@@ -28,6 +28,10 @@ Why this is the hill to die on: AI writes and tests `/engine` at full speed with
 
 Named, separately seeded streams: `outcomes`, `drama`, `slate`, `shop`, `events`. Run seed shown on the run-over screen from day one (debug + community sharing + daily challenge later, free).
 
+## The sweat as a steppable process (Week 2 shape requirement)
+
+The sweat is a cursor over drama events, not a pre-baked immutable list. Cash-out requires this anyway (input is polled between events); it also creates the **intervention seam** live relics need later: `ApplyLiveEffect` at a step boundary → recompute honest conditional `p` → re-sample the remaining outcome from the outcomes stream → drama generator re-authors the remaining events toward the (possibly new) result. Explicit and visible, per design/04's integrity rule. v0 builds the stepping structure but never calls the seam — no live relics in the prototype (PRD scope), no door closed for them either.
+
 ## Presentation layer notes
 
 - Engine emits an ordered **event stream** per sweat; Unity plays it back on a timeline with pacing control. The game is fundamentally a fancy event-stream player — keep it that way.

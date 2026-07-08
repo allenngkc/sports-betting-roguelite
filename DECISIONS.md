@@ -2,6 +2,7 @@
 
 Append-only. Format: date — decision — why. Reversing a decision gets a new entry, never an edit.
 
+- **2026-07-07 — Relic timing classes (pre-game / live / passive) + "store the base, compute the effective."** Locked odds are the contract and never mutate; live effects layer modifiers through the effect pipeline. Live `p` manipulation runs through the drama generator's intervention seam (conditional re-sample + re-author). Week 2 builds the sweat as a steppable cursor (needed for cash-out regardless); the seam ships unused in v0.
 - **2026-07-07 — PRD-prototype-v0 SIGNED OFF (Allen). Phase 1 begins.** Scope frozen except §8 tuning numbers; kill/continue verdict due after Week 6 evaluation.
 - **2026-07-07 — Cash-out fair-value formula corrected** in design/02: remaining legs contribute `p_j × o_j`, not `p_j` alone. Caught during engine implementation; both sanity anchors (none-resolved, all-resolved) are now unit tests.
 - **2026-07-07 — Presentation direction signed off (Allen):** "show the stakes, not the sport" — broadcast HUD, live win-prob graph, scorebug wall + director. Detail/element design acknowledged as a hard Phase 2 workstream; v0 remains plain text per PRD.

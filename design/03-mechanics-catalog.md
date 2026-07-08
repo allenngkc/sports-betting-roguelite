@@ -40,6 +40,16 @@ Shop between rounds, guru subscription upkeep, book reputation (win too much →
 
 **Accounting-engine relics** (sub-family): relics operating on tracked run-level quantities (vig paid, volume churned, tickets busted) rather than on any single bet. Anchor example — **"Piggy Bank" / rakeback** (Allen, 2026-07-07): accrues 2× cumulative vig paid, redeemable on a trigger (smash rules OPEN). At 2×, betting volume itself turns profitable, deliberately creating the **rakeback grinder archetype** — thematically grounded in real promo/rakeback grinding culture, and orthogonal to the +EV sharp archetype. Engine requirement: vig computed at ticket lock as a first-class stat (formula in 02).
 
+## Relic timing classes (added 2026-07-07, Allen)
+
+Orthogonal to the five axes, every relic has a timing class by which hooks it uses:
+
+- **Pre-game** — acts before the lock: `OnSlateGenerated / OnOddsOffered / OnBetComposed / OnTicketLocked`
+- **Live** — acts during the sweat: `OnLegStarted / OnMatchEvent / OnLegResolved / OnCashOutOffered` (includes the mid-sweat active charges from design/04's agency ladder)
+- **Passive/economy** — acts at settlement or between rounds
+
+Implementation law: **store the base, compute the effective.** Locked odds are the contract and are never mutated; live effects register modifiers evaluated through the effect pipeline, so replays stay deterministic and the UI can show the story ("locked 1.90 → boosted 2.28"). Live effects that change `p` mid-sweat go through the drama generator's intervention seam (design/05). Combo space this opens (Band 3 fuel): manipulate live probability, watch the cash-out offer spike, sell the ticket at the top — market manipulation as a game verb.
+
 ## Effect hook list (contract with `05-architecture.md`)
 
 `OnSlateGenerated, OnOddsOffered, OnBetComposed, OnTicketLocked, OnLegStarted, OnMatchEvent, OnLegResolved, OnCashOutOffered, OnCashOutTaken, OnTicketSettled, OnRoundSettled, OnShopEntered, OnEventChoice, OnLimited, OnRunEnd`
