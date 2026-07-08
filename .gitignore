@@ -1,0 +1,24 @@
+# .NET
+bin/
+obj/
+artifacts/
+TestResults/
+*.user
+.vs/
+.idea/
+*.DotSettings
+
+# Unity (Phase 2 — game/ project)
+game/[Ll]ibrary/
+game/[Tt]emp/
+game/[Oo]bj/
+game/[Bb]uild/
+game/[Bb]uilds/
+game/[Ll]ogs/
+game/[Uu]serSettings/
+game/[Mm]emoryCaptures/
+*.csproj.meta
+
+# OS
+Thumbs.db
+.DS_Store

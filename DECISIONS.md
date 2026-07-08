@@ -1,0 +1,19 @@
+# Decision Log
+
+Append-only. Format: date — decision — why. Reversing a decision gets a new entry, never an edit.
+
+- **2026-07-07 — PRD-prototype-v0 SIGNED OFF (Allen). Phase 1 begins.** Scope frozen except §8 tuning numbers; kill/continue verdict due after Week 6 evaluation.
+- **2026-07-07 — Cash-out fair-value formula corrected** in design/02: remaining legs contribute `p_j × o_j`, not `p_j` alone. Caught during engine implementation; both sanity anchors (none-resolved, all-resolved) are now unit tests.
+- **2026-07-07 — Presentation direction signed off (Allen):** "show the stakes, not the sport" — broadcast HUD, live win-prob graph, scorebug wall + director. Detail/element design acknowledged as a hard Phase 2 workstream; v0 remains plain text per PRD.
+- **2026-07-07 — Prestige-as-power DROPPED (Allen):** across-run progression is breadth-only unlocks (new relics, bet types, leagues). Rationale: carried power flattens the EV arc by skipping Band 1 scarcity.
+
+- **2026-07-07 — Engine: Unity 6 + C#.** Largest community/tutorial corpus and strongest AI-assisted language fit (Allen will rely heavily on AI); Asset Store for juice; best mobile port path for v2. Godot rejected for AI-workflow reasons (models mix Godot 3/4 APIs); LÖVE rejected for ecosystem size.
+- **2026-07-07 — Architecture: headless pure-C# engine, Unity as presentation layer, separate Monte Carlo sim runner.** Enables AI-speed logic iteration without the editor, empirical balance, cheap web/mobile ports, deterministic replay.
+- **2026-07-07 — Signature mechanic: the sweat.** Leg-by-leg parlay resolution with live cash-out offer. Design Pillar 1; all juice budget flows here first.
+- **2026-07-07 — Sports are not simulated; drama is.** Outcome sampled first from true p, then a pacing-controlled narrative generator writes events arriving at it. Live p / cash-out math stays honest. Makes multi-sport support a reskin.
+- **2026-07-07 — Every mechanic maps to the four-number model** (true p, offered odds, stake, payout) and one of five axes (information / odds / capital / resolution / economy).
+- **2026-07-07 — Tone: satire of gambling culture,** fictional leagues/teams only. Accept a gambling-theme age rating rather than sanitize.
+- **2026-07-07 — Phase 0 is docs-first.** No production code until the Phase 0 gate in 07-business-and-roadmap.md is met.
+- **2026-07-07 — Concurrent tickets: baseline 3 per round, limits upgradable** via shop/relics/events (Allen). Tickets double as a variance-management portfolio, so cap raises are skill expression.
+- **2026-07-07 — Economy doctrine: the EV arc with three bands** (Allen's direction, formalized in design/02). Band 1 scarcity balanced tight; Band 3 "sanctioned brokenness" deliberately uncapped — gate *when* it's reachable, never *how high*. Synergy audits classify loops (delicious vs degenerate), they don't kill them. Anti-grind: layered progression; across-run unlocks lean breadth-not-power (prestige final call still OPEN).
+- **2026-07-07 — Pillar 3 generalized: "four numbers" → "mathematically legible payoff functions."** Allen's counterexamples (per-leg payout relic retaining full parlay payout; 2× vig-rebate piggy bank) are strong designs that don't fit scalar modification of p/o/s/payout. New law: relics may rewrite a bet's payoff function or operate on tracked run-level accounting quantities, provided the effect is expressible at existing engine hooks and EV-auditable by /sim. Derived rule added to 02: cash-out prices the full remaining payoff function, including future relic cash flows.
