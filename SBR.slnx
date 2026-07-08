@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/engine.tests/">
+    <Project Path="engine.tests/SBR.Engine.Tests.csproj" />
+  </Folder>
+  <Folder Name="/engine/">
+    <Project Path="engine/SBR.Engine.csproj" />
+  </Folder>
+</Solution>
