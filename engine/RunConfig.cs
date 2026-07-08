@@ -15,5 +15,8 @@ public sealed class RunConfig
     public double MinTrueProb { get; set; } = 0.25;
     public double MaxTrueProb { get; set; } = 0.75;
 
+    /// <summary>Pacing dials for the drama generator (design/04); flows through Run into every SweatSession.</summary>
+    public DramaConfig Drama { get; set; } = new DramaConfig();
+
     public int Rounds => Targets.Length;
 }

@@ -79,6 +79,7 @@ public class RunTests
         var run = NewRun();
         run.PlaceTicket(new[] { new Pick(0, Side.Home), new Pick(1, Side.Away) }, 50);
         run.LockRound();
+        run.FastForwardRound();
 
         Assert.Equal(Phase.Settlement, run.Phase);
         Assert.All(run.CurrentSlate.Matchups, m => Assert.NotNull(m.Result));
@@ -94,6 +95,7 @@ public class RunTests
         double bankBeforeLock = run.Bank;
 
         run.LockRound();
+        run.FastForwardRound();
 
         double expectedWinnings = run.Tickets
             .Where(t => t.State == TicketState.Won)
@@ -108,6 +110,7 @@ public class RunTests
         Ticket a = run.PlaceTicket(new[] { new Pick(0, Side.Home) }, 10);
         Ticket b = run.PlaceTicket(new[] { new Pick(0, Side.Home) }, 10);
         run.LockRound();
+        run.FastForwardRound();
 
         Assert.Equal(a.State, b.State);
         Assert.Equal(a.Legs[0].State, b.Legs[0].State);
@@ -132,6 +135,7 @@ public class RunTests
     {
         var run = NewRun();
         run.LockRound();
+        run.FastForwardRound();
         run.Settle();
         Assert.Equal(Phase.RunLost, run.Phase);
     }
@@ -142,6 +146,7 @@ public class RunTests
         var cfg = new RunConfig { Targets = new double[] { 100, 100 } };
         var run = NewRun(cfg: cfg);
         run.LockRound();
+        run.FastForwardRound();
         run.Settle();
         Assert.Equal(Phase.Shop, run.Phase);
 
@@ -159,9 +164,11 @@ public class RunTests
         var run = NewRun(cfg: cfg);
 
         run.LockRound();
+        run.FastForwardRound();
         run.Settle();
         run.ExitShop();
         run.LockRound();
+        run.FastForwardRound();
         run.Settle();
 
         Assert.Equal(Phase.RunWon, run.Phase);
@@ -175,6 +182,7 @@ public class RunTests
         double round1Prob = run.CurrentSlate.Matchups[0].TrueHomeProb;
 
         run.LockRound();
+        run.FastForwardRound();
         run.Settle();
         run.ExitShop();
 
@@ -203,6 +211,7 @@ public class RunTests
             run.PlaceTicket(new[] { new Pick(0, Side.Home), new Pick(2, Side.Away) }, 120);
             run.PlaceTicket(new[] { new Pick(4, Side.Home) }, 60);
             run.LockRound();
+            run.FastForwardRound();
             run.Settle();
             return (run.Phase, run.Bank);
         }
