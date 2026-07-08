@@ -1,7 +1,7 @@
 # Sports Betting Roguelite — Design Workspace
 
 **Working title:** TBD (see OPEN-QUESTIONS.md)
-**Status:** Phase 1 — Week 1 (headless engine core). PRD signed off 2026-07-07. Code lives in `engine/` (+ `engine.tests/`); `sim/` and `game-console/` arrive Weeks 4–5.
+**Status:** Phase 1 — Weeks 1–2 done (engine core; drama generator + steppable sweat + cash-out, 91 tests green). Next: Week 3, effect system + the 10 relics + shop. Code lives in `engine/` (+ `engine.tests/`); `sim/` and `game-console/` arrive Weeks 4–5.
 **Owner:** Allen. **Collaborator:** Claude (design discussion, math, architecture, VFX implementation).
 
 ## What this space is
