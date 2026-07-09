@@ -5,4 +5,7 @@
   <Folder Name="/engine/">
     <Project Path="engine/SBR.Engine.csproj" />
   </Folder>
+  <Folder Name="/game-console/">
+    <Project Path="game-console/SBR.ConsoleGame.csproj" />
+  </Folder>
 </Solution>

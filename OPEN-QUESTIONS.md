@@ -29,6 +29,8 @@ Anything undecided lives here so it can't get lost. When resolved: move the outc
 - [ ] "Piggy Bank" redemption trigger: smash at will (lose future accrual)? auto-break on ticket bust (consolation engine)? end-of-round only? And does 2× survive Monte Carlo, or does the rakeback-grinder archetype need a cap/upkeep cost?
 
 ## The sweat (design/04)
+- [ ] First playtest data (Week 4 implementation agent, 2026-07-08): the bad-beat near-miss (75% one event before a 0% whistle) already lands hard even in text; predicted first repetitiveness = calm Momentum beats on heavily-favored legs (cash-out barely moves → no decision pressure), likely felt by ticket 2–3. Watch for this in Allen's S1/S2 runs; candidate fix is compressing consecutive Calm beats, not faster pacing overall.
+- [ ] Week 5 sim note: the --auto baseline's flat $50 stake cap under-represents a naive bettor (mathematically cannot clear round 1 from $500 with a 2-leg favorite parlay); the sim's naive bot should stake ~25% of bank uncapped instead.
 - [x] ~~Presentation proposal~~ — signed off 2026-07-07 (DECISIONS.md); detail design is a Phase 2 workstream
 - [ ] Mid-sweat agency ladder (design/04, PROPOSED): confirm the band-tiered verb approach; then design the active-charge relic set and decide whether partial cash-out is baseline or an early unlock
 - [ ] Fast-forward policy (anti-frustration vs Pillar 1)
