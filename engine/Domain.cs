@@ -81,14 +81,27 @@ public sealed class Leg
     public Matchup Matchup { get; }
     public Side Side { get; }
 
-    /// <summary>Locked at compose time; relics that modify odds act before the lock.</summary>
-    public double OfferedOdds { get; }
+    /// <summary>The matchup's own price for the picked side — the odds before any relic touched them.</summary>
+    public double BaseOdds { get; }
+
+    /// <summary>The locked contract odds. Equals <see cref="BaseOdds"/> unless a compose-time relic
+    /// (boosted_odds, promo_code) rewrote it before the ticket locked.</summary>
+    public double OfferedOdds { get; internal set; }
+
+    /// <summary>Set by the mulligan relic when this leg reveals Lost: the leg is struck from the ticket
+    /// (excluded from payout, win condition, cash-out products, and early-payout partials).</summary>
+    public bool IsVoided { get; internal set; }
+
+    /// <summary>Set by the lucky_charm relic when the ticket's final leg reveals Lost but the baked
+    /// second-chance roll succeeded: this ticket grades the leg Won without touching Matchup.Result.</summary>
+    public bool LuckyFlippedWon { get; internal set; }
 
     public Leg(Matchup matchup, Side side, double offeredOdds)
     {
         Matchup = matchup;
         Side = side;
         OfferedOdds = offeredOdds;
+        BaseOdds = offeredOdds;
     }
 
     public double TrueProb => Matchup.TrueProb(Side);
@@ -97,6 +110,10 @@ public sealed class Leg
         Matchup.Result == null ? LegState.Pending
         : Matchup.Result == Side ? LegState.Won
         : LegState.Lost;
+
+    /// <summary>This ticket's grading of the leg: a lucky-charm flip counts as Won even though
+    /// <see cref="State"/> (engine truth) is still Lost. Voided legs never count as won.</summary>
+    public bool GradesWon => !IsVoided && (LuckyFlippedWon || State == LegState.Won);
 }
 
 public sealed class Ticket
@@ -113,5 +130,25 @@ public sealed class Ticket
         VigPaid = vigPaid;
     }
 
-    public double PotentialPayout => Stake * OddsMath.ParlayDecimal(Legs.Select(l => l.OfferedOdds).ToList());
+    /// <summary>Legs that still count toward the ticket: voided (mulligan'd) legs are excluded.</summary>
+    public IEnumerable<Leg> ActiveLegs => Legs.Where(l => !l.IsVoided);
+
+    /// <summary>A ticket wins when it has at least one active leg and every active leg grades Won.</summary>
+    public bool GradesWon
+    {
+        get
+        {
+            bool any = false;
+            foreach (Leg l in Legs)
+            {
+                if (l.IsVoided) continue;
+                any = true;
+                if (!l.GradesWon) return false;
+            }
+            return any;
+        }
+    }
+
+    /// <summary>Payout on a win: stake × product of the active legs' offered odds (voided legs drop out).</summary>
+    public double PotentialPayout => Stake * OddsMath.ParlayDecimal(ActiveLegs.Select(l => l.OfferedOdds).ToList());
 }

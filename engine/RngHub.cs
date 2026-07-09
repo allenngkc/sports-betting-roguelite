@@ -21,6 +21,9 @@ public sealed class RngHub
     /// <summary>Shop offers (Week 3).</summary>
     public Pcg32 Shop { get; }
 
+    /// <summary>Relic effects: tout-sheet intel and lucky-charm second-chance rolls (Week 3).</summary>
+    public Pcg32 Relics { get; }
+
     public RngHub(string runSeed)
     {
         RunSeed = runSeed;
@@ -29,6 +32,7 @@ public sealed class RngHub
         Drama = new Pcg32(seed, Fnv1a64("drama"));
         Slate = new Pcg32(seed, Fnv1a64("slate"));
         Shop = new Pcg32(seed, Fnv1a64("shop"));
+        Relics = new Pcg32(seed, Fnv1a64("relics"));
     }
 
     public static ulong Fnv1a64(string s)

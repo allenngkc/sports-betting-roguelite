@@ -72,7 +72,7 @@ If this screen loop reads fun to you, the PRD is aimed right. If not, say so bef
 | Relic | Axis | Hook(s) | Effect (v0 numbers — sim will retune) |
 |---|---|---|---|
 | Tout Sheet | Info | OnSlateGenerated | Reveals true win% ±5pp for 2 matchups/round |
-| Sharp Eye | Info | OnOddsOffered | Flags whether one chosen line is +EV (boolean) |
+| Sharp Eye | Info | OnOddsOffered | Reveals the exact true win% of one chosen line per round (redesigned 2026-07-08: the original "+EV flag" is always false against a vig-priced book — dead content; see DECISIONS.md) |
 | Boosted Odds | Odds | OnBetComposed | +15% decimal odds on each ticket's first leg |
 | Promo Code | Odds | OnTicketLocked | First ticket each round is priced at fair odds (vig = 0) |
 | High Roller | Capital | OnBetComposed | Max stake ×2 |
@@ -102,7 +102,7 @@ Definition of done, technical: `dotnet test` green; `sim --runs 10000 --strategy
 
 ## 8. Tuning defaults (v0 starting values — the sim's job is to move these)
 
-Starting bank $500 · targets [800, 1200, 1900, 3000, 4800, 7800, 12500, 20000] (≈ ×1.6) · overround 5% flat · cash-out margin 8% · min stake $10, max stake 100% of bank (÷ relics) · shop prices $150–400 · 6 matchups/round · 3 tickets/round max.
+Starting bank $500 · targets [800, 1200, 1900, 3000, 4800, 7800, 12500, 20000] (≈ ×1.6) · overround 5% flat · cash-out margin 8% · min stake $10, max stake per ticket 50% of current bank (High Roller doubles to 100%; amended 2026-07-08 — the original "100% of bank" made High Roller a no-op) · shop prices $150–400 · 6 matchups/round · 3 tickets/round max · 5 relic slots.
 
 ## 9. Milestones
 
