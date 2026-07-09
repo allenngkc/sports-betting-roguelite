@@ -22,6 +22,7 @@ Anything undecided lives here so it can't get lost. When resolved: move the outc
 - [ ] Anti-frustration: bad-beat insurance as visible item vs any hidden pity system
 
 ## Mechanics (design/03)
+- [ ] Consumables vs passives implementation (design/03, from playtest #1): slot pool sizes (straw man 3+3), sell-back fraction (straw man 50%), which of the current 10 convert to consumables (lean: lucky_charm, mulligan, promo_code), and WHEN — lean: build Week 5 sim first on the current system, then rework items, re-run sim, and hold the Week 6 verdict on the reworked system. Allen to confirm sequencing.
 - [ ] Cap on resolution-warping relics per ticket?
 - [ ] Guru accuracy estimation UX — how does the player track record without a spreadsheet feel?
 - [ ] Insider-tip consequence table (book flags? sting events? how harsh?)

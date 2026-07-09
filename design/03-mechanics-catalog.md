@@ -56,6 +56,17 @@ Implementation law: **store the base, compute the effective.** Locked odds are t
 
 Every mechanic above must be expressible as subscriptions to these hooks. If one can't be, the hook list (not the mechanic) gets reviewed.
 
+## Consumables vs passive skills (Allen, playtest #1, 2026-07-08 — designed, not yet implemented)
+
+Playtest finding: a run with 5/5 permanent relics felt too easy — permanent stacking removes scarcity decisions. Direction (Balatro's jokers-vs-tarots split, adapted):
+
+- **Consumables** ("charms"): one-time use, then gone. Candidates from the current 10: Lucky Charm (single second chance), Mulligan (single void), Promo Code (a promo is one-time by nature). New consumable ideas: **Bet Reset** (void a locked ticket, recover the stake), slate re-roll, one-shot odds boost.
+- **Passive skills**: permanent while slotted — Tout Sheet, Sharp Eye (recharging), Boosted Odds, High Roller, Early Payout, Piggy Bank.
+- **Separate slot pools** (straw man: 3 passive + 3 consumable — sim tunes), and **sell-back** at a fraction of price (straw man 50%) so slots are a managed portfolio, not a ratchet.
+- Difficulty rationale: consumables create "use now or save it" tension every round and keep lategame power spiky instead of flat; passives remain the engine-building spine. EV audit discipline applies to both.
+
+Implementation timing: parked in OPEN-QUESTIONS — lean is after the Week 5 sim harness exists, so the rebalance is measured rather than vibed, with the Week 6 verdict run on the reworked system.
+
 ## Idea intake protocol
 
 New idea → one line in OPEN-QUESTIONS.md with its proposed axis → we discuss → it either gets a section here, gets merged into an existing mechanic, or gets a dated "cut, because…" note. Cut ideas stay visible; they're fuel for v2/v3 (prediction markets are already parked there).

@@ -43,6 +43,8 @@ Principle: **mid-sweat agency is a progression axis.** The verbs available *duri
 
 Hard rule: **no QTEs.** Mid-sweat actions are options, never prompts; the sweat stays fully watchable hands-off. Required input converts tension into task.
 
+**Progressive sweat density (Allen, playtest #1, 2026-07-08):** early sweats felt too fast to follow on first contact. For Unity: sweat *presentation complexity* should ramp with the run, mirroring the agency ladder — early rounds get shorter, simpler, slower-read sweats (fewer events, bigger type, one thing moving); lategame gets the full dense broadcast wall. This is also the onboarding mechanism: the player learns the sweat's grammar in Band 1 before Band 3 turns up the noise. Engine already supports it (DramaConfig event budgets can scale by round); it's a renderer + config concern, no architecture change.
+
 Engine cost: near zero — active charges are player-initiated effects on the existing `OnMatchEvent` / `OnCashOutOffered` hooks.
 
 v0 note: prototype ships cash-out-only *on purpose* (isolates the anticipation+one-decision hypothesis). Evaluation should record **when** sweat repetitiveness first appears (which run #) as design input for this ladder.

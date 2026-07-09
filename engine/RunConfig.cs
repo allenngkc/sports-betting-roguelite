@@ -9,9 +9,10 @@ public sealed class RunConfig
     public double CashOutMargin { get; set; } = 0.08;
     public double MinStake { get; set; } = 10;
 
-    /// <summary>Base cap on a single ticket's stake as a fraction of the current bank (PRD F7 discipline);
-    /// the high_roller relic multiplies it. Boundary inclusive: a stake exactly at the cap is allowed.</summary>
-    public double MaxStakeFraction { get; set; } = 0.5;
+    /// <summary>Cap on a single ticket's stake as a fraction of the current bank. 1.0 = uncapped (all-in
+    /// allowed) — lifted 2026-07-08 after playtest #1. Kept as a dial for /sim experiments. Boundary
+    /// inclusive: a stake exactly at the cap is allowed.</summary>
+    public double MaxStakeFraction { get; set; } = 1.0;
 
     public int MaxTicketsPerRound { get; set; } = 3;
     public int MatchupsPerSlate { get; set; } = 6;

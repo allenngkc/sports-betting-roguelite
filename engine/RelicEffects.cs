@@ -89,11 +89,10 @@ public sealed class EffectEngine
         foreach (RelicBehavior b in _behaviors) b.Compose(legs, isFirstTicketThisRound);
     }
 
-    public double MaxStakeFraction(double baseFraction)
+    /// <summary>Placement effects (high_roller): run after compose, with the bank pre-deduction.</summary>
+    public void ApplyTicketPlaced(Ticket ticket, double stake, double bankBeforeDeduction)
     {
-        double mult = 1.0;
-        foreach (RelicBehavior b in _behaviors) mult *= b.MaxStakeFractionMult();
-        return baseFraction * mult;
+        foreach (RelicBehavior b in _behaviors) b.OnTicketPlaced(ticket, stake, bankBeforeDeduction);
     }
 
     // ---- sharp_eye (active query) ----
@@ -205,7 +204,7 @@ internal abstract class RelicBehavior
 
     // Hook sites (default no-op).
     public virtual void Compose(IReadOnlyList<Leg> legs, bool isFirstTicketThisRound) { }
-    public virtual double MaxStakeFractionMult() => 1.0;
+    public virtual void OnTicketPlaced(Ticket ticket, double stake, double bankBeforeDeduction) { }
     public virtual void OnBust(BustContext ctx) { }
 
     public static RelicBehavior Create(RelicDefinition def)
@@ -216,7 +215,7 @@ internal abstract class RelicBehavior
             case "RevealLineTrueProb": return new RevealLineTrueProbBehavior(def);
             case "BoostLegOdds": return new BoostLegOddsBehavior(def);
             case "FairOddsFirstTicket": return new FairOddsFirstTicketBehavior(def);
-            case "MaxStakeMult": return new MaxStakeMultBehavior(def);
+            case "AllInPayoutBonus": return new AllInPayoutBonusBehavior(def);
             case "RefundBustedStake": return new RefundBustedStakeBehavior(def);
             case "VoidDeadLeg": return new VoidDeadLegBehavior(def);
             case "SecondChanceFinalLeg": return new SecondChanceFinalLegBehavior(def);
@@ -290,11 +289,18 @@ internal sealed class FairOddsFirstTicketBehavior : RelicBehavior
     }
 }
 
-/// <summary>high_roller: multiply the max-stake fraction.</summary>
-internal sealed class MaxStakeMultBehavior : RelicBehavior
+/// <summary>high_roller: staking at least the threshold fraction of the bank boosts the ticket's payout.
+/// Redesigned 2026-07-08 alongside lifting the max-stake cap (which made the old cap-doubling effect
+/// a no-op); this rewards the uncapped all-in play the cap removal enables.</summary>
+internal sealed class AllInPayoutBonusBehavior : RelicBehavior
 {
-    public MaxStakeMultBehavior(RelicDefinition def) : base(def) { }
-    public override double MaxStakeFractionMult() => Param("mult");
+    public AllInPayoutBonusBehavior(RelicDefinition def) : base(def) { }
+
+    public override void OnTicketPlaced(Ticket ticket, double stake, double bankBeforeDeduction)
+    {
+        if (stake >= Param("thresholdFraction") * bankBeforeDeduction)
+            ticket.PayoutMultiplier *= Param("payoutMult");
+    }
 }
 
 /// <summary>bankroll_insurance: the first bust each round refunds a fraction of its stake.</summary>

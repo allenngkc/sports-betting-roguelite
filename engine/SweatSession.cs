@@ -166,7 +166,9 @@ public sealed class SweatSession
             if (!_ticket.Legs[j].IsVoided)
                 remaining.Add((_ticket.Legs[j].TrueProb, _ticket.Legs[j].OfferedOdds));
 
-        double fair = OddsMath.CashOutFair(_ticket.Stake, resolvedOddsProduct, remaining);
+        // The relic payout multiplier (high_roller) scales the terminal payout, so it scales its EV;
+        // early-payout partials are stake-based and deliberately unscaled.
+        double fair = OddsMath.CashOutFair(_ticket.Stake, resolvedOddsProduct, remaining) * _ticket.PayoutMultiplier;
         fair += FutureEarlyPayoutEv();
         return fair;
     }

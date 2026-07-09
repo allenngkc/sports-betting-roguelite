@@ -63,10 +63,9 @@ public static class RelicCatalog
             new Dictionary<string, double>()),
 
         new RelicDefinition("high_roller", "High Roller",
-            "Doubles the maximum stake you may put on a single ticket.",
-            "Capital", "MaxStakeMult", 250,
-            new Dictionary<string, double> { ["mult"] = 2.0 }),
-
+            "Stake at least half your bank on a ticket and its payout is boosted 15%.",
+            "Capital", "AllInPayoutBonus", 250,
+            new Dictionary<string, double> { ["thresholdFraction"] = 0.5, ["payoutMult"] = 1.15 }),
         new RelicDefinition("bankroll_insurance", "Bankroll Insurance",
             "The first ticket you bust each round refunds half its stake.",
             "Capital", "RefundBustedStake", 200,

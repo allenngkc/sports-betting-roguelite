@@ -123,6 +123,10 @@ public sealed class Ticket
     public double VigPaid { get; }
     public TicketState State { get; internal set; } = TicketState.Open;
 
+    /// <summary>Payout scale from relic effects (high_roller's all-in bonus); 1.0 unless an effect set it.
+    /// Scales the win payout and the cash-out fair value, never the early-payout partials (stake-based).</summary>
+    public double PayoutMultiplier { get; internal set; } = 1.0;
+
     public Ticket(IReadOnlyList<Leg> legs, double stake, double vigPaid)
     {
         Legs = legs;
@@ -149,6 +153,7 @@ public sealed class Ticket
         }
     }
 
-    /// <summary>Payout on a win: stake × product of the active legs' offered odds (voided legs drop out).</summary>
-    public double PotentialPayout => Stake * OddsMath.ParlayDecimal(ActiveLegs.Select(l => l.OfferedOdds).ToList());
+    /// <summary>Payout on a win: stake × product of the active legs' offered odds (voided legs drop out),
+    /// scaled by any relic payout multiplier.</summary>
+    public double PotentialPayout => Stake * OddsMath.ParlayDecimal(ActiveLegs.Select(l => l.OfferedOdds).ToList()) * PayoutMultiplier;
 }

@@ -268,22 +268,54 @@ public class RelicCatalogAndShopTests
         Assert.True(System.Math.Abs(ta.Legs[0].OfferedOdds - tb.Legs[0].OfferedOdds) > 1e-6);
     }
 
-    // ---- high_roller ----
+    // ---- stakes uncapped (2026-07-08) + high_roller's all-in payout bonus ----
 
     [Fact]
-    public void High_roller_lifts_the_max_stake_from_half_bank_to_the_whole_bank()
+    public void Stakes_are_uncapped_up_to_the_whole_bank()
     {
-        // Baseline (no relic): 0.5 × bank is allowed, 0.75 × bank is rejected.
-        var plain = new Run("R3-0", new RunConfig()); // bank 500
-        plain.PlaceTicket(RelicKit.Picks((0, Side.Home)), 250); // exactly 0.5 × 500, inclusive
-        var plain2 = new Run("R3-0", new RunConfig());
-        Assert.Throws<System.ArgumentException>(() => plain2.PlaceTicket(RelicKit.Picks((0, Side.Home)), 375));
+        var allIn = new Run("R3-0", new RunConfig()); // bank 500
+        allIn.PlaceTicket(RelicKit.Picks((0, Side.Home)), 500);
+        Assert.Equal(0, allIn.Bank, 10);
 
-        // With high_roller: 0.75 × bank is fine; above the whole bank is still rejected.
+        var over = new Run("R3-0", new RunConfig());
+        Assert.Throws<System.ArgumentException>(() => over.PlaceTicket(RelicKit.Picks((0, Side.Home)), 501));
+    }
+
+    [Fact]
+    public void High_roller_boosts_payout_only_when_staking_at_least_half_the_bank()
+    {
         Run hr = RelicKit.Round2Owning("R3-0", RelicKit.Cheap(), "high_roller");
-        hr.PlaceTicket(RelicKit.Picks((0, Side.Home)), 0.75 * hr.Bank);
+        double bank = hr.Bank;
 
-        Run hr2 = RelicKit.Round2Owning("R3-0", RelicKit.Cheap(), "high_roller");
-        Assert.Throws<System.ArgumentException>(() => hr2.PlaceTicket(RelicKit.Picks((0, Side.Home)), hr2.Bank + 1));
+        Ticket big = hr.PlaceTicket(RelicKit.Picks((0, Side.Home)), 0.5 * bank);
+        Assert.Equal(1.15, big.PayoutMultiplier, 12);
+        Assert.Equal(0.5 * bank * big.Legs[0].OfferedOdds * 1.15, big.PotentialPayout, 8);
+
+        Ticket small = hr.PlaceTicket(RelicKit.Picks((1, Side.Home)), 10); // far below half the reduced bank
+        Assert.Equal(1.0, small.PayoutMultiplier, 12);
+        Assert.Equal(10 * small.Legs[0].OfferedOdds, small.PotentialPayout, 8);
+    }
+
+    [Fact]
+    public void High_roller_bonus_scales_the_cash_out_fair_value()
+    {
+        Run hr = RelicKit.Round2Owning("R3-0", RelicKit.Cheap(), "high_roller");
+        Ticket t = hr.PlaceTicket(RelicKit.Picks((0, Side.Home), (1, Side.Home)), 0.5 * hr.Bank);
+        hr.LockRound();
+
+        double expected = 1.15 * OddsMath.CashOutFair(t.Stake, 1.0, new[]
+        {
+            (t.Legs[0].TrueProb, t.Legs[0].OfferedOdds),
+            (t.Legs[1].TrueProb, t.Legs[1].OfferedOdds),
+        });
+        Assert.Equal(expected, hr.Sweats[0].CashOutFair()!.Value, 8);
+    }
+
+    [Fact]
+    public void Without_high_roller_all_in_tickets_get_no_bonus()
+    {
+        var run = new Run("R3-0", new RunConfig());
+        Ticket t = run.PlaceTicket(RelicKit.Picks((0, Side.Home)), 500);
+        Assert.Equal(1.0, t.PayoutMultiplier, 12);
     }
 }

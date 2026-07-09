@@ -28,3 +28,4 @@ A living design bible. We discuss topics here session by session, converge on de
 | `design/07-business-and-roadmap.md` | Market research, phases, validation gates, launch funnel |
 | `DECISIONS.md` | Append-only decision log |
 | `OPEN-QUESTIONS.md` | Parking lot for everything undecided |
+| `PLAYTESTS.md` | Human playtest log — findings, S-criteria signals, actions |

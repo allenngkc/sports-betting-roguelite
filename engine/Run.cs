@@ -75,11 +75,9 @@ public sealed class Run
         if (stake < Config.MinStake)
             throw new ArgumentException($"Minimum stake is {Config.MinStake}, got {stake}");
 
-        double maxStake = _effects.MaxStakeFraction(Config.MaxStakeFraction) * Bank;
+        double maxStake = Config.MaxStakeFraction * Bank;
         if (stake > maxStake)
             throw new ArgumentException($"Stake {stake} exceeds the max stake {maxStake} for bank {Bank}");
-        if (stake > Bank)
-            throw new ArgumentException($"Stake {stake} exceeds bank {Bank}");
 
         var legs = picks
             .Select(p =>
@@ -96,6 +94,9 @@ public sealed class Run
         double offered = OddsMath.ParlayDecimal(legs.Select(l => l.OfferedOdds).ToList());
         double fair = OddsMath.FairDecimal(OddsMath.ParlayProb(legs.Select(l => l.TrueProb).ToList()));
         var ticket = new Ticket(legs, stake, OddsMath.VigPaid(stake, offered, fair));
+
+        // Placement effects (high_roller's all-in bonus) see the bank BEFORE the stake is deducted.
+        _effects.ApplyTicketPlaced(ticket, stake, Bank);
 
         Bank -= stake;
         _tickets.Add(ticket);
