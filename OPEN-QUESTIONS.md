@@ -16,10 +16,10 @@ Anything undecided lives here so it can't get lost. When resolved: move the outc
 - [x] ~~Prestige/carry-over between runs~~ — resolved 2026-07-07: breadth-only unlocks, prestige-as-power dropped (DECISIONS.md)
 
 ## Balance & structure (from the Week 5 sim, 2026-07-09 — these gate the Week 6 verdict)
-- [ ] **Failure model.** Hard per-round targets make survival geometric: even skilled play clears ~72% of a round under a flat-early curve → 0.72⁸ ≈ 7% runs won; S4 needs ~91%/round. Flatter targets alone moved skilled median death only 1→2. Options: (a) targets tracking the skilled-EV curve + much stronger relic compounding; (b) **debt-as-HP** — miss a target and the bookie floats the shortfall at punitive interest (added to future targets); miss while already in debt = death. (b) converts instant death into accumulating pressure, is thematically native (the bookie!), and echoes CloverPit's debt frame. Allen to decide — core-loop change.
-- [ ] **Book pricing noise.** SlateGenerator prices at true p × (1+overround) proportionally, so two-way de-vigging recovers true p *exactly* → Tout Sheet and Sharp Eye carry mathematically zero informational edge (the sim's skilled bot proved it). Proposal: the book prices off a noisy estimate (p_book = true p + noise, σ ≈ 3–5pp config dial). This creates genuinely mispriced lines to hunt — the actual sharp fantasy — and makes the information axis real. Changes PRD F3's "book is sharp" premise; Allen to sign off.
-- [ ] Info relic follow-up: with book noise, Tout Sheet/Sharp Eye become edge-finders (interval/exact truth vs the book's line) — re-audit after.
-- [ ] Relic power re-audit after retune (current death-floor makes the audit unresolvable; provisional Δ-mean-survival ranking: early_payout, lucky_charm, promo_code lead; tout_sheet, sharp_eye, bankroll_insurance ≈ dead).
+- [x] ~~Failure model~~ — resolved 2026-07-09: **debt-as-HP approved** (DECISIONS.md); implementation + recalibration in flight.
+- [x] ~~Book pricing noise~~ — resolved 2026-07-09: dropped for v0, parked to v2 with multiple books (DECISIONS.md). **Information relics removed from v0** (tout_sheet, sharp_eye); axis returns in v2 with line shopping/hedging/promo extraction.
+- [ ] Relic power re-audit at the post-debt calibrated config (provisional Δ-mean-survival ranking: early_payout, lucky_charm, promo_code lead; bankroll_insurance weak).
+- [ ] Calibration criterion (Allen): naive ~50% alive entering round 3–4; skilled median death ≥7. Levers: targets, starting bank, juice rate, relic prices.
 
 ## Math (design/02)
 - [ ] Correlation model for correlated parlays (shared latent momentum factor?)

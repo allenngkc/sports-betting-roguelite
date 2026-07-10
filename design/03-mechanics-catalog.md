@@ -14,6 +14,8 @@ Every mechanic slots into one axis (its primary job) and may touch others. This 
 
 ## Axis 1 — Information (the game's soul, and our differentiation)
 
+> **PARKED to v2 (2026-07-09, Allen):** v0's single sharp book prices at true p + proportional vig, so de-vigging recovers truth for free and information relics carry zero edge (proven by the Week 5 sim). The axis returns in v2 alongside its enabling features — multiple books with **pricing noise**, line shopping, hedging, promo extraction — where information actually has something to exploit. Everything below is design inventory for that return, not v0 content.
+
 - **Guru channels.** Subscribe (recurring cost, Axis 5 interaction) to get pick signals. Each guru has a *hidden accuracy* the player estimates from track record — some are sharp, some are coin-flippers with marketing, some are **shills who fade their own audience** (their picks are anti-signal, which a savvy player exploits by betting the opposite: a delicious discovery). Guru drama events: hot streaks, blowups, "exposed" scandals that crater a subscription you paid for.
 - **Insider tips.** Rare events: a stranger offers information about a match. Trust mechanics — the tip has hidden reliability; acting on it may carry consequences (the book flags suspicious bets → accelerates limiting; occasionally the "insider" is a sting). High variance by design.
 - **Scouting/stats tools.** Boring-but-honest info: buy tighter confidence intervals on `p` for specific leagues. The workhorse the flashy options are balanced against.

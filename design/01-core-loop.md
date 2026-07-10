@@ -18,9 +18,9 @@ Candidate ratchets, probably layered:
 - **The book adjusts.** Win too much and you get **limited**: max stakes cut, best odds hidden — the real-world sharp's problem as a difficulty mechanic. Forces diversification into new books/bet types.
 - **Vig creep.** Later rounds have worse baseline odds (Parlay does "fixed odds worsen over time"; ours should worsen *reactively*, which is smarter and more thematic).
 
-## Failure state
+## Failure state — debt-as-HP (DECIDED 2026-07-09, from Week 5 sim findings)
 
-Bankroll can't cover the target → run ends. Fiction TBD: debt collector? Back to the day job? Needs to land satirical, not grim. (OPEN)
+Missing a target no longer ends the run outright. With no debt: **the bookie floats you** — bank is topped up to the target (working capital to keep playing), and you now owe the shortfall plus juice (interest baked at borrow time; rate is a sim dial). Clear a later settle at target + debt and it's repaid in cash. Miss *while in debt* and the bookie collects — run over. No borrowing on the final round. This converts geometric per-round death into accumulating pressure (the Week 5 sim showed even optimal play under hard targets wins ~7% of runs; S4 needs ~91% per-round survival), and the failure fiction resolves itself: you were never playing against the sports — you were playing against your bookie.
 
 ## Meta progression between runs
 
