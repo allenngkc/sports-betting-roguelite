@@ -8,4 +8,7 @@
   <Folder Name="/game-console/">
     <Project Path="game-console/SBR.ConsoleGame.csproj" />
   </Folder>
+  <Folder Name="/sim/">
+    <Project Path="sim/SBR.Sim.csproj" />
+  </Folder>
 </Solution>
