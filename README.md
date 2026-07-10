@@ -1,7 +1,7 @@
 # Sports Betting Roguelite — Design Workspace
 
 **Working title:** TBD (see OPEN-QUESTIONS.md)
-**Status:** Phase 1 — Weeks 1–4 done. THE GAME IS PLAYABLE: `dotnet run --project game-console` (or `-- --auto [seed]` for a no-input smoke run). Engine 128 tests green. Next: Week 5, the `/sim` Monte Carlo harness; then the Week 6 kill/continue evaluation (S1/S2 need Allen's runs — see PRD §2).
+**Status:** Phase 1 — Weeks 1–5 done + the debt-as-HP balance patch (S3 and S4 both PASS; see `sim-report.md`). THE GAME IS PLAYABLE: `dotnet run --project game-console` (or `-- --auto [seed]`). Engine 133 tests green; sim: `dotnet run --project sim -- --runs 10000 --strategy all`. Next: the consumables/passives item rework, re-sim, then the Week 6 kill/continue evaluation (S1/S2 need Allen's runs — see PRD §2, PLAYTESTS.md).
 **Owner:** Allen. **Collaborator:** Claude (design discussion, math, architecture, VFX implementation).
 
 ## What this space is

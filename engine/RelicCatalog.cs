@@ -13,7 +13,8 @@ public sealed class RelicDefinition
     public string Name { get; }
     public string Description { get; }
 
-    /// <summary>Design axis: Information | Odds | Capital | Resolution | PayoffStructure | Accounting.</summary>
+    /// <summary>Design axis: Odds | Capital | Resolution | PayoffStructure | Accounting
+    /// (Information is parked until v2 — DECISIONS.md 2026-07-09).</summary>
     public string Axis { get; }
 
     /// <summary>Behavior key the effect engine keys on.</summary>
@@ -37,53 +38,45 @@ public sealed class RelicDefinition
     }
 }
 
-/// <summary>The fixed 10-relic catalog for v0 (PRD F8). Order is stable; the shop draws from it.</summary>
+/// <summary>The fixed 8-relic catalog for v0 (PRD F8). Order is stable; the shop draws from it.
+/// The information axis (tout_sheet, sharp_eye) was cut 2026-07-09 (DECISIONS.md) — it only pays off
+/// alongside line shopping / multiple books, all v2; the axis is parked, not deleted.</summary>
 public static class RelicCatalog
 {
     public static IReadOnlyList<RelicDefinition> All { get; } = new List<RelicDefinition>
     {
-        new RelicDefinition("tout_sheet", "Tout Sheet",
-            "At the start of each round, reveals a tight probability band around the truth for two games.",
-            "Information", "RevealTrueProb", 200,
-            new Dictionary<string, double> { ["count"] = 2, ["halfWidthPp"] = 0.05 }),
-
-        new RelicDefinition("sharp_eye", "Sharp Eye",
-            "Once per round, study one line: reveals its exact true win probability.",
-            "Information", "RevealLineTrueProb", 250,
-            new Dictionary<string, double> { ["usesPerRound"] = 1 }),
-
         new RelicDefinition("boosted_odds", "Boosted Odds",
             "The first leg of every ticket has its odds boosted by 15%.",
-            "Odds", "BoostLegOdds", 300,
+            "Odds", "BoostLegOdds", 200,
             new Dictionary<string, double> { ["legIndex"] = 0, ["mult"] = 1.15 }),
 
         new RelicDefinition("promo_code", "Promo Code",
             "Your first ticket each round is priced at fair odds, no vig.",
-            "Odds", "FairOddsFirstTicket", 350,
+            "Odds", "FairOddsFirstTicket", 250,
             new Dictionary<string, double>()),
 
         new RelicDefinition("high_roller", "High Roller",
             "Stake at least half your bank on a ticket and its payout is boosted 15%.",
-            "Capital", "AllInPayoutBonus", 250,
+            "Capital", "AllInPayoutBonus", 200,
             new Dictionary<string, double> { ["thresholdFraction"] = 0.5, ["payoutMult"] = 1.15 }),
         new RelicDefinition("bankroll_insurance", "Bankroll Insurance",
             "The first ticket you bust each round refunds half its stake.",
-            "Capital", "RefundBustedStake", 200,
+            "Capital", "RefundBustedStake", 150,
             new Dictionary<string, double> { ["fraction"] = 0.5, ["usesPerRound"] = 1 }),
 
         new RelicDefinition("mulligan", "Mulligan",
             "Once per round, a dead leg on a multi-leg ticket is voided instead of killing it.",
-            "Resolution", "VoidDeadLeg", 400,
+            "Resolution", "VoidDeadLeg", 250,
             new Dictionary<string, double> { ["usesPerRound"] = 1 }),
 
         new RelicDefinition("lucky_charm", "Lucky Charm",
             "Your ticket's final leg gets a small second-chance shot at winning when it would lose.",
-            "Resolution", "SecondChanceFinalLeg", 300,
+            "Resolution", "SecondChanceFinalLeg", 200,
             new Dictionary<string, double> { ["boostPp"] = 0.03 }),
 
         new RelicDefinition("early_payout", "Early Payout",
             "Each leg that comes in pays you 15% of your stake immediately, on top of the parlay.",
-            "PayoffStructure", "PayPerGreenLeg", 350,
+            "PayoffStructure", "PayPerGreenLeg", 250,
             new Dictionary<string, double> { ["fractionOfStake"] = 0.15 }),
 
         new RelicDefinition("piggy_bank", "Piggy Bank",

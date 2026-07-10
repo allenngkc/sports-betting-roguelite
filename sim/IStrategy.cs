@@ -10,17 +10,10 @@ namespace SBR.Sim;
 public sealed class BotState
 {
     /// <summary>The bot's estimate of P(home wins) per matchup index for the current round. Populated by
-    /// the bot at bet time from the info a player could have (intel bands, sharp-eye, de-vigged odds).</summary>
+    /// the bot at bet time from the info a player could have (de-vigged odds).</summary>
     public readonly Dictionary<int, double> HomeProbEst = new();
 
-    /// <summary>Sharp-eye charges the bot spent this round (a decision, counted by the harness).</summary>
-    public int SharpEyeUses;
-
-    public void NewRound()
-    {
-        HomeProbEst.Clear();
-        SharpEyeUses = 0;
-    }
+    public void NewRound() => HomeProbEst.Clear();
 }
 
 /// <summary>
@@ -28,7 +21,7 @@ public sealed class BotState
 /// (per sweat event, only when <see cref="ControlsSweat"/>), and <see cref="Shop"/> (between rounds).
 ///
 /// HONESTY RULE (enforced by convention across all bots): a bot may read only what a player could know —
-/// odds, records, tout Intel, sharp-eye answers, and revealed drama events (evt.WinProbAfter). A bot must
+/// odds, records, the bank/debt/requirement, and revealed drama events (evt.WinProbAfter). A bot must
 /// NEVER read Matchup.TrueHomeProb, Leg.TrueProb, or Matchup.Result. Only the harness (Metrics) reads truth.
 /// </summary>
 public interface IStrategy
@@ -39,15 +32,15 @@ public interface IStrategy
     /// <see cref="ShouldCashOut"/>. Naive is the only bot that opts out.</summary>
     bool ControlsSweat { get; }
 
-    /// <summary>Betting window: place 0..MaxTickets tickets via run.PlaceTicket and optionally spend
-    /// sharp-eye via run.QuerySharpEye (increment state.SharpEyeUses when you do).</summary>
+    /// <summary>Betting window: place 0..MaxTickets tickets via run.PlaceTicket.</summary>
     void Bet(Run run, BotState state, Pcg32 rng);
 
     /// <summary>
     /// Called once per sweat event on an open, cash-out-eligible ticket when an offer exists.
     /// Return true to take <paramref name="offer"/>. <paramref name="bankNow"/> is the live bank and
-    /// <paramref name="target"/> the round target; <paramref name="evt"/>.WinProbAfter is the on-screen
-    /// live win% of the current leg (legitimate player information).
+    /// <paramref name="target"/> the round's settle requirement (target + any bookie debt);
+    /// <paramref name="evt"/>.WinProbAfter is the on-screen live win% of the current leg
+    /// (legitimate player information).
     /// </summary>
     bool ShouldCashOut(Run run, Ticket ticket, SweatSession session, DramaEvent evt,
         double offer, double bankNow, double target, BotState state, Pcg32 rng);

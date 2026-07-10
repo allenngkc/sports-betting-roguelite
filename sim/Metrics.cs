@@ -23,12 +23,11 @@ public sealed class RoundMetrics
     /// <summary>Largest single-ticket money swing this round (won payout / cash-out taken / stake lost).</summary>
     public double BiggestSwing;
 
-    public int SharpEyeUses;
     public int Buys;
 
-    /// <summary>Player-facing decisions attributable to this round: tickets + sharp-eye uses + cash-outs
+    /// <summary>Player-facing decisions attributable to this round: tickets + cash-outs
     /// + purchases in this round's shop.</summary>
-    public int Decisions => TicketsPlaced + SharpEyeUses + CashOutsCount + Buys;
+    public int Decisions => TicketsPlaced + CashOutsCount + Buys;
 }
 
 /// <summary>Everything the report needs from a single seeded run.</summary>
@@ -46,6 +45,13 @@ public sealed class RunResult
     public double BiggestSwing;
 
     public int TotalDecisions;
+
+    /// <summary>Debt-as-HP events: how many times the bookie floated this run (a clean miss borrowed).</summary>
+    public int FloatsTaken;
+
+    /// <summary>True when the run died owing the bookie (missed a settle while indebted). False deaths
+    /// are plain final-round misses — the only other way to lose under debt-as-HP.</summary>
+    public bool DiedInDebt;
 }
 
 /// <summary>

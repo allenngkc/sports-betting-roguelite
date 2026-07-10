@@ -14,20 +14,12 @@ namespace SBR.Sim;
 /// bank-distorting. The only clean, non-distorting way is to reach into Run's private EffectEngine and
 /// append the relic directly, exactly as a purchase would — reflection, which is legitimate in a test
 /// harness (this project) but would be a layering violation anywhere else.
-///
-/// It also regenerates round-1 tout Intel: the engine only calls GenerateIntel at ExitShop, so a
-/// tout_sheet granted before round 1 would otherwise produce no round-1 intel. GenerateIntel draws no
-/// RNG unless tout_sheet is owned, so this is a no-op for every other relic.
 /// </summary>
 public static class RelicGrant
 {
     private static readonly FieldInfo EffectsField =
         typeof(Run).GetField("_effects", BindingFlags.NonPublic | BindingFlags.Instance)
         ?? throw new InvalidOperationException("Run._effects not found — engine layout changed.");
-
-    private static readonly FieldInfo IntelField =
-        typeof(Run).GetField("_intel", BindingFlags.NonPublic | BindingFlags.Instance)
-        ?? throw new InvalidOperationException("Run._intel not found — engine layout changed.");
 
     private static readonly Dictionary<string, RelicDefinition> ById = BuildIndex();
 
@@ -39,7 +31,7 @@ public static class RelicGrant
     }
 
     /// <summary>Grants the given relics (in order → acquisition order) to a freshly constructed run
-    /// sitting in round-1 Betting, then refreshes round-1 intel. Must be called before the first bet.</summary>
+    /// sitting in round-1 Betting. Must be called before the first bet.</summary>
     public static void Grant(Run run, IReadOnlyList<string> relicIds)
     {
         var effects = (EffectEngine)EffectsField.GetValue(run)!;
@@ -49,9 +41,5 @@ public static class RelicGrant
                 throw new ArgumentException($"Unknown relic id '{id}'");
             effects.Add(def); // appends in acquisition order, resets its per-round charge — as BuyRelic does
         }
-
-        // Round-1 intel: the engine only fires tout on ExitShop, so grant it here for round 1 too.
-        IReadOnlyList<MatchupIntel> intel = effects.GenerateIntel(run.CurrentSlate, run.Rng.Relics);
-        IntelField.SetValue(run, intel);
     }
 }

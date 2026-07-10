@@ -33,7 +33,6 @@ public static class RunPlayer
 
             state.NewRound();
             strat.Bet(run, state, rng);
-            rm.SharpEyeUses = state.SharpEyeUses;
 
             rm.TicketsPlaced = run.Tickets.Count;
             foreach (Ticket t in run.Tickets)
@@ -54,13 +53,17 @@ public static class RunPlayer
             ScoreSwings(run, rm, cashoutByTicket);
             result.BiggestSwing = Math.Max(result.BiggestSwing, rm.BiggestSwing);
 
+            double debtBefore = run.Debt; // debt-as-HP: classify what this settle did
             run.Settle();
+            if (debtBefore == 0.0 && run.Debt > 0.0 && run.Phase != Phase.RunLost)
+                result.FloatsTaken++; // the bookie floated a clean miss
             result.Rounds.Add(rm);
 
             if (run.Phase == Phase.RunLost)
             {
                 result.DeathRound = run.Round;
                 result.Won = false;
+                result.DiedInDebt = debtBefore > 0.0; // vs a plain final-round miss
                 break;
             }
             if (run.Phase == Phase.RunWon)
@@ -99,7 +102,8 @@ public static class RunPlayer
                 double? offer = session.CashOutOffer();
                 if (offer is not { } o) continue;
 
-                if (strat.ShouldCashOut(run, ticket, session, evt!, o, run.Bank, run.CurrentTarget, state, rng))
+                // Debt-as-HP: the settle checks Requirement (target + debt), so that is the bot's target.
+                if (strat.ShouldCashOut(run, ticket, session, evt!, o, run.Bank, run.Requirement, state, rng))
                 {
                     session.AcceptCashOut();
                     rm.CashOutsCount++;

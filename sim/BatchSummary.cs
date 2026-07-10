@@ -28,6 +28,15 @@ public sealed class BatchSummary
     public readonly int[] EvSampleByRound = new int[9];
     public readonly double[] MedianDecisionsByRound = new double[9];
 
+    // ---- debt-as-HP (DECISIONS.md 2026-07-09) ----
+
+    /// <summary>Mean bookie floats taken per run.</summary>
+    public double MeanFloats;
+
+    /// <summary>Deaths that happened while indebted, as a % of all deaths (the rest are plain
+    /// final-round misses). 0 when the batch had no deaths.</summary>
+    public double InDebtDeathPct;
+
     public static BatchSummary From(string name, RunResult[] results)
     {
         var s = new BatchSummary { Name = name, N = results.Length };
@@ -39,6 +48,8 @@ public sealed class BatchSummary
         var decByRound = new List<double>[9];
         for (int r = 1; r <= 8; r++) { evByRound[r] = new List<double>(); decByRound[r] = new List<double>(); }
 
+        long floats = 0;
+        int deaths = 0, inDebtDeaths = 0;
         for (int i = 0; i < results.Length; i++)
         {
             RunResult rr = results[i];
@@ -46,6 +57,8 @@ public sealed class BatchSummary
             s.BiggestSwings[i] = rr.BiggestSwing;
             s.FinalBanks[i] = rr.FinalBank;
             if (rr.Won) { s.Wins++; s.WinningFinalBanks.Add(rr.FinalBank); }
+            else { deaths++; if (rr.DiedInDebt) inDebtDeaths++; }
+            floats += rr.FloatsTaken;
 
             for (int r = 1; r <= 8; r++)
                 if (rr.DeathRound >= r) s.AliveEntering[r]++;
@@ -58,6 +71,9 @@ public sealed class BatchSummary
                 foreach (double ev in rm.TicketEvsAtLock) evByRound[r].Add(ev);
             }
         }
+
+        s.MeanFloats = results.Length == 0 ? 0.0 : (double)floats / results.Length;
+        s.InDebtDeathPct = deaths == 0 ? 0.0 : 100.0 * inDebtDeaths / deaths;
 
         s.MedianDeath = Stats.MedianInt(s.DeathRounds);
         var deathAsDouble = new double[s.DeathRounds.Length];

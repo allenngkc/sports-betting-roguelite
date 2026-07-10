@@ -3,21 +3,26 @@ using SBR.Engine;
 
 namespace SBR.Engine.Tests;
 
-// Catalog shape, the between-rounds shop, and the compose-time / query relics.
-// Seeds (config RelicKit.Cheap) and their round-1 shop offers, found by scan:
-//   R3-0 [high_roller, early_payout, tout_sheet]
-//   R3-1 [sharp_eye, boosted_odds, bankroll_insurance]
-//   R3-3 [promo_code, high_roller, boosted_odds]
+// Catalog shape, the between-rounds shop, and the compose-time relics. Seeds (config RelicKit.Cheap)
+// and their round-1 shop offers, re-scanned 2026-07-09 after the info axis (tout_sheet, sharp_eye)
+// was cut and the catalog shrank to 8 (the Fisher-Yates offer sequences all shifted):
+//   R3-0 [high_roller, promo_code, mulligan]
+//   R3-1 [piggy_bank, lucky_charm, bankroll_insurance]
+//   R3-3 [promo_code, early_payout, mulligan]
+//   R3-5 [promo_code, lucky_charm, boosted_odds]
 public class RelicCatalogAndShopTests
 {
     // ---- catalog ----
 
     [Fact]
-    public void Catalog_has_ten_relics_with_unique_ids()
+    public void Catalog_has_eight_relics_with_unique_ids()
     {
-        Assert.Equal(10, RelicCatalog.All.Count);
+        // 10 → 8 on 2026-07-09: the information axis (tout_sheet, sharp_eye) is parked until v2.
+        Assert.Equal(8, RelicCatalog.All.Count);
         var ids = RelicCatalog.All.Select(r => r.Id).ToList();
         Assert.Equal(ids.Count, ids.Distinct().Count());
+        Assert.DoesNotContain("tout_sheet", ids);
+        Assert.DoesNotContain("sharp_eye", ids);
     }
 
     [Fact]
@@ -49,7 +54,7 @@ public class RelicCatalogAndShopTests
     public void Shop_offers_are_deterministic_for_a_seed()
     {
         Run a = RelicKit.Round1ToShop("R3-0", RelicKit.Cheap());
-        Assert.Equal(new[] { "high_roller", "early_payout", "tout_sheet" }, a.ShopOffers.Select(o => o.Id).ToArray());
+        Assert.Equal(new[] { "high_roller", "promo_code", "mulligan" }, a.ShopOffers.Select(o => o.Id).ToArray());
 
         Run b = RelicKit.Round1ToShop("R3-0", RelicKit.Cheap());
         Assert.Equal(a.ShopOffers.Select(o => o.Id), b.ShopOffers.Select(o => o.Id));
@@ -61,7 +66,7 @@ public class RelicCatalogAndShopTests
         Run run = RelicKit.Round1ToShop("R3-1", RelicKit.Cheap());
         double bank0 = run.Bank;
 
-        RelicDefinition first = run.ShopOffers[1]; // boosted_odds
+        RelicDefinition first = run.ShopOffers[1]; // lucky_charm
         run.BuyRelic(1);
         Assert.Equal(bank0 - first.Price, run.Bank, 9);
         Assert.Equal(2, run.ShopOffers.Count);
@@ -93,7 +98,7 @@ public class RelicCatalogAndShopTests
     [Fact]
     public void BuyRelic_rejects_insufficient_bank()
     {
-        // Bank 100 is below every offered price (R3-0's cheapest is 200).
+        // Bank 100 is below every catalog price (the cheapest relic is 150).
         Run run = RelicKit.Round1ToShop("R3-0", RelicKit.Cheap(bank: 100));
         Assert.Throws<System.InvalidOperationException>(() => run.BuyRelic(0));
     }
@@ -117,95 +122,12 @@ public class RelicCatalogAndShopTests
         Assert.Throws<System.InvalidOperationException>(() => run.BuyRelic(0)); // slots full
     }
 
-    // ---- tout_sheet ----
-
-    [Fact]
-    public void Tout_sheet_reveals_two_bands_that_bracket_the_true_home_prob()
-    {
-        Run run = RelicKit.Round2Owning("R3-0", RelicKit.Cheap(), "tout_sheet");
-        Assert.Equal(2, run.Intel.Count);
-        Assert.Equal(2, run.Intel.Select(i => i.MatchupIndex).Distinct().Count());
-        foreach (MatchupIntel intel in run.Intel)
-        {
-            Matchup m = run.CurrentSlate.Matchups[intel.MatchupIndex];
-            Assert.InRange(m.TrueHomeProb, intel.ProbLow, intel.ProbHigh);
-            Assert.Equal(0.10, intel.ProbHigh - intel.ProbLow, 6); // 0.05 each side of truth
-        }
-    }
-
-    [Fact]
-    public void Intel_is_empty_without_the_relic()
-    {
-        var run = new Run("R3-0", RelicKit.Cheap());
-        Assert.Empty(run.Intel); // round 1
-        run.LockRound(); run.FastForwardRound(); run.Settle(); run.ExitShop();
-        Assert.Empty(run.Intel); // round 2, still no tout_sheet
-    }
-
-    [Fact]
-    public void Tout_sheet_regenerates_intel_each_round()
-    {
-        Run run = RelicKit.Round2Owning("R3-0", RelicKit.Cheap(), "tout_sheet");
-        Assert.Equal(2, run.Intel.Count);
-
-        run.LockRound(); run.FastForwardRound(); run.Settle(); run.ExitShop(); // round 3
-        Assert.Equal(2, run.Intel.Count); // fresh intel for the new slate
-        foreach (MatchupIntel intel in run.Intel)
-            Assert.InRange(run.CurrentSlate.Matchups[intel.MatchupIndex].TrueHomeProb, intel.ProbLow, intel.ProbHigh);
-    }
-
-    // ---- sharp_eye ----
-
-    [Fact]
-    public void Sharp_eye_reveals_the_exact_true_probability_of_the_chosen_line()
-    {
-        Run run = RelicKit.Round2Owning("R3-1", RelicKit.Cheap(), "sharp_eye");
-        Matchup m = run.CurrentSlate.Matchups[0];
-        Assert.Equal(m.TrueProb(Side.Home), run.QuerySharpEye(0, Side.Home), 12);
-    }
-
-    [Fact]
-    public void Sharp_eye_reveals_the_away_side_as_the_complement()
-    {
-        Run run = RelicKit.Round2Owning("R3-1", RelicKit.Cheap(), "sharp_eye");
-        Matchup m = run.CurrentSlate.Matchups[3];
-        Assert.Equal(1.0 - m.TrueHomeProb, run.QuerySharpEye(3, Side.Away), 12);
-    }
-
-    [Fact]
-    public void Sharp_eye_throws_when_not_owned_out_of_phase_or_out_of_charges()
-    {
-        var plain = new Run("R3-1", RelicKit.Cheap());
-        Assert.Throws<System.InvalidOperationException>(() => plain.QuerySharpEye(0, Side.Home)); // not owned
-
-        Run wrongPhase = RelicKit.Round2Owning("R3-1", RelicKit.Cheap(), "sharp_eye");
-        wrongPhase.PlaceTicket(RelicKit.Picks((0, Side.Home)), 50);
-        wrongPhase.LockRound(); // now Sweat
-        Assert.Throws<System.InvalidOperationException>(() => wrongPhase.QuerySharpEye(0, Side.Home));
-
-        Run noCharge = RelicKit.Round2Owning("R3-1", RelicKit.Cheap(), "sharp_eye");
-        noCharge.QuerySharpEye(0, Side.Home); // consumes the one charge
-        Assert.Throws<System.InvalidOperationException>(() => noCharge.QuerySharpEye(1, Side.Home));
-    }
-
-    [Fact]
-    public void Sharp_eye_recharges_each_round()
-    {
-        Run run = RelicKit.Round2Owning("R3-1", RelicKit.Cheap(), "sharp_eye");
-        run.QuerySharpEye(0, Side.Home);
-        Assert.Throws<System.InvalidOperationException>(() => run.QuerySharpEye(1, Side.Home));
-
-        run.LockRound(); run.FastForwardRound(); run.Settle(); run.ExitShop(); // round 3
-        run.QuerySharpEye(0, Side.Home); // recharged, no throw
-        Assert.Throws<System.InvalidOperationException>(() => run.QuerySharpEye(1, Side.Home));
-    }
-
     // ---- boosted_odds ----
 
     [Fact]
     public void Boosted_odds_multiplies_only_leg_zero_and_feeds_vig_and_payout()
     {
-        Run run = RelicKit.Round2Owning("R3-1", RelicKit.Cheap(), "boosted_odds");
+        Run run = RelicKit.Round2Owning("R3-5", RelicKit.Cheap(), "boosted_odds");
         Ticket t = run.PlaceTicket(RelicKit.Picks((0, Side.Home), (1, Side.Home)), 100);
 
         Assert.Equal(t.Legs[0].BaseOdds * 1.15, t.Legs[0].OfferedOdds, 9);
@@ -255,13 +177,13 @@ public class RelicCatalogAndShopTests
         var cfg = RelicKit.Cheap();
 
         // Order A: promo THEN boost — promo sets leg 0 fair, boost then multiplies it by 1.15.
-        Run a = RelicKit.Round2Owning("R3-3", cfg, "promo_code", "boosted_odds");
+        Run a = RelicKit.Round2Owning("R3-5", cfg, "promo_code", "boosted_odds");
         Ticket ta = a.PlaceTicket(RelicKit.Picks((0, Side.Home), (1, Side.Home)), 100);
         Assert.Equal(1.15 * OddsMath.FairDecimal(ta.Legs[0].TrueProb), ta.Legs[0].OfferedOdds, 9);
         Assert.Equal(OddsMath.FairDecimal(ta.Legs[1].TrueProb), ta.Legs[1].OfferedOdds, 9);
 
         // Order B: boost THEN promo — promo overwrites leg 0 back to fair, erasing the boost.
-        Run b = RelicKit.Round2Owning("R3-3", cfg, "boosted_odds", "promo_code");
+        Run b = RelicKit.Round2Owning("R3-5", cfg, "boosted_odds", "promo_code");
         Ticket tb = b.PlaceTicket(RelicKit.Picks((0, Side.Home), (1, Side.Home)), 100);
         Assert.Equal(OddsMath.FairDecimal(tb.Legs[0].TrueProb), tb.Legs[0].OfferedOdds, 9);
 
@@ -273,11 +195,12 @@ public class RelicCatalogAndShopTests
     [Fact]
     public void Stakes_are_uncapped_up_to_the_whole_bank()
     {
-        var allIn = new Run("R3-0", new RunConfig()); // bank 500
+        var cfg = new RunConfig { StartingBank = 500 };
+        var allIn = new Run("R3-0", cfg);
         allIn.PlaceTicket(RelicKit.Picks((0, Side.Home)), 500);
         Assert.Equal(0, allIn.Bank, 10);
 
-        var over = new Run("R3-0", new RunConfig());
+        var over = new Run("R3-0", new RunConfig { StartingBank = 500 });
         Assert.Throws<System.ArgumentException>(() => over.PlaceTicket(RelicKit.Picks((0, Side.Home)), 501));
     }
 
@@ -314,7 +237,7 @@ public class RelicCatalogAndShopTests
     [Fact]
     public void Without_high_roller_all_in_tickets_get_no_bonus()
     {
-        var run = new Run("R3-0", new RunConfig());
+        var run = new Run("R3-0", new RunConfig { StartingBank = 500 });
         Ticket t = run.PlaceTicket(RelicKit.Picks((0, Side.Home)), 500);
         Assert.Equal(1.0, t.PayoutMultiplier, 12);
     }

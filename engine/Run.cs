@@ -12,11 +12,12 @@ public enum Phase { Betting, Sweat, Settlement, Shop, RunWon, RunLost }
 /// FinishSweat → Settle → (Shop: BuyRelic*) → ExitShop → … LockRound samples the fixed
 /// outcome universe, bakes drama paths and the lucky-charm rolls, accrues the piggy bank, and
 /// builds one SweatSession per ticket; the round settles in FinishSweat once every session is
-/// complete. FastForwardRound drains the sweat without cashing out.
+/// complete. FastForwardRound drains the sweat without cashing out. Settle applies debt-as-HP
+/// (DECISIONS.md 2026-07-09): a clean miss borrows from the bookie instead of ending the run.
 ///
 /// Relics (PRD F8) live in an <see cref="EffectEngine"/> in acquisition order and hook the sites
-/// above. All relic randomness (tout intel, lucky-charm rolls) is baked from the independent Relics
-/// stream at lock/shop-exit, never during stepping, so determinism holds.
+/// above. All relic randomness (the lucky-charm rolls) is baked from the independent Relics
+/// stream at lock, never during stepping, so determinism holds.
 /// </summary>
 public sealed class Run
 {
@@ -45,15 +46,19 @@ public sealed class Run
     /// <summary>The relics on offer in the current shop; empty outside Phase.Shop.</summary>
     public IReadOnlyList<RelicDefinition> ShopOffers => _shopOffers;
 
-    private IReadOnlyList<MatchupIntel> _intel = Array.Empty<MatchupIntel>();
-
-    /// <summary>tout_sheet intel for the current round; empty when the relic is not owned.</summary>
-    public IReadOnlyList<MatchupIntel> Intel => _intel;
-
     /// <summary>piggy_bank's running balance; smashes into the bank when a ticket busts.</summary>
     public double PiggyBankBalance { get; private set; }
 
+    /// <summary>What the run owes the bookie (debt-as-HP, DECISIONS.md 2026-07-09). 0 when clean.
+    /// Set when a no-debt settle misses the target (shortfall × (1 + juice)); cleared in cash by the
+    /// first settle that reaches <see cref="Requirement"/>. Missing a settle while indebted, or any
+    /// final-round miss, loses the run.</summary>
+    public double Debt { get; private set; }
+
     public double CurrentTarget => Config.Targets[Round - 1];
+
+    /// <summary>What <see cref="Settle"/> actually checks: the round target plus any outstanding debt.</summary>
+    public double Requirement => CurrentTarget + Debt;
 
     public Run(string runSeed, RunConfig? config = null)
     {
@@ -101,22 +106,6 @@ public sealed class Run
         Bank -= stake;
         _tickets.Add(ticket);
         return ticket;
-    }
-
-    /// <summary>sharp_eye: reveals the exact true win probability of one chosen line. Consumes the
-    /// once-per-round charge. Betting phase and ownership required; no RNG. (Redesigned from a
-    /// "+EV flag" that was always false against a vig-priced book — DECISIONS.md 2026-07-08.)</summary>
-    public double QuerySharpEye(int matchupIndex, Side side)
-    {
-        RequirePhase(Phase.Betting);
-        if (!_effects.HasSharpEye)
-            throw new InvalidOperationException("Sharp Eye is not owned.");
-        if (matchupIndex < 0 || matchupIndex >= CurrentSlate.Matchups.Count)
-            throw new ArgumentOutOfRangeException(nameof(matchupIndex));
-        if (!_effects.TryConsumeSharpEye())
-            throw new InvalidOperationException("Sharp Eye has no charge left this round.");
-
-        return CurrentSlate.Matchups[matchupIndex].TrueProb(side);
     }
 
     public void LockRound()
@@ -198,13 +187,39 @@ public sealed class Run
         PiggyBankBalance = 0.0;
     }
 
+    /// <summary>
+    /// Debt-as-HP settle (DECISIONS.md 2026-07-09). Clearing <see cref="Requirement"/> (target + debt)
+    /// repays any debt in cash — by construction the bank stays ≥ the target — then advances (final
+    /// round → RunWon, else → Shop). Missing it with no debt on a non-final round means the bookie
+    /// floats you: the bank is topped up to the target as working capital and the shortfall is booked
+    /// at (1 + juice). Missing while indebted, or any miss on the final round, loses the run.
+    /// </summary>
     public void Settle()
     {
         RequirePhase(Phase.Settlement);
-        if (Bank >= CurrentTarget)
-            Phase = Round == Config.Rounds ? Phase.RunWon : Phase.Shop;
+        bool finalRound = Round == Config.Rounds;
+
+        if (Bank >= Requirement)
+        {
+            if (Debt > 0)
+            {
+                Bank -= Debt; // repaid in cash; Bank ≥ Requirement ⇒ Bank − Debt ≥ CurrentTarget
+                Debt = 0;
+            }
+            Phase = finalRound ? Phase.RunWon : Phase.Shop;
+        }
+        else if (Debt == 0 && !finalRound)
+        {
+            // The bookie floats you: working capital up to the target, the shortfall on the books.
+            double shortfall = CurrentTarget - Bank;
+            Bank = CurrentTarget;
+            Debt = shortfall * (1.0 + Config.DebtJuiceRate);
+            Phase = Phase.Shop;
+        }
         else
-            Phase = Phase.RunLost;
+        {
+            Phase = Phase.RunLost; // missed while indebted, or missed the final round
+        }
 
         if (Phase == Phase.Shop)
             GenerateShopOffers();
@@ -256,7 +271,6 @@ public sealed class Run
         _tickets.Clear();
         _sweats.Clear();
         CurrentSlate = SlateGenerator.Generate(Round, Rng.Slate, Config);
-        _intel = _effects.GenerateIntel(CurrentSlate, Rng.Relics); // tout_sheet fires on the fresh slate
         Phase = Phase.Betting;
     }
 

@@ -4,15 +4,15 @@ using SBR.Engine;
 namespace SBR.Engine.Tests;
 
 // The sweat-time / settlement relics: insurance, mulligan, lucky_charm, early_payout, piggy_bank,
-// and the acquisition-order chain. Seeds (config RelicKit.Cheap) found by scan:
-//   R3-1    offers bankroll_insurance
-//   R3-4    offers mulligan, piggy_bank
-//   R3-163  offers lucky_charm; first Relics roll 0.00163 (< 0.03 → a losing final leg flips)
-//   R3-2    offers lucky_charm; first Relics roll 0.32   (a losing final leg stays lost)
-//   R3-0    offers early_payout
-//   R3-82   offers mulligan + early_payout
-//   R3-11   offers piggy_bank + boosted_odds
-//   R3-4661 offers bankroll_insurance + piggy_bank + lucky_charm; first roll 0.00318 (flip)
+// and the acquisition-order chain. Seeds (config RelicKit.Cheap) re-scanned 2026-07-09 after the
+// catalog shrank to 8 relics (all shop offer sequences shifted):
+//   R3-1    offers bankroll_insurance (also piggy_bank, lucky_charm; first Relics roll 0.17)
+//   R3-0    offers mulligan (also high_roller, promo_code)
+//   R3-131  offers lucky_charm; first Relics roll 0.019 (< 0.03 → a losing final leg flips)
+//   R3-2    offers lucky_charm + piggy_bank; first Relics roll 0.32 (a losing final leg stays lost)
+//   R3-3    offers early_payout + mulligan (also promo_code)
+//   R3-12   offers piggy_bank + boosted_odds
+//   R3-1046 offers bankroll_insurance + piggy_bank + lucky_charm; first roll 0.00337 (flip)
 public class RelicSweatEffectTests
 {
     // ---- bankroll_insurance ----
@@ -52,8 +52,8 @@ public class RelicSweatEffectTests
     public void Mulligan_voids_a_dead_middle_leg_and_the_ticket_wins_at_the_reduced_payout()
     {
         var cfg = RelicKit.Cheap();
-        Side[] r2 = RelicKit.RoundResults("R3-4", cfg, 2);
-        Run run = RelicKit.Round2Owning("R3-4", cfg, "mulligan");
+        Side[] r2 = RelicKit.RoundResults("R3-0", cfg, 2);
+        Run run = RelicKit.Round2Owning("R3-0", cfg, "mulligan");
 
         Ticket t = run.PlaceTicket(RelicKit.Picks(
             (0, RelicKit.Win(r2, 0)), (1, RelicKit.Lose(r2, 1)), (2, RelicKit.Win(r2, 2))), 100);
@@ -76,8 +76,8 @@ public class RelicSweatEffectTests
     public void Mulligan_does_not_save_a_single_leg_ticket()
     {
         var cfg = RelicKit.Cheap();
-        Side[] r2 = RelicKit.RoundResults("R3-4", cfg, 2);
-        Run run = RelicKit.Round2Owning("R3-4", cfg, "mulligan");
+        Side[] r2 = RelicKit.RoundResults("R3-0", cfg, 2);
+        Run run = RelicKit.Round2Owning("R3-0", cfg, "mulligan");
 
         Ticket t = run.PlaceTicket(RelicKit.Picks((0, RelicKit.Lose(r2, 0))), 100);
         run.LockRound();
@@ -91,8 +91,8 @@ public class RelicSweatEffectTests
     public void Mulligan_fires_only_once_per_round_across_tickets()
     {
         var cfg = RelicKit.Cheap();
-        Side[] r2 = RelicKit.RoundResults("R3-4", cfg, 2);
-        Run run = RelicKit.Round2Owning("R3-4", cfg, "mulligan");
+        Side[] r2 = RelicKit.RoundResults("R3-0", cfg, 2);
+        Run run = RelicKit.Round2Owning("R3-0", cfg, "mulligan");
 
         Ticket a = run.PlaceTicket(RelicKit.Picks((0, RelicKit.Win(r2, 0)), (1, RelicKit.Lose(r2, 1))), 100);
         Ticket b = run.PlaceTicket(RelicKit.Picks((2, RelicKit.Win(r2, 2)), (3, RelicKit.Lose(r2, 3))), 100);
@@ -109,8 +109,8 @@ public class RelicSweatEffectTests
     public void Cash_out_after_a_void_prices_only_the_surviving_legs()
     {
         var cfg = RelicKit.Cheap();
-        Side[] r2 = RelicKit.RoundResults("R3-4", cfg, 2);
-        Run run = RelicKit.Round2Owning("R3-4", cfg, "mulligan");
+        Side[] r2 = RelicKit.RoundResults("R3-0", cfg, 2);
+        Run run = RelicKit.Round2Owning("R3-0", cfg, "mulligan");
 
         Ticket t = run.PlaceTicket(RelicKit.Picks(
             (0, RelicKit.Win(r2, 0)), (1, RelicKit.Lose(r2, 1)), (2, RelicKit.Win(r2, 2))), 200);
@@ -133,8 +133,8 @@ public class RelicSweatEffectTests
     public void Lucky_charm_flips_a_losing_final_leg_without_touching_the_matchup()
     {
         var cfg = RelicKit.Cheap();
-        Side[] r2 = RelicKit.RoundResults("R3-163", cfg, 2);
-        Run run = RelicKit.Round2Owning("R3-163", cfg, "lucky_charm");
+        Side[] r2 = RelicKit.RoundResults("R3-131", cfg, 2);
+        Run run = RelicKit.Round2Owning("R3-131", cfg, "lucky_charm");
 
         Ticket t = run.PlaceTicket(RelicKit.Picks((0, RelicKit.Lose(r2, 0))), 100);
         double bankAfterBet = run.Bank;
@@ -186,8 +186,8 @@ public class RelicSweatEffectTests
     public void Early_payout_credits_each_green_leg_between_events_and_pays_full_on_a_win()
     {
         var cfg = RelicKit.Cheap();
-        Side[] r2 = RelicKit.RoundResults("R3-0", cfg, 2);
-        Run run = RelicKit.Round2Owning("R3-0", cfg, "early_payout");
+        Side[] r2 = RelicKit.RoundResults("R3-3", cfg, 2);
+        Run run = RelicKit.Round2Owning("R3-3", cfg, "early_payout");
 
         Ticket t = run.PlaceTicket(RelicKit.Picks((0, RelicKit.Win(r2, 0)), (1, RelicKit.Win(r2, 1))), 100);
         double bankAfterBet = run.Bank;
@@ -209,8 +209,8 @@ public class RelicSweatEffectTests
     public void Early_payout_prices_future_partials_into_the_cash_out_fair_value()
     {
         var cfg = RelicKit.Cheap();
-        Side[] r2 = RelicKit.RoundResults("R3-0", cfg, 2);
-        Run run = RelicKit.Round2Owning("R3-0", cfg, "early_payout");
+        Side[] r2 = RelicKit.RoundResults("R3-3", cfg, 2);
+        Run run = RelicKit.Round2Owning("R3-3", cfg, "early_payout");
 
         Ticket t = run.PlaceTicket(RelicKit.Picks((0, RelicKit.Win(r2, 0)), (1, RelicKit.Win(r2, 1))), 200);
         run.LockRound();
@@ -229,8 +229,8 @@ public class RelicSweatEffectTests
     public void Early_payout_pays_no_partial_for_a_voided_leg()
     {
         var cfg = RelicKit.Cheap();
-        Side[] r2 = RelicKit.RoundResults("R3-82", cfg, 2);
-        Run run = RelicKit.Round2Owning("R3-82", cfg, "early_payout", "mulligan");
+        Side[] r2 = RelicKit.RoundResults("R3-3", cfg, 2);
+        Run run = RelicKit.Round2Owning("R3-3", cfg, "early_payout", "mulligan");
 
         Ticket t = run.PlaceTicket(RelicKit.Picks(
             (0, RelicKit.Win(r2, 0)), (1, RelicKit.Lose(r2, 1)), (2, RelicKit.Win(r2, 2))), 100);
@@ -250,8 +250,8 @@ public class RelicSweatEffectTests
     public void Piggy_bank_accrues_twice_the_paid_vig_at_lock()
     {
         var cfg = RelicKit.Cheap();
-        Side[] r2 = RelicKit.RoundResults("R3-4", cfg, 2);
-        Run run = RelicKit.Round2Owning("R3-4", cfg, "piggy_bank");
+        Side[] r2 = RelicKit.RoundResults("R3-2", cfg, 2);
+        Run run = RelicKit.Round2Owning("R3-2", cfg, "piggy_bank");
 
         Ticket t = run.PlaceTicket(RelicKit.Picks((0, RelicKit.Win(r2, 0)), (1, RelicKit.Win(r2, 1))), 100);
         Assert.Equal(0.0, run.PiggyBankBalance); // nothing accrued until lock
@@ -264,7 +264,7 @@ public class RelicSweatEffectTests
     public void Piggy_bank_accrues_zero_on_a_negative_vig_ticket()
     {
         var cfg = RelicKit.Cheap();
-        Run run = RelicKit.Round2Owning("R3-11", cfg, "piggy_bank", "boosted_odds");
+        Run run = RelicKit.Round2Owning("R3-12", cfg, "piggy_bank", "boosted_odds");
 
         Ticket t = run.PlaceTicket(RelicKit.Picks((0, Side.Away)), 100); // boosted single → priced above fair
         Assert.True(t.VigPaid < 0);
@@ -276,8 +276,8 @@ public class RelicSweatEffectTests
     public void Piggy_bank_smashes_into_the_bank_on_a_bust_and_resets()
     {
         var cfg = RelicKit.Cheap();
-        Side[] r2 = RelicKit.RoundResults("R3-4", cfg, 2);
-        Run run = RelicKit.Round2Owning("R3-4", cfg, "piggy_bank");
+        Side[] r2 = RelicKit.RoundResults("R3-2", cfg, 2);
+        Run run = RelicKit.Round2Owning("R3-2", cfg, "piggy_bank");
 
         Ticket t = run.PlaceTicket(RelicKit.Picks((0, RelicKit.Lose(r2, 0))), 100);
         double bankAfterBet = run.Bank;
@@ -295,8 +295,8 @@ public class RelicSweatEffectTests
     public void Piggy_bank_balance_survives_a_round_with_no_bust()
     {
         var cfg = RelicKit.Cheap();
-        Side[] r2 = RelicKit.RoundResults("R3-4", cfg, 2);
-        Run run = RelicKit.Round2Owning("R3-4", cfg, "piggy_bank");
+        Side[] r2 = RelicKit.RoundResults("R3-2", cfg, 2);
+        Run run = RelicKit.Round2Owning("R3-2", cfg, "piggy_bank");
 
         Ticket t = run.PlaceTicket(RelicKit.Picks((0, RelicKit.Win(r2, 0))), 100);
         run.LockRound();
@@ -316,8 +316,8 @@ public class RelicSweatEffectTests
     public void A_lucky_flip_stops_the_bust_chain_so_insurance_and_piggy_do_not_fire()
     {
         var cfg = RelicKit.Cheap();
-        Side[] r2 = RelicKit.RoundResults("R3-4661", cfg, 2);
-        Run run = RelicKit.Round2Owning("R3-4661", cfg, "bankroll_insurance", "piggy_bank", "lucky_charm");
+        Side[] r2 = RelicKit.RoundResults("R3-1046", cfg, 2);
+        Run run = RelicKit.Round2Owning("R3-1046", cfg, "bankroll_insurance", "piggy_bank", "lucky_charm");
 
         Ticket t = run.PlaceTicket(RelicKit.Picks((0, RelicKit.Lose(r2, 0))), 100);
         double bankAfterBet = run.Bank;

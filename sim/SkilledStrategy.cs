@@ -5,29 +5,30 @@ using SBR.Engine;
 namespace SBR.Sim;
 
 /// <summary>
-/// SKILLED — the S4 measuring stick (target: median death round ≥7). Plays the information game the way
-/// a sharp would, then sizes and times like one. Policy is deliberately dial-ridden (consts below) and
-/// readable; it is expected to be iterated once real numbers exist.
+/// SKILLED — the S4 measuring stick (target: median death round ≥7). Estimates like a sharp, then
+/// sizes and times like one. Policy is deliberately dial-ridden (consts below) and readable; it is
+/// expected to be iterated once real numbers exist.
 ///
-/// Estimation (p̂ per side, best source wins): sharp-eye exact &gt; tout intel midpoint &gt; de-vigged odds.
-///   De-vig here NORMALIZES the two implied probs (p̂_home = (1/o_home)/(1/o_home + 1/o_away)). Because
-///   the book prices proportionally (o = 1/(p·(1+overround))), this recovers the true p exactly — a
-///   property the report calls out, since it makes the info relics informationally redundant for a
-///   de-vigging bot.
+/// Estimation (p̂ per side): pure two-way de-vig of the offered odds — NORMALIZE the implied probs
+///   (p̂_home = (1/o_home)/(1/o_home + 1/o_away)). Because v0's book prices proportionally
+///   (o = 1/(p·(1+overround))), this recovers the true p EXACTLY. The irony is noted for the record:
+///   with the information relics cut from v0 (DECISIONS.md 2026-07-09), the de-vigging bot is a
+///   perfectly-informed player anyway — which is fine for an S4 measuring stick; the axis returns in
+///   v2 with pricing noise and multiple books, and only then does information have a price again.
 ///
-/// Betting: a primary 2–3 leg parlay on the highest-p̂ sides, legs and stake chosen to clear the round's
-///   target on a win (escalating when behind pace); Kelly-lite floor. With boosted_odds owned, a small
-///   single-leg exploit ticket captures the +EV boosted first leg (promo_code, when owned, already makes
-///   the primary's first ticket fair-priced). With high_roller owned and the target far, the primary is
-///   staked past half-bank to trigger the payout bonus.
+/// Betting: a primary 1–3 leg ticket on the highest-p̂ sides, legs and stake chosen to clear the
+///   round's REQUIREMENT (target + any bookie debt) on a win, escalating when behind pace; Kelly-lite
+///   floor. With boosted_odds owned, a small single-leg exploit ticket captures the +EV boosted first
+///   leg (promo_code, when owned, already makes the primary's first ticket fair-priced). With
+///   high_roller owned and the requirement far, the primary is staked past half-bank for the bonus.
 ///
-/// Cash-out: accept when the offer alone clears the round (survival trumps EV), or when it is within 5%
-///   of the estimated value of holding (computed from revealed live win% + p̂, never from true probs).
-///   Otherwise let it ride.
+/// Cash-out: accept when the offer alone clears the round's requirement (survival trumps EV), or when
+///   it is within 5% of the estimated value of holding (computed from revealed live win% + p̂, never
+///   from true probs). Otherwise let it ride.
 ///
-/// HONESTY: the ONLY true value this bot ever sees is what sharp-eye legitimately reveals via
-/// run.QuerySharpEye, plus the on-screen cash-out offer and each event's revealed WinProbAfter. It never
-/// reads Matchup.TrueHomeProb, Leg.TrueProb, or Matchup.Result. The de-vig math uses only public odds.
+/// HONESTY: this bot reads only public state — offered odds, the bank/debt/requirement it could see
+/// on screen, the cash-out offer, and each event's revealed WinProbAfter. It never reads
+/// Matchup.TrueHomeProb, Leg.TrueProb, or Matchup.Result. The de-vig math uses only public odds.
 /// </summary>
 public sealed class SkilledStrategy : IStrategy
 {
@@ -35,18 +36,23 @@ public sealed class SkilledStrategy : IStrategy
     private const double StakeMin = 0.10;          // Kelly-lite lower clamp (fraction of bank)
     private const double StakeMax = 0.60;          // Kelly-lite upper clamp
     private const double HighRollerFrac = 0.55;    // safely past the 0.5-bank threshold after flooring
-    private const double HighRollerNeedMult = 1.15;// only reach for the bonus when the target is this far
-    private const double ClearBuffer = 1.08;       // aim ~8% over target so a winning parlay clears after flooring
+    private const double HighRollerNeedMult = 1.15;// only reach for the bonus when the requirement is this far
+    private const double ClearBuffer = 1.08;       // aim ~8% over the requirement so a win clears after flooring
     private const double ExploitFrac = 0.15;       // stake of the boosted single-leg exploit ticket
     private const double CashOutEvRatio = 0.95;    // accept a cash-out at ≥95% of estimated hold value
-    private const double ShopHeadroomFloor = 0.40; // keep ≥40% of the NEXT target as working capital when buying
+
+    // Keep ≥110% of the NEXT requirement as working capital when buying — relics are bought from
+    // genuine surplus only. (Was 0.40 pre-debt: under debt-as-HP and the flat-early recalibrated
+    // targets, buying down to 40% guaranteed a ~2.5× requirement multiple — an all-in coin flip —
+    // after every shop, which is not what "skilled" means. Iterated 2026-07-09 with the retune.)
+    private const double ShopHeadroomFloor = 1.10;
     private const int MaxPrimaryLegs = 3;
 
-    // Shop buy priority (highest first): sharps stack information and pricing edges before capital/insurance.
+    // Shop buy priority (highest first) over the 8-relic catalog: pricing edges before capital/insurance.
     private static readonly string[] Priority =
     {
-        "tout_sheet", "sharp_eye", "boosted_odds", "promo_code", "early_payout",
-        "piggy_bank", "high_roller", "bankroll_insurance", "mulligan", "lucky_charm",
+        "boosted_odds", "promo_code", "early_payout", "piggy_bank",
+        "high_roller", "bankroll_insurance", "mulligan", "lucky_charm",
     };
 
     public string Name => "skilled";
@@ -68,23 +74,11 @@ public sealed class SkilledStrategy : IStrategy
     {
         IReadOnlyList<Matchup> slate = run.CurrentSlate.Matchups;
 
-        // 1. de-vig baseline for every matchup.
+        // 1. de-vig estimate for every matchup (see the class doc for why this is exact in v0).
         foreach (Matchup m in slate)
             state.HomeProbEst[m.Index] = DevigHome(m);
 
-        // 2. tout intel overlay (band midpoint ≈ truth).
-        var intel = new HashSet<int>();
-        foreach (MatchupIntel mi in run.Intel)
-        {
-            state.HomeProbEst[mi.MatchupIndex] = 0.5 * (mi.ProbLow + mi.ProbHigh);
-            intel.Add(mi.MatchupIndex);
-        }
-
-        // 3. sharp-eye: spend the charge on the shortest-priced un-intel'd line (exact reveal).
-        if (Owns(run, "sharp_eye"))
-            SpendSharpEye(run, state, intel, slate);
-
-        // 4. candidate legs: each matchup's better side by p̂.
+        // 2. candidate legs: each matchup's better side by p̂.
         var cands = new List<Cand>(slate.Count);
         foreach (Matchup m in slate)
         {
@@ -103,19 +97,20 @@ public sealed class SkilledStrategy : IStrategy
 
     private void PlacePrimary(Run run, List<Cand> cands)
     {
+        // Debt-as-HP: the settle checks Requirement (target + debt), so the sharp plans against it.
         double bank = run.Bank;
-        double needMult = run.CurrentTarget / bank;              // >1 whenever we still trail the target
-        double aimMult = run.CurrentTarget * ClearBuffer / bank; // aim past the target so a win clears with headroom
+        double needMult = run.Requirement / bank;              // >1 whenever we still trail the requirement
+        double aimMult = run.Requirement * ClearBuffer / bank; // aim past it so a win clears with headroom
 
         // When behind pace, "escalate" past the Kelly-lite cap: the sharp will size up (to all-in if the
-        // target demands it) rather than place a bet that mathematically cannot clear. When ahead, keep
-        // the disciplined 0.6 cap.
+        // requirement demands it) rather than place a bet that mathematically cannot clear. When ahead,
+        // keep the disciplined 0.6 cap.
         double escMax = aimMult > 1.0 ? run.Config.MaxStakeFraction : StakeMax;
 
         // Pick the leg set that MAXIMISES the estimated chance of clearing: fewer legs mean a higher joint
         // win prob but need higher odds (so a bigger stake). Consider a single best side, then the top-2 and
         // top-3 favorites; keep whichever can clear at ≤ escMax with the highest win probability. This makes
-        // skilled favour a big single/short bet under steep targets and 2–3 leg parlays when they clear
+        // skilled favour a big single/short bet under steep requirements and 2–3 leg parlays when they clear
         // comfortably — the survival-honest reading of "prefer parlays, but escalate when behind pace".
         var best = ChooseTicket(cands, aimMult, escMax);
         if (best is not { } plan) return;
@@ -140,13 +135,13 @@ public sealed class SkilledStrategy : IStrategy
 
     // Best clearing ticket by estimated win probability. Single leg searches every side for the highest-p̂
     // one whose odds still clear at ≤ escMax; parlays use the top-L favorites. Falls back to the highest-odds
-    // top-favorite parlay if nothing can clear (target out of reach — bet for the biggest multiplier).
+    // top-favorite parlay if nothing can clear (requirement out of reach — bet for the biggest multiplier).
     private static Plan? ChooseTicket(List<Cand> cands, double aimMult, double escMax)
     {
         Plan? best = null;
         double bestWin = -1.0;
 
-        // L = 1: the single side most likely to win while still clearing on a win.
+        // L = 1: the single side most likely to win while still clearing at ≤ escMax.
         foreach (Cand c in cands)
         {
             if (ReqFrac(aimMult, c.Odds) > escMax) continue;
@@ -205,6 +200,7 @@ public sealed class SkilledStrategy : IStrategy
         // advanced to (or completed) the next leg, so evt no longer describes the live cash-out state.
         if (evt.Type == DramaEventType.LegFinal) return false;
 
+        // `target` is the harness-passed requirement (target + debt) — survival math must clear it.
         double remainingNeeded = target - bankNow;
         if (remainingNeeded > 0 && offer >= remainingNeeded) return true; // survival trumps EV
 
@@ -251,12 +247,13 @@ public sealed class SkilledStrategy : IStrategy
     public void Shop(Run run, BotState state, Pcg32 rng)
     {
         // The PRD frames the shop as "power vs target headroom": every dollar spent on a relic is a dollar
-        // not available to clear the NEXT target. A sharp respects that — buy in priority order, but only
+        // not available to clear the NEXT settle. A sharp respects that — buy in priority order, but only
         // while enough working capital survives the purchase to still have a real shot at the next round.
         // Shop runs before ExitShop increments Round, so run.Round is the round just cleared (1-based);
-        // the current round sits at Targets[Round-1], hence the NEXT target is Targets[Round].
-        double nextTarget = run.Config.Targets[run.Round];
-        double floor = ShopHeadroomFloor * nextTarget;
+        // the current round sits at Targets[Round-1], hence the NEXT target is Targets[Round] — plus any
+        // bookie debt still on the books (a float leaves the shop with debt outstanding).
+        double nextRequirement = run.Config.Targets[run.Round] + run.Debt;
+        double floor = ShopHeadroomFloor * nextRequirement;
 
         while (run.OwnedRelics.Count < run.Config.RelicSlots)
         {
@@ -275,32 +272,6 @@ public sealed class SkilledStrategy : IStrategy
     }
 
     // ---- estimation helpers (public info only) ----
-
-    private static void SpendSharpEye(Run run, BotState state, HashSet<int> intel, IReadOnlyList<Matchup> slate)
-    {
-        int target = -1;
-        double bestOdds = double.MaxValue;
-        Side favSide = Side.Home;
-        foreach (Matchup m in slate)
-        {
-            if (intel.Contains(m.Index)) continue;
-            Side fav = m.HomeOdds <= m.AwayOdds ? Side.Home : Side.Away;
-            double favOdds = m.Odds(fav);
-            if (favOdds < bestOdds) { bestOdds = favOdds; target = m.Index; favSide = fav; }
-        }
-        if (target < 0) return;
-
-        try
-        {
-            double truePFav = run.QuerySharpEye(target, favSide); // sanctioned relic reveal, not a truth peek
-            state.HomeProbEst[target] = favSide == Side.Home ? truePFav : 1.0 - truePFav;
-            state.SharpEyeUses++;
-        }
-        catch (InvalidOperationException)
-        {
-            // no charge this round; leave the de-vig / intel estimate in place
-        }
-    }
 
     private static double DevigHome(Matchup m)
     {

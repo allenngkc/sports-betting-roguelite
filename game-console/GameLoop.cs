@@ -87,7 +87,10 @@ internal static class GameLoop
         Ui.Clear();
         Ui.Rule();
         if (run.Phase == Phase.RunWon)
-            Ui.WriteLine(ConsoleColor.Green, "YOU WON — all 8 rounds cleared. The house blinks first.");
+            Ui.WriteLine(ConsoleColor.Green, $"YOU WON — all {run.Config.Rounds} rounds cleared. The house blinks first.");
+        else if (run.Debt > 0)
+            Ui.WriteLine(ConsoleColor.Red,
+                $"THE BOOKIE COLLECTS — round {run.Round}, {Ui.Money(run.Requirement)} due ({Ui.Money(run.Debt)} of it his), and you couldn't pay.");
         else
             Ui.WriteLine(ConsoleColor.Red, $"BUSTED — out in round {run.Round}, short of {Ui.Money(run.CurrentTarget)}.");
         Ui.Rule();
@@ -123,10 +126,16 @@ internal static class GameLoop
 
             run.LockRound();
             run.FastForwardRound(); // never cash out
+            double debtBefore = run.Debt;
             run.Settle();
 
             bool survived = run.Phase != Phase.RunLost;
-            Console.WriteLine($"R{reached} bank {(long)Math.Round(run.Bank)} target {(long)Math.Round(run.CurrentTarget)} {(survived ? "W" : "L")}");
+            string debt = run.Debt > 0 ? $" debt {(long)Math.Round(run.Debt)}" : "";
+            Console.WriteLine($"R{reached} bank {(long)Math.Round(run.Bank)} target {(long)Math.Round(run.CurrentTarget)}{debt} {(survived ? "W" : "L")}");
+            if (survived && debtBefore == 0 && run.Debt > 0)
+                Console.WriteLine($"R{reached} THE BOOKIE FLOATS YOU — owing {(long)Math.Round(run.Debt)}");
+            else if (survived && debtBefore > 0 && run.Debt == 0)
+                Console.WriteLine($"R{reached} DEBT CLEARED -{(long)Math.Round(debtBefore)}");
 
             if (run.Phase == Phase.RunLost) { won = false; break; }
             if (run.Phase == Phase.RunWon) { won = true; break; }
@@ -141,7 +150,8 @@ internal static class GameLoop
             run.ExitShop();
         }
 
-        Console.WriteLine($"AUTO RESULT: {(won ? "WON" : "LOST")}, round {reached}, final bank {Ui.Money(run.Bank)}, seed {seed}");
+        string how = won ? "WON" : run.Debt > 0 ? "LOST (the bookie collects)" : "LOST";
+        Console.WriteLine($"AUTO RESULT: {how}, round {reached}, final bank {Ui.Money(run.Bank)}, seed {seed}");
         return 0;
     }
 

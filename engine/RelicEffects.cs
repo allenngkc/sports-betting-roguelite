@@ -3,24 +3,6 @@ using System.Collections.Generic;
 
 namespace SBR.Engine;
 
-/// <summary>
-/// Tout-sheet intel for one matchup: a probability band around the HOME side's true win prob
-/// (design/F8). The band is centered on truth and does not itself reveal it.
-/// </summary>
-public readonly struct MatchupIntel
-{
-    public int MatchupIndex { get; }
-    public double ProbLow { get; }
-    public double ProbHigh { get; }
-
-    public MatchupIntel(int matchupIndex, double probLow, double probHigh)
-    {
-        MatchupIndex = matchupIndex;
-        ProbLow = probLow;
-        ProbHigh = probHigh;
-    }
-}
-
 /// <summary>How a leg's revealed loss resolves once the relics have their say.</summary>
 public enum LossResolution
 {
@@ -93,24 +75,6 @@ public sealed class EffectEngine
     public void ApplyTicketPlaced(Ticket ticket, double stake, double bankBeforeDeduction)
     {
         foreach (RelicBehavior b in _behaviors) b.OnTicketPlaced(ticket, stake, bankBeforeDeduction);
-    }
-
-    // ---- sharp_eye (active query) ----
-
-    public bool HasSharpEye => Find("RevealLineTrueProb") != null;
-
-    public bool TryConsumeSharpEye()
-    {
-        var b = (RevealLineTrueProbBehavior?)Find("RevealLineTrueProb");
-        return b != null && b.TryUse();
-    }
-
-    // ---- tout_sheet (intel) ----
-
-    public IReadOnlyList<MatchupIntel> GenerateIntel(Slate slate, Pcg32 relics)
-    {
-        var b = (RevealTrueProbBehavior?)Find("RevealTrueProb");
-        return b == null ? Array.Empty<MatchupIntel>() : b.GenerateIntel(slate, relics);
     }
 
     // ---- early_payout ----
@@ -211,8 +175,6 @@ internal abstract class RelicBehavior
     {
         switch (def.Op)
         {
-            case "RevealTrueProb": return new RevealTrueProbBehavior(def);
-            case "RevealLineTrueProb": return new RevealLineTrueProbBehavior(def);
             case "BoostLegOdds": return new BoostLegOddsBehavior(def);
             case "FairOddsFirstTicket": return new FairOddsFirstTicketBehavior(def);
             case "AllInPayoutBonus": return new AllInPayoutBonusBehavior(def);
@@ -224,43 +186,6 @@ internal abstract class RelicBehavior
             default: throw new ArgumentException($"Unknown relic op '{def.Op}'");
         }
     }
-}
-
-/// <summary>tout_sheet: reveal a probability band around the home true prob for a few games.</summary>
-internal sealed class RevealTrueProbBehavior : RelicBehavior
-{
-    public RevealTrueProbBehavior(RelicDefinition def) : base(def) { }
-
-    public IReadOnlyList<MatchupIntel> GenerateIntel(Slate slate, Pcg32 relics)
-    {
-        int n = slate.Matchups.Count;
-        int count = Math.Min((int)Param("count"), n);
-        double hw = Param("halfWidthPp");
-
-        var chosen = new List<int>(count);
-        while (chosen.Count < count)
-        {
-            int idx = relics.NextInt(0, n);
-            if (!chosen.Contains(idx)) chosen.Add(idx);
-        }
-
-        var intel = new List<MatchupIntel>(count);
-        foreach (int idx in chosen)
-        {
-            double p = slate.Matchups[idx].TrueHomeProb;
-            intel.Add(new MatchupIntel(idx, Math.Max(0.0, p - hw), Math.Min(1.0, p + hw)));
-        }
-        return intel;
-    }
-}
-
-/// <summary>sharp_eye: a once-per-round exact true-prob reveal for one chosen line (no RNG).
-/// Redesigned 2026-07-08: the original "+EV flag" was mathematically always false against a
-/// vig-priced sharp book, making the relic dead content (see DECISIONS.md).</summary>
-internal sealed class RevealLineTrueProbBehavior : RelicBehavior
-{
-    public RevealLineTrueProbBehavior(RelicDefinition def) : base(def) { }
-    public bool TryUse() => TryConsumeCharge();
 }
 
 /// <summary>boosted_odds: multiply a fixed leg's offered odds by a factor at compose time.</summary>

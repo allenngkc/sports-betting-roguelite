@@ -38,9 +38,33 @@ internal static class SweatRenderer
 
         run.FinishSweat();
         Settlement(run, cashOuts);
+
+        double debtBefore = run.Debt;
+        double bankBefore = run.Bank;
         run.Settle();
+        DebtBeat(run, debtBefore, bankBefore);
+
         Ui.Line();
         Ui.Pause();
+    }
+
+    /// <summary>The debt-as-HP settle beats: the bookie's float when a clean miss borrows, the
+    /// green clear when a settle repays. A death in debt is the run-over screen's line, not ours.</summary>
+    private static void DebtBeat(Run run, double debtBefore, double bankBefore)
+    {
+        if (run.Phase == Phase.RunLost) return;
+
+        if (debtBefore == 0.0 && run.Debt > 0.0)
+        {
+            double floated = run.Bank - bankBefore; // topped up to the target
+            Ui.WriteLine(ConsoleColor.Yellow,
+                $" THE BOOKIE FLOATS YOU — {Ui.Signed(floated)} on the books, you owe {Ui.Money(run.Debt)}");
+            Ui.WriteLine(ConsoleColor.Cyan, " (clear TARGET + DEBT at a later settle, or he collects)");
+        }
+        else if (debtBefore > 0.0 && run.Debt == 0.0)
+        {
+            Ui.WriteLine(ConsoleColor.Green, $" DEBT CLEARED {Ui.Signed(-debtBefore)}");
+        }
     }
 
     private static void SweatOne(Run run, int index, int total, Dictionary<Ticket, double> cashOuts, ref double lastBank)
@@ -176,9 +200,13 @@ internal static class SweatRenderer
             }
         }
 
-        bool met = run.Bank >= run.CurrentTarget;
+        // Debt-as-HP: the settle checks target + debt, so show the full requirement when indebted.
+        bool met = run.Bank >= run.Requirement;
+        string owed = run.Debt > 0
+            ? $"TARGET {Ui.Money(run.CurrentTarget)} + DEBT {Ui.Money(run.Debt)}"
+            : $"TARGET {Ui.Money(run.CurrentTarget)}";
         Ui.WriteLine(met ? ConsoleColor.Green : ConsoleColor.Red,
-            $" BANK {Ui.Money(run.Bank)}  vs  TARGET {Ui.Money(run.CurrentTarget)}   {(met ? "✔ CLEARED" : "✘ SHORT")}");
+            $" BANK {Ui.Money(run.Bank)}  vs  {owed}   {(met ? "✔ CLEARED" : "✘ SHORT")}");
         Ui.Rule();
     }
 

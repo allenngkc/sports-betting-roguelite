@@ -9,11 +9,14 @@ public class RunTests
     [Fact]
     public void New_run_starts_in_betting_with_prd_defaults()
     {
+        // §8 defaults as recalibrated 2026-07-09 (debt-as-HP retune): flat-early targets, R1 = 400.
         var run = NewRun();
         Assert.Equal(Phase.Betting, run.Phase);
         Assert.Equal(1, run.Round);
         Assert.Equal(500, run.Bank);
-        Assert.Equal(800, run.CurrentTarget);
+        Assert.Equal(400, run.CurrentTarget);
+        Assert.Equal(0.0, run.Debt);
+        Assert.Equal(run.CurrentTarget, run.Requirement);
         Assert.Equal(6, run.CurrentSlate.Matchups.Count);
     }
 
@@ -131,13 +134,33 @@ public class RunTests
     }
 
     [Fact]
-    public void Missing_the_target_loses_the_run()
+    public void Missing_the_target_floats_you_into_the_shop()
     {
-        var run = NewRun();
+        // Debt-as-HP (DECISIONS.md 2026-07-09): a clean miss no longer kills the run — the bookie
+        // floats the bank up to the target and books the shortfall at (1 + juice).
+        var cfg = new RunConfig { StartingBank = 500, Targets = new double[] { 800, 1200 }, DebtJuiceRate = 0.5 };
+        var run = NewRun(cfg: cfg);
         run.LockRound();
         run.FastForwardRound();
         run.Settle();
+
+        Assert.Equal(Phase.Shop, run.Phase);
+        Assert.Equal(800, run.Bank, 10);                    // topped up to the target
+        Assert.Equal((800 - 500) * 1.5, run.Debt, 10);      // shortfall × 1.5
+    }
+
+    [Fact]
+    public void Two_consecutive_misses_lose_the_run()
+    {
+        var cfg = new RunConfig { StartingBank = 500, Targets = new double[] { 800, 1200, 1900 }, DebtJuiceRate = 0.5 };
+        var run = NewRun(cfg: cfg);
+        run.LockRound(); run.FastForwardRound(); run.Settle(); // miss 1: float (bank 800, debt 450)
+        Assert.Equal(Phase.Shop, run.Phase);
+        run.ExitShop();
+        run.LockRound(); run.FastForwardRound(); run.Settle(); // miss 2: 800 < 1200 + 450 while indebted
+
         Assert.Equal(Phase.RunLost, run.Phase);
+        Assert.True(run.Debt > 0); // died owing the bookie
     }
 
     [Fact]

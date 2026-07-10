@@ -51,8 +51,12 @@ public static class Report
         sb.AppendLine();
         sb.AppendLine($"- Date: {date}");
         sb.AppendLine("- Engine: workspace is not a git repo — `git describe` unavailable");
-        sb.AppendLine($"- Config: bank {Money(cfg.StartingBank)}, targets [{Targets(cfg)}] (~×1.6), "
+        double meanRamp = cfg.Targets.Length > 1
+            ? Math.Pow(cfg.Targets[^1] / cfg.Targets[0], 1.0 / (cfg.Targets.Length - 1))
+            : 1.0;
+        sb.AppendLine($"- Config: bank {Money(cfg.StartingBank)}, targets [{Targets(cfg)}] (avg ×{meanRamp.ToString("F2", Inv)}), "
             + $"overround {Pct(cfg.Overround * 100)}, cash-out margin {Pct(cfg.CashOutMargin * 100)}, "
+            + $"debt juice {Pct(cfg.DebtJuiceRate * 100)}, "
             + $"min stake {Money(cfg.MinStake)}, max stake {Pct(cfg.MaxStakeFraction * 100)} of bank, "
             + $"{cfg.MatchupsPerSlate} matchups/round, {cfg.MaxTicketsPerRound} tickets/round, {cfg.RelicSlots} relic slots");
         sb.AppendLine($"- Strategies: {string.Join(", ", Names(batches))}");
@@ -94,6 +98,14 @@ public static class Report
         sb.AppendLine();
         sb.Append("| mean rounds reached |");
         foreach (BatchSummary b in batches) sb.Append($" {b.MeanDeath.ToString("F2", Inv)} |");
+        sb.AppendLine();
+        // Debt-as-HP telemetry (DECISIONS.md 2026-07-09): how often the bookie floats a run, and what
+        // fraction of deaths are the bookie collecting (vs a plain final-round miss).
+        sb.Append("| mean floats per run |");
+        foreach (BatchSummary b in batches) sb.Append($" {b.MeanFloats.ToString("F2", Inv)} |");
+        sb.AppendLine();
+        sb.Append("| in-debt deaths (% of deaths) |");
+        foreach (BatchSummary b in batches) sb.Append($" {Pct(b.InDebtDeathPct)} |");
         sb.AppendLine();
         sb.AppendLine();
 
@@ -138,8 +150,8 @@ public static class Report
 
         sb.AppendLine($"Skilled baseline: median death {MedianDeath(audit.Baseline.MedianDeath)}, "
             + $"mean rounds {audit.Baseline.MeanDeath.ToString("F2", Inv)}, won {Pct(audit.Baseline.WonPct)}. "
-            + "Each row is skilled with that one relic granted free at run start. Because win%/median saturate at "
-            + "the §8 floor, rows are sorted by **Δ mean rounds survived** — the only column with resolving power here.");
+            + "Each row is skilled with that one relic granted free at run start. Rows are sorted by "
+            + "**Δ mean rounds survived** (the steadiest signal); Δ won % is the run-winning read.");
         sb.AppendLine();
         sb.AppendLine("| Relic | mean rounds | Δ mean | median death | won % | Δ won % | flag |");
         sb.AppendLine("|---|---|---|---|---|---|---|");
@@ -172,8 +184,8 @@ public static class Report
         }
         AuditData.Entry top = audit.Entries[0];
         return $"strongest relic is {top.RelicName} ({Signed(top.MeanDelta)} mean rounds); "
-            + $"{dead} look dead, {dominant} dominant — but every relic is measured against a floored economy, "
-            + "so re-audit once targets let runs breathe.";
+            + $"{dead} look dead, {dominant} dominant. Note the audit grants relics FREE — organic play "
+            + "also pays the shop price out of target headroom.";
     }
 
     // ---- 3. variance ----
@@ -338,7 +350,7 @@ public static class Report
     {
         sb.AppendLine("## 7. Grind metric");
         sb.AppendLine();
-        sb.AppendLine("Median decisions per round (tickets + sharp-eye + cash-outs + buys). Fewer decisions late than mid = flat repetition.");
+        sb.AppendLine("Median decisions per round (tickets + cash-outs + buys). Fewer decisions late than mid = flat repetition.");
         sb.AppendLine();
 
         sb.Append("| Round |");

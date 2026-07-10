@@ -4,10 +4,16 @@ namespace SBR.Engine;
 public sealed class RunConfig
 {
     public double StartingBank { get; set; } = 500;
-    public double[] Targets { get; set; } = { 800, 1200, 1900, 3000, 4800, 7800, 12500, 20000 };
+    public double[] Targets { get; set; } = { 400, 460, 520, 650, 800, 1000, 1500, 2800 };
     public double Overround { get; set; } = 0.05;
     public double CashOutMargin { get; set; } = 0.08;
     public double MinStake { get; set; } = 10;
+
+    /// <summary>Debt-as-HP (DECISIONS.md 2026-07-09): missing a settle with no debt outstanding makes
+    /// the bookie float you — the bank is topped up to the target and the shortfall is booked as debt
+    /// at shortfall × (1 + this rate). Interest is baked once at borrow time; the balance never
+    /// compounds. A calibration dial.</summary>
+    public double DebtJuiceRate { get; set; } = 0.5;
 
     /// <summary>Cap on a single ticket's stake as a fraction of the current bank. 1.0 = uncapped (all-in
     /// allowed) — lifted 2026-07-08 after playtest #1. Kept as a dial for /sim experiments. Boundary

@@ -8,9 +8,10 @@ namespace SBR.ConsoleGame;
 internal enum BetAction { Locked, Quit }
 
 /// <summary>
-/// The Phase.Betting screen and its single-letter command loop. Renders the header, relics, the slate
-/// (with tout-sheet intel bands), and tickets placed so far, then dispatches B / E / L / Q. Every engine
-/// call is wrapped so a bad input prints the message and returns to the loop — the shell never crashes.
+/// The Phase.Betting screen and its single-letter command loop. Renders the header (bank, target,
+/// any bookie debt), relics, the slate, and tickets placed so far, then dispatches B / L / Q. Every
+/// engine call is wrapped so a bad input prints the message and returns to the loop — the shell
+/// never crashes.
 /// </summary>
 internal static class BettingScreen
 {
@@ -19,17 +20,12 @@ internal static class BettingScreen
         while (true)
         {
             Render(run);
-            string cmd = Ui.Prompt(CommandBar(run)).ToUpperInvariant();
+            string cmd = Ui.Prompt(CommandBar()).ToUpperInvariant();
             if (Ui.Eof) return BetAction.Quit;
             switch (cmd)
             {
                 case "B":
                     Build(run);
-                    break;
-
-                case "E":
-                    if (OwnsSharpEye(run)) SharpEye(run);
-                    else Unknown();
                     break;
 
                 case "L":
@@ -54,11 +50,8 @@ internal static class BettingScreen
         Ui.Pause();
     }
 
-    private static string CommandBar(Run run)
-    {
-        string eye = OwnsSharpEye(run) ? "  [E]ye a line" : "";
-        return $"commands: [B]uild ticket{eye}  [L]ock round  [Q]uit  > ";
-    }
+    private static string CommandBar()
+        => "commands: [B]uild ticket  [L]ock round  [Q]uit  > ";
 
     // ---- rendering ----
 
@@ -69,6 +62,10 @@ internal static class BettingScreen
             $"ROUND {run.Round}/{run.Config.Rounds}  ·  BANK {Ui.Money(run.Bank)}  ·  TARGET {Ui.Money(run.CurrentTarget)}  ·  SEED {run.Rng.RunSeed}");
         Ui.WriteLine(ConsoleColor.DarkGray,
             $"tickets {run.Tickets.Count}/{run.Config.MaxTicketsPerRound}  ·  relics {run.OwnedRelics.Count}/{run.Config.RelicSlots}");
+
+        if (run.Debt > 0)
+            Ui.WriteLine(ConsoleColor.Red,
+                $"DEBT {Ui.Money(run.Debt)}  ·  the settle needs {Ui.Money(run.Requirement)} or the bookie collects");
 
         if (OwnsPiggy(run))
             Ui.WriteLine(ConsoleColor.Cyan, $"PIGGY {Ui.Money(run.PiggyBankBalance)}");
@@ -98,18 +95,12 @@ internal static class BettingScreen
     {
         Ui.WriteLine(ConsoleColor.White, "SLATE  (away @ home · moneyline)");
 
-        var intel = new Dictionary<int, MatchupIntel>();
-        foreach (MatchupIntel mi in run.Intel) intel[mi.MatchupIndex] = mi;
-
         foreach (Matchup m in run.CurrentSlate.Matchups)
         {
             string away = $"{m.Away.Name} ({m.Away.Record})";
             string home = $"{m.Home.Name} ({m.Home.Record})";
             string line = $" {m.Index + 1}. {away.PadRight(28)} {Ui.American(m.AwayOdds),5}   @   {home.PadRight(28)} {Ui.American(m.HomeOdds),5}";
-            Ui.Write(ConsoleColor.Gray, line);
-            if (intel.TryGetValue(m.Index, out MatchupIntel band))
-                Ui.Write(ConsoleColor.Cyan, $"   [home {Ui.Pct(band.ProbLow)}–{Ui.Pct(band.ProbHigh)}%]");
-            Ui.Line();
+            Ui.WriteLine(ConsoleColor.Gray, line);
         }
     }
 
@@ -171,27 +162,6 @@ internal static class BettingScreen
         Ui.Pause();
     }
 
-    // ---- E: sharp eye ----
-
-    private static void SharpEye(Run run)
-    {
-        string line = Ui.Prompt("line> (e.g. 2H)  ");
-        try
-        {
-            (int idx, Side side) = ParseOne(line, run.CurrentSlate.Matchups.Count);
-            double p = run.QuerySharpEye(idx, side);
-            Matchup m = run.CurrentSlate.Matchups[idx];
-            string team = Short(side == Side.Home ? m.Home.Name : m.Away.Name);
-            Ui.WriteLine(ConsoleColor.Cyan, $"SHARP EYE — {team} ({side}) true win probability: {Ui.Pct(p)}%");
-        }
-        catch (Exception ex)
-        {
-            Ui.WriteLine(ConsoleColor.Red, ex.Message); // engine errors verbatim (not owned / no charge / phase)
-        }
-
-        Ui.Pause();
-    }
-
     // ---- parsing ----
 
     private static List<Pick> ParsePicks(string line, int matchupCount)
@@ -229,7 +199,6 @@ internal static class BettingScreen
 
     // ---- helpers ----
 
-    private static bool OwnsSharpEye(Run run) => Owns(run, "sharp_eye");
     private static bool OwnsPiggy(Run run) => Owns(run, "piggy_bank");
 
     private static bool Owns(Run run, string id)

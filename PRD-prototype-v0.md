@@ -56,7 +56,7 @@ If this screen loop reads fun to you, the PRD is aimed right. If not, say so bef
 
 ## 4. In scope (functional requirements)
 
-- **F1 — Run structure:** 8 rounds, one betting window per round, up to 3 tickets per window, bank must meet the round target at settle or the run ends. No meta progression; run seed shown at start and end.
+- **F1 — Run structure:** 8 rounds, one betting window per round, up to 3 tickets per window. Settle checks bank ≥ target + any debt. **Debt-as-HP (amended 2026-07-09):** a clean miss on a non-final round doesn't end the run — the bookie floats the bank up to the target and books the shortfall × (1 + juice, default 0.5); missing while indebted, or missing the final round, loses the run. No meta progression; run seed shown at start and end.
 - **F2 — Slate generation:** 6 matchups/round, one fictional sport, procedurally named teams with W-L records. True `p` per side drawn from [0.25, 0.75]; records are a *noisy* signal of `p` (the only free information).
 - **F3 — Odds engine:** one book, two-way moneyline, book prices at true `p` + fixed 5% overround (book is sharp; no exploitable mispricing except via relics). American odds display. Vig tracked per ticket at lock (formula in `design/02`).
 - **F4 — Tickets:** singles to 6-leg parlays, independent legs (no correlation model in v0), stake $10 minimum, payout = stake × Π odds.
@@ -71,8 +71,7 @@ If this screen loop reads fun to you, the PRD is aimed right. If not, say so bef
 
 | Relic | Axis | Hook(s) | Effect (v0 numbers — sim will retune) |
 |---|---|---|---|
-| Tout Sheet | Info | OnSlateGenerated | Reveals true win% ±5pp for 2 matchups/round |
-| Sharp Eye | Info | OnOddsOffered | Reveals the exact true win% of one chosen line per round (redesigned 2026-07-08: the original "+EV flag" is always false against a vig-priced book — dead content; see DECISIONS.md) |
+| ~~Tout Sheet~~ / ~~Sharp Eye~~ | Info | — | REMOVED 2026-07-09 (Allen): the info axis is dead against v0's single de-viggable book; returns in v2 with multiple books/line shopping. Catalog is 8 relics. |
 | Boosted Odds | Odds | OnBetComposed | +15% decimal odds on each ticket's first leg |
 | Promo Code | Odds | OnTicketLocked | First ticket each round is priced at fair odds (vig = 0) |
 | High Roller | Capital | OnBetComposed | Stake ≥ half your bank → that ticket's payout +15% (redesigned 2026-07-08 with the stake-cap removal; see DECISIONS.md) |
@@ -102,7 +101,7 @@ Definition of done, technical: `dotnet test` green; `sim --runs 10000 --strategy
 
 ## 8. Tuning defaults (v0 starting values — the sim's job is to move these)
 
-Starting bank $500 · targets [800, 1200, 1900, 3000, 4800, 7800, 12500, 20000] (≈ ×1.6) · overround 5% flat · cash-out margin 8% · min stake $10, stakes uncapped up to the whole bank (cap lifted 2026-07-08 after playtest #1; High Roller redesigned to an all-in payout bonus) · shop prices $150–400 · 6 matchups/round · 3 tickets/round max · 5 relic slots.
+Recalibrated 2026-07-09 by the sim (iteration log in the balance-patch report; S3 PASS at 3, S4 PASS at 7, skilled win 11.5%): starting bank $500 · targets [400, 460, 520, 650, 800, 1000, 1500, 2800] (flat Band 1, gentle Band 2, ×1.87 Band 3 spike) · debt juice rate 0.5 · overround 5% flat · cash-out margin 8% · min stake $10, stakes uncapped up to the whole bank · relic prices $150–250 (boosted 200, promo 250, high_roller 200, insurance 150, mulligan 250, lucky 200, early_payout 250, piggy 150) · 6 matchups/round · 3 tickets/round max · 5 relic slots.
 
 ## 9. Milestones
 
