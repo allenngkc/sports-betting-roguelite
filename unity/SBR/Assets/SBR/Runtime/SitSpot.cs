@@ -8,7 +8,8 @@ namespace SBR.Game
     /// camera (smoothstep, 0.35s) to the seat anchor, then hands look control back to the
     /// controller in Seated mode (yaw/pitch clamped around the seat forward, which faces
     /// the TV). Interact again - or holding Move for more than standUpMoveHold seconds -
-    /// eases the camera back to the exact pre-sit pose and restores normal control.
+    /// eases the camera back to the standing eye position while KEEPING the current look
+    /// direction (playtest #3: swinging the view back to the pre-sit pose felt wrong).
     /// The player capsule itself never moves; only the camera travels.
     /// </summary>
     public sealed class SitSpot : Interactable
@@ -40,7 +41,6 @@ namespace SBR.Game
         private State _state = State.Idle;
         private FirstPersonController _controller;
         private Vector3 _preSitPosition;
-        private Quaternion _preSitRotation;
         private float _moveHeldTime;
 
         public override string Prompt => _state == State.Idle ? "Sit" : "Stand up";
@@ -89,7 +89,6 @@ namespace SBR.Game
             _state = State.SittingDown;
             Transform cam = _controller.cameraTransform;
             _preSitPosition = cam.position;
-            _preSitRotation = cam.rotation;
 
             _controller.BeginExternalCameraControl();
             yield return LerpCamera(cam, seatAnchor.position, seatAnchor.rotation);
@@ -107,8 +106,15 @@ namespace SBR.Game
             Transform cam = _controller.cameraTransform;
 
             _controller.BeginExternalCameraControl();
-            yield return LerpCamera(cam, _preSitPosition, _preSitRotation);
+            // Travel back to the standing eye position only; the view stays where the player
+            // was looking (e.g. still on the TV), so standing never swings the camera around.
+            Quaternion keptView = cam.rotation;
+            yield return LerpCamera(cam, _preSitPosition, keptView);
 
+            // Split the kept view into body yaw + camera pitch so ExitSeated's resync from the
+            // transforms is snap-free.
+            _controller.transform.rotation = Quaternion.Euler(0f, keptView.eulerAngles.y, 0f);
+            cam.rotation = keptView;
             _controller.ExitSeated();
             _state = State.Idle;
         }

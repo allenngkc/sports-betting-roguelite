@@ -306,7 +306,9 @@ namespace SBR
 
             Box("Stool", null, new Vector3(0.55f, 0.225f, 1.45f),
                 new Vector3(0.35f, 0.45f, 0.35f), mats.Prop);
-            Box("MiniFridge", null, new Vector3(0.35f, 0.425f, 1.75f),
+            // Door-end left corner, ~1m left of the player spawn (playtest #3: the old spot
+            // by the desk collided with the stool).
+            Box("MiniFridge", null, new Vector3(-0.95f, 0.425f, -1.65f),
                 new Vector3(0.5f, 0.85f, 0.5f), mats.Prop);
 
             BuildLaptop(mats, layer);

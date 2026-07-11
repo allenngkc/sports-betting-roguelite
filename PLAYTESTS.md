@@ -2,6 +2,16 @@
 
 Human playtests only (agent impressions live in OPEN-QUESTIONS). Newest first. Each entry: build, what happened, S-criteria signals, actions taken.
 
+## #3 — Allen, 2026-07-11 (build: M1+M2 graybox room, commit b9c3ea0) — MILESTONE REVIEW
+
+First walk of the Unity room. Verdict: **M2 approved with two fixes.**
+- Sit-down camera ease + seated TV framing: "loved it" — the signature camera moment lands.
+- **Stand-up camera: rejected** — lerping back to the pre-sit pose swings the view away; FIXED same day: standing keeps the current look direction, travels position only.
+- Room scale/movement: good, no wall clipping. Hover loop (crosshair/tint/prompt/pulse): good for prototype. Lighting: readable.
+- **Mini fridge collided with the stool** — FIXED: moved to the door-end left corner (~1m left of spawn).
+- Art expectations set: graybox approved as prototype; real art direction later per design/08.
+- Gate: M3 (the TV plays the sweat) green-lit.
+
 ## #2 — Allen, 2026-07-10 (build: debt-as-HP patch, commit 6d36fd9)
 
 **"Pressure is real that the run is dead."** The debt mechanic lands as pressure, not as a safety net — the exact feel question the patch had to answer, answered positive. No change requests. This playtest closed the loop on the Week 6 evaluation: verdict CONTINUE (DECISIONS.md).
