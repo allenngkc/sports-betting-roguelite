@@ -25,3 +25,4 @@ unity/SBR/*.slnx
 # OS
 Thumbs.db
 .DS_Store
+unity/SBR/[Dd]ata/
