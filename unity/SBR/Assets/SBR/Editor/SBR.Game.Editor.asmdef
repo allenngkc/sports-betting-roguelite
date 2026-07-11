@@ -1,0 +1,19 @@
+{
+    "name": "SBR.Game.Editor",
+    "rootNamespace": "SBR",
+    "references": [
+        "SBR.Game",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

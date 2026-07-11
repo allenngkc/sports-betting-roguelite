@@ -7,4 +7,22 @@
     <RootNamespace>SBR.Engine</RootNamespace>
   </PropertyGroup>
 
+  <!--
+    Mirror the freshly built engine into the Unity project so the Plugins DLL can never go stale.
+    Guarded on the Unity project's Assets folder existing, so the engine still builds on machines
+    that don't have the Unity checkout (CI, sim-only clones). M1, Phase 2.
+  -->
+  <PropertyGroup>
+    <SbrUnityPluginDir>$(MSBuildThisFileDirectory)..\unity\SBR\Assets\Plugins\SBR</SbrUnityPluginDir>
+  </PropertyGroup>
+
+  <Target Name="CopyEngineToUnityPlugins" AfterTargets="Build"
+          Condition="Exists('$(MSBuildThisFileDirectory)..\unity\SBR\Assets')">
+    <MakeDir Directories="$(SbrUnityPluginDir)" />
+    <Copy SourceFiles="$(TargetPath)"
+          DestinationFolder="$(SbrUnityPluginDir)"
+          SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="SBR.Engine.dll copied to $(SbrUnityPluginDir)" />
+  </Target>
+
 </Project>
