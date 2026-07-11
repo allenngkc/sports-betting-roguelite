@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 
@@ -17,10 +18,22 @@ namespace SBR.Game
         /// <summary>The seat currently occupied, if any. M2 has exactly one.</summary>
         public static SitSpot Active { get; private set; }
 
+        /// <summary>Raised when the player sits (true) or stands (false). M3's TvSweatScreen listens so
+        /// the sweat steps only while seated (design/04): sitting starts/resumes, standing pauses.</summary>
+        public static event Action<bool> SeatedChanged;
+
+        /// <summary>M3 interact-suppression hook: while this returns true (a live cash-out offer is
+        /// showing), an Interact press must NOT stand the player up - E is the cash-out accept, and
+        /// standing is hold-move during a live sweat. Null = never suppressed. TvSweatScreen owns it.</summary>
+        public static Func<bool> InteractStandSuppressed;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
         {
-            Active = null; // safety for disabled domain reload
+            // Safety for disabled domain reload: clear statics before scene objects wire themselves up.
+            Active = null;
+            SeatedChanged = null;
+            InteractStandSuppressed = null;
         }
 
         [Header("Wiring (set by GrayboxRoomBuilder)")]
@@ -62,6 +75,10 @@ namespace SBR.Game
             }
             else if (_state == State.Seated)
             {
+                // While a live cash-out offer is showing, E belongs to the sweat (accept), not standing;
+                // the player stands with hold-move instead (design/04, M3 decision 6).
+                if (InteractStandSuppressed != null && InteractStandSuppressed())
+                    return;
                 StartCoroutine(StandUp());
             }
             // Presses during a transition are ignored.
@@ -97,12 +114,14 @@ namespace SBR.Game
             _moveHeldTime = 0f;
             _state = State.Seated;
             Active = this;
+            SeatedChanged?.Invoke(true); // the sweat starts/resumes
         }
 
         private IEnumerator StandUp()
         {
             _state = State.StandingUp;
             Active = null;
+            SeatedChanged?.Invoke(false); // you looked away - the sweat pauses, the offer stays frozen
             Transform cam = _controller.cameraTransform;
 
             _controller.BeginExternalCameraControl();

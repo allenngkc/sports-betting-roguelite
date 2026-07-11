@@ -4,7 +4,8 @@
     "references": [
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
-        "SBR.Probe"
+        "SBR.Probe",
+        "SBR.Game"
     ],
     "includePlatforms": [
         "Editor"

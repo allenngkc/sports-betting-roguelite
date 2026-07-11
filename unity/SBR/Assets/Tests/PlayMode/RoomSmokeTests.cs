@@ -8,9 +8,11 @@ using UnityEngine.TestTools;
 namespace SBR.Tests.PlayMode
 {
     /// <summary>
-    /// M2 smoke test: Room.unity loads, the player rig / 4 interactables / HUD exist,
-    /// 60 frames tick without exceptions or error logs (the test runner fails on
-    /// unexpected Debug.LogError automatically), and the camera stays inside the room.
+    /// Room smoke test (M2, updated for M3): Room.unity loads, the player rig / HUD exist,
+    /// and after M3 exactly 3 interactables remain (couch, laptop, phone - the TV became the
+    /// live sweat surface, no longer interactable). The M3 TV trio (TvSweatScreen, TvLight,
+    /// DemoRunDriver) is present; 60 frames tick without exceptions or error logs (the runner
+    /// fails on unexpected Debug.LogError automatically), and the camera stays inside the room.
     /// Requires the scene in EditorBuildSettings - run SBR.GrayboxRoomBuilder.Build first.
     /// </summary>
     public class RoomSmokeTests
@@ -36,11 +38,16 @@ namespace SBR.Tests.PlayMode
                 "PlayerInteractor missing");
 
             Interactable[] interactables = Object.FindObjectsByType<Interactable>();
-            Assert.AreEqual(4, interactables.Length,
-                "expected exactly 4 interactables: couch, TV, laptop, phone");
+            Assert.AreEqual(3, interactables.Length,
+                "expected exactly 3 interactables after M3: couch, laptop, phone (the TV is no longer interactable)");
             Assert.AreEqual(1, CountOfType<SitSpot>(interactables), "expected exactly one SitSpot");
-            Assert.AreEqual(3, CountOfType<ScreenStub>(interactables),
-                "expected TV, laptop and phone ScreenStubs");
+            Assert.AreEqual(2, CountOfType<ScreenStub>(interactables),
+                "expected laptop and phone ScreenStubs (the TV's went away in M3)");
+
+            // M3 TV trio.
+            Assert.IsNotNull(Object.FindAnyObjectByType<TvSweatScreen>(), "TvSweatScreen missing");
+            Assert.IsNotNull(Object.FindAnyObjectByType<TvLight>(), "TvLight missing");
+            Assert.IsNotNull(Object.FindAnyObjectByType<DemoRunDriver>(), "DemoRunDriver missing");
 
             var hud = Object.FindAnyObjectByType<InteractionHud>();
             Assert.IsNotNull(hud, "InteractionHud missing");

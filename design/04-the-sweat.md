@@ -49,6 +49,15 @@ Engine cost: near zero — active charges are player-initiated effects on the ex
 
 v0 note: prototype ships cash-out-only *on purpose* (isolates the anticipation+one-decision hypothesis). Evaluation should record **when** sweat repetitiveness first appears (which run #) as design input for this ladder.
 
+## Diegetic viewing (M3, 2026-07-11)
+
+The sweat plays on the room's TV (design/08 diegesis), and watching is physical:
+
+- **Sitting on the couch starts/resumes the sweat; standing pauses it mid-event, offer frozen.** Events only advance while you watch — the sweat is appointment viewing, not ambient. Not exploitable: outcomes are baked at lock and the offer only moves on events, so pausing pauses everything.
+- **While a cash-out offer is live, Interact (E) accepts it** — the couch's stand-up is suppressed; standing during a live sweat is hold-move. The one-button cash-out stays law even seated.
+- **The room is the reaction shot** (design/08): a TV-driven light washes the room green on a GREEN leg, red on a DEAD leg, gold on cash-out.
+- Presentation consumes no engine RNG — the TV only calls MoveNext/CashOut; static, flicker and noise use presentation-local randomness.
+
 ## Presentation beats (v1 target)
 
 1. **Ticket lock-in.** Stamp/receipt-print moment. Commitment device.

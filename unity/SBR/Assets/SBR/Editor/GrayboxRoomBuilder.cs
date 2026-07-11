@@ -58,7 +58,7 @@ namespace SBR
 
             BuildShell(mats);
             BuildCouch(mats, layer);
-            BuildTv(mats, layer);
+            BuildTv(mats, inputActions);
             BuildWindow(mats);
             BuildDeskCluster(mats, layer);
             var interactor = BuildPlayer(inputActions, layer);
@@ -76,7 +76,8 @@ namespace SBR
             int interactables = UnityEngine.Object
                 .FindObjectsByType<Interactable>().Length;
             Debug.Log($"[GrayboxRoomBuilder] built {ScenePath}: layer '{InteractableLayerName}'={layer}, " +
-                      $"interactables={interactables} (expect 4: couch, TV, laptop, phone)");
+                      $"interactables={interactables} (expect 3: couch, laptop, phone - the TV is the live " +
+                      "sweat surface in M3, no longer interactable)");
         }
 
         // ------------------------------------------------------------------ layer
@@ -255,25 +256,44 @@ namespace SBR
 
         // --------------------------------------------------------------------- tv
 
-        private static void BuildTv(Materials mats, int layer)
+        private static void BuildTv(Materials mats, InputActionAsset inputActions)
         {
             var root = new GameObject("TV");
 
             // Wall-mounted on the right long wall, center at seated eye height (~1.1m).
-            GameObject body = Box("TVBody", root.transform,
+            Box("TVBody", root.transform,
                 new Vector3(1.265f, 1.1f, 0.3f), new Vector3(0.06f, 0.65f, 1.1f), mats.Bezel);
             GameObject screen = Quad("TVScreen", root.transform,
                 new Vector3(1.232f, 1.1f, 0.3f), new Vector2(0.98f, 0.55f),
                 Vector3.left, Vector3.up, mats.TvScreen);
 
-            var stub = root.AddComponent<ScreenStub>();
-            stub.prompt = "Watch TV";
-            stub.screenRenderer = screen.GetComponent<Renderer>();
-            stub.idleEmission = new Color(0.010f, 0.045f, 0.020f); // phosphor-idle green-black
-            stub.pulseEmission = new Color(0.12f, 1.1f, 0.35f);    // phosphor green
-            stub.highlightRenderers = new[] { body.GetComponent<Renderer>() };
+            // M3: the TV is the live sweat surface, no longer interactable (the ScreenStub is gone and the
+            // TV stays on the default layer). TvSweatScreen hangs a world-space canvas on the screen inset
+            // in front of this emissive quad and steps the real engine's SweatSession while seated.
+            var tv = root.AddComponent<TvSweatScreen>();
+            tv.emissiveScreen = screen.GetComponent<Renderer>();
+            tv.actions = inputActions;
+            tv.screenWorldSize = new Vector2(0.98f, 0.55f);
 
-            SetLayerRecursive(root, layer);
+            // TvLight: the room is the reaction shot (design/08). A point light just off the TV, driven by
+            // the screen state (phosphor idle, green flare, red wash, gold pulse).
+            var lightGo = new GameObject("TvLight");
+            lightGo.transform.position = new Vector3(1.05f, 1.15f, 0.3f);
+            var light = lightGo.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.range = 3.2f;
+            light.intensity = 0.5f;
+            light.color = new Color(0.35f, 1f, 0.5f);
+            light.shadows = LightShadows.None;
+            var tvLight = lightGo.AddComponent<TvLight>();
+            tvLight.pointLight = light;
+            tv.tvLight = tvLight;
+
+            // DemoRunDriver: the endless demo channel that feeds the screen real tickets (M4 replaces it).
+            var driverGo = new GameObject("DemoRunDriver");
+            var driver = driverGo.AddComponent<DemoRunDriver>();
+            driver.screen = tv;
+            tv.driver = driver;
         }
 
         // ----------------------------------------------------------------- window
