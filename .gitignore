@@ -8,15 +8,18 @@ TestResults/
 .idea/
 *.DotSettings
 
-# Unity (Phase 2 — game/ project)
-game/[Ll]ibrary/
-game/[Tt]emp/
-game/[Oo]bj/
-game/[Bb]uild/
-game/[Bb]uilds/
-game/[Ll]ogs/
-game/[Uu]serSettings/
-game/[Mm]emoryCaptures/
+# Unity (Phase 2 — unity/SBR project; ignores scoped so engine/sim/console .csproj stay tracked)
+unity/SBR/[Ll]ibrary/
+unity/SBR/[Tt]emp/
+unity/SBR/[Oo]bj/
+unity/SBR/[Bb]uild/
+unity/SBR/[Bb]uilds/
+unity/SBR/[Ll]ogs/
+unity/SBR/[Uu]serSettings/
+unity/SBR/[Mm]emoryCaptures/
+unity/SBR/*.csproj
+unity/SBR/*.sln
+unity/SBR/*.slnx
 *.csproj.meta
 
 # OS

@@ -4,10 +4,10 @@
 
 A degenerate's compact room at night, where every game surface is a glowing screen — betting-app diegesis framed by a CloverPit-scale living space that *is* the health bar.
 
-## Style: betting-app diegesis, room-framed
+## Style: betting-app diegesis, room-framed (REVISED 2026-07-10, Allen)
 
-- The player never sees themselves. Fixed camera from the couch-ish POV; the world is the room and its screens.
-- All gameplay UI is **diegetic**: the sweat plays on the **TV** (broadcast scorebug, live win-prob graph, ticker); tickets are built on a **phone/desk betslip**; the bookie exists only as **push notifications and debt messages**; the seed/round info lives on screen chrome, not floating HUD.
+- **First-person controllable character** — the player walks around the room (CloverPit model). The character is invisible (no body, no animation pipeline; optional hands as later garnish). Presence through movement, not portrayal.
+- **Screens are the interaction surfaces, and any screen can access the book**: walk to the **TV** to watch the sweat (broadcast scorebug, live win-prob graph, ticker), the **laptop on the desk** to build tickets and browse the book/shop, the **phone** for the bookie's notifications and debt messages. All gameplay UI is diegetic; seed/round info lives on screen chrome, not floating HUD.
 - Screens get the treatment: phosphor glow, scanline flicker, CRT curvature/chromatic aberration on big hits. Typography is the primary art asset — strong numerals, ticker fonts, sportsbook-app iconography parodied.
 
 ## Palette: casino neon on black
@@ -24,11 +24,13 @@ Rule: green/red never used for anything but money-good/money-bad — the gamblin
 
 ## The room (Allen's spec — scope-locked)
 
-Tokyo compact minimalist, **no kitchen**, CloverPit-sized. Fixed prop list:
-- **Bunk bed with couch under it** (the player's seat — camera anchor)
-- **TV across the couch** (the sweat surface)
-- **Window beside** (time-of-day/mood light)
-- **Mini fridge** and **small desk table** on the other side (desk = betslip/shop surface candidate)
+Tokyo compact minimalist, **no kitchen**, CloverPit-sized, walkable in first person. Fixed prop list with interaction roles:
+- **Bunk bed with couch under it** — the sweat-watching seat (sit → camera settles on the TV)
+- **TV across the couch** — the sweat surface (live games, scorebug wall lategame)
+- **Window beside** — time-of-day/mood light (state-driven)
+- **Small desk table with laptop** — the book: ticket building, shop, run info
+- **Mini fridge** — flavor interaction (state-driven contents: heater = stocked, buried = empty)
+- **Phone** — bookie notifications, debt messages, cash-out buzz (audible anywhere in the room)
 
 ### Room state = the health bar (~4 variants)
 
