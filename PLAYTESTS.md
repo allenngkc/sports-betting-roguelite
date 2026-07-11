@@ -2,6 +2,11 @@
 
 Human playtests only (agent impressions live in OPEN-QUESTIONS). Newest first. Each entry: build, what happened, S-criteria signals, actions taken.
 
+## #5 — Allen, 2026-07-11 (build: M3 + review fixes, commit 47da286)
+
+**"Overall feels much nicer now!"** — the #4 fixes (seated zoom framing, unmirrored text, bar inset) land. One finding:
+1. **Seated look-around should be clamped (still free-feeling).** The clamp existed (±60° yaw / ±40° pitch) but was tuned for the unzoomed view — at 17° FOV it allowed 3+ screen-widths of swing, reading as no clamp. FIXED same day: seated limits tightened to ±12° yaw / ±8° pitch (a glance that keeps the TV in view), and seated mouse deltas scale by the zoom ratio (seatedFov/standingFov ≈ 0.25) so look speed stays constant in screen space instead of slamming the tight clamp in one flick. Both remain SitSpot dials.
+
 ## #4 — Allen, 2026-07-11 (build: M3 TV sweat, commit 162291c) — MILESTONE REVIEW
 
 First sit-and-sweat in Unity. Verdict: **feel is right for a prototype** ("room for huge improvements in the final prototype" — expected and accepted at graybox fidelity). Three fixes, all landed same day:

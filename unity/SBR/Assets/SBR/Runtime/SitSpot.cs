@@ -45,8 +45,10 @@ namespace SBR.Game
         [Tooltip("Seated camera FOV - the sit zooms in so the TV nearly fills the view " +
                  "(playtest #4: at the standing FOV the TV read too small). 0 = leave FOV alone.")]
         public float seatedFov = 17f;
-        public float seatedYawLimit = 60f;
-        public float seatedPitchLimit = 40f;
+        [Tooltip("Seated look-around clamps, degrees around the seat forward. Tight on purpose " +
+                 "(playtest #5): a glance that keeps the TV in view, not a room survey.")]
+        public float seatedYawLimit = 12f;
+        public float seatedPitchLimit = 8f;
         [Tooltip("Seconds of held Move input that stands the player back up.")]
         public float standUpMoveHold = 0.5f;
         [Tooltip("Move magnitude below this does not count as intent to stand.")]
@@ -117,7 +119,9 @@ namespace SBR.Game
             _controller.BeginExternalCameraControl();
             yield return LerpCamera(cam, seatAnchor.position, seatAnchor.rotation, seatedFov);
 
-            _controller.EnterSeated(seatAnchor.rotation, seatedYawLimit, seatedPitchLimit);
+            // Look scale = zoom ratio, so the mouse covers screen space at the standing speed.
+            float lookScale = _lens != null && _standingFov > 0f ? seatedFov / _standingFov : 1f;
+            _controller.EnterSeated(seatAnchor.rotation, seatedYawLimit, seatedPitchLimit, lookScale);
             _moveHeldTime = 0f;
             _state = State.Seated;
             Active = this;

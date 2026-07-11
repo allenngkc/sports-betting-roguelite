@@ -52,6 +52,7 @@ namespace SBR.Game
         private float _seatPitchOffset;
         private float _seatYawLimit = 60f;
         private float _seatPitchLimit = 40f;
+        private float _seatLookScale = 1f;
 
         private void Awake()
         {
@@ -127,6 +128,10 @@ namespace SBR.Game
                     break;
 
                 case LookMode.Seated:
+                    // Scaled so a zoomed seat keeps a constant screen-space look speed - at a
+                    // ~4x zoom, unscaled deltas slam the tight clamp in a single flick.
+                    dx *= _seatLookScale;
+                    dy *= _seatLookScale;
                     _seatYawOffset = Mathf.Clamp(_seatYawOffset + dx, -_seatYawLimit, _seatYawLimit);
                     _seatPitchOffset = Mathf.Clamp(_seatPitchOffset - dy, -_seatPitchLimit, _seatPitchLimit);
                     if (cameraTransform != null)
@@ -161,8 +166,11 @@ namespace SBR.Game
             MovementLocked = true;
         }
 
-        /// <summary>Look becomes offsets around the seat orientation, clamped.</summary>
-        public void EnterSeated(Quaternion seatRotation, float yawLimit, float pitchLimit)
+        /// <summary>Look becomes offsets around the seat orientation, clamped. lookScale scales
+        /// mouse deltas while seated (pass seatedFov/standingFov so a zoomed seat keeps a constant
+        /// screen-space look speed; 1 = unscaled).</summary>
+        public void EnterSeated(Quaternion seatRotation, float yawLimit, float pitchLimit,
+                                float lookScale = 1f)
         {
             Vector3 e = seatRotation.eulerAngles;
             _seatYaw = e.y;
@@ -171,6 +179,7 @@ namespace SBR.Game
             _seatPitchOffset = 0f;
             _seatYawLimit = yawLimit;
             _seatPitchLimit = pitchLimit;
+            _seatLookScale = Mathf.Clamp(lookScale, 0.05f, 1f);
             Mode = LookMode.Seated;
             MovementLocked = true;
         }
