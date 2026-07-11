@@ -3,9 +3,10 @@
 Anything undecided lives here so it can't get lost. When resolved: move the outcome to the relevant doc + DECISIONS.md, strike it here with a date.
 
 ## Identity
-- [ ] Game name / working title
-- [ ] Art direction: pixel art vs clean vector/flat vs CRT-degenerate aesthetic (interacts with juice plan and asset sourcing)
-- [ ] Player character fiction: silent avatar, or a characterized degen with a life sim frame (apartment decays/improves with bankroll)?
+- [x] ~~Game name~~ — deferred by decision 2026-07-10: SBR codename until Phase 3 (the itch page will force a public name; revisit then)
+- [x] ~~Art direction~~ — DECIDED 2026-07-10: betting-app diegesis in a compact room, casino neon on black (design/08)
+- [x] ~~Player character fiction~~ — DECIDED 2026-07-10: characterized degen via the room-as-health-bar (no visible character; you are the couch POV) (design/08)
+- [ ] Character garnish during the slice: hands on the betslip? reflection in TV static? (mood detail, decide in Phase 2)
 
 ## Core loop (design/01)
 - [ ] Run length target and round count

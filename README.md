@@ -26,6 +26,7 @@ A living design bible. We discuss topics here session by session, converge on de
 | `design/05-architecture.md` | Headless C# core, Unity layer, effect hooks, data-driven content, RNG |
 | `design/06-vfx-and-juice.md` | The juice stack, effect inventory, who builds what |
 | `design/07-business-and-roadmap.md` | Market research, phases, validation gates, launch funnel |
+| `design/08-art-direction.md` | Betting-app diegesis in a compact room; palette tokens; room-as-health-bar; juice mapping |
 | `DECISIONS.md` | Append-only decision log |
 | `OPEN-QUESTIONS.md` | Parking lot for everything undecided |
 | `PLAYTESTS.md` | Human playtest log — findings, S-criteria signals, actions |
