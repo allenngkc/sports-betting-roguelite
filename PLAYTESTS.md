@@ -2,6 +2,10 @@
 
 Human playtests only (agent impressions live in OPEN-QUESTIONS). Newest first. Each entry: build, what happened, S-criteria signals, actions taken.
 
+## #2 — Allen, 2026-07-10 (build: debt-as-HP patch, commit 6d36fd9)
+
+**"Pressure is real that the run is dead."** The debt mechanic lands as pressure, not as a safety net — the exact feel question the patch had to answer, answered positive. No change requests. This playtest closed the loop on the Week 6 evaluation: verdict CONTINUE (DECISIONS.md).
+
 ## #1 — Allen, 2026-07-08 (build: Week 4 console, commit 4fca35f)
 
 **Verdict signal: "I feel this is a fun game!"** First S2-relevant positive from a human.

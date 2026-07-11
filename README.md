@@ -1,7 +1,7 @@
 # Sports Betting Roguelite — Design Workspace
 
 **Working title:** TBD (see OPEN-QUESTIONS.md)
-**Status:** Phase 1 — Weeks 1–5 done + the debt-as-HP balance patch (S3 and S4 both PASS; see `sim-report.md`). THE GAME IS PLAYABLE: `dotnet run --project game-console` (or `-- --auto [seed]`). Engine 133 tests green; sim: `dotnet run --project sim -- --runs 10000 --strategy all`. Next: the consumables/passives item rework, re-sim, then the Week 6 kill/continue evaluation (S1/S2 need Allen's runs — see PRD §2, PLAYTESTS.md).
+**Status:** PHASE 1 COMPLETE — Week 6 verdict: **CONTINUE** (2026-07-10, DECISIONS.md). The text prototype proved the sweat; S3/S4 pass by sim, S2/S5 by playtest+audit. Phase 2 (juiced Unity vertical slice → itch.io WebGL) is next; its gate: strangers replay it unprompted. Console: `dotnet run --project game-console`; sim: `dotnet run --project sim -- --runs 10000 --strategy all`; 133 tests green. Phase 2 backlog carried: consumables/passives rework (+re-sim), mulligan fix, progressive sweat density, mid-sweat agency.
 **Owner:** Allen. **Collaborator:** Claude (design discussion, math, architecture, VFX implementation).
 
 ## What this space is
