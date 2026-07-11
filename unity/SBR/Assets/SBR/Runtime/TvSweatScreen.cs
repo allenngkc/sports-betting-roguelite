@@ -566,11 +566,12 @@ namespace SBR.Game
             var canvasRt = canvas.GetComponent<RectTransform>();
             canvasRt.sizeDelta = new Vector2(w, h);
 
-            // Face the couch: the visible (+Z) side points along the emissive quad's outward normal.
+            // Float toward the couch, but aim +Z INTO the wall: UGUI text reads correctly from the
+            // canvas's -Z side (playtest #4 fix - +Z at the viewer shows the back face, mirrored).
             Vector3 normal = emissiveScreen != null ? -emissiveScreen.transform.forward : Vector3.left;
             Vector3 pos = (emissiveScreen != null ? emissiveScreen.transform.position : new Vector3(1.232f, 1.1f, 0.3f))
                           + normal * canvasOffset;
-            canvasGo.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(normal, Vector3.up));
+            canvasGo.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(-normal, Vector3.up));
             canvasGo.transform.localScale = Vector3.one * (screenWorldSize.x / w);
 
             Transform root = canvasGo.transform;
@@ -604,7 +605,9 @@ namespace SBR.Game
             frt.anchorMin = frt.anchorMax = new Vector2(0f, 0.5f);
             frt.pivot = new Vector2(0f, 0.5f);
             frt.sizeDelta = new Vector2(0f, _barHeight - 8f);
-            frt.anchoredPosition = new Vector2(-barWidth / 2f + 4f, 0f);
+            // Anchor is already the bar's LEFT edge; only the 4px inset remains (playtest #4 fix -
+            // the old -barWidth/2 offset assumed a center anchor and hung the fill outside the TV).
+            frt.anchoredPosition = new Vector2(4f, 0f);
 
             _tWinPct = MakeText(root, "WinPct", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, -86f), new Vector2(barWidth, 34f), 24, TextAnchor.MiddleCenter, flavorColor, FontStyle.Bold);

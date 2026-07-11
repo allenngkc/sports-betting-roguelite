@@ -42,6 +42,9 @@ namespace SBR.Game
 
         [Header("Dials")]
         public float transitionDuration = 0.35f;
+        [Tooltip("Seated camera FOV - the sit zooms in so the TV nearly fills the view " +
+                 "(playtest #4: at the standing FOV the TV read too small). 0 = leave FOV alone.")]
+        public float seatedFov = 17f;
         public float seatedYawLimit = 60f;
         public float seatedPitchLimit = 40f;
         [Tooltip("Seconds of held Move input that stands the player back up.")]
@@ -55,6 +58,8 @@ namespace SBR.Game
         private FirstPersonController _controller;
         private Vector3 _preSitPosition;
         private float _moveHeldTime;
+        private Camera _lens;
+        private float _standingFov;
 
         public override string Prompt => _state == State.Idle ? "Sit" : "Stand up";
 
@@ -106,9 +111,11 @@ namespace SBR.Game
             _state = State.SittingDown;
             Transform cam = _controller.cameraTransform;
             _preSitPosition = cam.position;
+            _lens = seatedFov > 0f ? cam.GetComponent<Camera>() : null;
+            if (_lens != null) _standingFov = _lens.fieldOfView;
 
             _controller.BeginExternalCameraControl();
-            yield return LerpCamera(cam, seatAnchor.position, seatAnchor.rotation);
+            yield return LerpCamera(cam, seatAnchor.position, seatAnchor.rotation, seatedFov);
 
             _controller.EnterSeated(seatAnchor.rotation, seatedYawLimit, seatedPitchLimit);
             _moveHeldTime = 0f;
@@ -128,7 +135,7 @@ namespace SBR.Game
             // Travel back to the standing eye position only; the view stays where the player
             // was looking (e.g. still on the TV), so standing never swings the camera around.
             Quaternion keptView = cam.rotation;
-            yield return LerpCamera(cam, _preSitPosition, keptView);
+            yield return LerpCamera(cam, _preSitPosition, keptView, _lens != null ? _standingFov : 0f);
 
             // Split the kept view into body yaw + camera pitch so ExitSeated's resync from the
             // transforms is snap-free.
@@ -138,10 +145,13 @@ namespace SBR.Game
             _state = State.Idle;
         }
 
-        private IEnumerator LerpCamera(Transform cam, Vector3 toPosition, Quaternion toRotation)
+        private IEnumerator LerpCamera(Transform cam, Vector3 toPosition, Quaternion toRotation,
+                                       float toFov = 0f)
         {
             Vector3 fromPosition = cam.position;
             Quaternion fromRotation = cam.rotation;
+            float fromFov = _lens != null ? _lens.fieldOfView : 0f;
+            bool zoom = _lens != null && toFov > 0f;
             float duration = Mathf.Max(0.01f, transitionDuration);
             float t = 0f;
 
@@ -152,6 +162,7 @@ namespace SBR.Game
                 cam.SetPositionAndRotation(
                     Vector3.Lerp(fromPosition, toPosition, eased),
                     Quaternion.Slerp(fromRotation, toRotation, eased));
+                if (zoom) _lens.fieldOfView = Mathf.Lerp(fromFov, toFov, eased);
                 yield return null;
             }
         }

@@ -242,9 +242,17 @@ namespace SBR
             var sit = root.AddComponent<SitSpot>();
             var anchor = new GameObject("SeatAnchor").transform;
             anchor.SetParent(root.transform, false);
-            // Seated eye ~1.15m, base rotation facing +X: straight at the TV.
-            anchor.SetPositionAndRotation(new Vector3(-0.95f, 1.15f, 0.3f), Quaternion.Euler(0f, 90f, 0f));
+            // Seated eye ~1.15m, base rotation aimed at the TV screen's CENTER (keep in sync with
+            // BuildTv), not just +X - at the seated zoom FOV even the 5cm eye-vs-center offset shows.
+            Vector3 seatedEye = new Vector3(-0.95f, 1.15f, 0.3f);
+            Vector3 tvScreenCenter = new Vector3(1.232f, 1.1f, 0.3f);
+            anchor.SetPositionAndRotation(seatedEye,
+                Quaternion.LookRotation(tvScreenCenter - seatedEye, Vector3.up));
             sit.seatAnchor = anchor;
+            // Playtest #4: seated view should hold "just the TV". At 2.18m the 0.98x0.55 screen
+            // subtends ~25x14 degrees; 17 degrees vertical FOV fills ~85% of the view with a slim
+            // frame of room so the TvLight reaction shot still reads at the edges.
+            sit.seatedFov = 17f;
             sit.highlightRenderers = new[]
             {
                 seat.GetComponent<Renderer>(),

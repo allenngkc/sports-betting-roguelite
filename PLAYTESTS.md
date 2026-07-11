@@ -2,6 +2,15 @@
 
 Human playtests only (agent impressions live in OPEN-QUESTIONS). Newest first. Each entry: build, what happened, S-criteria signals, actions taken.
 
+## #4 — Allen, 2026-07-11 (build: M3 TV sweat, commit 162291c) — MILESTONE REVIEW
+
+First sit-and-sweat in Unity. Verdict: **feel is right for a prototype** ("room for huge improvements in the final prototype" — expected and accepted at graybox fidelity). Three fixes, all landed same day:
+1. **Seated framing: TV too far/small** — the view should hold just the TV. FIXED: the sit now zooms to a 17° seated FOV (TV fills ~85% of the view, slim room frame so the TvLight reaction still reads) and the seat anchor aims at the screen's exact center. FOV eases in/out with the sit/stand transition; `SitSpot.seatedFov` is a dial.
+2. **TV text mirrored/unreadable** — the world-space canvas faced the couch with its +Z, showing its back face. FIXED: canvas +Z now points into the wall.
+3. **Win-prob bar fill popped out of the TV** — the fill was offset by −barWidth/2 from a left-edge anchor (a center-anchor assumption), hanging 346px outside the screen. FIXED: 4px inset from the left anchor.
+
+Gate: M4 (real betting loop) awaits Allen's confirm on the fixed build.
+
 ## #3 — Allen, 2026-07-11 (build: M1+M2 graybox room, commit b9c3ea0) — MILESTONE REVIEW
 
 First walk of the Unity room. Verdict: **M2 approved with two fixes.**
