@@ -2,6 +2,15 @@
 
 Human playtests only (agent impressions live in OPEN-QUESTIONS). Newest first. Each entry: build, what happened, S-criteria signals, actions taken.
 
+## #6 — Allen, 2026-07-11 (build: M4 betting loop, commit 43d7758) — MILESTONE REVIEW
+
+**"Functionality everything is working nice! Really good for functional prototype."** Betslip click flow: feels good. Art/sweat/graphics headroom acknowledged for later phases (expected at graybox). Three findings, all landed same day:
+1. **Records read as mystery numbers** ("3-6, 7-2 — what does these mean?"). FIXED: records now attach to their team in parens — "LIONS (3-6) @ SHARKS (7-2)" — with a "( ) = SEASON W-L" legend on the slate header; TV scorebug records got the parens too.
+2. **American odds as the default** (+200 style). FIXED: new `OddsFormat.American` (display only, engine stays decimal) used on the slate buttons, slip legs, combined line, TV ticket cards and slip strip. EditMode-tested against book convention (2.00→+100, 1.87→−115).
+3. **Can't see what's riding during the sweat** (stake at risk, legs, odds). FIXED: an always-on slip strip on the TV during the sweat — "RISK $125 → PAYS $312" plus every leg with its odds, colored by presented status (green W / red L / cyan VOID / white LIVE / dim pending). Status follows the presentation cursor, never engine truth, so baked outcomes never leak early.
+
+Gate: M5 (phone bookie) awaits Allen's confirm on the fixed build.
+
 ## #5 — Allen, 2026-07-11 (build: M3 + review fixes, commit 47da286)
 
 **"Overall feels much nicer now!"** — the #4 fixes (seated zoom framing, unmirrored text, bar inset) land. One finding:

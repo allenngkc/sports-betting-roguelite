@@ -122,7 +122,8 @@ namespace SBR.Game
         private Font _font;
         private float _innerWidth;
         private float _barHeight;
-        private Text _tMatchup, _tRecords, _tLeg, _tClock, _tFlavor, _tWinPct, _tCashOut, _tChrome, _tAttract, _tBigAmount;
+        private int _resolvedThrough; // legs below this index are PRESENTED as resolved (not engine truth)
+        private Text _tMatchup, _tRecords, _tLeg, _tClock, _tFlavor, _tWinPct, _tCashOut, _tChrome, _tAttract, _tBigAmount, _tSlipStrip;
         private Image _backing, _barBg, _barFill, _greenFlood, _goldFlood, _dimOverlay;
         private RawImage _staticNoise, _scanlines;
         private Texture2D _noiseTex;
@@ -327,6 +328,43 @@ namespace SBR.Game
             _probTarget = (float)leg.TrueProb;
             _probShown = _probTarget;
             _tWinPct.text = $"WIN {Mathf.RoundToInt(_probTarget * 100f)}%";
+            _resolvedThrough = 0;
+            UpdateSlipStrip(0);
+        }
+
+        /// <summary>The always-on slip strip during a sweat (playtest #6: "what did I place, how much
+        /// is at risk, at what odds?"). Rich-text legs colored by PRESENTED status — resolved legs use
+        /// the presentation cursor, never engine truth (outcomes are baked at lock; the strip must not
+        /// leak them early): green W / red L / cyan VOID / white LIVE / dim pending.</summary>
+        private void UpdateSlipStrip(int liveLeg)
+        {
+            if (_ticket == null) { _tSlipStrip.text = string.Empty; return; }
+
+            string strip = $"RISK ${Money(_ticket.Stake)} → PAYS ${Money(_ticket.PotentialPayout)}     ";
+            for (int i = 0; i < _ticket.Legs.Count; i++)
+            {
+                Leg leg = _ticket.Legs[i];
+                string side = SweatFlavor.Short(
+                    leg.Side == Side.Home ? leg.Matchup.Home.Name : leg.Matchup.Away.Name).ToUpperInvariant();
+                string label = $"{side} {OddsFormat.American(leg.OfferedOdds)}";
+
+                if (i > 0) strip += "  ·  ";
+                if (i < _resolvedThrough)
+                {
+                    strip += leg.IsVoided ? $"<color=#9EDCF6>{label} VOID</color>"
+                        : leg.GradesWon ? $"<color=#3CE873>{label} W</color>"
+                        : $"<color=#FF4038>{label} L</color>";
+                }
+                else if (i == liveLeg)
+                {
+                    strip += $"<color=#E8F2F8>{label} LIVE</color>";
+                }
+                else
+                {
+                    strip += $"<color=#7A8890>{label}</color>";
+                }
+            }
+            _tSlipStrip.text = strip;
         }
 
         /// <summary>The auto-advance interstitial (M4): TICKET i/n, the legs line, stake → to-win.</summary>
@@ -342,9 +380,10 @@ namespace SBR.Game
                 if (legs.Length > 0) legs += "   ·   ";
                 string side = SweatFlavor.Short(
                     leg.Side == Side.Home ? leg.Matchup.Home.Name : leg.Matchup.Away.Name);
-                legs += $"{side.ToUpperInvariant()} {leg.OfferedOdds.ToString("0.00", CultureInfo.InvariantCulture)}";
+                legs += $"{side.ToUpperInvariant()} {OddsFormat.American(leg.OfferedOdds)}";
             }
             _tRecords.text = legs;
+            _tSlipStrip.text = string.Empty;
 
             _tFlavor.color = flavorColor;
             _tFlavor.text = $"${Money(_ticket.Stake)} TO WIN ${Money(_ticket.PotentialPayout)}";
@@ -371,6 +410,7 @@ namespace SBR.Game
             _tClock.text = string.Empty;
             _tWinPct.text = string.Empty;
             _tBigAmount.text = string.Empty;
+            _tSlipStrip.text = string.Empty;
 
             if (s.Floated)
             {
@@ -467,6 +507,7 @@ namespace SBR.Game
             _tClock.text = string.Empty;
             _tMatchup.text = string.Empty;
             _tRecords.text = string.Empty;
+            _tSlipStrip.text = string.Empty;
             _tWinPct.text = string.Empty;
             _tFlavor.text = string.Empty;
         }
@@ -494,6 +535,7 @@ namespace SBR.Game
             _tWinPct.text = $"WIN {Mathf.RoundToInt(_probTarget * 100f)}%";
 
             _tAttract.enabled = false;
+            UpdateSlipStrip(evt.LegIndex);
             UpdateCashOutLabel();
         }
 
@@ -524,7 +566,7 @@ namespace SBR.Game
         }
 
         private static string RecordsLine(Leg leg)
-            => $"{leg.Matchup.Away.Record}          {leg.Matchup.Home.Record}";
+            => $"({leg.Matchup.Away.Record})          ({leg.Matchup.Home.Record})"; // season W-L
 
         // ---------------------------------------------------------------- beats
 
@@ -538,13 +580,18 @@ namespace SBR.Game
                 _tFlavor.color = chromeCyan;
                 _tFlavor.text = $"LEG {k} - VOIDED, the ticket lives";
                 yield return ScaledWait(deadLineDuration);
-                yield break;
+            }
+            else if (leg.GradesWon)
+            {
+                yield return GreenLegBeat(k);
+            }
+            else
+            {
+                yield return DeadLegBeat(k);
             }
 
-            if (leg.GradesWon)
-                yield return GreenLegBeat(k);
-            else
-                yield return DeadLegBeat(k);
+            _resolvedThrough = evt.LegIndex + 1;
+            UpdateSlipStrip(evt.LegIndex + 1); // next leg reads LIVE once its events start
         }
 
         private IEnumerator GreenLegBeat(int k)
@@ -791,6 +838,9 @@ namespace SBR.Game
                 new Vector2(0f, -14f), new Vector2(w - 120f, 56f), 34, TextAnchor.UpperCenter, flavorColor, FontStyle.Bold);
             _tRecords = MakeText(root, "Records", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
                 new Vector2(0f, -74f), new Vector2(w - 120f, 30f), 20, TextAnchor.UpperCenter, chromeCyan);
+            // The slip strip (playtest #6): stake at risk + every leg with odds and presented status.
+            _tSlipStrip = MakeText(root, "SlipStrip", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -106f), new Vector2(w - 80f, 26f), 15, TextAnchor.UpperCenter, chromeCyan);
 
             // --- middle: flavour ticker + win-prob bar ---
             _tFlavor = MakeText(root, "Flavor", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),

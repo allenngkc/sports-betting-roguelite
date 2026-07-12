@@ -180,19 +180,21 @@ namespace SBR.Game
             var slate = MakePanel(_pageBetslip, "Slate", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(10f, -6f), new Vector2(596f, h - 12f), new Color(0f, 0f, 0f, 0f));
 
-            float rowH = (h - 24f) / r.CurrentSlate.Matchups.Count;
+            // Legend line (playtest #6: the bare records read as mystery numbers).
+            MakeText(slate, "Legend", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(4f, 0f), new Vector2(580f, 22f), 13, TextAnchor.UpperLeft, Dim(chromeCyan),
+                "TODAY'S BOARD   ·   ( ) = SEASON W-L");
+
+            float rowH = (h - 24f - 24f) / r.CurrentSlate.Matchups.Count;
             for (int i = 0; i < r.CurrentSlate.Matchups.Count; i++)
             {
                 Matchup m = r.CurrentSlate.Matchups[i];
                 var row = MakePanel(slate, $"Row{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(0f, -i * rowH), new Vector2(596f, rowH - 6f), panel);
+                    new Vector2(0f, -24f - i * rowH), new Vector2(596f, rowH - 6f), panel);
 
                 MakeText(row, "Matchup", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
-                    new Vector2(10f, 10f), new Vector2(300f, 30f), 19, TextAnchor.MiddleLeft, textColor,
-                    $"{TeamShort(m.Away)}  @  {TeamShort(m.Home)}");
-                MakeText(row, "Records", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
-                    new Vector2(10f, -14f), new Vector2(300f, 24f), 14, TextAnchor.MiddleLeft, chromeCyan,
-                    $"{m.Away.Record}   ·   {m.Home.Record}");
+                    new Vector2(10f, 0f), new Vector2(306f, 52f), 18, TextAnchor.MiddleLeft, textColor,
+                    $"{TeamShort(m.Away)} ({m.Away.Record})  @  {TeamShort(m.Home)} ({m.Home.Record})");
 
                 Side? on = _slip.SideOn(m.Index);
                 MakeOddsButton(row, m, Side.Away, on == Side.Away, new Vector2(316f, 0f));
@@ -225,7 +227,7 @@ namespace SBR.Game
                     new Vector2(8f, y), new Vector2(376f, 30f), new Color(0f, 0f, 0f, 0f));
                 MakeText(legRow, "Line", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
                     new Vector2(4f, 0f), new Vector2(300f, 28f), 15, TextAnchor.MiddleLeft, textColor,
-                    $"{TeamShort(team)}   {Odds(m.Odds(p.Side))}");
+                    $"{TeamShort(team)}   {OddsFormat.American(m.Odds(p.Side))}");
                 int idx = p.MatchupIndex;
                 MakeButton(legRow, "X", "✕", new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
                     new Vector2(-4f, 0f), new Vector2(30f, 26f), 14, panelHot, hotRed,
@@ -237,7 +239,7 @@ namespace SBR.Game
             MakeText(slipPanel, "Combined", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(12f, y), new Vector2(370f, 26f), 15, TextAnchor.UpperLeft, chromeCyan,
                 _slip.Picks.Count > 0
-                    ? $"{_slip.Picks.Count} LEG{(_slip.Picks.Count > 1 ? "S" : "")}   ·   COMBINED {Odds(_slip.CombinedOdds)}"
+                    ? $"{_slip.Picks.Count} LEG{(_slip.Picks.Count > 1 ? "S" : "")}   ·   COMBINED {OddsFormat.American(_slip.CombinedOdds)}"
                     : " ");
             y -= 30f;
 
@@ -295,7 +297,7 @@ namespace SBR.Game
 
         private void MakeOddsButton(RectTransform row, Matchup m, Side side, bool selected, Vector2 x)
         {
-            string label = $"{(side == Side.Away ? "AWY" : "HOM")} {Odds(m.Odds(side))}";
+            string label = $"{(side == Side.Away ? "AWY" : "HOM")} {OddsFormat.American(m.Odds(side))}";
             MakeButton(row, side.ToString(), label, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
                 new Vector2(x.x, 0f), new Vector2(130f, 52f), 17,
                 selected ? panelHot : panel, selected ? moneyGreen : textColor,
@@ -576,8 +578,6 @@ namespace SBR.Game
             long n = (long)Math.Round(v, MidpointRounding.AwayFromZero);
             return "$" + n.ToString("N0", CultureInfo.InvariantCulture);
         }
-
-        private static string Odds(double o) => o.ToString("0.00", CultureInfo.InvariantCulture);
 
         private static Font LoadFont()
         {
