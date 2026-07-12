@@ -4,7 +4,9 @@ using SBR.Game;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.Rendering;
 
 namespace SBR
@@ -58,11 +60,12 @@ namespace SBR
 
             BuildShell(mats);
             BuildCouch(mats, layer);
-            BuildTv(mats, inputActions);
+            RunDirector director = BuildTv(mats, inputActions);
             BuildWindow(mats);
-            BuildDeskCluster(mats, layer);
+            BuildDeskCluster(mats, layer, director);
             var interactor = BuildPlayer(inputActions, layer);
             BuildHud(interactor);
+            BuildEventSystem();
             BuildLighting();
 
             if (!System.IO.Directory.Exists("Assets/Scenes"))
@@ -264,7 +267,7 @@ namespace SBR
 
         // --------------------------------------------------------------------- tv
 
-        private static void BuildTv(Materials mats, InputActionAsset inputActions)
+        private static RunDirector BuildTv(Materials mats, InputActionAsset inputActions)
         {
             var root = new GameObject("TV");
 
@@ -283,6 +286,12 @@ namespace SBR
             tv.actions = inputActions;
             tv.screenWorldSize = new Vector2(0.98f, 0.55f);
 
+            // RunDirector (M4): the single owner of the engine Run. The TV walks its sweats; the
+            // laptop drives betting/shop/new-run through it.
+            var directorGo = new GameObject("RunDirector");
+            var director = directorGo.AddComponent<RunDirector>();
+            tv.director = director;
+
             // TvLight: the room is the reaction shot (design/08). A point light just off the TV, driven by
             // the screen state (phosphor idle, green flare, red wash, gold pulse).
             var lightGo = new GameObject("TvLight");
@@ -297,11 +306,7 @@ namespace SBR
             tvLight.pointLight = light;
             tv.tvLight = tvLight;
 
-            // DemoRunDriver: the endless demo channel that feeds the screen real tickets (M4 replaces it).
-            var driverGo = new GameObject("DemoRunDriver");
-            var driver = driverGo.AddComponent<DemoRunDriver>();
-            driver.screen = tv;
-            tv.driver = driver;
+            return director;
         }
 
         // ----------------------------------------------------------------- window
@@ -316,7 +321,7 @@ namespace SBR
 
         // ----------------------------------------------------- desk / laptop / phone
 
-        private static void BuildDeskCluster(Materials mats, int layer)
+        private static void BuildDeskCluster(Materials mats, int layer, RunDirector director)
         {
             Transform deskRoot = new GameObject("Desk").transform;
 
@@ -339,11 +344,11 @@ namespace SBR
             Box("MiniFridge", null, new Vector3(-0.95f, 0.425f, -1.65f),
                 new Vector3(0.5f, 0.85f, 0.5f), mats.Prop);
 
-            BuildLaptop(mats, layer);
+            BuildLaptop(mats, layer, director);
             BuildPhone(mats, layer);
         }
 
-        private static void BuildLaptop(Materials mats, int layer)
+        private static void BuildLaptop(Materials mats, int layer, RunDirector director)
         {
             var root = new GameObject("Laptop");
             root.transform.position = new Vector3(1.15f, 0.85f, 1.62f);
@@ -368,15 +373,31 @@ namespace SBR
             grabVolume.size = new Vector3(0.45f, 0.4f, 0.5f);
             grabVolume.isTrigger = true;
 
-            var stub = root.AddComponent<ScreenStub>();
-            stub.prompt = "Use laptop";
-            stub.screenRenderer = lid.GetComponent<Renderer>();
-            stub.idleEmission = new Color(0.025f, 0.055f, 0.035f);
-            stub.pulseEmission = new Color(0.12f, 1.1f, 0.35f);
-            stub.highlightRenderers = new[] { lapBase.GetComponent<Renderer>() };
+            // M4: the laptop IS the book. DeskFocus glides the camera to the lid and frees the cursor;
+            // LaptopScreen hangs the phase-driven pages (betslip/shop/run-over) on a world-space canvas.
+            var focus = root.AddComponent<DeskFocus>();
+            focus.highlightRenderers = new[] { lapBase.GetComponent<Renderer>() };
+
+            // Focus anchor: in front of the lid along its outward normal, looking at its center.
+            // The Quad primitive's visible face is local -Z, so outward = -lid.forward.
+            Transform lidT = lid.transform;
+            Vector3 outward = -lidT.forward;
+            var anchor = new GameObject("FocusAnchor").transform;
+            anchor.SetParent(root.transform, false);
+            anchor.SetPositionAndRotation(
+                lidT.position + outward * LaptopFocusDistance,
+                Quaternion.LookRotation(-outward, lidT.up));
+            focus.focusAnchor = anchor;
+
+            var book = root.AddComponent<LaptopScreen>();
+            book.director = director;
+            book.lidRenderer = lid.GetComponent<Renderer>();
 
             SetLayerRecursive(root, layer);
         }
+
+        // Frames the 0.32x0.22 lid at ~80% of the 30-degree focus FOV.
+        private const float LaptopFocusDistance = 0.52f;
 
         private static void BuildPhone(Materials mats, int layer)
         {
@@ -445,6 +466,15 @@ namespace SBR
             var hudGo = new GameObject("InteractionHud");
             var hud = hudGo.AddComponent<InteractionHud>();
             hud.interactor = interactor;
+        }
+
+        private static void BuildEventSystem()
+        {
+            // The laptop's UGUI buttons need an event system; the input-system UI module reads the
+            // same devices the Player map uses (its own default UI actions).
+            var esGo = new GameObject("EventSystem");
+            esGo.AddComponent<EventSystem>();
+            esGo.AddComponent<InputSystemUIInputModule>();
         }
 
         // --------------------------------------------------------------- lighting

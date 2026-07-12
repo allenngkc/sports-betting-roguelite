@@ -38,6 +38,10 @@ namespace SBR.Game
         public bool MovementLocked { get; private set; }
         public Vector2 MoveInput { get; private set; }
 
+        /// <summary>While true (a screen focus wants clicks - M4's laptop), the cursor stays visible
+        /// and the click-to-relock convenience is suppressed. Owned by DeskFocus.</summary>
+        public bool CursorFree { get; private set; }
+
         private CharacterController _cc;
         private InputAction _move;
         private InputAction _look;
@@ -106,7 +110,7 @@ namespace SBR.Game
 
             Mouse mouse = Mouse.current;
             if (mouse != null && mouse.leftButton.wasPressedThisFrame &&
-                Cursor.lockState != CursorLockMode.Locked)
+                Cursor.lockState != CursorLockMode.Locked && !CursorFree)
             {
                 SetCursorLocked(true);
             }
@@ -195,6 +199,13 @@ namespace SBR.Game
                 ? Mathf.Clamp(NormalizeAngle(cameraTransform.localEulerAngles.x), -pitchLimit, pitchLimit)
                 : 0f;
             transform.rotation = Quaternion.Euler(0f, _yaw, 0f);
+        }
+
+        /// <summary>Frees the cursor for screen-space clicking (true) or restores locked FPS look.</summary>
+        public void SetCursorFree(bool free)
+        {
+            CursorFree = free;
+            SetCursorLocked(!free);
         }
 
         public void SetCursorLocked(bool locked)

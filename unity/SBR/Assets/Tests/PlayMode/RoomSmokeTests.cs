@@ -8,12 +8,13 @@ using UnityEngine.TestTools;
 namespace SBR.Tests.PlayMode
 {
     /// <summary>
-    /// Room smoke test (M2, updated for M3): Room.unity loads, the player rig / HUD exist,
-    /// and after M3 exactly 3 interactables remain (couch, laptop, phone - the TV became the
-    /// live sweat surface, no longer interactable). The M3 TV trio (TvSweatScreen, TvLight,
-    /// DemoRunDriver) is present; 60 frames tick without exceptions or error logs (the runner
-    /// fails on unexpected Debug.LogError automatically), and the camera stays inside the room.
-    /// Requires the scene in EditorBuildSettings - run SBR.GrayboxRoomBuilder.Build first.
+    /// Room smoke test (M2, updated for M3/M4): Room.unity loads, the player rig / HUD exist,
+    /// and exactly 3 interactables remain — the couch SitSpot, the laptop DeskFocus (M4: the
+    /// book replaced its ScreenStub) and the phone's ScreenStub. The M4 surfaces (TvSweatScreen,
+    /// TvLight, RunDirector, LaptopScreen) and the EventSystem are present; 60 frames tick
+    /// without exceptions or error logs (the runner fails on unexpected Debug.LogError
+    /// automatically) — which also exercises the laptop's betslip page build — and the camera
+    /// stays inside the room. Requires the scene in EditorBuildSettings (GrayboxRoomBuilder.Build).
     /// </summary>
     public class RoomSmokeTests
     {
@@ -39,15 +40,20 @@ namespace SBR.Tests.PlayMode
 
             Interactable[] interactables = Object.FindObjectsByType<Interactable>();
             Assert.AreEqual(3, interactables.Length,
-                "expected exactly 3 interactables after M3: couch, laptop, phone (the TV is no longer interactable)");
+                "expected exactly 3 interactables: couch, laptop, phone (the TV is not interactable)");
             Assert.AreEqual(1, CountOfType<SitSpot>(interactables), "expected exactly one SitSpot");
-            Assert.AreEqual(2, CountOfType<ScreenStub>(interactables),
-                "expected laptop and phone ScreenStubs (the TV's went away in M3)");
+            Assert.AreEqual(1, CountOfType<DeskFocus>(interactables),
+                "expected the laptop's DeskFocus (M4 replaced its ScreenStub)");
+            Assert.AreEqual(1, CountOfType<ScreenStub>(interactables),
+                "expected only the phone's ScreenStub after M4");
 
-            // M3 TV trio.
+            // M4 surfaces.
             Assert.IsNotNull(Object.FindAnyObjectByType<TvSweatScreen>(), "TvSweatScreen missing");
             Assert.IsNotNull(Object.FindAnyObjectByType<TvLight>(), "TvLight missing");
-            Assert.IsNotNull(Object.FindAnyObjectByType<DemoRunDriver>(), "DemoRunDriver missing");
+            Assert.IsNotNull(Object.FindAnyObjectByType<RunDirector>(), "RunDirector missing");
+            Assert.IsNotNull(Object.FindAnyObjectByType<LaptopScreen>(), "LaptopScreen missing");
+            Assert.IsNotNull(Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>(),
+                "EventSystem missing (the laptop UI cannot take clicks)");
 
             var hud = Object.FindAnyObjectByType<InteractionHud>();
             Assert.IsNotNull(hud, "InteractionHud missing");

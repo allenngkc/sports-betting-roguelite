@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using NUnit.Framework;
 using SBR.Engine;
 using SBR.Game;
@@ -10,49 +11,64 @@ using UnityEngine.TestTools;
 namespace SBR.Tests.PlayMode
 {
     /// <summary>
-    /// M3 PlayMode: the TV plays the real engine's sweat. Loads Room, forces fast pacing via
-    /// TvSweatScreen.TimeScaleOverride, and (1) sits and steps a full sweat to settlement, asserting the
-    /// bank moved consistently with the ticket's terminal state and nothing threw; and (2) proves standing
-    /// mid-sweat freezes the event cursor (design/04: standing pauses, the offer stays frozen).
+    /// M4 PlayMode: the real round loop through the room's surfaces. Tickets are placed through the
+    /// engine (DemoTicketPolicy is the auto-play fixture — the laptop UI is a thin renderer over the
+    /// EditMode-tested BetslipModel), the director locks, the TV walks the sweats serially while
+    /// seated, the round settles and the shop opens. Also: standing mid-sweat freezes the cursor
+    /// (design/04), and a zero-ticket lock settles on the spot.
+    /// All waits are wall-clock — batch mode runs unthrottled (M3's lesson).
     /// Requires the scene in EditorBuildSettings - run SBR.GrayboxRoomBuilder.Build first.
     /// </summary>
     public class TvSweatScreenTests
     {
         [UnityTest]
-        public IEnumerator SeatedSweatRunsToSettlementAndBankMatchesOutcome()
+        public IEnumerator FullRound_TwoTickets_SweatsSeriallyToSettleAndShop()
         {
             yield return LoadRoom();
 
-            var driver = UnityEngine.Object.FindAnyObjectByType<DemoRunDriver>();
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
             var screen = UnityEngine.Object.FindAnyObjectByType<TvSweatScreen>();
             var couch = UnityEngine.Object.FindAnyObjectByType<SitSpot>();
-            Assert.IsNotNull(driver, "DemoRunDriver missing");
+            Assert.IsNotNull(director, "RunDirector missing");
             Assert.IsNotNull(screen, "TvSweatScreen missing");
             Assert.IsNotNull(couch, "SitSpot missing");
 
-            screen.TimeScaleOverride = 0.0001f; // fast-forward pacing and beats
-            couch.transitionDuration = 0.01f;   // batch mode is unthrottled; don't spend 0.35s sitting
+            screen.TimeScaleOverride = 0.0001f; // fast-forward pacing, beats and cards
+            couch.transitionDuration = 0.01f;
 
-            yield return WaitUntil(() => driver.CurrentSession != null, 10f, "driver never locked a ticket");
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            Run run = director.Run;
+            Assert.AreEqual(Phase.Betting, run.Phase, "a fresh run opens in Betting");
 
-            // Programmatically sit (drives the real SitSpot -> SeatedChanged wiring).
+            // Ticket 1 via the auto-play fixture; ticket 2 a single-leg bet on an unused matchup.
+            (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run);
+            run.PlaceTicket(picks, stake);
+            run.PlaceTicket(new List<Pick> { new Pick(UnusedMatchup(run, picks), Side.Home) }, 10);
+
+            director.LockRound();
+            Assert.AreEqual(Phase.Sweat, run.Phase);
+            Assert.AreEqual(2, run.Sweats.Count, "one session per ticket");
+
             couch.OnInteract(null);
             yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
 
-            yield return WaitUntil(() => driver.SettleCount >= 1, 60f, "sweat never reached settlement");
+            yield return WaitUntil(
+                () => run.Phase == Phase.Shop || run.Phase == Phase.RunWon || run.Phase == Phase.RunLost,
+                60f, "the round never settled");
 
-            Assert.AreNotEqual(TicketState.Open, driver.LastTicketState,
-                "the settled ticket did not reach a terminal state");
+            Assert.IsTrue(director.LastSettle.HasValue, "settle card telemetry missing");
+            foreach (Ticket t in run.Tickets)
+                Assert.AreNotEqual(TicketState.Open, t.State, "every ticket must reach a terminal state");
+            Assert.Greater(run.Bank, 0.0, "bank went non-positive");
 
-            double finishDelta = driver.LastBankAfterFinish - driver.LastBankBeforeFinish;
-            if (driver.LastTicketState == TicketState.Won)
-                Assert.AreEqual(driver.LastPotentialPayout, finishDelta, 1e-4,
-                    "a won ticket must credit its full payout at FinishSweat");
-            else // Lost or CashedOut: FinishSweat credits nothing (cash-out was credited live; no relics)
-                Assert.AreEqual(0.0, finishDelta, 1e-4,
-                    $"{driver.LastTicketState} ticket must not change the bank at FinishSweat");
-
-            Assert.Greater(driver.Run.Bank, 0.0, "bank went non-positive");
+            if (run.Phase == Phase.Shop)
+            {
+                int round = run.Round;
+                director.ExitShop();
+                Assert.AreEqual(Phase.Betting, run.Phase, "leaving the shop opens the next round");
+                Assert.AreEqual(round + 1, run.Round);
+                Assert.AreEqual(0, run.Tickets.Count, "the new round starts with a clean slate");
+            }
         }
 
         [UnityTest]
@@ -60,21 +76,26 @@ namespace SBR.Tests.PlayMode
         {
             yield return LoadRoom();
 
-            var driver = UnityEngine.Object.FindAnyObjectByType<DemoRunDriver>();
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
             var screen = UnityEngine.Object.FindAnyObjectByType<TvSweatScreen>();
             var couch = UnityEngine.Object.FindAnyObjectByType<SitSpot>();
-            Assert.IsNotNull(driver);
+            Assert.IsNotNull(director);
             Assert.IsNotNull(screen);
             Assert.IsNotNull(couch);
 
             // Moderate pacing so events land ~70-180ms apart in real time - a broken pause would
             // measurably advance the cursor inside the freeze windows below at any frame rate.
             screen.TimeScaleOverride = 0.15f;
-            couch.transitionDuration = 0.01f; // batch mode is unthrottled; don't spend 0.35s sitting
+            couch.transitionDuration = 0.01f;
 
-            yield return WaitUntil(() => driver.CurrentSession != null, 10f, "driver never locked a ticket");
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            Run run = director.Run;
 
-            // Before sitting, the sweat must not advance at all (stepping is gated on seated).
+            (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run);
+            run.PlaceTicket(picks, stake);
+            director.LockRound();
+
+            // Before sitting, the sweat must not advance at all (card and steps gate on seated).
             yield return WaitRealtime(0.3f);
             Assert.AreEqual(0, screen.EventsEmitted, "sweat advanced before the player sat down");
 
@@ -95,7 +116,36 @@ namespace SBR.Tests.PlayMode
             Assert.IsFalse(screen.SweatComplete, "sweat should stay paused while standing");
         }
 
+        [UnityTest]
+        public IEnumerator ZeroTicketLockSettlesOnTheSpot()
+        {
+            yield return LoadRoom();
+
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+            Assert.IsNotNull(director);
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+
+            director.LockRound(); // no tickets: the director settles without TV ceremony
+
+            // Starting bank 500 >= round-1 target 400, so a no-bet round always clears into the shop.
+            Assert.AreEqual(Phase.Shop, director.Run.Phase, "no-bet round should settle straight to Shop");
+            Assert.IsTrue(director.LastSettle.HasValue);
+            Assert.IsTrue(director.LastSettle.Value.TargetMet);
+        }
+
         // ---- helpers ----
+
+        private static int UnusedMatchup(Run run, IReadOnlyList<Pick> used)
+        {
+            for (int i = 0; i < run.CurrentSlate.Matchups.Count; i++)
+            {
+                bool taken = false;
+                foreach (Pick p in used)
+                    if (p.MatchupIndex == i) { taken = true; break; }
+                if (!taken) return i;
+            }
+            throw new InvalidOperationException("no unused matchup on the slate");
+        }
 
         private static IEnumerator LoadRoom()
         {

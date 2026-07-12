@@ -9,15 +9,18 @@ using UnityEngine.UI;
 namespace SBR.Game
 {
     /// <summary>
-    /// The TV plays the sweat, live from the real engine (M3's emotional core). A world-space UGUI canvas
-    /// sits on the TV screen inset (0.98 x 0.55) in front of the emissive quad; a coroutine steps the
-    /// current <see cref="SweatSession"/> one event at a time, but ONLY while the player is seated
-    /// (design/04 - sitting starts/resumes, standing pauses mid-event with the offer frozen). Layout: a
-    /// top scorebug (matchup + records + leg i/j + fake clock), a middle flavour ticker (ported from the
-    /// console's voice) and a breathing win-prob bar, and a bottom gold cash-out line + chrome row
-    /// (ROUND/BANK/TARGET/DEBT/SEED). Beats are all code-driven: GREEN = green flood + emissive spike,
-    /// DEAD = static then the red DEAD line + the screen dropping darker, ticket-dead = a dim-to-black
-    /// beat, cash-out = a gold flood with the amount big. The TvLight makes the room the reaction shot.
+    /// The TV plays the sweat, live from the real engine (M3's emotional core; M4 wires it to the real
+    /// round). A world-space UGUI canvas sits on the TV screen inset (0.98 x 0.55) in front of the
+    /// emissive quad; a coroutine walks the locked round's sweats SERIALLY (M4 grill decision) - a ~2s
+    /// auto-advance ticket card between sweats, a settle card after the last (target met / the bookie
+    /// floats you), then the SHOP OPEN nudge while the laptop glows. Events step ONLY while the player
+    /// is seated (design/04 - sitting starts/resumes, standing pauses mid-event with the offer frozen).
+    /// Outside the sweat the TV idles per phase: PLACE YOUR BETS during Betting, SHOP OPEN during Shop,
+    /// and the run verdict card on RunWon/RunLost with the room light dropping cold (M4 grill decision).
+    ///
+    /// Beats are all code-driven: GREEN = green flood + emissive spike, DEAD = static then the red DEAD
+    /// line + the screen dropping darker, ticket-dead = a dim-to-black beat, cash-out = a gold flood
+    /// with the amount big. The TvLight makes the room the reaction shot.
     ///
     /// Palette is law (design/08): green = money-good only, red = money-bad only, gold = cash-out.
     /// Pacing ports the console's table into <see cref="PacingFor"/> with serialized dials; no engine RNG
@@ -26,7 +29,7 @@ namespace SBR.Game
     public sealed class TvSweatScreen : MonoBehaviour
     {
         [Header("Wiring (set by GrayboxRoomBuilder)")]
-        public DemoRunDriver driver;
+        public RunDirector director;
         public Renderer emissiveScreen;      // the TV quad behind the canvas - its phosphor glow
         public TvLight tvLight;
         public InputActionAsset actions;     // for the Interact (E) = cash-out accept
@@ -53,6 +56,10 @@ namespace SBR.Game
         public float TimeScaleOverride = 1f;
 
         [Header("Beat dials (seconds)")]
+        [Tooltip("The auto-advance ticket card between sweats (TICKET i/n, legs, stake to win).")]
+        public float ticketCardDuration = 2.0f;
+        [Tooltip("The settle card after the round's last sweat (target met / the bookie floats you).")]
+        public float settleCardDuration = 3.0f;
         public float greenFloodDuration = 0.3f;
         public float deadStaticDuration = 0.6f;
         public int staticRegens = 5;
@@ -90,7 +97,7 @@ namespace SBR.Game
         private bool _seated;
         private SweatSession _session;
         private Ticket _ticket;
-        private SweatSession _lastPresented;
+        private string _idleKey; // last idle/verdict render, so per-phase screens paint once
         private int _eventsEmitted;
         private int _flavorLegSeen = -1;
         private double _prevProb;
@@ -175,26 +182,79 @@ namespace SBR.Game
         {
             while (true)
             {
-                if (driver == null) { yield return null; continue; }
+                if (director == null || director.Run == null) { yield return null; continue; }
 
-                SweatSession s = driver.CurrentSession;
-                Ticket t = driver.CurrentTicket;
-                if (s == null || t == null || s == _lastPresented) { yield return null; continue; }
+                switch (director.Run.Phase)
+                {
+                    case Phase.Sweat:
+                        yield return PresentRound();
+                        break;
 
-                _session = s;
-                _ticket = t;
-                _lastPresented = s;
+                    case Phase.Betting:
+                        RenderIdle("betting", "PLACE YOUR BETS",
+                            "the book is open on the laptop", moneyIdle: true);
+                        yield return null;
+                        break;
 
+                    case Phase.Shop:
+                        RenderIdle("shop", "SHOP OPEN",
+                            "gear up at the laptop, then the next round", moneyIdle: true);
+                        yield return null;
+                        break;
+
+                    case Phase.RunWon:
+                    case Phase.RunLost:
+                        RenderRunOver();
+                        yield return null;
+                        break;
+
+                    default: // Settlement is transient (zero-ticket locks settle inside the director)
+                        yield return null;
+                        break;
+                }
+            }
+        }
+
+        /// <summary>The locked round, serially: ticket card → sweat → per-ticket beat, for each ticket,
+        /// then FinishAndSettle and the settle card. The director owns the index; we own the ceremony.</summary>
+        private IEnumerator PresentRound()
+        {
+            _idleKey = null;
+
+            while (director.Run.Phase == Phase.Sweat && director.CurrentSession != null)
+            {
+                _session = director.CurrentSession;
+                _ticket = director.CurrentTicket;
+
+                yield return TicketCardBeat();
                 yield return PlaySweat();
                 yield return SettlementBeat();
-                driver.SettleAndAdvance();
-                yield return null; // let the driver's next lock settle before we re-read it
+
+                if (!director.AdvanceSweat()) break;
             }
+
+            if (director.Run.Phase == Phase.Sweat)
+            {
+                director.FinishAndSettle();
+                yield return SettleCardBeat();
+            }
+        }
+
+        private IEnumerator TicketCardBeat()
+        {
+            ResetForNewSession(); // clears floods/dim/static, resets the light, shows the attract
+            _tAttract.text = "SIT TO WATCH THE SWEAT";
+            _tAttract.color = new Color(phosphorGreen.r, phosphorGreen.g, phosphorGreen.b, 1f);
+            RenderTicketCard();
+
+            yield return WaitSeated();
+            _tAttract.enabled = false;
+            yield return SeatedHold(ticketCardDuration * 1000f);
         }
 
         private IEnumerator PlaySweat()
         {
-            ResetForNewSession();
+            RenderPregame();
             int lastLeg = _ticket.Legs.Count - 1;
 
             while (_session != null && !_session.IsComplete)
@@ -267,6 +327,148 @@ namespace SBR.Game
             _probTarget = (float)leg.TrueProb;
             _probShown = _probTarget;
             _tWinPct.text = $"WIN {Mathf.RoundToInt(_probTarget * 100f)}%";
+        }
+
+        /// <summary>The auto-advance interstitial (M4): TICKET i/n, the legs line, stake → to-win.</summary>
+        private void RenderTicketCard()
+        {
+            _tLeg.text = string.Empty;
+            _tClock.text = "PRE";
+            _tMatchup.text = $"TICKET {director.SweatIndex + 1}/{director.Run.Sweats.Count}";
+
+            string legs = string.Empty;
+            foreach (Leg leg in _ticket.Legs)
+            {
+                if (legs.Length > 0) legs += "   ·   ";
+                string side = SweatFlavor.Short(
+                    leg.Side == Side.Home ? leg.Matchup.Home.Name : leg.Matchup.Away.Name);
+                legs += $"{side.ToUpperInvariant()} {leg.OfferedOdds.ToString("0.00", CultureInfo.InvariantCulture)}";
+            }
+            _tRecords.text = legs;
+
+            _tFlavor.color = flavorColor;
+            _tFlavor.text = $"${Money(_ticket.Stake)} TO WIN ${Money(_ticket.PotentialPayout)}";
+
+            float p0 = (float)_ticket.Legs[0].TrueProb;
+            _probTarget = _probShown = p0;
+            _tWinPct.text = $"WIN {Mathf.RoundToInt(p0 * 100f)}%";
+        }
+
+        /// <summary>The round's verdict short of a run end: TARGET MET green, or the bookie float red
+        /// (M4 grill decision). RunWon/RunLost skip this — the persistent verdict card owns them.</summary>
+        private IEnumerator SettleCardBeat()
+        {
+            RunDirector.SettleReport? maybe = director.LastSettle;
+            if (maybe == null) yield break;
+            RunDirector.SettleReport s = maybe.Value;
+            if (s.Outcome == Phase.RunWon || s.Outcome == Phase.RunLost) yield break;
+
+            SetAlpha(_dimOverlay, 0f);
+            SetRawAlpha(_staticNoise, 0f);
+            _tCashOut.enabled = false;
+            _tAttract.enabled = false;
+            _tLeg.text = string.Empty;
+            _tClock.text = string.Empty;
+            _tWinPct.text = string.Empty;
+            _tBigAmount.text = string.Empty;
+
+            if (s.Floated)
+            {
+                _tMatchup.text = $"SHORT — BANK ${Money(s.Bank)} / TGT ${Money(s.Target)}";
+                _tFlavor.color = new Color(hotRed.r, hotRed.g, hotRed.b, 1f);
+                _tFlavor.text = "THE BOOKIE FLOATS YOU";
+                _tRecords.text = $"${Money(s.DebtAfter)} ON THE BOOKS — DUE AT THE NEXT SETTLE";
+                _emissRest = new Color(_emissIdle.r * 0.3f, _emissIdle.g * 0.12f, _emissIdle.b * 0.12f);
+                EmissionFlash(new Color(0.25f, 0.02f, 0.02f));
+                tvLight?.SetRest(new Color(0.7f, 0.18f, 0.15f), 0.32f);
+            }
+            else
+            {
+                _tMatchup.text = s.DebtCleared ? "REQUIREMENT MET" : "TARGET MET";
+                _tFlavor.color = new Color(phosphorGreen.r, phosphorGreen.g, phosphorGreen.b, 1f);
+                _tFlavor.text = $"BANK ${Money(s.Bank)} / TGT ${Money(s.Target)}";
+                _tRecords.text = s.DebtCleared
+                    ? $"DEBT CLEARED — ${Money(s.DebtBefore)} PAID IN CASH"
+                    : string.Empty;
+                EmissionFlash(phosphorGreen);
+                tvLight?.Flash(new Color(0.30f, 1f, 0.45f), 3.0f);
+            }
+
+            yield return ScaledWait(settleCardDuration);
+        }
+
+        /// <summary>A per-phase idle screen (Betting / Shop), painted once per key.</summary>
+        private void RenderIdle(string key, string title, string sub, bool moneyIdle)
+        {
+            if (_idleKey == key) return;
+            _idleKey = key;
+            _session = null;
+            _ticket = null;
+
+            ClearToBlankScreen();
+            _tAttract.enabled = true;
+            _tAttract.color = new Color(phosphorGreen.r, phosphorGreen.g, phosphorGreen.b, 1f);
+            _tAttract.text = title;
+            _tWinPct.text = sub;
+
+            if (moneyIdle)
+            {
+                _emissRest = _emissIdle;
+                tvLight?.ResetToIdle();
+            }
+        }
+
+        /// <summary>The persistent run verdict card; the room light drops cold on a loss, warm gold on
+        /// the win (M4 grill decision - the cheap lighting fake of the room states).</summary>
+        private void RenderRunOver()
+        {
+            Run r = director.Run;
+            bool won = r.Phase == Phase.RunWon;
+            string key = $"over-{r.Phase}-{(long)r.Bank}";
+            if (_idleKey == key) return;
+            _idleKey = key;
+            _session = null;
+            _ticket = null;
+
+            ClearToBlankScreen();
+            _tAttract.enabled = true;
+            _tAttract.text = won ? "THE HOUSE BLINKS FIRST"
+                : r.Debt > 0 ? "THE BOOKIE COLLECTS" : "BUSTED";
+            _tAttract.color = won
+                ? new Color(gold.r, gold.g, gold.b, 1f)
+                : new Color(hotRed.r, hotRed.g, hotRed.b, 1f);
+            _tWinPct.text = $"FINAL BANK ${Money(r.Bank)}  —  NEW RUN AT THE LAPTOP";
+
+            if (won)
+            {
+                _emissRest = gold * 0.08f;
+                EmissionFlash(gold);
+                tvLight?.Flash(new Color(1f, 0.82f, 0.25f), 3.4f);
+                tvLight?.SetRest(new Color(1f, 0.82f, 0.35f), 0.45f);
+            }
+            else
+            {
+                // Cold and dark: desaturated blue-grey, barely lit - the room mourns.
+                _emissRest = new Color(0.008f, 0.010f, 0.018f);
+                EmissionFlash(new Color(0.10f, 0.02f, 0.02f));
+                tvLight?.SetRest(new Color(0.30f, 0.34f, 0.48f), 0.10f);
+            }
+        }
+
+        private void ClearToBlankScreen()
+        {
+            SetAlpha(_greenFlood, 0f);
+            SetAlpha(_goldFlood, 0f);
+            SetAlpha(_dimOverlay, 0f);
+            SetRawAlpha(_staticNoise, 0f);
+            _tCashOut.enabled = false;
+            _tBigAmount.text = string.Empty;
+            _tLeg.text = string.Empty;
+            _tClock.text = string.Empty;
+            _tMatchup.text = string.Empty;
+            _tRecords.text = string.Empty;
+            _tWinPct.text = string.Empty;
+            _tFlavor.text = string.Empty;
         }
 
         private void RenderEvent(DramaEvent evt)
@@ -457,7 +659,7 @@ namespace SBR.Game
 
         private void RefreshChrome()
         {
-            Run r = driver != null ? driver.Run : null;
+            Run r = director != null ? director.Run : null;
             if (r == null) { _tChrome.text = string.Empty; return; }
             _tChrome.text =
                 $"R{r.Round}/{r.Config.Rounds}   ·   BANK ${Money(r.Bank)}   ·   TGT ${Money(r.CurrentTarget)}" +

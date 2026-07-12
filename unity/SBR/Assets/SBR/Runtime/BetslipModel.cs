@@ -1,0 +1,127 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using SBR.Engine;
+
+namespace SBR.Game
+{
+    /// <summary>
+    /// The working slip's state (M4) — pure C#, no Unity, so EditMode tests exercise it directly and
+    /// the laptop UI stays a thin renderer. One slip is built at a time (M4 grill decision): clicking
+    /// a slate side toggles the leg (same side removes, other side switches), stake is set by
+    /// fraction-of-bank chips (10/25/50/MAX) or $10 nudges, and Place() hands the picks to the engine
+    /// (which owns all validation and any compose-time relic odds rewrites).
+    ///
+    /// The slip's TO WIN preview uses BASE slate odds — a promo/boost relic can only make the placed
+    /// ticket better than the preview, never worse (the placed-tickets list shows the real payout).
+    /// </summary>
+    public sealed class BetslipModel
+    {
+        private readonly Run _run;
+        private readonly List<Pick> _picks = new List<Pick>();
+
+        /// <summary>Whole-dollar stake. Clamped to [MinStake, MaxStakeFraction × bank] on every set.</summary>
+        public double Stake { get; private set; }
+
+        public IReadOnlyList<Pick> Picks => _picks;
+
+        public BetslipModel(Run run)
+        {
+            _run = run ?? throw new ArgumentNullException(nameof(run));
+            SetStakeFraction(0.10);
+        }
+
+        // ------------------------------------------------------------------ legs
+
+        /// <summary>The slip's side on this matchup, if any.</summary>
+        public Side? SideOn(int matchupIndex)
+        {
+            foreach (Pick p in _picks)
+                if (p.MatchupIndex == matchupIndex) return p.Side;
+            return null;
+        }
+
+        /// <summary>Slate-side click: adds the leg, switches side, or removes it (same side again).
+        /// Returns false only when a NEW leg would exceed MaxLegs.</summary>
+        public bool Toggle(int matchupIndex, Side side)
+        {
+            for (int i = 0; i < _picks.Count; i++)
+            {
+                if (_picks[i].MatchupIndex != matchupIndex) continue;
+                if (_picks[i].Side == side) _picks.RemoveAt(i);
+                else _picks[i] = new Pick(matchupIndex, side);
+                return true;
+            }
+
+            if (_picks.Count >= _run.Config.MaxLegs) return false;
+            _picks.Add(new Pick(matchupIndex, side));
+            return true;
+        }
+
+        public void Remove(int matchupIndex)
+            => _picks.RemoveAll(p => p.MatchupIndex == matchupIndex);
+
+        public void Clear() => _picks.Clear();
+
+        // ------------------------------------------------------------------ stake
+
+        /// <summary>A fraction chip: stake = floor(fraction × bank), clamped. 1.0 = the MAX chip.</summary>
+        public void SetStakeFraction(double fraction)
+            => Stake = ClampStake(Math.Floor(fraction * _run.Bank));
+
+        /// <summary>The −/+ $10 nudge buttons.</summary>
+        public void Nudge(double dollars) => Stake = ClampStake(Stake + dollars);
+
+        private double ClampStake(double stake)
+        {
+            double max = Math.Floor(_run.Config.MaxStakeFraction * _run.Bank);
+            return Math.Max(_run.Config.MinStake, Math.Min(stake, max));
+        }
+
+        // ------------------------------------------------------------------ derived
+
+        /// <summary>Parlay decimal odds over the slip's BASE slate prices.</summary>
+        public double CombinedOdds
+        {
+            get
+            {
+                if (_picks.Count == 0) return 0.0;
+                var odds = new List<double>(_picks.Count);
+                foreach (Pick p in _picks)
+                    odds.Add(_run.CurrentSlate.Matchups[p.MatchupIndex].Odds(p.Side));
+                return OddsMath.ParlayDecimal(odds);
+            }
+        }
+
+        public double ToWin => _picks.Count == 0 ? 0.0 : Stake * CombinedOdds;
+
+        /// <summary>Why PLACE is disabled, or null when it's live. UI renders the reason verbatim.</summary>
+        public string PlaceBlocker
+        {
+            get
+            {
+                if (_run.Phase != Phase.Betting) return "betting is closed";
+                if (_run.Tickets.Count >= _run.Config.MaxTicketsPerRound)
+                    return $"max {_run.Config.MaxTicketsPerRound} tickets";
+                if (_picks.Count == 0) return "pick a side";
+                if (_run.Bank < _run.Config.MinStake) return "bank too small";
+                if (Stake > _run.Config.MaxStakeFraction * _run.Bank) return "stake exceeds bank";
+                return null;
+            }
+        }
+
+        public bool CanPlace => PlaceBlocker == null;
+
+        // ------------------------------------------------------------------ place
+
+        /// <summary>Places the slip as an engine ticket, clears it, and re-anchors the stake to the
+        /// post-deduction bank. Callers should check CanPlace; engine exceptions bubble (rulebook).</summary>
+        public Ticket Place()
+        {
+            Ticket ticket = _run.PlaceTicket(_picks.ToList(), Stake);
+            Clear();
+            SetStakeFraction(0.10);
+            return ticket;
+        }
+    }
+}

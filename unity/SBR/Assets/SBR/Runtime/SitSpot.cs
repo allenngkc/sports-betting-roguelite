@@ -151,24 +151,6 @@ namespace SBR.Game
 
         private IEnumerator LerpCamera(Transform cam, Vector3 toPosition, Quaternion toRotation,
                                        float toFov = 0f)
-        {
-            Vector3 fromPosition = cam.position;
-            Quaternion fromRotation = cam.rotation;
-            float fromFov = _lens != null ? _lens.fieldOfView : 0f;
-            bool zoom = _lens != null && toFov > 0f;
-            float duration = Mathf.Max(0.01f, transitionDuration);
-            float t = 0f;
-
-            while (t < 1f)
-            {
-                t = Mathf.Min(1f, t + Time.deltaTime / duration);
-                float eased = t * t * (3f - 2f * t); // smoothstep
-                cam.SetPositionAndRotation(
-                    Vector3.Lerp(fromPosition, toPosition, eased),
-                    Quaternion.Slerp(fromRotation, toRotation, eased));
-                if (zoom) _lens.fieldOfView = Mathf.Lerp(fromFov, toFov, eased);
-                yield return null;
-            }
-        }
+            => CameraGlide.Go(cam, toPosition, toRotation, transitionDuration, _lens, toFov);
     }
 }

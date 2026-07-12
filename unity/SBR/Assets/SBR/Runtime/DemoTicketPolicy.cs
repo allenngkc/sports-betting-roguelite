@@ -5,11 +5,12 @@ using SBR.Engine;
 namespace SBR.Game
 {
     /// <summary>
-    /// The demo channel's ticket policy (M3 architecture decision 1): auto-build one ticket of 2-3 legs
-    /// on the shortest-priced sides (the favourites), staked at 25% of the current bank (min $10). Pure
-    /// and deterministic from run state - same seed and round produce the same picks and stake - and it
-    /// consumes NO engine RNG (it only reads the already-baked slate, the bank, and the seed string), so
-    /// the driver can never perturb the run seed. M4 replaces this with the real betting loop.
+    /// Deterministic auto-play ticket policy: one ticket of 2-3 legs on the shortest-priced sides
+    /// (the favourites), staked at 25% of the current bank (min $10). Born as M3's demo channel; M4
+    /// replaced the channel with the real betting loop and kept this as the test / auto-play fixture
+    /// (PlayMode full-loop tests, and a future attract mode). Pure and deterministic from run state -
+    /// same seed and round produce the same picks and stake - and it consumes NO engine RNG (it only
+    /// reads the already-baked slate, the bank, and the seed string).
     /// </summary>
     public static class DemoTicketPolicy
     {
