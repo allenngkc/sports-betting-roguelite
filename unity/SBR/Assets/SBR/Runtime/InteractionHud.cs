@@ -31,12 +31,19 @@ namespace SBR.Game
 
         private void Update()
         {
-            string prompt = interactor != null ? interactor.ActivePrompt : null;
+            // While a desk screen owns the camera the overlay gets out of the way entirely -
+            // playtest #7: "E - Back" and the crosshair sat on top of the bookie thread. The
+            // E-toggle is learned from the pre-engage prompt, and hold-move always backs out.
+            bool screenFocused = DeskFocus.Active != null;
+            if (_crosshair != null)
+                _crosshair.enabled = !screenFocused;
+
+            string prompt = !screenFocused && interactor != null ? interactor.ActivePrompt : null;
             if (_promptLabel != null)
                 _promptLabel.text = string.IsNullOrEmpty(prompt)
                     ? string.Empty
                     : $"{interactKeyLabel} - {prompt}";
-            if (_crosshair != null)
+            if (_crosshair != null && !screenFocused)
                 _crosshair.color = interactor != null && interactor.Hovered != null
                     ? crosshairHoverColor
                     : crosshairIdleColor;

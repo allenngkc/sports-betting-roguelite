@@ -2,6 +2,17 @@
 
 Human playtests only (agent impressions live in OPEN-QUESTIONS). Newest first. Each entry: build, what happened, S-criteria signals, actions taken.
 
+## #7 — Allen, 2026-07-12 (build: M5 bookie phone, commit 2ef5cae) — MILESTONE REVIEW
+
+Phone thread readable, **"nice top-down view"** — the DeskFocus reuse call paid off. One finding:
+1. **"E - Back" prompt + crosshair overlaid the thread while reading the phone.** The interactor's
+   ray still hits the grab volume from the focused camera. FIXED same day: the overlay HUD hides
+   entirely (crosshair + prompt) while any DeskFocus owns the camera — the E-toggle is learned
+   from the pre-engage prompt and hold-move always backs out.
+Note: buzz salience unverified — Allen's session didn't float. Standing check for a future run:
+lose a round on purpose and see whether the desk-side blue blink registers from the couch during
+the TV settle card (too subtle / right / distracting).
+
 ## #6 — Allen, 2026-07-11 (build: M4 betting loop, commit 43d7758) — MILESTONE REVIEW
 
 **"Functionality everything is working nice! Really good for functional prototype."** Betslip click flow: feels good. Art/sweat/graphics headroom acknowledged for later phases (expected at graybox). Three findings, all landed same day:
