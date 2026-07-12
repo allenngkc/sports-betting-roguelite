@@ -160,3 +160,56 @@ Act 1 locked intent with Allen (4 decisions); Act 2 produced 25 findings across 
 22 accepted, 1 redirected to existing API (Run.Rng.RunSeed), 1.5 rejected with logged reasons
 (FLOAT keeps its dollar amount as bookie voice; PlayMode does not re-drive full engine floats).
 Awaiting Allen's sign-off to implement.
+
+## Act 3 — Build (Codex builds, Claude verifies)
+
+Allen chose Codex for implementation. Builder model: gpt-5.6-sol (config default). Kickoff notes:
+- The skill's --yolo launch was denied by Claude Code's permission classifier (running a
+  third-party agent with sandbox+approvals off was never explicitly named by the user). Probe
+  showed codex `-s workspace-write` CAN write files natively in this environment, so the build
+  runs SANDBOXED (workspace-write) - stricter than the skill's default.
+- Plan artifacts committed first (clean-tree gate): commit ae8d01a.
+
+### Round 1 — Codex build
+Environment block, no files touched: every shell spawn fails in the sandbox on this non-elevated
+session (CreateProcessAsUserW failed: 5) - same class as Act 2 round 1. Codex could not read the
+repo. Native apply_patch writes DO work (probe-proven).
+
+### Claude's response
+Resumed the same thread with a ~139KB inline packet: PLAN.md + all edit-target files (full,
+current), all pattern files, engine sources - plus a hard no-shell contract (apply_patch only,
+no disk reads, no .meta fabrication). One retry per the skill's bounded-delegation spirit; if it
+fails again, Claude takes over.
+
+### Round 2 — Codex build (inline packet)
+Delivered in full via apply_patch, zero shell use: created BookieScript / BookieFeedModel /
+BookieFeed / PhoneScreen + BookieFeedModelTests + PhoneTests; edited DeskFocus (prompt field,
+pre-glide ownership claim, OnDisable unwind), RunDirector (public normalized StartNewRun(seed)),
+GrayboxRoomBuilder (BuildPhone: DeskFocus #2 top-down + BookieFeed + PhoneScreen + cyan buzz
+light), RoomSmokeTests (M5 topology + welcome render assert); deleted ScreenStub.cs(+.meta).
+Reported no deviations; API self-verification claimed clean.
+
+### Claude's verdict (full diff read)
+Spec-faithful on every Codex-hardened contract point: dedup keys, stamped rounds, ordered
+multi-emission (CLEARED before VERDICT_WON), first-snapshot welcome, atomic reset with monotone
+Revision + append-only ArrivalSequence, subtype-complete hash keys, phone-identity read state,
+pre-glide claim + Idle-entry-only rejection + OnDisable unwind, candidate-seed adapter flow with
+MoveNext draining (not FastForwardRound). House voice matched; palette law kept (bubbles neutral,
+buzz cyan chrome); writing lands the warm-to-cold arc. Observed, out of scope, backlog: SitSpot
+(couch) remains outside the DeskFocus ownership domain - pre-existing M4 gap, low risk.
+Proof pipeline (scene rebuild + EditMode + PlayMode) running - Claude-run, per the skill.
+
+### Verify — proof pipeline (Claude-run)
+Run 1: compile FAILED - one error class, one file: Codex added `using System;` to
+RoomSmokeTests.cs making bare `Object` ambiguous (CS0104 x12). Everything else in the blind
+apply_patch build compiled clean. Claude fixed directly (one using-alias line) - trivia, not a
+delegation round.
+Run 2: EditMode 34/34; PlayMode 6/8. Both failures were TEST calibration against designed
+behavior, not production bugs: (a) raw Cursor.lockState is not honored in headless batch - the
+code-owned controller.CursorFree signal (asserted alongside) passed; assert dropped with comment;
+(b) the claim-before-glide contract sets Active at claim time, so the release-cleanly segment
+interacted mid-transition (ignored by design) - added the same 0.05s settle beat the test's own
+laptop segment already used. Claude fixed both directly.
+Run 3 (final tree): EditMode 34/34, PlayMode 8/8 - including the real-adapter deterministic
+float flow. Codex production code needed ZERO fixes. Fix rounds used: 0 of 2 (all three issues
+were Claude-side trivia edits, logged above).

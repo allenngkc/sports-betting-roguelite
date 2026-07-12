@@ -4,7 +4,7 @@ using UnityEngine;
 namespace SBR.Game
 {
     /// <summary>
-    /// The laptop's engagement (M4 grill decision: E-zoom + cursor, no sit). Interact while idle
+    /// The desk-screen engagement (M4/M5 grill decision: E-zoom + cursor, no sit). Interact while idle
     /// glides the camera to the focus anchor (framing the lid) and zooms to focusFov, then frees the
     /// cursor so the world-space laptop UI takes clicks. Interact again — or holding Move — glides
     /// back to the standing eye position, KEEPING the current look direction (playtest #3's stand-up
@@ -13,7 +13,7 @@ namespace SBR.Game
     /// </summary>
     public sealed class DeskFocus : Interactable
     {
-        /// <summary>The focus currently engaged, if any (one laptop in M4).</summary>
+        /// <summary>The focus that owns the camera, including both glide windows.</summary>
         public static DeskFocus Active { get; private set; }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -25,6 +25,9 @@ namespace SBR.Game
         [Header("Wiring (set by GrayboxRoomBuilder)")]
         [Tooltip("Focused camera pose: in front of the lid, looking at its center.")]
         public Transform focusAnchor;
+
+        [Tooltip("Per-instance interaction copy: laptop and phone must not share a hard-coded prompt.")]
+        public string prompt = "Use laptop";
 
         [Header("Dials")]
         public float transitionDuration = 0.35f;
@@ -44,12 +47,17 @@ namespace SBR.Game
         private float _standingFov;
         private float _moveHeldTime;
 
-        public override string Prompt => _state == State.Idle ? "Use laptop" : "Back";
+        public override string Prompt => _state == State.Idle ? prompt : "Back";
 
         public override void OnInteract(PlayerInteractor player)
         {
             if (_state == State.Idle)
             {
+                // Claim before the first glide frame. M5's second focus made the old completion-time
+                // claim raceable: both surfaces could start moving the same camera.
+                if (Active != null && Active != this)
+                    return;
+
                 FirstPersonController controller = player != null
                     ? player.GetComponentInParent<FirstPersonController>()
                     : null;
@@ -59,6 +67,7 @@ namespace SBR.Game
                     return;
 
                 _controller = controller;
+                Active = this;
                 StartCoroutine(FocusIn());
             }
             else if (_state == State.Focused)
@@ -100,13 +109,11 @@ namespace SBR.Game
             _controller.SetCursorFree(true); // the laptop UI takes clicks now
             _moveHeldTime = 0f;
             _state = State.Focused;
-            Active = this;
         }
 
         private IEnumerator FocusOut()
         {
             _state = State.FocusingOut;
-            Active = null;
             _controller.SetCursorFree(false); // relock for the glide home
             Transform cam = _controller.cameraTransform;
 
@@ -121,6 +128,34 @@ namespace SBR.Game
             cam.rotation = keptView;
             _controller.ExitSeated();
             _state = State.Idle;
+            if (Active == this)
+                Active = null;
+        }
+
+        private void OnDisable()
+        {
+            bool ownsCamera = Active == this;
+            StopAllCoroutines();
+
+            // Unwind the external pose before releasing the shared claim. Otherwise the other desk
+            // surface can acquire a controller still stranded mid-glide (M5 ownership race audit).
+            if (ownsCamera && _controller != null && _controller.cameraTransform != null)
+            {
+                Transform cam = _controller.cameraTransform;
+                Quaternion keptView = cam.rotation;
+                cam.SetPositionAndRotation(_preFocusPosition, keptView);
+                if (_lens != null)
+                    _lens.fieldOfView = _standingFov;
+                _controller.SetCursorFree(false);
+                _controller.transform.rotation = Quaternion.Euler(0f, keptView.eulerAngles.y, 0f);
+                cam.rotation = keptView;
+                _controller.ExitSeated();
+            }
+
+            _state = State.Idle;
+            _moveHeldTime = 0f;
+            if (ownsCamera)
+                Active = null;
         }
     }
 }

@@ -76,14 +76,17 @@ namespace SBR.Game
 
         private void Start()
         {
-            StartNewRun(string.IsNullOrWhiteSpace(seed) ? NewSeed() : seed.Trim());
+            StartNewRun(seed);
         }
 
         /// <summary>The laptop's NEW RUN button (prototype flow — a real menu replaces this later).</summary>
         public void StartNewRun() => StartNewRun(NewSeed());
 
-        private void StartNewRun(string runSeed)
+        /// <summary>Starts a pinned run for deterministic presentation tests and seed entry. Input is
+        /// normalized exactly like first boot: trim visible seeds; blank/null rolls a fresh one.</summary>
+        public void StartNewRun(string runSeed)
         {
+            runSeed = string.IsNullOrWhiteSpace(runSeed) ? NewSeed() : runSeed.Trim();
             Run = new Run(runSeed);
             SweatIndex = 0;
             CurrentSession = null;

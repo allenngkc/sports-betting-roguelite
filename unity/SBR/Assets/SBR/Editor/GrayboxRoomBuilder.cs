@@ -345,7 +345,7 @@ namespace SBR
                 new Vector3(0.5f, 0.85f, 0.5f), mats.Prop);
 
             BuildLaptop(mats, layer, director);
-            BuildPhone(mats, layer);
+            BuildPhone(mats, layer, director);
         }
 
         private static void BuildLaptop(Materials mats, int layer, RunDirector director)
@@ -399,7 +399,7 @@ namespace SBR
         // Frames the 0.32x0.22 lid at ~80% of the 30-degree focus FOV.
         private const float LaptopFocusDistance = 0.52f;
 
-        private static void BuildPhone(Materials mats, int layer)
+        private static void BuildPhone(Materials mats, int layer, RunDirector director)
         {
             var root = new GameObject("Phone");
             root.transform.position = new Vector3(1.0f, 0.80f, 1.15f);
@@ -415,12 +415,41 @@ namespace SBR
             grabVolume.size = new Vector3(0.22f, 0.15f, 0.3f);
             grabVolume.isTrigger = true;
 
-            var stub = root.AddComponent<ScreenStub>();
-            stub.prompt = "Check phone";
-            stub.screenRenderer = screen.GetComponent<Renderer>();
-            stub.idleEmission = new Color(0.020f, 0.030f, 0.060f);
-            stub.pulseEmission = new Color(0.30f, 0.50f, 0.90f); // dim cyan/white chrome, not money-green
-            stub.highlightRenderers = new[] { body.GetComponent<Renderer>() };
+            // M5: the phone is the bookie's voice. It gets its own hardened DeskFocus rather than a
+            // stub, with a top-down pose whose up is the quad's screen-up (+Z, away from the player).
+            var focus = root.AddComponent<DeskFocus>();
+            focus.prompt = "Check phone";
+            focus.focusFov = 30f;
+            focus.highlightRenderers = new[] { body.GetComponent<Renderer>() };
+
+            Transform screenT = screen.transform;
+            var anchor = new GameObject("FocusAnchor").transform;
+            anchor.SetParent(root.transform, false);
+            anchor.SetPositionAndRotation(
+                screenT.position + Vector3.up * 0.30f,
+                Quaternion.LookRotation(Vector3.down, screenT.up));
+            focus.focusAnchor = anchor;
+
+            var feed = root.AddComponent<BookieFeed>();
+            feed.director = director;
+            feed.phoneFocus = focus;
+
+            // A tiny cyan/white blink is chrome, never money-green (design/08 palette law).
+            var lightGo = new GameObject("PhoneBuzzLight");
+            lightGo.transform.SetParent(root.transform, false);
+            lightGo.transform.position = screenT.position + Vector3.up * 0.035f;
+            var buzzLight = lightGo.AddComponent<Light>();
+            buzzLight.type = LightType.Point;
+            buzzLight.range = 0.55f;
+            buzzLight.intensity = 0f;
+            buzzLight.color = new Color(0.55f, 0.82f, 1.0f);
+            buzzLight.shadows = LightShadows.None;
+            buzzLight.enabled = false;
+
+            var phone = root.AddComponent<PhoneScreen>();
+            phone.feed = feed;
+            phone.screenRenderer = screen.GetComponent<Renderer>();
+            phone.buzzLight = buzzLight;
 
             SetLayerRecursive(root, layer);
         }
