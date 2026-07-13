@@ -64,14 +64,25 @@ lean: static engine and ratchet both feed the SAME Ticket.PayoutMultiplier produ
 owning both MULTIPLIES (×1.5 static × 2.0 wound scar = ×3.0) — the stacking-strategy fun.
 
 **TOTEM OF UNDYING (Allen 2026-07-12) — the death-save as a relic, resolving open question #2:**
-one charge; when a payment can't be met, the totem triggers and the run survives. Answers
+one charge, and **purchasable only ONCE per run** (no re-buys after it burns — you get one
+mercy, ever); when a payment can't be met, the totem triggers and the run survives. Answers
 design/02's "pity as an item, not a hidden system." Visible protection changes betting behavior
 (a real decision layer), the shop charging for mercy is peak bookie satire, and the sim already
 predicts survival items audit strongest (Insurance was DOMINANT). Grill parameter: on trigger,
 payment waived clean vs the bookie covers it and the NEXT payment grows by shortfall ×1.5 (the
 old float math, itemized — lean). This likely claims the economy/protection slot.
 
-## C. Scoped charms and combo effects (Allen's extensions — logged for v2, not this rework)
+## B2. Direction of record (Allen, 2026-07-12): stacking strategy IS the fun
+
+"A majority of the fun of this game should be players thinking about strategies on how to stack
+it up." Consequences: the item catalog GROWS along the payout-composition axis over time (more
+multipliers, more feeders into the product slot, more combo shapes); every future item is judged
+first by "does it create a stacking decision," not merely "is it balanced"; and the combo-effect
+space (C below) is a committed future direction, not a maybe. This sharpens design/02's economy
+doctrine — Band 3 brokenness is REACHED through composition skill, and composition skill is the
+game's primary strategic verb outside the sweat.
+
+## C. Scoped charms and combo effects (Allen's extensions — committed future direction, post-rework)
 
 - **Sport/player-scoped charms**: a charm applies only to legs of a given sport (or player, once
   props exist — design/04 parked props for v2). The parlay receives the boost iff it contains a
