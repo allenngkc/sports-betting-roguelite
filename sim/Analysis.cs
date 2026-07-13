@@ -92,10 +92,15 @@ public sealed class ComboData
         return null;
     }
 
-    public static ComboData Compute(int runs, string seedPrefix, RunConfig cfg, double baselineWonPct)
+    public static ComboData Compute(int runs, string seedPrefix, RunConfig cfg)
     {
-        var data = new ComboData { RunsPerConfig = runs, BaselineWonPct = baselineWonPct };
-        var strat = new SkilledStrategy();
+        // G5 measurement (Allen-approved round-1 fix): the fixed-discipline bot removes the
+        // ownership-changes-behavior confound, so pair-vs-solo deltas read pure composition.
+        // The baseline is recomputed with the same bot for a like-for-like comparison.
+        var strat = new FixedDisciplineStrategy();
+        double fixedBaseline = BatchSummary.From("f",
+            Harness.RunBatch(strat, runs, seedPrefix, cfg)).WonPct;
+        var data = new ComboData { RunsPerConfig = runs, BaselineWonPct = fixedBaseline };
         IReadOnlyList<RelicDefinition> all = RelicCatalog.All;
 
         foreach (RelicDefinition def in all)
@@ -110,9 +115,9 @@ public sealed class ComboData
             string a = all[i].Id, b = all[j].Id;
             RunResult[] r = Harness.RunBatch(strat, runs, seedPrefix, cfg, new[] { a, b });
             double pairWon = BatchSummary.From("s", r).WonPct;
-            double soloDeltaA = data.SoloWonPct[a] - baselineWonPct;
-            double soloDeltaB = data.SoloWonPct[b] - baselineWonPct;
-            double excess = (pairWon - baselineWonPct) - (soloDeltaA + soloDeltaB);
+            double soloDeltaA = data.SoloWonPct[a] - fixedBaseline;
+            double soloDeltaB = data.SoloWonPct[b] - fixedBaseline;
+            double excess = (pairWon - fixedBaseline) - (soloDeltaA + soloDeltaB);
             data.Pairs.Add(new Pair { IdA = a, IdB = b, PairWonPct = pairWon, SynergyExcess = excess });
         }
 
@@ -141,26 +146,27 @@ public sealed class GateData
     {
         var g = new GateData();
 
+        // Bands re-ratified by Allen 2026-07-13 (design/10 F) after campaign round 1.
         if (naive != null)
-            g.Add("G1", "honest gambling: naive median death 3–4, win <1%",
-                naive.MedianDeath >= 3.0 && naive.MedianDeath <= 4.0 && naive.WonPct < 1.0,
+            g.Add("G1", "honest gambling: naive win <1%, dies before the cliff resolves (median ≤6)",
+                naive.MedianDeath <= 6.0 && naive.WonPct < 1.0,
                 $"median {naive.MedianDeath:0.#}, won {naive.WonPct:F1}%");
 
         if (noshop != null)
-            g.Add("G2", "engine mandatory: no-shop skilled median death 5–6, win <2%",
+            g.Add("G2", "engine mandatory: no-shop skilled win <2%, median death 5–6",
                 noshop.MedianDeath >= 5.0 && noshop.MedianDeath <= 6.0 && noshop.WonPct < 2.0,
                 $"median {noshop.MedianDeath:0.#}, won {noshop.WonPct:F1}%");
 
         if (skilled != null)
-            g.Add("G3", "skilled + items wins: median death ≥7, win 10–15%",
-                skilled.MedianDeath >= 7.0 && skilled.WonPct >= 10.0 && skilled.WonPct <= 15.0,
+            g.Add("G3", "skilled + items wins: median death ≥6, win 5–8% (Allen's final-product band)",
+                skilled.MedianDeath >= 6.0 && skilled.WonPct >= 5.0 && skilled.WonPct <= 8.0,
                 $"median {skilled.MedianDeath:0.#}, won {skilled.WonPct:F1}%");
 
         if (skilled != null)
         {
             int cross = skilled.EvZeroCrossRound();
-            g.Add("G4", "the EV arc exists: skilled mean ticket EV crosses zero in rounds 4–7",
-                cross >= 4 && cross <= 7,
+            g.Add("G4", "the EV arc exists: skilled mean ticket EV crosses zero in rounds 3–7",
+                cross >= 3 && cross <= 7,
                 cross == 0 ? "never crosses" : $"crosses at R{cross}");
         }
 

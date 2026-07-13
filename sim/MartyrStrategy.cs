@@ -90,7 +90,7 @@ public sealed class MartyrStrategy : IStrategy
         for (int i = 0; i < run.ShopOffers.Count; i++)
         {
             if (run.ShopOffers[i].Id != RelicCatalog.ScarTissueId) continue;
-            if (run.ShopOffers[i].Price > run.Bank) return;
+            if (run.ShopOffers[i].Price > run.Comps) return;
             run.BuyRelic(i);
             return;
         }

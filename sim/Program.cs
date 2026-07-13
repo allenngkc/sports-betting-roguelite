@@ -69,14 +69,9 @@ internal static class Program
         int comboRuns = opt.Gates && opt.Combos == 0 ? opt.Runs : opt.Combos;
         if (comboRuns > 0)
         {
-            BatchSummary skilled = byName.TryGetValue("skilled", out var s)
-                ? s : SkilledBaseline(opt, cfg, ref totalRuns);
-            double baselineWon = comboRuns == opt.Runs
-                ? skilled.WonPct
-                : BatchSummary.From("s", Harness.RunBatch(new SkilledStrategy(), comboRuns, opt.SeedPrefix, cfg)).WonPct;
-            combos = ComboData.Compute(comboRuns, opt.SeedPrefix, cfg, baselineWon);
+            combos = ComboData.Compute(comboRuns, opt.SeedPrefix, cfg); // fixed-discipline bot inside
             int n = RelicCatalog.All.Count;
-            totalRuns += (long)(n + n * (n - 1) / 2) * comboRuns;
+            totalRuns += (long)(1 + n + n * (n - 1) / 2) * comboRuns;
         }
 
         GateData? gates = null;
@@ -108,10 +103,10 @@ internal static class Program
     {
         // Two-phase (convex) curves — the CloverPit shape: gentle through R4, cliff after.
         // The constant-ratio family could not hold median death ≥7 AND win 10–15% at once.
-        double[] banks = { 550, 650, 750 };
-        double[] firsts = { 60, 75, 90 };
+        double[] banks = { 250, 300, 350 };
+        double[] firsts = { 60, 70, 80 };
         double[] earlies = { 1.20 };
-        double[] lates = { 1.75, 1.90, 2.05 };
+        double[] lates = { 1.75, 1.90 };
         int rounds = new RunConfig().Payments.Length;
 
         Console.WriteLine($"# payment-curve grid — {opt.Runs:N0} runs/bot/cell, bots: naive, skilled, noshop");

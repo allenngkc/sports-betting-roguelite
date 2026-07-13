@@ -53,6 +53,10 @@ public sealed class Run
     public RngHub Rng { get; }
     public int Round { get; private set; } = 1;
     public double Bank { get; private set; }
+
+    /// <summary>COMPS (design/10 F): the book's loyalty currency, earned per dollar staked,
+    /// spent in the shop. Cash pays the bookie; comps buy the build.</summary>
+    public double Comps { get; private set; }
     public Phase Phase { get; private set; } = Phase.Betting;
     public Slate CurrentSlate { get; private set; }
 
@@ -178,6 +182,7 @@ public sealed class Run
         _effects.ApplyTicketPlaced(ticket, stake, Bank, isFirstTicketThisRound: _tickets.Count == 0);
 
         Bank -= stake;
+        Comps += stake * Config.CompsPerDollarStaked; // the loyalty program pays on volume, win or lose
         _tickets.Add(ticket);
         return ticket;
     }
@@ -335,12 +340,12 @@ public sealed class Run
             throw new ArgumentOutOfRangeException(nameof(offerIndex));
 
         RelicDefinition def = _shopOffers[offerIndex];
-        if (def.Price > Bank)
-            throw new InvalidOperationException($"Relic {def.Id} costs {def.Price}, bank is {Bank}");
+        if (def.Price > Comps)
+            throw new InvalidOperationException($"Relic {def.Id} costs {def.Price} comps, you have {Comps}");
         if (OwnedRelics.Count >= Config.RelicSlots)
             throw new InvalidOperationException($"All {Config.RelicSlots} relic slots are full");
 
-        Bank -= def.Price;
+        Comps -= def.Price;
         _effects.Add(def);
         if (def.Id == RelicCatalog.TotemId)
             TotemEverPurchased = true;
@@ -354,12 +359,12 @@ public sealed class Run
             throw new ArgumentOutOfRangeException(nameof(offerIndex));
 
         ConsumableDefinition def = _consumableOffers[offerIndex];
-        if (def.Price > Bank)
-            throw new InvalidOperationException($"{def.Id} costs {def.Price}, bank is {Bank}");
+        if (def.Price > Comps)
+            throw new InvalidOperationException($"{def.Id} costs {def.Price} comps, you have {Comps}");
         if (_consumables.Count >= Config.ConsumableSlots)
             throw new InvalidOperationException($"All {Config.ConsumableSlots} consumable slots are full");
 
-        Bank -= def.Price;
+        Comps -= def.Price;
         _consumables.Add(def);
         _consumableOffers.RemoveAt(offerIndex);
     }
@@ -372,7 +377,7 @@ public sealed class Run
         if (ownedIndex < 0 || ownedIndex >= _effects.Owned.Count)
             throw new ArgumentOutOfRangeException(nameof(ownedIndex));
 
-        Bank += _effects.Owned[ownedIndex].Price * Config.SellBackFraction;
+        Comps += _effects.Owned[ownedIndex].Price * Config.SellBackFraction;
         _effects.RemoveAt(ownedIndex);
     }
 
@@ -382,7 +387,7 @@ public sealed class Run
         if (ownedIndex < 0 || ownedIndex >= _consumables.Count)
             throw new ArgumentOutOfRangeException(nameof(ownedIndex));
 
-        Bank += _consumables[ownedIndex].Price * Config.SellBackFraction;
+        Comps += _consumables[ownedIndex].Price * Config.SellBackFraction;
         _consumables.RemoveAt(ownedIndex);
     }
 
@@ -450,6 +455,9 @@ public sealed class Run
 
     /// <summary>Grants a consumable directly (audit/test seam; ignores slot limits).</summary>
     public void GrantConsumable(ConsumableDefinition def) => _consumables.Add(def);
+
+    /// <summary>Grants comps directly (test seam).</summary>
+    public void GrantComps(double comps) => Comps += comps;
 
     // ------------------------------------------------------------------ helpers
 

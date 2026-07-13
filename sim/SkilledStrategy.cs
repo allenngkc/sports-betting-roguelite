@@ -44,6 +44,9 @@ public class SkilledStrategy : IStrategy
     public SkilledStrategy() : this(shops: true) { }
     protected SkilledStrategy(bool shops) => _shops = shops;
 
+    /// <summary>True in the G5 measurement variant: stake policy ignores item ownership.</summary>
+    protected virtual bool FixedDiscipline => false;
+
     public virtual string Name => "skilled";
     public bool ControlsSweat => true;
 
@@ -125,14 +128,25 @@ public class SkilledStrategy : IStrategy
         double remaining = 0;
         for (int r2 = run.Round - 1; r2 < run.PaymentSchedule.Count; r2++)
             remaining += run.PaymentSchedule[r2];
-        // Pre-engine discipline (second grid run's lesson): without The Multiplier these parlays
-        // are −EV vig bleed — the sharp bets the MINIMUM (stay present, preserve capital for the
-        // shop). With it they are strongly +EV — size toward denting the remaining schedule.
+        // Pre-engine, the comps era (design/10 F): the bank is ~2–3 payments, so income is
+        // mandatory NOW — size the parlay so a hit funds this payment plus a seed of the next
+        // (quota sizing), which also pumps comp volume toward the engine. Post-engine, size
+        // toward denting the remaining schedule.
         bool engined = OwnsMultiplier(run) && picks.Count >= 3;
         double stake;
-        if (!engined)
+        if (FixedDiscipline)
         {
-            stake = Math.Min(run.Config.MinStake, Math.Floor(spare));
+            // The G5 measurement bot (Allen-approved fix): stakes 25% of spare REGARDLESS of item
+            // ownership, so pair-vs-solo deltas measure composition, not ownership-induced
+            // aggression (round 1's confound: the engine tempts bigger bets and earlier deaths).
+            stake = Math.Clamp(Math.Floor(0.25 * spare), run.Config.MinStake, Math.Floor(spare));
+            if (stake < run.Config.MinStake) return;
+        }
+        else if (!engined)
+        {
+            double quota = payment + 0.5 * (run.NextPayment ?? 0.0);
+            double quotaStake = odds > 1.0 ? quota * ClearBuffer / odds : run.Config.MinStake;
+            stake = Math.Clamp(Math.Floor(quotaStake), run.Config.MinStake, Math.Floor(spare));
             if (stake < run.Config.MinStake) return;
         }
         else
@@ -256,10 +270,8 @@ public class SkilledStrategy : IStrategy
     {
         if (!_shops) return;
 
-        // Every dollar spent is a dollar not available for the NEXT payment; buy in priority order
-        // only while the working-capital floor survives the purchase.
-        double floor = ShopHeadroomFloor * (run.NextPayment ?? 0.0);
-
+        // Comps are shop-only currency (design/10 F) — no cash tension, buy in priority while
+        // comps and slots allow.
         bool bought = true;
         while (bought)
         {
@@ -271,7 +283,7 @@ public class SkilledStrategy : IStrategy
                 for (int i = 0; i < run.ShopOffers.Count; i++)
                 {
                     RelicDefinition o = run.ShopOffers[i];
-                    if (o.Price > run.Bank || run.Bank - o.Price < floor) continue;
+                    if (o.Price > run.Comps) continue;
                     int rank = RankOf(RelicPriority, o.Id);
                     if (rank < bestRank) { bestRank = rank; buyIndex = i; }
                 }
@@ -285,7 +297,7 @@ public class SkilledStrategy : IStrategy
                 for (int i = 0; i < run.ConsumableOffers.Count; i++)
                 {
                     ConsumableDefinition o = run.ConsumableOffers[i];
-                    if (o.Price > run.Bank || run.Bank - o.Price < floor) continue;
+                    if (o.Price > run.Comps) continue;
                     int rank = RankOf(ConsumablePriority, o.Id);
                     if (rank < bestRank) { bestRank = rank; buyIndex = i; }
                 }
@@ -339,4 +351,13 @@ public sealed class NoShopStrategy : SkilledStrategy
 {
     public NoShopStrategy() : base(shops: false) { }
     public override string Name => "noshop";
+}
+
+/// <summary>The G5 measurement bot: skilled shopping OFF, stake discipline FIXED — granted-item
+/// batches through this bot isolate what the items DO from how ownership changes behavior.</summary>
+public sealed class FixedDisciplineStrategy : SkilledStrategy
+{
+    public FixedDisciplineStrategy() : base(shops: false) { }
+    protected override bool FixedDiscipline => true;
+    public override string Name => "fixed";
 }

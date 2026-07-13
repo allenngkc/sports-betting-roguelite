@@ -129,6 +129,28 @@ consumables (timed, scarce), never passive engines. Scaling lives on o (parlay p
 PayoutMultiplier product slot, payoff rewrites, and economy flows — with bankroll compounding as
 the native exponential underneath (design/09 §3b).
 
+## F. Campaign round-1 rulings (Allen, 2026-07-13) + the COMPS currency
+
+Sim round 1 (sim-report-2.md) surfaced five rulings; Allen's calls:
+1. **Naive band accepted as found** (dies R5, 0.0% wins — "no one would really play naively").
+2. **Skilled win target: 5–8% per run** (final-product realism) — G3 re-banded.
+3. **SECOND CURRENCY ADOPTED — "COMPS"**: items are bought with comps, earned by WAGERING
+   VOLUME (like a real book's loyalty program — the satire writes itself: chasing comps is
+   −EV cash, exactly like real VIP programs). This also fixes round 1's discovered flaws in one
+   stroke: the cash bank shrinks to ~2–3 payments (betting becomes mandatory — no more idling
+   through round 5 on a fat bank, Allen's core observation), the item-price-vs-capital bind
+   dissolves, and the engine arrives organically at R2–3 (Band 1 restored, G4 re-fixed).
+4. **Current 3+3 catalog = basic-loop proof only.** The future is 150+ charms/consumables —
+   at that scale the sim's audits become genuinely load-bearing.
+5. **G5 measurement fix approved** (fixed-discipline bot isolates composition from the
+   engine-tempts-aggression artifact — itself a keeper finding: owning the engine makes bots
+   AND players bet bigger and die faster while winning more).
+
+**LONG-TERM PILLAR (Allen): 150+ unique charms manipulating the factors, with FUSION — players
+fuse distinct charms into powerful combinations as the main fun.** Extends B2/C: the composition
+axis goes from "stack products" to "craft new items from pairs." Fusion design is its own future
+grill; the one-product-slot law and the sim combo scan are its foundations.
+
 ## Open (for the grill)
 
 1. Payment curve numbers + start bank (sim grid: curve × item power; S3/S4 re-gated).

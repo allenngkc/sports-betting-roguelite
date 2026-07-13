@@ -19,7 +19,7 @@ public sealed class RelicDefinition
     /// <summary>Behavior key the effect engine keys on.</summary>
     public string Op { get; }
 
-    /// <summary>Fixed shop price.</summary>
+    /// <summary>Fixed shop price, in COMPS (design/10 F: the second currency, earned by staking).</summary>
     public double Price { get; }
 
     public IReadOnlyDictionary<string, double> Params { get; }
@@ -76,21 +76,21 @@ public static class RelicCatalog
     {
         new RelicDefinition(MultiplierId, "The Multiplier",
             "Parlays of 3 or more legs pay 1.5x.",
-            "Payout", "ParlayPayoutMult", 100,
+            "Payout", "ParlayPayoutMult", 5,
             new Dictionary<string, double> { ["minLegs"] = 3, ["mult"] = 1.5 }),
 
         new RelicDefinition(ScarTissueId, "Scar Tissue",
             "Every busted ticket adds scar stacks (bigger stakes scar harder). The first ticket " +
             "you place each round carries them: if it hits, its payout grows by your stacks and " +
             "they burn. Busts only feed the scar.",
-            "Payout", "ScarTissue", 80,
+            "Payout", "ScarTissue", 4,
             new Dictionary<string, double> { ["ppPerBust"] = 5.0, ["fullStakeFraction"] = 0.25 }),
 
         new RelicDefinition(TotemId, "Totem of Undying",
             "One charge, sold once per run, ever: when you cannot make a payment, the bookie " +
             "covers it - and your next payment grows by the shortfall, plus his juice. Never " +
             "saves the final payment.",
-            "Survival", "TotemOfUndying", 120,
+            "Survival", "TotemOfUndying", 6,
             new Dictionary<string, double> { ["charges"] = 1 }),
     };
 
@@ -98,13 +98,13 @@ public static class RelicCatalog
     {
         new ConsumableDefinition("mulligan_slip", "Mulligan Slip",
             "Play it the moment a leg dies on a multi-leg ticket: the leg is voided and the " +
-            "ticket lives. The window closes when the ticket settles.", 40),
+            "ticket lives. The window closes when the ticket settles.", 2),
 
         new ConsumableDefinition("profit_boost", "Profit Boost",
-            "Play it at the betslip: one chosen leg's odds are boosted 30% before you lock.", 30),
+            "Play it at the betslip: one chosen leg's odds are boosted 30% before you lock.", 1.5),
 
         new ConsumableDefinition("timeout", "Timeout",
             "Play it mid-sweat: the cash-out offer holds its price for the next 3 events. A dead " +
-            "ticket still pays nothing - the hold freezes the price, not fate.", 30),
+            "ticket still pays nothing - the hold freezes the price, not fate.", 1.5),
     };
 }

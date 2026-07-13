@@ -4,13 +4,19 @@ namespace SBR.Engine;
 /// gate campaign (PLAN.md 2026-07-13, gates G1–G6) owns the payment curve.</summary>
 public sealed class RunConfig
 {
-    public double StartingBank { get; set; } = 750;
+    public double StartingBank { get; set; } = 350;
 
     /// <summary>The debt-payment schedule (economy rework, design/10): DEDUCTED from the bank at
     /// each settle — miss a payment and the run is over (unless the Totem fires). Two-phase convex
-    /// (the campaign's discovered shape, 2026-07-13): gentle ×1.2 through R4 — the build window —
-    /// then the ×1.9 cliff. Grid candidate 750/90/1.2/1.9; the gate report carries the evidence.</summary>
-    public double[] Payments { get; set; } = { 90, 110, 130, 155, 295, 560, 1065, 2025 };
+    /// (the campaign's discovered shape): gentle build window, then the cliff. Under the COMPS
+    /// currency (design/10 F) the cash bank starts at only ~2–3 payments, so BETTING IS MANDATORY
+    /// from round 1 — idling is death (Allen's round-1 ruling). The grid re-tunes these.</summary>
+    public double[] Payments { get; set; } = { 60, 70, 85, 105, 195, 375, 710, 1350 };
+
+    /// <summary>COMPS (design/10 F): the second currency, earned per dollar STAKED — the book's
+    /// loyalty program, and items are bought with it. Chasing comps is −EV cash, exactly like a
+    /// real VIP program; the shop no longer competes with payments for bankroll.</summary>
+    public double CompsPerDollarStaked { get; set; } = 0.10;
 
     public double Overround { get; set; } = 0.05;
     public double CashOutMargin { get; set; } = 0.08;

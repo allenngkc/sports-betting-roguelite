@@ -16,6 +16,7 @@ public class ShopAndGiftTests
         run.LockRound();
         run.FastForwardRound();
         run.Settle();
+        run.GrantComps(100); // shop currency (design/10 F) for the buy/sell scripts
         return run; // in Phase.Shop
     }
 
@@ -32,27 +33,29 @@ public class ShopAndGiftTests
     public void Buying_deducts_and_owns_and_removes_the_offer()
     {
         Run run = ShopRun();
-        double bank = run.Bank;
+        double bankBefore = run.Bank;
+        double comps = run.Comps;
         int idx = IndexOf(run, RelicCatalog.MultiplierId);
         double price = run.ShopOffers[idx].Price;
 
         run.BuyRelic(idx);
-        Assert.Equal(bank - price, run.Bank, 10);
+        Assert.Equal(comps - price, run.Comps, 10);
+        Assert.Equal(bankBefore, run.Bank, 10); // items never touch cash (design/10 F)
         Assert.Single(run.OwnedRelics);
         Assert.Equal(2, run.ShopOffers.Count);
     }
 
     [Fact]
-    public void Sell_back_credits_half_the_list_price()
+    public void Sell_back_credits_half_the_list_price_in_comps()
     {
         Run run = ShopRun();
         int idx = IndexOf(run, RelicCatalog.MultiplierId);
         double price = run.ShopOffers[idx].Price;
         run.BuyRelic(idx);
-        double bank = run.Bank;
+        double comps = run.Comps;
 
         run.SellRelic(0);
-        Assert.Equal(bank + price * 0.5, run.Bank, 10);
+        Assert.Equal(comps + price * 0.5, run.Comps, 10);
         Assert.Empty(run.OwnedRelics);
     }
 
