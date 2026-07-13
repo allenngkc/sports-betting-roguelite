@@ -51,14 +51,25 @@ on the laptop relic strip. A hidden ratchet is a hidden system.
 |---|---|---|---|---|
 | **Streak Engine** | each consecutive settle with all payments made + ≥1 winning ticket | +X% to PayoutMultiplier per stack | payout (product slot) | Allen-liked; streak breaks do NOT unwind (ratchets never unwind — tension comes from the trigger, not loss aversion) |
 | **Green Winder** | every green leg presented | +small% PayoutMultiplier per N legs | payout | the "every spin matters" CloverPit feel; sweat becomes engine fuel |
-| **Scar Tissue** | every busted ticket | next ticket +X% payout per stack, consumed on win | payoff rewrite | converts pain into the comeback bet; loss-triggered = anti-frustration built into the engine |
+| **Scar Tissue** | every busted ticket | +5%/stack to the NEXT winning ticket's payout, uncapped, consumed by that win (Allen's spec 2026-07-12: 20 busts → one safe parlay cashes +100%) | payoff rewrite | the martyr archetype — eat variance early, cash the scar late. FARMING GUARD needed: min-stake busts are cheap in dollars (real cost = ticket slots/time); grill picks a qualifier (stake ≥ fraction of bank, or stacks scale with stake) + combo scan |
 | **The Vig Ledger** | per $100 cumulative vig paid | +1% permanent odds boost on all legs | o | volume play; makes long parlays cheaper over time (design/09 §3a: unlocks the parlay exponential) |
 | **Settle-Up Interest** | each settle with surplus banked | +1pp interest rate on post-payment balance | economy | the CloverPit interest analog, discipline-flavored; pays weekly |
 | **All-In Callus** | each all-in ticket placed (≥ bank/2) | High Roller threshold bonus grows +2%/stack | payout | feeds the existing PayoutMultiplier slot; stacks with High Roller's fantasy |
 
-Grill question seeded: 3 passive slots probably = one ratchet + one static multiplicative engine
-+ one economy/compounding piece (design/09 §4). Which ratchet, and does the static engine feed
-the same PayoutMultiplier product (composition!) or a different factor?
+**The 3-passive portfolio principle** (clarified 2026-07-12): three different power CURVES so
+buy order and run stage matter — a RATCHET (weak at purchase, monstrous late; earns power from
+play), a STATIC multiplicative engine (full power instantly, e.g. "3+ leg parlays pay ×1.5"),
+and an ECONOMY/protection piece (grows or guards the bankroll outside tickets). Composition
+lean: static engine and ratchet both feed the SAME Ticket.PayoutMultiplier product slot, so
+owning both MULTIPLIES (×1.5 static × 2.0 wound scar = ×3.0) — the stacking-strategy fun.
+
+**TOTEM OF UNDYING (Allen 2026-07-12) — the death-save as a relic, resolving open question #2:**
+one charge; when a payment can't be met, the totem triggers and the run survives. Answers
+design/02's "pity as an item, not a hidden system." Visible protection changes betting behavior
+(a real decision layer), the shop charging for mercy is peak bookie satire, and the sim already
+predicts survival items audit strongest (Insurance was DOMINANT). Grill parameter: on trigger,
+payment waived clean vs the bookie covers it and the NEXT payment grows by shortfall ×1.5 (the
+old float math, itemized — lean). This likely claims the economy/protection slot.
 
 ## C. Scoped charms and combo effects (Allen's extensions — logged for v2, not this rework)
 
@@ -87,10 +98,15 @@ Candidates for the 3 slots:
    player fantasy; real bettors don't feel vig, a spreadsheet benefit is a dead consumable.)
 3. **Free Bet** (pre-lock alt): stake refunded as cash if the ticket loses. The other canonical
    promo; downside protection with the true cost hidden in vig — satirically on-message.
-4. **Timeout** (mid-sweat, design/04 Band-2 ladder): freeze the drama + hold the cash-out offer
-   for 3 events. First live-agency verb; engine seam (ApplyLiveEffect) already exists unused.
-5. **Ref's Whistle** (mid-sweat alt): veto one just-fired event, re-sample via the intervention
-   seam. Bends the storyline honestly; louder than Timeout, costs more sim care.
+4. **Timeout** (mid-sweat, design/04 Band-2 ladder): PLAYER-FIRED, never random (clarified
+   2026-07-12) — pressed at a moment the player chooses: the drama freezes and the cash-out
+   offer HOLDS for 3 events, buying the take-it-or-ride decision without the number crashing
+   mid-hesitation. Skill = firing it at the offer's peak. Engine seam (ApplyLiveEffect) exists.
+5. **Ref's Whistle** (mid-sweat alt): also player-fired — veto the event that just cratered
+   your win prob; the drama generator re-samples it honestly through the intervention seam (the
+   re-roll may still come out bad). The "rigging the game" fantasy on your thumb. Random
+   versions of either would be drama-generator CONTENT (variance), not agency — different tool,
+   maybe someday, not these slots. Hard rule stands: options, never QTE prompts.
 
 Grill picks 3 of the 5 (leans: 1 + 2 + 4 — one per moment: sweat-save, pre-lock, live-agency).
 
@@ -105,8 +121,13 @@ the native exponential underneath (design/09 §3b).
 ## Open (for the grill)
 
 1. Payment curve numbers + start bank (sim grid: curve × item power; S3/S4 re-gated).
-2. Grace on a missed payment: none (clean death), or one bookie-gift intervention?
-3. The 3 passives: which ratchet; static engine on the same product slot or a second factor?
-4. The 3 consumables: final pick of the 5; shop prices; bookie-gift trigger conditions.
+2. ~~Grace on a missed payment~~ → RESOLVED direction: the Totem relic (see B); grill picks
+   waive-clean vs itemized-float on trigger.
+3. The 3 passives: Totem likely takes the economy/protection slot; which ratchet (Scar Tissue
+   front-runner, farming guard TBD); the static engine's shape — and confirm both multipliers
+   feed the one PayoutMultiplier product.
+4. The 3 consumables: final pick of the 5 (leans 1+2+4); shop prices; bookie-gift triggers.
 5. Consumable slot count (2? 3?) and whether gifts can overflow slots.
 6. Sweat presentation of ratchet winds (a +1 stack ping during the sweat = new juice moment).
+7. Scar Tissue farming guard: min-stake qualifier vs stake-scaled stacks vs none (let the combo
+   scan judge).
