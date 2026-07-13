@@ -8,14 +8,16 @@ namespace SBR.Sim;
 public sealed class CliOptions
 {
     public int Runs = 10000;
-    public string Strategy = "all";     // naive | random | skilled | all
+    public string Strategy = "all";     // naive | random | skilled | noshop | martyr | all
     public string SeedPrefix = "SIM";
     public bool Audit;
-    public int Combos;                  // 0 = off; else runs per relic pair
+    public int Combos;                  // 0 = off; else runs per passive pair
+    public bool Gates;                  // the full G1–G6 campaign (implies audit + combos + all bots)
+    public bool Grid;                   // the payment-curve grid (growth × P1), gates-lite per cell
     public string? ReportPath;
     public bool Verify;
 
-    public static readonly string[] AllStrategies = { "naive", "random", "skilled" };
+    public static readonly string[] AllStrategies = { "naive", "random", "skilled", "noshop", "martyr" };
 
     public IReadOnlyList<string> SelectedStrategies =>
         Strategy == "all" ? AllStrategies : new[] { Strategy };
@@ -36,7 +38,13 @@ public sealed class CliOptions
                 case "--strategy":
                     if (!TryTake(args, ref i, out options.Strategy!, out error)) return false;
                     if (options.Strategy != "all" && Array.IndexOf(AllStrategies, options.Strategy) < 0)
-                    { error = $"--strategy must be naive|random|skilled|all, got '{options.Strategy}'"; return false; }
+                    { error = $"--strategy must be naive|random|skilled|noshop|martyr|all, got '{options.Strategy}'"; return false; }
+                    break;
+                case "--gates":
+                    options.Gates = true;
+                    break;
+                case "--grid":
+                    options.Grid = true;
                     break;
                 case "--seed-prefix":
                     if (!TryTake(args, ref i, out options.SeedPrefix!, out error)) return false;

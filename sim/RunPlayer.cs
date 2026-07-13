@@ -7,21 +7,28 @@ namespace SBR.Sim;
 /// <summary>
 /// Drives one fully-seeded run end to end (betting → sweat → settle → shop → …), invoking the
 /// strategy's hooks and recording metrics. The engine owns all state; this only sequences its
-/// transitions, exactly like game-console's AutoRun but with a pluggable bot and instrumentation.
+/// transitions with instrumentation.
 ///
-/// The bot's own randomness is a Pcg32 seeded from the run seed (RngHub.Fnv1a64(seed + ":bot")), so a
-/// run is fully reproducible and independent of every other run — the property parallelism relies on.
+/// Economy-rework behaviors: a held Mulligan Slip is ALWAYS played when a sweat suspends in the
+/// pending-loss window (the documented bot policy — timing skill is a human affordance the bots
+/// approximate greedily); Timeout is never bot-played (playtest-gated, PLAN.md); a granted audit
+/// consumable is refilled each round via <see cref="ItemGrant.RefillConsumable"/>. Totem fires,
+/// scar telemetry, gifts and close-call deaths are read from engine telemetry after each settle.
+///
+/// The bot's own randomness is a Pcg32 seeded from the run seed, so a run is fully reproducible
+/// and independent of every other run — the property parallelism relies on.
 /// </summary>
 public static class RunPlayer
 {
     // A fixed, distinct stream id for the bot generator so it never collides with an engine stream.
     private static readonly ulong BotStream = RngHub.Fnv1a64("sim-bot");
 
-    public static RunResult Play(IStrategy strat, string seed, RunConfig cfg, string[]? grantedRelics = null)
+    public static RunResult Play(IStrategy strat, string seed, RunConfig cfg,
+        string[]? grantedRelics = null, string? grantedConsumable = null)
     {
         var run = new Run(seed, cfg);
         if (grantedRelics is { Length: > 0 })
-            RelicGrant.Grant(run, grantedRelics);
+            ItemGrant.GrantRelics(run, grantedRelics);
 
         var rng = new Pcg32(RngHub.Fnv1a64(seed + ":bot"), BotStream);
         var state = new BotState();
@@ -29,6 +36,11 @@ public static class RunPlayer
 
         while (true)
         {
+            if (grantedConsumable != null)
+                ItemGrant.RefillConsumable(run, grantedConsumable);
+            if (run.LastGift != null)
+                result.GiftsReceived++;
+
             var rm = new RoundMetrics { Round = run.Round, BankAtStart = run.Bank };
 
             state.NewRound();
@@ -38,7 +50,7 @@ public static class RunPlayer
             foreach (Ticket t in run.Tickets)
             {
                 rm.TotalStaked += t.Stake;
-                rm.TicketEvsAtLock.Add(Metrics.TrueTicketEvAtLock(t, run.OwnedRelics));
+                rm.TicketEvsAtLock.Add(Metrics.TrueTicketEvAtLock(t));
             }
 
             run.LockRound();
@@ -48,35 +60,39 @@ public static class RunPlayer
             if (strat.ControlsSweat)
                 PlaySweatWithControl(run, strat, state, rng, rm, cashoutByTicket);
             else
-                run.FastForwardRound(); // naive: never cashes out
+                run.FastForwardRound(); // naive: never cashes out; pending windows auto-decline
 
             ScoreSwings(run, rm, cashoutByTicket);
             result.BiggestSwing = Math.Max(result.BiggestSwing, rm.BiggestSwing);
 
-            double debtBefore = run.Debt; // debt-as-HP: classify what this settle did
+            double scarBefore = run.ScarStacks;
             run.Settle();
-            if (debtBefore == 0.0 && run.Debt > 0.0 && run.Phase != Phase.RunLost)
-                result.FloatsTaken++; // the bookie floated a clean miss
+            result.MaxScarStacks = Math.Max(result.MaxScarStacks, run.ScarStacks);
+            if (scarBefore > 0 && run.ScarStacks == 0) result.ScarBurns++; // carrier realized this round
+
+            SettlementReport settle = run.LastSettlement!.Value;
+            if (settle.TotemFired) result.TotemFires++;
             result.Rounds.Add(rm);
 
             if (run.Phase == Phase.RunLost)
             {
                 result.DeathRound = run.Round;
                 result.Won = false;
-                result.DiedInDebt = debtBefore > 0.0; // vs a plain final-round miss
+                // Close-call deaths (report metric): the bank was within 20% of the missed payment.
+                result.CloseCallDeath = settle.Shortfall <= 0.20 * settle.Payment;
                 break;
             }
             if (run.Phase == Phase.RunWon)
             {
-                result.DeathRound = 9;
+                result.DeathRound = run.Config.Rounds + 1;
                 result.Won = true;
                 break;
             }
 
             // Phase.Shop
-            int ownedBefore = run.OwnedRelics.Count;
+            int ownedBefore = run.OwnedRelics.Count + run.OwnedConsumables.Count;
             strat.Shop(run, state, rng);
-            rm.Buys = run.OwnedRelics.Count - ownedBefore;
+            rm.Buys = run.OwnedRelics.Count + run.OwnedConsumables.Count - ownedBefore;
             run.ExitShop();
         }
 
@@ -97,13 +113,26 @@ public static class RunPlayer
         {
             SweatSession session = sweats[i];
             Ticket ticket = run.Tickets[i];
-            while (session.MoveNext(out DramaEvent? evt))
+            while (true)
             {
+                bool moved = session.MoveNext(out DramaEvent? evt);
+
+                // The pending-loss window: bot policy is greedy — a held slip is always played.
+                // (MoveNext past the window would decline it; the play resumes the same session.)
+                if (session.HasPendingLoss && run.OwnsConsumable("mulligan_slip"))
+                {
+                    run.PlayMulliganSlip(session);
+                    rm.MulligansPlayed++;
+                    continue;
+                }
+
+                if (!moved) break;
+
                 double? offer = session.CashOutOffer();
                 if (offer is not { } o) continue;
 
-                // Debt-as-HP: the settle checks Requirement (target + debt), so that is the bot's target.
-                if (strat.ShouldCashOut(run, ticket, session, evt!, o, run.Bank, run.Requirement, state, rng))
+                // The payment model: the settle deducts CurrentPayment, so that is the bot's target.
+                if (strat.ShouldCashOut(run, ticket, session, evt!, o, run.Bank, run.CurrentPayment, state, rng))
                 {
                     session.AcceptCashOut();
                     rm.CashOutsCount++;

@@ -18,27 +18,51 @@ public static class Report
     // ---- public entry points ----
 
     public static string Full(CliOptions opt, IReadOnlyList<BatchSummary> batches,
-        AuditData? audit, ComboData? combos, string date, double wallSeconds, RunConfig cfg, long totalRuns)
+        AuditData? audit, ComboData? combos, GateData? gates, string date, double wallSeconds,
+        RunConfig cfg, long totalRuns)
     {
         var sb = new StringBuilder();
         sb.Append(Header(opt, date, wallSeconds, cfg, batches, totalRuns));
-        sb.Append(Body(opt, batches, audit, combos));
+        sb.Append(Body(opt, batches, audit, combos, gates));
         return sb.ToString();
     }
 
     /// <summary>Deterministic body only (no date / wall time) — the surface --verify diffs.</summary>
     public static string Body(CliOptions opt, IReadOnlyList<BatchSummary> batches,
-        AuditData? audit, ComboData? combos)
+        AuditData? audit, ComboData? combos, GateData? gates)
     {
         var sb = new StringBuilder();
+        GatesSection(sb, gates);
         Survival(sb, batches);
-        RelicAudit(sb, audit);
+        ItemAudit(sb, audit);
         Variance(sb, batches);
-        Ratchet(sb);
+        Ratchet(sb, batches);
         EvArc(sb, batches);
         BandThree(sb, batches, combos);
         Grind(sb, batches);
         return sb.ToString();
+    }
+
+    // ---- 0. gates ----
+
+    private static void GatesSection(StringBuilder sb, GateData? gates)
+    {
+        if (gates == null) return;
+        sb.AppendLine("## 0. Gate campaign (PLAN.md acceptance criteria)");
+        sb.AppendLine();
+        sb.AppendLine("| Gate | Criterion | Verdict | Actual |");
+        sb.AppendLine("|---|---|---|---|");
+        foreach (GateData.Gate g in gates.Gates)
+            sb.AppendLine($"| {g.Id} | {g.Description} | {(g.Pass ? "**PASS**" : "**FAIL**")} | {g.Actual} |");
+        sb.AppendLine();
+        if (gates.ItemFlags.Count == 0)
+            sb.AppendLine("Item flags: none — no DEAD items, no DOMINANT item, Totem in the healthy band.");
+        else
+            foreach (string flag in gates.ItemFlags)
+                sb.AppendLine($"- ⚑ {flag}");
+        sb.AppendLine();
+        sb.AppendLine($"> **{(gates.AllPass && gates.ItemFlags.Count == 0 ? "ALL GATES PASS — the economy holds." : "NOT DONE — iterate the knobs (item numbers / prices / curve) and rerun.")}**");
+        sb.AppendLine();
     }
 
     // ---- header ----
@@ -51,14 +75,15 @@ public static class Report
         sb.AppendLine();
         sb.AppendLine($"- Date: {date}");
         sb.AppendLine("- Engine: workspace is not a git repo — `git describe` unavailable");
-        double meanRamp = cfg.Targets.Length > 1
-            ? Math.Pow(cfg.Targets[^1] / cfg.Targets[0], 1.0 / (cfg.Targets.Length - 1))
+        double meanRamp = cfg.Payments.Length > 1
+            ? Math.Pow(cfg.Payments[^1] / cfg.Payments[0], 1.0 / (cfg.Payments.Length - 1))
             : 1.0;
-        sb.AppendLine($"- Config: bank {Money(cfg.StartingBank)}, targets [{Targets(cfg)}] (avg ×{meanRamp.ToString("F2", Inv)}), "
+        sb.AppendLine($"- Config: bank {Money(cfg.StartingBank)}, PAYMENTS [{Payments(cfg)}] (avg ×{meanRamp.ToString("F2", Inv)}), "
             + $"overround {Pct(cfg.Overround * 100)}, cash-out margin {Pct(cfg.CashOutMargin * 100)}, "
-            + $"debt juice {Pct(cfg.DebtJuiceRate * 100)}, "
+            + $"totem juice {Pct(cfg.TotemJuiceRate * 100)}, "
             + $"min stake {Money(cfg.MinStake)}, max stake {Pct(cfg.MaxStakeFraction * 100)} of bank, "
-            + $"{cfg.MatchupsPerSlate} matchups/round, {cfg.MaxTicketsPerRound} tickets/round, {cfg.RelicSlots} relic slots");
+            + $"{cfg.MatchupsPerSlate} matchups/round, {cfg.MaxTicketsPerRound} tickets/round, "
+            + $"{cfg.RelicSlots} relic + {cfg.ConsumableSlots} consumable slots");
         sb.AppendLine($"- Strategies: {string.Join(", ", Names(batches))}");
         sb.AppendLine($"- Runs per batch: {opt.Runs.ToString("N0", Inv)}");
         sb.AppendLine($"- Total runs (incl. audit/combos): {total.ToString("N0", Inv)}");
@@ -99,29 +124,20 @@ public static class Report
         sb.Append("| mean rounds reached |");
         foreach (BatchSummary b in batches) sb.Append($" {b.MeanDeath.ToString("F2", Inv)} |");
         sb.AppendLine();
-        // Debt-as-HP telemetry (DECISIONS.md 2026-07-09): how often the bookie floats a run, and what
-        // fraction of deaths are the bookie collecting (vs a plain final-round miss).
-        sb.Append("| mean floats per run |");
-        foreach (BatchSummary b in batches) sb.Append($" {b.MeanFloats.ToString("F2", Inv)} |");
+        // Payment-model telemetry: totem saves, near-miss deaths, and the pity channel firing.
+        sb.Append("| totem fire rate |");
+        foreach (BatchSummary b in batches) sb.Append($" {Pct(b.TotemFireRate)} |");
         sb.AppendLine();
-        sb.Append("| in-debt deaths (% of deaths) |");
-        foreach (BatchSummary b in batches) sb.Append($" {Pct(b.InDebtDeathPct)} |");
+        sb.Append("| close-call deaths (% of deaths) |");
+        foreach (BatchSummary b in batches) sb.Append($" {Pct(b.CloseCallDeathPct)} |");
+        sb.AppendLine();
+        sb.Append("| mean bookie gifts per run |");
+        foreach (BatchSummary b in batches) sb.Append($" {b.MeanGifts.ToString("F2", Inv)} |");
         sb.AppendLine();
         sb.AppendLine();
 
         BatchSummary? naive = Find(batches, "naive");
         BatchSummary? skilled = Find(batches, "skilled");
-        if (naive != null)
-        {
-            bool pass = naive.MedianDeath >= 3.0 && naive.MedianDeath <= 4.0;
-            sb.AppendLine($"`S3 (naive median death 3–4): {(pass ? "PASS" : "FAIL")} (actual {naive.MedianDeath.ToString("0.#", Inv)})`");
-        }
-        if (skilled != null)
-        {
-            bool pass = skilled.MedianDeath >= 7.0;
-            sb.AppendLine($"`S4 (skilled median death ≥7): {(pass ? "PASS" : "FAIL")} (actual {skilled.MedianDeath.ToString("0.#", Inv)})`");
-        }
-        sb.AppendLine();
         sb.AppendLine($"> Takeaway: {SurvivalTakeaway(naive, skilled)}");
         sb.AppendLine();
     }
@@ -135,57 +151,37 @@ public static class Report
         return $"naive dies at round {n}, skilled reaches {s} — {gap}; compare against the 3–4 / ≥7 targets above.";
     }
 
-    // ---- 2. relic audit ----
+    // ---- 2. item audit ----
 
-    private static void RelicAudit(StringBuilder sb, AuditData? audit)
+    private static void ItemAudit(StringBuilder sb, AuditData? audit)
     {
-        sb.AppendLine("## 2. Relic power audit");
+        sb.AppendLine("## 2. Item power audit (3 passives + 3 consumables)");
         sb.AppendLine();
         if (audit == null)
         {
-            sb.AppendLine("_Not run — pass `--audit` to grant each relic free to skilled and measure its marginal effect._");
+            sb.AppendLine("_Not run — pass `--audit` (or `--gates`) to grant each item free to skilled and measure it._");
             sb.AppendLine();
             return;
         }
 
         sb.AppendLine($"Skilled baseline: median death {MedianDeath(audit.Baseline.MedianDeath)}, "
             + $"mean rounds {audit.Baseline.MeanDeath.ToString("F2", Inv)}, won {Pct(audit.Baseline.WonPct)}. "
-            + "Each row is skilled with that one relic granted free at run start. Rows are sorted by "
-            + "**Δ mean rounds survived** (the steadiest signal); Δ won % is the run-winning read.");
+            + "Passives granted at run start; consumables refilled every round. Timeout is exempt from "
+            + "the DEAD flag — bots never play it (playtest-gated). Sorted by Δ mean rounds survived.");
         sb.AppendLine();
-        sb.AppendLine("| Relic | mean rounds | Δ mean | median death | won % | Δ won % | flag |");
-        sb.AppendLine("|---|---|---|---|---|---|---|");
+        sb.AppendLine("| Item | kind | mean rounds | Δ mean | median death | won % | Δ won % | totem fires |");
+        sb.AppendLine("|---|---|---|---|---|---|---|---|");
         foreach (AuditData.Entry e in audit.Entries)
         {
-            string flag = AuditFlag(e);
-            sb.AppendLine($"| {e.RelicName} | {e.MeanDeath.ToString("F2", Inv)} | {Signed(e.MeanDelta)} "
-                + $"| {MedianDeath(e.MedianDeath)} | {Pct(e.WonPct)} | {SignedPct(e.WonDelta)} | {flag} |");
+            string totem = e.Id == RelicCatalog.TotemId ? Pct(e.TotemFireRate) : "—";
+            sb.AppendLine($"| {e.Name} | {(e.IsConsumable ? "consumable" : "passive")} "
+                + $"| {e.MeanDeath.ToString("F2", Inv)} | {Signed(e.MeanDelta)} "
+                + $"| {MedianDeath(e.MedianDeath)} | {Pct(e.WonPct)} | {SignedPct(e.WonDelta)} | {totem} |");
         }
         sb.AppendLine();
-        sb.AppendLine($"> Takeaway: {AuditTakeaway(audit)}");
+        sb.AppendLine("> Takeaway: the gate section's item flags carry the verdicts (DEAD / DOMINANT / totem band). "
+            + "Note the audit grants items FREE — organic play also pays shop prices out of payment headroom.");
         sb.AppendLine();
-    }
-
-    private static string AuditFlag(AuditData.Entry e)
-    {
-        if (e.WonDelta >= 15.0 || e.MeanDelta >= 0.30) return "DOMINANT";
-        if (Math.Abs(e.MeanDelta) < 0.02 && Math.Abs(e.WonDelta) < 1.0) return "DEAD (~0 effect)";
-        if (e.MeanDelta < -0.02) return "hurts (bot mis-uses it)";
-        return "";
-    }
-
-    private static string AuditTakeaway(AuditData audit)
-    {
-        int dead = 0, dominant = 0;
-        foreach (AuditData.Entry e in audit.Entries)
-        {
-            if (e.WonDelta >= 15.0 || e.MeanDelta >= 0.30) dominant++;
-            else if (Math.Abs(e.MeanDelta) < 0.02 && Math.Abs(e.WonDelta) < 1.0) dead++;
-        }
-        AuditData.Entry top = audit.Entries[0];
-        return $"strongest relic is {top.RelicName} ({Signed(top.MeanDelta)} mean rounds); "
-            + $"{dead} look dead, {dominant} dominant. Note the audit grants relics FREE — organic play "
-            + "also pays the shop price out of target headroom.";
     }
 
     // ---- 3. variance ----
@@ -222,11 +218,19 @@ public static class Report
 
     // ---- 4. ratchet ----
 
-    private static void Ratchet(StringBuilder sb)
+    private static void Ratchet(StringBuilder sb, IReadOnlyList<BatchSummary> batches)
     {
-        sb.AppendLine("## 4. Ratchet tuning");
+        sb.AppendLine("## 4. Ratchet telemetry (Scar Tissue)");
         sb.AppendLine();
-        sb.AppendLine("_N/A in v0 — there is no limiting/ratchet mechanic in the prototype (parked to a later phase)._");
+        sb.AppendLine("Mean peak stacks (pp) and mean carrier burns per run — is the ratchet winding and cashing?");
+        sb.AppendLine();
+        sb.AppendLine("| Strategy | mean peak stacks | mean burns/run |");
+        sb.AppendLine("|---|---|---|");
+        foreach (BatchSummary b in batches)
+            sb.AppendLine($"| {b.Name} | {b.MeanMaxScar.ToString("F1", Inv)}pp | {b.MeanScarBurns.ToString("F2", Inv)} |");
+        sb.AppendLine();
+        sb.AppendLine("> Takeaway: zero across the board means nobody buys/holds the scar (price or power problem); "
+            + "huge stacks with zero burns means winding without cashing (the carrier rule isn't landing).");
         sb.AppendLine();
     }
 
@@ -428,10 +432,10 @@ public static class Report
     private static string Pct(double v) => v.ToString("F1", Inv) + "%";
     private static string MedianDeath(double m) => m >= 9.0 ? "9 (won)" : m.ToString("0.#", Inv);
 
-    private static string Targets(RunConfig cfg)
+    private static string Payments(RunConfig cfg)
     {
         var parts = new List<string>();
-        foreach (double t in cfg.Targets) parts.Add(((long)t).ToString(Inv));
+        foreach (double t in cfg.Payments) parts.Add(((long)t).ToString(Inv));
         return string.Join(", ", parts);
     }
 

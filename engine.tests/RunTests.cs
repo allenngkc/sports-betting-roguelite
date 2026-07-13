@@ -9,12 +9,12 @@ public class RunTests
     [Fact]
     public void New_run_starts_in_betting_with_rework_defaults()
     {
-        // Economy rework (PLAN.md 2026-07-13): payments replace targets; R1 payment = 250.
+        // Campaign-chosen defaults (sim-report-2.md 2026-07-13): bank 750, convex payments from 90.
         var run = NewRun();
         Assert.Equal(Phase.Betting, run.Phase);
         Assert.Equal(1, run.Round);
-        Assert.Equal(500, run.Bank);
-        Assert.Equal(250, run.CurrentPayment);
+        Assert.Equal(750, run.Bank);
+        Assert.Equal(90, run.CurrentPayment);
         Assert.Null(run.LastSettlement);
         Assert.Equal(0.0, run.ScarStacks);
         Assert.Empty(run.OwnedConsumables);
@@ -28,7 +28,7 @@ public class RunTests
         Matchup m = run.CurrentSlate.Matchups[0];
         Ticket t = run.PlaceTicket(new[] { new Pick(0, Side.Home) }, 100);
 
-        Assert.Equal(400, run.Bank);
+        Assert.Equal(650, run.Bank);
         Assert.Equal(TicketState.Open, t.State);
         Assert.Equal(m.HomeOdds, t.Legs[0].OfferedOdds, 12);
         Assert.Equal(100 * m.HomeOdds, t.PotentialPayout, 10);
@@ -51,7 +51,7 @@ public class RunTests
     {
         var run = NewRun();
         Assert.Throws<ArgumentException>(() => run.PlaceTicket(new[] { new Pick(0, Side.Home) }, 5));
-        Assert.Throws<ArgumentException>(() => run.PlaceTicket(new[] { new Pick(0, Side.Home) }, 501));
+        Assert.Throws<ArgumentException>(() => run.PlaceTicket(new[] { new Pick(0, Side.Home) }, 751));
         Assert.Throws<ArgumentException>(() => run.PlaceTicket(Array.Empty<Pick>(), 100));
         Assert.Throws<ArgumentException>(
             () => run.PlaceTicket(new[] { new Pick(0, Side.Home), new Pick(0, Side.Away) }, 100));
@@ -159,7 +159,7 @@ public class RunTests
         run.FastForwardRound();
         run.Settle();
         Assert.Equal(Phase.Shop, run.Phase);
-        Assert.Equal(400, run.Bank, 10); // 500 − the 100 payment: the settle takes its cut
+        Assert.Equal(650, run.Bank, 10); // 750 − the 100 payment: the settle takes its cut
         Assert.True(run.LastSettlement!.Value.Paid);
 
         run.ExitShop();
@@ -184,7 +184,7 @@ public class RunTests
         run.Settle();
 
         Assert.Equal(Phase.RunWon, run.Phase);
-        Assert.Equal(300, run.Bank, 10); // both payments taken from the untouched 500
+        Assert.Equal(550, run.Bank, 10); // both payments taken from the untouched 750
     }
 
     [Fact]

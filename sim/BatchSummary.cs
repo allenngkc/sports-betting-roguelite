@@ -28,14 +28,21 @@ public sealed class BatchSummary
     public readonly int[] EvSampleByRound = new int[9];
     public readonly double[] MedianDecisionsByRound = new double[9];
 
-    // ---- debt-as-HP (DECISIONS.md 2026-07-09) ----
+    // ---- economy-rework telemetry ----
 
-    /// <summary>Mean bookie floats taken per run.</summary>
-    public double MeanFloats;
+    /// <summary>Fraction of runs whose Totem fired (each run fires at most once).</summary>
+    public double TotemFireRate;
 
-    /// <summary>Deaths that happened while indebted, as a % of all deaths (the rest are plain
-    /// final-round misses). 0 when the batch had no deaths.</summary>
-    public double InDebtDeathPct;
+    /// <summary>Deaths with the bank within 20% of the missed payment, as a % of all deaths —
+    /// the near-miss failure mode (report metric). 0 when the batch had no deaths.</summary>
+    public double CloseCallDeathPct;
+
+    /// <summary>Scar ratchet telemetry: mean peak stacks (pp) and mean carrier burns per run.</summary>
+    public double MeanMaxScar;
+    public double MeanScarBurns;
+
+    /// <summary>Mean bookie gifts received per run (the pity channel firing).</summary>
+    public double MeanGifts;
 
     public static BatchSummary From(string name, RunResult[] results)
     {
@@ -48,8 +55,9 @@ public sealed class BatchSummary
         var decByRound = new List<double>[9];
         for (int r = 1; r <= 8; r++) { evByRound[r] = new List<double>(); decByRound[r] = new List<double>(); }
 
-        long floats = 0;
-        int deaths = 0, inDebtDeaths = 0;
+        long totemFires = 0, scarBurns = 0, gifts = 0;
+        double maxScarSum = 0;
+        int deaths = 0, closeCalls = 0;
         for (int i = 0; i < results.Length; i++)
         {
             RunResult rr = results[i];
@@ -57,8 +65,11 @@ public sealed class BatchSummary
             s.BiggestSwings[i] = rr.BiggestSwing;
             s.FinalBanks[i] = rr.FinalBank;
             if (rr.Won) { s.Wins++; s.WinningFinalBanks.Add(rr.FinalBank); }
-            else { deaths++; if (rr.DiedInDebt) inDebtDeaths++; }
-            floats += rr.FloatsTaken;
+            else { deaths++; if (rr.CloseCallDeath) closeCalls++; }
+            totemFires += rr.TotemFires;
+            scarBurns += rr.ScarBurns;
+            gifts += rr.GiftsReceived;
+            maxScarSum += rr.MaxScarStacks;
 
             for (int r = 1; r <= 8; r++)
                 if (rr.DeathRound >= r) s.AliveEntering[r]++;
@@ -72,8 +83,11 @@ public sealed class BatchSummary
             }
         }
 
-        s.MeanFloats = results.Length == 0 ? 0.0 : (double)floats / results.Length;
-        s.InDebtDeathPct = deaths == 0 ? 0.0 : 100.0 * inDebtDeaths / deaths;
+        s.TotemFireRate = results.Length == 0 ? 0.0 : 100.0 * totemFires / results.Length;
+        s.CloseCallDeathPct = deaths == 0 ? 0.0 : 100.0 * closeCalls / deaths;
+        s.MeanMaxScar = results.Length == 0 ? 0.0 : maxScarSum / results.Length;
+        s.MeanScarBurns = results.Length == 0 ? 0.0 : (double)scarBurns / results.Length;
+        s.MeanGifts = results.Length == 0 ? 0.0 : (double)gifts / results.Length;
 
         s.MedianDeath = Stats.MedianInt(s.DeathRounds);
         var deathAsDouble = new double[s.DeathRounds.Length];

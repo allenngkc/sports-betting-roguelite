@@ -34,9 +34,10 @@ public class ShopAndGiftTests
         Run run = ShopRun();
         double bank = run.Bank;
         int idx = IndexOf(run, RelicCatalog.MultiplierId);
+        double price = run.ShopOffers[idx].Price;
 
         run.BuyRelic(idx);
-        Assert.Equal(bank - 250, run.Bank, 10);
+        Assert.Equal(bank - price, run.Bank, 10);
         Assert.Single(run.OwnedRelics);
         Assert.Equal(2, run.ShopOffers.Count);
     }
@@ -45,11 +46,13 @@ public class ShopAndGiftTests
     public void Sell_back_credits_half_the_list_price()
     {
         Run run = ShopRun();
-        run.BuyRelic(IndexOf(run, RelicCatalog.MultiplierId));
+        int idx = IndexOf(run, RelicCatalog.MultiplierId);
+        double price = run.ShopOffers[idx].Price;
+        run.BuyRelic(idx);
         double bank = run.Bank;
 
         run.SellRelic(0);
-        Assert.Equal(bank + 125, run.Bank, 10);
+        Assert.Equal(bank + price * 0.5, run.Bank, 10);
         Assert.Empty(run.OwnedRelics);
     }
 

@@ -14,13 +14,13 @@ namespace SBR.Sim;
 public static class Harness
 {
     public static RunResult[] RunBatch(IStrategy strat, int runs, string seedPrefix, RunConfig cfg,
-        string[]? grantedRelics = null)
+        string[]? grantedRelics = null, string? grantedConsumable = null)
     {
         var results = new RunResult[runs];
         Parallel.For(0, runs, i =>
         {
             string seed = $"{seedPrefix}-{i}";
-            results[i] = RunPlayer.Play(strat, seed, cfg, grantedRelics);
+            results[i] = RunPlayer.Play(strat, seed, cfg, grantedRelics, grantedConsumable);
         });
         return results;
     }
@@ -30,6 +30,8 @@ public static class Harness
         "naive" => new NaiveStrategy(),
         "random" => new RandomStrategy(),
         "skilled" => new SkilledStrategy(),
+        "noshop" => new NoShopStrategy(),
+        "martyr" => new MartyrStrategy(),
         _ => throw new ArgumentException($"Unknown strategy '{name}'"),
     };
 }

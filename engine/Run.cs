@@ -89,6 +89,14 @@ public sealed class Run
 
     public double CurrentPayment => _payments[Round - 1];
 
+    /// <summary>The following round's payment (surcharges included), or null on the final round —
+    /// what a player planning shop spending is actually planning against.</summary>
+    public double? NextPayment => Round < Config.Rounds ? _payments[Round] : (double?)null;
+
+    /// <summary>The full live schedule (surcharges included) — shown to the player like any book's
+    /// ledger; the whole ladder is public information.</summary>
+    public IReadOnlyList<double> PaymentSchedule => _payments;
+
     /// <summary>Telemetry of the most recent settle; null before the first.</summary>
     public SettlementReport? LastSettlement { get; private set; }
 

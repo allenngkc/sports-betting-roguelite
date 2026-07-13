@@ -8,11 +8,13 @@ using SBR.Engine;
 namespace SBR.Sim;
 
 /// <summary>
-/// The /sim Monte Carlo harness (PRD F9): plays N seeded runs per strategy bot over the FROZEN engine
-/// and emits the markdown balance report that the Week 6 kill/continue verdict will cite.
+/// The /sim Monte Carlo harness: plays N seeded runs per strategy bot and emits the markdown
+/// balance report. The economy rework (PLAN.md 2026-07-13) added the GATE CAMPAIGN (--gates:
+/// G1–G6 + item flags, the milestone's acceptance criteria) and the payment-curve GRID (--grid:
+/// growth × P1 cells, gates-lite per cell — how the curve gets chosen).
 ///
-///   dotnet run --project sim -- [--runs N] [--strategy naive|random|skilled|all] [--seed-prefix STR]
-///                               [--audit] [--combos N] [--report PATH] [--verify]
+///   dotnet run --project sim -- [--runs N] [--strategy naive|random|skilled|noshop|martyr|all]
+///       [--seed-prefix STR] [--audit] [--combos N] [--gates] [--grid] [--report PATH] [--verify]
 /// </summary>
 internal static class Program
 {
@@ -25,9 +27,10 @@ internal static class Program
             return error == "help" ? 0 : 2;
         }
 
-        var cfg = new RunConfig(); // PRD §8 defaults — the sim reports on these, never mutates them
+        var cfg = new RunConfig(); // rework defaults — the sim reports on these, never mutates them
 
         if (opt.Verify) return Verify(opt, cfg);
+        if (opt.Grid) return Grid(opt);
 
         return Run(opt, cfg);
     }
@@ -36,41 +39,59 @@ internal static class Program
     {
         var sw = Stopwatch.StartNew();
         var batches = new List<BatchSummary>();
-        BatchSummary? skilled = null;
+        var byName = new Dictionary<string, BatchSummary>();
         long totalRuns = 0;
 
-        foreach (string name in opt.SelectedStrategies)
+        IEnumerable<string> strategyNames = opt.Gates
+            ? new[] { "naive", "skilled", "noshop", "martyr" } // the gate roster
+            : opt.SelectedStrategies;
+
+        foreach (string name in strategyNames)
         {
             IStrategy strat = Harness.Create(name);
             RunResult[] results = Harness.RunBatch(strat, opt.Runs, opt.SeedPrefix, cfg);
             totalRuns += opt.Runs;
             BatchSummary summary = BatchSummary.From(name, results);
             batches.Add(summary);
-            if (name == "skilled") skilled = summary;
+            byName[name] = summary;
         }
 
         AuditData? audit = null;
-        if (opt.Audit)
+        if (opt.Audit || opt.Gates)
         {
-            skilled ??= SkilledBaseline(opt, cfg, ref totalRuns);
+            BatchSummary skilled = byName.TryGetValue("skilled", out var s)
+                ? s : SkilledBaseline(opt, cfg, ref totalRuns);
             audit = AuditData.Compute(opt.Runs, opt.SeedPrefix, cfg, skilled);
-            totalRuns += (long)RelicCatalog.All.Count * opt.Runs;
+            totalRuns += (long)(RelicCatalog.All.Count + RelicCatalog.Consumables.Count) * opt.Runs;
         }
 
         ComboData? combos = null;
-        if (opt.Combos > 0)
+        int comboRuns = opt.Gates && opt.Combos == 0 ? opt.Runs : opt.Combos;
+        if (comboRuns > 0)
         {
-            skilled ??= SkilledBaseline(opt, cfg, ref totalRuns);
-            double baselineWon = ComboBaseline(opt, cfg, skilled);
-            combos = ComboData.Compute(opt.Combos, opt.SeedPrefix, cfg, baselineWon);
+            BatchSummary skilled = byName.TryGetValue("skilled", out var s)
+                ? s : SkilledBaseline(opt, cfg, ref totalRuns);
+            double baselineWon = comboRuns == opt.Runs
+                ? skilled.WonPct
+                : BatchSummary.From("s", Harness.RunBatch(new SkilledStrategy(), comboRuns, opt.SeedPrefix, cfg)).WonPct;
+            combos = ComboData.Compute(comboRuns, opt.SeedPrefix, cfg, baselineWon);
             int n = RelicCatalog.All.Count;
-            totalRuns += (long)(n + n * (n - 1) / 2) * opt.Combos; // solos + pairs
+            totalRuns += (long)(n + n * (n - 1) / 2) * comboRuns;
+        }
+
+        GateData? gates = null;
+        if (opt.Gates)
+        {
+            gates = GateData.Evaluate(
+                byName.GetValueOrDefault("naive"), byName.GetValueOrDefault("skilled"),
+                byName.GetValueOrDefault("noshop"), byName.GetValueOrDefault("martyr"),
+                audit, combos);
         }
 
         sw.Stop();
 
         string date = DateTime.Now.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
-        string report = Report.Full(opt, batches, audit, combos, date, sw.Elapsed.TotalSeconds, cfg, totalRuns);
+        string report = Report.Full(opt, batches, audit, combos, gates, date, sw.Elapsed.TotalSeconds, cfg, totalRuns);
 
         Console.Out.Write(report);
         if (opt.ReportPath != null)
@@ -78,16 +99,64 @@ internal static class Program
             File.WriteAllText(opt.ReportPath, report);
             Console.Error.WriteLine($"[wrote {opt.ReportPath}]");
         }
-        return 0;
+        return gates is { AllPass: false } ? 1 : 0;
     }
 
-    // The combo baseline win% must come from a batch at --combos N (not --runs N) so its deltas line up
-    // with the solo/pair batches; recompute if the counts differ.
-    private static double ComboBaseline(CliOptions opt, RunConfig cfg, BatchSummary skilledAtRuns)
+    // The payment-curve grid: growth × P1 cells, G1–G4 per cell (G5/G6 need the audit/combo cost —
+    // they run on the chosen cell via --gates). Payments rounded to $5 for readability.
+    private static int Grid(CliOptions opt)
     {
-        if (opt.Combos == opt.Runs) return skilledAtRuns.WonPct;
-        RunResult[] r = Harness.RunBatch(new SkilledStrategy(), opt.Combos, opt.SeedPrefix, cfg);
-        return BatchSummary.From("skilled", r).WonPct;
+        // Two-phase (convex) curves — the CloverPit shape: gentle through R4, cliff after.
+        // The constant-ratio family could not hold median death ≥7 AND win 10–15% at once.
+        double[] banks = { 550, 650, 750 };
+        double[] firsts = { 60, 75, 90 };
+        double[] earlies = { 1.20 };
+        double[] lates = { 1.75, 1.90, 2.05 };
+        int rounds = new RunConfig().Payments.Length;
+
+        Console.WriteLine($"# payment-curve grid — {opt.Runs:N0} runs/bot/cell, bots: naive, skilled, noshop");
+        Console.WriteLine();
+        Console.WriteLine("| bank | P1 | early | late | P8 | G1 naive | G2 noshop | G3 skilled | G4 EV cross | verdict |");
+        Console.WriteLine("|---|---|---|---|---|---|---|---|---|---|");
+
+        foreach (double bank in banks)
+        foreach (double p1 in firsts)
+        foreach (double g1 in earlies)
+        foreach (double g2 in lates)
+        {
+            var payments = new double[rounds];
+            double p = p1;
+            for (int i = 0; i < rounds; i++)
+            {
+                payments[i] = Math.Round(p / 5.0) * 5.0;
+                p *= i < 3 ? g1 : g2; // R1–R4 gentle, R5–R8 the cliff
+            }
+            var cfg = new RunConfig { Payments = payments, StartingBank = bank };
+
+            BatchSummary naive = BatchSummary.From("naive",
+                Harness.RunBatch(new NaiveStrategy(), opt.Runs, opt.SeedPrefix, cfg));
+            BatchSummary skilled = BatchSummary.From("skilled",
+                Harness.RunBatch(new SkilledStrategy(), opt.Runs, opt.SeedPrefix, cfg));
+            BatchSummary noshop = BatchSummary.From("noshop",
+                Harness.RunBatch(new NoShopStrategy(), opt.Runs, opt.SeedPrefix, cfg));
+
+            GateData gates = GateData.Evaluate(naive, skilled, noshop, null, null, null);
+            int pass = 0;
+            var cells = new List<string>();
+            foreach (GateData.Gate gate in gates.Gates)
+            {
+                cells.Add($"{(gate.Pass ? "PASS" : "fail")} ({gate.Actual})");
+                if (gate.Pass) pass++;
+            }
+            while (cells.Count < 4) cells.Add("—");
+
+            string verdict = pass == gates.Gates.Count && gates.Gates.Count == 4 ? "**CANDIDATE**" : $"{pass}/4";
+            Console.WriteLine($"| {bank:0} | {p1:0} | ×{g1:0.00} | ×{g2:0.00} | {payments[^1]:N0} | {cells[0]} | {cells[1]} | {cells[2]} | {cells[3]} | {verdict} |");
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("Run the full campaign on a CANDIDATE cell: set RunConfig.Payments, then `--gates --runs 10000`.");
+        return 0;
     }
 
     private static BatchSummary SkilledBaseline(CliOptions opt, RunConfig cfg, ref long totalRuns)
@@ -125,7 +194,7 @@ internal static class Program
             batches.Add(BatchSummary.From(name, r));
         }
         var opt = new CliOptions { Runs = runs, Strategy = "all", SeedPrefix = seedPrefix };
-        return Report.Body(opt, batches, null, null);
+        return Report.Body(opt, batches, null, null, null);
     }
 
     private static string FirstDiff(string a, string b)
@@ -142,10 +211,12 @@ internal static class Program
     private const string Usage =
         "usage: dotnet run --project sim -- [options]\n" +
         "  --runs N              runs per strategy batch (default 10000)\n" +
-        "  --strategy S          naive | random | skilled | all (default all)\n" +
+        "  --strategy S          naive | random | skilled | noshop | martyr | all (default all)\n" +
         "  --seed-prefix STR     run i uses engine seed \"{STR}-{i}\" (default SIM)\n" +
-        "  --audit               add the relic power audit (skilled + each relic granted free)\n" +
-        "  --combos N            pairwise relic combo scan, N runs per pair (default off; try 2000)\n" +
+        "  --audit               the six-item power audit (each granted free to skilled)\n" +
+        "  --combos N            pairwise passive combo scan, N runs per pair\n" +
+        "  --gates               the FULL gate campaign: G1-G6 + item flags (implies audit+combos)\n" +
+        "  --grid                the payment-curve grid (growth x P1), gates-lite per cell\n" +
         "  --report PATH         also write the markdown report to PATH\n" +
         "  --verify              determinism self-check (200 runs twice), then exit\n";
 }

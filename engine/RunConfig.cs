@@ -4,13 +4,13 @@ namespace SBR.Engine;
 /// gate campaign (PLAN.md 2026-07-13, gates G1–G6) owns the payment curve.</summary>
 public sealed class RunConfig
 {
-    public double StartingBank { get; set; } = 500;
+    public double StartingBank { get; set; } = 750;
 
     /// <summary>The debt-payment schedule (economy rework, design/10): DEDUCTED from the bank at
-    /// each settle — miss a payment and the run is over (unless the Totem fires). Replaces the old
-    /// hold-a-threshold Targets; the payment model makes the run an income-rate race. Starting
-    /// hypothesis ≈ ×1.7/round; the sim grid refines.</summary>
-    public double[] Payments { get; set; } = { 250, 425, 720, 1230, 2090, 3550, 6040, 10260 };
+    /// each settle — miss a payment and the run is over (unless the Totem fires). Two-phase convex
+    /// (the campaign's discovered shape, 2026-07-13): gentle ×1.2 through R4 — the build window —
+    /// then the ×1.9 cliff. Grid candidate 750/90/1.2/1.9; the gate report carries the evidence.</summary>
+    public double[] Payments { get; set; } = { 90, 110, 130, 155, 295, 560, 1065, 2025 };
 
     public double Overround { get; set; } = 0.05;
     public double CashOutMargin { get; set; } = 0.08;

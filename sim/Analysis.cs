@@ -4,7 +4,10 @@ using SBR.Engine;
 
 namespace SBR.Sim;
 
-/// <summary>Relic power audit (§2): skilled with each relic granted free vs baseline skilled.</summary>
+/// <summary>Item power audit: skilled with each of the SIX items granted free vs baseline.
+/// Passives are granted at run start; consumables are refilled every round (a single-use item
+/// granted once would audit as noise). Timeout is included for the non-degeneracy read but is
+/// EXEMPT from the DEAD flag — bots never play it (playtest-gated, PLAN.md).</summary>
 public sealed class AuditData
 {
     public BatchSummary Baseline = null!;
@@ -12,14 +15,16 @@ public sealed class AuditData
 
     public sealed class Entry
     {
-        public string RelicId = "";
-        public string RelicName = "";
+        public string Id = "";
+        public string Name = "";
+        public bool IsConsumable;
         public double MedianDeath;
         public double WonPct;
         public double MedianDelta;
         public double WonDelta;
         public double MeanDeath;
-        public double MeanDelta; // Δ mean rounds survived — the discriminating signal when win% saturates
+        public double MeanDelta;      // Δ mean rounds survived — the discriminating signal
+        public double TotemFireRate;  // only meaningful for the totem row
     }
 
     public static AuditData Compute(int runs, string seedPrefix, RunConfig cfg, BatchSummary skilledBaseline)
@@ -28,29 +33,43 @@ public sealed class AuditData
         var strat = new SkilledStrategy();
 
         foreach (RelicDefinition def in RelicCatalog.All)
-        {
-            RunResult[] granted = Harness.RunBatch(strat, runs, seedPrefix, cfg, new[] { def.Id });
-            BatchSummary s = BatchSummary.From("skilled+" + def.Id, granted);
-            audit.Entries.Add(new Entry
-            {
-                RelicId = def.Id,
-                RelicName = def.Name,
-                MedianDeath = s.MedianDeath,
-                WonPct = s.WonPct,
-                MedianDelta = s.MedianDeath - skilledBaseline.MedianDeath,
-                WonDelta = s.WonPct - skilledBaseline.WonPct,
-                MeanDeath = s.MeanDeath,
-                MeanDelta = s.MeanDeath - skilledBaseline.MeanDeath,
-            });
-        }
+            audit.Entries.Add(Entry_(strat, runs, seedPrefix, cfg, skilledBaseline,
+                def.Id, def.Name, isConsumable: false));
 
-        // Win% and median saturate at the §8 floor, so rank by the finer Δ mean rounds survived.
+        foreach (ConsumableDefinition def in RelicCatalog.Consumables)
+            audit.Entries.Add(Entry_(strat, runs, seedPrefix, cfg, skilledBaseline,
+                def.Id, def.Name, isConsumable: true));
+
         audit.Entries.Sort((a, b) => b.MeanDelta.CompareTo(a.MeanDelta));
         return audit;
     }
+
+    private static Entry Entry_(SkilledStrategy strat, int runs, string seedPrefix, RunConfig cfg,
+        BatchSummary baseline, string id, string name, bool isConsumable)
+    {
+        RunResult[] granted = isConsumable
+            ? Harness.RunBatch(strat, runs, seedPrefix, cfg, grantedConsumable: id)
+            : Harness.RunBatch(strat, runs, seedPrefix, cfg, new[] { id });
+        BatchSummary s = BatchSummary.From("skilled+" + id, granted);
+        return new Entry
+        {
+            Id = id,
+            Name = name,
+            IsConsumable = isConsumable,
+            MedianDeath = s.MedianDeath,
+            WonPct = s.WonPct,
+            MedianDelta = s.MedianDeath - baseline.MedianDeath,
+            WonDelta = s.WonPct - baseline.WonPct,
+            MeanDeath = s.MeanDeath,
+            MeanDelta = s.MeanDeath - baseline.MeanDeath,
+            TotemFireRate = s.TotemFireRate,
+        };
+    }
 }
 
-/// <summary>Pairwise relic combo scan (§6): synergy excess over the sum of solo win-rate deltas.</summary>
+/// <summary>Pairwise passive combo scan: synergy excess over the sum of solo win-rate deltas.
+/// With 3 passives this is 3 pairs — and the Multiplier+Scar pair is gate G5's superadditivity
+/// evidence (composition through the shared PayoutMultiplier product).</summary>
 public sealed class ComboData
 {
     public int RunsPerConfig;
@@ -64,6 +83,13 @@ public sealed class ComboData
         public string IdB = "";
         public double PairWonPct;
         public double SynergyExcess;
+    }
+
+    public Pair? Find(string a, string b)
+    {
+        foreach (Pair p in Pairs)
+            if ((p.IdA == a && p.IdB == b) || (p.IdA == b && p.IdB == a)) return p;
+        return null;
     }
 
     public static ComboData Compute(int runs, string seedPrefix, RunConfig cfg, double baselineWonPct)
@@ -92,5 +118,108 @@ public sealed class ComboData
 
         data.Pairs.Sort((x, y) => y.SynergyExcess.CompareTo(x.SynergyExcess));
         return data;
+    }
+}
+
+/// <summary>The gate table (PLAN.md, Allen-approved): the acceptance criteria of the economy
+/// rework's sim campaign, computed from the batches + audit + combo data.</summary>
+public sealed class GateData
+{
+    public sealed class Gate
+    {
+        public string Id = "";
+        public string Description = "";
+        public bool Pass;
+        public string Actual = "";
+    }
+
+    public readonly List<Gate> Gates = new();
+    public readonly List<string> ItemFlags = new();
+
+    public static GateData Evaluate(BatchSummary? naive, BatchSummary? skilled, BatchSummary? noshop,
+        BatchSummary? martyr, AuditData? audit, ComboData? combos)
+    {
+        var g = new GateData();
+
+        if (naive != null)
+            g.Add("G1", "honest gambling: naive median death 3–4, win <1%",
+                naive.MedianDeath >= 3.0 && naive.MedianDeath <= 4.0 && naive.WonPct < 1.0,
+                $"median {naive.MedianDeath:0.#}, won {naive.WonPct:F1}%");
+
+        if (noshop != null)
+            g.Add("G2", "engine mandatory: no-shop skilled median death 5–6, win <2%",
+                noshop.MedianDeath >= 5.0 && noshop.MedianDeath <= 6.0 && noshop.WonPct < 2.0,
+                $"median {noshop.MedianDeath:0.#}, won {noshop.WonPct:F1}%");
+
+        if (skilled != null)
+            g.Add("G3", "skilled + items wins: median death ≥7, win 10–15%",
+                skilled.MedianDeath >= 7.0 && skilled.WonPct >= 10.0 && skilled.WonPct <= 15.0,
+                $"median {skilled.MedianDeath:0.#}, won {skilled.WonPct:F1}%");
+
+        if (skilled != null)
+        {
+            int cross = skilled.EvZeroCrossRound();
+            g.Add("G4", "the EV arc exists: skilled mean ticket EV crosses zero in rounds 4–7",
+                cross >= 4 && cross <= 7,
+                cross == 0 ? "never crosses" : $"crosses at R{cross}");
+        }
+
+        if (combos != null && audit != null)
+        {
+            ComboData.Pair? pair = combos.Find(RelicCatalog.MultiplierId, RelicCatalog.ScarTissueId);
+            if (pair != null)
+                g.Add("G5", "composition superadditive: Multiplier+Scar pair Δwin > sum of solo Δwins",
+                    pair.SynergyExcess > 0.0,
+                    $"synergy excess {pair.SynergyExcess:+0.0;-0.0}pp");
+        }
+
+        if (martyr != null && skilled != null)
+            g.Add("G6", "martyr guard: scar-farming bot win ≤ skilled +2pp",
+                martyr.WonPct <= skilled.WonPct + 2.0,
+                $"martyr {martyr.WonPct:F1}% vs skilled {skilled.WonPct:F1}%");
+
+        if (audit != null)
+        {
+            foreach (AuditData.Entry e in audit.Entries)
+            {
+                if (e.Id == "timeout") continue; // playtest-gated: bots never play it
+                if (e.WonDelta < 1.0 && Math.Abs(e.MeanDelta) < 0.05)
+                    g.ItemFlags.Add($"DEAD: {e.Name} (Δwon {e.WonDelta:+0.0;-0.0}pp, Δmean {e.MeanDelta:+0.00;-0.00})");
+            }
+            // Dominance: no item's Δwon more than 2× the next best positive.
+            double best = double.MinValue, second = double.MinValue;
+            string bestName = "";
+            foreach (AuditData.Entry e in audit.Entries)
+            {
+                if (e.Id == "timeout") continue;
+                if (e.WonDelta > best) { second = best; best = e.WonDelta; bestName = e.Name; }
+                else if (e.WonDelta > second) second = e.WonDelta;
+            }
+            if (second > 0 && best > 2.0 * second)
+                g.ItemFlags.Add($"DOMINANT: {bestName} (Δwon {best:F1}pp > 2× next {second:F1}pp)");
+
+            foreach (AuditData.Entry e in audit.Entries)
+            {
+                if (e.Id != RelicCatalog.TotemId) continue;
+                bool healthy = e.MeanDelta >= 0.3 && e.TotemFireRate >= 25.0 && e.TotemFireRate <= 60.0;
+                if (!healthy)
+                    g.ItemFlags.Add($"TOTEM: Δmean {e.MeanDelta:+0.00;-0.00} (want ≥0.3), " +
+                        $"fire rate {e.TotemFireRate:F0}% (want 25–60%)");
+            }
+        }
+
+        return g;
+    }
+
+    private void Add(string id, string desc, bool pass, string actual)
+        => Gates.Add(new Gate { Id = id, Description = desc, Pass = pass, Actual = actual });
+
+    public bool AllPass
+    {
+        get
+        {
+            foreach (Gate gate in Gates) if (!gate.Pass) return false;
+            return Gates.Count > 0;
+        }
     }
 }

@@ -1,45 +1,62 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using SBR.Engine;
 
 namespace SBR.Sim;
 
 /// <summary>
-/// HARNESS-ONLY BACKDOOR — must never migrate into engine or game code.
-///
-/// The relic power audit and the combo scan need a run to start already owning specific relics. The
-/// frozen engine has no "grant relic" API: RelicCatalog prices are fixed and Run.BuyRelic requires
-/// Phase.Shop and a bank deduction, so buying is both stochastic (the shop may not offer it) and
-/// bank-distorting. The only clean, non-distorting way is to reach into Run's private EffectEngine and
-/// append the relic directly, exactly as a purchase would — reflection, which is legitimate in a test
-/// harness (this project) but would be a layering violation anywhere else.
+/// Item grants for the audit paths (economy rework: the engine now exposes public
+/// Run.GrantRelic/GrantConsumable seams, so the old reflection backdoor is gone).
+/// Passives are granted once at run start; a granted consumable is REFILLED at every round's
+/// open by RunPlayer (modeling a steady supply), because a single-use item granted once would
+/// audit as noise.
 /// </summary>
-public static class RelicGrant
+public static class ItemGrant
 {
-    private static readonly FieldInfo EffectsField =
-        typeof(Run).GetField("_effects", BindingFlags.NonPublic | BindingFlags.Instance)
-        ?? throw new InvalidOperationException("Run._effects not found — engine layout changed.");
+    private static readonly Dictionary<string, RelicDefinition> RelicById = BuildRelics();
+    private static readonly Dictionary<string, ConsumableDefinition> ConsumableById = BuildConsumables();
 
-    private static readonly Dictionary<string, RelicDefinition> ById = BuildIndex();
+    public static bool IsConsumable(string id) => ConsumableById.ContainsKey(id);
 
-    private static Dictionary<string, RelicDefinition> BuildIndex()
+    public static string NameOf(string id)
+        => RelicById.TryGetValue(id, out var r) ? r.Name
+            : ConsumableById.TryGetValue(id, out var c) ? c.Name : id;
+
+    public static double PriceOf(string id)
+        => RelicById.TryGetValue(id, out var r) ? r.Price
+            : ConsumableById.TryGetValue(id, out var c) ? c.Price : 0.0;
+
+    /// <summary>Grants the passives in order (acquisition order) to a fresh round-1 run.</summary>
+    public static void GrantRelics(Run run, IReadOnlyList<string> relicIds)
+    {
+        foreach (string id in relicIds)
+        {
+            if (!RelicById.TryGetValue(id, out RelicDefinition? def))
+                throw new ArgumentException($"Unknown relic id '{id}'");
+            run.GrantRelic(def);
+        }
+    }
+
+    /// <summary>Tops the run up to one held copy of the consumable (RunPlayer calls per round).</summary>
+    public static void RefillConsumable(Run run, string id)
+    {
+        if (!ConsumableById.TryGetValue(id, out ConsumableDefinition? def))
+            throw new ArgumentException($"Unknown consumable id '{id}'");
+        if (!run.OwnsConsumable(id))
+            run.GrantConsumable(def);
+    }
+
+    private static Dictionary<string, RelicDefinition> BuildRelics()
     {
         var map = new Dictionary<string, RelicDefinition>();
         foreach (RelicDefinition d in RelicCatalog.All) map[d.Id] = d;
         return map;
     }
 
-    /// <summary>Grants the given relics (in order → acquisition order) to a freshly constructed run
-    /// sitting in round-1 Betting. Must be called before the first bet.</summary>
-    public static void Grant(Run run, IReadOnlyList<string> relicIds)
+    private static Dictionary<string, ConsumableDefinition> BuildConsumables()
     {
-        var effects = (EffectEngine)EffectsField.GetValue(run)!;
-        foreach (string id in relicIds)
-        {
-            if (!ById.TryGetValue(id, out RelicDefinition? def))
-                throw new ArgumentException($"Unknown relic id '{id}'");
-            effects.Add(def); // appends in acquisition order, resets its per-round charge — as BuyRelic does
-        }
+        var map = new Dictionary<string, ConsumableDefinition>();
+        foreach (ConsumableDefinition d in RelicCatalog.Consumables) map[d.Id] = d;
+        return map;
     }
 }

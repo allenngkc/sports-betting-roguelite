@@ -15,7 +15,9 @@ public class GoldenSeedTests
 
     private static Run ScriptedRound()
     {
-        var run = new Run(Seed);
+        // The Week-2 pin was taken at bank 500; the pin stays valid by pinning the config too
+        // (outcomes/drama are bank-independent, but the settled-bank assertion is not).
+        var run = new Run(Seed, new RunConfig { StartingBank = 500 });
         // Parlay: (0,Away) win, (2,Away) win, (3,Home) lose-on-final.  Single: (1,Home) win.
         run.PlaceTicket(new[] { new Pick(0, Side.Away), new Pick(2, Side.Away), new Pick(3, Side.Home) }, 100);
         run.PlaceTicket(new[] { new Pick(1, Side.Home) }, 50);

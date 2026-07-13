@@ -21,7 +21,7 @@ public class ItemTests
     }
 
     private static RunConfig EasyPayments(params double[] payments)
-        => new RunConfig { Payments = payments };
+        => new RunConfig { Payments = payments, StartingBank = 500 }; // scar math below assumes 500
 
     // ---- The Multiplier ----
 
