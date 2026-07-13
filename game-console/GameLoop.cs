@@ -42,42 +42,99 @@ internal static class GameLoop
         {
             Ui.Clear();
             Ui.Rule();
-            Ui.WriteLine(ConsoleColor.White, $"SHOP — round {run.Round} cleared, gear up");
+            Ui.WriteLine(ConsoleColor.White, $"SHOP — round {run.Round} paid, gear up");
             Ui.Rule();
 
-            string piggy = Owns(run, "piggy_bank") ? $"   ·   PIGGY {Ui.Money(run.PiggyBankBalance)}" : "";
             Ui.WriteLine(ConsoleColor.DarkGray,
-                $"BANK {Ui.Money(run.Bank)}   ·   SLOTS {run.OwnedRelics.Count}/{run.Config.RelicSlots}{piggy}");
+                $"BANK {Ui.Money(run.Bank)}   ·   COMPS {run.Comps:0.#}   ·   relic slots {run.OwnedRelics.Count}/{run.Config.RelicSlots}"
+                + $"   ·   consumable slots {run.OwnedConsumables.Count}/{run.Config.ConsumableSlots}");
+            Ui.WriteLine(ConsoleColor.DarkGray,
+                $"next payment {(run.NextPayment.HasValue ? Ui.Money(run.NextPayment.Value) : "—")}   ·   comps buy items; cash pays the bookie");
             Ui.Line();
 
-            for (int i = 0; i < run.ShopOffers.Count; i++)
+            int k = run.ShopOffers.Count;
+            for (int i = 0; i < k; i++)
             {
                 RelicDefinition o = run.ShopOffers[i];
                 Ui.Write(ConsoleColor.White, $" {i + 1}. {o.Name}  ");
-                Ui.Write(ConsoleColor.Yellow, Ui.Money(o.Price));
+                Ui.Write(ConsoleColor.Yellow, $"{o.Price:0.#} comps");
                 Ui.WriteLine(ConsoleColor.DarkGray, $"   [{o.Axis}]");
+                Ui.WriteLine(ConsoleColor.Gray, $"     {o.Description}");
+            }
+            for (int i = 0; i < run.ConsumableOffers.Count; i++)
+            {
+                ConsumableDefinition o = run.ConsumableOffers[i];
+                Ui.Write(ConsoleColor.White, $" {k + i + 1}. {o.Name}  ");
+                Ui.Write(ConsoleColor.Yellow, $"{o.Price:0.#} comps");
+                Ui.WriteLine(ConsoleColor.DarkGray, "   [consumable]");
                 Ui.WriteLine(ConsoleColor.Gray, $"     {o.Description}");
             }
 
             Ui.Line();
-            string cmd = Ui.Prompt($"buy 1–{run.ShopOffers.Count} or [X] leave: ").ToUpperInvariant();
+            int total = k + run.ConsumableOffers.Count;
+            string cmd = Ui.Prompt($"buy 1–{total}, [S]ell, or [X] leave: ").ToUpperInvariant();
             if (cmd == "X" || Ui.Eof)
             {
                 run.ExitShop();
+                if (run.LastGift != null)
+                {
+                    Ui.WriteLine(ConsoleColor.Cyan,
+                        $" the bookie texts: \"rough stretch. house sends its regards.\" — FREE {run.LastGift.Name}");
+                    Ui.Pause();
+                }
                 return;
             }
 
-            if (int.TryParse(cmd, out int n) && n >= 1 && n <= run.ShopOffers.Count)
+            if (cmd == "S")
             {
-                try { run.BuyRelic(n - 1); }
+                SellScreen(run);
+                continue;
+            }
+
+            if (int.TryParse(cmd, out int n) && n >= 1 && n <= total)
+            {
+                try
+                {
+                    if (n <= k) run.BuyRelic(n - 1);
+                    else run.BuyConsumable(n - 1 - k);
+                }
                 catch (Exception ex) { Ui.WriteLine(ConsoleColor.Red, ex.Message); Ui.Pause(); }
             }
             else
             {
-                Ui.WriteLine(ConsoleColor.Red, "Pick an offer number, or X to leave.");
+                Ui.WriteLine(ConsoleColor.Red, "Pick an offer number, S to sell, or X to leave.");
                 Ui.Pause();
             }
         }
+    }
+
+    private static void SellScreen(Run run)
+    {
+        if (run.OwnedRelics.Count == 0 && run.OwnedConsumables.Count == 0)
+        {
+            Ui.WriteLine(ConsoleColor.Red, "Nothing to sell.");
+            Ui.Pause();
+            return;
+        }
+
+        Ui.Line();
+        int k = run.OwnedRelics.Count;
+        for (int i = 0; i < k; i++)
+            Ui.WriteLine(ConsoleColor.Gray,
+                $" {i + 1}. {run.OwnedRelics[i].Name}  (sells for {run.OwnedRelics[i].Price * run.Config.SellBackFraction:0.#} comps)");
+        for (int i = 0; i < run.OwnedConsumables.Count; i++)
+            Ui.WriteLine(ConsoleColor.Gray,
+                $" {k + i + 1}. {run.OwnedConsumables[i].Name}  (sells for {run.OwnedConsumables[i].Price * run.Config.SellBackFraction:0.#} comps)");
+
+        string cmd = Ui.Prompt($"sell 1–{k + run.OwnedConsumables.Count} (enter to cancel): ");
+        if (!int.TryParse(cmd, out int n) || n < 1 || n > k + run.OwnedConsumables.Count) return;
+
+        try
+        {
+            if (n <= k) run.SellRelic(n - 1);
+            else run.SellConsumable(n - 1 - k);
+        }
+        catch (Exception ex) { Ui.WriteLine(ConsoleColor.Red, ex.Message); Ui.Pause(); }
     }
 
     // ---- run over ----
@@ -87,15 +144,18 @@ internal static class GameLoop
         Ui.Clear();
         Ui.Rule();
         if (run.Phase == Phase.RunWon)
-            Ui.WriteLine(ConsoleColor.Green, $"YOU WON — all {run.Config.Rounds} rounds cleared. The house blinks first.");
-        else if (run.Debt > 0)
-            Ui.WriteLine(ConsoleColor.Red,
-                $"THE BOOKIE COLLECTS — round {run.Round}, {Ui.Money(run.Requirement)} due ({Ui.Money(run.Debt)} of it his), and you couldn't pay.");
+        {
+            Ui.WriteLine(ConsoleColor.Green, $"YOU WON — all {run.Config.Rounds} payments made. The house blinks first.");
+        }
         else
-            Ui.WriteLine(ConsoleColor.Red, $"BUSTED — out in round {run.Round}, short of {Ui.Money(run.CurrentTarget)}.");
+        {
+            SettlementReport r = run.LastSettlement!.Value;
+            Ui.WriteLine(ConsoleColor.Red,
+                $"THE BOOKIE COLLECTS — round {r.Round}: {Ui.Money(r.Payment)} due, you had {Ui.Money(r.BankBefore)} (short {Ui.Money(r.Shortfall)}).");
+        }
         Ui.Rule();
 
-        Ui.WriteLine(ConsoleColor.White, $"Final bank: {Ui.Money(run.Bank)}");
+        Ui.WriteLine(ConsoleColor.White, $"Final bank: {Ui.Money(run.Bank)}   ·   comps left: {run.Comps:0.#}");
         Ui.WriteLine(ConsoleColor.DarkGray, $"Seed: {run.Rng.RunSeed}");
         Ui.Line();
         return Ui.Confirm("play again? y/n: ");
@@ -125,40 +185,31 @@ internal static class GameLoop
             }
 
             run.LockRound();
-            run.FastForwardRound(); // never cash out
-            double debtBefore = run.Debt;
+            run.FastForwardRound(); // never cash out; pending windows auto-decline
             run.Settle();
 
+            SettlementReport r = run.LastSettlement!.Value;
             bool survived = run.Phase != Phase.RunLost;
-            string debt = run.Debt > 0 ? $" debt {(long)Math.Round(run.Debt)}" : "";
-            Console.WriteLine($"R{reached} bank {(long)Math.Round(run.Bank)} target {(long)Math.Round(run.CurrentTarget)}{debt} {(survived ? "W" : "L")}");
-            if (survived && debtBefore == 0 && run.Debt > 0)
-                Console.WriteLine($"R{reached} THE BOOKIE FLOATS YOU — owing {(long)Math.Round(run.Debt)}");
-            else if (survived && debtBefore > 0 && run.Debt == 0)
-                Console.WriteLine($"R{reached} DEBT CLEARED -{(long)Math.Round(debtBefore)}");
+            Console.WriteLine($"R{reached} bank {(long)Math.Round(run.Bank)} payment {(long)r.Payment}"
+                + $" comps {run.Comps:0.#} {(survived ? "W" : "L")}");
+            if (r.TotemFired)
+                Console.WriteLine($"R{reached} THE TOTEM BURNS — short {(long)r.Shortfall}, next payment surcharged");
 
             if (run.Phase == Phase.RunLost) { won = false; break; }
             if (run.Phase == Phase.RunWon) { won = true; break; }
 
-            // Phase.Shop: buy offer 0 if affordable and a slot remains.
+            // Phase.Shop: buy the first affordable offer (comps) if a slot remains.
             if (run.ShopOffers.Count > 0
                 && run.OwnedRelics.Count < run.Config.RelicSlots
-                && run.ShopOffers[0].Price <= run.Bank)
+                && run.ShopOffers[0].Price <= run.Comps)
             {
                 try { run.BuyRelic(0); } catch { /* ignore, keep the run moving */ }
             }
             run.ExitShop();
         }
 
-        string how = won ? "WON" : run.Debt > 0 ? "LOST (the bookie collects)" : "LOST";
+        string how = won ? "WON" : "LOST (the bookie collects)";
         Console.WriteLine($"AUTO RESULT: {how}, round {reached}, final bank {Ui.Money(run.Bank)}, seed {seed}");
         return 0;
-    }
-
-    private static bool Owns(Run run, string id)
-    {
-        foreach (RelicDefinition r in run.OwnedRelics)
-            if (r.Id == id) return true;
-        return false;
     }
 }

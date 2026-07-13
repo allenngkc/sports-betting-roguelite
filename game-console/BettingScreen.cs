@@ -29,7 +29,7 @@ internal static class BettingScreen
                     break;
 
                 case "L":
-                    if (run.Tickets.Count == 0 && !Ui.Confirm("no bets this round? y/n: ")) break;
+                    if (run.Tickets.Count == 0 && !Ui.Confirm("no bets this round? the payment still comes due — y/n: ")) break;
                     run.LockRound();
                     return BetAction.Locked;
 
@@ -59,22 +59,35 @@ internal static class BettingScreen
     {
         Ui.Clear();
         Ui.WriteLine(ConsoleColor.Cyan,
-            $"ROUND {run.Round}/{run.Config.Rounds}  ·  BANK {Ui.Money(run.Bank)}  ·  TARGET {Ui.Money(run.CurrentTarget)}  ·  SEED {run.Rng.RunSeed}");
+            $"ROUND {run.Round}/{run.Config.Rounds}  ·  BANK {Ui.Money(run.Bank)}  ·  PAYMENT DUE {Ui.Money(run.CurrentPayment)}"
+            + $"  ·  COMPS {run.Comps:0.#}  ·  SEED {run.Rng.RunSeed}");
         Ui.WriteLine(ConsoleColor.DarkGray,
-            $"tickets {run.Tickets.Count}/{run.Config.MaxTicketsPerRound}  ·  relics {run.OwnedRelics.Count}/{run.Config.RelicSlots}");
+            $"tickets {run.Tickets.Count}/{run.Config.MaxTicketsPerRound}  ·  relics {run.OwnedRelics.Count}/{run.Config.RelicSlots}"
+            + $"  ·  consumables {run.OwnedConsumables.Count}/{run.Config.ConsumableSlots}"
+            + $"  ·  staking earns comps ({run.Config.CompsPerDollarStaked:0.##}/$)");
 
-        if (run.Debt > 0)
-            Ui.WriteLine(ConsoleColor.Red,
-                $"DEBT {Ui.Money(run.Debt)}  ·  the settle needs {Ui.Money(run.Requirement)} or the bookie collects");
+        // The whole ledger is public information (design/10) — show what is coming.
+        var schedule = new List<string>();
+        for (int r = run.Round - 1; r < run.PaymentSchedule.Count; r++)
+            schedule.Add(Ui.Money(run.PaymentSchedule[r]));
+        Ui.WriteLine(ConsoleColor.DarkGray, "SCHEDULE: " + string.Join(" → ", schedule));
 
-        if (OwnsPiggy(run))
-            Ui.WriteLine(ConsoleColor.Cyan, $"PIGGY {Ui.Money(run.PiggyBankBalance)}");
+        if (run.ScarStacks > 0)
+            Ui.WriteLine(ConsoleColor.Magenta,
+                $"SCAR {run.ScarStacks:0.#}pp — your FIRST ticket this round carries it (burns on a hit)");
 
         if (run.OwnedRelics.Count > 0)
         {
             var names = new List<string>();
             foreach (RelicDefinition r in run.OwnedRelics) names.Add(r.Name);
             Ui.WriteLine(ConsoleColor.Cyan, "RELICS: " + string.Join(", ", names));
+        }
+
+        if (run.OwnedConsumables.Count > 0)
+        {
+            var names = new List<string>();
+            foreach (ConsumableDefinition c in run.OwnedConsumables) names.Add(c.Name);
+            Ui.WriteLine(ConsoleColor.Cyan, "CONSUMABLES: " + string.Join(", ", names));
         }
 
         Ui.Rule();
@@ -148,9 +161,21 @@ internal static class BettingScreen
             return;
         }
 
+        // A held Profit Boost is played at the betslip (design/10 D): pick the leg it lands on.
+        int boostLeg = -1;
+        if (run.OwnsConsumable("profit_boost") && picks.Count > 0)
+        {
+            string b = Ui.Prompt($"PROFIT BOOST held — boost which leg? (1-{picks.Count}, enter to skip) ");
+            if (int.TryParse(b, NumberStyles.Integer, CultureInfo.InvariantCulture, out int bl)
+                && bl >= 1 && bl <= picks.Count)
+            {
+                boostLeg = bl - 1;
+            }
+        }
+
         try
         {
-            Ticket t = run.PlaceTicket(picks, stake);
+            Ticket t = run.PlaceTicket(picks, stake, boostLeg);
             Ui.WriteLine(ConsoleColor.Green,
                 $"TICKET PLACED: {DescribeLegs(t)}  |  {Ui.Money(t.Stake)} → {Ui.Money(t.PotentialPayout)}");
         }
@@ -198,15 +223,6 @@ internal static class BettingScreen
     }
 
     // ---- helpers ----
-
-    private static bool OwnsPiggy(Run run) => Owns(run, "piggy_bank");
-
-    private static bool Owns(Run run, string id)
-    {
-        foreach (RelicDefinition r in run.OwnedRelics)
-            if (r.Id == id) return true;
-        return false;
-    }
 
     private static string Short(string teamName)
     {

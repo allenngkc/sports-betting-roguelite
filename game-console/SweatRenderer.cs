@@ -16,14 +16,15 @@ internal static class SweatRenderer
     private const int PollSliceMs = 50;
     private const int DeadBeatMs = 600; // the silence before a bad-beat DEAD line
 
-    private enum Input { None, CashOut, FastForward }
+    private enum Input { None, CashOut, FastForward, Timeout }
 
     public static void Play(Run run)
     {
         Ui.Clear();
         Ui.Rule();
-        Ui.WriteLine(ConsoleColor.White, $"ROUND {run.Round} — THE SWEAT");
-        Ui.WriteLine(ConsoleColor.DarkGray, "[C] cash out (when offered)  ·  [F] fast-forward (never the final leg)");
+        Ui.WriteLine(ConsoleColor.White, $"ROUND {run.Round} — THE SWEAT   (payment due at settle: {Ui.Money(run.CurrentPayment)})");
+        Ui.WriteLine(ConsoleColor.DarkGray,
+            "[C] cash out  ·  [T] timeout (hold the offer)  ·  [M] mulligan slip (when a leg dies)  ·  [F] fast-forward");
         Ui.Rule();
 
         double lastBank = run.Bank;
@@ -39,31 +40,30 @@ internal static class SweatRenderer
         run.FinishSweat();
         Settlement(run, cashOuts);
 
-        double debtBefore = run.Debt;
-        double bankBefore = run.Bank;
         run.Settle();
-        DebtBeat(run, debtBefore, bankBefore);
+        PaymentBeat(run);
 
         Ui.Line();
         Ui.Pause();
     }
 
-    /// <summary>The debt-as-HP settle beats: the bookie's float when a clean miss borrows, the
-    /// green clear when a settle repays. A death in debt is the run-over screen's line, not ours.</summary>
-    private static void DebtBeat(Run run, double debtBefore, double bankBefore)
+    /// <summary>The payment settle beats (design/10): the deduction, or the Totem covering a
+    /// shortfall. A missed payment is the run-over screen's line, not ours.</summary>
+    private static void PaymentBeat(Run run)
     {
-        if (run.Phase == Phase.RunLost) return;
+        SettlementReport r = run.LastSettlement!.Value;
+        if (r.Outcome == Phase.RunLost) return;
 
-        if (debtBefore == 0.0 && run.Debt > 0.0)
+        if (r.TotemFired)
         {
-            double floated = run.Bank - bankBefore; // topped up to the target
+            Ui.WriteLine(ConsoleColor.Magenta, " THE TOTEM BURNS — the bookie covers your shortfall.");
             Ui.WriteLine(ConsoleColor.Yellow,
-                $" THE BOOKIE FLOATS YOU — {Ui.Signed(floated)} on the books, you owe {Ui.Money(run.Debt)}");
-            Ui.WriteLine(ConsoleColor.Cyan, " (clear TARGET + DEBT at a later settle, or he collects)");
+                $" {Ui.Money(r.Shortfall)} short, everything taken; the next payment grows by {Ui.Money(r.Shortfall * 1.5)}.");
         }
-        else if (debtBefore > 0.0 && run.Debt == 0.0)
+        else
         {
-            Ui.WriteLine(ConsoleColor.Green, $" DEBT CLEARED {Ui.Signed(-debtBefore)}");
+            Ui.WriteLine(ConsoleColor.Green,
+                $" PAYMENT MADE {Ui.Signed(-r.Payment)}  ·  bank {Ui.Money(r.BankAfter)}");
         }
     }
 
@@ -93,6 +93,19 @@ internal static class SweatRenderer
             prevProb = evt.WinProbAfter;
             RenderBankDelta(run, ref lastBank);
 
+            // The Mulligan Slip window (design/10 D): a dead leg suspended the session — the
+            // player's timed save. Declining (any key but M, or no slip) lets the bust proceed.
+            if (session.HasPendingLoss)
+            {
+                if (run.OwnsConsumable("mulligan_slip") && PromptSlip())
+                {
+                    run.PlayMulliganSlip(session);
+                    Ui.WriteLine(ConsoleColor.Cyan, "  MULLIGAN SLIP — leg voided, the ticket lives");
+                    continue;
+                }
+                session.DeclinePendingLoss();
+            }
+
             if (session.IsComplete) break;
 
             bool onFinalLeg = evt.LegIndex == lastLeg;
@@ -110,11 +123,35 @@ internal static class SweatRenderer
                     lastBank = run.Bank; // the credit is the CASHED OUT line; don't double-report it
                     return;
 
+                case Input.Timeout:
+                    if (run.OwnsConsumable("timeout"))
+                    {
+                        run.PlayTimeout(session);
+                        Ui.WriteLine(ConsoleColor.Cyan,
+                            $"  TIMEOUT — the offer holds at {Ui.Money(session.CashOutOffer()!.Value)} through the next 3 events");
+                    }
+                    else
+                    {
+                        Ui.WriteLine(ConsoleColor.DarkGray, "  (no Timeout held — the shop sells them)");
+                    }
+                    break;
+
                 case Input.FastForward:
                     fastForward = true;
                     break;
             }
         }
+    }
+
+    /// <summary>The window prompt: M plays the slip, anything else declines. Redirected input
+    /// (the smoke pipeline) auto-declines — autoplay never consumes items.</summary>
+    private static bool PromptSlip()
+    {
+        if (Console.IsInputRedirected) return false;
+        Ui.Write(ConsoleColor.Cyan, "  MULLIGAN SLIP held — [M] void the dead leg, any other key lets it die: ");
+        ConsoleKey key = Console.ReadKey(true).Key;
+        Ui.Line();
+        return key == ConsoleKey.M;
     }
 
     private static void RenderEvent(DramaEvent e, Leg leg, SweatSession session, double prevProb, bool fast)
@@ -141,13 +178,6 @@ internal static class SweatRenderer
         if (leg.IsVoided)
         {
             Ui.WriteLine(ConsoleColor.Cyan, "  MULLIGAN — leg voided, the ticket lives");
-            return;
-        }
-
-        if (leg.LuckyFlippedWon)
-        {
-            Ui.WriteLine(ConsoleColor.Magenta, "  THE BOOK GRADES IT YOUR WAY?!");
-            Ui.WriteLine(ConsoleColor.Green, $"  LEG {k}: ✔ GREEN");
             return;
         }
 
@@ -200,13 +230,10 @@ internal static class SweatRenderer
             }
         }
 
-        // Debt-as-HP: the settle checks target + debt, so show the full requirement when indebted.
-        bool met = run.Bank >= run.Requirement;
-        string owed = run.Debt > 0
-            ? $"TARGET {Ui.Money(run.CurrentTarget)} + DEBT {Ui.Money(run.Debt)}"
-            : $"TARGET {Ui.Money(run.CurrentTarget)}";
+        // The payment model: the settle DEDUCTS CurrentPayment — show whether the bank holds it.
+        bool met = run.Bank >= run.CurrentPayment;
         Ui.WriteLine(met ? ConsoleColor.Green : ConsoleColor.Red,
-            $" BANK {Ui.Money(run.Bank)}  vs  {owed}   {(met ? "✔ CLEARED" : "✘ SHORT")}");
+            $" BANK {Ui.Money(run.Bank)}  vs  PAYMENT DUE {Ui.Money(run.CurrentPayment)}   {(met ? "✔ COVERED" : "✘ SHORT")}");
         Ui.Rule();
     }
 
@@ -254,6 +281,8 @@ internal static class SweatRenderer
                 ConsoleKey key = Console.ReadKey(true).Key;
                 if (key == ConsoleKey.C && session.CashOutOffer() != null)
                     return Input.CashOut;
+                if (key == ConsoleKey.T && session.CashOutOffer() != null)
+                    return Input.Timeout;
                 if (key == ConsoleKey.F)
                 {
                     if (!onFinalLeg) return Input.FastForward;
