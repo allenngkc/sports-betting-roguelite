@@ -88,13 +88,9 @@ public sealed class Leg
     /// (boosted_odds, promo_code) rewrote it before the ticket locked.</summary>
     public double OfferedOdds { get; internal set; }
 
-    /// <summary>Set by the mulligan relic when this leg reveals Lost: the leg is struck from the ticket
-    /// (excluded from payout, win condition, cash-out products, and early-payout partials).</summary>
+    /// <summary>Set when a Mulligan Slip voids this leg after it reveals Lost: the leg is struck from
+    /// the ticket (excluded from payout, win condition, and cash-out products).</summary>
     public bool IsVoided { get; internal set; }
-
-    /// <summary>Set by the lucky_charm relic when the ticket's final leg reveals Lost but the baked
-    /// second-chance roll succeeded: this ticket grades the leg Won without touching Matchup.Result.</summary>
-    public bool LuckyFlippedWon { get; internal set; }
 
     public Leg(Matchup matchup, Side side, double offeredOdds)
     {
@@ -111,9 +107,8 @@ public sealed class Leg
         : Matchup.Result == Side ? LegState.Won
         : LegState.Lost;
 
-    /// <summary>This ticket's grading of the leg: a lucky-charm flip counts as Won even though
-    /// <see cref="State"/> (engine truth) is still Lost. Voided legs never count as won.</summary>
-    public bool GradesWon => !IsVoided && (LuckyFlippedWon || State == LegState.Won);
+    /// <summary>This ticket's grading of the leg. Voided legs never count as won.</summary>
+    public bool GradesWon => !IsVoided && State == LegState.Won;
 }
 
 public sealed class Ticket
@@ -123,9 +118,16 @@ public sealed class Ticket
     public double VigPaid { get; }
     public TicketState State { get; internal set; } = TicketState.Open;
 
-    /// <summary>Payout scale from relic effects (high_roller's all-in bonus); 1.0 unless an effect set it.
-    /// Scales the win payout and the cash-out fair value, never the early-payout partials (stake-based).</summary>
+    /// <summary>Payout scale from relic effects — THE product slot (design/10 B2): every payout
+    /// effect multiplies in (The Multiplier × Scar Tissue × future feeders), so items stack
+    /// multiplicatively. Scales the win payout and the cash-out fair value.</summary>
     public double PayoutMultiplier { get; internal set; } = 1.0;
+
+    /// <summary>Scar Tissue bookkeeping (design/10 B): the stacks this ticket's bust would add,
+    /// baked at placement from its stake fraction; and whether this ticket carries (and on a win
+    /// or cash-out, burns) the current stacks — the round's FIRST-placed ticket carries.</summary>
+    internal double ScarStacksIfBust { get; set; }
+    internal bool ScarCarrier { get; set; }
 
     public Ticket(IReadOnlyList<Leg> legs, double stake, double vigPaid)
     {

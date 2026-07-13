@@ -3,38 +3,12 @@ using System.Collections.Generic;
 
 namespace SBR.Engine;
 
-/// <summary>How a leg's revealed loss resolves once the relics have their say.</summary>
-public enum LossResolution
-{
-    /// <summary>No relic intervened: the ticket busts.</summary>
-    Bust,
-
-    /// <summary>Mulligan voided the leg; the sweat continues on the remaining legs.</summary>
-    Mulligan,
-
-    /// <summary>Lucky charm's second chance fired on the final leg; this ticket grades it Won.</summary>
-    LuckyFlip,
-}
-
-/// <summary>The money seams a bust-triggered relic reaches for, so the engine keeps Bank/piggy state.</summary>
-public sealed class BustContext
-{
-    public Ticket Ticket { get; }
-    public Action<double> CreditBank { get; }
-    public Action SmashPiggy { get; }
-
-    public BustContext(Ticket ticket, Action<double> creditBank, Action smashPiggy)
-    {
-        Ticket = ticket;
-        CreditBank = creditBank;
-        SmashPiggy = smashPiggy;
-    }
-}
-
 /// <summary>
-/// Owned relics and their behaviors, held strictly in acquisition (purchase) order (PRD F8). The
-/// order is load-bearing: compose-time effects and bust-time effects resolve in it, so promo-then-boost
-/// differs from boost-then-promo. Behaviors are keyed on <see cref="RelicDefinition.Op"/>.
+/// Owned passives and their behaviors, in acquisition (purchase) order. The economy rework
+/// (PLAN.md 2026-07-13) slimmed this to three behaviors on three power curves: The Multiplier
+/// (static engine), Scar Tissue (ratchet), Totem of Undying (survival). Every payout effect
+/// multiplies into the single Ticket.PayoutMultiplier product — composition law, design/10 B2.
+/// The old 8-relic behavior set is retired (git history is the archive).
 /// </summary>
 public sealed class EffectEngine
 {
@@ -45,10 +19,16 @@ public sealed class EffectEngine
 
     public void Add(RelicDefinition def)
     {
-        RelicBehavior behavior = RelicBehavior.Create(def);
-        behavior.ResetRound(); // a just-bought relic starts the next round charged
         _owned.Add(def);
-        _behaviors.Add(behavior);
+        _behaviors.Add(RelicBehavior.Create(def));
+    }
+
+    /// <summary>Sell-back support: removes the passive at the index. A sold Scar Tissue loses its
+    /// stacks; a sold Totem does not refund its once-per-run purchase right.</summary>
+    public void RemoveAt(int index)
+    {
+        _owned.RemoveAt(index);
+        _behaviors.RemoveAt(index);
     }
 
     public bool Owns(string id)
@@ -58,81 +38,56 @@ public sealed class EffectEngine
         return false;
     }
 
-    /// <summary>Recharge every per-round charge (called when a new round begins).</summary>
-    public void ResetRoundCharges()
-    {
-        foreach (RelicBehavior b in _behaviors) b.ResetRound();
-    }
+    // ---- placement (PlaceTicket, after compose, bank pre-deduction) ----
 
-    // ---- compose-time (PlaceTicket) ----
-
-    public void ApplyCompose(IReadOnlyList<Leg> legs, bool isFirstTicketThisRound)
-    {
-        foreach (RelicBehavior b in _behaviors) b.Compose(legs, isFirstTicketThisRound);
-    }
-
-    /// <summary>Placement effects (high_roller): run after compose, with the bank pre-deduction.</summary>
-    public void ApplyTicketPlaced(Ticket ticket, double stake, double bankBeforeDeduction)
-    {
-        foreach (RelicBehavior b in _behaviors) b.OnTicketPlaced(ticket, stake, bankBeforeDeduction);
-    }
-
-    // ---- early_payout ----
-
-    public bool HasEarlyPayout => Find("PayPerGreenLeg") != null;
-
-    public double EarlyPayoutFraction
-    {
-        get
-        {
-            var b = Find("PayPerGreenLeg");
-            return b == null ? 0.0 : b.Param("fractionOfStake");
-        }
-    }
-
-    // ---- lucky_charm (baked second-chance roll) ----
-
-    public bool HasLuckyCharm => Find("SecondChanceFinalLeg") != null;
-
-    /// <summary>Bakes the final-leg second-chance roll at lock. Draws the Relics stream only when owned.</summary>
-    public bool BakeLuckyRoll(double finalLegTrueProb, Pcg32 relics)
-    {
-        var b = (SecondChanceFinalLegBehavior?)Find("SecondChanceFinalLeg");
-        return b != null && b.BakeRoll(finalLegTrueProb, relics);
-    }
-
-    // ---- piggy_bank (accrual) ----
-
-    public bool HasPiggyBank => Find("VigRebate") != null;
-
-    public double PiggyRebateMult
-    {
-        get
-        {
-            var b = Find("VigRebate");
-            return b == null ? 0.0 : b.Param("mult");
-        }
-    }
-
-    // ---- loss resolution (SweatSession), acquisition order ----
-
-    public LossResolution ResolveLoss(bool isFinalLeg, bool luckyBakedSuccess, int legCount)
+    public void ApplyTicketPlaced(Ticket ticket, double stake, double bankBeforeDeduction, bool isFirstTicketThisRound)
     {
         foreach (RelicBehavior b in _behaviors)
-        {
-            if (b.Op == "SecondChanceFinalLeg" && isFinalLeg && luckyBakedSuccess)
-                return LossResolution.LuckyFlip;
-            if (b.Op == "VoidDeadLeg" && legCount >= 2 && ((VoidDeadLegBehavior)b).TryUse())
-                return LossResolution.Mulligan;
-        }
-        return LossResolution.Bust;
+            b.OnTicketPlaced(ticket, stake, bankBeforeDeduction, isFirstTicketThisRound);
     }
 
-    // ---- bust chain (insurance + piggy), acquisition order ----
+    // ---- bust chain (scar growth), acquisition order ----
 
-    public void OnBust(BustContext ctx)
+    public void OnBust(Ticket ticket)
     {
-        foreach (RelicBehavior b in _behaviors) b.OnBust(ctx);
+        foreach (RelicBehavior b in _behaviors) b.OnBust(ticket);
+    }
+
+    /// <summary>A ticket realized value (graded Won at FinishSweat, or cash-out accepted): the scar
+    /// carrier burns its stacks here.</summary>
+    public void OnTicketRealized(Ticket ticket)
+    {
+        foreach (RelicBehavior b in _behaviors) b.OnTicketRealized(ticket);
+    }
+
+    // ---- scar tissue (visible ratchet state) ----
+
+    /// <summary>Current scar stacks in percentage points (0 when Scar Tissue is not owned).</summary>
+    public double ScarStacks
+    {
+        get
+        {
+            var b = (ScarTissueBehavior?)Find("ScarTissue");
+            return b?.Stacks ?? 0.0;
+        }
+    }
+
+    // ---- totem of undying ----
+
+    public bool HasTotemCharge
+    {
+        get
+        {
+            var b = (TotemBehavior?)Find("TotemOfUndying");
+            return b != null && b.HasCharge;
+        }
+    }
+
+    /// <summary>Consumes the totem's single charge (the relic stays owned as a spent trophy).</summary>
+    public bool TryConsumeTotem()
+    {
+        var b = (TotemBehavior?)Find("TotemOfUndying");
+        return b != null && b.TryConsume();
     }
 
     private RelicBehavior? Find(string op)
@@ -143,11 +98,10 @@ public sealed class EffectEngine
     }
 }
 
-/// <summary>A parameterized relic behavior, constructed from its <see cref="RelicDefinition"/>.</summary>
+/// <summary>A parameterized passive behavior, constructed from its <see cref="RelicDefinition"/>.</summary>
 internal abstract class RelicBehavior
 {
     protected readonly RelicDefinition Def;
-    private int _chargesLeft;
 
     protected RelicBehavior(RelicDefinition def) => Def = def;
 
@@ -155,122 +109,94 @@ internal abstract class RelicBehavior
 
     public double Param(string key) => Def.Params.TryGetValue(key, out double v) ? v : 0.0;
 
-    protected int MaxCharges => (int)Param("usesPerRound");
-
-    public virtual void ResetRound() => _chargesLeft = MaxCharges;
-
-    protected bool TryConsumeCharge()
-    {
-        if (_chargesLeft <= 0) return false;
-        _chargesLeft--;
-        return true;
-    }
-
     // Hook sites (default no-op).
-    public virtual void Compose(IReadOnlyList<Leg> legs, bool isFirstTicketThisRound) { }
-    public virtual void OnTicketPlaced(Ticket ticket, double stake, double bankBeforeDeduction) { }
-    public virtual void OnBust(BustContext ctx) { }
+    public virtual void OnTicketPlaced(Ticket ticket, double stake, double bankBeforeDeduction,
+        bool isFirstTicketThisRound) { }
+    public virtual void OnBust(Ticket ticket) { }
+    public virtual void OnTicketRealized(Ticket ticket) { }
 
     public static RelicBehavior Create(RelicDefinition def)
     {
         switch (def.Op)
         {
-            case "BoostLegOdds": return new BoostLegOddsBehavior(def);
-            case "FairOddsFirstTicket": return new FairOddsFirstTicketBehavior(def);
-            case "AllInPayoutBonus": return new AllInPayoutBonusBehavior(def);
-            case "RefundBustedStake": return new RefundBustedStakeBehavior(def);
-            case "VoidDeadLeg": return new VoidDeadLegBehavior(def);
-            case "SecondChanceFinalLeg": return new SecondChanceFinalLegBehavior(def);
-            case "PayPerGreenLeg": return new PayPerGreenLegBehavior(def);
-            case "VigRebate": return new VigRebateBehavior(def);
+            case "ParlayPayoutMult": return new ParlayPayoutMultBehavior(def);
+            case "ScarTissue": return new ScarTissueBehavior(def);
+            case "TotemOfUndying": return new TotemBehavior(def);
             default: throw new ArgumentException($"Unknown relic op '{def.Op}'");
         }
     }
 }
 
-/// <summary>boosted_odds: multiply a fixed leg's offered odds by a factor at compose time.</summary>
-internal sealed class BoostLegOddsBehavior : RelicBehavior
+/// <summary>The Multiplier: parlays of minLegs+ legs multiply the payout product. Full power at
+/// purchase — the static engine of the three power curves.</summary>
+internal sealed class ParlayPayoutMultBehavior : RelicBehavior
 {
-    public BoostLegOddsBehavior(RelicDefinition def) : base(def) { }
+    public ParlayPayoutMultBehavior(RelicDefinition def) : base(def) { }
 
-    public override void Compose(IReadOnlyList<Leg> legs, bool isFirstTicketThisRound)
+    public override void OnTicketPlaced(Ticket ticket, double stake, double bankBeforeDeduction,
+        bool isFirstTicketThisRound)
     {
-        int legIndex = (int)Param("legIndex");
-        if (legIndex >= 0 && legIndex < legs.Count)
-            legs[legIndex].OfferedOdds *= Param("mult");
+        if (ticket.Legs.Count >= (int)Param("minLegs"))
+            ticket.PayoutMultiplier *= Param("mult");
     }
 }
 
-/// <summary>promo_code: the round's first ticket is priced at fair odds (no vig).</summary>
-internal sealed class FairOddsFirstTicketBehavior : RelicBehavior
+/// <summary>
+/// Scar Tissue: the ratchet (design/10 B, Allen's spec + carrier semantics). Every bust adds
+/// stacks scaled by the busted ticket's stake fraction at placement — full ppPerBust for stakes
+/// ≥ fullStakeFraction of the bank, proportionally less below (the farming guard). The FIRST
+/// ticket placed each round carries the current stacks: its payout product gets ×(1 + stacks/100),
+/// and when it realizes value (win or cash-out) the stacks burn to zero. A busted carrier feeds
+/// the scar like any bust. Stacks are uncapped, persist across rounds, and never unwind on their
+/// own — ratchets ratchet.
+/// </summary>
+internal sealed class ScarTissueBehavior : RelicBehavior
 {
-    public FairOddsFirstTicketBehavior(RelicDefinition def) : base(def) { }
+    public ScarTissueBehavior(RelicDefinition def) : base(def) { }
 
-    public override void Compose(IReadOnlyList<Leg> legs, bool isFirstTicketThisRound)
+    public double Stacks { get; private set; }
+
+    public override void OnTicketPlaced(Ticket ticket, double stake, double bankBeforeDeduction,
+        bool isFirstTicketThisRound)
     {
-        if (!isFirstTicketThisRound) return;
-        foreach (Leg leg in legs)
-            leg.OfferedOdds = OddsMath.FairDecimal(leg.TrueProb);
+        double fullStake = Param("fullStakeFraction") * bankBeforeDeduction;
+        double fraction = fullStake <= 0 ? 1.0 : Math.Min(1.0, stake / fullStake);
+        ticket.ScarStacksIfBust = Param("ppPerBust") * fraction;
+
+        if (isFirstTicketThisRound && Stacks > 0)
+        {
+            ticket.ScarCarrier = true;
+            ticket.PayoutMultiplier *= 1.0 + Stacks / 100.0;
+        }
+    }
+
+    public override void OnBust(Ticket ticket) => Stacks += ticket.ScarStacksIfBust;
+
+    public override void OnTicketRealized(Ticket ticket)
+    {
+        if (ticket.ScarCarrier)
+        {
+            Stacks = 0;
+            ticket.ScarCarrier = false;
+        }
     }
 }
 
-/// <summary>high_roller: staking at least the threshold fraction of the bank boosts the ticket's payout.
-/// Redesigned 2026-07-08 alongside lifting the max-stake cap (which made the old cap-doubling effect
-/// a no-op); this rewards the uncapped all-in play the cap removal enables.</summary>
-internal sealed class AllInPayoutBonusBehavior : RelicBehavior
+/// <summary>Totem of Undying: one charge; consumed by Run.Settle when a non-final payment cannot
+/// be met. The definition stays in the owned list after burning (a spent trophy) — the shop's
+/// once-per-run rule lives on Run, not here.</summary>
+internal sealed class TotemBehavior : RelicBehavior
 {
-    public AllInPayoutBonusBehavior(RelicDefinition def) : base(def) { }
+    private int _charges;
 
-    public override void OnTicketPlaced(Ticket ticket, double stake, double bankBeforeDeduction)
+    public TotemBehavior(RelicDefinition def) : base(def) => _charges = (int)Param("charges");
+
+    public bool HasCharge => _charges > 0;
+
+    public bool TryConsume()
     {
-        if (stake >= Param("thresholdFraction") * bankBeforeDeduction)
-            ticket.PayoutMultiplier *= Param("payoutMult");
+        if (_charges <= 0) return false;
+        _charges--;
+        return true;
     }
-}
-
-/// <summary>bankroll_insurance: the first bust each round refunds a fraction of its stake.</summary>
-internal sealed class RefundBustedStakeBehavior : RelicBehavior
-{
-    public RefundBustedStakeBehavior(RelicDefinition def) : base(def) { }
-
-    public override void OnBust(BustContext ctx)
-    {
-        if (TryConsumeCharge())
-            ctx.CreditBank(Param("fraction") * ctx.Ticket.Stake);
-    }
-}
-
-/// <summary>mulligan: once per round, void a dead leg on a multi-leg ticket instead of busting.</summary>
-internal sealed class VoidDeadLegBehavior : RelicBehavior
-{
-    public VoidDeadLegBehavior(RelicDefinition def) : base(def) { }
-    public bool TryUse() => TryConsumeCharge();
-}
-
-/// <summary>lucky_charm: bake a final-leg second chance worth exactly +boostPp of win probability.</summary>
-internal sealed class SecondChanceFinalLegBehavior : RelicBehavior
-{
-    public SecondChanceFinalLegBehavior(RelicDefinition def) : base(def) { }
-
-    public bool BakeRoll(double finalLegTrueProb, Pcg32 relics)
-    {
-        // roll < boostPp / (1 - p) lifts a p-prob leg's win chance to p + boostPp exactly.
-        double gap = 1.0 - finalLegTrueProb;
-        if (gap < 1e-9) return false; // already ~certain: no roll needed, draw nothing
-        double roll = relics.NextDouble();
-        return roll < Param("boostPp") / gap;
-    }
-}
-
-/// <summary>early_payout: credit a fraction of stake per green leg, and price it into cash-out.</summary>
-internal sealed class PayPerGreenLegBehavior : RelicBehavior
-{
-    public PayPerGreenLegBehavior(RelicDefinition def) : base(def) { }
-}
-
-/// <summary>piggy_bank: accrue a multiple of paid vig at lock; smash into the bank on any bust.</summary>
-internal sealed class VigRebateBehavior : RelicBehavior
-{
-    public VigRebateBehavior(RelicDefinition def) : base(def) { }
-    public override void OnBust(BustContext ctx) => ctx.SmashPiggy();
 }

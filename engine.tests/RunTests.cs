@@ -7,16 +7,17 @@ public class RunTests
     private static Run NewRun(string seed = "RUN-TEST", RunConfig? cfg = null) => new(seed, cfg);
 
     [Fact]
-    public void New_run_starts_in_betting_with_prd_defaults()
+    public void New_run_starts_in_betting_with_rework_defaults()
     {
-        // §8 defaults as recalibrated 2026-07-09 (debt-as-HP retune): flat-early targets, R1 = 400.
+        // Economy rework (PLAN.md 2026-07-13): payments replace targets; R1 payment = 250.
         var run = NewRun();
         Assert.Equal(Phase.Betting, run.Phase);
         Assert.Equal(1, run.Round);
         Assert.Equal(500, run.Bank);
-        Assert.Equal(400, run.CurrentTarget);
-        Assert.Equal(0.0, run.Debt);
-        Assert.Equal(run.CurrentTarget, run.Requirement);
+        Assert.Equal(250, run.CurrentPayment);
+        Assert.Null(run.LastSettlement);
+        Assert.Equal(0.0, run.ScarStacks);
+        Assert.Empty(run.OwnedConsumables);
         Assert.Equal(6, run.CurrentSlate.Matchups.Count);
     }
 
@@ -134,56 +135,44 @@ public class RunTests
     }
 
     [Fact]
-    public void Missing_the_target_floats_you_into_the_shop()
+    public void Missing_a_payment_without_the_totem_loses_the_run()
     {
-        // Debt-as-HP (DECISIONS.md 2026-07-09): a clean miss no longer kills the run — the bookie
-        // floats the bank up to the target and books the shortfall at (1 + juice).
-        var cfg = new RunConfig { StartingBank = 500, Targets = new double[] { 800, 1200 }, DebtJuiceRate = 0.5 };
+        // Payment model (design/10): the settle DEDUCTS; a shortfall with no Totem is death.
+        var cfg = new RunConfig { StartingBank = 500, Payments = new double[] { 800, 1200 } };
         var run = NewRun(cfg: cfg);
         run.LockRound();
         run.FastForwardRound();
         run.Settle();
-
-        Assert.Equal(Phase.Shop, run.Phase);
-        Assert.Equal(800, run.Bank, 10);                    // topped up to the target
-        Assert.Equal((800 - 500) * 1.5, run.Debt, 10);      // shortfall × 1.5
-    }
-
-    [Fact]
-    public void Two_consecutive_misses_lose_the_run()
-    {
-        var cfg = new RunConfig { StartingBank = 500, Targets = new double[] { 800, 1200, 1900 }, DebtJuiceRate = 0.5 };
-        var run = NewRun(cfg: cfg);
-        run.LockRound(); run.FastForwardRound(); run.Settle(); // miss 1: float (bank 800, debt 450)
-        Assert.Equal(Phase.Shop, run.Phase);
-        run.ExitShop();
-        run.LockRound(); run.FastForwardRound(); run.Settle(); // miss 2: 800 < 1200 + 450 while indebted
 
         Assert.Equal(Phase.RunLost, run.Phase);
-        Assert.True(run.Debt > 0); // died owing the bookie
+        Assert.True(run.LastSettlement.HasValue);
+        Assert.Equal(300, run.LastSettlement!.Value.Shortfall, 10);
+        Assert.False(run.LastSettlement!.Value.TotemFired);
     }
 
     [Fact]
-    public void Meeting_the_target_advances_through_the_shop()
+    public void Meeting_a_payment_deducts_it_and_advances_through_the_shop()
     {
-        var cfg = new RunConfig { Targets = new double[] { 100, 100 } };
+        var cfg = new RunConfig { Payments = new double[] { 100, 100 } };
         var run = NewRun(cfg: cfg);
         run.LockRound();
         run.FastForwardRound();
         run.Settle();
         Assert.Equal(Phase.Shop, run.Phase);
+        Assert.Equal(400, run.Bank, 10); // 500 − the 100 payment: the settle takes its cut
+        Assert.True(run.LastSettlement!.Value.Paid);
 
         run.ExitShop();
         Assert.Equal(2, run.Round);
         Assert.Equal(Phase.Betting, run.Phase);
         Assert.Empty(run.Tickets);
-        Assert.Equal(100, run.CurrentTarget);
+        Assert.Equal(100, run.CurrentPayment);
     }
 
     [Fact]
-    public void Clearing_the_final_round_wins_the_run()
+    public void Clearing_the_final_payment_wins_the_run()
     {
-        var cfg = new RunConfig { Targets = new double[] { 100, 100 } };
+        var cfg = new RunConfig { Payments = new double[] { 100, 100 } };
         var run = NewRun(cfg: cfg);
 
         run.LockRound();
@@ -195,12 +184,13 @@ public class RunTests
         run.Settle();
 
         Assert.Equal(Phase.RunWon, run.Phase);
+        Assert.Equal(300, run.Bank, 10); // both payments taken from the untouched 500
     }
 
     [Fact]
     public void Fresh_slate_each_round_differs()
     {
-        var cfg = new RunConfig { Targets = new double[] { 100, 100 } };
+        var cfg = new RunConfig { Payments = new double[] { 100, 100 } };
         var run = NewRun(cfg: cfg);
         double round1Prob = run.CurrentSlate.Matchups[0].TrueHomeProb;
 

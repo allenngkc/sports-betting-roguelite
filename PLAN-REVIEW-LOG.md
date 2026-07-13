@@ -8,3 +8,11 @@ product, stake-scaled Scar Tissue ratchet, consumables as player-fired timing ve
 Slip / Profit Boost / Timeout), shop + bookie-gift channels, sell-back 50%, six sim gates
 (G1–G6) + item flags, scope = engine + sim + console with Unity isolated behind the stale DLL.
 (The prior M5 plan + log live in git history — this file is per-milestone.)
+
+## Act 2 — SKIPPED (Allen's call, 2026-07-13)
+CUN.AI served 503 "no available channel for gpt-5.6-sol" across ~60 minutes of bounded retries
+(10+ attempts, 5 cycles). Allen: "for now let's not use codex agents, you will take control."
+Claude builds directly from the locked plan and compensates with deeper self-review on the
+highest-risk seams: Settle/Totem paths, Scar carrier semantics, PayoutMultiplier composition,
+consumable windows vs SweatSession's real API, and RNG purity. The gate campaign (G1-G6) remains
+the plan's own adversarial instrument - the sim is the reviewer of record for this milestone.

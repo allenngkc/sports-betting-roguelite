@@ -27,7 +27,7 @@ public class RunSweatTests
     [Fact]
     public void Sweats_is_empty_until_lock_and_after_leaving_the_shop()
     {
-        var cfg = new RunConfig { Targets = new double[] { 100, 100 } };
+        var cfg = new RunConfig { Payments = new double[] { 100, 100 } };
         var run = new Run("SWEAT-EMPTY", cfg);
         Assert.Empty(run.Sweats);
 
