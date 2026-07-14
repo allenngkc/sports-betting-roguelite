@@ -19,7 +19,7 @@ namespace SBR.Sim;
 /// Shop: passives in priority order (Multiplier → Scar → Totem: the static engine compounds all
 /// run, the ratchet earns from variance, the totem is bought when affordable insurance), then a
 /// Mulligan Slip / Profit Boost while a consumable slot is free — all only above a working-capital
-/// floor of the NEXT payment. Timeout is never bought or played (playtest-gated, PLAN.md).
+/// floor of the NEXT payment.
 ///
 /// HONESTY: reads only public state — odds, bank/payment, offers, revealed WinProbAfter, own items.
 /// Never Matchup.TrueHomeProb / Leg.TrueProb / Matchup.Result.

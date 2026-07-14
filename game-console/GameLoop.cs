@@ -193,7 +193,7 @@ internal static class GameLoop
             Console.WriteLine($"R{reached} bank {(long)Math.Round(run.Bank)} payment {(long)r.Payment}"
                 + $" comps {run.Comps:0.#} {(survived ? "W" : "L")}");
             if (r.TotemFired)
-                Console.WriteLine($"R{reached} THE TOTEM BURNS — short {(long)r.Shortfall}, next payment surcharged");
+                Console.WriteLine($"R{reached} THE TOTEM BURNS — payment {(long)r.Payment} deferred, bank untouched, next payment surcharged");
 
             if (run.Phase == Phase.RunLost) { won = false; break; }
             if (run.Phase == Phase.RunWon) { won = true; break; }

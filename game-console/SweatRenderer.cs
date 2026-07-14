@@ -16,7 +16,7 @@ internal static class SweatRenderer
     private const int PollSliceMs = 50;
     private const int DeadBeatMs = 600; // the silence before a bad-beat DEAD line
 
-    private enum Input { None, CashOut, FastForward, Timeout }
+    private enum Input { None, CashOut, FastForward }
 
     public static void Play(Run run)
     {
@@ -24,7 +24,7 @@ internal static class SweatRenderer
         Ui.Rule();
         Ui.WriteLine(ConsoleColor.White, $"ROUND {run.Round} — THE SWEAT   (payment due at settle: {Ui.Money(run.CurrentPayment)})");
         Ui.WriteLine(ConsoleColor.DarkGray,
-            "[C] cash out  ·  [T] timeout (hold the offer)  ·  [M] mulligan slip (when a leg dies)  ·  [F] fast-forward");
+            "[C] cash out  ·  [M] mulligan slip (when a leg dies)  ·  [F] fast-forward");
         Ui.Rule();
 
         double lastBank = run.Bank;
@@ -56,9 +56,10 @@ internal static class SweatRenderer
 
         if (r.TotemFired)
         {
-            Ui.WriteLine(ConsoleColor.Magenta, " THE TOTEM BURNS — the bookie covers your shortfall.");
+            Ui.WriteLine(ConsoleColor.Magenta, " THE TOTEM BURNS — the payment is deferred.");
             Ui.WriteLine(ConsoleColor.Yellow,
-                $" {Ui.Money(r.Shortfall)} short, everything taken; the next payment grows by {Ui.Money(r.Shortfall * 1.5)}.");
+                $" Your bank is untouched ({Ui.Money(r.BankAfter)}); the next payment grows by "
+                + $"{Ui.Money(r.Payment * (1.0 + run.Config.TotemJuiceRate))}.");
         }
         else
         {
@@ -122,19 +123,6 @@ internal static class SweatRenderer
                     Ui.WriteLine(ConsoleColor.Yellow, $"  CASHED OUT: {Ui.Money(amt)}");
                     lastBank = run.Bank; // the credit is the CASHED OUT line; don't double-report it
                     return;
-
-                case Input.Timeout:
-                    if (run.OwnsConsumable("timeout"))
-                    {
-                        run.PlayTimeout(session);
-                        Ui.WriteLine(ConsoleColor.Cyan,
-                            $"  TIMEOUT — the offer holds at {Ui.Money(session.CashOutOffer()!.Value)} through the next 3 events");
-                    }
-                    else
-                    {
-                        Ui.WriteLine(ConsoleColor.DarkGray, "  (no Timeout held — the shop sells them)");
-                    }
-                    break;
 
                 case Input.FastForward:
                     fastForward = true;
@@ -281,8 +269,6 @@ internal static class SweatRenderer
                 ConsoleKey key = Console.ReadKey(true).Key;
                 if (key == ConsoleKey.C && session.CashOutOffer() != null)
                     return Input.CashOut;
-                if (key == ConsoleKey.T && session.CashOutOffer() != null)
-                    return Input.Timeout;
                 if (key == ConsoleKey.F)
                 {
                     if (!onFinalLeg) return Input.FastForward;

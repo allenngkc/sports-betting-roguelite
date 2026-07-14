@@ -166,8 +166,8 @@ public static class Report
 
         sb.AppendLine($"Skilled baseline: median death {MedianDeath(audit.Baseline.MedianDeath)}, "
             + $"mean rounds {audit.Baseline.MeanDeath.ToString("F2", Inv)}, won {Pct(audit.Baseline.WonPct)}. "
-            + "Passives granted at run start; consumables refilled every round. Timeout is exempt from "
-            + "the DEAD flag — bots never play it (playtest-gated). Sorted by Δ mean rounds survived.");
+            + "Passives granted at run start; consumables refilled every round. "
+            + "Sorted by Δ mean rounds survived.");
         sb.AppendLine();
         sb.AppendLine("| Item | kind | mean rounds | Δ mean | median death | won % | Δ won % | totem fires |");
         sb.AppendLine("|---|---|---|---|---|---|---|---|");

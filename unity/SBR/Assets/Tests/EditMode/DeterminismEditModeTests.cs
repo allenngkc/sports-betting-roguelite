@@ -79,13 +79,12 @@ namespace SBR.Tests.EditMode
             TestContext.WriteLine($"[EditMode/Mono] event-stream FNV-1a hash = {r.Hash}");
         }
 
-        // Ported from engine.tests/DebtTests.cs (A_clean_miss_borrows...): a no-bet miss with no debt
-        // makes the bookie float you — bank topped to the target, shortfall booked at x(1 + 0.5).
         [Test]
-        public void Payment_shortfall_with_the_totem_surcharges_the_next_payment()
+        public void Payment_shortfall_with_the_totem_defers_and_surcharges_the_next_payment()
         {
-            // The economy rework's mercy path (design/10): the Totem covers a non-final
-            // shortfall — bank zeroes, the NEXT payment grows by shortfall × (1 + juice).
+            // The economy rework's mercy path (design/10, playtest #8): the Totem DEFERS a
+            // non-final payment — the bank is untouched (working capital survives) and the
+            // NEXT payment grows by payment × (1 + juice).
             var run = new Run("PAY-TOTEM", new RunConfig
             {
                 StartingBank = 500,
@@ -99,10 +98,10 @@ namespace SBR.Tests.EditMode
             run.Settle();
 
             Assert.AreEqual(Phase.Shop, run.Phase);                       // the run continues
-            Assert.AreEqual(0.0, run.Bank, 1e-9);                         // he takes everything you have
+            Assert.AreEqual(500.0, run.Bank, 1e-9);                       // the bank stands
             Assert.IsTrue(run.LastSettlement!.Value.TotemFired);
             run.ExitShop();
-            Assert.AreEqual(400.0 + 300.0 * 1.5, run.CurrentPayment, 1e-9); // shortfall × 1.5 lands on P2
+            Assert.AreEqual(400.0 + 800.0 * 1.5, run.CurrentPayment, 1e-9); // payment × 1.5 lands on P2
         }
     }
 }

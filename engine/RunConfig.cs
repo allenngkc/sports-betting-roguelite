@@ -38,11 +38,17 @@ public sealed class RunConfig
     /// roomier for the committed item-growth direction (design/10 B2).</summary>
     public int RelicSlots { get; set; } = 5;
 
-    /// <summary>Max consumables held at once (separate pool from relics — playtest #1 split).</summary>
-    public int ConsumableSlots { get; set; } = 2;
+    /// <summary>Max consumables held at once (separate pool from relics — playtest #1 split).
+    /// 3 since playtest #8: with one shop offer per visit, a third slot lets a player bank saves
+    /// for the cliff — the G3 band's buy-back for the tighter offer draw.</summary>
+    public int ConsumableSlots { get; set; } = 3;
 
-    /// <summary>How many consumable offers the shop shows per visit (drawn from the catalog).</summary>
-    public int ConsumableOfferCount { get; set; } = 2;
+    /// <summary>How many consumable offers the shop shows per visit (drawn from the catalog).
+    /// Dropped to 1 when Timeout was cut (playtest #8): with a 2-item catalog, two offer slots
+    /// guaranteed a Mulligan Slip every shop — the strongest item on tap pushed skilled above
+    /// Allen's 5–8% win band. One random offer restores the draw scarcity Timeout's dead card
+    /// used to provide.</summary>
+    public int ConsumableOfferCount { get; set; } = 1;
 
     /// <summary>Sell-back fraction of list price, both pools (design/10, Allen 2026-07-12).</summary>
     public double SellBackFraction { get; set; } = 0.5;
@@ -52,8 +58,10 @@ public sealed class RunConfig
     public int GiftAfterLosingRounds { get; set; } = 2;
     public int GiftCooldownRounds { get; set; } = 2;
 
-    /// <summary>Totem of Undying: the covered shortfall is added to the NEXT payment at this
-    /// multiple (the old float juice, itemized — design/10 B).</summary>
+    /// <summary>Totem of Undying: the DEFERRED payment is added to the NEXT payment at
+    /// payment × (1 + this rate). Playtest #8 made the totem leave the bank untouched; the G3
+    /// campaign showed the juice barely moves win rate (the offer draw is the binding knob), so
+    /// the ratified 0.5 stands.</summary>
     public double TotemJuiceRate { get; set; } = 0.5;
 
     /// <summary>Pacing dials for the drama generator (design/04); flows through Run into every SweatSession.</summary>

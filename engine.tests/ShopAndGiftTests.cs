@@ -25,8 +25,8 @@ public class ShopAndGiftTests
     {
         Run run = ShopRun();
         Assert.Equal(3, run.ShopOffers.Count);
-        Assert.Equal(2, run.ConsumableOffers.Count);
-        Assert.NotEqual(run.ConsumableOffers[0].Id, run.ConsumableOffers[1].Id); // distinct draws
+        // One consumable offer per visit since playtest #8 (the draw scarcity is the G3 knob).
+        Assert.Single(run.ConsumableOffers);
     }
 
     [Fact]
@@ -78,6 +78,7 @@ public class ShopAndGiftTests
         Run run = ShopRun();
         run.GrantConsumable(RelicCatalog.Consumables[0]);
         run.GrantConsumable(RelicCatalog.Consumables[1]);
+        run.GrantConsumable(RelicCatalog.Consumables[0]); // 3 slots since playtest #8
 
         Assert.Throws<InvalidOperationException>(() => run.BuyConsumable(0));
     }

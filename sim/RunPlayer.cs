@@ -11,7 +11,7 @@ namespace SBR.Sim;
 ///
 /// Economy-rework behaviors: a held Mulligan Slip is ALWAYS played when a sweat suspends in the
 /// pending-loss window (the documented bot policy — timing skill is a human affordance the bots
-/// approximate greedily); Timeout is never bot-played (playtest-gated, PLAN.md); a granted audit
+/// approximate greedily); a granted audit
 /// consumable is refilled each round via <see cref="ItemGrant.RefillConsumable"/>. Totem fires,
 /// scar telemetry, gifts and close-call deaths are read from engine telemetry after each settle.
 ///

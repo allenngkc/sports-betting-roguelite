@@ -4,10 +4,10 @@ using SBR.Engine;
 
 namespace SBR.Sim;
 
-/// <summary>Item power audit: skilled with each of the SIX items granted free vs baseline.
+/// <summary>Item power audit: skilled with each catalog item granted free vs baseline.
 /// Passives are granted at run start; consumables are refilled every round (a single-use item
-/// granted once would audit as noise). Timeout is included for the non-degeneracy read but is
-/// EXEMPT from the DEAD flag — bots never play it (playtest-gated, PLAN.md).</summary>
+/// granted once would audit as noise). (Timeout was cut at playtest #8 — Allen's verdict matched
+/// this audit's ≈0 read.)</summary>
 public sealed class AuditData
 {
     public BatchSummary Baseline = null!;
@@ -188,7 +188,6 @@ public sealed class GateData
         {
             foreach (AuditData.Entry e in audit.Entries)
             {
-                if (e.Id == "timeout") continue; // playtest-gated: bots never play it
                 if (e.WonDelta < 1.0 && Math.Abs(e.MeanDelta) < 0.05)
                     g.ItemFlags.Add($"DEAD: {e.Name} (Δwon {e.WonDelta:+0.0;-0.0}pp, Δmean {e.MeanDelta:+0.00;-0.00})");
             }
@@ -197,7 +196,6 @@ public sealed class GateData
             string bestName = "";
             foreach (AuditData.Entry e in audit.Entries)
             {
-                if (e.Id == "timeout") continue;
                 if (e.WonDelta > best) { second = best; best = e.WonDelta; bestName = e.Name; }
                 else if (e.WonDelta > second) second = e.WonDelta;
             }
@@ -207,10 +205,14 @@ public sealed class GateData
             foreach (AuditData.Entry e in audit.Entries)
             {
                 if (e.Id != RelicCatalog.TotemId) continue;
-                bool healthy = e.MeanDelta >= 0.3 && e.TotemFireRate >= 25.0 && e.TotemFireRate <= 60.0;
+                // Fire-rate band on the ORGANIC skilled batch (bought at shop price), not the
+                // audit batch — a totem granted free to 100% of runs fires near-always by
+                // construction (the artifact ratified around in sim-report-2, now encoded).
+                double organicFire = skilled?.TotemFireRate ?? e.TotemFireRate;
+                bool healthy = e.MeanDelta >= 0.3 && organicFire >= 25.0 && organicFire <= 60.0;
                 if (!healthy)
                     g.ItemFlags.Add($"TOTEM: Δmean {e.MeanDelta:+0.00;-0.00} (want ≥0.3), " +
-                        $"fire rate {e.TotemFireRate:F0}% (want 25–60%)");
+                        $"organic fire rate {organicFire:F0}% (want 25–60%)");
             }
         }
 

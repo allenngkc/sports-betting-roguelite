@@ -151,6 +151,24 @@ fuse distinct charms into powerful combinations as the main fun.** Extends B2/C:
 axis goes from "stack products" to "craft new items from pairs." Fusion design is its own future
 grill; the one-product-slot law and the sim combo scan are its foundations.
 
+## G. Playtest #8 amendments (Allen, 2026-07-13) — Timeout cut; Totem = full deferral
+
+1. **Timeout CUT** (Allen: "useless"; the audit always read ≈0 and it was playtest-gated —
+   the playtest voted no). The slate is Mulligan Slip + Profit Boost. The live-intervention
+   seam (ApplyLiveEffect/OfferHoldEffect) survives with its own test: Ref's Whistle or a
+   returned hold can buy it back some day, per D's ladder.
+2. **The Totem defers instead of draining.** Old: pay what you have, bank → $0, shortfall × 1.5
+   surcharged. Allen fired it and read $0 as "no capital" — correctly: below the $10 min stake
+   the saved round is unplayable, mercy in name only. New: the WHOLE payment defers — bank
+   untouched, payment × (1 + juice) lands on the next payment, never the final round. The
+   D-section trigger question (waive-clean vs itemized-float) is thereby RE-RESOLVED to
+   waive-with-surcharge after the float variant failed contact with a player.
+3. **Rebalance where the cause was** (sim-report-3.md, 50k/batch, ALL GATES PASS): the G3
+   breach after the cut (9.2%) came from the offer draw — 2 offer slots over a 2-item catalog
+   made Mulligan Slip (+20pp audit) a guarantee every shop. Knobs: consumable offers 2 → 1,
+   consumable slots 2 → 3 (answers Open #5: bank saves for the cliff), mulligan 2 → 1.5 comps,
+   juice stays 0.5. Skilled 6.2%, organic totem fires 50.3%, zero flags.
+
 ## Open (for the grill)
 
 1. Payment curve numbers + start bank (sim grid: curve × item power; S3/S4 re-gated).

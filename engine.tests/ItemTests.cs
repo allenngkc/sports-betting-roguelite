@@ -204,13 +204,13 @@ public class ItemTests
         Assert.True(single.OwnsConsumable("mulligan_slip"));
     }
 
-    // ---- Timeout ----
+    // ---- Live-intervention seam (Timeout the ITEM was cut at playtest #8; the offer-hold
+    // plumbing it rode stays pinned — future actives may buy it back) ----
 
     [Fact]
-    public void Timeout_freezes_the_offer_until_the_third_event_lands()
+    public void Offer_hold_effect_freezes_the_offer_until_the_third_event_lands()
     {
         var run = new Run("GOLDEN-W2", EasyPayments(10, 10));
-        run.GrantConsumable(Con("timeout"));
 
         run.PlaceTicket(Picks((0, Side.Away), (2, Side.Away)), 100); // both win in GOLDEN-W2
         run.LockRound();
@@ -218,8 +218,7 @@ public class ItemTests
         s.MoveNext(out _);
 
         double held = s.CashOutOffer()!.Value;
-        run.PlayTimeout(s);
-        Assert.Empty(run.OwnedConsumables);
+        s.ApplyLiveEffect(new OfferHoldEffect(3));
 
         s.MoveNext(out _);
         Assert.Equal(held, s.CashOutOffer()!.Value, 10); // frozen after event 1
@@ -231,14 +230,9 @@ public class ItemTests
     }
 
     [Fact]
-    public void Timeout_requires_a_live_offer()
+    public void Catalog_has_no_timeout_after_playtest_8()
     {
-        var run = new Run("GOLDEN-W2", EasyPayments(10, 10));
-        run.GrantConsumable(Con("timeout"));
-        run.PlaceTicket(Picks((1, Side.Home)), 50); // single leg: never an offer
-        run.LockRound();
-
-        Assert.Throws<InvalidOperationException>(() => run.PlayTimeout(run.Sweats[0]));
-        Assert.True(run.OwnsConsumable("timeout")); // a refused play is not consumed
+        Assert.DoesNotContain(RelicCatalog.Consumables, c => c.Id == "timeout");
+        Assert.Equal(2, RelicCatalog.Consumables.Count); // mulligan_slip + profit_boost
     }
 }

@@ -31,7 +31,7 @@ namespace SBR.Game
 
         private static readonly string[] TotemBurned =
         {
-            "covered you. once. the next one grows.",
+            "on the books. once. the next one grows.",
             "that trinket bought you a week. don't make it a habit.",
         };
 

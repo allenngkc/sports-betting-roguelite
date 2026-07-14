@@ -463,7 +463,8 @@ namespace SBR.Game
                 _tMatchup.text = $"SHORT — ${Money(s.BankBefore)} AGAINST ${Money(s.Payment)}";
                 _tFlavor.color = new Color(hotRed.r, hotRed.g, hotRed.b, 1f);
                 _tFlavor.text = "THE TOTEM BURNS";
-                _tRecords.text = $"THE BOOKIE COVERS ${Money(s.Shortfall)} — THE NEXT PAYMENT GROWS";
+                double juiced = s.Payment * (1.0 + (director?.Run?.Config.TotemJuiceRate ?? 0.5));
+                _tRecords.text = $"PAYMENT DEFERRED — YOUR BANK STANDS. THE NEXT ONE GROWS BY ${Money(juiced)}";
                 _emissRest = new Color(_emissIdle.r * 0.3f, _emissIdle.g * 0.12f, _emissIdle.b * 0.12f);
                 EmissionFlash(new Color(0.25f, 0.02f, 0.02f));
                 tvLight?.SetRest(new Color(0.7f, 0.18f, 0.15f), 0.32f);
@@ -590,9 +591,7 @@ namespace SBR.Game
             if (offer.HasValue)
             {
                 _tCashOut.enabled = true;
-                string hold = director?.Run != null && director.Run.OwnsConsumable("timeout")
-                    ? "   ·   HOLD [T]" : string.Empty;
-                _tCashOut.text = $"CASH OUT ${Money(offer.Value)}   [E]{hold}";
+                _tCashOut.text = $"CASH OUT ${Money(offer.Value)}   [E]";
             }
             else
             {
@@ -736,23 +735,6 @@ namespace SBR.Game
 
             if (_interact != null && _interact.WasPressedThisFrame())
                 TryCashOut();
-
-            if (Keyboard.current != null && Keyboard.current.tKey.wasPressedThisFrame)
-                TryTimeout();
-        }
-
-        /// <summary>[T] plays a held Timeout: the cash-out offer freezes until the 3rd event lands
-        /// (design/10 D — the price lock, not a fate lock).</summary>
-        private void TryTimeout()
-        {
-            if (!_seated || _session == null || _session.IsComplete || _session.HasPendingLoss) return;
-            if (director?.Run == null || !director.Run.OwnsConsumable("timeout")) return;
-            if (!_session.CashOutOffer().HasValue) return;
-
-            director.Run.PlayTimeout(_session);
-            _tFlavor.color = chromeCyan;
-            _tFlavor.text = "TIMEOUT — THE OFFER HOLDS FOR 3 EVENTS";
-            UpdateCashOutLabel();
         }
 
         private void TryCashOut()

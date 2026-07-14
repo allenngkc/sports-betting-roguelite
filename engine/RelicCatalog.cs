@@ -87,9 +87,9 @@ public static class RelicCatalog
             new Dictionary<string, double> { ["ppPerBust"] = 5.0, ["fullStakeFraction"] = 0.25 }),
 
         new RelicDefinition(TotemId, "Totem of Undying",
-            "One charge, sold once per run, ever: when you cannot make a payment, the bookie " +
-            "covers it - and your next payment grows by the shortfall, plus his juice. Never " +
-            "saves the final payment.",
+            "One charge, sold once per run, ever: when you cannot make a payment, the whole " +
+            "payment is DEFERRED - your bank is untouched, and the payment plus his juice lands " +
+            "on the next one. Never saves the final payment.",
             "Survival", "TotemOfUndying", 6,
             new Dictionary<string, double> { ["charges"] = 1 }),
     };
@@ -98,13 +98,13 @@ public static class RelicCatalog
     {
         new ConsumableDefinition("mulligan_slip", "Mulligan Slip",
             "Play it the moment a leg dies on a multi-leg ticket: the leg is voided and the " +
-            "ticket lives. The window closes when the ticket settles.", 2),
+            "ticket lives. The window closes when the ticket settles.", 1.5),
 
         new ConsumableDefinition("profit_boost", "Profit Boost",
             "Play it at the betslip: one chosen leg's odds are boosted 30% before you lock.", 1.5),
 
-        new ConsumableDefinition("timeout", "Timeout",
-            "Play it mid-sweat: the cash-out offer holds its price for the next 3 events. A dead " +
-            "ticket still pays nothing - the hold freezes the price, not fate.", 1.5),
+        // Timeout CUT at playtest #8 (Allen: "useless") — the sim's ≈0 audit agreed. The engine's
+        // offer-hold seam (OfferHoldEffect via ApplyLiveEffect) stays: it is the design/04 Band-2
+        // intervention plumbing, and future actives may buy it back.
     };
 }

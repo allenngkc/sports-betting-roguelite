@@ -42,8 +42,8 @@ public readonly struct SettlementReport
 ///
 /// Passives live in the <see cref="EffectEngine"/> (Multiplier / Scar Tissue / Totem — all payout
 /// effects multiply into Ticket.PayoutMultiplier). Consumables are a separate pool of player-TIMED
-/// verbs: Profit Boost at PlaceTicket, Mulligan Slip at a sweat's pending-loss window, Timeout as
-/// a cash-out offer hold. The bookie GIFTS a consumable after consecutive losing rounds (the
+/// verbs: Profit Boost at PlaceTicket, Mulligan Slip at a sweat's pending-loss window. The
+/// bookie GIFTS a consumable after consecutive losing rounds (the
 /// pity/retention channel — he wants you betting). LockRound still samples the fixed outcome
 /// universe; consumable timing can never perturb the run seed.
 /// </summary>
@@ -226,20 +226,8 @@ public sealed class Run
         session.ResolvePendingLossAsMulligan();
     }
 
-    /// <summary>Plays a held Timeout on the session: the cash-out offer holds its current price
-    /// for the next 3 events. Requires a live offer.</summary>
-    public void PlayTimeout(SweatSession session)
-    {
-        RequirePhase(Phase.Sweat);
-        if (session == null) throw new ArgumentNullException(nameof(session));
-        if (!session.CashOutOffer().HasValue)
-            throw new InvalidOperationException("No live cash-out offer to hold");
-        if (!OwnsConsumable("timeout"))
-            throw new InvalidOperationException("No Timeout held");
-
-        ConsumeConsumable("timeout");
-        session.ApplyLiveEffect(new OfferHoldEffect(3));
-    }
+    // Timeout (a cash-out offer hold) was CUT at playtest #8 — its PlayTimeout verb lived here.
+    // The SweatSession live-intervention seam it rode (ApplyLiveEffect/OfferHoldEffect) remains.
 
     // ------------------------------------------------------------------ settle
 
@@ -288,9 +276,9 @@ public sealed class Run
     /// <summary>
     /// The payment settle (design/10): the round's payment is DEDUCTED. Meet it and the run
     /// advances (final round → RunWon). Miss it and the run is over — unless the Totem of Undying
-    /// has a charge and this is not the final payment: the bookie covers the shortfall, the bank
-    /// zeroes, and the NEXT payment grows by shortfall × (1 + juice). The final payment is never
-    /// coverable ("no next favor").
+    /// has a charge and this is not the final payment: the whole payment is DEFERRED (the bank is
+    /// untouched — working capital survives, playtest #8) and the NEXT payment grows by
+    /// payment × (1 + juice). The final payment is never deferrable ("no next favor").
     /// </summary>
     public void Settle()
     {
@@ -308,9 +296,11 @@ public sealed class Run
         }
         else if (!finalRound && _effects.TryConsumeTotem())
         {
+            // Playtest #8 fix: the totem DEFERS the whole payment — the bank is untouched
+            // (mercy that leaves you at $0 is a death sentence in an income race), and the FULL
+            // payment × (1 + juice) lands on the next one. Real mercy, steeper price.
             shortfall = payment - Bank;
-            Bank = 0;
-            _payments[Round] += shortfall * (1.0 + Config.TotemJuiceRate);
+            _payments[Round] += payment * (1.0 + Config.TotemJuiceRate);
             totemFired = true;
             Phase = Phase.Shop;
         }

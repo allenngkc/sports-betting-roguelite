@@ -2,6 +2,24 @@
 
 Human playtests only (agent impressions live in OPEN-QUESTIONS). Newest first. Each entry: build, what happened, S-criteria signals, actions taken.
 
+## #8 — Allen, 2026-07-13 (build: economy rework in the room, commit 18d1b88) — ECONOMY REVIEW
+
+**"I like the game loop"** — first hands-on with payments + comps + the 3+3 catalog in the room; "everything else good" beyond two findings, both landed same day:
+1. **Timeout is useless — remove it.** Matches the sim audit (≈0 Δ across the board; it was
+   playtest-gated and the playtest voted no). CUT end to end: catalog (now 3 passives + 2
+   consumables), engine verb, console [T], TV [T]/HOLD hint. The engine's live-intervention
+   seam (`ApplyLiveEffect`/`OfferHoldEffect`) stays, pinned by a seam test — future actives can
+   buy the hold back if a design wants it.
+2. **Totem fired "but didn't really give me any capital — my bank is still at $0."** Correct
+   read: the old totem paid the shortfall by taking the whole bank, leaving a zombie round
+   (can't even place the $10 min stake). REWORKED to full deferral: the payment is skipped, the
+   bank is UNTOUCHED, and payment × 1.5 lands on the next one. Mercy that leaves you playing.
+   Re-tuning fallout (sim-report-3.md, 50k runs/batch, ALL GATES PASS): the win-rate jump came
+   NOT from the totem (+0.3pp audit) but from cutting Timeout — a 2-item catalog with 2 offer
+   slots guaranteed a Mulligan Slip every shop. Knobs moved: consumable offers 2 → 1 per shop
+   (draw scarcity restored), consumable slots 2 → 3 (bank a save for the cliff), mulligan
+   2 → 1.5 comps. Skilled lands 6.2% (Allen's 5–8% band), organic totem fire rate 50%.
+
 ## #7 — Allen, 2026-07-12 (build: M5 bookie phone, commit 2ef5cae) — MILESTONE REVIEW
 
 Phone thread readable, **"nice top-down view"** — the DeskFocus reuse call paid off. One finding:

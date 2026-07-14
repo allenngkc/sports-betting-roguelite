@@ -4,9 +4,11 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace SBR.Engine;
 
-/// <summary>Timeout's payload for the live-intervention seam: the cash-out offer holds its
+/// <summary>Offer-hold payload for the live-intervention seam: the cash-out offer holds its
 /// current price for the next N events. The hold freezes the PRICE, not fate — a revealed dead
-/// leg still kills the offer (a held price on a dead ticket would be a money printer).</summary>
+/// leg still kills the offer (a held price on a dead ticket would be a money printer).
+/// (Originally Timeout's payload; the item was cut at playtest #8 — the seam stays for future
+/// actives.)</summary>
 public sealed class OfferHoldEffect
 {
     public int Events { get; }
@@ -27,9 +29,9 @@ public sealed class OfferHoldEffect
 /// Economy-rework changes (PLAN.md 2026-07-13): relic loss-conversion is gone — instead, when a
 /// leg reveals Lost on a multi-leg ticket and a Mulligan Slip is HELD, the session suspends in a
 /// PENDING-LOSS window (the player's timed save, design/10 D): Run.PlayMulliganSlip voids the leg
-/// and play continues; DeclinePendingLoss — or simply advancing — busts the ticket. Timeout arrives
-/// through ApplyLiveEffect as an OfferHoldEffect. A cash-out or win notifies the EffectEngine so
-/// the Scar carrier burns its stacks.
+/// and play continues; DeclinePendingLoss — or simply advancing — busts the ticket. Offer holds
+/// arrive through ApplyLiveEffect as an OfferHoldEffect. A cash-out or win notifies the
+/// EffectEngine so the Scar carrier burns its stacks.
 ///
 /// Determinism: all drama paths are baked at construction; stepping, cash-out, holds and the
 /// pending window draw NO RNG — player timing can never perturb the run seed.
@@ -51,8 +53,8 @@ public sealed class SweatSession
     private bool _complete;
 
     private int _pendingDeadLeg = -1; // the revealed-dead leg awaiting a Mulligan Slip decision
-    private double? _heldFair;        // Timeout: frozen fair value
-    private int _holdEventsLeft;      // Timeout: events the hold survives
+    private double? _heldFair;        // offer hold: frozen fair value
+    private int _holdEventsLeft;      // offer hold: events the hold survives
 
     /// <param name="creditBank">The bank seam: adds the given amount to the run's bank (cash-out).</param>
     /// <param name="effects">Owned passives; notified on bust (scar feeds) and realize (scar burns).</param>
@@ -205,7 +207,7 @@ public sealed class SweatSession
     /// = stake × Π(offered odds of settled-Won legs) × (p_live × o) of the current leg
     ///   × Π(trueProb × o) of legs not yet started, with voided legs dropped, all scaled by the
     /// payout product (design/02: cash-out prices the ticket's full remaining payoff function —
-    /// Multiplier and a carried Scar included). Under a Timeout hold, the held value is returned
+    /// Multiplier and a carried Scar included). Under an offer hold, the held value is returned
     /// instead while the hold lasts.
     /// </summary>
     public double? CashOutFair()
@@ -252,7 +254,8 @@ public sealed class SweatSession
         _effects.OnTicketRealized(_ticket);
     }
 
-    /// <summary>The live-intervention seam (design/05), first real user: Timeout's OfferHoldEffect.
+    /// <summary>The live-intervention seam (design/05). Carries OfferHoldEffect (once Timeout's
+    /// payload — the item was cut at playtest #8; the seam stays for future actives).
     /// Requires a live offer; the hold freezes the current FAIR value for the effect's event count.</summary>
     public void ApplyLiveEffect(object effect)
     {
