@@ -271,9 +271,55 @@ namespace SBR.Game
                 if (evt.Type == DramaEventType.LegFinal)
                     yield return ResolveBeat(evt);
 
+                // The Mulligan Slip window (design/10 D): a dead leg suspended the session while a
+                // slip is held — the drama freezes on the player's timed save.
+                if (_session.HasPendingLoss)
+                    yield return MulliganWindowBeat();
+
                 if (_session.IsComplete) break;
                 yield return SeatedHold(PacingFor(evt, onFinalLeg));
             }
+        }
+
+        /// <summary>The pending-loss window: [M] plays the slip (leg voided, sweat resumes), [N]
+        /// declines (the bust proceeds). The drama holds as long as the decision does — the pause
+        /// IS the moment. Without a keyboard (batch tests) the window declines immediately, so
+        /// autoplay never hangs.</summary>
+        private IEnumerator MulliganWindowBeat()
+        {
+            if (Keyboard.current == null)
+            {
+                _session.DeclinePendingLoss();
+                yield break;
+            }
+
+            _tCashOut.enabled = true;
+            _tCashOut.text = "MULLIGAN SLIP HELD — [M] PLAY IT   ·   [N] LET IT DIE";
+
+            while (_session.HasPendingLoss)
+            {
+                if (_seated && Keyboard.current.mKey.wasPressedThisFrame
+                    && director.Run.OwnsConsumable("mulligan_slip"))
+                {
+                    director.Run.PlayMulliganSlip(_session);
+                    _tCashOut.enabled = false;
+                    _tFlavor.color = chromeCyan;
+                    _tFlavor.text = "THE SLIP COMES OUT — LEG VOIDED, THE TICKET LIVES";
+                    _emissRest = _emissIdle; // the DEAD dim lifts: the ticket breathes again
+                    tvLight?.ResetToIdle();
+                    UpdateSlipStrip(Mathf.Min(_resolvedThrough, _ticket.Legs.Count - 1));
+                    yield return ScaledWait(deadLineDuration);
+                    yield break;
+                }
+                if (_seated && Keyboard.current.nKey.wasPressedThisFrame)
+                {
+                    _session.DeclinePendingLoss();
+                    _tCashOut.enabled = false;
+                    yield break;
+                }
+                yield return null;
+            }
+            _tCashOut.enabled = false;
         }
 
         private IEnumerator SettlementBeat()
@@ -393,13 +439,13 @@ namespace SBR.Game
             _tWinPct.text = $"WIN {Mathf.RoundToInt(p0 * 100f)}%";
         }
 
-        /// <summary>The round's verdict short of a run end: TARGET MET green, or the bookie float red
-        /// (M4 grill decision). RunWon/RunLost skip this — the persistent verdict card owns them.</summary>
+        /// <summary>The round's settle card short of a run end (payment model): PAYMENT MADE green,
+        /// or the Totem burning. RunWon/RunLost skip this — the persistent verdict card owns them.</summary>
         private IEnumerator SettleCardBeat()
         {
-            RunDirector.SettleReport? maybe = director.LastSettle;
+            SettlementReport? maybe = director.LastSettle;
             if (maybe == null) yield break;
-            RunDirector.SettleReport s = maybe.Value;
+            SettlementReport s = maybe.Value;
             if (s.Outcome == Phase.RunWon || s.Outcome == Phase.RunLost) yield break;
 
             SetAlpha(_dimOverlay, 0f);
@@ -412,24 +458,22 @@ namespace SBR.Game
             _tBigAmount.text = string.Empty;
             _tSlipStrip.text = string.Empty;
 
-            if (s.Floated)
+            if (s.TotemFired)
             {
-                _tMatchup.text = $"SHORT — BANK ${Money(s.Bank)} / TGT ${Money(s.Target)}";
+                _tMatchup.text = $"SHORT — ${Money(s.BankBefore)} AGAINST ${Money(s.Payment)}";
                 _tFlavor.color = new Color(hotRed.r, hotRed.g, hotRed.b, 1f);
-                _tFlavor.text = "THE BOOKIE FLOATS YOU";
-                _tRecords.text = $"${Money(s.DebtAfter)} ON THE BOOKS — DUE AT THE NEXT SETTLE";
+                _tFlavor.text = "THE TOTEM BURNS";
+                _tRecords.text = $"THE BOOKIE COVERS ${Money(s.Shortfall)} — THE NEXT PAYMENT GROWS";
                 _emissRest = new Color(_emissIdle.r * 0.3f, _emissIdle.g * 0.12f, _emissIdle.b * 0.12f);
                 EmissionFlash(new Color(0.25f, 0.02f, 0.02f));
                 tvLight?.SetRest(new Color(0.7f, 0.18f, 0.15f), 0.32f);
             }
             else
             {
-                _tMatchup.text = s.DebtCleared ? "REQUIREMENT MET" : "TARGET MET";
+                _tMatchup.text = "PAYMENT MADE";
                 _tFlavor.color = new Color(phosphorGreen.r, phosphorGreen.g, phosphorGreen.b, 1f);
-                _tFlavor.text = $"BANK ${Money(s.Bank)} / TGT ${Money(s.Target)}";
-                _tRecords.text = s.DebtCleared
-                    ? $"DEBT CLEARED — ${Money(s.DebtBefore)} PAID IN CASH"
-                    : string.Empty;
+                _tFlavor.text = $"−${Money(s.Payment)}   ·   BANK ${Money(s.BankAfter)}";
+                _tRecords.text = string.Empty;
                 EmissionFlash(phosphorGreen);
                 tvLight?.Flash(new Color(0.30f, 1f, 0.45f), 3.0f);
             }
@@ -472,8 +516,7 @@ namespace SBR.Game
 
             ClearToBlankScreen();
             _tAttract.enabled = true;
-            _tAttract.text = won ? "THE HOUSE BLINKS FIRST"
-                : r.Debt > 0 ? "THE BOOKIE COLLECTS" : "BUSTED";
+            _tAttract.text = won ? "THE HOUSE BLINKS FIRST" : "THE BOOKIE COLLECTS";
             _tAttract.color = won
                 ? new Color(gold.r, gold.g, gold.b, 1f)
                 : new Color(hotRed.r, hotRed.g, hotRed.b, 1f);
@@ -547,7 +590,9 @@ namespace SBR.Game
             if (offer.HasValue)
             {
                 _tCashOut.enabled = true;
-                _tCashOut.text = $"CASH OUT ${Money(offer.Value)}   [E]";
+                string hold = director?.Run != null && director.Run.OwnsConsumable("timeout")
+                    ? "   ·   HOLD [T]" : string.Empty;
+                _tCashOut.text = $"CASH OUT ${Money(offer.Value)}   [E]{hold}";
             }
             else
             {
@@ -691,6 +736,23 @@ namespace SBR.Game
 
             if (_interact != null && _interact.WasPressedThisFrame())
                 TryCashOut();
+
+            if (Keyboard.current != null && Keyboard.current.tKey.wasPressedThisFrame)
+                TryTimeout();
+        }
+
+        /// <summary>[T] plays a held Timeout: the cash-out offer freezes until the 3rd event lands
+        /// (design/10 D — the price lock, not a fate lock).</summary>
+        private void TryTimeout()
+        {
+            if (!_seated || _session == null || _session.IsComplete || _session.HasPendingLoss) return;
+            if (director?.Run == null || !director.Run.OwnsConsumable("timeout")) return;
+            if (!_session.CashOutOffer().HasValue) return;
+
+            director.Run.PlayTimeout(_session);
+            _tFlavor.color = chromeCyan;
+            _tFlavor.text = "TIMEOUT — THE OFFER HOLDS FOR 3 EVENTS";
+            UpdateCashOutLabel();
         }
 
         private void TryCashOut()
@@ -709,8 +771,8 @@ namespace SBR.Game
             Run r = director != null ? director.Run : null;
             if (r == null) { _tChrome.text = string.Empty; return; }
             _tChrome.text =
-                $"R{r.Round}/{r.Config.Rounds}   ·   BANK ${Money(r.Bank)}   ·   TGT ${Money(r.CurrentTarget)}" +
-                $"   ·   DEBT ${Money(r.Debt)}   ·   {r.Rng.RunSeed}";
+                $"R{r.Round}/{r.Config.Rounds}   ·   BANK ${Money(r.Bank)}   ·   PAY ${Money(r.CurrentPayment)}" +
+                $"   ·   COMPS {r.Comps.ToString("0.#", CultureInfo.InvariantCulture)}   ·   {r.Rng.RunSeed}";
         }
 
         private void ApplyEmission()

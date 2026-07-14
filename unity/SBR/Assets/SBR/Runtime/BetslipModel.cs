@@ -23,6 +23,10 @@ namespace SBR.Game
         /// <summary>Whole-dollar stake. Clamped to [MinStake, MaxStakeFraction × bank] on every set.</summary>
         public double Stake { get; private set; }
 
+        /// <summary>Index into Picks of the leg a held Profit Boost lands on, or −1. Any leg
+        /// mutation clears it (indices shift; the player re-aims deliberately).</summary>
+        public int BoostLeg { get; private set; } = -1;
+
         public IReadOnlyList<Pick> Picks => _picks;
 
         public BetslipModel(Run run)
@@ -45,6 +49,7 @@ namespace SBR.Game
         /// Returns false only when a NEW leg would exceed MaxLegs.</summary>
         public bool Toggle(int matchupIndex, Side side)
         {
+            BoostLeg = -1;
             for (int i = 0; i < _picks.Count; i++)
             {
                 if (_picks[i].MatchupIndex != matchupIndex) continue;
@@ -59,9 +64,24 @@ namespace SBR.Game
         }
 
         public void Remove(int matchupIndex)
-            => _picks.RemoveAll(p => p.MatchupIndex == matchupIndex);
+        {
+            BoostLeg = -1;
+            _picks.RemoveAll(p => p.MatchupIndex == matchupIndex);
+        }
 
-        public void Clear() => _picks.Clear();
+        public void Clear()
+        {
+            BoostLeg = -1;
+            _picks.Clear();
+        }
+
+        /// <summary>Aims (or un-aims) the held Profit Boost at a slip leg. No-op without the item.</summary>
+        public void ToggleBoost(int pickIndex)
+        {
+            if (pickIndex < 0 || pickIndex >= _picks.Count) return;
+            if (!_run.OwnsConsumable("profit_boost")) return;
+            BoostLeg = BoostLeg == pickIndex ? -1 : pickIndex;
+        }
 
         // ------------------------------------------------------------------ stake
 
@@ -114,11 +134,11 @@ namespace SBR.Game
 
         // ------------------------------------------------------------------ place
 
-        /// <summary>Places the slip as an engine ticket, clears it, and re-anchors the stake to the
-        /// post-deduction bank. Callers should check CanPlace; engine exceptions bubble (rulebook).</summary>
+        /// <summary>Places the slip as an engine ticket (playing an aimed Profit Boost), clears it,
+        /// and re-anchors the stake. Callers should check CanPlace; engine exceptions bubble.</summary>
         public Ticket Place()
         {
-            Ticket ticket = _run.PlaceTicket(_picks.ToList(), Stake);
+            Ticket ticket = _run.PlaceTicket(_picks.ToList(), Stake, BoostLeg);
             Clear();
             SetStakeFraction(0.10);
             return ticket;

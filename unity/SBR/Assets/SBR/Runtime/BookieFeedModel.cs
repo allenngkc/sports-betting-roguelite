@@ -7,14 +7,13 @@ namespace SBR.Game
     public enum BookieMessageKind
     {
         RUN_START,
-        FLOAT_WARM,
-        FLOAT_COLD,
-        DEBT_BETTING,
-        NO_MORE_FAVORS,
-        CLEARED,
+        CLIFF_DEMAND,
+        FINAL_DEMAND,
+        TOTEM_BURNED,
+        CLOSE_CALL_RECEIPT,
+        GIFT,
         COLLECTION,
         VERDICT_WON,
-        VERDICT_BUST,
     }
 
     public readonly struct BookieMessage
@@ -32,27 +31,36 @@ namespace SBR.Game
     }
 
     /// <summary>
-    /// Pure M5 trigger state over RunDirector snapshots. Settle beats use the report's round so a
-    /// delayed observation after ExitShop cannot rewrite history; betting beats use the live round.
-    /// Reset is atomic per run, while Revision and ArrivalSequence stay monotone for render and buzz.
+    /// Pure trigger state over RunDirector snapshots — the creditor model (design/10 F: the
+    /// payments are HIS; the phone carries demands, receipts, and mercy). Settle beats stamp the
+    /// report's round so a delayed observation after ExitShop cannot rewrite history; betting
+    /// beats (demands, gifts) use the live round. Per-snapshot order: reset → settle beats →
+    /// gift → demand. Reset is atomic per run; Revision and ArrivalSequence stay monotone —
+    /// Revision drives rendering, ArrivalSequence (append-only) drives the buzz.
     /// </summary>
     public sealed class BookieFeedModel
     {
+        /// <summary>A payment this much bigger than the last one draws the cliff-demand text.</summary>
+        public const double CliffRatio = 1.5;
+
+        /// <summary>Paying with less than this fraction of the payment left over reads as a
+        /// close call — the bookie notices.</summary>
+        public const double CloseCallFraction = 0.20;
+
         private readonly List<BookieMessage> _messages = new List<BookieMessage>();
         private readonly HashSet<int> _seenSettleRounds = new HashSet<int>();
         private readonly HashSet<int> _seenBettingRounds = new HashSet<int>();
 
         private bool _hasRun;
         private int _runGeneration;
-        private int _floatCount;
 
         public IReadOnlyList<BookieMessage> Messages => _messages;
         public int UnreadCount { get; private set; }
         public long Revision { get; private set; }
         public long ArrivalSequence { get; private set; }
 
-        public void Observe(int runGeneration, Run run, Phase phase, int round, double debt,
-                            RunDirector.SettleReport? lastSettle)
+        public void Observe(int runGeneration, Run run, Phase phase, int round,
+                            SettlementReport? lastSettlement)
         {
             if (run == null)
                 return;
@@ -60,20 +68,25 @@ namespace SBR.Game
             if (!_hasRun || runGeneration != _runGeneration)
             {
                 ResetForRun(runGeneration);
-                Append(run, round, BookieMessageKind.RUN_START);
+                Append(run, round, BookieMessageKind.RUN_START, run.PaymentSchedule[0]);
             }
 
-            // A delayed frame can expose settle and next-round betting together. The debt origin
-            // must speak before its reminder, matching the TV card's narrative order.
-            if (lastSettle.HasValue)
-                ProcessSettle(run, lastSettle.Value);
+            if (lastSettlement.HasValue)
+                ProcessSettle(run, lastSettlement.Value);
 
-            if (phase == Phase.Betting && debt > 0.0 && _seenBettingRounds.Add(round))
+            if (phase == Phase.Betting && _seenBettingRounds.Add(round))
             {
-                BookieMessageKind kind = round == run.Config.Rounds
-                    ? BookieMessageKind.NO_MORE_FAVORS
-                    : BookieMessageKind.DEBT_BETTING;
-                Append(run, round, kind, debt);
+                // The gift text precedes the demand: mercy first, then business.
+                if (run.LastGift != null)
+                    Append(run, round, BookieMessageKind.GIFT, 0.0, run.LastGift.Name);
+
+                // The OBSERVED round's payment — never Run.CurrentPayment, which tracks the run's
+                // live round and diverges from a synthetic or delayed observation.
+                double payment = run.PaymentSchedule[round - 1];
+                if (round == run.Config.Rounds)
+                    Append(run, round, BookieMessageKind.FINAL_DEMAND, payment);
+                else if (round >= 2 && payment >= CliffRatio * run.PaymentSchedule[round - 2])
+                    Append(run, round, BookieMessageKind.CLIFF_DEMAND, payment);
             }
         }
 
@@ -90,47 +103,40 @@ namespace SBR.Game
             _messages.Clear();
             _seenSettleRounds.Clear();
             _seenBettingRounds.Clear();
-            _floatCount = 0;
             UnreadCount = 0;
             _runGeneration = runGeneration;
             _hasRun = true;
             Revision++;
         }
 
-        private void ProcessSettle(Run run, RunDirector.SettleReport report)
+        private void ProcessSettle(Run run, SettlementReport report)
         {
             if (!_seenSettleRounds.Add(report.Round))
                 return;
 
-            if (report.Floated)
+            if (report.Outcome == Phase.RunLost)
             {
-                BookieMessageKind kind = _floatCount == 0
-                    ? BookieMessageKind.FLOAT_WARM
-                    : BookieMessageKind.FLOAT_COLD;
-                _floatCount++;
-                Append(run, report.Round, kind, report.DebtAfter);
+                Append(run, report.Round, BookieMessageKind.COLLECTION, report.Shortfall);
             }
-
-            // Clearing debt is its own beat and always precedes a final verdict in the same report.
-            if (report.DebtCleared)
-                Append(run, report.Round, BookieMessageKind.CLEARED);
-
-            if (report.Outcome == Phase.RunWon)
+            else if (report.Outcome == Phase.RunWon)
             {
                 Append(run, report.Round, BookieMessageKind.VERDICT_WON);
             }
-            else if (report.Outcome == Phase.RunLost)
+            else if (report.TotemFired)
             {
-                Append(run, report.Round,
-                    report.DebtAfter > 0.0 ? BookieMessageKind.COLLECTION : BookieMessageKind.VERDICT_BUST,
-                    report.DebtAfter);
+                Append(run, report.Round, BookieMessageKind.TOTEM_BURNED, report.Shortfall);
+            }
+            else if (report.Paid && report.BankAfter < CloseCallFraction * report.Payment)
+            {
+                Append(run, report.Round, BookieMessageKind.CLOSE_CALL_RECEIPT, report.BankAfter);
             }
         }
 
-        private void Append(Run run, int round, BookieMessageKind kind, double amount = 0.0)
+        private void Append(Run run, int round, BookieMessageKind kind, double amount = 0.0,
+            string detail = null)
         {
             _messages.Add(new BookieMessage(kind, round,
-                BookieScript.Write(run.Rng.RunSeed, round, kind, amount)));
+                BookieScript.Write(run.Rng.RunSeed, round, kind, amount, detail)));
             UnreadCount++;
             Revision++;
             ArrivalSequence++;

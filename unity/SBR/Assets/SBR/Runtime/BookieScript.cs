@@ -4,76 +4,71 @@ using System.Globalization;
 namespace SBR.Game
 {
     /// <summary>
-    /// The bookie's text voice (M5, design/00): lowercase, deadpan, and friendly only while the
-    /// favors are cheap. Lines are presentation-only and chosen by a stable hash of seed, stamped
-    /// round, and trigger kind, so reading the phone never consumes engine RNG.
+    /// The bookie's text voice (M5, remapped for the payment economy — design/10 F: the bookie is
+    /// the CREDITOR; the schedule is his). Lowercase, deadpan, warm only while you're paying.
+    /// Lines are presentation-only and chosen by a stable hash of seed, stamped round, and trigger
+    /// kind, so reading the phone never consumes engine RNG.
     /// </summary>
     public static class BookieScript
     {
         private static readonly string[] RunStart =
         {
-            "new run. fresh numbers. try not to make either of us sentimental.",
-            "board's open. i believe in you in the legally nonbinding sense.",
+            "you know the schedule. first one's {0}. don't be a stranger.",
+            "new book, same arrangement. {0} due at the first settle.",
         };
 
-        private static readonly string[] FloatWarm =
+        private static readonly string[] CliffDemand =
         {
-            "covered you. you're into me for {0}. happens to the best customers.",
-            "i floated the room. {0} on the arm. keep it moving.",
-            "short night. i spotted you {0}. call it professional optimism.",
+            "this one's bigger. {0}. hope you've been building.",
+            "the number jumps today. {0}. no surprises between us.",
         };
 
-        private static readonly string[] FloatCold =
+        private static readonly string[] FinalDemand =
         {
-            "another {0}. we're developing a pattern and i don't collect patterns.",
-            "you're into me for {0}. again. the friendship rate has expired.",
-            "i covered {0}. this is the last time it feels conversational.",
+            "last payment. {0}. all of it.",
+            "final settle. {0}. then we're done, one way or the other.",
         };
 
-        private static readonly string[] DebtBetting =
+        private static readonly string[] TotemBurned =
         {
-            "my {0} is in play too. pick like you remember that.",
-            "you owe {0}. tonight the vig has a face.",
+            "covered you. once. the next one grows.",
+            "that trinket bought you a week. don't make it a habit.",
         };
 
-        private static readonly string[] NoMoreFavors =
+        private static readonly string[] CloseCallReceipt =
         {
-            "final round. {0} due. there is no next favor.",
-            "last board. bring back my {0} or don't bring back excuses.",
+            "received. you're cutting it close.",
+            "paid. barely. i notice these things.",
         };
 
-        private static readonly string[] Cleared =
+        private static readonly string[] Gift =
         {
-            "we're square. knew you had it. mostly.",
-            "debt cleared. deleting the draft with your address in it.",
+            "rough stretch. house sends its regards - a {0}, on me.",
+            "cold streak, huh. here's a {0}. keep betting.",
         };
 
         private static readonly string[] Collection =
         {
-            "that's the run. i still have your number. and {0} of your attention.",
-            "account closed. balance isn't. {0} has entered the collection phase.",
+            "short. we're past texts now.",
+            "that's that. someone will come by.",
         };
 
         private static readonly string[] VerdictWon =
         {
-            "you got there. take the win before it learns your name.",
-            "run cleared. proud of you in a way my accountant discourages.",
+            "paid in full. the house blinks first. don't come back.",
+            "all of it, settled. i almost respect it.",
         };
 
-        private static readonly string[] VerdictBust =
-        {
-            "busted clean. no debt, just evidence.",
-            "run's over. good news: you only owe yourself an explanation.",
-        };
-
-        public static string Write(string runSeed, int round, BookieMessageKind kind, double amount = 0.0)
+        /// <summary>Writes the line for a trigger: {0} is the money amount — or, for GIFT, the
+        /// item name passed as <paramref name="detail"/>.</summary>
+        public static string Write(string runSeed, int round, BookieMessageKind kind,
+            double amount = 0.0, string detail = null)
         {
             string[] pool = Pool(kind);
             uint hash = DemoTicketPolicy.StableHash($"{runSeed}#{round}#{kind}");
             string line = pool[(int)(hash % (uint)pool.Length)];
-            return line.IndexOf("{0}", StringComparison.Ordinal) >= 0
-                ? string.Format(CultureInfo.InvariantCulture, line, Money(amount))
-                : line;
+            if (line.IndexOf("{0}", StringComparison.Ordinal) < 0) return line;
+            return string.Format(CultureInfo.InvariantCulture, line, detail ?? Money(amount));
         }
 
         public static string Money(double value)
@@ -87,14 +82,13 @@ namespace SBR.Game
             switch (kind)
             {
                 case BookieMessageKind.RUN_START: return RunStart;
-                case BookieMessageKind.FLOAT_WARM: return FloatWarm;
-                case BookieMessageKind.FLOAT_COLD: return FloatCold;
-                case BookieMessageKind.DEBT_BETTING: return DebtBetting;
-                case BookieMessageKind.NO_MORE_FAVORS: return NoMoreFavors;
-                case BookieMessageKind.CLEARED: return Cleared;
+                case BookieMessageKind.CLIFF_DEMAND: return CliffDemand;
+                case BookieMessageKind.FINAL_DEMAND: return FinalDemand;
+                case BookieMessageKind.TOTEM_BURNED: return TotemBurned;
+                case BookieMessageKind.CLOSE_CALL_RECEIPT: return CloseCallReceipt;
+                case BookieMessageKind.GIFT: return Gift;
                 case BookieMessageKind.COLLECTION: return Collection;
                 case BookieMessageKind.VERDICT_WON: return VerdictWon;
-                case BookieMessageKind.VERDICT_BUST: return VerdictBust;
                 default: throw new ArgumentOutOfRangeException(nameof(kind), kind, null);
             }
         }

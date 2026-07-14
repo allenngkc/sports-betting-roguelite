@@ -11,10 +11,14 @@ namespace SBR.Tests.EditMode
     /// </summary>
     public class BetslipModelTests
     {
+        // The chip/reanchor math below was written against bank 500; the economy rework moved the
+        // default to 350, so every run pins its config.
+        private static RunConfig Bank500() => new RunConfig { StartingBank = 500 };
+
         [Test]
         public void Toggle_adds_switches_and_removes()
         {
-            var run = new Run("SLIP-TOGGLE");
+            var run = new Run("SLIP-TOGGLE", Bank500());
             var slip = new BetslipModel(run);
 
             Assert.IsTrue(slip.Toggle(0, Side.Home));
@@ -32,7 +36,7 @@ namespace SBR.Tests.EditMode
         [Test]
         public void Toggle_caps_new_legs_at_max_but_still_switches_existing()
         {
-            var run = new Run("SLIP-CAP", new RunConfig { MaxLegs = 2 });
+            var run = new Run("SLIP-CAP", new RunConfig { MaxLegs = 2, StartingBank = 500 });
             var slip = new BetslipModel(run);
 
             Assert.IsTrue(slip.Toggle(0, Side.Home));
@@ -47,7 +51,7 @@ namespace SBR.Tests.EditMode
         [Test]
         public void Stake_chips_and_nudges_clamp_to_min_and_bank()
         {
-            var run = new Run("SLIP-STAKE"); // starting bank 500
+            var run = new Run("SLIP-STAKE", Bank500()); // starting bank 500
             var slip = new BetslipModel(run);
 
             Assert.AreEqual(50.0, slip.Stake, 1e-9, "default chip is 10% of bank");
@@ -71,7 +75,7 @@ namespace SBR.Tests.EditMode
         [Test]
         public void ToWin_preview_matches_the_engine_ticket_payout_without_relics()
         {
-            var run = new Run("SLIP-PREVIEW");
+            var run = new Run("SLIP-PREVIEW", Bank500());
             var slip = new BetslipModel(run);
 
             slip.Toggle(0, Side.Home);
@@ -87,7 +91,7 @@ namespace SBR.Tests.EditMode
         [Test]
         public void Place_clears_the_slip_and_reanchors_the_stake_to_the_new_bank()
         {
-            var run = new Run("SLIP-REANCHOR"); // bank 500
+            var run = new Run("SLIP-REANCHOR", Bank500()); // bank 500
             var slip = new BetslipModel(run);
 
             slip.Toggle(0, Side.Home);
@@ -102,7 +106,7 @@ namespace SBR.Tests.EditMode
         [Test]
         public void PlaceBlocker_walks_the_reasons()
         {
-            var run = new Run("SLIP-BLOCK");
+            var run = new Run("SLIP-BLOCK", Bank500());
             var slip = new BetslipModel(run);
 
             Assert.AreEqual("pick a side", slip.PlaceBlocker);
@@ -123,7 +127,7 @@ namespace SBR.Tests.EditMode
         [Test]
         public void Model_consumes_no_engine_rng()
         {
-            var run = new Run("SLIP-PURE");
+            var run = new Run("SLIP-PURE", Bank500());
             var slip = new BetslipModel(run);
             slip.Toggle(0, Side.Home);
             slip.Toggle(2, Side.Away);
@@ -132,7 +136,7 @@ namespace SBR.Tests.EditMode
             _ = slip.ToWin;
             slip.Place();
 
-            var control = new Run("SLIP-PURE");
+            var control = new Run("SLIP-PURE", Bank500());
             run.LockRound();
             control.LockRound();
             for (int i = 0; i < control.CurrentSlate.Matchups.Count; i++)

@@ -82,22 +82,27 @@ namespace SBR.Tests.EditMode
         // Ported from engine.tests/DebtTests.cs (A_clean_miss_borrows...): a no-bet miss with no debt
         // makes the bookie float you — bank topped to the target, shortfall booked at x(1 + 0.5).
         [Test]
-        public void Debt_clean_miss_borrows_bank_topped_to_target_debt_is_juiced_shortfall()
+        public void Payment_shortfall_with_the_totem_surcharges_the_next_payment()
         {
-            var run = new Run("DEBT-BORROW", new RunConfig
+            // The economy rework's mercy path (design/10): the Totem covers a non-final
+            // shortfall — bank zeroes, the NEXT payment grows by shortfall × (1 + juice).
+            var run = new Run("PAY-TOTEM", new RunConfig
             {
                 StartingBank = 500,
-                Targets = new double[] { 800, 1200 },
-                DebtJuiceRate = 0.5,
+                Payments = new double[] { 800, 400 },
+                TotemJuiceRate = 0.5,
             });
+            foreach (RelicDefinition def in RelicCatalog.All)
+                if (def.Id == RelicCatalog.TotemId) run.GrantRelic(def);
             run.LockRound();
             run.FastForwardRound();
             run.Settle();
 
-            Assert.AreEqual(Phase.Shop, run.Phase);                     // the run continues
-            Assert.AreEqual(800.0, run.Bank, 1e-9);                     // working capital up to the target
-            Assert.AreEqual((800.0 - 500.0) * 1.5, run.Debt, 1e-9);     // shortfall x (1 + 0.5)
-            Assert.Greater(run.ShopOffers.Count, 0);                    // the float lands in a real shop
+            Assert.AreEqual(Phase.Shop, run.Phase);                       // the run continues
+            Assert.AreEqual(0.0, run.Bank, 1e-9);                         // he takes everything you have
+            Assert.IsTrue(run.LastSettlement!.Value.TotemFired);
+            run.ExitShop();
+            Assert.AreEqual(400.0 + 300.0 * 1.5, run.CurrentPayment, 1e-9); // shortfall × 1.5 lands on P2
         }
     }
 }

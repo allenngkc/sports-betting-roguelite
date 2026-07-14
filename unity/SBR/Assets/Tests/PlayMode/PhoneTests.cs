@@ -112,7 +112,7 @@ namespace SBR.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Real_adapter_emits_warm_float_with_report_round_and_amount()
+        public IEnumerator Real_adapter_walks_a_no_bet_run_to_the_cliff_and_the_collection_text()
         {
             yield return LoadRoom();
             var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
@@ -121,38 +121,29 @@ namespace SBR.Tests.PlayMode
             Assert.IsNotNull(feed);
             yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
 
-            RunDirector.SettleReport floated = default;
-            string winningCandidate = null;
-            for (int i = 0; i < 20; i++)
+            // Fully deterministic for ANY seed: no bets, bank 350 against payments 60+70+85+105 =
+            // 320, so round 5's 195 collects with 30 in hand. Zero-ticket locks settle inline.
+            director.StartNewRun("M5-CLIFF");
+            Run run = director.Run;
+            while (run.Phase != Phase.RunLost)
             {
-                string candidate = $"M5-F{i}";
-                director.StartNewRun(candidate);
-                Run run = director.Run;
-                run.PlaceTicket(new List<Pick> { new Pick(0, Side.Home) }, run.Bank);
+                yield return null; // a frame per betting phase, so the feed observes each demand
                 director.LockRound();
-
-                foreach (SweatSession session in run.Sweats)
-                    while (session.MoveNext(out _)) { }
-
-                director.FinishAndSettle();
-                Assert.IsTrue(director.LastSettle.HasValue, $"{candidate} did not produce settle telemetry");
-                if (director.LastSettle.Value.Floated)
-                {
-                    floated = director.LastSettle.Value;
-                    winningCandidate = candidate;
-                    break;
-                }
+                if (run.Phase == Phase.Shop) director.ExitShop();
             }
 
-            Assert.IsNotNull(winningCandidate, "expected one Home loss among deterministic M5-F0..M5-F19");
-            yield return WaitUntil(() => HasKind(feed.Messages, BookieMessageKind.FLOAT_WARM),
-                10f, "real BookieFeed never observed the floated settle");
+            Assert.AreEqual(5, run.LastSettlement!.Value.Round, "the cliff should collect at round 5");
 
-            BookieMessage message = FindKind(feed.Messages, BookieMessageKind.FLOAT_WARM);
-            Assert.AreEqual(floated.Round, message.Round,
-                "adapter must stamp the report round, not a later live Run.Round");
-            StringAssert.Contains(Money(floated.DebtAfter), message.Text);
-            Assert.AreEqual(winningCandidate, director.Run.Rng.RunSeed);
+            yield return WaitUntil(() => HasKind(feed.Messages, BookieMessageKind.COLLECTION),
+                10f, "real BookieFeed never observed the collection");
+
+            BookieMessage collection = FindKind(feed.Messages, BookieMessageKind.COLLECTION);
+            Assert.AreEqual(5, collection.Round, "adapter must stamp the report round");
+
+            // The round-5 demand (195 vs 105 is the ≥1.5× jump) should have texted at its open.
+            BookieMessage demand = FindKind(feed.Messages, BookieMessageKind.CLIFF_DEMAND);
+            Assert.AreEqual(5, demand.Round);
+            StringAssert.Contains(Money(195), demand.Text);
         }
 
         private static void FindFocuses(out DeskFocus laptop, out DeskFocus phone)

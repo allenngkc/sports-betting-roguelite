@@ -33,8 +33,9 @@ namespace SBR.Game
         public SweatSession CurrentSession { get; private set; }
         public Ticket CurrentTicket { get; private set; }
 
-        /// <summary>Set by FinishAndSettle; cleared when the next round locks. The TV's settle card.</summary>
-        public SettleReport? LastSettle { get; private set; }
+        /// <summary>The engine's settle telemetry (payment model): what was due, what happened,
+        /// whether the Totem fired. The TV's settle card and the bookie feed read it.</summary>
+        public SettlementReport? LastSettle => Run?.LastSettlement;
 
         /// <summary>Bumped on every StartNewRun so surfaces can cheaply detect the reset.</summary>
         public int RunGeneration { get; private set; }
@@ -42,32 +43,6 @@ namespace SBR.Game
         private static readonly char[] SeedAlphabet =
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".ToCharArray();
         private System.Random _seedRng;
-
-        public readonly struct SettleReport
-        {
-            public readonly int Round;
-            public readonly double Bank;
-            public readonly double Target;
-            public readonly double DebtBefore;
-            public readonly double DebtAfter;
-            public readonly Phase Outcome;
-
-            public SettleReport(int round, double bank, double target,
-                                double debtBefore, double debtAfter, Phase outcome)
-            {
-                Round = round;
-                Bank = bank;
-                Target = target;
-                DebtBefore = debtBefore;
-                DebtAfter = debtAfter;
-                Outcome = outcome;
-            }
-
-            /// <summary>The bookie floated this settle: a clean miss became working capital + debt.</summary>
-            public bool Floated => DebtBefore == 0 && DebtAfter > 0;
-            public bool DebtCleared => DebtBefore > 0 && DebtAfter == 0 && Outcome != Phase.RunLost;
-            public bool TargetMet => Outcome == Phase.Shop && !Floated || Outcome == Phase.RunWon;
-        }
 
         private void Awake()
         {
@@ -91,9 +66,8 @@ namespace SBR.Game
             SweatIndex = 0;
             CurrentSession = null;
             CurrentTicket = null;
-            LastSettle = null;
             RunGeneration++;
-            Debug.Log($"[RunDirector] NEW RUN seed={runSeed} bank={Run.Bank} target={Run.CurrentTarget}");
+            Debug.Log($"[RunDirector] NEW RUN seed={runSeed} bank={Run.Bank} payment={Run.CurrentPayment}");
         }
 
         // ------------------------------------------------------------------ betting → sweat
@@ -103,7 +77,6 @@ namespace SBR.Game
         public void LockRound()
         {
             if (Run == null || Run.Phase != Phase.Betting) return;
-            LastSettle = null;
             Run.LockRound();
 
             if (Run.Sweats.Count == 0)
@@ -129,19 +102,15 @@ namespace SBR.Game
             return true;
         }
 
-        /// <summary>FinishSweat + Settle once every session is complete; captures the settle card.</summary>
+        /// <summary>FinishSweat + Settle once every session is complete; the engine writes the
+        /// settle telemetry (LastSettlement) as part of Settle.</summary>
         public void FinishAndSettle()
         {
             if (Run == null || Run.Phase != Phase.Sweat) return;
 
-            int round = Run.Round;
-            double target = Run.CurrentTarget;
-            double debtBefore = Run.Debt;
-
             Run.FinishSweat();
             Run.Settle();
 
-            LastSettle = new SettleReport(round, Run.Bank, target, debtBefore, Run.Debt, Run.Phase);
             CurrentSession = null;
             CurrentTicket = null;
         }
@@ -156,6 +125,48 @@ namespace SBR.Game
             try
             {
                 Run.BuyRelic(offerIndex);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+
+        public string TryBuyConsumable(int offerIndex)
+        {
+            if (Run == null || Run.Phase != Phase.Shop) return "shop is closed";
+            try
+            {
+                Run.BuyConsumable(offerIndex);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+
+        public string TrySellRelic(int ownedIndex)
+        {
+            if (Run == null || Run.Phase != Phase.Shop) return "shop is closed";
+            try
+            {
+                Run.SellRelic(ownedIndex);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+
+        public string TrySellConsumable(int ownedIndex)
+        {
+            if (Run == null || Run.Phase != Phase.Shop) return "shop is closed";
+            try
+            {
+                Run.SellConsumable(ownedIndex);
                 return null;
             }
             catch (Exception ex)

@@ -127,10 +127,10 @@ namespace SBR.Tests.PlayMode
 
             director.LockRound(); // no tickets: the director settles without TV ceremony
 
-            // Starting bank 500 >= round-1 target 400, so a no-bet round always clears into the shop.
+            // Starting bank 350 >= round-1 payment 60, so a no-bet round always pays into the shop.
             Assert.AreEqual(Phase.Shop, director.Run.Phase, "no-bet round should settle straight to Shop");
             Assert.IsTrue(director.LastSettle.HasValue);
-            Assert.IsTrue(director.LastSettle.Value.TargetMet);
+            Assert.IsTrue(director.LastSettle.Value.Paid);
         }
 
         // ---- helpers ----

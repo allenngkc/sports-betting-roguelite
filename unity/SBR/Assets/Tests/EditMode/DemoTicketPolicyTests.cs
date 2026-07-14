@@ -93,7 +93,7 @@ namespace SBR.Tests.EditMode
         [Test]
         public void Stake_is_quarter_bank_min_ten_and_the_ticket_is_engine_valid()
         {
-            var run = new Run("POLICY-STAKE"); // starting bank 500 -> 0.25*500 = 125
+            var run = new Run("POLICY-STAKE", new RunConfig { StartingBank = 500 }); // 0.25*500 = 125
             (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run);
 
             double expected = Math.Max(run.Config.MinStake, Math.Floor(0.25 * run.Bank));

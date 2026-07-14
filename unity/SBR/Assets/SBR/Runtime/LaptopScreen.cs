@@ -108,11 +108,12 @@ namespace SBR.Game
             Run r = director.Run;
             var sb = new StringBuilder(96);
             sb.Append(director.RunGeneration).Append('|').Append(r.Phase).Append('|').Append(r.Round)
-              .Append('|').Append((long)r.Bank).Append('|').Append((long)r.Debt)
+              .Append('|').Append((long)r.Bank).Append('|').Append((long)(r.Comps * 10))
               .Append('|').Append(r.Tickets.Count).Append('|').Append(r.ShopOffers.Count)
-              .Append('|').Append(r.OwnedRelics.Count).Append('|').Append((long)r.PiggyBankBalance)
+              .Append('|').Append(r.ConsumableOffers.Count).Append('|').Append(r.OwnedRelics.Count)
+              .Append('|').Append(r.OwnedConsumables.Count).Append('|').Append((long)(r.ScarStacks * 10))
               .Append('|').Append(_lockArmed).Append('|').Append(_shopError.Length)
-              .Append('|').Append((long)(_slip?.Stake ?? 0));
+              .Append('|').Append((long)(_slip?.Stake ?? 0)).Append('|').Append(_slip?.BoostLeg ?? -1);
             if (_slip != null)
                 foreach (Pick p in _slip.Picks)
                     sb.Append('|').Append(p.MatchupIndex).Append(p.Side == Side.Home ? 'H' : 'A');
@@ -146,13 +147,16 @@ namespace SBR.Game
 
         private void RebuildHeader(Run r)
         {
-            string debt = r.Debt > 0 ? $"   DEBT {Money(r.Debt)} DUE {Money(r.Requirement)}" : "";
+            // The bank must HOLD the payment at settle — the header goes red when it doesn't.
+            bool short_ = r.Bank < r.CurrentPayment;
             _tHeaderLeft.text =
-                $"ROUND {r.Round}/{r.Config.Rounds}   BANK {Money(r.Bank)}   TGT {Money(r.CurrentTarget)}{debt}";
-            _tHeaderLeft.color = r.Debt > 0 ? hotRed : chromeCyan;
+                $"ROUND {r.Round}/{r.Config.Rounds}   BANK {Money(r.Bank)}   PAYMENT DUE {Money(r.CurrentPayment)}"
+                + $"   COMPS {r.Comps.ToString("0.#", CultureInfo.InvariantCulture)}";
+            _tHeaderLeft.color = short_ ? hotRed : chromeCyan;
 
             var right = new StringBuilder();
-            if (r.PiggyBankBalance > 0) right.Append($"PIGGY {Money(r.PiggyBankBalance)}   ");
+            if (r.ScarStacks > 0)
+                right.Append($"SCAR {r.ScarStacks.ToString("0.#", CultureInfo.InvariantCulture)}pp   ");
             if (r.OwnedRelics.Count > 0)
             {
                 var names = new StringBuilder();
@@ -163,7 +167,7 @@ namespace SBR.Game
                 }
                 right.Append(names);
             }
-            right.Append($"   {r.OwnedRelics.Count}/{r.Config.RelicSlots}");
+            right.Append($"   {r.OwnedRelics.Count}/{r.Config.RelicSlots}R {r.OwnedConsumables.Count}/{r.Config.ConsumableSlots}C");
             _tHeaderRight.text = right.ToString();
         }
 
@@ -183,14 +187,25 @@ namespace SBR.Game
             // Legend line (playtest #6: the bare records read as mystery numbers).
             MakeText(slate, "Legend", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(4f, 0f), new Vector2(580f, 22f), 13, TextAnchor.UpperLeft, Dim(chromeCyan),
-                "TODAY'S BOARD   ·   ( ) = SEASON W-L");
+                "TODAY'S BOARD   ·   ( ) = SEASON W-L   ·   STAKING EARNS COMPS");
 
-            float rowH = (h - 24f - 24f) / r.CurrentSlate.Matchups.Count;
+            // The whole ledger is public information (design/10) — the payments still coming.
+            var sched = new StringBuilder("SCHEDULE  ");
+            for (int p = r.Round - 1; p < r.PaymentSchedule.Count; p++)
+            {
+                if (p > r.Round - 1) sched.Append("  →  ");
+                sched.Append(Money(r.PaymentSchedule[p]));
+            }
+            MakeText(slate, "Schedule", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(4f, -22f), new Vector2(580f, 22f), 13, TextAnchor.UpperLeft, Dim(textColor),
+                sched.ToString());
+
+            float rowH = (h - 24f - 48f) / r.CurrentSlate.Matchups.Count;
             for (int i = 0; i < r.CurrentSlate.Matchups.Count; i++)
             {
                 Matchup m = r.CurrentSlate.Matchups[i];
                 var row = MakePanel(slate, $"Row{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(0f, -24f - i * rowH), new Vector2(596f, rowH - 6f), panel);
+                    new Vector2(0f, -48f - i * rowH), new Vector2(596f, rowH - 6f), panel);
 
                 MakeText(row, "Matchup", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
                     new Vector2(10f, 0f), new Vector2(306f, 52f), 18, TextAnchor.MiddleLeft, textColor,
@@ -219,16 +234,29 @@ namespace SBR.Game
                 y -= 30f;
             }
 
-            foreach (Pick p in _slip.Picks)
+            bool boostHeld = r.OwnsConsumable("profit_boost");
+            for (int li = 0; li < _slip.Picks.Count; li++)
             {
+                Pick p = _slip.Picks[li];
                 Matchup m = r.CurrentSlate.Matchups[p.MatchupIndex];
                 Team team = p.Side == Side.Home ? m.Home : m.Away;
+                bool boosted = _slip.BoostLeg == li;
                 var legRow = MakePanel(slipPanel, $"Leg{p.MatchupIndex}", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(8f, y), new Vector2(376f, 30f), new Color(0f, 0f, 0f, 0f));
                 MakeText(legRow, "Line", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
-                    new Vector2(4f, 0f), new Vector2(300f, 28f), 15, TextAnchor.MiddleLeft, textColor,
-                    $"{TeamShort(team)}   {OddsFormat.American(m.Odds(p.Side))}");
+                    new Vector2(4f, 0f), new Vector2(250f, 28f), 15, TextAnchor.MiddleLeft,
+                    boosted ? gold : textColor,
+                    $"{TeamShort(team)}   {OddsFormat.American(m.Odds(p.Side))}{(boosted ? "  +BOOST" : "")}");
                 int idx = p.MatchupIndex;
+                int legIndex = li;
+                if (boostHeld)
+                {
+                    MakeButton(legRow, "Boost", boosted ? "UNBOOST" : "BOOST",
+                        new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
+                        new Vector2(-40f, 0f), new Vector2(84f, 26f), 12,
+                        boosted ? panelHot : panel, gold,
+                        () => { _slip.ToggleBoost(legIndex); Disarm(); });
+                }
                 MakeButton(legRow, "X", "✕", new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
                     new Vector2(-4f, 0f), new Vector2(30f, 26f), 14, panelHot, hotRed,
                     () => { _slip.Remove(idx); Disarm(); });
@@ -317,47 +345,103 @@ namespace SBR.Game
         private void RebuildShop(Run r)
         {
             ClearChildren(_pageShop);
-            float h = _pageShop.rect.height;
 
             MakeText(_pageShop, "Title", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(12f, -6f), new Vector2(700f, 30f), 20, TextAnchor.UpperLeft, gold,
-                $"SHOP — ROUND {r.Round} CLEARED, GEAR UP");
+                new Vector2(12f, -6f), new Vector2(980f, 30f), 20, TextAnchor.UpperLeft, gold,
+                $"SHOP — ROUND {r.Round} PAID   ·   COMPS {r.Comps.ToString("0.#", CultureInfo.InvariantCulture)}"
+                + "   ·   comps buy items; cash pays the bookie");
 
+            // Passive cards, half width; consumable cards on the right column.
             float y = -44f;
             for (int i = 0; i < r.ShopOffers.Count; i++)
             {
                 RelicDefinition o = r.ShopOffers[i];
                 var card = MakePanel(_pageShop, $"Offer{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(12f, y), new Vector2(1000f, 118f), panel);
+                    new Vector2(12f, y), new Vector2(560f, 108f), panel);
 
                 MakeText(card, "Name", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(12f, -8f), new Vector2(640f, 28f), 18, TextAnchor.UpperLeft, textColor,
+                    new Vector2(12f, -6f), new Vector2(400f, 26f), 16, TextAnchor.UpperLeft, textColor,
                     $"{o.Name.ToUpperInvariant()}   ·   {o.Axis}");
                 MakeText(card, "Desc", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(12f, -38f), new Vector2(760f, 66f), 14, TextAnchor.UpperLeft, Dim(textColor),
+                    new Vector2(12f, -32f), new Vector2(410f, 70f), 12, TextAnchor.UpperLeft, Dim(textColor),
                     o.Description);
 
-                bool affordable = o.Price <= r.Bank && r.OwnedRelics.Count < r.Config.RelicSlots;
+                bool affordable = o.Price <= r.Comps && r.OwnedRelics.Count < r.Config.RelicSlots;
                 int idx = i;
-                MakeButton(card, "Buy", $"BUY {Money(o.Price)}",
-                    new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-12f, 0f), new Vector2(190f, 52f), 17,
+                MakeButton(card, "Buy", $"BUY {o.Price:0.#}c",
+                    new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-10f, 0f), new Vector2(120f, 48f), 15,
                     affordable ? panelHot : panel, affordable ? moneyGreen : Dim(textColor),
                     () => { _shopError = director.TryBuyRelic(idx) ?? ""; },
                     interactable: affordable);
 
-                y -= 126f;
+                y -= 114f;
+            }
+
+            float cy = -44f;
+            for (int i = 0; i < r.ConsumableOffers.Count; i++)
+            {
+                ConsumableDefinition o = r.ConsumableOffers[i];
+                var card = MakePanel(_pageShop, $"COffer{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(584f, cy), new Vector2(428f, 108f), panel);
+
+                MakeText(card, "Name", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(12f, -6f), new Vector2(280f, 26f), 15, TextAnchor.UpperLeft, chromeCyan,
+                    $"{o.Name.ToUpperInvariant()}   ·   consumable");
+                MakeText(card, "Desc", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(12f, -32f), new Vector2(290f, 70f), 12, TextAnchor.UpperLeft, Dim(textColor),
+                    o.Description);
+
+                bool affordable = o.Price <= r.Comps && r.OwnedConsumables.Count < r.Config.ConsumableSlots;
+                int idx = i;
+                MakeButton(card, "Buy", $"BUY {o.Price:0.#}c",
+                    new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-10f, 0f), new Vector2(110f, 48f), 14,
+                    affordable ? panelHot : panel, affordable ? moneyGreen : Dim(textColor),
+                    () => { _shopError = director.TryBuyConsumable(idx) ?? ""; },
+                    interactable: affordable);
+
+                cy -= 114f;
+            }
+
+            // Sell-back row (design/10: 50% in comps).
+            float sy = Math.Min(y, cy) - 6f;
+            if (r.OwnedRelics.Count + r.OwnedConsumables.Count > 0)
+            {
+                MakeText(_pageShop, "SellTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(12f, sy), new Vector2(500f, 24f), 14, TextAnchor.UpperLeft, Dim(chromeCyan),
+                    "SELL BACK (half price, in comps):");
+                float sx = 12f;
+                sy -= 26f;
+                for (int i = 0; i < r.OwnedRelics.Count; i++)
+                {
+                    int idx = i;
+                    MakeButton(_pageShop, $"SellR{i}",
+                        $"{r.OwnedRelics[i].Name}  +{r.OwnedRelics[i].Price * r.Config.SellBackFraction:0.#}c",
+                        new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(sx, sy), new Vector2(238f, 34f), 12,
+                        panel, hotRed, () => { _shopError = director.TrySellRelic(idx) ?? ""; });
+                    sx += 246f;
+                }
+                for (int i = 0; i < r.OwnedConsumables.Count; i++)
+                {
+                    int idx = i;
+                    MakeButton(_pageShop, $"SellC{i}",
+                        $"{r.OwnedConsumables[i].Name}  +{r.OwnedConsumables[i].Price * r.Config.SellBackFraction:0.#}c",
+                        new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(sx, sy), new Vector2(238f, 34f), 12,
+                        panel, hotRed, () => { _shopError = director.TrySellConsumable(idx) ?? ""; });
+                    sx += 246f;
+                }
             }
 
             if (_shopError.Length > 0)
             {
                 MakeText(_pageShop, "Error", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(12f, y), new Vector2(900f, 26f), 15, TextAnchor.UpperLeft, hotRed, _shopError);
+                    new Vector2(12f, sy - 40f), new Vector2(900f, 26f), 14, TextAnchor.UpperLeft, hotRed, _shopError);
             }
 
             MakeButton(_pageShop, "Leave", "LEAVE SHOP — NEXT ROUND",
                 new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 10f), new Vector2(420f, 48f), 18,
                 panelHot, gold, () => { _shopError = ""; director.ExitShop(); });
         }
+
 
         // ------------------------------------------------------------------ RUN OVER page
 
@@ -366,11 +450,12 @@ namespace SBR.Game
             ClearChildren(_pageRunOver);
 
             bool won = r.Phase == Phase.RunWon;
+            SettlementReport? last = r.LastSettlement;
             string verdict = won
-                ? $"YOU WON — ALL {r.Config.Rounds} ROUNDS CLEARED"
-                : r.Debt > 0
-                    ? $"THE BOOKIE COLLECTS — ROUND {r.Round}, {Money(r.Requirement)} DUE"
-                    : $"BUSTED — OUT IN ROUND {r.Round}, SHORT OF {Money(r.CurrentTarget)}";
+                ? $"YOU WON — ALL {r.Config.Rounds} PAYMENTS MADE"
+                : last.HasValue
+                    ? $"THE BOOKIE COLLECTS — ROUND {last.Value.Round}: {Money(last.Value.Payment)} DUE, SHORT {Money(last.Value.Shortfall)}"
+                    : "THE BOOKIE COLLECTS";
 
             MakeText(_pageRunOver, "Verdict", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
                 new Vector2(0f, -60f), new Vector2(960f, 60f), 30, TextAnchor.UpperCenter,

@@ -81,7 +81,9 @@ namespace SBR.Probe
         /// <summary>The scripted GOLDEN-W2 round: a 3-leg parlay + a winning single, locked and ready to sweat.</summary>
         public static Run ScriptedRound()
         {
-            var run = new Run(Seed);
+            // The Week-2 pin was taken at bank 500; pin the config so the settled-bank expectation
+            // survives economy retunes (outcomes/drama are bank-independent).
+            var run = new Run(Seed, new RunConfig { StartingBank = 500 });
             // Parlay: (0,Away) win, (2,Away) win, (3,Home) lose-on-final.  Single: (1,Home) win.
             run.PlaceTicket(new[] { new Pick(0, Side.Away), new Pick(2, Side.Away), new Pick(3, Side.Home) }, 100);
             run.PlaceTicket(new[] { new Pick(1, Side.Home) }, 50);

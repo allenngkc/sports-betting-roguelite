@@ -27,7 +27,7 @@ namespace SBR.Game
                 return;
 
             _model.Observe(director.RunGeneration, director.Run, director.Run.Phase,
-                director.Run.Round, director.Run.Debt, director.LastSettle);
+                director.Run.Round, director.LastSettle);
 
             if (phoneFocus != null && DeskFocus.Active == phoneFocus)
                 _model.MarkRead();
