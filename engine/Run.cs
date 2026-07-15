@@ -55,8 +55,19 @@ public sealed class Run
     public double Bank { get; private set; }
 
     /// <summary>COMPS (design/10 F): the book's loyalty currency, earned per dollar staked,
-    /// spent in the shop. Cash pays the bookie; comps buy the build.</summary>
-    public double Comps { get; private set; }
+    /// spent in the shop. Charm-expansion accounting (PLAN.md rev 5): the authoritative balance
+    /// is an INTEGER count of tenths — no hidden fractional state. Wagering earnings pool in a
+    /// per-round raw buffer and commit ONCE at LockRound (remainder discarded); every other
+    /// mutation moves exact tenths at its own commit point.</summary>
+    public double Comps => _deciComps / 10.0;
+
+    private long _deciComps;
+    private double _compsAccrualRaw;
+
+    /// <summary>Converts a comps amount to integer tenths (AwayFromZero — PLAN.md rev 5).</summary>
+    internal static long ToDeci(double comps)
+        => (long)Math.Round(comps * 10.0, MidpointRounding.AwayFromZero);
+
     public Phase Phase { get; private set; } = Phase.Betting;
     public Slate CurrentSlate { get; private set; }
 
@@ -68,7 +79,7 @@ public sealed class Run
     /// <summary>One session per ticket in placement order; empty until the round is locked.</summary>
     public IReadOnlyList<SweatSession> Sweats => _sweats;
 
-    private readonly EffectEngine _effects = new EffectEngine();
+    private readonly EffectEngine _effects;
 
     /// <summary>Owned passives, in acquisition (purchase) order.</summary>
     public IReadOnlyList<RelicDefinition> OwnedRelics => _effects.Owned;
@@ -87,19 +98,32 @@ public sealed class Run
     /// <summary>Consumable offers in the current shop.</summary>
     public IReadOnlyList<ConsumableDefinition> ConsumableOffers => _consumableOffers;
 
-    /// <summary>The runtime payment schedule. Starts as Config.Payments; the Totem surcharges the
-    /// next entry when it fires.</summary>
+    /// <summary>The BASE payment schedule: Config.Payments plus Totem surcharges (booked at base
+    /// rates — PLAN.md rev 5 §9) plus Marker relief. House Key never mutates this — its ×1.15
+    /// applies through the getters below on UNPAID entries only, so selling the Key simply drops
+    /// the factor.</summary>
     private readonly double[] _payments;
 
-    public double CurrentPayment => _payments[Round - 1];
+    public double CurrentPayment => _payments[Round - 1] * _effects.PaymentFactor;
 
-    /// <summary>The following round's payment (surcharges included), or null on the final round —
-    /// what a player planning shop spending is actually planning against.</summary>
-    public double? NextPayment => Round < Config.Rounds ? _payments[Round] : (double?)null;
+    /// <summary>The following round's payment (surcharges and payment factors included), or null
+    /// on the final round — what a player planning shop spending is planning against.</summary>
+    public double? NextPayment
+        => Round < Config.Rounds ? _payments[Round] * _effects.PaymentFactor : (double?)null;
 
-    /// <summary>The full live schedule (surcharges included) — shown to the player like any book's
-    /// ledger; the whole ladder is public information.</summary>
-    public IReadOnlyList<double> PaymentSchedule => _payments;
+    /// <summary>The full live schedule — the book's public ledger. Unpaid entries (current round
+    /// onward) carry the live payment factor; settled entries show their base history.</summary>
+    public IReadOnlyList<double> PaymentSchedule
+    {
+        get
+        {
+            var view = new double[_payments.Length];
+            double factor = _effects.PaymentFactor;
+            for (int i = 0; i < _payments.Length; i++)
+                view[i] = i >= Round - 1 ? _payments[i] * factor : _payments[i];
+            return view;
+        }
+    }
 
     /// <summary>Telemetry of the most recent settle; null before the first.</summary>
     public SettlementReport? LastSettlement { get; private set; }
@@ -119,11 +143,21 @@ public sealed class Run
     private int _consecutiveLosingRounds;
     private int _roundsSinceGift;
 
+    // Charm-expansion legality latches (PLAN.md rev 5 §7-8).
+    private bool _markerPlayedThisRound;
+    private bool _managerUsedThisVisit;
+    private int _managerRedealOrdinal;
+
+    /// <summary>The visible effect-state snapshot (ratchet stacks, streaks) — the UI's window
+    /// into persistent item state (design/10 mandate, PLAN.md rev 5 §20).</summary>
+    public IReadOnlyList<EffectStat> EffectStates => _effects.StateSnapshot();
+
     public Run(string runSeed, RunConfig? config = null)
     {
         Config = config ?? new RunConfig();
         Rng = new RngHub(runSeed);
         Bank = Config.StartingBank;
+        _effects = new EffectEngine(GrantComps);
         _payments = (double[])Config.Payments.Clone();
         _bankAtBettingStart = Bank;
         _roundsSinceGift = Config.GiftCooldownRounds; // the first eligible gift is not cooldown-blocked
@@ -133,8 +167,11 @@ public sealed class Run
     // ------------------------------------------------------------------ betting
 
     /// <summary>Places a ticket. profitBoostLeg ≥ 0 plays a held Profit Boost on that leg (its
-    /// offered odds ×<see cref="RelicCatalog.ProfitBoostMult"/> before pricing) and consumes it.</summary>
-    public Ticket PlaceTicket(IReadOnlyList<Pick> picks, double stake, int profitBoostLeg = -1)
+    /// offered odds ×<see cref="RelicCatalog.ProfitBoostMult"/> before pricing) and consumes it.
+    /// A locked contract <paramref name="modifier"/> (Free Bet / Double or Nothing — one per
+    /// ticket, the one-modifier law) consumes its consumable and prices into the contract.</summary>
+    public Ticket PlaceTicket(IReadOnlyList<Pick> picks, double stake, int profitBoostLeg = -1,
+        TicketModifier modifier = TicketModifier.None)
     {
         RequirePhase(Phase.Betting);
         if (_tickets.Count >= Config.MaxTicketsPerRound)
@@ -150,6 +187,8 @@ public sealed class Run
         if (stake > maxStake)
             throw new ArgumentException($"Stake {stake} exceeds the max stake {maxStake} for bank {Bank}");
 
+        // Atomic legality (PLAN.md rev 5 §7): every consumable this placement needs is validated
+        // BEFORE anything is consumed.
         if (profitBoostLeg >= 0)
         {
             if (profitBoostLeg >= picks.Count)
@@ -157,6 +196,10 @@ public sealed class Run
             if (!OwnsConsumable("profit_boost"))
                 throw new InvalidOperationException("No Profit Boost held");
         }
+        if (modifier == TicketModifier.FreeBet && !OwnsConsumable("free_bet"))
+            throw new InvalidOperationException("No Free Bet Token held");
+        if (modifier == TicketModifier.DoubleOrNothing && !OwnsConsumable("double_or_nothing"))
+            throw new InvalidOperationException("No Double or Nothing Slip held");
 
         var legs = picks
             .Select(p =>
@@ -176,20 +219,55 @@ public sealed class Run
 
         double offered = OddsMath.ParlayDecimal(legs.Select(l => l.OfferedOdds).ToList());
         double fair = OddsMath.FairDecimal(OddsMath.ParlayProb(legs.Select(l => l.TrueProb).ToList()));
-        var ticket = new Ticket(legs, stake, OddsMath.VigPaid(stake, offered, fair));
+        var ticket = new Ticket(legs, stake, OddsMath.VigPaid(stake, offered, fair))
+        {
+            Id = $"{Round}.{_tickets.Count}",
+        };
+
+        if (modifier != TicketModifier.None)
+        {
+            ConsumeConsumable(modifier == TicketModifier.FreeBet ? "free_bet" : "double_or_nothing");
+            ticket.Modifier = modifier;
+            if (modifier == TicketModifier.DoubleOrNothing)
+                ticket.SetFactor("don", RelicCatalog.DoubleOrNothingMult);
+        }
 
         // Placement effects (Multiplier, Scar carrier) see the bank BEFORE the stake is deducted.
         _effects.ApplyTicketPlaced(ticket, stake, Bank, isFirstTicketThisRound: _tickets.Count == 0);
 
         Bank -= stake;
-        Comps += stake * Config.CompsPerDollarStaked; // the loyalty program pays on volume, win or lose
+        _compsAccrualRaw += stake * Config.CompsPerDollarStaked; // pools raw; commits once at lock
         _tickets.Add(ticket);
         return ticket;
+    }
+
+    /// <summary>Plays a held Bookie's Marker: this round's payment drops by the relief fraction.
+    /// Once per round — he keeps count (PLAN.md rev 5 §7).</summary>
+    public void PlayBookiesMarker()
+    {
+        RequirePhase(Phase.Betting);
+        if (_markerPlayedThisRound)
+            throw new InvalidOperationException("The Marker is once per round");
+        if (!OwnsConsumable("bookies_marker"))
+            throw new InvalidOperationException("No Bookie's Marker held");
+
+        ConsumeConsumable("bookies_marker");
+        _markerPlayedThisRound = true;
+        _payments[Round - 1] *= 1.0 - RelicCatalog.MarkerRelief;
     }
 
     public void LockRound()
     {
         RequirePhase(Phase.Betting);
+
+        // The round's comps accrual COMMITS here — once, in tenths, remainder discarded — so
+        // the Whale/Collection snapshots below read the same balance the player sees.
+        _deciComps += ToDeci(_compsAccrualRaw);
+        _compsAccrualRaw = 0;
+
+        // Lock-time factor snapshots (chalk/iron/jar/system/whale/collection/housekey/photo):
+        // no RNG involved, and the factor maps are frozen after this except the designed toggles.
+        _effects.ApplyLock(this);
 
         // Every game on the slate resolves, bet or not, in slate order: outcomes for a seed are
         // identical no matter what the player wagered (the fixed universe).
@@ -203,7 +281,9 @@ public sealed class Run
                 DramaGenerator.BuildTicketPaths(ticket, Rng.Drama, Config.Drama);
 
             _sweats.Add(new SweatSession(ticket, paths, Config, CreditBank, _effects,
-                mulliganAvailable: () => OwnsConsumable("mulligan_slip"), HandleBust));
+                mulliganAvailable: () => OwnsConsumable("mulligan_slip"),
+                whistleAvailable: () => OwnsConsumable("refs_whistle"),
+                HandleBust));
         }
 
         Phase = Phase.Sweat;
@@ -224,6 +304,27 @@ public sealed class Run
 
         ConsumeConsumable("mulligan_slip");
         session.ResolvePendingLossAsMulligan();
+        // The designed post-lock toggle (PLAN.md rev 5 §2): a void can strip the ticket's last
+        // qualifying longshot leg — only the photo factor re-evaluates.
+        _effects.RefreshPhotoFactor(session.TicketRef);
+    }
+
+    /// <summary>Plays a held Ref's Whistle on the session's pending dead leg: the leg's GRADING
+    /// re-rolls once at the win-prob the player was living on before the killing event (this
+    /// slip only — the shared result never bends). Overturned → the leg stands at full odds;
+    /// confirmed → the ticket dies. Works on single-leg tickets (PLAN.md rev 5 §4-5).</summary>
+    public void PlayRefsWhistle(SweatSession session)
+    {
+        RequirePhase(Phase.Sweat);
+        if (session == null) throw new ArgumentNullException(nameof(session));
+        if (!session.HasPendingLoss)
+            throw new InvalidOperationException("No dead leg is awaiting a Ref's Whistle");
+        if (!OwnsConsumable("refs_whistle"))
+            throw new InvalidOperationException("No Ref's Whistle held");
+
+        ConsumeConsumable("refs_whistle");
+        Pcg32 roll = Rng.Derive(Round, session.TicketRef.Id, session.PendingDeadLegIndex, "whistle", 0);
+        session.ResolvePendingLossWithWhistle(roll);
     }
 
     // Timeout (a cash-out offer hold) was CUT at playtest #8 — its PlayTimeout verb lived here.
@@ -232,7 +333,9 @@ public sealed class Run
     // ------------------------------------------------------------------ settle
 
     /// <summary>Settles the round after the sweat: every still-Open ticket resolves Won (all active
-    /// legs green — payout credited, scar carrier burns) or Lost (the scar feeds).</summary>
+    /// legs green — payout credited, scar carrier burns) or Lost (the scar feeds). Then the
+    /// terminal-realization ledger runs (PLAN.md rev 5 §4): Free Bet refunds issue exactly once,
+    /// early busts included.</summary>
     public void FinishSweat()
     {
         RequirePhase(Phase.Sweat);
@@ -253,6 +356,19 @@ public sealed class Run
             {
                 ticket.State = TicketState.Lost;
                 HandleBust(ticket);
+            }
+        }
+
+        // Terminal-realization ledger: every Lost Free Bet ticket refunds its stake, once.
+        // The loss still happened everywhere it matters (scar fed, jar counts it).
+        foreach (Ticket ticket in _tickets)
+        {
+            if (ticket.State == TicketState.Lost
+                && ticket.Modifier == TicketModifier.FreeBet
+                && !ticket.Refunded)
+            {
+                ticket.Refunded = true;
+                Bank += ticket.Stake;
             }
         }
 
@@ -284,10 +400,27 @@ public sealed class Run
     {
         RequirePhase(Phase.Settlement);
         bool finalRound = Round == Config.Rounds;
-        double payment = _payments[Round - 1];
+        // The EFFECTIVE payment: base schedule × the live payment factor (House Key). The base
+        // array is never factor-mutated — getters own the view (PLAN.md rev 5 §9).
+        double payment = _payments[Round - 1] * _effects.PaymentFactor;
         double bankBefore = Bank;
         double shortfall = 0;
         bool totemFired = false;
+
+        // RoundResolution fires BEFORE the payment (after the refund ledger): The System and
+        // the Bad Beat Jar read the round as played, not as taxed.
+        double roundPnl = bankBefore - _bankAtBettingStart;
+        int won = 0, lost = 0, cashed = 0;
+        double refunds = 0;
+        foreach (Ticket t in _tickets)
+        {
+            if (t.State == TicketState.Won) won++;
+            else if (t.State == TicketState.Lost) lost++;
+            else if (t.State == TicketState.CashedOut) cashed++;
+            if (t.Refunded) refunds += t.Stake;
+        }
+        _effects.OnRoundResolved(new RoundResolution(
+            Round, roundPnl, _tickets.Count, won, lost, cashed, refunds));
 
         if (Bank >= payment)
         {
@@ -296,11 +429,11 @@ public sealed class Run
         }
         else if (!finalRound && _effects.TryConsumeTotem())
         {
-            // Playtest #8 fix: the totem DEFERS the whole payment — the bank is untouched
-            // (mercy that leaves you at $0 is a death sentence in an income race), and the FULL
-            // payment × (1 + juice) lands on the next one. Real mercy, steeper price.
+            // Playtest #8: the totem DEFERS the whole payment — bank untouched, and the payment
+            // plus juice lands on the next one. The surcharge books at BASE rates (Codex r2 #3):
+            // the House Key factor applies once, through the getters, never compounded in.
             shortfall = payment - Bank;
-            _payments[Round] += payment * (1.0 + Config.TotemJuiceRate);
+            _payments[Round] += _payments[Round - 1] * (1.0 + Config.TotemJuiceRate);
             totemFired = true;
             Phase = Phase.Shop;
         }
@@ -312,11 +445,10 @@ public sealed class Run
 
         LastSettlement = new SettlementReport(Round, payment, bankBefore, Bank, shortfall, totemFired, Phase);
 
-        double roundPnl = bankBefore - _bankAtBettingStart;
         _consecutiveLosingRounds = roundPnl < 0 ? _consecutiveLosingRounds + 1 : 0;
 
         if (Phase == Phase.Shop)
-            GenerateShopOffers();
+            EnterShop();
     }
 
     // ------------------------------------------------------------------ shop
@@ -330,12 +462,13 @@ public sealed class Run
             throw new ArgumentOutOfRangeException(nameof(offerIndex));
 
         RelicDefinition def = _shopOffers[offerIndex];
-        if (def.Price > Comps)
+        long price = ToDeci(def.Price);
+        if (price > _deciComps)
             throw new InvalidOperationException($"Relic {def.Id} costs {def.Price} comps, you have {Comps}");
         if (OwnedRelics.Count >= Config.RelicSlots)
             throw new InvalidOperationException($"All {Config.RelicSlots} relic slots are full");
 
-        Comps -= def.Price;
+        _deciComps -= price;
         _effects.Add(def);
         if (def.Id == RelicCatalog.TotemId)
             TotemEverPurchased = true;
@@ -349,25 +482,38 @@ public sealed class Run
             throw new ArgumentOutOfRangeException(nameof(offerIndex));
 
         ConsumableDefinition def = _consumableOffers[offerIndex];
-        if (def.Price > Comps)
+        long price = ToDeci(def.Price);
+        if (price > _deciComps)
             throw new InvalidOperationException($"{def.Id} costs {def.Price} comps, you have {Comps}");
         if (_consumables.Count >= Config.ConsumableSlots)
             throw new InvalidOperationException($"All {Config.ConsumableSlots} consumable slots are full");
 
-        Comps -= def.Price;
+        _deciComps -= price;
         _consumables.Add(def);
         _consumableOffers.RemoveAt(offerIndex);
     }
 
-    /// <summary>Sells the owned passive at the index for SellBackFraction of list price. A sold
-    /// Scar Tissue loses its stacks; a sold Totem cannot be re-bought.</summary>
+    /// <summary>The single resale truth (PLAN.md rev 5 §10): Bobblehead's 3× override rides its
+    /// resaleMult param; a fired (spent) Totem is worth 0; everything else sells at the global
+    /// SellBackFraction of list.</summary>
+    public double GetResaleValue(RelicDefinition def)
+    {
+        if (_effects.TotemSpent(def)) return 0.0;
+        if (def.Params.TryGetValue("resaleMult", out double mult))
+            return def.Price * mult;
+        return def.Price * Config.SellBackFraction;
+    }
+
+    /// <summary>Sells the owned passive at the index for its <see cref="GetResaleValue"/>. A sold
+    /// stateful passive loses its state (stacks die with the behavior); a sold Totem cannot be
+    /// re-bought.</summary>
     public void SellRelic(int ownedIndex)
     {
         RequirePhase(Phase.Shop);
         if (ownedIndex < 0 || ownedIndex >= _effects.Owned.Count)
             throw new ArgumentOutOfRangeException(nameof(ownedIndex));
 
-        Comps += _effects.Owned[ownedIndex].Price * Config.SellBackFraction;
+        _deciComps += ToDeci(GetResaleValue(_effects.Owned[ownedIndex]));
         _effects.RemoveAt(ownedIndex);
     }
 
@@ -377,31 +523,72 @@ public sealed class Run
         if (ownedIndex < 0 || ownedIndex >= _consumables.Count)
             throw new ArgumentOutOfRangeException(nameof(ownedIndex));
 
-        Comps += _consumables[ownedIndex].Price * Config.SellBackFraction;
+        _deciComps += ToDeci(_consumables[ownedIndex].Price * Config.SellBackFraction);
         _consumables.RemoveAt(ownedIndex);
     }
 
-    private void GenerateShopOffers()
+    /// <summary>Plays a held Ask for the Manager: the whole hand is redealt once per visit. The
+    /// redeal draws from a DERIVED stream — the Shop stream is untouched, so future visits deal
+    /// identically whether or not the Manager was called (PLAN.md rev 5 §6, §8).</summary>
+    public void PlayAskManager()
+    {
+        RequirePhase(Phase.Shop);
+        if (_managerUsedThisVisit)
+            throw new InvalidOperationException("The Manager comes out once per visit");
+        if (!OwnsConsumable("ask_manager"))
+            throw new InvalidOperationException("No Ask for the Manager held");
+
+        ConsumeConsumable("ask_manager");
+        _managerUsedThisVisit = true;
+        DealOffers(Rng.Derive(Round, "", -1, "redeal", _managerRedealOrdinal++));
+    }
+
+    /// <summary>Shop entry: one-time effects fire (Rake's Rebate interest), the Manager latch
+    /// resets, and the hand is dealt. A Manager redeal calls <see cref="DealOffers"/> ONLY —
+    /// entry effects never replay (PLAN.md rev 5 §8).</summary>
+    private void EnterShop()
+    {
+        _effects.OnShopEnter(this);
+        _managerUsedThisVisit = false;
+        DealOffers(Rng.Shop);
+    }
+
+    /// <summary>Pure dealing (the DEALT HAND, PLAN.md rev 5 §8): PassiveOfferCount distinct
+    /// passives from the unowned pool (a purchased-ever Totem is out forever; short pools deal
+    /// what remains) + ConsumableOfferCount distinct consumables.</summary>
+    private void DealOffers(Pcg32 rng)
     {
         _shopOffers.Clear();
+        var pool = new List<RelicDefinition>();
         foreach (RelicDefinition d in RelicCatalog.All)
         {
             if (_effects.Owns(d.Id)) continue;
             if (d.Id == RelicCatalog.TotemId && TotemEverPurchased) continue;
-            _shopOffers.Add(d);
+            pool.Add(d);
+        }
+        int deal = Math.Min(Config.PassiveOfferCount, pool.Count);
+        for (int i = 0; i < deal; i++)
+        {
+            int j = rng.NextInt(i, pool.Count);
+            (pool[i], pool[j]) = (pool[j], pool[i]);
+            _shopOffers.Add(pool[i]);
         }
 
-        // Consumable offers: draw ConsumableOfferCount distinct types via the Shop stream.
         _consumableOffers.Clear();
         var candidates = new List<ConsumableDefinition>(RelicCatalog.Consumables);
         int take = Math.Min(Config.ConsumableOfferCount, candidates.Count);
         for (int i = 0; i < take; i++)
         {
-            int j = Rng.Shop.NextInt(i, candidates.Count);
+            int j = rng.NextInt(i, candidates.Count);
             (candidates[i], candidates[j]) = (candidates[j], candidates[i]);
             _consumableOffers.Add(candidates[i]);
         }
     }
+
+    /// <summary>Rake's Rebate seam: interest on the held balance, committed in exact tenths.
+    /// Public for the deci-comp quantization tests; gameplay reaches it only via the Rebate.</summary>
+    public void ApplyCompsInterest(double rate)
+        => _deciComps += (long)Math.Round(_deciComps * rate, MidpointRounding.AwayFromZero);
 
     public void ExitShop()
     {
@@ -411,6 +598,7 @@ public sealed class Run
         Round++;
         _tickets.Clear();
         _sweats.Clear();
+        _markerPlayedThisRound = false;
         CurrentSlate = SlateGenerator.Generate(Round, Rng.Slate, Config);
         Phase = Phase.Betting;
         _bankAtBettingStart = Bank;
@@ -446,8 +634,8 @@ public sealed class Run
     /// <summary>Grants a consumable directly (audit/test seam; ignores slot limits).</summary>
     public void GrantConsumable(ConsumableDefinition def) => _consumables.Add(def);
 
-    /// <summary>Grants comps directly (test seam).</summary>
-    public void GrantComps(double comps) => Comps += comps;
+    /// <summary>Grants comps directly (Comp'd Suite's award seam + tests), in exact tenths.</summary>
+    public void GrantComps(double comps) => _deciComps += ToDeci(comps);
 
     // ------------------------------------------------------------------ helpers
 

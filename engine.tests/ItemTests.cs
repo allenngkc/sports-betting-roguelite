@@ -35,7 +35,7 @@ public class ItemTests
         Ticket three = run.PlaceTicket(Picks((2, Side.Home), (3, Side.Home), (4, Side.Home)), 20);
 
         Assert.Equal(1.0, two.PayoutMultiplier, 12);
-        Assert.Equal(1.5, three.PayoutMultiplier, 12);
+        Assert.Equal(1.6, three.PayoutMultiplier, 12); // tuned 1.5 → 1.6 (charm campaign)
     }
 
     // ---- Scar Tissue ----
@@ -78,12 +78,12 @@ public class ItemTests
         run.Settle();
         run.ExitShop();
 
-        // Round 2, first ticket, 3 legs: Multiplier × Scar carrier = 1.5 × 1.05 — the product slot.
+        // Round 2, first ticket, 3 legs: Multiplier × Scar carrier = 1.6 × 1.05 — the product slot.
         Ticket carrier = run.PlaceTicket(Picks((0, Side.Home), (1, Side.Home), (2, Side.Home)), 20);
         Ticket second = run.PlaceTicket(Picks((3, Side.Home), (4, Side.Home), (5, Side.Home)), 20);
 
-        Assert.Equal(1.5 * 1.05, carrier.PayoutMultiplier, 10);
-        Assert.Equal(1.5, second.PayoutMultiplier, 10); // only the first-placed carries
+        Assert.Equal(1.6 * 1.05, carrier.PayoutMultiplier, 10);
+        Assert.Equal(1.6, second.PayoutMultiplier, 10); // only the first-placed carries
     }
 
     [Fact]
@@ -230,9 +230,11 @@ public class ItemTests
     }
 
     [Fact]
-    public void Catalog_has_no_timeout_after_playtest_8()
+    public void Catalog_is_the_charm_expansion_22_no_timeout()
     {
         Assert.DoesNotContain(RelicCatalog.Consumables, c => c.Id == "timeout");
-        Assert.Equal(2, RelicCatalog.Consumables.Count); // mulligan_slip + profit_boost
+        // Charm expansion (PLAN.md rev 5): 15 passives + 7 consumables = 22 items.
+        Assert.Equal(15, RelicCatalog.All.Count);
+        Assert.Equal(7, RelicCatalog.Consumables.Count);
     }
 }

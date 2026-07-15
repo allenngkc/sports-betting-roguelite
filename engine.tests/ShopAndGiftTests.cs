@@ -21,12 +21,16 @@ public class ShopAndGiftTests
     }
 
     [Fact]
-    public void Shop_offers_every_unowned_passive_and_draws_consumables()
+    public void Shop_deals_a_hand_of_distinct_unowned_passives_and_distinct_consumables()
     {
         Run run = ShopRun();
-        Assert.Equal(3, run.ShopOffers.Count);
-        // One consumable offer per visit since playtest #8 (the draw scarcity is the G3 knob).
-        Assert.Single(run.ConsumableOffers);
+        // The DEALT HAND (charm campaign tuning): 4 passives + 3 consumables per visit.
+        Assert.Equal(4, run.ShopOffers.Count);
+        Assert.Equal(3, run.ConsumableOffers.Count);
+        Assert.Equal(4, run.ShopOffers.Select(o => o.Id).Distinct().Count());
+        Assert.Equal(3, run.ConsumableOffers.Select(o => o.Id).Distinct().Count());
+        foreach (RelicDefinition o in run.ShopOffers)
+            Assert.DoesNotContain(run.OwnedRelics, r => r.Id == o.Id);
     }
 
     [Fact]
@@ -35,41 +39,47 @@ public class ShopAndGiftTests
         Run run = ShopRun();
         double bankBefore = run.Bank;
         double comps = run.Comps;
-        int idx = IndexOf(run, RelicCatalog.MultiplierId);
-        double price = run.ShopOffers[idx].Price;
+        RelicDefinition def = run.ShopOffers[0];
 
-        run.BuyRelic(idx);
-        Assert.Equal(comps - price, run.Comps, 10);
+        run.BuyRelic(0);
+        Assert.Equal(comps - def.Price, run.Comps, 10);
         Assert.Equal(bankBefore, run.Bank, 10); // items never touch cash (design/10 F)
         Assert.Single(run.OwnedRelics);
-        Assert.Equal(2, run.ShopOffers.Count);
+        Assert.Equal(3, run.ShopOffers.Count);
     }
 
     [Fact]
-    public void Sell_back_credits_half_the_list_price_in_comps()
+    public void Sell_back_credits_the_resale_value_in_comps()
     {
         Run run = ShopRun();
-        int idx = IndexOf(run, RelicCatalog.MultiplierId);
-        double price = run.ShopOffers[idx].Price;
-        run.BuyRelic(idx);
+        RelicDefinition def = run.ShopOffers[0];
+        run.BuyRelic(0);
         double comps = run.Comps;
+        double resale = run.GetResaleValue(def); // the single resale truth (rev 5 §10)
 
         run.SellRelic(0);
-        Assert.Equal(comps + price * 0.5, run.Comps, 10);
+        Assert.Equal(comps + resale, run.Comps, 10);
         Assert.Empty(run.OwnedRelics);
     }
 
     [Fact]
-    public void Totem_is_never_offered_again_after_a_purchase_even_if_sold()
+    public void Totem_is_never_dealt_again_after_a_purchase_even_if_sold()
     {
-        Run run = ShopRun();
-        run.BuyRelic(IndexOf(run, RelicCatalog.TotemId));
+        Run run = ShopRun(rounds: 12);
+        run.GrantRelic(RelicCatalog.All.First(r => r.Id == RelicCatalog.TotemId)); // marks purchased
         run.SellRelic(0); // sold back — but the once-per-run right is spent
-        run.ExitShop();
 
-        run.LockRound(); run.FastForwardRound(); run.Settle();
-        Assert.DoesNotContain(run.ShopOffers, o => o.Id == RelicCatalog.TotemId);
-        Assert.Equal(2, run.ShopOffers.Count); // multiplier + scar only
+        // Every hand dealt AFTER the purchase excludes the totem from the pool, forever.
+        int handsScanned = 0;
+        while (run.Phase == Phase.Shop && handsScanned < 8)
+        {
+            run.ExitShop();
+            run.LockRound(); run.FastForwardRound(); run.Settle();
+            if (run.Phase != Phase.Shop) break;
+            Assert.DoesNotContain(run.ShopOffers, o => o.Id == RelicCatalog.TotemId);
+            handsScanned++;
+        }
+        Assert.True(handsScanned >= 5, $"only {handsScanned} hands scanned — extend the run");
     }
 
     [Fact]

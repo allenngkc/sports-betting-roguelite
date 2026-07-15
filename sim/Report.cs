@@ -166,17 +166,21 @@ public static class Report
 
         sb.AppendLine($"Skilled baseline: median death {MedianDeath(audit.Baseline.MedianDeath)}, "
             + $"mean rounds {audit.Baseline.MeanDeath.ToString("F2", Inv)}, won {Pct(audit.Baseline.WonPct)}. "
-            + "Passives granted at run start; consumables refilled every round. "
+            + "Passives granted at run start; consumables refilled every round. Exposure = uses "
+            + "(consumables) or wound-up runs (ratchets); ±  is the paired-seed SE on Δwon. "
             + "Sorted by Δ mean rounds survived.");
         sb.AppendLine();
-        sb.AppendLine("| Item | kind | mean rounds | Δ mean | median death | won % | Δ won % | totem fires |");
-        sb.AppendLine("|---|---|---|---|---|---|---|---|");
+        sb.AppendLine("| Item | kind | mean rounds | Δ mean | median death | won % | Δ won % (±SE) | exposure | totem fires |");
+        sb.AppendLine("|---|---|---|---|---|---|---|---|---|");
         foreach (AuditData.Entry e in audit.Entries)
         {
             string totem = e.Id == RelicCatalog.TotemId ? Pct(e.TotemFireRate) : "—";
+            string exposure = e.IsConsumable ? $"{e.Used:N0} uses"
+                : e.StatePositiveRuns > 0 ? $"{e.StatePositiveRuns:N0} wound" : "—";
             sb.AppendLine($"| {e.Name} | {(e.IsConsumable ? "consumable" : "passive")} "
                 + $"| {e.MeanDeath.ToString("F2", Inv)} | {Signed(e.MeanDelta)} "
-                + $"| {MedianDeath(e.MedianDeath)} | {Pct(e.WonPct)} | {SignedPct(e.WonDelta)} | {totem} |");
+                + $"| {MedianDeath(e.MedianDeath)} | {Pct(e.WonPct)} "
+                + $"| {SignedPct(e.WonDelta)} (±{e.WonDeltaSe.ToString("0.0", Inv)}) | {exposure} | {totem} |");
         }
         sb.AppendLine();
         sb.AppendLine("> Takeaway: the gate section's item flags carry the verdicts (DEAD / DOMINANT / totem band). "

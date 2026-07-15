@@ -11,12 +11,12 @@ public sealed class RunConfig
     /// (the campaign's discovered shape): gentle build window, then the cliff. Under the COMPS
     /// currency (design/10 F) the cash bank starts at only ~2–3 payments, so BETTING IS MANDATORY
     /// from round 1 — idling is death (Allen's round-1 ruling). The grid re-tunes these.</summary>
-    public double[] Payments { get; set; } = { 60, 70, 85, 105, 195, 375, 710, 1350 };
+    public double[] Payments { get; set; } = { 60, 70, 85, 105, 155, 375, 710, 1350 };
 
     /// <summary>COMPS (design/10 F): the second currency, earned per dollar STAKED — the book's
     /// loyalty program, and items are bought with it. Chasing comps is −EV cash, exactly like a
     /// real VIP program; the shop no longer competes with payments for bankroll.</summary>
-    public double CompsPerDollarStaked { get; set; } = 0.10;
+    public double CompsPerDollarStaked { get; set; } = 0.12;
 
     public double Overround { get; set; } = 0.05;
     public double CashOutMargin { get; set; } = 0.08;
@@ -43,12 +43,17 @@ public sealed class RunConfig
     /// for the cliff — the G3 band's buy-back for the tighter offer draw.</summary>
     public int ConsumableSlots { get; set; } = 3;
 
-    /// <summary>How many consumable offers the shop shows per visit (drawn from the catalog).
-    /// Dropped to 1 when Timeout was cut (playtest #8): with a 2-item catalog, two offer slots
-    /// guaranteed a Mulligan Slip every shop — the strongest item on tap pushed skilled above
-    /// Allen's 5–8% win band. One random offer restores the draw scarcity Timeout's dead card
-    /// used to provide.</summary>
-    public int ConsumableOfferCount { get; set; } = 1;
+    /// <summary>Passive offers dealt per shop visit (charm expansion: the DEALT HAND — a random
+    /// draw from the unowned pool replaces show-everything at catalog size 15). Tuned to 4:
+    /// at 3 the engine-finding variance starved too many builds; at 5 the win rate rode the
+    /// band ceiling. A specific item shows ~27%/visit at 4-of-15 — scarcity stays real.</summary>
+    public int PassiveOfferCount { get; set; } = 4;
+
+    /// <summary>Consumable offers dealt per shop visit. History: 2 → 1 at playtest #8 (a 2-item
+    /// pool with 2 slots guaranteed the strongest item every shop) → 3 for the charm expansion:
+    /// the 7-item pool does the dilution (a specific tool shows ~43% of visits), and the wider
+    /// hand is where the toolbox decisions live.</summary>
+    public int ConsumableOfferCount { get; set; } = 3;
 
     /// <summary>Sell-back fraction of list price, both pools (design/10, Allen 2026-07-12).</summary>
     public double SellBackFraction { get; set; } = 0.5;

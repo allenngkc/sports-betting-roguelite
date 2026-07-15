@@ -45,4 +45,14 @@ public sealed class RngHub
         }
         return hash;
     }
+
+    /// <summary>
+    /// Derived one-shot stream (charm expansion, PLAN.md rev 5 §6): fully keyed by run seed,
+    /// round, ticket, leg, action, and use ordinal, so no two derivations collide and NONE of
+    /// the named streams above is ever consumed — consumable timing can never perturb the run.
+    /// Whistle rolls key (round, ticketId, legIndex, "whistle", 0); Manager redeals key
+    /// (round, "", -1, "redeal", useOrdinal).
+    /// </summary>
+    public Pcg32 Derive(int round, string ticketId, int legIndex, string action, int ordinal)
+        => new Pcg32(Fnv1a64(RunSeed), Fnv1a64($"{round}#{ticketId}#{legIndex}#{action}#{ordinal}"));
 }

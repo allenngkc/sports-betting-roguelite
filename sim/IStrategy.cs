@@ -16,9 +16,15 @@ public sealed class BotState
     public void NewRound() => HomeProbEst.Clear();
 }
 
+/// <summary>The pending-loss window verbs a bot can choose between (charm expansion, PLAN.md
+/// rev 5 §13). RunPlayer validates legality (holdings, mulligan's ≥2-active-legs rule) and
+/// falls back to Decline when the choice is illegal.</summary>
+public enum PendingLossAction { Decline, Mulligan, Whistle }
+
 /// <summary>
 /// A pluggable strategy bot (PRD F9). Hooks: <see cref="Bet"/> (betting window), <see cref="ShouldCashOut"/>
-/// (per sweat event, only when <see cref="ControlsSweat"/>), and <see cref="Shop"/> (between rounds).
+/// (per sweat event, only when <see cref="ControlsSweat"/>), <see cref="ChoosePendingLossAction"/>
+/// (the save window), and <see cref="Shop"/> (between rounds).
 ///
 /// HONESTY RULE (enforced by convention across all bots): a bot may read only what a player could know —
 /// odds, records, the bank/debt/requirement, and revealed drama events (evt.WinProbAfter). A bot must
@@ -44,6 +50,21 @@ public interface IStrategy
     /// </summary>
     bool ShouldCashOut(Run run, Ticket ticket, SweatSession session, DramaEvent evt,
         double offer, double bankNow, double target, BotState state, Pcg32 rng);
+
+    /// <summary>
+    /// The pending-loss window (rev 5 §13). Default policy (the documented bot greed): a legal
+    /// Mulligan is the certain save — take it; else a held Whistle fires when the captured
+    /// pre-kill prob gives at least a coin-flip's worth of rescue; else decline.
+    /// </summary>
+    PendingLossAction ChoosePendingLossAction(Run run, Ticket ticket, SweatSession session,
+        BotState state, Pcg32 rng)
+    {
+        if (run.OwnsConsumable("mulligan_slip") && session.CanMulliganPendingLoss)
+            return PendingLossAction.Mulligan;
+        if (run.OwnsConsumable("refs_whistle") && session.PendingLossProbBefore >= 0.35)
+            return PendingLossAction.Whistle;
+        return PendingLossAction.Decline;
+    }
 
     /// <summary>Shop window: buy relics via run.BuyRelic.</summary>
     void Shop(Run run, BotState state, Pcg32 rng);

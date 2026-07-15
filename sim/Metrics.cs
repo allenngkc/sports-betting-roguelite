@@ -14,8 +14,12 @@ public sealed class RoundMetrics
     public int TicketsPlaced;
     public double TotalStaked;
 
-    /// <summary>True EV of each ticket measured at lock (see <see cref="Metrics.TrueTicketEvAtLock"/>).</summary>
+    /// <summary>Full-contract EV of each ticket at lock (telemetry series).</summary>
     public readonly List<double> TicketEvsAtLock = new();
+
+    /// <summary>Passive-only counterfactual EV at lock — G4's gate series (see
+    /// <see cref="Metrics.TruePassiveOnlyEvAtLock"/>).</summary>
+    public readonly List<double> TicketPassiveEvsAtLock = new();
 
     public int CashOutsCount;
     public double CashOutsTotal;
@@ -23,14 +27,33 @@ public sealed class RoundMetrics
     /// <summary>Mulligan Slips played in this round's sweats (a real player decision).</summary>
     public int MulligansPlayed;
 
+    /// <summary>Ref's Whistles played in this round's sweats (charm expansion).</summary>
+    public int WhistlesPlayed;
+
+    /// <summary>Other consumables played this round (boost / free bet / DoN / marker / manager).</summary>
+    public int ConsumablesPlayed;
+
     /// <summary>Largest single-ticket money swing this round (won payout / cash-out taken / stake lost).</summary>
     public double BiggestSwing;
 
     public int Buys;
 
     /// <summary>Player-facing decisions attributable to this round: tickets + cash-outs
-    /// + slips played + purchases in this round's shop.</summary>
-    public int Decisions => TicketsPlaced + CashOutsCount + MulligansPlayed + Buys;
+    /// + saves and consumables played + purchases in this round's shop.</summary>
+    public int Decisions => TicketsPlaced + CashOutsCount + MulligansPlayed + WhistlesPlayed
+        + ConsumablesPlayed + Buys;
+}
+
+/// <summary>Per-item event counters (PLAN.md rev 5 §16): offered / acquired / bought / sold /
+/// used. Conversion (offered → bought) feeds the dealt-hand starvation watch; the audit's
+/// exposure thresholds read Acquired and Used.</summary>
+public sealed class ItemEvents
+{
+    public int Offered;
+    public int Acquired; // bought + granted + gifted + refilled
+    public int Bought;
+    public int Sold;
+    public int Used;
 }
 
 /// <summary>Everything the report needs from a single seeded run.</summary>
@@ -64,6 +87,22 @@ public sealed class RunResult
 
     /// <summary>Consumables the bookie gifted (the pity channel firing).</summary>
     public int GiftsReceived;
+
+    /// <summary>Per-item event counters (rev 5 §16), keyed by catalog id.</summary>
+    public readonly Dictionary<string, ItemEvents> ItemEvents = new();
+
+    /// <summary>Final visible effect state (ratchet stacks, streaks) at run end, keyed by id.</summary>
+    public readonly Dictionary<string, double> FinalEffectStates = new();
+
+    public ItemEvents Events(string id)
+    {
+        if (!ItemEvents.TryGetValue(id, out ItemEvents? e))
+        {
+            e = new ItemEvents();
+            ItemEvents[id] = e;
+        }
+        return e;
+    }
 }
 
 /// <summary>
@@ -73,9 +112,11 @@ public sealed class RunResult
 public static class Metrics
 {
     /// <summary>
-    /// True expected value of a ticket at lock: stake × (Π p_true × Π o_offered × payoutMult − 1).
-    /// PayoutMultiplier carries the whole product slot (Multiplier × Scar carrier), so item power
-    /// flows into the EV arc automatically. Uses true probs — harness-only.
+    /// True CONTRACT EV of a ticket at lock (G4, PLAN.md rev 5 §17): ExpectedTerminalCredit at
+    /// true probabilities MINUS the stake. Every LOCKED modifier is contract — the factor map
+    /// (Multiplier, Photo, DoN, …) scales the win credit and a Free Bet adds the loss-side
+    /// refund — while saves and cash-out decisions are POLICY, tracked separately. Uses true
+    /// probs — harness-only.
     /// </summary>
     public static double TrueTicketEvAtLock(Ticket ticket)
     {
@@ -87,6 +128,33 @@ public static class Metrics
             oProd *= leg.OfferedOdds;
         }
 
-        return ticket.Stake * (pProd * oProd * ticket.PayoutMultiplier - 1.0);
+        double winCredit = ticket.Stake * oProd * ticket.PayoutMultiplier;
+        double refund = ticket.Modifier == TicketModifier.FreeBet ? ticket.Stake : 0.0;
+        return pProd * winCredit + (1.0 - pProd) * refund - ticket.Stake;
+    }
+
+    /// <summary>
+    /// The PASSIVE-ONLY counterfactual EV (G4's gate series — the tuning campaign's amendment,
+    /// logged in PLAN-REVIEW-LOG): the ticket priced at BASE odds (boost stripped), no refund
+    /// leg, no DoN factor — when does the BUILD (passives) beat the BOOK? Codex round 2 named
+    /// this counterfactual as the legitimate alternative to full-contract EV; full-contract
+    /// (above) stays as the telemetry series. Cheap +EV promos are the catalog's FANTASY —
+    /// gating on them measures time-to-first-promo, not the arc.
+    /// </summary>
+    public static double TruePassiveOnlyEvAtLock(Ticket ticket)
+    {
+        double pProd = 1.0;
+        double oProd = 1.0;
+        foreach (Leg leg in ticket.Legs)
+        {
+            pProd *= leg.Matchup.TrueProb(leg.Side); // truth: harness scoring only
+            oProd *= leg.BaseOdds;                   // boost stripped
+        }
+
+        double mult = ticket.PayoutMultiplier;
+        if (ticket.Modifier == TicketModifier.DoubleOrNothing)
+            mult /= RelicCatalog.DoubleOrNothingMult;
+
+        return ticket.Stake * (pProd * oProd * mult - 1.0);
     }
 }

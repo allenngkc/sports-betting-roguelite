@@ -25,6 +25,7 @@ public sealed class BatchSummary
     public readonly List<double> WinningFinalBanks = new();
 
     public readonly double[] MeanEvByRound = new double[9];
+    public readonly double[] MeanPassiveEvByRound = new double[9]; // G4's gate series
     public readonly int[] EvSampleByRound = new int[9];
     public readonly double[] MedianDecisionsByRound = new double[9];
 
@@ -44,16 +45,33 @@ public sealed class BatchSummary
     /// <summary>Mean bookie gifts received per run (the pity channel firing).</summary>
     public double MeanGifts;
 
+    /// <summary>Per-run win flags in run-index order — paired-seed CI math for the item flags
+    /// (rev 5 §15) subtracts these across batches that share a seed list.</summary>
+    public bool[] WonFlags = Array.Empty<bool>();
+
+    /// <summary>Batch-total per-item events (rev 5 §16): offered/acquired/bought/sold/used.</summary>
+    public readonly Dictionary<string, ItemEvents> ItemTotals = new();
+
+    /// <summary>Runs whose final effect state for the id was > 0 (ratchets that actually wound).</summary>
+    public readonly Dictionary<string, int> StatePositiveRuns = new();
+
     public static BatchSummary From(string name, RunResult[] results)
     {
         var s = new BatchSummary { Name = name, N = results.Length };
         s.DeathRounds = new int[results.Length];
         s.BiggestSwings = new double[results.Length];
         s.FinalBanks = new double[results.Length];
+        s.WonFlags = new bool[results.Length];
 
         var evByRound = new List<double>[9];
+        var pevByRound = new List<double>[9];
         var decByRound = new List<double>[9];
-        for (int r = 1; r <= 8; r++) { evByRound[r] = new List<double>(); decByRound[r] = new List<double>(); }
+        for (int r = 1; r <= 8; r++)
+        {
+            evByRound[r] = new List<double>();
+            pevByRound[r] = new List<double>();
+            decByRound[r] = new List<double>();
+        }
 
         long totemFires = 0, scarBurns = 0, gifts = 0;
         double maxScarSum = 0;
@@ -64,8 +82,23 @@ public sealed class BatchSummary
             s.DeathRounds[i] = rr.DeathRound;
             s.BiggestSwings[i] = rr.BiggestSwing;
             s.FinalBanks[i] = rr.FinalBank;
+            s.WonFlags[i] = rr.Won;
             if (rr.Won) { s.Wins++; s.WinningFinalBanks.Add(rr.FinalBank); }
             else { deaths++; if (rr.CloseCallDeath) closeCalls++; }
+
+            foreach ((string id, ItemEvents e) in rr.ItemEvents)
+            {
+                if (!s.ItemTotals.TryGetValue(id, out ItemEvents? tot))
+                    s.ItemTotals[id] = tot = new ItemEvents();
+                tot.Offered += e.Offered;
+                tot.Acquired += e.Acquired;
+                tot.Bought += e.Bought;
+                tot.Sold += e.Sold;
+                tot.Used += e.Used;
+            }
+            foreach ((string id, double v) in rr.FinalEffectStates)
+                if (v > 0)
+                    s.StatePositiveRuns[id] = s.StatePositiveRuns.TryGetValue(id, out int n) ? n + 1 : 1;
             totemFires += rr.TotemFires;
             scarBurns += rr.ScarBurns;
             gifts += rr.GiftsReceived;
@@ -80,6 +113,7 @@ public sealed class BatchSummary
                 s.PlayedByRound[r]++;
                 decByRound[r].Add(rm.Decisions);
                 foreach (double ev in rm.TicketEvsAtLock) evByRound[r].Add(ev);
+                foreach (double ev in rm.TicketPassiveEvsAtLock) pevByRound[r].Add(ev);
             }
         }
 
@@ -97,16 +131,18 @@ public sealed class BatchSummary
         {
             s.EvSampleByRound[r] = evByRound[r].Count;
             s.MeanEvByRound[r] = Stats.Mean(evByRound[r]);
+            s.MeanPassiveEvByRound[r] = Stats.Mean(pevByRound[r]);
             s.MedianDecisionsByRound[r] = Stats.Median(decByRound[r]);
         }
         return s;
     }
 
-    /// <summary>First round (1..8) whose mean per-ticket EV at lock is ≥ 0, or 0 if it never crosses.</summary>
+    /// <summary>First round (1..8) whose mean per-ticket PASSIVE-ONLY EV at lock is ≥ 0, or 0 if
+    /// it never crosses — G4's gate series (the full-contract series is telemetry).</summary>
     public int EvZeroCrossRound()
     {
         for (int r = 1; r <= 8; r++)
-            if (EvSampleByRound[r] > 0 && MeanEvByRound[r] >= 0.0) return r;
+            if (EvSampleByRound[r] > 0 && MeanPassiveEvByRound[r] >= 0.0) return r;
         return 0;
     }
 }

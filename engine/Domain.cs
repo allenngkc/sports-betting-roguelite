@@ -10,6 +10,15 @@ public enum LegState { Pending, Won, Lost }
 
 public enum TicketState { Open, Won, Lost, CashedOut }
 
+/// <summary>A ticket's final, ticket-local grading of one leg — what OnLegResolved carries
+/// after any pending-loss window has closed (charm expansion, PLAN.md rev 5).</summary>
+public enum LegGrade { Won, Lost, Voided }
+
+/// <summary>Locked contract modifiers (charm expansion): at most ONE per ticket — the
+/// one-modifier law, mirror of the one-product-slot law. Locked at placement, part of the
+/// ticket's outcome→cash-flow contract (they price into cash-outs and G4).</summary>
+public enum TicketModifier { None, FreeBet, DoubleOrNothing }
+
 public sealed class Team
 {
     public string Name { get; }
@@ -92,6 +101,11 @@ public sealed class Leg
     /// the ticket (excluded from payout, win condition, and cash-out products).</summary>
     public bool IsVoided { get; internal set; }
 
+    /// <summary>Ref's Whistle rescue (charm expansion): a successful grading re-roll marks THIS
+    /// ticket's copy of the leg Won. Ticket-local by construction — Legs belong to one ticket;
+    /// the shared <see cref="Matchup.Result"/> never bends (Lucky Charm precedent).</summary>
+    public bool RescuedWon { get; internal set; }
+
     public Leg(Matchup matchup, Side side, double offeredOdds)
     {
         Matchup = matchup;
@@ -107,8 +121,9 @@ public sealed class Leg
         : Matchup.Result == Side ? LegState.Won
         : LegState.Lost;
 
-    /// <summary>This ticket's grading of the leg. Voided legs never count as won.</summary>
-    public bool GradesWon => !IsVoided && State == LegState.Won;
+    /// <summary>This ticket's grading of the leg. Voided legs never count as won; a whistle-rescued
+    /// leg counts as won for this ticket only.</summary>
+    public bool GradesWon => !IsVoided && (RescuedWon || State == LegState.Won);
 }
 
 public sealed class Ticket
@@ -118,10 +133,40 @@ public sealed class Ticket
     public double VigPaid { get; }
     public TicketState State { get; internal set; } = TicketState.Open;
 
-    /// <summary>Payout scale from relic effects — THE product slot (design/10 B2): every payout
-    /// effect multiplies in (The Multiplier × Scar Tissue × future feeders), so items stack
-    /// multiplicatively. Scales the win payout and the cash-out fair value.</summary>
-    public double PayoutMultiplier { get; internal set; } = 1.0;
+    /// <summary>Stable per-run identity: "round.placementIndex" — the DeriveRng key component
+    /// (charm expansion, PLAN.md rev 5).</summary>
+    public string Id { get; internal set; } = "";
+
+    /// <summary>The named factor map behind <see cref="PayoutMultiplier"/> (charm expansion):
+    /// each payout effect owns one named ×(1+x) factor ("multiplier", "scar", "photo", "whale",
+    /// "collection", "chalk", "iron", "jar", "system", "housekey", "don"). Immutable after lock
+    /// EXCEPT the designed toggles (photo drops when its last qualifying leg is voided).</summary>
+    private readonly Dictionary<string, double> _factors = new Dictionary<string, double>();
+
+    internal void SetFactor(string name, double value) => _factors[name] = value;
+    internal void RemoveFactor(string name) => _factors.Remove(name);
+    internal bool HasFactor(string name) => _factors.ContainsKey(name);
+
+    /// <summary>Payout scale from relic effects — THE product slot (design/10 B2): the product
+    /// of every named factor, so items stack multiplicatively. Scales the win payout and the
+    /// cash-out fair value.</summary>
+    public double PayoutMultiplier
+    {
+        get
+        {
+            double p = 1.0;
+            foreach (double f in _factors.Values) p *= f;
+            return p;
+        }
+    }
+
+    /// <summary>The locked contract modifier (one per ticket — the one-modifier law): Free Bet
+    /// refunds the stake on a loss; Double or Nothing doubles the product and suppresses
+    /// cash-out offers.</summary>
+    public TicketModifier Modifier { get; internal set; } = TicketModifier.None;
+
+    /// <summary>Free Bet's exactly-once latch, set by the terminal-realization ledger.</summary>
+    public bool Refunded { get; internal set; }
 
     /// <summary>Scar Tissue bookkeeping (design/10 B): the stacks this ticket's bust would add,
     /// baked at placement from its stake fraction; and whether this ticket carries (and on a win

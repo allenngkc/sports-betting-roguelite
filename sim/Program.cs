@@ -43,8 +43,8 @@ internal static class Program
         long totalRuns = 0;
 
         IEnumerable<string> strategyNames = opt.Gates
-            ? new[] { "naive", "skilled", "noshop", "martyr" } // the gate roster
-            : opt.SelectedStrategies;
+            ? new[] { "naive", "skilled", "noshop", "martyr", "chalk", "hoarder", "ironhands" }
+            : opt.SelectedStrategies; // gates roster: the gate bots + archetype telemetry
 
         foreach (string name in strategyNames)
         {
@@ -54,6 +54,19 @@ internal static class Program
             BatchSummary summary = BatchSummary.From(name, results);
             batches.Add(summary);
             byName[name] = summary;
+        }
+
+        // G6's actual gate (rev 5 §17): the WORST-CASE loss-farmer — Scar + Jar granted free,
+        // a Free Bet refilled every round. The organic martyr above is telemetry beside it.
+        BatchSummary? martyrWorst = null;
+        if (opt.Gates)
+        {
+            RunResult[] worst = Harness.RunBatch(new MartyrStrategy(), opt.Runs, opt.SeedPrefix, cfg,
+                new[] { RelicCatalog.ScarTissueId, "bad_beat_jar" }, "free_bet");
+            totalRuns += opt.Runs;
+            martyrWorst = BatchSummary.From("martyr-worst", worst);
+            batches.Add(martyrWorst);
+            byName["martyr-worst"] = martyrWorst;
         }
 
         AuditData? audit = null;
@@ -80,7 +93,7 @@ internal static class Program
             gates = GateData.Evaluate(
                 byName.GetValueOrDefault("naive"), byName.GetValueOrDefault("skilled"),
                 byName.GetValueOrDefault("noshop"), byName.GetValueOrDefault("martyr"),
-                audit, combos);
+                martyrWorst, audit, combos);
         }
 
         sw.Stop();
@@ -94,7 +107,9 @@ internal static class Program
             File.WriteAllText(opt.ReportPath, report);
             Console.Error.WriteLine($"[wrote {opt.ReportPath}]");
         }
-        return gates is { AllPass: false } ? 1 : 0;
+        // Campaign exit contract (rev 5): DONE requires every gate AND a clean flag sheet —
+        // UNDEREXPOSED and item flags block exactly like a failed gate.
+        return gates != null && (!gates.AllPass || gates.ItemFlags.Count > 0) ? 1 : 0;
     }
 
     // The payment-curve grid: growth × P1 cells, G1–G4 per cell (G5/G6 need the audit/combo cost —
@@ -135,7 +150,7 @@ internal static class Program
             BatchSummary noshop = BatchSummary.From("noshop",
                 Harness.RunBatch(new NoShopStrategy(), opt.Runs, opt.SeedPrefix, cfg));
 
-            GateData gates = GateData.Evaluate(naive, skilled, noshop, null, null, null);
+            GateData gates = GateData.Evaluate(naive, skilled, noshop, null, null, null, null);
             int pass = 0;
             var cells = new List<string>();
             foreach (GateData.Gate gate in gates.Gates)

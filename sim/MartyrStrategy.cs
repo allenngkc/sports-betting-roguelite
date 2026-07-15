@@ -5,18 +5,20 @@ using SBR.Engine;
 namespace SBR.Sim;
 
 /// <summary>
-/// MARTYR — the G6 adversary: farms Scar Tissue stacks as ruthlessly as a human would, then
-/// cashes them on one safe carrier. If this beats organic skilled play by more than the gate's
-/// margin, the farming guard (stake-scaled stacks) has failed.
+/// MARTYR — the G6 adversary, upgraded for the charm expansion (rev 5 §14): farms EVERY
+/// loss-feeder — Scar Tissue stacks, Bad Beat Jar rounds, and Free Bet refunded busts — then
+/// cashes on one safe carrier. If this beats organic skilled play by more than the gate's
+/// margin, the farming guards have failed. The WORST-CASE variant (G6's actual gate) gets Scar
+/// + Jar granted and a Free Bet refilled every round by the harness.
 ///
 /// Policy:
-///   • Shop: buys scar_tissue and nothing else (the pure-farm caricature).
+///   • Shop: buys scar_tissue, bad_beat_jar, and free_bet tokens — nothing else.
 ///   • Farming rounds (stacks below the cash-in bar): two 2-leg LONGSHOT parlays (the lowest-p̂
-///     sides) staked at the full-scar fraction (25% of bank each) — deliberately likely busts
-///     that each feed ~+5pp; the payment reserve is never staked.
+///     sides) staked at the full-scar fraction — deliberately likely busts; a held Free Bet
+///     rides the first farm ticket (refunded martyrdom — the loss still feeds Scar AND Jar).
 ///   • Cash-in rounds (stacks ≥ the bar): ONE ticket placed first (the carrier) — the single
 ///     highest-p̂ side, staked with everything above the payment reserve.
-///   • Cash-out: survival-take only (offer clears the payment when the bank cannot).
+///   • Cash-out: survival-take only. Saves: never — busts are the harvest.
 ///
 /// HONESTY: de-vig estimates only, like every bot.
 /// </summary>
@@ -28,6 +30,10 @@ public sealed class MartyrStrategy : IStrategy
 
     public string Name => "martyr";
     public bool ControlsSweat => true;
+
+    /// <summary>The martyr NEVER saves a dying leg — busts are the harvest.</summary>
+    public PendingLossAction ChoosePendingLossAction(Run run, Ticket ticket, SweatSession session,
+        BotState state, Pcg32 rng) => PendingLossAction.Decline;
 
     public void Bet(Run run, BotState state, Pcg32 rng)
     {
@@ -72,7 +78,11 @@ public sealed class MartyrStrategy : IStrategy
                 new Pick(legsPool[t * 2].m, legsPool[t * 2].s),
                 new Pick(legsPool[t * 2 + 1].m, legsPool[t * 2 + 1].s),
             };
-            run.PlaceTicket(picks, stake);
+            // Refunded martyrdom: a held Free Bet rides the first farm ticket — the bust still
+            // feeds Scar and the Jar, but the stake comes home.
+            TicketModifier mod = t == 0 && run.OwnsConsumable("free_bet")
+                ? TicketModifier.FreeBet : TicketModifier.None;
+            run.PlaceTicket(picks, stake, -1, mod);
             budget -= stake;
         }
     }
@@ -87,12 +97,36 @@ public sealed class MartyrStrategy : IStrategy
 
     public void Shop(Run run, BotState state, Pcg32 rng)
     {
-        for (int i = 0; i < run.ShopOffers.Count; i++)
+        // Loss-feeders only: Scar, Jar, and Free Bet tokens (rev 5 §14).
+        bool bought = true;
+        while (bought)
         {
-            if (run.ShopOffers[i].Id != RelicCatalog.ScarTissueId) continue;
-            if (run.ShopOffers[i].Price > run.Comps) return;
-            run.BuyRelic(i);
-            return;
+            bought = false;
+            if (run.OwnedRelics.Count < run.Config.RelicSlots)
+            {
+                for (int i = 0; i < run.ShopOffers.Count; i++)
+                {
+                    string id = run.ShopOffers[i].Id;
+                    if (id != RelicCatalog.ScarTissueId && id != "bad_beat_jar") continue;
+                    if (run.ShopOffers[i].Price > run.Comps) continue;
+                    run.BuyRelic(i);
+                    bought = true;
+                    break;
+                }
+                if (bought) continue;
+            }
+
+            if (run.OwnedConsumables.Count < run.Config.ConsumableSlots)
+            {
+                for (int i = 0; i < run.ConsumableOffers.Count; i++)
+                {
+                    if (run.ConsumableOffers[i].Id != "free_bet") continue;
+                    if (run.ConsumableOffers[i].Price > run.Comps) continue;
+                    run.BuyConsumable(i);
+                    bought = true;
+                    break;
+                }
+            }
         }
     }
 }

@@ -25,6 +25,13 @@ public sealed class AuditData
         public double MeanDeath;
         public double MeanDelta;      // Δ mean rounds survived — the discriminating signal
         public double TotemFireRate;  // only meaningful for the totem row
+
+        // ---- charm expansion (rev 5 §15): paired-seed arrays + exposure ----
+        public bool[] WonFlags = Array.Empty<bool>();
+        public int[] DeathRounds = Array.Empty<int>();
+        public int Used;               // consumable plays / bobblehead flips in the batch
+        public int StatePositiveRuns;  // runs where the ratchet actually wound (stat > 0)
+        public double WonDeltaSe;      // paired-seed SE of WonDelta, in pp
     }
 
     public static AuditData Compute(int runs, string seedPrefix, RunConfig cfg, BatchSummary skilledBaseline)
@@ -63,7 +70,46 @@ public sealed class AuditData
             MeanDeath = s.MeanDeath,
             MeanDelta = s.MeanDeath - baseline.MeanDeath,
             TotemFireRate = s.TotemFireRate,
+            WonFlags = s.WonFlags,
+            DeathRounds = s.DeathRounds,
+            Used = s.ItemTotals.TryGetValue(id, out ItemEvents? e) ? e.Used : 0,
+            StatePositiveRuns = s.StatePositiveRuns.TryGetValue(id, out int n) ? n : 0,
+            WonDeltaSe = PairedSePp(s.WonFlags, baseline.WonFlags),
         };
+    }
+
+    /// <summary>Paired-seed SE of a win-rate delta, in percentage points (rev 5 §15).</summary>
+    public static double PairedSePp(bool[] a, bool[] b)
+    {
+        int n = Math.Min(a.Length, b.Length);
+        if (n < 2) return double.PositiveInfinity;
+        double mean = 0;
+        for (int i = 0; i < n; i++) mean += (a[i] ? 1 : 0) - (b[i] ? 1 : 0);
+        mean /= n;
+        double ss = 0;
+        for (int i = 0; i < n; i++)
+        {
+            double d = ((a[i] ? 1 : 0) - (b[i] ? 1 : 0)) - mean;
+            ss += d * d;
+        }
+        return 100.0 * Math.Sqrt(ss / (n - 1) / n);
+    }
+
+    /// <summary>Paired-seed SE of a mean-death delta (rounds).</summary>
+    public static double PairedSeRounds(int[] a, int[] b)
+    {
+        int n = Math.Min(a.Length, b.Length);
+        if (n < 2) return double.PositiveInfinity;
+        double mean = 0;
+        for (int i = 0; i < n; i++) mean += a[i] - b[i];
+        mean /= n;
+        double ss = 0;
+        for (int i = 0; i < n; i++)
+        {
+            double d = (a[i] - b[i]) - mean;
+            ss += d * d;
+        }
+        return Math.Sqrt(ss / (n - 1) / n);
     }
 }
 
@@ -142,7 +188,7 @@ public sealed class GateData
     public readonly List<string> ItemFlags = new();
 
     public static GateData Evaluate(BatchSummary? naive, BatchSummary? skilled, BatchSummary? noshop,
-        BatchSummary? martyr, AuditData? audit, ComboData? combos)
+        BatchSummary? martyr, BatchSummary? martyrWorst, AuditData? audit, ComboData? combos)
     {
         var g = new GateData();
 
@@ -158,8 +204,9 @@ public sealed class GateData
                 $"median {noshop.MedianDeath:0.#}, won {noshop.WonPct:F1}%");
 
         if (skilled != null)
-            g.Add("G3", "skilled + items wins: median death ≥6, win 5–8% (Allen's final-product band)",
-                skilled.MedianDeath >= 6.0 && skilled.WonPct >= 5.0 && skilled.WonPct <= 8.0,
+            g.Add("G3", "skilled + items wins: median death ≥5, win 5–8% (re-banded by Allen "
+                + "2026-07-15 — the dealt hand's build variance is the roguelite shape)",
+                skilled.MedianDeath >= 5.0 && skilled.WonPct >= 5.0 && skilled.WonPct <= 8.0,
                 $"median {skilled.MedianDeath:0.#}, won {skilled.WonPct:F1}%");
 
         if (skilled != null)
@@ -179,28 +226,85 @@ public sealed class GateData
                     $"synergy excess {pair.SynergyExcess:+0.0;-0.0}pp");
         }
 
-        if (martyr != null && skilled != null)
-            g.Add("G6", "martyr guard: scar-farming bot win ≤ skilled +2pp",
-                martyr.WonPct <= skilled.WonPct + 2.0,
-                $"martyr {martyr.WonPct:F1}% vs skilled {skilled.WonPct:F1}%");
+        // G6 (rev 5 §17): the WORST-CASE granted batch gates (Scar + Jar granted, Free Bet
+        // refilled every round); the organic martyr is telemetry beside it.
+        BatchSummary? guard = martyrWorst ?? martyr;
+        if (guard != null && skilled != null)
+            g.Add("G6", "martyr guard (worst case granted): loss-farming win ≤ skilled +2pp",
+                guard.WonPct <= skilled.WonPct + 2.0,
+                $"{guard.Name} {guard.WonPct:F1}% vs skilled {skilled.WonPct:F1}%"
+                + (martyrWorst != null && martyr != null ? $" (organic martyr {martyr.WonPct:F1}%)" : ""));
 
         if (audit != null)
         {
+            // Statistical control (rev 5 §15): paired-seed CIs, Bonferroni z across the whole
+            // endpoint family (every DEAD test + the two within-kind dominance contrasts).
+            int family = audit.Entries.Count + 2;
+            double z = BonferroniZ(0.05, family);
+
+            // Always-on passives trigger by construction; ratchets must show wound-up runs.
+            var ratchets = new HashSet<string>
+                { "scar_tissue", "chalk_eater", "iron_hands", "bad_beat_jar", "the_system" };
+
             foreach (AuditData.Entry e in audit.Entries)
             {
-                if (e.WonDelta < 1.0 && Math.Abs(e.MeanDelta) < 0.05)
-                    g.ItemFlags.Add($"DEAD: {e.Name} (Δwon {e.WonDelta:+0.0;-0.0}pp, Δmean {e.MeanDelta:+0.00;-0.00})");
+                // Exposure first (rev 5 §15, declared thresholds): an unexercised item's delta
+                // is meaningless — UNDEREXPOSED blocks instead of flagging DEAD.
+                if (e.IsConsumable && e.Used < MinUses)
+                {
+                    g.ItemFlags.Add($"UNDEREXPOSED: {e.Name} ({e.Used} uses < {MinUses} — fix the policy, not the item)");
+                    continue;
+                }
+                if (!e.IsConsumable && ratchets.Contains(e.Id) && e.StatePositiveRuns < MinUses)
+                {
+                    g.ItemFlags.Add($"UNDEREXPOSED: {e.Name} ({e.StatePositiveRuns} wound-up runs < {MinUses})");
+                    continue;
+                }
+
+                double meanSe = AuditData.PairedSeRounds(e.DeathRounds, audit.Baseline.DeathRounds);
+                bool deadWon = e.WonDelta + z * e.WonDeltaSe < 1.0;
+                bool deadMean = Math.Abs(e.MeanDelta) + z * meanSe < 0.05;
+                if (deadWon && deadMean)
+                    g.ItemFlags.Add($"DEAD: {e.Name} (Δwon {e.WonDelta:+0.0;-0.0}±{z * e.WonDeltaSe:0.0}pp, "
+                        + $"Δmean {e.MeanDelta:+0.00;-0.00})");
             }
-            // Dominance: no item's Δwon more than 2× the next best positive.
-            double best = double.MinValue, second = double.MinValue;
-            string bestName = "";
-            foreach (AuditData.Entry e in audit.Entries)
+
+            // Dominance within KIND (rev 5 §15): the explicit contrast best − 2×next, CI lower
+            // bound > 0 with a +0.5pp practical margin, winner non-DEAD by construction (its
+            // Δwon must exceed 2×next + 0.5 ≥ 0.5, and the DEAD test would contradict it only
+            // below 1.0pp — checked explicitly).
+            foreach (bool consumables in new[] { false, true })
             {
-                if (e.WonDelta > best) { second = best; best = e.WonDelta; bestName = e.Name; }
-                else if (e.WonDelta > second) second = e.WonDelta;
+                AuditData.Entry? best = null, next = null;
+                foreach (AuditData.Entry e in audit.Entries)
+                {
+                    if (e.IsConsumable != consumables) continue;
+                    if (best == null || e.WonDelta > best.WonDelta) { next = best; best = e; }
+                    else if (next == null || e.WonDelta > next.WonDelta) next = e;
+                }
+                if (best == null || next == null || next.WonDelta <= 0) continue;
+
+                double contrast = 0, ss = 0;
+                int n = Math.Min(Math.Min(best.WonFlags.Length, next.WonFlags.Length),
+                    audit.Baseline.WonFlags.Length);
+                if (n < 2) continue;
+                for (int i = 0; i < n; i++)
+                    contrast += (best.WonFlags[i] ? 1 : 0) + (audit.Baseline.WonFlags[i] ? 1 : 0)
+                        - 2 * (next.WonFlags[i] ? 1 : 0);
+                contrast = 100.0 * contrast / n;
+                double meanC = contrast / 100.0;
+                for (int i = 0; i < n; i++)
+                {
+                    double d = (best.WonFlags[i] ? 1 : 0) + (audit.Baseline.WonFlags[i] ? 1 : 0)
+                        - 2 * (next.WonFlags[i] ? 1 : 0) - meanC;
+                    ss += d * d;
+                }
+                double se = 100.0 * Math.Sqrt(ss / (n - 1) / n);
+                bool winnerAlive = best.WonDelta >= 1.0;
+                if (contrast - z * se > 0 && contrast > 0.5 && winnerAlive)
+                    g.ItemFlags.Add($"DOMINANT ({(consumables ? "consumable" : "passive")}): {best.Name} "
+                        + $"(best−2×next = {contrast:+0.0}±{z * se:0.0}pp)");
             }
-            if (second > 0 && best > 2.0 * second)
-                g.ItemFlags.Add($"DOMINANT: {bestName} (Δwon {best:F1}pp > 2× next {second:F1}pp)");
 
             foreach (AuditData.Entry e in audit.Entries)
             {
@@ -217,6 +321,19 @@ public sealed class GateData
         }
 
         return g;
+    }
+
+    /// <summary>Declared exposure threshold (PLAN.md rev 5 §15): below it the audit BLOCKS.</summary>
+    public const int MinUses = 200;
+
+    /// <summary>Two-sided Bonferroni-corrected z for the family (rational approximation of
+    /// Φ⁻¹; exact enough for a flag threshold).</summary>
+    public static double BonferroniZ(double alpha, int family)
+    {
+        double p = 1.0 - alpha / family / 2.0;
+        // Beasley-Springer-Moro-ish approximation for the upper tail.
+        double t = Math.Sqrt(-2.0 * Math.Log(1.0 - p));
+        return t - (2.30753 + 0.27061 * t) / (1.0 + 0.99229 * t + 0.04481 * t * t);
     }
 
     private void Add(string id, string desc, bool pass, string actual)

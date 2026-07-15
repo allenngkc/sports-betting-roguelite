@@ -1,0 +1,142 @@
+7 Sins Stone - Turns seven Sevens appearing together into Golden Sevens.
+AA Batteries - Adds Battery modifiers to Clovers and Bells, helping recharge usable charms.
+Abstract Painting - Temporarily doubles pattern values after scoring a pattern of at least five symbols.
+Ace of Clubs - Permanently upgrades Clovers and Bells as you spend tickets.
+Ace of Diamonds - Permanently upgrades Diamonds and Treasures when you score patterns of four or more symbols.
+Ace of Hearts - Permanently upgrades Cherries and Lemons when a spin triggers at least three patterns.
+Ace of Spades - Permanently upgrades Sevens after enough charms activate.
+Adam’s Ribcage - Doubles your pattern multiplier for the round whenever you score a 999.
+Abyssu - Stores a one-use charm and activates it again when Abyssu is discarded.
+Ancient Coin - Gives an extra high-luck spin, but may eventually destroy itself after repeated use.
+Angel’s Hand - Adds a random two-symbol pattern for the current round.
+Ankh - Saves a failing run by granting two emergency rounds, then disappears.
+Baphomet - Permanently doubles the value of Above and Below patterns whenever 666 appears.
+Barathrum - Stores a selected telephone ability and triggers it again when discarded.
+Bell Pepper - Randomly grants luck that scales with store restocks during the deadline.
+Bell Picture - Makes Bells appear more often for the current deadline.
+Book of Shadows - Raises the chance of 666 and awards diminishing bonus spins when it appears.
+Bricks - Gives Lemons a high chance to carry the Token modifier.
+Broken Calculator - Randomly makes all patterns repeat once during a spin.
+Calendar - Permanently upgrades all symbols based on how many rounds you skipped when completing deadlines.
+Car - Gives Diamonds a chance to carry the Ticket modifier.
+Car Battery - Immediately restores all charges to Red Button charms without occupying space.
+Cardboard House - Permanently adds one charm slot and then disappears.
+Cat Food - Adds two spins to every round.
+Channeler of Fortune - Grants substantial luck after enough charms activate during a round.
+Chastity Belt - Gains permanent pattern multiplier whenever you decline an ability during a red telephone call.
+Cherry Picture - Makes Cherries appear more often for the current deadline.
+Chonky Cat - Pays twice your current interest when a spin triggers at least seven patterns.
+Cigarettes - Permanently upgrades every symbol, takes no space and refreshes the store.
+Clicker - Gives Cherries and Lemons a chance to repeat.
+Clover Picture - Makes Clovers appear more often for the current deadline.
+Clover Voucher - Immediately grants four tickets without occupying space.
+CloverBell - Gives free store restocks when a spin scores both Clovers and Bells.
+CloverField - Increases the resale value of your equipped charms every round.
+CloverPet - Gains symbol multiplier based on the number of tickets you are holding.
+CloverPot - Generates additional tickets at deadlines based on the tickets you already own.
+Consolation Prize - Sometimes permanently upgrades all symbols after a spin scores no patterns.
+Corpse - Story-related charm that increases debt while equipped and cannot normally be discarded.
+Cross - Alternates between scaling pattern multiplier and increasing the chance of 666.
+CrowBar - Immediately grants three free restocks without occupying space.
+Crystal Skull - Triples Diamond, Treasure and Seven values for the round after a 666.
+Crystal Sphere - Gives Diamonds, Treasures and Sevens a chance to receive Chain modifiers.
+D4 - Randomly rerolls every symbol that is not part of a scoring pattern.
+D6 - Refreshes the store for free at the end of every round.
+D20 - Randomizes every charm stored in your drawers at the end of each round.
+Dark Lotus - Gains symbol multiplier equal to the combined resale value of your equipped charms.
+Dear Diary - Adds another telephone choice.
+Demon’s Horn - Gives substantial luck on the spin following a 666.
+Depression - Removes naturally generated luck, leaving only luck supplied by charms.
+Diamond Picture - Makes Diamonds appear more often for the current deadline.
+Diesel Locomotive - Permanently upgrades patterns after three consecutive unrewarded spins.
+Disc A - Makes patterns repeat once every seven spins.
+Disc B - Grants seven luck every seven spins.
+Disc C - Forces Zig and Zag patterns every seven spins.
+Dung Beetle - Permanently upgrades all symbols whenever you discard another charm.
+Dynamo - Can recharge all Red Button charms at the end of a round.
+Electrician - Gives all symbols a temporary chance to receive Battery modifiers.
+Electricity Meter - Recharges a random Red Button charm whenever you restock the store.
+Eternity - Adds pattern repetition for the round whenever you score a 999.
+Evil Deal - Doubles many rewards and multipliers but also doubles the chance of encountering 666.
+Expired Meds - Prevents your currently most valuable symbol from appearing.
+Eye Jar - Creates an Eye pattern after repeatedly scoring Diamonds, Treasures or Sevens.
+Eye of God - Eye patterns repay the money earned from every previous 999 in the run.
+Fake Coin - Randomly grants an extra spin with bonus luck.
+Fidelity Card - Reduces the ticket cost of store charms by one.
+Fortune Cookie - Refreshes the shop with luck-related charms and occupies no space.
+Fortune Teller - Gives all symbols a temporary chance to receive Chain modifiers.
+Fruit Basket - Makes Cherry and Lemon patterns repeat, but expires after several rounds.
+Gabihbb’H - Doubles your symbol multiplier for the round whenever 666 appears.
+Golden Bell - Makes Bells substantially more likely to be Golden.
+Golden Cherry - Makes Cherries substantially more likely to be Golden.
+Golden Clover - Makes Clovers substantially more likely to be Golden.
+Golden Diamond - Makes Diamonds substantially more likely to be Golden.
+Golden Horseshoe - Forces random-activation charms to trigger on the next spin, with destruction risk after heavy use.
+Golden Lemon - Makes Lemons substantially more likely to be Golden.
+Golden Pepper - Randomly grants luck that scales with rounds skipped during the previous deadline.
+Golden Seven - Makes Sevens substantially more likely to be Golden.
+Golden Treasure - Makes Treasures substantially more likely to be Golden.
+Grandma’s Purse - Gives a large temporary interest boost that decays each round.
+Greedy King - Adds a scaling chance for any symbol to become Golden based on rounds skipped.
+Green Pepper - Randomly grants seven luck, but disappears after nine activations.
+Halo - Converts symbols surrounding your only scoring pattern into matching symbols.
+Hamsa - Makes patterns repeat on the first spin of each round.
+Harbor - Gives Treasures a chance to carry the Token modifier.
+Holy Bible - Cancels an incoming 666 but may be destroyed afterward.
+Holy Spirit - Adds random traits to all equipped charms whenever you score a 999.
+Horseshoe - Doubles the activation frequency of random-trigger charms.
+Hourglass - Produces decreasing ticket payouts over three deadlines before disappearing.
+Iron - Gives Bells a chance to carry the Ticket modifier.
+Jimbo - Has a randomly generated effect.
+Lemon Picture - Makes Lemons appear more often for the current deadline.
+Little Star - Forces a large horizontal pattern after a spin scores nothing.
+Lost Briefcase - Immediately pays 30% of your current debt and occupies no space.
+Lost Wallet - Gains pattern multiplier for every fifteen tickets you hold.
+Lucky Cat - Pays your current interest whenever a spin triggers at least three patterns.
+Magical Tomato - Makes fruit patterns repeat for the round after 666 appears.
+Megaphone - Doubles telephone ability activations but removes one charm slot.
+Midas Touch - Makes every symbol scored during the round permanently increase by its base value.
+Mushrooms - Temporarily increases all symbol values for each pattern beyond the second in a spin.
+Music Tape - Immediately adds one round to the current deadline without occupying space.
+Naughty Dealer - Builds a universal Token-modifier chance by scoring spins with many patterns.
+Necklace - Repeats a lone Diamond or Treasure pattern twice and doubles its final payout.
+Necronomicon - Provides pattern multiplier while also increasing the chance of 666.
+Nose - Forces an Above or Below pattern after several spins without a large pattern.
+Nuclear Button - Makes every Red Button charm activate an extra time but removes one charm slot.
+Number 1 - Makes patterns containing yellow symbols repeat during the current round.
+Number 2 - Makes patterns containing non-yellow symbols repeat during the current round.
+One Trick Pony - Guarantees a jackpot during the next round, then disappears.
+Ophanim Wheels - Queues a jackpot for the following spin whenever you score a 999.
+Pain Killers - Converts the symbols in a lone scoring pattern into your most valuable symbol.
+Pareidolia - Permanently doubles all pattern values when an Eye appears as the only pattern.
+Pentacle - Permanently gains symbol multiplier from spins that trigger at least five patterns.
+Personal Trainer - Gives all symbols a temporary chance to receive Repetition modifiers.
+Photo Book - Refreshes the store with symbol-picture charms and occupies no space.
+Possessed Cell Phone - Forces a 666 on an upcoming spin and can stack multiple forced 666s.
+Potato Battery - Recharges every Red Button charm after two unrewarded spins.
+Property Certificate - Permanently adds two charm slots.
+Raging Capitalist - Builds a universal Ticket-modifier chance whenever you buy charms.
+Red Pepper - Randomly grants five luck, but disappears after twelve activations.
+Red Shiny Rock - Gives four luck to the next spin.
+Ring Bell - Permanently increases every symbol by its base value.
+Ritual Bell - Gives three free restocks whenever 666 appears.
+Rosary - Sometimes cancels an incoming 666.
+Rotated Hamsa - Grants seven luck on the final spin of every round.
+Rotten Pepper - Randomly grants luck that scales when spins trigger at least three patterns.
+Sacred Heart - Gives Red Button activations a 50% chance not to consume charges.
+Sardines - Exists mainly to be sold for twice the normal resale value.
+Scratch and Hope - Makes your most common symbol appear more frequently.
+Seven Picture - Makes Sevens appear more often for the current deadline.
+Sheep - Gives Clovers a chance to carry the Token modifier.
+Ship - Gives Treasures a chance to carry the Ticket modifier.
+Shoe - Gives Cherries a chance to carry the Ticket modifier.
+Shopping Cart - Gains symbol multiplier from unused free restocks and generates one each deadline.
+Skull - Story-related charm that raises debt but creates free charms based on equipped Corpse pieces.
+Stain - Temporarily increases every pattern’s value after scoring a pattern of four or more symbols.
+Steam Locomotive - Permanently upgrades all symbols after three consecutive unrewarded spins.
+Stone - Gives Diamonds a chance to carry the Token modifier.
+Stonks - Permanently adds 5% interest.
+Super Capacitor - Uses fully charged Red Button charms to recharge other usable charms after spins.
+Swole Cat - Pays four times your current interest when a spin triggers at least fifteen patterns.
+Tarot Deck - Builds symbol multiplier through consecutive spins where charms activate, resetting when none activate.
+The Blood - Adds Repetition to fruits, Battery to Clovers/Bells and Chain to high-value symbols.

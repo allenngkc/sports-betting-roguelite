@@ -34,10 +34,74 @@ public class SkilledStrategy : IStrategy
     private const double ShopHeadroomFloor = 1.00; // keep the NEXT payment intact when buying
     private const int MaxPrimaryLegs = 3;
 
-    // Passive buy priority (highest first); consumables bought after passives while slots free.
-    private static readonly string[] RelicPriority =
-        { RelicCatalog.MultiplierId, RelicCatalog.ScarTissueId, RelicCatalog.TotemId };
-    private static readonly string[] ConsumablePriority = { "mulligan_slip", "profit_boost" };
+    // Passive buy priority (highest first) over the FULL 15-passive catalog (rev 5 §13); the
+    // dealt hand means the bot buys the best of what it is shown, tier-ranked. Bobblehead is
+    // deliberately absent — it is handled by the flip rule (buy 2, sell 6: free money whenever
+    // dealt), never held. Archetype bots override this list.
+    private static readonly string[] DefaultRelicPriority =
+    {
+        RelicCatalog.MultiplierId, "longshot_photo", RelicCatalog.TotemId, "the_system",
+        "chalk_eater", RelicCatalog.ScarTissueId, "whale_card", "bad_beat_jar",
+        "iron_hands", "compd_suite", "rakes_rebate", "house_key",
+        "golden_parachute", "the_collection",
+    };
+
+    private static readonly string[] ConsumablePriority =
+        { "mulligan_slip", "refs_whistle", "free_bet", "profit_boost", "bookies_marker",
+          "double_or_nothing", "ask_manager" };
+
+    /// <summary>The tier list (archetype bots override).</summary>
+    protected virtual string[] RelicPriorityList => DefaultRelicPriority;
+
+    /// <summary>Comps the bot refuses to spend below (the Whale/Rebate hoard tension).</summary>
+    protected virtual double CompsHoldFloor(Run run)
+        => OwnsRelic(run, "whale_card") ? 20.0 : 0.0;
+
+    /// <summary>Max parlay legs: a 4th leg when Comp'd Suite makes leg count pay.</summary>
+    protected virtual int PrimaryLegCap(Run run)
+        => OwnsRelic(run, "compd_suite") ? 4 : MaxPrimaryLegs;
+
+    /// <summary>Which locked contract modifier to attach to the primary ticket (one per ticket —
+    /// the one-modifier law). DoN doubles the committed engine parlay (p̂ ≥ 0.30 — a 3-leg
+    /// favorites plan sits ~0.34); Free Bet insures everything else.</summary>
+    protected virtual TicketModifier PickModifier(Run run, double planWinProb)
+    {
+        if (run.OwnsConsumable("double_or_nothing") && planWinProb >= 0.30)
+            return TicketModifier.DoubleOrNothing;
+        if (run.OwnsConsumable("free_bet")) return TicketModifier.FreeBet;
+        return TicketModifier.None;
+    }
+
+    /// <summary>The bot's engine test, dealt-hand aware (the tuning campaign's first finding):
+    /// ANY owned product source is an engine — waiting for The Multiplier specifically starves
+    /// the build 4 shops out of 5.</summary>
+    protected static bool OwnsAnyEngine(Run run)
+    {
+        foreach (RelicDefinition d in run.OwnedRelics)
+        {
+            switch (d.Id)
+            {
+                case "the_multiplier":
+                case "longshot_photo":
+                case "the_system":
+                case "chalk_eater":
+                case "bad_beat_jar":
+                case "iron_hands":
+                case "whale_card":
+                case "the_collection":
+                case "house_key":
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    protected static bool OwnsRelic(Run run, string id)
+    {
+        foreach (RelicDefinition d in run.OwnedRelics)
+            if (d.Id == id) return true;
+        return false;
+    }
 
     private readonly bool _shops;
 
@@ -98,22 +162,27 @@ public class SkilledStrategy : IStrategy
 
         if (bank < payment * ClearBuffer)
         {
-            // Survival: existing escalation logic against the payment itself.
+            // Survival: existing escalation logic against the payment itself. A held Free Bet
+            // insures the rescue ticket — the exact spot the refund is worth the most.
             double aimMult = payment * ClearBuffer / bank;
             var rescue = ChooseTicket(cands, aimMult, run.Config.MaxStakeFraction);
             if (rescue is not { } r) return;
             double rf = Math.Clamp(ReqFrac(aimMult, r.Odds), StakeMin, run.Config.MaxStakeFraction);
             double rs = Math.Clamp(Math.Floor(rf * bank), run.Config.MinStake, bank);
             if (rs < run.Config.MinStake) return;
-            run.PlaceTicket(r.Picks, rs, BoostLeg(run, r.Picks));
+            TicketModifier rescueMod = run.OwnsConsumable("free_bet")
+                ? TicketModifier.FreeBet : TicketModifier.None;
+            run.PlaceTicket(r.Picks, rs, BoostLeg(run, r.Picks), rescueMod);
             return;
         }
 
-        // Engine mode.
+        // Engine mode. (Campaign note: reserving toward the NEXT payment too was tried and
+        // BACKFIRED — won 7.0% → 4.0%. In an income race, under-betting starves the engine;
+        // the game punishes timidity. Reserve today's payment only.)
         double spare = bank - payment;
         if (spare < run.Config.MinStake) return;
 
-        int legs = Math.Min(MaxPrimaryLegs, cands.Count);
+        int legs = Math.Min(PrimaryLegCap(run), cands.Count);
         double odds = 1.0, win = 1.0;
         var picks = new List<Pick>(legs);
         for (int i = 0; i < legs; i++)
@@ -132,7 +201,7 @@ public class SkilledStrategy : IStrategy
         // mandatory NOW — size the parlay so a hit funds this payment plus a seed of the next
         // (quota sizing), which also pumps comp volume toward the engine. Post-engine, size
         // toward denting the remaining schedule.
-        bool engined = OwnsMultiplier(run) && picks.Count >= 3;
+        bool engined = OwnsAnyEngine(run) && picks.Count >= 3;
         double stake;
         if (FixedDiscipline)
         {
@@ -159,7 +228,7 @@ public class SkilledStrategy : IStrategy
                 run.Config.MinStake, cap);
         }
 
-        run.PlaceTicket(picks, stake, BoostLeg(run, picks));
+        run.PlaceTicket(picks, stake, BoostLeg(run, picks), PickModifier(run, win));
     }
 
     /// <summary>A held Profit Boost lands on the longest-odds leg — the largest absolute gain.</summary>
@@ -233,7 +302,7 @@ public class SkilledStrategy : IStrategy
         return new Plan(p2, o2, w2);
     }
 
-    public bool ShouldCashOut(Run run, Ticket ticket, SweatSession session, DramaEvent evt,
+    public virtual bool ShouldCashOut(Run run, Ticket ticket, SweatSession session, DramaEvent evt,
         double offer, double bankNow, double target, BotState state, Pcg32 rng)
     {
         if (evt.Type == DramaEventType.LegFinal) return false;
@@ -270,38 +339,89 @@ public class SkilledStrategy : IStrategy
     {
         if (!_shops) return;
 
-        // Comps are shop-only currency (design/10 F) — no cash tension, buy in priority while
-        // comps and slots allow.
+        // The Bobblehead flip: buy at 2, sell at 6 — free comps whenever it is dealt and a
+        // slot can host it for a moment (the shop-flipper baseline every sharp would run).
+        for (int i = 0; i < run.ShopOffers.Count; i++)
+        {
+            if (run.ShopOffers[i].Id != "bobblehead") continue;
+            if (run.ShopOffers[i].Price > run.Comps) break;
+            if (run.OwnedRelics.Count >= run.Config.RelicSlots) break;
+            run.BuyRelic(i);
+            for (int j = 0; j < run.OwnedRelics.Count; j++)
+                if (run.OwnedRelics[j].Id == "bobblehead") { run.SellRelic(j); break; }
+            break;
+        }
+
+        double holdFloor = CompsHoldFloor(run);
+        string[] priority = RelicPriorityList;
+
+        // Buy discipline (tuning campaign finding #2): buying the best of a BAD hand burns the
+        // comps an engine needs. Pre-engine, only top-tier items are worth a slot; afterwards
+        // mid-tier joins; the bottom of the list is a luxury for a rich late bank.
+        bool engined = OwnsAnyEngine(run);
+        int cutoff = !engined ? 6 : run.Comps >= 15.0 ? int.MaxValue : 10;
+
         bool bought = true;
         while (bought)
         {
             bought = false;
-            if (run.OwnedRelics.Count < run.Config.RelicSlots)
+
+            // Best-ranked affordable passive in the dealt hand (respecting the hoard floor).
+            int buyIndex = -1;
+            int bestRank = int.MaxValue;
+            for (int i = 0; i < run.ShopOffers.Count; i++)
             {
-                int buyIndex = -1;
-                int bestRank = int.MaxValue;
-                for (int i = 0; i < run.ShopOffers.Count; i++)
+                RelicDefinition o = run.ShopOffers[i];
+                if (o.Price > run.Comps - holdFloor) continue;
+                int rank = RankOf(priority, o.Id);
+                if (rank >= cutoff) continue;
+                if (rank < bestRank) { bestRank = rank; buyIndex = i; }
+            }
+
+            if (buyIndex >= 0)
+            {
+                if (run.OwnedRelics.Count < run.Config.RelicSlots)
                 {
-                    RelicDefinition o = run.ShopOffers[i];
-                    if (o.Price > run.Comps) continue;
-                    int rank = RankOf(RelicPriority, o.Id);
-                    if (rank < bestRank) { bestRank = rank; buyIndex = i; }
+                    run.BuyRelic(buyIndex);
+                    bought = true;
+                    continue;
                 }
-                if (buyIndex >= 0) { run.BuyRelic(buyIndex); bought = true; continue; }
+
+                // Replacement (rev 5 §13): slots full — sell the worst-ranked owned passive
+                // when the dealt item ranks strictly better and the trade nets out affordable.
+                int worstOwned = -1, worstRank = -1;
+                for (int j = 0; j < run.OwnedRelics.Count; j++)
+                {
+                    string id = run.OwnedRelics[j].Id;
+                    if (id == RelicCatalog.TotemId) continue; // never resellable value
+                    int rank = RankOf(priority, id);
+                    if (rank > worstRank) { worstRank = rank; worstOwned = j; }
+                }
+                RelicDefinition dealt = run.ShopOffers[buyIndex];
+                if (worstOwned >= 0 && bestRank < worstRank
+                    && run.Comps + run.GetResaleValue(run.OwnedRelics[worstOwned]) - holdFloor >= dealt.Price)
+                {
+                    run.SellRelic(worstOwned);
+                    // Offer indexes are untouched by a sell; re-find the dealt item defensively.
+                    for (int i = 0; i < run.ShopOffers.Count; i++)
+                        if (run.ShopOffers[i].Id == dealt.Id) { run.BuyRelic(i); break; }
+                    bought = true;
+                    continue;
+                }
             }
 
             if (run.OwnedConsumables.Count < run.Config.ConsumableSlots)
             {
-                int buyIndex = -1;
-                int bestRank = int.MaxValue;
+                int cIndex = -1;
+                int cRank = int.MaxValue;
                 for (int i = 0; i < run.ConsumableOffers.Count; i++)
                 {
                     ConsumableDefinition o = run.ConsumableOffers[i];
-                    if (o.Price > run.Comps) continue;
+                    if (o.Price > run.Comps - holdFloor) continue;
                     int rank = RankOf(ConsumablePriority, o.Id);
-                    if (rank < bestRank) { bestRank = rank; buyIndex = i; }
+                    if (rank < cRank) { cRank = rank; cIndex = i; }
                 }
-                if (buyIndex >= 0) { run.BuyConsumable(buyIndex); bought = true; }
+                if (cIndex >= 0) { run.BuyConsumable(cIndex); bought = true; }
             }
         }
     }

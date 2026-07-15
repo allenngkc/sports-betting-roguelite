@@ -32,6 +32,9 @@ public static class Harness
         "skilled" => new SkilledStrategy(),
         "noshop" => new NoShopStrategy(),
         "martyr" => new MartyrStrategy(),
+        "chalk" => new ChalkGrinderStrategy(),
+        "hoarder" => new VipHoarderStrategy(),
+        "ironhands" => new IronHandsStrategy(),
         _ => throw new ArgumentException($"Unknown strategy '{name}'"),
     };
 }

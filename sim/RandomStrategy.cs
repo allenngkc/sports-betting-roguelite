@@ -53,15 +53,26 @@ public sealed class RandomStrategy : IStrategy
 
     public void Shop(Run run, BotState state, Pcg32 rng)
     {
+        // Codex r2 #13 fix: affordability is COMPS (the shop currency), never cash — and the
+        // random shopper picks legally across BOTH dealt rows within their separate slot limits.
         if (rng.NextDouble() >= ShopBuyChance) return;
-        if (run.OwnedRelics.Count >= run.Config.RelicSlots) return;
 
-        var affordable = new List<int>();
-        for (int i = 0; i < run.ShopOffers.Count; i++)
-            if (run.ShopOffers[i].Price <= run.Bank) affordable.Add(i);
-        if (affordable.Count == 0) return;
+        var passives = new List<int>();
+        if (run.OwnedRelics.Count < run.Config.RelicSlots)
+            for (int i = 0; i < run.ShopOffers.Count; i++)
+                if (run.ShopOffers[i].Price <= run.Comps) passives.Add(i);
 
-        run.BuyRelic(affordable[rng.NextInt(0, affordable.Count)]);
+        var consumables = new List<int>();
+        if (run.OwnedConsumables.Count < run.Config.ConsumableSlots)
+            for (int i = 0; i < run.ConsumableOffers.Count; i++)
+                if (run.ConsumableOffers[i].Price <= run.Comps) consumables.Add(i);
+
+        int total = passives.Count + consumables.Count;
+        if (total == 0) return;
+
+        int pick = rng.NextInt(0, total);
+        if (pick < passives.Count) run.BuyRelic(passives[pick]);
+        else run.BuyConsumable(consumables[pick - passives.Count]);
     }
 
     // Partial Fisher-Yates: `count` distinct indices from [0, n).
