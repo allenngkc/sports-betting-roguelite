@@ -24,7 +24,7 @@ internal static class SweatRenderer
         Ui.Rule();
         Ui.WriteLine(ConsoleColor.White, $"ROUND {run.Round} — THE SWEAT   (payment due at settle: {Ui.Money(run.CurrentPayment)})");
         Ui.WriteLine(ConsoleColor.DarkGray,
-            "[C] cash out  ·  [M] mulligan slip (when a leg dies)  ·  [F] fast-forward");
+            "[C] cash out  ·  [M] mulligan / [R] whistle (when a leg dies)  ·  [F] fast-forward");
         Ui.Rule();
 
         double lastBank = run.Bank;
@@ -94,17 +94,34 @@ internal static class SweatRenderer
             prevProb = evt.WinProbAfter;
             RenderBankDelta(run, ref lastBank);
 
-            // The Mulligan Slip window (design/10 D): a dead leg suspended the session — the
-            // player's timed save. Declining (any key but M, or no slip) lets the bust proceed.
+            // The pending-loss window (rev 5): a dead leg suspended the session — the player's
+            // timed save. [M] voids (Mulligan, ≥2 legs), [R] sends it to review at the odds you
+            // were living on (Whistle — full odds on an overturn, dead for real on a confirm).
             if (session.HasPendingLoss)
             {
-                if (run.OwnsConsumable("mulligan_slip") && PromptSlip())
+                bool canM = run.OwnsConsumable("mulligan_slip") && session.CanMulliganPendingLoss;
+                bool canR = run.OwnsConsumable("refs_whistle");
+                switch (PromptSave(session, canM, canR))
                 {
-                    run.PlayMulliganSlip(session);
-                    Ui.WriteLine(ConsoleColor.Cyan, "  MULLIGAN SLIP — leg voided, the ticket lives");
-                    continue;
+                    case ConsoleKey.M when canM:
+                        run.PlayMulliganSlip(session);
+                        Ui.WriteLine(ConsoleColor.Cyan, "  MULLIGAN SLIP — leg voided, the ticket lives");
+                        continue;
+
+                    case ConsoleKey.R when canR:
+                        run.PlayRefsWhistle(session);
+                        if (!session.IsComplete)
+                        {
+                            Ui.WriteLine(ConsoleColor.Green, "  REVIEWED — OVERTURNED. The leg STANDS at full odds.");
+                            continue;
+                        }
+                        Ui.WriteLine(ConsoleColor.Red, "  REVIEWED — the call is CONFIRMED. Dead.");
+                        break;
+
+                    default:
+                        session.DeclinePendingLoss();
+                        break;
                 }
-                session.DeclinePendingLoss();
             }
 
             if (session.IsComplete) break;
@@ -131,15 +148,18 @@ internal static class SweatRenderer
         }
     }
 
-    /// <summary>The window prompt: M plays the slip, anything else declines. Redirected input
-    /// (the smoke pipeline) auto-declines — autoplay never consumes items.</summary>
-    private static bool PromptSlip()
+    /// <summary>The window prompt: [M] mulligan / [R] whistle, anything else declines. Redirected
+    /// input (the smoke pipeline) auto-declines — autoplay never consumes items.</summary>
+    private static ConsoleKey PromptSave(SweatSession session, bool canM, bool canR)
     {
-        if (Console.IsInputRedirected) return false;
-        Ui.Write(ConsoleColor.Cyan, "  MULLIGAN SLIP held — [M] void the dead leg, any other key lets it die: ");
+        if (Console.IsInputRedirected || (!canM && !canR)) return ConsoleKey.NoName;
+        var verbs = new List<string>();
+        if (canM) verbs.Add("[M] void the leg");
+        if (canR) verbs.Add($"[R] send to review at {Ui.Pct(session.PendingLossProbBefore)}%");
+        Ui.Write(ConsoleColor.Cyan, $"  SAVE? {string.Join("  ·  ", verbs)}  ·  any other key lets it die: ");
         ConsoleKey key = Console.ReadKey(true).Key;
         Ui.Line();
-        return key == ConsoleKey.M;
+        return key;
     }
 
     private static void RenderEvent(DramaEvent e, Leg leg, SweatSession session, double prevProb, bool fast)

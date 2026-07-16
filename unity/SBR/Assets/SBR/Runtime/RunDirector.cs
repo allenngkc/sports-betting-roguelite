@@ -175,6 +175,36 @@ namespace SBR.Game
             }
         }
 
+        /// <summary>Ask for the Manager: redeal the shop hand once per visit (charm expansion).</summary>
+        public string TryPlayManager()
+        {
+            if (Run == null || Run.Phase != Phase.Shop) return "shop is closed";
+            try
+            {
+                Run.PlayAskManager();
+                return null;
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+
+        /// <summary>Bookie's Marker: this round's payment −25%, once per round (betting phase).</summary>
+        public string TryPlayMarker()
+        {
+            if (Run == null || Run.Phase != Phase.Betting) return "betting is closed";
+            try
+            {
+                Run.PlayBookiesMarker();
+                return null;
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+
         public void ExitShop()
         {
             if (Run == null || Run.Phase != Phase.Shop) return;

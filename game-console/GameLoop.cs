@@ -50,6 +50,7 @@ internal static class GameLoop
                 + $"   ·   consumable slots {run.OwnedConsumables.Count}/{run.Config.ConsumableSlots}");
             Ui.WriteLine(ConsoleColor.DarkGray,
                 $"next payment {(run.NextPayment.HasValue ? Ui.Money(run.NextPayment.Value) : "—")}   ·   comps buy items; cash pays the bookie");
+            WriteEffectStates(run);
             Ui.Line();
 
             int k = run.ShopOffers.Count;
@@ -72,7 +73,14 @@ internal static class GameLoop
 
             Ui.Line();
             int total = k + run.ConsumableOffers.Count;
-            string cmd = Ui.Prompt($"buy 1–{total}, [S]ell, or [X] leave: ").ToUpperInvariant();
+            string managerHint = run.OwnsConsumable("ask_manager") ? ", [M]anager (redeal)" : "";
+            string cmd = Ui.Prompt($"buy 1–{total}, [S]ell{managerHint}, or [X] leave: ").ToUpperInvariant();
+            if (cmd == "M" && run.OwnsConsumable("ask_manager"))
+            {
+                try { run.PlayAskManager(); }
+                catch (Exception ex) { Ui.WriteLine(ConsoleColor.Red, ex.Message); Ui.Pause(); }
+                continue;
+            }
             if (cmd == "X" || Ui.Eof)
             {
                 run.ExitShop();
@@ -121,7 +129,7 @@ internal static class GameLoop
         int k = run.OwnedRelics.Count;
         for (int i = 0; i < k; i++)
             Ui.WriteLine(ConsoleColor.Gray,
-                $" {i + 1}. {run.OwnedRelics[i].Name}  (sells for {run.OwnedRelics[i].Price * run.Config.SellBackFraction:0.#} comps)");
+                $" {i + 1}. {run.OwnedRelics[i].Name}  (sells for {run.GetResaleValue(run.OwnedRelics[i]):0.#} comps)");
         for (int i = 0; i < run.OwnedConsumables.Count; i++)
             Ui.WriteLine(ConsoleColor.Gray,
                 $" {k + i + 1}. {run.OwnedConsumables[i].Name}  (sells for {run.OwnedConsumables[i].Price * run.Config.SellBackFraction:0.#} comps)");
@@ -135,6 +143,20 @@ internal static class GameLoop
             else run.SellConsumable(n - 1 - k);
         }
         catch (Exception ex) { Ui.WriteLine(ConsoleColor.Red, ex.Message); Ui.Pause(); }
+    }
+
+    /// <summary>The visible ratchet/streak state (design/10 mandate, rev 5 §20) — one line,
+    /// only when something is wound up.</summary>
+    internal static void WriteEffectStates(Run run)
+    {
+        var parts = new List<string>();
+        foreach (EffectStat s in run.EffectStates)
+            if (s.Value > 0)
+                parts.Add(s.Id == "the_system"
+                    ? $"{s.Label} {s.Value:0} streak"
+                    : $"{s.Label} +{s.Value:0.#}pp");
+        if (parts.Count > 0)
+            Ui.WriteLine(ConsoleColor.Magenta, " " + string.Join("   ·   ", parts));
     }
 
     // ---- run over ----

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Globalization;
+using System.Text;
 using SBR.Engine;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -271,21 +272,22 @@ namespace SBR.Game
                 if (evt.Type == DramaEventType.LegFinal)
                     yield return ResolveBeat(evt);
 
-                // The Mulligan Slip window (design/10 D): a dead leg suspended the session while a
-                // slip is held — the drama freezes on the player's timed save.
+                // The pending-loss window (charm expansion): a dead leg suspended the session
+                // while a save is held — the drama freezes on the player's timed decision.
                 if (_session.HasPendingLoss)
-                    yield return MulliganWindowBeat();
+                    yield return PendingWindowBeat();
 
                 if (_session.IsComplete) break;
                 yield return SeatedHold(PacingFor(evt, onFinalLeg));
             }
         }
 
-        /// <summary>The pending-loss window: [M] plays the slip (leg voided, sweat resumes), [N]
-        /// declines (the bust proceeds). The drama holds as long as the decision does — the pause
-        /// IS the moment. Without a keyboard (batch tests) the window declines immediately, so
-        /// autoplay never hangs.</summary>
-        private IEnumerator MulliganWindowBeat()
+        /// <summary>The pending-loss window (charm expansion): [M] plays a Mulligan (leg voided,
+        /// sweat resumes), [R] plays the Ref's Whistle (the call goes to review at the odds you
+        /// were living on — overturned it STANDS at full odds, confirmed it dies), [N] declines.
+        /// The drama holds as long as the decision does — the pause IS the moment. Without a
+        /// keyboard (batch tests) the window declines immediately, so autoplay never hangs.</summary>
+        private IEnumerator PendingWindowBeat()
         {
             if (Keyboard.current == null)
             {
@@ -293,13 +295,16 @@ namespace SBR.Game
                 yield break;
             }
 
+            bool canM = director.Run.OwnsConsumable("mulligan_slip") && _session.CanMulliganPendingLoss;
+            bool canR = director.Run.OwnsConsumable("refs_whistle");
+            string verbs = (canM ? "[M] MULLIGAN   ·   " : "")
+                + (canR ? $"[R] SEND TO REVIEW ({Mathf.RoundToInt((float)(_session.PendingLossProbBefore * 100))}%)   ·   " : "");
             _tCashOut.enabled = true;
-            _tCashOut.text = "MULLIGAN SLIP HELD — [M] PLAY IT   ·   [N] LET IT DIE";
+            _tCashOut.text = verbs + "[N] LET IT DIE";
 
             while (_session.HasPendingLoss)
             {
-                if (_seated && Keyboard.current.mKey.wasPressedThisFrame
-                    && director.Run.OwnsConsumable("mulligan_slip"))
+                if (_seated && canM && Keyboard.current.mKey.wasPressedThisFrame)
                 {
                     director.Run.PlayMulliganSlip(_session);
                     _tCashOut.enabled = false;
@@ -308,6 +313,26 @@ namespace SBR.Game
                     _emissRest = _emissIdle; // the DEAD dim lifts: the ticket breathes again
                     tvLight?.ResetToIdle();
                     UpdateSlipStrip(Mathf.Min(_resolvedThrough, _ticket.Legs.Count - 1));
+                    yield return ScaledWait(deadLineDuration);
+                    yield break;
+                }
+                if (_seated && canR && Keyboard.current.rKey.wasPressedThisFrame)
+                {
+                    director.Run.PlayRefsWhistle(_session);
+                    _tCashOut.enabled = false;
+                    if (!_session.IsComplete)
+                    {
+                        _tFlavor.color = new Color(phosphorGreen.r, phosphorGreen.g, phosphorGreen.b, 1f);
+                        _tFlavor.text = "REVIEWED — OVERTURNED. THE LEG STANDS.";
+                        _emissRest = _emissIdle;
+                        tvLight?.ResetToIdle();
+                        UpdateSlipStrip(Mathf.Min(_resolvedThrough, _ticket.Legs.Count - 1));
+                    }
+                    else
+                    {
+                        _tFlavor.color = new Color(hotRed.r, hotRed.g, hotRed.b, 1f);
+                        _tFlavor.text = "REVIEWED — THE CALL IS CONFIRMED.";
+                    }
                     yield return ScaledWait(deadLineDuration);
                     yield break;
                 }
@@ -752,9 +777,15 @@ namespace SBR.Game
         {
             Run r = director != null ? director.Run : null;
             if (r == null) { _tChrome.text = string.Empty; return; }
+            // Wound-up ratchet state rides the chrome (rev 5 §20) — compact, only when live.
+            var stacks = new StringBuilder();
+            foreach (EffectStat s in r.EffectStates)
+                if (s.Value > 0)
+                    stacks.Append("   ·   ").Append(s.Label).Append(' ')
+                        .Append(s.Value.ToString("0.#", CultureInfo.InvariantCulture));
             _tChrome.text =
                 $"R{r.Round}/{r.Config.Rounds}   ·   BANK ${Money(r.Bank)}   ·   PAY ${Money(r.CurrentPayment)}" +
-                $"   ·   COMPS {r.Comps.ToString("0.#", CultureInfo.InvariantCulture)}   ·   {r.Rng.RunSeed}";
+                $"   ·   COMPS {r.Comps.ToString("0.#", CultureInfo.InvariantCulture)}{stacks}   ·   {r.Rng.RunSeed}";
         }
 
         private void ApplyEmission()

@@ -28,6 +28,17 @@ internal static class BettingScreen
                     Build(run);
                     break;
 
+                case "K":
+                    try
+                    {
+                        run.PlayBookiesMarker();
+                        Ui.WriteLine(ConsoleColor.Cyan,
+                            $"MARKER PLAYED — this round's payment drops to {Ui.Money(run.CurrentPayment)}.");
+                    }
+                    catch (Exception ex) { Ui.WriteLine(ConsoleColor.Red, ex.Message); }
+                    Ui.Pause();
+                    break;
+
                 case "L":
                     if (run.Tickets.Count == 0 && !Ui.Confirm("no bets this round? the payment still comes due — y/n: ")) break;
                     run.LockRound();
@@ -51,7 +62,7 @@ internal static class BettingScreen
     }
 
     private static string CommandBar()
-        => "commands: [B]uild ticket  [L]ock round  [Q]uit  > ";
+        => "commands: [B]uild ticket  [K] marker  [L]ock round  [Q]uit  > ";
 
     // ---- rendering ----
 
@@ -75,6 +86,7 @@ internal static class BettingScreen
         if (run.ScarStacks > 0)
             Ui.WriteLine(ConsoleColor.Magenta,
                 $"SCAR {run.ScarStacks:0.#}pp — your FIRST ticket this round carries it (burns on a hit)");
+        GameLoop.WriteEffectStates(run); // chalk/iron/jar/system stacks (rev 5 §20)
 
         if (run.OwnedRelics.Count > 0)
         {
@@ -173,11 +185,26 @@ internal static class BettingScreen
             }
         }
 
+        // Locked contract modifiers (one per ticket — the one-modifier law).
+        TicketModifier modifier = TicketModifier.None;
+        bool hasFree = run.OwnsConsumable("free_bet");
+        bool hasDon = run.OwnsConsumable("double_or_nothing");
+        if (hasFree || hasDon)
+        {
+            string opts = hasFree && hasDon ? "[F]ree bet / [D]ouble-or-nothing"
+                : hasFree ? "[F]ree bet" : "[D]ouble-or-nothing";
+            string m = Ui.Prompt($"modifier? {opts} (enter to skip) ").ToUpperInvariant();
+            if (m == "F" && hasFree) modifier = TicketModifier.FreeBet;
+            else if (m == "D" && hasDon) modifier = TicketModifier.DoubleOrNothing;
+        }
+
         try
         {
-            Ticket t = run.PlaceTicket(picks, stake, boostLeg);
+            Ticket t = run.PlaceTicket(picks, stake, boostLeg, modifier);
+            string tag = t.Modifier == TicketModifier.FreeBet ? "  [FREE BET]"
+                : t.Modifier == TicketModifier.DoubleOrNothing ? "  [DOUBLE OR NOTHING — no cash-out]" : "";
             Ui.WriteLine(ConsoleColor.Green,
-                $"TICKET PLACED: {DescribeLegs(t)}  |  {Ui.Money(t.Stake)} → {Ui.Money(t.PotentialPayout)}");
+                $"TICKET PLACED: {DescribeLegs(t)}  |  {Ui.Money(t.Stake)} → {Ui.Money(t.PotentialPayout)}{tag}");
         }
         catch (Exception ex)
         {

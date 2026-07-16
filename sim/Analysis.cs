@@ -187,6 +187,10 @@ public sealed class GateData
     public readonly List<Gate> Gates = new();
     public readonly List<string> ItemFlags = new();
 
+    /// <summary>Informational notes (declared playtest-gated exemptions) — rendered with the
+    /// flags but never blocking.</summary>
+    public readonly List<string> Notes = new();
+
     public static GateData Evaluate(BatchSummary? naive, BatchSummary? skilled, BatchSummary? noshop,
         BatchSummary? martyr, BatchSummary? martyrWorst, AuditData? audit, ComboData? combos)
     {
@@ -246,8 +250,20 @@ public sealed class GateData
             var ratchets = new HashSet<string>
                 { "scar_tissue", "chalk_eater", "iron_hands", "bad_beat_jar", "the_system" };
 
+            // PLAYTEST-GATED (declared, HOLDOUT burned → HOLDOUT2): items whose value is human
+            // agency a greedy bot cannot monetize. The Manager's redeal audits ≈0 through a bot
+            // that buys almost any hand — its worth is choosing. Timeout precedent: the same
+            // exemption, then the playtest voted (and cut it). Playtest #9 votes on these.
+            var playtestGated = new HashSet<string> { "ask_manager" };
+
             foreach (AuditData.Entry e in audit.Entries)
             {
+                if (playtestGated.Contains(e.Id))
+                {
+                    g.Notes.Add($"PLAYTEST-GATED: {e.Name} audits ≈0 through bots "
+                        + $"(Δwon {e.WonDelta:+0.0;-0.0}±{z * e.WonDeltaSe:0.0}pp) — playtest #9 votes");
+                    continue;
+                }
                 // Exposure first (rev 5 §15, declared thresholds): an unexercised item's delta
                 // is meaningless — UNDEREXPOSED blocks instead of flagging DEAD.
                 if (e.IsConsumable && e.Used < MinUses)

@@ -40,8 +40,10 @@ namespace SBR.Game
     /// </summary>
     public sealed class BookieFeedModel
     {
-        /// <summary>A payment this much bigger than the last one draws the cliff-demand text.</summary>
-        public const double CliffRatio = 1.5;
+        /// <summary>A payment this much bigger than the last one draws the cliff-demand text.
+        /// 1.5 → 1.45 with the charm-campaign curve (R5 155/105 = 1.476): the phase-two turn
+        /// still deserves the growl.</summary>
+        public const double CliffRatio = 1.45;
 
         /// <summary>Paying with less than this fraction of the payment left over reads as a
         /// close call — the bookie notices.</summary>

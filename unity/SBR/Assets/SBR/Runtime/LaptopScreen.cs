@@ -109,11 +109,15 @@ namespace SBR.Game
             var sb = new StringBuilder(96);
             sb.Append(director.RunGeneration).Append('|').Append(r.Phase).Append('|').Append(r.Round)
               .Append('|').Append((long)r.Bank).Append('|').Append((long)(r.Comps * 10))
+              .Append('|').Append((long)r.CurrentPayment) // the Marker moves it mid-phase
               .Append('|').Append(r.Tickets.Count).Append('|').Append(r.ShopOffers.Count)
               .Append('|').Append(r.ConsumableOffers.Count).Append('|').Append(r.OwnedRelics.Count)
               .Append('|').Append(r.OwnedConsumables.Count).Append('|').Append((long)(r.ScarStacks * 10))
               .Append('|').Append(_lockArmed).Append('|').Append(_shopError.Length)
-              .Append('|').Append((long)(_slip?.Stake ?? 0)).Append('|').Append(_slip?.BoostLeg ?? -1);
+              .Append('|').Append((long)(_slip?.Stake ?? 0)).Append('|').Append(_slip?.BoostLeg ?? -1)
+              .Append('|').Append((int)(_slip?.Modifier ?? TicketModifier.None));
+            foreach (EffectStat s in r.EffectStates)
+                sb.Append('|').Append((long)(s.Value * 10)); // ratchet/streak chrome (rev 5 §20)
             if (_slip != null)
                 foreach (Pick p in _slip.Picks)
                     sb.Append('|').Append(p.MatchupIndex).Append(p.Side == Side.Home ? 'H' : 'A');
@@ -157,6 +161,13 @@ namespace SBR.Game
             var right = new StringBuilder();
             if (r.ScarStacks > 0)
                 right.Append($"SCAR {r.ScarStacks.ToString("0.#", CultureInfo.InvariantCulture)}pp   ");
+            foreach (EffectStat s in r.EffectStates)
+            {
+                if (s.Value <= 0 || s.Id == RelicCatalog.ScarTissueId) continue; // scar shown above
+                right.Append(s.Id == "the_system"
+                    ? $"{s.Label} x{s.Value.ToString("0", CultureInfo.InvariantCulture)}   "
+                    : $"{s.Label} {s.Value.ToString("0.#", CultureInfo.InvariantCulture)}pp   ");
+            }
             if (r.OwnedRelics.Count > 0)
             {
                 var names = new StringBuilder();
@@ -188,6 +199,14 @@ namespace SBR.Game
             MakeText(slate, "Legend", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(4f, 0f), new Vector2(580f, 22f), 13, TextAnchor.UpperLeft, Dim(chromeCyan),
                 "TODAY'S BOARD   ·   ( ) = SEASON W-L   ·   STAKING EARNS COMPS");
+
+            // Bookie's Marker (charm expansion): shave this round's payment, once per round.
+            if (r.OwnsConsumable("bookies_marker"))
+            {
+                MakeButton(slate, "Marker", "MARKER −25%",
+                    new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-4f, 0f), new Vector2(130f, 22f), 12,
+                    panelHot, gold, () => { director.TryPlayMarker(); Disarm(); });
+            }
 
             // The whole ledger is public information (design/10) — the payments still coming.
             var sched = new StringBuilder("SCHEDULE  ");
@@ -271,6 +290,32 @@ namespace SBR.Game
                     : " ");
             y -= 30f;
 
+            // Locked contract modifiers (charm expansion): one per ticket, Free Bet xor DoN.
+            bool freeHeld = r.OwnsConsumable("free_bet");
+            bool donHeld = r.OwnsConsumable("double_or_nothing");
+            if (freeHeld || donHeld)
+            {
+                float mx = 12f;
+                if (freeHeld)
+                {
+                    bool on = _slip.Modifier == TicketModifier.FreeBet;
+                    MakeButton(slipPanel, "ModFree", on ? "FREE BET ✓" : "FREE BET",
+                        new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(mx, y), new Vector2(150f, 34f), 13,
+                        on ? panelHot : panel, on ? moneyGreen : chromeCyan,
+                        () => { _slip.ToggleModifier(TicketModifier.FreeBet); Disarm(); });
+                    mx += 158f;
+                }
+                if (donHeld)
+                {
+                    bool on = _slip.Modifier == TicketModifier.DoubleOrNothing;
+                    MakeButton(slipPanel, "ModDon", on ? "DOUBLE OR NOTHING ✓" : "DOUBLE OR NOTHING",
+                        new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(mx, y), new Vector2(200f, 34f), 13,
+                        on ? panelHot : panel, on ? gold : chromeCyan,
+                        () => { _slip.ToggleModifier(TicketModifier.DoubleOrNothing); Disarm(); });
+                }
+                y -= 42f;
+            }
+
             // Stake chips: fractions of bank (grill decision) + $10 nudges.
             float cx = 12f;
             MakeChip(slipPanel, "10%", cx, y, () => { _slip.SetStakeFraction(0.10); Disarm(); }); cx += 74f;
@@ -298,13 +343,15 @@ namespace SBR.Game
                 interactable: blocker == null);
             y -= 52f;
 
-            // Placed tickets, compact.
+            // Placed tickets, compact (modifier tags included).
             for (int i = 0; i < r.Tickets.Count; i++)
             {
                 Ticket t = r.Tickets[i];
+                string tag = t.Modifier == TicketModifier.FreeBet ? "  [FREE]"
+                    : t.Modifier == TicketModifier.DoubleOrNothing ? "  [DoN]" : "";
                 MakeText(slipPanel, $"Placed{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(12f, y), new Vector2(370f, 24f), 14, TextAnchor.UpperLeft, Dim(textColor),
-                    $"#{i + 1}  {t.Legs.Count} leg{(t.Legs.Count > 1 ? "s" : "")}  {Money(t.Stake)} → {Money(t.PotentialPayout)}");
+                    $"#{i + 1}  {t.Legs.Count} leg{(t.Legs.Count > 1 ? "s" : "")}  {Money(t.Stake)} → {Money(t.PotentialPayout)}{tag}");
                 y -= 26f;
             }
 
@@ -347,34 +394,42 @@ namespace SBR.Game
             ClearChildren(_pageShop);
 
             MakeText(_pageShop, "Title", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(12f, -6f), new Vector2(980f, 30f), 20, TextAnchor.UpperLeft, gold,
+                new Vector2(12f, -6f), new Vector2(760f, 30f), 20, TextAnchor.UpperLeft, gold,
                 $"SHOP — ROUND {r.Round} PAID   ·   COMPS {r.Comps.ToString("0.#", CultureInfo.InvariantCulture)}"
-                + "   ·   comps buy items; cash pays the bookie");
+                + "   ·   today's hand");
 
-            // Passive cards, half width; consumable cards on the right column.
+            // Ask for the Manager (charm expansion): redeal the hand, once per visit.
+            if (r.OwnsConsumable("ask_manager"))
+            {
+                MakeButton(_pageShop, "Manager", "ASK FOR THE MANAGER — REDEAL",
+                    new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-12f, -4f), new Vector2(280f, 34f), 13,
+                    panelHot, chromeCyan, () => { _shopError = director.TryPlayManager() ?? ""; });
+            }
+
+            // The DEALT HAND (charm expansion): 4 passive cards left, 3 consumable cards right.
             float y = -44f;
             for (int i = 0; i < r.ShopOffers.Count; i++)
             {
                 RelicDefinition o = r.ShopOffers[i];
                 var card = MakePanel(_pageShop, $"Offer{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(12f, y), new Vector2(560f, 108f), panel);
+                    new Vector2(12f, y), new Vector2(560f, 82f), panel);
 
                 MakeText(card, "Name", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(12f, -6f), new Vector2(400f, 26f), 16, TextAnchor.UpperLeft, textColor,
+                    new Vector2(12f, -4f), new Vector2(400f, 22f), 15, TextAnchor.UpperLeft, textColor,
                     $"{o.Name.ToUpperInvariant()}   ·   {o.Axis}");
                 MakeText(card, "Desc", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(12f, -32f), new Vector2(410f, 70f), 12, TextAnchor.UpperLeft, Dim(textColor),
+                    new Vector2(12f, -26f), new Vector2(410f, 54f), 11, TextAnchor.UpperLeft, Dim(textColor),
                     o.Description);
 
                 bool affordable = o.Price <= r.Comps && r.OwnedRelics.Count < r.Config.RelicSlots;
                 int idx = i;
                 MakeButton(card, "Buy", $"BUY {o.Price:0.#}c",
-                    new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-10f, 0f), new Vector2(120f, 48f), 15,
+                    new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-10f, 0f), new Vector2(120f, 40f), 14,
                     affordable ? panelHot : panel, affordable ? moneyGreen : Dim(textColor),
                     () => { _shopError = director.TryBuyRelic(idx) ?? ""; },
                     interactable: affordable);
 
-                y -= 114f;
+                y -= 88f;
             }
 
             float cy = -44f;
@@ -382,24 +437,24 @@ namespace SBR.Game
             {
                 ConsumableDefinition o = r.ConsumableOffers[i];
                 var card = MakePanel(_pageShop, $"COffer{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(584f, cy), new Vector2(428f, 108f), panel);
+                    new Vector2(584f, cy), new Vector2(428f, 82f), panel);
 
                 MakeText(card, "Name", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(12f, -6f), new Vector2(280f, 26f), 15, TextAnchor.UpperLeft, chromeCyan,
+                    new Vector2(12f, -4f), new Vector2(280f, 22f), 14, TextAnchor.UpperLeft, chromeCyan,
                     $"{o.Name.ToUpperInvariant()}   ·   consumable");
                 MakeText(card, "Desc", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(12f, -32f), new Vector2(290f, 70f), 12, TextAnchor.UpperLeft, Dim(textColor),
+                    new Vector2(12f, -26f), new Vector2(290f, 54f), 11, TextAnchor.UpperLeft, Dim(textColor),
                     o.Description);
 
                 bool affordable = o.Price <= r.Comps && r.OwnedConsumables.Count < r.Config.ConsumableSlots;
                 int idx = i;
                 MakeButton(card, "Buy", $"BUY {o.Price:0.#}c",
-                    new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-10f, 0f), new Vector2(110f, 48f), 14,
+                    new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-10f, 0f), new Vector2(110f, 40f), 13,
                     affordable ? panelHot : panel, affordable ? moneyGreen : Dim(textColor),
                     () => { _shopError = director.TryBuyConsumable(idx) ?? ""; },
                     interactable: affordable);
 
-                cy -= 114f;
+                cy -= 88f;
             }
 
             // Sell-back row (design/10: 50% in comps).
@@ -408,14 +463,14 @@ namespace SBR.Game
             {
                 MakeText(_pageShop, "SellTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(12f, sy), new Vector2(500f, 24f), 14, TextAnchor.UpperLeft, Dim(chromeCyan),
-                    "SELL BACK (half price, in comps):");
+                    "SELL BACK (in comps):");
                 float sx = 12f;
                 sy -= 26f;
                 for (int i = 0; i < r.OwnedRelics.Count; i++)
                 {
                     int idx = i;
                     MakeButton(_pageShop, $"SellR{i}",
-                        $"{r.OwnedRelics[i].Name}  +{r.OwnedRelics[i].Price * r.Config.SellBackFraction:0.#}c",
+                        $"{r.OwnedRelics[i].Name}  +{r.GetResaleValue(r.OwnedRelics[i]):0.#}c",
                         new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(sx, sy), new Vector2(238f, 34f), 12,
                         panel, hotRed, () => { _shopError = director.TrySellRelic(idx) ?? ""; });
                     sx += 246f;

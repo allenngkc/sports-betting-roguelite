@@ -122,7 +122,7 @@ namespace SBR.Tests.PlayMode
             yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
 
             // Fully deterministic for ANY seed: no bets, bank 350 against payments 60+70+85+105 =
-            // 320, so round 5's 195 collects with 30 in hand. Zero-ticket locks settle inline.
+            // 320, so round 5's 155 collects with 30 in hand. Zero-ticket locks settle inline.
             director.StartNewRun("M5-CLIFF");
             Run run = director.Run;
             while (run.Phase != Phase.RunLost)
@@ -140,10 +140,10 @@ namespace SBR.Tests.PlayMode
             BookieMessage collection = FindKind(feed.Messages, BookieMessageKind.COLLECTION);
             Assert.AreEqual(5, collection.Round, "adapter must stamp the report round");
 
-            // The round-5 demand (195 vs 105 is the ≥1.5× jump) should have texted at its open.
+            // The round-5 demand (155 vs 105 clears the ≥1.45× cliff ratio) texts at its open.
             BookieMessage demand = FindKind(feed.Messages, BookieMessageKind.CLIFF_DEMAND);
             Assert.AreEqual(5, demand.Round);
-            StringAssert.Contains(Money(195), demand.Text);
+            StringAssert.Contains(Money(155), demand.Text);
         }
 
         private static void FindFocuses(out DeskFocus laptop, out DeskFocus phone)

@@ -60,6 +60,8 @@ public static class Report
         else
             foreach (string flag in gates.ItemFlags)
                 sb.AppendLine($"- ⚑ {flag}");
+        foreach (string note in gates.Notes)
+            sb.AppendLine($"- ℹ {note}");
         sb.AppendLine();
         sb.AppendLine($"> **{(gates.AllPass && gates.ItemFlags.Count == 0 ? "ALL GATES PASS — the economy holds." : "NOT DONE — iterate the knobs (item numbers / prices / curve) and rerun.")}**");
         sb.AppendLine();

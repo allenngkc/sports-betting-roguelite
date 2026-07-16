@@ -27,6 +27,10 @@ namespace SBR.Game
         /// mutation clears it (indices shift; the player re-aims deliberately).</summary>
         public int BoostLeg { get; private set; } = -1;
 
+        /// <summary>The locked contract modifier this slip will place with (one per ticket —
+        /// the one-modifier law; charm expansion). Cleared with the slip.</summary>
+        public TicketModifier Modifier { get; private set; } = TicketModifier.None;
+
         public IReadOnlyList<Pick> Picks => _picks;
 
         public BetslipModel(Run run)
@@ -81,6 +85,15 @@ namespace SBR.Game
             if (pickIndex < 0 || pickIndex >= _picks.Count) return;
             if (!_run.OwnsConsumable("profit_boost")) return;
             BoostLeg = BoostLeg == pickIndex ? -1 : pickIndex;
+        }
+
+        /// <summary>Toggles a locked contract modifier onto the slip (Free Bet xor DoN — picking
+        /// one replaces the other). No-op without the matching consumable held.</summary>
+        public void ToggleModifier(TicketModifier modifier)
+        {
+            if (modifier == TicketModifier.FreeBet && !_run.OwnsConsumable("free_bet")) return;
+            if (modifier == TicketModifier.DoubleOrNothing && !_run.OwnsConsumable("double_or_nothing")) return;
+            Modifier = Modifier == modifier ? TicketModifier.None : modifier;
         }
 
         // ------------------------------------------------------------------ stake
@@ -138,8 +151,9 @@ namespace SBR.Game
         /// and re-anchors the stake. Callers should check CanPlace; engine exceptions bubble.</summary>
         public Ticket Place()
         {
-            Ticket ticket = _run.PlaceTicket(_picks.ToList(), Stake, BoostLeg);
+            Ticket ticket = _run.PlaceTicket(_picks.ToList(), Stake, BoostLeg, Modifier);
             Clear();
+            Modifier = TicketModifier.None;
             SetStakeFraction(0.10);
             return ticket;
         }
