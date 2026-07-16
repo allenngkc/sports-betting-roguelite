@@ -36,6 +36,11 @@ Anything undecided lives here so it can't get lost. When resolved: move the outc
 - [ ] "Early Payout" relic: Variant 1 (any hitting leg pays, order-independent) vs Variant 2 (sequential, stops paying when a leg dies)? Lean: Variant 2 — cheaper EV, matches serial sweat
 - [ ] "Piggy Bank" redemption trigger: smash at will (lose future accrual)? auto-break on ticket bust (consolation engine)? end-of-round only? And does 2× survive Monte Carlo, or does the rakeback-grinder archetype need a cap/upkeep cost?
 
+## Charm expansion (from playtest #9 + the tuning campaign, 2026-07-15)
+- [ ] Free Bet / Golden Parachute: traps or tools? Bots use both to under-win (granted-free audit −5.0pp / −5.4pp — insurance crowds out compounding); a human may deploy them at the right moments bots can't find. Standing playtest check; watch, don't nerf.
+- [ ] R5 payment cliff ($155 → $375): does it read as fair now that build luck spreads deaths (G3 re-banded to median ≥5)? Standing playtest check.
+- [ ] Multiplier+Scar synergy is hair-thin (G5 excess +0.1pp) — a fusion-era design question: does the 150+ fusion catalog make engine-pair synergies structural instead of incidental?
+
 ## The sweat (design/04)
 - [ ] First playtest data (Week 4 implementation agent, 2026-07-08): the bad-beat near-miss (75% one event before a 0% whistle) already lands hard even in text; predicted first repetitiveness = calm Momentum beats on heavily-favored legs (cash-out barely moves → no decision pressure), likely felt by ticket 2–3. Watch for this in Allen's S1/S2 runs; candidate fix is compressing consecutive Calm beats, not faster pacing overall.
 - [ ] Week 5 sim note: the --auto baseline's flat $50 stake cap under-represents a naive bettor (mathematically cannot clear round 1 from $500 with a 2-leg favorite parlay); the sim's naive bot should stake ~25% of bank uncapped instead.

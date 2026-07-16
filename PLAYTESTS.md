@@ -2,17 +2,23 @@
 
 Human playtests only (agent impressions live in OPEN-QUESTIONS). Newest first. Each entry: build, what happened, S-criteria signals, actions taken.
 
-## GATE — playtest #9 (charm expansion) awaits Allen
+## #9 — Allen, 2026-07-15 (build: charm expansion, commit 10b6135) — EXPANSION REVIEW
 
-The 22-item catalog is live in the room: the dealt-hand shop (4 passives + 3 consumables,
-ASK FOR THE MANAGER redeals), Free Bet / Double-or-Nothing toggles on the betslip, the MARKER
-button, and the [M]/[R] save window on the TV (the Whistle shows its review percentage).
-Standing questions for the session: (1) does building around the dealt hand FEEL like strategy
-(the pillar this milestone exists for)? (2) VOTE: Ask for the Manager — it audits ≈0 through
-bots and is playtest-gated exactly like Timeout was (which died at playtest #8); does human
-agency justify it? (3) do Free Bet and Golden Parachute feel like traps or tools (bots use
-them to under-win — insurance crowds out compounding)? (4) is the R5 cliff read as fair now
-that build luck spreads deaths (G3 re-banded to median ≥5)?
+**"Just playtested the game, nice!"** — first hands-on with the 22-item catalog, the dealt-hand
+shop, and the modifier/Marker/Whistle verbs. Two of the four standing questions answered:
+1. **The strategy pillar LANDS.** "It feels like I am comparing which relic works nice with
+   another relic, I got the strategy building process." That is the exact sentence this
+   milestone existed to earn — building around the dealt hand reads as combo strategy, not
+   as a vending machine. No changes requested.
+2. **Ask for the Manager: KEEP.** "Keep ask for the manager I like this." The playtest gate
+   resolves opposite to Timeout's (#8 cut it): the Manager's ≈0 bot audit stays permanently
+   exempt as a HUMAN-AGENCY item — its worth is the choice, which bots can't monetize. The
+   sim keeps reporting it as an ℹ note (never blocking), now labeled ratified.
+
+Carried as standing checks for a future session (not answered this run):
+- Do Free Bet and Golden Parachute feel like traps or tools? (Bots use them to under-win —
+  insurance crowds out compounding. Watch, don't nerf.)
+- Does the R5 payment cliff ($155 → $375) read as fair now that build luck spreads deaths?
 
 ## #8 — Allen, 2026-07-13 (build: economy rework in the room, commit 18d1b88) — ECONOMY REVIEW
 

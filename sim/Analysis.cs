@@ -253,7 +253,8 @@ public sealed class GateData
             // PLAYTEST-GATED (declared, HOLDOUT burned → HOLDOUT2): items whose value is human
             // agency a greedy bot cannot monetize. The Manager's redeal audits ≈0 through a bot
             // that buys almost any hand — its worth is choosing. Timeout precedent: the same
-            // exemption, then the playtest voted (and cut it). Playtest #9 votes on these.
+            // exemption, then the playtest voted (and cut it). The Manager's vote went the
+            // other way: RATIFIED KEEP at playtest #9 (2026-07-15) — the exemption is permanent.
             var playtestGated = new HashSet<string> { "ask_manager" };
 
             foreach (AuditData.Entry e in audit.Entries)
@@ -261,7 +262,7 @@ public sealed class GateData
                 if (playtestGated.Contains(e.Id))
                 {
                     g.Notes.Add($"PLAYTEST-GATED: {e.Name} audits ≈0 through bots "
-                        + $"(Δwon {e.WonDelta:+0.0;-0.0}±{z * e.WonDeltaSe:0.0}pp) — playtest #9 votes");
+                        + $"(Δwon {e.WonDelta:+0.0;-0.0}±{z * e.WonDeltaSe:0.0}pp) — RATIFIED KEEP, playtest #9");
                     continue;
                 }
                 // Exposure first (rev 5 §15, declared thresholds): an unexercised item's delta
