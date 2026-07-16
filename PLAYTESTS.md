@@ -2,6 +2,18 @@
 
 Human playtests only (agent impressions live in OPEN-QUESTIONS). Newest first. Each entry: build, what happened, S-criteria signals, actions taken.
 
+## GATE — playtest #9 (charm expansion) awaits Allen
+
+The 22-item catalog is live in the room: the dealt-hand shop (4 passives + 3 consumables,
+ASK FOR THE MANAGER redeals), Free Bet / Double-or-Nothing toggles on the betslip, the MARKER
+button, and the [M]/[R] save window on the TV (the Whistle shows its review percentage).
+Standing questions for the session: (1) does building around the dealt hand FEEL like strategy
+(the pillar this milestone exists for)? (2) VOTE: Ask for the Manager — it audits ≈0 through
+bots and is playtest-gated exactly like Timeout was (which died at playtest #8); does human
+agency justify it? (3) do Free Bet and Golden Parachute feel like traps or tools (bots use
+them to under-win — insurance crowds out compounding)? (4) is the R5 cliff read as fair now
+that build luck spreads deaths (G3 re-banded to median ≥5)?
+
 ## #8 — Allen, 2026-07-13 (build: economy rework in the room, commit 18d1b88) — ECONOMY REVIEW
 
 **"I like the game loop"** — first hands-on with payments + comps + the 3+3 catalog in the room; "everything else good" beyond two findings, both landed same day:

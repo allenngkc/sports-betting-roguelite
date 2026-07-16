@@ -328,3 +328,15 @@ grinding. ALLEN RULED: re-band to median ≥5 — build luck spreading deaths is
 shape; the dealt hand stays pure. G3 = median ≥5, win 5–8%. Campaign findings of record:
 buy discipline (skip low-tier hands pre-engine) and the timidity result (reserving toward
 future payments LOWERS survival — the income race punishes hoarding).
+
+## Act 3 — Build + validation (Claude)
+
+Built by Claude per the resolution choice. Engine 144/144 (the §19 matrix); sim upgraded per
+§12–18; 14-iteration tuning campaign on TUNE- seeds (two Allen re-ratifications: G3 median ≥5;
+G4 = passive-only counterfactual EV — the logged amendment above); freeze at db5a70c; HOLDOUT
+burned by the declared Manager playtest-gated exemption (dfb588d); HOLDOUT2 validation:
+ALL SIX GATES PASS at 50k/batch (skilled 7.0%, median 5, martyr-worst 5.9% ≤ +2pp guard,
+totem organic 37.4%, zero blocking flags). G5 excess +0.1pp passes the ratified gate but
+misses this plan's +0.5pp protocol margin — documented in DECISIONS, not hidden. Console +
+Unity migrated (EditMode 32/32, PlayMode 8/8). One artifact, whole story: grilled → reviewed
+(5 rounds, 46 findings) → built → tuned → frozen → validated on unseen seeds.
