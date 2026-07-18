@@ -20,7 +20,7 @@ namespace SBR.Tests.EditMode
             Run run = GoldenReplay.ScriptedRound();
             List<DramaEvent> events = GoldenReplay.DrainAll(run);
 
-            Assert.AreEqual(47, events.Count, "expected exactly 47 events");
+            Assert.AreEqual(18, events.Count, "expected exactly 18 events (re-pinned F_0.2.0 M-T1)");
             Assert.AreEqual(GoldenReplay.ExpectedEvents.Length, events.Count);
 
             for (int i = 0; i < events.Count; i++)
