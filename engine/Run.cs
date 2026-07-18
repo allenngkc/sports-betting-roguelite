@@ -278,7 +278,7 @@ public sealed class Run
         foreach (Ticket ticket in _tickets)
         {
             IReadOnlyList<IReadOnlyList<DramaEvent>> paths =
-                DramaGenerator.BuildTicketPaths(ticket, Rng.Drama, Config.Drama);
+                DramaGenerator.BuildTicketPaths(ticket, Rng.Drama, Config.Drama, Round);
 
             _sweats.Add(new SweatSession(ticket, paths, Config, CreditBank, _effects,
                 mulliganAvailable: () => OwnsConsumable("mulligan_slip"),

@@ -110,11 +110,14 @@ events_file() {
 # Use Python's standard library instead of requiring jq. Prefer python3 but
 # retain the Windows/Python launcher name used by some supported environments.
 run_python() {
-    if command -v python3 >/dev/null 2>&1; then
+    # Windows ships a Store app-execution-alias `python3` stub that exists on
+    # PATH but exits without running anything, so probe each candidate with a
+    # no-op instead of trusting `command -v`.
+    if python3 -c pass >/dev/null 2>&1; then
         python3 "$@"
-    elif command -v python >/dev/null 2>&1; then
+    elif python -c pass >/dev/null 2>&1; then
         python "$@"
-    elif command -v py >/dev/null 2>&1; then
+    elif py -3 -c pass >/dev/null 2>&1; then
         py -3 "$@"
     else
         echo "error: Python 3 is required for Codex JSONL progress parsing" >&2

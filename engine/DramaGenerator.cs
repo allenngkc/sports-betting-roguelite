@@ -31,31 +31,36 @@ public static class DramaGenerator
     /// near-miss roll, then — only if it fires — the near-miss step). Generating all paths at once,
     /// even for legs that a loss will keep from ever being played, is what makes cursor stepping and
     /// cash-out decisions consume no RNG — so WHETHER a player cashes out can never perturb the seed.
+    /// The 1-based round selects the progressive-density event bounds (design/04: early sweats
+    /// are shorter; the draw structure per leg is round-independent, only the bounds move).
     /// </summary>
-    public static IReadOnlyList<IReadOnlyList<DramaEvent>> BuildTicketPaths(Ticket ticket, Pcg32 drama, DramaConfig config)
+    public static IReadOnlyList<IReadOnlyList<DramaEvent>> BuildTicketPaths(Ticket ticket, Pcg32 drama, DramaConfig config, int round)
     {
         if (ticket == null) throw new ArgumentNullException(nameof(ticket));
         if (drama == null) throw new ArgumentNullException(nameof(drama));
         if (config == null) throw new ArgumentNullException(nameof(config));
+
+        (int minEvents, int maxEvents) = config.EventBoundsForRound(round);
 
         int legCount = ticket.Legs.Count;
         var paths = new List<IReadOnlyList<DramaEvent>>(legCount);
         for (int legIndex = 0; legIndex < legCount; legIndex++)
         {
             bool isFinalLeg = legIndex == legCount - 1;
-            paths.Add(BuildLegPath(legIndex, ticket.Legs[legIndex], isFinalLeg, drama, config));
+            paths.Add(BuildLegPath(legIndex, ticket.Legs[legIndex], isFinalLeg, drama, config, minEvents, maxEvents));
         }
         return paths;
     }
 
-    private static IReadOnlyList<DramaEvent> BuildLegPath(int legIndex, Leg leg, bool isFinalLeg, Pcg32 drama, DramaConfig config)
+    private static IReadOnlyList<DramaEvent> BuildLegPath(int legIndex, Leg leg, bool isFinalLeg, Pcg32 drama, DramaConfig config,
+        int minEvents, int maxEvents)
     {
         LegState outcome = leg.State;
         if (outcome == LegState.Pending)
             throw new InvalidOperationException("Drama paths require a resolved leg outcome; lock the round first.");
         double target = outcome == LegState.Won ? 1.0 : 0.0;
 
-        int baseCount = drama.NextInt(config.MinEventsPerLeg, config.MaxEventsPerLeg + 1);
+        int baseCount = drama.NextInt(minEvents, maxEvents + 1);
         int k = isFinalLeg
             ? (int)Math.Round(baseCount * config.FinalLegBudgetMultiplier, MidpointRounding.AwayFromZero)
             : baseCount;

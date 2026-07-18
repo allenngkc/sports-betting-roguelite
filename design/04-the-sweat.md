@@ -21,9 +21,24 @@ Allen's worry: "build a parlay, wait, hit or not" is boring without footage. The
 Technical basis: the drama generator emits a **typed event stream** (`clock, event_type, score_delta, win_prob_delta, tension_tag`) — it is not a "text generator." Text is merely v0's renderer. The renderer ladder, same engine underneath:
 
 1. **v0 — text ticker** (prototype): validates pacing and tension only.
-2. **Shipped target — broadcast HUD:** animated scorebug, live win-probability graph drawing itself, crowd audio swells, shake on big events. No field, no players — Balatro shows no poker table.
+2. **Shipped target — broadcast HUD:** animated scorebug, live win-probability graph drawing itself, crowd audio swells, shake on big events. ~~No field, no players — Balatro shows no poker table.~~
 3. **Optional garnish — abstract momentum viz:** drive-chart / tug-of-war bar showing territory. Cheap, sport-reskinnable.
-4. **Full 2D sport simulation: CUT.** Content-pipeline trap; adds cost, subtracts focus from the stakes.
+4. ~~**Full 2D sport simulation: CUT.** Content-pipeline trap; adds cost, subtracts focus from the stakes.~~
+
+**SUPERSEDED 2026-07-18 (Allen, plan F_0.2.0 — the MATCH THEATER):** after nine playtests,
+text is not enough for the near-final signature moment. Tier 3 matures into a **stage with
+actors**: a top-down neon-on-black pitch where anonymous team-colored dots act out the beat
+stream — the ball's field position IS territory, spatialized. This is *not* tier 4 returning:
+the theater is a **renderer of the drama stream, never a simulation**, held by the theater
+laws — (1) every staged moment is keyed by a `DramaEvent`; idle filler never signifies (it
+restates the last revealed state, never implies new information); (2) presentation-local RNG
+only; (3) causal presentation — goals commit on scene playback, suspended finals resolve from
+the final ticket-local grade, every scoreboard increment maps 1:1 to a staged goal, live-lead
+clamped to ±1 (the theater tells one-goal-game stories); (4) the stakes chrome stays dominant
+— tier 2's scorebug/win-prob/cash-out frame the stage, and the palette law extends onto it
+(no red team dots, no money-green pitch, VAR-disallow chrome never a red card). Scene
+vocabulary is capped (~15 templates, ordered resolver); sports remain reskins — a stage
+prefab + scene grammar per sport. Full spec: `docs/1-plans/F_0.2.0_match-theater-sweat.plan.md`.
 
 **Multi-ticket presentation — "the wall":** the round's games display as a sportsbook-lobby wall of mini scorebugs; a **director system** cuts focus to the highest-tension moment (the RedZone pattern), driven by the drama generator's tension tags. This resolves the serial-vs-parallel question as a hybrid: parallel wall, directed serial focus. Engine requirement: drama generator emits tension scores; director is a presentation-layer policy over them.
 
@@ -69,7 +84,14 @@ The sweat plays on the room's TV (design/08 diegesis), and watching is physical:
 
 ## Pacing rules of thumb (tune via playtest)
 
-- A 3-leg ticket sweat: ~30–60 seconds total. Never make the player wait without a decision or an event.
+- A 3-leg ticket sweat: **60–90 seconds at full density** (revised 2026-07-18 with the match
+  theater — Allen wants time to watch the show and weigh the cash-out; the stage gives the eye
+  somewhere to live, which text never could). Beats run 3–8s, tension-paced (Calm fast,
+  Decisive slow); ledger-correction goals are separately timed sub-scenes on the final whistle.
+  Early rounds are deliberately shorter: the engine's progressive-density ramp
+  (`DramaConfig.EventBoundsForRound`) starts at 2–4 events/leg and reaches the full 3–5 band by
+  round 3 — the onboarding mechanism from playtest #1, now engine-real. Never make the player
+  wait without a decision or an event.
 - Skippable? Fast-forward unlocks only after settlement of first N runs, and never during the final leg. (OPEN — anti-frustration vs Pillar 1.)
 
 ## Open questions

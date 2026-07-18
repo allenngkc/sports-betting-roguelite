@@ -62,7 +62,7 @@ sports-betting-roguelite/
 │   ├── RelicCatalog.cs      #   The 22-item catalog: 15 passives + 7 consumables (ops + params + prices)
 │   ├── RelicEffects.cs      #   EffectEngine: the typed hook pipeline + 15 passive behavior classes
 │   └── RunConfig.cs         #   Every tuning knob: payments, comps rate, offer counts, prices
-├── engine.tests/            # xUnit — 144 tests incl. golden-seed determinism pins
+├── engine.tests/            # xUnit — 146 tests incl. golden-seed determinism pins
 ├── sim/                     # SBR.Sim — Monte Carlo harness (exe)
 │   ├── Program.cs           #   CLI entry; exit 1 on gate failure OR blocking item flags
 │   ├── CliOptions.cs        #   --runs --strategy --gates --grid --audit --combos --seed-prefix --report --verify
@@ -133,7 +133,7 @@ These are laws, not preferences — each traces to a DECISIONS.md entry:
 
 ```bash
 dotnet build SBR.slnx                 # engine + tests + sim + console
-dotnet test engine.tests              # 144 xUnit tests
+dotnet test engine.tests              # 146 xUnit tests
 dotnet run --project sim -- --gates --runs 50000 --report sim-report.md
 dotnet run --project game-console     # playable text client
 ```
@@ -151,7 +151,9 @@ dotnet run --project game-console     # playable text client
 
 - **`engine/RunConfig.cs` is the single tuning surface**: payment schedule
   `[60, 70, 85, 105, 155, 375, 710, 1350]`, comps rate (0.12/$ staked), shop offer counts
-  (4 passives + 3 consumables), slot counts, starting bank, juice rate, drama pacing dials.
+  (4 passives + 3 consumables), slot counts, starting bank, juice rate, drama pacing dials
+  (per-leg event budgets 3–5 with a progressive-density ramp: 2–4 at round 1 → full band at
+  round 3 via `DramaConfig.EventBoundsForRound`, both-branch clamped).
 - **`engine/RelicCatalog.cs`** holds per-item params and prices (compile-time C# by decision).
 - **Sim CLI flags** (`sim/CliOptions.cs`) select strategy/runs/seeds/campaign mode; seed *prefixes*
   are the namespace mechanism (`TUNE-`, `HOLDOUT-`, …) for the holdout protocol.
@@ -215,7 +217,10 @@ new Run(seed) ──► [Round r]
 
 `DramaGenerator` + `DramaEvent` + `DramaConfig`: the outcome of a leg is sampled **first**; the
 generator then authors a beat sequence (momentum swings, near-misses) that *arrives* at it, under
-pacing control. Live win-probability shown during the sweat is honest — recomputed from the true
+pacing control. `BuildTicketPaths` takes the 1-based round: `DramaConfig.EventBoundsForRound`
+implements the progressive-density ramp (design/04 — early sweats shorter, full band by round 3);
+the per-leg draw structure is round-independent, only the bounds move (F_0.2.0 M-T1, 2026-07-18 —
+an intended drama-stream golden re-pin whose settlement pin proved outcome invariance). Live win-probability shown during the sweat is honest — recomputed from the true
 model given revealed beats — so the cash-out offer is always a fair-value quote, never theater
 math. Multi-sport support is a reskin because sports are vocabulary, not simulation. The
 intervention seam (`ApplyLiveEffect`/`OfferHoldEffect`) survives under test for future live actives
@@ -357,7 +362,7 @@ graph LR
 
 | Suite | Framework | Count | What it pins |
 |---|---|---|---|
-| `engine.tests/` | xUnit | 144 | Behavior matrix per item, worked-number pins, golden seeds, determinism, catalog invariants |
+| `engine.tests/` | xUnit | 146 | Behavior matrix per item, worked-number pins, golden seeds, determinism, catalog invariants |
 | Unity EditMode | UTF | 32 | Model logic (odds format, betslip, bookie feed triggers) |
 | Unity PlayMode | UTF | 8 | Room wiring, screen flows |
 | `sim --gates` | custom | statistical | The economy itself: G1–G6 + item flags on 50k-run batches |

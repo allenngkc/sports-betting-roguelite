@@ -34,63 +34,37 @@ public class GoldenSeedTests
         return all;
     }
 
-    // (LegIndex, Step, Type, Tag) for every one of the 47 events, in fast-forward order.
+    // (LegIndex, Step, Type, Tag) for every one of the 18 events, in fast-forward order.
+    // Re-pinned 2026-07-18 (F_0.2.0 M-T1): drama budgets cut to 3–5/leg with the round-1
+    // progressive-density ramp at 2–4 — an INTENDED drama-stream re-pin. The settlement pin
+    // below was deliberately NOT touched: outcomes ride the Outcomes stream and must not move.
     private static readonly (int leg, int step, DramaEventType type, TensionTag tag)[] Expected =
     {
-        (0, 1, DramaEventType.Score,    TensionTag.Swing),
-        (0, 2, DramaEventType.BigPlay,  TensionTag.Swing),
-        (0, 3, DramaEventType.Score,    TensionTag.Swing),
-        (0, 4, DramaEventType.BigPlay,  TensionTag.NearMiss),
-        (0, 5, DramaEventType.LegFinal, TensionTag.Decisive),
-        (1, 1, DramaEventType.Score,    TensionTag.Swing),
-        (1, 2, DramaEventType.Score,    TensionTag.Swing),
+        (0, 1, DramaEventType.BigPlay,  TensionTag.Swing),
+        (0, 2, DramaEventType.LegFinal, TensionTag.Decisive),
+        (1, 1, DramaEventType.Momentum, TensionTag.Calm),
+        (1, 2, DramaEventType.Momentum, TensionTag.Calm),
         (1, 3, DramaEventType.Momentum, TensionTag.Calm),
-        (1, 4, DramaEventType.Momentum, TensionTag.Calm),
-        (1, 5, DramaEventType.BigPlay,  TensionTag.NearMiss),
-        (1, 6, DramaEventType.LegFinal, TensionTag.Decisive),
-        (2, 1, DramaEventType.Score,    TensionTag.Swing),
-        (2, 2, DramaEventType.Score,    TensionTag.Calm),
-        (2, 3, DramaEventType.Momentum, TensionTag.Calm),
-        (2, 4, DramaEventType.Score,    TensionTag.Swing),
-        (2, 5, DramaEventType.Momentum, TensionTag.Calm),
-        (2, 6, DramaEventType.Momentum, TensionTag.Calm),
-        (2, 7, DramaEventType.Momentum, TensionTag.Calm),
-        (2, 8, DramaEventType.Score,    TensionTag.Swing),
-        (2, 9, DramaEventType.Momentum, TensionTag.Calm),
-        (2, 10, DramaEventType.Score,    TensionTag.Swing),
-        (2, 11, DramaEventType.Momentum, TensionTag.Calm),
-        (2, 12, DramaEventType.BigPlay,  TensionTag.NearMiss),
-        (2, 13, DramaEventType.BigPlay,  TensionTag.LeadChange),
-        (2, 14, DramaEventType.Momentum, TensionTag.Calm),
-        (2, 15, DramaEventType.Score,    TensionTag.Calm),
-        (2, 16, DramaEventType.Momentum, TensionTag.Calm),
-        (2, 17, DramaEventType.Momentum, TensionTag.Calm),
-        (2, 18, DramaEventType.LegFinal, TensionTag.Decisive),
+        (1, 4, DramaEventType.LegFinal, TensionTag.Decisive),
+        (2, 1, DramaEventType.Momentum, TensionTag.Calm),
+        (2, 2, DramaEventType.Momentum, TensionTag.Calm),
+        (2, 3, DramaEventType.BigPlay,  TensionTag.NearMiss),
+        (2, 4, DramaEventType.LegFinal, TensionTag.Decisive),
         (0, 1, DramaEventType.Momentum, TensionTag.Calm),
         (0, 2, DramaEventType.Momentum, TensionTag.Calm),
         (0, 3, DramaEventType.Momentum, TensionTag.Calm),
-        (0, 4, DramaEventType.Momentum, TensionTag.Calm),
-        (0, 5, DramaEventType.Score,    TensionTag.Calm),
-        (0, 6, DramaEventType.Momentum, TensionTag.Calm),
+        (0, 4, DramaEventType.Score,    TensionTag.Swing),
+        (0, 5, DramaEventType.Momentum, TensionTag.Calm),
+        (0, 6, DramaEventType.Score,    TensionTag.Swing),
         (0, 7, DramaEventType.Score,    TensionTag.Swing),
-        (0, 8, DramaEventType.Momentum, TensionTag.Calm),
-        (0, 9, DramaEventType.Momentum, TensionTag.Calm),
-        (0, 10, DramaEventType.Momentum, TensionTag.Calm),
-        (0, 11, DramaEventType.Momentum, TensionTag.Calm),
-        (0, 12, DramaEventType.Momentum, TensionTag.Calm),
-        (0, 13, DramaEventType.Momentum, TensionTag.Calm),
-        (0, 14, DramaEventType.Score,    TensionTag.Calm),
-        (0, 15, DramaEventType.Momentum, TensionTag.Calm),
-        (0, 16, DramaEventType.BigPlay,  TensionTag.NearMiss),
-        (0, 17, DramaEventType.BigPlay,  TensionTag.LeadChange),
-        (0, 18, DramaEventType.LegFinal, TensionTag.Decisive),
+        (0, 8, DramaEventType.LegFinal, TensionTag.Decisive),
     };
 
     // WinProbAfter (6 dp) for the first ten events.
     private static readonly double[] ExpectedFirstTenWinProb =
     {
-        0.664315, 0.843441, 0.970000, 0.250000, 1.000000,
-        0.820891, 0.956521, 0.970000, 0.902995, 0.250000,
+        0.803542, 1.000000, 0.774708, 0.751859, 0.767951,
+        1.000000, 0.432400, 0.404952, 0.750000, 0.000000,
     };
 
     [Fact]
@@ -99,7 +73,7 @@ public class GoldenSeedTests
         Run run = ScriptedRound();
         List<DramaEvent> events = DrainAll(run);
 
-        Assert.Equal(47, events.Count);
+        Assert.Equal(18, events.Count);
         Assert.Equal(Expected.Length, events.Count);
 
         for (int i = 0; i < events.Count; i++)
