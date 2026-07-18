@@ -2,6 +2,25 @@
 
 Human playtests only (agent impressions live in OPEN-QUESTIONS). Newest first. Each entry: build, what happened, S-criteria signals, actions taken.
 
+## #11 — Allen, 2026-07-18 (build: MT-3 scenes, commit 6f4473b) — M-T3 MID-GATE REVIEW
+
+Score visibility from #10 confirmed fixed ("Nice that I see the score now"). Two crucial
+findings, both fixed same day (MT-3.1, commit d076bbf):
+1. **The chrome spoils the show.** Win-prob/cash-out repriced at the engine step, then the
+   goal played ~4.5s later — "suddenly the winrate goes to 90%, only then my team scores."
+   FIXED: causal reveal — the beat's chrome lands at the scene's payoff moment (the goal /
+   the save / the whistle), never before. Cash-out ruling (Allen ratified the proposal):
+   the market SUSPENDS while a scene plays (real-book behavior on a dangerous attack) and
+   reopens at the reveal with the fresh price — no stale-price accepts, no spoiler price.
+2. **Ball movement meant nothing.** Passes crossed teams, "passes to the goalkeeper and
+   scores." FIXED: sticky possession (one carrier, teammate passes, visible interception
+   turnovers), scene waypoints routed through the actual attacking dots, shots aimed at
+   the corner away from the keeper (keepers only save or concede), defending team drops
+   into a compact block, nearest defenders chase on breakaways, off-ball forward runs.
+
+Direction ratified in the same conversation: the show must read as a REAL match —
+formations, attacking sequences, defense. That is now the M-T3 gate bar.
+
 ## #10 — Allen, 2026-07-18 (build: MT-2 stage, commit 0cd53d1) — M-T2 GATE REVIEW
 
 _(Numbering note: the F_0.2.0 plan labeled the M-T5 slice feel gate "playtest #10"; the
