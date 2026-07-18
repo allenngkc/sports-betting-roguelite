@@ -78,6 +78,13 @@ namespace SBR.Game
         public float emissionDecay = 3.2f;
         [Range(0f, 1f)] public float scanlineAlpha = 0.15f;
 
+        [Header("Theater (F_0.2.0 — the match theater stage)")]
+        [Tooltip("The match theater stage (M-T2). Off = the pre-theater text-ticker layout, kept " +
+                 "as the A/B fallback through M-T4 per the plan's reversibility clause.")]
+        public bool theaterEnabled = true;
+        public Color pitchLineColor = new Color(0.85f, 0.92f, 0.95f, 0.50f);
+        public Color pitchBgColor = new Color(0.012f, 0.016f, 0.022f, 0.95f);
+
         [Header("Palette (design/08)")]
         [ColorUsage(false, true)] public Color phosphorGreen = new Color(0.20f, 1.15f, 0.40f);
         [ColorUsage(false, true)] public Color hotRed = new Color(1.10f, 0.16f, 0.13f);
@@ -128,6 +135,11 @@ namespace SBR.Game
         private Image _backing, _barBg, _barFill, _greenFlood, _goldFlood, _dimOverlay;
         private RawImage _staticNoise, _scanlines;
         private Texture2D _noiseTex;
+
+        // ---- theater (F_0.2.0) ----
+        private TheaterStage _stage;
+        private readonly SweatPresentationModel _presModel = new SweatPresentationModel();
+        private int _stageLeg = -1;
 
         // =====================================================================================
 
@@ -371,6 +383,9 @@ namespace SBR.Game
         {
             _eventsEmitted = 0;
             _flavorLegSeen = -1;
+            _presModel.ResetForTicket();
+            _stageLeg = -1;
+            _stage?.Show(false);
 
             _emissRest = _emissIdle;
             tvLight?.ResetToIdle();
@@ -401,6 +416,19 @@ namespace SBR.Game
             _tWinPct.text = $"WIN {Mathf.RoundToInt(_probTarget * 100f)}%";
             _resolvedThrough = 0;
             UpdateSlipStrip(0);
+            BeginStageLeg(0, leg);
+        }
+
+        /// <summary>Kicks the stage off for a leg: model-owned team colors (deterministic,
+        /// non-reserved pool), the picked side attacking right, territory opening at TrueProb.</summary>
+        private void BeginStageLeg(int legIndex, Leg leg)
+        {
+            if (_stage == null) return;
+            _stageLeg = legIndex;
+            (uint home, uint away) = TheaterPalette.TeamColors(leg.Matchup.Home.Name, leg.Matchup.Away.Name);
+            _stage.Show(true);
+            _stage.BeginLeg(TheaterStage.FromRgb(home), TheaterStage.FromRgb(away),
+                pickedIsHome: leg.Side == Side.Home, openingProb: (float)leg.TrueProb);
         }
 
         /// <summary>The always-on slip strip during a sweat (playtest #6: "what did I place, how much
@@ -441,6 +469,8 @@ namespace SBR.Game
         /// <summary>The auto-advance interstitial (M4): TICKET i/n, the legs line, stake → to-win.</summary>
         private void RenderTicketCard()
         {
+            _stage?.Show(false); // the interstitial card is stage-free; pregame re-raises it
+            _stageLeg = -1;
             _tLeg.text = string.Empty;
             _tClock.text = "PRE";
             _tMatchup.text = $"TICKET {director.SweatIndex + 1}/{director.Run.Sweats.Count}";
@@ -566,6 +596,7 @@ namespace SBR.Game
 
         private void ClearToBlankScreen()
         {
+            _stage?.Show(false);
             SetAlpha(_greenFlood, 0f);
             SetAlpha(_goldFlood, 0f);
             SetAlpha(_dimOverlay, 0f);
@@ -602,6 +633,15 @@ namespace SBR.Game
 
             _probTarget = (float)evt.WinProbAfter;
             _tWinPct.text = $"WIN {Mathf.RoundToInt(_probTarget * 100f)}%";
+
+            // The stage speaks the same beat (model owns the direction rule — one authority).
+            bool up = _presModel.RecordBeat(evt, leg);
+            if (_stage != null)
+            {
+                if (evt.LegIndex != _stageLeg) BeginStageLeg(evt.LegIndex, leg);
+                _stage.SetLiveProb((float)evt.WinProbAfter);
+                if (evt.Type != DramaEventType.LegFinal) _stage.Pulse(up, evt.Tag);
+            }
 
             _tAttract.enabled = false;
             UpdateSlipStrip(evt.LegIndex);
@@ -757,6 +797,10 @@ namespace SBR.Game
             ApplyEmission();
             AnimateBar();
             AnimateFlavorPunch();
+
+            // The stage freezes with the viewing contract: standing pauses mid-motion, and the
+            // pending-loss window holds the frame — the frozen ball is the dread (F_0.2.0).
+            _stage?.SetFrozen(!_seated || (_session != null && _session.HasPendingLoss));
 
             if (_interact != null && _interact.WasPressedThisFrame())
                 TryCashOut();
@@ -954,6 +998,14 @@ namespace SBR.Game
                 TextAnchor.MiddleCenter, new Color(phosphorGreen.r, phosphorGreen.g, phosphorGreen.b, 1f), FontStyle.Bold);
             _tAttract.text = "SIT TO WATCH THE SWEAT";
 
+            // --- the match theater stage (F_0.2.0 M-T2) ---
+            if (theaterEnabled)
+            {
+                _stage = TheaterStage.Build(root, new Vector2(0f, 8f), new Vector2(720f, 252f),
+                    pitchLineColor, pitchBgColor);
+                ApplyTheaterLayout(w);
+            }
+
             // --- overlays (front to back after content) ---
             _greenFlood = MakeStretchImage(root, "GreenFlood", new Color(0.15f, 1f, 0.35f, 0f));
             _staticNoise = MakeStretchRaw(root, "StaticNoise", new Color(1f, 1f, 1f, 0f));
@@ -974,6 +1026,27 @@ namespace SBR.Game
             _staticNoise.texture = _noiseTex;
 
             _probShown = _probTarget = 0.5f;
+        }
+
+        /// <summary>With the stage in the center, the middle chrome re-flows beneath it: the
+        /// flavor line shrinks to a commentary strip under the pitch, the win-prob bar and
+        /// cash-out drop toward the bottom edge. Positions are graybox dials — Allen tunes at
+        /// the M-T2 gate.</summary>
+        private void ApplyTheaterLayout(int w)
+        {
+            _tFlavor.fontSize = 22;
+            _tFlavor.rectTransform.sizeDelta = new Vector2(w - 80f, 30f);
+            _tFlavor.rectTransform.anchoredPosition = new Vector2(0f, -142f);
+
+            _barBg.rectTransform.anchoredPosition = new Vector2(0f, -176f);
+
+            _tWinPct.fontSize = 20;
+            _tWinPct.rectTransform.sizeDelta = new Vector2(360f, 26f);
+            _tWinPct.rectTransform.anchoredPosition = new Vector2(0f, -206f);
+
+            _tCashOut.fontSize = 26;
+            _tCashOut.rectTransform.sizeDelta = new Vector2(w - 60f, 34f);
+            _tCashOut.rectTransform.anchoredPosition = new Vector2(0f, -238f);
         }
 
         private Text MakeText(Transform parent, string name, Vector2 anchor, Vector2 pivot, Vector2 pos,
