@@ -27,15 +27,22 @@ namespace SBR.Game
         /// <summary>
         /// The formation anchor for an outfield dot. <paramref name="attackBias"/> in [-1, 1]
         /// shifts the whole shape toward the opponent goal (+) or its own (−) by up to 0.16
-        /// of the pitch — territory made spatial.
+        /// of the pitch — territory made spatial. <paramref name="compact"/> in [0, 1] squeezes
+        /// the shape toward the horizontal midline (the defensive block: a team under siege
+        /// drops deep AND narrows — M-T3.1, playtest #11).
         /// </summary>
-        public static Vector2 FormationSlot(int index, bool attacksRight, float attackBias)
+        public static Vector2 FormationSlot(int index, bool attacksRight, float attackBias, float compact = 0f)
         {
             Vector2 s = Slots[Mathf.Clamp(index, 0, Slots.Length - 1)];
             s.x = Mathf.Clamp(s.x + attackBias * 0.16f, 0.06f, 0.94f);
+            s.y = Mathf.Lerp(s.y, 0.5f, Mathf.Clamp01(compact) * 0.45f);
             if (!attacksRight) s.x = 1f - s.x;
             return s;
         }
+
+        /// <summary>Back-line slot indices (the three defenders) — chalked-off restarts and
+        /// clearances route to these.</summary>
+        public static bool IsBackLine(int index) => index < 3;
 
         public static Vector2 Keeper(bool attacksRight)
             => attacksRight ? KeeperSlot : new Vector2(1f - KeeperSlot.x, KeeperSlot.y);

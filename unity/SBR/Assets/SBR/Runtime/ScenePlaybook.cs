@@ -41,18 +41,23 @@ namespace SBR.Game
         public readonly bool LeadChangeIntro;
         /// <summary>#10 overlay: urgency modifiers (actor speed, pass tempo).</summary>
         public readonly bool Urgent;
+        /// <summary>Whether the beat's beneficiary (the side running the move) is the picked
+        /// team — the stage routes passes through that team's dots. For/Against templates
+        /// already encode it; direction-neutral templates (calm, fallback) rely on this.</summary>
+        public readonly bool ForPicked;
         /// <summary>The goal playback this scene stages, if any (ledger-decided commit/chalk).</summary>
         public readonly ScoreLedger.StagedGoal? Goal;
         /// <summary>Beat-scene seconds from the pacer (finals add correction sub-scenes separately).</summary>
         public readonly float Duration;
 
         public SceneSpec(SceneTemplate template, int variant, bool leadChangeIntro, bool urgent,
-            ScoreLedger.StagedGoal? goal, float duration)
+            bool forPicked, ScoreLedger.StagedGoal? goal, float duration)
         {
             Template = template;
             Variant = variant;
             LeadChangeIntro = leadChangeIntro;
             Urgent = urgent;
+            ForPicked = forPicked;
             Goal = goal;
             Duration = duration;
         }

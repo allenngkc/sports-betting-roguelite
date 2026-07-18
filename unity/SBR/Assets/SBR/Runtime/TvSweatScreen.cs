@@ -147,6 +147,14 @@ namespace SBR.Game
         private TheaterChoreographer _choreo;
         private int _stageLeg = -1;
         private bool _lastBeatUp;
+        // Causal reveal (M-T3.1): the beat's chrome is computed at MoveNext but LANDS at the
+        // scene's payoff moment — the number must never spoil the goal.
+        private float _pendingProb;
+        private string _pendingFlavor;
+        private string _pendingClock;
+        // Market suspend (M-T3.1, Allen's ruling): the engine reprices at MoveNext, so while a
+        // scene plays the market is SUSPENDED — no stale-price accepts, no spoiler price.
+        private bool _marketSuspended;
 
         // =====================================================================================
 
@@ -321,10 +329,12 @@ namespace SBR.Game
             Leg leg = _ticket.Legs[evt.LegIndex];
             _stage.timeScale = Mathf.Max(0f, TimeScaleOverride);
 
+            SuspendMarket(); // the engine repriced at MoveNext — no price until the reveal
+
             if (evt.Type != DramaEventType.LegFinal)
             {
                 SceneSpec spec = _choreo.ResolveBeat(evt, _lastBeatUp, _ledger);
-                _stage.PlayScene(spec, OnGoalPlayed, null);
+                _stage.PlayScene(spec, OnGoalPlayed, RevealBeatChrome, null);
                 yield return WaitSceneDone();
                 if (_session.IsComplete) yield break; // cashed out mid-scene
                 yield return SeatedHold(interSceneGapMs); // idle filler ≤1s between scenes
@@ -334,6 +344,8 @@ namespace SBR.Game
             if (_session.HasPendingLoss)
             {
                 // The clippable moment: buildup → the shot freezes mid-flight → the prompt.
+                // The chrome still speaks the PRE-KILL state (the honest displayed value the
+                // whistle rolls against) — the 0% never shows before the story resolves.
                 _stage.SuspendKillShot(ScenePlaybook.VariantFor(evt.Step));
                 while (_stage.ScenePlaying && !_stage.SuspendedAtShot) yield return null;
                 yield return PendingWindowBeat();
@@ -372,15 +384,30 @@ namespace SBR.Game
             }
         }
 
-        /// <summary>The GREEN/DEAD slam, fired as the final scene completes (TvLight sync). The
-        /// VOID path already spoke inside the pending window (the slip ceremony).</summary>
+        /// <summary>The GREEN/DEAD slam, fired as the final scene completes (TvLight sync) —
+        /// which is also the final's REVEAL moment: only now do the clock read FT and the bar
+        /// snap to the outcome. The VOID path already spoke inside the pending window (the
+        /// slip ceremony), and a voided match keeps its pre-kill bar — 0/1 never applied.</summary>
         private IEnumerator FinalSlam(DramaEvent evt, LegGrade grade)
         {
+            _tClock.text = "FT";
+            if (grade == LegGrade.Won)
+            {
+                _probTarget = 1f;
+                _tWinPct.text = "WIN 100%";
+            }
+            else if (grade == LegGrade.Lost)
+            {
+                _probTarget = 0f;
+                _tWinPct.text = "WIN 0%";
+            }
+
             _resolvedThrough = evt.LegIndex + 1;
             UpdateSlipStrip(evt.LegIndex + 1);
             int k = evt.LegIndex + 1;
             if (grade == LegGrade.Won) yield return GreenLegBeat(k);
             else if (grade == LegGrade.Lost) yield return DeadLegBeat(k);
+            ReopenMarket(); // between legs (or at the end) the fresh price may speak again
         }
 
         /// <summary>A staged goal's playback completed: the ledger commits (or the chalk-off
@@ -417,6 +444,7 @@ namespace SBR.Game
             string verbs = (canM ? "[M] MULLIGAN   ·   " : "")
                 + (canR ? $"[R] SEND TO REVIEW ({Mathf.RoundToInt((float)(_session.PendingLossProbBefore * 100))}%)   ·   " : "");
             _tCashOut.enabled = true;
+            _tCashOut.color = new Color(gold.r, gold.g, gold.b, 1f); // the prompt is actionable — gold
             _tCashOut.text = verbs + "[N] LET IT DIE";
 
             while (_session.HasPendingLoss)
@@ -490,6 +518,8 @@ namespace SBR.Game
             _flavorLegSeen = -1;
             _presModel.ResetForTicket();
             _stageLeg = -1;
+            _marketSuspended = false;
+            _tCashOut.color = new Color(gold.r, gold.g, gold.b, 1f);
             _stage?.Show(false);
 
             _emissRest = _emissIdle;
@@ -747,36 +777,87 @@ namespace SBR.Game
 
             _tRecords.text = RecordsLine(leg);
             _tLeg.text = $"LEG {evt.LegIndex + 1}/{_ticket.Legs.Count}";
-            _tClock.text = SweatFlavor.Clock(evt);
 
             if (evt.LegIndex != _flavorLegSeen)
             {
                 _flavorLegSeen = evt.LegIndex;
                 _prevProb = leg.TrueProb; // pre-event anchor for this leg's first beat
             }
-            _tFlavor.color = flavorColor;
-            _tFlavor.text = SweatFlavor.For(evt, leg, _prevProb);
+            string flavor = SweatFlavor.For(evt, leg, _prevProb);
             _prevProb = evt.WinProbAfter;
-            _flavorScale = 1.12f; // punch
-
-            _probTarget = (float)evt.WinProbAfter;
-            _tWinPct.text = $"WIN {Mathf.RoundToInt(_probTarget * 100f)}%";
 
             // The stage speaks the same beat (model owns the direction rule — one authority).
             _lastBeatUp = _presModel.RecordBeat(evt, leg);
             if (_stage != null)
             {
+                // Causal reveal (M-T3.1): identity chrome may update now, but the win-prob,
+                // WIN %, flavor, and clock are STASHED — they land at the scene's payoff
+                // (RevealBeatChrome / FinalSlam), never before the pitch has shown the story.
+                _pendingProb = (float)evt.WinProbAfter;
+                _pendingFlavor = flavor;
+                _pendingClock = SweatFlavor.Clock(evt);
+
                 if (evt.LegIndex != _stageLeg) BeginStageLeg(evt.LegIndex, leg);
                 _stage.SetLiveProb((float)evt.WinProbAfter);
                 UpdateScorebug(leg); // colored identity + running score (M-T3 scorebug)
             }
             else
             {
+                _tClock.text = SweatFlavor.Clock(evt);
+                _tFlavor.color = flavorColor;
+                _tFlavor.text = flavor;
+                _flavorScale = 1.12f; // punch
+                _probTarget = (float)evt.WinProbAfter;
+                _tWinPct.text = $"WIN {Mathf.RoundToInt(_probTarget * 100f)}%";
                 _tMatchup.text = MatchupLine(leg);
+                UpdateCashOutLabel();
             }
 
             _tAttract.enabled = false;
             UpdateSlipStrip(evt.LegIndex);
+        }
+
+        /// <summary>The beat's payoff moment on the stage: NOW the chrome may speak — the
+        /// win-prob bar moves, the flavor line lands, the clock ticks, the market re-opens
+        /// at the fresh price. Fired by the scene's onReveal (goal / save / scene end).</summary>
+        private void RevealBeatChrome()
+        {
+            _probTarget = _pendingProb;
+            _tWinPct.text = $"WIN {Mathf.RoundToInt(_probTarget * 100f)}%";
+            _tClock.text = _pendingClock;
+            _tFlavor.color = flavorColor;
+            _tFlavor.text = _pendingFlavor;
+            _flavorScale = 1.12f;
+            ReopenMarket();
+        }
+
+        /// <summary>While a scene plays, the book suspends the market (M-T3.1): the engine has
+        /// already repriced, so the only honest options are the new price (a spoiler) or no
+        /// price. Real books suspend on a dangerous attack — so does ours.</summary>
+        private void SuspendMarket()
+        {
+            _marketSuspended = true;
+            bool offerExists = _session != null && !_session.IsComplete
+                && _eventsEmitted >= 1 && _session.CashOutOffer().HasValue;
+            if (offerExists)
+            {
+                // Neutral pending-gray (the slip strip's not-yet color) — NOT cyan: in sweat
+                // semantics cyan is reserved for VOID (design/08), and a suspended market at
+                // peak tension must never read as a voided leg.
+                _tCashOut.enabled = true;
+                _tCashOut.color = new Color(0.48f, 0.53f, 0.56f, 1f);
+                _tCashOut.text = "MARKET SUSPENDED";
+            }
+            else
+            {
+                _tCashOut.enabled = false;
+            }
+        }
+
+        private void ReopenMarket()
+        {
+            _marketSuspended = false;
+            _tCashOut.color = new Color(gold.r, gold.g, gold.b, 1f);
             UpdateCashOutLabel();
         }
 
@@ -788,6 +869,7 @@ namespace SBR.Game
             if (offer.HasValue)
             {
                 _tCashOut.enabled = true;
+                _tCashOut.color = new Color(gold.r, gold.g, gold.b, 1f); // suspend dims it; live gold restores
                 _tCashOut.text = $"CASH OUT ${Money(offer.Value)}   [E]";
             }
             else
@@ -945,6 +1027,7 @@ namespace SBR.Game
 
         private void TryCashOut()
         {
+            if (_marketSuspended) return; // the book is off the market mid-scene (M-T3.1)
             if (!_seated || _session == null || _session.IsComplete || _eventsEmitted < 1) return;
             double? offer = _session.CashOutOffer();
             if (!offer.HasValue) return;

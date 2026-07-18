@@ -45,15 +45,15 @@ namespace SBR.Game
                 SceneTemplate final = evt.WinProbAfter >= 0.5
                     ? SceneTemplate.LegFinalWon
                     : SceneTemplate.LegFinalLost;
-                return new SceneSpec(final, variant, false, false, null,
-                    _pacer.SceneSeconds(final, false));
+                return new SceneSpec(final, variant, false, false,
+                    final == SceneTemplate.LegFinalWon, null, _pacer.SceneSeconds(final, false));
             }
 
             // 2. NearMiss wins over the base table — never a goal, regardless of Type.
             if (evt.Tag == TensionTag.NearMiss)
             {
                 SceneTemplate miss = up ? SceneTemplate.NearMissHope : SceneTemplate.NearMissScare;
-                return new SceneSpec(miss, variant, false, false, null,
+                return new SceneSpec(miss, variant, false, false, up, null,
                     _pacer.SceneSeconds(miss, false));
             }
 
@@ -74,7 +74,7 @@ namespace SBR.Game
                 ? ledger.StageBeatGoal(evt.Type, up)
                 : null;
 
-            return new SceneSpec(template, variant, leadChange, urgent, goal,
+            return new SceneSpec(template, variant, leadChange, urgent, up, goal,
                 _pacer.SceneSeconds(template, leadChange));
         }
 
@@ -84,8 +84,8 @@ namespace SBR.Game
         public SceneSpec ResolveFinal(LegGrade grade, int step)
         {
             SceneTemplate template = grade == LegGrade.Won ? SceneTemplate.LegFinalWon : SceneTemplate.LegFinalLost;
-            return new SceneSpec(template, ScenePlaybook.VariantFor(step), false, false, null,
-                _pacer.SceneSeconds(template, false));
+            return new SceneSpec(template, ScenePlaybook.VariantFor(step), false, false,
+                grade == LegGrade.Won, null, _pacer.SceneSeconds(template, false));
         }
     }
 }

@@ -73,10 +73,10 @@ namespace SBR.Tests.PlayMode
         // ------------------------------------------------------------ M-T3 scene playback
 
         private static SceneSpec Spec(SceneTemplate t, ScoreLedger.StagedGoal? goal = null)
-            => new SceneSpec(t, 0, false, false, goal, new SweatPacer().SceneSeconds(t, false));
+            => new SceneSpec(t, 0, false, false, true, goal, new SweatPacer().SceneSeconds(t, false));
 
         [UnityTest]
-        public IEnumerator One_scene_per_template_plays_to_completion()
+        public IEnumerator One_scene_per_template_plays_to_completion_and_reveals_once()
         {
             TheaterStage stage = BuildStage();
             stage.timeScale = 0.02f; // duration multiplier — fast-forward story time
@@ -91,15 +91,39 @@ namespace SBR.Tests.PlayMode
             foreach (SceneTemplate t in templates)
             {
                 bool done = false;
+                int reveals = 0;
                 ScoreLedger.StagedGoal? goal = ScenePlaybook.ProducesGoal(t)
                     ? new ScoreLedger.StagedGoal(true, true)
                     : (ScoreLedger.StagedGoal?)null;
-                stage.PlayScene(Spec(t, goal), null, () => done = true);
+                stage.PlayScene(Spec(t, goal), null, () => reveals++, () => done = true);
                 float w = 0f;
                 while (!done && w < 8f) { w += Time.deltaTime; yield return null; }
                 Assert.IsTrue(done, $"{t} never completed");
                 Assert.IsFalse(stage.ScenePlaying, $"{t} left the stage mid-scene");
+                Assert.AreEqual(1, reveals, $"{t} must reveal exactly once (the causal moment)");
             }
+        }
+
+        [UnityTest]
+        public IEnumerator Goal_scenes_reveal_with_the_goal_before_scene_end()
+        {
+            TheaterStage stage = BuildStage();
+            stage.timeScale = 0.02f;
+
+            // Event ordering: the reveal must land in the same instant as the net ripple
+            // (immediately after the goal callback), strictly before scene completion —
+            // never before the goal (that would spoil), never held to the end (too late).
+            int seq = 0, goalAt = 0, revealAt = 0, doneAt = 0;
+            stage.PlayScene(Spec(SceneTemplate.GoalFor, new ScoreLedger.StagedGoal(true, true)),
+                g => goalAt = ++seq,
+                () => revealAt = ++seq,
+                () => doneAt = ++seq);
+            float w = 0f;
+            while (doneAt == 0 && w < 8f) { w += Time.deltaTime; yield return null; }
+
+            Assert.Greater(goalAt, 0, "the goal must play");
+            Assert.AreEqual(goalAt + 1, revealAt, "the reveal fires WITH the goal moment");
+            Assert.Greater(doneAt, revealAt, "the restart still plays after the reveal");
         }
 
         [UnityTest]
@@ -111,7 +135,7 @@ namespace SBR.Tests.PlayMode
             ScoreLedger.StagedGoal? played = null;
             bool done = false;
             stage.PlayScene(Spec(SceneTemplate.GoalFor, new ScoreLedger.StagedGoal(true, true)),
-                g => played = g, () => done = true);
+                g => played = g, null, () => done = true);
             float w = 0f;
             while (!done && w < 8f) { w += Time.deltaTime; yield return null; }
             Assert.IsTrue(played.HasValue, "the goal playback must report");
@@ -121,7 +145,7 @@ namespace SBR.Tests.PlayMode
             played = null;
             done = false;
             stage.PlayScene(Spec(SceneTemplate.BreakawayAgainst, new ScoreLedger.StagedGoal(false, false)),
-                g => played = g, () => done = true);
+                g => played = g, null, () => done = true);
             w = 0f;
             while (!done && w < 8f) { w += Time.deltaTime; yield return null; }
             Assert.IsTrue(played.HasValue);

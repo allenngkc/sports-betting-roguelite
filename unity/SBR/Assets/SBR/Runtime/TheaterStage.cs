@@ -6,8 +6,8 @@ using UnityEngine.UI;
 namespace SBR.Game
 {
     /// <summary>
-    /// The match theater's stage (F_0.2.0 M-T2 + M-T3 scenes): a top-down neon-on-black pitch
-    /// where anonymous team-colored dots act out the drama stream. This is a RENDERER, never a
+    /// The match theater's stage (F_0.2.0 M-T2..M-T3.1): a top-down neon-on-black pitch where
+    /// anonymous team-colored dots act out the drama stream. This is a RENDERER, never a
     /// simulation — the theater laws (design/04, superseded ruling 2026-07-18):
     ///
     ///  1. Every staged moment is keyed by a DramaEvent. Between scenes the idle possession
@@ -19,21 +19,27 @@ namespace SBR.Game
     ///     lines; the desaturated-cyan treatment appears ONLY for a VOID.
     ///
     /// The PICKED team always attacks RIGHT: the ball drifting right is money coming home.
-    /// M-T3: beats play as authored SCENES (goal buildups, breakaways, near-misses, finals with
-    /// stoppage-time corrections) via <see cref="PlayScene"/>/<see cref="PlayFinalScene"/>;
-    /// the pending-loss window suspends a kill scene at the shot mid-flight
-    /// (<see cref="SuspendKillShot"/>) and resumes with the grade-chosen continuation
-    /// (<see cref="ResumeSuspended"/>). Scene STEP TIME scales by <see cref="timeScale"/>
-    /// (TvSweatScreen forwards its TimeScaleOverride) so batch tests fast-forward; dot motion
-    /// runs on real frame time (it is only ever cosmetic). Freezing (stand-up pause) halts the
-    /// whole stage mid-motion — the frozen frame IS the dread.
+    ///
+    /// M-T3.1 coherence (playtest #11): the ball is always CARRIED — one sticky carrier, passes
+    /// go dot-to-dot within the team in possession, turnovers are visible interceptions. Scene
+    /// waypoints route through the actual actors of the attacking team (a shot launches from
+    /// the last carrier toward the corner AWAY from the defending keeper; keepers never receive
+    /// a pass — they only save or concede). Formations breathe both ways: the attacking shape
+    /// pushes up while the defending team drops into a compact block; on breakaways the nearest
+    /// defenders chase the carrier. Scenes also fire an onReveal callback at their payoff
+    /// moment (the goal / the save / scene end) so the chrome can stay causally honest.
+    ///
+    /// Scene STEP TIME scales by <see cref="timeScale"/> — a DURATION multiplier with the same
+    /// semantics as TvSweatScreen's TimeScaleOverride (1 = ship pacing, tiny = fast-forward,
+    /// 0 = frame-rate bound); dot motion runs on real frame time (it is only ever cosmetic).
+    /// Freezing (stand-up pause) halts the whole stage mid-motion — the frozen frame IS the dread.
     /// </summary>
     public sealed class TheaterStage : MonoBehaviour
     {
         [Header("Feel dials")]
-        [Tooltip("Seconds between idle possession retargets (min).")]
+        [Tooltip("Seconds between idle passes (min).")]
         public float passIntervalMin = 0.7f;
-        [Tooltip("Seconds between idle possession retargets (max).")]
+        [Tooltip("Seconds between idle passes (max).")]
         public float passIntervalMax = 1.5f;
         [Tooltip("Dot smooth-damp time; smaller = snappier.")]
         public float dotDamp = 0.55f;
@@ -58,7 +64,7 @@ namespace SBR.Game
         private Image _flashRing;
 
         private Vector2[] _homePos, _awayPos, _homeVel, _awayVel, _homeNoise, _awayNoise;
-        private Vector2 _ballPos, _ballVel, _ballTarget;
+        private Vector2 _ballPos, _ballVel;
         private Vector2 _hkPos, _akPos, _hkVel, _akVel;
 
         private System.Random _rng;
@@ -71,32 +77,51 @@ namespace SBR.Game
         private float _nextPassAt;
         private float _urgency;          // 0..1, briefly raised by big beats
 
+        // ---- possession (M-T3.1: the ball is always carried) ----
+        private bool _carrierHome;       // which team has it
+        private int _carrierIx;          // outfield index of the carrier
+
         private static Sprite _circleSprite;
         private static Sprite _ringSprite;
         private static int s_seedSalt; // per-instance RNG salt (presentation-local, never engine)
 
         // ---- scene playback (M-T3) ----
         private const byte MkNone = 0, MkGoal = 1, MkSuspend = 2, MkSave = 3, MkVoid = 4;
+        // Ball routing per step (M-T3.1): how the authored waypoint finds a real actor.
+        private const byte RoutePass = 0;      // nearest attacking OUTFIELD dot to the waypoint — a pass
+        private const byte RouteAuthored = 1;  // fly to the authored point (holds, restarts to spots)
+        private const byte RouteShot = 2;      // authored point, y snapped to the corner AWAY from the keeper
+        private const byte RouteBackLine = 3;  // nearest DEFENDING back-line dot (clearances, chalked restarts)
+        private const byte RouteKickoff = 4;   // center spot; the conceding side collects at step end
 
         private struct Step
         {
-            public float Dur;      // seconds (scaled by timeScale when advancing)
-            public Vector2 Ball;   // normalized pitch target, PICKED frame (right = picked attack)
+            public float Dur;      // seconds (× timeScale when advancing)
+            public Vector2 Ball;   // authored target, normalized PICKED frame (right = picked attack)
             public float Terr;     // territory the formations speak during this step
             public float Tempo;    // 0..1 urgency (actor speed, pass tempo)
             public byte Marker;    // fired at step END
+            public byte Route;     // ball routing mode
+            public bool AtkPicked; // the side running the move THIS step (continuations switch)
+            public bool Chase;     // nearest defenders hunt the ball this step
             public ScoreLedger.StagedGoal Goal; // rides MkGoal
         }
 
         private Step[] _script;
         private int _stepIx;
         private float _stepT;
+        private bool _stepEntered;
         private bool _suspendedAtShot;
         private float _sceneTerr = 0.5f;
         private float _sceneTerrVel;
         private Action<ScoreLedger.StagedGoal> _onGoalPlayed;
+        private Action _onReveal;
+        private bool _revealFired;
         private Action _onSceneComplete;
-        private float _flashT;         // net-ripple flash countdown
+        private int _routeDotIx = -1;    // resolved actor for RoutePass/RouteBackLine steps
+        private bool _routeDotHome;
+        private Vector2 _stepBallLocal;  // resolved target for authored/shot steps
+        private float _flashT;           // net-ripple flash countdown
         private float _flashDur;
         private bool _flashRight;
 
@@ -200,7 +225,7 @@ namespace SBR.Game
         // ------------------------------------------------------------------ public surface
 
         /// <summary>New leg: team colors from the model, picked side attacking right. Actors
-        /// snap to kickoff formation; the ball to the center spot.</summary>
+        /// snap to kickoff formation; the ball to the center spot; the picked team kicks off.</summary>
         public void BeginLeg(Color homeColor, Color awayColor, bool pickedIsHome, float openingProb)
         {
             CancelScene();
@@ -231,8 +256,10 @@ namespace SBR.Game
             _hkVel = _akVel = Vector2.zero;
             _ball.color = Color.white;
 
-            _ballPos = _ballTarget = Vector2.zero;
+            _ballPos = Vector2.zero;
             _ballVel = Vector2.zero;
+            _carrierHome = _homeAttacksRight; // the picked side kicks off
+            _carrierIx = 4;                   // central mid
             _nextPassAt = Time.time + NextPassDelay();
             ApplyPositions();
         }
@@ -268,26 +295,30 @@ namespace SBR.Game
 
         /// <summary>Plays a resolved beat scene. <paramref name="onGoalPlayed"/> fires when a
         /// staged goal's playback completes (commit AND chalked — the ledger sorts them);
-        /// <paramref name="onComplete"/> when the script exhausts. Poll <see cref="ScenePlaying"/>.</summary>
-        public void PlayScene(SceneSpec spec, Action<ScoreLedger.StagedGoal> onGoalPlayed, Action onComplete)
+        /// <paramref name="onReveal"/> fires exactly once at the scene's payoff moment (the
+        /// goal, the save, or scene end for territory shapes) — the causally honest instant
+        /// for the chrome to speak; <paramref name="onComplete"/> when the script exhausts.
+        /// Poll <see cref="ScenePlaying"/>.</summary>
+        public void PlayScene(SceneSpec spec, Action<ScoreLedger.StagedGoal> onGoalPlayed,
+            Action onReveal, Action onComplete)
         {
-            StartScript(BuildBeatScript(spec), onGoalPlayed, onComplete);
+            StartScript(BuildBeatScript(spec), onGoalPlayed, onReveal, onComplete);
         }
 
         /// <summary>Plays the final whistle sequence: pre-reveal hold → the plan's staged
         /// goal(s) as separately-timed sub-scenes → celebrate/collapse. The GREEN/DEAD slam
-        /// itself belongs to the orchestrator (TvLight sync) at completion.</summary>
+        /// and the final chrome reveal belong to the orchestrator at completion (TvLight sync).</summary>
         public void PlayFinalScene(SceneSpec spec, ScoreLedger.FinalPlan plan,
             Action<ScoreLedger.StagedGoal> onGoalPlayed, Action onComplete)
         {
-            StartScript(BuildFinalScript(spec, plan), onGoalPlayed, onComplete);
+            StartScript(BuildFinalScript(spec, plan), onGoalPlayed, null, onComplete);
         }
 
         /// <summary>The pending-loss window's kill scene: opponent buildup → shot launched →
         /// FROZEN at the suspension point, mid-flight. Holds until <see cref="ResumeSuspended"/>.</summary>
         public void SuspendKillShot(int variant)
         {
-            StartScript(BuildKillShotScript(variant), null, null);
+            StartScript(BuildKillShotScript(variant), null, null, null);
         }
 
         /// <summary>The suspended scene's continuation, chosen from the FINAL ticket-local grade
@@ -298,7 +329,7 @@ namespace SBR.Game
             Action<ScoreLedger.StagedGoal> onGoalPlayed, Action onComplete)
         {
             _suspendedAtShot = false;
-            StartScript(BuildContinuationScript(plan), onGoalPlayed, onComplete);
+            StartScript(BuildContinuationScript(plan), onGoalPlayed, null, onComplete);
         }
 
         /// <summary>Abandons any active scene without completing it (cash-out, leg change).</summary>
@@ -307,18 +338,25 @@ namespace SBR.Game
             _script = null;
             _stepIx = 0;
             _stepT = 0f;
+            _stepEntered = false;
             _suspendedAtShot = false;
             _onGoalPlayed = null;
+            _onReveal = null;
+            _revealFired = false;
             _onSceneComplete = null;
         }
 
-        private void StartScript(Step[] script, Action<ScoreLedger.StagedGoal> onGoalPlayed, Action onComplete)
+        private void StartScript(Step[] script, Action<ScoreLedger.StagedGoal> onGoalPlayed,
+            Action onReveal, Action onComplete)
         {
             _script = script;
             _stepIx = 0;
             _stepT = 0f;
+            _stepEntered = false;
             _suspendedAtShot = false;
             _onGoalPlayed = onGoalPlayed;
+            _onReveal = onReveal;
+            _revealFired = false;
             _onSceneComplete = onComplete;
         }
 
@@ -338,16 +376,18 @@ namespace SBR.Game
         {
             if (_suspendedAtShot) return; // the frozen shot — the window's dread
 
+            if (!_stepEntered) EnterStep();
             Step s = _script[_stepIx];
 
             // Motion (real frame time — cosmetic): formations speak the scene's territory,
-            // the ball flies the authored route, tempo scales everything.
+            // the ball travels its routed target, tempo scales everything.
             float speed = 1f + s.Tempo * 1.6f;
             _sceneTerr = Mathf.SmoothDamp(_sceneTerr, s.Terr, ref _sceneTerrVel, 0.45f / speed);
             LastTerritoryX = _sceneTerr;
-            MoveActors(_sceneTerr, speed, dt);
-            _ballTarget = ToLocal(PickedFrame(s.Ball));
-            _ballPos = Vector2.SmoothDamp(_ballPos, _ballTarget, ref _ballVel, ballDamp / speed);
+            MoveActors(_sceneTerr, speed, s.Chase, s.AtkPicked);
+
+            Vector2 target = _routeDotIx >= 0 ? DotPos(_routeDotHome, _routeDotIx) : _stepBallLocal;
+            _ballPos = Vector2.SmoothDamp(_ballPos, target, ref _ballVel, ballDamp / speed);
             ApplyPositions();
 
             // Story time (scaled — batch tests fast-forward through here by shrinking the
@@ -355,41 +395,117 @@ namespace SBR.Game
             _stepT += dt;
             if (_stepT < s.Dur * Mathf.Max(0f, timeScale)) return;
 
-            FireMarker(s);
+            CompleteStep(s);
             if (_suspendedAtShot) return; // MkSuspend holds ON its step until resumed
 
             _stepIx++;
             _stepT = 0f;
+            _stepEntered = false;
             if (_stepIx >= _script.Length)
             {
                 _script = null;
+                FireReveal(); // scenes with no explicit payoff reveal at their end
                 Action done = _onSceneComplete;
                 _onGoalPlayed = null;
+                _onReveal = null;
                 _onSceneComplete = null;
                 done?.Invoke();
             }
         }
 
-        private void FireMarker(Step s)
+        /// <summary>Resolves the step's ball routing against the ACTUAL actors — the move must
+        /// read as the attacking team passing it around, never a ball flying to nobody.</summary>
+        private void EnterStep()
+        {
+            _stepEntered = true;
+            Step s = _script[_stepIx];
+            bool atkHome = s.AtkPicked == _homeAttacksRight;
+            _routeDotIx = -1;
+
+            switch (s.Route)
+            {
+                case RoutePass:
+                {
+                    Vector2 want = ToLocal(s.Ball);
+                    int ix = NearestOutfield(atkHome, want, exclude: BallCarriedBy(atkHome) ? _carrierIx : -1);
+                    _routeDotIx = ix;
+                    _routeDotHome = atkHome;
+                    // Off-ball: teammates near the move make short forward runs, not static jitter.
+                    ForwardRuns(atkHome, s.AtkPicked ? 1f : -1f);
+                    break;
+                }
+                case RouteBackLine:
+                {
+                    Vector2 want = ToLocal(s.Ball);
+                    _routeDotIx = NearestBackLine(!atkHome, want);
+                    _routeDotHome = !atkHome;
+                    break;
+                }
+                case RouteShot:
+                {
+                    // Aim at the corner AWAY from the defending keeper — a shot, not a pass.
+                    Vector2 authored = s.Ball;
+                    bool rightGoal = authored.x > 0.5f;
+                    Vector2 keeper = rightGoal
+                        ? (_homeAttacksRight ? _akPos : _hkPos)
+                        : (_homeAttacksRight ? _hkPos : _akPos);
+                    authored.y = keeper.y > 0f ? 0.42f : 0.58f;
+                    _stepBallLocal = ToLocal(authored);
+                    break;
+                }
+                case RouteKickoff:
+                default:
+                    _stepBallLocal = ToLocal(s.Ball);
+                    break;
+            }
+        }
+
+        /// <summary>End-of-step bookkeeping: markers fire, and possession follows the story so
+        /// the idle loop resumes from a coherent carrier.</summary>
+        private void CompleteStep(Step s)
         {
             switch (s.Marker)
             {
                 case MkGoal:
-                    // Net ripple at the goal the ball attacked; a chalked-off goal ripples
-                    // dimmer — VAR takes it away, the flavor line says so (orchestrator).
-                    FlashGoal(right: PickedFrame(s.Ball).x > 0.5f, strong: s.Goal.Commits);
+                    FlashGoal(right: s.Ball.x > 0.5f, strong: s.Goal.Commits);
                     _onGoalPlayed?.Invoke(s.Goal);
+                    FireReveal(); // the net ripple IS the beat's payoff
                     break;
                 case MkSuspend:
                     _suspendedAtShot = true;
                     break;
                 case MkSave:
                     KeeperLunge();
+                    FireReveal(); // the save IS the near-miss payoff
                     break;
                 case MkVoid:
                     ApplyVoidTint();
                     break;
             }
+
+            switch (s.Route)
+            {
+                case RoutePass:
+                case RouteBackLine:
+                    if (_routeDotIx >= 0)
+                    {
+                        _carrierHome = _routeDotHome;
+                        _carrierIx = _routeDotIx;
+                    }
+                    break;
+                case RouteKickoff:
+                    // The side that just conceded collects at the center spot.
+                    _carrierHome = s.AtkPicked != _homeAttacksRight;
+                    _carrierIx = 4;
+                    break;
+            }
+        }
+
+        private void FireReveal()
+        {
+            if (_revealFired) return;
+            _revealFired = true;
+            _onReveal?.Invoke();
         }
 
         private void UpdateIdle(float dt)
@@ -405,61 +521,94 @@ namespace SBR.Game
             LastTerritoryX = terr;
 
             float speed = 1f + _urgency * 1.4f;
-            MoveActors(terr, speed, dt);
+            MoveActors(terr, speed, chase: false, atkPicked: terr >= 0.5f);
 
-            // Possession recycling: the ball hops between actors near the territory point.
+            // Sticky possession: the carrier keeps it, passes go to TEAMMATES, and turnovers
+            // are visible interceptions. Long-run possession share restates the live prob
+            // (allowed: it repeats revealed state) — nothing here ever implies a goal.
             if (Time.time >= _nextPassAt)
             {
                 _nextPassAt = Time.time + NextPassDelay() / speed;
-                _ballTarget = PickCarrier(terr);
-                for (int i = 0; i < PitchLayout.OutfieldPerTeam; i++)
-                {
-                    if (_rng.NextDouble() < 0.3) RerollNoise(ref _homeNoise[i]);
-                    if (_rng.NextDouble() < 0.3) RerollNoise(ref _awayNoise[i]);
-                }
+                float share = Mathf.Lerp(0.25f, 0.75f, _prob); // picked side's possession target
+                bool carrierPicked = _carrierHome == _homeAttacksRight;
+                float keep = carrierPicked
+                    ? Mathf.Lerp(0.55f, 0.92f, share)
+                    : Mathf.Lerp(0.55f, 0.92f, 1f - share);
+                if (_rng.NextDouble() < keep) PassToTeammate(terr);
+                else TurnoverAtBall();
             }
-            _ballPos = Vector2.SmoothDamp(_ballPos, _ballTarget, ref _ballVel, ballDamp / speed);
 
+            _ballPos = Vector2.SmoothDamp(_ballPos, DotPos(_carrierHome, _carrierIx), ref _ballVel, ballDamp / speed);
             ApplyPositions();
         }
 
-        /// <summary>Formation motion shared by idle and scenes: dots damp toward their biased
-        /// slots, keepers hold their lines.</summary>
-        private void MoveActors(float terr, float speed, float dt)
+        /// <summary>A pass within the team in possession: best of three candidates, preferring
+        /// a comfortable pass length and progress toward the territory point.</summary>
+        private void PassToTeammate(float terr)
         {
-            float bias = (terr - 0.5f) * 2f; // [-1, 1] toward the right goal
+            Vector2 from = DotPos(_carrierHome, _carrierIx);
+            float terrX = (terr - 0.5f) * (_w - Pad * 2f);
+            int best = -1;
+            float bestScore = float.NegativeInfinity;
+            for (int tries = 0; tries < 3; tries++)
+            {
+                int c = _rng.Next(PitchLayout.OutfieldPerTeam);
+                if (c == _carrierIx) continue;
+                Vector2 p = DotPos(_carrierHome, c);
+                float dist = Vector2.Distance(from, p);
+                if (dist < 24f) continue; // no toe-pokes to a dot standing on the ball
+                float lengthScore = -Mathf.Abs(dist - 120f) * 0.01f;          // comfortable pass
+                float progressScore = -Mathf.Abs(p.x - terrX) * 0.008f;       // toward the action
+                float score = lengthScore + progressScore;
+                if (score > bestScore) { bestScore = score; best = c; }
+            }
+            if (best >= 0) _carrierIx = best;
+        }
+
+        /// <summary>A visible turnover: the nearest opponent steps INTO the ball and takes it —
+        /// possession flips because somebody won it, not because the script blinked.</summary>
+        private void TurnoverAtBall()
+        {
+            bool interceptorHome = !_carrierHome;
+            int ix = NearestOutfield(interceptorHome, _ballPos, exclude: -1);
+            ref Vector2 vel = ref (interceptorHome ? ref _homeVel[ix] : ref _awayVel[ix]);
+            Vector2 toBall = _ballPos - DotPos(interceptorHome, ix);
+            vel += toBall.normalized * Mathf.Min(toBall.magnitude * 4f, 220f);
+            _carrierHome = interceptorHome;
+            _carrierIx = ix;
+        }
+
+        /// <summary>Formation motion shared by idle and scenes (M-T3.1): the attacking shape
+        /// pushes up while the DEFENDING team drops into a compact block; on chase steps the
+        /// two defenders nearest the ball hunt the carrier instead of holding shape.</summary>
+        private void MoveActors(float terr, float speed, bool chase, bool atkPicked)
+        {
+            float bias = (terr - 0.5f) * 2f; // [-1, 1] toward the right goal (picked frame)
             float damp = dotDamp / speed;
+
+            // Per-team posture: positive = on the front foot, negative = under siege.
+            float homeAtk = _homeAttacksRight ? bias : -bias;
+            float awayAtk = -homeAtk;
+            float homeCompact = Mathf.Clamp01(-homeAtk) * 0.8f;
+            float awayCompact = Mathf.Clamp01(-awayAtk) * 0.8f;
+
+            bool chaseHome = chase && atkPicked != _homeAttacksRight; // defenders chase
+            int chase1 = -1, chase2 = -1;
+            if (chase) FindNearestTwo(chaseHome, _ballPos, out chase1, out chase2);
 
             for (int i = 0; i < PitchLayout.OutfieldPerTeam; i++)
             {
-                // Home's shape pushes with the territory when it attacks right, against it otherwise.
-                float homeBias = _homeAttacksRight ? bias : -bias;
-                Vector2 ht = ToLocal(PitchLayout.FormationSlot(i, _homeAttacksRight, homeBias)) + _homeNoise[i];
-                Vector2 at = ToLocal(PitchLayout.FormationSlot(i, !_homeAttacksRight, -homeBias)) + _awayNoise[i];
+                Vector2 ht = chaseHome && (i == chase1 || i == chase2)
+                    ? _ballPos + new Vector2(_homeAttacksRight ? -26f : 26f, i == chase1 ? 12f : -14f)
+                    : ToLocal(PitchLayout.FormationSlot(i, _homeAttacksRight, homeAtk, homeCompact)) + _homeNoise[i];
+                Vector2 at = !chaseHome && chase && (i == chase1 || i == chase2)
+                    ? _ballPos + new Vector2(_homeAttacksRight ? 26f : -26f, i == chase1 ? 12f : -14f)
+                    : ToLocal(PitchLayout.FormationSlot(i, !_homeAttacksRight, awayAtk, awayCompact)) + _awayNoise[i];
                 _homePos[i] = Vector2.SmoothDamp(_homePos[i], ht, ref _homeVel[i], damp);
                 _awayPos[i] = Vector2.SmoothDamp(_awayPos[i], at, ref _awayVel[i], damp);
             }
             _hkPos = Vector2.SmoothDamp(_hkPos, ToLocal(PitchLayout.Keeper(_homeAttacksRight)), ref _hkVel, dotDamp);
             _akPos = Vector2.SmoothDamp(_akPos, ToLocal(PitchLayout.Keeper(!_homeAttacksRight)), ref _akVel, dotDamp);
-        }
-
-        /// <summary>A pass target near the territory point. Possession share restates the live
-        /// prob (allowed: it repeats revealed state), drawn from presentation-local RNG only.</summary>
-        private Vector2 PickCarrier(float terr)
-        {
-            bool pickedHasIt = _rng.NextDouble() < Mathf.Lerp(0.25f, 0.75f, _prob);
-            bool homeHasIt = _homeAttacksRight == pickedHasIt;
-            Vector2[] side = homeHasIt ? _homePos : _awayPos;
-
-            // Prefer carriers near the territory x — pick the closest of three random dots.
-            float terrX = (terr - 0.5f) * (_w - Pad * 2f);
-            Vector2 best = side[_rng.Next(side.Length)];
-            for (int tries = 0; tries < 2; tries++)
-            {
-                Vector2 candidate = side[_rng.Next(side.Length)];
-                if (Mathf.Abs(candidate.x - terrX) < Mathf.Abs(best.x - terrX)) best = candidate;
-            }
-            return best + new Vector2(Rand(-14f, 14f), Rand(-14f, 14f));
         }
 
         // ------------------------------------------------------------------ scene scripts
@@ -468,11 +617,16 @@ namespace SBR.Game
         private static float Lane(int variant) => variant == 0 ? 0.5f : variant == 1 ? 0.32f : 0.68f;
 
         private static Step S(float dur, float bx, float by, float terr, float tempo,
-            byte marker = MkNone, ScoreLedger.StagedGoal goal = default)
-            => new Step { Dur = dur, Ball = new Vector2(bx, by), Terr = terr, Tempo = tempo, Marker = marker, Goal = goal };
+            byte marker = MkNone, ScoreLedger.StagedGoal goal = default, byte route = RoutePass,
+            bool atkPicked = true, bool chase = false)
+            => new Step
+            {
+                Dur = dur, Ball = new Vector2(bx, by), Terr = terr, Tempo = tempo,
+                Marker = marker, Goal = goal, Route = route, AtkPicked = atkPicked, Chase = chase,
+            };
 
-        /// <summary>Mirrors a picked-frame script across the halfway line (for/against pairs
-        /// share one author).</summary>
+        /// <summary>Mirrors a picked-frame script across the halfway line and hands the move to
+        /// the OTHER team (for/against pairs share one author).</summary>
         private static Step[] Mirror(Step[] steps)
         {
             var m = new Step[steps.Length];
@@ -481,6 +635,7 @@ namespace SBR.Game
                 m[i] = steps[i];
                 m[i].Ball = new Vector2(1f - m[i].Ball.x, m[i].Ball.y);
                 m[i].Terr = 1f - m[i].Terr;
+                m[i].AtkPicked = !m[i].AtkPicked;
             }
             return m;
         }
@@ -506,11 +661,11 @@ namespace SBR.Game
                     {
                         S(B * 0.30f, 0.56f, lane, 0.60f, Mathf.Max(0.55f, u)),
                         S(B * 0.24f, 0.80f, lane, 0.68f, Mathf.Max(0.7f, u)),
-                        S(B * 0.14f, 0.965f, 0.5f, 0.72f, 1f),
-                        S(B * 0.14f, 0.985f, 0.5f, 0.72f, 1f, MkGoal, goal),
+                        S(B * 0.14f, 0.90f, lane, 0.72f, 1f),                       // the final pass
+                        S(B * 0.14f, 0.985f, 0.5f, 0.72f, 1f, MkGoal, goal, RouteShot),
                         commits
-                            ? S(B * 0.18f, 0.5f, 0.5f, 0.55f, 0.4f)      // kickoff restart (#14)
-                            : S(B * 0.18f, 0.82f, 0.25f, 0.60f, 0.3f),   // chalked: goal kick, play on
+                            ? S(B * 0.18f, 0.5f, 0.5f, 0.55f, 0.4f, route: RouteKickoff)
+                            : S(B * 0.18f, 0.84f, 0.30f, 0.60f, 0.3f, route: RouteBackLine), // chalked: defenders restart
                     };
                     if (spec.Template == SceneTemplate.GoalAgainst) core = Mirror(core);
                     break;
@@ -519,13 +674,13 @@ namespace SBR.Game
                 case SceneTemplate.BreakawayAgainst:
                     core = new[]
                     {
-                        S(B * 0.22f, 0.30f, 0.5f, 0.42f, 0.5f),          // they had it — turnover
-                        S(B * 0.30f, 0.70f, lane, 0.58f, 1f),            // the long carry
-                        S(B * 0.14f, 0.88f, lane, 0.66f, 1f),
-                        S(B * 0.14f, 0.965f, spec.Variant == 2 ? 0.58f : 0.42f, 0.70f, 1f, MkGoal, goal),
+                        S(B * 0.22f, 0.30f, 0.5f, 0.42f, 0.5f),                     // won it deep
+                        S(B * 0.30f, 0.70f, lane, 0.58f, 1f, chase: true),          // the long carry, hunted
+                        S(B * 0.14f, 0.88f, lane, 0.66f, 1f, chase: true),
+                        S(B * 0.14f, 0.965f, spec.Variant == 2 ? 0.58f : 0.42f, 0.70f, 1f, MkGoal, goal, RouteShot),
                         commits
-                            ? S(B * 0.20f, 0.5f, 0.5f, 0.55f, 0.4f)
-                            : S(B * 0.20f, 0.82f, 0.25f, 0.60f, 0.3f),
+                            ? S(B * 0.20f, 0.5f, 0.5f, 0.55f, 0.4f, route: RouteKickoff)
+                            : S(B * 0.20f, 0.84f, 0.30f, 0.60f, 0.3f, route: RouteBackLine),
                     };
                     if (spec.Template == SceneTemplate.BreakawayAgainst) core = Mirror(core);
                     break;
@@ -547,25 +702,27 @@ namespace SBR.Game
                     {
                         S(B * 0.26f, 0.62f, lane, 0.62f, 0.7f),
                         S(B * 0.20f, 0.86f, lane, 0.68f, 1f),
-                        S(B * 0.12f, 0.99f, 0.47f, 0.72f, 1f),           // the shot
-                        S(B * 0.10f, 0.94f, 0.82f, 0.70f, 1f, MkSave),   // off the bar / full-stretch
-                        S(B * 0.12f, 0.92f, 0.80f, 0.70f, 0f),           // the hold — dead air
-                        S(B * 0.20f, 0.62f, 0.5f, 0.58f, 0.3f),          // cleared, hearts restart
+                        S(B * 0.12f, 0.99f, 0.47f, 0.72f, 1f, route: RouteShot),     // the shot
+                        S(B * 0.10f, 0.94f, 0.82f, 0.70f, 1f, MkSave, route: RouteAuthored), // off the bar
+                        S(B * 0.12f, 0.92f, 0.80f, 0.70f, 0f, route: RouteAuthored), // the hold — dead air
+                        S(B * 0.20f, 0.60f, 0.35f, 0.58f, 0.3f, route: RouteBackLine), // cleared off the line
                     };
                     if (spec.Template == SceneTemplate.NearMissScare) core = Mirror(core);
                     break;
 
                 case SceneTemplate.CalmPossession:
+                {
                     core = new[]
                     {
-                        S(B * 0.35f, 0.46f, 0.40f, 0.50f, 0.2f),
-                        S(B * 0.35f, 0.54f, 0.60f, 0.50f, 0.2f),
-                        S(B * 0.30f, 0.48f, 0.5f, 0.50f, 0.15f),
+                        S(B * 0.35f, 0.46f, 0.40f, 0.50f, 0.2f, atkPicked: spec.ForPicked),
+                        S(B * 0.35f, 0.54f, 0.60f, 0.50f, 0.2f, atkPicked: spec.ForPicked),
+                        S(B * 0.30f, 0.48f, 0.5f, 0.50f, 0.15f, atkPicked: spec.ForPicked),
                     };
                     break;
+                }
 
                 case SceneTemplate.Kickoff:
-                    core = new[] { S(B, 0.5f, 0.5f, 0.5f, 0.3f) };
+                    core = new[] { S(B, 0.5f, 0.5f, 0.5f, 0.3f, route: RouteKickoff, atkPicked: spec.ForPicked) };
                     break;
 
                 case SceneTemplate.LegFinalWon:
@@ -579,9 +736,9 @@ namespace SBR.Game
                 default: // #15 fallback: a neutral attack fizzles out
                     core = new[]
                     {
-                        S(B * 0.40f, 0.60f, lane, 0.55f, 0.5f),
-                        S(B * 0.30f, 0.72f, 1f - lane, 0.58f, 0.5f),
-                        S(B * 0.30f, 0.50f, 0.5f, 0.52f, 0.3f),
+                        S(B * 0.40f, 0.60f, lane, 0.55f, 0.5f, atkPicked: spec.ForPicked),
+                        S(B * 0.30f, 0.72f, 1f - lane, 0.58f, 0.5f, atkPicked: spec.ForPicked),
+                        S(B * 0.30f, 0.50f, 0.5f, 0.52f, 0.3f, atkPicked: spec.ForPicked),
                     };
                     break;
             }
@@ -590,7 +747,7 @@ namespace SBR.Game
 
             // Steal → transition: the ball flips flanks at midfield before the move starts.
             var withIntro = new Step[core.Length + 1];
-            withIntro[0] = S(intro, 0.42f, 1f - lane, 0.46f, 1f);
+            withIntro[0] = S(intro, 0.42f, 1f - lane, 0.46f, 1f, atkPicked: core[0].AtkPicked);
             Array.Copy(core, 0, withIntro, 1, core.Length);
             return withIntro;
         }
@@ -609,20 +766,20 @@ namespace SBR.Game
                 foreach (ScoreLedger.StagedGoal g in plan.Goals)
                 {
                     steps.Add(S(1.1f, 0.86f, 1f - lane, 0.72f, 1f)); // the break at the death
-                    steps.Add(S(1.4f, 0.975f, 0.5f, 0.74f, 1f, MkGoal, g));
+                    steps.Add(S(1.4f, 0.975f, 0.5f, 0.74f, 1f, MkGoal, g, RouteShot));
                 }
-                steps.Add(S(B * 0.33f, 0.5f, 0.5f, 0.72f, 1f));      // whistle — celebrate
+                steps.Add(S(B * 0.33f, 0.5f, 0.5f, 0.72f, 1f, route: RouteAuthored)); // whistle — celebrate
             }
             else
             {
-                steps.Add(S(B * 0.40f, 0.38f, 0.5f, 0.36f, 0.6f));   // the dread hold
-                steps.Add(S(B * 0.27f, 0.22f, lane, 0.30f, 0.8f));
+                steps.Add(S(B * 0.40f, 0.38f, 0.5f, 0.36f, 0.6f, atkPicked: false));  // the dread hold
+                steps.Add(S(B * 0.27f, 0.22f, lane, 0.30f, 0.8f, atkPicked: false));
                 foreach (ScoreLedger.StagedGoal g in plan.Goals)
                 {
-                    steps.Add(S(1.0f, 0.13f, lane, 0.28f, 1f));      // the killing approach
-                    steps.Add(S(1.5f, 0.025f, 0.5f, 0.26f, 1f, MkGoal, g));
+                    steps.Add(S(1.0f, 0.13f, lane, 0.28f, 1f, atkPicked: false, chase: true));
+                    steps.Add(S(1.5f, 0.025f, 0.5f, 0.26f, 1f, MkGoal, g, RouteShot, atkPicked: false));
                 }
-                steps.Add(S(B * 0.33f, 0.5f, 0.5f, 0.26f, 0.1f));    // whistle — collapse
+                steps.Add(S(B * 0.33f, 0.5f, 0.5f, 0.26f, 0.1f, route: RouteAuthored, atkPicked: false)); // collapse
             }
             return steps.ToArray();
         }
@@ -632,10 +789,10 @@ namespace SBR.Game
             float lane = Lane(variant);
             return new[]
             {
-                S(0.9f, 0.30f, lane, 0.34f, 0.8f),                   // opponent buildup
-                S(0.6f, 0.14f, lane, 0.30f, 1f),                     // the approach
-                S(0.35f, 0.10f, 0.5f, 0.28f, 1f),                    // shot launched
-                S(0.20f, 0.05f, 0.5f, 0.28f, 1f, MkSuspend),         // FROZEN mid-flight
+                S(0.9f, 0.30f, lane, 0.34f, 0.8f, atkPicked: false),                 // opponent buildup
+                S(0.6f, 0.14f, lane, 0.30f, 1f, atkPicked: false, chase: true),      // the approach
+                S(0.35f, 0.10f, 0.5f, 0.28f, 1f, route: RouteShot, atkPicked: false), // shot launched
+                S(0.20f, 0.05f, 0.5f, 0.28f, 1f, MkSuspend, route: RouteAuthored, atkPicked: false), // FROZEN
             };
         }
 
@@ -645,18 +802,18 @@ namespace SBR.Game
             switch (plan.Grade)
             {
                 case LegGrade.Voided:
-                    steps.Add(S(0.9f, 0.06f, 0.5f, 0.40f, 0.1f, MkVoid)); // the slip comes out
-                    steps.Add(S(1.4f, 0.5f, 0.5f, 0.50f, 0.1f));          // the scene dissolves
+                    steps.Add(S(0.9f, 0.06f, 0.5f, 0.40f, 0.1f, MkVoid, route: RouteAuthored, atkPicked: false));
+                    steps.Add(S(1.4f, 0.5f, 0.5f, 0.50f, 0.1f, route: RouteAuthored)); // the scene dissolves
                     break;
 
                 case LegGrade.Won:
-                    steps.Add(S(0.7f, 0.20f, 0.78f, 0.40f, 1f, MkSave));  // the shot dies — parried
+                    steps.Add(S(0.7f, 0.20f, 0.78f, 0.40f, 1f, MkSave, route: RouteAuthored, atkPicked: false));
                     foreach (ScoreLedger.StagedGoal g in plan.Goals)
                     {
                         steps.Add(S(1.1f, 0.70f, 0.42f, 0.62f, 1f));      // the sucker-punch break
-                        steps.Add(S(1.4f, 0.975f, 0.5f, 0.72f, 1f, MkGoal, g));
+                        steps.Add(S(1.4f, 0.975f, 0.5f, 0.72f, 1f, MkGoal, g, RouteShot));
                     }
-                    steps.Add(S(1.8f, 0.5f, 0.5f, 0.72f, 1f));            // whistle — celebrate
+                    steps.Add(S(1.8f, 0.5f, 0.5f, 0.72f, 1f, route: RouteAuthored)); // whistle — celebrate
                     break;
 
                 case LegGrade.Lost:
@@ -668,16 +825,16 @@ namespace SBR.Game
                         {
                             // The frozen flight completes (chalked at the death if the entry
                             // score already satisfied Lost — the whistle still confirms it).
-                            steps.Add(S(0.5f, 0.02f, 0.5f, 0.26f, 1f, MkGoal, g));
+                            steps.Add(S(0.5f, 0.02f, 0.5f, 0.26f, 1f, MkGoal, g, RouteShot, atkPicked: false));
                             first = false;
                         }
                         else
                         {
-                            steps.Add(S(1.0f, 0.13f, 0.35f, 0.28f, 1f));
-                            steps.Add(S(1.5f, 0.025f, 0.5f, 0.26f, 1f, MkGoal, g));
+                            steps.Add(S(1.0f, 0.13f, 0.35f, 0.28f, 1f, atkPicked: false, chase: true));
+                            steps.Add(S(1.5f, 0.025f, 0.5f, 0.26f, 1f, MkGoal, g, RouteShot, atkPicked: false));
                         }
                     }
-                    steps.Add(S(1.8f, 0.5f, 0.5f, 0.26f, 0.1f));          // whistle — collapse
+                    steps.Add(S(1.8f, 0.5f, 0.5f, 0.26f, 0.1f, route: RouteAuthored, atkPicked: false)); // collapse
                     break;
             }
             return steps.ToArray();
@@ -712,7 +869,7 @@ namespace SBR.Game
         private void KeeperLunge()
         {
             // The keeper defending the goal nearest the ball hurls toward it — one impulse,
-            // the smooth-damp brings them home after.
+            // the smooth-damp brings them home after. Keepers save; they never receive.
             bool ballRight = _ballPos.x > 0f;
             bool homeDefendsRight = !_homeAttacksRight;
             ref Vector2 vel = ref (ballRight == homeDefendsRight ? ref _hkVel : ref _akVel);
@@ -736,12 +893,64 @@ namespace SBR.Game
             _ball.color = new Color(0.62f, 0.86f, 0.96f, 0.9f);
         }
 
-        // ------------------------------------------------------------------ helpers
+        // ------------------------------------------------------------------ actor lookups
 
-        /// <summary>Scripts are authored in the PICKED frame (right = picked's attack). The
-        /// picked side always attacks right on this stage, so this is the identity — kept as
-        /// the single seam if that law ever changes.</summary>
-        private static Vector2 PickedFrame(Vector2 v) => v;
+        private Vector2 DotPos(bool home, int ix) => home ? _homePos[ix] : _awayPos[ix];
+
+        private bool BallCarriedBy(bool home) => _carrierHome == home;
+
+        private int NearestOutfield(bool home, Vector2 localPt, int exclude)
+        {
+            Vector2[] side = home ? _homePos : _awayPos;
+            int best = 0;
+            float bestD = float.PositiveInfinity;
+            for (int i = 0; i < side.Length; i++)
+            {
+                if (i == exclude) continue;
+                float d = (side[i] - localPt).sqrMagnitude;
+                if (d < bestD) { bestD = d; best = i; }
+            }
+            return best;
+        }
+
+        private int NearestBackLine(bool home, Vector2 localPt)
+        {
+            Vector2[] side = home ? _homePos : _awayPos;
+            int best = 0;
+            float bestD = float.PositiveInfinity;
+            for (int i = 0; i < side.Length; i++)
+            {
+                if (!PitchLayout.IsBackLine(i)) continue;
+                float d = (side[i] - localPt).sqrMagnitude;
+                if (d < bestD) { bestD = d; best = i; }
+            }
+            return best;
+        }
+
+        private void FindNearestTwo(bool home, Vector2 localPt, out int first, out int second)
+        {
+            Vector2[] side = home ? _homePos : _awayPos;
+            first = second = -1;
+            float d1 = float.PositiveInfinity, d2 = float.PositiveInfinity;
+            for (int i = 0; i < side.Length; i++)
+            {
+                float d = (side[i] - localPt).sqrMagnitude;
+                if (d < d1) { d2 = d1; second = first; d1 = d; first = i; }
+                else if (d < d2) { d2 = d; second = i; }
+            }
+        }
+
+        /// <summary>Teammates near the move make short forward runs during buildup — off-ball
+        /// motion with intent, not static jitter.</summary>
+        private void ForwardRuns(bool home, float dir)
+        {
+            Vector2[] noise = home ? _homeNoise : _awayNoise;
+            for (int i = 0; i < noise.Length; i++)
+                if (_rng.NextDouble() < 0.4)
+                    noise[i] = new Vector2(dir * Rand(4f, 26f), Rand(-14f, 14f));
+        }
+
+        // ------------------------------------------------------------------ helpers
 
         private void ApplyPositions()
         {
