@@ -21,7 +21,7 @@ internal static class EventText
 
         // Tag overrides win over the base table.
         if (e.Tag == TensionTag.NearMiss)
-            return up ? "a miracle brewing?!" : "…it's slipping away";
+            return up ? "off the bar — a miracle brewing?!" : "…cleared off the line. it's slipping away";
 
         string line = Base(e.Type, up, picked, other, e.Step);
         if (e.Tag == TensionTag.LeadChange) line += " — LEAD CHANGE";
@@ -48,43 +48,43 @@ internal static class EventText
 
     private static readonly string[] ScoreUp =
     {
-        "{picked} punch it in.",
-        "{picked} find the end zone.",
-        "Points for {picked} — the number ticks your way.",
+        "{picked} slot it home.",
+        "{picked} score — far post says yes.",
+        "Goal for {picked} — the number ticks your way.",
     };
 
     private static readonly string[] ScoreDown =
     {
         "{other} answer right back.",
-        "{other} punch one back. Ugly.",
+        "{other} poke one in at the near post. Ugly.",
         "{other} on the board; your slip flinches.",
     };
 
     private static readonly string[] BigUp =
     {
-        "HUGE play by {picked}!",
-        "{picked} break one wide open — the crowd loses it.",
-        "{picked} strike deep. This is happening.",
+        "{picked} tear away — IT'S IN!",
+        "{picked} break the line and finish — the crowd loses it.",
+        "{picked} counter at full sprint. This is happening.",
     };
 
     private static readonly string[] BigDown =
     {
-        "Disaster — {other} take it the distance.",
-        "{other} rip off a monster play. Cover your eyes.",
-        "{other} break contain. That one hurt.",
+        "Disaster — {other} go the length of the pitch.",
+        "{other} rip through on the break. Cover your eyes.",
+        "{other} walk it in. That one hurt.",
     };
 
     private static readonly string[] MomUp =
     {
-        "{picked} grinding it out.",
-        "{picked} lean on them, clock and all.",
+        "{picked} squeezing the half.",
+        "{picked} pin them deep — passes and patience.",
         "{picked} tighten the screws.",
     };
 
     private static readonly string[] MomDown =
     {
-        "{other} controlling the clock.",
-        "{other} chew the clock, slow and mean.",
+        "{other} keeping the ball.",
+        "{other} pass it around, slow and mean.",
         "{other} settle in; the drift is against you.",
     };
 

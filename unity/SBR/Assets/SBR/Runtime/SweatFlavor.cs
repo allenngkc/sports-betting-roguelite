@@ -25,23 +25,21 @@ namespace SBR.Game
 
             // Tag overrides win over the base table.
             if (e.Tag == TensionTag.NearMiss)
-                return up ? "a miracle brewing?!" : "...it's slipping away";
+                return up ? "off the bar - a miracle brewing?!" : "...cleared off the line. it's slipping away";
 
             string line = Base(e.Type, up, picked, other, e.Step);
             if (e.Tag == TensionTag.LeadChange) line += " - LEAD CHANGE";
             return line;
         }
 
-        /// <summary>A fake broadcast clock derived from the event's position in its leg (ported from
-        /// SweatRenderer.Clock). The final whistle reads FINAL.</summary>
+        /// <summary>The broadcast clock, soccer-shaped (F_0.2.0 M-T3): a 90-minute match clock
+        /// counting UP, derived from the event's position in its leg. The final whistle reads FT.</summary>
         public static string Clock(DramaEvent e)
         {
-            if (e.Type == DramaEventType.LegFinal) return "FINAL";
-            double f = e.TotalSteps <= 1 ? 0.999 : Math.Min(0.999, (double)e.Step / e.TotalSteps);
-            int quarter = Math.Min(4, (int)(f * 4) + 1);
-            double within = f * 4 - Math.Floor(f * 4);           // fraction through the quarter
-            int secs = (int)Math.Round((1.0 - within) * 15 * 60); // counts down within a 15:00 quarter
-            return $"Q{quarter} {secs / 60:00}:{secs % 60:00}";
+            if (e.Type == DramaEventType.LegFinal) return "FT";
+            double f = e.TotalSteps <= 1 ? 0.99 : Math.Min(0.99, (double)e.Step / e.TotalSteps);
+            int minute = Math.Max(1, (int)Math.Round(f * 90));
+            return $"{minute}'";
         }
 
         private static string Base(DramaEventType type, bool up, string picked, string other, int step)
@@ -64,43 +62,43 @@ namespace SBR.Game
 
         private static readonly string[] ScoreUp =
         {
-            "{picked} punch it in.",
-            "{picked} find the end zone.",
-            "Points for {picked} - the number ticks your way.",
+            "{picked} slot it home.",
+            "{picked} score - far post says yes.",
+            "Goal for {picked} - the number ticks your way.",
         };
 
         private static readonly string[] ScoreDown =
         {
             "{other} answer right back.",
-            "{other} punch one back. Ugly.",
+            "{other} poke one in at the near post. Ugly.",
             "{other} on the board; your slip flinches.",
         };
 
         private static readonly string[] BigUp =
         {
-            "HUGE play by {picked}!",
-            "{picked} break one wide open - the crowd loses it.",
-            "{picked} strike deep. This is happening.",
+            "{picked} tear away - IT'S IN!",
+            "{picked} break the line and finish - the crowd loses it.",
+            "{picked} counter at full sprint. This is happening.",
         };
 
         private static readonly string[] BigDown =
         {
-            "Disaster - {other} take it the distance.",
-            "{other} rip off a monster play. Cover your eyes.",
-            "{other} break contain. That one hurt.",
+            "Disaster - {other} go the length of the pitch.",
+            "{other} rip through on the break. Cover your eyes.",
+            "{other} walk it in. That one hurt.",
         };
 
         private static readonly string[] MomUp =
         {
-            "{picked} grinding it out.",
-            "{picked} lean on them, clock and all.",
+            "{picked} squeezing the half.",
+            "{picked} pin them deep - passes and patience.",
             "{picked} tighten the screws.",
         };
 
         private static readonly string[] MomDown =
         {
-            "{other} controlling the clock.",
-            "{other} chew the clock, slow and mean.",
+            "{other} keeping the ball.",
+            "{other} pass it around, slow and mean.",
             "{other} settle in; the drift is against you.",
         };
 

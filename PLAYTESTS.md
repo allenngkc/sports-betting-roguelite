@@ -2,6 +2,32 @@
 
 Human playtests only (agent impressions live in OPEN-QUESTIONS). Newest first. Each entry: build, what happened, S-criteria signals, actions taken.
 
+## #10 — Allen, 2026-07-18 (build: MT-2 stage, commit 0cd53d1) — M-T2 GATE REVIEW
+
+_(Numbering note: the F_0.2.0 plan labeled the M-T5 slice feel gate "playtest #10"; the
+intermediate theater gates take the running numbers, so the slice feel gate shifts to
+whatever number it lands on.)_
+
+**"I like the graphic of the show"** — the neon stage look is ratified; the M-T2 slice's
+deliberate gaps are the findings. Four notes, three actions:
+1. **The puppetshow is too fast — can't follow what's going on.** Expected at this slice:
+   M-T2 kept the text ticker's beat cadence. The fix is M-T3's SweatPacer (3–8s tension-
+   driven beat-scenes). ACTION: proceed to M-T3.
+2. **Moneyline legibility gap: which color is my team, and what's the score?** Team
+   identity (names ↔ dot colors ↔ the picked side) and the running score must live on
+   screen. The full scorebug is M-T4 chrome, but the minimal version (colored team names,
+   pick marker, running score) is PULLED FORWARD into M-T3 — the score ledger logic lands
+   there anyway.
+3. **Legs resolve green/red with no goals seen.** Correct diagnosis of the slice: M-T2
+   stages no scenes, so resolution has no on-pitch cause. M-T3's ScenePlaybook is the fix —
+   goals visibly staged (buildup → shot → net), and the goal-playback invariant means the
+   ledger can never move without one.
+4. Stage graphics approved (the couch-readability half of the M-T2 gate).
+
+Gate verdict: **look PASS, watchability deferred to the M-T3 gate** — the M-T2 questions
+"dots hold territory coherently / nothing signifies falsely" were overshadowed by the
+missing scene layer; they get re-asked at the M-T3 editor sweat.
+
 ## #9 — Allen, 2026-07-15 (build: charm expansion, commit 10b6135) — EXPANSION REVIEW
 
 **"Just playtested the game, nice!"** — first hands-on with the 22-item catalog, the dealt-hand

@@ -79,11 +79,15 @@ namespace SBR.Game
         [Range(0f, 1f)] public float scanlineAlpha = 0.15f;
 
         [Header("Theater (F_0.2.0 — the match theater stage)")]
-        [Tooltip("The match theater stage (M-T2). Off = the pre-theater text-ticker layout, kept " +
+        [Tooltip("The match theater stage (M-T2/T3). Off = the pre-theater text-ticker layout, kept " +
                  "as the A/B fallback through M-T4 per the plan's reversibility clause.")]
         public bool theaterEnabled = true;
         public Color pitchLineColor = new Color(0.85f, 0.92f, 0.95f, 0.50f);
         public Color pitchBgColor = new Color(0.012f, 0.016f, 0.022f, 0.95f);
+        [Tooltip("Scene-class → seconds (M-T3). The duration-acceptance test pins these bands.")]
+        public SweatPacer pacer = new SweatPacer();
+        [Tooltip("Idle gap between beat scenes, ms (the ≤1s filler law).")]
+        public float interSceneGapMs = 400f;
 
         [Header("Palette (design/08)")]
         [ColorUsage(false, true)] public Color phosphorGreen = new Color(0.20f, 1.15f, 0.40f);
@@ -139,13 +143,17 @@ namespace SBR.Game
         // ---- theater (F_0.2.0) ----
         private TheaterStage _stage;
         private readonly SweatPresentationModel _presModel = new SweatPresentationModel();
+        private readonly ScoreLedger _ledger = new ScoreLedger();
+        private TheaterChoreographer _choreo;
         private int _stageLeg = -1;
+        private bool _lastBeatUp;
 
         // =====================================================================================
 
         private void Awake()
         {
             _font = LoadFont();
+            _choreo = new TheaterChoreographer(pacer);
             _emissBlock = new MaterialPropertyBlock();
             _emissSeed = UnityEngine.Random.value * 100f;
 
@@ -280,6 +288,13 @@ namespace SBR.Game
                 _eventsEmitted++;
                 RenderEvent(evt);
 
+                if (_stage != null)
+                {
+                    // M-T3: the scenes own pacing AND the resolution ceremony.
+                    yield return TheaterBeat(evt);
+                    continue;
+                }
+
                 bool onFinalLeg = evt.LegIndex == lastLeg;
                 if (evt.Type == DramaEventType.LegFinal)
                     yield return ResolveBeat(evt);
@@ -291,6 +306,96 @@ namespace SBR.Game
 
                 if (_session.IsComplete) break;
                 yield return SeatedHold(PacingFor(evt, onFinalLeg));
+            }
+        }
+
+        // ---------------------------------------------------------------- theater beats (M-T3)
+
+        /// <summary>One beat as theater: non-final beats play their resolved scene (the scene's
+        /// duration IS the pacing); a LegFinal plays the final whistle sequence with the
+        /// ledger's stoppage-time plan; a pending loss suspends the kill scene at the shot
+        /// mid-flight, holds through the save window, and resumes with the continuation chosen
+        /// from the FINAL ticket-local grade (never WinProbAfter).</summary>
+        private IEnumerator TheaterBeat(DramaEvent evt)
+        {
+            Leg leg = _ticket.Legs[evt.LegIndex];
+            _stage.timeScale = Mathf.Max(0f, TimeScaleOverride);
+
+            if (evt.Type != DramaEventType.LegFinal)
+            {
+                SceneSpec spec = _choreo.ResolveBeat(evt, _lastBeatUp, _ledger);
+                _stage.PlayScene(spec, OnGoalPlayed, null);
+                yield return WaitSceneDone();
+                if (_session.IsComplete) yield break; // cashed out mid-scene
+                yield return SeatedHold(interSceneGapMs); // idle filler ≤1s between scenes
+                yield break;
+            }
+
+            if (_session.HasPendingLoss)
+            {
+                // The clippable moment: buildup → the shot freezes mid-flight → the prompt.
+                _stage.SuspendKillShot(ScenePlaybook.VariantFor(evt.Step));
+                while (_stage.ScenePlaying && !_stage.SuspendedAtShot) yield return null;
+                yield return PendingWindowBeat();
+
+                LegGrade grade = leg.IsVoided ? LegGrade.Voided
+                    : leg.GradesWon ? LegGrade.Won : LegGrade.Lost;
+                ScoreLedger.FinalPlan plan = _ledger.PlanFinal(grade);
+                _stage.ResumeSuspended(plan, OnGoalPlayed, null);
+                yield return WaitSceneDone();
+                yield return FinalSlam(evt, grade);
+            }
+            else
+            {
+                LegGrade grade = leg.IsVoided ? LegGrade.Voided
+                    : leg.GradesWon ? LegGrade.Won : LegGrade.Lost;
+                ScoreLedger.FinalPlan plan = _ledger.PlanFinal(grade);
+                SceneSpec spec = _choreo.ResolveFinal(grade, evt.Step);
+                _stage.PlayFinalScene(spec, plan, OnGoalPlayed, null);
+                yield return WaitSceneDone();
+                yield return FinalSlam(evt, grade);
+            }
+        }
+
+        /// <summary>Waits out the active scene. Seating freezes the stage (the scene stalls, so
+        /// this stalls with it); a cash-out abandons the scene — the gold flood takes the screen.</summary>
+        private IEnumerator WaitSceneDone()
+        {
+            while (_stage != null && _stage.ScenePlaying)
+            {
+                if (_ticket != null && _ticket.State == TicketState.CashedOut)
+                {
+                    _stage.CancelScene();
+                    yield break;
+                }
+                yield return null;
+            }
+        }
+
+        /// <summary>The GREEN/DEAD slam, fired as the final scene completes (TvLight sync). The
+        /// VOID path already spoke inside the pending window (the slip ceremony).</summary>
+        private IEnumerator FinalSlam(DramaEvent evt, LegGrade grade)
+        {
+            _resolvedThrough = evt.LegIndex + 1;
+            UpdateSlipStrip(evt.LegIndex + 1);
+            int k = evt.LegIndex + 1;
+            if (grade == LegGrade.Won) yield return GreenLegBeat(k);
+            else if (grade == LegGrade.Lost) yield return DeadLegBeat(k);
+        }
+
+        /// <summary>A staged goal's playback completed: the ledger commits (or the chalk-off
+        /// stands), the scorebug speaks, VAR gets its line. The ONLY score path (goal-playback
+        /// invariant: the board can never move without a goal on the pitch).</summary>
+        private void OnGoalPlayed(ScoreLedger.StagedGoal goal)
+        {
+            _ledger.CompleteGoal(goal);
+            if (_ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count)
+                UpdateScorebug(_ticket.Legs[_stageLeg]);
+            if (!goal.Commits)
+            {
+                _tFlavor.color = flavorColor;
+                _tFlavor.text = "VAR — NO GOAL";
+                _flavorScale = 1.12f;
             }
         }
 
@@ -420,15 +525,39 @@ namespace SBR.Game
         }
 
         /// <summary>Kicks the stage off for a leg: model-owned team colors (deterministic,
-        /// non-reserved pool), the picked side attacking right, territory opening at TrueProb.</summary>
+        /// non-reserved pool), the picked side attacking right, territory opening at TrueProb.
+        /// New leg = new match: the score ledger resets and the scorebug re-speaks.</summary>
         private void BeginStageLeg(int legIndex, Leg leg)
         {
             if (_stage == null) return;
             _stageLeg = legIndex;
+            _ledger.ResetForLeg();
             (uint home, uint away) = TheaterPalette.TeamColors(leg.Matchup.Home.Name, leg.Matchup.Away.Name);
             _stage.Show(true);
             _stage.BeginLeg(TheaterStage.FromRgb(home), TheaterStage.FromRgb(away),
                 pickedIsHome: leg.Side == Side.Home, openingProb: (float)leg.TrueProb);
+            UpdateScorebug(leg);
+        }
+
+        /// <summary>The theater scorebug (M-T3, playtest #10 finding #2 pulled forward from
+        /// chrome v2): team names IN their dot colors so the stage is instantly attributable,
+        /// the running synthesized score between them, the picked side marked. Away @ home
+        /// order, matching the slate's convention everywhere else.</summary>
+        private void UpdateScorebug(Leg leg)
+        {
+            if (_tMatchup == null) return;
+            (uint homeRgb, uint awayRgb) = TheaterPalette.TeamColors(leg.Matchup.Home.Name, leg.Matchup.Away.Name);
+            bool pickedHome = leg.Side == Side.Home;
+            int homeScore = pickedHome ? _ledger.Picked : _ledger.Opponent;
+            int awayScore = pickedHome ? _ledger.Opponent : _ledger.Picked;
+
+            string away = SweatFlavor.Short(leg.Matchup.Away.Name).ToUpperInvariant();
+            string home = SweatFlavor.Short(leg.Matchup.Home.Name).ToUpperInvariant();
+            string awayMark = leg.Side == Side.Away ? "● " : "";
+            string homeMark = leg.Side == Side.Home ? " ●" : "";
+            _tMatchup.text =
+                $"<color=#{awayRgb:X6}>{awayMark}{away}</color>  {awayScore} — {homeScore}  " +
+                $"<color=#{homeRgb:X6}>{home}{homeMark}</color>";
         }
 
         /// <summary>The always-on slip strip during a sweat (playtest #6: "what did I place, how much
@@ -616,7 +745,6 @@ namespace SBR.Game
         {
             Leg leg = _ticket.Legs[evt.LegIndex];
 
-            _tMatchup.text = MatchupLine(leg);
             _tRecords.text = RecordsLine(leg);
             _tLeg.text = $"LEG {evt.LegIndex + 1}/{_ticket.Legs.Count}";
             _tClock.text = SweatFlavor.Clock(evt);
@@ -635,12 +763,16 @@ namespace SBR.Game
             _tWinPct.text = $"WIN {Mathf.RoundToInt(_probTarget * 100f)}%";
 
             // The stage speaks the same beat (model owns the direction rule — one authority).
-            bool up = _presModel.RecordBeat(evt, leg);
+            _lastBeatUp = _presModel.RecordBeat(evt, leg);
             if (_stage != null)
             {
                 if (evt.LegIndex != _stageLeg) BeginStageLeg(evt.LegIndex, leg);
                 _stage.SetLiveProb((float)evt.WinProbAfter);
-                if (evt.Type != DramaEventType.LegFinal) _stage.Pulse(up, evt.Tag);
+                UpdateScorebug(leg); // colored identity + running score (M-T3 scorebug)
+            }
+            else
+            {
+                _tMatchup.text = MatchupLine(leg);
             }
 
             _tAttract.enabled = false;
@@ -798,9 +930,14 @@ namespace SBR.Game
             AnimateBar();
             AnimateFlavorPunch();
 
-            // The stage freezes with the viewing contract: standing pauses mid-motion, and the
-            // pending-loss window holds the frame — the frozen ball is the dread (F_0.2.0).
-            _stage?.SetFrozen(!_seated || (_session != null && _session.HasPendingLoss));
+            // The stage freezes with the viewing contract: standing pauses mid-motion. The
+            // pending-loss window's freeze is the stage's own suspension point (M-T3) — the
+            // kill scene's buildup must PLAY before the shot hangs mid-flight.
+            if (_stage != null)
+            {
+                _stage.SetFrozen(!_seated);
+                _stage.timeScale = Mathf.Max(0f, TimeScaleOverride);
+            }
 
             if (_interact != null && _interact.WasPressedThisFrame())
                 TryCashOut();

@@ -65,6 +65,124 @@ namespace SBR.Game
     }
 
     /// <summary>
+    /// The synthesized score ledger (F_0.2.0 M-T3) — causal + honest. Pure C#, EditMode-testable.
+    ///
+    /// Laws (the plan's §Score ledger, verbatim intent):
+    ///  - Attribution: a Score/BigPlay beat up ⇒ picked-team goal, down ⇒ opponent goal;
+    ///    Momentum/NearMiss ⇒ no goal.
+    ///  - Live-lead clamp (<see cref="MaxLiveLead"/> = ±1, a dial): a goal that would push the
+    ///    live lead beyond the clamp stages as the CHALKED-OFF variant — full drama, VAR
+    ///    disallow, no increment. Deliberate drama law: the theater tells one-goal-game
+    ///    stories, blowout scorelines never sweat.
+    ///  - Commit timing: a goal commits when its playback COMPLETES (<see cref="CompleteGoal"/>
+    ///    is the only score mutator), never on MoveNext — a suspended scene has committed nothing.
+    ///  - Finals (<see cref="PlanFinal"/>): the scoreline entering any LegFinal is within ±1
+    ///    (clamp consequence), so a correction needs at most 2 staged goals. Won ⇒ stoppage-time
+    ///    goal(s) until the picked team is strictly ahead. Lost ⇒ the killing shot commits only
+    ///    if the opponent is not already strictly ahead (already −1 ⇒ chalked at the death),
+    ///    then correction goal(s) until the opponent is strictly ahead. Voided ⇒ the ledger
+    ///    freezes as-is under the VOID treatment — no goals, no corrections.
+    ///  - Goal-playback invariant: every increment maps 1:1 to a completed staged goal.
+    /// </summary>
+    public sealed class ScoreLedger
+    {
+        /// <summary>The live-lead clamp dial (±goals). 1 = one-goal-game stories.</summary>
+        public int MaxLiveLead { get; set; } = 1;
+
+        /// <summary>Committed goals for the picked side, this leg.</summary>
+        public int Picked { get; private set; }
+
+        /// <summary>Committed goals for the opponent, this leg.</summary>
+        public int Opponent { get; private set; }
+
+        /// <summary>Total committed goal playbacks this leg (the invariant's counter).</summary>
+        public int CommittedGoals { get; private set; }
+
+        /// <summary>A goal the choreographer staged: who it's for, and whether it commits
+        /// (false = the chalked-off VAR-disallow variant — plays in full, never scores).</summary>
+        public readonly struct StagedGoal
+        {
+            public readonly bool ForPicked;
+            public readonly bool Commits;
+
+            public StagedGoal(bool forPicked, bool commits)
+            {
+                ForPicked = forPicked;
+                Commits = commits;
+            }
+        }
+
+        /// <summary>The final whistle's staging order: the goals scene #12/#13 must play
+        /// (killing shot first on a Lost, then corrections), each completed via
+        /// <see cref="CompleteGoal"/> as its sub-scene finishes.</summary>
+        public readonly struct FinalPlan
+        {
+            public readonly LegGrade Grade;
+            public readonly StagedGoal[] Goals;
+
+            public FinalPlan(LegGrade grade, StagedGoal[] goals)
+            {
+                Grade = grade;
+                Goals = goals;
+            }
+        }
+
+        /// <summary>Attribution + clamp for a non-final beat. Null = this beat stages no goal.</summary>
+        public StagedGoal? StageBeatGoal(DramaEventType type, bool up)
+        {
+            if (type != DramaEventType.Score && type != DramaEventType.BigPlay) return null;
+            int leadAfter = up ? Picked + 1 - Opponent : Opponent + 1 - Picked;
+            return new StagedGoal(forPicked: up, commits: leadAfter <= MaxLiveLead);
+        }
+
+        /// <summary>The ONLY score mutator — called when a staged goal's playback completes.
+        /// A chalked-off goal (Commits false) completes without moving anything.</summary>
+        public void CompleteGoal(StagedGoal goal)
+        {
+            if (!goal.Commits) return;
+            if (goal.ForPicked) Picked++;
+            else Opponent++;
+            CommittedGoals++;
+        }
+
+        /// <summary>The stoppage-time staging order for a LegFinal, from the FINAL ticket-local
+        /// grade (single presentation authority — a suspended scene's ending is never chosen
+        /// from WinProbAfter). Pure planning: nothing commits until playback completes.</summary>
+        public FinalPlan PlanFinal(LegGrade grade)
+        {
+            var goals = new System.Collections.Generic.List<StagedGoal>(3);
+            int p = Picked, o = Opponent;
+            switch (grade)
+            {
+                case LegGrade.Won:
+                    while (p <= o) { goals.Add(new StagedGoal(true, true)); p++; }
+                    break;
+                case LegGrade.Lost:
+                    // The killing shot commits only if the opponent is not already strictly
+                    // ahead; otherwise it stages chalked-off — disallowed at the death, the
+                    // whistle still confirms Lost. MaxLiveLead is never violated.
+                    bool killingCommits = o <= p;
+                    goals.Add(new StagedGoal(false, killingCommits));
+                    if (killingCommits) o++;
+                    while (o <= p) { goals.Add(new StagedGoal(false, true)); o++; }
+                    break;
+                case LegGrade.Voided:
+                default:
+                    break; // the scoreline freezes as-is under the cyan VOID treatment
+            }
+            return new FinalPlan(grade, goals.ToArray());
+        }
+
+        /// <summary>New leg, new match: the scoreline resets.</summary>
+        public void ResetForLeg()
+        {
+            Picked = 0;
+            Opponent = 0;
+            CommittedGoals = 0;
+        }
+    }
+
+    /// <summary>
     /// The theater's team-color law (F_0.2.0): colors come from a fixed pool that excludes
     /// every reserved signal color — phosphor green (money-good), hot red (money-bad),
     /// gold (cash-out), cyan (VOID). Assignment is deterministic from the team NAME

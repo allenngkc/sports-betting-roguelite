@@ -70,6 +70,126 @@ namespace SBR.Tests.PlayMode
             Assert.AreEqual(honest, stage.LastTerritoryX, 0.02f, "the pulse must decay to honesty");
         }
 
+        // ------------------------------------------------------------ M-T3 scene playback
+
+        private static SceneSpec Spec(SceneTemplate t, ScoreLedger.StagedGoal? goal = null)
+            => new SceneSpec(t, 0, false, false, goal, new SweatPacer().SceneSeconds(t, false));
+
+        [UnityTest]
+        public IEnumerator One_scene_per_template_plays_to_completion()
+        {
+            TheaterStage stage = BuildStage();
+            stage.timeScale = 0.02f; // duration multiplier — fast-forward story time
+
+            var templates = new[]
+            {
+                SceneTemplate.GoalFor, SceneTemplate.GoalAgainst, SceneTemplate.BreakawayFor,
+                SceneTemplate.BreakawayAgainst, SceneTemplate.TerritoryFor, SceneTemplate.TerritoryAgainst,
+                SceneTemplate.NearMissHope, SceneTemplate.NearMissScare, SceneTemplate.CalmPossession,
+                SceneTemplate.Kickoff, SceneTemplate.Fallback,
+            };
+            foreach (SceneTemplate t in templates)
+            {
+                bool done = false;
+                ScoreLedger.StagedGoal? goal = ScenePlaybook.ProducesGoal(t)
+                    ? new ScoreLedger.StagedGoal(true, true)
+                    : (ScoreLedger.StagedGoal?)null;
+                stage.PlayScene(Spec(t, goal), null, () => done = true);
+                float w = 0f;
+                while (!done && w < 8f) { w += Time.deltaTime; yield return null; }
+                Assert.IsTrue(done, $"{t} never completed");
+                Assert.IsFalse(stage.ScenePlaying, $"{t} left the stage mid-scene");
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator Goal_playback_reports_commit_and_chalked_variants()
+        {
+            TheaterStage stage = BuildStage();
+            stage.timeScale = 0.02f;
+
+            ScoreLedger.StagedGoal? played = null;
+            bool done = false;
+            stage.PlayScene(Spec(SceneTemplate.GoalFor, new ScoreLedger.StagedGoal(true, true)),
+                g => played = g, () => done = true);
+            float w = 0f;
+            while (!done && w < 8f) { w += Time.deltaTime; yield return null; }
+            Assert.IsTrue(played.HasValue, "the goal playback must report");
+            Assert.IsTrue(played.Value.Commits && played.Value.ForPicked);
+
+            // The chalked-off variant: full goal drama, VAR takes it away, Commits false rides.
+            played = null;
+            done = false;
+            stage.PlayScene(Spec(SceneTemplate.BreakawayAgainst, new ScoreLedger.StagedGoal(false, false)),
+                g => played = g, () => done = true);
+            w = 0f;
+            while (!done && w < 8f) { w += Time.deltaTime; yield return null; }
+            Assert.IsTrue(played.HasValue);
+            Assert.IsFalse(played.Value.Commits, "the chalked goal must report Commits=false");
+        }
+
+        [UnityTest]
+        public IEnumerator Final_scene_stages_the_plan_goals_then_completes()
+        {
+            TheaterStage stage = BuildStage();
+            stage.timeScale = 0.02f;
+
+            var ledger = new ScoreLedger(); // 0-0 entering the final
+            ScoreLedger.FinalPlan plan = ledger.PlanFinal(LegGrade.Won); // needs 1 stoppage goal
+            Assert.AreEqual(1, plan.Goals.Length);
+
+            int goalsPlayed = 0;
+            bool done = false;
+            stage.PlayFinalScene(Spec(SceneTemplate.LegFinalWon), plan, g => goalsPlayed++, () => done = true);
+            float w = 0f;
+            while (!done && w < 10f) { w += Time.deltaTime; yield return null; }
+            Assert.IsTrue(done, "the final scene never completed");
+            Assert.AreEqual(plan.Goals.Length, goalsPlayed, "every staged goal must visibly play");
+        }
+
+        [UnityTest]
+        public IEnumerator Pending_window_suspends_at_the_shot_and_resumes_each_way()
+        {
+            TheaterStage stage = BuildStage();
+            stage.timeScale = 0.02f;
+
+            // Suspend: the kill scene freezes mid-flight and HOLDS.
+            stage.SuspendKillShot(0);
+            float w = 0f;
+            while (!stage.SuspendedAtShot && w < 8f) { w += Time.deltaTime; yield return null; }
+            Assert.IsTrue(stage.SuspendedAtShot, "the kill scene never reached its suspension point");
+            Assert.IsTrue(stage.ScenePlaying, "suspension is mid-scene, not scene-end");
+
+            Vector3 frozenBall = stage.transform.Find("Ball").localPosition;
+            for (int i = 0; i < 10; i++) yield return null;
+            Assert.AreEqual(frozenBall, stage.transform.Find("Ball").localPosition,
+                "the frozen shot must hang mid-flight");
+
+            // Resume as Lost: the flight completes — the killing goal plays, then the collapse.
+            var ledger = new ScoreLedger();
+            ScoreLedger.FinalPlan lost = ledger.PlanFinal(LegGrade.Lost);
+            int goals = 0;
+            bool done = false;
+            stage.ResumeSuspended(lost, g => goals++, () => done = true);
+            w = 0f;
+            while (!done && w < 10f) { w += Time.deltaTime; yield return null; }
+            Assert.IsTrue(done, "the Lost continuation never completed");
+            Assert.AreEqual(lost.Goals.Length, goals, "the killing shot must visibly play");
+            Assert.IsFalse(stage.SuspendedAtShot);
+
+            // Resume as VOID (fresh suspension): no goals — the stage dissolves cyan.
+            stage.SuspendKillShot(1);
+            w = 0f;
+            while (!stage.SuspendedAtShot && w < 8f) { w += Time.deltaTime; yield return null; }
+            goals = 0;
+            done = false;
+            stage.ResumeSuspended(new ScoreLedger().PlanFinal(LegGrade.Voided), g => goals++, () => done = true);
+            w = 0f;
+            while (!done && w < 10f) { w += Time.deltaTime; yield return null; }
+            Assert.IsTrue(done, "the VOID continuation never completed");
+            Assert.AreEqual(0, goals, "a voided leg stages no goals");
+        }
+
         [UnityTest]
         public IEnumerator Freezing_holds_the_exact_frame()
         {
