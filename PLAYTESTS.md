@@ -2,6 +2,22 @@
 
 Human playtests only (agent impressions live in OPEN-QUESTIONS). Newest first. Each entry: build, what happened, S-criteria signals, actions taken.
 
+## #16 — Allen, 2026-07-19 (build: MT-5, commit ba2b701) — THE SLICE FEEL GATE
+
+**"It feels nice now."** The F_0.2.0 slice passes on feel — the theater, the reconciled
+board, the taunting chrome, and the market rhythm hold up in a full run with sound. Gate
+rulings of record:
+1. **Audio: procedural v0 verdict — "kinda bad," REVISIT.** The CC0-vs-procedural decision
+   resolves against procedural-only: the architecture stays (TvAudioDirector, tension drive,
+   dread floor), but the clips need a real pass (CC0 samples or better synthesis). Parked as
+   its own later workstream — not blocking.
+2. **Priority redirect (Allen): the next feature is the LAPTOP OS + SPORTSBOOK REDESIGN** —
+   a mimic operating system inside the laptop (navigate a desktop, open the sportsbook app,
+   place bets there) with a full redesign of the betting UI. Slots AHEAD of the WebGL
+   follow-up and the micro-markets plan in the ratified queue; micro-markets will plug into
+   the new sportsbook UI rather than the old railroaded betslip.
+3. WebGL readiness: not ruled on this session; revisit after the sportsbook work.
+
 ## #15 — Allen, 2026-07-19 (build: MT-4.1, commit 496e1aa) — M-T4 MID-GATE REVIEW 2
 
 **"Everything feels better now"** — the reconciliation lands. One last nit, fixed same day
