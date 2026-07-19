@@ -81,15 +81,23 @@ def progress_line(event: dict[str, Any]) -> str | None:
 
 
 def events(lines: Iterable[str]) -> Iterable[dict[str, Any]]:
+    # Malformed lines are SKIPPED, never fatal: this renderer sits on Codex's
+    # stdout pipe, and exiting mid-run closes the pipe and kills the Codex
+    # session with EPIPE (observed 2026-07-18 — one bad line aborted a whole
+    # implementation run). Progress rendering is best-effort by design.
     for line_number, line in enumerate(lines, 1):
         if not line.strip():
             continue
         try:
             event = json.loads(line)
         except json.JSONDecodeError as exc:
-            raise ValueError(f"invalid JSONL at line {line_number}: {exc.msg}") from exc
+            print(f"[codex] skipping invalid JSONL at line {line_number}: {exc.msg}",
+                  file=sys.stderr, flush=True)
+            continue
         if not isinstance(event, dict):
-            raise ValueError(f"invalid JSONL at line {line_number}: event is not an object")
+            print(f"[codex] skipping invalid JSONL at line {line_number}: event is not an object",
+                  file=sys.stderr, flush=True)
+            continue
         yield event
 
 

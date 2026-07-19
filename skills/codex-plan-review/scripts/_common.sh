@@ -73,6 +73,27 @@ case "${TRIP_ALLOW_NON_GIT:-0}" in
         ;;
 esac
 
+# Windows sandbox mechanism (2026-07-18): Codex's default "elevated" broker
+# spawns children via CreateProcessAsUserW, which needs an interactive logon
+# session and fails with error 1312 from background jobs (Claude bg sessions
+# set CLAUDE_JOB_DIR — default those to the "unelevated" spawner). This only
+# selects the OS enforcement mechanism; the sandbox POLICY stays whatever the
+# launcher passes (--sandbox workspace-write / read-only — never bypassed).
+# Override with TRIP_CODEX_WINDOWS_SANDBOX=elevated|unelevated.
+CODEX_SANDBOX_FLAGS=()
+if [ "${OS:-}" = "Windows_NT" ]; then
+    _trip_win_sandbox="${TRIP_CODEX_WINDOWS_SANDBOX:-${CLAUDE_JOB_DIR:+unelevated}}"
+    case "$_trip_win_sandbox" in
+        "") ;;
+        elevated|unelevated) CODEX_SANDBOX_FLAGS+=(-c "windows.sandbox=$_trip_win_sandbox") ;;
+        *)
+            echo "error: TRIP_CODEX_WINDOWS_SANDBOX must be elevated or unelevated" >&2
+            return 64
+            ;;
+    esac
+    unset _trip_win_sandbox
+fi
+
 # Derive a per-target key from a path-like string. For real paths we
 # resolve to absolute; for non-path targets (branch names, commit
 # ranges) we sanitize in place. Replace '/' with '__'; force any other

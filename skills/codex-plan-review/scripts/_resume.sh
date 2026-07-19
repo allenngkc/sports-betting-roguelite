@@ -54,6 +54,7 @@ if run_codex_with_progress \
     "$EVENTS_FILE" "$EVENTS_FILE.stderr" "$THREAD_FILE" append \
     codex exec resume "$THREAD_ID" \
         "${CODEX_GIT_FLAGS[@]}" \
+        "${CODEX_SANDBOX_FLAGS[@]}" \
         --json \
         -c model="$CODEX_MODEL" \
         -c model_reasoning_effort="$CODEX_EFFORT" \

@@ -64,6 +64,7 @@ if run_codex_with_progress \
     codex exec \
         --json \
         "${CODEX_GIT_FLAGS[@]}" \
+        "${CODEX_SANDBOX_FLAGS[@]}" \
         --sandbox workspace-write \
         --color never \
         -c model="$CODEX_MODEL" \
