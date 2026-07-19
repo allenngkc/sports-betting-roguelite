@@ -2,6 +2,19 @@
 
 Human playtests only (agent impressions live in OPEN-QUESTIONS). Newest first. Each entry: build, what happened, S-criteria signals, actions taken.
 
+## #15 — Allen, 2026-07-19 (build: MT-4.1, commit 496e1aa) — M-T4 MID-GATE REVIEW 2
+
+**"Everything feels better now"** — the reconciliation lands. One last nit, fixed same day
+(MT-4.2): **MARKET SUSPENDED dominates; cash-out windows are rare.** Cause: reconciliation
+made many more beats into goal scenes, and dangerous scenes suspend from frame one to the
+payoff (~82% in). Honest levers only (the shown price must always be the paid price; holding
+the pre-beat price past the reveal was analyzed and rejected — cashing out at the pre-goal
+price after seeing the goal is a player exploit): (1) goal/breakaway payoffs moved to ~66%
+of the scene, so the whole restart tail plays with the market OPEN; (2) the inter-scene gap
+widened 0.4s → 0.9s (still inside the ≤1s filler law) — a guaranteed open-market window
+every beat. Net: open time per dangerous beat roughly doubles; possession beats were already
+fully open.
+
 ## #14 — Allen, 2026-07-19 (build: MT-4, commit 7296585) — M-T4 MID-GATE REVIEW
 
 **"Everything feels nicer now"** — chrome v2 lands. One crucial finding, fixed same day

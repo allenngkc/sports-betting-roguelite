@@ -95,8 +95,9 @@ namespace SBR.Game
         public Color pitchBgColor = new Color(0.012f, 0.016f, 0.022f, 0.95f);
         [Tooltip("Scene-class → seconds (M-T3). The duration-acceptance test pins these bands.")]
         public SweatPacer pacer = new SweatPacer();
-        [Tooltip("Idle gap between beat scenes, ms (the ≤1s filler law).")]
-        public float interSceneGapMs = 400f;
+        [Tooltip("Idle gap between beat scenes, ms (the ≤1s filler law). Doubles as the " +
+                 "guaranteed open-market window per beat (playtest #15).")]
+        public float interSceneGapMs = 900f;
 
         [Header("Palette (design/08)")]
         [ColorUsage(false, true)] public Color phosphorGreen = new Color(0.20f, 1.15f, 0.40f);

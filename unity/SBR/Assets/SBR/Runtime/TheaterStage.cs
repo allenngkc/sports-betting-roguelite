@@ -751,13 +751,15 @@ namespace SBR.Game
                 case SceneTemplate.GoalAgainst:
                     core = new[]
                     {
-                        S(B * 0.30f, 0.56f, lane, 0.60f, Mathf.Max(0.55f, u)),
-                        S(B * 0.24f, 0.80f, lane, 0.68f, Mathf.Max(0.7f, u)),
-                        S(B * 0.14f, 0.90f, lane, 0.72f, 1f),                       // the final pass
-                        S(B * 0.14f, 0.985f, 0.5f, 0.72f, 1f, MkGoal, goal, RouteShot),
+                        S(B * 0.22f, 0.56f, lane, 0.60f, Mathf.Max(0.55f, u)),
+                        S(B * 0.20f, 0.80f, lane, 0.68f, Mathf.Max(0.7f, u)),
+                        S(B * 0.12f, 0.90f, lane, 0.72f, 1f),                       // the final pass
+                        S(B * 0.12f, 0.985f, 0.5f, 0.72f, 1f, MkGoal, goal, RouteShot),
+                        // The long restart tail is deliberate (playtest #15): the reveal fires
+                        // at the goal (66% in), so this whole walk-back plays with the market OPEN.
                         commits
-                            ? S(B * 0.18f, 0.5f, 0.5f, 0.55f, 0.4f, route: RouteKickoff)
-                            : S(B * 0.18f, 0.84f, 0.30f, 0.60f, 0.3f, route: RouteBackLine), // chalked: defenders restart
+                            ? S(B * 0.34f, 0.5f, 0.5f, 0.55f, 0.4f, route: RouteKickoff)
+                            : S(B * 0.34f, 0.84f, 0.30f, 0.60f, 0.3f, route: RouteBackLine), // chalked: defenders restart
                     };
                     if (spec.Template == SceneTemplate.GoalAgainst) core = Mirror(core);
                     break;
@@ -766,13 +768,13 @@ namespace SBR.Game
                 case SceneTemplate.BreakawayAgainst:
                     core = new[]
                     {
-                        S(B * 0.22f, 0.30f, 0.5f, 0.42f, 0.5f),                     // won it deep
-                        S(B * 0.30f, 0.70f, lane, 0.58f, 1f, chase: true),          // the long carry, hunted
-                        S(B * 0.14f, 0.88f, lane, 0.66f, 1f, chase: true),
-                        S(B * 0.14f, 0.965f, spec.Variant == 2 ? 0.58f : 0.42f, 0.70f, 1f, MkGoal, goal, RouteShot),
+                        S(B * 0.18f, 0.30f, 0.5f, 0.42f, 0.5f),                     // won it deep
+                        S(B * 0.26f, 0.70f, lane, 0.58f, 1f, chase: true),          // the long carry, hunted
+                        S(B * 0.12f, 0.88f, lane, 0.66f, 1f, chase: true),
+                        S(B * 0.12f, 0.965f, spec.Variant == 2 ? 0.58f : 0.42f, 0.70f, 1f, MkGoal, goal, RouteShot),
                         commits
-                            ? S(B * 0.20f, 0.5f, 0.5f, 0.55f, 0.4f, route: RouteKickoff)
-                            : S(B * 0.20f, 0.84f, 0.30f, 0.60f, 0.3f, route: RouteBackLine),
+                            ? S(B * 0.32f, 0.5f, 0.5f, 0.55f, 0.4f, route: RouteKickoff)
+                            : S(B * 0.32f, 0.84f, 0.30f, 0.60f, 0.3f, route: RouteBackLine),
                     };
                     if (spec.Template == SceneTemplate.BreakawayAgainst) core = Mirror(core);
                     break;
