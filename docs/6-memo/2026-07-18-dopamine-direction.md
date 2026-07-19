@@ -44,10 +44,14 @@ Already planned, now understood as the dopamine milestone rather than polish:
 - Crowd bed swelling with danger (M-T5): anticipation is mostly audio.
 
 ### 3. Mid-sweat agency ladder Band 2 (design/04, already ratified direction)
-Decisions are dopamine. Partial cash-out (take 50%, let half ride) doubles decision density
-with zero new engine concepts (the payoff evaluator already prices it). Active charges
-(momentum boost, the existing Whistle) give lategame sweats verbs. The ladder was explicitly
-parked until "sweat repetitiveness first appears" — it has now appeared (run: playtest #13).
+Decisions are dopamine. Active charges (momentum boost, the existing Whistle) give lategame
+sweats verbs. The ladder was explicitly parked until "sweat repetitiveness first appears" —
+it has now appeared (run: playtest #13).
+
+**RULING (Allen, 2026-07-18): partial cash-out REJECTED as a baseline verb** — real books
+don't offer it, and the book's mechanics hold to the same realism bar as the presentation.
+It may return RELIC-GATED (a relic selling a non-real-book power is the established doctrine
+— see Ask for the Manager); parked until the Band-2 work.
 
 ### 4. Spectacle scaling with Band 3 (number-go-up)
 When a build gets broken (Multiplier stacks, payout ×N), the SHOW should break with it:
