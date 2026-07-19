@@ -29,6 +29,9 @@ namespace SBR.Game
         public float fallbackSeconds = 3.0f;
         /// <summary>Structural kickoff/restart (#14) — outside the beat-scene band by classification.</summary>
         public float kickoffSeconds = 1.5f;
+        /// <summary>Single presentation tempo dial. Values below 1 make every scene and
+        /// correction sub-scene shorter without changing their relative tuning.</summary>
+        public float paceMultiplier = 0.75f;
 
         /// <summary>The BEAT-SCENE duration for a resolved template (+overlays). Near-miss
         /// includes its hold; finals return their base — corrections are added by
@@ -52,11 +55,12 @@ namespace SBR.Game
                 _ => fallbackSeconds,
             };
             if (leadChangeIntro) s += leadChangeIntroExtra;
-            return s;
+            return s * paceMultiplier;
         }
 
         /// <summary>The full final whistle sequence: base + one sub-scene per staged correction
         /// goal (the killing shot on a Lost is one of them).</summary>
-        public float FinalSceneSeconds(int stagedGoals) => legFinalSeconds + stagedGoals * correctionGoalSeconds;
+        public float FinalSceneSeconds(int stagedGoals)
+            => (legFinalSeconds + stagedGoals * correctionGoalSeconds) * paceMultiplier;
     }
 }

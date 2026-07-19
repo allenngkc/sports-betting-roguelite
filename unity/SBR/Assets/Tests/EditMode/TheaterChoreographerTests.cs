@@ -141,8 +141,8 @@ namespace SBR.Tests.EditMode
                 foreach (bool intro in intros)
                 {
                     float s = pacer.SceneSeconds(t, intro);
-                    Assert.GreaterOrEqual(s, 3f, $"{t} (intro={intro}) under the band");
-                    Assert.LessOrEqual(s, 8f, $"{t} (intro={intro}) over the band");
+                    Assert.GreaterOrEqual(s, 3f * pacer.paceMultiplier, $"{t} (intro={intro}) under the band");
+                    Assert.LessOrEqual(s, 8f * pacer.paceMultiplier, $"{t} (intro={intro}) over the band");
                 }
             }
         }
@@ -151,13 +151,14 @@ namespace SBR.Tests.EditMode
         public void Correction_sub_scenes_are_separately_timed_and_the_final_caps_at_13s()
         {
             var pacer = new SweatPacer();
-            Assert.AreEqual(2.5f, pacer.correctionGoalSeconds, 1e-4f,
+            float correctionSeconds = pacer.correctionGoalSeconds * pacer.paceMultiplier;
+            Assert.AreEqual(2.5f * pacer.paceMultiplier, correctionSeconds, 1e-4f,
                 "correction sub-scenes are 2.5s by declaration");
             for (int n = 0; n <= 2; n++)
             {
                 float total = pacer.FinalSceneSeconds(n);
-                Assert.AreEqual(pacer.legFinalSeconds + n * 2.5f, total, 1e-4f);
-                Assert.LessOrEqual(total, 13f, "a full final whistle sequence runs at most 13s");
+                Assert.AreEqual((pacer.legFinalSeconds + n * 2.5f) * pacer.paceMultiplier, total, 1e-4f);
+                Assert.LessOrEqual(total, 13f * pacer.paceMultiplier, "a full final whistle sequence runs at most 13s");
             }
         }
 

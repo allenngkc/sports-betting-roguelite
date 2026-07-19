@@ -2,6 +2,26 @@
 
 Human playtests only (agent impressions live in OPEN-QUESTIONS). Newest first. Each entry: build, what happened, S-criteria signals, actions taken.
 
+## #12 — Allen, 2026-07-18 (build: MT-3.1, commit d076bbf) — M-T3 MID-GATE REVIEW 2
+
+Goals, defense sense: LIKED. Three findings, all landed same day (MT-3.2, Luna's first
+sandboxed implementation run after the codex launcher fix):
+1. **"Add regular time + stoppage time to know when the game ends."** DONE: pre-final
+   minutes cap at 89'; a final sequence opens at 90' (structural — no outcome leak), each
+   staged goal ticks 90'+n, the slam lands FT.
+2. **"25% faster — slightly too slow."** DONE: SweatPacer.paceMultiplier = 0.75, one dial
+   scaling every scene and correction sub-scene (stage playback included via
+   TheaterStage.paceScale). Duration acceptance re-verified at the new tempo: median
+   61.1s — the 60–90s per-sweat law now sits at its floor; any further speedup needs the
+   band re-ruled.
+3. **"Dots feel rigid/fake; midfielders don't defend."** DONE: per-dot reaction-lag
+   personalities + independent wander clocks + top-speed caps (runners, not magnets);
+   territory shifts ripple through the shape line by line (backs react last); the
+   defending team's nearest dots engage the carrier goal-side (3 in scenes, 2 on
+   breakaway chases, a mild single press in idle) while the rest hold the block.
+
+Direction standing: the M-T3 gate bar remains "reads as a real match."
+
 ## #11 — Allen, 2026-07-18 (build: MT-3 scenes, commit 6f4473b) — M-T3 MID-GATE REVIEW
 
 Score visibility from #10 confirmed fixed ("Nice that I see the score now"). Two crucial

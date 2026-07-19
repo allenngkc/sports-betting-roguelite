@@ -152,6 +152,8 @@ namespace SBR.Game
         private float _pendingProb;
         private string _pendingFlavor;
         private string _pendingClock;
+        private bool _finalSequenceActive;
+        private int _stoppageGoalCount;
         // Market suspend (M-T3.1, Allen's ruling): the engine reprices at MoveNext, so while a
         // scene plays the market is SUSPENDED — no stale-price accepts, no spoiler price.
         private bool _marketSuspended;
@@ -341,6 +343,7 @@ namespace SBR.Game
                 yield break;
             }
 
+            BeginFinalSequenceClock();
             if (_session.HasPendingLoss)
             {
                 // The clippable moment: buildup → the shot freezes mid-flight → the prompt.
@@ -391,6 +394,7 @@ namespace SBR.Game
         private IEnumerator FinalSlam(DramaEvent evt, LegGrade grade)
         {
             _tClock.text = "FT";
+            _finalSequenceActive = false;
             if (grade == LegGrade.Won)
             {
                 _probTarget = 1f;
@@ -416,6 +420,11 @@ namespace SBR.Game
         private void OnGoalPlayed(ScoreLedger.StagedGoal goal)
         {
             _ledger.CompleteGoal(goal);
+            if (_finalSequenceActive)
+            {
+                _stoppageGoalCount++;
+                _tClock.text = $"90'+{_stoppageGoalCount}";
+            }
             if (_ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count)
                 UpdateScorebug(_ticket.Legs[_stageLeg]);
             if (!goal.Commits)
@@ -424,6 +433,16 @@ namespace SBR.Game
                 _tFlavor.text = "VAR — NO GOAL";
                 _flavorScale = 1.12f;
             }
+        }
+
+        /// <summary>Regular time is over when a final scene starts. The stoppage counter is
+        /// presentation structure, not outcome information; it advances only from visible
+        /// goal-playback callbacks and is replaced by FT at the final slam.</summary>
+        private void BeginFinalSequenceClock()
+        {
+            _finalSequenceActive = true;
+            _stoppageGoalCount = 0;
+            _tClock.text = "90'";
         }
 
         /// <summary>The pending-loss window (charm expansion): [M] plays a Mulligan (leg voided,
@@ -518,6 +537,8 @@ namespace SBR.Game
             _flavorLegSeen = -1;
             _presModel.ResetForTicket();
             _stageLeg = -1;
+            _finalSequenceActive = false;
+            _stoppageGoalCount = 0;
             _marketSuspended = false;
             _tCashOut.color = new Color(gold.r, gold.g, gold.b, 1f);
             _stage?.Show(false);
@@ -1223,6 +1244,7 @@ namespace SBR.Game
             {
                 _stage = TheaterStage.Build(root, new Vector2(0f, 8f), new Vector2(720f, 252f),
                     pitchLineColor, pitchBgColor);
+                _stage.paceScale = pacer.paceMultiplier; // stage playback matches the pacer's arithmetic
                 ApplyTheaterLayout(w);
             }
 

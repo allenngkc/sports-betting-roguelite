@@ -53,6 +53,11 @@ namespace SBR.Game
                  "TimeScaleOverride, which is forwarded here): 1 = ship pacing, tiny = " +
                  "fast-forward, 0 = as fast as the frame rate allows.")]
         public float timeScale = 1f;
+        [Tooltip("Presentation tempo for the ABSOLUTE step durations (correction sub-scenes, " +
+                 "kill-shot buildups, continuations). TvSweatScreen forwards SweatPacer's " +
+                 "paceMultiplier so the stage's playback matches the pacer's arithmetic; the " +
+                 "fraction-based steps already inherit it through SceneSpec.Duration.")]
+        public float paceScale = 1f;
 
         private RectTransform _rt;
         private float _w, _h;
@@ -64,6 +69,8 @@ namespace SBR.Game
         private Image _flashRing;
 
         private Vector2[] _homePos, _awayPos, _homeVel, _awayVel, _homeNoise, _awayNoise;
+        private float[] _homeReactionLag, _awayReactionLag, _homeNoiseTimer, _awayNoiseTimer;
+        private float[] _homeShapeBias, _awayShapeBias, _homeShapeBiasVel, _awayShapeBiasVel;
         private Vector2 _ballPos, _ballVel;
         private Vector2 _hkPos, _akPos, _hkVel, _akVel;
 
@@ -194,6 +201,14 @@ namespace SBR.Game
             _awayVel = new Vector2[PitchLayout.OutfieldPerTeam];
             _homeNoise = new Vector2[PitchLayout.OutfieldPerTeam];
             _awayNoise = new Vector2[PitchLayout.OutfieldPerTeam];
+            _homeReactionLag = new float[PitchLayout.OutfieldPerTeam];
+            _awayReactionLag = new float[PitchLayout.OutfieldPerTeam];
+            _homeNoiseTimer = new float[PitchLayout.OutfieldPerTeam];
+            _awayNoiseTimer = new float[PitchLayout.OutfieldPerTeam];
+            _homeShapeBias = new float[PitchLayout.OutfieldPerTeam];
+            _awayShapeBias = new float[PitchLayout.OutfieldPerTeam];
+            _homeShapeBiasVel = new float[PitchLayout.OutfieldPerTeam];
+            _awayShapeBiasVel = new float[PitchLayout.OutfieldPerTeam];
             for (int i = 0; i < PitchLayout.OutfieldPerTeam; i++)
             {
                 _homeDots[i] = MakeDot($"Home{i}", Vector2.zero, 22f, Color.gray);
@@ -245,6 +260,12 @@ namespace SBR.Game
                 _awayDots[i].color = awayColor;
                 RerollNoise(ref _homeNoise[i]);
                 RerollNoise(ref _awayNoise[i]);
+                _homeReactionLag[i] = Rand(0.8f, 1.5f);
+                _awayReactionLag[i] = Rand(0.8f, 1.5f);
+                _homeNoiseTimer[i] = Rand(0.8f, 2.2f);
+                _awayNoiseTimer[i] = Rand(0.8f, 2.2f);
+                _homeShapeBias[i] = _awayShapeBias[i] = 0f;
+                _homeShapeBiasVel[i] = _awayShapeBiasVel[i] = 0f;
                 _homePos[i] = ToLocal(PitchLayout.FormationSlot(i, _homeAttacksRight, 0f));
                 _awayPos[i] = ToLocal(PitchLayout.FormationSlot(i, !_homeAttacksRight, 0f));
                 _homeVel[i] = _awayVel[i] = Vector2.zero;
@@ -384,7 +405,7 @@ namespace SBR.Game
             float speed = 1f + s.Tempo * 1.6f;
             _sceneTerr = Mathf.SmoothDamp(_sceneTerr, s.Terr, ref _sceneTerrVel, 0.45f / speed);
             LastTerritoryX = _sceneTerr;
-            MoveActors(_sceneTerr, speed, s.Chase, s.AtkPicked);
+            MoveActors(_sceneTerr, speed, s.Chase, s.AtkPicked, dt);
 
             Vector2 target = _routeDotIx >= 0 ? DotPos(_routeDotHome, _routeDotIx) : _stepBallLocal;
             _ballPos = Vector2.SmoothDamp(_ballPos, target, ref _ballVel, ballDamp / speed);
@@ -521,7 +542,7 @@ namespace SBR.Game
             LastTerritoryX = terr;
 
             float speed = 1f + _urgency * 1.4f;
-            MoveActors(terr, speed, chase: false, atkPicked: terr >= 0.5f);
+            MoveActors(terr, speed, chase: false, atkPicked: terr >= 0.5f, dt);
 
             // Sticky possession: the carrier keeps it, passes go to TEAMMATES, and turnovers
             // are visible interceptions. Long-run possession share restates the live prob
@@ -578,43 +599,114 @@ namespace SBR.Game
             _carrierIx = ix;
         }
 
-        /// <summary>Formation motion shared by idle and scenes (M-T3.1): the attacking shape
-        /// pushes up while the DEFENDING team drops into a compact block; on chase steps the
-        /// two defenders nearest the ball hunt the carrier instead of holding shape.</summary>
-        private void MoveActors(float terr, float speed, bool chase, bool atkPicked)
+        /// <summary>Formation motion shared by idle and scenes: each dot has its own lagged
+        /// territory response and noise clock, while the nearest defenders engage the carrier
+        /// goal-side instead of letting the midfield line watch the move from a rigid block.</summary>
+        private void MoveActors(float terr, float speed, bool chase, bool atkPicked, float dt)
         {
             float bias = (terr - 0.5f) * 2f; // [-1, 1] toward the right goal (picked frame)
-            float damp = dotDamp / speed;
 
             // Per-team posture: positive = on the front foot, negative = under siege.
             float homeAtk = _homeAttacksRight ? bias : -bias;
             float awayAtk = -homeAtk;
-            float homeCompact = Mathf.Clamp01(-homeAtk) * 0.8f;
-            float awayCompact = Mathf.Clamp01(-awayAtk) * 0.8f;
+            bool inScene = _script != null;
+            bool defendingHome = inScene ? atkPicked != _homeAttacksRight : !_carrierHome;
+            int engaged1, engaged2, engaged3;
+            FindNearestThree(defendingHome, _ballPos, out engaged1, out engaged2, out engaged3);
+            int engagementCount = inScene ? (chase ? 2 : 3) : 1;
+            float engagementStrength = inScene ? 1f : 0.45f;
 
-            bool chaseHome = chase && atkPicked != _homeAttacksRight; // defenders chase
-            int chase1 = -1, chase2 = -1;
-            if (chase) FindNearestTwo(chaseHome, _ballPos, out chase1, out chase2);
+            UpdateNoise(_homeNoise, _homeNoiseTimer, dt);
+            UpdateNoise(_awayNoise, _awayNoiseTimer, dt);
 
             for (int i = 0; i < PitchLayout.OutfieldPerTeam; i++)
             {
-                Vector2 ht = chaseHome && (i == chase1 || i == chase2)
-                    ? _ballPos + new Vector2(_homeAttacksRight ? -26f : 26f, i == chase1 ? 12f : -14f)
-                    : ToLocal(PitchLayout.FormationSlot(i, _homeAttacksRight, homeAtk, homeCompact)) + _homeNoise[i];
-                Vector2 at = !chaseHome && chase && (i == chase1 || i == chase2)
-                    ? _ballPos + new Vector2(_homeAttacksRight ? 26f : -26f, i == chase1 ? 12f : -14f)
-                    : ToLocal(PitchLayout.FormationSlot(i, !_homeAttacksRight, awayAtk, awayCompact)) + _awayNoise[i];
-                _homePos[i] = Vector2.SmoothDamp(_homePos[i], ht, ref _homeVel[i], damp);
-                _awayPos[i] = Vector2.SmoothDamp(_awayPos[i], at, ref _awayVel[i], damp);
+                float homeBias = Mathf.SmoothDamp(_homeShapeBias[i], homeAtk,
+                    ref _homeShapeBiasVel[i], ShapeDamp(true, i, speed), 4f, dt);
+                float awayBias = Mathf.SmoothDamp(_awayShapeBias[i], awayAtk,
+                    ref _awayShapeBiasVel[i], ShapeDamp(false, i, speed), 4f, dt);
+                _homeShapeBias[i] = homeBias;
+                _awayShapeBias[i] = awayBias;
+
+                bool homeEngages = defendingHome && engagementCount > 0
+                    && IsEngaged(i, engaged1, engaged2, engaged3, engagementCount);
+                bool awayEngages = !defendingHome && engagementCount > 0
+                    && IsEngaged(i, engaged1, engaged2, engaged3, engagementCount);
+                Vector2 ht = homeEngages
+                    ? DefensiveEngagementTarget(true, RankOf(i, engaged1, engaged2, engaged3), engagementStrength)
+                    : ToLocal(PitchLayout.FormationSlot(i, _homeAttacksRight, homeBias,
+                        Mathf.Clamp01(-homeBias) * 0.8f)) + _homeNoise[i];
+                Vector2 at = awayEngages
+                    ? DefensiveEngagementTarget(false, RankOf(i, engaged1, engaged2, engaged3), engagementStrength)
+                    : ToLocal(PitchLayout.FormationSlot(i, !_homeAttacksRight, awayBias,
+                        Mathf.Clamp01(-awayBias) * 0.8f)) + _awayNoise[i];
+                _homePos[i] = Vector2.SmoothDamp(_homePos[i], ht, ref _homeVel[i],
+                    PositionDamp(true, i, speed), MaxDotSpeed(speed), dt);
+                _awayPos[i] = Vector2.SmoothDamp(_awayPos[i], at, ref _awayVel[i],
+                    PositionDamp(false, i, speed), MaxDotSpeed(speed), dt);
             }
-            _hkPos = Vector2.SmoothDamp(_hkPos, ToLocal(PitchLayout.Keeper(_homeAttacksRight)), ref _hkVel, dotDamp);
-            _akPos = Vector2.SmoothDamp(_akPos, ToLocal(PitchLayout.Keeper(!_homeAttacksRight)), ref _akVel, dotDamp);
+            _hkPos = Vector2.SmoothDamp(_hkPos, ToLocal(PitchLayout.Keeper(_homeAttacksRight)),
+                ref _hkVel, dotDamp / speed, MaxDotSpeed(speed), dt);
+            _akPos = Vector2.SmoothDamp(_akPos, ToLocal(PitchLayout.Keeper(!_homeAttacksRight)),
+                ref _akVel, dotDamp / speed, MaxDotSpeed(speed), dt);
+        }
+
+        private float PositionDamp(bool home, int index, float speed)
+            => Mathf.Max(0.01f, dotDamp * ReactionLag(home, index) / speed);
+
+        private float ShapeDamp(bool home, int index, float speed)
+        {
+            // The back line absorbs shape changes last; midfielders carry the wave and
+            // forwards can make the quickest read of a territory shift.
+            float lineFactor = PitchLayout.IsBackLine(index) ? 1.15f : index < 6 ? 1f : 0.85f;
+            return Mathf.Max(0.01f, dotDamp * ReactionLag(home, index) * lineFactor / speed);
+        }
+
+        private float ReactionLag(bool home, int index)
+            => home ? _homeReactionLag[index] : _awayReactionLag[index];
+
+        private float MaxDotSpeed(float speed)
+            => Mathf.Lerp(300f, 380f, Mathf.Clamp01((speed - 1f) / 1.6f));
+
+        private static bool IsEngaged(int index, int first, int second, int third, int count)
+            => index == first || (count > 1 && index == second) || (count > 2 && index == third);
+
+        private static int RankOf(int index, int first, int second, int third)
+            => index == first ? 0 : index == second ? 1 : index == third ? 2 : 0;
+
+        private Vector2 DefensiveEngagementTarget(bool defendingHome, int rank, float strength)
+        {
+            bool attacksRight = defendingHome ? _homeAttacksRight : !_homeAttacksRight;
+            float ownGoalX = ToLocal(PitchLayout.Keeper(attacksRight)).x;
+            float towardOwnGoal = Mathf.Sign(ownGoalX - _ballPos.x);
+            if (Mathf.Abs(towardOwnGoal) < 0.01f) towardOwnGoal = attacksRight ? -1f : 1f;
+
+            float distance = Mathf.Lerp(76f, 60f, strength);
+            float laneOffset = rank == 0 ? 0f : (rank == 1 ? 18f : -18f);
+            Vector2 target = _ballPos + new Vector2(towardOwnGoal * distance, laneOffset);
+            float xLimit = (_w - Pad * 2f) * 0.5f;
+            float yLimit = (_h - Pad * 2f) * 0.5f;
+            return new Vector2(Mathf.Clamp(target.x, -xLimit, xLimit), Mathf.Clamp(target.y, -yLimit, yLimit));
+        }
+
+        private void UpdateNoise(Vector2[] noise, float[] timers, float dt)
+        {
+            for (int i = 0; i < noise.Length; i++)
+            {
+                timers[i] -= dt;
+                if (timers[i] > 0f) continue;
+                RerollNoise(ref noise[i]);
+                timers[i] = Rand(0.8f, 2.2f);
+            }
         }
 
         // ------------------------------------------------------------------ scene scripts
 
         /// <summary>Variant lanes: which flank the move runs down (EventText's variant trick).</summary>
         private static float Lane(int variant) => variant == 0 ? 0.5f : variant == 1 ? 0.32f : 0.68f;
+
+        /// <summary>Absolute (non-fractional) step seconds, honoring the presentation tempo.</summary>
+        private float P(float seconds) => seconds * Mathf.Max(0.01f, paceScale);
 
         private static Step S(float dur, float bx, float by, float terr, float tempo,
             byte marker = MkNone, ScoreLedger.StagedGoal goal = default, byte route = RoutePass,
@@ -765,8 +857,8 @@ namespace SBR.Game
                 steps.Add(S(B * 0.27f, 0.78f, lane, 0.70f, 0.85f));
                 foreach (ScoreLedger.StagedGoal g in plan.Goals)
                 {
-                    steps.Add(S(1.1f, 0.86f, 1f - lane, 0.72f, 1f)); // the break at the death
-                    steps.Add(S(1.4f, 0.975f, 0.5f, 0.74f, 1f, MkGoal, g, RouteShot));
+                    steps.Add(S(P(1.1f), 0.86f, 1f - lane, 0.72f, 1f)); // the break at the death
+                    steps.Add(S(P(1.4f), 0.975f, 0.5f, 0.74f, 1f, MkGoal, g, RouteShot));
                 }
                 steps.Add(S(B * 0.33f, 0.5f, 0.5f, 0.72f, 1f, route: RouteAuthored)); // whistle — celebrate
             }
@@ -776,8 +868,8 @@ namespace SBR.Game
                 steps.Add(S(B * 0.27f, 0.22f, lane, 0.30f, 0.8f, atkPicked: false));
                 foreach (ScoreLedger.StagedGoal g in plan.Goals)
                 {
-                    steps.Add(S(1.0f, 0.13f, lane, 0.28f, 1f, atkPicked: false, chase: true));
-                    steps.Add(S(1.5f, 0.025f, 0.5f, 0.26f, 1f, MkGoal, g, RouteShot, atkPicked: false));
+                    steps.Add(S(P(1.0f), 0.13f, lane, 0.28f, 1f, atkPicked: false, chase: true));
+                    steps.Add(S(P(1.5f), 0.025f, 0.5f, 0.26f, 1f, MkGoal, g, RouteShot, atkPicked: false));
                 }
                 steps.Add(S(B * 0.33f, 0.5f, 0.5f, 0.26f, 0.1f, route: RouteAuthored, atkPicked: false)); // collapse
             }
@@ -789,10 +881,10 @@ namespace SBR.Game
             float lane = Lane(variant);
             return new[]
             {
-                S(0.9f, 0.30f, lane, 0.34f, 0.8f, atkPicked: false),                 // opponent buildup
-                S(0.6f, 0.14f, lane, 0.30f, 1f, atkPicked: false, chase: true),      // the approach
-                S(0.35f, 0.10f, 0.5f, 0.28f, 1f, route: RouteShot, atkPicked: false), // shot launched
-                S(0.20f, 0.05f, 0.5f, 0.28f, 1f, MkSuspend, route: RouteAuthored, atkPicked: false), // FROZEN
+                S(P(0.9f), 0.30f, lane, 0.34f, 0.8f, atkPicked: false),                 // opponent buildup
+                S(P(0.6f), 0.14f, lane, 0.30f, 1f, atkPicked: false, chase: true),      // the approach
+                S(P(0.35f), 0.10f, 0.5f, 0.28f, 1f, route: RouteShot, atkPicked: false), // shot launched
+                S(P(0.20f), 0.05f, 0.5f, 0.28f, 1f, MkSuspend, route: RouteAuthored, atkPicked: false), // FROZEN
             };
         }
 
@@ -802,18 +894,18 @@ namespace SBR.Game
             switch (plan.Grade)
             {
                 case LegGrade.Voided:
-                    steps.Add(S(0.9f, 0.06f, 0.5f, 0.40f, 0.1f, MkVoid, route: RouteAuthored, atkPicked: false));
-                    steps.Add(S(1.4f, 0.5f, 0.5f, 0.50f, 0.1f, route: RouteAuthored)); // the scene dissolves
+                    steps.Add(S(P(0.9f), 0.06f, 0.5f, 0.40f, 0.1f, MkVoid, route: RouteAuthored, atkPicked: false));
+                    steps.Add(S(P(1.4f), 0.5f, 0.5f, 0.50f, 0.1f, route: RouteAuthored)); // the scene dissolves
                     break;
 
                 case LegGrade.Won:
-                    steps.Add(S(0.7f, 0.20f, 0.78f, 0.40f, 1f, MkSave, route: RouteAuthored, atkPicked: false));
+                    steps.Add(S(P(0.7f), 0.20f, 0.78f, 0.40f, 1f, MkSave, route: RouteAuthored, atkPicked: false));
                     foreach (ScoreLedger.StagedGoal g in plan.Goals)
                     {
-                        steps.Add(S(1.1f, 0.70f, 0.42f, 0.62f, 1f));      // the sucker-punch break
-                        steps.Add(S(1.4f, 0.975f, 0.5f, 0.72f, 1f, MkGoal, g, RouteShot));
+                        steps.Add(S(P(1.1f), 0.70f, 0.42f, 0.62f, 1f));      // the sucker-punch break
+                        steps.Add(S(P(1.4f), 0.975f, 0.5f, 0.72f, 1f, MkGoal, g, RouteShot));
                     }
-                    steps.Add(S(1.8f, 0.5f, 0.5f, 0.72f, 1f, route: RouteAuthored)); // whistle — celebrate
+                    steps.Add(S(P(1.8f), 0.5f, 0.5f, 0.72f, 1f, route: RouteAuthored)); // whistle — celebrate
                     break;
 
                 case LegGrade.Lost:
@@ -825,16 +917,16 @@ namespace SBR.Game
                         {
                             // The frozen flight completes (chalked at the death if the entry
                             // score already satisfied Lost — the whistle still confirms it).
-                            steps.Add(S(0.5f, 0.02f, 0.5f, 0.26f, 1f, MkGoal, g, RouteShot, atkPicked: false));
+                            steps.Add(S(P(0.5f), 0.02f, 0.5f, 0.26f, 1f, MkGoal, g, RouteShot, atkPicked: false));
                             first = false;
                         }
                         else
                         {
-                            steps.Add(S(1.0f, 0.13f, 0.35f, 0.28f, 1f, atkPicked: false, chase: true));
-                            steps.Add(S(1.5f, 0.025f, 0.5f, 0.26f, 1f, MkGoal, g, RouteShot, atkPicked: false));
+                            steps.Add(S(P(1.0f), 0.13f, 0.35f, 0.28f, 1f, atkPicked: false, chase: true));
+                            steps.Add(S(P(1.5f), 0.025f, 0.5f, 0.26f, 1f, MkGoal, g, RouteShot, atkPicked: false));
                         }
                     }
-                    steps.Add(S(1.8f, 0.5f, 0.5f, 0.26f, 0.1f, route: RouteAuthored, atkPicked: false)); // collapse
+                    steps.Add(S(P(1.8f), 0.5f, 0.5f, 0.26f, 0.1f, route: RouteAuthored, atkPicked: false)); // collapse
                     break;
             }
             return steps.ToArray();
@@ -927,16 +1019,29 @@ namespace SBR.Game
             return best;
         }
 
-        private void FindNearestTwo(bool home, Vector2 localPt, out int first, out int second)
+        private void FindNearestThree(bool home, Vector2 localPt, out int first, out int second, out int third)
         {
             Vector2[] side = home ? _homePos : _awayPos;
-            first = second = -1;
-            float d1 = float.PositiveInfinity, d2 = float.PositiveInfinity;
+            first = second = third = -1;
+            float d1 = float.PositiveInfinity, d2 = float.PositiveInfinity, d3 = float.PositiveInfinity;
             for (int i = 0; i < side.Length; i++)
             {
                 float d = (side[i] - localPt).sqrMagnitude;
-                if (d < d1) { d2 = d1; second = first; d1 = d; first = i; }
-                else if (d < d2) { d2 = d; second = i; }
+                if (d < d1)
+                {
+                    d3 = d2; third = second;
+                    d2 = d1; second = first;
+                    d1 = d; first = i;
+                }
+                else if (d < d2)
+                {
+                    d3 = d2; third = second;
+                    d2 = d; second = i;
+                }
+                else if (d < d3)
+                {
+                    d3 = d; third = i;
+                }
             }
         }
 

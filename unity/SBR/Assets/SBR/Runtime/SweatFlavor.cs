@@ -38,7 +38,7 @@ namespace SBR.Game
         {
             if (e.Type == DramaEventType.LegFinal) return "FT";
             double f = e.TotalSteps <= 1 ? 0.99 : Math.Min(0.99, (double)e.Step / e.TotalSteps);
-            int minute = Math.Max(1, (int)Math.Round(f * 90));
+            int minute = Math.Min(89, Math.Max(1, (int)Math.Round(f * 90)));
             return $"{minute}'";
         }
 
