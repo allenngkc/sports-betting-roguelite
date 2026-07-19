@@ -2,6 +2,30 @@
 
 Human playtests only (agent impressions live in OPEN-QUESTIONS). Newest first. Each entry: build, what happened, S-criteria signals, actions taken.
 
+## #13 — Allen, 2026-07-18 (build: MT-3.2, commit 3d88049) — M-T3 MID-GATE REVIEW 3
+
+Three findings + one design question. Findings landed same day (MT-3.3 hotfix tier):
+1. **Clock should tick continuously** (1' 2' 3'... so the player knows it's the 37th minute).
+   DONE: the clock now runs constantly through each scene toward the beat's baked minute
+   (position-derived, never outcome-derived — causality holds), pauses with the stand-up
+   freeze and the suspension window (frozen time is part of the dread), hits 90' into the
+   final sequence, 90'+n per stoppage goal, FT at the slam.
+2. **REGRESSION: "can't cash out anymore."** Root cause: M-T3.1's blanket market suspension +
+   M-T3.2's 25% speedup left the market open only in ~0.4s inter-scene gaps. FIX: suspension
+   now covers DANGEROUS scenes only (goal chances, near-misses, finals) — real-book behavior;
+   possession scenes reveal at scene start and keep the price live. Most of the sweat is
+   cash-out-able again; the suspension becomes a tell that something is ON.
+3. **Slip legs should wear team colors** so the player knows who they're sweating for.
+   DONE: unresolved slip legs render in their team's theater color (live full, pending
+   dimmed); W/L/VOID money colors still take over on resolution.
+4. **The dopamine question** ("could feel boring; CloverPit pays every spin — how do we keep
+   dopamine across many runs?"). This is the moment design/04's v0 note said to record: sweat
+   repetitiveness first appeared here (#13). Direction memo written:
+   `docs/6-memo/2026-07-18-dopamine-direction.md` — result-cadence micro-markets (corners/
+   props resolving mid-leg), M-T4/M-T5 reframed as the dopamine milestones (taunting counter,
+   tape, settle payoffs, crowd audio), agency ladder Band 2 (partial cash-out), Band-3
+   number-go-up spectacle, RedZone multi-sweat cut. Sequencing proposed; grill before adoption.
+
 ## #12 — Allen, 2026-07-18 (build: MT-3.1, commit d076bbf) — M-T3 MID-GATE REVIEW 2
 
 Goals, defense sense: LIKED. Three findings, all landed same day (MT-3.2, Luna's first

@@ -151,9 +151,15 @@ namespace SBR.Game
         // scene's payoff moment — the number must never spoil the goal.
         private float _pendingProb;
         private string _pendingFlavor;
-        private string _pendingClock;
         private bool _finalSequenceActive;
         private int _stoppageGoalCount;
+        // The continuously ticking match clock (playtest #13): minutes advance 1' 2' 3'
+        // through each scene toward the beat's baked minute — constant time flow the player
+        // can read, still causal (the target is position-derived, never outcome-derived).
+        private float _clockShownMin;   // fractional minute currently displayed
+        private float _clockTargetMin;  // the minute this run arrives at
+        private float _clockRate;       // minutes per realtime second for the active run
+        private bool _clockTicking;
         // Market suspend (M-T3.1, Allen's ruling): the engine reprices at MoveNext, so while a
         // scene plays the market is SUSPENDED — no stale-price accepts, no spoiler price.
         private bool _marketSuspended;
@@ -331,18 +337,36 @@ namespace SBR.Game
             Leg leg = _ticket.Legs[evt.LegIndex];
             _stage.timeScale = Mathf.Max(0f, TimeScaleOverride);
 
-            SuspendMarket(); // the engine repriced at MoveNext — no price until the reveal
-
             if (evt.Type != DramaEventType.LegFinal)
             {
                 SceneSpec spec = _choreo.ResolveBeat(evt, _lastBeatUp, _ledger);
-                _stage.PlayScene(spec, OnGoalPlayed, RevealBeatChrome, null);
+                StartClockRun(SweatFlavor.Minute(evt), spec.Duration);
+
+                // Market suspension is for DANGEROUS scenes only (playtest #13 — blanket
+                // suspension left almost no window to cash out): goal chances and near-misses
+                // suspend until their reveal, exactly like a real book on a dangerous attack;
+                // possession scenes carry so little information that the market drifts openly
+                // — their chrome reveals at scene start.
+                bool dangerous = spec.Goal.HasValue
+                    || spec.Template == SceneTemplate.NearMissHope
+                    || spec.Template == SceneTemplate.NearMissScare;
+                if (dangerous)
+                {
+                    SuspendMarket();
+                    _stage.PlayScene(spec, OnGoalPlayed, RevealBeatChrome, null);
+                }
+                else
+                {
+                    RevealBeatChrome(); // low-information beat: prob drifts, price stays live
+                    _stage.PlayScene(spec, OnGoalPlayed, null, null);
+                }
                 yield return WaitSceneDone();
                 if (_session.IsComplete) yield break; // cashed out mid-scene
                 yield return SeatedHold(interSceneGapMs); // idle filler ≤1s between scenes
                 yield break;
             }
 
+            SuspendMarket(); // a final is always a dangerous attack
             BeginFinalSequenceClock();
             if (_session.HasPendingLoss)
             {
@@ -395,6 +419,7 @@ namespace SBR.Game
         {
             _tClock.text = "FT";
             _finalSequenceActive = false;
+            _clockTicking = false;
             if (grade == LegGrade.Won)
             {
                 _probTarget = 1f;
@@ -442,7 +467,39 @@ namespace SBR.Game
         {
             _finalSequenceActive = true;
             _stoppageGoalCount = 0;
-            _tClock.text = "90'";
+            // Tick the remaining minutes away during the final's pre-reveal hold.
+            StartClockRun(90, pacer.FinalSceneSeconds(0) * 0.5f);
+        }
+
+        /// <summary>Arms the ticking clock: from the currently shown minute to
+        /// <paramref name="targetMinute"/> over <paramref name="sceneSeconds"/> of story time.
+        /// The ticker in Update honors seating and the stage's own freezes.</summary>
+        private void StartClockRun(int targetMinute, float sceneSeconds)
+        {
+            _clockTargetMin = Mathf.Max(_clockShownMin, targetMinute);
+            float dur = Mathf.Max(0.05f, sceneSeconds * Mathf.Max(0.0001f, TimeScaleOverride));
+            _clockRate = (_clockTargetMin - _clockShownMin) / dur;
+            _clockTicking = _clockRate > 0f;
+            RenderClockMinute();
+        }
+
+        /// <summary>Advances the ticking clock while the show is actually rolling: seated, a
+        /// scene playing, not frozen at the suspension point. The pending window and stand-up
+        /// pause stop time itself — the frozen clock is part of the dread.</summary>
+        private void TickClock()
+        {
+            if (!_clockTicking || _stage == null) return;
+            if (!_seated || !_stage.ScenePlaying || _stage.SuspendedAtShot) return;
+            int before = Mathf.FloorToInt(_clockShownMin);
+            _clockShownMin = Mathf.Min(_clockTargetMin, _clockShownMin + _clockRate * Time.deltaTime);
+            if (_clockShownMin >= _clockTargetMin) _clockTicking = false;
+            if (Mathf.FloorToInt(_clockShownMin) != before) RenderClockMinute();
+        }
+
+        private void RenderClockMinute()
+        {
+            if (_finalSequenceActive && _stoppageGoalCount > 0) return; // 90'+n owns the text
+            _tClock.text = $"{Mathf.Max(1, Mathf.FloorToInt(_clockShownMin))}'";
         }
 
         /// <summary>The pending-loss window (charm expansion): [M] plays a Mulligan (leg voided,
@@ -583,6 +640,11 @@ namespace SBR.Game
             if (_stage == null) return;
             _stageLeg = legIndex;
             _ledger.ResetForLeg();
+            // Kickoff: the match clock returns to zero and the final-sequence state clears.
+            _clockShownMin = 0f;
+            _clockTicking = false;
+            _finalSequenceActive = false;
+            _stoppageGoalCount = 0;
             (uint home, uint away) = TheaterPalette.TeamColors(leg.Matchup.Home.Name, leg.Matchup.Away.Name);
             _stage.Show(true);
             _stage.BeginLeg(TheaterStage.FromRgb(home), TheaterStage.FromRgb(away),
@@ -614,7 +676,9 @@ namespace SBR.Game
         /// <summary>The always-on slip strip during a sweat (playtest #6: "what did I place, how much
         /// is at risk, at what odds?"). Rich-text legs colored by PRESENTED status — resolved legs use
         /// the presentation cursor, never engine truth (outcomes are baked at lock; the strip must not
-        /// leak them early): green W / red L / cyan VOID / white LIVE / dim pending.</summary>
+        /// leak them early): green W / red L / cyan VOID. Unresolved legs wear THEIR TEAM'S theater
+        /// color (playtest #13 — "which team am I sweating for?"): live at full strength, pending
+        /// dimmed; the money colors still take over the instant a leg resolves.</summary>
         private void UpdateSlipStrip(int liveLeg)
         {
             if (_ticket == null) { _tSlipStrip.text = string.Empty; return; }
@@ -626,6 +690,8 @@ namespace SBR.Game
                 string side = SweatFlavor.Short(
                     leg.Side == Side.Home ? leg.Matchup.Home.Name : leg.Matchup.Away.Name).ToUpperInvariant();
                 string label = $"{side} {OddsFormat.American(leg.OfferedOdds)}";
+                (uint homeRgb, uint awayRgb) = TheaterPalette.TeamColors(leg.Matchup.Home.Name, leg.Matchup.Away.Name);
+                uint pickedRgb = leg.Side == Side.Home ? homeRgb : awayRgb;
 
                 if (i > 0) strip += "  ·  ";
                 if (i < _resolvedThrough)
@@ -636,11 +702,11 @@ namespace SBR.Game
                 }
                 else if (i == liveLeg)
                 {
-                    strip += $"<color=#E8F2F8>{label} LIVE</color>";
+                    strip += $"<color=#{pickedRgb:X6}>{label} LIVE</color>";
                 }
                 else
                 {
-                    strip += $"<color=#7A8890>{label}</color>";
+                    strip += $"<color=#{pickedRgb:X6}99>{label}</color>"; // dimmed team color
                 }
             }
             _tSlipStrip.text = strip;
@@ -816,7 +882,6 @@ namespace SBR.Game
                 // (RevealBeatChrome / FinalSlam), never before the pitch has shown the story.
                 _pendingProb = (float)evt.WinProbAfter;
                 _pendingFlavor = flavor;
-                _pendingClock = SweatFlavor.Clock(evt);
 
                 if (evt.LegIndex != _stageLeg) BeginStageLeg(evt.LegIndex, leg);
                 _stage.SetLiveProb((float)evt.WinProbAfter);
@@ -845,7 +910,6 @@ namespace SBR.Game
         {
             _probTarget = _pendingProb;
             _tWinPct.text = $"WIN {Mathf.RoundToInt(_probTarget * 100f)}%";
-            _tClock.text = _pendingClock;
             _tFlavor.color = flavorColor;
             _tFlavor.text = _pendingFlavor;
             _flavorScale = 1.12f;
@@ -1032,6 +1096,7 @@ namespace SBR.Game
             ApplyEmission();
             AnimateBar();
             AnimateFlavorPunch();
+            TickClock();
 
             // The stage freezes with the viewing contract: standing pauses mid-motion. The
             // pending-loss window's freeze is the stage's own suspension point (M-T3) — the

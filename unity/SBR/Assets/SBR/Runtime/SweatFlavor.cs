@@ -37,9 +37,16 @@ namespace SBR.Game
         public static string Clock(DramaEvent e)
         {
             if (e.Type == DramaEventType.LegFinal) return "FT";
+            return $"{Minute(e)}'";
+        }
+
+        /// <summary>The beat's baked minute (position-derived, never outcome-derived) — the
+        /// target the theater's continuously ticking clock runs toward. Caps at 89: the 90th
+        /// minute belongs to the final sequence's stoppage time.</summary>
+        public static int Minute(DramaEvent e)
+        {
             double f = e.TotalSteps <= 1 ? 0.99 : Math.Min(0.99, (double)e.Step / e.TotalSteps);
-            int minute = Math.Min(89, Math.Max(1, (int)Math.Round(f * 90)));
-            return $"{minute}'";
+            return Math.Min(89, Math.Max(1, (int)Math.Round(f * 90)));
         }
 
         private static string Base(DramaEventType type, bool up, string picked, string other, int step)
