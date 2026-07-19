@@ -2,6 +2,23 @@
 
 Human playtests only (agent impressions live in OPEN-QUESTIONS). Newest first. Each entry: build, what happened, S-criteria signals, actions taken.
 
+## #14 — Allen, 2026-07-19 (build: MT-4, commit 7296585) — M-T4 MID-GATE REVIEW
+
+**"Everything feels nicer now"** — chrome v2 lands. One crucial finding, fixed same day
+(MT-4.1): **the win-prob bar and the scoreboard disagree** ("0:1 we are winning but the bar
+shows 25%... 90% winrate when it's still 0-0 — feels artificially created/faked"). Diagnosis:
+the bar is the honest engine probability (untouchable — cash-out prices off it, design/04
+integrity rule); the fake thing was the SCOREBOARD, which only created goals from big-swing
+beats and so drifted out of agreement with the bar. FIX — the reconciliation amendment to the
+score ledger: the scoreline is a lagging quantized rendering of the probability. Sustained
+prob ≥70% implies picked ahead; ≤30% implies opponent ahead; when the board disagrees, the
+next beat moving in that direction stages the reconciling goal regardless of beat type
+(upgraded to a full goal scene — the board only moves behind goal playback), through the same
+±1 clamp. Mid-band (30–70%) tolerates any clamped scoreline — a 1-0 lead at 55% stays a
+natural one-goal game. Near-miss beats stay exempt. Both of Allen's scenarios are now pinned
+EditMode tests. Duration law re-verified (median 61.4s); final corrections drop (1.55→1.50
+per path) since the board rarely needs a stoppage-time fix anymore.
+
 ## #13 — Allen, 2026-07-18 (build: MT-3.2, commit 3d88049) — M-T3 MID-GATE REVIEW 3
 
 Three findings + one design question. Findings landed same day (MT-3.3 hotfix tier):

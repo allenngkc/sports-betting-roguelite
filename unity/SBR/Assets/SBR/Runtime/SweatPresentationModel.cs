@@ -146,12 +146,57 @@ namespace SBR.Game
             }
         }
 
-        /// <summary>Attribution + clamp for a non-final beat. Null = this beat stages no goal.</summary>
-        public StagedGoal? StageBeatGoal(DramaEventType type, bool up)
+        /// <summary>Above this live prob the scoreboard must show the picked side ahead —
+        /// the score is a lagging quantized rendering of the probability (playtest #14).</summary>
+        public double ReconcileHighBand { get; set; } = 0.70;
+
+        /// <summary>Below this live prob the scoreboard must show the opponent ahead.</summary>
+        public double ReconcileLowBand { get; set; } = 0.30;
+
+        /// <summary>Attribution + clamp for a non-final beat. Null = this beat stages no goal.
+        ///
+        /// Two goal sources (playtest #14 amendment — "the bar and the board must agree"):
+        ///  1. Type attribution (the original law): Score/BigPlay beats stage a goal for the
+        ///     beat's beneficiary.
+        ///  2. Prob reconciliation: when the live probability says one side should be AHEAD
+        ///     (outside the reconcile bands) and the board disagrees, a beat moving in that
+        ///     direction stages the reconciling goal regardless of its type — the mid-leg
+        ///     generalization of the final whistle's stoppage-time correction. Without this,
+        ///     the board can read 0-0 at 90% or "leading" at 25%, which plays as fake.
+        ///
+        /// Near-miss exemption and the live-lead clamp are enforced by the caller/clamp as
+        /// before; reconciliation targets ±1 so it can never violate the clamp.</summary>
+        public StagedGoal? StageBeatGoal(DramaEventType type, bool up, double delta, double probAfter)
         {
-            if (type != DramaEventType.Score && type != DramaEventType.BigPlay) return null;
-            int leadAfter = up ? Picked + 1 - Opponent : Opponent + 1 - Picked;
-            return new StagedGoal(forPicked: up, commits: leadAfter <= MaxLiveLead);
+            bool typeGoal = type == DramaEventType.Score || type == DramaEventType.BigPlay;
+            if (typeGoal)
+            {
+                // Type goals keep the original direction rule (ties up — EventText's law);
+                // their |delta| ≥ 0.07 means they are never actually flat.
+                int typeLeadAfter = up ? Picked + 1 - Opponent : Opponent + 1 - Picked;
+                return new StagedGoal(forPicked: up, commits: typeLeadAfter <= MaxLiveLead);
+            }
+
+            // The board the probability implies: +1 (picked ahead), -1 (opponent ahead), or
+            // 0 (mid-band — any scoreline within the clamp is a fine story, including 1-0
+            // either way; reconciliation never drags a natural lead back to level).
+            //
+            // Direction gate (Sol, M-T4.1): SIGN-COMPATIBILITY, not the tie-broken bool. A
+            // flat beat (delta 0 — real inputs: paths riding the generator's 0.03/0.97
+            // clamp) supports EITHER side's band; contrary motion never reconciles. Strict
+            // inequality would leave a ceiling-riding 97% path unreconciled forever — the
+            // exact dissonance this amendment exists to kill. The staged goal's direction
+            // comes from the BAND, never from the tie-break.
+            int impliedLead = probAfter >= ReconcileHighBand ? 1
+                : probAfter <= ReconcileLowBand ? -1 : 0;
+            int lead = Picked - Opponent;
+            bool reconcileUp = impliedLead > 0 && lead < impliedLead && delta >= 0.0;
+            bool reconcileDown = impliedLead < 0 && lead > impliedLead && delta <= 0.0;
+            if (!reconcileUp && !reconcileDown) return null;
+
+            bool forPicked = reconcileUp;
+            int leadAfter = forPicked ? Picked + 1 - Opponent : Opponent + 1 - Picked;
+            return new StagedGoal(forPicked, commits: leadAfter <= MaxLiveLead);
         }
 
         /// <summary>The ONLY score mutator — called when a staged goal's playback completes.

@@ -42,7 +42,7 @@ namespace SBR.Tests.EditMode
                     {
                         combos++;
                         SceneSpec spec = choreo.ResolveBeat(
-                            Evt(type, tag, up ? 0.7 : 0.3), up, new ScoreLedger());
+                            Evt(type, tag, up ? 0.7 : 0.3), up, up ? 0.05 : -0.05, new ScoreLedger());
                         Assert.Greater(spec.Duration, 0f, $"({type}, {tag}, up={up}) got no duration");
                         Assert.IsTrue(ScenePlaybook.IsBeatScene(spec.Template),
                             $"({type}, {tag}, up={up}) resolved to a structural template");
@@ -56,11 +56,11 @@ namespace SBR.Tests.EditMode
             var choreo = new TheaterChoreographer(new SweatPacer());
             foreach (DramaEventType type in new[] { DramaEventType.Score, DramaEventType.BigPlay, DramaEventType.Momentum })
             {
-                SceneSpec hope = choreo.ResolveBeat(Evt(type, TensionTag.NearMiss, 0.8), true, new ScoreLedger());
+                SceneSpec hope = choreo.ResolveBeat(Evt(type, TensionTag.NearMiss, 0.8), true, 0.05, new ScoreLedger());
                 Assert.AreEqual(SceneTemplate.NearMissHope, hope.Template, $"{type} up");
                 Assert.IsNull(hope.Goal, $"{type}: a near-miss is never a goal");
 
-                SceneSpec scare = choreo.ResolveBeat(Evt(type, TensionTag.NearMiss, 0.2), false, new ScoreLedger());
+                SceneSpec scare = choreo.ResolveBeat(Evt(type, TensionTag.NearMiss, 0.2), false, -0.05, new ScoreLedger());
                 Assert.AreEqual(SceneTemplate.NearMissScare, scare.Template, $"{type} down");
                 Assert.IsNull(scare.Goal);
             }
@@ -72,19 +72,19 @@ namespace SBR.Tests.EditMode
             var choreo = new TheaterChoreographer(new SweatPacer());
             var ledger = new ScoreLedger();
             Assert.AreEqual(SceneTemplate.GoalFor,
-                choreo.ResolveBeat(Evt(DramaEventType.Score, TensionTag.Swing, 0.7), true, ledger).Template);
+                choreo.ResolveBeat(Evt(DramaEventType.Score, TensionTag.Swing, 0.7), true, 0.05, ledger).Template);
             Assert.AreEqual(SceneTemplate.GoalAgainst,
-                choreo.ResolveBeat(Evt(DramaEventType.Score, TensionTag.Swing, 0.3), false, ledger).Template);
+                choreo.ResolveBeat(Evt(DramaEventType.Score, TensionTag.Swing, 0.3), false, -0.05, ledger).Template);
             Assert.AreEqual(SceneTemplate.BreakawayFor,
-                choreo.ResolveBeat(Evt(DramaEventType.BigPlay, TensionTag.Swing, 0.8), true, ledger).Template);
+                choreo.ResolveBeat(Evt(DramaEventType.BigPlay, TensionTag.Swing, 0.8), true, 0.05, ledger).Template);
             Assert.AreEqual(SceneTemplate.BreakawayAgainst,
-                choreo.ResolveBeat(Evt(DramaEventType.BigPlay, TensionTag.Swing, 0.2), false, ledger).Template);
+                choreo.ResolveBeat(Evt(DramaEventType.BigPlay, TensionTag.Swing, 0.2), false, -0.05, ledger).Template);
             Assert.AreEqual(SceneTemplate.TerritoryFor,
-                choreo.ResolveBeat(Evt(DramaEventType.Momentum, TensionTag.LeadChange, 0.55), true, ledger).Template);
+                choreo.ResolveBeat(Evt(DramaEventType.Momentum, TensionTag.LeadChange, 0.55), true, 0.05, ledger).Template);
             Assert.AreEqual(SceneTemplate.TerritoryAgainst,
-                choreo.ResolveBeat(Evt(DramaEventType.Momentum, TensionTag.LeadChange, 0.45), false, ledger).Template);
+                choreo.ResolveBeat(Evt(DramaEventType.Momentum, TensionTag.LeadChange, 0.45), false, -0.05, ledger).Template);
             Assert.AreEqual(SceneTemplate.CalmPossession,
-                choreo.ResolveBeat(Evt(DramaEventType.Momentum, TensionTag.Calm, 0.55), true, ledger).Template,
+                choreo.ResolveBeat(Evt(DramaEventType.Momentum, TensionTag.Calm, 0.55), true, 0.05, ledger).Template,
                 "Momentum with Tag==Calm uses the #11 calm variant");
         }
 
@@ -92,9 +92,9 @@ namespace SBR.Tests.EditMode
         public void Overlays_modify_playback_but_never_choose_the_template()
         {
             var choreo = new TheaterChoreographer(new SweatPacer());
-            SceneSpec plain = choreo.ResolveBeat(Evt(DramaEventType.Score, TensionTag.Calm, 0.7), true, new ScoreLedger());
-            SceneSpec lead = choreo.ResolveBeat(Evt(DramaEventType.Score, TensionTag.LeadChange, 0.7), true, new ScoreLedger());
-            SceneSpec swing = choreo.ResolveBeat(Evt(DramaEventType.Score, TensionTag.Swing, 0.7), true, new ScoreLedger());
+            SceneSpec plain = choreo.ResolveBeat(Evt(DramaEventType.Score, TensionTag.Calm, 0.7), true, 0.05, new ScoreLedger());
+            SceneSpec lead = choreo.ResolveBeat(Evt(DramaEventType.Score, TensionTag.LeadChange, 0.7), true, 0.05, new ScoreLedger());
+            SceneSpec swing = choreo.ResolveBeat(Evt(DramaEventType.Score, TensionTag.Swing, 0.7), true, 0.05, new ScoreLedger());
 
             Assert.AreEqual(plain.Template, lead.Template, "#9 is an overlay, not a template");
             Assert.AreEqual(plain.Template, swing.Template, "#10 is an overlay, not a template");
@@ -109,11 +109,31 @@ namespace SBR.Tests.EditMode
         {
             var choreo = new TheaterChoreographer(new SweatPacer());
             var ledger = new ScoreLedger();
-            ledger.CompleteGoal(ledger.StageBeatGoal(DramaEventType.Score, true).Value); // 1-0
+            ledger.CompleteGoal(ledger.StageBeatGoal(DramaEventType.Score, true, 0.05, 0.5).Value); // 1-0
 
-            SceneSpec spec = choreo.ResolveBeat(Evt(DramaEventType.Score, TensionTag.Swing, 0.9), true, ledger);
+            SceneSpec spec = choreo.ResolveBeat(Evt(DramaEventType.Score, TensionTag.Swing, 0.9), true, 0.05, ledger);
             Assert.IsTrue(spec.Goal.HasValue, "a Score beat stages a goal playback");
             Assert.IsFalse(spec.Goal.Value.Commits, "the 2-0 goal stages as the chalked-off variant");
+        }
+
+        [Test]
+        public void Reconciliation_upgrades_a_momentum_beat_to_a_goal_scene()
+        {
+            // Playtest #14: when the ledger stages a reconciling goal on a Momentum beat,
+            // the scene must LOOK like a goal — the board only moves behind goal playback.
+            var choreo = new TheaterChoreographer(new SweatPacer());
+            var ledger = new ScoreLedger(); // 0-0
+            SceneSpec spec = choreo.ResolveBeat(
+                Evt(DramaEventType.Momentum, TensionTag.LeadChange, 0.90), true, 0.0, ledger);
+            Assert.AreEqual(SceneTemplate.GoalFor, spec.Template,
+                "the reconciling momentum beat plays as a goal scene");
+            Assert.IsTrue(spec.Goal.HasValue && spec.Goal.Value.Commits);
+
+            // Near-miss beats stay exempt even when the board lags the bar (rule 2 first).
+            SceneSpec miss = choreo.ResolveBeat(
+                Evt(DramaEventType.Momentum, TensionTag.NearMiss, 0.90), true, 0.05, new ScoreLedger());
+            Assert.AreEqual(SceneTemplate.NearMissHope, miss.Template);
+            Assert.IsNull(miss.Goal, "a near-miss is never a goal, reconciliation included");
         }
 
         // ---------------------------------------------------------------- pacer bands
@@ -196,6 +216,7 @@ namespace SBR.Tests.EditMode
                     foreach (DramaEvent evt in paths[legIx])
                     {
                         bool up = model.RecordBeat(evt, leg);
+                        double delta = model.Beats[model.Beats.Count - 1].Delta;
                         if (evt.Type == DramaEventType.LegFinal)
                         {
                             ScoreLedger.FinalPlan plan =
@@ -205,7 +226,7 @@ namespace SBR.Tests.EditMode
                         }
                         else
                         {
-                            SceneSpec spec = choreo.ResolveBeat(evt, up, ledger);
+                            SceneSpec spec = choreo.ResolveBeat(evt, up, delta, ledger);
                             total += spec.Duration;
                             if (spec.Goal.HasValue) ledger.CompleteGoal(spec.Goal.Value);
                         }

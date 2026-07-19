@@ -109,6 +109,16 @@ namespace SBR.Game
             "{other} settle in; the drift is against you.",
         };
 
+        /// <summary>The goal call for a reconciliation-upgraded beat (playtest #14 — the board
+        /// catches the bar): the Score tables by the GOAL's beneficiary, so a possession beat
+        /// that scores never reads "passes and patience" while the net ripples (Sol, M-T4.1).</summary>
+        public static string GoalLine(bool forPicked, Leg leg, int step)
+        {
+            string picked = Short(leg.Side == Side.Home ? leg.Matchup.Home.Name : leg.Matchup.Away.Name);
+            string other = Short(leg.Side == Side.Home ? leg.Matchup.Away.Name : leg.Matchup.Home.Name);
+            return Base(DramaEventType.Score, forPicked, picked, other, step);
+        }
+
         /// <summary>The team's noun (last word of the "City Noun" name) - punchier for the ticker.</summary>
         public static string Short(string teamName)
         {

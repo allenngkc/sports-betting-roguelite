@@ -167,6 +167,7 @@ namespace SBR.Game
         private TheaterChoreographer _choreo;
         private int _stageLeg = -1;
         private bool _lastBeatUp;
+        private double _lastBeatDelta;
         // Causal reveal (M-T3.1): the beat's chrome is computed at MoveNext but LANDS at the
         // scene's payoff moment — the number must never spoil the goal.
         private float _pendingProb;
@@ -373,8 +374,19 @@ namespace SBR.Game
 
             if (evt.Type != DramaEventType.LegFinal)
             {
-                SceneSpec spec = _choreo.ResolveBeat(evt, _lastBeatUp, _ledger);
+                SceneSpec spec = _choreo.ResolveBeat(evt, _lastBeatUp, _lastBeatDelta, _ledger);
                 StartClockRun(SweatFlavor.Minute(evt), spec.Duration);
+
+                // A staged goal owns the beat's story (Sol, M-T4.1): the flavor speaks the
+                // goal call and the TAPE dot wears the SCORER'S color — both keyed to the
+                // goal's beneficiary, never the tie-broken beat direction (a flat floor
+                // beat reconciles for the opponent while the tie-break says "up").
+                if (spec.Goal.HasValue)
+                {
+                    _pendingBeatBeneficiary = TeamColor(leg, spec.Goal.Value.ForPicked);
+                    if (evt.Type == DramaEventType.Momentum)
+                        _pendingFlavor = SweatFlavor.GoalLine(spec.Goal.Value.ForPicked, leg, evt.Step);
+                }
 
                 // Market suspension is for DANGEROUS scenes only (playtest #13 — blanket
                 // suspension left almost no window to cash out): goal chances and near-misses
@@ -935,6 +947,7 @@ namespace SBR.Game
             // The stage speaks the same beat (model owns the direction rule — one authority).
             _lastBeatUp = _presModel.RecordBeat(evt, leg);
             SweatPresentationModel.BeatRecord beat = _presModel.Beats[_presModel.Beats.Count - 1];
+            _lastBeatDelta = beat.Delta;
             _pendingBeatDelta = beat.Delta;
             _pendingTapeBeat = evt.Type != DramaEventType.LegFinal;
             _pendingBeatBeneficiary = TeamColor(leg, _lastBeatUp);

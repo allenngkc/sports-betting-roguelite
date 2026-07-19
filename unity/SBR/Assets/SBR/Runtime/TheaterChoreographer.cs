@@ -32,9 +32,11 @@ namespace SBR.Game
             _pacer = pacer ?? new SweatPacer();
         }
 
-        /// <summary>Resolves a beat. <paramref name="up"/> is the model's direction (the one
-        /// authority); <paramref name="ledger"/> decides goal commit vs chalked-off.</summary>
-        public SceneSpec ResolveBeat(DramaEvent evt, bool up, ScoreLedger ledger)
+        /// <summary>Resolves a beat. <paramref name="up"/> and <paramref name="delta"/> are the
+        /// model's direction and signed movement (the one authority — BeatRecord);
+        /// <paramref name="ledger"/> decides goal commit vs chalked-off, including the
+        /// prob-reconciliation source whose sign gate needs the raw delta (flat ≠ up).</summary>
+        public SceneSpec ResolveBeat(DramaEvent evt, bool up, double delta, ScoreLedger ledger)
         {
             int variant = ScenePlaybook.VariantFor(evt.Step);
 
@@ -70,9 +72,13 @@ namespace SBR.Game
                 _ => SceneTemplate.Fallback, // future enum additions play, never throw
             };
 
-            ScoreLedger.StagedGoal? goal = ScenePlaybook.ProducesGoal(template)
-                ? ledger.StageBeatGoal(evt.Type, up)
-                : null;
+            // The ledger owns BOTH goal sources (type attribution + prob reconciliation,
+            // playtest #14). A reconciliation goal on a momentum beat UPGRADES the scene to
+            // the goal template — the board only ever moves behind a staged goal, and a goal
+            // must look like one.
+            ScoreLedger.StagedGoal? goal = ledger.StageBeatGoal(evt.Type, up, delta, evt.WinProbAfter);
+            if (goal.HasValue && !ScenePlaybook.ProducesGoal(template))
+                template = goal.Value.ForPicked ? SceneTemplate.GoalFor : SceneTemplate.GoalAgainst;
 
             return new SceneSpec(template, variant, leadChange, urgent, up, goal,
                 _pacer.SceneSeconds(template, leadChange));
