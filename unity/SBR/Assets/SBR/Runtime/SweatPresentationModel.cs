@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using SBR.Engine;
 
@@ -22,17 +23,25 @@ namespace SBR.Game
             public readonly TensionTag Tag;
             /// <summary>True when the beat moved the PICKED side's win probability up (ties count up).</summary>
             public readonly bool Up;
+            /// <summary>Signed win-probability movement from the previous beat (or TrueProb for the first).</summary>
+            public readonly double Delta;
             public readonly double ProbAfter;
 
-            public BeatRecord(int legIndex, int step, DramaEventType type, TensionTag tag, bool up, double probAfter)
+            public BeatRecord(int legIndex, int step, DramaEventType type, TensionTag tag, bool up,
+                double delta, double probAfter)
             {
                 LegIndex = legIndex;
                 Step = step;
                 Type = type;
                 Tag = tag;
                 Up = up;
+                Delta = delta;
                 ProbAfter = probAfter;
             }
+
+            public BeatRecord(int legIndex, int step, DramaEventType type, TensionTag tag, bool up,
+                double probAfter)
+                : this(legIndex, step, type, tag, up, 0.0, probAfter) { }
         }
 
         private readonly List<BeatRecord> _beats = new List<BeatRecord>();
@@ -49,10 +58,20 @@ namespace SBR.Game
                 _anchorLeg = evt.LegIndex;
                 _prevProb = leg.TrueProb; // the pre-event anchor, exactly EventText's rule
             }
-            bool up = evt.WinProbAfter >= _prevProb;
+            double delta = evt.WinProbAfter - _prevProb;
+            bool up = delta >= 0.0;
             _prevProb = evt.WinProbAfter;
-            _beats.Add(new BeatRecord(evt.LegIndex, evt.Step, evt.Type, evt.Tag, up, evt.WinProbAfter));
+            _beats.Add(new BeatRecord(evt.LegIndex, evt.Step, evt.Type, evt.Tag, up, delta, evt.WinProbAfter));
             return up;
+        }
+
+        /// <summary>Maps a beat's absolute probability movement to the tape's dot size band.</summary>
+        public static int MagnitudeBand(double delta)
+        {
+            double magnitude = Math.Abs(delta);
+            if (magnitude < 0.04) return 0;
+            if (magnitude < 0.10) return 1;
+            return 2;
         }
 
         /// <summary>New ticket — beat history and the direction anchor reset.</summary>

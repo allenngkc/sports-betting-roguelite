@@ -83,6 +83,35 @@ namespace SBR.Tests.EditMode
         }
 
         [Test]
+        public void Magnitude_bands_partition_the_delta_space()
+        {
+            Assert.AreEqual(0, SweatPresentationModel.MagnitudeBand(0.0));
+            Assert.AreEqual(0, SweatPresentationModel.MagnitudeBand(0.039));
+            Assert.AreEqual(0, SweatPresentationModel.MagnitudeBand(-0.039), "bands use |delta|");
+            Assert.AreEqual(1, SweatPresentationModel.MagnitudeBand(0.04));
+            Assert.AreEqual(1, SweatPresentationModel.MagnitudeBand(-0.099));
+            Assert.AreEqual(2, SweatPresentationModel.MagnitudeBand(0.10));
+            Assert.AreEqual(2, SweatPresentationModel.MagnitudeBand(-0.5));
+        }
+
+        [Test]
+        public void Record_beat_stores_the_signed_delta_from_the_anchor()
+        {
+            var run = new Run("THEATER-DELTA", new RunConfig());
+            Ticket ticket = run.PlaceTicket(new[] { new Pick(0, Side.Home) }, 50);
+            run.LockRound();
+            Leg leg = ticket.Legs[0];
+
+            var model = new SweatPresentationModel();
+            double anchor = leg.TrueProb;
+            model.RecordBeat(new DramaEvent(0, 1, 4, DramaEventType.Score, anchor + 0.08, TensionTag.Swing), leg);
+            model.RecordBeat(new DramaEvent(0, 2, 4, DramaEventType.Score, anchor - 0.02, TensionTag.Swing), leg);
+
+            Assert.AreEqual(0.08, model.Beats[0].Delta, 1e-9, "first beat measures from the TrueProb anchor");
+            Assert.AreEqual(-0.10, model.Beats[1].Delta, 1e-9, "later beats measure from the previous beat");
+        }
+
+        [Test]
         public void Reset_clears_history_and_re_anchors()
         {
             var run = new Run("THEATER-RESET", new RunConfig());

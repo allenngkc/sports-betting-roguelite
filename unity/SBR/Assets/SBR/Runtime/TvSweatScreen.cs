@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using SBR.Engine;
@@ -66,8 +67,16 @@ namespace SBR.Game
         public int staticRegens = 5;
         public float deadLineDuration = 0.7f;
         public float ticketDeadDimDuration = 0.9f;
+        [Tooltip("Silence after a dead ticket dims before the consolation line speaks.")]
+        public float ticketDeadSilenceDuration = 0.8f;
+        public float ticketDeadConsolationDuration = 1.0f;
         public float cashOutFloodDuration = 0.8f;
         public float winFloodDuration = 1.0f;
+        public float cashOutTickDuration = 0.4f;
+        public double cashOutRoundMultiple = 100.0;
+        public float winTallyDuration = 1.2f;
+        public float winConfettiDuration = 2.0f;
+        public int winConfettiCount = 40;
 
         [Header("Feel dials")]
         public float breathAmplitude = 0.06f;
@@ -117,6 +126,13 @@ namespace SBR.Game
         private float _probShown;
         private float _flavorScale = 1f;
         private double _lastCashOutAmount;
+        private double _cashOutShown;
+        private bool _hasCashOutShown;
+        private Coroutine _cashOutAnimation;
+        private float _cashOutScale = 1f;
+        private float _cashOutFlash;
+        private int _cashOutRoundShown;
+        private float _barPunch = 1f;
 
         // ---- input ----
         private InputAction _interact;
@@ -135,13 +151,17 @@ namespace SBR.Game
         private float _innerWidth;
         private float _barHeight;
         private int _resolvedThrough; // legs below this index are PRESENTED as resolved (not engine truth)
-        private Text _tMatchup, _tRecords, _tLeg, _tClock, _tFlavor, _tWinPct, _tCashOut, _tChrome, _tAttract, _tBigAmount, _tSlipStrip;
+        private Text _tMatchup, _tRecords, _tLeg, _tClock, _tFlavor, _tWinPct, _tCashOut, _tChrome, _tAttract, _tBigAmount, _tSlipStrip, _tConsolation;
         private Image _backing, _barBg, _barFill, _greenFlood, _goldFlood, _dimOverlay;
         private RawImage _staticNoise, _scanlines;
         private Texture2D _noiseTex;
 
         // ---- theater (F_0.2.0) ----
         private TheaterStage _stage;
+        private MomentumTape _tape;
+        private Transform _canvasRoot;
+        private float _canvasWidth;
+        private float _canvasHeight;
         private readonly SweatPresentationModel _presModel = new SweatPresentationModel();
         private readonly ScoreLedger _ledger = new ScoreLedger();
         private TheaterChoreographer _choreo;
@@ -163,6 +183,19 @@ namespace SBR.Game
         // Market suspend (M-T3.1, Allen's ruling): the engine reprices at MoveNext, so while a
         // scene plays the market is SUSPENDED — no stale-price accepts, no spoiler price.
         private bool _marketSuspended;
+        private double _pendingBeatDelta;
+        private Color _pendingBeatBeneficiary;
+        private bool _pendingTapeBeat;
+
+        private struct ConfettiPiece
+        {
+            public RectTransform Rect;
+            public Vector2 Velocity;
+            public float Spin;
+        }
+
+        private readonly List<ConfettiPiece> _confetti = new List<ConfettiPiece>();
+        private System.Random _confettiRandom = new System.Random(0x534252);
 
         // =====================================================================================
 
@@ -197,6 +230,7 @@ namespace SBR.Game
             if (SitSpot.InteractStandSuppressed == (Func<bool>)CashOutLive)
                 SitSpot.InteractStandSuppressed = null;
             StopAllCoroutines();
+            CleanupConfetti();
         }
 
         private void OnSeatedChanged(bool seated) => _seated = seated;
@@ -433,6 +467,8 @@ namespace SBR.Game
 
             _resolvedThrough = evt.LegIndex + 1;
             UpdateSlipStrip(evt.LegIndex + 1);
+            _tape?.ResolveLeg(evt.LegIndex, grade);
+            PunchWinProbBar();
             int k = evt.LegIndex + 1;
             if (grade == LegGrade.Won) yield return GreenLegBeat(k);
             else if (grade == LegGrade.Lost) yield return DeadLegBeat(k);
@@ -593,6 +629,16 @@ namespace SBR.Game
             _eventsEmitted = 0;
             _flavorLegSeen = -1;
             _presModel.ResetForTicket();
+            _tape?.ResetForTicket(_ticket != null ? _ticket.Legs.Count : 0);
+            _tape?.Show(false);
+            CleanupConfetti();
+            StopCashOutAnimation();
+            _hasCashOutShown = false;
+            _cashOutShown = 0.0;
+            _cashOutScale = 1f;
+            _cashOutFlash = 0f;
+            _barPunch = 1f;
+            _pendingTapeBeat = false;
             _stageLeg = -1;
             _finalSequenceActive = false;
             _stoppageGoalCount = 0;
@@ -608,7 +654,9 @@ namespace SBR.Game
             SetAlpha(_dimOverlay, 0f);
             SetRawAlpha(_staticNoise, 0f);
             _tBigAmount.text = string.Empty;
+            if (_tConsolation != null) _tConsolation.enabled = false;
             _tCashOut.enabled = false;
+            _tCashOut.rectTransform.localScale = Vector3.one;
             _tAttract.enabled = true;
             _tFlavor.color = flavorColor;
 
@@ -639,6 +687,7 @@ namespace SBR.Game
         {
             if (_stage == null) return;
             _stageLeg = legIndex;
+            _tape?.Show(true);
             _ledger.ResetForLeg();
             // Kickoff: the match clock returns to zero and the final-sequence state clears.
             _clockShownMin = 0f;
@@ -671,6 +720,14 @@ namespace SBR.Game
             _tMatchup.text =
                 $"<color=#{awayRgb:X6}>{awayMark}{away}</color>  {awayScore} — {homeScore}  " +
                 $"<color=#{homeRgb:X6}>{home}{homeMark}</color>";
+        }
+
+        private static Color TeamColor(Leg leg, bool pickedSide)
+        {
+            (uint home, uint away) = TheaterPalette.TeamColors(leg.Matchup.Home.Name, leg.Matchup.Away.Name);
+            uint picked = leg.Side == Side.Home ? home : away;
+            uint opponent = leg.Side == Side.Home ? away : home;
+            return TheaterStage.FromRgb(pickedSide ? picked : opponent);
         }
 
         /// <summary>The always-on slip strip during a sweat (playtest #6: "what did I place, how much
@@ -843,6 +900,8 @@ namespace SBR.Game
         private void ClearToBlankScreen()
         {
             _stage?.Show(false);
+            _tape?.Show(false);
+            if (_tConsolation != null) _tConsolation.enabled = false;
             SetAlpha(_greenFlood, 0f);
             SetAlpha(_goldFlood, 0f);
             SetAlpha(_dimOverlay, 0f);
@@ -875,6 +934,10 @@ namespace SBR.Game
 
             // The stage speaks the same beat (model owns the direction rule — one authority).
             _lastBeatUp = _presModel.RecordBeat(evt, leg);
+            SweatPresentationModel.BeatRecord beat = _presModel.Beats[_presModel.Beats.Count - 1];
+            _pendingBeatDelta = beat.Delta;
+            _pendingTapeBeat = evt.Type != DramaEventType.LegFinal;
+            _pendingBeatBeneficiary = TeamColor(leg, _lastBeatUp);
             if (_stage != null)
             {
                 // Causal reveal (M-T3.1): identity chrome may update now, but the win-prob,
@@ -908,11 +971,18 @@ namespace SBR.Game
         /// at the fresh price. Fired by the scene's onReveal (goal / save / scene end).</summary>
         private void RevealBeatChrome()
         {
+            if (_pendingTapeBeat)
+            {
+                _tape?.AppendBeat(_stageLeg, _pendingBeatBeneficiary,
+                    SweatPresentationModel.MagnitudeBand(_pendingBeatDelta));
+                _pendingTapeBeat = false;
+            }
             _probTarget = _pendingProb;
             _tWinPct.text = $"WIN {Mathf.RoundToInt(_probTarget * 100f)}%";
             _tFlavor.color = flavorColor;
             _tFlavor.text = _pendingFlavor;
             _flavorScale = 1.12f;
+            PunchWinProbBar();
             ReopenMarket();
         }
 
@@ -922,6 +992,7 @@ namespace SBR.Game
         private void SuspendMarket()
         {
             _marketSuspended = true;
+            StopCashOutAnimation();
             bool offerExists = _session != null && !_session.IsComplete
                 && _eventsEmitted >= 1 && _session.CashOutOffer().HasValue;
             if (offerExists)
@@ -955,11 +1026,90 @@ namespace SBR.Game
             {
                 _tCashOut.enabled = true;
                 _tCashOut.color = new Color(gold.r, gold.g, gold.b, 1f); // suspend dims it; live gold restores
-                _tCashOut.text = $"CASH OUT ${Money(offer.Value)}   [E]";
+                SetCashOutOffer(offer.Value);
             }
             else
             {
+                StopCashOutAnimation();
                 _tCashOut.enabled = false;
+            }
+        }
+
+        private void SetCashOutOffer(double offer)
+        {
+            if (!_hasCashOutShown)
+            {
+                _hasCashOutShown = true;
+                _cashOutShown = offer;
+                _cashOutRoundShown = RoundBucket(offer);
+                RenderCashOut(offer);
+                return;
+            }
+
+            if (Math.Abs(offer - _cashOutShown) < 0.005)
+            {
+                RenderCashOut(_cashOutShown);
+                return;
+            }
+
+            bool dropped = offer < _cashOutShown;
+            if (dropped) _cashOutFlash = 1f; // gold taunt, never a money-bad red signal
+            StopCashOutAnimation();
+            _cashOutAnimation = StartCoroutine(AnimateCashOut(_cashOutShown, offer));
+        }
+
+        private IEnumerator AnimateCashOut(double from, double to)
+        {
+            float duration = Mathf.Max(0f, cashOutTickDuration * Mathf.Max(0f, TimeScaleOverride));
+            if (duration <= 0f)
+            {
+                _cashOutShown = to;
+                _cashOutRoundShown = RoundBucket(to);
+                RenderCashOut(to);
+                _cashOutAnimation = null;
+                yield break;
+            }
+
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                _cashOutShown = from + (to - from) * t;
+                int bucket = RoundBucket(_cashOutShown);
+                if (bucket != _cashOutRoundShown)
+                {
+                    _cashOutRoundShown = bucket;
+                    _cashOutScale = 1.18f;
+                }
+                RenderCashOut(_cashOutShown);
+                yield return null;
+            }
+
+            _cashOutShown = to;
+            _cashOutRoundShown = RoundBucket(to);
+            RenderCashOut(to);
+            _cashOutAnimation = null;
+        }
+
+        private int RoundBucket(double amount)
+        {
+            double multiple = Math.Max(1.0, cashOutRoundMultiple);
+            return (int)Math.Floor(amount / multiple);
+        }
+
+        private void RenderCashOut(double amount)
+        {
+            if (_tCashOut == null) return;
+            _tCashOut.text = $"CASH OUT ${Money(amount)}   [E]";
+        }
+
+        private void StopCashOutAnimation()
+        {
+            if (_cashOutAnimation != null)
+            {
+                StopCoroutine(_cashOutAnimation);
+                _cashOutAnimation = null;
             }
         }
 
@@ -1048,17 +1198,103 @@ namespace SBR.Game
                 yield return null;
             }
             SetAlpha(_dimOverlay, 0.94f);
+            yield return ScaledWait(ticketDeadSilenceDuration);
+
+            // The consolation renders on ITS OWN element built above the dim overlay —
+            // _tFlavor sits beneath the 94% dim and would be unreadable (Sol, M-T4).
+            string[] consolation =
+            {
+                "the book thanks you for your patronage.",
+                "so close. they always are.",
+                "a courtesy: nobody saw that.",
+                "the model remains extremely confident."
+            };
+            int ticketIndex = director != null ? director.SweatIndex : 0;
+            _tConsolation.text = consolation[Math.Abs(ticketIndex) % consolation.Length];
+            _tConsolation.enabled = true;
+            yield return ScaledWait(ticketDeadConsolationDuration);
+            _tConsolation.enabled = false;
         }
 
         private IEnumerator WinBeat()
         {
             double payout = _ticket.PotentialPayout;
             _tBigAmount.color = new Color(gold.r, gold.g, gold.b, 1f);
-            _tBigAmount.text = $"+${Money(payout)}";
+            _tBigAmount.text = "+$0";
             EmissionFlash(gold);
             tvLight?.Flash(new Color(1f, 0.82f, 0.25f), 3.4f);
-            yield return FloodPulse(_goldFlood, new Color(1f, 0.78f, 0.15f), 0.5f, winFloodDuration);
+            StartCoroutine(FloodPulse(_goldFlood, new Color(1f, 0.78f, 0.15f), 0.5f, winFloodDuration));
+            StartCoroutine(WinConfetti());
+
+            float duration = Mathf.Max(0f, winTallyDuration * Mathf.Max(0f, TimeScaleOverride));
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = duration <= 0f ? 1f : Mathf.Clamp01(elapsed / duration);
+                _tBigAmount.text = $"+${Money(payout * t)}";
+                yield return null;
+            }
+            _tBigAmount.text = $"+${Money(payout)}";
+            yield return ScaledWait(Mathf.Max(0f, winConfettiDuration - winTallyDuration));
             _tBigAmount.text = string.Empty;
+        }
+
+        private IEnumerator WinConfetti()
+        {
+            CleanupConfetti();
+            int count = Mathf.Max(0, winConfettiCount);
+            for (int i = 0; i < count; i++)
+            {
+                var go = new GameObject($"WinConfetti_{i}", typeof(Image));
+                go.transform.SetParent(_canvasRoot, false);
+                var image = go.GetComponent<Image>();
+                image.raycastTarget = false;
+                image.color = _confettiRandom.NextDouble() < 0.68
+                    ? new Color(gold.r, gold.g, gold.b, 1f)
+                    : Color.white;
+                var rt = image.rectTransform;
+                rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+                rt.pivot = new Vector2(0.5f, 0.5f);
+                float side = 8f + (float)_confettiRandom.NextDouble() * 6f;
+                rt.sizeDelta = new Vector2(side, side);
+                rt.anchoredPosition = new Vector2(
+                    (float)(_confettiRandom.NextDouble() * _canvasWidth - _canvasWidth * 0.5),
+                    _canvasHeight * 0.5f + 8f + (float)_confettiRandom.NextDouble() * 32f);
+                _confetti.Add(new ConfettiPiece
+                {
+                    Rect = rt,
+                    Velocity = new Vector2((float)(_confettiRandom.NextDouble() * 70f - 35f),
+                        -(70f + (float)_confettiRandom.NextDouble() * 80f)),
+                    Spin = (float)(_confettiRandom.NextDouble() * 360f - 180f)
+                });
+            }
+
+            float duration = Mathf.Max(0f, winConfettiDuration * Mathf.Max(0f, TimeScaleOverride));
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float storyDt = Time.deltaTime / Mathf.Max(0.0001f, TimeScaleOverride);
+                for (int i = 0; i < _confetti.Count; i++)
+                {
+                    ConfettiPiece piece = _confetti[i];
+                    if (piece.Rect == null) continue;
+                    piece.Velocity.y -= 150f * storyDt;
+                    piece.Rect.anchoredPosition += piece.Velocity * storyDt;
+                    piece.Rect.Rotate(0f, 0f, piece.Spin * storyDt);
+                    _confetti[i] = piece;
+                }
+                yield return null;
+            }
+            CleanupConfetti();
+        }
+
+        private void CleanupConfetti()
+        {
+            for (int i = 0; i < _confetti.Count; i++)
+                if (_confetti[i].Rect != null) Destroy(_confetti[i].Rect.gameObject);
+            _confetti.Clear();
         }
 
         /// <summary>Fired from Update the instant E is accepted, so the gold hit is responsive.</summary>
@@ -1096,6 +1332,7 @@ namespace SBR.Game
             ApplyEmission();
             AnimateBar();
             AnimateFlavorPunch();
+            AnimateCashOutTaunt();
             TickClock();
 
             // The stage freezes with the viewing contract: standing pauses mid-motion. The
@@ -1114,6 +1351,8 @@ namespace SBR.Game
         private void TryCashOut()
         {
             if (_marketSuspended) return; // the book is off the market mid-scene (M-T3.1)
+            if (_cashOutAnimation != null) return; // the price is settling — the displayed and
+                                                   // accepted number must never differ (Sol, M-T4)
             if (!_seated || _session == null || _session.IsComplete || _eventsEmitted < 1) return;
             double? offer = _session.CashOutOffer();
             if (!offer.HasValue) return;
@@ -1161,8 +1400,26 @@ namespace SBR.Game
             float w = Mathf.Clamp01(_probShown) * _innerWidth;
             float hz = Mathf.Lerp(breathSlowHz, breathFastHz, Mathf.Abs(2f * _probShown - 1f));
             float breathe = 1f + Mathf.Sin(Time.time * hz * 2f * Mathf.PI) * breathAmplitude;
+            float punchDt = Time.deltaTime / Mathf.Max(0.0001f, TimeScaleOverride);
+            _barPunch = Mathf.MoveTowards(_barPunch, 1f, 2.8f * punchDt);
             _barFill.rectTransform.sizeDelta = new Vector2(w, _barHeight - 8f);
-            _barFill.rectTransform.localScale = new Vector3(1f, breathe, 1f);
+            _barFill.rectTransform.localScale = new Vector3(1f, breathe * _barPunch, 1f);
+        }
+
+        private void PunchWinProbBar() => _barPunch = 1.15f;
+
+        private void AnimateCashOutTaunt()
+        {
+            if (_tCashOut == null) return;
+            float scaledDt = Time.deltaTime / Mathf.Max(0.0001f, TimeScaleOverride);
+            _cashOutScale = Mathf.MoveTowards(_cashOutScale, 1f, 3.2f * scaledDt);
+            _cashOutFlash = Mathf.MoveTowards(_cashOutFlash, 0f, 4.5f * scaledDt);
+            _tCashOut.rectTransform.localScale = Vector3.one * _cashOutScale;
+            if (_tCashOut.enabled && !_marketSuspended)
+            {
+                Color brightGold = Color.Lerp(gold, Color.white, 0.28f);
+                _tCashOut.color = Color.Lerp(gold, brightGold, _cashOutFlash);
+            }
         }
 
         private void AnimateFlavorPunch()
@@ -1249,6 +1506,9 @@ namespace SBR.Game
             canvasGo.transform.localScale = Vector3.one * (screenWorldSize.x / w);
 
             Transform root = canvasGo.transform;
+            _canvasRoot = root;
+            _canvasWidth = w;
+            _canvasHeight = h;
             float halfW = w / 2f, halfH = h / 2f;
 
             // Backing panel (near-black; the phosphor glow bleeds through its slight transparency).
@@ -1311,6 +1571,7 @@ namespace SBR.Game
                     pitchLineColor, pitchBgColor);
                 _stage.paceScale = pacer.paceMultiplier; // stage playback matches the pacer's arithmetic
                 ApplyTheaterLayout(w);
+                _tape = MomentumTape.Build(root, new Vector2(-330f, -252f), new Vector2(300f, 50f));
             }
 
             // --- overlays (front to back after content) ---
@@ -1322,6 +1583,13 @@ namespace SBR.Game
                 new Vector2(0f, 0f), new Vector2(w - 40f, 200f), 96,
                 TextAnchor.MiddleCenter, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Bold);
             _tBigAmount.text = string.Empty;
+
+            // The bad-beat consolation line — built ABOVE the dim overlay so the sting stays
+            // readable through the 94% dim (Sol, M-T4); neutral chrome, never money-red.
+            _tConsolation = MakeText(root, "Consolation", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -20f), new Vector2(w - 80f, 44f), 28,
+                TextAnchor.MiddleCenter, flavorColor, FontStyle.Italic);
+            _tConsolation.enabled = false;
 
             // Scanlines on very top - a thin repeating dark line at ~15% alpha.
             _scanlines = MakeStretchRaw(root, "Scanlines", Color.white);
