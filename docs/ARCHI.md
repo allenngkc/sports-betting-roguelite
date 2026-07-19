@@ -280,6 +280,24 @@ Scene `Room`: a compact first-person apartment where **the room is the interface
   sweats, the pending-window beat (`[M]ulligan / [R]eview / let it die`), slip strip, settle cards.
   `TvLight` makes the room the reaction shot (palette law: green money-good, red money-bad, gold
   cash-out — colors reserved).
+- **The match theater** (F_0.2.0, the sweat's renderer — a stage, never a simulation):
+  `TvSweatScreen` orchestrates; `SweatPresentationModel` (pure C#: beat history + deltas, the
+  direction rule, `TheaterPalette` team colors from a non-reserved pool, `ScoreLedger` — causal
+  score synthesis with the ±1 live-lead clamp, playback-completion commits, and the playtest #14
+  prob-reconciliation source: the scoreboard is a lagging quantized rendering of the live prob);
+  `TheaterChoreographer` + `ScenePlaybook` (the ordered beat→scene resolver, 15 templates, total
+  over all combos) + `SweatPacer` (scene-class durations × `paceMultiplier`, the 60–90s duration
+  law); `TheaterStage` (neon pitch, actor-routed ball with sticky possession, per-dot movement
+  personalities, defensive engagement, scene playback with onReveal payoff callbacks and the
+  frozen kill-shot suspension); `MomentumTape` (per-leg beat strips → money-signal caps);
+  `PitchLayout` (formation geometry). Causal reveal law: chrome, tape, and market reprice at the
+  scene's payoff — dangerous scenes suspend the market until then (the shown price is always the
+  paid price).
+- **Audio v0** (`TvAudioDirector`, M-T5): procedural, diegetic, zero-asset — all clips synthesized
+  at build (filtered-noise crowd bed on its own low-passed child object; goal/chalked, near-miss
+  riser-and-cut, whistle, GREEN/DEAD slams, cash-out ka-chunk stings). Tension-driven (win-prob
+  distance from 0.5 + scene urgency), with the dread floor: the pending window and stand-up duck
+  everything to near-silence. Strictly parallel decoration — never blocks a scene; batch-safe.
 - **The laptop** (`LaptopScreen` + `BetslipModel` + `RunDirector`): the betting app — betslip with
   fraction-chip stakes and modifier toggles, shop (dealt-hand cards, Manager button, sell-backs at
   `GetResaleValue`), run header with effect chrome. `RunDirector` owns run lifecycle and engine
@@ -289,7 +307,8 @@ Scene `Room`: a compact first-person apartment where **the room is the interface
   when the schedule growls.
 - **`OddsFormat`**: American odds display only; the engine stays decimal.
 - Rendering is deliberately graybox: code-built UGUI, no asset pipeline yet (Phase 2 gate is feel,
-  not art). Audio does not exist yet.
+  not art). Audio is procedural v0 (above); the CC0-vs-procedural decision belongs to the slice
+  feel gate.
 
 ## 15. Console Client
 

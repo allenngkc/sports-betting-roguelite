@@ -87,6 +87,11 @@ namespace SBR.Game
         public float emissionDecay = 3.2f;
         [Range(0f, 1f)] public float scanlineAlpha = 0.15f;
 
+        [Header("Audio v0 (procedural, diegetic)")]
+        [Range(0f, 1f)] public float masterVolume = 0.5f;
+        [Range(0f, 1f)] public float crowdVolume = 0.6f;
+        [Range(0f, 1f)] public float stingVolume = 0.8f;
+
         [Header("Theater (F_0.2.0 — the match theater stage)")]
         [Tooltip("The match theater stage (M-T2/T3). Off = the pre-theater text-ticker layout, kept " +
                  "as the A/B fallback through M-T4 per the plan's reversibility clause.")]
@@ -188,6 +193,8 @@ namespace SBR.Game
         private double _pendingBeatDelta;
         private Color _pendingBeatBeneficiary;
         private bool _pendingTapeBeat;
+        private TvAudioDirector _audio;
+        private float _audioUrgency;
 
         private struct ConfettiPiece
         {
@@ -223,6 +230,7 @@ namespace SBR.Game
             SitSpot.SeatedChanged += OnSeatedChanged;
             SitSpot.InteractStandSuppressed = CashOutLive; // E is cash-out while an offer shows, not stand
             _seated = SitSpot.Active != null;
+            _audio?.Show(true);
             StartCoroutine(RunChannel());
         }
 
@@ -233,6 +241,7 @@ namespace SBR.Game
                 SitSpot.InteractStandSuppressed = null;
             StopAllCoroutines();
             CleanupConfetti();
+            _audio?.Show(false);
         }
 
         private void OnSeatedChanged(bool seated) => _seated = seated;
@@ -376,6 +385,15 @@ namespace SBR.Game
             if (evt.Type != DramaEventType.LegFinal)
             {
                 SceneSpec spec = _choreo.ResolveBeat(evt, _lastBeatUp, _lastBeatDelta, _ledger);
+                bool nearMiss = spec.Template == SceneTemplate.NearMissHope
+                    || spec.Template == SceneTemplate.NearMissScare;
+                _audioUrgency = spec.Urgent ? 1f : 0f;
+                if (nearMiss)
+                {
+                    float riserSeconds = spec.Duration * 0.66f
+                        * Mathf.Max(0.0001f, TimeScaleOverride);
+                    _audio?.NearMissRiser(riserSeconds);
+                }
                 StartClockRun(SweatFlavor.Minute(evt), spec.Duration);
 
                 // A staged goal owns the beat's story (Sol, M-T4.1): the flavor speaks the
@@ -400,7 +418,8 @@ namespace SBR.Game
                 if (dangerous)
                 {
                     SuspendMarket();
-                    _stage.PlayScene(spec, OnGoalPlayed, RevealBeatChrome, null);
+                    _stage.PlayScene(spec, OnGoalPlayed,
+                        nearMiss ? RevealBeatAudio : RevealBeatChrome, null);
                 }
                 else
                 {
@@ -408,11 +427,13 @@ namespace SBR.Game
                     _stage.PlayScene(spec, OnGoalPlayed, null, null);
                 }
                 yield return WaitSceneDone();
+                _audioUrgency = 0f;
                 if (_session.IsComplete) yield break; // cashed out mid-scene
                 yield return SeatedHold(interSceneGapMs); // idle filler ≤1s between scenes
                 yield break;
             }
 
+            _audioUrgency = 1f;
             SuspendMarket(); // a final is always a dangerous attack
             BeginFinalSequenceClock();
             if (_session.HasPendingLoss)
@@ -483,8 +504,19 @@ namespace SBR.Game
             _tape?.ResolveLeg(evt.LegIndex, grade);
             PunchWinProbBar();
             int k = evt.LegIndex + 1;
-            if (grade == LegGrade.Won) yield return GreenLegBeat(k);
-            else if (grade == LegGrade.Lost) yield return DeadLegBeat(k);
+            if (grade == LegGrade.Won)
+            {
+                _audio?.Whistle();
+                _audio?.SlamWon();
+                yield return GreenLegBeat(k);
+            }
+            else if (grade == LegGrade.Lost)
+            {
+                _audio?.Whistle();
+                _audio?.SlamLost();
+                yield return DeadLegBeat(k);
+            }
+            _audioUrgency = 0f;
             ReopenMarket(); // between legs (or at the end) the fresh price may speak again
         }
 
@@ -493,6 +525,7 @@ namespace SBR.Game
         /// invariant: the board can never move without a goal on the pitch).</summary>
         private void OnGoalPlayed(ScoreLedger.StagedGoal goal)
         {
+            _audio?.GoalHit(goal.Commits);
             _ledger.CompleteGoal(goal);
             if (_finalSequenceActive)
             {
@@ -654,6 +687,7 @@ namespace SBR.Game
             _pendingTapeBeat = false;
             _stageLeg = -1;
             _finalSequenceActive = false;
+            _audioUrgency = 0f;
             _stoppageGoalCount = 0;
             _marketSuspended = false;
             _tCashOut.color = new Color(gold.r, gold.g, gold.b, 1f);
@@ -1000,6 +1034,12 @@ namespace SBR.Game
             ReopenMarket();
         }
 
+        private void RevealBeatAudio()
+        {
+            _audio?.CutRiser();
+            RevealBeatChrome();
+        }
+
         /// <summary>While a scene plays, the book suspends the market (M-T3.1): the engine has
         /// already repriced, so the only honest options are the new price (a spoiler) or no
         /// price. Real books suspend on a dangerous attack — so does ours.</summary>
@@ -1233,6 +1273,7 @@ namespace SBR.Game
         private IEnumerator WinBeat()
         {
             double payout = _ticket.PotentialPayout;
+            _audio?.SlamWon();
             _tBigAmount.color = new Color(gold.r, gold.g, gold.b, 1f);
             _tBigAmount.text = "+$0";
             EmissionFlash(gold);
@@ -1349,6 +1390,16 @@ namespace SBR.Game
             AnimateCashOutTaunt();
             TickClock();
 
+            if (_audio != null)
+            {
+                _audio.masterVolume = masterVolume;
+                _audio.crowdVolume = crowdVolume;
+                _audio.stingVolume = stingVolume;
+                _audio.SetTension(1f - Mathf.Abs(2f * _probShown - 1f), _audioUrgency);
+                bool dread = !_seated || (_session != null && _session.HasPendingLoss);
+                _audio.Duck(dread, dread ? 0.15f : 0.8f);
+            }
+
             // The stage freezes with the viewing contract: standing pauses mid-motion. The
             // pending-loss window's freeze is the stage's own suspension point (M-T3) — the
             // kill scene's buildup must PLAY before the shot hangs mid-flight.
@@ -1373,6 +1424,7 @@ namespace SBR.Game
 
             _lastCashOutAmount = offer.Value;
             _session.AcceptCashOut();               // credits the bank; marks the ticket CashedOut
+            _audio?.CashOutKaChunk();
             StartCoroutine(CashOutFloodBeat(_lastCashOutAmount));
         }
 
@@ -1586,6 +1638,14 @@ namespace SBR.Game
                 _stage.paceScale = pacer.paceMultiplier; // stage playback matches the pacer's arithmetic
                 ApplyTheaterLayout(w);
                 _tape = MomentumTape.Build(root, new Vector2(-330f, -252f), new Vector2(300f, 50f));
+                Transform audioAnchor = emissiveScreen != null ? emissiveScreen.transform : transform;
+                _audio = TvAudioDirector.Build(audioAnchor);
+                if (_audio != null)
+                {
+                    _audio.masterVolume = masterVolume;
+                    _audio.crowdVolume = crowdVolume;
+                    _audio.stingVolume = stingVolume;
+                }
             }
 
             // --- overlays (front to back after content) ---
