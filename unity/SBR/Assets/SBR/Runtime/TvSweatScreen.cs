@@ -10,6 +10,181 @@ using UnityEngine.UI;
 
 namespace SBR.Game
 {
+    public enum RevealedLegState { Pending, Live, Won, Lost, Voided }
+
+    /// <summary>Read-only presentation data copied from the TV's own visible chrome.</summary>
+    public sealed class RevealedLeg
+    {
+        public int Index { get; internal set; }
+        public string TeamName { get; internal set; }
+        public string AmericanOdds { get; internal set; }
+        public uint TeamColor { get; internal set; }
+        public RevealedLegState State { get; internal set; }
+    }
+
+    public sealed class RevealedTicket
+    {
+        public int Index { get; internal set; }
+        public double Stake { get; internal set; }
+        public double PotentialPayout { get; internal set; }
+        public RevealedTicketState State { get; internal set; }
+        public IReadOnlyList<RevealedLeg> Legs { get; internal set; }
+    }
+
+    public enum RevealedTicketState { Riding, Won, Lost, CashedOut }
+
+    /// <summary>
+    /// The TV-owned causal mirror. Laptop MY BETS may read this object, but it cannot access the sweat
+    /// session or its live offer. Values advance only at the same reveal points as the TV chrome.
+    /// </summary>
+    public sealed class RevealedView
+    {
+        private readonly List<RevealedTicket> _tickets = new List<RevealedTicket>();
+
+        /// <summary>Structural changes only (tickets, legs, states, reset/clear) — the OS
+        /// rebuilds its UI on this. Fast display values live on DisplayRevision.</summary>
+        public int Revision { get; internal set; }
+
+        /// <summary>Per-frame display values (clock, prob, score, suspension). Consumers
+        /// update cached labels in place — a ticking minute must never rebuild a canvas
+        /// (Sol, F_0.3.0 performance finding).</summary>
+        public int DisplayRevision { get; internal set; }
+        public bool HasTicket { get; internal set; }
+        public int CurrentTicketIndex { get; internal set; }
+        public int TicketCount { get; internal set; }
+        public float WinProbability { get; internal set; }
+        public string ScoreText { get; internal set; } = string.Empty;
+        public string ClockText { get; internal set; } = string.Empty;
+        public bool MarketSuspended { get; internal set; }
+        public IReadOnlyList<RevealedTicket> Tickets => _tickets;
+
+        internal void Reset(Run run, Ticket current, int currentIndex)
+        {
+            var previous = new List<RevealedTicket>(_tickets);
+            _tickets.Clear();
+            if (run != null)
+            {
+                for (int i = 0; i < run.Tickets.Count; i++)
+                    _tickets.Add(i < currentIndex && i < previous.Count
+                        ? previous[i] : CopyTicket(run.Tickets[i], i));
+            }
+            CurrentTicketIndex = currentIndex;
+            TicketCount = _tickets.Count;
+            HasTicket = current != null && current.Legs.Count > 0;
+            WinProbability = HasTicket ? (float)current.Legs[0].TrueProb : 0f;
+            ScoreText = string.Empty;
+            ClockText = "PRE";
+            MarketSuspended = false;
+            Revision++;
+        }
+
+        internal void BeginLeg(int legIndex, Leg leg)
+        {
+            if (!HasTicket || leg == null) return;
+            RevealedTicket ticket = CurrentTicket;
+            if (ticket == null || legIndex < 0 || legIndex >= ticket.Legs.Count) return;
+            ticket.Legs[legIndex].State = RevealedLegState.Live;
+            Revision++;
+        }
+
+        internal void SetProbability(float probability)
+        {
+            if (!HasTicket) return;
+            WinProbability = probability;
+            DisplayRevision++;
+        }
+
+        internal void SetClock(string clock)
+        {
+            if (!HasTicket) return;
+            ClockText = clock ?? string.Empty;
+            DisplayRevision++;
+        }
+
+        internal void SetScore(string score)
+        {
+            if (!HasTicket) return;
+            ScoreText = score ?? string.Empty;
+            DisplayRevision++;
+        }
+
+        internal void SetMarketSuspended(bool suspended)
+        {
+            if (!HasTicket) return;
+            MarketSuspended = suspended;
+            DisplayRevision++;
+        }
+
+        internal void ResolveLeg(int legIndex, LegGrade grade)
+        {
+            RevealedTicket ticket = CurrentTicket;
+            if (ticket == null || legIndex < 0 || legIndex >= ticket.Legs.Count) return;
+            ticket.Legs[legIndex].State = grade == LegGrade.Won ? RevealedLegState.Won
+                : grade == LegGrade.Lost ? RevealedLegState.Lost : RevealedLegState.Voided;
+            if (grade == LegGrade.Lost) ticket.State = RevealedTicketState.Lost;
+            else
+            {
+                bool allResolved = true;
+                for (int i = 0; i < ticket.Legs.Count; i++)
+                    if (ticket.Legs[i].State == RevealedLegState.Pending || ticket.Legs[i].State == RevealedLegState.Live)
+                        allResolved = false;
+                if (allResolved) ticket.State = RevealedTicketState.Won;
+            }
+            Revision++;
+        }
+
+        /// <summary>The sweat is over and the TV moved on — the mirror empties with it
+        /// (a stale round under a live banner is a lie; Sol, F_0.3.0 finding 2).</summary>
+        internal void Clear()
+        {
+            _tickets.Clear();
+            HasTicket = false;
+            TicketCount = 0;
+            CurrentTicketIndex = 0;
+            WinProbability = 0f;
+            ScoreText = string.Empty;
+            ClockText = string.Empty;
+            MarketSuspended = false;
+            Revision++;
+        }
+
+        internal void MarkCashedOut()
+        {
+            RevealedTicket ticket = CurrentTicket;
+            if (ticket == null) return;
+            ticket.State = RevealedTicketState.CashedOut;
+            Revision++;
+        }
+
+        private RevealedTicket CurrentTicket
+            => CurrentTicketIndex >= 0 && CurrentTicketIndex < _tickets.Count ? _tickets[CurrentTicketIndex] : null;
+
+        private static RevealedTicket CopyTicket(Ticket source, int index)
+        {
+            var legs = new List<RevealedLeg>(source.Legs.Count);
+            foreach (Leg leg in source.Legs)
+            {
+                (uint home, uint away) = TheaterPalette.TeamColors(leg.Matchup.Home.Name, leg.Matchup.Away.Name);
+                legs.Add(new RevealedLeg
+                {
+                    Index = legs.Count,
+                    TeamName = SweatFlavor.Short(leg.Side == Side.Home ? leg.Matchup.Home.Name : leg.Matchup.Away.Name).ToUpperInvariant(),
+                    AmericanOdds = OddsFormat.American(leg.OfferedOdds),
+                    TeamColor = leg.Side == Side.Home ? home : away,
+                    State = RevealedLegState.Pending
+                });
+            }
+            return new RevealedTicket
+            {
+                Index = index,
+                Stake = source.Stake,
+                PotentialPayout = source.PotentialPayout,
+                State = RevealedTicketState.Riding,
+                Legs = legs
+            };
+        }
+    }
+
     /// <summary>
     /// The TV plays the sweat, live from the real engine (M3's emotional core; M4 wires it to the real
     /// round). A world-space UGUI canvas sits on the TV screen inset (0.98 x 0.55) in front of the
@@ -116,6 +291,7 @@ namespace SBR.Game
         // ---- public test/debug surface ----
         public int EventsEmitted => _eventsEmitted;
         public bool SweatComplete => _session != null && _session.IsComplete;
+        public RevealedView RevealedView { get; } = new RevealedView();
         /// <summary>Test/debug hook: force the seated state (simulates sitting / looking away) without the
         /// couch. Normal play drives this through SitSpot.SeatedChanged.</summary>
         public void ForceSeated(bool seated) => _seated = seated;
@@ -486,6 +662,7 @@ namespace SBR.Game
         private IEnumerator FinalSlam(DramaEvent evt, LegGrade grade)
         {
             _tClock.text = "FT";
+            RevealedView.SetClock(_tClock.text);
             _finalSequenceActive = false;
             _clockTicking = false;
             if (grade == LegGrade.Won)
@@ -498,6 +675,8 @@ namespace SBR.Game
                 _probTarget = 0f;
                 _tWinPct.text = "WIN 0%";
             }
+            RevealedView.SetProbability(_probTarget);
+            RevealedView.ResolveLeg(evt.LegIndex, grade);
 
             _resolvedThrough = evt.LegIndex + 1;
             UpdateSlipStrip(evt.LegIndex + 1);
@@ -531,6 +710,7 @@ namespace SBR.Game
             {
                 _stoppageGoalCount++;
                 _tClock.text = $"90'+{_stoppageGoalCount}";
+                RevealedView.SetClock(_tClock.text);
             }
             if (_ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count)
                 UpdateScorebug(_ticket.Legs[_stageLeg]);
@@ -582,6 +762,7 @@ namespace SBR.Game
         {
             if (_finalSequenceActive && _stoppageGoalCount > 0) return; // 90'+n owns the text
             _tClock.text = $"{Mathf.Max(1, Mathf.FloorToInt(_clockShownMin))}'";
+            RevealedView.SetClock(_tClock.text);
         }
 
         /// <summary>The pending-loss window (charm expansion): [M] plays a Mulligan (leg voided,
@@ -690,6 +871,8 @@ namespace SBR.Game
             _audioUrgency = 0f;
             _stoppageGoalCount = 0;
             _marketSuspended = false;
+            RevealedView.Reset(director != null ? director.Run : null, _ticket,
+                director != null ? director.SweatIndex : 0);
             _tCashOut.color = new Color(gold.r, gold.g, gold.b, 1f);
             _stage?.Show(false);
 
@@ -745,6 +928,7 @@ namespace SBR.Game
             _stage.Show(true);
             _stage.BeginLeg(TheaterStage.FromRgb(home), TheaterStage.FromRgb(away),
                 pickedIsHome: leg.Side == Side.Home, openingProb: (float)leg.TrueProb);
+            RevealedView.BeginLeg(legIndex, leg);
             UpdateScorebug(leg);
         }
 
@@ -767,6 +951,7 @@ namespace SBR.Game
             _tMatchup.text =
                 $"<color=#{awayRgb:X6}>{awayMark}{away}</color>  {awayScore} — {homeScore}  " +
                 $"<color=#{homeRgb:X6}>{home}{homeMark}</color>";
+            RevealedView.SetScore($"{away} {awayScore} — {home} {homeScore}");
         }
 
         private static Color TeamColor(Leg leg, bool pickedSide)
@@ -894,6 +1079,7 @@ namespace SBR.Game
             _idleKey = key;
             _session = null;
             _ticket = null;
+            RevealedView.Clear();
 
             ClearToBlankScreen();
             _tAttract.enabled = true;
@@ -919,6 +1105,7 @@ namespace SBR.Game
             _idleKey = key;
             _session = null;
             _ticket = null;
+            RevealedView.Clear();
 
             ClearToBlankScreen();
             _tAttract.enabled = true;
@@ -1007,6 +1194,8 @@ namespace SBR.Game
                 _probTarget = (float)evt.WinProbAfter;
                 _tWinPct.text = $"WIN {Mathf.RoundToInt(_probTarget * 100f)}%";
                 _tMatchup.text = MatchupLine(leg);
+                RevealedView.SetProbability(_probTarget);
+                RevealedView.SetClock(_tClock.text);
                 UpdateCashOutLabel();
             }
 
@@ -1027,6 +1216,8 @@ namespace SBR.Game
             }
             _probTarget = _pendingProb;
             _tWinPct.text = $"WIN {Mathf.RoundToInt(_probTarget * 100f)}%";
+            RevealedView.SetProbability(_probTarget);
+            RevealedView.SetClock(_tClock.text);
             _tFlavor.color = flavorColor;
             _tFlavor.text = _pendingFlavor;
             _flavorScale = 1.12f;
@@ -1046,6 +1237,7 @@ namespace SBR.Game
         private void SuspendMarket()
         {
             _marketSuspended = true;
+            RevealedView.SetMarketSuspended(true);
             StopCashOutAnimation();
             bool offerExists = _session != null && !_session.IsComplete
                 && _eventsEmitted >= 1 && _session.CashOutOffer().HasValue;
@@ -1067,6 +1259,7 @@ namespace SBR.Game
         private void ReopenMarket()
         {
             _marketSuspended = false;
+            RevealedView.SetMarketSuspended(false);
             _tCashOut.color = new Color(gold.r, gold.g, gold.b, 1f);
             UpdateCashOutLabel();
         }
@@ -1424,6 +1617,7 @@ namespace SBR.Game
 
             _lastCashOutAmount = offer.Value;
             _session.AcceptCashOut();               // credits the bank; marks the ticket CashedOut
+            RevealedView.MarkCashedOut();
             _audio?.CashOutKaChunk();
             StartCoroutine(CashOutFloodBeat(_lastCashOutAmount));
         }

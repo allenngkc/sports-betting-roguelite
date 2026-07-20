@@ -373,8 +373,8 @@ namespace SBR
             grabVolume.size = new Vector3(0.45f, 0.4f, 0.5f);
             grabVolume.isTrigger = true;
 
-            // M4: the laptop IS the book. DeskFocus glides the camera to the lid and frees the cursor;
-            // LaptopScreen hangs the phase-driven pages (betslip/shop/run-over) on a world-space canvas.
+            // The laptop IS the book. DeskFocus glides the camera to the lid and frees the cursor;
+            // LaptopScreen hosts the code-built OS and its SureThing app on a world-space canvas.
             var focus = root.AddComponent<DeskFocus>();
             focus.highlightRenderers = new[] { lapBase.GetComponent<Renderer>() };
 
@@ -391,6 +391,7 @@ namespace SBR
 
             var book = root.AddComponent<LaptopScreen>();
             book.director = director;
+            book.tv = UnityEngine.Object.FindAnyObjectByType<TvSweatScreen>();
             book.lidRenderer = lid.GetComponent<Renderer>();
 
             SetLayerRecursive(root, layer);

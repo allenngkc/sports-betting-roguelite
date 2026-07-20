@@ -1,0 +1,418 @@
+using System;
+using System.Globalization;
+using SBR.Engine;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace SBR.Game
+{
+    /// <summary>The small, app-switching shell around the SureThing sportsbook.</summary>
+    public sealed class LaptopOs
+    {
+        internal static readonly Color Accent = new Color(0.6078f, 0.3608f, 0.9647f, 1f); // #9B5CF6
+        internal static readonly Color Ink = new Color(0.035f, 0.028f, 0.065f, 0.98f);
+        internal static readonly Color Surface = new Color(0.075f, 0.060f, 0.125f, 0.98f);
+        internal static readonly Color SurfaceRaised = new Color(0.12f, 0.095f, 0.19f, 1f);
+        internal static readonly Color Muted = new Color(0.63f, 0.61f, 0.70f, 1f);
+        internal static readonly Color White = new Color(0.95f, 0.94f, 0.98f, 1f);
+        internal static readonly Color MoneyGood = new Color(0.25f, 0.95f, 0.45f, 1f);
+        internal static readonly Color MoneyBad = new Color(0.95f, 0.25f, 0.22f, 1f);
+        internal static readonly Color MoneyGold = new Color(0.98f, 0.78f, 0.25f, 1f);
+        internal static readonly Color SignalCyan = new Color(0.62f, 0.86f, 0.96f, 1f);
+
+        private enum App { Desktop, SureThing, OldSlips, Verdict }
+
+        private readonly RectTransform _root;
+        private readonly Font _font;
+        private readonly LaptopScreen _host;
+        private readonly int _width;
+        private readonly int _height;
+        private readonly RectTransform _desktop;
+        private readonly RectTransform _app;
+        private readonly SportsbookApp _sportsbook;
+        private readonly OldSlipsApp _oldSlips;
+        private App _activeApp = App.Desktop;
+        private SportsbookApp.Tab _tab = SportsbookApp.Tab.Lobby;
+        private Phase _lastPhase;
+        private bool _hasPhase;
+        private string _signature;
+        private int _lastDisplayRevision = -1;
+        private string _toast;
+        private float _toastUntil;
+
+        public LaptopOs(RectTransform root, Font font, LaptopScreen host, int width, int height)
+        {
+            _root = root;
+            _font = font;
+            _host = host;
+            _width = width;
+            _height = height;
+
+            _desktop = LaptopUi.MakePanel(root, "Desktop", Vector2.zero, Vector2.zero,
+                Vector2.zero, new Vector2(width, height), new Color(0f, 0f, 0f, 0f));
+            // The wallpaper Graphic lives on its OWN child: MakePanel's GameObject already
+            // carries an Image, and Unity allows one Graphic per object — AddComponent on
+            // the panel returns null (the room-boot NRE this comment buries).
+            var wallGo = new GameObject("Wallpaper", typeof(LaptopWallpaperGraphic));
+            wallGo.transform.SetParent(_desktop, false);
+            var wallpaper = wallGo.GetComponent<LaptopWallpaperGraphic>();
+            wallpaper.raycastTarget = false;
+            RectTransform wallRt = wallpaper.rectTransform;
+            wallRt.anchorMin = Vector2.zero;
+            wallRt.anchorMax = Vector2.one;
+            wallRt.offsetMin = Vector2.zero;
+            wallRt.offsetMax = Vector2.zero;
+            wallGo.transform.SetAsFirstSibling();
+            _app = LaptopUi.MakePanel(root, "App", Vector2.zero, Vector2.zero,
+                Vector2.zero, new Vector2(width, height), Ink);
+            _app.gameObject.SetActive(false);
+
+            _sportsbook = new SportsbookApp(_app, _font, _host, Invalidate, SelectTab, OpenHome);
+            _oldSlips = new OldSlipsApp(_app, _font, OpenHome);
+            BuildDesktop();
+        }
+
+        public void Tick(Run run, BetslipModel slip)
+        {
+            if (_toast != null && Time.unscaledTime > _toastUntil)
+            {
+                _toast = null;
+                _signature = null;
+            }
+            if (!_hasPhase || run.Phase != _lastPhase)
+            {
+                _lastPhase = run.Phase;
+                _hasPhase = true;
+                ApplyPhaseDefault(run.Phase);
+                Invalidate();
+            }
+
+            // Fast display values (clock/prob/score/suspension) refresh IN PLACE — only
+            // structural revisions rebuild the canvas (Sol, F_0.3.0 performance finding).
+            RevealedView view = _host.tv != null ? _host.tv.RevealedView : null;
+            if (view != null && view.DisplayRevision != _lastDisplayRevision
+                && _activeApp == App.SureThing && _tab == SportsbookApp.Tab.MyBets)
+            {
+                _lastDisplayRevision = view.DisplayRevision;
+                _sportsbook.UpdateMirrorDisplay(view);
+            }
+
+            string viewRevision = view != null
+                ? view.Revision.ToString(CultureInfo.InvariantCulture) : "-";
+            string signature = string.Concat(
+                _host.director.RunGeneration, "|", run.Phase, "|", run.Round, "|",
+                ((long)run.Bank).ToString(CultureInfo.InvariantCulture), "|", run.Tickets.Count, "|",
+                run.ShopOffers.Count, "|", run.ConsumableOffers.Count, "|", run.OwnedRelics.Count, "|",
+                run.OwnedConsumables.Count, "|", slip.Picks.Count, "|", ((long)slip.Stake).ToString(CultureInfo.InvariantCulture), "|",
+                (int)slip.Modifier, "|", slip.BoostLeg, "|", _activeApp, "|", _tab, "|", viewRevision,
+                "|", _toast);
+            if (signature == _signature) return;
+            _signature = signature;
+            Rebuild(run, slip);
+        }
+
+        /// <summary>Test/debug surface — the same transitions the desktop icons and tabs
+        /// drive, exposed so PlayMode can walk the OS without simulating cursor clicks.</summary>
+        public bool OnDesktop => _activeApp == App.Desktop;
+        public SportsbookApp.Tab CurrentTab => _tab;
+
+        public void OpenSportsbook(SportsbookApp.Tab tab)
+        {
+            _activeApp = App.SureThing;
+            _tab = tab;
+            Invalidate();
+        }
+
+        public void OpenDesktop()
+        {
+            _activeApp = App.Desktop;
+            Invalidate();
+        }
+
+        public void ResetForRun()
+        {
+            _activeApp = App.Desktop;
+            _tab = SportsbookApp.Tab.Lobby;
+            _hasPhase = false;
+            _signature = null;
+            _toast = null;
+        }
+
+        private void ApplyPhaseDefault(Phase phase)
+        {
+            switch (phase)
+            {
+                case Phase.Betting:
+                    _activeApp = App.SureThing;
+                    _tab = SportsbookApp.Tab.Lobby;
+                    break;
+                case Phase.Sweat:
+                    _activeApp = App.SureThing;
+                    _tab = SportsbookApp.Tab.MyBets;
+                    break;
+                case Phase.Shop:
+                    _activeApp = App.SureThing;
+                    _tab = SportsbookApp.Tab.Rewards;
+                    ShowToast("REWARDS IS OPEN — spend your comps before the next payment.");
+                    break;
+                case Phase.RunWon:
+                case Phase.RunLost:
+                    _activeApp = App.Verdict;
+                    break;
+            }
+        }
+
+        private void Rebuild(Run run, BetslipModel slip)
+        {
+            _desktop.gameObject.SetActive(_activeApp == App.Desktop);
+            _app.gameObject.SetActive(_activeApp != App.Desktop);
+            if (_activeApp == App.Desktop) return;
+
+            if (_activeApp == App.SureThing)
+                _sportsbook.Render(run, slip, _tab, run.Phase == Phase.Sweat);
+            else if (_activeApp == App.OldSlips)
+                _oldSlips.Render(run);
+            else
+                RenderVerdict(run);
+
+            if (_toast != null)
+            {
+                LaptopUi.MakeText(_app, "Toast", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                    new Vector2(0f, 62f), new Vector2(760f, 24f), 11, TextAnchor.LowerCenter,
+                    Accent, _toast, _font);
+            }
+        }
+
+        private void BuildDesktop()
+        {
+            LaptopUi.MakeText(_desktop, "DesktopSure", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(28f, -28f), new Vector2(76f, 36f), 23, TextAnchor.UpperLeft, White,
+                "SURE", _font);
+            LaptopUi.MakeText(_desktop, "DesktopThing", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(105f, -28f), new Vector2(130f, 36f), 23, TextAnchor.UpperLeft, Accent,
+                "THING.", _font);
+            LaptopUi.MakeText(_desktop, "DesktopTagline", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(30f, -62f), new Vector2(420f, 24f), 12, TextAnchor.UpperLeft, Muted,
+                "the number never lies", _font);
+
+            MakeDesktopIcon("SureThing", "S", "Sportsbook", new Vector2(34f, -120f), Accent,
+                () => { _activeApp = App.SureThing; Invalidate(); });
+            MakeDesktopIcon("OldSlips", "$", "Old Slips", new Vector2(34f, -225f), SurfaceRaised,
+                () => { _activeApp = App.OldSlips; Invalidate(); });
+            MakeDesktopIcon("Mail", "@", "Mail (soon)", new Vector2(34f, -330f), Muted, null);
+            MakeDesktopIcon("Bank", "¤", "Bank (soon)", new Vector2(34f, -435f), Muted, null);
+
+            RectTransform taskbar = LaptopUi.MakePanel(_desktop, "Taskbar", new Vector2(0f, 0f), new Vector2(0f, 0f),
+                new Vector2(0f, 0f), new Vector2(_width, 54f), new Color(0.025f, 0.02f, 0.05f, 0.94f));
+            LaptopUi.MakeButton(taskbar, "Home", "HOME", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
+                new Vector2(18f, 0f), new Vector2(90f, 34f), 12, SurfaceRaised, White, null, _font);
+            LaptopUi.MakeText(taskbar, "TaskbarText", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, 0f), new Vector2(320f, 30f), 12, TextAnchor.MiddleCenter, Muted,
+                "SURETHING.   ·   old slips", _font);
+            LaptopUi.MakeText(taskbar, "Clock", new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
+                new Vector2(-24f, 0f), new Vector2(180f, 30f), 12, TextAnchor.MiddleRight, Muted,
+                "03:17 AM   ·   12%", _font);
+        }
+
+        private void MakeDesktopIcon(string name, string glyph, string label, Vector2 position, Color color,
+            Action onClick)
+        {
+            Button button = LaptopUi.MakeButton(_desktop, name, glyph, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                position, new Vector2(86f, 76f), 28, new Color(0f, 0f, 0f, 0.12f), color, onClick, _font,
+                onClick != null);
+            LaptopUi.MakeText(button.GetComponent<RectTransform>(), "Label", new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f), new Vector2(0f, -25f), new Vector2(150f, 22f), 11,
+                TextAnchor.UpperCenter, onClick == null ? Muted : White, label, _font);
+        }
+
+        private void RenderVerdict(Run run)
+        {
+            LaptopUi.ClearChildren(_app);
+            bool won = run.Phase == Phase.RunWon;
+            LaptopUi.MakePanel(_app, "VerdictBg", Vector2.zero, Vector2.zero, Vector2.zero,
+                new Vector2(_width, _height), new Color(0.03f, 0.02f, 0.06f, 1f));
+            LaptopUi.MakeText(_app, "VerdictBrand", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(0f, -54f), new Vector2(800f, 36f), 22, TextAnchor.UpperCenter, White,
+                "SureThing.", _font);
+            LaptopUi.MakeText(_app, "Verdict", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, 70f), new Vector2(900f, 60f), 30, TextAnchor.MiddleCenter,
+                won ? MoneyGold : MoneyBad,
+                won ? "THE HOUSE BLINKS FIRST" : "THE BOOKIE COLLECTS", _font);
+            LaptopUi.MakeText(_app, "Final", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, 14f), new Vector2(900f, 36f), 18, TextAnchor.MiddleCenter, White,
+                $"FINAL BANK {LaptopUi.Money(run.Bank)}   ·   SEED {run.Rng.RunSeed}", _font);
+            LaptopUi.MakeButton(_app, "NewRun", "NEW RUN", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(0f, 58f), new Vector2(300f, 52f), 19, Accent, White,
+                () => { _host.director.StartNewRun(); Invalidate(); }, _font);
+        }
+
+        private void ShowToast(string toast)
+        {
+            _toast = toast;
+            _toastUntil = Time.unscaledTime + 4f;
+        }
+
+        private void Invalidate()
+        {
+            _signature = null;
+            if (_toast != null && Time.unscaledTime > _toastUntil) _toast = null;
+        }
+
+        internal void OpenHome()
+        {
+            _activeApp = App.Desktop;
+            Invalidate();
+        }
+
+        internal void OpenSportsbook()
+        {
+            _activeApp = App.SureThing;
+            if (_lastPhase == Phase.Shop) _tab = SportsbookApp.Tab.Rewards;
+            else if (_lastPhase == Phase.Sweat) _tab = SportsbookApp.Tab.MyBets;
+            else _tab = SportsbookApp.Tab.Lobby;
+            Invalidate();
+        }
+
+        internal void OpenOldSlips()
+        {
+            _activeApp = App.OldSlips;
+            Invalidate();
+        }
+
+        internal void SelectTab(SportsbookApp.Tab tab)
+        {
+            _activeApp = App.SureThing;
+            _tab = tab;
+            Invalidate();
+        }
+    }
+
+    /// <summary>Code-built, texture-free wallpaper: four corner colors interpolate across the canvas.</summary>
+    internal sealed class LaptopWallpaperGraphic : Graphic
+    {
+        protected override void OnPopulateMesh(VertexHelper vh)
+        {
+            vh.Clear();
+            Rect r = rectTransform.rect;
+            Color topLeft = new Color(0.075f, 0.04f, 0.16f, 1f);
+            Color topRight = new Color(0.025f, 0.025f, 0.07f, 1f);
+            Color bottomLeft = new Color(0.02f, 0.025f, 0.06f, 1f);
+            Color bottomRight = new Color(0.08f, 0.025f, 0.13f, 1f);
+            vh.AddVert(new Vector3(r.xMin, r.yMin), (Color32)bottomLeft, Vector2.zero);
+            vh.AddVert(new Vector3(r.xMin, r.yMax), (Color32)topLeft, Vector2.up);
+            vh.AddVert(new Vector3(r.xMax, r.yMax), (Color32)topRight, Vector2.one);
+            vh.AddVert(new Vector3(r.xMax, r.yMin), (Color32)bottomRight, Vector2.right);
+            vh.AddTriangle(0, 1, 2);
+            vh.AddTriangle(2, 3, 0);
+        }
+    }
+
+    internal static class LaptopUi
+    {
+        public static void ClearChildren(RectTransform root)
+        {
+            for (int i = root.childCount - 1; i >= 0; i--)
+                UnityEngine.Object.Destroy(root.GetChild(i).gameObject);
+        }
+
+        public static Text MakeText(RectTransform parent, string name, Vector2 anchor, Vector2 pivot,
+            Vector2 position, Vector2 size, int fontSize, TextAnchor align, Color color, string content, Font font)
+        {
+            var go = new GameObject(name, typeof(Text));
+            go.transform.SetParent(parent, false);
+            Text text = go.GetComponent<Text>();
+            if (font != null) text.font = font;
+            text.fontSize = fontSize;
+            text.alignment = align;
+            text.color = color;
+            text.text = content;
+            text.raycastTarget = false;
+            text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            text.verticalOverflow = VerticalWrapMode.Truncate;
+            RectTransform rt = text.rectTransform;
+            rt.anchorMin = rt.anchorMax = anchor;
+            rt.pivot = pivot;
+            rt.sizeDelta = size;
+            rt.anchoredPosition = position;
+            return text;
+        }
+
+        public static RectTransform MakePanel(RectTransform parent, string name, Vector2 anchor, Vector2 pivot,
+            Vector2 position, Vector2 size, Color color)
+        {
+            var go = new GameObject(name, typeof(Image));
+            go.transform.SetParent(parent, false);
+            Image image = go.GetComponent<Image>();
+            image.color = color;
+            image.raycastTarget = false;
+            RectTransform rt = image.rectTransform;
+            rt.anchorMin = rt.anchorMax = anchor;
+            rt.pivot = pivot;
+            rt.sizeDelta = size;
+            rt.anchoredPosition = position;
+            return rt;
+        }
+
+        public static Image MakeStretchImage(Transform parent, string name, Color color)
+        {
+            var go = new GameObject(name, typeof(Image));
+            go.transform.SetParent(parent, false);
+            Image image = go.GetComponent<Image>();
+            image.color = color;
+            RectTransform rt = image.rectTransform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            return image;
+        }
+
+        public static Button MakeButton(RectTransform parent, string name, string label, Vector2 anchor, Vector2 pivot,
+            Vector2 position, Vector2 size, int fontSize, Color background, Color foreground, Action onClick,
+            Font font, bool interactable = true)
+        {
+            var go = new GameObject(name, typeof(Image), typeof(Button));
+            go.transform.SetParent(parent, false);
+            Image image = go.GetComponent<Image>();
+            image.color = background;
+            image.raycastTarget = interactable;
+            RectTransform rt = image.rectTransform;
+            rt.anchorMin = rt.anchorMax = anchor;
+            rt.pivot = pivot;
+            rt.sizeDelta = size;
+            rt.anchoredPosition = position;
+            Button button = go.GetComponent<Button>();
+            button.targetGraphic = image;
+            button.interactable = interactable;
+            ColorBlock colors = button.colors;
+            colors.highlightedColor = new Color(1.25f, 1.25f, 1.25f, 1f);
+            colors.pressedColor = new Color(0.8f, 0.8f, 0.8f, 1f);
+            button.colors = colors;
+            if (onClick != null) button.onClick.AddListener(() => onClick());
+            Text text = MakeText(rt, "Label", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, size, fontSize, TextAnchor.MiddleCenter, foreground, label, font);
+            text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            return button;
+        }
+
+        public static Color Dim(Color color) => new Color(color.r, color.g, color.b, 0.55f);
+
+        public static string TeamShort(Team team)
+        {
+            int split = team.Name.LastIndexOf(' ');
+            return (split >= 0 ? team.Name.Substring(split + 1) : team.Name).ToUpperInvariant();
+        }
+
+        public static string Money(double value)
+        {
+            long rounded = (long)Math.Round(value, MidpointRounding.AwayFromZero);
+            return "$" + rounded.ToString("N0", CultureInfo.InvariantCulture);
+        }
+
+        public static Color FromRgb(uint rgb)
+        {
+            return new Color(((rgb >> 16) & 0xff) / 255f, ((rgb >> 8) & 0xff) / 255f,
+                (rgb & 0xff) / 255f, 1f);
+        }
+    }
+}

@@ -298,10 +298,12 @@ Scene `Room`: a compact first-person apartment where **the room is the interface
   riser-and-cut, whistle, GREEN/DEAD slams, cash-out ka-chunk stings). Tension-driven (win-prob
   distance from 0.5 + scene urgency), with the dread floor: the pending window and stand-up duck
   everything to near-silence. Strictly parallel decoration — never blocks a scene; batch-safe.
-- **The laptop** (`LaptopScreen` + `BetslipModel` + `RunDirector`): the betting app — betslip with
-  fraction-chip stakes and modifier toggles, shop (dealt-hand cards, Manager button, sell-backs at
-  `GetResaleValue`), run header with effect chrome. `RunDirector` owns run lifecycle and engine
-  verb calls.
+- **The laptop** (`LaptopScreen` + `LaptopOs` + `SportsbookApp` + `BetslipModel` + `RunDirector`):
+  a code-built mimic OS whose SureThing app carries the betting flow — desktop/app switching,
+  fraction-chip stakes and modifier toggles, frozen-board MY BETS mirror, Rewards (dealt-hand cards,
+  Manager button, sell-backs at `GetResaleValue`), and the run verdict. `RunDirector` owns run lifecycle
+  and engine verb calls. During a sweat, MY BETS reads only `TvSweatScreen.RevealedView`; it never reads
+  the engine session's live probability or offer.
 - **The phone** (`PhoneScreen` + `BookieFeed(Model)` + `BookieScript`): the bookie's voice — a
   deterministic text thread keyed by trigger kinds; `BookieFeedModel.CliffRatio` (1.45) decides
   when the schedule growls.
