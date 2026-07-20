@@ -2,6 +2,17 @@
 
 Human playtests only (agent impressions live in OPEN-QUESTIONS). Newest first. Each entry: build, what happened, S-criteria signals, actions taken.
 
+## #17 — Allen, 2026-07-20 (build: F_0.3.0, commit 497ec77) — LAPTOP OS GATE REVIEW
+
+First hands-on with the mimic OS. Two findings, fixed same day (hotfix tier):
+1. **Lobby cards colored both team names with one color.** The names sat in a single white
+   label; only the dots carried team colors. FIXED: each name wears its own theater color
+   via rich text, matching its dot.
+2. **MY BETS header carried clock/score/win% noise** ("PRE · MIDDLE MEN 0 — NOTARIES 0 ·
+   WIN 58%"). Allen: remove it. FIXED: the header is identity only ("MY BETS · TICKET
+   n/m") — the live numbers belong to the TV; the market-state line and per-leg states
+   stay. (Also deletes the per-frame header/prob mirror labels — less display churn.)
+
 ## #16 — Allen, 2026-07-19 (build: MT-5, commit ba2b701) — THE SLICE FEEL GATE
 
 **"It feels nice now."** The F_0.2.0 slice passes on feel — the theater, the reconciled

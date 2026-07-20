@@ -128,7 +128,8 @@ namespace SBR.Game
             MakeDot(card, "HomeDot", new Vector2(14f, -47f), LaptopUi.FromRgb(homeRgb));
             LaptopUi.MakeText(card, "Teams", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(28f, -8f), new Vector2(180f, 54f), 14, TextAnchor.UpperLeft, LaptopOs.White,
-                $"{LaptopUi.TeamShort(matchup.Away)}  @\n{LaptopUi.TeamShort(matchup.Home)}", _font);
+                $"<color=#{awayRgb:X6}>{LaptopUi.TeamShort(matchup.Away)}</color>  @\n" +
+                $"<color=#{homeRgb:X6}>{LaptopUi.TeamShort(matchup.Home)}</color>", _font);
             LaptopUi.MakeText(card, "Records", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-12f, -10f), new Vector2(110f, 46f), 11, TextAnchor.UpperRight, LaptopOs.Muted,
                 $"{matchup.Away.Record}\n{matchup.Home.Record}", _font);
@@ -267,8 +268,6 @@ namespace SBR.Game
                 () => { onClick(); _invalidate(); }, _font);
         }
 
-        private Text _mirrorHeader;
-        private Text _mirrorProb;
         private Text _mirrorMarket;
 
         /// <summary>In-place refresh of the fast mirror values (clock, score, prob,
@@ -277,11 +276,6 @@ namespace SBR.Game
         public void UpdateMirrorDisplay(RevealedView view)
         {
             if (view == null || !view.HasTicket) return;
-            if (_mirrorHeader != null)
-                _mirrorHeader.text =
-                    $"MY BETS   ·   TICKET {view.CurrentTicketIndex + 1}/{view.TicketCount}   ·   {view.ClockText}   ·   {view.ScoreText}";
-            if (_mirrorProb != null)
-                _mirrorProb.text = $"WIN {Mathf.RoundToInt(view.WinProbability * 100f)}%";
             if (_mirrorMarket != null)
             {
                 _mirrorMarket.text = view.MarketSuspended
@@ -304,8 +298,6 @@ namespace SBR.Game
                 new Vector2(24f, -160f), new Vector2(950f, 22f), 11, TextAnchor.UpperLeft, LaptopOs.Muted,
                 "MY BETS is a read-only mirror. The TV reveals the number when the scene pays off.", _font);
 
-            _mirrorHeader = null;
-            _mirrorProb = null;
             _mirrorMarket = null;
             if (view == null || !view.HasTicket)
             {
@@ -315,12 +307,11 @@ namespace SBR.Game
                 return;
             }
 
-            _mirrorHeader = LaptopUi.MakeText(_root, "LiveHeader", new Vector2(0f, 1f), new Vector2(0f, 1f),
+            // Identity only (playtest #17): the clock, score, and win% belong to the TV —
+            // duplicating them here read as noise. The header is static per rebuild.
+            LaptopUi.MakeText(_root, "LiveHeader", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(24f, -204f), new Vector2(950f, 30f), 16, TextAnchor.UpperLeft, LaptopOs.White,
-                string.Empty, _font);
-            _mirrorProb = LaptopUi.MakeText(_root, "Probability", new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-24f, -204f), new Vector2(260f, 30f), 16, TextAnchor.UpperRight, LaptopOs.Accent,
-                string.Empty, _font);
+                $"MY BETS   ·   TICKET {view.CurrentTicketIndex + 1}/{view.TicketCount}", _font);
             _mirrorMarket = LaptopUi.MakeText(_root, "Market", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(24f, -234f), new Vector2(950f, 22f), 11, TextAnchor.UpperLeft, LaptopOs.White,
                 string.Empty, _font);
