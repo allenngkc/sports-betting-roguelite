@@ -15,6 +15,20 @@ internal static class EventText
     {
         if (e.Type == DramaEventType.LegFinal) return Prefix(leg) + "FINAL WHISTLE";
 
+        // The scorer board is an individual selection, and the scorer's IDENTITY is the
+        // market outcome — reading the baked scorer list here would spoil the leg before
+        // the walk decides it. Narration keys to the beat's direction only (the corners
+        // precedent): hope reads as his chance building, dread as goals that aren't his.
+        if (leg.Selection.Kind == MarketKind.AnytimeScorer
+            && (e.Type == DramaEventType.Score || e.Type == DramaEventType.BigPlay))
+        {
+            Player pickedPlayer = leg.Matchup.PlayerAt(leg.Selection.PlayerIndex);
+            bool up2 = e.WinProbAfter >= prevProb;
+            return Prefix(leg) + (up2
+                ? $"{Surname(pickedPlayer.Name)} in the thick of it — his moment is coming"
+                : "a goal in the churn — not your man.");
+        }
+
         // Market legs (O/U, BTTS) have no picked TEAM — anchor the narrative on the home side;
         // the market prefix carries the pick, and up/down still tracks the pick's win prob.
         // Real market-aware vocabulary is Phase 3 (F_0.4.0 plan).
@@ -151,5 +165,11 @@ internal static class EventText
     {
         int i = teamName.LastIndexOf(' ');
         return i >= 0 ? teamName.Substring(i + 1) : teamName;
+    }
+
+    private static string Surname(string name)
+    {
+        int i = name.LastIndexOf(' ');
+        return i >= 0 ? name.Substring(i + 1).ToUpperInvariant() : name.ToUpperInvariant();
     }
 }

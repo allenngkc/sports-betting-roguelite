@@ -78,6 +78,10 @@ public readonly struct MarketSelection : IEquatable<MarketSelection>
     public static MarketSelection TotalCards(double line, bool over)
         => new MarketSelection(MarketKind.TotalCards, line, over ? MarketChoice.Over : MarketChoice.Under);
 
+    /// <summary>Player indices address the matchup's scorer board: away roster first, then home.</summary>
+    public static MarketSelection AnytimeScorer(int playerIndex)
+        => new MarketSelection(MarketKind.AnytimeScorer, 0.0, MarketChoice.Yes, playerIndex);
+
     public bool Equals(MarketSelection other)
         => Kind == other.Kind && Line.Equals(other.Line) && Choice == other.Choice
             && PlayerIndex == other.PlayerIndex;
@@ -144,6 +148,8 @@ public sealed class MatchStatLine
     public int AwayCorners { get; }
     public int HomeCards { get; }
     public int AwayCards { get; }
+    public IReadOnlyList<Player> HomeScorers { get; private set; } = Array.Empty<Player>();
+    public IReadOnlyList<Player> AwayScorers { get; private set; } = Array.Empty<Player>();
 
     public Side Winner => HomeGoals > AwayGoals ? Side.Home : Side.Away;
 
@@ -158,6 +164,37 @@ public sealed class MatchStatLine
         HomeCards = homeCards;
         AwayCards = awayCards;
     }
+
+    public MatchStatLine(int homeGoals, int awayGoals, int homeCorners, int awayCorners,
+        int homeCards, int awayCards, IReadOnlyList<Player> homeScorers, IReadOnlyList<Player> awayScorers)
+        : this(homeGoals, awayGoals, homeCorners, awayCorners, homeCards, awayCards)
+        => SetScorers(homeScorers, awayScorers);
+
+    internal void SetScorers(IReadOnlyList<Player> homeScorers, IReadOnlyList<Player> awayScorers)
+    {
+        if (homeScorers.Count != HomeGoals || awayScorers.Count != AwayGoals)
+            throw new ArgumentException("Scorer attribution must contain exactly one player per goal");
+        HomeScorers = homeScorers;
+        AwayScorers = awayScorers;
+    }
+}
+
+public enum PlayerRole { FW, MF, DF }
+
+public sealed class Player
+{
+    public string Name { get; }
+    public PlayerRole Role { get; }
+    public double ScoringWeight { get; }
+
+    public Player(string name, PlayerRole role, double scoringWeight)
+    {
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Player name is required", nameof(name));
+        if (scoringWeight <= 0.0) throw new ArgumentOutOfRangeException(nameof(scoringWeight));
+        Name = name;
+        Role = role;
+        ScoringWeight = scoringWeight;
+    }
 }
 
 public sealed class Team
@@ -166,12 +203,17 @@ public sealed class Team
     public int Wins { get; }
     public int Losses { get; }
     public string Record => $"{Wins}-{Losses}";
+    public IReadOnlyList<Player> Players { get; }
 
     public Team(string name, int wins, int losses)
+        : this(name, wins, losses, Array.Empty<Player>()) { }
+
+    public Team(string name, int wins, int losses, IReadOnlyList<Player> players)
     {
         Name = name;
         Wins = wins;
         Losses = losses;
+        Players = players ?? throw new ArgumentNullException(nameof(players));
     }
 }
 
@@ -235,10 +277,23 @@ public sealed class Matchup
         throw new ArgumentException($"Market selection is not offered: {selection.Kind}");
     }
     public double FairOdds(MarketSelection selection) => 1.0 / TrueProb(selection);
+    /// <summary>Scorer-board ordering is stable: away players then home players.</summary>
+    public Player PlayerAt(int playerIndex)
+    {
+        if (playerIndex < 0 || playerIndex >= Away.Players.Count + Home.Players.Count)
+            throw new ArgumentOutOfRangeException(nameof(playerIndex));
+        return playerIndex < Away.Players.Count ? Away.Players[playerIndex]
+            : Home.Players[playerIndex - Away.Players.Count];
+    }
+    public Side PlayerSide(int playerIndex)
+    {
+        PlayerAt(playerIndex); // validates
+        return playerIndex < Away.Players.Count ? Side.Away : Side.Home;
+    }
     public bool Grades(MarketSelection selection)
     {
         if (StatLine == null) return false;
-        return MatchModel.Grades(StatLine, selection);
+        return MatchModel.Grades(this, StatLine, selection);
     }
 }
 

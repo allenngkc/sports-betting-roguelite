@@ -593,6 +593,7 @@ namespace SBR.Game
                     _pendingBeatBeneficiary = TeamColor(leg, spec.Goal.Value.ScoredByPicked);
                     if (evt.Type == DramaEventType.Momentum)
                         _pendingFlavor = SweatFlavor.GoalLine(spec.Goal.Value.ForPicked, leg, evt.Step);
+                    PrepareScoringActor(leg, spec.Goal.Value);
                 }
 
                 // A batched count reveal says so out loud — one corner animation can carry
@@ -737,6 +738,8 @@ namespace SBR.Game
         private void OnGoalPlayed(ScoreLedger.StagedGoal goal)
         {
             _audio?.GoalHit(goal.Commits);
+            Player scorer = ScorerFor(goal, _ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count
+                ? _ticket.Legs[_stageLeg] : null);
             _ledger.CompleteGoal(goal);
             if (_finalSequenceActive)
             {
@@ -750,6 +753,17 @@ namespace SBR.Game
             {
                 _tFlavor.color = flavorColor;
                 _tFlavor.text = "VAR — NO GOAL";
+                _flavorScale = 1.12f;
+            }
+            else if (scorer != null && _ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count)
+            {
+                Leg leg = _ticket.Legs[_stageLeg];
+                bool pickedScorer = leg.Selection.Kind == MarketKind.AnytimeScorer
+                    && object.ReferenceEquals(scorer, leg.Matchup.PlayerAt(leg.Selection.PlayerIndex));
+                _tFlavor.color = pickedScorer ? LaptopOs.MoneyGood : flavorColor;
+                _tFlavor.text = pickedScorer
+                    ? Surname(scorer.Name) + " STRIKES — THAT'S YOUR MAN"
+                    : Surname(scorer.Name) + " FINDS THE NET";
                 _flavorScale = 1.12f;
             }
         }
@@ -1040,9 +1054,49 @@ namespace SBR.Game
                     return $"BTTS {(_ledger.Picked > 0 ? 1 : 0) + (_ledger.Opponent > 0 ? 1 : 0)}/2";
                 case MarketKind.TotalGoals:
                     return $"GOALS {_ledger.Picked}-{_ledger.Opponent} | {choice} {selection.Line:0.0}";
+                case MarketKind.AnytimeScorer:
+                    // Scorer IDENTITY is this market's outcome — mid-sweat the chip makes no
+                    // count claim at all (mapping revealed board goals onto the baked scorer
+                    // list resolves the market ahead of the live price; the shown state must
+                    // never say more than the quote does). Identity lands at the whistle.
+                    Player player = leg.Matchup.PlayerAt(selection.PlayerIndex);
+                    return $"{Surname(player.Name)} ANYTIME";
                 default:
                     return string.Empty;
             }
+        }
+
+        private void PrepareScoringActor(Leg leg, ScoreLedger.StagedGoal goal)
+        {
+            Player scorer = ScorerFor(goal, leg);
+            if (scorer == null || _stage == null) return;
+            bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
+            bool scorerHome = goal.ScoredByPicked ? pickedHome : !pickedHome;
+            var roster = scorerHome ? leg.Matchup.Home.Players : leg.Matchup.Away.Players;
+            int index = 0;
+            for (; index < roster.Count; index++)
+                if (object.ReferenceEquals(roster[index], scorer)) break;
+            _stage.SetScoringActor(scorerHome, index, scorer.Name);
+        }
+
+        private Player ScorerFor(ScoreLedger.StagedGoal goal, Leg leg)
+        {
+            if (!goal.Commits || leg == null || leg.Matchup.StatLine == null) return null;
+            // On the SWEATED scorer leg, identity IS the market outcome — naming mid-sweat
+            // goals from the baked list would resolve the market ahead of the live price.
+            // Identity stays suspended until the final sequence (the payoff moment).
+            if (leg.Selection.Kind == MarketKind.AnytimeScorer && !_finalSequenceActive) return null;
+            bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
+            bool scorerHome = goal.ScoredByPicked ? pickedHome : !pickedHome;
+            int index = goal.ScoredByPicked ? _ledger.Picked : _ledger.Opponent;
+            var scorers = scorerHome ? leg.Matchup.StatLine.HomeScorers : leg.Matchup.StatLine.AwayScorers;
+            return index >= 0 && index < scorers.Count ? scorers[index] : null;
+        }
+
+        private static string Surname(string name)
+        {
+            int i = name.LastIndexOf(' ');
+            return (i >= 0 ? name.Substring(i + 1) : name).ToUpperInvariant();
         }
 
         private static Color TeamColor(Leg leg, bool pickedSide)

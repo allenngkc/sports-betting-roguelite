@@ -161,7 +161,7 @@ public sealed class Run
         _payments = (double[])Config.Payments.Clone();
         _bankAtBettingStart = Bank;
         _roundsSinceGift = Config.GiftCooldownRounds; // the first eligible gift is not cooldown-blocked
-        CurrentSlate = SlateGenerator.Generate(Round, Rng.Slate, Config);
+        CurrentSlate = SlateGenerator.Generate(Round, Rng, Config);
     }
 
     // ------------------------------------------------------------------ betting
@@ -274,7 +274,11 @@ public sealed class Run
         // Every game on the slate resolves, bet or not, in slate order: outcomes for a seed are
         // identical no matter what the player wagered (the fixed universe).
         foreach (Matchup matchup in CurrentSlate.Matchups)
+        {
             matchup.StatLine = MatchModel.SampleStatLine(matchup, Rng.Outcomes);
+            MatchModel.SampleScorers(matchup.StatLine, matchup.Home.Players, matchup.Away.Players,
+                Rng.DeriveMatch(Round, matchup.Index, "scorers"));
+        }
 
         _sweats.Clear();
         foreach (Ticket ticket in _tickets)
@@ -601,7 +605,7 @@ public sealed class Run
         _tickets.Clear();
         _sweats.Clear();
         _markerPlayedThisRound = false;
-        CurrentSlate = SlateGenerator.Generate(Round, Rng.Slate, Config);
+        CurrentSlate = SlateGenerator.Generate(Round, Rng, Config);
         Phase = Phase.Betting;
         _bankAtBettingStart = Bank;
 

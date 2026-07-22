@@ -96,6 +96,10 @@ public static class MatchModel
             offers.Add(Offer(matchup, MarketSelection.TotalCards(line, true), config));
             offers.Add(Offer(matchup, MarketSelection.TotalCards(line, false), config));
         }
+        // The scorer board is one-way YES-only. PlayerIndex is the stable board index: away
+        // roster first, home roster second (see Matchup.PlayerAt).
+        for (int i = 0; i < matchup.Away.Players.Count + matchup.Home.Players.Count; i++)
+            offers.Add(Offer(matchup, MarketSelection.AnytimeScorer(i), config));
         return offers;
     }
 
@@ -122,6 +126,19 @@ public static class MatchModel
         int homeCards = SampleFromRaw(d.HomeCardRaw, d.HomeCardTotal, outcomes);
         int awayCards = SampleFromRaw(d.AwayCardRaw, d.AwayCardTotal, outcomes);
         return new MatchStatLine(score.HomeGoals, score.AwayGoals, homeCorners, awayCorners, homeCards, awayCards);
+    }
+
+    /// <summary>Attributes every already-baked goal from the same categorical weights used by
+    /// the anytime price. This consumes only the caller-provided derived match stream.</summary>
+    public static void SampleScorers(MatchStatLine line, IReadOnlyList<Player> homeRoster,
+        IReadOnlyList<Player> awayRoster, Pcg32 rng)
+    {
+        if (line == null) throw new ArgumentNullException(nameof(line));
+        var home = new List<Player>(line.HomeGoals);
+        var away = new List<Player>(line.AwayGoals);
+        for (int i = 0; i < line.HomeGoals; i++) home.Add(SamplePlayer(homeRoster, rng));
+        for (int i = 0; i < line.AwayGoals; i++) away.Add(SamplePlayer(awayRoster, rng));
+        line.SetScorers(home, away);
     }
 
     public static double TrueProbability(Matchup matchup, MarketSelection selection)
@@ -159,7 +176,21 @@ public static class MatchModel
                 return selection.Choice == MarketChoice.Over ? overCards : 1.0 - overCards;
 
             case MarketKind.AnytimeScorer:
-                throw new NotSupportedException("Anytime Scorer is a Phase 4 market");
+                if (selection.Choice != MarketChoice.Yes)
+                    throw new ArgumentException("Anytime scorer is a YES-only market");
+                if (selection.Line != 0.0) throw new ArgumentException("Anytime scorer has no line");
+                Player player = matchup.PlayerAt(selection.PlayerIndex);
+                Side team = matchup.PlayerSide(selection.PlayerIndex);
+                IReadOnlyList<Player> roster = team == Side.Home ? matchup.Home.Players : matchup.Away.Players;
+                double totalWeight = 0.0;
+                foreach (Player p in roster) totalWeight += p.ScoringWeight;
+                if (totalWeight <= 0.0) throw new InvalidOperationException("Scorer roster has no positive weights");
+                double weight = player.ScoringWeight / totalWeight;
+                // The scorer formula uses the same unconditional score enumeration as every
+                // other goal market, but evaluates a per-outcome miss value rather than a predicate.
+                double miss = ScoreExpectation(matchup, (h, a) => Math.Pow(1.0 - weight,
+                    team == Side.Home ? h : a));
+                return 1.0 - miss;
 
             default:
                 throw new ArgumentOutOfRangeException(nameof(selection));
@@ -181,10 +212,23 @@ public static class MatchModel
             case MarketKind.TotalCards:
                 return Compare(line.HomeCards + line.AwayCards, selection.Line, selection.Choice);
             case MarketKind.AnytimeScorer:
-                throw new NotSupportedException("Anytime Scorer is a Phase 4 market");
+                throw new ArgumentException("Anytime scorer grading requires matchup roster context");
             default:
                 throw new ArgumentOutOfRangeException(nameof(selection));
         }
+    }
+
+    public static bool Grades(Matchup matchup, MatchStatLine line, MarketSelection selection)
+    {
+        if (selection.Kind != MarketKind.AnytimeScorer) return Grades(line, selection);
+        if (selection.Choice != MarketChoice.Yes)
+            throw new ArgumentException("Anytime scorer is a YES-only market");
+        Player player = matchup.PlayerAt(selection.PlayerIndex);
+        IReadOnlyList<Player> scorers = matchup.PlayerSide(selection.PlayerIndex) == Side.Home
+            ? line.HomeScorers : line.AwayScorers;
+        foreach (Player scorer in scorers)
+            if (ReferenceEquals(scorer, player)) return true;
+        return false;
     }
 
     public static string DisplayLabel(Matchup matchup, MarketSelection selection)
@@ -202,6 +246,8 @@ public static class MatchModel
                 return $"{selection.Choice.ToString().ToUpperInvariant()} {selection.Line:0.0} CORNERS — {match}";
             case MarketKind.TotalCards:
                 return $"{selection.Choice.ToString().ToUpperInvariant()} {selection.Line:0.0} CARDS — {match}";
+            case MarketKind.AnytimeScorer:
+                return $"{matchup.PlayerAt(selection.PlayerIndex).Name.ToUpperInvariant()} ANYTIME — {match}";
             default:
                 return selection.Kind.ToString();
         }
@@ -268,6 +314,31 @@ public static class MatchModel
         foreach (ScoreOutcome x in matchup.Dist.AwayWinScores)
             if (predicate(x.HomeGoals, x.AwayGoals)) p += (1.0 - matchup.TrueHomeProb) * x.Probability;
         return p;
+    }
+
+    private static double ScoreExpectation(Matchup matchup, Func<int, int, double> value)
+    {
+        double sum = 0.0;
+        foreach (ScoreOutcome x in matchup.Dist.HomeWinScores)
+            sum += matchup.TrueHomeProb * x.Probability * value(x.HomeGoals, x.AwayGoals);
+        foreach (ScoreOutcome x in matchup.Dist.AwayWinScores)
+            sum += (1.0 - matchup.TrueHomeProb) * x.Probability * value(x.HomeGoals, x.AwayGoals);
+        return sum;
+    }
+
+    private static Player SamplePlayer(IReadOnlyList<Player> roster, Pcg32 rng)
+    {
+        if (roster == null || roster.Count == 0) throw new ArgumentException("Scoring team has no roster");
+        double total = 0.0;
+        foreach (Player player in roster) total += player.ScoringWeight;
+        if (total <= 0.0) throw new ArgumentException("Scoring roster has no positive weights");
+        double roll = rng.NextDouble() * total;
+        foreach (Player player in roster)
+        {
+            roll -= player.ScoringWeight;
+            if (roll < 0.0) return player;
+        }
+        return roster[roster.Count - 1];
     }
 
     private static double CountTotalProbability(double[] homeRaw, double homeTotal,

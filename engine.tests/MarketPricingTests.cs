@@ -12,12 +12,16 @@ public class MarketPricingTests
         var run = new Run("MARKET-BOARD");
         Matchup m = run.CurrentSlate.Matchups[0];
 
-        Assert.Equal(22, m.Markets.Count);
+        // Phase 4 adds one YES-only scorer offer for every listed outfield player, not a
+        // magic board-size constant. The old Phase 1 board remains the 22 two-way offers.
+        Assert.Equal(22 + m.Home.Players.Count + m.Away.Players.Count, m.Markets.Count);
         Assert.Equal(2, m.Markets.Count(x => x.Selection.Kind == MarketKind.Moneyline));
         Assert.Equal(2, m.Markets.Count(x => x.Selection.Kind == MarketKind.BothTeamsToScore));
         Assert.Equal(6, m.Markets.Count(x => x.Selection.Kind == MarketKind.TotalGoals));
         Assert.Equal(6, m.Markets.Count(x => x.Selection.Kind == MarketKind.TotalCorners));
         Assert.Equal(6, m.Markets.Count(x => x.Selection.Kind == MarketKind.TotalCards));
+        Assert.Equal(m.Home.Players.Count + m.Away.Players.Count,
+            m.Markets.Count(x => x.Selection.Kind == MarketKind.AnytimeScorer));
     }
 
     [Fact]

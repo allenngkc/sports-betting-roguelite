@@ -21,6 +21,15 @@ public static class SlateGenerator
     };
 
     public static Slate Generate(int round, Pcg32 rng, RunConfig config)
+        => Generate(round, rng, config, null);
+
+    /// <summary>The Run supplies its hub so roster generation can use isolated match streams.
+    /// The legacy stream-only overload remains for slate draw-order tests and produces empty
+    /// rosters because it has no run seed from which to derive them.</summary>
+    public static Slate Generate(int round, RngHub hub, RunConfig config)
+        => Generate(round, hub.Slate, config, hub);
+
+    private static Slate Generate(int round, Pcg32 rng, RunConfig config, RngHub? hub)
     {
         // Unique noun per team keeps names distinct within a slate; cities may repeat.
         int[] nounOrder = ShuffledIndices(Nouns.Length, rng);
@@ -33,6 +42,12 @@ public static class SlateGenerator
             // Records are the round's only free information: a noisy binomial signal of true strength.
             Team home = MakeTeam(nounOrder[i * 2], rng, config, p);
             Team away = MakeTeam(nounOrder[i * 2 + 1], rng, config, 1.0 - p);
+            if (hub != null)
+            {
+                Pcg32 rosterRng = hub.DeriveMatch(round, i, "roster");
+                home = WithRoster(home, MakeRoster(rosterRng, config));
+                away = WithRoster(away, MakeRoster(rosterRng, config));
+            }
 
             // The nine latent/signal draws are deliberately sequential and independent of the
             // Outcomes stream: three shared match tempos, then home/away GF/COR/CRD signals.
@@ -71,6 +86,29 @@ public static class SlateGenerator
         string name = $"{Cities[rng.NextInt(0, Cities.Length)]} {Nouns[nounIndex]}";
         int wins = Binomial(rng, config.PriorGames, strength);
         return new Team(name, wins, config.PriorGames - wins);
+    }
+
+    private static Team WithRoster(Team team, IReadOnlyList<Player> players)
+        => new Team(team.Name, team.Wins, team.Losses, players);
+
+    private static readonly string[] PlayerFirst =
+        { "Biff", "Chaz", "Marty", "Deke", "Rico", "Darryl", "Gus", "Ned", "Troy", "Lance", "Skip", "Vince" };
+    private static readonly string[] PlayerLast =
+        { "Ledger", "Cinder", "Muffin", "Pavement", "Coupon", "Wobble", "Gasket", "Pylon", "Ketchup", "Lanyard", "Racket", "Stapler" };
+
+    private static IReadOnlyList<Player> MakeRoster(Pcg32 rng, RunConfig config)
+    {
+        if (config.PlayersPerTeam <= 0) throw new InvalidOperationException("PlayersPerTeam must be positive");
+        var players = new List<Player>(config.PlayersPerTeam);
+        for (int i = 0; i < config.PlayersPerTeam; i++)
+        {
+            // A stable role mix puts attackers up front while still listing midfielders and defenders.
+            PlayerRole role = i % 7 < 3 ? PlayerRole.FW : i % 7 < 5 ? PlayerRole.MF : PlayerRole.DF;
+            double weight = role == PlayerRole.FW ? config.ForwardScoringWeight
+                : role == PlayerRole.MF ? config.MidfielderScoringWeight : config.DefenderScoringWeight;
+            players.Add(new Player($"{PlayerFirst[rng.NextInt(0, PlayerFirst.Length)]} {PlayerLast[rng.NextInt(0, PlayerLast.Length)]}", role, weight));
+        }
+        return players;
     }
 
     private static int Binomial(Pcg32 rng, int n, double p)

@@ -185,7 +185,9 @@ namespace SBR.Game
         /// home side; the market label carries the pick. Shared by every renderer so the anchor
         /// can never disagree across surfaces. Moneyline legs answer with their real side.</summary>
         public static bool PickedHomeForPresentation(Leg leg)
-            => leg.Selection.Kind != MarketKind.Moneyline || leg.Selection.Choice == MarketChoice.Home;
+            => leg.Selection.Kind == MarketKind.AnytimeScorer
+                ? leg.Matchup.PlayerSide(leg.Selection.PlayerIndex) == Side.Home
+                : leg.Selection.Kind != MarketKind.Moneyline || leg.Selection.Choice == MarketChoice.Home;
 
         /// <summary>The team's noun (last word of the "City Noun" name) - punchier for the ticker.</summary>
         public static string Short(string teamName)

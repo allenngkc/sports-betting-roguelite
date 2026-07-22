@@ -339,6 +339,15 @@ namespace SBR.Game
             StartScript(BuildBeatScript(spec), onGoalPlayed, onCountPlayed, onReveal, onComplete);
         }
 
+        /// <summary>Presentation-only identity for the current scoring run. The named player is
+        /// one of the existing colored actors; no engine state or RNG is involved.</summary>
+        public void SetScoringActor(bool home, int rosterIndex, string playerName)
+        {
+            Image[] dots = home ? _homeDots : _awayDots;
+            if (dots == null || dots.Length == 0) return;
+            dots[Mathf.Abs(rosterIndex) % dots.Length].gameObject.name = playerName;
+        }
+
         /// <summary>Plays the final whistle sequence: pre-reveal hold → the plan's staged
         /// goal(s) as separately-timed sub-scenes → celebrate/collapse. The GREEN/DEAD slam
         /// and the final chrome reveal belong to the orchestrator at completion (TvLight sync).</summary>

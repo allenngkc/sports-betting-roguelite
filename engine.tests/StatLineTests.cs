@@ -44,7 +44,11 @@ public class StatLineTests
                             ? Compare(m.StatLine!.HomeCorners + m.StatLine.AwayCorners, selection)
                             : selection.Kind == MarketKind.TotalCards
                                 ? Compare(m.StatLine!.HomeCards + m.StatLine.AwayCards, selection)
-                                : false;
+                                : selection.Kind == MarketKind.AnytimeScorer
+                                    ? (m.PlayerSide(selection.PlayerIndex) == Side.Home
+                                        ? m.StatLine!.HomeScorers : m.StatLine!.AwayScorers)
+                                        .Any(p => object.ReferenceEquals(p, m.PlayerAt(selection.PlayerIndex)))
+                                    : false;
             Assert.Equal(expected, m.Grades(selection));
         }
     }

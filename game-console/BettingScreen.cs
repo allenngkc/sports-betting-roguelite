@@ -160,6 +160,15 @@ internal static class BettingScreen
             Ui.WriteLine(ConsoleColor.Gray,
                 $" {MarketCode(offer.Selection),-8} {Ui.American(offer.Odds),5}  p {Ui.Pct(offer.TrueProb),2}%");
         }
+        Ui.Line();
+        Ui.WriteLine(ConsoleColor.White, "PLAYERS  (S# = anytime scorer)");
+        foreach (MarketOffer offer in m.Markets)
+        {
+            if (offer.Selection.Kind != MarketKind.AnytimeScorer) continue;
+            Player player = m.PlayerAt(offer.Selection.PlayerIndex);
+            Ui.WriteLine(ConsoleColor.Gray,
+                $" S{offer.Selection.PlayerIndex + 1,-2} {player.Name,-22} [{player.Role}]  {Ui.American(offer.Odds),5}");
+        }
         Ui.Pause();
     }
 
@@ -172,6 +181,7 @@ internal static class BettingScreen
             case MarketKind.TotalCorners: return $"C{(s.Choice == MarketChoice.Over ? "O" : "U")}{s.Line:0.0}";
             case MarketKind.TotalCards: return $"K{(s.Choice == MarketChoice.Over ? "O" : "U")}{s.Line:0.0}";
             case MarketKind.BothTeamsToScore: return s.Choice == MarketChoice.Yes ? "BTTS YES" : "BTTS NO";
+            case MarketKind.AnytimeScorer: return $"S{s.PlayerIndex + 1} ANYTIME";
             default: return s.Kind.ToString();
         }
     }
@@ -191,7 +201,7 @@ internal static class BettingScreen
 
     private static void Build(Run run)
     {
-        string picksLine = Ui.Prompt("picks> (e.g. 1H 3GO2.5 5CO9.5 2Y)  ");
+        string picksLine = Ui.Prompt("picks> (e.g. 1H 3GO2.5 5CO9.5 2Y 1S3)  ");
         List<Pick> picks;
         try
         {
@@ -276,7 +286,7 @@ internal static class BettingScreen
     {
         token = token.Trim();
         if (token.Length < 2)
-            throw new ArgumentException($"Bad pick '{token}' — use 1H, 1GO2.5, 1CO9.5, 1KO4.5, or 1Y.");
+            throw new ArgumentException($"Bad pick '{token}' — use 1H, 1GO2.5, 1CO9.5, 1KO4.5, 1Y, or 1S3.");
 
         int marker = 0;
         while (marker < token.Length && char.IsDigit(token[marker])) marker++;
@@ -292,6 +302,14 @@ internal static class BettingScreen
             return new Pick(idx, MarketSelection.Moneyline(code == "H" ? Side.Home : Side.Away));
         if (code == "Y" || code == "N")
             return new Pick(idx, MarketSelection.BothTeamsToScore(code == "Y"));
+        if (code.StartsWith("S", StringComparison.Ordinal)
+            && int.TryParse(code.Substring(1), NumberStyles.Integer, CultureInfo.InvariantCulture, out int scorerNumber)
+            && scorerNumber >= 1)
+        {
+            MarketSelection scorer = MarketSelection.AnytimeScorer(scorerNumber - 1);
+            matchup.Odds(scorer); // validates the listed index against the locked board
+            return new Pick(idx, scorer);
+        }
         if (code.Length < 3)
             throw new ArgumentException($"Bad market in '{token}'. Use GO/GU, CO/CU, KO/KU, or Y/N.");
         string prefix = code.Substring(0, 2);

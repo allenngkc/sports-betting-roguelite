@@ -55,4 +55,9 @@ public sealed class RngHub
     /// </summary>
     public Pcg32 Derive(int round, string ticketId, int legIndex, string action, int ordinal)
         => new Pcg32(Fnv1a64(RunSeed), Fnv1a64($"{round}#{ticketId}#{legIndex}#{action}#{ordinal}"));
+
+    /// <summary>Match-scoped universe data (rosters and scorer attribution) lives on its own
+    /// stream. It must never consume either the sequential slate or outcomes streams.</summary>
+    public Pcg32 DeriveMatch(int round, int matchupIndex, string purpose)
+        => new Pcg32(Fnv1a64(RunSeed), Fnv1a64($"{round}#M{matchupIndex}#{purpose}"));
 }

@@ -178,6 +178,10 @@ namespace SBR.Game
         /// −1 = goals hurt the pick (Under, BTTS No).</summary>
         private int _goalSense;
 
+        /// <summary>Scorer legs: goals stage as neutral theater, but the ML prob↔lead
+        /// reconciliation bands must not fire (the prob is not a lead).</summary>
+        private bool _suppressBandReconcile;
+
         /// <summary>Whether this ledger has been bound to the locked match stat line.</summary>
         public bool HasEndpoint => _hasEndpoint;
         public int TargetPicked => _targetPicked;
@@ -191,6 +195,7 @@ namespace SBR.Game
             if (statLine == null) throw new ArgumentNullException(nameof(statLine));
             _hasEndpoint = true;
             _goalSense = 0; // moneyline unless the Leg overload widens it
+            _suppressBandReconcile = false;
             _targetPicked = pickedHome ? statLine.HomeGoals : statLine.AwayGoals;
             _targetOpponent = pickedHome ? statLine.AwayGoals : statLine.HomeGoals;
             ResetForLeg();
@@ -210,6 +215,10 @@ namespace SBR.Game
                     && leg.Selection.Kind != MarketKind.BothTeamsToScore ? 0
                 : leg.Selection.Choice == MarketChoice.Over || leg.Selection.Choice == MarketChoice.Yes ? 1
                 : -1;
+            // The ML prob↔lead reconciliation bands assume the live prob tracks a LEAD. On a
+            // scorer leg it tracks one player's chance — the bands are meaningless there
+            // (F_0.4.0 P4 review; same law as the market-leg skip above).
+            _suppressBandReconcile = leg.Selection.Kind == MarketKind.AnytimeScorer;
         }
 
         /// <summary>Attribution + clamp for a non-final beat. Null = this beat stages no goal.
@@ -257,6 +266,8 @@ namespace SBR.Game
                 int typeLeadAfter = up ? Picked + 1 - Opponent : Opponent + 1 - Picked;
                 return new StagedGoal(forPicked: up, commits: typeLeadAfter <= MaxLiveLead);
             }
+
+            if (_suppressBandReconcile) return null;
 
             // The board the probability implies: +1 (picked ahead), -1 (opponent ahead), or
             // 0 (mid-band — any scoreline within the clamp is a fine story, including 1-0

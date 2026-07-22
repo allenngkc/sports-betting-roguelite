@@ -11,7 +11,7 @@ namespace SBR.Game
     {
         public enum Tab { Lobby, Detail, MyBets, Rewards }
 
-        private enum DetailTab { Goals, Corners, Cards }
+        private enum DetailTab { Goals, Corners, Cards, Players }
 
         private readonly RectTransform _root;
         private readonly Font _font;
@@ -195,6 +195,7 @@ namespace SBR.Game
             MakeDetailTab(panel, "GOALS", DetailTab.Goals, 18f);
             MakeDetailTab(panel, "CORNERS", DetailTab.Corners, 126f);
             MakeDetailTab(panel, "CARDS", DetailTab.Cards, 236f);
+            MakeDetailTab(panel, "PLAYERS", DetailTab.Players, 330f);
 
             if (_detailTab == DetailTab.Goals)
             {
@@ -205,15 +206,17 @@ namespace SBR.Game
             }
             else if (_detailTab == DetailTab.Corners)
                 BuildMarketLines(panel, run, slip, matchup, run.Config.CornerLines, MarketKind.TotalCorners, "CORNERS", boardFrozen, -122f);
-            else
+            else if (_detailTab == DetailTab.Cards)
                 BuildMarketLines(panel, run, slip, matchup, run.Config.CardLines, MarketKind.TotalCards, "CARDS", boardFrozen, -122f);
+            else
+                BuildPlayerLines(panel, slip, matchup, boardFrozen, -122f);
         }
 
         private void MakeDetailTab(RectTransform parent, string label, DetailTab tab, float x)
         {
             bool active = _detailTab == tab;
             LaptopUi.MakeButton(parent, "DetailTab" + label, label, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(x, -78f), new Vector2(label == "CORNERS" ? 102f : 94f, 28f), 10,
+                new Vector2(x, -78f), new Vector2(label == "CORNERS" ? 102f : label == "PLAYERS" ? 102f : 94f, 28f), 10,
                 active ? LaptopOs.Accent : LaptopOs.SurfaceRaised, LaptopOs.White,
                 () => { _detailTab = tab; _invalidate(); }, _font);
         }
@@ -245,13 +248,31 @@ namespace SBR.Game
             MakeMarketButton(parent, slip, matchup, MarketSelection.BothTeamsToScore(false), "NO", 196f, y - 28f, frozen);
         }
 
+        private void BuildPlayerLines(RectTransform parent, BetslipModel slip, Matchup matchup, bool frozen, float y)
+        {
+            LaptopUi.MakeText(parent, "PlayersTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(18f, y), new Vector2(500f, 22f), 12, TextAnchor.UpperLeft, LaptopOs.Accent,
+                "ANYTIME GOALSCORER", _font);
+            int row = 0;
+            foreach (MarketOffer offer in matchup.Markets)
+            {
+                if (offer.Selection.Kind != MarketKind.AnytimeScorer) continue;
+                Player player = matchup.PlayerAt(offer.Selection.PlayerIndex);
+                float x = row % 2 == 0 ? 18f : 290f;
+                float rowY = y - 28f - (row / 2) * 38f;
+                MakeMarketButton(parent, slip, matchup, offer.Selection,
+                    $"{player.Name.ToUpperInvariant()}  [{player.Role}]", x, rowY, frozen, 254f);
+                row++;
+            }
+        }
+
         private void MakeMarketButton(RectTransform parent, BetslipModel slip, Matchup matchup,
-            MarketSelection selection, string label, float x, float y, bool frozen)
+            MarketSelection selection, string label, float x, float y, bool frozen, float width = 164f)
         {
             bool selected = slip.SelectionOn(matchup.Index) == selection;
-            LaptopUi.MakeButton(parent, "Market" + selection.Kind + selection.Choice + selection.Line.ToString(CultureInfo.InvariantCulture),
+            LaptopUi.MakeButton(parent, "Market" + selection.Kind + selection.Choice + selection.Line.ToString(CultureInfo.InvariantCulture) + selection.PlayerIndex,
                 $"{label}  {OddsFormat.American(matchup.Odds(selection))}", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(x, y), new Vector2(164f, 30f), 11, selected ? LaptopOs.Accent : LaptopOs.SurfaceRaised,
+                new Vector2(x, y), new Vector2(width, 30f), 11, selected ? LaptopOs.Accent : LaptopOs.SurfaceRaised,
                 frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
                 frozen ? null : () => { slip.Toggle(matchup.Index, selection); _invalidate(); }, _font, !frozen);
         }

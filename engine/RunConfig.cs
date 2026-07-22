@@ -51,6 +51,13 @@ public sealed class RunConfig
     public double[] CornerLines { get; set; } = { 8.5, 9.5, 10.5 };
     public double[] CardLines { get; set; } = { 3.5, 4.5, 5.5 };
 
+    // Anytime-scorer roster dials. There are deliberately no goalkeeper offers: these are the
+    // listed outfield players whose normalized weights feed both price and attribution.
+    public int PlayersPerTeam { get; set; } = 7;
+    public double ForwardScoringWeight { get; set; } = 3.0;
+    public double MidfielderScoringWeight { get; set; } = 1.5;
+    public double DefenderScoringWeight { get; set; } = 0.5;
+
     /// <summary>Max passive relics owned at once. The rework catalog has 3 passives; slots stay
     /// roomier for the committed item-growth direction (design/10 B2).</summary>
     public int RelicSlots { get; set; } = 5;
