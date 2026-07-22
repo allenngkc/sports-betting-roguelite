@@ -156,12 +156,12 @@ public class CharmExpansionTests
     public void Photo_drops_when_the_last_qualifying_leg_is_voided()
     {
         var run = new Run("GOLDEN-W2", EasyPayments(10, 10));
-        // Qualify ONLY the leg that dies (matchup 1, Away side loses). Precondition: its odds
-        // exceed the surviving leg's odds by construction of the band below.
+        // F_0.4.0 re-pin: qualify ONLY the leg that dies (matchup 1, Home side loses).
+        // Precondition: its odds exceed the surviving leg's odds by construction of the band below.
         Ticket probe = null!;
         {
             var scout = new Run("GOLDEN-W2", EasyPayments(10, 10));
-            probe = scout.PlaceTicket(Picks((1, Side.Away), (0, Side.Away)), 20);
+            probe = scout.PlaceTicket(Picks((1, Side.Home), (0, Side.Away)), 20);
         }
         double dyingOdds = probe.Legs[0].OfferedOdds;
         double survivorOdds = probe.Legs[1].OfferedOdds;
@@ -172,12 +172,13 @@ public class CharmExpansionTests
             ("minOdds", dyingOdds - 1e-9), ("mult", 1.6)));
         run.GrantConsumable(Con("mulligan_slip"));
 
-        Ticket t = run.PlaceTicket(Picks((1, Side.Away), (0, Side.Away)), 20);
+        Ticket t = run.PlaceTicket(Picks((1, Side.Home), (0, Side.Away)), 20);
         run.LockRound();
         Assert.Equal(1.6, t.PayoutMultiplier, 10);
+        Assert.Equal(LegState.Lost, t.Legs[0].State); // fixture drift: the dying leg must die, or the wait below never ends
 
         SweatSession s = run.Sweats[0];
-        while (!s.HasPendingLoss) s.MoveNext(out _); // matchup 1 Away reveals dead
+        while (!s.HasPendingLoss) s.MoveNext(out _); // matchup 1 Home reveals dead
         run.PlayMulliganSlip(s);                     // void strips the only qualifying leg
 
         Assert.Equal(1.0, t.PayoutMultiplier, 10);   // the photo factor toggled off — only it
@@ -191,7 +192,7 @@ public class CharmExpansionTests
         var run = new Run("GOLDEN-W2", EasyPayments(10, 10, 10, 10, 10));
         run.GrantRelic(Def("iron_hands"));
 
-        run.PlaceTicket(Picks((1, Side.Home)), 10); // wins at full ride
+        run.PlaceTicket(Picks((1, Side.Away)), 10); // wins at full ride (F_0.4.0 universe)
         run.LockRound();
         run.FastForwardRound();
         run.Settle();
@@ -396,7 +397,7 @@ public class CharmExpansionTests
         var run = new Run("GOLDEN-W2", EasyPayments(10, 10, 10, 10));
         run.GrantRelic(Def("the_system"));
 
-        run.PlaceTicket(Picks((1, Side.Home)), 20); // wins → PnL > 0
+        run.PlaceTicket(Picks((0, Side.Away)), 20); // wins → PnL > 0 in the Phase 1 pin
         run.LockRound(); run.FastForwardRound(); run.Settle(); run.ExitShop();
 
         Ticket r2 = run.PlaceTicket(Picks((0, Side.Away)), 10);
@@ -421,10 +422,10 @@ public class CharmExpansionTests
         var run = new Run("GOLDEN-W2", EasyPayments(10, 10));
         run.GrantRelic(Def("compd_suite"));
 
-        run.PlaceTicket(Picks((0, Side.Away), (2, Side.Away), (3, Side.Away), (4, Side.Away)), 40);
+        run.PlaceTicket(Picks((0, Side.Away), (1, Side.Away), (4, Side.Away), (5, Side.Away)), 40);
         run.LockRound();
-        double afterLock = run.Comps; // accrual committed (4.0)
-        run.FastForwardRound();       // all four win → +8 comps at realize
+        double afterLock = run.Comps; // accrual committed (4.8)
+        run.FastForwardRound();       // all four win (F_0.4.0 universe) → +8 comps at realize
         Assert.Equal(afterLock + 8.0, run.Comps, 10);
     }
 
@@ -516,7 +517,7 @@ public class CharmExpansionTests
         run.GrantRelic(Def("iron_hands"));
         run.GrantConsumable(Con("double_or_nothing"));
 
-        Ticket t = run.PlaceTicket(Picks((0, Side.Away), (2, Side.Away)), 20,
+        Ticket t = run.PlaceTicket(Picks((0, Side.Away), (3, Side.Home)), 20,
             modifier: TicketModifier.DoubleOrNothing);
         run.LockRound();
         Assert.Equal(2.0, t.PayoutMultiplier, 10);
@@ -577,8 +578,8 @@ public class CharmExpansionTests
         run.GrantConsumable(Con("refs_whistle"));
         run.GrantConsumable(Con("refs_whistle"));
 
-        // Leg 0 (matchup 1, Away) dies; leg 1 (matchup 0, Away) would win.
-        Ticket t = run.PlaceTicket(Picks((1, Side.Away), (0, Side.Away)), 20);
+        // F_0.4.0 re-pin: leg 0 (matchup 1, Home) dies; leg 1 (matchup 0, Away) would win.
+        Ticket t = run.PlaceTicket(Picks((1, Side.Home), (0, Side.Away)), 20);
         run.LockRound();
         SweatSession s = run.Sweats[0];
         while (!s.HasPendingLoss) s.MoveNext(out _);
@@ -610,8 +611,8 @@ public class CharmExpansionTests
         var run = new Run("GOLDEN-W2", EasyPayments(10, 10));
         run.GrantConsumable(Con("refs_whistle"));
 
-        Ticket whistled = run.PlaceTicket(Picks((1, Side.Away)), 10); // single-leg: whistle-only window
-        Ticket bystander = run.PlaceTicket(Picks((1, Side.Away)), 10);
+        Ticket whistled = run.PlaceTicket(Picks((1, Side.Home)), 10); // single-leg: whistle-only window
+        Ticket bystander = run.PlaceTicket(Picks((1, Side.Home)), 10);
         run.LockRound();
 
         SweatSession s = run.Sweats[0];
@@ -628,7 +629,7 @@ public class CharmExpansionTests
 
         Assert.Equal(expectRescue ? TicketState.Won : TicketState.Lost, whistled.State);
         Assert.Equal(TicketState.Lost, bystander.State); // the shared result never bent
-        Assert.Equal(Side.Home, whistled.Legs[0].Matchup.Result);
+        Assert.Equal(Side.Away, whistled.Legs[0].Matchup.Result);
     }
 
     // ---------------------------------------------------------------- determinism

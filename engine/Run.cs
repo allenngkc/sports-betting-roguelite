@@ -204,8 +204,10 @@ public sealed class Run
         var legs = picks
             .Select(p =>
             {
+                if (p.MatchupIndex < 0 || p.MatchupIndex >= CurrentSlate.Matchups.Count)
+                    throw new ArgumentException($"Matchup {p.MatchupIndex + 1} is off the slate");
                 Matchup matchup = CurrentSlate.Matchups[p.MatchupIndex];
-                return new Leg(matchup, p.Side, matchup.Odds(p.Side));
+                return new Leg(matchup, p.Selection, matchup.Odds(p.Selection));
             })
             .ToList();
 
@@ -272,7 +274,7 @@ public sealed class Run
         // Every game on the slate resolves, bet or not, in slate order: outcomes for a seed are
         // identical no matter what the player wagered (the fixed universe).
         foreach (Matchup matchup in CurrentSlate.Matchups)
-            matchup.Result = Rng.Outcomes.NextDouble() < matchup.TrueHomeProb ? Side.Home : Side.Away;
+            matchup.StatLine = MatchModel.SampleStatLine(matchup, Rng.Outcomes);
 
         _sweats.Clear();
         foreach (Ticket ticket in _tickets)

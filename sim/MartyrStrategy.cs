@@ -58,7 +58,7 @@ public sealed class MartyrStrategy : IStrategy
             var best = sides[0];
             foreach (var c in sides) if (c.pHat > best.pHat) best = c;
             double stake = Math.Clamp(Math.Floor(budget), run.Config.MinStake, run.Bank);
-            run.PlaceTicket(new List<Pick> { new Pick(best.m, best.s) }, stake);
+            run.PlaceTicket(new List<Pick> { new Pick(best.m, MarketSelection.Moneyline(best.s)) }, stake);
             return;
         }
 
@@ -75,8 +75,8 @@ public sealed class MartyrStrategy : IStrategy
             if (stake < run.Config.MinStake) break;
             var picks = new List<Pick>
             {
-                new Pick(legsPool[t * 2].m, legsPool[t * 2].s),
-                new Pick(legsPool[t * 2 + 1].m, legsPool[t * 2 + 1].s),
+                new Pick(legsPool[t * 2].m, MarketSelection.Moneyline(legsPool[t * 2].s)),
+                new Pick(legsPool[t * 2 + 1].m, MarketSelection.Moneyline(legsPool[t * 2 + 1].s)),
             };
             // Refunded martyrdom: a held Free Bet rides the first farm ticket — the bust still
             // feeds Scar and the Jar, but the stake comes home.

@@ -189,7 +189,7 @@ public class SkilledStrategy : IStrategy
         {
             odds *= cands[i].Odds;
             win *= cands[i].PHat;
-            picks.Add(new Pick(cands[i].Matchup, cands[i].Side));
+            picks.Add(new Pick(cands[i].Matchup, MarketSelection.Moneyline(cands[i].Side)));
         }
 
         // Size toward denting what's left of the schedule: a hit should cover ~half the remaining
@@ -274,7 +274,7 @@ public class SkilledStrategy : IStrategy
             if (c.PHat > bestWin)
             {
                 bestWin = c.PHat;
-                best = new Plan(new List<Pick> { new Pick(c.Matchup, c.Side) }, c.Odds, c.PHat);
+                best = new Plan(new List<Pick> { new Pick(c.Matchup, MarketSelection.Moneyline(c.Side)) }, c.Odds, c.PHat);
             }
         }
 
@@ -284,7 +284,7 @@ public class SkilledStrategy : IStrategy
         {
             odds *= cands[i].Odds;
             win *= cands[i].PHat;
-            picks.Add(new Pick(cands[i].Matchup, cands[i].Side));
+            picks.Add(new Pick(cands[i].Matchup, MarketSelection.Moneyline(cands[i].Side)));
             if (i + 1 < 2) continue; // only consider L >= 2 here
             if (ReqFrac(aimMult, odds) <= escMax && win > bestWin)
             {
@@ -298,7 +298,7 @@ public class SkilledStrategy : IStrategy
         int legs = Math.Min(MaxPrimaryLegs, cands.Count);
         double o2 = 1.0, w2 = 1.0;
         var p2 = new List<Pick>(legs);
-        for (int i = 0; i < legs; i++) { o2 *= cands[i].Odds; w2 *= cands[i].PHat; p2.Add(new Pick(cands[i].Matchup, cands[i].Side)); }
+        for (int i = 0; i < legs; i++) { o2 *= cands[i].Odds; w2 *= cands[i].PHat; p2.Add(new Pick(cands[i].Matchup, MarketSelection.Moneyline(cands[i].Side))); }
         return new Plan(p2, o2, w2);
     }
 

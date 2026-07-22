@@ -39,6 +39,10 @@ internal static class BettingScreen
                     Ui.Pause();
                     break;
 
+                case string detail when detail.StartsWith("M ", StringComparison.Ordinal):
+                    ShowDetail(run, detail.Substring(2));
+                    break;
+
                 case "L":
                     if (run.Tickets.Count == 0 && !Ui.Confirm("no bets this round? the payment still comes due — y/n: ")) break;
                     run.LockRound();
@@ -62,7 +66,7 @@ internal static class BettingScreen
     }
 
     private static string CommandBar()
-        => "commands: [B]uild ticket  [K] marker  [L]ock round  [Q]uit  > ";
+        => "commands: [B]uild ticket  [M n] match detail  [K] marker  [L]ock round  [Q]uit  > ";
 
     // ---- rendering ----
 
@@ -129,14 +133,56 @@ internal static class BettingScreen
         }
     }
 
+    private static void ShowDetail(Run run, string number)
+    {
+        if (!int.TryParse(number, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n)
+            || n < 1 || n > run.CurrentSlate.Matchups.Count)
+        {
+            Ui.WriteLine(ConsoleColor.Red, $"Matchup must be 1–{run.CurrentSlate.Matchups.Count}.");
+            Ui.Pause();
+            return;
+        }
+
+        Matchup m = run.CurrentSlate.Matchups[n - 1];
+        Ui.Clear();
+        Ui.WriteLine(ConsoleColor.Cyan, $"MATCH {n}: {m.Away.Name} @ {m.Home.Name}");
+        Ui.WriteLine(ConsoleColor.DarkGray,
+            $"records  {m.Away.Record} @ {m.Home.Record}   ·   public stats (GF / COR / CRD)");
+        Ui.WriteLine(ConsoleColor.Gray,
+            $"away     {m.AwayStats.GoalsFor:0.0} / {m.AwayStats.Corners:0.0} / {m.AwayStats.Cards:0.0}");
+        Ui.WriteLine(ConsoleColor.Gray,
+            $"home     {m.HomeStats.GoalsFor:0.0} / {m.HomeStats.Corners:0.0} / {m.HomeStats.Cards:0.0}");
+        Ui.Rule();
+        Ui.WriteLine(ConsoleColor.White, "MARKETS  (decimal odds shown as American)");
+        foreach (MarketOffer offer in m.Markets)
+        {
+            if (offer.Selection.Kind == MarketKind.AnytimeScorer) continue;
+            Ui.WriteLine(ConsoleColor.Gray,
+                $" {MarketCode(offer.Selection),-8} {Ui.American(offer.Odds),5}  p {Ui.Pct(offer.TrueProb),2}%");
+        }
+        Ui.Pause();
+    }
+
+    private static string MarketCode(MarketSelection s)
+    {
+        switch (s.Kind)
+        {
+            case MarketKind.Moneyline: return s.Choice == MarketChoice.Home ? "HOME ML" : "AWAY ML";
+            case MarketKind.TotalGoals: return $"G{(s.Choice == MarketChoice.Over ? "O" : "U")}{s.Line:0.0}";
+            case MarketKind.TotalCorners: return $"C{(s.Choice == MarketChoice.Over ? "O" : "U")}{s.Line:0.0}";
+            case MarketKind.TotalCards: return $"K{(s.Choice == MarketChoice.Over ? "O" : "U")}{s.Line:0.0}";
+            case MarketKind.BothTeamsToScore: return s.Choice == MarketChoice.Yes ? "BTTS YES" : "BTTS NO";
+            default: return s.Kind.ToString();
+        }
+    }
+
     private static string DescribeLegs(Ticket t)
     {
         var parts = new List<string>();
         foreach (Leg leg in t.Legs)
         {
-            string team = Short(leg.Side == Side.Home ? leg.Matchup.Home.Name : leg.Matchup.Away.Name);
             string mark = Math.Abs(leg.OfferedOdds - leg.BaseOdds) > 1e-9 ? " ^boosted" : "";
-            parts.Add($"{team} {Ui.American(leg.OfferedOdds)}{mark}");
+            parts.Add($"{MarketCode(leg.Selection)} {Ui.American(leg.OfferedOdds)}{mark}");
         }
         return string.Join(", ", parts);
     }
@@ -145,11 +191,11 @@ internal static class BettingScreen
 
     private static void Build(Run run)
     {
-        string picksLine = Ui.Prompt("picks> (e.g. 1H 3A 5H)  ");
+        string picksLine = Ui.Prompt("picks> (e.g. 1H 3GO2.5 5CO9.5 2Y)  ");
         List<Pick> picks;
         try
         {
-            picks = ParsePicks(picksLine, run.CurrentSlate.Matchups.Count);
+            picks = ParsePicks(picksLine, run.CurrentSlate.Matchups);
         }
         catch (Exception ex)
         {
@@ -216,37 +262,54 @@ internal static class BettingScreen
 
     // ---- parsing ----
 
-    private static List<Pick> ParsePicks(string line, int matchupCount)
+    private static List<Pick> ParsePicks(string line, IReadOnlyList<Matchup> matchups)
     {
         var picks = new List<Pick>();
         foreach (string tok in line.Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries))
         {
-            (int idx, Side side) = ParseOne(tok, matchupCount);
-            picks.Add(new Pick(idx, side));
+            picks.Add(ParseOne(tok, matchups));
         }
         return picks;
     }
 
-    private static (int idx, Side side) ParseOne(string token, int matchupCount)
+    private static Pick ParseOne(string token, IReadOnlyList<Matchup> matchups)
     {
         token = token.Trim();
         if (token.Length < 2)
-            throw new ArgumentException($"Bad pick '{token}' — use a number then H or A, e.g. 1H.");
+            throw new ArgumentException($"Bad pick '{token}' — use 1H, 1GO2.5, 1CO9.5, 1KO4.5, or 1Y.");
 
-        char sc = char.ToUpperInvariant(token[token.Length - 1]);
-        Side side = sc == 'H' ? Side.Home
-                  : sc == 'A' ? Side.Away
-                  : throw new ArgumentException($"Bad side in '{token}' — end with H (home) or A (away).");
-
-        string num = token.Substring(0, token.Length - 1);
-        if (!int.TryParse(num, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n))
+        int marker = 0;
+        while (marker < token.Length && char.IsDigit(token[marker])) marker++;
+        if (!int.TryParse(token.Substring(0, marker), NumberStyles.Integer, CultureInfo.InvariantCulture, out int n))
             throw new ArgumentException($"Bad matchup number in '{token}'.");
 
         int idx = n - 1;
-        if (idx < 0 || idx >= matchupCount)
-            throw new ArgumentException($"Matchup {n} is off the slate (pick 1–{matchupCount}).");
-
-        return (idx, side);
+        if (idx < 0 || idx >= matchups.Count)
+            throw new ArgumentException($"Matchup {n} is off the slate (pick 1–{matchups.Count}).");
+        string code = token.Substring(marker).ToUpperInvariant();
+        Matchup matchup = matchups[idx];
+        if (code == "H" || code == "A")
+            return new Pick(idx, MarketSelection.Moneyline(code == "H" ? Side.Home : Side.Away));
+        if (code == "Y" || code == "N")
+            return new Pick(idx, MarketSelection.BothTeamsToScore(code == "Y"));
+        if (code.Length < 3)
+            throw new ArgumentException($"Bad market in '{token}'. Use GO/GU, CO/CU, KO/KU, or Y/N.");
+        string prefix = code.Substring(0, 2);
+        if (!double.TryParse(code.Substring(2), NumberStyles.Float, CultureInfo.InvariantCulture, out double line))
+            throw new ArgumentException($"Bad line in '{token}'.");
+        if (prefix[1] != 'O' && prefix[1] != 'U')
+            throw new ArgumentException($"Bad market in '{token}'. Use GO/GU, CO/CU, KO/KU, or Y/N.");
+        bool over = prefix[1] == 'O';
+        MarketSelection selection = prefix[0] == 'G'
+            ? MarketSelection.TotalGoals(line, over)
+            : prefix[0] == 'C'
+                ? MarketSelection.TotalCorners(line, over)
+                : prefix[0] == 'K'
+                    ? MarketSelection.TotalCards(line, over)
+                    : throw new ArgumentException($"Bad market in '{token}'.");
+        // This also rejects syntactically valid but unavailable ladder lines.
+        matchup.Odds(selection);
+        return new Pick(idx, selection);
     }
 
     // ---- helpers ----

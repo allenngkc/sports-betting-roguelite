@@ -146,6 +146,7 @@ namespace SBR.Tests.EditMode
             {
                 SceneTemplate.GoalFor, SceneTemplate.GoalAgainst,
                 SceneTemplate.BreakawayFor, SceneTemplate.BreakawayAgainst,
+                SceneTemplate.CornerFor, SceneTemplate.CornerAgainst, SceneTemplate.Booking,
                 SceneTemplate.TerritoryFor, SceneTemplate.TerritoryAgainst,
                 SceneTemplate.NearMissHope, SceneTemplate.NearMissScare,
                 SceneTemplate.CalmPossession, SceneTemplate.LegFinalWon,

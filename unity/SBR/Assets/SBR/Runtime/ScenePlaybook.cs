@@ -1,9 +1,11 @@
 using System;
+using SBR.Engine;
 
 namespace SBR.Game
 {
     /// <summary>
-    /// The theater's scene vocabulary (F_0.2.0 M-T3): ~15 templates, numbered per the plan's
+    /// The theater's scene vocabulary (F_0.2.0 M-T3): goal, count, and outcome templates,
+    /// numbered per the plan's
     /// table. #9 (LeadChange turnover intro) and #10 (Swing urgency) are OVERLAYS — playback
     /// modifiers on a <see cref="SceneSpec"/>, never templates — so they carry no enum entry.
     /// #14 (kickoff/restart) is structural playback the stage composes into goal scenes and
@@ -24,6 +26,9 @@ namespace SBR.Game
         LegFinalLost = 13,
         Kickoff = 14,
         Fallback = 15,
+        CornerFor = 16,
+        CornerAgainst = 17,
+        Booking = 18,
     }
 
     /// <summary>
@@ -47,11 +52,22 @@ namespace SBR.Game
         public readonly bool ForPicked;
         /// <summary>The goal playback this scene stages, if any (ledger-decided commit/chalk).</summary>
         public readonly ScoreLedger.StagedGoal? Goal;
+        /// <summary>The count playback this scene stages, if this is a corner/booking scene.</summary>
+        public readonly CountLedger.StagedCount? Count;
+        /// <summary>Remaining endpoint count playbacks carried by a final scene.</summary>
+        public readonly CountLedger.FinalPlan? CountFinal;
+        public readonly MarketKind Market;
         /// <summary>Beat-scene seconds from the pacer (finals add correction sub-scenes separately).</summary>
         public readonly float Duration;
 
         public SceneSpec(SceneTemplate template, int variant, bool leadChangeIntro, bool urgent,
             bool forPicked, ScoreLedger.StagedGoal? goal, float duration)
+            : this(template, variant, leadChangeIntro, urgent, forPicked, goal, null, null,
+                MarketKind.Moneyline, duration) { }
+
+        public SceneSpec(SceneTemplate template, int variant, bool leadChangeIntro, bool urgent,
+            bool forPicked, ScoreLedger.StagedGoal? goal, CountLedger.StagedCount? count,
+            CountLedger.FinalPlan? countFinal, MarketKind market, float duration)
         {
             Template = template;
             Variant = variant;
@@ -59,6 +75,9 @@ namespace SBR.Game
             Urgent = urgent;
             ForPicked = forPicked;
             Goal = goal;
+            Count = count;
+            CountFinal = countFinal;
+            Market = market;
             Duration = duration;
         }
     }
@@ -79,6 +98,15 @@ namespace SBR.Game
         public static bool ProducesGoal(SceneTemplate t)
             => t == SceneTemplate.GoalFor || t == SceneTemplate.GoalAgainst
             || t == SceneTemplate.BreakawayFor || t == SceneTemplate.BreakawayAgainst;
+
+        public static bool ProducesCorner(SceneTemplate t)
+            => t == SceneTemplate.CornerFor || t == SceneTemplate.CornerAgainst;
+
+        public static bool ProducesBooking(SceneTemplate t)
+            => t == SceneTemplate.Booking;
+
+        public static bool ProducesCount(SceneTemplate t)
+            => ProducesCorner(t) || ProducesBooking(t);
 
         /// <summary>Beat-scene templates — the ones the [3, 8]s pacer band governs. Finals are
         /// included at their BASE duration; correction sub-scenes are separately timed by

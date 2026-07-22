@@ -1,0 +1,10 @@
+Files changed:
+
+- [TvAudioDirector.cs](C:/Users/Allen/Documents/CodingProjects/sports-betting-roguelite/unity/SBR/Assets/SBR/Runtime/TvAudioDirector.cs) — procedural diegetic crowd bed, stings, ducking, and mix controls.
+- [TvSweatScreen.cs](C:/Users/Allen/Documents/CodingProjects/sports-betting-roguelite/unity/SBR/Assets/SBR/Runtime/TvSweatScreen.cs) — audio construction, mix forwarding, and event wiring.
+
+Deviations: Plan checkboxes were not modified because the scope explicitly forbids documentation changes.
+
+Nothing else left undone. Unity and slnx builds were skipped as instructed. Static whitespace and diff checks pass; no `.meta` was created.
+
+IMPLEMENTATION_COMPLETE

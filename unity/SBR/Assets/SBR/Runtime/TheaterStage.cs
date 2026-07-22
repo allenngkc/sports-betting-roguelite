@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using SBR.Engine;
 using UnityEngine;
 using UnityEngine.UI;
@@ -67,6 +68,7 @@ namespace SBR.Game
         private Image[] _awayDots;
         private Image _homeKeeper, _awayKeeper, _ball;
         private Image _flashRing;
+        private Image _bookingCard;
 
         private Vector2[] _homePos, _awayPos, _homeVel, _awayVel, _homeNoise, _awayNoise;
         private float[] _homeReactionLag, _awayReactionLag, _homeNoiseTimer, _awayNoiseTimer;
@@ -93,13 +95,15 @@ namespace SBR.Game
         private static int s_seedSalt; // per-instance RNG salt (presentation-local, never engine)
 
         // ---- scene playback (M-T3) ----
-        private const byte MkNone = 0, MkGoal = 1, MkSuspend = 2, MkSave = 3, MkVoid = 4;
+        private const byte MkNone = 0, MkGoal = 1, MkSuspend = 2, MkSave = 3, MkVoid = 4,
+            MkCorner = 5, MkBooking = 6;
         // Ball routing per step (M-T3.1): how the authored waypoint finds a real actor.
         private const byte RoutePass = 0;      // nearest attacking OUTFIELD dot to the waypoint — a pass
         private const byte RouteAuthored = 1;  // fly to the authored point (holds, restarts to spots)
         private const byte RouteShot = 2;      // authored point, y snapped to the corner AWAY from the keeper
         private const byte RouteBackLine = 3;  // nearest DEFENDING back-line dot (clearances, chalked restarts)
         private const byte RouteKickoff = 4;   // center spot; the conceding side collects at step end
+        private const byte RouteCorner = 5;    // corner arc; the attacking side takes the kick
 
         private struct Step
         {
@@ -112,6 +116,7 @@ namespace SBR.Game
             public bool AtkPicked; // the side running the move THIS step (continuations switch)
             public bool Chase;     // nearest defenders hunt the ball this step
             public ScoreLedger.StagedGoal Goal; // rides MkGoal
+            public CountLedger.StagedCount Count; // rides MkCorner/MkBooking
         }
 
         private Step[] _script;
@@ -122,6 +127,7 @@ namespace SBR.Game
         private float _sceneTerr = 0.5f;
         private float _sceneTerrVel;
         private Action<ScoreLedger.StagedGoal> _onGoalPlayed;
+        private Action<CountLedger.StagedCount> _onCountPlayed;
         private Action _onReveal;
         private bool _revealFired;
         private Action _onSceneComplete;
@@ -222,6 +228,9 @@ namespace SBR.Game
             _flashRing = MakeImage("NetRipple", Vector2.zero, new Vector2(_h * 0.5f, _h * 0.5f), Color.white);
             _flashRing.sprite = RingSprite();
             _flashRing.enabled = false;
+            _bookingCard = MakeRect("BookingCard", Vector2.zero, new Vector2(16f, 26f),
+                new Color(0.94f, 0.96f, 1f, 1f));
+            _bookingCard.enabled = false;
 
             Show(false);
         }
@@ -322,8 +331,12 @@ namespace SBR.Game
         /// Poll <see cref="ScenePlaying"/>.</summary>
         public void PlayScene(SceneSpec spec, Action<ScoreLedger.StagedGoal> onGoalPlayed,
             Action onReveal, Action onComplete)
+            => PlayScene(spec, onGoalPlayed, onReveal, onComplete, null);
+
+        public void PlayScene(SceneSpec spec, Action<ScoreLedger.StagedGoal> onGoalPlayed,
+            Action onReveal, Action onComplete, Action<CountLedger.StagedCount> onCountPlayed)
         {
-            StartScript(BuildBeatScript(spec), onGoalPlayed, onReveal, onComplete);
+            StartScript(BuildBeatScript(spec), onGoalPlayed, onCountPlayed, onReveal, onComplete);
         }
 
         /// <summary>Plays the final whistle sequence: pre-reveal hold → the plan's staged
@@ -331,15 +344,20 @@ namespace SBR.Game
         /// and the final chrome reveal belong to the orchestrator at completion (TvLight sync).</summary>
         public void PlayFinalScene(SceneSpec spec, ScoreLedger.FinalPlan plan,
             Action<ScoreLedger.StagedGoal> onGoalPlayed, Action onComplete)
+            => PlayFinalScene(spec, plan, spec.CountFinal, onGoalPlayed, null, onComplete);
+
+        public void PlayFinalScene(SceneSpec spec, ScoreLedger.FinalPlan plan,
+            CountLedger.FinalPlan? countPlan, Action<ScoreLedger.StagedGoal> onGoalPlayed,
+            Action<CountLedger.StagedCount> onCountPlayed, Action onComplete)
         {
-            StartScript(BuildFinalScript(spec, plan), onGoalPlayed, null, onComplete);
+            StartScript(BuildFinalScript(spec, plan, countPlan), onGoalPlayed, onCountPlayed, null, onComplete);
         }
 
         /// <summary>The pending-loss window's kill scene: opponent buildup → shot launched →
         /// FROZEN at the suspension point, mid-flight. Holds until <see cref="ResumeSuspended"/>.</summary>
         public void SuspendKillShot(int variant)
         {
-            StartScript(BuildKillShotScript(variant), null, null, null);
+            StartScript(BuildKillShotScript(variant), null, null, null, null);
         }
 
         /// <summary>The suspended scene's continuation, chosen from the FINAL ticket-local grade
@@ -348,9 +366,19 @@ namespace SBR.Game
         /// completes (chalked if the entry score already satisfied Lost), then corrections.</summary>
         public void ResumeSuspended(ScoreLedger.FinalPlan plan,
             Action<ScoreLedger.StagedGoal> onGoalPlayed, Action onComplete)
+            => ResumeSuspended(plan, null, MarketKind.Moneyline, onGoalPlayed, null, onComplete);
+
+        public void ResumeSuspended(ScoreLedger.FinalPlan plan, CountLedger.FinalPlan? countPlan,
+            Action<ScoreLedger.StagedGoal> onGoalPlayed, Action<CountLedger.StagedCount> onCountPlayed,
+            Action onComplete)
+            => ResumeSuspended(plan, countPlan, MarketKind.Moneyline, onGoalPlayed, onCountPlayed, onComplete);
+
+        public void ResumeSuspended(ScoreLedger.FinalPlan plan, CountLedger.FinalPlan? countPlan,
+            MarketKind market, Action<ScoreLedger.StagedGoal> onGoalPlayed,
+            Action<CountLedger.StagedCount> onCountPlayed, Action onComplete)
         {
             _suspendedAtShot = false;
-            StartScript(BuildContinuationScript(plan), onGoalPlayed, null, onComplete);
+            StartScript(BuildContinuationScript(plan, countPlan, market), onGoalPlayed, onCountPlayed, null, onComplete);
         }
 
         /// <summary>Abandons any active scene without completing it (cash-out, leg change).</summary>
@@ -362,13 +390,14 @@ namespace SBR.Game
             _stepEntered = false;
             _suspendedAtShot = false;
             _onGoalPlayed = null;
+            _onCountPlayed = null;
             _onReveal = null;
             _revealFired = false;
             _onSceneComplete = null;
         }
 
         private void StartScript(Step[] script, Action<ScoreLedger.StagedGoal> onGoalPlayed,
-            Action onReveal, Action onComplete)
+            Action<CountLedger.StagedCount> onCountPlayed, Action onReveal, Action onComplete)
         {
             _script = script;
             _stepIx = 0;
@@ -376,6 +405,7 @@ namespace SBR.Game
             _stepEntered = false;
             _suspendedAtShot = false;
             _onGoalPlayed = onGoalPlayed;
+            _onCountPlayed = onCountPlayed;
             _onReveal = onReveal;
             _revealFired = false;
             _onSceneComplete = onComplete;
@@ -428,6 +458,7 @@ namespace SBR.Game
                 FireReveal(); // scenes with no explicit payoff reveal at their end
                 Action done = _onSceneComplete;
                 _onGoalPlayed = null;
+                _onCountPlayed = null;
                 _onReveal = null;
                 _onSceneComplete = null;
                 done?.Invoke();
@@ -474,6 +505,9 @@ namespace SBR.Game
                     _stepBallLocal = ToLocal(authored);
                     break;
                 }
+                case RouteCorner:
+                    _stepBallLocal = ToLocal(s.Ball);
+                    break;
                 case RouteKickoff:
                 default:
                     _stepBallLocal = ToLocal(s.Ball);
@@ -502,6 +536,16 @@ namespace SBR.Game
                 case MkVoid:
                     ApplyVoidTint();
                     break;
+                case MkCorner:
+                    FlashCorner();
+                    _onCountPlayed?.Invoke(s.Count);
+                    FireReveal();
+                    break;
+                case MkBooking:
+                    FlashBooking();
+                    _onCountPlayed?.Invoke(s.Count);
+                    FireReveal();
+                    break;
             }
 
             switch (s.Route)
@@ -518,6 +562,10 @@ namespace SBR.Game
                     // The side that just conceded collects at the center spot.
                     _carrierHome = s.AtkPicked != _homeAttacksRight;
                     _carrierIx = 4;
+                    break;
+                case RouteCorner:
+                    _carrierHome = s.AtkPicked == _homeAttacksRight;
+                    _carrierIx = NearestOutfield(_carrierHome, _stepBallLocal, exclude: -1);
                     break;
             }
         }
@@ -710,12 +758,24 @@ namespace SBR.Game
 
         private static Step S(float dur, float bx, float by, float terr, float tempo,
             byte marker = MkNone, ScoreLedger.StagedGoal goal = default, byte route = RoutePass,
-            bool atkPicked = true, bool chase = false)
+            bool atkPicked = true, bool chase = false, CountLedger.StagedCount count = default)
             => new Step
             {
                 Dur = dur, Ball = new Vector2(bx, by), Terr = terr, Tempo = tempo,
-                Marker = marker, Goal = goal, Route = route, AtkPicked = atkPicked, Chase = chase,
+                Marker = marker, Goal = goal, Count = count, Route = route,
+                AtkPicked = atkPicked, Chase = chase,
             };
+
+        /// <summary>Single-step mirror — final/continuation goal reveals are authored in one
+        /// frame and flipped per goal when the scorer is the other side (Sol, F_0.4.0 P3 r2:
+        /// AtkPicked alone routed the actors but left the ball driving at the wrong goal).</summary>
+        private static Step MirrorStep(Step s)
+        {
+            s.Ball = new Vector2(1f - s.Ball.x, s.Ball.y);
+            s.Terr = 1f - s.Terr;
+            s.AtkPicked = !s.AtkPicked;
+            return s;
+        }
 
         /// <summary>Mirrors a picked-frame script across the halfway line and hands the move to
         /// the OTHER team (for/against pairs share one author).</summary>
@@ -777,6 +837,36 @@ namespace SBR.Game
                             : S(B * 0.32f, 0.84f, 0.30f, 0.60f, 0.3f, route: RouteBackLine),
                     };
                     if (spec.Template == SceneTemplate.BreakawayAgainst) core = Mirror(core);
+                    break;
+
+                case SceneTemplate.CornerFor:
+                case SceneTemplate.CornerAgainst:
+                {
+                    // A corner scene ends at the attacking corner: the count callback fires
+                    // at the kick, not when the approach begins.
+                    core = new[]
+                    {
+                        S(B * 0.30f, 0.42f, lane, 0.50f, Mathf.Max(0.5f, u), chase: true),
+                        S(B * 0.26f, 0.84f, lane, 0.68f, Mathf.Max(0.8f, u), chase: true),
+                        S(B * 0.16f, 0.97f, lane, 0.72f, 1f, MkCorner,
+                            route: RouteCorner, count: spec.Count ?? default),
+                        S(B * 0.28f, 0.72f, 0.58f, 0.56f, 0.35f, route: RouteBackLine),
+                    };
+                    if (spec.Template == SceneTemplate.CornerAgainst) core = Mirror(core);
+                    break;
+                }
+
+                case SceneTemplate.Booking:
+                    core = new[]
+                    {
+                        S(B * 0.32f, 0.48f, lane, 0.50f, 0.45f, atkPicked: spec.ForPicked),
+                        S(B * 0.24f, 0.60f, lane, 0.54f, 0.9f, chase: true,
+                            atkPicked: spec.ForPicked),
+                        S(B * 0.12f, 0.55f, lane, 0.50f, 1f, MkBooking,
+                            route: RouteAuthored, atkPicked: spec.ForPicked,
+                            count: spec.Count ?? default),
+                        S(B * 0.32f, 0.50f, 0.50f, 0.50f, 0.15f, route: RouteAuthored),
+                    };
                     break;
 
                 case SceneTemplate.TerritoryFor:
@@ -846,7 +936,8 @@ namespace SBR.Game
             return withIntro;
         }
 
-        private Step[] BuildFinalScript(SceneSpec spec, ScoreLedger.FinalPlan plan)
+        private Step[] BuildFinalScript(SceneSpec spec, ScoreLedger.FinalPlan plan,
+            CountLedger.FinalPlan? countPlan = null)
         {
             float lane = Lane(spec.Variant);
             bool won = spec.Template == SceneTemplate.LegFinalWon || plan.Grade == LegGrade.Won;
@@ -859,9 +950,15 @@ namespace SBR.Game
                 steps.Add(S(B * 0.27f, 0.78f, lane, 0.70f, 0.85f));
                 foreach (ScoreLedger.StagedGoal g in plan.Goals)
                 {
-                    steps.Add(S(P(1.1f), 0.86f, 1f - lane, 0.72f, 1f)); // the break at the death
-                    steps.Add(S(P(1.4f), 0.975f, 0.5f, 0.74f, 1f, MkGoal, g, RouteShot));
+                    // Authored in the picked frame, mirrored whole when the goal belongs to
+                    // the other side — a won final can still reveal baked opponent goals
+                    // (endpoint convergence; Sol, F_0.4.0 P3 r1+r2).
+                    Step run = S(P(1.1f), 0.86f, 1f - lane, 0.72f, 1f);
+                    Step shot = S(P(1.4f), 0.975f, 0.5f, 0.74f, 1f, MkGoal, g, RouteShot);
+                    steps.Add(g.ScoredByPicked ? run : MirrorStep(run));
+                    steps.Add(g.ScoredByPicked ? shot : MirrorStep(shot));
                 }
+                AppendFinalCounts(steps, spec, countPlan, lane);
                 steps.Add(S(B * 0.33f, 0.5f, 0.5f, 0.72f, 1f, route: RouteAuthored)); // whistle — celebrate
             }
             else
@@ -870,9 +967,14 @@ namespace SBR.Game
                 steps.Add(S(B * 0.27f, 0.22f, lane, 0.30f, 0.8f, atkPicked: false));
                 foreach (ScoreLedger.StagedGoal g in plan.Goals)
                 {
-                    steps.Add(S(P(1.0f), 0.13f, lane, 0.28f, 1f, atkPicked: false, chase: true));
-                    steps.Add(S(P(1.5f), 0.025f, 0.5f, 0.26f, 1f, MkGoal, g, RouteShot, atkPicked: false));
+                    // Authored in the opponent frame, mirrored whole when the goal is the
+                    // picked side's (Sol, F_0.4.0 P3 r1+r2).
+                    Step run = S(P(1.0f), 0.13f, lane, 0.28f, 1f, atkPicked: false, chase: true);
+                    Step shot = S(P(1.5f), 0.025f, 0.5f, 0.26f, 1f, MkGoal, g, RouteShot, atkPicked: false);
+                    steps.Add(g.ScoredByPicked ? MirrorStep(run) : run);
+                    steps.Add(g.ScoredByPicked ? MirrorStep(shot) : shot);
                 }
+                AppendFinalCounts(steps, spec, countPlan, lane);
                 steps.Add(S(B * 0.33f, 0.5f, 0.5f, 0.26f, 0.1f, route: RouteAuthored, atkPicked: false)); // collapse
             }
             return steps.ToArray();
@@ -890,7 +992,8 @@ namespace SBR.Game
             };
         }
 
-        private Step[] BuildContinuationScript(ScoreLedger.FinalPlan plan)
+        private Step[] BuildContinuationScript(ScoreLedger.FinalPlan plan, CountLedger.FinalPlan? countPlan = null,
+            MarketKind market = MarketKind.Moneyline)
         {
             var steps = new System.Collections.Generic.List<Step>(2 + plan.Goals.Length * 2);
             switch (plan.Grade)
@@ -904,9 +1007,15 @@ namespace SBR.Game
                     steps.Add(S(P(0.7f), 0.20f, 0.78f, 0.40f, 1f, MkSave, route: RouteAuthored, atkPicked: false));
                     foreach (ScoreLedger.StagedGoal g in plan.Goals)
                     {
-                        steps.Add(S(P(1.1f), 0.70f, 0.42f, 0.62f, 1f));      // the sucker-punch break
-                        steps.Add(S(P(1.4f), 0.975f, 0.5f, 0.72f, 1f, MkGoal, g, RouteShot));
+                        // the sucker-punch break — picked frame, mirrored whole for the
+                        // other side's goals (Sol, F_0.4.0 P3 r1+r2)
+                        Step run = S(P(1.1f), 0.70f, 0.42f, 0.62f, 1f);
+                        Step shot = S(P(1.4f), 0.975f, 0.5f, 0.72f, 1f, MkGoal, g, RouteShot);
+                        steps.Add(g.ScoredByPicked ? run : MirrorStep(run));
+                        steps.Add(g.ScoredByPicked ? shot : MirrorStep(shot));
                     }
+                    AppendFinalCounts(steps, new SceneSpec(SceneTemplate.LegFinalWon, 0, false, false,
+                        true, null, null, countPlan, market, 0f), countPlan, 0.5f);
                     steps.Add(S(P(1.8f), 0.5f, 0.5f, 0.72f, 1f, route: RouteAuthored)); // whistle — celebrate
                     break;
 
@@ -924,25 +1033,79 @@ namespace SBR.Game
                         }
                         else
                         {
-                            steps.Add(S(P(1.0f), 0.13f, 0.35f, 0.28f, 1f, atkPicked: false, chase: true));
-                            steps.Add(S(P(1.5f), 0.025f, 0.5f, 0.26f, 1f, MkGoal, g, RouteShot, atkPicked: false));
+                            // post-freeze reveals: opponent frame, mirrored whole for picked-
+                            // side goals; only the frozen flight above keeps its launched-side
+                            // continuity (Sol, F_0.4.0 P3 r1+r2)
+                            Step run = S(P(1.0f), 0.13f, 0.35f, 0.28f, 1f, atkPicked: false, chase: true);
+                            Step shot = S(P(1.5f), 0.025f, 0.5f, 0.26f, 1f, MkGoal, g, RouteShot, atkPicked: false);
+                            steps.Add(g.ScoredByPicked ? MirrorStep(run) : run);
+                            steps.Add(g.ScoredByPicked ? MirrorStep(shot) : shot);
                         }
                     }
+                    AppendFinalCounts(steps, new SceneSpec(SceneTemplate.LegFinalLost, 0, false, false,
+                        false, null, null, countPlan, market, 0f), countPlan, 0.5f);
                     steps.Add(S(P(1.8f), 0.5f, 0.5f, 0.26f, 0.1f, route: RouteAuthored, atkPicked: false)); // collapse
                     break;
             }
             return steps.ToArray();
         }
 
+        private void AppendFinalCounts(List<Step> steps, SceneSpec spec, CountLedger.FinalPlan? countPlan,
+            float lane)
+        {
+            if (!countPlan.HasValue || countPlan.Value.Counts == null) return;
+            byte marker = spec.Market == MarketKind.TotalCards ? MkBooking : MkCorner;
+            bool won = spec.Template == SceneTemplate.LegFinalWon;
+            for (int i = 0; i < countPlan.Value.Counts.Length; i++)
+            {
+                CountLedger.StagedCount count = countPlan.Value.Counts[i];
+                // A zero batch is nothing happening — it never earns a corner/booking scene
+                // (Sol, F_0.4.0 P3 r2; PlanFinal filters these too, this is the belt).
+                if (count.TotalDelta <= 0) continue;
+                bool attackPicked = count.ForPicked;
+                float x = attackPicked ? 0.96f : 0.04f;
+                steps.Add(S(P(0.9f), x, lane, won ? 0.70f : 0.30f, 1f,
+                    marker, route: spec.Market == MarketKind.TotalCorners ? RouteCorner : RouteAuthored,
+                    atkPicked: attackPicked, count: count));
+            }
+        }
+
         // ------------------------------------------------------------------ scene visuals
 
         private void FlashGoal(bool right, bool strong)
         {
+            if (_bookingCard != null) _bookingCard.enabled = false;
             _flashRight = right;
             _flashDur = strong ? 0.55f : 0.35f;
             _flashT = _flashDur;
             _flashRing.enabled = true;
             _flashRing.color = new Color(1f, 1f, 1f, strong ? 0.95f : 0.5f);
+        }
+
+        private void FlashCorner()
+        {
+            if (_bookingCard != null) _bookingCard.enabled = false;
+            _flashRight = _ballPos.x > 0f;
+            _flashDur = 0.38f;
+            _flashT = _flashDur;
+            _flashRing.enabled = true;
+            _flashRing.color = new Color(1f, 1f, 1f, 0.68f);
+        }
+
+        private void FlashBooking()
+        {
+            if (_bookingCard != null)
+            {
+                _bookingCard.enabled = true;
+                _bookingCard.rectTransform.anchoredPosition = _ballPos;
+                _bookingCard.rectTransform.localScale = Vector3.one;
+                _bookingCard.transform.SetAsLastSibling();
+            }
+            _flashRight = _ballPos.x > 0f;
+            _flashDur = 0.45f;
+            _flashT = _flashDur;
+            _flashRing.enabled = true;
+            _flashRing.color = new Color(0.92f, 0.95f, 1f, 0.72f);
         }
 
         private void UpdateFlash(float dt)
@@ -957,7 +1120,11 @@ namespace SBR.Game
             Color c = _flashRing.color;
             c.a = Mathf.Lerp(c.a, 0f, t * t);
             _flashRing.color = c;
-            if (_flashT <= 0f) _flashRing.enabled = false;
+            if (_flashT <= 0f)
+            {
+                _flashRing.enabled = false;
+                if (_bookingCard != null) _bookingCard.enabled = false;
+            }
         }
 
         private void KeeperLunge()

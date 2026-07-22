@@ -17,6 +17,7 @@ namespace SBR.Game
     {
         public int Index { get; internal set; }
         public string TeamName { get; internal set; }
+        public string MarketLabel { get; internal set; }
         public string AmericanOdds { get; internal set; }
         public uint TeamColor { get; internal set; }
         public RevealedLegState State { get; internal set; }
@@ -165,12 +166,16 @@ namespace SBR.Game
             foreach (Leg leg in source.Legs)
             {
                 (uint home, uint away) = TheaterPalette.TeamColors(leg.Matchup.Home.Name, leg.Matchup.Away.Name);
+                bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
                 legs.Add(new RevealedLeg
                 {
                     Index = legs.Count,
-                    TeamName = SweatFlavor.Short(leg.Side == Side.Home ? leg.Matchup.Home.Name : leg.Matchup.Away.Name).ToUpperInvariant(),
+                    TeamName = leg.Selection.Kind == MarketKind.Moneyline
+                        ? SweatFlavor.Short(pickedHome ? leg.Matchup.Home.Name : leg.Matchup.Away.Name).ToUpperInvariant()
+                        : leg.DisplayLabel,
+                    MarketLabel = leg.DisplayLabel,
                     AmericanOdds = OddsFormat.American(leg.OfferedOdds),
-                    TeamColor = leg.Side == Side.Home ? home : away,
+                    TeamColor = pickedHome ? home : away,
                     State = RevealedLegState.Pending
                 });
             }
@@ -346,8 +351,10 @@ namespace SBR.Game
         private float _canvasHeight;
         private readonly SweatPresentationModel _presModel = new SweatPresentationModel();
         private readonly ScoreLedger _ledger = new ScoreLedger();
+        private CountLedger _countLedger;
         private TheaterChoreographer _choreo;
         private int _stageLeg = -1;
+        private int _stageBeatCount;
         private bool _lastBeatUp;
         private double _lastBeatDelta;
         // Causal reveal (M-T3.1): the beat's chrome is computed at MoveNext but LANDS at the
@@ -560,10 +567,13 @@ namespace SBR.Game
 
             if (evt.Type != DramaEventType.LegFinal)
             {
-                SceneSpec spec = _choreo.ResolveBeat(evt, _lastBeatUp, _lastBeatDelta, _ledger);
+                SceneSpec spec = _choreo.ResolveBeat(evt, _lastBeatUp, _lastBeatDelta, _ledger,
+                    leg, _countLedger);
                 bool nearMiss = spec.Template == SceneTemplate.NearMissHope
                     || spec.Template == SceneTemplate.NearMissScare;
                 _audioUrgency = spec.Urgent ? 1f : 0f;
+                if (spec.Template == SceneTemplate.CornerFor || spec.Template == SceneTemplate.CornerAgainst)
+                    _audio?.CornerRiser(spec.Duration * 0.80f);
                 if (nearMiss)
                 {
                     float riserSeconds = spec.Duration * 0.66f
@@ -578,10 +588,28 @@ namespace SBR.Game
                 // beat reconciles for the opponent while the tie-break says "up").
                 if (spec.Goal.HasValue)
                 {
-                    _pendingBeatBeneficiary = TeamColor(leg, spec.Goal.Value.ForPicked);
+                    // Scorer's color = the side that SCORES; the goal-call language = the
+                    // money direction. Decoupled for market legs (Sol, F_0.4.0 P3).
+                    _pendingBeatBeneficiary = TeamColor(leg, spec.Goal.Value.ScoredByPicked);
                     if (evt.Type == DramaEventType.Momentum)
                         _pendingFlavor = SweatFlavor.GoalLine(spec.Goal.Value.ForPicked, leg, evt.Step);
                 }
+
+                // A batched count reveal says so out loud — one corner animation can carry
+                // several flags from the spell (amount-aware commentary; Sol, F_0.4.0 P3).
+                bool countLeg = leg.Selection.Kind == MarketKind.TotalCorners
+                    || leg.Selection.Kind == MarketKind.TotalCards;
+                bool countScene = spec.Count.HasValue && spec.Count.Value.TotalDelta > 0;
+                if (countScene && spec.Count.Value.TotalDelta > 1)
+                    _pendingFlavor += $" ({spec.Count.Value.TotalDelta} in the spell)";
+                // A zero batch fell through to ordinary play: the pre-computed corner/booking
+                // line would narrate an event the pitch never shows (Sol, F_0.4.0 P3 r2).
+                // But a staged goal owns the beat's story wherever it lands (M-T4.1) — the
+                // goal call wins over neutral possession (Sol, F_0.4.0 P3 r3).
+                if (countLeg && !countScene)
+                    _pendingFlavor = spec.Goal.HasValue
+                        ? SweatFlavor.GoalLine(spec.Goal.Value.ForPicked, leg, evt.Step)
+                        : SweatFlavor.NeutralLine(evt, leg, _lastBeatUp);
 
                 // Market suspension is for DANGEROUS scenes only (playtest #13 — blanket
                 // suspension left almost no window to cash out): goal chances and near-misses
@@ -589,18 +617,20 @@ namespace SBR.Game
                 // possession scenes carry so little information that the market drifts openly
                 // — their chrome reveals at scene start.
                 bool dangerous = spec.Goal.HasValue
+                    || spec.Count.HasValue
                     || spec.Template == SceneTemplate.NearMissHope
                     || spec.Template == SceneTemplate.NearMissScare;
                 if (dangerous)
                 {
                     SuspendMarket();
                     _stage.PlayScene(spec, OnGoalPlayed,
-                        nearMiss ? RevealBeatAudio : RevealBeatChrome, null);
+                        nearMiss || spec.Count.HasValue ? RevealBeatAudio : RevealBeatChrome, null,
+                        OnCountPlayed);
                 }
                 else
                 {
                     RevealBeatChrome(); // low-information beat: prob drifts, price stays live
-                    _stage.PlayScene(spec, OnGoalPlayed, null, null);
+                    _stage.PlayScene(spec, OnGoalPlayed, null, null, OnCountPlayed);
                 }
                 yield return WaitSceneDone();
                 _audioUrgency = 0f;
@@ -624,7 +654,9 @@ namespace SBR.Game
                 LegGrade grade = leg.IsVoided ? LegGrade.Voided
                     : leg.GradesWon ? LegGrade.Won : LegGrade.Lost;
                 ScoreLedger.FinalPlan plan = _ledger.PlanFinal(grade);
-                _stage.ResumeSuspended(plan, OnGoalPlayed, null);
+                bool countForPicked = leg.Selection.Choice == MarketChoice.Over;
+                CountLedger.FinalPlan? countPlan = _countLedger?.PlanFinal(countForPicked);
+                _stage.ResumeSuspended(plan, countPlan, leg.Selection.Kind, OnGoalPlayed, OnCountPlayed, null);
                 yield return WaitSceneDone();
                 yield return FinalSlam(evt, grade);
             }
@@ -632,9 +664,9 @@ namespace SBR.Game
             {
                 LegGrade grade = leg.IsVoided ? LegGrade.Voided
                     : leg.GradesWon ? LegGrade.Won : LegGrade.Lost;
+                SceneSpec spec = _choreo.ResolveFinal(grade, evt.Step, _ledger, _countLedger, leg);
                 ScoreLedger.FinalPlan plan = _ledger.PlanFinal(grade);
-                SceneSpec spec = _choreo.ResolveFinal(grade, evt.Step);
-                _stage.PlayFinalScene(spec, plan, OnGoalPlayed, null);
+                _stage.PlayFinalScene(spec, plan, spec.CountFinal, OnGoalPlayed, OnCountPlayed, null);
                 yield return WaitSceneDone();
                 yield return FinalSlam(evt, grade);
             }
@@ -720,6 +752,24 @@ namespace SBR.Game
                 _tFlavor.text = "VAR — NO GOAL";
                 _flavorScale = 1.12f;
             }
+        }
+
+        /// <summary>A corner kick or booking reaches its payoff. Count and market direction
+        /// move together here; the stage callback fires before the chrome reveal callback.</summary>
+        private void OnCountPlayed(CountLedger.StagedCount count)
+        {
+            if (_countLedger == null) return;
+            _countLedger.CompleteCount(count);
+            if (_countLedger.TargetTotal > 0)
+            {
+                if (_ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count)
+                    UpdateScorebug(_ticket.Legs[_stageLeg]);
+            }
+            if (_ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count
+                && _ticket.Legs[_stageLeg].Selection.Kind == MarketKind.TotalCards)
+                _audio?.BookingWhistle();
+            else
+                _audio?.CutRiser();
         }
 
         /// <summary>Regular time is over when a final scene starts. The stoppage counter is
@@ -867,6 +917,8 @@ namespace SBR.Game
             _barPunch = 1f;
             _pendingTapeBeat = false;
             _stageLeg = -1;
+            _stageBeatCount = 0;
+            _countLedger = null;
             _finalSequenceActive = false;
             _audioUrgency = 0f;
             _stoppageGoalCount = 0;
@@ -907,18 +959,26 @@ namespace SBR.Game
             _tWinPct.text = $"WIN {Mathf.RoundToInt(_probTarget * 100f)}%";
             _resolvedThrough = 0;
             UpdateSlipStrip(0);
-            BeginStageLeg(0, leg);
+            BeginStageLeg(0, leg, 0);
         }
 
         /// <summary>Kicks the stage off for a leg: model-owned team colors (deterministic,
         /// non-reserved pool), the picked side attacking right, territory opening at TrueProb.
         /// New leg = new match: the score ledger resets and the scorebug re-speaks.</summary>
-        private void BeginStageLeg(int legIndex, Leg leg)
+        private void BeginStageLeg(int legIndex, Leg leg, int beatCount)
         {
             if (_stage == null) return;
             _stageLeg = legIndex;
+            _stageBeatCount = beatCount;
             _tape?.Show(true);
             _ledger.ResetForLeg();
+            _ledger.ConfigureEndpoint(leg);
+            _countLedger = null;
+            if (leg.Selection.Kind == MarketKind.TotalCorners || leg.Selection.Kind == MarketKind.TotalCards)
+            {
+                _countLedger = new CountLedger();
+                _countLedger.ConfigureEndpoint(leg.Matchup.StatLine, leg.Selection.Kind, Math.Max(1, beatCount));
+            }
             // Kickoff: the match clock returns to zero and the final-sequence state clears.
             _clockShownMin = 0f;
             _clockTicking = false;
@@ -927,7 +987,7 @@ namespace SBR.Game
             (uint home, uint away) = TheaterPalette.TeamColors(leg.Matchup.Home.Name, leg.Matchup.Away.Name);
             _stage.Show(true);
             _stage.BeginLeg(TheaterStage.FromRgb(home), TheaterStage.FromRgb(away),
-                pickedIsHome: leg.Side == Side.Home, openingProb: (float)leg.TrueProb);
+                pickedIsHome: SweatFlavor.PickedHomeForPresentation(leg), openingProb: (float)leg.TrueProb);
             RevealedView.BeginLeg(legIndex, leg);
             UpdateScorebug(leg);
         }
@@ -940,25 +1000,57 @@ namespace SBR.Game
         {
             if (_tMatchup == null) return;
             (uint homeRgb, uint awayRgb) = TheaterPalette.TeamColors(leg.Matchup.Home.Name, leg.Matchup.Away.Name);
-            bool pickedHome = leg.Side == Side.Home;
+            bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
             int homeScore = pickedHome ? _ledger.Picked : _ledger.Opponent;
             int awayScore = pickedHome ? _ledger.Opponent : _ledger.Picked;
 
             string away = SweatFlavor.Short(leg.Matchup.Away.Name).ToUpperInvariant();
             string home = SweatFlavor.Short(leg.Matchup.Home.Name).ToUpperInvariant();
-            string awayMark = leg.Side == Side.Away ? "● " : "";
-            string homeMark = leg.Side == Side.Home ? " ●" : "";
+            // The pick dot marks YOUR TEAM — a market leg has none, so it wears no dot
+            // (the slip strip's market label carries the pick until Phase 3's market chip).
+            bool isMl = leg.Selection.Kind == MarketKind.Moneyline;
+            string awayMark = isMl && !pickedHome ? "● " : "";
+            string homeMark = isMl && pickedHome ? " ●" : "";
             _tMatchup.text =
                 $"<color=#{awayRgb:X6}>{awayMark}{away}</color>  {awayScore} — {homeScore}  " +
                 $"<color=#{homeRgb:X6}>{home}{homeMark}</color>";
+            string chip = MarketChip(leg);
+            _tRecords.text = RecordsLine(leg) + (chip.Length > 0 ? $"   |   {chip}" : string.Empty);
             RevealedView.SetScore($"{away} {awayScore} — {home} {homeScore}");
+        }
+
+        private string MarketChip(Leg leg)
+        {
+            MarketSelection selection = leg.Selection;
+            MatchStatLine line = leg.Matchup.StatLine;
+            if (line == null) return string.Empty;
+            string choice = selection.Choice == MarketChoice.Over ? "O"
+                : selection.Choice == MarketChoice.Under ? "U" : string.Empty;
+            switch (selection.Kind)
+            {
+                // The chip shows only REVEALED counts (0 before any payoff) — falling back to
+                // the baked stat line would leak the outcome (causal reveal law).
+                case MarketKind.TotalCorners:
+                    return $"CORNERS {_countLedger?.Home ?? 0}-{_countLedger?.Away ?? 0} | {choice} {selection.Line:0.0}";
+                case MarketKind.TotalCards:
+                    return $"CARDS {_countLedger?.Total ?? 0} | {choice} {selection.Line:0.0}";
+                case MarketKind.BothTeamsToScore:
+                    // Teams-scored progress, not a scoreline — BTTS asks "how many of the
+                    // two have scored", so the chip reads n/2 (Sol, F_0.4.0 P3).
+                    return $"BTTS {(_ledger.Picked > 0 ? 1 : 0) + (_ledger.Opponent > 0 ? 1 : 0)}/2";
+                case MarketKind.TotalGoals:
+                    return $"GOALS {_ledger.Picked}-{_ledger.Opponent} | {choice} {selection.Line:0.0}";
+                default:
+                    return string.Empty;
+            }
         }
 
         private static Color TeamColor(Leg leg, bool pickedSide)
         {
             (uint home, uint away) = TheaterPalette.TeamColors(leg.Matchup.Home.Name, leg.Matchup.Away.Name);
-            uint picked = leg.Side == Side.Home ? home : away;
-            uint opponent = leg.Side == Side.Home ? away : home;
+            bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
+            uint picked = pickedHome ? home : away;
+            uint opponent = pickedHome ? away : home;
             return TheaterStage.FromRgb(pickedSide ? picked : opponent);
         }
 
@@ -976,11 +1068,9 @@ namespace SBR.Game
             for (int i = 0; i < _ticket.Legs.Count; i++)
             {
                 Leg leg = _ticket.Legs[i];
-                string side = SweatFlavor.Short(
-                    leg.Side == Side.Home ? leg.Matchup.Home.Name : leg.Matchup.Away.Name).ToUpperInvariant();
-                string label = $"{side} {OddsFormat.American(leg.OfferedOdds)}";
+                string label = $"{leg.DisplayLabel} {OddsFormat.American(leg.OfferedOdds)}";
                 (uint homeRgb, uint awayRgb) = TheaterPalette.TeamColors(leg.Matchup.Home.Name, leg.Matchup.Away.Name);
-                uint pickedRgb = leg.Side == Side.Home ? homeRgb : awayRgb;
+                uint pickedRgb = SweatFlavor.PickedHomeForPresentation(leg) ? homeRgb : awayRgb;
 
                 if (i > 0) strip += "  ·  ";
                 if (i < _resolvedThrough)
@@ -1014,9 +1104,7 @@ namespace SBR.Game
             foreach (Leg leg in _ticket.Legs)
             {
                 if (legs.Length > 0) legs += "   ·   ";
-                string side = SweatFlavor.Short(
-                    leg.Side == Side.Home ? leg.Matchup.Home.Name : leg.Matchup.Away.Name);
-                legs += $"{side.ToUpperInvariant()} {OddsFormat.American(leg.OfferedOdds)}";
+                legs += $"{leg.DisplayLabel} {OddsFormat.American(leg.OfferedOdds)}";
             }
             _tRecords.text = legs;
             _tSlipStrip.text = string.Empty;
@@ -1181,7 +1269,8 @@ namespace SBR.Game
                 _pendingProb = (float)evt.WinProbAfter;
                 _pendingFlavor = flavor;
 
-                if (evt.LegIndex != _stageLeg) BeginStageLeg(evt.LegIndex, leg);
+                if (evt.LegIndex != _stageLeg || _stageBeatCount != evt.TotalSteps)
+                    BeginStageLeg(evt.LegIndex, leg, evt.TotalSteps);
                 _stage.SetLiveProb((float)evt.WinProbAfter);
                 UpdateScorebug(leg); // colored identity + running score (M-T3 scorebug)
             }
@@ -1365,8 +1454,11 @@ namespace SBR.Game
             string away = SweatFlavor.Short(leg.Matchup.Away.Name);
             string home = SweatFlavor.Short(leg.Matchup.Home.Name);
             // Mark the picked side with a dot so the player knows which team is theirs.
-            string awayMark = leg.Side == Side.Away ? "● " : "";
-            string homeMark = leg.Side == Side.Home ? " ●" : "";
+            // Market legs have no team — no dot (their pick reads from the market label).
+            bool isMl = leg.Selection.Kind == MarketKind.Moneyline;
+            bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
+            string awayMark = isMl && !pickedHome ? "● " : "";
+            string homeMark = isMl && pickedHome ? " ●" : "";
             return $"{awayMark}{away.ToUpperInvariant()}  @  {home.ToUpperInvariant()}{homeMark}";
         }
 

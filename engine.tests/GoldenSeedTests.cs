@@ -5,7 +5,8 @@ namespace SBR.Engine.Tests;
 
 /// <summary>
 /// The Week 2 determinism pin. Seed GOLDEN-W2, a scripted 2-ticket round (a 3-leg parlay that
-/// wins two legs then loses on its decisive final leg, plus a winning single). The full event
+/// wins its first leg then dies on its second, plus a winning single — the single keeps the
+/// settlement pin sensitive to payout crediting, not just stake deduction). The full event
 /// stream, the total count, and settlement are hard-coded below. An UNINTENTIONAL change here is
 /// a determinism regression — investigate before re-pinning.
 /// </summary>
@@ -18,9 +19,9 @@ public class GoldenSeedTests
         // The Week-2 pin was taken at bank 500; the pin stays valid by pinning the config too
         // (outcomes/drama are bank-independent, but the settled-bank assertion is not).
         var run = new Run(Seed, new RunConfig { StartingBank = 500 });
-        // Parlay: (0,Away) win, (2,Away) win, (3,Home) lose-on-final.  Single: (1,Home) win.
+        // F_0.4.0 universe: parlay (0,Away) win, (2,Away) DIES, (3,Home) never sweated.  Single: (1,Away) win.
         run.PlaceTicket(new[] { new Pick(0, Side.Away), new Pick(2, Side.Away), new Pick(3, Side.Home) }, 100);
-        run.PlaceTicket(new[] { new Pick(1, Side.Home) }, 50);
+        run.PlaceTicket(new[] { new Pick(1, Side.Away) }, 50);
         run.LockRound();
         return run;
     }
@@ -34,26 +35,20 @@ public class GoldenSeedTests
         return all;
     }
 
-    // (LegIndex, Step, Type, Tag) for every one of the 18 events, in fast-forward order.
-    // Re-pinned 2026-07-18 (F_0.2.0 M-T1): drama budgets cut to 3–5/leg with the round-1
-    // progressive-density ramp at 2–4 — an INTENDED drama-stream re-pin. The settlement pin
-    // below was deliberately NOT touched: outcomes ride the Outcomes stream and must not move.
+    // (LegIndex, Step, Type, Tag) for every event, in fast-forward order. Re-pinned once for
+    // F_0.4.0 Phase 1: the stat-line sampler changes the locked market universe intentionally.
     private static readonly (int leg, int step, DramaEventType type, TensionTag tag)[] Expected =
     {
         (0, 1, DramaEventType.BigPlay,  TensionTag.Swing),
         (0, 2, DramaEventType.LegFinal, TensionTag.Decisive),
-        (1, 1, DramaEventType.Momentum, TensionTag.Calm),
-        (1, 2, DramaEventType.Momentum, TensionTag.Calm),
-        (1, 3, DramaEventType.Momentum, TensionTag.Calm),
+        (1, 1, DramaEventType.Score, TensionTag.Swing),
+        (1, 2, DramaEventType.BigPlay, TensionTag.Swing),
+        (1, 3, DramaEventType.Score, TensionTag.Swing),
         (1, 4, DramaEventType.LegFinal, TensionTag.Decisive),
-        (2, 1, DramaEventType.Momentum, TensionTag.Calm),
-        (2, 2, DramaEventType.Momentum, TensionTag.Calm),
-        (2, 3, DramaEventType.BigPlay,  TensionTag.NearMiss),
-        (2, 4, DramaEventType.LegFinal, TensionTag.Decisive),
-        (0, 1, DramaEventType.Momentum, TensionTag.Calm),
-        (0, 2, DramaEventType.Momentum, TensionTag.Calm),
+        (0, 1, DramaEventType.Momentum, TensionTag.LeadChange),
+        (0, 2, DramaEventType.Momentum, TensionTag.LeadChange),
         (0, 3, DramaEventType.Momentum, TensionTag.Calm),
-        (0, 4, DramaEventType.Score,    TensionTag.Swing),
+        (0, 4, DramaEventType.Score,    TensionTag.LeadChange),
         (0, 5, DramaEventType.Momentum, TensionTag.Calm),
         (0, 6, DramaEventType.Score,    TensionTag.Swing),
         (0, 7, DramaEventType.Score,    TensionTag.Swing),
@@ -63,8 +58,8 @@ public class GoldenSeedTests
     // WinProbAfter (6 dp) for the first ten events.
     private static readonly double[] ExpectedFirstTenWinProb =
     {
-        0.803542, 1.000000, 0.774708, 0.751859, 0.767951,
-        1.000000, 0.432400, 0.404952, 0.750000, 0.000000,
+        0.803542, 1.000000, 0.363411, 0.144328, 0.030000,
+        0.000000, 0.523784, 0.484132, 0.493316, 0.636125,
     };
 
     [Fact]
@@ -73,7 +68,7 @@ public class GoldenSeedTests
         Run run = ScriptedRound();
         List<DramaEvent> events = DrainAll(run);
 
-        Assert.Equal(18, events.Count);
+        Assert.Equal(14, events.Count);
         Assert.Equal(Expected.Length, events.Count);
 
         for (int i = 0; i < events.Count; i++)
@@ -97,9 +92,9 @@ public class GoldenSeedTests
         run.FinishSweat();
 
         Assert.Equal(Phase.Settlement, run.Phase);
-        Assert.Equal(TicketState.Lost, run.Tickets[0].State); // parlay died on its final leg
-        Assert.Equal(TicketState.Won, run.Tickets[1].State);  // single hit
-        Assert.Equal(428.631019, run.Bank, 5);
+        Assert.Equal(TicketState.Lost, run.Tickets[0].State); // parlay died on its second leg
+        Assert.Equal(TicketState.Won, run.Tickets[1].State);  // single hit — payout crediting stays pinned
+        Assert.Equal(452.559054816409, run.Bank, 5);
     }
 
     [Fact]

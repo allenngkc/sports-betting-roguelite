@@ -72,10 +72,10 @@ public class RunSweatTests
     [Fact]
     public void Finish_sweat_settles_a_winning_ticket_and_a_losing_ticket()
     {
-        // GOLDEN-W2: (1,Home) wins, (0,Home) loses.
+        // F_0.4.0 re-pin: (0,Away) wins, (1,Home) loses.
         var run = new Run("GOLDEN-W2");
-        Ticket winner = run.PlaceTicket(Picks((1, Side.Home)), 100);
-        Ticket loser = run.PlaceTicket(Picks((0, Side.Home)), 100);
+        Ticket winner = run.PlaceTicket(Picks((0, Side.Away)), 100);
+        Ticket loser = run.PlaceTicket(Picks((1, Side.Home)), 100);
         double bankBeforeLock = run.Bank;
 
         run.LockRound();

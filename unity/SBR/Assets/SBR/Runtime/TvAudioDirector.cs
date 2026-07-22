@@ -27,7 +27,9 @@ namespace SBR.Game
         private AudioClip _goalClip;
         private AudioClip _chalkedGoalClip;
         private AudioClip _riserClip;
+        private AudioClip _cornerClip;
         private AudioClip _whistleClip;
+        private AudioClip _bookingWhistleClip;
         private AudioClip _slamWonClip;
         private AudioClip _slamLostClip;
         private AudioClip _cashOutClip;
@@ -68,7 +70,9 @@ namespace SBR.Game
             director._goalClip = BuildGoalClip(true);
             director._chalkedGoalClip = BuildGoalClip(false);
             director._riserClip = BuildRiserClip();
+            director._cornerClip = BuildCornerClip();
             director._whistleClip = BuildWhistleClip();
+            director._bookingWhistleClip = BuildBookingWhistleClip();
             director._slamWonClip = BuildSlamWonClip();
             director._slamLostClip = BuildSlamLostClip();
             director._cashOutClip = BuildCashOutClip();
@@ -132,7 +136,18 @@ namespace SBR.Game
         {
             Stop(_riserSource);
             if (!_shown || _riserClip == null) return;
+            _riserSource.clip = _riserClip;
             _riserSource.pitch = Mathf.Clamp(RiserSeconds / Mathf.Max(0.05f, seconds), 0.05f, 3f);
+            Play(_riserSource);
+        }
+
+        /// <summary>Corner-kick riser: parallel decoration for the count-scene payoff.</summary>
+        public void CornerRiser(float seconds)
+        {
+            Stop(_riserSource);
+            if (!_shown || _cornerClip == null) return;
+            _riserSource.clip = _cornerClip;
+            _riserSource.pitch = Mathf.Clamp(4.5f / Mathf.Max(0.05f, seconds), 0.05f, 3f);
             Play(_riserSource);
         }
 
@@ -143,6 +158,9 @@ namespace SBR.Game
         }
 
         public void Whistle() => PlayOneShot(_stingSource, _whistleClip);
+
+        /// <summary>Short stoppage whistle for a booking scene; it never blocks playback.</summary>
+        public void BookingWhistle() => PlayOneShot(_stingSource, _bookingWhistleClip);
 
         public void SlamWon() => PlayOneShot(_stingSource, _slamWonClip);
 
@@ -276,6 +294,22 @@ namespace SBR.Game
             return CreateClip("NearMissRiser", data);
         }
 
+        private static AudioClip BuildCornerClip()
+        {
+            float seconds = 4.5f;
+            int samples = Mathf.RoundToInt(seconds * SampleRate);
+            var data = new float[samples];
+            for (int i = 0; i < samples; i++)
+            {
+                float t = (float)i / SampleRate;
+                float p = t / seconds;
+                float freq = 120f + 420f * p;
+                float envelope = 0.03f + 0.22f * p;
+                data[i] = Mathf.Sin(2f * Mathf.PI * freq * t) * envelope;
+            }
+            return CreateClip("CornerRiser", data);
+        }
+
         private static AudioClip BuildWhistleClip()
         {
             float seconds = 0.72f;
@@ -292,6 +326,21 @@ namespace SBR.Game
                 data[i] = Mathf.Sign(Mathf.Sin(2f * Mathf.PI * 1850f * t)) * envelope * 0.28f;
             }
             return CreateClip("Whistle", data);
+        }
+
+        private static AudioClip BuildBookingWhistleClip()
+        {
+            float seconds = 0.42f;
+            int samples = Mathf.RoundToInt(seconds * SampleRate);
+            var data = new float[samples];
+            for (int i = 0; i < samples; i++)
+            {
+                float t = (float)i / SampleRate;
+                float envelope = Mathf.Sin(Mathf.Clamp01(t / seconds) * Mathf.PI)
+                    * Mathf.Exp(-2.6f * t);
+                data[i] = Mathf.Sign(Mathf.Sin(2f * Mathf.PI * 2300f * t)) * envelope * 0.30f;
+            }
+            return CreateClip("BookingWhistle", data);
         }
 
         private static AudioClip BuildSlamWonClip()

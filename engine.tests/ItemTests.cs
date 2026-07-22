@@ -114,8 +114,8 @@ public class ItemTests
         var run = new Run("GOLDEN-W2", EasyPayments(10, 10));
         run.GrantRelic(Def(RelicCatalog.ScarTissueId));
 
-        run.PlaceTicket(Picks((0, Side.Home)), 125);  // carrier of 0 stacks; busts → +5
-        run.PlaceTicket(Picks((3, Side.Home)), 125);  // also busts → +5 more
+        run.PlaceTicket(Picks((1, Side.Home)), 125);  // carrier of 0 stacks; busts → +5
+        run.PlaceTicket(Picks((2, Side.Away)), 125);  // also busts → +5 more
         run.LockRound();
         run.FastForwardRound();
 
@@ -147,8 +147,8 @@ public class ItemTests
         var run = new Run("GOLDEN-W2", EasyPayments(10, 10));
         run.GrantConsumable(Con("mulligan_slip"));
 
-        // Leg order = pick order: (0,Home) dies first, (1,Home) wins.
-        Ticket t = run.PlaceTicket(Picks((0, Side.Home), (1, Side.Home)), 50);
+        // Leg order = pick order: (1,Home) dies first, (0,Away) wins.
+        Ticket t = run.PlaceTicket(Picks((1, Side.Home), (0, Side.Away)), 50);
         run.LockRound();
         SweatSession s = run.Sweats[0];
 

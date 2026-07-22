@@ -41,29 +41,48 @@ namespace SBR.Game
 
         // ------------------------------------------------------------------ legs
 
-        /// <summary>The slip's side on this matchup, if any.</summary>
+        /// <summary>The slip's moneyline side on this matchup, if the selected leg is moneyline.</summary>
         public Side? SideOn(int matchupIndex)
         {
             foreach (Pick p in _picks)
-                if (p.MatchupIndex == matchupIndex) return p.Side;
+            {
+                if (p.MatchupIndex != matchupIndex) continue;
+                if (p.Selection.Kind != MarketKind.Moneyline) return null;
+                return p.Selection.Choice == MarketChoice.Home ? Side.Home : Side.Away;
+            }
             return null;
         }
 
-        /// <summary>Slate-side click: adds the leg, switches side, or removes it (same side again).
-        /// Returns false only when a NEW leg would exceed MaxLegs.</summary>
-        public bool Toggle(int matchupIndex, Side side)
+        /// <summary>The selected market on this matchup, if any.</summary>
+        public MarketSelection? SelectionOn(int matchupIndex)
         {
+            foreach (Pick p in _picks)
+                if (p.MatchupIndex == matchupIndex) return p.Selection;
+            return null;
+        }
+
+        /// <summary>Slate-side click, retained as a convenience for the moneyline board.</summary>
+        public bool Toggle(int matchupIndex, Side side)
+            => Toggle(matchupIndex, MarketSelection.Moneyline(side));
+
+        /// <summary>Adds a market leg, replaces a different selection for the same matchup, or
+        /// removes the leg when the same selection is clicked again. A matchup contributes at
+        /// most one leg to the slip.</summary>
+        public bool Toggle(int matchupIndex, MarketSelection selection)
+        {
+            if (matchupIndex < 0 || matchupIndex >= _run.CurrentSlate.Matchups.Count) return false;
+            _ = _run.CurrentSlate.Matchups[matchupIndex].Odds(selection);
             BoostLeg = -1;
             for (int i = 0; i < _picks.Count; i++)
             {
                 if (_picks[i].MatchupIndex != matchupIndex) continue;
-                if (_picks[i].Side == side) _picks.RemoveAt(i);
-                else _picks[i] = new Pick(matchupIndex, side);
+                if (_picks[i].Selection == selection) _picks.RemoveAt(i);
+                else _picks[i] = new Pick(matchupIndex, selection);
                 return true;
             }
 
             if (_picks.Count >= _run.Config.MaxLegs) return false;
-            _picks.Add(new Pick(matchupIndex, side));
+            _picks.Add(new Pick(matchupIndex, selection));
             return true;
         }
 
@@ -121,7 +140,7 @@ namespace SBR.Game
                 if (_picks.Count == 0) return 0.0;
                 var odds = new List<double>(_picks.Count);
                 foreach (Pick p in _picks)
-                    odds.Add(_run.CurrentSlate.Matchups[p.MatchupIndex].Odds(p.Side));
+                    odds.Add(_run.CurrentSlate.Matchups[p.MatchupIndex].Odds(p.Selection));
                 return OddsMath.ParlayDecimal(odds);
             }
         }

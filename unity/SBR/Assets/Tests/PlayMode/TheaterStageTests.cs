@@ -85,6 +85,7 @@ namespace SBR.Tests.PlayMode
             {
                 SceneTemplate.GoalFor, SceneTemplate.GoalAgainst, SceneTemplate.BreakawayFor,
                 SceneTemplate.BreakawayAgainst, SceneTemplate.TerritoryFor, SceneTemplate.TerritoryAgainst,
+                SceneTemplate.CornerFor, SceneTemplate.CornerAgainst, SceneTemplate.Booking,
                 SceneTemplate.NearMissHope, SceneTemplate.NearMissScare, SceneTemplate.CalmPossession,
                 SceneTemplate.Kickoff, SceneTemplate.Fallback,
             };

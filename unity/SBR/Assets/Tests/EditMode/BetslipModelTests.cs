@@ -49,6 +49,59 @@ namespace SBR.Tests.EditMode
         }
 
         [Test]
+        public void Market_toggle_replaces_a_match_leg_and_same_selection_removes_it()
+        {
+            var run = new Run("SLIP-MARKET-TOGGLE", Bank500());
+            var slip = new BetslipModel(run);
+            MarketSelection over = MarketSelection.TotalGoals(2.5, true);
+            MarketSelection under = MarketSelection.TotalGoals(3.5, false);
+
+            Assert.IsTrue(slip.Toggle(0, over));
+            Assert.AreEqual(over, slip.SelectionOn(0));
+            Assert.IsNull(slip.SideOn(0), "market legs must not be projected to a moneyline side");
+
+            Assert.IsTrue(slip.Toggle(0, under), "a different market replaces the existing matchup leg");
+            Assert.AreEqual(1, slip.Picks.Count);
+            Assert.AreEqual(under, slip.SelectionOn(0));
+
+            Assert.IsTrue(slip.Toggle(0, under), "clicking the same market removes the leg");
+            Assert.AreEqual(0, slip.Picks.Count);
+        }
+
+        [Test]
+        public void Market_preview_and_place_preserve_selection_and_market_label()
+        {
+            var run = new Run("SLIP-MARKET-PLACE", Bank500());
+            var slip = new BetslipModel(run);
+            MarketSelection goals = MarketSelection.TotalGoals(2.5, true);
+            MarketSelection btts = MarketSelection.BothTeamsToScore(true);
+
+            slip.Toggle(0, goals);
+            slip.Toggle(1, btts);
+            double expectedOdds = run.CurrentSlate.Matchups[0].Odds(goals)
+                * run.CurrentSlate.Matchups[1].Odds(btts);
+            Assert.AreEqual(expectedOdds, slip.CombinedOdds, 1e-12);
+
+            Ticket ticket = slip.Place();
+            Assert.AreEqual(goals, ticket.Legs[0].Selection);
+            Assert.AreEqual(btts, ticket.Legs[1].Selection);
+            Assert.IsTrue(ticket.Legs[0].DisplayLabel.Contains("GOALS"));
+            Assert.IsTrue(ticket.Legs[1].DisplayLabel.Contains("BTTS"));
+        }
+
+        [Test]
+        public void Market_toggle_respects_max_legs_for_new_matchups()
+        {
+            var run = new Run("SLIP-MARKET-CAP", new RunConfig { MaxLegs = 1, StartingBank = 500 });
+            var slip = new BetslipModel(run);
+
+            Assert.IsTrue(slip.Toggle(0, MarketSelection.TotalCorners(8.5, true)));
+            Assert.IsFalse(slip.Toggle(1, MarketSelection.TotalCards(3.5, false)));
+            Assert.IsTrue(slip.Toggle(0, MarketSelection.BothTeamsToScore(false)));
+            Assert.AreEqual(1, slip.Picks.Count);
+        }
+
+        [Test]
         public void Stake_chips_and_nudges_clamp_to_min_and_bank()
         {
             var run = new Run("SLIP-STAKE", Bank500()); // starting bank 500

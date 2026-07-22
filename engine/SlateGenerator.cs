@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace SBR.Engine;
@@ -33,11 +34,36 @@ public static class SlateGenerator
             Team home = MakeTeam(nounOrder[i * 2], rng, config, p);
             Team away = MakeTeam(nounOrder[i * 2 + 1], rng, config, 1.0 - p);
 
+            // The nine latent/signal draws are deliberately sequential and independent of the
+            // Outcomes stream: three shared match tempos, then home/away GF/COR/CRD signals.
+            double goalTempo = 1.0 - config.GoalTempoSpread
+                + 2.0 * config.GoalTempoSpread * rng.NextDouble();
+            double cornerTempo = 1.0 - config.CornerTempoSpread
+                + 2.0 * config.CornerTempoSpread * rng.NextDouble();
+            double disciplineTempo = 1.0 - config.DisciplineSpread
+                + 2.0 * config.DisciplineSpread * rng.NextDouble();
+            MatchLatents latents = MatchModel.LatentsFor(p, goalTempo, cornerTempo, disciplineTempo, config);
+            TeamStats homeStats = DisplayStats(latents.HomeGoalRate, latents.HomeCornerRate,
+                latents.HomeCardRate, rng, config);
+            TeamStats awayStats = DisplayStats(latents.AwayGoalRate, latents.AwayCornerRate,
+                latents.AwayCardRate, rng, config);
+
             (double homeOdds, double awayOdds) = OddsMath.OverroundOdds(p, config.Overround);
-            matchups.Add(new Matchup(i, home, away, p, homeOdds, awayOdds));
+            var matchup = new Matchup(i, home, away, p, homeOdds, awayOdds, latents,
+                homeStats, awayStats, System.Array.Empty<MarketOffer>(), config);
+            matchups.Add(matchup);
+            matchup.SetMarkets(MatchModel.BuildOffers(matchup, config));
         }
 
         return new Slate(round, matchups);
+    }
+
+    private static TeamStats DisplayStats(double goalRate, double cornerRate, double cardRate,
+        Pcg32 rng, RunConfig config)
+    {
+        double sigma(double rate) => config.SignalNoise * rate / Math.Sqrt(config.PriorGames);
+        double noisy(double rate) => rate + (2.0 * rng.NextDouble() - 1.0) * sigma(rate);
+        return new TeamStats(noisy(goalRate), noisy(cornerRate), noisy(cardRate));
     }
 
     private static Team MakeTeam(int nounIndex, Pcg32 rng, RunConfig config, double strength)

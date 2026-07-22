@@ -20,7 +20,7 @@ namespace SBR.Tests.EditMode
             Run run = GoldenReplay.ScriptedRound();
             List<DramaEvent> events = GoldenReplay.DrainAll(run);
 
-            Assert.AreEqual(18, events.Count, "expected exactly 18 events (re-pinned F_0.2.0 M-T1)");
+            Assert.AreEqual(14, events.Count, "expected exactly 14 events (F_0.4.0 Phase 1 re-pin)");
             Assert.AreEqual(GoldenReplay.ExpectedEvents.Length, events.Count);
 
             for (int i = 0; i < events.Count; i++)
@@ -47,8 +47,8 @@ namespace SBR.Tests.EditMode
             run.FinishSweat();
 
             Assert.AreEqual(Phase.Settlement, run.Phase);
-            Assert.AreEqual(TicketState.Lost, run.Tickets[0].State); // parlay died on its final leg
-            Assert.AreEqual(TicketState.Won, run.Tickets[1].State);  // single hit
+            Assert.AreEqual(TicketState.Lost, run.Tickets[0].State); // parlay died on its second leg
+            Assert.AreEqual(TicketState.Won, run.Tickets[1].State);  // single hit — payout crediting stays pinned
             Assert.AreEqual(GoldenReplay.ExpectedBank, run.Bank, 1e-5); // 5 dp
         }
 

@@ -1,0 +1,4 @@
+Reading additional input from stdin...
+2026-07-19T09:51:29.926727Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\unity\SBR\Assets\SBR\Runtime\TvSweatScreen.cs:
+        private void ResetForNewSession()
+        {

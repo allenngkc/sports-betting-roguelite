@@ -279,5 +279,120 @@ namespace SBR.Tests.EditMode
                 }
             }
         }
+
+        [Test]
+        public void Count_schedule_sums_exactly_and_keeps_each_batch_bounded()
+        {
+            var ledger = new CountLedger(7, 3, 4);
+            int expectedBound = (7 + 4 - 1) / 4 + (3 + 4 - 1) / 4;
+            int sum = 0;
+            int previous = 0;
+            for (int i = 0; i < ledger.PlannedDeltas.Count; i++)
+            {
+                int delta = ledger.PlannedDeltas[i];
+                Assert.GreaterOrEqual(delta, 0);
+                Assert.LessOrEqual(delta, expectedBound);
+                sum += delta;
+                Assert.GreaterOrEqual(sum, previous, "partial sums must be monotone");
+                previous = sum;
+            }
+            Assert.AreEqual(10, sum);
+            Assert.Greater(ledger.MaxPerBeatDelta, 1, "count scenes may reveal batched deltas");
+            Assert.AreEqual(7, ledger.HomeDeltas[0] + ledger.HomeDeltas[1]
+                + ledger.HomeDeltas[2] + ledger.HomeDeltas[3]);
+            Assert.AreEqual(3, ledger.AwayDeltas[0] + ledger.AwayDeltas[1]
+                + ledger.AwayDeltas[2] + ledger.AwayDeltas[3]);
+        }
+
+        [Test]
+        public void Count_final_plan_converges_to_the_baked_endpoint()
+        {
+            var ledger = new CountLedger(7, 3, 4);
+            ledger.CompleteCount(ledger.StageBeat(true));
+            ledger.CompleteCount(ledger.StageBeat(false));
+            foreach (CountLedger.StagedCount count in ledger.PlanFinal(true).Counts)
+                ledger.CompleteCount(count);
+
+            Assert.AreEqual(7, ledger.Home);
+            Assert.AreEqual(3, ledger.Away);
+            Assert.AreEqual(10, ledger.Total);
+        }
+
+        [Test]
+        public void Goal_ledger_converges_to_the_locked_scoreline_at_the_whistle()
+        {
+            var ledger = new ScoreLedger();
+            var statLine = new MatchStatLine(4, 1, 7, 3, 2, 4);
+            ledger.ConfigureEndpoint(statLine, pickedHome: true);
+
+            foreach (ScoreLedger.StagedGoal goal in ledger.PlanFinal(LegGrade.Won).Goals)
+                ledger.CompleteGoal(goal);
+
+            Assert.AreEqual(4, ledger.Picked);
+            Assert.AreEqual(1, ledger.Opponent);
+            Assert.AreEqual(5, ledger.CommittedGoals);
+        }
+
+        [Test]
+        public void Count_scene_direction_is_the_selections_sense_never_the_beat_direction()
+        {
+            // Sol, F_0.4.0 P3 r2: an increment's hope/dread is fixed by the SELECTION — a
+            // corner always bites an Under bettor, even on a beat whose price drifted their
+            // way (the count arriving slower than the line needs). Beat direction must not
+            // leak into the count scene's mood.
+            var run = new Run("COUNT-DIRECTION", new RunConfig());
+            Ticket ticket = run.PlaceTicket(new[]
+            {
+                new Pick(0, MarketSelection.TotalCorners(9.5, false)),
+            }, 10);
+            run.LockRound();
+            Leg leg = ticket.Legs[0];
+            var counts = new CountLedger();
+            counts.ConfigureEndpoint(leg.Matchup.StatLine, MarketKind.TotalCorners, 2);
+            var choreo = new TheaterChoreographer(new SweatPacer());
+
+            SceneSpec towardUnder = choreo.ResolveBeat(
+                new DramaEvent(0, 1, 4, DramaEventType.Momentum, 0.25, TensionTag.Calm),
+                up: true, delta: 0.05, new ScoreLedger(), leg, counts);
+            SceneSpec awayFromUnder = choreo.ResolveBeat(
+                new DramaEvent(0, 2, 4, DramaEventType.Momentum, 0.15, TensionTag.Calm),
+                up: false, delta: -0.10, new ScoreLedger(), leg, counts);
+
+            foreach (SceneSpec spec in new[] { towardUnder, awayFromUnder })
+            {
+                // Two beats over a >= 1-corner endpoint: every staged count scene on an
+                // Under leg is dread; a zero batch may fall through to ordinary play instead.
+                if (spec.Count.HasValue && spec.Count.Value.TotalDelta > 0)
+                {
+                    Assert.AreEqual(SceneTemplate.CornerAgainst, spec.Template);
+                    Assert.IsFalse(spec.ForPicked);
+                }
+                else
+                {
+                    Assert.AreNotEqual(SceneTemplate.CornerFor, spec.Template);
+                    Assert.AreNotEqual(SceneTemplate.CornerAgainst, spec.Template);
+                }
+            }
+
+            // The Over side of the same coin: increments are hope, whatever the beat did.
+            var overRun = new Run("COUNT-DIRECTION", new RunConfig());
+            Ticket overTicket = overRun.PlaceTicket(new[]
+            {
+                new Pick(0, MarketSelection.TotalCorners(9.5, true)),
+            }, 10);
+            overRun.LockRound();
+            Leg overLeg = overTicket.Legs[0];
+            var overCounts = new CountLedger();
+            overCounts.ConfigureEndpoint(overLeg.Matchup.StatLine, MarketKind.TotalCorners, 2);
+
+            SceneSpec downBeatOver = choreo.ResolveBeat(
+                new DramaEvent(0, 1, 4, DramaEventType.Momentum, 0.35, TensionTag.Calm),
+                up: false, delta: -0.05, new ScoreLedger(), overLeg, overCounts);
+            if (downBeatOver.Count.HasValue && downBeatOver.Count.Value.TotalDelta > 0)
+            {
+                Assert.AreEqual(SceneTemplate.CornerFor, downBeatOver.Template);
+                Assert.IsTrue(downBeatOver.ForPicked);
+            }
+        }
     }
 }

@@ -1,0 +1,22 @@
+Implemented M-T3.2.
+
+Files changed:
+- `SweatFlavor.cs` — caps pre-final clock at 89′.
+- `SweatPacer.cs` — adds 0.75 pace multiplier.
+- `TvSweatScreen.cs` — adds stoppage clock and final-sequence goal counter.
+- `TheaterStage.cs` — organic per-dot motion, lag, noise timers, speed caps, and defensive engagement.
+- `TheaterChoreographerTests.cs` — updates scaled timing pins.
+
+Deviations:
+- `PitchLayout.cs` and `TheaterStageTests.cs` required no changes.
+- Plan/docs checkboxes were not updated because the task explicitly forbids docs changes.
+
+Validation:
+- Engine build passed.
+- 146 engine tests passed.
+- Sim and console builds passed.
+- No lint configured.
+- Unity tests were not run; Unity validation was by inspection per task guidance.
+- Full `SBR.slnx` build returned a zero-error wrapper failure, while individual projects passed.
+
+IMPLEMENTATION_COMPLETE

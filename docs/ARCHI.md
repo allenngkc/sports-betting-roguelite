@@ -55,7 +55,8 @@ sports-betting-roguelite/
 │   ├── DramaGenerator.cs    #   Narrative event authoring toward a pre-sampled outcome
 │   ├── DramaEvent.cs        #   Event vocabulary (beats the TV/console render)
 │   ├── DramaConfig.cs       #   Pacing dials
-│   ├── SlateGenerator.cs    #   Rounds' match slates: teams, records, true probs, offered odds
+│   ├── SlateGenerator.cs    #   Rounds' match slates: teams, records, latents, public signals
+│   ├── MatchModel.cs        #   Shared market pricing, stat-line enumeration and sampling
 │   ├── OddsMath.cs          #   Decimal↔American, vig, parlay products, cash-out fair value
 │   ├── Pcg32.cs             #   PCG32 + FNV-1a hashing
 │   ├── RngHub.cs            #   Named deterministic streams + Derive() for consumable-timing isolation
@@ -184,7 +185,7 @@ A **Run** (`engine/Run.cs`) is a state machine over rounds:
 new Run(seed) ──► [Round r]
    PlaceTicket(picks, stake, profitBoostLeg, modifier)   × up to 3 tickets
    PlayBookiesMarker / consumables (pre-lock verbs)
-   LockRound()          ← comps accrual commits; outcomes baked; odds frozen (the contract)
+   LockRound()          ← comps accrual commits; stat lines/outcomes baked; odds frozen (the contract)
    [SweatSession per ticket]  ← serial leg-by-leg resolution, cash-out offer live
       FinishSweat()     ← terminal ledger: Free Bet refund exactly-once
    Settle()             ← effective payment = base × PaymentFactor; totem deferral;
@@ -198,8 +199,15 @@ new Run(seed) ──► [Round r]
   before a killing event lands, where Mulligan Slip (revert) or Ref's Whistle (grading re-roll at
   the captured pre-kill probability) can save the leg. `OnLegResolved` fires exactly once per leg,
   after the window closes, with the final ticket-local grade.
+- **Market model:** a `Pick` carries a `MarketSelection`; every `Leg` prices and grades through
+  `MatchModel` against the matchup's single locked `MatchStatLine`. The one-leg-per-match guard
+  remains the structural v1 SGP boundary. Moneyline remains a convenience constructor, while
+  Phase 1 also exposes goals, BTTS, corners, and cards offers.
 - **Failure model:** miss a payment → the totem can defer it once (payment × 1.5 onto the next);
   otherwise the run is over. Payments are deducted, not target-checked (economy rework, 2026-07-13).
+- At lock, each matchup consumes one Outcomes draw for the winner, one for the conditional score,
+  and four truncated-Poisson count draws. Slate generation consumes three tempo and six public
+  signal draws per matchup. Both sequences are fixed regardless of bets.
 - The presentation contract: clients render state transitions; they never decide them.
 
 ## 10. RNG & Determinism
@@ -283,11 +291,13 @@ Scene `Room`: a compact first-person apartment where **the room is the interface
 - **The match theater** (F_0.2.0, the sweat's renderer — a stage, never a simulation):
   `TvSweatScreen` orchestrates; `SweatPresentationModel` (pure C#: beat history + deltas, the
   direction rule, `TheaterPalette` team colors from a non-reserved pool, `ScoreLedger` — causal
-  score synthesis with the ±1 live-lead clamp, playback-completion commits, and the playtest #14
-  prob-reconciliation source: the scoreboard is a lagging quantized rendering of the live prob);
-  `TheaterChoreographer` + `ScenePlaybook` (the ordered beat→scene resolver, 15 templates, total
-  over all combos) + `SweatPacer` (scene-class durations × `paceMultiplier`, the 60–90s duration
-  law); `TheaterStage` (neon pitch, actor-routed ball with sticky possession, per-dot movement
+  score synthesis with the ±1 live-lead clamp, playback-completion commits, endpoint convergence
+  to the baked score, and the playtest #14 prob-reconciliation source: the scoreboard is a lagging
+  quantized rendering of the live prob); `CountLedger` (pre-planned non-negative home/away batches
+  for corners/cards, exact endpoint convergence, playback-only commits); `TheaterChoreographer` +
+  `ScenePlaybook` (the ordered beat→scene resolver, goal/corner/booking vocabulary) + `SweatPacer`
+  (scene-class durations × `paceMultiplier`, the 60–90s duration law); `TheaterStage` (neon pitch,
+  actor-routed ball with sticky possession, corner-kick and booking staging, per-dot movement
   personalities, defensive engagement, scene playback with onReveal payoff callbacks and the
   frozen kill-shot suspension); `MomentumTape` (per-leg beat strips → money-signal caps);
   `PitchLayout` (formation geometry). Causal reveal law: chrome, tape, and market reprice at the
@@ -295,15 +305,18 @@ Scene `Room`: a compact first-person apartment where **the room is the interface
   paid price).
 - **Audio v0** (`TvAudioDirector`, M-T5): procedural, diegetic, zero-asset — all clips synthesized
   at build (filtered-noise crowd bed on its own low-passed child object; goal/chalked, near-miss
-  riser-and-cut, whistle, GREEN/DEAD slams, cash-out ka-chunk stings). Tension-driven (win-prob
+  and corner risers, goal/booking whistles, GREEN/DEAD slams, cash-out ka-chunk stings). Tension-driven (win-prob
   distance from 0.5 + scene urgency), with the dread floor: the pending window and stand-up duck
   everything to near-silence. Strictly parallel decoration — never blocks a scene; batch-safe.
 - **The laptop** (`LaptopScreen` + `LaptopOs` + `SportsbookApp` + `BetslipModel` + `RunDirector`):
   a code-built mimic OS whose SureThing app carries the betting flow — desktop/app switching,
-  fraction-chip stakes and modifier toggles, frozen-board MY BETS mirror, Rewards (dealt-hand cards,
+  moneyline board plus per-match market detail (stats header, totals/BTTS tabs and two-way rows),
+  one-leg-per-match `MarketSelection` toggles, fraction-chip stakes and modifier toggles, frozen-board
+  MY BETS mirror, Rewards (dealt-hand cards,
   Manager button, sell-backs at `GetResaleValue`), and the run verdict. `RunDirector` owns run lifecycle
-  and engine verb calls. During a sweat, MY BETS reads only `TvSweatScreen.RevealedView`; it never reads
-  the engine session's live probability or offer.
+  and engine verb calls. Market labels flow from `Leg.DisplayLabel` into the TV slip strip and the
+  mirror. During a sweat, MY BETS reads only `TvSweatScreen.RevealedView`; it never reads the engine
+  session's live probability or offer.
 - **The phone** (`PhoneScreen` + `BookieFeed(Model)` + `BookieScript`): the bookie's voice — a
   deterministic text thread keyed by trigger kinds; `BookieFeedModel.CliffRatio` (1.45) decides
   when the schedule growls.
@@ -315,10 +328,10 @@ Scene `Room`: a compact first-person apartment where **the room is the interface
 ## 15. Console Client
 
 `game-console/` is the fastest full-loop playtest surface (`dotnet run --project game-console`):
-`GameLoop` (run/shop/Manager), `BettingScreen` (picks, stakes, `[K]` marker, `[F]/[D]` modifier
-prompts), `SweatRenderer` (drama beats, save-window prompts with review %), `Ui`/`EventText`
-(rendering vocabulary). It exercises every engine verb the Unity room does — new engine features
-land here first.
+`GameLoop` (run/shop/Manager), `BettingScreen` (ML board, `[M n]` match detail, market grammar,
+stakes, marker, modifiers), `SweatRenderer` (drama beats, save-window prompts with review %),
+`Ui`/`EventText` (rendering vocabulary). It exercises every engine verb the Unity room does — new
+engine features land here first.
 
 ## 16. Data Flow Diagrams
 
@@ -384,7 +397,7 @@ graph LR
 | Suite | Framework | Count | What it pins |
 |---|---|---|---|
 | `engine.tests/` | xUnit | 146 | Behavior matrix per item, worked-number pins, golden seeds, determinism, catalog invariants |
-| Unity EditMode | UTF | 32 | Model logic (odds format, betslip, bookie feed triggers) |
+| Unity EditMode | UTF | 39 | Model logic (odds format, market-aware betslip, count-ledger and scene laws) |
 | Unity PlayMode | UTF | 8 | Room wiring, screen flows |
 | `sim --gates` | custom | statistical | The economy itself: G1–G6 + item flags on 50k-run batches |
 

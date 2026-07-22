@@ -1,0 +1,867 @@
+Reading additional input from stdin...
+2026-07-19T01:25:09.974669Z ERROR codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit
+2026-07-19T01:25:09.991100Z ERROR codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit
+2026-07-19T01:25:37.257308Z ERROR codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit
+2026-07-19T01:26:20.662488Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.8 seconds
+Output:
+DECISIONS.md:5:- **2026-07-18 — DOPAMINE DIRECTION RATIFIED (Allen, playtest #13 conversation; memo `docs/6-memo/2026-07-18-dopamine-direction.md`).** The sweat-repetitiveness moment design/04's v0 note asked to record has arrived (run: playtest #13, "could feel boring... CloverPit pays every spin"). Rulings on the memo's five levers: (1) **micro-markets ratified as the cadence fix** — corners/next-goal/player props resolving mid-leg, its own post-slice TRIP HIGH plan with engine + sim campaign ("once we have micro-markets it should be more fun"); (2) **M-T4/M-T5 confirmed** as the dopamine milestones (taunting counter, momentum tape, settle payoffs, crowd audio); (3) **partial cash-out REJECTED as a baseline verb** — "irl we can't do that"; the diegetic-realism bar applies to book mechanics, not just presentation. May return RELIC-GATED (a relic that sells you a non-real-book power is fair game — same doctrine as Ask for the Manager's human-agency exemption); parked, revisit with the Band-2 agency work; (4) **Band-3 number-go-up spectacle ratified** (renderer-only); (5) **RedZone multi-sweat cut ratified** (lategame density, presentation-only). Sequencing stands: M-T4 → M-T5 → micro-markets plan; spectacle and RedZone ride along where they fit.
+DECISIONS.md:7:- **2026-07-18 — MATCH THEATER RULING: the sweat gets a 2D stage; the "no field, no players" clause of 2026-07-07 is SUPERSEDED (Allen, plan F_0.2.0).** After nine playtests Allen's verdict: text validated pacing but is not enough for the near-final signature moment. The reframe that makes this safe: the theater is **a renderer of the drama stream, not a sports simulation** — design/04's tier-3 "abstract momentum viz" matured into a stage with actors (the ball's field position IS territory), while the tier-4 content-pipeline trap stays cut via the theater laws: every staged moment keyed by a `DramaEvent`; idle filler never signifies (restates revealed state, never implies new information); presentation-local RNG only; causal score synthesis (goals commit on scene playback; suspended finals resolve from the final ticket-local grade; every ledger increment maps 1:1 to a staged goal; live-lead clamp ±1 — the theater tells one-goal-game stories); stakes chrome stays dominant; palette law extended (no red team dots, no money-green pitch, VAR-disallow never a red card). Grill rulings: soccer stage; fewer-bigger beats; momentum tape in slice; WebGL/itch deferred to a follow-up plan; beats 3–8s tension-paced, 60–90s per full-density 3-leg sweat, final-leg ×2 kept. Process of record: TRIP HIGH — Sol plan review ran 5 rounds to APPROVED (11 findings, all accepted; PLAN-REVIEW-LOG.md). **M-T1 engine change shipped same day:** budgets 5–10 → 3–5/leg with a progressive-density ramp (2–4 at round 1 → full band at round 3, `EventBoundsForRound`, AwayFromZero + both-branch clamps), `BuildTicketPaths` takes the 1-based round. Drama-stream goldens re-pinned INTENTIONALLY (GOLDEN-W2: 47 → 18 events; near-miss pins re-scanned to NM2-10/SC-99); the settlement pin (bank 428.631019) deliberately untouched and green — the outcome-invariance proof. Engine tests 146/146. Sim gate campaign on TUNE- seeds pending; HOLDOUT3- validation deferred until after Allen's console texture gate so a texture rejection cannot burn the namespace.
+DECISIONS.md:8:- **2026-07-15 — PLAYTEST #9: STRATEGY PILLAR CONFIRMED; ASK FOR THE MANAGER RATIFIED KEEP.** Allen's first hands-on with the charm expansion (commit 10b6135): "It feels like I am comparing which relic works nice with another relic, I got the strategy building process" — the dealt-hand shop delivers the combo-building fantasy this milestone existed for; no changes requested. The Manager's playtest gate resolves KEEP ("I like this") — the opposite verdict from Timeout at #8, vindicating the human-agency exemption doctrine: an item that audits ≈0 through bots can still earn its slot when its value IS the choice. The sim's ℹ note stays permanent (never blocking), relabeled RATIFIED. Carried forward as standing checks (not answered this session): Free Bet / Golden Parachute trap-or-tool feel, and R5 cliff fairness under build-luck death spread.
+DECISIONS.md:9:- **2026-07-15 — CHARM EXPANSION SHIPPED: 17 new items, the dealt-hand shop, Ref's Whistle — ALL GATES PASS on held-out seeds (sim-report-4-holdout2.md, 7.55M runs).** The stacking-strategies pillar at prototype scale: catalog 15 passives + 7 consumables = 22 items (CloverPit-inspired by mandate; Same Game Special CUT by Allen pre-build). Process of record: /grill-me-codex — Act 1 grill locked Whistle semantics (grading re-roll in the pending window, ticket-local, full odds on an overturn), the sim bar, the one-modifier law, dealt-hand rules; Act 2 Codex adversarial review ran 5 rounds to APPROVED (46 findings; Codex won the G4-contract and terminal-credit arguments, conceded Photo-prices-cash-outs; the whole exchange in PLAN-REVIEW-LOG.md). Engine: typed effect pipeline, named factor maps in the one product slot, integer deci-comps, DeriveRng, terminal-realization ledger, House Key payment getters. Sim: paired-seed CI flags (Bonferroni), exposure thresholds, G6 worst-case granted martyr, archetype telemetry bots. TWO RE-RATIFICATIONS DURING THE CAMPAIGN (Allen): G3 median re-banded ≥6 → ≥5 (the dealt hand's build variance IS the roguelite shape — median-6 was jointly unreachable with the naive/noshop bands); G4 gates on PASSIVE-ONLY counterfactual EV (cheap +EV promos are the catalog's fantasy — full-contract EV measured time-to-first-promo; logged amendment, Codex-sanctioned branch). Tuned numbers: Multiplier ×1.6, Chalk 2pp, Jar 10pp, System 12pp, comps 0.12/$, R5 payment 155, hand 4P+3C, Bobblehead 2×. Holdout protocol honored the hard way: HOLDOUT burned when the Manager's DEAD flag was declared playtest-gated (Timeout precedent — bot-unmonetizable agency), HOLDOUT2 revalidated clean from commit dfb588d. Holdout facts: skilled 7.0% / median 5 (stable across three seed families), martyr-worst 5.9% under the +2pp guard, totem organic 37.5%, G5 excess +0.1pp (passes the ratified >0; MISSES the rev-3 protocol margin of +0.5 — documented, not hidden: the Multiplier+Scar synergy is real but hair-thin). Campaign findings of record: pre-engine buy discipline beats any item; reserving toward future payments LOWERS survival (the income race punishes timidity); granted-free Free Bet/Parachute audit NEGATIVE on win rate (insurance crowds out compounding) — playtest watch items, not nerf targets. Engine tests 144/144; Unity 32/32 + 8/8; console smoke green. Gate: playtest #9.
+DECISIONS.md:10:- **2026-07-13 — PLAYTEST #8: TIMEOUT CUT; TOTEM REWORKED TO FULL DEFERRAL — gates re-held (sim-report-3.md, 50k/batch).** Allen's two findings, both shipped same day. (1) Timeout removed end to end (Allen: "useless"; the sim's audit read ≈0 all along — playtest-gated, playtest voted no). The catalog is 3 passives + 2 consumables; the engine's live-intervention seam (`ApplyLiveEffect`/`OfferHoldEffect`) survives under its own test as future-actives plumbing. (2) The Totem no longer takes the bank: Allen fired it and landed at $0 — a zombie round (below the $10 min stake, mercy in name only). New behavior: the whole payment DEFERS — bank untouched, payment × (1 + juice 0.5) added to the next payment, still never the final round. Campaign discovery: the resulting G3 breach (skilled 9.2% > 8%) traced NOT to the totem (+0.3pp audit) but to the Timeout cut itself — a 2-item catalog under 2 shop offer slots guaranteed a Mulligan Slip (+20pp audit item) every visit. Fix at the offer draw, where the cause was: consumable offers 2 → 1 per shop, consumable slots 2 → 3, mulligan 2 → 1.5 comps; payment curve and comps rate untouched. Result: skilled 6.2% (band 5–8%), organic totem fire 50.3%, zero item flags — and the totem-flag check now reads the ORGANIC fire rate, encoding the artifact rationale ratified narratively in sim-report-2.
+DECISIONS.md:12:- **2026-07-12 — M5 SHIPPED: the phone is the bookie (first Codex-built milestone).** Design locked via /grill-me-codex (grill with Allen → 5 adversarial Codex review rounds → APPROVED; full argument in PLAN-REVIEW-LOG.md), then Codex implemented PLAN.md rev 4 under /codex-build with Claude verifying (production code needed zero fixes; 42/42 tests). Decisions of record: phone = the bookie's VOICE (text thread, not an info hub — but float texts DO name the owed amount, pinned to DebtAfter); a person, warm→cold deadpan arc (VIP-host satire parked); DeskFocus reused top-down (pick-up-into-hand deferred to the juice pass); nine trigger kinds with subtype-complete deterministic keys; visual-only buzz until the sound pass. CORRECTION shipped: debt is a one-round loan (Settle clears or collects — Run.cs), so escalation rides on repeat-float coldness + the indebted-round beat + the final-round warning, not per-round reminders. DeskFocus hardened en route: per-instance prompts, claim-before-glide camera ownership, OnDisable unwind. Known gap logged for backlog: SitSpot remains outside the focus-ownership domain (pre-existing M4 seam, low risk).
+DECISIONS.md:13:- **2026-07-11 — M4 design locked by grill session (Allen confirmed): the real betting loop, in-room.** Scope: a full run playable start-to-finish in the room, no console; the phone stays a stub until M5; the demo channel is deleted (`DemoTicketPolicy` survives as the test/auto-play fixture). **Laptop** = E-zoom + free cursor, no sit (high-frequency surface wants low ceremony; the couch keeps the only sit ritual) with phase-driven pages that railroad like a real betting app: BETSLIP (two-panel sportsbook layout, one working slip, fraction-chip stakes 10%/25%/50%/MAX + $10 nudges — uncapped all-in stays one deliberate click; LOCK IT IN with a one-step zero-ticket confirm), GO WATCH while locked, SHOP, RUN OVER with NEW RUN (**prototype flow only — Allen: a proper menu will own run restart later**); persistent header row: round/bank/target/debt-in-red + relic strip + piggy. **TV** walks the round's sweats serially: ~2s auto-advance ticket cards between sweats (design/04's no-prompts law holds — the sweat stays hands-off watchable), a settle card after the last (TARGET MET green / THE BOOKIE FLOATS YOU red), then SHOP OPEN while the laptop lid breathes for attention; the run verdict lands on the TV with the room light dropping cold on a loss, gold on the win (the cheap lighting fake of design/08's room states). Inherited: zero-ticket locks settle on the spot; E cash-out applies only to the currently sweating ticket. Why: proves the full loop on the diegetic surfaces with the walk between couch and desk as the loop's rhythm — the room is the interface.
+DECISIONS.md:14:- **2026-07-11 — M3 design decisions (the TV plays the sweat, live from the real engine).** (1) A demo channel feeds the screen until M4: `DemoRunDriver` runs real `Run`/`SweatSession` state end to end (place → lock → sweat → settle → shop-skip → next, new run on win/loss) with a deterministic `DemoTicketPolicy` (2–3 shortest-priced legs, 25% of bank) that consumes no engine RNG. (2) The TV stops being an interactable — it IS the sweat surface: a code-built world-space UGUI canvas on the screen inset, no assets. (3) The sweat steps only while seated — sitting starts/resumes, standing pauses mid-event with the offer frozen (design/04 "Diegetic viewing"). (4) Presentation never consumes engine RNG (only MoveNext/CashOut; outcomes stay baked at lock). (5) design/08 palette law enforced on the first real surface: green = money-good only, red = money-bad only, gold = cash-out; the TvLight makes the room the reaction shot. (6) While a cash-out offer is live, E accepts it and the couch's stand-up is suppressed (standing = hold-move). Why: proves the emotional core on the diegetic surface with the real engine before any betting UI exists, and keeps determinism intact for the WebGL golden-seed check.
+DECISIONS.md:16:- **2026-07-10 — Art direction DECIDED (Allen): betting-app diegesis framed by a compact room (design/08).** All UI diegetic (sweat on the TV, betslip at the desk, bookie as phone notifications); casino neon on black (green=money-good, red=money-bad, gold=cash-out, colors reserved); room = health bar with ~4 states (Tokyo compact, no kitchen: bunk bed over couch, TV opposite, window beside, mini fridge + desk) — slice ships state 1 + a lighting/decal fake of the debt states. Game name: SBR codename until Phase 3.
+DECISIONS.md:18:- **2026-07-09 — Recalibration landed: S3 PASS (naive median death 3), S4 PASS (skilled median death 7, win 11.5%).** Final §8: targets [400,460,520,650,800,1000,1500,2800], juice 0.5, prices 150–250, bank/overround/margin unchanged. Known residuals for Week 6: random's median matches naive's (debt punishes wild sizing hardest — acceptable, G3 half-met); skilled's organic EV-arc never crosses zero (survival-optimal bot buys surplus-only; whether looser human buying recovers the arc is a playtest question); relic audit at the new config ranks insurance dominant (+4.3pp win) and mulligan dead (±0) — both feed the item rework.
+DECISIONS.md:19:- **2026-07-09 — Debt-as-HP failure model APPROVED (Allen).** Miss a target with no debt → the bookie floats you: bank topped up to the target (working capital), debt = shortfall × (1 + juice rate, default 0.5, sim-tuned). Clearing target + debt at a later settle repays it in cash. Miss while already in debt = run over. No borrowing on the final round. Rationale: converts geometric instant-death into accumulating pressure so runs reach the relic-compounding band; thematically native (the bookie).
+DECISIONS.md:22:- **2026-07-09 — Week 5 sim findings accepted as the tuning agenda; target retune deferred into Week 6 alongside the item rework.** S3/S4 both FAIL on current §8 targets (all strategies median death 1). A flat-early curve experiment ([520…2600]) improved skilled to median death 2 — direction confirmed, magnitude insufficient → the failure model itself is on the table (debt-as-HP proposal) plus book-noise pricing for the information axis; both parked in OPEN-QUESTIONS for Allen. Relic audit re-runs after retune.
+DECISIONS.md:23:- **2026-07-08 — Max stake cap LIFTED (Allen, playtest #1); High Roller redesigned to an all-in payout bonus.** Reverses the same-day 50%-of-bank cap: stakes now uncapped to the whole bank (MaxStakeFraction default 1.0, kept as a /sim dial). Since the cap removal made High Roller's cap-doubling a no-op (again), it becomes: staking ≥ half your bank boosts that ticket's payout +15% (Ticket.PayoutMultiplier; scales win payout and cash-out fair value, never stake-based partials).
+DECISIONS.md:24:- **2026-07-08 — Item system direction (Allen, playtest #1): split relics into one-time-use consumables vs permanent passive skills,** separate slot pools, sell-back. Rationale: 5/5 permanents felt too easy; consumables restore scarcity decisions. Designed in design/03; implementation timing parked in OPEN-QUESTIONS (lean: post-Week-5 sim, rebalance measured, verdict on the reworked system).
+DECISIONS.md:26:- **2026-07-08 — Sharp Eye redesigned: "+EV flag" → exact true-prob reveal for one chosen line per round.** Implementation proved the spec'd predicate `trueProb × offeredOdds > 1` is mathematically always false against our sharp vig-priced book (F3: no mispricing exists to find), making the relic dead content and undermining S5. Same id/axis/price/charge; now the active, exact counterpart to Tout Sheet's passive fuzzy intervals. Found by the Week 3 implementation agent.
+DECISIONS.md:27:- **2026-07-08 — Accepted v0 imprecision: cash-out fair value ignores Lucky Charm's +3pp on the final leg.** Pricing the baked roll correctly would leak the future through the offer; the unconditional underprice is conservative (house-favorable). Revisit if a lucky-charm cash-out build emerges in sim.
+DECISIONS.md:28:- **2026-07-08 — Week 3 scope decisions (pre-implementation).** (a) Base max stake = 50% of current bank per ticket; High Roller doubles to 100% (PRD §8 amended — original spec made it a no-op). (b) Lucky Charm = per-ticket second-chance reroll on a lost final leg at `0.03/(1−p)` — exactly +3pp, preserves the fixed universe and shared-outcome invariant; only your slip's grading bends. (c) Mulligan auto-applies (pure buff, no real decision in v0), multi-leg tickets only; player-choice variant deferred to console UX. (d) Piggy Bank accrues only positive vig (Boosted Odds/Promo Code can drive vig ≤ 0). (e) Relic content = C# catalog (op + params + price), not JSON: System.Text.Json isn't in netstandard2.1 and adds Unity/IL2CPP friction; same data shape, zero dependencies; externalize when content scales. (f) New dedicated `Relics` RNG stream; effect resolution strictly in acquisition order.
+DECISIONS.md:29:- **2026-07-07 — Relic timing classes (pre-game / live / passive) + "store the base, compute the effective."** Locked odds are the contract and never mutate; live effects layer modifiers through the effect pipeline. Live `p` manipulation runs through the drama generator's intervention seam (conditional re-sample + re-author). Week 2 builds the sweat as a steppable cursor (needed for cash-out regardless); the seam ships unused in v0.
+DECISIONS.md:31:- **2026-07-07 — Cash-out fair-value formula corrected** in design/02: remaining legs contribute `p_j × o_j`, not `p_j` alone. Caught during engine implementation; both sanity anchors (none-resolved, all-resolved) are now unit tests.
+DECISIONS.md:37:- **2026-07-07 — Signature mechanic: the sweat.** Leg-by-leg parlay resolution with live cash-out offer. Design Pillar 1; all juice budget flows here first.
+DECISIONS.md:38:- **2026-07-07 — Sports are not simulated; drama is.** Outcome sampled first from true p, then a pacing-controlled narrative generator writes events arriving at it. Live p / cash-out math stays honest. Makes multi-sport support a reskin.
+DECISIONS.md:39:- **2026-07-07 — Every mechanic maps to the four-number model** (true p, offered odds, stake, payout) and one of five axes (information / odds / capital / resolution / economy).
+DECISIONS.md:43:- **2026-07-07 — Economy doctrine: the EV arc with three bands** (Allen's direction, formalized in design/02). Band 1 scarcity balanced tight; Band 3 "sanctioned brokenness" deliberately uncapped — gate *when* it's reachable, never *how high*. Synergy audits classify loops (delicious vs degenerate), they don't kill them. Anti-grind: layered progression; across-run unlocks lean breadth-not-power (prestige final call still OPEN).
+DECISIONS.md:44:- **2026-07-07 — Pillar 3 generalized: "four numbers" → "mathematically legible payoff functions."** Allen's counterexamples (per-leg payout relic retaining full parlay payout; 2× vig-rebate piggy bank) are strong designs that don't fit scalar modification of p/o/s/payout. New law: relics may rewrite a bet's payoff function or operate on tracked run-level accounting quantities, provided the effect is expressible at existing engine hooks and EV-auditable by /sim. Derived rule added to 02: cash-out prices the full remaining payoff function, including future relic cash flows.
+design/04-the-sweat.md:10:2. A **drama generator** then writes a plausible event sequence (score changes, momentum swings, injuries, "they're mounting a comeback") that *arrives at* the predetermined outcome.
+design/04-the-sweat.md:13:Integrity rule: the drama never changes the sampled outcome (unless an Axis-4 relic explicitly and visibly does). Live `p` shown to the player is the honest conditional probability given events so far — the cash-out math stays truthful even though the storyline is authored. Players will reverse-engineer the system; it must be defensible.
+design/04-the-sweat.md:19:Allen's worry: "build a parlay, wait, hit or not" is boring without footage. The answer is not simulating footage — it's fidelity to the real fantasy: **a bettor doesn't watch the game, he watches the app.** The live win-probability graph, the scorebug, the cash-out number — betting apps and ESPN have already trained the audience to sweat from exactly this interface. For our satire it's also the joke: the degenerate stares at the betslip, not the game.
+design/04-the-sweat.md:30:actors**: a top-down neon-on-black pitch where anonymous team-colored dots act out the beat
+design/04-the-sweat.md:38:— tier 2's scorebug/win-prob/cash-out frame the stage, and the palette law extends onto it
+design/04-the-sweat.md:39:(no red team dots, no money-green pitch, VAR-disallow chrome never a red card). Scene
+design/04-the-sweat.md:40:vocabulary is capped (~15 templates, ordered resolver); sports remain reskins — a stage
+design/04-the-sweat.md:43:**Multi-ticket presentation — "the wall":** the round's games display as a sportsbook-lobby wall of mini scorebugs; a **director system** cuts focus to the highest-tension moment (the RedZone pattern), driven by the drama generator's tension tags. This resolves the serial-vs-parallel question as a hybrid: parallel wall, directed serial focus. Engine requirement: drama generator emits tension scores; director is a presentation-layer policy over them.
+design/04-the-sweat.md:47:Anti-boredom invariant: the player is never purely waiting — the cash-out offer is a live decision held open through the whole sweat, and every event moves it.
+design/04-the-sweat.md:49:## Mid-sweat agency ladder (PROPOSED 2026-07-07 — answers "is cash-out alone enough?")
+design/04-the-sweat.md:55:| 1 — mark | watches, prays | full cash-out only. The powerlessness IS the tension (thematically honest) |
+design/04-the-sweat.md:56:| 2 — operator | intervenes | relic **active charges**: Timeout (pause drama, lock offer for 3 events), Ref's Whistle (veto + reroll one event), momentum boost; **partial cash-out** (real sportsbook feature — take 50%, let half ride); director remote in multi-ticket rounds |
+design/04-the-sweat.md:59:Hard rule: **no QTEs.** Mid-sweat actions are options, never prompts; the sweat stays fully watchable hands-off. Required input converts tension into task.
+design/04-the-sweat.md:63:Engine cost: near zero — active charges are player-initiated effects on the existing `OnMatchEvent` / `OnCashOutOffered` hooks.
+design/04-the-sweat.md:65:v0 note: prototype ships cash-out-only *on purpose* (isolates the anticipation+one-decision hypothesis). Evaluation should record **when** sweat repetitiveness first appears (which run #) as design input for this ladder.
+design/04-the-sweat.md:72:- **While a cash-out offer is live, Interact (E) accepts it** — the couch's stand-up is suppressed; standing during a live sweat is hold-move. The one-button cash-out stays law even seated.
+design/04-the-sweat.md:73:- **The room is the reaction shot** (design/08): a TV-driven light washes the room green on a GREEN leg, red on a DEAD leg, gold on cash-out.
+design/04-the-sweat.md:74:- Presentation consumes no engine RNG — the TV only calls MoveNext/CashOut; static, flicker and noise use presentation-local randomness.
+design/04-the-sweat.md:80:3. **Per leg:** ticker of drama events; live win probability bar breathing with each event; leg slams GREEN (juice crescendo) or DEAD (harsh cut, ticket visually burns at the corner).
+design/04-the-sweat.md:81:4. **The cash-out counter** is on screen from leg one, ticking with live fair value minus margin. It must *taunt* — pulse when it hits round numbers, flash when it's about to drop. The decision is one button, always live.
+design/04-the-sweat.md:83:6. **Settlement:** full payout celebration (confetti of cash, receipt tally rolling up) or the bad-beat sting (silence beat, then the satirical consolation — a guru tweet: "tough beat fam, tomorrow's picks in the channel 🔒").
+design/04-the-sweat.md:88:  theater — Allen wants time to watch the show and weigh the cash-out; the stage gives the eye
+design/04-the-sweat.md:95:- Skippable? Fast-forward unlocks only after settlement of first N runs, and never during the final leg. (OPEN — anti-frustration vs Pillar 1.)
+design/04-the-sweat.md:101:- Does live betting *during* the sweat exist in v1, or is cash-out the only live decision? (Lean: cash-out only in v1. Live betting is a v2 pillar candidate.)
+rg: design/08*: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+
+2026-07-19T01:26:26.238604Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.9 seconds
+Output:
+
+## Diegetic viewing (M3, 2026-07-11)
+
+The sweat plays on the room's TV (design/08 diegesis), and watching is physical:
+
+- **Sitting on the couch starts/resumes the sweat; standing pauses it mid-event, offer frozen.** Events only advance while you watch — the sweat is appointment viewing, not ambient. Not exploitable: outcomes are baked at lock and the offer only moves on events, so pausing pauses everything.
+- **While a cash-out offer is live, Interact (E) accepts it** — the couch's stand-up is suppressed; standing during a live sweat is hold-move. The one-button cash-out stays law even seated.
+- **The room is the reaction shot** (design/08): a TV-driven light washes the room green on a GREEN leg, red on a DEAD leg, gold on cash-out.
+- Presentation consumes no engine RNG — the TV only calls MoveNext/CashOut; static, flicker and noise use presentation-local randomness.
+
+## Presentation beats (v1 target)
+
+1. **Ticket lock-in.** Stamp/receipt-print moment. Commitment device.
+2. **Legs resolve sequentially, not in parallel.** Even if matches are "simultaneous" in fiction, we present serially — serial tension is the whole point. (Fictional framing: you're watching the multi-cast, one screen at a time.)
+3. **Per leg:** ticker of drama events; live win probability bar breathing with each event; leg slams GREEN (juice crescendo) or DEAD (harsh cut, ticket visually burns at the corner).
+4. **The cash-out counter** is on screen from leg one, ticking with live fair value minus margin. It must *taunt* — pulse when it hits round numbers, flash when it's about to drop. The decision is one button, always live.
+5. **The final leg** gets 2–3× the drama budget: slower events, closer scores, the near-miss dial maxed.
+6. **Settlement:** full payout celebration (confetti of cash, receipt tally rolling up) or the bad-beat sting (silence beat, then the satirical consolation — a guru tweet: "tough beat fam, tomorrow's picks in the channel 🔒").
+
+## Pacing rules of thumb (tune via playtest)
+
+- A 3-leg ticket sweat: **60–90 seconds at full density** (revised 2026-07-18 with the match
+  theater — Allen wants time to watch the show and weigh the cash-out; the stage gives the eye
+  somewhere to live, which text never could). Beats run 3–8s, tension-paced (Calm fast,
+  Decisive slow); ledger-correction goals are separately timed sub-scenes on the final whistle.
+  Early rounds are deliberately shorter: the engine's progressive-density ramp
+  (`DramaConfig.EventBoundsForRound`) starts at 2–4 events/leg and reaches the full 3–5 band by
+  round 3 — the onboarding mechanism from playtest #1, now engine-real. Never make the player
+  wait without a decision or an event.
+- Skippable? Fast-forward unlocks only after settlement of first N runs, and never during the final leg. (OPEN — anti-frustration vs Pillar 1.)
+===== palette refs =====
+design/08-art-direction.md-10-- **Screens are the interaction surfaces, and any screen can access the book**: walk to the **TV** to watch the sweat (broadcast scorebug, live win-prob graph, ticker), the **laptop on the desk** to build tickets and browse the book/shop, the **phone** for the bookie's notifications and debt messages. All gameplay UI is diegetic; seed/round info lives on screen chrome, not floating HUD.
+design/08-art-direction.md-11-- Screens get the treatment: phosphor glow, scanline flicker, CRT curvature/chromatic aberration on big hits. Typography is the primary art asset — strong numerals, ticker fonts, sportsbook-app iconography parodied.
+design/08-art-direction.md-12-
+design/08-art-direction.md:13:## Palette: casino neon on black
+design/08-art-direction.md-14-
+design/08-art-direction.md-15-| Token | Use |
+design/08-art-direction.md-16-|---|---|
+design/08-art-direction.md-17-| Deep black / near-black blues | base, room shadows, screen bezels |
+design/08-art-direction.md:18:| Phosphor green | money, wins, bank, GREEN legs |
+design/08-art-direction.md:19:| Hot red | losses, DEAD legs, DEBT, the bookie |
+design/08-art-direction.md:20:| Gold | cash-out, jackpots, payout moments |
+design/08-art-direction.md:21:| Dim cyan/white | chrome, clocks, filler ticker text |
+design/08-art-direction.md-22-
+design/08-art-direction.md:23:Rule: green/red never used for anything but money-good/money-bad — the gambling color language stays pure.
+design/08-art-direction.md-24-
+design/08-art-direction.md-25-## The room (Allen's spec — scope-locked)
+design/08-art-direction.md-26-
+--
+design/08-art-direction.md-30-- **Window beside** — time-of-day/mood light (state-driven)
+design/08-art-direction.md-31-- **Small desk table with laptop** — the book: ticket building, shop, run info
+design/08-art-direction.md-32-- **Mini fridge** — flavor interaction (state-driven contents: heater = stocked, buried = empty)
+design/08-art-direction.md:33:- **Phone** — bookie notifications, debt messages, cash-out buzz (audible anywhere in the room)
+design/08-art-direction.md-34-
+design/08-art-direction.md-35-### Room state = the health bar (~4 variants)
+design/08-art-direction.md-36-
+--
+design/08-art-direction.md-38-|---|---|---|
+design/08-art-direction.md-39-| 1. Baseline | run start | dingy but okay; neutral light |
+design/08-art-direction.md-40-| 2. Heater | win streak / bank ≫ target | new couch, a plant, sunlight through the blinds |
+design/08-art-direction.md:41:| 3. Sweating | debt > 0 | darker, bills on the desk, red notification glow |
+design/08-art-direction.md-42-| 4. Buried | deep debt / near-death | boarded window, unpaid bills pile, room lit only by the TV |
+design/08-art-direction.md-43-
+design/08-art-direction.md:44:Production plan (scope guard): the Phase 2 vertical slice ships with **state 1 only, plus a lighting/prop-decal layer** that fakes states 3–4 (red wash, bill decals, darker exposure). Full four-variant art lands after the slice's gate. Room art sourcing: asset-kit bash + AI-gen concept passes, cleanup by hand; if the slice validates, commission a proper environment pass.
+design/08-art-direction.md-45-
+design/08-art-direction.md-46-## Juice mapping (design/06 effects re-expressed in this style)
+design/08-art-direction.md-47-
+design/08-art-direction.md:48:- Leg GREEN: TV flash + phosphor bloom + scanline jump; DEAD: TV cuts to static for a beat, room darkens one notch
+design/08-art-direction.md:49:- Cash-out taken: gold sweep across the TV, register *ka-chunk*, phone buzz
+design/08-art-direction.md:50:- Bookie float: the room dims, red notification glow, phone rattles on the desk
+design/08-art-direction.md-51-- Big payout: neon spill from the TV lights the whole room — the room is the reaction shot
+design/08-art-direction.md-52-- Progressive sweat density (design/04): early rounds = calm TV, simple scorebug; late rounds = picture-in-picture wall, ticker crawl, notification spam
+design/08-art-direction.md-53-
+design/08-art-direction.md-54-## Capsule / marketing note
+design/08-art-direction.md-55-
+design/08-art-direction.md:56:The money shot is the room at night, face-lit... except there's no face — the empty couch, the glowing TV showing 61%, the gold CASH OUT prompt. Distinctive against both real-app screenshots and pixel-art competitors; reads at capsule size because it's one light source and three colors.
+design/08-art-direction.md-57-
+design/08-art-direction.md:58:## Deferred
+design/08-art-direction.md-59-
+design/08-art-direction.md-60-- Game name: SBR codename until Phase 3 (decided 2026-07-10).
+design/08-art-direction.md-61-- Character visibility (hands? reflection in the TV during static?): mood garnish, decide during the slice.
+
+2026-07-19T01:34:09.027248Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 5.8 seconds
+Output:
+C:\Program Files\Unity\Hub\Editor\6000.5.3f1
+
+Build FAILED.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.60
+
+2026-07-19T01:34:18.350683Z ERROR codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit
+2026-07-19T01:35:14.920455Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.9 seconds
+Output:
+
+2026-07-19T01:35:26.811799Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 2.4 seconds
+Output:
+
+Build FAILED.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:01.34
+
+2026-07-19T01:37:17.187720Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.9 seconds
+Output:
+
+[32;1mId          : [0m23908
+[32;1mProcessName : [0mUnity
+[32;1mCPU         : [0m2.765625
+[32;1mResponding  : [0mTrue
+[32;1mStartTime   : [0m7/18/2026 6:35:44 PM
+
+
+2026-07-19T01:37:23.358464Z ERROR codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit
+2026-07-19T01:38:26.266979Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\unity\SBR\Assets\SBR\Runtime\TvSweatScreen.cs:
+            _tCashOut.enabled = false;
+            _tAttract.enabled = true;
+2026-07-19T01:39:07.045493Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.4 seconds
+Output:
+
+[32;1mId          : [0m23908
+[32;1mProcessName : [0mUnity
+[32;1mCPU         : [0m5.0625
+[32;1mResponding  : [0mTrue
+[32;1mStartTime   : [0m7/18/2026 6:35:44 PM
+
+
+2026-07-19T01:39:38.148555Z ERROR codex_core::tools::router: error=`"C:\\Users\\Allen\\AppData\\Local\\Microsoft\\WindowsApps\\pwsh.exe" -Command "git restore --source=HEAD -- 'unity/SBR/Assets/Plugins/SBR/SBR.Engine.dll'; Remove-Item -LiteralPath 'unity/SBR/Assets/SBR/Runtime/MomentumTape.cs.meta' -Force -ErrorAction SilentlyContinue; git status --short"` rejected: blocked by policy
+2026-07-19T01:39:54.503706Z ERROR codex_core::tools::router: error=`"C:\\Users\\Allen\\AppData\\Local\\Microsoft\\WindowsApps\\pwsh.exe" -Command "Remove-Item -LiteralPath 'unity/SBR/Assets/SBR/Runtime/MomentumTape.cs.meta' -Force -ErrorAction SilentlyContinue; git status --short"` rejected: blocked by policy
+2026-07-19T01:40:28.380687Z ERROR codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit
+2026-07-19T01:41:18.127259Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.6 seconds
+Total output lines: 800
+Output:
+MZگ       ےے  ¸       @                                   €   ؛ ´	ح!¸Lح!This program cannot be run in DOS mode.
+$       PE  L ‹ھ
+چ        à " 0  ً         â                                 `         `…                           چ O      „                   @    ˆ T                                                             H           .text   (ï       ً                    `.rsrc   „         ٍ              @  @.reloc      @     ِ              @  B                ء     H     Pl  8،                                                         (  
+*^(  
+چ$  %œ}  *:(  
+}  *:(  
+}  *:(  
+}  *{  *{  *{  *†r  p(  Œ%  (  Œ%  (  
+*r(  
+}  }  }  *{  *{  *{  *{  *{  *{   *{!  *"}!  *ز(  
+}  }  }  }  }  }   *n,#      ً?(  Y*(  *F,(  *(  *J#      ً?(  [*{"  *{#  *V(  
+}"  }#  *{$  *{%  *>}$  }%  *{&  *{'  *{(  *{)  *"})  *{*  *"}*  *{+  *"}+  *ژ(  
+}&  }'  (!  }(  *J(  (  o  * 0 B     (  o  
+ (  
+,+(  o  
+(   (  
+‏ (  
+_-***z("  -($  -
+((  ‏***{,  *{-  *{.  *{/  *"}/  *{0  *"}0  *:{1  o  
+*:{1  o  
+&*6{1  o  
+* 0 D     #      ً?
+{1  o  
+o  
++(  
+Z
+(  
+-ëق‏  o  
+ـ*    4     {2  *"}2  *{3  *"}3  *{4  *"}4  *{5  *"}5  *تr  p}0  s  
+}1  (  
+},  }-  }.  *®(*  ~ظ  %-&~ط  ‏x s  
+%€ظ  (  +* 0 E     
+(*  o   
++o!  
+o"  -
+o)  -قo"  
+-غق
+,o  
+ـ*	*       )7 
+    0 C       (+  (>  ~ع  %-&~ط  ‏y s#  
+%€ع  (  +(  +(d  Z(4  Z*{6  *"}6  *{7  *"}7  *{8  *"}8  *{9  *"}9  *{:  *"}:  *0 …     (I  1	(I  2(A  
+(C  +OYl(I  Yl[(E  l(A  (E  YlZX(&  
+i
+(G  l(C  (G  YlZX(&  
+i/
+/s'  
+*{;  *"};  *{<  *"}<  *{=  *"}=  *{>  *"}>  *   0 f       }6  }7  }8  }9  }:  #       @};  #
+×£p=
+ا?}<  #      à?}=  #ffffffض?}>  (  
+*{J  *{K  *{L  *{M  *{N  *{O  *ز(  
+}J  }K  }L  }M  }N  }O  * 0 Œ     -r  ps(  
+z-r!  ps(  
+z-r-  ps(  
+zoK  %{)  
+
+{*  
+o*  o+  
+s,  
++/Y‏	o*  o-  
+(]  o.  
+X2ج	*0 ¦    o(  
+-r;  ps/  
+z.#        +	#      ً?Xon  -+loL  Z(&  
+i	/	Xچ/  o'  ،8§   Y™Y	YXl[#      ً?oP  YoP  #       @Zl	l[ZX		Yl	l[(0  
+
+#       @om  Z#      ً?YoN  Z	Z
+ZY™XX#¸…ëQ¸‍?#
+×£p=
+ï?(1  
+،X	Y>Oےےے	،om  oR  Aڑ   #       @	lZ#      @[(2  
+i(3  
+	Y1	Y	on  .,™#      ذ?(4  
+#¸…ëQ¸‍?#
+×£p=
+ï?(1  
++*™#      è?(5  
+#¸…ëQ¸‍?#
+×£p=
+ï?(1  
+،	s6  
+8±   ™Y™Y(7  
+	‏%-##333333أ?/#ىQ¸…ë±?/+++-K.BY™#      à?Y™#      à?YZ#        2#ڑ™™™™™¹?/+
++++	™s[  o8  
+X	>Gےےے*J(i  #      ً?[*J(j  #      ً?[*0 K       (i  #       @/#      Y@#      ً?Y[(9  
+ie*#      Y@#      ً?YZ(9  
+i* 0 O       d2#      ً?l#      Y@[X*œ0#      ً?#      Y@el[X*rہ  pŒ%  (:  
+s;  
+z 0 _     (j  #        4r$ ps;  
+z#      ً?XZ
+#      ً?Y#      ً?XZ#      ً?[#      ً?[s<  
+*r(j  (i  Z#      ً?YZ*0 3     #      ً?
++o=  
+(i  o=  
+Z
+Xo>  
+2ف* 0 3     #      ً?
++o=  
+(j  o=  
+Z
+Xo>  
+2ف*r(i  (i  #      ً?[YZ*0 U     Z
++Bo?  
+{@  
+(j  o?  
+{A  
+(i  o?  
+{@  
+o?  
+{A  
+ZZ
+XoB  
+2µ*:#      ً?YZ*خ#      ً?1(C  
+-(D  
+,rR pŒ/  (:  
+s;  
+z*ق#        1#      ً?/(C  
+,r– pŒ/  (:  
+s;  
+z*ق(  
+bj`}X  j}W  (l  &{W  X}W  (l  &*0 B   	  {W  
+!-•L-ôQXZ{X  X}W  dadm;di_de__b`*N(l  vl#      ً=Z*  0    
+  0rن ps;  
+zY
+(l  ^X*{Y  *{Z  *{[  *{\  *{]  *{^  *{_  *ٍ(  
+}Y  }Z  }[  }\  }]  }^  }_  *{`  *{a  *{b  *{c  *’(  
+}`  }a  }b  }c  *~j  *~k  *  0 œ      sE  
+%rB pr` pr~ prئ prش p#      @s  
+%rِ p#      @o  
+%r p#ڑ™™™™™ù?o  
+sv  oF  
+%r pr( pr@ prئ pr× p#      @s  
+%rي p#      @o  
+%r p#      ذ?o  
+sv  oF  
+%r% prG pri pr pr  p#      @s  
+%r> p#      ً?o  
+sv  oF  
+%rN prf pr~ prئ prM p#      @s  
+%rk p#      ّ?o  
+%r{ p#       @o  
+sv  oF  
+%rچ pr« prظ prئ pr~	 p#      @s  
+%r¤	 p#      @o  
+%r p#ڑ™™™™™ù?o  
+sv  oF  
+%r´	 prت	 prà	 prئ prد
+ p#      @s  
+%rï
+ p#      @o  
+sv  oF  
+%r pr# prE prز prè p#      @s  
+%r p#Hلz®Gٌ?o  
+sv  oF  
+%r pr2 prV prز pr p#      @s  
+%r1 p#ڑ™™™™™¹?o  
+sv  oF  
+%r; prQ prg prئ pr@ p#      @s  
+%rb p#{®Gلzt?o  
+sv  oF  
+%rr prŒ pr¦ prئ pry p#      @s  
+%r، p#      $@o  
+sv  oF  
+%r· prث prك pr pr¦ p#      @s  
+%r p#ffffffِ?o  
+%rط p#ffffffٍ?o  
+sv  oF  
+%rô pr
+ pr  prئ prك p#      @s  
+%r، p#      (@o  
+sv  oF  
+%rû pr pr- prز prز p#      @s  
+%rِ p#      @o  
+%rô p#       @o  
+sv  oF  
+%r  pr pr> prز prˆ p#       @s  
+%r’ p#       @o  
+sv  oF  
+%r¨ prئ prن prئ pr» p#      @s  
+%rb p#{®Gلz„?o  
+sv  oF  
+€j  sG  
+%rل pr‎ pr p#      ّ?s{  oH  
+%r* prD pr^ p#      @s{  oH  
+%r‎ pr pr- p#      @s{  oH  
+%r pr4 pr\ p#      ً?s{  oH  
+%rû pr prM p#       @s{  oH  
+%r pr< pr\ p#      @s{  oH  
+%r pr) prE p#       @s{  oH  
+€k  *{l  *{m  *{n  *Z}l  }m  }n  *{o  *{p  *{q  *{r  *{s  *{t  *{u  *ع}o  }p  }q  }r  }s  }t  }u  *{v  *  0 G       sE  
+}v  sI  
+}w  (  
+%- &~ـ  %-&~غ  ‏| sJ  
+%€ـ  }x  * 0 &     {v  oF  
+(¯  
+{w  oK  
+o£  *ھ{w  oL  
+o¤  {v  oM  
+{w  oN  
+*   0 C     {v  oO  
+
++ (P  
+oo  (Q  
+,ق (R  
+-كق ‏  o  
+ـ**     %1     0 9     {w  oS  
+
++ (T  
+o¥   (U  
+-وق ‏  o  
+ـ*       *     0 5     {w  oS  
+
++ (T  
+o¦   (U  
+-êق ‏  o  
+ـ*       &     0 7     {w  oS  
+
++ (T  
+o§   (U  
+-èق ‏  o  
+ـ*     (     rr~	 p(ں  t#  %-&*(ؤ  *   0 5     {w  oS  
+
++ (T  
+o¨   (U  
+-êق ‏  o  
+ـ*       &     0 ;     {w  oS  
+
++ (T  
+{x  o©   (U  
+-نق ‏  o  
+ـ*      ,     0 5     {w  oS  
+
++ (T  
+oھ   (U  
+-êق ‏  o  
+ـ*       &     0 5     {w  oS  
+
++ (T  
+o«   (U  
+-êق ‏  o  
+ـ*       &     0 D     #      ً?
+{w  oS  
++(T  
+o¬  Z
+(U  
+-وق‏  o  
+ـ*    4     0 D     #      ً?
+{w  oS  
++(T  
+o­  Z
+(U  
+-وق‏  o  
+ـ*    4     0 <     sV  
+
+{w  oS  
++(T  
+o®  (U  
+-êق‏  o  
+ـ*    ,     ’r× p(ں  t   %-&#        *(³  *   0      r  p(ں  t!  
+,o؛  **zos  r  p(Q  
+,
+(œ  ‏**0      r  p(ں  t!  
+,o»  **   0 E     {w  oS  
+
++ (T  
+o،  (Q  
+,ق (U  
+-فق ‏  o  
+ـ**       '3     :(  
+}y  *2{y  os  *0 !     {y  ou   oW  
+-
+#        ************#      ً?**#      ً?** 0 r    os  
+9J  (X  
+YE   o  ç  ç  ç  ç  ç  —   ç  ç  `  !           ;   <  ç  ç  *  ç  N  8â  (Y  
+C.[L.kP.<8ئ  (Y  
+L;گ   T.v8¬  (Y  
+L;‹   R;ک   8ڈ  rش p(Q  
+:  8z  r@ p(Q  
+:9  8e  rز p(Q  
+:@  8P  r× p(Q  
+:ق   8;  r  p(Q  
+:ذ   8&  rM p(Q  
+:آ   8  r~	 p(Q  
+:´   8ü   r» p(Q  
+:ه   8ç   rد
+ p(Q  
+:‘   8ز   rè p(Q  
+:ƒ   8½   r p(Q  
+-x8«   ry p(Q  
+-t8™   r¦ p(Q  
+-i8‡   rك p(Q  
+-^+xrˆ p(Q  
+-]+is°  *s²  *s¹  *s¾  *sآ  *sا  *sث  *sح  *sد  *sس  *s×  *sـ  *sà  *sâ  *sم  *rو pos  r p(Z  
+s;  
+z"(   *آo*  o+  
+rِ p(¢  i2r pr p(¢  o1  *"(   *{z  *"}z  *  0 Œ     r p(¢  Z
+#        1#      ً?[(4  
++	#      ً?rي p(¢  Zo:  ,=(³  #        6,o<  r& p#      ً?(³  #      Y@[Xo1  *R(³  o9  X(´  *~o;  ,#        (´  o<  *ٹ{y  oo  r0 p(³  s‚  o[  
+*j(   r> p(¢  i}{  **{{  ‏*n{{  0*{{  Y}{  *{|  *"}|  *"(   *¾-+o   rk p(¢  5(¼  r{ p(¢  X(½  *0 _     (¼  #        5*oü  o\  
+
++*o]  
+r: p#      ً?(¼  #      Y@[Xo1  o"  
+-خق
+,o  
+ـ*     6T 
+    ٹ{y  oo  rF p(¼  s‚  o[  
+*"(   *0 1     oü  o\  
+
++o]  
+(ؤ  o"  
+-êق
+,o  
+ـ*       & 
+    0 f     
+o>  o   
++o!  
+o   r¤	 p(¢  7
+قo"  
+-ـق
+,o  
+ـ,rR pr p(¢  o1  *rR po2  *      (6 
+    {}  *"}}  *"(   *  0 +     o-  3(إ  
+X(ئ  *o-  3(ئ  * 0 f     (إ  0*(إ  lrï
+ p(¢  Z
+oü  o\  
++%o]  
+r^ p#      ً?#      Y@[Xo1  o"  
+-سق
+,o  
+ـ*     * 1[ 
+    ¾{y  oo  rh p(إ  lrï
+ p(¢  Zs‚  o[  
+*"(   *2r p(¢  *"(   *Jr1 p(¢  o  *"(   * 0 ^     #      ً?rb p(¢  oِ  ZX
+#      ً?5*oü  o\  
++o]  
+rr po1  o"  
+-çق
+,o  
+ـ*     6 S 
+    {~  *"}~  *"(   *خ(…  2((‡  (…  3(ر  r، p(¢  X(ز  *  0 _     (ر  #        5*oü  o\  
+
++*o]  
+r~ p#      ً?(ر  #      Y@[Xo1  o"  
+-خق
+,o  
+ـ*     6T 
+    ٹ{y  oo  r† p(ر  s‚  o[  
+*"(   *0 >     oü  o\  
+
++o]  
+rژ pr p(¢  o1  o"  
+-فق
+,o  
+ـ*      '3 
+    2rط p(¢  *{  *"}  *"(   * 0 +     („  #        6(ع  
+X(غ  *(غ  * 0 f     (ع  0*(ع  lr، p(¢  Z
+oü  o\  
++%o]  
+r  p#      ً?#      Y@[Xo1  o"  
+-سق
+,o  
+ـ*     * 1[ 
+    ژ{y  oo  r® p(ع  ls‚  o[  
+*"(   *   0 `     o-  .*
+o*  o   
++o!  
+o"  -X
+o"  
+-çق
+,o  
+ـrِ p(¢  i2rô p(¢  o^  
+*    5 
+    "(   *"(   *  0 ›     #        
+o‏  o_  
++o`  
+	o X
+o"  
+-çق
+,o  
+ـ#      ً?rb p(¢  ZX#      ً?5*oü  o\  
++o]  
+r¼ po1  o"  
+-هق,o  
+ـ*     3 
+     o ژ     {€  *{پ  *{‚  *{ƒ  *{„  *{…  *0 ƒ     (  
+}€  (ى  
+rز p(ى  sk  }پ  r!  p(ى  sk  }‚  rن p(ى  sk  }ƒ  rً p(ى  sk  }„  rْ p(ى  sk  }…  * 0 8     !%#"„نœٍث
++oY  
+	na
+!³     Z
+XoX  
+2ع*0 K       (ه  (ى  r pچ  %Œ%  ¢%¢%Œ%  ¢%¢%Œ%  ¢(a  
+(ى  sk  *ع}چ  }ژ  }ڈ  }گ  }‘  }’  }“  *J{‘  #        ‏*{”  *{•  *{–  *"}–  *{—  *"}—  *J{ک  l#      $@[*N#      $@Z(&  
+j*{ڑ  *"}ڑ  *{›  *"}›  *{œ  *{‌  *2{‍  o‹  *{ں  *{   *{،  *r{¢  (ٍ  Y™{‍  o™  Z*  0 <     (ٍ  (ً  oW 2
+ ‏  *{¢  (ٍ  ™{‍  o™  Zsb  
+*0 Q     {¢  ژiچ/  
+{‍  o™  +&(ٍ  Y/
+{¢  ™+
+{¢  ™Z،X{¢  ژi2د*{£  *"}£  *{¤  *"}¤  *2{‍  o›  *{¥  *"}¥  *2{‍  oڑ  *  0 م       }–  sc  
+}œ  sd  
+}‌  sG  
+}ں  sE  
+}   sG  
+}،  (  
+%-&sX }”  së  }•  (ً  o+ (ُ  ‏$ sJ  
+sŒ  }‍  (ً  o- oe  
+t"  }¢  (ô  }¦  (ً  oQ }¨  (ٍ  (ٌ  oè  (ً  (Y (û  * 0 +    (' {œ  of  
+(ً  o9 2 r0 p(ً  o9 Œ%  (:  
+s/  
+zog  
+2og  
+(ً  o= 1+rd p(ً  o= Œ%  og  
+Œ%  (  
+s;  
+z~ق  %-&~ف  ‏ sh  
+%€ق  (  +(  +(  +og  
+.r¬ ps;  
+z(ً  o5 4&r p(ً  o5 Œ/  Œ/  (  
+s;  
+z(ً  o7 (ô  Z
+6'rL pŒ/  Œ/  (ô  Œ/  (k  
+s;  
+z27og  
+2r® pŒ%  (:  
+s;  
+zr* p(% -r  ps/  
+z3r‎ p(% -r.  ps/  
+z3rû p(% -r\  ps/  
+z‏( sl  
+(  +(  +2'om  
+%o   #حجججججô?Zo!  r* p(& ~ك  %-&~ف  ‏€ s#  
+%€ك  (  +(  +(d  ~à  %-&~ف  ‏پ s#  
+%€à  (  +(  +(e  (_  	(f  s=  %rڑ  p(ٍ  Œ%  {œ  of  
+Œ%  (  
+o0  ,:.rû p+r‎ p(& o6  3rھ  p#       @o1  {‍  (ô  {œ  of  
+‏oگ  (ô  Y(ُ  {™  (ً  o/ ZX}™  {œ  on  
+* 0 e       (' {©  ,r²  ps/  
+zr p(% -rى  ps/  
+zr p(& }©  {¢  (ٍ  Yڈ/  %O#      è?ZW*   0
+ G     (' {ک  {™  (÷  X}ک  #        }™  {‍  o‘  (ْ  o  oo  
+
++.op  
+(ٌ  oو  om  o  2+sq  
+o  o"  
+-تق
+,o  
+ـ{‌  or  
+{œ  os  
++{(t  
+	(ٌ  oç  (ً  oU (ٍ  (\  {‌  	(ً  ‏ sJ  
+{‍  ‏) su  
+‏* su  
+‏ sv  
+s` ow  
+(x  
+:yےےےق‏)  o  
+ـ(ù  *    K :… 
+     ¦ ‹1    0 c       (' -r! ps(  
+zoc -r,! ps/  
+zrل p(% -r|! ps/  
+zrل p(& oj {‍  oa o“  * 0 |   !  (' -r! ps(  
+zoc -r¨! ps/  
+zr p(% -rّ! ps/  
+zr p(& (ٌ  (ٍ  oa o/  od r$" poي  
+ok *0   "  (' {‌  ~ل  %-&~ف  ‏‚ sy  
+%€ل  (	  +-r4" ps/  
+z{œ  os  
+
++N (t  
+o-  ->o?  ,(o.  (ô  o@  X(ُ  {‍  o•  +o.  (  (x  
+-©ق ‏)  o  
+ـ{œ  os  
+
++< (t  
+o-  3+o5  3"o7  -o8  (ô  o+  X(ُ   (x  
+-»ق ‏)  o  
+ـ(ù  *     J [¥      ؟ I    0 G   #  (' {‌  o{  
+
++ (|  
+og -ِ (}  
+-هق ‏-  o  
+ـ( *     2     >(ô  X(ُ  *6{‍  o”  *  0 ّ  $  (' (ٍ  (ً  oW ‏
+{¢  (ٍ  Y™{‍  o™  Z(ô  #        {¦  Y#        	{œ  os  
+
++R
+(t  
+o-  3X+"o-  3X+o-  3Xo7  ,	o+  X	
+(x  
+-¥ق
+‏)  o  
+ـ{‍  (ٍ  {œ  of  
+	sٹ  o–  (ô  7(ô  Y(ُ  -+(ù  +o-\{‍  o‍  ,O(ô  Y{¢  (ٍ  ڈ/  %O{¢  (ٍ  Y™#      ً?(ً  oS XZXW(ù  +(ô  Y(ù  (ٍ  (ô  	(ّ  sî  s~  
+( #        2+{§  X}§  (ّ  3( *   v _ص     0 ê   %  (' 2{   o  
+2r·" ps€  
+z{   oپ  
+
+ot  (÷  {ک  1,rح" poo  ot  Œ/  (ِ  Œ/  (k  
+s/  
+z(‏  o‚  
+(ً  oE 2 r# p(ً  oE Œ%  (:  
+s/  
+z{ک  Y}ک  {‍  oچ  oo  r% p(Q  
+,( {   oM  
+*  0 ر   &  (' 2{،  oƒ  
+2r·" ps€  
+z{،  o„  
+
+oz  (÷  {ک  1,rW# pow  oz  Œ/  (ِ  Œ/  (k  
+s/  
+z{ں  oƒ  
+(ً  oG 2 r›# p(ً  oG Œ%  (:  
+s/  
+z{ک  Y}ک  {ں  oH  
+{،  o…  
+*   0 H     {‍  o‌  ,
+#        *ou  r’ p oW  
+,	ot  Z*ot  (ً  oM Z*0 _       (' 2{‍  o‹  o‚  
+2rك# ps€  
+z{ک  {‍  o‹  o†  
+( (÷  X}ک  {‍  oژ  * 0 `       (' 2{ں  oƒ  
+2rك# ps€  
+z{ک  {ں  o„  
+oz  (ً  oM Z(÷  X}ک  {ں  o…  
+*0	 x     (' {ھ  ,rُ# ps/  
+zr p(% -r?$ ps/  
+zr p(& }ھ  (ٌ  (ٍ  r  prw$ p{«  
+X}«  oي  ( *–{‍  o—  }ھ  (ٌ  oé  ( *  0 ‰  '  {   o‡  
+sE  
+
+(|  o_  
++@o`  
+{‍  oo  oڈ  -#oo  r% p(Q  
+,(
+ -oF  
+o"  
+-·ق,o  
+ـ(ً  oI o  
+(ˆ  
++]o  
+on  	
+oپ  
+oپ  
+	o‰  
+
+o‰  
+{   oپ  
+oF  
+X2‍{،  oٹ  
+(}  s‹  
+(ً  oK oƒ  
+(ˆ  
++]oƒ  
+on  
+	o„  
+o„  
+
+oŒ  
+	oŒ  
+{،  o„  
+oH  
+X	2‍*       Mj     z{ک  {ک  lZ(&  
+jX}ک  * 0   (  (' {   o‡  
+{،  oٹ  
+(ٍ  
+X(َ  {œ  oچ  
+{‌  or  
+}©  (ٍ  (ٌ  oè  (ً  (Y (û  (ù  (ô  }¦  ( {¨  X}¨  {§  (ً  oO 2k{¨  (ً  oQ 2X{ں  oƒ  
+(ً  oG /@(}  (ٌ  oé  (}  oژ  
+on  oڈ  
+{ں  oH  
+( }¨  *ڑ{‍  oچ  oo  r% p(Q  
+,( *6{ں  oH  
+*R{ک  (÷  X}ک  *   0 C   )  {ں  oگ  
+
++ (‘  
+ow  (Q  
+,ق (’  
+-كق ‏3  o  
+ـ**     %1     0 R     
++*{ں  o„  
+ow  (Q  
+,{ں  o…  
+*X
+{ں  oƒ  
+2بr…$ prچ$ p(Z  
+s/  
+z®(ّ  .!r™$ pŒ/  (ّ  Œ/  (  
+s/  
+z*  0 3   *  (ْ  o  (  o“  
+
+(  (  o  s&  *2rل p(% *2r p(% *{¬  *"}¬  *{­  *"}­  *{®  *"}®  *{¯  *"}¯  *{°  *"}°  *{±  *"}±  *{²  *"}²  *{³  *"}³  *{´  *"}´  *{µ  *"}µ  *{¶  *"}¶  *{·  *"}·  *{¸  *"}¸  *{¹  *"}¹  *{؛  *"}؛  *{»  *"}»  *{¼  *"}¼  *{½  *"}½  *{¾  *"}¾  *{؟  *"}؟  *{ہ  *"}ہ  *{ء  *"}ء  *&(- ژi*   0       #     àu@}¬  چ/  %ذ×  (”  
+}­  #¸…ëQ¸¾?}®  #ڑ™™™™™©?}¯  #{®Gلz´?}°  #      $@}±  #      ً?}²  }³  }´  }µ  	}¶  #      ذ?}·  #      è?}¸  }¹  }؛  }»  }¼  #      à?}½  }¾  }؟  #      à?}ہ  sT  }ء  (  
+*  0 ¬   +  ~أ  ژi(\ 
+o; s•  
++zoA oC oA Yom  ZXZ”	(Z ZX”#      ً?	Y(Z 	o1 (b  %{@  
+{A  
+	s  o–  
+Xo; ?zےےےs  *0 B     ~آ  ~آ  ژion  ڑrه$ p~أ  ڑ(Z  
+o? ([ 
+o? Ys
+  *  0    ,  
++om  4X
+X2ë*   0 X   -  چ%  
++‍X2ôY+5Xon  ڈ%  	ڈ%  	””TTY0ا*0 K      چ&  %ré$ p¢%rù$ p¢%r% p¢%r+% p¢%r?% p¢%rM% p¢%ra% p¢%ro% p¢%rپ% p¢%	r•% p¢%
+r£% p¢%r­% p¢%r؟% p¢%rث% p¢%r×% p¢%rم% p¢€آ  چ&  %rَ% p¢%r‎% p¢%r& p¢%r'& p¢%r?& p¢%rQ& p¢%rk& p¢%r{& p¢%rڈ& p¢%	r¥& p¢%
+r·& p¢%rث& p¢%rف& p¢%rي& p¢%r' p¢%r' p¢%r-' p¢%r?' p¢%rQ' p¢%re' p¢€أ  *{ؤ  *v(  
+/ru' ps€  
+z}ؤ  *   0 j    }ر  (  
+%-&r  ps(  
+z}إ  %-&rƒ' ps(  
+z}ئ  %-&r-  ps(  
+z}ا  %-&rڈ' ps(  
+z}ب  %-&r¥' ps(  
+z}ة  %-&rµ' ps(  
+z}ت  %-&rظ' ps(  
+z}ش  %-&rû' ps(  
+z}ث  o—  
+o*  o+  
+.r	( prƒ' psک  
+zo*  o+  
+چ  }ج  
++{ج  ‍X
+{ج  ژi2è}ح  }خ  o*  o+  
+‏}ذ  o*  o+  
+0#        +o*  o-  
+o'  }د  *{إ  *{ذ  *6{ر  ‏‏*{ر  *j{ر  /
+#        *{ز  *b{ر  2(i ‏‏**0 ڈ   .  {ر  2(l Q*{ذ  ,Q*{ئ  {ح  o™  
+{خ  oڑ  
+
+{خ  X}خ  {د  }س  oY  }د  {ض  1{ض  Y}ض  oX  3(h Q* 0 ´   /  {إ  o*  {ح  o-  
+
+o(  3({ج  {ح  ‍{ة  {إ  o’  (n *{ج  {ح  ‍{ت  o›  
+,(i ‏‏+-{ش  o›  
+,{ح  }ر  {س  }ز  *{ة  {إ  o’  (m *0 <     
+{…7304 tokens truncated…ter OnShopEnter _heldFair RawCashOutFair RelicBehavior WhaleCardBehavior RakesRebateBehavior CompdSuiteBehavior GoldenParachuteBehavior ScarTissueBehavior TotemBehavior TheSystemBehavior TheCollectionBehavior LongshotPhotoBehavior NoOpBehavior BadBeatJarBehavior ChalkEaterBehavior IronHandsBehavior ParlayPayoutMultBehavior HouseKeyBehavior IEnumerator GetEnumerator DramaGenerator SlateGenerator .ctor RemoveFactor RefreshPhotoFactor HasFactor SetFactor get_PaymentFactor .cctor get_LateDecisiveBias set_LateDecisiveBias Abs legProbs get_Relics get_OwnedRelics System.Diagnostics get_OfferedOdds set_OfferedOdds offeredOdds OverroundOdds get_HomeOdds homeOdds RequireOdds get_BaseOdds legOdds decimalOdds FairOdds get_AwayOdds awayOdds get_Rounds _consecutiveLosingRounds get_GiftAfterLosingRounds set_GiftAfterLosingRounds get_GiftCooldownRounds set_GiftCooldownRounds get_DensityRampRounds set_DensityRampRounds ShuffledIndices System.Runtime.CompilerServices DebuggingModes _charges Cities get_Consumables get_OwnedConsumables _consumables get_PriorGames set_PriorGames get_Outcomes res get_Losses losses get_EffectStates get_Values NullableFlags get_Legs get_ActiveLegs remainingLegs get_MaxLegs set_MaxLegs legs BuildTicketPaths _paths System.Diagnostics.CodeAnalysis Microsoft.CodeAnalysis get_Axis axis get_Stacks set_Stacks get_ScarStacks picks get_Params params get_Wins set_Wins wins System.Collections Nouns Owns get_TotalSteps totalSteps get_Comps _deciComps GrantComps _grantComps comps get_Matchups matchups get_Chars get_ConsumableOffers _consumableOffers DealOffers get_ShopOffers _shopOffers RuntimeHelpers _behaviors _factors NearMiss DeclinePendingLoss get_CanMulliganPendingLoss get_HasPendingLoss get_Sweats _sweats AddStats stats _effects AttributeTargets get_Tickets _tickets get_Payments set_Payments _payments get_Events minEvents maxEvents events get_RelicSlots set_RelicSlots get_ConsumableSlots set_ConsumableSlots RemoveAt Concat FinishSweat Format EffectStat OfferHoldEffect ApplyLiveEffect effect Object Select Distinct resolvedOddsProduct FreeBet PlaceTicket _ticket _holdEventsLeft _roundsSinceGift get_LastGift set_LastGift _managerUsedThisVisit DoubleOrNothingMult ProfitBoostMult GetValueOrDefault get_Result set_Result NextUInt NextInt get_LastSettlement set_LastSettlement get_CurrentPayment get_NextPayment payment TotemSpent get_Current DramaEvent _probBeforeEvent get_Count ActiveLegCount get_ConsumableOfferCount set_ConsumableOfferCount get_PassiveOfferCount set_PassiveOfferCount amount StateSnapshot _bankAtBettingStart SettlementReport Sqrt ApplyCompsInterest ToList RunLost get_TicketsLost lost HandleBust get_ScarStacksIfBust set_ScarStacksIfBust OnBust _onBust get_TicketsCashedOut cashedOut AcceptCashOut get_PotentialPayout evt MoveNext Ev _compsAccrualRaw Max get_Index ownedIndex get_LegIndex get_PendingDeadLegIndex legIndex nounIndex get_MatchupIndex matchupIndex offerIndex index BigPlay InitializeArray get_Away away ContainsKey key op_Equality get_Volatility set_Volatility IsInfinity     { 0 } - { 1 }  t i c k e t  d r a m a  c o n f i g  €ƒD r a m a   p a t h s   r e q u i r e   a   r e s o l v e d   l e g   o u t c o m e ;   l o c k   t h e   r o u n d   f i r s t .  cA m e r i c a n   o d d s   m u s t   b e   > =   + 1 0 0   o r   < =   - 1 0 0 ,   g o t   { 0 } -o v e r r o u n d   m u s t   b e   > =   0  CD e c i m a l   o d d s   m u s t   b e   >   1 ,   g o t   { 0 }  MP r o b a b i l i t y   m u s t   b e   i n   ( 0 ,   1 ) ,   g o t   { 0 }  ]m a x E x c l u s i v e   m u s t   b e   g r e a t e r   t h a n   m i n I n c l u s i v e  t h e _ m u l t i p l i e r  T h e   M u l t i p l i e r  GP a r l a y s   o f   3   o r   m o r e   l e g s   p a y   1 . 6 x .  P a y o u t  !P a r l a y P a y o u t M u l t  m i n L e g s  	m u l t  s c a r _ t i s s u e  S c a r   T i s s u e  پ•E v e r y   b u s t e d   t i c k e t   a d d s   s c a r   s t a c k s   ( b i g g e r   s t a k e s   s c a r   h a r d e r ) .   T h e   f i r s t   t i c k e t   y o u   p l a c e   e a c h   r o u n d   c a r r i e s   t h e m :   i f   i t   h i t s ,   i t s   p a y o u t   g r o w s   b y   y o u r   s t a c k s   a n d   t h e y   b u r n .   B u s t s   o n l y   f e e d   t h e   s c a r .  S c a r T i s s u e  p p P e r B u s t  #f u l l S t a k e F r a c t i o n  !t o t e m _ o f _ u n d y i n g  !T o t e m   o f   U n d y i n g  پ£O n e   c h a r g e ,   s o l d   o n c e   p e r   r u n ,   e v e r :   w h e n   y o u   c a n n o t   m a k e   a   p a y m e n t ,   t h e   w h o l e   p a y m e n t   i s   D E F E R R E D   -   y o u r   b a n k   i s   u n t o u c h e d ,   a n d   t h e   p a y m e n t   p l u s   h i s   j u i c e   l a n d s   o n   t h e   n e x t   o n e .   N e v e r   s a v e s   t h e   f i n a l   p a y m e n t . S u r v i v a l  T o t e m O f U n d y i n g  c h a r g e s  c h a l k _ e a t e r  C h a l k   E a t e r  €حE v e r y   w i n n i n g   l e g   a t   - 2 0 0   o r   s h o r t e r   f e e d s   i t :   + 2 %   p a y o u t   o n   e v e r y   t i c k e t ,   f o r e v e r .   G r i n d e r s   g e t   p a i d . L e g B a n d R a t c h e t  m a x O d d s  p p P e r L e g  l o n g s h o t _ p h o t o  -L o n g s h o t   L a r r y ' s   P h o t o €£A n y   t i c k e t   h o l d i n g   a   l i v e   l e g   a t   + 2 0 0   o r   l o n g e r   p a y s   1 . 6 x .   L a r r y   b e l i e v e s   i n   y o u .  %L e g B a n d P r o d u c t F l a g  m i n O d d s  i r o n _ h a n d s  I r o n   H a n d s  €يE v e r y   t i c k e t   t h a t   W I N S   a t   f u l l   r i d e   a d d s   + 4 %   p a y o u t   t o   e v e r y t h i n g .   C a s h   A N Y   t i c k e t   o u t   a n d   t h e   s t a c k   s h a t t e r s   t o   z e r o .  F u l l R i d e R a t c h e t  p p P e r W i n  !g o l d e n _ p a r a c h u t e  !G o l d e n   P a r a c h u t e  €‹T h e   b o o k   w a i v e s   i t s   m a r g i n   o n   c a s h - o u t s :   e v e r y   c a s h - o u t   p a y s   8 %   m o r e . A c c o u n t i n g  #C a s h O u t Q u o t e S c a l e  s c a l e  r a k e s _ r e b a t e  #T h e   R a k e ' s   R e b a t e €«E v e r y   t i m e   t h e   s h o p   o p e n s ,   y o u r   h e l d   c o m p s   e a r n   1 0 %   i n t e r e s t .   L o y a l t y   p a y s   t h e   l o y a l .  -S h o p E n t e r C o m p s I n t e r e s t  	r a t e  w h a l e _ c a r d  W h a l e   C a r d  €×E v e r y   c o m p   y o u   H O L D   w h e n   t h e   r o u n d   l o c k s   a d d s   + 0 . 5 %   p a y o u t   t o   e v e r y   t i c k e t .   B i g   b a l a n c e s   g e t   b i g   t r e a t m e n t .  !C o m p s H e l d P r o d u c t  p e r C o m p  b a d _ b e a t _ j a r  B a d   B e a t   J a r  €رE v e r y   r o u n d   w h e r e   e v e r y   t i c k e t   y o u   p l a c e d   d i e s   d r o p s   + 1 0 %   p a y o u t   i n   t h e   j a r ,   f o r e v e r .   T h e   j a r   r e m e m b e r s .  'A l l L o s s R o u n d R a t c h e t  p p P e r R o u n d  h o u s e _ k e y  H o u s e   K e y  €إA l l   p a y o u t s   x 1 . 4   -   a n d   e v e r y   r e m a i n i n g   p a y m e n t   r u n s   1 5 %   h e a v i e r   w h i l e   y o u   h o l d   i t .   P o w e r   h a s   r e n t . 1P r o d u c t P l u s P a y m e n t F a c t o r  p a y m e n t F a c t o r  t h e _ s y s t e m  T h e   S y s t e m  €½E a c h   c o n s e c u t i v e   p r o f i t a b l e   r o u n d   a d d s   + 1 2 %   p a y o u t .   O n e   d o w n   r o u n d   a n d   t h e   b i n d e r   s t a r t s   o v e r .  S t r e a k R a t c h e t  c o m p d _ s u i t e  C o m p ' d   S u i t e €£A   w i n n i n g   t i c k e t   w i t h   4 +   l e g s   c o m p s   y o u   8   o n   t h e   s p o t .   T h e   b o o k   l o v e s   a   s h o w - o f f . !L e g C o u n t C o m p s P a y  c o m p s  b o b b l e h e a d  'U n o p e n e d   B o b b l e h e a d  ID o e s   n o t h i n g .   C o l l e c t o r s   p a y   d o u b l e .  	N o O p  r e s a l e M u l t  t h e _ c o l l e c t i o n  T h e   C o l l e c t i o n  €صE v e r y   c o m p   o f   r e s a l e   v a l u e   a c r o s s   y o u r   o w n e d   p a s s i v e s   a d d s   + 1 %   p a y o u t   a t   l o c k .   F u l l   s h e l v e s ,   f u l l   p o c k e t s .  %R e s a l e V a l u e P r o d u c t  m u l l i g a n _ s l i p  M u l l i g a n   S l i p  پP l a y   i t   t h e   m o m e n t   a   l e g   d i e s   o n   a   m u l t i - l e g   t i c k e t :   t h e   l e g   i s   v o i d e d   a n d   t h e   t i c k e t   l i v e s .   T h e   w i n d o w   c l o s e s   w h e n   t h e   t i c k e t   s e t t l e s . p r o f i t _ b o o s t  P r o f i t   B o o s t  €‌P l a y   i t   a t   t h e   b e t s l i p :   o n e   c h o s e n   l e g ' s   o d d s   a r e   b o o s t e d   3 0 %   b e f o r e   y o u   l o c k . f r e e _ b e t  F r e e   B e t   T o k e n  €يF l a g   o n e   t i c k e t   b e f o r e   y o u   l o c k :   i f   i t   l o s e s ,   t h e   s t a k e   c o m e s   b a c k   i n   c a s h .   T h e   b u s t   s t i l l   c o u n t s   e v e r y w h e r e   i t   h u r t s .  a s k _ m a n a g e r  'A s k   f o r   t h e   M a n a g e r  €‌P l a y   i t   i n   t h e   s h o p :   t h e   w h o l e   h a n d   i s   r e d e a l t   o n c e .   H e   i s   n o t   h a p p y   a b o u t   i t .  #d o u b l e _ o r _ n o t h i n g  -D o u b l e   o r   N o t h i n g   S l i p  €دF l a g   o n e   t i c k e t   b e f o r e   y o u   l o c k :   i t   p a y s   D O U B L E   i f   i t   w i n s   -   a n d   t h e   c a s h - o u t   b u t t o n   i s   g o n e .   N o   e x i t s . b o o k i e s _ m a r k e r  B o o k i e ' s   M a r k e r €±P l a y   i t   b e f o r e   y o u   l o c k :   t h i s   r o u n d ' s   p a y m e n t   d r o p s   2 5 % .   O n e   p e r   r o u n d   -   h e   k e e p s   c o u n t . r e f s _ w h i s t l e  R e f ' s   W h i s t l e پںP l a y   i t   t h e   m o m e n t   a   l e g   d i e s :   t h e   c a l l   g o e s   t o   r e v i e w   a t   t h e   o d d s   y o u   w e r e   l i v i n g   o n .   O v e r t u r n e d ,   t h e   l e g   s t a n d s   a t   F U L L   o d d s   -   c o n f i r m e d ,   t h e   t i c k e t   d i e s .   W o r k s   w h e r e   a   M u l l i g a n   c a n n o t :   s i n g l e - l e g   t i c k e t s . %U n k n o w n   r e l i c   o p   ' ' m u l t i p l i e r  	s c a r  	S C A R  c h a l k  C H A L K  p h o t o  	i r o n  	I R O N  w h a l e  j a r  J A R  h o u s e k e y  s y s t e m  S T R E A K  c o l l e c t i o n  o u t c o m e s  s l a t e  	s h o p  r e l i c s  '{ 0 } # { 1 } # { 2 } # { 3 } # { 4 }  3M a x   { 0 }   t i c k e t s   p e r   r o u n d  GT i c k e t s   t a k e   1   t o   { 0 }   l e g s ,   g o t   { 1 }  cA   t i c k e t   c a n n o t   h a v e   t w o   l e g s   o n   t h e   s a m e   m a t c h u p  ;M i n i m u m   s t a k e   i s   { 0 } ,   g o t   { 1 }  aS t a k e   { 0 }   e x c e e d s   t h e   m a x   s t a k e   { 1 }   f o r   b a n k   { 2 }  UP r o f i t   B o o s t   l e g   { 0 }   i s   n o t   o n   t h i s   t i c k e t  )N o   P r o f i t   B o o s t   h e l d  -N o   F r e e   B e t   T o k e n   h e l d  =N o   D o u b l e   o r   N o t h i n g   S l i p   h e l d  { 0 } . { 1 }  d o n  9T h e   M a r k e r   i s   o n c e   p e r   r o u n d  /N o   B o o k i e ' s   M a r k e r   h e l d s e s s i o n  ON o   d e a d   l e g   i s   a w a i t i n g   a   M u l l i g a n   S l i p  +N o   M u l l i g a n   S l i p   h e l d  ON o   d e a d   l e g   i s   a w a i t i n g   a   R e f ' s   W h i s t l e +N o   R e f ' s   W h i s t l e   h e l d w h i s t l e  €پE v e r y   s w e a t   s e s s i o n   m u s t   b e   c o m p l e t e   b e f o r e   f i n i s h i n g   t h e   s w e a t .  o f f e r I n d e x  OR e l i c   { 0 }   c o s t s   { 1 }   c o m p s ,   y o u   h a v e   { 2 }  9A l l   { 0 }   r e l i c   s l o t s   a r e   f u l l  C{ 0 }   c o s t s   { 1 }   c o m p s ,   y o u   h a v e   { 2 }  CA l l   { 0 }   c o n s u m a b l e   s l o t s   a r e   f u l l  o w n e d I n d e x  IT h e   M a n a g e r   c o m e s   o u t   o n c e   p e r   v i s i t  7N o   A s k   f o r   t h e   M a n a g e r   h e l d  r e d e a l  N o      h e l d  KE x p e c t e d   p h a s e   { 0 } ,   b u t   r u n   i s   i n   { 1 }     A t l a n t a  S a n   F r a n c i s c o  T u s c a l o o s a  M o o s e   J a w  D e n v e r  S h e b o y g a n  F r e s n o  W a t e r l o o  P a w t u c k e t  D u l u t h  	R e n o  S c r a n t o n  B o i s e  T u l s a  O m a h a  Y o n k e r s  	Y a m s  S t a r t u p s  B r i c k l a y e r s  L o n g h a u l e r s  M a l l a r d s  S p r e a d s h e e t s  T u r n i p s  M i d d l e m e n  R e g u l a t o r s  P l u m b e r s  M e a t b a l l s  A u d i t o r s  F e r r e t s  O v e r h e a d s  G r a v e d i g g e r s  N o t a r i e s  M u s k r a t s  Z a m b o n i s  L o o p h o l e s  R e f u n d s  e v e n t s  p a t h s  c r e d i t B a n k  e f f e c t s  #m u l l i g a n A v a i l a b l e  !w h i s t l e A v a i l a b l e  o n B u s t  [P a t h   c o u n t   m u s t   m a t c h   t h e   t i c k e t ' s   l e g   c o u n t . 7N o   p e n d i n g   l o s s   t o   m u l l i g a n  SV o i d i n g   t h e   o n l y   a c t i v e   l e g   i s   n o t   a   s a v e  5N o   p e n d i n g   l o s s   t o   w h i s t l e  5N o   p e n d i n g   l o s s   t o   d e c l i n e  l e g I n d e x  SN o   c a s h - o u t   o f f e r   i s   c u r r e n t l y   a v a i l a b l e . 3N o   l i v e   c a s h - o u t   t o   h o l d . +U n k n o w n   l i v e   e f f e c t   ' 	n u l l  ' .  u[8q7غDکغذt"rC‎       9   
+II     Y    
+a
+  ] ]
+  a a  m< e e m 
+<i<<e<  i i<m<ee m 
+<y e 
+ €­uyMP €µ<  
+yMPM<    yPHL    yP uM€µ
+Mu€µu 		y`ydyx€پx
+€…`	  €… €…` 	€…x€…x€…xxyl€…xyl€„€…xxx}    i@e@i@
+i@@	i<	i@	i<i``i@e`i` IIy@y€ش  y<@€µ8m8
+8e e 
+
+e  m8<
+8<y<i00€…@@MMPe0i0€…@€‰€پ@\€…@@@m€شe m 
+€ش€…€ش€شP€…€ش€…@@I€ہ`
+€µ`d
+M`2y`ydi``y```yddd  	 e d€µdMd
+€…d€…d0M0	 €إ€رy0,,y0€µMP P
+MMPMP<yu€…u
+yu€…uII€ذ  €ص  ج{ےح-فQ                333333أ?ىQ¸…ë±?ڑ™™™™™¹?¸…ëQ¸‍?
+×£p=
+ï?      è?      ذ?t h e _ m u l t i p l i e r s c a r _ t i s s u e  t o t e m _ o f _ u n d y i n g حجججججô?       @   ےےےے $(,IM00M<YHL}M`Mdy`yx€پ`\€¼€ب€¸
+4y@y€شtydI€ہdD@MMP€‰€پ@I€è€ـm<m<€à€نm8	m€ش     ,    I	 I ,,   M0
+ M0     0  0    M<         ( ( M<  e<	 u  H  L HL MMP@\D MP<\D  
+ u M Mu    	   } }   M`  Md   
+   M`	 €پ ` @ €ؤ	 @<$ @ p  yl ` x  @€پ	 yl x`  \ 	 \ €¼  €ب  €¸ 
+  €¼ €¼  4 4  M@	  M€ش  Md  I  M	  I€ہ
+ I€ہ  d d  Ml €ب @M8( €ش ` \ <8     D D
+ 4\€ب ,\€ب \ \- @MMP€ب€پt€‰€‰€پ@  @ P   < < 8 €ش( ( ( ,( ( I( M0( ( 0( ( ( M<(  ( (( e<( H( L( } M` Md( M`( \( €ب( €¸( €¼( 4( M@	( M€ش( Md( I( M	( I€ہ( d( Ml( ( D( @        TWrapNonExceptionThrows      G .NETStandard,Version=v2.1 TFrameworkDisplayName.NET Standard 2.1 
+SBR.Engine   Release   1.0.0.0  3 .1.0.0+36bb6bf1820e8a60b5b50d4ba9ab7cc7396bb417            & „k   TAllowMultiple T	Inherited & L   TAllowMultiple T	Inherited &     TAllowMultiple T	Inherited     MinMax      homeaway      po  
+                  {ûير MP   ٹ   ـ ـï                '   f fً                             RSDSض¯Kى·pکO؟‏_¶–çîa   C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine\obj\Release\netstandard2.1\SBR.Engine.pdb SHA256 ض¯Kى·pکO?‏_¶–çîa{ûيQ[–•;¥ھC3Kژ·µ         د                         ء           _CorDllMain mscoree.dll        ے%         N@     €Q@     @U@     @Z@     `c@     pw@     0†@     •@                                                                                                                                                                                                                                            €                  0  €                   H   X  (          (4   V S _ V E R S I O N _ I N F O     ½ï‏                 ?                         D    V a r F i l e I n f o     $    T r a n s l a t i o n       °ˆ   S t r i n g F i l e I n f o   d   0 0 0 0 0 4 b 0   6   C o m p a n y N a m e     S B R . E n g i n e     >   F i l e D e s c r i p t i o n     S B R . E n g i n e     0   F i l e V e r s i o n     1 . 0 . 0 . 0   >   I n t e r n a l N a m e   S B R . E n g i n e . d l l     (   L e g a l C o p y r i g h t       F   O r i g i n a l F i l e n a m e   S B R . E n g i n e . d l l     6   P r o d u c t N a m e     S B R . E n g i n e     ‚ /  P r o d u c t V e r s i o n   1 . 0 . 0 + 3 6 b b 6 b f 1 8 2 0 e 8 a 6 0 b 5 b 5 0 d 4 b a 9 a b 7 c c 7 3 9 6 b b 4 1 7     8   A s s e m b l y   V e r s i o n   1 . 0 . 0 . 0                                                                                                                                         ن>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      

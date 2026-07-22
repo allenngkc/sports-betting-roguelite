@@ -8,36 +8,32 @@ namespace SBR.Probe
     /// PLATFORM PROBE — disposable (M1, Phase 2). NOT product code.
     ///
     /// Single source of the determinism pins inside Unity, ported verbatim from
-    /// engine.tests/GoldenSeedTests.cs: the scripted GOLDEN-W2 round (a 3-leg parlay that wins two
-    /// legs then loses on its decisive final leg, plus a winning single), the 18-event
+    /// engine.tests/GoldenSeedTests.cs: the scripted GOLDEN-W2 round (a 3-leg parlay and a single),
+    /// the 14-event
     /// (LegIndex, Step, Type, Tag) sequence, the first-ten WinProbAfter values, and the settled bank.
-    /// Re-pinned 2026-07-18 (F_0.2.0 M-T1: drama budgets 3–5/leg, round-1 ramp 2–4 — an INTENDED
-    /// drama-stream re-pin; ExpectedBank deliberately untouched, the outcome-invariance proof).
+    /// Re-pinned once for F_0.4.0 Phase 1: the stat-line sampler intentionally changes the locked
+    /// market universe. This fixture mirrors engine.tests/GoldenSeedTests.cs.
     /// Both the EditMode determinism test and the runtime <see cref="DeterminismProbe"/> replay
     /// through this so the pins live once. An unintentional change here is a determinism regression.
     /// </summary>
     public static class GoldenReplay
     {
         public const string Seed = "GOLDEN-W2";
-        public const double ExpectedBank = 428.631019;
+        public const double ExpectedBank = 452.559054816409;
 
-        // (LegIndex, Step, Type, Tag) for every one of the 18 events, in fast-forward order.
+        // (LegIndex, Step, Type, Tag) for every one of the 14 events, in fast-forward order.
         public static readonly (int leg, int step, DramaEventType type, TensionTag tag)[] ExpectedEvents =
         {
             (0, 1, DramaEventType.BigPlay,  TensionTag.Swing),
             (0, 2, DramaEventType.LegFinal, TensionTag.Decisive),
-            (1, 1, DramaEventType.Momentum, TensionTag.Calm),
-            (1, 2, DramaEventType.Momentum, TensionTag.Calm),
-            (1, 3, DramaEventType.Momentum, TensionTag.Calm),
+            (1, 1, DramaEventType.Score, TensionTag.Swing),
+            (1, 2, DramaEventType.BigPlay, TensionTag.Swing),
+            (1, 3, DramaEventType.Score, TensionTag.Swing),
             (1, 4, DramaEventType.LegFinal, TensionTag.Decisive),
-            (2, 1, DramaEventType.Momentum, TensionTag.Calm),
-            (2, 2, DramaEventType.Momentum, TensionTag.Calm),
-            (2, 3, DramaEventType.BigPlay,  TensionTag.NearMiss),
-            (2, 4, DramaEventType.LegFinal, TensionTag.Decisive),
-            (0, 1, DramaEventType.Momentum, TensionTag.Calm),
-            (0, 2, DramaEventType.Momentum, TensionTag.Calm),
+            (0, 1, DramaEventType.Momentum, TensionTag.LeadChange),
+            (0, 2, DramaEventType.Momentum, TensionTag.LeadChange),
             (0, 3, DramaEventType.Momentum, TensionTag.Calm),
-            (0, 4, DramaEventType.Score,    TensionTag.Swing),
+            (0, 4, DramaEventType.Score,    TensionTag.LeadChange),
             (0, 5, DramaEventType.Momentum, TensionTag.Calm),
             (0, 6, DramaEventType.Score,    TensionTag.Swing),
             (0, 7, DramaEventType.Score,    TensionTag.Swing),
@@ -47,19 +43,19 @@ namespace SBR.Probe
         // WinProbAfter (6 dp) for the first ten events.
         public static readonly double[] ExpectedFirstTenWinProb =
         {
-            0.803542, 1.000000, 0.774708, 0.751859, 0.767951,
-            1.000000, 0.432400, 0.404952, 0.750000, 0.000000,
+            0.803542, 1.000000, 0.363411, 0.144328, 0.030000,
+            0.000000, 0.523784, 0.484132, 0.493316, 0.636125,
         };
 
-        /// <summary>The scripted GOLDEN-W2 round: a 3-leg parlay + a winning single, locked and ready to sweat.</summary>
+        /// <summary>The scripted GOLDEN-W2 round: a 3-leg parlay + a single, locked and ready to sweat.</summary>
         public static Run ScriptedRound()
         {
             // The Week-2 pin was taken at bank 500; pin the config so the settled-bank expectation
             // survives economy retunes (outcomes/drama are bank-independent).
             var run = new Run(Seed, new RunConfig { StartingBank = 500 });
-            // Parlay: (0,Away) win, (2,Away) win, (3,Home) lose-on-final.  Single: (1,Home) win.
+            // F_0.4.0 universe: parlay (0,Away) win, (2,Away) DIES, (3,Home) never sweated.  Single: (1,Away) win.
             run.PlaceTicket(new[] { new Pick(0, Side.Away), new Pick(2, Side.Away), new Pick(3, Side.Home) }, 100);
-            run.PlaceTicket(new[] { new Pick(1, Side.Home) }, 50);
+            run.PlaceTicket(new[] { new Pick(1, Side.Away) }, 50);
             run.LockRound();
             return run;
         }

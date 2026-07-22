@@ -74,4 +74,19 @@ public class SlateGeneratorTests
             anyDifferent |= a.Matchups[i].TrueHomeProb != b.Matchups[i].TrueHomeProb;
         Assert.True(anyDifferent);
     }
+
+    [Fact]
+    public void Slate_stream_latent_and_signal_draw_order_is_pinned()
+    {
+        Matchup m = NewSlate("SLATE-ORDER").Matchups[0];
+        Assert.Equal(0.35560803476255387, m.TrueHomeProb, 14);
+        Assert.Equal(1.3101548438617372, m.Latents.HomeGoalRate, 14);
+        Assert.Equal(1.6523662365479055, m.Latents.AwayGoalRate, 14);
+        Assert.Equal(4.9576744950551, m.Latents.HomeCornerRate, 14);
+        Assert.Equal(6.252615090348998, m.Latents.AwayCornerRate, 14);
+        Assert.Equal(2.1417705650414263, m.Latents.HomeCardRate, 14);
+        Assert.Equal(1.9639218654324382, m.Latents.AwayCardRate, 14);
+        Assert.Equal(1.3175929766032495, m.HomeStats.GoalsFor, 14);
+        Assert.Equal(6.224231498616765, m.AwayStats.Corners, 14);
+    }
 }

@@ -36,14 +36,14 @@ public class SweatSessionTests
     [Fact]
     public void Later_legs_read_pending_while_an_earlier_leg_is_mid_path()
     {
-        var (_, ticket, session) = Lock(Picks((0, Side.Away), (2, Side.Away))); // both win
+        var (_, ticket, session) = Lock(Picks((0, Side.Away), (2, Side.Away))); // first wins, second loses
 
         Assert.True(session.MoveNext(out _)); // first beat of leg 0
         Assert.Equal(LegState.Pending, session.RevealedLegState(0));
         Assert.Equal(LegState.Pending, session.RevealedLegState(1));
 
         // Engine truth for leg 1 is already decided at lock, but the session must not leak it.
-        Assert.Equal(LegState.Won, ticket.Legs[1].State);
+        Assert.Equal(LegState.Lost, ticket.Legs[1].State);
         Assert.Equal(LegState.Pending, session.RevealedLegState(1));
 
         // Drain leg 0 to its LegFinal: leg 0 becomes revealed Won, leg 1 stays pending.

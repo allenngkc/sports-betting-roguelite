@@ -121,13 +121,29 @@ namespace SBR.Game
         /// (false = the chalked-off VAR-disallow variant — plays in full, never scores).</summary>
         public readonly struct StagedGoal
         {
+            /// <summary>Money direction: does this goal move toward the PICKED OUTCOME? Drives
+            /// the GoalFor/GoalAgainst template and hope/dread. For an Under/No bettor a goal
+            /// is always dread, whichever team scores (Sol, F_0.4.0 P3 review).</summary>
             public readonly bool ForPicked;
+            /// <summary>Which SIDE scores (presentation anchor): the counter this goal moves and
+            /// the team the stage animates. Equals ForPicked on moneyline legs, where the pick
+            /// IS a team; market legs decouple the two.</summary>
+            public readonly bool ScoredByPicked;
             public readonly bool Commits;
+            /// <summary>Endpoint reconciliation may reveal several baked goals in one
+            /// stoppage-time playback so the 60–90s sweat law does not turn a rare blowout
+            /// into an unbounded scene sequence.</summary>
+            public readonly int Amount;
 
-            public StagedGoal(bool forPicked, bool commits)
+            public StagedGoal(bool forPicked, bool commits, int amount = 1)
+                : this(forPicked, forPicked, commits, amount) { }
+
+            public StagedGoal(bool forPicked, bool scoredByPicked, bool commits, int amount)
             {
                 ForPicked = forPicked;
+                ScoredByPicked = scoredByPicked;
                 Commits = commits;
+                Amount = Math.Max(0, amount);
             }
         }
 
@@ -153,6 +169,49 @@ namespace SBR.Game
         /// <summary>Below this live prob the scoreboard must show the opponent ahead.</summary>
         public double ReconcileLowBand { get; set; } = 0.30;
 
+        private bool _hasEndpoint;
+        private int _targetPicked;
+        private int _targetOpponent;
+
+        /// <summary>How goals relate to the picked outcome (Sol, F_0.4.0 P3 review):
+        /// 0 = moneyline (a picked-team goal helps); +1 = goals help the pick (Over, BTTS Yes);
+        /// −1 = goals hurt the pick (Under, BTTS No).</summary>
+        private int _goalSense;
+
+        /// <summary>Whether this ledger has been bound to the locked match stat line.</summary>
+        public bool HasEndpoint => _hasEndpoint;
+        public int TargetPicked => _targetPicked;
+        public int TargetOpponent => _targetOpponent;
+
+        /// <summary>Binds the presentation ledger to the locked score endpoint. Non-moneyline
+        /// markets use the home side as their presentation anchor; the market itself, not a
+        /// phantom team pick, remains the source of direction and grading.</summary>
+        public void ConfigureEndpoint(MatchStatLine statLine, bool pickedHome)
+        {
+            if (statLine == null) throw new ArgumentNullException(nameof(statLine));
+            _hasEndpoint = true;
+            _goalSense = 0; // moneyline unless the Leg overload widens it
+            _targetPicked = pickedHome ? statLine.HomeGoals : statLine.AwayGoals;
+            _targetOpponent = pickedHome ? statLine.AwayGoals : statLine.HomeGoals;
+            ResetForLeg();
+        }
+
+        /// <summary>Convenience binding for a ticket leg. The locked stat line is read-only
+        /// presentation input; no engine cursor or RNG is touched.</summary>
+        public void ConfigureEndpoint(Leg leg)
+        {
+            if (leg == null) throw new ArgumentNullException(nameof(leg));
+            ConfigureEndpoint(leg.Matchup.StatLine,
+                leg.Selection.Kind != MarketKind.Moneyline || leg.Selection.Choice == MarketChoice.Home);
+            // Goal sense binds only where GOALS are the market. Corners/cards legs keep the
+            // neutral home-anchored goal decoration — their market coupling lives in the
+            // CountLedger, not here.
+            _goalSense = leg.Selection.Kind != MarketKind.TotalGoals
+                    && leg.Selection.Kind != MarketKind.BothTeamsToScore ? 0
+                : leg.Selection.Choice == MarketChoice.Over || leg.Selection.Choice == MarketChoice.Yes ? 1
+                : -1;
+        }
+
         /// <summary>Attribution + clamp for a non-final beat. Null = this beat stages no goal.
         ///
         /// Two goal sources (playtest #14 amendment — "the bar and the board must agree"):
@@ -169,10 +228,32 @@ namespace SBR.Game
         public StagedGoal? StageBeatGoal(DramaEventType type, bool up, double delta, double probAfter)
         {
             bool typeGoal = type == DramaEventType.Score || type == DramaEventType.BigPlay;
+
+            // Market goal sense (Sol, F_0.4.0 P3): on a totals/BTTS leg a goal's money
+            // direction is fixed by the SELECTION, not by which team scores. A goal can only
+            // stage on a beat whose direction matches that sense (an improving Under beat can
+            // never show a committing goal), it goes to whichever side still has baked goals
+            // remaining, and the ML prob↔lead reconciliation below is meaningless here — the
+            // live prob tracks the TOTAL against the line, not a lead — so market legs skip it.
+            if (_goalSense != 0)
+            {
+                if (!typeGoal) return null;
+                bool goalHelps = _goalSense > 0;
+                if (up != goalHelps) return null;
+                int remPicked = _targetPicked - Picked;
+                int remOpponent = _targetOpponent - Opponent;
+                if (remPicked <= 0 && remOpponent <= 0)
+                    return new StagedGoal(goalHelps, scoredByPicked: true, commits: false, amount: 1);
+                bool scoredByPicked = remPicked >= remOpponent;
+                return new StagedGoal(goalHelps, scoredByPicked, commits: true, amount: 1);
+            }
+
             if (typeGoal)
             {
                 // Type goals keep the original direction rule (ties up — EventText's law);
                 // their |delta| ≥ 0.07 means they are never actually flat.
+                if (_hasEndpoint && ((up && Picked >= _targetPicked) || (!up && Opponent >= _targetOpponent)))
+                    return new StagedGoal(forPicked: up, commits: false);
                 int typeLeadAfter = up ? Picked + 1 - Opponent : Opponent + 1 - Picked;
                 return new StagedGoal(forPicked: up, commits: typeLeadAfter <= MaxLiveLead);
             }
@@ -195,6 +276,9 @@ namespace SBR.Game
             if (!reconcileUp && !reconcileDown) return null;
 
             bool forPicked = reconcileUp;
+            if (_hasEndpoint && ((forPicked && Picked >= _targetPicked)
+                || (!forPicked && Opponent >= _targetOpponent)))
+                return new StagedGoal(forPicked, commits: false);
             int leadAfter = forPicked ? Picked + 1 - Opponent : Opponent + 1 - Picked;
             return new StagedGoal(forPicked, commits: leadAfter <= MaxLiveLead);
         }
@@ -204,9 +288,19 @@ namespace SBR.Game
         public void CompleteGoal(StagedGoal goal)
         {
             if (!goal.Commits) return;
-            if (goal.ForPicked) Picked++;
-            else Opponent++;
-            CommittedGoals++;
+            int amount = Math.Max(0, goal.Amount);
+            if (goal.ScoredByPicked)
+            {
+                int applied = _hasEndpoint ? Math.Min(amount, Math.Max(0, _targetPicked - Picked)) : amount;
+                Picked += applied;
+                CommittedGoals += applied;
+            }
+            else
+            {
+                int applied = _hasEndpoint ? Math.Min(amount, Math.Max(0, _targetOpponent - Opponent)) : amount;
+                Opponent += applied;
+                CommittedGoals += applied;
+            }
         }
 
         /// <summary>The stoppage-time staging order for a LegFinal, from the FINAL ticket-local
@@ -215,6 +309,17 @@ namespace SBR.Game
         public FinalPlan PlanFinal(LegGrade grade)
         {
             var goals = new System.Collections.Generic.List<StagedGoal>(3);
+            if (_hasEndpoint)
+            {
+                // The locked stat line is the endpoint authority. The normal-time clamp keeps
+                // the story legible; the final sequence is allowed to reveal the remaining
+                // baked goals so the score converges exactly, even for a real blowout.
+                if (Picked < _targetPicked)
+                    goals.Add(new StagedGoal(true, true, _targetPicked - Picked));
+                if (Opponent < _targetOpponent)
+                    goals.Add(new StagedGoal(false, true, _targetOpponent - Opponent));
+                return new FinalPlan(grade, goals.ToArray());
+            }
             int p = Picked, o = Opponent;
             switch (grade)
             {
@@ -243,6 +348,173 @@ namespace SBR.Game
             Picked = 0;
             Opponent = 0;
             CommittedGoals = 0;
+        }
+    }
+
+    /// <summary>
+    /// A deterministic, presentation-only count ledger for corners or cards. It plans the
+    /// home/away batched deltas before playback starts, then mutates only at a scene payoff.
+    /// Each plan is monotone, every delta is non-negative, and the plan sums exactly to the
+    /// locked stat-line endpoint.
+    /// </summary>
+    public sealed class CountLedger
+    {
+        public readonly struct StagedCount
+        {
+            public readonly int HomeDelta;
+            public readonly int AwayDelta;
+            public readonly bool ForPicked;
+            public int TotalDelta => HomeDelta + AwayDelta;
+
+            public StagedCount(int homeDelta, int awayDelta, bool forPicked)
+            {
+                HomeDelta = homeDelta;
+                AwayDelta = awayDelta;
+                ForPicked = forPicked;
+            }
+        }
+
+        public readonly struct FinalPlan
+        {
+            public readonly StagedCount[] Counts;
+
+            public FinalPlan(StagedCount[] counts) => Counts = counts ?? Array.Empty<StagedCount>();
+        }
+
+        private readonly List<int> _homeDeltas = new List<int>();
+        private readonly List<int> _awayDeltas = new List<int>();
+        private int _nextBeat;
+        private int _targetHome;
+        private int _targetAway;
+
+        public int TargetHome => _targetHome;
+        public int TargetAway => _targetAway;
+        public int TargetTotal => _targetHome + _targetAway;
+        public int Home { get; private set; }
+        public int Away { get; private set; }
+        public int Total => Home + Away;
+        public int ConsumedBeats => _nextBeat;
+        public int MaxPerBeatDelta
+        {
+            get
+            {
+                int max = 0;
+                for (int i = 0; i < _homeDeltas.Count; i++)
+                    max = Math.Max(max, _homeDeltas[i] + _awayDeltas[i]);
+                return max;
+            }
+        }
+        public IReadOnlyList<int> HomeDeltas => _homeDeltas;
+        public IReadOnlyList<int> AwayDeltas => _awayDeltas;
+        public IReadOnlyList<int> PlannedDeltas
+        {
+            get
+            {
+                var total = new int[_homeDeltas.Count];
+                for (int i = 0; i < total.Length; i++) total[i] = _homeDeltas[i] + _awayDeltas[i];
+                return total;
+            }
+        }
+
+        public CountLedger() { }
+
+        public CountLedger(int targetHome, int targetAway, int beatCount)
+        {
+            ConfigureEndpoint(targetHome, targetAway, beatCount);
+        }
+
+        public void ConfigureEndpoint(MatchStatLine statLine, MarketKind kind, int beatCount)
+        {
+            if (statLine == null) throw new ArgumentNullException(nameof(statLine));
+            if (kind == MarketKind.TotalCorners)
+                ConfigureEndpoint(statLine.HomeCorners, statLine.AwayCorners, beatCount);
+            else if (kind == MarketKind.TotalCards)
+                ConfigureEndpoint(statLine.HomeCards, statLine.AwayCards, beatCount);
+            else
+                throw new ArgumentException("CountLedger supports corners or cards only", nameof(kind));
+        }
+
+        public void ConfigureEndpoint(int targetHome, int targetAway, int beatCount)
+        {
+            if (targetHome < 0 || targetAway < 0) throw new ArgumentOutOfRangeException(nameof(targetHome));
+            _targetHome = targetHome;
+            _targetAway = targetAway;
+            PlanForBeats(beatCount);
+            ResetForLeg();
+        }
+
+        /// <summary>Creates the complete batched schedule. Remainders are spread across the
+        /// earliest beats so partial sums are monotone and the final beat remains bounded.</summary>
+        public void PlanForBeats(int beatCount)
+        {
+            beatCount = Math.Max(1, beatCount);
+            _homeDeltas.Clear();
+            _awayDeltas.Clear();
+            Distribute(_targetHome, beatCount, _homeDeltas);
+            Distribute(_targetAway, beatCount, _awayDeltas);
+            _nextBeat = 0;
+        }
+
+        public StagedCount StageBeat(bool forPicked)
+        {
+            if (_nextBeat >= _homeDeltas.Count)
+                return new StagedCount(0, 0, forPicked);
+            int index = _nextBeat;
+            _nextBeat++;
+            return new StagedCount(_homeDeltas[index], _awayDeltas[index], forPicked);
+        }
+
+        public void CompleteCount(StagedCount count)
+        {
+            Home = Math.Min(_targetHome, Home + Math.Max(0, count.HomeDelta));
+            Away = Math.Min(_targetAway, Away + Math.Max(0, count.AwayDelta));
+        }
+
+        /// <summary>Returns the remaining planned beats. In normal playback this is exactly the
+        /// final scheduled batch; returning all remaining entries also keeps forced-test usage
+        /// bounded when a caller jumps directly to the whistle.</summary>
+        public FinalPlan PlanFinal(bool forPicked)
+        {
+            var remaining = new List<StagedCount>();
+            while (_nextBeat < _homeDeltas.Count)
+            {
+                // Zero batches never earn a scene — nothing happened (Sol, F_0.4.0 P3 r2).
+                if (_homeDeltas[_nextBeat] + _awayDeltas[_nextBeat] > 0)
+                    remaining.Add(new StagedCount(_homeDeltas[_nextBeat], _awayDeltas[_nextBeat], forPicked));
+                _nextBeat++;
+            }
+            if (remaining.Count == 0 && (Home < _targetHome || Away < _targetAway))
+            {
+                // A forced jump to the whistle must still obey the largest pre-planned
+                // per-beat batch. Never hide an arbitrary reconciliation dump in LegFinal.
+                int max = Math.Max(1, MaxPerBeatDelta);
+                int home = Math.Max(0, _targetHome - Home);
+                int away = Math.Max(0, _targetAway - Away);
+                while (home > 0 || away > 0)
+                {
+                    int homeBatch = Math.Min(home, max);
+                    int awayBatch = Math.Min(away, max - homeBatch);
+                    if (homeBatch == 0 && awayBatch == 0) awayBatch = Math.Min(away, max);
+                    remaining.Add(new StagedCount(homeBatch, awayBatch, forPicked));
+                    home -= homeBatch;
+                    away -= awayBatch;
+                }
+            }
+            return new FinalPlan(remaining.ToArray());
+        }
+
+        public void ResetForLeg()
+        {
+            Home = 0;
+            Away = 0;
+            _nextBeat = 0;
+        }
+
+        private static void Distribute(int target, int beats, List<int> output)
+        {
+            int quotient = target / beats;
+            int remainder = target % beats;
+            for (int i = 0; i < beats; i++) output.Add(quotient + (i < remainder ? 1 : 0));
         }
     }
 

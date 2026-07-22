@@ -48,7 +48,7 @@ public sealed class NaiveStrategy : IStrategy
 
         var picks = new List<Pick>(Legs);
         for (int i = 0; i < Legs; i++)
-            picks.Add(new Pick(favs[i].matchup, favs[i].side));
+            picks.Add(new Pick(favs[i].matchup, MarketSelection.Moneyline(favs[i].side)));
 
         run.PlaceTicket(picks, stake);
     }

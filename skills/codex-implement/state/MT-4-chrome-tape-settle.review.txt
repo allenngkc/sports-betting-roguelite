@@ -1,0 +1,18 @@
+Implemented M-T4 runtime changes.
+
+Files changed:
+
+- [MomentumTape.cs](C:/Users/Allen/Documents/CodingProjects/sports-betting-roguelite/unity/SBR/Assets/SBR/Runtime/MomentumTape.cs) — added causal beat tape and resolution caps.
+- [SweatPresentationModel.cs](C:/Users/Allen/Documents/CodingProjects/sports-betting-roguelite/unity/SBR/Assets/SBR/Runtime/SweatPresentationModel.cs) — added signed deltas and magnitude bands.
+- [TvSweatScreen.cs](C:/Users/Allen/Documents/CodingProjects/sports-betting-roguelite/unity/SBR/Assets/SBR/Runtime/TvSweatScreen.cs) — added counter odometer/taunts, bar pulses, confetti payout tally, and consolation beats.
+
+Deviations: plan/docs were not modified per the explicit scope restriction.
+
+Validation:
+
+- Engine build: passed.
+- Engine tests: 146/146 passed.
+- Unity compilation: blocked by Unity Package Manager IPC/project lock before compilation.
+- No lint tooling configured.
+
+IMPLEMENTATION_PARTIAL

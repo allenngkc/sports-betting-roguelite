@@ -9,7 +9,9 @@ namespace SBR.Game
     /// <summary>SureThing's card-book app. It is a renderer over BetslipModel, RunDirector, and the TV view.</summary>
     public sealed class SportsbookApp
     {
-        public enum Tab { Lobby, MyBets, Rewards }
+        public enum Tab { Lobby, Detail, MyBets, Rewards }
+
+        private enum DetailTab { Goals, Corners, Cards }
 
         private readonly RectTransform _root;
         private readonly Font _font;
@@ -19,6 +21,8 @@ namespace SBR.Game
         private readonly Action _home;
         private bool _lockArmed;
         private string _shopError = string.Empty;
+        private int _detailMatchup = -1;
+        private DetailTab _detailTab = DetailTab.Goals;
 
         public SportsbookApp(RectTransform root, Font font, LaptopScreen host, Action invalidate,
             Action<Tab> selectTab, Action home)
@@ -38,6 +42,7 @@ namespace SBR.Game
                 _root.sizeDelta, LaptopOs.Ink);
             BuildChrome(run, tab, boardFrozen);
             if (tab == Tab.Lobby) BuildLobby(run, slip, boardFrozen);
+            else if (tab == Tab.Detail) BuildDetail(run, slip, boardFrozen);
             else if (tab == Tab.MyBets) BuildMyBets(_host.tv != null ? _host.tv.RevealedView : null, boardFrozen);
             else BuildRewards(run);
             BuildTaskbar();
@@ -134,21 +139,121 @@ namespace SBR.Game
                 new Vector2(-12f, -10f), new Vector2(110f, 46f), 11, TextAnchor.UpperRight, LaptopOs.Muted,
                 $"{matchup.Away.Record}\n{matchup.Home.Record}", _font);
 
-            bool awaySelected = slip.SideOn(matchup.Index) == Side.Away;
-            bool homeSelected = slip.SideOn(matchup.Index) == Side.Home;
+            bool awaySelected = slip.SelectionOn(matchup.Index) == MarketSelection.Moneyline(Side.Away);
+            bool homeSelected = slip.SelectionOn(matchup.Index) == MarketSelection.Moneyline(Side.Home);
             LaptopUi.MakeButton(card, "AwayOdds", $"AWAY  {OddsFormat.American(matchup.AwayOdds)}",
                 new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(12f, 30f), new Vector2(136f, 28f), 11,
                 awaySelected ? LaptopOs.Accent : LaptopOs.SurfaceRaised,
                 frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
-                frozen ? null : () => { slip.Toggle(matchup.Index, Side.Away); _invalidate(); }, _font, !frozen);
+                frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Away)); _invalidate(); }, _font, !frozen);
             LaptopUi.MakeButton(card, "HomeOdds", $"HOME  {OddsFormat.American(matchup.HomeOdds)}",
                 new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(158f, 30f), new Vector2(136f, 28f), 11,
                 homeSelected ? LaptopOs.Accent : LaptopOs.SurfaceRaised,
                 frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
-                frozen ? null : () => { slip.Toggle(matchup.Index, Side.Home); _invalidate(); }, _font, !frozen);
+                frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Home)); _invalidate(); }, _font, !frozen);
+            LaptopUi.MakeButton(card, "Details", "DETAILS", new Vector2(1f, 0f), new Vector2(1f, 0f),
+                new Vector2(-12f, 7f), new Vector2(104f, 18f), 9, LaptopOs.SurfaceRaised, LaptopOs.Accent,
+                () => OpenDetail(matchup.Index), _font);
             LaptopUi.MakeText(card, "Soon", new Vector2(0f, 0f), new Vector2(0f, 0f),
-                new Vector2(14f, 7f), new Vector2(285f, 18f), 9, TextAnchor.LowerLeft, LaptopUi.Dim(LaptopOs.Muted),
-                "More markets — corners · next goal · props soon", _font);
+                new Vector2(14f, 7f), new Vector2(170f, 18f), 9, TextAnchor.LowerLeft, LaptopUi.Dim(LaptopOs.Muted),
+                "goals · corners · cards · BTTS", _font);
+        }
+
+        private void OpenDetail(int matchupIndex)
+        {
+            _detailMatchup = matchupIndex;
+            _detailTab = DetailTab.Goals;
+            _selectTab(Tab.Detail);
+        }
+
+        private void BuildDetail(Run run, BetslipModel slip, bool boardFrozen)
+        {
+            if (_detailMatchup < 0 || _detailMatchup >= run.CurrentSlate.Matchups.Count)
+            {
+                _selectTab(Tab.Lobby);
+                return;
+            }
+
+            Matchup matchup = run.CurrentSlate.Matchups[_detailMatchup];
+            RectTransform panel = LaptopUi.MakePanel(_root, "Detail", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(18f, -114f), new Vector2(_root.sizeDelta.x - 36f, _root.sizeDelta.y - 178f), LaptopOs.Surface);
+            LaptopUi.MakeButton(panel, "Back", "← BOARD", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(14f, -10f), new Vector2(104f, 28f), 10, LaptopOs.SurfaceRaised, LaptopOs.Accent,
+                () => { _detailMatchup = -1; _selectTab(Tab.Lobby); }, _font);
+            LaptopUi.MakeText(panel, "Header", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(132f, -8f), new Vector2(620f, 28f), 18, TextAnchor.UpperLeft, LaptopOs.White,
+                $"{LaptopUi.TeamShort(matchup.Away)}  @  {LaptopUi.TeamShort(matchup.Home)}", _font);
+            LaptopUi.MakeText(panel, "Records", new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-20f, -12f), new Vector2(240f, 22f), 11, TextAnchor.UpperRight, LaptopOs.Muted,
+                $"{matchup.Away.Record}   ·   {matchup.Home.Record}", _font);
+
+            LaptopUi.MakeText(panel, "Stats", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(18f, -48f), new Vector2(850f, 24f), 11, TextAnchor.UpperLeft, LaptopOs.Muted,
+                $"FORM  {matchup.Away.Name}: GF {matchup.AwayStats.GoalsFor:0.0}  COR {matchup.AwayStats.Corners:0.0}  CRD {matchup.AwayStats.Cards:0.0}    " +
+                $"{matchup.Home.Name}: GF {matchup.HomeStats.GoalsFor:0.0}  COR {matchup.HomeStats.Corners:0.0}  CRD {matchup.HomeStats.Cards:0.0}", _font);
+
+            MakeDetailTab(panel, "GOALS", DetailTab.Goals, 18f);
+            MakeDetailTab(panel, "CORNERS", DetailTab.Corners, 126f);
+            MakeDetailTab(panel, "CARDS", DetailTab.Cards, 236f);
+
+            if (_detailTab == DetailTab.Goals)
+            {
+                BuildMarketLines(panel, run, slip, matchup, run.Config.GoalLines, MarketKind.TotalGoals, "GOALS", boardFrozen, -122f);
+                // BTTS lives on the Goals tab, clear of the full ladder (title 28 + rows at 38 each).
+                BuildBothTeamsScore(panel, slip, matchup, boardFrozen,
+                    -122f - 28f - run.Config.GoalLines.Length * 38f - 10f);
+            }
+            else if (_detailTab == DetailTab.Corners)
+                BuildMarketLines(panel, run, slip, matchup, run.Config.CornerLines, MarketKind.TotalCorners, "CORNERS", boardFrozen, -122f);
+            else
+                BuildMarketLines(panel, run, slip, matchup, run.Config.CardLines, MarketKind.TotalCards, "CARDS", boardFrozen, -122f);
+        }
+
+        private void MakeDetailTab(RectTransform parent, string label, DetailTab tab, float x)
+        {
+            bool active = _detailTab == tab;
+            LaptopUi.MakeButton(parent, "DetailTab" + label, label, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(x, -78f), new Vector2(label == "CORNERS" ? 102f : 94f, 28f), 10,
+                active ? LaptopOs.Accent : LaptopOs.SurfaceRaised, LaptopOs.White,
+                () => { _detailTab = tab; _invalidate(); }, _font);
+        }
+
+        private void BuildMarketLines(RectTransform parent, Run run, BetslipModel slip, Matchup matchup,
+            double[] lines, MarketKind kind, string title, bool frozen, float y)
+        {
+            LaptopUi.MakeText(parent, "MarketTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(18f, y), new Vector2(340f, 22f), 12, TextAnchor.UpperLeft, LaptopOs.Accent,
+                $"{title} TOTALS", _font);
+            for (int i = 0; i < lines.Length; i++)
+            {
+                double line = lines[i];
+                MarketSelection over = new MarketSelection(kind, line, MarketChoice.Over);
+                MarketSelection under = new MarketSelection(kind, line, MarketChoice.Under);
+                float rowY = y - 28f - i * 38f;
+                MakeMarketButton(parent, slip, matchup, over, $"OVER {line:0.0}", 18f, rowY, frozen);
+                MakeMarketButton(parent, slip, matchup, under, $"UNDER {line:0.0}", 196f, rowY, frozen);
+            }
+        }
+
+        private void BuildBothTeamsScore(RectTransform parent, BetslipModel slip, Matchup matchup,
+            bool frozen, float y)
+        {
+            LaptopUi.MakeText(parent, "BttsTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(18f, y), new Vector2(340f, 22f), 12, TextAnchor.UpperLeft, LaptopOs.Accent,
+                "BOTH TEAMS TO SCORE", _font);
+            MakeMarketButton(parent, slip, matchup, MarketSelection.BothTeamsToScore(true), "YES", 18f, y - 28f, frozen);
+            MakeMarketButton(parent, slip, matchup, MarketSelection.BothTeamsToScore(false), "NO", 196f, y - 28f, frozen);
+        }
+
+        private void MakeMarketButton(RectTransform parent, BetslipModel slip, Matchup matchup,
+            MarketSelection selection, string label, float x, float y, bool frozen)
+        {
+            bool selected = slip.SelectionOn(matchup.Index) == selection;
+            LaptopUi.MakeButton(parent, "Market" + selection.Kind + selection.Choice + selection.Line.ToString(CultureInfo.InvariantCulture),
+                $"{label}  {OddsFormat.American(matchup.Odds(selection))}", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(x, y), new Vector2(164f, 30f), 11, selected ? LaptopOs.Accent : LaptopOs.SurfaceRaised,
+                frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
+                frozen ? null : () => { slip.Toggle(matchup.Index, selection); _invalidate(); }, _font, !frozen);
         }
 
         private void BuildSlip(Run run, BetslipModel slip, bool boardFrozen)
@@ -175,10 +280,9 @@ namespace SBR.Game
             {
                 Pick pick = slip.Picks[i];
                 Matchup matchup = run.CurrentSlate.Matchups[pick.MatchupIndex];
-                Team team = pick.Side == Side.Home ? matchup.Home : matchup.Away;
                 LaptopUi.MakeText(panel, "Leg" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(14f, y), new Vector2(238f, 24f), 12, TextAnchor.UpperLeft, LaptopOs.White,
-                    $"{i + 1}. {LaptopUi.TeamShort(team)}   {OddsFormat.American(matchup.Odds(pick.Side))}", _font);
+                    $"{i + 1}. {MatchModel.DisplayLabel(matchup, pick.Selection)}   {OddsFormat.American(matchup.Odds(pick.Selection))}", _font);
                 int matchupIndex = pick.MatchupIndex;
                 if (run.OwnsConsumable("profit_boost"))
                 {
@@ -338,13 +442,14 @@ namespace SBR.Game
             {
                 if (i > 0) legs += "   ·   ";
                 RevealedLeg leg = ticket.Legs[i];
+                string label = string.IsNullOrEmpty(leg.MarketLabel) ? leg.TeamName : leg.MarketLabel;
                 // Money colors only on money outcomes; unresolved legs wear their team color
                 // (live full, pending dimmed) — the same law as the TV's slip strip.
-                legs += leg.State == RevealedLegState.Won ? $"<color=#3CE873>{leg.TeamName} {leg.AmericanOdds} W</color>"
-                    : leg.State == RevealedLegState.Lost ? $"<color=#FF4038>{leg.TeamName} {leg.AmericanOdds} L</color>"
-                    : leg.State == RevealedLegState.Voided ? $"<color=#9EDCF6>{leg.TeamName} {leg.AmericanOdds} VOID</color>"
-                    : leg.State == RevealedLegState.Live ? $"<color=#{leg.TeamColor:X6}>{leg.TeamName} {leg.AmericanOdds} LIVE</color>"
-                    : $"<color=#{leg.TeamColor:X6}99>{leg.TeamName} {leg.AmericanOdds}</color>";
+                legs += leg.State == RevealedLegState.Won ? $"<color=#3CE873>{label} {leg.AmericanOdds} W</color>"
+                    : leg.State == RevealedLegState.Lost ? $"<color=#FF4038>{label} {leg.AmericanOdds} L</color>"
+                    : leg.State == RevealedLegState.Voided ? $"<color=#9EDCF6>{label} {leg.AmericanOdds} VOID</color>"
+                    : leg.State == RevealedLegState.Live ? $"<color=#{leg.TeamColor:X6}>{label} {leg.AmericanOdds} LIVE</color>"
+                    : $"<color=#{leg.TeamColor:X6}99>{label} {leg.AmericanOdds}</color>";
             }
             LaptopUi.MakeText(card, "Legs", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -40f), new Vector2(425f, 50f), 12, TextAnchor.UpperLeft, LaptopOs.White, legs, _font);

@@ -1,0 +1,17 @@
+Implemented the plan.
+
+Files changed:
+
+- [LaptopScreen.cs](/C:/Users/Allen/Documents/CodingProjects/sports-betting-roguelite/unity/SBR/Assets/SBR/Runtime/LaptopScreen.cs): OS host and preserved engine seams.
+- [LaptopOs.cs](/C:/Users/Allen/Documents/CodingProjects/sports-betting-roguelite/unity/SBR/Assets/SBR/Runtime/LaptopOs.cs): desktop, app switching, taskbar, wallpaper, verdicts.
+- [SportsbookApp.cs](/C:/Users/Allen/Documents/CodingProjects/sports-betting-roguelite/unity/SBR/Assets/SBR/Runtime/SportsbookApp.cs): SureThing lobby, mirror, Rewards, and Old Slips.
+- [TvSweatScreen.cs](/C:/Users/Allen/Documents/CodingProjects/sports-betting-roguelite/unity/SBR/Assets/SBR/Runtime/TvSweatScreen.cs): TV-owned read-only `RevealedView`.
+- [GrayboxRoomBuilder.cs](/C:/Users/Allen/Documents/CodingProjects/sports-betting-roguelite/unity/SBR/Assets/SBR/Editor/GrayboxRoomBuilder.cs): TV wiring.
+- [ARCHI.md](/C:/Users/Allen/Documents/CodingProjects/sports-betting-roguelite/docs/ARCHI.md): curated architecture update.
+- Plan checkbox marked complete.
+
+Deviations: cashed-out Old Slips show `cash-out` instead of an amount because `Ticket` exposes no realized payout and engine changes were out of scope.
+
+`git diff --check` passed. Unity gates and slnx build were not run per instructions.
+
+IMPLEMENTATION_COMPLETE

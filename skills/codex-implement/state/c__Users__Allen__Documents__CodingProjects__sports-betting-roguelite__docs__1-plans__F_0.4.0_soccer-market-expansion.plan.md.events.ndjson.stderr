@@ -1,0 +1,1563 @@
+Reading additional input from stdin...
+2026-07-21T03:43:26.574378Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.6 seconds
+Output:
+using System;
+using System.Collections.Generic;
+using SBR.Engine;
+
+namespace SBR.Sim;
+
+/// <summary>
+/// NAIVE — the PRD S3 baseline: "bet favorites, never cash out, no relics" (target: median death round 3–4).
+///
+/// Policy, every round:
+///   • One 2-leg parlay on the two biggest favorites. The bot cannot see true probs, so it reads the
+///     ODDS: the two shortest-priced sides on the slate (each matchup's favorite is its shorter side, so
+///     the two globally shortest sides always land on distinct matchups — a legal ticket).
+///   • Stake = 25% of the current bank, floored to whole dollars, never below MinStake; skip the round's
+///     bet entirely if the bank is under MinStake (per the OPEN-QUESTIONS playtest note — a bank fraction,
+///     NOT the old flat $50 cap that made a naive bettor mathematically unable to clear round 1).
+///   • Never cashes out (ControlsSweat = false → the harness fast-forwards the sweat).
+///   • Buys nothing.
+///
+/// HONESTY: reads only Matchup.Odds/HomeOdds/AwayOdds (public book prices). Never touches true probs.
+/// </summary>
+public sealed class NaiveStrategy : IStrategy
+{
+    public string Name => "naive";
+    public bool ControlsSweat => false;
+
+    private const double StakeFraction = 0.25;
+    private const int Legs = 2;
+
+    public void Bet(Run run, BotState state, Pcg32 rng)
+    {
+        if (run.Bank < run.Config.MinStake) return;
+
+        double stake = Math.Max(run.Config.MinStake, Math.Floor(StakeFraction * run.Bank));
+        if (stake > run.Bank) return; // defensive; StakeFraction < 1 keeps this from tripping
+
+        IReadOnlyList<Matchup> slate = run.CurrentSlate.Matchups;
+        if (slate.Count < Legs) return;
+
+        // Each matchup's favorite (shorter-priced side) and its odds.
+        var favs = new List<(int matchup, Side side, double odds)>(slate.Count);
+        foreach (Matchup m in slate)
+        {
+            Side fav = m.HomeOdds <= m.AwayOdds ? Side.Home : Side.Away;
+            favs.Add((m.Index, fav, m.Odds(fav)));
+        }
+        favs.Sort((a, b) => a.odds.CompareTo(b.odds)); // shortest-priced first
+
+        var picks = new List<Pick>(Legs);
+        for (int i = 0; i < Legs; i++)
+            picks.Add(new Pick(favs[i].matchup, favs[i].side));
+
+        run.PlaceTicket(picks, stake);
+    }
+
+    // Never called (ControlsSweat is false), but the interface requires it.
+    public bool ShouldCashOut(Run run, Ticket ticket, SweatSession session, DramaEvent evt,
+        double offer, double bankNow, double target, BotState state, Pcg32 rng) => false;
+
+    public void Shop(Run run, BotState state, Pcg32 rng) { /* buys nothing */ }
+}
+using System;
+using System.Collections.Generic;
+using SBR.Engine;
+
+namespace SBR.Sim;
+
+/// <summary>
+/// RANDOM — a noise floor between naive and skilled: legal but thoughtless play.
+///
+/// Policy:
+///   • Betting: 1–3 tickets, each 1–4 legs on random distinct matchups and random sides, each staked a
+///     random 10–50% of the (shrinking) bank, floored to whole dollars and never below MinStake.
+///   • Sweat: steps the sessions and cashes out with 5% probability per event whenever an offer exists.
+///   • Shop: half the time, buys one random affordable offer.
+///
+/// HONESTY: picks sides and matchups at random — it never consults probabilities at all, true or implied.
+/// </summary>
+public sealed class RandomStrategy : IStrategy
+{
+    public string Name => "random";
+    public bool ControlsSweat => true;
+
+    private const double CashOutChancePerEvent = 0.05;
+    private const double ShopBuyChance = 0.5;
+
+    public void Bet(Run run, BotState state, Pcg32 rng)
+    {
+        int slateCount = run.CurrentSlate.Matchups.Count;
+        int tickets = rng.NextInt(1, Math.Min(run.Config.MaxTicketsPerRound, 3) + 1); // 1..3
+
+        for (int t = 0; t < tickets; t++)
+        {
+            if (run.Bank < run.Config.MinStake) break;
+
+            int maxLegs = Math.Min(4, Math.Min(run.Config.MaxLegs, slateCount));
+            int legs = rng.NextInt(1, maxLegs + 1); // 1..4
+
+            var picks = new List<Pick>(legs);
+            foreach (int m in DistinctMatchups(rng, slateCount, legs))
+                picks.Add(new Pick(m, rng.NextDouble() < 0.5 ? Side.Home : Side.Away));
+
+            double frac = 0.1 + 0.4 * rng.NextDouble(); // 10..50%
+            double stake = Math.Max(run.Config.MinStake, Math.Floor(frac * run.Bank));
+            if (stake > run.Bank) break;
+
+            run.PlaceTicket(picks, stake);
+        }
+    }
+
+    public bool ShouldCashOut(Run run, Ticket ticket, SweatSession session, DramaEvent evt,
+        double offer, double bankNow, double target, BotState state, Pcg32 rng)
+        => rng.NextDouble() < CashOutChancePerEvent;
+
+    public void Shop(Run run, BotState state, Pcg32 rng)
+    {
+        // Codex r2 #13 fix: affordability is COMPS (the shop currency), never cash — and the
+        // random shopper picks legally across BOTH dealt rows within their separate slot limits.
+        if (rng.NextDouble() >= ShopBuyChance) return;
+
+        var passives = new List<int>();
+        if (run.OwnedRelics.Count < run.Config.RelicSlots)
+            for (int i = 0; i < run.ShopOffers.Count; i++)
+                if (run.ShopOffers[i].Price <= run.Comps) passives.Add(i);
+
+        var consumables = new List<int>();
+        if (run.OwnedConsumables.Count < run.Config.ConsumableSlots)
+            for (int i = 0; i < run.ConsumableOffers.Count; i++)
+                if (run.ConsumableOffers[i].Price <= run.Comps) consumables.Add(i);
+
+        int total = passives.Count + consumables.Count;
+        if (total == 0) return;
+
+        int pick = rng.NextInt(0, total);
+        if (pick < passives.Count) run.BuyRelic(passives[pick]);
+        else run.BuyConsumable(consumables[pick - passives.Count]);
+    }
+
+    // Partial Fisher-Yates: `count` distinct indices from [0, n).
+    private static IEnumerable<int> DistinctMatchups(Pcg32 rng, int n, int count)
+    {
+        var pool = new int[n];
+        for (int i = 0; i < n; i++) pool[i] = i;
+        for (int i = 0; i < count; i++)
+        {
+            int j = rng.NextInt(i, n);
+            (pool[i], pool[j]) = (pool[j], pool[i]);
+            yield return pool[i];
+        }
+    }
+}
+rg: sim/*.cs: IO error for operation on sim/*.cs: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+
+2026-07-21T03:46:43.256088Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 2.8 seconds
+Output:
+
+Build FAILED.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:01.37
+
+2026-07-21T03:46:47.737811Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 2.4 seconds
+Output:
+
+Build FAILED.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:01.33
+
+2026-07-21T03:46:53.057329Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 3.1 seconds
+Output:
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine\SlateGenerator.cs(63,66): error CS0103: The name 'Math' does not exist in the current context [C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine\SBR.Engine.csproj]
+
+Build FAILED.
+
+C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine\SlateGenerator.cs(63,66): error CS0103: The name 'Math' does not exist in the current context [C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine\SBR.Engine.csproj]
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:02.05
+
+2026-07-21T03:47:01.638583Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 3.7 seconds
+Output:
+
+Build FAILED.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.59
+
+2026-07-21T03:51:43.598758Z ERROR codex_core::tools::router: error=Exit code: 124
+Wall time: 245 seconds
+Output:
+command timed out after 245000 milliseconds
+Test run for C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\bin\Debug\net10.0\SBR.Engine.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+  Failed SBR.Engine.Tests.CharmExpansionTests.Don_doubles_the_win_suppresses_cash_out_and_counts_for_iron_hands [5 ms]
+  Error Message:
+   Assert.Equal() Failure: Values are not within 10 decimal places
+Expected: 1.04 (rounded from 1.04)
+Actual:   1 (rounded from 1)
+  Stack Trace:
+     at SBR.Engine.Tests.CharmExpansionTests.Don_doubles_the_win_suppresses_cash_out_and_counts_for_iron_hands() in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\CharmExpansionTests.cs:line 532
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  Failed SBR.Engine.Tests.ItemTests.Scar_persists_and_grows_when_the_carrier_busts_too [7 ms]
+  Error Message:
+   Assert.Equal() Failure: Values are not within 10 decimal places
+Expected: 10 (rounded from 10)
+Actual:   5 (rounded from 5)
+  Stack Trace:
+     at SBR.Engine.Tests.ItemTests.Scar_persists_and_grows_when_the_carrier_busts_too() in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\ItemTests.cs:line 122
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  Failed SBR.Engine.Tests.GoldenSeedTests.Golden_seed_settles_to_pinned_bank_and_phase [1 ms]
+  Error Message:
+   Assert.Equal() Failure: Values differ
+Expected: Won
+Actual:   Lost
+  Stack Trace:
+     at SBR.Engine.Tests.GoldenSeedTests.Golden_seed_settles_to_pinned_bank_and_phase() in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\GoldenSeedTests.cs:line 101
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  Failed SBR.Engine.Tests.SweatSessionTests.Later_legs_read_pending_while_an_earlier_leg_is_mid_path [8 ms]
+  Error Message:
+   Assert.Equal() Failure: Values differ
+Expected: Won
+Actual:   Lost
+  Stack Trace:
+     at SBR.Engine.Tests.SweatSessionTests.Later_legs_read_pending_while_an_earlier_leg_is_mid_path() in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\SweatSessionTests.cs:line 46
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  Failed SBR.Engine.Tests.RunSweatTests.Finish_sweat_settles_a_winning_ticket_and_a_losing_ticket [1 ms]
+  Error Message:
+   Assert.Equal() Failure: Values differ
+Expected: Won
+Actual:   Lost
+  Stack Trace:
+     at SBR.Engine.Tests.RunSweatTests.Finish_sweat_settles_a_winning_ticket_and_a_losing_ticket() in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\RunSweatTests.cs:line 84
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  Failed SBR.Engine.Tests.GoldenSeedTests.Golden_seed_event_stream_is_pinned [1 ms]
+  Error Message:
+   Assert.Equal() Failure: Values differ
+Expected: 18
+Actual:   14
+  Stack Trace:
+     at SBR.Engine.Tests.GoldenSeedTests.Golden_seed_event_stream_is_pinned() in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\GoldenSeedTests.cs:line 76
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  Failed SBR.Engine.Tests.ItemTests.Mulligan_slip_window_opens_on_a_dead_leg_and_playing_it_saves_the_ticket [2 ms]
+  Error Message:
+   Assert.Equal() Failure: Values differ
+Expected: Won
+Actual:   Lost
+  Stack Trace:
+     at SBR.Engine.Tests.ItemTests.Mulligan_slip_window_opens_on_a_dead_leg_and_playing_it_saves_the_ticket() in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\ItemTests.cs:line 169
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+
+Failed!  - Failed:     7, Passed:   119, Skipped:     0, Total:   126, Duration: 438 ms - SBR.Engine.Tests.dll (net10.0)
+[xUnit.net 00:00:01.00]     SBR.Engine.Tests.CharmExpansionTests.Don_doubles_the_win_suppresses_cash_out_and_counts_for_iron_hands [FAIL]
+[xUnit.net 00:00:01.01]     SBR.Engine.Tests.ItemTests.Scar_persists_and_grows_when_the_carrier_busts_too [FAIL]
+[xUnit.net 00:00:01.01]     SBR.Engine.Tests.GoldenSeedTests.Golden_seed_settles_to_pinned_bank_and_phase [FAIL]
+[xUnit.net 00:00:01.01]     SBR.Engine.Tests.SweatSessionTests.Later_legs_read_pending_while_an_earlier_leg_is_mid_path [FAIL]
+[xUnit.net 00:00:01.01]     SBR.Engine.Tests.RunSweatTests.Finish_sweat_settles_a_winning_ticket_and_a_losing_ticket [FAIL]
+[xUnit.net 00:00:01.01]     SBR.Engine.Tests.GoldenSeedTests.Golden_seed_event_stream_is_pinned [FAIL]
+[xUnit.net 00:00:01.01]     SBR.Engine.Tests.ItemTests.Mulligan_slip_window_opens_on_a_dead_leg_and_playing_it_saves_the_ticket [FAIL]
+The active test run was aborted. Reason: Test host process crashed
+Test Run Aborted.
+
+2026-07-21T03:53:43.846835Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 2.5 seconds
+Output:
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  SBR.Engine -> C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine\bin\Debug\netstandard2.1\SBR.Engine.dll
+  SBR.Engine.dll copied to C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine\..\unity\SBR\Assets\Plugins\SBR
+  SBR.Engine.Tests -> C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\bin\Debug\net10.0\SBR.Engine.Tests.dll
+Test run for C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\bin\Debug\net10.0\SBR.Engine.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+  Failed SBR.Engine.Tests.GoldenSeedTests.Golden_seed_settles_to_pinned_bank_and_phase [7 ms]
+  Error Message:
+   Assert.Equal() Failure: Values differ
+Expected: Won
+Actual:   Lost
+  Stack Trace:
+     at SBR.Engine.Tests.GoldenSeedTests.Golden_seed_settles_to_pinned_bank_and_phase() in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\GoldenSeedTests.cs:line 101
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed SBR.Engine.Tests.GoldenSeedTests.Golden_seed_event_stream_is_pinned [2 ms]
+  Error Message:
+   Assert.Equal() Failure: Values differ
+Expected: 18
+Actual:   14
+  Stack Trace:
+     at SBR.Engine.Tests.GoldenSeedTests.Golden_seed_event_stream_is_pinned() in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\GoldenSeedTests.cs:line 76
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+Failed!  - Failed:     2, Passed:     1, Skipped:     0, Total:     3, Duration: 55 ms - SBR.Engine.Tests.dll (net10.0)
+[xUnit.net 00:00:00.20]     SBR.Engine.Tests.GoldenSeedTests.Golden_seed_settles_to_pinned_bank_and_phase [FAIL]
+[xUnit.net 00:00:00.21]     SBR.Engine.Tests.GoldenSeedTests.Golden_seed_event_stream_is_pinned [FAIL]
+
+2026-07-21T03:57:22.093524Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\docs\ARCHI.md:
+│   ├── SlateGenerator.cs        #   Rounds' match slates: teams, records, true probs, offered odds
+2026-07-21T04:00:59.552072Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 152.1 seconds
+Output:
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  SBR.Engine -> C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine\bin\Debug\netstandard2.1\SBR.Engine.dll
+  SBR.Engine.dll copied to C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine\..\unity\SBR\Assets\Plugins\SBR
+  SBR.Engine.Tests -> C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\bin\Debug\net10.0\SBR.Engine.Tests.dll
+Test run for C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\bin\Debug\net10.0\SBR.Engine.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+  Failed SBR.Engine.Tests.SweatSessionTests.Later_legs_read_pending_while_an_earlier_leg_is_mid_path [8 ms]
+  Error Message:
+   Assert.Equal() Failure: Values differ
+Expected: Won
+Actual:   Lost
+  Stack Trace:
+     at SBR.Engine.Tests.SweatSessionTests.Later_legs_read_pending_while_an_earlier_leg_is_mid_path() in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\SweatSessionTests.cs:line 46
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed SBR.Engine.Tests.RunSweatTests.Finish_sweat_settles_a_winning_ticket_and_a_losing_ticket [1 ms]
+  Error Message:
+   Assert.Equal() Failure: Values differ
+Expected: Won
+Actual:   Lost
+  Stack Trace:
+     at SBR.Engine.Tests.RunSweatTests.Finish_sweat_settles_a_winning_ticket_and_a_losing_ticket() in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\RunSweatTests.cs:line 84
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed SBR.Engine.Tests.ItemTests.Scar_persists_and_grows_when_the_carrier_busts_too [12 ms]
+  Error Message:
+   Assert.Equal() Failure: Values are not within 10 decimal places
+Expected: 10 (rounded from 10)
+Actual:   5 (rounded from 5)
+  Stack Trace:
+     at SBR.Engine.Tests.ItemTests.Scar_persists_and_grows_when_the_carrier_busts_too() in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\ItemTests.cs:line 122
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed SBR.Engine.Tests.CharmExpansionTests.Don_doubles_the_win_suppresses_cash_out_and_counts_for_iron_hands [6 ms]
+  Error Message:
+   Assert.Equal() Failure: Values are not within 10 decimal places
+Expected: 1.04 (rounded from 1.04)
+Actual:   1 (rounded from 1)
+  Stack Trace:
+     at SBR.Engine.Tests.CharmExpansionTests.Don_doubles_the_win_suppresses_cash_out_and_counts_for_iron_hands() in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\CharmExpansionTests.cs:line 532
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Failed SBR.Engine.Tests.ItemTests.Mulligan_slip_window_opens_on_a_dead_leg_and_playing_it_saves_the_ticket [2 ms]
+  Error Message:
+   Assert.Equal() Failure: Values differ
+Expected: Won
+Actual:   Lost
+  Stack Trace:
+     at SBR.Engine.Tests.ItemTests.Mulligan_slip_window_opens_on_a_dead_leg_and_playing_it_saves_the_ticket() in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\ItemTests.cs:line 169
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+Failed!  - Failed:     5, Passed:   129, Skipped:     0, Total:   134, Duration: 299 ms - SBR.Engine.Tests.dll (net10.0)
+[xUnit.net 00:00:00.41]     SBR.Engine.Tests.SweatSessionTests.Later_legs_read_pending_while_an_earlier_leg_is_mid_path [FAIL]
+[xUnit.net 00:00:00.41]     SBR.Engine.Tests.RunSweatTests.Finish_sweat_settles_a_winning_ticket_and_a_losing_ticket [FAIL]
+[xUnit.net 00:00:00.41]     SBR.Engine.Tests.ItemTests.Scar_persists_and_grows_when_the_carrier_busts_too [FAIL]
+[xUnit.net 00:00:00.42]     SBR.Engine.Tests.CharmExpansionTests.Don_doubles_the_win_suppresses_cash_out_and_counts_for_iron_hands [FAIL]
+[xUnit.net 00:00:00.42]     SBR.Engine.Tests.ItemTests.Mulligan_slip_window_opens_on_a_dead_leg_and_playing_it_saves_the_ticket [FAIL]
+The active test run was aborted. Reason: Test host process crashed
+Test Run Aborted.
+
+2026-07-21T04:03:50.086243Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 105 seconds
+Output:
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  SBR.Engine -> C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine\bin\Debug\netstandard2.1\SBR.Engine.dll
+  SBR.Engine.dll copied to C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine\..\unity\SBR\Assets\Plugins\SBR
+  SBR.Engine.Tests -> C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\bin\Debug\net10.0\SBR.Engine.Tests.dll
+Test run for C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\bin\Debug\net10.0\SBR.Engine.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:   134, Skipped:     0, Total:   134, Duration: 255 ms - SBR.Engine.Tests.dll (net10.0)
+The active test run was aborted. Reason: Test host process crashed
+Test Run Aborted.
+
+2026-07-21T04:06:43.420355Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 164.2 seconds
+Output:
+  SBR.Engine -> C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine\bin\Debug\netstandard2.1\SBR.Engine.dll
+  SBR.Engine.dll copied to C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine\..\unity\SBR\Assets\Plugins\SBR
+  SBR.Engine.Tests -> C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\bin\Debug\net10.0\SBR.Engine.Tests.dll
+Test run for C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\bin\Debug\net10.0\SBR.Engine.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+  Failed SBR.Engine.Tests.CharmExpansionTests.System_streak_builds_on_profit_and_resets_on_flat_or_down [6 ms]
+  Error Message:
+   Assert.Equal() Failure: Values are not within 10 decimal places
+Expected: 1.1200000000000001 (rounded from 1.1200000000000001)
+Actual:   1 (rounded from 1)
+  Stack Trace:
+     at SBR.Engine.Tests.CharmExpansionTests.System_streak_builds_on_profit_and_resets_on_flat_or_down() in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\CharmExpansionTests.cs:line 404
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+Failed!  - Failed:     1, Passed:   139, Skipped:     0, Total:   140, Duration: 286 ms - SBR.Engine.Tests.dll (net10.0)
+[xUnit.net 00:00:00.32]     SBR.Engine.Tests.CharmExpansionTests.System_streak_builds_on_profit_and_resets_on_flat_or_down [FAIL]
+The active test run was aborted. Reason: Test host process crashed
+Test Run Aborted.
+
+2026-07-21T04:08:23.302420Z ERROR codex_core::tools::router: error=Exit code: 124
+Wall time: 81.8 seconds
+Output:
+command timed out after 81838 milliseconds
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  SBR.Engine -> C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine\bin\Debug\netstandard2.1\SBR.Engine.dll
+  SBR.Engine.dll copied to C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine\..\unity\SBR\Assets\Plugins\SBR
+  SBR.Engine.Tests -> C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\bin\Debug\net10.0\SBR.Engine.Tests.dll
+Test run for C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\bin\Debug\net10.0\SBR.Engine.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:    16, Skipped:     0, Total:    16, Duration: 108 ms - SBR.Engine.Tests.dll (net10.0)
+The active test run was aborted. Reason: Test host process crashed
+Test Run Aborted.
+
+2026-07-21T04:08:52.887803Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 4.6 seconds
+Output:
+# /sim — Monte Carlo balance report
+
+- Date: 2026-07-20 21:08
+- Engine: workspace is not a git repo — `git describe` unavailable
+- Config: bank $350, PAYMENTS [60, 70, 85, 105, 155, 375, 710, 1350] (avg ×1.56), overround 5.0%, cash-out margin 8.0%, totem juice 50.0%, min stake $10, max stake 100.0% of bank, 6 matchups/round, 3 tickets/round, 5 relic + 3 consumable slots
+- Strategies: naive, skilled, noshop, martyr, chalk, hoarder, ironhands, martyr-worst
+- Runs per batch: 20
+- Total runs (incl. audit/combos): 3,020
+- Wall time: 2.05 s
+
+## 0. Gate campaign (PLAN.md acceptance criteria)
+
+| Gate | Criterion | Verdict | Actual |
+|---|---|---|---|
+| G1 | honest gambling: naive win <1%, dies before the cliff resolves (median ≤6) | **PASS** | median 4, won 0.0% |
+| G2 | engine mandatory: no-shop skilled win <2%, median death 5–6 | **PASS** | median 5, won 0.0% |
+| G3 | skilled + items wins: median death ≥5, win 5–8% (re-banded by Allen 2026-07-15 — the dealt hand's build variance is the roguelite shape) | **FAIL** | median 5, won 0.0% |
+| G4 | the EV arc exists: skilled mean ticket EV crosses zero in rounds 3–7 | **FAIL** | crosses at R2 |
+| G5 | composition superadditive: Multiplier+Scar pair Δwin > sum of solo Δwins | **FAIL** | synergy excess +0.0pp |
+| G6 | martyr guard (worst case granted): loss-farming win ≤ skilled +2pp | **FAIL** | martyr-worst 15.0% vs skilled 0.0% (organic martyr 5.0%) |
+
+- ⚑ UNDEREXPOSED: Free Bet Token (129 uses < 200 — fix the policy, not the item)
+- ⚑ UNDEREXPOSED: Mulligan Slip (78 uses < 200 — fix the policy, not the item)
+- ⚑ UNDEREXPOSED: Double or Nothing Slip (63 uses < 200 — fix the policy, not the item)
+- ⚑ UNDEREXPOSED: Scar Tissue (6 wound-up runs < 200)
+- ⚑ UNDEREXPOSED: Ref's Whistle (18 uses < 200 — fix the policy, not the item)
+- ⚑ UNDEREXPOSED: Profit Boost (105 uses < 200 — fix the policy, not the item)
+- ⚑ UNDEREXPOSED: Bookie's Marker (42 uses < 200 — fix the policy, not the item)
+- ⚑ UNDEREXPOSED: Iron Hands (5 wound-up runs < 200)
+- ⚑ UNDEREXPOSED: Chalk Eater (20 wound-up runs < 200)
+- ⚑ UNDEREXPOSED: Bad Beat Jar (12 wound-up runs < 200)
+- ⚑ UNDEREXPOSED: The System (9 wound-up runs < 200)
+- ℹ PLAYTEST-GATED: Ask for the Manager audits ≈0 through bots (Δwon +0.0±0.0pp) — RATIFIED KEEP, playtest #9
+
+> **NOT DONE — iterate the knobs (item numbers / prices / curve) and rerun.**
+
+## 1. Survival curves
+
+Percent of runs still alive *entering* each round (a run that dies in round R was alive entering R).
+
+| Metric | naive | skilled | noshop | martyr | chalk | hoarder | ironhands | martyr-worst |
+|---|---|---|---|---|---|---|---|---|
+| enter R1 | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
+| enter R2 | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
+| enter R3 | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
+| enter R4 | 70.0% | 95.0% | 100.0% | 45.0% | 100.0% | 100.0% | 95.0% | 100.0% |
+| enter R5 | 30.0% | 65.0% | 55.0% | 35.0% | 65.0% | 65.0% | 65.0% | 50.0% |
+| enter R6 | 10.0% | 45.0% | 15.0% | 15.0% | 15.0% | 20.0% | 40.0% | 40.0% |
+| enter R7 | 0.0% | 20.0% | 0.0% | 10.0% | 10.0% | 0.0% | 20.0% | 20.0% |
+| enter R8 | 0.0% | 15.0% | 0.0% | 10.0% | 5.0% | 0.0% | 15.0% | 15.0% |
+| **won %** | **0.0%** | **0.0%** | **0.0%** | **5.0%** | **0.0%** | **0.0%** | **0.0%** | **15.0%** |
+| **median death round** | **4** | **5** | **5** | **3** | **5** | **5** | **5** | **4.5** |
+| mean rounds reached | 4.10 | 5.40 | 4.70 | 4.20 | 4.95 | 4.85 | 5.35 | 5.40 |
+| totem fire rate | 0.0% | 45.0% | 0.0% | 0.0% | 15.0% | 5.0% | 30.0% | 0.0% |
+| close-call deaths (% of deaths) | 5.0% | 5.0% | 5.0% | 0.0% | 5.0% | 5.0% | 5.0% | 5.9% |
+| mean bookie gifts per run | 0.60 | 0.50 | 0.80 | 0.80 | 0.50 | 0.70 | 0.45 | 0.95 |
+
+> Takeaway: naive dies at round 4, skilled reaches 5 — skill buys real extra survival; compare against the 3–4 / ≥7 targets above.
+
+## 2. Item power audit (3 passives + 3 consumables)
+
+Skilled baseline: median death 5, mean rounds 5.40, won 0.0%. Passives granted at run start; consumables refilled every round. Exposure = uses (consumables) or wound-up runs (ratchets); ±  is the paired-seed SE on Δwon. Sorted by Δ mean rounds survived.
+
+| Item | kind | mean rounds | Δ mean | median death | won % | Δ won % (±SE) | exposure | totem fires |
+|---|---|---|---|---|---|---|---|---|
+| Free Bet Token | consumable | 6.80 | +1.4 | 7 | 5.0% | +5.0pp (±5.0) | 129 uses | — |
+| Mulligan Slip | consumable | 6.60 | +1.2 | 6.5 | 10.0% | +10.0pp (±6.9) | 78 uses | — |
+| Totem of Undying | passive | 6.30 | +0.9 | 6 | 5.0% | +5.0pp (±5.0) | — | 95.0% |
+| Double or Nothing Slip | consumable | 6.10 | +0.7 | 5.5 | 20.0% | +20.0pp (±9.2) | 63 uses | — |
+| Scar Tissue | passive | 5.90 | +0.5 | 5 | 0.0% | 0.0pp (±0.0) | 6 wound | — |
+| The Multiplier | passive | 5.75 | +0.35 | 4.5 | 30.0% | +30.0pp (±10.5) | — | — |
+| Ref's Whistle | consumable | 5.75 | +0.35 | 5 | 10.0% | +10.0pp (±6.9) | 18 uses | — |
+| Golden Parachute | passive | 5.75 | +0.35 | 5.5 | 0.0% | 0.0pp (±0.0) | — | — |
+| The Collection | passive | 5.65 | +0.25 | 4.5 | 30.0% | +30.0pp (±10.5) | — | — |
+| Profit Boost | consumable | 5.65 | +0.25 | 5.5 | 10.0% | +10.0pp (±6.9) | 105 uses | — |
+| Bookie's Marker | consumable | 5.50 | +0.1 | 5 | 5.0% | +5.0pp (±5.0) | 42 uses | — |
+| Unopened Bobblehead | passive | 5.45 | +0.05 | 5 | 10.0% | +10.0pp (±6.9) | — | — |
+| House Key | passive | 5.35 | -0.05 | 4 | 30.0% | +30.0pp (±10.5) | — | — |
+| The Rake's Rebate | passive | 5.30 | -0.1 | 5 | 0.0% | 0.0pp (±0.0) | — | — |
+| Ask for the Manager | consumable | 5.30 | -0.1 | 5 | 0.0% | 0.0pp (±0.0) | 86 uses | — |
+| Comp'd Suite | passive | 5.20 | -0.2 | 5 | 5.0% | +5.0pp (±5.0) | — | — |
+| Iron Hands | passive | 5.10 | -0.3 | 4 | 15.0% | +15.0pp (±8.2) | 5 wound | — |
+| Longshot Larry's Photo | passive | 5.10 | -0.3 | 4 | 15.0% | +15.0pp (±8.2) | — | — |
+| Chalk Eater | passive | 5.10 | -0.3 | 4 | 10.0% | +10.0pp (±6.9) | 20 wound | — |
+| Bad Beat Jar | passive | 5.00 | -0.4 | 4 | 10.0% | +10.0pp (±6.9) | 12 wound | — |
+| The System | passive | 5.00 | -0.4 | 4 | 15.0% | +15.0pp (±8.2) | 9 wound | — |
+| Whale Card | passive | 4.85 | -0.55 | 4 | 10.0% | +10.0pp (±6.9) | — | — |
+
+> Takeaway: the gate section's item flags carry the verdicts (DEAD / DOMINANT / totem band). Note the audit grants items FREE — organic play also pays shop prices out of payment headroom.
+
+## 3. Variance feel
+
+Biggest single-ticket swing per run (won payout / cash-out taken / stake lost), and final bank of winning runs.
+
+| Strategy | swing p10 | p50 | p90 | p99 | win-bank p10 | p50 | p90 | p99 |
+|---|---|---|---|---|---|---|---|---|
+| naive | $87 | $89 | $161 | $220 | n/a | n/a | n/a | n/a |
+| skilled | $49 | $123 | $460 | $1,282 | n/a | n/a | n/a | n/a |
+| noshop | $48 | $101 | $153 | $196 | n/a | n/a | n/a | n/a |
+| martyr | $87 | $87 | $764 | $10,336 | $4,421 | $4,421 | $4,421 | $4,421 |
+| chalk | $39 | $74 | $147 | $512 | n/a | n/a | n/a | n/a |
+| hoarder | $48 | $103 | $153 | $280 | n/a | n/a | n/a | n/a |
+| ironhands | $49 | $124 | $407 | $1,217 | n/a | n/a | n/a | n/a |
+| martyr-worst | $87 | $150 | $3,054 | $23,320 | $1,619 | $8,092 | $15,075 | $16,646 |
+
+> Takeaway: swing p50 vs p99 shows whether the ride is flat (boring) or spiky (feels rigged); a p99 many multiples of p50 is the intended rare-blowup shape.
+
+## 4. Ratchet telemetry (Scar Tissue)
+
+Mean peak stacks (pp) and mean carrier burns per run — is the ratchet winding and cashing?
+
+| Strategy | mean peak stacks | mean burns/run |
+|---|---|---|
+| naive | 0.0pp | 0.00 |
+| skilled | 2.2pp | 0.00 |
+| noshop | 0.0pp | 0.00 |
+| martyr | 8.2pp | 0.00 |
+| chalk | 0.0pp | 0.00 |
+| hoarder | 0.0pp | 0.00 |
+| ironhands | 0.4pp | 0.00 |
+| martyr-worst | 28.1pp | 0.00 |
+
+> Takeaway: zero across the board means nobody buys/holds the scar (price or power problem); huge stacks with zero burns means winding without cashing (the carrier rule isn't landing).
+
+## 5. EV-arc
+
+Mean *true* per-ticket EV at lock, by round (the economy doctrine's crossing from −vig toward positive).
+
+| Round | naive mean EV | skilled mean EV | noshop mean EV | martyr mean EV | chalk mean EV | hoarder mean EV | ironhands mean EV | martyr-worst mean EV |
+|---|---|---|---|---|---|---|---|---|
+| R1 | -$8 | -$5 | -$5 | -$7 | -$4 | -$5 | -$5 | $33 |
+| R2 | -$6 | $8 | -$6 | $16 | -$2 | -$6 | $12 | $37 |
+| R3 | -$4 | $11 | -$1 | -$5 | $1 | $1 | $9 | $53 |
+| R4 | -$3 | $14 | -$3 | $52 | -$2 | $7 | $4 | $77 |
+| R5 | -$3 | $21 | -$7 | $19 | $4 | -$3 | $10 | $205 |
+| R6 | -$1 | $8 | — | $173 | $29 | -$5 | $12 | $350 |
+| R7 | — | -$3 | — | $597 | -$8 | — | $11 | $1,430 |
+| R8 | — | $110 | — | -$92 | $96 | — | $65 | $1,489 |
+
+- Skilled mean EV first crosses zero at **round 2** (target ≈ round 4).
+- **Survivorship caveat:** the round-2+ means average only the few runs that got there (R2 n=20 tickets vs R1 n=20). The MEDIAN skilled run dies at round 2, so it never reaches the +EV band — the arc is real for the surviving tail, not the typical player.
+- Naive mean EV never crosses zero — as intended.
+
+> Takeaway: among survivors the +EV relics do flip the arc (crosses ~R2, target ≈R4), but almost nobody survives to bank it — the mechanic works, the economy gates it away.
+
+## 6. Band-3 audit
+
+Top-1% final banks (is 'sanctioned brokenness' reachable but rare?).
+
+| Strategy | p99 final bank | top-1% mean | max |
+|---|---|---|---|
+| naive | $130 | $141 | $141 |
+| skilled | $1,218 | $1,404 | $1,404 |
+| noshop | $74 | $87 | $87 |
+| martyr | $3,755 | $4,421 | $4,421 |
+| chalk | $186 | $208 | $208 |
+| hoarder | $104 | $106 | $106 |
+| ironhands | $1,208 | $1,404 | $1,404 |
+| martyr-worst | $15,162 | $16,821 | $16,821 |
+
+
+Pairwise relic synergy (20 runs/config, baseline won 0.0%). Synergy excess = pair Δwon − (soloA Δ + soloB Δ). Top 10:
+
+| Pair | pair won % | synergy excess (pp) | tag |
+|---|---|---|---|
+| The Multiplier + Whale Card | 5.0% | +5 | degenerate: cheap pair, trivially assembled |
+| The Multiplier + House Key | 5.0% | +5 | degenerate: cheap pair, trivially assembled |
+| The Multiplier + Scar Tissue | 0.0% | 0 | marginal (no real loop) |
+| Golden Parachute + The Collection | 0.0% | 0 | marginal (no real loop) |
+| Golden Parachute + Unopened Bobblehead | 0.0% | 0 | marginal (no real loop) |
+| Golden Parachute + Comp'd Suite | 0.0% | 0 | marginal (no real loop) |
+| Golden Parachute + The System | 0.0% | 0 | marginal (no real loop) |
+| Golden Parachute + House Key | 0.0% | 0 | marginal (no real loop) |
+| Golden Parachute + Bad Beat Jar | 0.0% | 0 | marginal (no real loop) |
+| Golden Parachute + Whale Card | 0.0% | 0 | marginal (no real loop) |
+
+> Takeaway: brokenness should live in the tail (max ≫ p99) and, if combos ran, in a few hard-to-assemble pairs rather than trivial cheap ones.
+
+## 7. Grind metric
+
+Median decisions per round (tickets + cash-outs + buys). Fewer decisions late than mid = flat repetition.
+
+| Round | naive | skilled | noshop | martyr | chalk | hoarder | ironhands | martyr-worst |
+|---|---|---|---|---|---|---|---|---|
+| R1 | 1 | 2 | 1 | 3 | 2.5 | 1 | 3 | 3 |
+| R2 | 1 | 4 | 1 | 3 | 4 | 1 | 4 | 3 |
+| R3 | 1 | 4 | 1 | 0 | 4 | 3 | 4 | 3 |
+| R4 | 1 | 2 | 1 | 2 | 3 | 1 | 2 | 1.5 |
+| R5 | 1 | 2 | 1 | 1 | 1 | 1 | 2 | 3 |
+| R6 | 1 | 3 | 0 | 2 | 2 | 1 | 3 | 1 |
+| R7 | — | 3 | — | 2.5 | 2.5 | — | 3 | 3 |
+| R8 | — | 2 | — | 1 | 3 | — | 2 | 3 |
+
+> Takeaway: late rounds carry FEWER decisions than mid for: noshop, chalk, hoarder, martyr-worst — repetition-risk flag.
+
+
+2026-07-21T04:11:58.924359Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 179.5 seconds
+Output:
+# /sim — Monte Carlo balance report
+
+- Date: 2026-07-20 21:11
+- Engine: workspace is not a git repo — `git describe` unavailable
+- Config: bank $350, PAYMENTS [60, 70, 85, 105, 155, 375, 710, 1350] (avg ×1.56), overround 5.0%, cash-out margin 8.0%, totem juice 50.0%, min stake $10, max stake 100.0% of bank, 6 matchups/round, 3 tickets/round, 5 relic + 3 consumable slots
+- Strategies: naive, skilled, noshop, martyr, chalk, hoarder, ironhands, martyr-worst
+- Runs per batch: 1,000
+- Total runs (incl. audit/combos): 151,000
+- Wall time: 176.88 s
+
+## 0. Gate campaign (PLAN.md acceptance criteria)
+
+| Gate | Criterion | Verdict | Actual |
+|---|---|---|---|
+| G1 | honest gambling: naive win <1%, dies before the cliff resolves (median ≤6) | **PASS** | median 4, won 0.0% |
+| G2 | engine mandatory: no-shop skilled win <2%, median death 5–6 | **PASS** | median 5, won 0.0% |
+| G3 | skilled + items wins: median death ≥5, win 5–8% (re-banded by Allen 2026-07-15 — the dealt hand's build variance is the roguelite shape) | **PASS** | median 5, won 7.9% |
+| G4 | the EV arc exists: skilled mean ticket EV crosses zero in rounds 3–7 | **PASS** | crosses at R3 |
+| G5 | composition superadditive: Multiplier+Scar pair Δwin > sum of solo Δwins | **FAIL** | synergy excess -0.1pp |
+| G6 | martyr guard (worst case granted): loss-farming win ≤ skilled +2pp | **PASS** | martyr-worst 5.9% vs skilled 7.9% (organic martyr 1.4%) |
+
+Item flags: none — no DEAD items, no DOMINANT item, Totem in the healthy band.
+- ℹ PLAYTEST-GATED: Ask for the Manager audits ≈0 through bots (Δwon -0.9±3.0pp) — RATIFIED KEEP, playtest #9
+
+> **NOT DONE — iterate the knobs (item numbers / prices / curve) and rerun.**
+
+## 1. Survival curves
+
+Percent of runs still alive *entering* each round (a run that dies in round R was alive entering R).
+
+| Metric | naive | skilled | noshop | martyr | chalk | hoarder | ironhands | martyr-worst |
+|---|---|---|---|---|---|---|---|---|
+| enter R1 | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
+| enter R2 | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
+| enter R3 | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
+| enter R4 | 86.9% | 98.7% | 100.0% | 36.9% | 100.0% | 100.0% | 98.4% | 100.0% |
+| enter R5 | 42.3% | 77.3% | 67.9% | 24.9% | 82.4% | 73.4% | 74.4% | 42.8% |
+| enter R6 | 10.0% | 48.6% | 17.3% | 13.1% | 39.6% | 27.9% | 46.5% | 31.5% |
+| enter R7 | 0.1% | 27.7% | 1.9% | 6.8% | 17.3% | 8.3% | 29.7% | 19.3% |
+| enter R8 | 0.0% | 16.3% | 0.0% | 2.9% | 7.1% | 3.1% | 17.7% | 10.3% |
+| **won %** | **0.0%** | **7.9%** | **0.0%** | **1.4%** | **2.3%** | **0.4%** | **9.6%** | **5.9%** |
+| **median death round** | **4** | **5** | **5** | **3** | **5** | **5** | **5** | **4** |
+| mean rounds reached | 4.39 | 5.76 | 4.87 | 3.86 | 5.49 | 5.13 | 5.76 | 5.10 |
+| totem fire rate | 0.0% | 36.9% | 0.0% | 0.0% | 19.1% | 11.4% | 28.5% | 0.0% |
+| close-call deaths (% of deaths) | 12.0% | 5.6% | 3.6% | 4.7% | 4.2% | 3.8% | 5.9% | 5.1% |
+| mean bookie gifts per run | 0.45 | 0.42 | 0.73 | 0.87 | 0.51 | 0.66 | 0.38 | 1.01 |
+
+> Takeaway: naive dies at round 4, skilled reaches 5 — skill buys real extra survival; compare against the 3–4 / ≥7 targets above.
+
+## 2. Item power audit (3 passives + 3 consumables)
+
+Skilled baseline: median death 5, mean rounds 5.76, won 7.9%. Passives granted at run start; consumables refilled every round. Exposure = uses (consumables) or wound-up runs (ratchets); ±  is the paired-seed SE on Δwon. Sorted by Δ mean rounds survived.
+
+| Item | kind | mean rounds | Δ mean | median death | won % | Δ won % (±SE) | exposure | totem fires |
+|---|---|---|---|---|---|---|---|---|
+| Mulligan Slip | consumable | 7.26 | +1.49 | 7 | 29.1% | +21.2pp (±1.4) | 4,072 uses | — |
+| Free Bet Token | consumable | 6.57 | +0.8 | 7 | 2.3% | -5.6pp (±0.9) | 6,222 uses | — |
+| Totem of Undying | passive | 6.35 | +0.59 | 6 | 9.6% | +1.7pp (±1.0) | — | 87.1% |
+| Double or Nothing Slip | consumable | 6.28 | +0.51 | 6 | 19.3% | +11.4pp (±1.1) | 2,725 uses | — |
+| Unopened Bobblehead | passive | 6.24 | +0.48 | 6 | 15.6% | +7.7pp (±1.2) | — | — |
+| Profit Boost | consumable | 6.14 | +0.37 | 6 | 15.1% | +7.2pp (±0.9) | 5,680 uses | — |
+| Ref's Whistle | consumable | 6.08 | +0.32 | 6 | 11.0% | +3.1pp (±0.8) | 872 uses | — |
+| The Multiplier | passive | 6.03 | +0.26 | 5 | 25.7% | +17.8pp (±1.4) | — | — |
+| Bookie's Marker | consumable | 5.96 | +0.19 | 6 | 7.9% | 0.0pp (±0.6) | 2,080 uses | — |
+| Scar Tissue | passive | 5.89 | +0.12 | 6 | 8.8% | +0.9pp (±1.0) | 399 wound | — |
+| The Rake's Rebate | passive | 5.86 | +0.1 | 6 | 11.1% | +3.2pp (±1.1) | — | — |
+| Ask for the Manager | consumable | 5.79 | +0.03 | 5 | 7.0% | -0.9pp (±1.0) | 4,721 uses | — |
+| Comp'd Suite | passive | 5.78 | +0.02 | 5 | 9.4% | +1.5pp (±1.1) | — | — |
+| House Key | passive | 5.66 | -0.1 | 5 | 19.3% | +11.4pp (±1.3) | — | — |
+| Golden Parachute | passive | 5.62 | -0.15 | 5 | 1.5% | -6.4pp (±0.9) | — | — |
+| The Collection | passive | 5.58 | -0.19 | 5 | 16.5% | +8.6pp (±1.2) | — | — |
+| Bad Beat Jar | passive | 5.57 | -0.19 | 5 | 15.6% | +7.7pp (±1.2) | 572 wound | — |
+| The System | passive | 5.56 | -0.21 | 5 | 16.9% | +9.0pp (±1.2) | 387 wound | — |
+| Chalk Eater | passive | 5.55 | -0.22 | 5 | 15.0% | +7.1pp (±1.2) | 959 wound | — |
+| Longshot Larry's Photo | passive | 5.51 | -0.26 | 5 | 13.6% | +5.7pp (±1.2) | — | — |
+| Iron Hands | passive | 5.50 | -0.27 | 5 | 13.5% | +5.6pp (±1.2) | 224 wound | — |
+| Whale Card | passive | 4.96 | -0.81 | 4 | 11.0% | +3.1pp (±1.1) | — | — |
+
+> Takeaway: the gate section's item flags carry the verdicts (DEAD / DOMINANT / totem band). Note the audit grants items FREE — organic play also pays shop prices out of payment headroom.
+
+## 3. Variance feel
+
+Biggest single-ticket swing per run (won payout / cash-out taken / stake lost), and final bank of winning runs.
+
+| Strategy | swing p10 | p50 | p90 | p99 | win-bank p10 | p50 | p90 | p99 |
+|---|---|---|---|---|---|---|---|---|
+| naive | $87 | $106 | $181 | $216 | n/a | n/a | n/a | n/a |
+| skilled | $71 | $138 | $972 | $2,802 | $133 | $1,052 | $4,252 | $9,813 |
+| noshop | $50 | $119 | $177 | $367 | n/a | n/a | n/a | n/a |
+| martyr | $87 | $87 | $731 | $4,253 | $47 | $1,626 | $6,094 | $16,282 |
+| chalk | $49 | $114 | $386 | $1,765 | $89 | $469 | $1,869 | $2,641 |
+| hoarder | $51 | $119 | $197 | $1,033 | $138 | $395 | $910 | $1,074 |
+| ironhands | $79 | $140 | $1,245 | $3,558 | $101 | $1,738 | $5,660 | $11,563 |
+| martyr-worst | $87 | $87 | $1,504 | $12,946 | $492 | $2,674 | $14,957 | $33,121 |
+
+> Takeaway: swing p50 vs p99 shows whether the ride is flat (boring) or spiky (feels rigged); a p99 many multiples of p50 is the intended rare-blowup shape.
+
+## 4. Ratchet telemetry (Scar Tissue)
+
+Mean peak stacks (pp) and mean carrier burns per run — is the ratchet winding and cashing?
+
+| Strategy | mean peak stacks | mean burns/run |
+|---|---|---|
+| naive | 0.0pp | 0.00 |
+| skilled | 2.3pp | 0.00 |
+| noshop | 0.0pp | 0.00 |
+| martyr | 6.2pp | 0.00 |
+| chalk | 0.2pp | 0.00 |
+| hoarder | 0.0pp | 0.00 |
+| ironhands | 0.7pp | 0.00 |
+| martyr-worst | 27.9pp | 0.00 |
+
+> Takeaway: zero across the board means nobody buys/holds the scar (price or power problem); huge stacks with zero burns means winding without cashing (the carrier rule isn't landing).
+
+## 5. EV-arc
+
+Mean *true* per-ticket EV at lock, by round (the economy doctrine's crossing from −vig toward positive).
+
+| Round | naive mean EV | skilled mean EV | noshop mean EV | martyr mean EV | chalk mean EV | hoarder mean EV | ironhands mean EV | martyr-worst mean EV |
+|---|---|---|---|---|---|---|---|---|
+| R1 | -$8 | -$5 | -$5 | -$7 | -$4 | -$5 | -$5 | $32 |
+| R2 | -$6 | $4 | -$6 | $7 | -$2 | -$6 | $7 | $34 |
+| R3 | -$5 | $15 | -$2 | $14 | $1 | -$1 | $14 | $52 |
+| R4 | -$3 | $29 | -$4 | $21 | $5 | $3 | $32 | $79 |
+| R5 | -$3 | $48 | -$7 | $27 | $10 | $4 | $54 | $135 |
+| R6 | -$3 | $56 | -$6 | $116 | $17 | $6 | $77 | $263 |
+| R7 | -$1 | $89 | -$6 | $289 | $44 | $38 | $102 | $548 |
+| R8 | — | $107 | — | $312 | $117 | $84 | $120 | $859 |
+
+- Skilled mean EV first crosses zero at **round 3** (target ≈ round 4).
+- **Survivorship caveat:** the round-3+ means average only the few runs that got there (R3 n=960 tickets vs R1 n=1000). The MEDIAN skilled run dies at round 2, so it never reaches the +EV band — the arc is real for the surviving tail, not the typical player.
+- Naive mean EV never crosses zero — as intended.
+
+> Takeaway: among survivors the +EV relics do flip the arc (crosses ~R3, target ≈R4), but almost nobody survives to bank it — the mechanic works, the economy gates it away.
+
+## 6. Band-3 audit
+
+Top-1% final banks (is 'sanctioned brokenness' reachable but rare?).
+
+| Strategy | p99 final bank | top-1% mean | max |
+|---|---|---|---|
+| naive | $189 | $286 | $371 |
+| skilled | $4,136 | $6,709 | $10,796 |
+| noshop | $145 | $210 | $341 |
+| martyr | $941 | $4,410 | $17,698 |
+| chalk | $1,043 | $1,626 | $2,826 |
+| hoarder | $739 | $1,114 | $1,860 |
+| ironhands | $5,536 | $8,464 | $14,685 |
+| martyr-worst | $10,983 | $20,070 | $35,186 |
+
+
+Pairwise relic synergy (1,000 runs/config, baseline won 0.0%). Synergy excess = pair Δwon − (soloA Δ + soloB Δ). Top 10:
+
+| Pair | pair won % | synergy excess (pp) | tag |
+|---|---|---|---|
+| The Multiplier + House Key | 4.3% | +3.1 | degenerate: cheap pair, trivially assembled |
+| The Multiplier + Whale Card | 3.1% | +2 | degenerate: cheap pair, trivially assembled |
+| Whale Card + House Key | 1.2% | +1.1 | degenerate: cheap pair, trivially assembled |
+| Whale Card + Comp'd Suite | 0.7% | +0.7 | marginal (no real loop) |
+| The Multiplier + The System | 1.7% | +0.6 | marginal (no real loop) |
+| Chalk Eater + House Key | 0.6% | +0.5 | marginal (no real loop) |
+| Whale Card + The System | 0.5% | +0.5 | marginal (no real loop) |
+| Iron Hands + House Key | 0.6% | +0.5 | marginal (no real loop) |
+| Chalk Eater + Whale Card | 0.4% | +0.4 | marginal (no real loop) |
+| House Key + The System | 0.5% | +0.4 | marginal (no real loop) |
+
+> Takeaway: brokenness should live in the tail (max ≫ p99) and, if combos ran, in a few hard-to-assemble pairs rather than trivial cheap ones.
+
+## 7. Grind metric
+
+Median decisions per round (tickets + cash-outs + buys). Fewer decisions late than mid = flat repetition.
+
+| Round | naive | skilled | noshop | martyr | chalk | hoarder | ironhands | martyr-worst |
+|---|---|---|---|---|---|---|---|---|
+| R1 | 1 | 2 | 1 | 3 | 2 | 1 | 3 | 3 |
+| R2 | 1 | 4 | 1 | 3 | 3 | 1 | 4 | 3 |
+| R3 | 1 | 4 | 1 | 0 | 4 | 3 | 4 | 3 |
+| R4 | 1 | 3 | 1 | 2 | 3 | 2 | 3 | 0 |
+| R5 | 1 | 2 | 1 | 2 | 2 | 1 | 2.5 | 3 |
+| R6 | 1 | 2 | 1 | 1 | 2 | 1 | 3 | 2 |
+| R7 | 1 | 3 | 1 | 0 | 2 | 2 | 3 | 1 |
+| R8 | — | 2 | — | 1 | 2 | 1 | 2 | 2 |
+
+> Takeaway: late rounds carry FEWER decisions than mid for: skilled, martyr, chalk, hoarder, ironhands, martyr-worst — repetition-risk flag.
+
+
+2026-07-21T04:14:19.049612Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 59.4 seconds
+Output:
+Test run for C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\engine.tests\bin\Debug\net10.0\SBR.Engine.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:    51, Skipped:     0, Total:    51, Duration: 100 ms - SBR.Engine.Tests.dll (net10.0)
+The active test run was aborted. Reason: Test host process crashed
+Test Run Aborted.
+
+2026-07-21T04:16:14.395951Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 77.7 seconds
+Output:
+VSTest version 18.3.0 (x64)
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:   141, Skipped:     0, Total:   141, Duration: 270 ms - SBR.Engine.Tests.dll (net10.0)
+The active test run was aborted. Reason: Test host process crashed
+Test Run Aborted.
+
+[2m2026-07-21T06:51:12.621172Z[0m [31mERROR[0m [2mcodex_core::tools::router[0m[2m:[0m [3merror[0m[2m=[0mExit code: 1
+Wall time: 3.8 seconds
+Output:
+
+Build FAILED.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.70
+
+[2m2026-07-21T06:51:59.161054Z[0m [31mERROR[0m [2mcodex_core::tools::router[0m[2m:[0m [3merror[0m[2m=[0mExit code: 1
+Wall time: 3.5 seconds
+Output:
+
+Build FAILED.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.48
+
+[2m2026-07-21T06:52:07.593411Z[0m [31mERROR[0m [2mcodex_core::tools::router[0m[2m:[0m [3merror[0m[2m=[0mExit code: 1
+Wall time: 3.4 seconds
+Output:
+Build started 7/20/2026 11:52:04 PM.
+     1>Project "C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\SBR.slnx" on node 1 (default targets).
+     1>ValidateSolutionConfiguration:
+         Building solution configuration "Debug|Any CPU".
+     1>Done Building Project "C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\SBR.slnx" (default targets) -- FAILED.
+
+Build FAILED.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:02.58
+
+
+[2m2026-07-21T07:05:56.703992Z[0m [31mERROR[0m [2mcodex_core::tools::router[0m[2m:[0m [3merror[0m[2m=[0mapply_patch verification failed: Failed to find expected lines in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\unity\SBR\Assets\SBR\Runtime\SweatPacer.cs:
+    /// beat-scene lands in [3, 8]s, ledger-correction goals are separately
+[2m2026-07-21T07:10:34.466304Z[0m [31mERROR[0m [2mcodex_core::tools::router[0m[2m:[0m [3merror[0m[2m=[0mapply_patch verification failed: Failed to find expected lines in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\unity\SBR\Assets\SBR\Runtime\TvSweatScreen.cs:
+            string awayMark = !pickedHome ? "● " : "";
+            string homeMark = pickedHome ? " ●" : "";
+            _tMatchup.text =
+                $"<color=#{awayRgb:X6}>{awayMark}{away}</color>  {awayScore} — {homeScore}  " +
+                $"<color=#{homeRgb:X6}>{home}{homeMark}</color>";
+            RevealedView.SetScore($"{away} {awayScore} — {home} {homeScore}");
+        }
+[2m2026-07-21T07:13:34.400582Z[0m [31mERROR[0m [2mcodex_core::exec[0m[2m:[0m exec error: windows sandbox: CreateProcessAsUserW failed: 267 (The directory name is invalid.) | cwd=C:\Users\Allen\Documents\CodingProjects\sports-betting\-roguelite | cmd=C:\Users\Allen\AppData\Local\Microsoft\WindowsApps\pwsh.exe -Command "try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+rg -n \"BuildContinuationScript|StartScript\(|PlayScene\(|PlayFinalScene\(|ResumeSuspended\(\" unity/SBR/Assets/SBR/Runtime --glob '*.cs'" | env_u16_len=10825 | si_flags=256 | creation_flags=525312
+[2m2026-07-21T07:13:34.401174Z[0m [31mERROR[0m [2mcodex_core::tools::router[0m[2m:[0m [3merror[0m[2m=[0mexecution error: Io(Custom { kind: Other, error: "windows sandbox: CreateProcessAsUserW failed: 267 (The directory name is invalid.) | cwd=C:\\Users\\Allen\\Documents\\CodingProjects\\sports-betting\\-roguelite | cmd=C:\\Users\\Allen\\AppData\\Local\\Microsoft\\WindowsApps\\pwsh.exe -Command \"try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}\nrg -n \\\"BuildContinuationScript|StartScript\\(|PlayScene\\(|PlayFinalScene\\(|ResumeSuspended\\(\\\" unity/SBR/Assets/SBR/Runtime --glob '*.cs'\" | env_u16_len=10825 | si_flags=256 | creation_flags=525312" })
+[2m2026-07-21T07:13:40.675784Z[0m [31mERROR[0m [2mcodex_core::tools::router[0m[2m:[0m [3merror[0m[2m=[0mExit code: 1
+Wall time: 0.5 seconds
+Output:
+
+[2m2026-07-21T07:20:46.544221Z[0m [31mERROR[0m [2mcodex_core::tools::router[0m[2m:[0m [3merror[0m[2m=[0mExit code: 1
+Wall time: 0.9 seconds
+Output:
+            }
+        }
+
+        // ------------------------------------------------------------------ scene playback (M-T3)
+
+        /// <summary>Plays a resolved beat scene. <paramref name="onGoalPlayed"/> fires when a
+        /// staged goal's playback completes (commit AND chalked — the ledger sorts them);
+        /// <paramref name="onReveal"/> fires exactly once at the scene's payoff moment (the
+        /// goal, the save, or scene end for territory shapes) — the causally honest instant
+        /// for the chrome to speak; <paramref name="onComplete"/> when the script exhausts.
+        /// Poll <see cref="ScenePlaying"/>.</summary>
+        public void PlayScene(SceneSpec spec, Action<ScoreLedger.StagedGoal> onGoalPlayed,
+            Action onReveal, Action onComplete)
+            => PlayScene(spec, onGoalPlayed, onReveal, onComplete, null);
+
+        public void PlayScene(SceneSpec spec, Action<ScoreLedger.StagedGoal> onGoalPlayed,
+            Action onReveal, Action onComplete, Action<CountLedger.StagedCount> onCountPlayed)
+        {
+            StartScript(BuildBeatScript(spec), onGoalPlayed, onCountPlayed, onReveal, onComplete);
+        }
+
+        /// <summary>Plays the final whistle sequence: pre-reveal hold → the plan's staged
+        /// goal(s) as separately-timed sub-scenes → celebrate/collapse. The GREEN/DEAD slam
+        /// and the final chrome reveal belong to the orchestrator at completion (TvLight sync).</summary>
+        public void PlayFinalScene(SceneSpec spec, ScoreLedger.FinalPlan plan,
+            Action<ScoreLedger.StagedGoal> onGoalPlayed, Action onComplete)
+            => PlayFinalScene(spec, plan, spec.CountFinal, onGoalPlayed, null, onComplete);
+
+        public void PlayFinalScene(SceneSpec spec, ScoreLedger.FinalPlan plan,
+            CountLedger.FinalPlan? countPlan, Action<ScoreLedger.StagedGoal> onGoalPlayed,
+            Action<CountLedger.StagedCount> onCountPlayed, Action onComplete)
+        {
+            StartScript(BuildFinalScript(spec, plan, countPlan), onGoalPlayed, onCountPlayed, null, onComplete);
+        }
+
+        /// <summary>The pending-loss window's kill scene: opponent buildup → shot launched →
+        /// FROZEN at the suspension point, mid-flight. Holds until <see cref="ResumeSuspended"/>.</summary>
+        public void SuspendKillShot(int variant)
+        {
+            StartScript(BuildKillShotScript(variant), null, null, null, null);
+        }
+
+        /// <summary>The suspended scene's continuation, chosen from the FINAL ticket-local grade
+        /// (never WinProbAfter): Voided → cyan VOID dissolve, no goals; Won → the frozen shot
+        /// resolves as a save, then the counter goal(s) the correction needs; Lost → the flight
+        /// completes (chalked if the entry score already satisfied Lost), then corrections.</summary>
+            return steps.ToArray();
+        }
+
+        private void AppendFinalCounts(List<Step> steps, SceneSpec spec, CountLedger.FinalPlan? countPlan,
+            float lane)
+        {
+            if (!countPlan.HasValue || countPlan.Value.Counts == null) return;
+            byte marker = spec.Market == MarketKind.TotalCards ? MkBooking : MkCorner;
+            for (int i = 0; i < countPlan.Value.Counts.Length; i++)
+            {
+                CountLedger.StagedCount count = countPlan.Value.Counts[i];
+                bool attackPicked = count.ForPicked;
+                float x = attackPicked ? 0.96f : 0.04f;
+                steps.Add(S(P(0.9f), x, lane, won ? 0.70f : 0.30f, 1f,
+                    marker, route: spec.Market == MarketKind.TotalCorners ? RouteCorner : RouteAuthored,
+                    atkPicked: attackPicked, count: count));
+            }
+        }
+
+        // ------------------------------------------------------------------ scene visuals
+
+        private void FlashGoal(bool right, bool strong)
+        {
+            if (_bookingCard != null) _bookingCard.enabled = false;
+            _flashRight = right;
+            _flashDur = strong ? 0.55f : 0.35f;
+            _flashT = _flashDur;
+            _flashRing.enabled = true;
+            _flashRing.color = new Color(1f, 1f, 1f, strong ? 0.95f : 0.5f);
+        }
+
+        private void FlashCorner()
+        {
+            if (_bookingCard != null) _bookingCard.enabled = false;
+            _flashRight = _ballPos.x > 0f;
+            _flashDur = 0.38f;
+            _flashT = _flashDur;
+            _flashRing.enabled = true;
+            _flashRing.color = new Color(1f, 1f, 1f, 0.68f);
+        }
+
+        private void FlashBooking()
+        {
+            if (_bookingCard != null)
+            {
+                _bookingCard.enabled = true;
+                _bookingCard.rectTransform.anchoredPosition = _ballPos;
+                _bookingCard.rectTransform.localScale = Vector3.one;
+                _bookingCard.transform.SetAsLastSibling();
+            }
+            _flashRight = _ballPos.x > 0f;
+            _flashDur = 0.45f;
+            _flashT = _flashDur;
+            _flashRing.enabled = true;
+            _flashRing.color = new Color(0.92f, 0.95f, 1f, 0.72f);
+        }
+944:            BeginStageLeg(0, leg, 0);
+950:        private void BeginStageLeg(int legIndex, Leg leg, int beatCount)
+1251:                    BeginStageLeg(evt.LegIndex, leg, evt.TotalSteps);
+
+[2m2026-07-21T07:21:07.214661Z[0m [31mERROR[0m [2mcodex_core::tools::router[0m[2m:[0m [3merror[0m[2m=[0mExit code: 1
+Wall time: 1 seconds
+Total output lines: 652
+Output:
+using System;
+
+namespace SBR.Game
+{
+    /// <summary>
+    /// The theater's tempo (F_0.2.0 M-T3): resolved-scene-class → seconds. All dials, all
+    /// presentation config — the engine never sees these. Serialized on TvSweatScreen so
+    /// Allen tunes them at the M-T3 gate; pure C# (no UnityEngine) so EditMode pins the
+    /// bands: every beat-scene lands in [3, 8]s, ledger-correction goals are separately
+    /// timed sub-scenes (2.5s each, at most 2 by the clamp), so a full final whistle
+    /// sequence may run 8–13s — the slowest moment is deliberately the reveal.
+    /// </summary>
+    [Serializable]
+    public sealed class SweatPacer
+    {
+        public float territorySeconds = 3.0f;
+        public float calmSeconds = 3.0f;
+        public float goalSeconds = 4.5f;
+        public float breakawaySeconds = 5.0f;
+        public float cornerSeconds = 4.5f;
+        public float bookingSeconds = 4.0f;
+        /// <summary>#9 overlay: the steal → transition intro adds this on top of the base scene.</summary>
+        public float leadChangeIntroExtra = 0.8f;
+        public float nearMissSeconds = 6.5f;
+        /// <summary>The dead-air hold after the ball skims wide / hits the bar.</summary>
+        public float nearMissHold = 0.5f;
+        /// <summary>LegFinal base (pre-reveal hold + decisive sequence + whistle), before corrections.</summary>
+        public float legFinalSeconds = 7.5f;
+        /// <summary>Each ledger-correction goal, appended to the LegFinal as its own sub-scene.</summary>
+        public float correctionGoalSeconds = 2.5f;
+        public float fallbackSeconds = 3.0f;
+        /// <summary>Structural kickoff/restart (#14) — outside the beat-scene band by classification.</summary>
+        public float kickoffSeconds = 1.5f;
+        /// <summary>Single presentation tempo dial. Values below 1 make every scene and
+        /// correction sub-scene shorter without changing their relative tuning.</summary>
+        public float paceMultiplier = 0.75f;
+
+        /// <summary>The BEAT-SCENE duration for a resolved template (+overlays). Near-miss
+        /// includes its hold; finals return their base — corrections are added by
+        /// <see cref="FinalSceneSeconds"/>.</summary>
+        public float SceneSeconds(SceneTemplate template, bool leadChangeIntro)
+        {
+            float s = template switch
+            {
+                SceneTemplate.GoalFor => goalSeconds,
+                SceneTemplate.GoalAgainst => goalSeconds,
+                SceneTemplate.BreakawayFor => breakawaySeconds,
+                SceneTemplate.BreakawayAgainst => breakawaySeconds,
+                SceneTemplate.CornerFor => cornerSeconds,
+                SceneTemplate.CornerAgainst => cornerSeconds,
+                SceneTemplate.Booking => bookingSeconds,
+                SceneTemplate.TerritoryFor => territorySeconds,
+                SceneTemplate.TerritoryAgainst => territorySeconds,
+                SceneTemplate.NearMissHope => nearMissSeconds + nearMissHold,
+                SceneTemplate.NearMissScare => nearMissSeconds + nearMissHold,
+                SceneTemplate.CalmPossession => calmSeconds,
+                SceneTemplate.LegFinalWon => legFinalSeconds,
+                SceneTemplate.LegFinalLost => legFinalSeconds,
+                SceneTemplate.Kickoff => kickoffSeconds,
+                _ => fallbackSeconds,
+            };
+            if (leadChangeIntro) s += leadChangeIntroExtra;
+            return s * paceMultiplier;
+        }
+
+        /// <summary>The full final whistle sequence: base + one sub-scene per staged correction
+        /// goal (the killing shot on a Lost is one of them).</summary>
+        public float FinalSceneSeconds(int stagedGoals)
+            => (legFinalSeconds + stagedGoals * correctionGoalSeconds) * paceMultiplier;
+    }
+}
+using System;
+using SBR.Engine;
+
+namespace SBR.Game
+{
+    /// <summary>
+    /// The theater's scene vocabulary (F_0.2.0 M-T3): goal, count, and outcome templates,
+    /// numbered per the plan's
+    /// table. #9 (LeadChange turnover intro) and #10 (Swing urgency) are OVERLAYS — playback
+    /// modifiers on a <see cref="SceneSpec"/>, never templates — so they carry no enum entry.
+    /// #14 (kickoff/restart) is structural playback the stage composes into goal scenes and
+    /// leg opens; the resolver never returns it for a beat.
+    /// </summary>
+    public enum SceneTemplate
+    {
+        GoalFor = 1,
+        GoalAgainst = 2,
+        BreakawayFor = 3,
+        BreakawayAgainst = 4,
+        TerritoryFor = 5,
+        TerritoryAgainst = 6,
+        NearMissHope = 7,
+        NearMissScare = 8,
+        CalmPossession = 11,
+        LegFinalWon = 12,
+        LegFinalLost = 13,
+        Kickoff = 14,
+        Fallback = 15,
+        CornerFor = 16,
+        CornerAgainst = 17,
+        Booking = 18,
+    }
+
+    /// <summary>
+    /// One resolved staging order: template + overlays + the ledger's goal decision + the
+    /// pacer's duration. Pure data — the stage turns it into motion, the tests turn it into
+    /// pinned laws. A chalked-off goal is a <see cref="Goal"/> whose Commits is false: the
+    /// full goal drama plays, VAR disallows, the ledger never moves.
+    /// </summary>
+    public readonly struct SceneSpec
+    {
+        public readonly SceneTemplate Template;
+        /// <summary>Spatial variant 0..2, chosen by Step (deterministic — EventText's trick).</summary>
+        public readonly int Variant;
+        /// <summary>#9 overlay: steal → transition intro composed onto the base scene.</summary>
+        public readonly bool LeadChangeIntro;
+        /// <summary>#10 overlay: urgency modifiers (actor speed, pass tempo).</summary>
+        public readonly bool Urgent;
+        /// <summary>Whether the beat's beneficiary (the side running the move) is the picked
+        /// team — the stage routes passes through that team's dots. For/Against templates
+        /// already encode it; direction-neutral templates (calm, fallback) rely on this.</summary>
+        public readonly bool ForPicked;
+        /// <summary>The goal playback this scene stages, if any (ledger-decided commit/chalk).</summary>
+        public readonly ScoreLedger.StagedGoal? Goal;
+        /// <summary>The count playback this scene stages, if this is a corner/booking scene.</summary>
+        public readonly CountLedger.StagedCount? Count;
+        /// <summary>Remaining endpoint count playbacks carried by a final scene.</summary>
+        public readonly CountLedger.FinalPlan? CountFinal;
+        public readonly MarketKind Market;
+        /// <summary>Beat-scene seconds from the pacer (finals add correction sub-scenes separately).</summary>
+        public readonly float Duration;
+
+        public SceneSpec(SceneTemplate template, int variant, bool leadChangeIntro, bool urgent,
+            bool forPicked, ScoreLedger.StagedGoal? goal, float duration)
+            : this(template, variant, leadChangeIntro, urgent, forPicked, goal, null, null,
+                MarketKind.Moneyline, duration) { }
+
+        public SceneSpec(SceneTemplate template, int variant, bool leadChangeIntro, bool urgent,
+            bool forPicked, ScoreLedger.StagedGoal? goal, CountLedger.StagedCount? count,
+            CountLedger.FinalPlan? countFinal, MarketKind market, float duration)
+        {
+            Template = template;
+            Variant = variant;
+            LeadChangeIntro = leadChangeIntro;
+            Urgent = urgent;
+            ForPicked = forPicked;
+            Goal = goal;
+            Count = count;
+            CountFinal = countFinal;
+            Market = market;
+            Duration = duration;
+        }
+    }
+
+    /// <summary>Template metadata the resolver, pacer, and tests share.</summary>
+    public static class ScenePlaybook
+    {
+        /// <summary>Spatial variants per template (EventText's deterministic variant trick).</summary>
+        public const int VariantCount = 3;
+
+        public static int VariantFor(int step)
+        {
+            int v = step % VariantCount;
+            return v < 0 ? v + VariantCount : v;
+        }
+
+        /// <summary>Templates that stage a goal playback (and therefore own a chalked-off variant).</summary>
+        public static bool ProducesGoal(SceneTemplate t)
+            => t == SceneTemplate.GoalFor || t == SceneTemplate.GoalAgainst
+            || t == SceneTemplate.BreakawayFor || t == SceneTemplate.BreakawayAgainst;
+
+        public static bool ProducesCorner(SceneTemplate t)
+            => t == SceneTemplate.CornerFor || t == SceneTemplate.CornerAgainst;
+
+        public static bool ProducesBooking(SceneTemplate t)
+            => t == SceneTemplate.Booking;
+
+        public static bool ProducesCount(SceneTemplate t)
+            => ProducesCorner(t) || ProducesBooking(t);
+
+        /// <summary>Beat-scene templates — the ones the [3, 8]s pacer band governs. Finals are
+        /// included at their BASE duration; correction sub-scenes are separately timed by
+        /// classification. Kickoff (#14) is structural and exempt.</summary>
+        public static bool IsBeatScene(SceneTemplate t) => t != SceneTemplate.Kickoff;
+    }
+}
+using NUnit.Framework;
+using SBR.Engine;
+using SBR.Game;
+
+namespace SBR.Tests.EditMode
+{
+    /// <summary>
+    /// The resolver's laws (F_0.2.0 M-T3): totality over all 40 (Type × dir × Tag) combos,
+    /// NearMiss never a goal, Momentum×Calm → the #11 calm variant, overlays never choose the
+    /// template; the pacer's declared bands (beat-scenes in [3, 8]s, correction sub-scenes
+    /// 2.5s × ≤2 so a final runs ≤13s); and the DECLARED duration-acceptance criterion over
+    /// ≥1,000 full-density 3-leg generator paths (median 60–90s, ≥80% in 50–100s, worst ≤110s).
+    ///
+    /// Unreachable combos, documented per the plan (they resolve through the same path,
+    /// no special-casing): BigPlay×Calm and Momentum×Swing cannot occur since Swing needs
+    /// |Δp| ≥ 0.10 > the 0.07 Score threshold; Decisive appears only on LegFinal.
+    /// </summary>
+    public class TheaterChoreographerTests
+    {
+        private static readonly DramaEventType[] AllTypes =
+        {
+            DramaEventType.Momentum, DramaEventType.Score, DramaEventType.BigPlay, DramaEventType.LegFinal,
+        };
+
+        private static readonly TensionTag[] AllTags =
+        {
+            TensionTag.Calm, TensionTag.Swing, TensionTag.LeadChange, TensionTag.NearMiss, TensionTag.Decisive,
+        };
+
+        private static DramaEvent Evt(DramaEventType type, TensionTag tag, double probAfter, int step = 2)
+            => new DramaEvent(0, step, 6, type, probAfter, tag);
+
+        [Test]
+        public void Resolver_is_total_over_all_40_combos()
+        {
+            var choreo = new TheaterChoreographer(new SweatPacer());
+            int combos = 0;
+            foreach (DramaEventType type in AllTypes)
+                foreach (TensionTag tag in AllTags)
+                    foreach (bool up in new[] { true, false })
+                    {
+                        combos++;
+                        SceneSpec spec = choreo.ResolveBeat(
+                            Evt(type, tag, up ? 0.7 : 0.3), up, up ? 0.05 : -0.05, new ScoreLedger());
+                        Assert.Greater(spec.Duration, 0f, $"({type}, {tag}, up={up}) got no duration");
+                        Assert.IsTrue(ScenePlaybook.IsBeatScene(spec.Template),
+                            $"({type}, {tag}, up={up}) resolved to a structural template");
+                    }
+            Assert.AreEqual(40, combos, "the full (Type × Tag × dir) space");
+        }
+
+        [Test]
+        public void Near_miss_never_stages_a_goal_regardless_of_type()
+        {
+            var choreo = new TheaterChoreographer(new SweatPacer());
+            foreach (DramaEventType type in new[] { DramaEventType.Score, DramaEventType.BigPlay, DramaEventType.Momentum })
+            {
+                SceneSpec hope = choreo.ResolveBeat(Evt(type, TensionTag.NearMiss, 0.8), true, 0.05, new ScoreLedger());
+                Assert.AreEqual(SceneTemplate.NearMissHope, hope.Template, $"{type} up");
+                Assert.IsNull(hope.Goal, $"{type}: a near-miss is never a goal");
+
+                SceneSpec scare = choreo.ResolveBeat(Evt(type, TensionTag.NearMiss, 0.2), false, -0.05, new ScoreLedger());
+                Assert.AreEqual(SceneTemplate.NearMissScare, scare.Template, $"{type} down");
+                Assert.IsNull(scare.Goal);
+            }
+        }
+
+        [Test]
+        public void Base_table_maps_type_and_direction()
+        {
+            var choreo = new TheaterChoreographer(new SweatPacer());
+            var ledger = new ScoreLedger();
+            Assert.AreEqual(SceneTemplate.GoalFor,
+                choreo.ResolveBeat(Evt(DramaEventType.Score, TensionTag.Swing, 0.7), true, 0.05, ledger).Template);
+            Assert.AreEqual(SceneTemplate.GoalAgainst,
+                choreo.ResolveBeat(Evt(DramaEventType.Score, TensionTag.Swing, 0.3), false, -0.05, ledger).Template);
+            Assert.AreEqual(SceneTemplate.BreakawayFor,
+                choreo.ResolveBeat(Evt(DramaEventType.BigPlay, TensionTag.Swing, 0.8), true, 0.05, ledger).Template);
+            Assert.AreEqual(SceneTemplate.BreakawayAgainst,
+                choreo.ResolveBeat(Evt(DramaEventType.BigPlay, TensionTag.Swing, 0.2), false, -0.05, ledger).Template);
+            Assert.AreEqual(SceneTemplate.TerritoryFor,
+                choreo.ResolveBeat(Evt(DramaEventType.Momentum, TensionTag.LeadChange, 0.55), true, 0.05, ledger).Template);
+            Assert.AreEqual(SceneTemplate.TerritoryAgainst,
+                choreo.ResolveBeat(Evt(DramaEventType.Momentum, TensionTag.LeadChange, 0.45), false, -0.05, ledger).Template);
+            Assert.AreEqual(SceneTemplate.CalmPossession,
+                choreo.ResolveBeat(Evt(DramaEventType.Momentum, TensionTag.Calm, 0.55), true, 0.05, ledger).Template,
+                "Momentum with Tag==Calm uses the #11 calm variant");
+        }
+
+        [Test]
+        public void Overlays_modify_playback_but_never_choose_the_template()
+        {
+            var choreo = new TheaterChoreographer(new SweatPacer());
+            SceneSpec plain = choreo.ResolveBeat(Evt(DramaEventType.Score, TensionTag.Calm, 0.7), true, 0.05, new ScoreLedger());
+            SceneSpec lead = choreo.ResolveBeat(Evt(DramaEventType.Score, TensionTag.LeadChange, 0.7), true, 0.05, new ScoreLedger());
+            SceneSpec swing = choreo.ResolveBeat(Evt(DramaEventType.Score, TensionTag.Swing, 0.7), true, 0.05, new ScoreLedger());
+
+            Assert.AreEqual(plain.Template, lead.Template, "#9 is an overlay, not a template");
+            Assert.AreEqual(plain.Template, swing.Template, "#10 is an overlay, not a template");
+            Assert.IsTrue(lead.LeadChangeIntro);
+            Assert.IsFalse(plain.LeadChangeIntro);
+            Assert.IsTrue(swing.Urgent);
+            Assert.Greater(lead.Duration, plain.Duration, "the intro adds its extra on top");
+        }
+
+        [Test]
+        public void Goal_scenes_carry_the_ledger_ruling_chalked_when_clamped()
+        {
+            var choreo = new TheaterChoreographer(new SweatPacer());
+            var ledger = new ScoreLedger();
+            ledger.CompleteGoal(ledger.StageBeatGoal(DramaEventType.Score, true, 0.05, 0.5).Value); // 1-0
+
+            SceneSpec spec = choreo.ResolveBeat(Evt(DramaEventType.Score, TensionTag.Swing, 0.9), true, 0.05, ledger);
+            Assert.IsTrue(spec.Goal.HasValue, "a Score beat stages a goal playback");
+            Assert.IsFalse(spec.Goal.Value.Commits, "the 2-0 goal stages as the chalked-off variant");
+        }
+
+        [Test]
+        public void Reconciliation_upgrades_a_momentum_beat_to_a_goal_scene()
+        {
+            // Playtest #14: when the ledger stages a reconciling goal on a Momentum beat,
+            // the scene must LOOK like a goal — the board only moves behind goal playback.
+            var choreo = new TheaterChoreographer(new SweatPacer());
+            var ledger = new ScoreLedger(); // 0-0
+            SceneSpec spec = choreo.ResolveBeat(
+                Evt(DramaEventType.Momentum, TensionTag.LeadChange, 0.90), true, 0.0, ledger);
+            Assert.AreEqual(SceneTemplate.GoalFor, spec.Template,
+                "the reconciling momentum beat plays as a goal scene");
+            Assert.IsTrue(spec.Goal.HasValue && spec.Goal.Value.Commits);
+
+            // Near-miss beats stay exempt even when the board lags the bar (rule 2 first).
+            SceneSpec miss = choreo.ResolveBeat(
+                Evt(DramaEventType.Momentum, TensionTag.NearMiss, 0.90), true, 0.05, new ScoreLedger());
+            Assert.AreEqual(SceneTemplate.NearMissHope, miss.Template);
+            Assert.IsNull(miss.Goal, "a near-miss is never a goal, reconciliation included");
+        }
+
+        // ---------------------------------------------------------------- pacer bands
+
+        [Test]
+        public void Every_beat_scene_lands_in_the_3_to_8_second_band()
+        {
+            var pacer = new SweatPacer();
+            var beatScenes = new[]
+            {
+                SceneTemplate.GoalFor, SceneTemplate.GoalAgainst,
+                SceneTemplate.BreakawayFor, SceneTemplate.BreakawayAgainst,
+                SceneTemplate.CornerFor, SceneTemplate.CornerAgainst, SceneTemplate.Booking,
+                SceneTemplate.TerritoryFor, SceneTemplate.TerritoryAgainst,
+                SceneTemplate.NearMissHope, SceneTemplate.NearMissScare,
+                SceneTemplate.CalmPossession, SceneTemplate.LegFinalWon,
+                SceneTemplate.LegFinalLost, SceneTemplate.Fallback,
+            };
+            foreach (SceneTemplate t in beatScenes)
+            {
+                // The #9 intro only ever composes onto non-final scenes: resolver rule 1
+                // returns a final BEFORE the overlay step, so (final, intro) is unreachable.
+                bool[] intros = t == SceneTemplate.LegFinalWon || t == SceneTemplate.LegFinalLost
+                    ? new[] { false }
+                    : new[] { false, true };
+                foreach (bool intro in intros)
+                {
+                    float s = pacer.SceneSeconds(t, intro);
+                    Assert.GreaterOrEqual(s, 3f * pacer.paceMultiplier, $"{t} (intro={intro}) under the band");
+                    Assert.LessOrEqual(s, 8f * pacer.paceMultiplier, $"{t} (intro={intro}) over the band");
+                }
+            }
+        }
+
+        [Test]
+        public void Correction_sub_scenes_are_separately_timed_and_the_final_caps_at_13s()
+        {
+            var pacer = new SweatPacer();
+            float correctionSeconds = pacer.correctionGoalSeconds * pacer.paceMultiplier;
+            Assert.AreEqual(2.5f * pacer.paceMultiplier, correctionSeconds, 1e-4f,
+                "correction sub-scenes are 2.5s by declaration");
+            for (int n = 0; n <= 2; n++)
+            {
+                float total = pacer.FinalSceneSeconds(n);
+                Assert.AreEqual((pacer.legFinalSeconds + n * 2.5f) * pacer.paceMultiplier, total, 1e-4f);
+                Assert.LessOrEqual(total, 13f * pacer.paceMultiplier, "a full final whistle sequence runs at most 13s");
+            }
+        }
+
+        // ---------------------------------------------------------------- duration acceptance
+
+        [Test]
+        public void Duration_acceptance_median_60_to_90_over_full_density_paths()
+        {
+            // The DECLARED criterion (plan §SweatPacer, stated before tuning): ≥1,000
+            // engine-generated full-density 3-leg beat paths; summed scene durations
+     …2298 tokens truncated…ct. (os error 123)
+rg:             => new SceneSpec(t, 0, false, false, true, goal, new SweatPacer().SceneSeconds(t, false));: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg: : The system cannot find the path specified. (os error 3)
+rg:         [UnityTest]: The system cannot find the file specified. (os error 2)
+rg:         public IEnumerator One_scene_per_template_plays_to_completion_and_reveals_once(): The system cannot find the file specified. (os error 2)
+rg:         {: The system cannot find the file specified. (os error 2)
+rg:             TheaterStage stage = BuildStage();: The system cannot find the file specified. (os error 2)
+rg:             stage.timeScale = 0.02f; // duration multiplier — fast-forward story time: The system cannot find the path specified. (os error 3)
+rg: : The system cannot find the path specified. (os error 3)
+rg:             var templates = new[]: The system cannot find the file specified. (os error 2)
+rg:             {: The system cannot find the file specified. (os error 2)
+rg:                 SceneTemplate.GoalFor, SceneTemplate.GoalAgainst, SceneTemplate.BreakawayFor,: The system cannot find the file specified. (os error 2)
+rg:                 SceneTemplate.BreakawayAgainst, SceneTemplate.TerritoryFor, SceneTemplate.TerritoryAgainst,: The system cannot find the file specified. (os error 2)
+rg:                 SceneTemplate.CornerFor, SceneTemplate.CornerAgainst, SceneTemplate.Booking,: The system cannot find the file specified. (os error 2)
+rg:                 SceneTemplate.NearMissHope, SceneTemplate.NearMissScare, SceneTemplate.CalmPossession,: The system cannot find the file specified. (os error 2)
+rg:                 SceneTemplate.Kickoff, SceneTemplate.Fallback,: The system cannot find the file specified. (os error 2)
+rg:             };: The system cannot find the file specified. (os error 2)
+rg:             foreach (SceneTemplate t in templates): The system cannot find the file specified. (os error 2)
+rg:             {: The system cannot find the file specified. (os error 2)
+rg:                 bool done = false;: The system cannot find the file specified. (os error 2)
+rg:                 int reveals = 0;: The system cannot find the file specified. (os error 2)
+rg:                 ScoreLedger.StagedGoal? goal = ScenePlaybook.ProducesGoal(t): The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:                     ? new ScoreLedger.StagedGoal(true, true): The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:                     : (ScoreLedger.StagedGoal?)null;: The system cannot find the file specified. (os error 2)
+rg:                 stage.PlayScene(Spec(t, goal), null, () => reveals++, () => done = true);: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:                 float w = 0f;: The system cannot find the file specified. (os error 2)
+rg:                 while (!done && w < 8f) { w += Time.deltaTime; yield return null; }: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:                 Assert.IsTrue(done, $"{t} never completed");: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:                 Assert.IsFalse(stage.ScenePlaying, $"{t} left the stage mid-scene");: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:                 Assert.AreEqual(1, reveals, $"{t} must reveal exactly once (the causal moment)");: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             }: The system cannot find the file specified. (os error 2)
+rg:         }: The system cannot find the file specified. (os error 2)
+rg: : The system cannot find the path specified. (os error 3)
+rg:         [UnityTest]: The system cannot find the file specified. (os error 2)
+rg:         public IEnumerator Goal_scenes_reveal_with_the_goal_before_scene_end(): The system cannot find the file specified. (os error 2)
+rg:         {: The system cannot find the file specified. (os error 2)
+rg:             TheaterStage stage = BuildStage();: The system cannot find the file specified. (os error 2)
+rg:             stage.timeScale = 0.02f;: The system cannot find the file specified. (os error 2)
+rg: : The system cannot find the path specified. (os error 3)
+rg:             // Event ordering: the reveal must land in the same instant as the net ripple: The system cannot find the path specified. (os error 3)
+rg:             // (immediately after the goal callback), strictly before scene completion —: The system cannot find the path specified. (os error 3)
+rg:             // never before the goal (that would spoil), never held to the end (too late).: The system cannot find the path specified. (os error 3)
+rg:             int seq = 0, goalAt = 0, revealAt = 0, doneAt = 0;: The system cannot find the file specified. (os error 2)
+rg:             stage.PlayScene(Spec(SceneTemplate.GoalFor, new ScoreLedger.StagedGoal(true, true)),: The system cannot find the file specified. (os error 2)
+rg:                 g => goalAt = ++seq,: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:                 () => revealAt = ++seq,: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:                 () => doneAt = ++seq);: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             float w = 0f;: The system cannot find the file specified. (os error 2)
+rg:             while (doneAt == 0 && w < 8f) { w += Time.deltaTime; yield return null; }: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg: : The system cannot find the path specified. (os error 3)
+rg:             Assert.Greater(goalAt, 0, "the goal must play");: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             Assert.AreEqual(goalAt + 1, revealAt, "the reveal fires WITH the goal moment");: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             Assert.Greater(doneAt, revealAt, "the restart still plays after the reveal");: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:         }: The system cannot find the file specified. (os error 2)
+rg: : The system cannot find the path specified. (os error 3)
+rg:         [UnityTest]: The system cannot find the file specified. (os error 2)
+rg:         public IEnumerator Goal_playback_reports_commit_and_chalked_variants(): The system cannot find the file specified. (os error 2)
+rg:         {: The system cannot find the file specified. (os error 2)
+rg:             TheaterStage stage = BuildStage();: The system cannot find the file specified. (os error 2)
+rg:             stage.timeScale = 0.02f;: The system cannot find the file specified. (os error 2)
+rg: : The system cannot find the path specified. (os error 3)
+rg:             ScoreLedger.StagedGoal? played = null;: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             bool done = false;: The system cannot find the file specified. (os error 2)
+rg:             stage.PlayScene(Spec(SceneTemplate.GoalFor, new ScoreLedger.StagedGoal(true, true)),: The system cannot find the file specified. (os error 2)
+rg:                 g => played = g, null, () => done = true);: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             float w = 0f;: The system cannot find the file specified. (os error 2)
+rg:             while (!done && w < 8f) { w += Time.deltaTime; yield return null; }: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             Assert.IsTrue(played.HasValue, "the goal playback must report");: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             Assert.IsTrue(played.Value.Commits && played.Value.ForPicked);: The system cannot find the file specified. (os error 2)
+rg: : The system cannot find the path specified. (os error 3)
+rg:             // The chalked-off variant: full goal drama, VAR takes it away, Commits false rides.: The system cannot find the path specified. (os error 3)
+rg:             played = null;: The system cannot find the file specified. (os error 2)
+rg:             done = false;: The system cannot find the file specified. (os error 2)
+rg:             stage.PlayScene(Spec(SceneTemplate.BreakawayAgainst, new ScoreLedger.StagedGoal(false, false)),: The system cannot find the file specified. (os error 2)
+rg:                 g => played = g, null, () => done = true);: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             w = 0f;: The system cannot find the file specified. (os error 2)
+rg:             while (!done && w < 8f) { w += Time.deltaTime; yield return null; }: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             Assert.IsTrue(played.HasValue);: The system cannot find the file specified. (os error 2)
+rg:             Assert.IsFalse(played.Value.Commits, "the chalked goal must report Commits=false");: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:         }: The system cannot find the file specified. (os error 2)
+rg: : The system cannot find the path specified. (os error 3)
+rg:         [UnityTest]: The system cannot find the file specified. (os error 2)
+rg:         public IEnumerator Final_scene_stages_the_plan_goals_then_completes(): The system cannot find the file specified. (os error 2)
+rg:         {: The system cannot find the file specified. (os error 2)
+rg:             TheaterStage stage = BuildStage();: The system cannot find the file specified. (os error 2)
+rg:             stage.timeScale = 0.02f;: The system cannot find the file specified. (os error 2)
+rg: : The system cannot find the path specified. (os error 3)
+rg:             var ledger = new ScoreLedger(); // 0-0 entering the final: The system cannot find the path specified. (os error 3)
+rg:             ScoreLedger.FinalPlan plan = ledger.PlanFinal(LegGrade.Won); // needs 1 stoppage goal: The system cannot find the path specified. (os error 3)
+rg:             Assert.AreEqual(1, plan.Goals.Length);: The system cannot find the file specified. (os error 2)
+rg: : The system cannot find the path specified. (os error 3)
+rg:             int goalsPlayed = 0;: The system cannot find the file specified. (os error 2)
+rg:             bool done = false;: The system cannot find the file specified. (os error 2)
+rg:             stage.PlayFinalScene(Spec(SceneTemplate.LegFinalWon), plan, g => goalsPlayed++, () => done = true);: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             float w = 0f;: The system cannot find the file specified. (os error 2)
+rg:             while (!done && w < 10f) { w += Time.deltaTime; yield return null; }: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             Assert.IsTrue(done, "the final scene never completed");: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             Assert.AreEqual(plan.Goals.Length, goalsPlayed, "every staged goal must visibly play");: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:         }: The system cannot find the file specified. (os error 2)
+rg: : The system cannot find the path specified. (os error 3)
+rg:         [UnityTest]: The system cannot find the file specified. (os error 2)
+rg:         public IEnumerator Pending_window_suspends_at_the_shot_and_resumes_each_way(): The system cannot find the file specified. (os error 2)
+rg:         {: The system cannot find the file specified. (os error 2)
+rg:             TheaterStage stage = BuildStage();: The system cannot find the file specified. (os error 2)
+rg:             stage.timeScale = 0.02f;: The system cannot find the file specified. (os error 2)
+rg: : The system cannot find the path specified. (os error 3)
+rg:             // Suspend: the kill scene freezes mid-flight and HOLDS.: The system cannot find the path specified. (os error 3)
+rg:             stage.SuspendKillShot(0);: The system cannot find the file specified. (os error 2)
+rg:             float w = 0f;: The system cannot find the file specified. (os error 2)
+rg:             while (!stage.SuspendedAtShot && w < 8f) { w += Time.deltaTime; yield return null; }: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             Assert.IsTrue(stage.SuspendedAtShot, "the kill scene never reached its suspension point");: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             Assert.IsTrue(stage.ScenePlaying, "suspension is mid-scene, not scene-end");: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg: : The system cannot find the path specified. (os error 3)
+rg:             Vector3 frozenBall = stage.transform.Find("Ball").localPosition;: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             for (int i = 0; i < 10; i++) yield return null;: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             Assert.AreEqual(frozenBall, stage.transform.Find("Ball").localPosition,: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:                 "the frozen shot must hang mid-flight");: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg: : The system cannot find the path specified. (os error 3)
+rg:             // Resume as Lost: the flight completes — the killing goal plays, then the collapse.: The system cannot find the path specified. (os error 3)
+rg:             var ledger = new ScoreLedger();: The system cannot find the file specified. (os error 2)
+rg:             ScoreLedger.FinalPlan lost = ledger.PlanFinal(LegGrade.Lost);: The system cannot find the file specified. (os error 2)
+rg:             int goals = 0;: The system cannot find the file specified. (os error 2)
+rg:             bool done = false;: The system cannot find the file specified. (os error 2)
+rg:             stage.ResumeSuspended(lost, g => goals++, () => done = true);: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             w = 0f;: The system cannot find the file specified. (os error 2)
+rg:             while (!done && w < 10f) { w += Time.deltaTime; yield return null; }: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             Assert.IsTrue(done, "the Lost continuation never completed");: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             Assert.AreEqual(lost.Goals.Length, goals, "the killing shot must visibly play");: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             Assert.IsFalse(stage.SuspendedAtShot);: The system cannot find the file specified. (os error 2)
+rg: : The system cannot find the path specified. (os error 3)
+rg:             // Resume as VOID (fresh suspension): no goals — the stage dissolves cyan.: The system cannot find the path specified. (os error 3)
+rg:             stage.SuspendKillShot(1);: The system cannot find the file specified. (os error 2)
+rg:             w = 0f;: The system cannot find the file specified. (os error 2)
+rg:             while (!stage.SuspendedAtShot && w < 8f) { w += Time.deltaTime; yield return null; }: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             goals = 0;: The system cannot find the file specified. (os error 2)
+rg:             done = false;: The system cannot find the file specified. (os error 2)
+rg:             stage.ResumeSuspended(new ScoreLedger().PlanFinal(LegGrade.Voided), g => goals++, () => done = true);: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             w = 0f;: The system cannot find the file specified. (os error 2)
+rg:             while (!done && w < 10f) { w += Time.deltaTime; yield return null; }: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             Assert.IsTrue(done, "the VOID continuation never completed");: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             Assert.AreEqual(0, goals, "a voided leg stages no goals");: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:         }: The system cannot find the file specified. (os error 2)
+rg: : The system cannot find the path specified. (os error 3)
+rg:         [UnityTest]: The system cannot find the file specified. (os error 2)
+rg:         public IEnumerator Freezing_holds_the_exact_frame(): The system cannot find the file specified. (os error 2)
+rg:         {: The system cannot find the file specified. (os error 2)
+rg:             TheaterStage stage = BuildStage();: The system cannot find the file specified. (os error 2)
+rg:             stage.SetLiveProb(0.8f);: The system cannot find the file specified. (os error 2)
+rg:             yield return null;: The system cannot find the file specified. (os error 2)
+rg:             yield return null;: The system cannot find the file specified. (os error 2)
+rg: : The system cannot find the path specified. (os error 3)
+rg:             stage.SetFrozen(true);: The system cannot find the file specified. (os error 2)
+rg:             float frozenTerr = stage.LastTerritoryX;: The system cannot find the file specified. (os error 2)
+rg:             Vector3 frozenBall = stage.transform.Find("Ball").localPosition;: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             Vector3 frozenDot = stage.transform.Find("Home3").localPosition;: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg: : The system cannot find the path specified. (os error 3)
+rg:             for (int i = 0; i < 12; i++) yield return null;: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg: : The system cannot find the path specified. (os error 3)
+rg:             Assert.IsTrue(stage.IsFrozen);: The system cannot find the file specified. (os error 2)
+rg:             Assert.AreEqual(frozenTerr, stage.LastTerritoryX, 1e-6f, "frozen territory must not move");: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             Assert.AreEqual(frozenBall, stage.transform.Find("Ball").localPosition, "frozen ball must not move");: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:             Assert.AreEqual(frozenDot, stage.transform.Find("Home3").localPosition, "frozen dots must not move");: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg: : The system cannot find the path specified. (os error 3)
+rg:             // Thaw: motion resumes.: The system cannot find the path specified. (os error 3)
+rg:             stage.SetFrozen(false);: The system cannot find the file specified. (os error 2)
+rg:             stage.SetLiveProb(0.2f);: The system cannot find the file specified. (os error 2)
+rg:             yield return null;: The system cannot find the file specified. (os error 2)
+rg:             Assert.AreNotEqual(frozenTerr, stage.LastTerritoryX, "thawed territory must move again");: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg:         }: The system cannot find the file specified. (os error 2)
+rg:     }: The system cannot find the file specified. (os error 2)
+rg: }: The system cannot find the file specified. (os error 2)
+

@@ -34,6 +34,23 @@ public sealed class RunConfig
     public double MinTrueProb { get; set; } = 0.25;
     public double MaxTrueProb { get; set; } = 0.75;
 
+    // Soccer-market foundation. Rates are latent per-team match rates; the signal noise is the
+    // public, deliberately imperfect detail-page information. The grid caps keep the exact
+    // pricing distribution finite and give the sampler a constant draw count.
+    public double BaseGoalRate { get; set; } = 1.35;
+    public double BaseCornerRate { get; set; } = 5.0;
+    public double BaseCardRate { get; set; } = 2.2;
+    public double GoalTempoSpread { get; set; } = 0.15;
+    public double CornerTempoSpread { get; set; } = 0.20;
+    public double DisciplineSpread { get; set; } = 0.20;
+    public double SignalNoise { get; set; } = 0.35;
+    public int MaxGoalsGrid { get; set; } = 8;
+    public int MaxCornerGrid { get; set; } = 20;
+    public int MaxCardGrid { get; set; } = 12;
+    public double[] GoalLines { get; set; } = { 1.5, 2.5, 3.5 };
+    public double[] CornerLines { get; set; } = { 8.5, 9.5, 10.5 };
+    public double[] CardLines { get; set; } = { 3.5, 4.5, 5.5 };
+
     /// <summary>Max passive relics owned at once. The rework catalog has 3 passives; slots stay
     /// roomier for the committed item-growth direction (design/10 B2).</summary>
     public int RelicSlots { get; set; } = 5;

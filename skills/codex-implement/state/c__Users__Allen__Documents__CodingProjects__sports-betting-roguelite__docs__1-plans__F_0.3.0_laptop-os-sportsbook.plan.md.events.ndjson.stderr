@@ -1,0 +1,17 @@
+Reading additional input from stdin...
+2026-07-19T23:54:06.055846Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.7 seconds
+Output:
+[31;1mParserError: [0m
+[31;1m[36;1mLine |[0m
+[31;1m[36;1m[36;1m   2 | [0m … f (($n -ge 1 -and $n -le 230) -or ($n -ge 1 -and $n -le 18) [36;1m}[0m { '{0,4 …[0m
+[31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                                               ~[0m
+[31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mMissing closing ')' after expression in 'if' statement.[0m
+
+2026-07-20T00:02:01.653312Z ERROR codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit
+2026-07-20T00:04:17.430964Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\unity\SBR\Assets\SBR\Runtime\SportsbookApp.cs:
+            LaptopUi.MakeText(_root, "AppBacking", Vector2.zero, Vector2.zero, Vector2.zero,
+2026-07-20T00:05:25.611037Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in C:\Users\Allen\Documents\CodingProjects\sports-betting-roguelite\docs\ARCHI.md:
+- **The laptop** (`LaptopScreen` + `BetslipModel` + `RunDirector`): the betting app — betslip with
+  fraction-chip stakes and modifier toggles, shop (dealt-hand cards, Manager button, sell-backs at
+  `GetResaleValue`), run header with effect chrome. `RunDirector` owns run lifecycle and engine verb calls.

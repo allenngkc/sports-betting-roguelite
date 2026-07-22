@@ -37,7 +37,7 @@ public sealed class RandomStrategy : IStrategy
 
             var picks = new List<Pick>(legs);
             foreach (int m in DistinctMatchups(rng, slateCount, legs))
-                picks.Add(new Pick(m, rng.NextDouble() < 0.5 ? Side.Home : Side.Away));
+                picks.Add(new Pick(m, MarketSelection.Moneyline(rng.NextDouble() < 0.5 ? Side.Home : Side.Away)));
 
             double frac = 0.1 + 0.4 * rng.NextDouble(); // 10..50%
             double stake = Math.Max(run.Config.MinStake, Math.Floor(frac * run.Bank));

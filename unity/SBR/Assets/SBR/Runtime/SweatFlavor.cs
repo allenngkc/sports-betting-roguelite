@@ -19,9 +19,19 @@ namespace SBR.Game
         {
             if (e.Type == DramaEventType.LegFinal) return "FINAL WHISTLE";
 
-            string picked = Short(leg.Side == Side.Home ? leg.Matchup.Home.Name : leg.Matchup.Away.Name);
-            string other = Short(leg.Side == Side.Home ? leg.Matchup.Away.Name : leg.Matchup.Home.Name);
+            bool pickedHome = PickedHomeForPresentation(leg);
+            string picked = Short(pickedHome ? leg.Matchup.Home.Name : leg.Matchup.Away.Name);
+            string other = Short(pickedHome ? leg.Matchup.Away.Name : leg.Matchup.Home.Name);
             bool up = e.WinProbAfter >= prevProb;
+
+            // Count lines are keyed by the SELECTION's sense of an increment (Over hopes,
+            // Under dreads), never the beat's prob direction (Sol, F_0.4.0 P3 r2). These are
+            // the default; the orchestrator overrides with NeutralLine when the resolved
+            // scene turns out to carry no count event.
+            if (leg.Selection.Kind == MarketKind.TotalCorners)
+                return CornerLine(leg.Selection.Choice == MarketChoice.Over, leg, e.Step);
+            if (leg.Selection.Kind == MarketKind.TotalCards)
+                return BookingLine(leg.Selection.Choice == MarketChoice.Over, leg, e.Step);
 
             // Tag overrides win over the base table.
             if (e.Tag == TensionTag.NearMiss)
@@ -114,10 +124,68 @@ namespace SBR.Game
         /// that scores never reads "passes and patience" while the net ripples (Sol, M-T4.1).</summary>
         public static string GoalLine(bool forPicked, Leg leg, int step)
         {
-            string picked = Short(leg.Side == Side.Home ? leg.Matchup.Home.Name : leg.Matchup.Away.Name);
-            string other = Short(leg.Side == Side.Home ? leg.Matchup.Away.Name : leg.Matchup.Home.Name);
+            bool pickedHome = PickedHomeForPresentation(leg);
+            string picked = Short(pickedHome ? leg.Matchup.Home.Name : leg.Matchup.Away.Name);
+            string other = Short(pickedHome ? leg.Matchup.Away.Name : leg.Matchup.Home.Name);
             return Base(DramaEventType.Score, forPicked, picked, other, step);
         }
+
+        /// <summary>Ordinary-play line for a count-market beat whose resolved scene carries no
+        /// count event (a zero batch fell through) — corner/booking words would be a lie there
+        /// (Sol, F_0.4.0 P3 r2). Plain possession language, direction from the beat.</summary>
+        public static string NeutralLine(DramaEvent e, Leg leg, bool up)
+        {
+            bool pickedHome = PickedHomeForPresentation(leg);
+            string picked = Short(pickedHome ? leg.Matchup.Home.Name : leg.Matchup.Away.Name);
+            string other = Short(pickedHome ? leg.Matchup.Away.Name : leg.Matchup.Home.Name);
+            return Base(DramaEventType.Momentum, up, picked, other, e.Step);
+        }
+
+        public static string CornerLine(bool forPicked, Leg leg, int step)
+        {
+            string[] lines = forPicked ? CornerFor : CornerAgainst;
+            return lines[step % lines.Length];
+        }
+
+        public static string BookingLine(bool forPicked, Leg leg, int step)
+        {
+            string[] lines = forPicked ? BookingFor : BookingAgainst;
+            return lines[step % lines.Length];
+        }
+
+        private static readonly string[] CornerFor =
+        {
+            "whipped into the corner — the count moves your way.",
+            "corner kick won. another little number for the ledger.",
+            "the flag goes up; pressure becomes a corner.",
+        };
+
+        private static readonly string[] CornerAgainst =
+        {
+            "corner conceded. the number leans the wrong way.",
+            "they win the flag — an under bettor hears the groan.",
+            "deflected wide. corner to them, naturally.",
+        };
+
+        private static readonly string[] BookingFor =
+        {
+            "yellow card in the spell — the picked number improves.",
+            "the referee reaches for the card. discipline pays.",
+            "late tackle, clear booking. the cards count ticks.",
+        };
+
+        private static readonly string[] BookingAgainst =
+        {
+            "yellow card against the pick. the count bites.",
+            "whistle, card, paperwork — that is not what you wanted.",
+            "another booking. the number turns sour.",
+        };
+
+        /// <summary>Market legs (O/U, BTTS) have no picked TEAM — presentation anchors them on the
+        /// home side; the market label carries the pick. Shared by every renderer so the anchor
+        /// can never disagree across surfaces. Moneyline legs answer with their real side.</summary>
+        public static bool PickedHomeForPresentation(Leg leg)
+            => leg.Selection.Kind != MarketKind.Moneyline || leg.Selection.Choice == MarketChoice.Home;
 
         /// <summary>The team's noun (last word of the "City Noun" name) - punchier for the ticker.</summary>
         public static string Short(string teamName)

@@ -17,6 +17,8 @@ namespace SBR.Game
         public float calmSeconds = 3.0f;
         public float goalSeconds = 4.5f;
         public float breakawaySeconds = 5.0f;
+        public float cornerSeconds = 4.5f;
+        public float bookingSeconds = 4.0f;
         /// <summary>#9 overlay: the steal → transition intro adds this on top of the base scene.</summary>
         public float leadChangeIntroExtra = 0.8f;
         public float nearMissSeconds = 6.5f;
@@ -44,6 +46,9 @@ namespace SBR.Game
                 SceneTemplate.GoalAgainst => goalSeconds,
                 SceneTemplate.BreakawayFor => breakawaySeconds,
                 SceneTemplate.BreakawayAgainst => breakawaySeconds,
+                SceneTemplate.CornerFor => cornerSeconds,
+                SceneTemplate.CornerAgainst => cornerSeconds,
+                SceneTemplate.Booking => bookingSeconds,
                 SceneTemplate.TerritoryFor => territorySeconds,
                 SceneTemplate.TerritoryAgainst => territorySeconds,
                 SceneTemplate.NearMissHope => nearMissSeconds + nearMissHold,
