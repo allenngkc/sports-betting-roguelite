@@ -23,9 +23,10 @@ namespace SBR.Sim;
 /// Mulligan Slip / Profit Boost while a consumable slot is free — all only above a working-capital
 /// floor of the NEXT payment.
 ///
-/// HONESTY: reads only public state — odds, displayed stats, bank/payment, offers, revealed
-/// WinProbAfter, own items. Never Matchup.TrueHomeProb, Latents, StatLine, Matchup.Dist,
-/// engine pricing helpers, Leg.TrueProb, or Matchup.Result.
+/// HONESTY: reads only public state — odds, bank/payment, offers, revealed WinProbAfter,
+/// own items. Never Matchup.TrueHomeProb, Latents, StatLine, Matchup.Dist, engine pricing
+/// helpers, Leg.TrueProb, Matchup.Result, or the displayed TeamStats signal (the rejected
+/// estimator read them; the de-vig sharp prices off the board alone).
 /// </summary>
 public class SkilledStrategy : IStrategy
 {
@@ -50,8 +51,8 @@ public class SkilledStrategy : IStrategy
     };
 
     private static readonly string[] ConsumablePriority =
-        { "mulligan_slip", "refs_whistle", "free_bet", "profit_boost", "bookies_marker",
-          "double_or_nothing", "ask_manager" };
+        { "mulligan_slip", "refs_whistle", "double_or_nothing", "free_bet", "profit_boost",
+          "bookies_marker", "ask_manager" };
 
     /// <summary>The tier list (archetype bots override).</summary>
     protected virtual string[] RelicPriorityList => DefaultRelicPriority;
@@ -72,8 +73,9 @@ public class SkilledStrategy : IStrategy
     /// the one-modifier law). DoN doubles the committed engine parlay; Free Bet insures everything
     /// else. The 0.30 win-prob gate is ML-era scaffolding (a 3-leg favorites plan sits ~0.34) —
     /// under the full board the sharp plays singles/pairs/triples by EV, and a +EV single at 0.6
-    /// prob is a better DoN spot than a 3-leg parlay at 0.05. Gate on TICKET EV (win × odds − 1)
-    /// instead: the modifier's value scales with the ticket's edge, not its shape.</summary>
+    /// prob is a better DoN spot than a 3-leg parlay at 0.05. Gate on TICKET EV (win × odds ×
+    /// owned shape factors − 1) instead: the modifier's value scales with the ticket's edge,
+    /// not its shape — an engine parlay the Multiplier makes +EV is exactly the DoN spot.</summary>
     protected virtual TicketModifier PickModifier(Run run, double planWinProb, double planTicketEv)
     {
         if (run.OwnsConsumable("double_or_nothing") && planTicketEv > 0.0)
@@ -131,10 +133,10 @@ public class SkilledStrategy : IStrategy
         public readonly double PHat;
         public readonly double Odds;
         public readonly double Ev;
-        public Cand(int matchup, MarketSelection selection, double pHat, double odds)
+        public Cand(int matchup, MarketSelection selection, double pHat, double odds, double legFactor)
         {
             Matchup = matchup; Selection = selection; PHat = pHat; Odds = odds;
-            Ev = pHat * odds - 1.0;
+            Ev = pHat * odds * legFactor - 1.0;
         }
     }
 
@@ -155,18 +157,31 @@ public class SkilledStrategy : IStrategy
                 if (selection.Kind == MarketKind.AnytimeScorer) continue; // declared human-agency market
                 if (!IncludesMarketOffers && selection.Kind != MarketKind.Moneyline) continue;
 
-                double pHat = EstimateProbability(m, selection, state.HomeProbEst[m.Index], run.Config);
+                double pHat = EstimateProbability(m, selection);
                 state.MarketProbEst[(m.Index, selection)] = pHat;
-                var candidate = new Cand(m.Index, selection, pHat, offer.Odds);
-                if (best is null || candidate.Ev > best.Value.Ev) best = candidate;
+                var candidate = new Cand(m.Index, selection, pHat, offer.Odds, OwnedLegFactor(run, offer.Odds));
+                // De-vig of a truth-priced pair is exact, so in v1 every selection ties at −vig
+                // EV and "best per matchup" is a persona tie-break, not an edge: the sharp's home
+                // is the moneyline FAVORITE (the ML-era candidate). A strictly-better EV pulls it
+                // off the ML — owned item factors (Photo flips a longshot +EV) or, in v2, pricing
+                // noise. That movement toward what the build pays for is the point of the board.
+                if (best is null) best = candidate;
+                else if (candidate.Ev > best.Value.Ev + EvTieEps) best = candidate;
+                else if (candidate.Ev >= best.Value.Ev - EvTieEps
+                         && selection.Kind == MarketKind.Moneyline
+                         && best.Value.Selection.Kind == MarketKind.Moneyline
+                         && candidate.PHat > best.Value.PHat) best = candidate;
             }
             if (best is { } chosen) cands.Add(chosen);
         }
-        cands.Sort((a, b) => b.Ev.CompareTo(a.Ev)); // the sharp plays EDGES, not confidence —
-        // under the F_0.4.0 board, sorting by pHat converges on chalk totals (0.8 prob, 1.18 odds)
-        // which are high-confidence vigs with payout too thin to fund the payment schedule.
-        // EV sort keeps the ML-era plan shape (3 legs ≈ 0.34 win, odds ≈ 4.4) by putting the
-        // bot's genuine disagreements (small +EV edges at mid/long odds) at the top.
+        // The sharp plays EDGES, not confidence — but under exact de-vig every EV ties, so the
+        // tie-break restores the ML-era order (highest-confidence first): the top-favorites
+        // 3-leg parlay (≈0.34 win, odds ≈ 4.4) that funds the payment schedule. Sorting raw by
+        // pHat across the whole board stays rejected — it converges on chalk totals (0.8 prob,
+        // 1.18 odds), high-confidence vigs with payout too thin to fund the schedule.
+        cands.Sort((a, b) => Math.Abs(a.Ev - b.Ev) > EvTieEps
+            ? b.Ev.CompareTo(a.Ev)
+            : b.PHat.CompareTo(a.PHat));
 
         if (run.Bank < run.Config.MinStake || cands.Count < 2) return;
 
@@ -190,7 +205,7 @@ public class SkilledStrategy : IStrategy
             // Survival: existing escalation logic against the payment itself. A held Free Bet
             // insures the rescue ticket — the exact spot the refund is worth the most.
             double aimMult = payment * ClearBuffer / bank;
-            var rescue = ChooseTicket(cands, aimMult, run.Config.MaxStakeFraction);
+            var rescue = ChooseTicket(run, cands, aimMult, run.Config.MaxStakeFraction);
             if (rescue is not { } r) return;
             double rf = Math.Clamp(ReqFrac(aimMult, r.Odds), StakeMin, run.Config.MaxStakeFraction);
             double rs = Math.Clamp(Math.Floor(rf * bank), run.Config.MinStake, bank);
@@ -214,7 +229,7 @@ public class SkilledStrategy : IStrategy
         // considers singles, pairs, and triples and picks the combination whose win×odds
         // best clears the payment quota; that IS the engine ticket, not a fixed 3-legger.
         double engineAimMult = payment * ClearBuffer / spare;
-        var plan = ChooseTicket(cands, engineAimMult, run.Config.MaxStakeFraction);
+        var plan = ChooseTicket(run, cands, engineAimMult, run.Config.MaxStakeFraction);
         if (plan is not { } p) return;
         var picks = p.Picks;
         double odds = p.Odds;
@@ -255,7 +270,7 @@ public class SkilledStrategy : IStrategy
                 run.Config.MinStake, cap);
         }
 
-        run.PlaceTicket(picks, stake, BoostLeg(run, picks), PickModifier(run, win, win * odds - 1.0));
+        run.PlaceTicket(picks, stake, BoostLeg(run, picks), PickModifier(run, win, win * odds * p.Factor - 1.0));
     }
 
     /// <summary>A held Profit Boost lands on the longest-odds leg — the largest absolute gain.</summary>
@@ -285,53 +300,112 @@ public class SkilledStrategy : IStrategy
         public readonly List<Pick> Picks;
         public readonly double Odds;
         public readonly double WinProb;
-        public Plan(List<Pick> picks, double odds, double winProb) { Picks = picks; Odds = odds; WinProb = winProb; }
+        public readonly double Factor;
+        public Plan(List<Pick> picks, double odds, double winProb, double factor)
+        { Picks = picks; Odds = odds; WinProb = winProb; Factor = factor; }
     }
 
-    // Best clearing ticket by ESTIMATED TICKET EV (win × odds − 1 per unit stake), the sharp's
-    // actual objective (F_0.4.0 P5 review). The old win-prob ranking preferred chalk singles and
-    // 3-leg parlays by shape alone; EV ranking lets the math decide between a safe single at
-    // +8% and a parlay at +50%, which is what the ML-era plan number 0.30 was the RESULT of,
-    // never the target. Falls back to the widest top-EV parlay when nothing clears.
-    private static Plan? ChooseTicket(List<Cand> cands, double aimMult, double escMax)
+    // Best clearing ticket by ESTIMATED TICKET EV (win × odds × owned shape factors − 1 per
+    // unit stake), the sharp's actual objective (F_0.4.0 P5 review). The old win-prob ranking
+    // preferred chalk singles and 3-leg parlays by shape alone; EV ranking lets the math decide
+    // between a safe single and a parlay, which is what the ML-era plan number 0.30 was the
+    // RESULT of, never the target. The factor term is what makes the engine REAL to the bot:
+    // item-blind EV always prefers fewer legs (vig compounds), a granted Multiplier never fires,
+    // and G5 reads +0.0pp by construction (sim-smoke-p6). PRE-ENGINE the math is different
+    // (tuning campaign, F_0.4.0): with no shape factor owned every EV ties at −vig and the
+    // singles preference is pure vig-minimization — but singles need ~3× the stake for the same
+    // payout, the comp rush buys the engine at the FIRST shop, and the passive arc flips at R2
+    // (G4). So before any engine is owned the sharp bets the RIGHT TAIL (parlays only, the
+    // ML-era doctrine); once a factor is held, EV math decides shapes. Falls back to the
+    // widest top-EV parlay when nothing clears.
+    private static Plan? ChooseTicket(Run run, List<Cand> cands, double aimMult, double escMax)
     {
         Plan? best = null;
         double bestEv = double.MinValue;
+        // Pre-engine restriction, ROUND 1 ONLY (tuning campaign, F_0.4.0): an R1 triple stakes
+        // ~$22 where an R1 single needs ~$66 for the same payout target — the 3× comp rush is
+        // what bought the engine at the FIRST shop and flipped the passive arc at R2 (G4).
+        // Triple R1 (engine lands ~a shop later, cross R3+), then restore single velocity from
+        // R2 — the item economy runs on comp income; starving it every round cost G3 4.4pp.
+        bool preEngine = !OwnsAnyEngine(run) && run.Round == 1;
 
         foreach (Cand c in cands)
         {
+            if (preEngine) break; // no engine → no singles: the right tail funds the schedule
             if (ReqFrac(aimMult, c.Odds) > escMax) continue;
-            double ev = c.PHat * c.Odds - 1.0;
+            double factor = ShapeFactor(run, 1, c.Odds);
+            double ev = c.PHat * c.Odds * factor - 1.0;
             if (ev > bestEv)
             {
                 bestEv = ev;
-                best = new Plan(new List<Pick> { new Pick(c.Matchup, c.Selection) }, c.Odds, c.PHat);
+                best = new Plan(new List<Pick> { new Pick(c.Matchup, c.Selection) }, c.Odds, c.PHat, factor);
             }
         }
 
-        double odds = 1.0, win = 1.0;
+        double odds = 1.0, win = 1.0, longest = 0.0;
         var picks = new List<Pick>(3);
         for (int i = 0; i < Math.Min(MaxPrimaryLegs, cands.Count); i++)
         {
             odds *= cands[i].Odds;
             win *= cands[i].PHat;
+            if (cands[i].Odds > longest) longest = cands[i].Odds;
             picks.Add(new Pick(cands[i].Matchup, cands[i].Selection));
             if (i + 1 < 2) continue; // only consider L >= 2 here
-            double ticketEv = win * odds - 1.0;
+            if (preEngine && i + 1 < 3) continue; // pre-engine: the triple, not the pair
+            double legFactor = ShapeFactor(run, i + 1, longest);
+            double ticketEv = win * odds * legFactor - 1.0;
             if (ReqFrac(aimMult, odds) <= escMax && ticketEv > bestEv)
             {
                 bestEv = ticketEv;
-                best = new Plan(new List<Pick>(picks), odds, win);
+                best = new Plan(new List<Pick>(picks), odds, win, legFactor);
             }
         }
 
         if (best != null) return best;
 
         int legs = Math.Min(MaxPrimaryLegs, cands.Count);
-        double o2 = 1.0, w2 = 1.0;
+        double o2 = 1.0, w2 = 1.0, l2 = 0.0;
         var p2 = new List<Pick>(legs);
-        for (int i = 0; i < legs; i++) { o2 *= cands[i].Odds; w2 *= cands[i].PHat; p2.Add(new Pick(cands[i].Matchup, cands[i].Selection)); }
-        return new Plan(p2, o2, w2);
+        for (int i = 0; i < legs; i++)
+        {
+            o2 *= cands[i].Odds; w2 *= cands[i].PHat;
+            if (cands[i].Odds > l2) l2 = cands[i].Odds;
+            p2.Add(new Pick(cands[i].Matchup, cands[i].Selection));
+        }
+        return new Plan(p2, o2, w2, ShapeFactor(run, legs, l2));
+    }
+
+    /// <summary>The payout factor an owned Longshot Larry's Photo applies to a single leg:
+    /// the flag is per-leg (odds ≥ minOdds) and void-toggled, so the sharp prices it into the
+    /// LEG comparison — with the Photo held, a live longshot is genuinely +EV and the build's
+    /// engine pulls it off the moneyline favorite. Params are read off the owned definition —
+    /// public item-card info — so a catalog re-tune never desyncs the bot.</summary>
+    private static double OwnedLegFactor(Run run, double legOdds)
+    {
+        foreach (RelicDefinition d in run.OwnedRelics)
+            if (d.Id == "longshot_photo"
+                && legOdds >= (d.Params.TryGetValue("minOdds", out double minOdds) ? minOdds : 3.0))
+                return d.Params.TryGetValue("mult", out double mult) ? mult : 1.6;
+        return 1.0;
+    }
+
+    /// <summary>The payout factor OWNED items apply to a ticket of this shape — The Multiplier
+    /// at ≥minLegs legs, the Photo when any leg carries its flag. Shape-independent product
+    /// sources (Whale, Collection, House Key, DoN) multiply every plan equally and correctly
+    /// leave the RANKING untouched, so they are not here.</summary>
+    private static double ShapeFactor(Run run, int legCount, double longestLegOdds)
+    {
+        double factor = 1.0;
+        foreach (RelicDefinition d in run.OwnedRelics)
+        {
+            if (d.Id == RelicCatalog.MultiplierId
+                && legCount >= (d.Params.TryGetValue("minLegs", out double minLegs) ? minLegs : 3.0))
+                factor *= d.Params.TryGetValue("mult", out double mult) ? mult : 1.6;
+            else if (d.Id == "longshot_photo"
+                && longestLegOdds >= (d.Params.TryGetValue("minOdds", out double minOdds) ? minOdds : 3.0))
+                factor *= d.Params.TryGetValue("mult", out double pmult) ? pmult : 1.6;
+        }
+        return factor;
     }
 
     private static double PlanOdds(List<Cand> picks)
@@ -467,136 +541,27 @@ public class SkilledStrategy : IStrategy
 
     // ---- estimation helpers (public info only) ----
 
-    /// <summary>The sharp's edge: it reads the DISPLAYED TeamStats signal (public info) and
-    /// estimates latent rates with the OPTIMAL posterior mean under the signal's noise model —
-    /// shrinkage factor = spreadVar / (spreadVar + noiseVar), which for the tuned dials is ~0.75
-    /// (trust the signal 75%, shrink 25% toward the base rate). This is deliberately NOT de-vig:
-    /// the book prices at the true latent, and a weaker (noisier) estimator finds genuine
-    /// disagreement ~30% of the time with ~6% RMSE vs 5% vig — small edges, real edges.
-    /// Moneyline stays de-vigged (records are its signal; pHome is the public estimate).</summary>
-    private static double EstimateProbability(Matchup matchup, MarketSelection selection, double pHome, RunConfig config)
+    /// <summary>The sharp's ONLY estimator in v1: two-way de-vig — normalize the implied probs
+    /// of the offered pair. The book prices both sides proportionally from truth at a constant
+    /// overround, so this recovers the true probability EXACTLY, for every market kind. The
+    /// stats-signal estimator (shrinkage over the displayed TeamStats, bot-side Poisson grids)
+    /// was tried and rejected in the F_0.4.0 P5 review: against a truth-priced book its
+    /// disagreements are phantom edges and the bot torched its bankroll chasing them (G3 2.1%
+    /// in sim-smoke-p5). The information axis returns in v2 with pricing noise.</summary>
+    private static double EstimateProbability(Matchup matchup, MarketSelection selection)
     {
-        if (selection.Kind == MarketKind.Moneyline)
-            return selection.Choice == MarketChoice.Home ? pHome : 1.0 - pHome;
-
-        TeamStats home = matchup.HomeStats;
-        TeamStats away = matchup.AwayStats;
-        double homeGoals = Shrink(home.GoalsFor, config.BaseGoalRate, config);
-        double awayGoals = Shrink(away.GoalsFor, config.BaseGoalRate, config);
-        double homeCorners = Shrink(home.Corners, config.BaseCornerRate, config);
-        double awayCorners = Shrink(away.Corners, config.BaseCornerRate, config);
-        double homeCards = Shrink(home.Cards, config.BaseCardRate, config);
-        double awayCards = Shrink(away.Cards, config.BaseCardRate, config);
-
-        switch (selection.Kind)
-        {
-            case MarketKind.TotalGoals:
-            {
-                double over = ScoreGridProbability(homeGoals, awayGoals, pHome, config.MaxGoalsGrid,
-                    (h, a) => h + a > selection.Line);
-                return selection.Choice == MarketChoice.Over ? over : 1.0 - over;
-            }
-            case MarketKind.BothTeamsToScore:
-            {
-                double yes = ScoreGridProbability(homeGoals, awayGoals, pHome, config.MaxGoalsGrid,
-                    (h, a) => h >= 1 && a >= 1);
-                return selection.Choice == MarketChoice.Yes ? yes : 1.0 - yes;
-            }
-            case MarketKind.TotalCorners:
-            {
-                double over = CountGridProbability(homeCorners, awayCorners, config.MaxCornerGrid, selection.Line);
-                return selection.Choice == MarketChoice.Over ? over : 1.0 - over;
-            }
-            case MarketKind.TotalCards:
-            {
-                double over = CountGridProbability(homeCards, awayCards, config.MaxCardGrid, selection.Line);
-                return selection.Choice == MarketChoice.Over ? over : 1.0 - over;
-            }
-            default:
-                throw new ArgumentException($"Bots do not price {selection.Kind}");
-        }
+        double impl = 1.0 / matchup.Odds(selection);
+        double implOpp = 1.0 / matchup.Odds(Opposite(selection));
+        return impl / (impl + implOpp);
     }
 
-    /// <summary>Posterior mean of the latent rate given the noisy displayed signal, with a
-    /// deliberate EXTRA shrinkage factor (< 1.0) on top of the MMSE optimal. The raw MMSE
-    /// (75% trust) finds +17-29% phantom edges at the extremes — the signal is noisier than
-    /// the theoretical model because the prior is narrower conditional on the matchup (teams
-    /// with different pHome have correlated rates). TrustDamp shrinks toward the book's price
-    /// (base rate) more aggressively so the bot's estimates stay near-truth except when the
-    /// signal is genuinely strong; it is a sim-side dial, never a RunConfig knob.</summary>
-    private const double TrustDamp = 0.30;
-
-    private static double Shrink(double displayed, double baseRate, RunConfig config)
-    {
-        double spread = baseRate == config.BaseGoalRate ? config.GoalTempoSpread
-            : baseRate == config.BaseCornerRate ? config.CornerTempoSpread
-            : config.DisciplineSpread;
-        double spreadVar = baseRate * baseRate * spread * spread / 3.0;
-        double sigma = config.SignalNoise * baseRate / Math.Sqrt(config.PriorGames);
-        double noiseVar = sigma * sigma / 3.0;
-        double trust = spreadVar / (spreadVar + noiseVar) * TrustDamp;
-        return baseRate + (displayed - baseRate) * trust;
-    }
-
-    // The engine's v1 score process conditions the no-draw score grid on the winner, so the
-    // bettor mixes its own two conditional grids by its public moneyline estimate. Deliberately
-    // local strategy math, not a call into MatchModel — the bot prices from PUBLIC signal only.
-    private static double ScoreGridProbability(double homeRate, double awayRate, double pHome,
-        int maxGoals, Func<int, int, bool> predicate)
-    {
-        double homeMass = 0.0, awayMass = 0.0;
-        double homeHit = 0.0, awayHit = 0.0;
-        for (int h = 0; h <= maxGoals; h++)
-        for (int a = 0; a <= maxGoals; a++)
-        {
-            if (h == a) continue;
-            double mass = PoissonPmf(h, homeRate) * PoissonPmf(a, awayRate);
-            if (h > a)
-            {
-                homeMass += mass;
-                if (predicate(h, a)) homeHit += mass;
-            }
-            else
-            {
-                awayMass += mass;
-                if (predicate(h, a)) awayHit += mass;
-            }
-        }
-        return pHome * homeHit / homeMass + (1.0 - pHome) * awayHit / awayMass;
-    }
-
-    private static double CountGridProbability(double homeRate, double awayRate, int max, double line)
-    {
-        double[] home = RawPoisson(homeRate, max, out double homeTotal);
-        double[] away = RawPoisson(awayRate, max, out double awayTotal);
-        double over = 0.0;
-        for (int h = 0; h < home.Length; h++)
-        for (int a = 0; a < away.Length; a++)
-            if (h + a > line) over += home[h] / homeTotal * (away[a] / awayTotal);
-        return over;
-    }
-
-    private static double[] RawPoisson(double rate, int max, out double total)
-    {
-        var terms = new double[max + 1];
-        total = 0.0;
-        for (int i = 0; i <= max; i++)
-        {
-            terms[i] = PoissonPmf(i, rate);
-            total += terms[i];
-        }
-        return terms;
-    }
-
-    private static double PoissonPmf(int k, double rate)
-    {
-        double p = Math.Exp(-rate);
-        for (int i = 1; i <= k; i++) p *= rate / i;
-        return p;
-    }
+    /// <summary>Exact de-vig ties every selection at −vig EV; float noise (~1e-16) must not
+    /// break those ties, genuine disagreements (v2) are orders of magnitude larger.</summary>
+    private const double EvTieEps = 1e-9;
 
     private static MarketSelection Opposite(MarketSelection s) => s.Kind switch
     {
+        MarketKind.Moneyline => MarketSelection.Moneyline(s.Choice == MarketChoice.Home ? Side.Away : Side.Home),
         MarketKind.TotalGoals => MarketSelection.TotalGoals(s.Line, s.Choice != MarketChoice.Over),
         MarketKind.TotalCorners => MarketSelection.TotalCorners(s.Line, s.Choice != MarketChoice.Over),
         MarketKind.TotalCards => MarketSelection.TotalCards(s.Line, s.Choice != MarketChoice.Over),
@@ -615,9 +580,7 @@ public class SkilledStrategy : IStrategy
     {
         if (state.MarketProbEst.TryGetValue((leg.Matchup.Index, leg.Selection), out double pHat))
             return pHat;
-        int idx = leg.Matchup.Index;
-        double pHome = state.HomeProbEst.TryGetValue(idx, out double v) ? v : DevigHome(leg.Matchup);
-        return EstimateProbability(leg.Matchup, leg.Selection, pHome, leg.Matchup.ModelConfig ?? new RunConfig());
+        return EstimateProbability(leg.Matchup, leg.Selection);
     }
 
     // Required stake fraction f so that f·O + (1−f) ≥ needMult on a win: f ≥ (needMult−1)/(O−1).
