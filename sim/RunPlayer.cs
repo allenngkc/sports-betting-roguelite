@@ -76,6 +76,7 @@ public static class RunPlayer
                 rm.TotalStaked += t.Stake;
                 rm.TicketEvsAtLock.Add(Metrics.TrueTicketEvAtLock(t));
                 rm.TicketPassiveEvsAtLock.Add(Metrics.TruePassiveOnlyEvAtLock(t));
+                RecordMarketPlacement(rm, t);
             }
 
             run.LockRound();
@@ -87,6 +88,7 @@ public static class RunPlayer
             else
                 run.FastForwardRound(); // naive: never cashes out; pending windows auto-decline
 
+            RecordMarketRealization(rm, run.Tickets);
             ScoreSwings(run, rm, cashoutByTicket);
             result.BiggestSwing = Math.Max(result.BiggestSwing, rm.BiggestSwing);
 
@@ -235,6 +237,44 @@ public static class RunPlayer
             };
             if (swing > rm.BiggestSwing) rm.BiggestSwing = swing;
         }
+    }
+
+    private static void RecordMarketPlacement(RoundMetrics rm, Ticket ticket)
+    {
+        if (ticket.Legs.Count == 0) return;
+        double stakePerLeg = ticket.Stake / ticket.Legs.Count;
+        foreach (Leg leg in ticket.Legs)
+        {
+            MarketExposure exposure = Exposure(rm, leg.Selection.Kind);
+            exposure.LegsPlaced++;
+            exposure.Stake += stakePerLeg;
+        }
+    }
+
+    private static void RecordMarketRealization(RoundMetrics rm, IReadOnlyList<Ticket> tickets)
+    {
+        foreach (Ticket ticket in tickets)
+        {
+            if (ticket.Legs.Count == 0) continue;
+            double stakePerLeg = ticket.Stake / ticket.Legs.Count;
+            foreach (Leg leg in ticket.Legs)
+            {
+                // A void returns its allocated stake; the other market legs retain their own
+                // observable result. This is intentionally before parlay/item/cash-out effects.
+                if (leg.IsVoided) continue;
+                MarketExposure exposure = Exposure(rm, leg.Selection.Kind);
+                double unitNet = leg.GradesWon ? leg.OfferedOdds - 1.0 : -1.0;
+                exposure.RealizedNet += stakePerLeg * unitNet;
+                exposure.RealizedNetUnit += unitNet;
+            }
+        }
+    }
+
+    private static MarketExposure Exposure(RoundMetrics rm, MarketKind kind)
+    {
+        if (!rm.MarketExposure.TryGetValue(kind, out MarketExposure? exposure))
+            rm.MarketExposure[kind] = exposure = new MarketExposure();
+        return exposure;
     }
 
     // ---- per-item event accounting (rev 5 §16) ----

@@ -234,7 +234,9 @@ public sealed class Matchup
     /// <summary>Derived from the locked stat line, shared by every leg referencing this matchup.</summary>
     public Side? Result => StatLine?.Winner;
     public MatchStatLine? StatLine { get; internal set; }
-    internal RunConfig ModelConfig { get; }
+    /// <summary>The RunConfig this matchup's markets were priced under — public read access
+    /// for the sim's honest estimators (they price from the same dials, never engine internals).</summary>
+    public RunConfig ModelConfig { get; }
 
     private MatchDistributions? _dist;
     /// <summary>The matchup's exact finite distributions, built once and shared by pricing,

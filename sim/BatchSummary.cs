@@ -55,6 +55,9 @@ public sealed class BatchSummary
     /// <summary>Runs whose final effect state for the id was > 0 (ratchets that actually wound).</summary>
     public readonly Dictionary<string, int> StatePositiveRuns = new();
 
+    /// <summary>Batch-total market exposure. Scorer rows remain zero by declared bot policy.</summary>
+    public readonly Dictionary<MarketKind, MarketExposure> MarketExposure = new();
+
     public static BatchSummary From(string name, RunResult[] results)
     {
         var s = new BatchSummary { Name = name, N = results.Length };
@@ -114,6 +117,15 @@ public sealed class BatchSummary
                 decByRound[r].Add(rm.Decisions);
                 foreach (double ev in rm.TicketEvsAtLock) evByRound[r].Add(ev);
                 foreach (double ev in rm.TicketPassiveEvsAtLock) pevByRound[r].Add(ev);
+                foreach ((MarketKind kind, MarketExposure exposure) in rm.MarketExposure)
+                {
+                    if (!s.MarketExposure.TryGetValue(kind, out MarketExposure? total))
+                        s.MarketExposure[kind] = total = new MarketExposure();
+                    total.LegsPlaced += exposure.LegsPlaced;
+                    total.Stake += exposure.Stake;
+                    total.RealizedNet += exposure.RealizedNet;
+                    total.RealizedNetUnit += exposure.RealizedNetUnit;
+                }
             }
         }
 

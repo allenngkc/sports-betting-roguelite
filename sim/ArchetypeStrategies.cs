@@ -19,6 +19,7 @@ public sealed class ChalkGrinderStrategy : SkilledStrategy
 
     public override string Name => "chalk";
     protected override string[] RelicPriorityList => Priority;
+    protected override bool IncludesMarketOffers => false;
 
     // Chalk lives on leg volume: always stretch to 4 favorites when the slate allows.
     protected override int PrimaryLegCap(Run run) => 4;
@@ -36,6 +37,7 @@ public sealed class VipHoarderStrategy : SkilledStrategy
 
     public override string Name => "hoarder";
     protected override string[] RelicPriorityList => Priority;
+    protected override bool IncludesMarketOffers => false;
 
     // The hoard IS the build: once the engine pieces exist, comps stay home.
     protected override double CompsHoldFloor(Run run)
@@ -54,11 +56,12 @@ public sealed class IronHandsStrategy : SkilledStrategy
 
     public override string Name => "ironhands";
     protected override string[] RelicPriorityList => Priority;
+    protected override bool IncludesMarketOffers => false;
 
     // Commitment as identity: DoN whenever held (the stack only grows on full rides), and
     // cash-out only as literal survival (the base survival-take rule stays in ShouldCashOut
     // via target-clearing; EV-ratio exits are off).
-    protected override TicketModifier PickModifier(Run run, double planWinProb)
+    protected override TicketModifier PickModifier(Run run, double planWinProb, double planTicketEv)
     {
         if (run.OwnsConsumable("double_or_nothing")) return TicketModifier.DoubleOrNothing;
         if (run.OwnsConsumable("free_bet")) return TicketModifier.FreeBet;

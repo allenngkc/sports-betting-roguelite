@@ -43,7 +43,7 @@ internal static class Program
         long totalRuns = 0;
 
         IEnumerable<string> strategyNames = opt.Gates
-            ? new[] { "naive", "skilled", "noshop", "martyr", "chalk", "hoarder", "ironhands" }
+            ? new[] { "naive", "random", "skilled", "noshop", "martyr", "chalk", "hoarder", "ironhands" }
             : opt.SelectedStrategies; // gates roster: the gate bots + archetype telemetry
 
         foreach (string name in strategyNames)

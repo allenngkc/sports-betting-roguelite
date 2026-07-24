@@ -13,7 +13,8 @@ namespace SBR.Sim;
 ///   • Sweat: steps the sessions and cashes out with 5% probability per event whenever an offer exists.
 ///   • Shop: half the time, buys one random affordable offer.
 ///
-/// HONESTY: picks sides and matchups at random — it never consults probabilities at all, true or implied.
+/// HONESTY: picks board selections and matchups at random — it never consults probabilities at all,
+/// true or implied. Anytime scorer offers are declared human-agency markets and excluded from bots.
 /// </summary>
 public sealed class RandomStrategy : IStrategy
 {
@@ -37,7 +38,7 @@ public sealed class RandomStrategy : IStrategy
 
             var picks = new List<Pick>(legs);
             foreach (int m in DistinctMatchups(rng, slateCount, legs))
-                picks.Add(new Pick(m, MarketSelection.Moneyline(rng.NextDouble() < 0.5 ? Side.Home : Side.Away)));
+                picks.Add(new Pick(m, RandomBotSelection(run.CurrentSlate.Matchups[m], rng)));
 
             double frac = 0.1 + 0.4 * rng.NextDouble(); // 10..50%
             double stake = Math.Max(run.Config.MinStake, Math.Floor(frac * run.Bank));
@@ -86,5 +87,14 @@ public sealed class RandomStrategy : IStrategy
             (pool[i], pool[j]) = (pool[j], pool[i]);
             yield return pool[i];
         }
+    }
+
+    private static MarketSelection RandomBotSelection(Matchup matchup, Pcg32 rng)
+    {
+        var selections = new List<MarketSelection>();
+        foreach (MarketOffer offer in matchup.Markets)
+            if (offer.Selection.Kind != MarketKind.AnytimeScorer)
+                selections.Add(offer.Selection);
+        return selections[rng.NextInt(0, selections.Count)];
     }
 }

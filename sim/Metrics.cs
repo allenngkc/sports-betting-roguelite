@@ -21,6 +21,10 @@ public sealed class RoundMetrics
     /// <see cref="Metrics.TruePassiveOnlyEvAtLock"/>).</summary>
     public readonly List<double> TicketPassiveEvsAtLock = new();
 
+    /// <summary>Per-market leg exposure. Stake is split evenly across a ticket's placed legs so
+    /// shares sum to the total ticket stake rather than double-counting parlays.</summary>
+    public readonly Dictionary<MarketKind, MarketExposure> MarketExposure = new();
+
     public int CashOutsCount;
     public double CashOutsTotal;
 
@@ -42,6 +46,21 @@ public sealed class RoundMetrics
     /// + saves and consumables played + purchases in this round's shop.</summary>
     public int Decisions => TicketsPlaced + CashOutsCount + MulligansPlayed + WhistlesPlayed
         + ConsumablesPlayed + Buys;
+}
+
+/// <summary>Placed-leg exposure and its realized, pre-item single-leg return. This deliberately
+/// observes the market selection itself, before parlay multiplication, cash-outs, or relic
+/// factors make a ticket-level return impossible to attribute to one kind.</summary>
+public sealed class MarketExposure
+{
+    public int LegsPlaced;
+    public double Stake;
+    public double RealizedNet;
+    /// <summary>Sum of per-leg unit returns ((odds−1) on a win, −1 on a loss), unweighted by
+    /// stake. Compounding banks make the stake-weighted number a lottery readout — a few
+    /// monster tickets dominate it; THIS one converges to −vig under fair pricing and is the
+    /// sanity statistic (F_0.4.0 P5 review).</summary>
+    public double RealizedNetUnit;
 }
 
 /// <summary>Per-item event counters (PLAN.md rev 5 §16): offered / acquired / bought / sold /
@@ -124,7 +143,7 @@ public static class Metrics
         double oProd = 1.0;
         foreach (Leg leg in ticket.Legs)
         {
-            pProd *= leg.Matchup.TrueProb(leg.Side); // truth: harness scoring only
+            pProd *= leg.Matchup.TrueProb(leg.Selection); // truth: harness scoring only
             oProd *= leg.OfferedOdds;
         }
 
@@ -147,7 +166,7 @@ public static class Metrics
         double oProd = 1.0;
         foreach (Leg leg in ticket.Legs)
         {
-            pProd *= leg.Matchup.TrueProb(leg.Side); // truth: harness scoring only
+            pProd *= leg.Matchup.TrueProb(leg.Selection); // truth: harness scoring only
             oProd *= leg.BaseOdds;                   // boost stripped
         }
 

@@ -13,7 +13,16 @@ public sealed class BotState
     /// the bot at bet time from the info a player could have (de-vigged odds).</summary>
     public readonly Dictionary<int, double> HomeProbEst = new();
 
-    public void NewRound() => HomeProbEst.Clear();
+    /// <summary>The bot's public-information probability estimates for every selection it has
+    /// considered this round. MarketSelection is part of the key so non-moneyline legs never
+    /// need to be coerced through Side.</summary>
+    public readonly Dictionary<(int Matchup, MarketSelection Selection), double> MarketProbEst = new();
+
+    public void NewRound()
+    {
+        HomeProbEst.Clear();
+        MarketProbEst.Clear();
+    }
 }
 
 /// <summary>The pending-loss window verbs a bot can choose between (charm expansion, PLAN.md

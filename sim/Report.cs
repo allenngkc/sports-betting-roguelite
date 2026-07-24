@@ -34,6 +34,7 @@ public static class Report
         var sb = new StringBuilder();
         GatesSection(sb, gates);
         Survival(sb, batches);
+        MarketExposure(sb, batches);
         ItemAudit(sb, audit);
         Variance(sb, batches);
         Ratchet(sb, batches);
@@ -151,6 +152,40 @@ public static class Report
         string s = MedianDeath(skilled.MedianDeath);
         string gap = skilled.MedianDeath > naive.MedianDeath ? "skill buys real extra survival" : "skill barely moves the needle";
         return $"naive dies at round {n}, skilled reaches {s} — {gap}; compare against the 3–4 / ≥7 targets above.";
+    }
+
+    // ---- market exposure ----
+
+    private static void MarketExposure(StringBuilder sb, IReadOnlyList<BatchSummary> batches)
+    {
+        sb.AppendLine("## 2. Market exposure");
+        sb.AppendLine();
+        sb.AppendLine("Placed legs and equal-split stake share by market kind. `mean leg EV` is the "
+            + "UNWEIGHTED per-leg return (converges to −vig under fair pricing — the sanity column); "
+            + "`stake-wtd EV` is stake-weighted and fat-tailed under compounding banks (a few monster "
+            + "tickets dominate it — read it as variance, not edge). Both are single-leg, before "
+            + "parlay multiplication, cash-outs, voids, or relic factors.");
+        sb.AppendLine();
+        sb.AppendLine("| Strategy | market | legs placed | stake share | mean leg EV | stake-wtd EV |");
+        sb.AppendLine("|---|---|---|---|---|---|");
+        foreach (BatchSummary batch in batches)
+        {
+            double totalStake = 0.0;
+            foreach (MarketExposure exposure in batch.MarketExposure.Values) totalStake += exposure.Stake;
+            foreach (MarketKind kind in Enum.GetValues(typeof(MarketKind)))
+            {
+                batch.MarketExposure.TryGetValue(kind, out MarketExposure? exposure);
+                int legs = exposure?.LegsPlaced ?? 0;
+                double stake = exposure?.Stake ?? 0.0;
+                string share = totalStake == 0.0 ? "0.0%" : Pct(100.0 * stake / totalStake);
+                string meanEv = legs == 0 ? "—" : SignedPct(100.0 * exposure!.RealizedNetUnit / legs);
+                string wtdEv = stake == 0.0 ? "—" : SignedPct(100.0 * exposure!.RealizedNet / stake);
+                sb.AppendLine($"| {batch.Name} | {MarketName(kind)} | {legs.ToString("N0", Inv)} | {share} | {meanEv} | {wtdEv} |");
+            }
+        }
+        sb.AppendLine();
+        sb.AppendLine("> Anytime Scorer is intentionally zero: it is a declared human-agency market, excluded from every bot.");
+        sb.AppendLine();
     }
 
     // ---- 2. item audit ----
@@ -435,6 +470,16 @@ public static class Report
 
     private static string SignedPct(double v)
         => Math.Abs(v) < 0.05 ? "0.0pp" : (v > 0 ? "+" : "") + v.ToString("F1", Inv) + "pp";
+    private static string MarketName(MarketKind kind) => kind switch
+    {
+        MarketKind.Moneyline => "Moneyline",
+        MarketKind.TotalGoals => "Total Goals",
+        MarketKind.BothTeamsToScore => "BTTS",
+        MarketKind.TotalCorners => "Total Corners",
+        MarketKind.TotalCards => "Total Cards",
+        MarketKind.AnytimeScorer => "Anytime Scorer",
+        _ => kind.ToString(),
+    };
     private static string Pct(double v) => v.ToString("F1", Inv) + "%";
     private static string MedianDeath(double m) => m >= 9.0 ? "9 (won)" : m.ToString("0.#", Inv);
 
