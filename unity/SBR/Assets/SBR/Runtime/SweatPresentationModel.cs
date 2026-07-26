@@ -374,14 +374,21 @@ namespace SBR.Game
         {
             public readonly int HomeDelta;
             public readonly int AwayDelta;
-            public readonly bool ForPicked;
+            /// <summary>Which TEAM the engine actually committed this batch to (TVS-S01 fix,
+            /// PRD §7.6): true when the beneficiary is the home side. Derived ONLY from
+            /// <see cref="HomeDelta"/>/<see cref="AwayDelta"/> — the staged fact — never from
+            /// the bettor's Over/Under pick. A batch that credits both sides equally in the
+            /// same beat has no factual winner; the tie-break is a deterministic presentation
+            /// choice keyed on the beat index (PRD §4.3's "event step" key component), never
+            /// RNG or wall clock.</summary>
+            public readonly bool BeneficiaryIsHome;
             public int TotalDelta => HomeDelta + AwayDelta;
 
-            public StagedCount(int homeDelta, int awayDelta, bool forPicked)
+            public StagedCount(int homeDelta, int awayDelta, int beatIndex)
             {
                 HomeDelta = homeDelta;
                 AwayDelta = awayDelta;
-                ForPicked = forPicked;
+                BeneficiaryIsHome = homeDelta != awayDelta ? homeDelta > awayDelta : (beatIndex % 2 == 0);
             }
         }
 
@@ -466,13 +473,17 @@ namespace SBR.Game
             _nextBeat = 0;
         }
 
-        public StagedCount StageBeat(bool forPicked)
+        /// <summary>Stages the next pre-planned batch. No bet input: the schedule (and
+        /// therefore whether/how much happens) comes entirely from <see cref="PlanForBeats"/>
+        /// against the locked stat line; only the returned <see cref="StagedCount"/>'s own
+        /// beneficiary computation is index-derived (TVS-S01 fix, PRD §7.6).</summary>
+        public StagedCount StageBeat()
         {
             if (_nextBeat >= _homeDeltas.Count)
-                return new StagedCount(0, 0, forPicked);
+                return new StagedCount(0, 0, _nextBeat);
             int index = _nextBeat;
             _nextBeat++;
-            return new StagedCount(_homeDeltas[index], _awayDeltas[index], forPicked);
+            return new StagedCount(_homeDeltas[index], _awayDeltas[index], index);
         }
 
         public void CompleteCount(StagedCount count)
@@ -484,14 +495,14 @@ namespace SBR.Game
         /// <summary>Returns the remaining planned beats. In normal playback this is exactly the
         /// final scheduled batch; returning all remaining entries also keeps forced-test usage
         /// bounded when a caller jumps directly to the whistle.</summary>
-        public FinalPlan PlanFinal(bool forPicked)
+        public FinalPlan PlanFinal()
         {
             var remaining = new List<StagedCount>();
             while (_nextBeat < _homeDeltas.Count)
             {
                 // Zero batches never earn a scene — nothing happened (Sol, F_0.4.0 P3 r2).
                 if (_homeDeltas[_nextBeat] + _awayDeltas[_nextBeat] > 0)
-                    remaining.Add(new StagedCount(_homeDeltas[_nextBeat], _awayDeltas[_nextBeat], forPicked));
+                    remaining.Add(new StagedCount(_homeDeltas[_nextBeat], _awayDeltas[_nextBeat], _nextBeat));
                 _nextBeat++;
             }
             if (remaining.Count == 0 && (Home < _targetHome || Away < _targetAway))
@@ -501,12 +512,14 @@ namespace SBR.Game
                 int max = Math.Max(1, MaxPerBeatDelta);
                 int home = Math.Max(0, _targetHome - Home);
                 int away = Math.Max(0, _targetAway - Away);
+                int forcedIndex = _nextBeat; // continues the same deterministic tie-break sequence
                 while (home > 0 || away > 0)
                 {
                     int homeBatch = Math.Min(home, max);
                     int awayBatch = Math.Min(away, max - homeBatch);
                     if (homeBatch == 0 && awayBatch == 0) awayBatch = Math.Min(away, max);
-                    remaining.Add(new StagedCount(homeBatch, awayBatch, forPicked));
+                    remaining.Add(new StagedCount(homeBatch, awayBatch, forcedIndex));
+                    forcedIndex++;
                     home -= homeBatch;
                     away -= awayBatch;
                 }

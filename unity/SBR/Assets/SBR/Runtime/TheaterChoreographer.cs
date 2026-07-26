@@ -14,8 +14,12 @@ namespace SBR.Game
     ///      resolver total by reading WinProbAfter (1.0 → Won). A SUSPENDED LegFinal's
     ///      continuation is chosen from the FINAL ticket-local grade after resolution —
     ///      never from WinProbAfter (single presentation authority).
-    ///   2. A corners leg resolves to #16/#17 and a cards leg to #18. The beat direction is
-    ///      the selection direction: Under and No are down when the count rises.
+    ///   2. A corners leg resolves to #16/#17 and a cards leg to #18. Two SEPARATE facts drive
+    ///      these, never conflated (TVS-S01 fix, PRD §7.6): which TEMPLATE plays — #16 vs #17,
+    ///      the bettor's hope/dread — is the selection's sense (Under/No are dread when the
+    ///      count rises, F_0.4.0 P3 r2), exactly like before; which TEAM's dots physically run
+    ///      the move is the staged batch's own home/away beneficiary, carried separately via
+    ///      <see cref="SceneSpec.CountBeneficiaryIsHome"/> and never inferred from the template.
     ///   3. Tag == NearMiss → #7 (up, "miracle brewing") / #8 (down, "slipping away").
     ///      Never a goal, regardless of Type, for goal-family legs.
     ///   4. Base scene by (Type, dir) — Score: #1/#2 · BigPlay: #3/#4 · Momentum: #5/#6
@@ -52,16 +56,33 @@ namespace SBR.Game
             if (evt.Type != DramaEventType.LegFinal
                 && (market == MarketKind.TotalCorners || market == MarketKind.TotalCards))
             {
-                // A count event's hope/dread is fixed by the SELECTION, never the beat's prob
-                // direction: an increment helps Over and bites Under, even on a beat whose
-                // price drifted the bettor's way — corners can come, just slower than the
-                // line needs (Sol, F_0.4.0 P3 r2). The price still moves honestly at payoff.
-                bool countHelps = leg.Selection.Choice == MarketChoice.Over;
-                CountLedger.StagedCount? count = countLedger == null ? null : countLedger.StageBeat(countHelps);
+                // The batch itself is pre-planned from the locked stat line and fires on
+                // schedule regardless of the bet — StageBeat takes no bet input at all.
+                CountLedger.StagedCount? count = countLedger?.StageBeat();
                 // A zero batch stages NO count event — the beat falls through to ordinary
                 // play (a booking scene with nothing booked reads as a lie; Sol, F_0.4.0 P3).
                 if (count.HasValue && count.Value.TotalDelta > 0)
                 {
+                    // Concept 2 — MOOD: an increment's hope/dread is fixed by the SELECTION,
+                    // never the beat's prob direction or which team the engine credits it to —
+                    // a corner always bites an Under bettor, even when the engine credits it to
+                    // the "wrong" team for that story (Sol, F_0.4.0 P3 r2). This chooses
+                    // CornerFor/CornerAgainst for corners, and — since Booking has no For/Against
+                    // template split — also rides along as SceneSpec.ForPicked for Booking's use.
+                    // NEVER read for routing (reviewer correction, TVS-S01 follow-up): mood and
+                    // routing are independent, and conflating them either way (bet driving
+                    // routing, or team driving mood) is the same class of bug in two directions.
+                    bool countHelps = leg.Selection.Choice == MarketChoice.Over;
+                    // Concept 1 — ROUTING: which TEAM wins the corner / commits the foul is read
+                    // from the staged fact's beneficiary (StagedCount.BeneficiaryIsHome, derived
+                    // only from HomeDelta/AwayDelta) — never from the bettor's Over/Under pick.
+                    // Totals markets have no picked TEAM (SweatFlavor.PickedHomeForPresentation),
+                    // so this rides its own home/away field (SceneSpec.CountBeneficiaryIsHome)
+                    // rather than overloading ForPicked's picked-relative meaning, which the goal
+                    // path below still owns. The stage reads this directly for both Booking
+                    // (single template) and Corner (For/Against template's Mirror decision, which
+                    // must NOT be driven by which template — see TheaterStage.cs).
+                    bool beneficiaryIsHome = count.Value.BeneficiaryIsHome;
                     bool corners = market == MarketKind.TotalCorners;
                     SceneTemplate countTemplate = corners
                         ? (countHelps ? SceneTemplate.CornerFor : SceneTemplate.CornerAgainst)
@@ -69,7 +90,7 @@ namespace SBR.Game
                     bool countIntro = evt.Tag == TensionTag.LeadChange;
                     return new SceneSpec(countTemplate, variant, countIntro, evt.Tag == TensionTag.Swing,
                         countHelps, null, count, null, market,
-                        _pacer.SceneSeconds(countTemplate, countIntro));
+                        _pacer.SceneSeconds(countTemplate, countIntro), beneficiaryIsHome);
                 }
             }
 
@@ -138,8 +159,9 @@ namespace SBR.Game
         {
             SceneTemplate template = grade == LegGrade.Won ? SceneTemplate.LegFinalWon : SceneTemplate.LegFinalLost;
             MarketKind market = leg == null ? MarketKind.Moneyline : leg.Selection.Kind;
-            bool countForPicked = leg == null || leg.Selection.Choice == MarketChoice.Over;
-            CountLedger.FinalPlan? countFinal = countLedger == null ? null : countLedger.PlanFinal(countForPicked);
+            // TVS-S01 fix: each remaining batch attributes from its own HomeDelta/AwayDelta —
+            // CountLedger.PlanFinal no longer takes a bet-derived flag.
+            CountLedger.FinalPlan? countFinal = countLedger?.PlanFinal();
             return new SceneSpec(template, ScenePlaybook.VariantFor(step), false, false,
                 grade == LegGrade.Won, null, null, countFinal, market, _pacer.SceneSeconds(template, false));
         }

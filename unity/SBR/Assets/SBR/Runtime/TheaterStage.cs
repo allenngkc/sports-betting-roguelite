@@ -861,22 +861,40 @@ namespace SBR.Game
                             route: RouteCorner, count: spec.Count ?? default),
                         S(B * 0.28f, 0.72f, 0.58f, 0.56f, 0.35f, route: RouteBackLine),
                     };
-                    if (spec.Template == SceneTemplate.CornerAgainst) core = Mirror(core);
+                    // TVS-S01 follow-up (reviewer correction): CornerFor/CornerAgainst is the
+                    // bettor's hope/dread MOOD (selection-derived, TheaterChoreographer) — a
+                    // SEPARATE concept from which team physically wins the corner. Mirroring off
+                    // the template would put routing back on the bet (the original TVS-S01 bug).
+                    // Routing reads the staged fact directly instead. The ?? true fallback only
+                    // matters for a scene built with no staged count at all (e.g. a bare
+                    // template-completion test); every real Corner scene from ResolveBeat always
+                    // sets this field.
+                    if (!(spec.CountBeneficiaryIsHome ?? true)) core = Mirror(core);
                     break;
                 }
 
                 case SceneTemplate.Booking:
+                {
+                    // TVS-S01 fix (PRD §7.6): Booking is a direction-neutral template (no
+                    // For/Against split), so it reads which team commits the foul from the
+                    // staged fact — CountBeneficiaryIsHome — never from ForPicked (which is
+                    // incoherent for a totals market with no picked team). The ?? true fallback
+                    // only matters for a scene built with no staged count at all (e.g. a bare
+                    // template-completion test); every real Booking scene from ResolveBeat
+                    // always sets this field.
+                    bool bookingAttacksHome = spec.CountBeneficiaryIsHome ?? true;
                     core = new[]
                     {
-                        S(B * 0.32f, 0.48f, lane, 0.50f, 0.45f, atkPicked: spec.ForPicked),
+                        S(B * 0.32f, 0.48f, lane, 0.50f, 0.45f, atkPicked: bookingAttacksHome),
                         S(B * 0.24f, 0.60f, lane, 0.54f, 0.9f, chase: true,
-                            atkPicked: spec.ForPicked),
+                            atkPicked: bookingAttacksHome),
                         S(B * 0.12f, 0.55f, lane, 0.50f, 1f, MkBooking,
-                            route: RouteAuthored, atkPicked: spec.ForPicked,
+                            route: RouteAuthored, atkPicked: bookingAttacksHome,
                             count: spec.Count ?? default),
                         S(B * 0.32f, 0.50f, 0.50f, 0.50f, 0.15f, route: RouteAuthored),
                     };
                     break;
+                }
 
                 case SceneTemplate.TerritoryFor:
                 case SceneTemplate.TerritoryAgainst:
@@ -1071,11 +1089,16 @@ namespace SBR.Game
                 // A zero batch is nothing happening — it never earns a corner/booking scene
                 // (Sol, F_0.4.0 P3 r2; PlanFinal filters these too, this is the belt).
                 if (count.TotalDelta <= 0) continue;
-                bool attackPicked = count.ForPicked;
-                float x = attackPicked ? 0.96f : 0.04f;
+                // TVS-S01 fix (PRD §7.6): attribution is the staged fact's beneficiary team
+                // (HomeDelta/AwayDelta), never a bet-derived flag. Every market leg anchors
+                // home as the presentation side (_homeAttacksRight is true for any non-
+                // moneyline leg — SweatFlavor.PickedHomeForPresentation), so "attack is home"
+                // is exactly the AtkPicked routing primitive below.
+                bool attackHome = count.BeneficiaryIsHome;
+                float x = attackHome ? 0.96f : 0.04f;
                 steps.Add(S(P(0.9f), x, lane, won ? 0.70f : 0.30f, 1f,
                     marker, route: spec.Market == MarketKind.TotalCorners ? RouteCorner : RouteAuthored,
-                    atkPicked: attackPicked, count: count));
+                    atkPicked: attackHome, count: count));
             }
         }
 
