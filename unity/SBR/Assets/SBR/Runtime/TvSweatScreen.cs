@@ -300,9 +300,20 @@ namespace SBR.Game
         /// <summary>Test/debug hook: force the seated state (simulates sitting / looking away) without the
         /// couch. Normal play drives this through SitSpot.SeatedChanged.</summary>
         public void ForceSeated(bool seated) => _seated = seated;
+        /// <summary>Test/debug hook (TVS-H01 regression): true while the cash-out amount is mid-tween
+        /// (AnimateCashOut running). _cashOutAnimation is otherwise unobservable from outside the
+        /// sweat, and this is the exact condition CanAcceptCashOutNow also refuses.</summary>
+        public bool DebugCashOutAnimating => _cashOutAnimation != null;
 
         // ---- state ----
         private bool _seated;
+        // TVS-H02: accumulates real time only while seated. Every TvSweatScreen-owned timer,
+        // coroutine, and per-frame animator reads dt through SeatedDeltaTime (or samples this clock
+        // in place of Time.time) instead of Unity's clock directly, so one gate freezes all of them
+        // instead of 21 scattered `if (!_seated)` checks, and resuming never has to catch up.
+        // TheaterStage freezes independently through its own SetFrozen(!_seated) gate in Update()
+        // below — this accumulator does not touch the stage, which was already fully compliant.
+        private float _seatedClock;
         private SweatSession _session;
         private Ticket _ticket;
         private string _idleKey; // last idle/verdict render, so per-phase screens paint once
@@ -438,9 +449,25 @@ namespace SBR.Game
             map.Enable();
         }
 
-        /// <summary>An offer is showing that E should accept (rather than stand the player up).</summary>
-        private bool CashOutLive()
-            => _session != null && !_session.IsComplete && _eventsEmitted >= 1 && _session.CashOutOffer().HasValue;
+        /// <summary>An offer is showing that E should accept (rather than stand the player up).
+        /// Must agree exactly with TryCashOut's acceptance gate (TVS-H01) — both read
+        /// CanAcceptCashOutNow so a future edit cannot let the two drift apart again.</summary>
+        private bool CashOutLive() => CanAcceptCashOutNow();
+
+        /// <summary>The single truth for "is there a cash-out offer Interact may legally accept right
+        /// now" (TVS-H01; VISUAL-DESIGN.md §8.5). Open only when seated, the session is live, at
+        /// least one event has revealed, the market is not suspended, the shown price is not mid-tween,
+        /// and the engine is actually quoting an offer. Both the stand-suppression contract
+        /// (CashOutLive, wired to SitSpot.InteractStandSuppressed) and TryCashOut consult this one
+        /// predicate, so a suspended or updating offer can never reserve Interact without also being
+        /// acceptable — and a legal open offer always reserves it.</summary>
+        private bool CanAcceptCashOutNow()
+            => _seated
+            && _session != null && !_session.IsComplete
+            && _eventsEmitted >= 1
+            && !_marketSuspended
+            && _cashOutAnimation == null
+            && _session.CashOutOffer().HasValue;
 
         // ---------------------------------------------------------------- channel loop
 
@@ -655,8 +682,9 @@ namespace SBR.Game
                 LegGrade grade = leg.IsVoided ? LegGrade.Voided
                     : leg.GradesWon ? LegGrade.Won : LegGrade.Lost;
                 ScoreLedger.FinalPlan plan = _ledger.PlanFinal(grade);
-                bool countForPicked = leg.Selection.Choice == MarketChoice.Over;
-                CountLedger.FinalPlan? countPlan = _countLedger?.PlanFinal(countForPicked);
+                // TVS-S01 fix: PlanFinal derives each remaining batch's team attribution from
+                // its own HomeDelta/AwayDelta now — no bet-derived flag to compute here.
+                CountLedger.FinalPlan? countPlan = _countLedger?.PlanFinal();
                 _stage.ResumeSuspended(plan, countPlan, leg.Selection.Kind, OnGoalPlayed, OnCountPlayed, null);
                 yield return WaitSceneDone();
                 yield return FinalSlam(evt, grade);
@@ -1463,7 +1491,7 @@ namespace SBR.Game
             float elapsed = 0f;
             while (elapsed < duration)
             {
-                elapsed += Time.deltaTime;
+                elapsed += SeatedDeltaTime; // TVS-H02: freezes exactly while standing
                 float t = Mathf.Clamp01(elapsed / duration);
                 _cashOutShown = from + (to - from) * t;
                 int bucket = RoundBucket(_cashOutShown);
@@ -1586,7 +1614,7 @@ namespace SBR.Game
             float t = 0f;
             while (t < dur)
             {
-                t += Time.deltaTime;
+                t += SeatedDeltaTime; // TVS-H02: freezes exactly while standing
                 SetAlpha(_dimOverlay, Mathf.Lerp(0f, 0.94f, t / dur));
                 yield return null;
             }
@@ -1624,7 +1652,7 @@ namespace SBR.Game
             float elapsed = 0f;
             while (elapsed < duration)
             {
-                elapsed += Time.deltaTime;
+                elapsed += SeatedDeltaTime; // TVS-H02: freezes exactly while standing
                 float t = duration <= 0f ? 1f : Mathf.Clamp01(elapsed / duration);
                 _tBigAmount.text = $"+${Money(payout * t)}";
                 yield return null;
@@ -1668,8 +1696,8 @@ namespace SBR.Game
             float elapsed = 0f;
             while (elapsed < duration)
             {
-                elapsed += Time.deltaTime;
-                float storyDt = Time.deltaTime / Mathf.Max(0.0001f, TimeScaleOverride);
+                elapsed += SeatedDeltaTime; // TVS-H02: freezes exactly while standing
+                float storyDt = SeatedDeltaTime / Mathf.Max(0.0001f, TimeScaleOverride);
                 for (int i = 0; i < _confetti.Count; i++)
                 {
                     ConfettiPiece piece = _confetti[i];
@@ -1710,7 +1738,7 @@ namespace SBR.Game
             float t = 0f;
             while (t < dur)
             {
-                t += Time.deltaTime;
+                t += SeatedDeltaTime; // TVS-H02: freezes exactly while standing
                 float a = Mathf.Sin(Mathf.Clamp01(t / dur) * Mathf.PI) * peakAlpha; // rise then settle
                 SetAlpha(flood, a);
                 yield return null;
@@ -1720,8 +1748,17 @@ namespace SBR.Game
 
         // ---------------------------------------------------------------- input (Update)
 
+        /// <summary>Frozen substitute for Time.deltaTime (TVS-H02): 0 while standing, the real
+        /// per-frame delta while seated. Every timer/coroutine/animator this class owns reads dt
+        /// through this gate (or through _seatedClock for Time.time reads) instead of Unity's clock
+        /// directly, so one flag freezes all of them and sitting back down resumes with no catch-up.
+        /// </summary>
+        private float SeatedDeltaTime => _seated ? Time.deltaTime : 0f;
+
         private void Update()
         {
+            _seatedClock += SeatedDeltaTime; // TVS-H02: frozen substitute for Time.time while standing
+
             RefreshChrome();
             ApplyEmission();
             AnimateBar();
@@ -1754,12 +1791,9 @@ namespace SBR.Game
 
         private void TryCashOut()
         {
-            if (_marketSuspended) return; // the book is off the market mid-scene (M-T3.1)
-            if (_cashOutAnimation != null) return; // the price is settling — the displayed and
-                                                   // accepted number must never differ (Sol, M-T4)
-            if (!_seated || _session == null || _session.IsComplete || _eventsEmitted < 1) return;
+            if (!CanAcceptCashOutNow()) return; // TVS-H01: same predicate as the stand-suppression gate
             double? offer = _session.CashOutOffer();
-            if (!offer.HasValue) return;
+            if (!offer.HasValue) return; // defensive; CanAcceptCashOutNow already checked this
 
             _lastCashOutAmount = offer.Value;
             _session.AcceptCashOut();               // credits the bank; marks the ticket CashedOut
@@ -1786,9 +1820,11 @@ namespace SBR.Game
         private void ApplyEmission()
         {
             if (emissiveScreen == null) return;
-            _emissFlash01 = Mathf.MoveTowards(_emissFlash01, 0f, emissionDecay * Time.deltaTime);
+            // TVS-H02: both driven from the seated-only clock so the idle flicker holds exactly
+            // (not just slower) while standing, with no phase jump on resume.
+            _emissFlash01 = Mathf.MoveTowards(_emissFlash01, 0f, emissionDecay * SeatedDeltaTime);
             Color e = Color.Lerp(_emissRest, _emissFlash, _emissFlash01);
-            float flick = 1f + (Mathf.PerlinNoise(_emissSeed, Time.time * 9f) - 0.5f) * 2f * idleEmissionFlicker;
+            float flick = 1f + (Mathf.PerlinNoise(_emissSeed, _seatedClock * 9f) - 0.5f) * 2f * idleEmissionFlicker;
             _emissBlock.SetColor(EmissionColorId, e * Mathf.Max(0f, flick));
             emissiveScreen.SetPropertyBlock(_emissBlock);
         }
@@ -1802,11 +1838,13 @@ namespace SBR.Game
         private void AnimateBar()
         {
             if (_barFill == null) return;
-            _probShown = Mathf.Lerp(_probShown, _probTarget, 1f - Mathf.Exp(-9f * Time.deltaTime));
+            // TVS-H02: seated-only dt/clock throughout, so the win-prob animation (§4.4) holds
+            // exactly while standing, with no phase jump in the breathing wave on resume.
+            _probShown = Mathf.Lerp(_probShown, _probTarget, 1f - Mathf.Exp(-9f * SeatedDeltaTime));
             float w = Mathf.Clamp01(_probShown) * _innerWidth;
             float hz = Mathf.Lerp(breathSlowHz, breathFastHz, Mathf.Abs(2f * _probShown - 1f));
-            float breathe = 1f + Mathf.Sin(Time.time * hz * 2f * Mathf.PI) * breathAmplitude;
-            float punchDt = Time.deltaTime / Mathf.Max(0.0001f, TimeScaleOverride);
+            float breathe = 1f + Mathf.Sin(_seatedClock * hz * 2f * Mathf.PI) * breathAmplitude;
+            float punchDt = SeatedDeltaTime / Mathf.Max(0.0001f, TimeScaleOverride);
             _barPunch = Mathf.MoveTowards(_barPunch, 1f, 2.8f * punchDt);
             _barFill.rectTransform.sizeDelta = new Vector2(w, _barHeight - 8f);
             _barFill.rectTransform.localScale = new Vector3(1f, breathe * _barPunch, 1f);
@@ -1817,7 +1855,7 @@ namespace SBR.Game
         private void AnimateCashOutTaunt()
         {
             if (_tCashOut == null) return;
-            float scaledDt = Time.deltaTime / Mathf.Max(0.0001f, TimeScaleOverride);
+            float scaledDt = SeatedDeltaTime / Mathf.Max(0.0001f, TimeScaleOverride); // TVS-H02
             _cashOutScale = Mathf.MoveTowards(_cashOutScale, 1f, 3.2f * scaledDt);
             _cashOutFlash = Mathf.MoveTowards(_cashOutFlash, 0f, 4.5f * scaledDt);
             _tCashOut.rectTransform.localScale = Vector3.one * _cashOutScale;
@@ -1831,7 +1869,7 @@ namespace SBR.Game
         private void AnimateFlavorPunch()
         {
             if (_tFlavor == null) return;
-            _flavorScale = Mathf.MoveTowards(_flavorScale, 1f, 1.4f * Time.deltaTime);
+            _flavorScale = Mathf.MoveTowards(_flavorScale, 1f, 1.4f * SeatedDeltaTime); // TVS-H02
             _tFlavor.rectTransform.localScale = Vector3.one * _flavorScale;
         }
 
@@ -1873,17 +1911,22 @@ namespace SBR.Game
             }
         }
 
+        /// <summary>Holds for the given scaled seconds, counting time ONLY while seated (TVS-H02) —
+        /// every ceremony/effect/transition hold in this file (dead-leg, ticket-dead, win-beat,
+        /// settlement, settle-card, pending-window) is built from this one gated primitive.</summary>
         private IEnumerator ScaledWait(float seconds)
         {
             float dur = Mathf.Max(0f, seconds * Mathf.Max(0f, TimeScaleOverride));
             float t = 0f;
-            while (t < dur) { t += Time.deltaTime; yield return null; }
+            while (t < dur) { t += SeatedDeltaTime; yield return null; }
         }
 
+        /// <summary>As ScaledWait, but ignores TimeScaleOverride (used for the dead-leg static
+        /// regen crawl). Still seated-gated (TVS-H02): standing freezes it mid-regen.</summary>
         private IEnumerator WaitRealtime(float seconds)
         {
             float t = 0f;
-            while (t < seconds) { t += Time.deltaTime; yield return null; }
+            while (t < seconds) { t += SeatedDeltaTime; yield return null; }
         }
 
         // ---------------------------------------------------------------- canvas construction

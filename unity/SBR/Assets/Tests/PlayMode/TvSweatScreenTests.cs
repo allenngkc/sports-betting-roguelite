@@ -1,12 +1,14 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using NUnit.Framework;
 using SBR.Engine;
 using SBR.Game;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
+using UnityEngine.UI;
 
 namespace SBR.Tests.PlayMode
 {
@@ -133,7 +135,342 @@ namespace SBR.Tests.PlayMode
             Assert.IsTrue(director.LastSettle.Value.Paid);
         }
 
+        // ---- TVS-H01 regression: CashOutLive and TryCashOut must agree (docs/tv-sweat-refinement/
+        // BUG-LEDGER.md, phase-1a-execution-report.md §2.1). All three presses go through the private
+        // TryCashOut (via reflection, since batchmode has no keyboard to actually press Interact — see
+        // PendingWindowBeat's own `Keyboard.current == null` handling) and the couch's real OnInteract
+        // for the stand attempt, exactly mirroring the two independent Update() listeners on one press.
+
+        [UnityTest]
+        public IEnumerator Interact_DuringSuspendedMarket_StandsAndDoesNotCashOut()
+        {
+            yield return LoadRoom();
+            (RunDirector director, TvSweatScreen screen, SitSpot couch) = FindTrio();
+
+            screen.TimeScaleOverride = 0.15f;
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            Run run = director.Run;
+            (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run); // 2-3 legs: cash-out eligible
+            run.PlaceTicket(picks, stake);
+            director.LockRound();
+
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+
+            yield return WaitUntil(() =>
+                director.CurrentSession != null && !director.CurrentSession.IsComplete
+                && screen.EventsEmitted >= 1 && screen.RevealedView.MarketSuspended
+                && director.CurrentSession.CashOutOffer().HasValue,
+                20f, "never observed a suspended market with a live underlying offer");
+
+            Assert.IsFalse(SitSpot.InteractStandSuppressed(),
+                "TVS-H01: CashOutLive must not reserve Interact while the market is suspended");
+
+            TicketState stateBefore = director.CurrentTicket.State;
+            couch.OnInteract(null);           // the stand attempt
+            PressCashOutInteract(screen);     // the same physical press's cash-out attempt
+
+            Assert.IsNull(SitSpot.Active,
+                "TVS-H01: Interact must follow the normal stand contract while suspended (VISUAL-DESIGN.md §8.5)");
+            Assert.AreEqual(stateBefore, director.CurrentTicket.State,
+                "TVS-H01: a suspended market must not accept a cash-out");
+            Assert.IsFalse(director.CurrentSession.IsComplete, "cash-out must not have completed the session");
+        }
+
+        [UnityTest]
+        public IEnumerator Interact_DuringCashOutPriceAnimation_StandsAndDoesNotCashOut()
+        {
+            yield return LoadRoom();
+            (RunDirector director, TvSweatScreen screen, SitSpot couch) = FindTrio();
+
+            screen.TimeScaleOverride = 0.2f;
+            screen.cashOutTickDuration = 4f; // widen the real tween window for reliable polling
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            Run run = director.Run;
+            (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run);
+            run.PlaceTicket(picks, stake);
+            director.LockRound();
+
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+
+            yield return WaitUntil(() => screen.DebugCashOutAnimating, 20f,
+                "never observed the cash-out amount mid-tween");
+
+            Assert.IsFalse(SitSpot.InteractStandSuppressed(),
+                "TVS-H01: CashOutLive must not reserve Interact while the price is animating");
+
+            TicketState stateBefore = director.CurrentTicket.State;
+            couch.OnInteract(null);           // the stand attempt
+            PressCashOutInteract(screen);     // the same physical press's cash-out attempt
+
+            Assert.IsNull(SitSpot.Active,
+                "TVS-H01: Interact must follow the normal stand contract while the price updates (VISUAL-DESIGN.md §8.5)");
+            Assert.AreEqual(stateBefore, director.CurrentTicket.State,
+                "TVS-H01: an updating price must not accept a cash-out");
+            Assert.IsFalse(director.CurrentSession.IsComplete, "cash-out must not have completed the session");
+        }
+
+        [UnityTest]
+        public IEnumerator Interact_DuringLegalOpenOffer_CashesOutAndDoesNotStand()
+        {
+            yield return LoadRoom();
+            (RunDirector director, TvSweatScreen screen, SitSpot couch) = FindTrio();
+
+            screen.TimeScaleOverride = 0.15f;
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            Run run = director.Run;
+            (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run);
+            run.PlaceTicket(picks, stake);
+            director.LockRound();
+
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+
+            yield return WaitUntil(() =>
+                director.CurrentSession != null && !director.CurrentSession.IsComplete
+                && screen.EventsEmitted >= 1 && !screen.RevealedView.MarketSuspended
+                && !screen.DebugCashOutAnimating
+                && director.CurrentSession.CashOutOffer().HasValue,
+                20f, "never reached an open, stable cash-out window");
+
+            Assert.IsTrue(SitSpot.InteractStandSuppressed(),
+                "an open legal offer must reserve Interact for acceptance (VISUAL-DESIGN.md §8.5)");
+
+            // Stand attempt FIRST, while the offer is still untouched: this is the only ordering that
+            // isolates TVS-H01 from the pre-existing, out-of-scope race between PlayerInteractor's and
+            // TvSweatScreen's independent per-frame WasPressedThisFrame() polls (whichever fires first
+            // in a real frame can observe the other's side effect; that ordering hazard already exists
+            // in the unfixed code too and is not part of this dispatch).
+            couch.OnInteract(null);
+            Assert.IsNotNull(SitSpot.Active,
+                "TVS-H01: a legal open offer must not stand the player on Interact");
+
+            PressCashOutInteract(screen);
+            Assert.AreEqual(TicketState.CashedOut, director.CurrentTicket.State,
+                "TVS-H01: Interact during a legal open offer must cash out");
+            Assert.IsTrue(director.CurrentSession.IsComplete);
+        }
+
+        // ---- TVS-H02 regression: standing freezes every formerly-unguarded timer exactly, and
+        // sitting resumes with no hidden catch-up. Four categories covering the mechanism classes
+        // identified in phase-1a-execution-report.md §2.2, rather than one giant test:
+        //  A. continuous per-frame animators (ApplyEmission/AnimateBar/AnimateFlavorPunch/
+        //     AnimateCashOutTaunt — unconditional every Update());
+        //  B. the AnimateCashOut price-tween coroutine;
+        //  C. a resolution-effect coroutine (FloodPulse via the cash-out gold flood);
+        //  D. the ScaledWait/WaitRealtime family of ceremony/settlement holds, proven through their
+        //     functional consequence — standing must not let round progression advance.
+
+        [UnityTest]
+        public IEnumerator Standing_Freezes_ContinuousPerFrameAnimators_NoResumeCatchUp()
+        {
+            yield return LoadRoom();
+            (RunDirector director, TvSweatScreen screen, SitSpot couch) = FindTrio();
+
+            screen.TimeScaleOverride = 0.15f;
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            Run run = director.Run;
+            (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run);
+            run.PlaceTicket(picks, stake);
+            director.LockRound();
+
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+
+            Text flavor = FindChildComponent<Text>(screen, "Flavor");
+            Assert.IsNotNull(flavor, "Flavor text not found - canvas layout changed?");
+
+            // Every beat reveal punches the flavor scale to 1.12, then AnimateFlavorPunch decays it
+            // back toward 1 at a fixed 1.4/s (unscaled by TimeScaleOverride) - catch it above 1.02 so
+            // >= ~70ms of real decay life remains at the moment we stand.
+            yield return WaitUntil(() => flavor.rectTransform.localScale.x > 1.02f, 20f,
+                "never caught the flavor punch mid-decay");
+
+            float frozen = flavor.rectTransform.localScale.x;
+            screen.ForceSeated(false);
+            yield return WaitRealtime(0.05f);
+            Assert.AreEqual(frozen, flavor.rectTransform.localScale.x, 0.0001f,
+                "TVS-H02: flavor punch scale advanced while standing");
+            yield return WaitRealtime(0.2f); // several times the natural remaining decay life
+            Assert.AreEqual(frozen, flavor.rectTransform.localScale.x, 0.0001f,
+                "TVS-H02: flavor punch scale kept decaying (hidden catch-up) while standing");
+
+            screen.ForceSeated(true);
+            yield return WaitUntil(() => Mathf.Abs(flavor.rectTransform.localScale.x - frozen) > 0.0001f,
+                5f, "flavor punch never resumed decaying after sitting back down");
+        }
+
+        [UnityTest]
+        public IEnumerator Standing_Freezes_CashOutTween_NoResumeCatchUp()
+        {
+            yield return LoadRoom();
+            (RunDirector director, TvSweatScreen screen, SitSpot couch) = FindTrio();
+
+            screen.TimeScaleOverride = 0.2f;
+            screen.cashOutTickDuration = 4f; // widen the real tween window for reliable polling
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            Run run = director.Run;
+            (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run);
+            run.PlaceTicket(picks, stake);
+            director.LockRound();
+
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+
+            yield return WaitUntil(() => screen.DebugCashOutAnimating, 20f,
+                "never observed the cash-out amount mid-tween");
+
+            Text cashOut = FindChildComponent<Text>(screen, "CashOut");
+            Assert.IsNotNull(cashOut, "CashOut text not found - canvas layout changed?");
+            string frozen = cashOut.text;
+
+            screen.ForceSeated(false);
+            yield return WaitRealtime(0.1f);
+            Assert.AreEqual(frozen, cashOut.text, "TVS-H02: cash-out amount kept ticking while standing");
+            yield return WaitRealtime(0.3f);
+            Assert.AreEqual(frozen, cashOut.text,
+                "TVS-H02: cash-out amount kept ticking (hidden catch-up) while standing");
+
+            screen.ForceSeated(true);
+            yield return WaitUntil(() => cashOut.text != frozen || !screen.DebugCashOutAnimating, 5f,
+                "cash-out tween never resumed after sitting back down");
+        }
+
+        [UnityTest]
+        public IEnumerator Standing_Freezes_ResolutionEffectFlood_NoResumeCatchUp()
+        {
+            yield return LoadRoom();
+            (RunDirector director, TvSweatScreen screen, SitSpot couch) = FindTrio();
+
+            screen.TimeScaleOverride = 0.3f;
+            screen.cashOutFloodDuration = 3f; // widen the flood window for reliable polling
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            Run run = director.Run;
+            (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run);
+            run.PlaceTicket(picks, stake);
+            director.LockRound();
+
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+
+            yield return WaitUntil(() =>
+                director.CurrentSession != null && !director.CurrentSession.IsComplete
+                && screen.EventsEmitted >= 1 && !screen.RevealedView.MarketSuspended
+                && !screen.DebugCashOutAnimating
+                && director.CurrentSession.CashOutOffer().HasValue,
+                20f, "never reached an open cash-out window");
+
+            PressCashOutInteract(screen);
+            Assert.AreEqual(TicketState.CashedOut, director.CurrentTicket.State, "setup: cash-out must accept");
+
+            Image goldFlood = FindChildComponent<Image>(screen, "GoldFlood");
+            Assert.IsNotNull(goldFlood, "GoldFlood image not found - canvas layout changed?");
+
+            yield return WaitUntil(() => goldFlood.color.a > 0.02f, 5f, "the cash-out flood never started");
+
+            float frozenAlpha = goldFlood.color.a;
+            screen.ForceSeated(false);
+            yield return WaitRealtime(0.1f);
+            Assert.AreEqual(frozenAlpha, goldFlood.color.a, 0.0001f,
+                "TVS-H02: cash-out flood alpha advanced while standing");
+            yield return WaitRealtime(0.4f);
+            Assert.AreEqual(frozenAlpha, goldFlood.color.a, 0.0001f,
+                "TVS-H02: cash-out flood alpha kept animating (hidden catch-up) while standing");
+
+            screen.ForceSeated(true);
+            yield return WaitUntil(() => Mathf.Abs(goldFlood.color.a - frozenAlpha) > 0.0001f
+                || goldFlood.color.a <= 0.0001f, 10f, "flood never resumed after sitting back down");
+        }
+
+        [UnityTest]
+        public IEnumerator Standing_Freezes_SettlementHold_NoResumeCatchUp()
+        {
+            yield return LoadRoom();
+            (RunDirector director, TvSweatScreen screen, SitSpot couch) = FindTrio();
+
+            screen.TimeScaleOverride = 0.2f;
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            Run run = director.Run;
+            (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run);
+            run.PlaceTicket(picks, stake); // ticket 0: cash-out eligible
+            run.PlaceTicket(new List<Pick> { new Pick(UnusedMatchup(run, picks), Side.Home) }, 10); // ticket 1
+            director.LockRound();
+
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+
+            yield return WaitUntil(() =>
+                director.CurrentSession != null && !director.CurrentSession.IsComplete
+                && screen.EventsEmitted >= 1 && !screen.RevealedView.MarketSuspended
+                && !screen.DebugCashOutAnimating
+                && director.CurrentSession.CashOutOffer().HasValue,
+                20f, "never reached an open cash-out window on ticket 0");
+
+            int sweatIndexBefore = director.SweatIndex;
+            PressCashOutInteract(screen);
+            Assert.AreEqual(TicketState.CashedOut, director.CurrentTicket.State, "setup: cash-out must accept");
+
+            // Force-stand before yielding a single frame: SettlementBeat's ScaledWait(cashOutFloodDuration)
+            // has not started counting yet (PlaySweat/WaitSceneDone need a few frames to unwind onto it),
+            // so this reliably catches the hold from its very first tick.
+            screen.ForceSeated(false);
+
+            yield return WaitRealtime(1.0f); // many multiples of cashOutFloodDuration * TimeScaleOverride
+            Assert.AreEqual(sweatIndexBefore, director.SweatIndex,
+                "TVS-H02: the cash-out settlement hold advanced to the next ticket while standing");
+            Assert.AreEqual(Phase.Sweat, run.Phase, "TVS-H02: round progression must not advance while standing");
+
+            screen.ForceSeated(true);
+            yield return WaitUntil(() => director.SweatIndex != sweatIndexBefore || run.Phase != Phase.Sweat,
+                20f, "settlement never resumed after sitting back down");
+        }
+
         // ---- helpers ----
+
+        private static (RunDirector, TvSweatScreen, SitSpot) FindTrio()
+        {
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+            var screen = UnityEngine.Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = UnityEngine.Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+            return (director, screen, couch);
+        }
+
+        /// <summary>Invokes TvSweatScreen's private TryCashOut exactly as Update() does on an Interact
+        /// press. Batchmode has no keyboard device (PendingWindowBeat's own `Keyboard.current == null`
+        /// branch shows this is a known property of this harness), so a real key press cannot be
+        /// simulated; reflection calls the same production method instead of duplicating its logic.</summary>
+        private static void PressCashOutInteract(TvSweatScreen screen)
+        {
+            MethodInfo method = typeof(TvSweatScreen).GetMethod("TryCashOut",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(method, "TvSweatScreen.TryCashOut not found by reflection - was it renamed?");
+            method.Invoke(screen, null);
+        }
+
+        private static T FindChildComponent<T>(TvSweatScreen screen, string childName) where T : Component
+        {
+            foreach (T c in screen.GetComponentsInChildren<T>(true))
+                if (c.name == childName) return c;
+            return null;
+        }
 
         private static int UnusedMatchup(Run run, IReadOnlyList<Pick> used)
         {
