@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TV Sweat — layout concepts (greybox)</title>
+<style>
+  :root{
+    --ink:#e8e8ea; --dim:#8b8b93; --line:#3a3a42; --bg:#141418; --panel:#1c1c22;
+    --hot:#c9a227; --stage:#22262c;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:14px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+       padding:32px 24px 96px}
+  .wrap{max-width:1180px;margin:0 auto}
+  h1{font-size:24px;margin:0 0 6px;letter-spacing:-.01em}
+  .sub{color:var(--dim);margin:0 0 28px;max-width:70ch}
+  h2{font-size:17px;margin:44px 0 4px;letter-spacing:-.01em}
+  h2 span{color:var(--hot);font-variant-numeric:tabular-nums}
+  .bet{color:var(--dim);margin:0 0 14px;max-width:78ch}
+  .risk{color:#c98a7a}
+  .screen{aspect-ratio:16/9;width:100%;background:#0e0e12;border:1px solid var(--line);
+          display:grid;gap:6px;padding:6px}
+  .z{background:var(--panel);border:1px dashed #4a4a55;border-radius:2px;
+     display:flex;flex-direction:column;justify-content:center;align-items:center;
+     text-align:center;padding:6px;min-width:0;min-height:0;overflow:hidden}
+  .z b{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink)}
+  .z i{font-size:10px;font-style:normal;color:var(--dim);line-height:1.35;margin-top:3px}
+  .z.stage{background:var(--stage);border-style:solid;border-color:#4d5a4d}
+  .z.cash{border-color:var(--hot);color:var(--hot)}
+  .z.cash b{color:var(--hot)}
+  .z.stats{border-color:#5a7a8a}
+  .z.stats b{color:#8fc0d4}
+  .z.score b{font-size:13px}
+  .q{display:inline-block;background:#2a2a33;color:var(--dim);border-radius:8px;
+     padding:0 5px;font-size:9px;margin:2px 1px 0;letter-spacing:.03em}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 18px;margin:18px 0 8px;color:var(--dim);font-size:12px}
+  .legend div{display:flex;align-items:center;gap:6px}
+  .sw{width:13px;height:13px;border:1px dashed #4a4a55;background:var(--panel);border-radius:2px}
+  .sw.stage{background:var(--stage);border-style:solid;border-color:#4d5a4d}
+  .sw.cash{border-color:var(--hot)}
+  .sw.stats{border-color:#5a7a8a}
+  .note{border-left:2px solid var(--line);padding:2px 0 2px 14px;margin:14px 0 0;
+        color:var(--dim);max-width:80ch}
+  .note b{color:var(--ink);font-weight:600}
+  hr{border:0;border-top:1px solid var(--line);margin:38px 0 0}
+  .qkey{margin:26px 0 0;color:var(--dim);font-size:12.5px;max-width:80ch}
+  .qkey ol{margin:6px 0 0;padding-left:20px}
+  .qkey li{margin:1px 0}
+  /* ---- per-layout grids ---- */
+  .A{grid-template-columns:1fr 1fr 1fr 260px;
+     grid-template-rows:52px 1fr 44px 62px;
+     grid-template-areas:"sc sc sc sc" "st st st leg" "ev ev ev leg" "tk tk ch ch"}
+  .B{grid-template-columns:290px 1fr 1fr;
+     grid-template-rows:44px 1fr 1fr 58px;
+     grid-template-areas:"tkt sc sc" "tkt st st" "tkt st st" "ch ev ev"}
+  .C{grid-template-columns:220px 1fr 1fr 230px;
+     grid-template-rows:46px 1fr 46px 60px;
+     grid-template-areas:"sc st st stx" "st2 st2 st2 st2" "ev ev ev ev" "st3 st3 ch ch"}
+  .D{grid-template-columns:1fr 1fr 1fr 1fr;
+     grid-template-rows:46px 1fr 1fr 54px;
+     grid-template-areas:"sc sc sc sc" "st st st st" "tkt leg leg stx" "ch ch ch ch"}
+  .E{grid-template-columns:230px 1fr 230px;
+     grid-template-rows:48px 1fr 46px 56px;
+     grid-template-areas:"sc sc sc" "tkt st leg" "tkt st stx" "ch ch ch"}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>TV Sweat — layout concepts</h1>
+<p class="sub">Greybox on purpose. No colour, no LED treatment, no type choices — those come from the
+committed world once the structure is settled. Judge composition, hierarchy, and whether the six
+questions can be answered in order. Every layout carries all five PRD zones plus the new §8.8 stats
+panel.</p>
+
+<div class="legend">
+  <div><span class="sw"></span> information zone</div>
+  <div><span class="sw stage"></span> theater stage</div>
+  <div><span class="sw cash"></span> cash-out / action slot</div>
+  <div><span class="sw stats"></span> §8.8 match stats (new verb)</div>
+  <div><span class="q">Q1</span> answers question <i>n</i> from PRD §1</div>
+</div>
+
+<!-- ============ A ============ -->
+<h2><span>A.</span> Broadcast Standard <span style="color:var(--dim);font-weight:400">— the incumbent</span></h2>
+<p class="bet">The layout already drawn in VISUAL-DESIGN.md, included so you're choosing against a real
+baseline rather than a strawman. Scorebug spans the top, stage centre, active leg on a right rail,
+event strip under the stage, money along the bottom.</p>
+<div class="screen A">
+  <div class="z score" style="grid-area:sc"><b>Scorebug — teams · score · clock</b>
+    <i><span class="q">Q1</span><span class="q">Q2</span></i></div>
+  <div class="z stage" style="grid-area:st"><b>Theater stage</b><i>fixed top-down · picked team attacks right</i></div>
+  <div class="z" style="grid-area:leg"><b>Active leg</b>
+    <i>market · odds · NEED · LIVE progress<br><span class="q">Q3</span></i></div>
+  <div class="z" style="grid-area:ev"><b>Event strip</b><i>one line, price-moving event <span class="q">Q6</span></i></div>
+  <div class="z" style="grid-area:tk"><b>Risk / pays · leg chips</b><i><span class="q">Q4</span></i></div>
+  <div class="z cash" style="grid-area:ch"><b>Cash-out slot</b><i><span class="q">Q5</span></i></div>
+</div>
+<p class="note"><b>Bet:</b> familiarity. Reads like every sports broadcast, so nothing has to be learned.
+<span class="risk"><b>Risk:</b></span> it's also the layout every betting app ships, and it's the one
+that most easily reads as a dashboard. The stats panel has no natural home — it has to hide inside
+the scorebug or displace the event strip.</p>
+
+<!-- ============ B ============ -->
+<h2><span>B.</span> Ticket Rail</h2>
+<p class="bet">The bet slip is a permanent left column: every leg stacked, the active one expanded,
+risk and payout at its foot. The match takes the remaining two-thirds. Cash-out anchors the base of
+the ticket column, so the money and the action live together.</p>
+<div class="screen B">
+  <div class="z" style="grid-area:tkt"><b>Ticket column</b>
+    <i>all legs stacked · active leg expanded with NEED + LIVE · risk / pays<br>
+    <span class="q">Q3</span><span class="q">Q4</span> · stats tab at head</i></div>
+  <div class="z score" style="grid-area:sc"><b>Compact scorebug</b><i><span class="q">Q1</span><span class="q">Q2</span></i></div>
+  <div class="z stage" style="grid-area:st"><b>Theater stage</b><i>wider frame, no right rail competing</i></div>
+  <div class="z cash" style="grid-area:ch"><b>Cash-out</b><i><span class="q">Q5</span></i></div>
+  <div class="z" style="grid-area:ev"><b>Event strip</b><i><span class="q">Q6</span></i></div>
+</div>
+<p class="note"><b>Bet:</b> the most literal expression of "the bet, not the sport, is the star" — you
+read your ticket first and the match second. Multi-leg tickets and ticket-to-ticket transitions are
+far clearer here than anywhere else, and the stats panel gets an obvious home as a second tab on the
+column. <span class="risk"><b>Risk:</b></span> the stage loses centre stage, and a left-heavy
+composition fights the picked-team-attacks-right convention.</p>
+
+<!-- ============ C ============ -->
+<h2><span>C.</span> Full-Bleed Broadcast</h2>
+<p class="bet">The stage fills the entire screen. Everything else is an overlay floating on top of it,
+the way a real broadcast works — corner bug, lower-third, action card. Nothing is a panel.</p>
+<div class="screen C">
+  <div class="z score" style="grid-area:sc"><b>Corner bug</b><i><span class="q">Q1</span><span class="q">Q2</span></i></div>
+  <div class="z stage" style="grid-area:st"><b>stage continues ⟶</b></div>
+  <div class="z stats" style="grid-area:stx"><b>§8.8 stats</b><i>opens full overlay</i></div>
+  <div class="z stage" style="grid-area:st2"><b>Theater stage — full bleed, edge to edge</b>
+    <i>overlays sit on the pitch, not beside it</i></div>
+  <div class="z" style="grid-area:ev"><b>Lower-third — active leg + event</b>
+    <i>retracts when idle <span class="q">Q3</span><span class="q">Q6</span></i></div>
+  <div class="z" style="grid-area:st3"><b>Risk / pays · leg chips</b><i><span class="q">Q4</span></i></div>
+  <div class="z cash" style="grid-area:ch"><b>Action card</b><i><span class="q">Q5</span></i></div>
+</div>
+<p class="note"><b>Bet:</b> the most television-like and the least like software. Best fit for the
+"this must not feel like a website" constraint, and the stadium-LED world has the most room to
+breathe here. <span class="risk"><b>Risk:</b></span> overlays covering the pitch is exactly what PRD
+§8.6 forbids, and a retracting lower-third fights the requirement that zones never move. This is the
+highest-ceiling and highest-risk option.</p>
+
+<!-- ============ D ============ -->
+<h2><span>D.</span> Split Horizon</h2>
+<p class="bet">A hard horizontal division. The top half is the match and nothing else. The bottom half
+is a dense console holding everything about your money. Two worlds, one screen, no overlap.</p>
+<div class="screen D">
+  <div class="z score" style="grid-area:sc"><b>Scorebug</b><i><span class="q">Q1</span><span class="q">Q2</span></i></div>
+  <div class="z stage" style="grid-area:st"><b>Theater stage — the match half</b><i>never overlaid, never obscured</i></div>
+  <div class="z" style="grid-area:tkt"><b>Ticket · legs</b><i><span class="q">Q4</span></i></div>
+  <div class="z" style="grid-area:leg"><b>Active leg — NEED · LIVE progress · event</b><i><span class="q">Q3</span><span class="q">Q6</span></i></div>
+  <div class="z stats" style="grid-area:stx"><b>§8.8 stats</b><i>expands upward into the console only</i></div>
+  <div class="z cash" style="grid-area:ch"><b>Cash-out slot</b><i><span class="q">Q5</span></i></div>
+</div>
+<p class="note"><b>Bet:</b> the cleanest answer to the stats panel you just asked for — it expands
+inside the console and never touches the pitch, so §4.4 pausing and §8.6 no-obscuring both stay
+intact for free. Also the easiest to keep truthful, since match facts and money facts never share a
+region. <span class="risk"><b>Risk:</b></span> giving half the screen to a console makes the stage
+small, and a small stage undercuts the scene-variety work in §7 that Phase 2 is about to build.</p>
+
+<!-- ============ E ============ -->
+<h2><span>E.</span> Centre Column</h2>
+<p class="bet">Three columns under one scorebug. The pitch runs vertically in the centre — attacking
+upward instead of rightward — with the ticket on one flank and the active leg plus stats on the other.</p>
+<div class="screen E">
+  <div class="z score" style="grid-area:sc"><b>Scorebug spans all three columns</b><i><span class="q">Q1</span><span class="q">Q2</span></i></div>
+  <div class="z" style="grid-area:tkt"><b>Ticket · legs · risk / pays</b><i><span class="q">Q4</span></i></div>
+  <div class="z stage" style="grid-area:st"><b>Theater stage<br>vertical pitch</b><i>picked team attacks upward</i></div>
+  <div class="z" style="grid-area:leg"><b>Active leg</b><i><span class="q">Q3</span><span class="q">Q6</span></i></div>
+  <div class="z stats" style="grid-area:stx"><b>§8.8 stats</b></div>
+  <div class="z cash" style="grid-area:ch"><b>Cash-out slot</b><i><span class="q">Q5</span></i></div>
+</div>
+<p class="note"><b>Bet:</b> a vertical pitch is taller than it is wide, which suits a 16:9 screen far
+better than a letterboxed horizontal pitch, and it frees two full-height flanks for information
+without shrinking the stage. Formation reads beautifully vertically, which the §8.8 panel now needs.
+<span class="risk"><b>Risk:</b></span> this changes the framing your PRD §4.5 approved. Direction stays
+stable — up instead of right — but it is a real departure from Decision B and needs an explicit
+ruling. It is also the least broadcast-like of the five.</p>
+
+<hr>
+<div class="qkey">
+  <b style="color:var(--ink)">The six questions (PRD §1), which every layout must answer in order:</b>
+  <ol>
+    <li>Who is playing, and which team or market did I back?</li>
+    <li>What is the score and match time?</li>
+    <li>What still has to happen for this leg to win?</li>
+    <li>How much is at risk, and what does the ticket pay?</li>
+    <li>Can I cash out right now? If not, why not?</li>
+    <li>What event just changed the price?</li>
+  </ol>
+</div>
+
+</div>
+</body>
+</html>

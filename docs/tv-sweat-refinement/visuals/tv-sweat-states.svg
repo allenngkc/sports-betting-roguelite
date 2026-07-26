@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
+  <title id="title">TV sweat action-state comparison</title>
+  <desc id="desc">Three simplified TV panels comparing an open cash-out, a suspended market, and a pending Mulligan or Whistle decision.</desc>
+  <defs>
+    <filter id="gold-glow" x="-20%" y="-40%" width="140%" height="180%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1200" height="420" fill="#030706"/>
+
+  <!-- OPEN -->
+  <g transform="translate(15 18)">
+    <text x="185" y="18" text-anchor="middle" fill="#E7F1F5" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800">A. OPEN MARKET</text>
+    <rect x="0" y="34" width="370" height="350" rx="10" fill="#071015" stroke="#1D343F" stroke-width="2"/>
+    <text x="18" y="62" fill="#9EDCF6" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="800">TICKET 1/2 • LEG 2/3</text>
+    <text x="185" y="91" text-anchor="middle" fill="#E7F1F5" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="900">
+      <tspan fill="#3D7BFF">NORTHSIDE</tspan><tspan> 1 — 0 </tspan><tspan fill="#E84DD0">RIVERS</tspan>
+    </text>
+    <text x="350" y="62" text-anchor="end" fill="#9EDCF6" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800">67'</text>
+    <rect x="16" y="108" width="338" height="132" rx="5" fill="#061014" stroke="#62808A"/>
+    <line x1="185" y1="108" x2="185" y2="240" stroke="#62808A"/>
+    <g fill="#3D7BFF"><circle cx="82" cy="145" r="7"/><circle cx="121" cy="190" r="7"/><circle cx="207" cy="160" r="7"/></g>
+    <g fill="#E84DD0"><circle cx="270" cy="147" r="7"/><circle cx="251" cy="205" r="7"/><circle cx="184" cy="197" r="7"/></g>
+    <circle cx="225" cy="176" r="4" fill="#FFFFFF"/>
+    <text x="18" y="267" fill="#E7F1F5" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="750">LIVE • NORTHSIDE TO WIN</text>
+    <rect x="16" y="286" width="338" height="62" rx="7" fill="#241C0B" stroke="#F2BC45" stroke-width="2" filter="url(#gold-glow)"/>
+    <text x="185" y="311" text-anchor="middle" fill="#C89A38" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="800">ACTIONABLE</text>
+    <text x="185" y="336" text-anchor="middle" fill="#F2BC45" font-family="Inter, Arial, sans-serif" font-size="23" font-weight="900">CASH OUT $184  [E]</text>
+    <text x="185" y="370" text-anchor="middle" fill="#87969C" font-family="Inter, Arial, sans-serif" font-size="12">Interact accepts; stand is suppressed.</text>
+  </g>
+
+  <!-- SUSPENDED -->
+  <g transform="translate(415 18)">
+    <text x="185" y="18" text-anchor="middle" fill="#E7F1F5" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800">B. DANGEROUS ATTACK</text>
+    <rect x="0" y="34" width="370" height="350" rx="10" fill="#071015" stroke="#1D343F" stroke-width="2"/>
+    <text x="18" y="62" fill="#9EDCF6" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="800">TICKET 1/2 • LEG 2/3</text>
+    <text x="185" y="91" text-anchor="middle" fill="#E7F1F5" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="900">
+      <tspan fill="#3D7BFF">NORTHSIDE</tspan><tspan> 1 — 0 </tspan><tspan fill="#E84DD0">RIVERS</tspan>
+    </text>
+    <text x="350" y="62" text-anchor="end" fill="#9EDCF6" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800">68'</text>
+    <rect x="16" y="108" width="338" height="132" rx="5" fill="#061014" stroke="#62808A"/>
+    <line x1="185" y1="108" x2="185" y2="240" stroke="#62808A"/>
+    <g fill="#3D7BFF"><circle cx="92" cy="158" r="7"/><circle cx="154" cy="188" r="7"/><circle cx="250" cy="168" r="7"/></g>
+    <g fill="#E84DD0"><circle cx="292" cy="144" r="7"/><circle cx="281" cy="201" r="7"/><circle cx="228" cy="207" r="7"/></g>
+    <circle cx="310" cy="178" r="4" fill="#FFFFFF"/>
+    <text x="18" y="267" fill="#E7F1F5" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="750">SHOT BUILDING • PRICE HELD BACK</text>
+    <rect x="16" y="286" width="338" height="62" rx="7" fill="#11171A" stroke="#7A878F" stroke-width="2"/>
+    <text x="185" y="310" text-anchor="middle" fill="#7A878F" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="800">NOT ACTIONABLE</text>
+    <text x="185" y="336" text-anchor="middle" fill="#A7B0B4" font-family="Inter, Arial, sans-serif" font-size="23" font-weight="900">MARKET SUSPENDED</text>
+    <text x="185" y="370" text-anchor="middle" fill="#87969C" font-family="Inter, Arial, sans-serif" font-size="12">No amount; Interact follows stand contract.</text>
+  </g>
+
+  <!-- PENDING -->
+  <g transform="translate(815 18)">
+    <text x="185" y="18" text-anchor="middle" fill="#E7F1F5" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800">C. PENDING WINDOW</text>
+    <rect x="0" y="34" width="370" height="350" rx="10" fill="#071015" stroke="#1D343F" stroke-width="2"/>
+    <text x="18" y="62" fill="#9EDCF6" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="800">TICKET 1/2 • FINAL LEG</text>
+    <text x="185" y="91" text-anchor="middle" fill="#E7F1F5" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="900">
+      <tspan fill="#3D7BFF">NORTHSIDE</tspan><tspan> 1 — 1 </tspan><tspan fill="#E84DD0">RIVERS</tspan>
+    </text>
+    <text x="350" y="62" text-anchor="end" fill="#9EDCF6" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800">90'</text>
+    <rect x="16" y="108" width="338" height="132" rx="5" fill="#061014" stroke="#62808A"/>
+    <line x1="185" y1="108" x2="185" y2="240" stroke="#62808A"/>
+    <g fill="#3D7BFF"><circle cx="92" cy="158" r="7"/><circle cx="141" cy="200" r="7"/></g>
+    <g fill="#E84DD0"><circle cx="262" cy="151" r="7"/><circle cx="298" cy="197" r="7"/></g>
+    <circle cx="326" cy="179" r="4" fill="#FFFFFF"/>
+    <rect x="42" y="126" width="286" height="98" rx="8" fill="#0B151A" fill-opacity="0.96" stroke="#9EDCF6"/>
+    <text x="185" y="148" text-anchor="middle" fill="#9EDCF6" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="900" letter-spacing="1">SHOT FROZEN</text>
+    <text x="185" y="171" text-anchor="middle" fill="#E7F1F5" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800">[M] MULLIGAN — VOID LEG</text>
+    <text x="185" y="192" text-anchor="middle" fill="#E7F1F5" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800">[R] SEND TO REVIEW (38%)</text>
+    <text x="185" y="213" text-anchor="middle" fill="#A7B0B4" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800">[N] LET IT DIE</text>
+    <text x="18" y="267" fill="#E7F1F5" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="750">NEED • NORTHSIDE TO WIN</text>
+    <rect x="16" y="286" width="338" height="62" rx="7" fill="#11171A" stroke="#7A878F" stroke-width="2"/>
+    <text x="185" y="310" text-anchor="middle" fill="#7A878F" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="800">INTERVENTION ACTIVE</text>
+    <text x="185" y="336" text-anchor="middle" fill="#A7B0B4" font-family="Inter, Arial, sans-serif" font-size="23" font-weight="900">MARKET SUSPENDED</text>
+    <text x="185" y="370" text-anchor="middle" fill="#87969C" font-family="Inter, Arial, sans-serif" font-size="12">Scorebug and active leg remain visible.</text>
+  </g>
+</svg>
