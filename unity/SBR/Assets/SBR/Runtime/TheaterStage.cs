@@ -137,6 +137,12 @@ namespace SBR.Game
         private float _flashT;           // net-ripple flash countdown
         private float _flashDur;
         private bool _flashRight;
+        // TVS-H03: set only when EnterStep resolves a RoutePass step whose StagedGoal carries a
+        // plan-time-bound actor — never by spatial proximity. Test/debug tracking only; nothing
+        // in playback reads it back.
+        private bool _boundActorActive;
+        private bool _boundActorHome;
+        private int _boundActorIx;
 
         // ---- public test/debug surface ----
         /// <summary>The territory x the last Update spoke (honest prob + decaying pulse in idle,
@@ -148,6 +154,13 @@ namespace SBR.Game
         public bool ScenePlaying => _script != null;
         /// <summary>Frozen at the kill shot's suspension point, awaiting ResumeSuspended.</summary>
         public bool SuspendedAtShot => _suspendedAtShot;
+        /// <summary>TVS-H03 test/debug surface: the actor the CURRENT scene's routing bound to a
+        /// staged goal's identity (never spatial nearest-neighbor), as of the most recently
+        /// entered RoutePass step. Null when no step in the active scene carried a bound actor.
+        /// Proves the STAGE's routing consumed the plan-time binding, not just that the plan
+        /// carried one. Gameplay never reads this.</summary>
+        public (bool IsHome, int RosterIndex)? BoundActorRouted
+            => _boundActorActive ? ((bool, int)?)(_boundActorHome, _boundActorIx) : null;
 
         // ------------------------------------------------------------------ construction
 
@@ -339,14 +352,11 @@ namespace SBR.Game
             StartScript(BuildBeatScript(spec), onGoalPlayed, onCountPlayed, onReveal, onComplete);
         }
 
-        /// <summary>Presentation-only identity for the current scoring run. The named player is
-        /// one of the existing colored actors; no engine state or RNG is involved.</summary>
-        public void SetScoringActor(bool home, int rosterIndex, string playerName)
-        {
-            Image[] dots = home ? _homeDots : _awayDots;
-            if (dots == null || dots.Length == 0) return;
-            dots[Mathf.Abs(rosterIndex) % dots.Length].gameObject.name = playerName;
-        }
+        // TVS-H03: SetScoringActor used to live here — it only ever renamed an unrendered
+        // GameObject.name, with no read-side connection to EnterStep/CompleteStep's route/
+        // carrier selection (Phase 1A). Removed in favor of a real binding: a bound StagedGoal
+        // (ScoreLedger.BindAnytimeScorer) now drives EnterStep's RoutePass case directly — see
+        // BoundActorRouted below and the RoutePass case in EnterStep.
 
         /// <summary>Plays the final whistle sequence: pre-reveal hold → the plan's staged
         /// goal(s) as separately-timed sub-scenes → celebrate/collapse. The GREEN/DEAD slam
@@ -403,6 +413,7 @@ namespace SBR.Game
             _onReveal = null;
             _revealFired = false;
             _onSceneComplete = null;
+            _boundActorActive = false;
         }
 
         private void StartScript(Step[] script, Action<ScoreLedger.StagedGoal> onGoalPlayed,
@@ -418,6 +429,7 @@ namespace SBR.Game
             _onReveal = onReveal;
             _revealFired = false;
             _onSceneComplete = onComplete;
+            _boundActorActive = false;
         }
 
         // ------------------------------------------------------------------ update
@@ -487,6 +499,27 @@ namespace SBR.Game
             {
                 case RoutePass:
                 {
+                    // TVS-H03: a goal bound to a roster identity at plan time (see
+                    // ScoreLedger.BindAnytimeScorer) routes to THAT exact actor — never spatial
+                    // nearest-neighbor. This is the run immediately before the shot (RouteShot
+                    // doesn't reassign the routed dot), so the bound actor is genuinely the one
+                    // the ball is seen carrying into the shot, not just a name attached after
+                    // the fact. Every other step (every other market, every non-reveal goal)
+                    // takes the unbound branch unchanged.
+                    if (s.Goal.HasBoundScorer)
+                    {
+                        Image[] boundDots = s.Goal.ScorerIsHome ? _homeDots : _awayDots;
+                        int boundIx = boundDots != null && boundDots.Length > 0
+                            ? Mathf.Abs(s.Goal.ScorerRosterIndex) % boundDots.Length : -1;
+                        _routeDotIx = boundIx;
+                        _routeDotHome = s.Goal.ScorerIsHome;
+                        _boundActorActive = boundIx >= 0;
+                        _boundActorHome = s.Goal.ScorerIsHome;
+                        _boundActorIx = boundIx;
+                        ForwardRuns(atkHome, s.AtkPicked ? 1f : -1f);
+                        break;
+                    }
+                    _boundActorActive = false;
                     Vector2 want = ToLocal(s.Ball);
                     int ix = NearestOutfield(atkHome, want, exclude: BallCarriedBy(atkHome) ? _carrierIx : -1);
                     _routeDotIx = ix;
@@ -980,7 +1013,11 @@ namespace SBR.Game
                     // Authored in the picked frame, mirrored whole when the goal belongs to
                     // the other side — a won final can still reveal baked opponent goals
                     // (endpoint convergence; Sol, F_0.4.0 P3 r1+r2).
-                    Step run = S(P(1.1f), 0.86f, 1f - lane, 0.72f, 1f);
+                    // TVS-H03: the run carries the SAME goal as the shot (goal: g), not just
+                    // the shot — EnterStep's RoutePass case reads it to route a bound scorer
+                    // (ScoreLedger.BindAnytimeScorer) to the exact actor the shot then fires
+                    // from, instead of the nearest-neighbor default.
+                    Step run = S(P(1.1f), 0.86f, 1f - lane, 0.72f, 1f, goal: g);
                     Step shot = S(P(1.4f), 0.975f, 0.5f, 0.74f, 1f, MkGoal, g, RouteShot);
                     steps.Add(g.ScoredByPicked ? run : MirrorStep(run));
                     steps.Add(g.ScoredByPicked ? shot : MirrorStep(shot));
@@ -995,8 +1032,10 @@ namespace SBR.Game
                 foreach (ScoreLedger.StagedGoal g in plan.Goals)
                 {
                     // Authored in the opponent frame, mirrored whole when the goal is the
-                    // picked side's (Sol, F_0.4.0 P3 r1+r2).
-                    Step run = S(P(1.0f), 0.13f, lane, 0.28f, 1f, atkPicked: false, chase: true);
+                    // picked side's (Sol, F_0.4.0 P3 r1+r2). BindAnytimeScorer only ever binds
+                    // a Won plan, so g.HasBoundScorer is always false on this Lost path — goal:
+                    // g is threaded through anyway for symmetry with the Won branch above.
+                    Step run = S(P(1.0f), 0.13f, lane, 0.28f, 1f, atkPicked: false, chase: true, goal: g);
                     Step shot = S(P(1.5f), 0.025f, 0.5f, 0.26f, 1f, MkGoal, g, RouteShot, atkPicked: false);
                     steps.Add(g.ScoredByPicked ? MirrorStep(run) : run);
                     steps.Add(g.ScoredByPicked ? MirrorStep(shot) : shot);
@@ -1035,8 +1074,9 @@ namespace SBR.Game
                     foreach (ScoreLedger.StagedGoal g in plan.Goals)
                     {
                         // the sucker-punch break — picked frame, mirrored whole for the
-                        // other side's goals (Sol, F_0.4.0 P3 r1+r2)
-                        Step run = S(P(1.1f), 0.70f, 0.42f, 0.62f, 1f);
+                        // other side's goals (Sol, F_0.4.0 P3 r1+r2). TVS-H03: goal: g on the
+                        // run too, same reasoning as BuildFinalScript's Won branch.
+                        Step run = S(P(1.1f), 0.70f, 0.42f, 0.62f, 1f, goal: g);
                         Step shot = S(P(1.4f), 0.975f, 0.5f, 0.72f, 1f, MkGoal, g, RouteShot);
                         steps.Add(g.ScoredByPicked ? run : MirrorStep(run));
                         steps.Add(g.ScoredByPicked ? shot : MirrorStep(shot));
@@ -1062,8 +1102,9 @@ namespace SBR.Game
                         {
                             // post-freeze reveals: opponent frame, mirrored whole for picked-
                             // side goals; only the frozen flight above keeps its launched-side
-                            // continuity (Sol, F_0.4.0 P3 r1+r2)
-                            Step run = S(P(1.0f), 0.13f, 0.35f, 0.28f, 1f, atkPicked: false, chase: true);
+                            // continuity (Sol, F_0.4.0 P3 r1+r2). BindAnytimeScorer never binds
+                            // a Lost plan; goal: g threaded for symmetry only.
+                            Step run = S(P(1.0f), 0.13f, 0.35f, 0.28f, 1f, atkPicked: false, chase: true, goal: g);
                             Step shot = S(P(1.5f), 0.025f, 0.5f, 0.26f, 1f, MkGoal, g, RouteShot, atkPicked: false);
                             steps.Add(g.ScoredByPicked ? MirrorStep(run) : run);
                             steps.Add(g.ScoredByPicked ? MirrorStep(shot) : shot);

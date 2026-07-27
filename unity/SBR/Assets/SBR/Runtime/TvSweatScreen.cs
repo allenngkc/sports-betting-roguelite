@@ -654,7 +654,13 @@ namespace SBR.Game
                     _pendingBeatBeneficiary = TeamColor(leg, spec.Goal.Value.ScoredByPicked);
                     if (evt.Type == DramaEventType.Momentum)
                         _pendingFlavor = SweatFlavor.GoalLine(spec.Goal.Value.ForPicked, leg, evt.Step);
-                    PrepareScoringActor(leg, spec.Goal.Value);
+                    // TVS-H03 fix: the old PrepareScoringActor/SetScoringActor call here was a
+                    // no-op for every anytime-scorer leg (ScorerFor already suppressed identity
+                    // pre-final) and, for every other market, stamped a GameObject.name nothing
+                    // ever read (Phase 1A: "zero read-side connection to EnterStep/CompleteStep's
+                    // ...route/carrier selection"). Removed rather than left as a second, inert
+                    // "scorer actor" mechanism alongside the real plan-time binding below — see
+                    // ScoreLedger.BindAnytimeScorer and TheaterStage.EnterStep's RoutePass case.
                 }
 
                 // A batched count reveal says so out loud — one corner animation can carry
@@ -718,6 +724,10 @@ namespace SBR.Game
                 ScoreLedger.FinalPlan plan = _ledger.PlanFinal(grade);
                 // TVS-S01 fix: PlanFinal derives each remaining batch's team attribution from
                 // its own HomeDelta/AwayDelta now — no bet-derived flag to compute here.
+                // TVS-H03 fix: bound here, at plan time, before ResumeSuspended ever plays a
+                // frame — the reveal copy (ScorerFor) and the stage's actor routing both read
+                // this exact binding, never a post-hoc reconciliation of the two.
+                plan = ScoreLedger.BindAnytimeScorer(plan, leg);
                 CountLedger.FinalPlan? countPlan = _countLedger?.PlanFinal();
                 _stage.ResumeSuspended(plan, countPlan, leg.Selection.Kind, OnGoalPlayed, OnCountPlayed, null);
                 yield return WaitSceneDone();
@@ -729,6 +739,8 @@ namespace SBR.Game
                     : leg.GradesWon ? LegGrade.Won : LegGrade.Lost;
                 SceneSpec spec = _choreo.ResolveFinal(grade, evt.Step, _ledger, _countLedger, leg);
                 ScoreLedger.FinalPlan plan = _ledger.PlanFinal(grade);
+                // TVS-H03 fix: see the ResumeSuspended branch above — same plan-time binding.
+                plan = ScoreLedger.BindAnytimeScorer(plan, leg);
                 _stage.PlayFinalScene(spec, plan, spec.CountFinal, OnGoalPlayed, OnCountPlayed, null);
                 yield return WaitSceneDone();
                 yield return FinalSlam(evt, grade);
@@ -1128,26 +1140,26 @@ namespace SBR.Game
             }
         }
 
-        private void PrepareScoringActor(Leg leg, ScoreLedger.StagedGoal goal)
-        {
-            Player scorer = ScorerFor(goal, leg);
-            if (scorer == null || _stage == null) return;
-            bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
-            bool scorerHome = goal.ScoredByPicked ? pickedHome : !pickedHome;
-            var roster = scorerHome ? leg.Matchup.Home.Players : leg.Matchup.Away.Players;
-            int index = 0;
-            for (; index < roster.Count; index++)
-                if (object.ReferenceEquals(roster[index], scorer)) break;
-            _stage.SetScoringActor(scorerHome, index, scorer.Name);
-        }
-
         private Player ScorerFor(ScoreLedger.StagedGoal goal, Leg leg)
         {
             if (!goal.Commits || leg == null || leg.Matchup.StatLine == null) return null;
-            // On the SWEATED scorer leg, identity IS the market outcome — naming mid-sweat
-            // goals from the baked list would resolve the market ahead of the live price.
-            // Identity stays suspended until the final sequence (the payoff moment).
-            if (leg.Selection.Kind == MarketKind.AnytimeScorer && !_finalSequenceActive) return null;
+            // TVS-H03 fix: an anytime-scorer leg's identity is bound at PLAN time
+            // (ScoreLedger.BindAnytimeScorer, called before ResumeSuspended/PlayFinalScene ever
+            // plays a frame) directly onto the one goal that carries it. Read that binding here,
+            // verbatim — never the old HomeScorers/AwayScorers[index] reconstruction, which had
+            // no causal link to which actor the stage was about to animate as the shot-taker.
+            // Identity stays suspended until the final sequence (the payoff moment) exactly as
+            // before: BindAnytimeScorer only ever runs from the LegFinal branch, and
+            // StageBeatGoal (the only producer of a pre-final StagedGoal) never sets
+            // HasBoundScorer, so the !_finalSequenceActive guard below is now belt-and-braces,
+            // not the only thing preventing an early reveal.
+            if (leg.Selection.Kind == MarketKind.AnytimeScorer)
+            {
+                if (!_finalSequenceActive || !goal.HasBoundScorer) return null;
+                var bound = goal.ScorerIsHome ? leg.Matchup.Home.Players : leg.Matchup.Away.Players;
+                return goal.ScorerRosterIndex >= 0 && goal.ScorerRosterIndex < bound.Count
+                    ? bound[goal.ScorerRosterIndex] : null;
+            }
             bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
             bool scorerHome = goal.ScoredByPicked ? pickedHome : !pickedHome;
             int index = goal.ScoredByPicked ? _ledger.Picked : _ledger.Opponent;

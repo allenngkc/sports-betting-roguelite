@@ -667,5 +667,233 @@ namespace SBR.Tests.EditMode
             foreach (int d in ledger.PlannedDeltas) sum += d;
             return sum;
         }
+
+        // ---------------------------------------------------------------- TVS-H03 regression
+        //
+        // Anytime-scorer identity binding (PRD §4.1, §4.3, §7.7). The defect: SetScoringActor
+        // only ever renamed an unrendered GameObject.name, with no read-side connection to the
+        // stage's actual route/carrier selection — so the name in the reveal copy and the actor
+        // visibly taking the final touch could disagree. The fix binds ONE roster identity onto
+        // the goal that carries it, at PLAN time (ScoreLedger.BindAnytimeScorer), before any
+        // playback: TvSweatScreen.ScorerFor (copy) and TheaterStage.EnterStep (the stage's
+        // actor routing) both read that same StagedGoal.HasBoundScorer/ScorerIsHome/
+        // ScorerRosterIndex — never a post-hoc reconciliation of two separately-computed values.
+        //
+        // This also fixes a related latent mismatch these tests pin directly: ScoreLedger.
+        // ConfigureEndpoint(Leg) used to compute its own "picked is home" anchor inline, forcing
+        // Picked/Opponent onto literal home/away for every non-moneyline market including
+        // anytime-scorer — but SweatFlavor.PickedHomeForPresentation (and therefore the stage's
+        // whole attacking-direction convention, _homeAttacksRight) already special-cases
+        // anytime-scorer onto the BACKED PLAYER's own side, which can be away. The two anchors
+        // silently disagreed for an away-backed leg. ConfigureEndpoint(Leg) now calls the same
+        // shared helper, so they cannot drift apart again.
+
+        private static Leg BuildScorerLeg(int playerIndex, string runId)
+            => BuildCountLeg(MarketSelection.AnytimeScorer(playerIndex), runId);
+
+        [Test]
+        public void ConfigureEndpoint_anchors_an_anytime_scorer_leg_on_the_backed_players_own_side()
+        {
+            int awayRosterSize = new RunConfig().PlayersPerTeam;
+
+            Leg awayBacked = BuildScorerLeg(0, "H03-ANCHOR-AWAY");
+            Assert.AreEqual(awayRosterSize, awayBacked.Matchup.Away.Players.Count,
+                "test assumption: default roster size");
+            var awayLedger = new ScoreLedger();
+            awayLedger.ConfigureEndpoint(awayBacked);
+            Assert.AreEqual(awayBacked.Matchup.StatLine.AwayGoals, awayLedger.TargetPicked,
+                "an away-backed scorer leg must anchor Picked on the away goal count, not home");
+            Assert.AreEqual(awayBacked.Matchup.StatLine.HomeGoals, awayLedger.TargetOpponent);
+
+            Leg homeBacked = BuildScorerLeg(awayRosterSize, "H03-ANCHOR-HOME");
+            var homeLedger = new ScoreLedger();
+            homeLedger.ConfigureEndpoint(homeBacked);
+            Assert.AreEqual(homeBacked.Matchup.StatLine.HomeGoals, homeLedger.TargetPicked,
+                "a home-backed scorer leg must anchor Picked on the home goal count");
+            Assert.AreEqual(homeBacked.Matchup.StatLine.AwayGoals, homeLedger.TargetOpponent);
+        }
+
+        [Test]
+        public void BindAnytimeScorer_won_leg_binds_the_exact_backed_player_home_or_away()
+        {
+            int awayRosterSize = new RunConfig().PlayersPerTeam;
+
+            foreach (bool backedHome in new[] { false, true })
+            {
+                int playerIndex = backedHome ? awayRosterSize : 0; // first home vs. first away player
+                Leg leg = BuildScorerLeg(playerIndex, $"H03-BIND-WON-{backedHome}");
+                Player backedPlayer = leg.Matchup.PlayerAt(playerIndex);
+
+                var ledger = new ScoreLedger();
+                ledger.ConfigureEndpoint(leg);
+                ScoreLedger.FinalPlan plan = ledger.PlanFinal(LegGrade.Won);
+                ScoreLedger.FinalPlan bound = ScoreLedger.BindAnytimeScorer(plan, leg);
+
+                bool foundBinding = false;
+                foreach (ScoreLedger.StagedGoal g in bound.Goals)
+                {
+                    if (!g.HasBoundScorer) continue;
+                    foundBinding = true;
+                    Assert.AreEqual(backedHome, g.ScorerIsHome,
+                        $"backedHome={backedHome}: the bound side must match the backed player's real side");
+                    var roster = g.ScorerIsHome ? leg.Matchup.Home.Players : leg.Matchup.Away.Players;
+                    Assert.IsTrue(g.ScorerRosterIndex >= 0 && g.ScorerRosterIndex < roster.Count,
+                        $"backedHome={backedHome}: roster index must be in range");
+                    Assert.AreSame(backedPlayer, roster[g.ScorerRosterIndex],
+                        $"backedHome={backedHome}: the bound roster identity must BE the backed player, " +
+                        "by reference, never a lookalike from the match's full scorer list");
+                }
+                Assert.IsTrue(foundBinding,
+                    $"backedHome={backedHome}: a Won anytime-scorer leg's final plan must carry a bound goal " +
+                    "(this run's target for the backed side was reached during PlanFinal's own construction, " +
+                    "so a fresh ScoreLedger — 0 committed either side — always leaves a correction to bind)");
+
+                // Every OTHER goal in the plan (if any — the opponent-side correction) stays unbound.
+                foreach (ScoreLedger.StagedGoal g in bound.Goals)
+                    if (!g.ScoredByPicked) Assert.IsFalse(g.HasBoundScorer,
+                        "only the backed side's own goal may ever carry the bound identity");
+            }
+        }
+
+        [Test]
+        public void BindAnytimeScorer_lost_leg_binds_nothing()
+        {
+            Leg leg = BuildScorerLeg(0, "H03-BIND-LOST");
+            var ledger = new ScoreLedger();
+            ledger.ConfigureEndpoint(leg);
+            ScoreLedger.FinalPlan plan = ledger.PlanFinal(LegGrade.Lost);
+            ScoreLedger.FinalPlan bound = ScoreLedger.BindAnytimeScorer(plan, leg);
+
+            Assert.AreEqual(plan.Goals.Length, bound.Goals.Length);
+            foreach (ScoreLedger.StagedGoal g in bound.Goals)
+                Assert.IsFalse(g.HasBoundScorer, "a lost anytime-scorer leg must never bind a scorer identity");
+        }
+
+        [Test]
+        public void BindAnytimeScorer_voided_leg_binds_nothing()
+        {
+            Leg leg = BuildScorerLeg(0, "H03-BIND-VOID");
+            var ledger = new ScoreLedger();
+            ledger.ConfigureEndpoint(leg);
+            ScoreLedger.FinalPlan plan = ledger.PlanFinal(LegGrade.Voided);
+            ScoreLedger.FinalPlan bound = ScoreLedger.BindAnytimeScorer(plan, leg);
+
+            foreach (ScoreLedger.StagedGoal g in bound.Goals)
+                Assert.IsFalse(g.HasBoundScorer, "a voided leg must never bind a scorer identity");
+        }
+
+        [Test]
+        public void BindAnytimeScorer_ignores_every_non_scorer_market()
+        {
+            // A moneyline leg's Won final plan has committing goals too (the correction the
+            // clamp deferred) — BindAnytimeScorer must never touch them.
+            Leg leg = BuildCountLeg(MarketSelection.Moneyline(Side.Home), "H03-BIND-ML");
+            var ledger = new ScoreLedger();
+            ledger.ConfigureEndpoint(leg.Matchup.StatLine, pickedHome: true);
+            ScoreLedger.FinalPlan plan = ledger.PlanFinal(LegGrade.Won);
+            ScoreLedger.FinalPlan bound = ScoreLedger.BindAnytimeScorer(plan, leg);
+
+            Assert.AreEqual(plan.Goals.Length, bound.Goals.Length);
+            for (int i = 0; i < plan.Goals.Length; i++)
+            {
+                Assert.IsFalse(bound.Goals[i].HasBoundScorer, "a moneyline leg must never bind a scorer identity");
+                Assert.AreEqual(plan.Goals[i].Commits, bound.Goals[i].Commits, "no other field may change either");
+                Assert.AreEqual(plan.Goals[i].ScoredByPicked, bound.Goals[i].ScoredByPicked);
+            }
+        }
+
+        [Test]
+        public void BindAnytimeScorer_is_deterministic_across_repeated_calls()
+        {
+            Leg leg = BuildScorerLeg(0, "H03-BIND-DETERMINISM");
+            var ledgerA = new ScoreLedger();
+            ledgerA.ConfigureEndpoint(leg);
+            ScoreLedger.FinalPlan boundA = ScoreLedger.BindAnytimeScorer(ledgerA.PlanFinal(LegGrade.Won), leg);
+
+            var ledgerB = new ScoreLedger();
+            ledgerB.ConfigureEndpoint(leg);
+            ScoreLedger.FinalPlan boundB = ScoreLedger.BindAnytimeScorer(ledgerB.PlanFinal(LegGrade.Won), leg);
+
+            Assert.AreEqual(boundA.Goals.Length, boundB.Goals.Length);
+            for (int i = 0; i < boundA.Goals.Length; i++)
+            {
+                Assert.AreEqual(boundA.Goals[i].HasBoundScorer, boundB.Goals[i].HasBoundScorer);
+                Assert.AreEqual(boundA.Goals[i].ScorerIsHome, boundB.Goals[i].ScorerIsHome);
+                Assert.AreEqual(boundA.Goals[i].ScorerRosterIndex, boundB.Goals[i].ScorerRosterIndex);
+            }
+        }
+
+        [Test]
+        public void BindAnytimeScorer_two_concurrent_scorer_legs_on_one_match_bind_independently()
+        {
+            // PRD §8.2A: two legs can be live on the SAME match at once. Two separate
+            // anytime-scorer tickets on the same matchup, one backing a home player and one
+            // backing an away player — binding must come from each leg's own selection, never
+            // a shared "the active leg" notion, so neither call may see or influence the other.
+            int awayRosterSize = new RunConfig().PlayersPerTeam;
+            var run = new Run("H03-CONCURRENT", new RunConfig());
+            Ticket homeTicket = run.PlaceTicket(new[] { new Pick(0, MarketSelection.AnytimeScorer(awayRosterSize)) }, 10);
+            Ticket awayTicket = run.PlaceTicket(new[] { new Pick(0, MarketSelection.AnytimeScorer(0)) }, 10);
+            run.LockRound();
+            Leg homeLeg = homeTicket.Legs[0];
+            Leg awayLeg = awayTicket.Legs[0];
+            Assert.AreSame(homeLeg.Matchup, awayLeg.Matchup, "both legs ride the same match");
+
+            var homeLedger = new ScoreLedger();
+            homeLedger.ConfigureEndpoint(homeLeg);
+            var awayLedger = new ScoreLedger();
+            awayLedger.ConfigureEndpoint(awayLeg);
+
+            // Interleave the two legs' planning/binding calls to prove neither reaches for the
+            // other's state.
+            ScoreLedger.FinalPlan homePlan = homeLedger.PlanFinal(LegGrade.Won);
+            ScoreLedger.FinalPlan awayPlan = awayLedger.PlanFinal(LegGrade.Won);
+            ScoreLedger.FinalPlan homeBound = ScoreLedger.BindAnytimeScorer(homePlan, homeLeg);
+            ScoreLedger.FinalPlan awayBound = ScoreLedger.BindAnytimeScorer(awayPlan, awayLeg);
+
+            Player homeBackedPlayer = homeLeg.Matchup.PlayerAt(awayRosterSize);
+            Player awayBackedPlayer = awayLeg.Matchup.PlayerAt(0);
+            Assert.AreNotSame(homeBackedPlayer, awayBackedPlayer);
+
+            bool foundHome = false, foundAway = false;
+            foreach (ScoreLedger.StagedGoal g in homeBound.Goals)
+            {
+                if (!g.HasBoundScorer) continue;
+                foundHome = true;
+                Assert.IsTrue(g.ScorerIsHome, "the home ticket's leg must bind a home actor");
+                Assert.AreSame(homeBackedPlayer, homeLeg.Matchup.Home.Players[g.ScorerRosterIndex]);
+            }
+            foreach (ScoreLedger.StagedGoal g in awayBound.Goals)
+            {
+                if (!g.HasBoundScorer) continue;
+                foundAway = true;
+                Assert.IsFalse(g.ScorerIsHome, "the away ticket's leg must bind an away actor");
+                Assert.AreSame(awayBackedPlayer, awayLeg.Matchup.Away.Players[g.ScorerRosterIndex]);
+            }
+            Assert.IsTrue(foundHome, "the home-backed leg must have bound its own goal");
+            Assert.IsTrue(foundAway, "the away-backed leg must have bound its own goal");
+        }
+
+        [Test]
+        public void StageBeatGoal_never_produces_a_bound_scorer_the_pre_final_causal_reveal_guard()
+        {
+            // Structural half of the causal-reveal-timing guarantee (PRD §4.1): the ONLY
+            // producer of a pre-final StagedGoal is StageBeatGoal, and BindAnytimeScorer is only
+            // ever invoked (TvSweatScreen.TheaterBeat) on a FinalPlan inside the LegFinal branch.
+            // If StageBeatGoal itself never sets HasBoundScorer, no pre-final beat can carry a
+            // bound identity regardless of call order — this exhausts every (type, direction,
+            // endpoint) combination StageBeatGoal accepts.
+            foreach (DramaEventType type in new[]
+                { DramaEventType.Score, DramaEventType.BigPlay, DramaEventType.Momentum, DramaEventType.LegFinal })
+            {
+                foreach (bool up in new[] { true, false })
+                {
+                    var ledger = new ScoreLedger();
+                    ScoreLedger.StagedGoal? g = ledger.StageBeatGoal(type, up, up ? 0.05 : -0.05, up ? 0.9 : 0.1);
+                    if (g.HasValue) Assert.IsFalse(g.Value.HasBoundScorer,
+                        $"{type}/{up}: StageBeatGoal must never itself bind a scorer identity");
+                }
+            }
+        }
     }
 }

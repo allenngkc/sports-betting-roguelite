@@ -550,6 +550,199 @@ and visual-design track (`design/08-art-direction.md`, `DESIGN.md`, `PRODUCT.md`
 `docs/tv-sweat-refinement/`, `.impeccable/`) working-tree state that this agent did not create or
 modify.
 
+## 4D. TVS-H03 fix — anytime-scorer identity binding
+
+**Scope:** TVS-H03 only. Dispatched separately from Phase 1B/4C per the design's own instruction to
+hold it for the §7.7 locator decision; that decision (jersey/ring/tag visual treatment, §14) is still
+pending and out of scope here — this fixes the data binding underneath, not any visual locator.
+
+### Reachability claim — re-verified, holds
+
+Phase 1A's finding was: `SetScoringActor` is unreachable with a real identity for an `AnytimeScorer`
+leg, both before and during the final. Re-read from source independently before touching anything:
+
+- **Pre-final:** `PrepareScoringActor` was called only from `TheaterBeat`'s non-final branch
+  (`TvSweatScreen.cs:657`, pre-fix), which calls `ScorerFor`. `ScorerFor` had
+  `if (leg.Selection.Kind == MarketKind.AnytimeScorer && !_finalSequenceActive) return null;`
+  (`TvSweatScreen.cs:1162`, pre-fix) — `_finalSequenceActive` is only ever set true inside the
+  `LegFinal` branch's `BeginFinalSequenceClock()`, which the non-final branch never reaches. So
+  `ScorerFor` always returned `null` here for a scorer leg, `PrepareScoringActor` always no-opped
+  (`scorer == null` early return), and `SetScoringActor` was never called. **Confirmed.**
+- **Final:** Neither final path (`TvSweatScreen.cs:707-725` pending-loss/`ResumeSuspended`, or
+  `:726-735` plain `PlayFinalScene`) called `PrepareScoringActor` at all. **Confirmed unreachable.**
+- **Every other market:** `PrepareScoringActor`/`SetScoringActor` WAS reachable and DID run during
+  non-final goal beats (the `AnytimeScorer` gate above doesn't apply to moneyline/totals/BTTS), but
+  `SetScoringActor` only renamed `dots[i].gameObject.name` — no `Text`/`TMP` component exists on any
+  dot, and `EnterStep`/`CompleteStep`'s route/carrier selection never reads `.gameObject.name`
+  anywhere in the file (verified by search: `gameObject.name` had exactly one write site and zero
+  read sites in `TheaterStage.cs`). So the mechanism was reachable-but-inert for every market, not
+  just a no-op for scorer legs — worse than Phase 1A's finding stated, in that a broken "binding" was
+  actively running and doing nothing, for every goal on every market, the whole time.
+
+The reachability claim held. The reveal path for an anytime-scorer leg's identity ran entirely
+through a SEPARATE, independent read — `OnGoalPlayed` → `ScorerFor` → `leg.Matchup.StatLine.
+HomeScorers[_ledger.Picked]` / `AwayScorers[_ledger.Opponent]` — with zero connection to
+`SetScoringActor` at all. That separate read is where the actual defect lived, not in
+`SetScoringActor` narrowly; see the design note below.
+
+### A related latent defect found while tracing the reveal path
+
+Before designing the binding, the reveal path's own correctness needed checking: could
+`HomeScorers[_ledger.Picked]`/`AwayScorers[_ledger.Opponent]` name the WRONG player even on a won
+leg? Tracing it: `ScoreLedger.ConfigureEndpoint(Leg leg)` computed its own inline "picked is home"
+anchor — `leg.Selection.Kind != MarketKind.Moneyline || leg.Selection.Choice == MarketChoice.Home`,
+which is unconditionally `true` for `AnytimeScorer` (`Kind != Moneyline`) regardless of which side
+the backed player is actually on. `_targetPicked`/`_targetOpponent` (and therefore the
+`Picked`/`Opponent` counters `ScorerFor` indexed by) were consequently anchored on literal home/away.
+But `SweatFlavor.PickedHomeForPresentation` — the anchor the STAGE itself uses for attacking
+direction (`_homeAttacksRight`), team color, and every other scorer-leg renderer — special-cases
+`AnytimeScorer` onto the BACKED PLAYER's own side (`leg.Matchup.PlayerSide(leg.Selection.
+PlayerIndex) == Side.Home`), which can be away. For an away-backed scorer leg the two anchors
+disagreed, so `ScorerFor`'s home/away-indexed lookup and the stage's picked-relative goal mirroring
+were reading two different conventions under the same "Picked" name — the identity named in copy,
+when it happened to fire at all, was not reliably even reading from the correct side's scorer list.
+Fixed as part of this same change (`SweatPresentationModel.cs`,
+`ConfigureEndpoint(Leg leg)` now calls `SweatFlavor.PickedHomeForPresentation(leg)` instead of
+duplicating the formula) — see `ConfigureEndpoint_anchors_an_anytime_scorer_leg_on_the_backed_players_own_side`
+below. This call is a no-op for every other market (the two formulas were already identical there).
+
+### TVS-H03 — anytime-scorer identity binding — FIXED
+
+| Field | Content |
+|---|---|
+| ID | TVS-H03 |
+| Build | `674b69e` + this working tree (uncommitted) |
+| Seed / Round / Ticket-leg / Market | `NOT CAPTURED — EDITMODE/PLAYMODE UNIT AND COMPONENT TESTS, NOT A SEEDED MANUAL SWEAT` (regression tests below drive `ScoreLedger`/`TheaterStage` directly, several through a real engine `Run`/`Ticket`/`LockRound()` stack for a `MarketKind.AnytimeScorer` selection, without pinning one seed — the defect is a data-binding/routing bug reproducible for any anytime-scorer leg regardless of seed) |
+| Scene | Any goal-producing template played through `PlayFinalScene`/`ResumeSuspended` (final whistle sequence) on an `AnytimeScorer` leg |
+| Playback state | Final sequence goal reveal (`MkGoal`/`RouteShot`), both the unsuspended final and the pending-loss suspended-shot continuation |
+| Expected | PRD §4.1: anytime-scorer identity appears only at its causal reveal point and belongs to the actor that takes the visible final touch. |
+| Actual (pre-fix) | Confirmed by source (this dispatch, re-verifying Phase 1A): `SetScoringActor` was unreachable-with-identity for a scorer leg, as above. Separately, `ScorerFor`'s `HomeScorers`/`AwayScorers`-index reconstruction had no causal link to which dot `EnterStep`'s `RoutePass` (spatial nearest-neighbor) had actually routed the ball through on the preceding step — the two were computed independently, from different data, with no shared identity. A name could be revealed in copy while an unrelated dot visibly carried the ball into the net. |
+| Reproduction | Pre-fix: confirmed by source only (Phase 1A + this dispatch's re-verification), `NOT RUN` at runtime (there is no rendering to observe the mismatch visually in this harness — see §6.1.1 — and the mismatch is a data-binding fact, provable by source inspection: two independent computations feeding two independent consumers, with no shared value between them). Post-fix: reproduced correct by real EditMode/PlayMode execution, `0 failures` across the 9 regression cases below plus the full existing suite — real suite output pasted below. |
+| Evidence | Pass/fail EditMode/PlayMode evidence for the DATA/ROUTING contract (§6.1.1 — sufficient: this is a state-machine/data-binding defect, not a "what is drawn" defect — no color, layout, or legibility claim is made). The dots themselves remain plain, unlabeled circles pre- and post-fix (§7.7's visual locator is explicitly out of scope for this dispatch); no screenshot/video is claimed or needed. |
+| Severity | Major (as scoped by Phase 1A's original finding) |
+| Regression | `ConfigureEndpoint_anchors_an_anytime_scorer_leg_on_the_backed_players_own_side`, `BindAnytimeScorer_won_leg_binds_the_exact_backed_player_home_or_away`, `BindAnytimeScorer_lost_leg_binds_nothing`, `BindAnytimeScorer_voided_leg_binds_nothing`, `BindAnytimeScorer_ignores_every_non_scorer_market`, `BindAnytimeScorer_is_deterministic_across_repeated_calls`, `BindAnytimeScorer_two_concurrent_scorer_legs_on_one_match_bind_independently`, `StageBeatGoal_never_produces_a_bound_scorer_the_pre_final_causal_reveal_guard` (all `ScoreLedgerTests.cs`, EditMode); `Bound_goal_routes_the_carrier_to_the_exact_bound_actor`, `Bound_goal_on_the_home_side_routes_home`, `Unbound_goals_never_report_a_routed_actor` (all `TheaterStageTests.cs`, PlayMode) |
+| Owner / status | TV execution agent / **FIXED, verified** |
+
+### The binding model: one struct field, bound once, read twice — never reconciled
+
+**Where identity now lives.** `ScoreLedger.StagedGoal` (`SweatPresentationModel.cs`) gained three new
+fields — `HasBoundScorer`, `ScorerIsHome`, `ScorerRosterIndex` — defaulting to unbound on every
+existing constructor (a dedicated private constructor and a `WithBoundScorer(bool, int)` method are
+the only way to set them true, so no existing call site anywhere in the codebase can accidentally
+produce a bound goal). This mirrors the TVS-S01 precedent deliberately: a genuinely new, orthogonal
+fact gets its own field rather than overloading an existing one (`ForPicked`/`ScoredByPicked` keep
+their existing meaning, untouched).
+
+**Where the binding happens.** `ScoreLedger.BindAnytimeScorer(FinalPlan plan, Leg leg)` is a new pure,
+static, stateless function. Called from `TvSweatScreen.TheaterBeat`'s `LegFinal` branch, in BOTH the
+pending-loss (`ResumeSuspended`) and plain (`PlayFinalScene`) paths, immediately after
+`_ledger.PlanFinal(grade)` and before either is handed to the stage — i.e. at PLAN time, before a
+single frame of the final sequence plays. It:
+
+1. No-ops for every non-`AnytimeScorer` leg, every non-`Won` grade, and an empty/null plan.
+2. Reads the backed player's own side and per-side roster index directly from the leg's own
+   selection (`leg.Matchup.PlayerSide(leg.Selection.PlayerIndex)`, `leg.Selection.PlayerIndex`
+   offset by the away roster size) — no engine RNG, no `UnityEngine.Random`, no wall clock, no frame
+   timing; every input is a staged fact already fixed at bet-placement time.
+3. Finds the one committing goal in the plan whose `ScoredByPicked` matches the backed player's own
+   side (reliable now that `ConfigureEndpoint`'s anchor fix makes `ScoredByPicked` agree with
+   `SweatFlavor.PickedHomeForPresentation` again) and calls `WithBoundScorer` on it. A Lost or Voided
+   leg finds nothing (grade gate). A Won leg whose backed side's quota was already exhausted before
+   the final finds nothing either — this method never invents a goal to force a reveal, which would
+   move the causal reveal point (out of scope, and PRD §4.1 forbids revealing early — inventing a
+   late one is the same law from the other direction).
+
+**Where identity is read.** Exactly two places, both reading the same three fields off the same
+`StagedGoal` value — never a third, independently-derived one:
+
+- **Copy:** `TvSweatScreen.ScorerFor` — for an `AnytimeScorer` leg, returns
+  `(goal.ScorerIsHome ? Home : Away).Players[goal.ScorerRosterIndex]` directly, gated on
+  `_finalSequenceActive && goal.HasBoundScorer`. The old `HomeScorers`/`AwayScorers`-index
+  reconstruction is gone for this market entirely (kept, unchanged, for every other market).
+- **Stage:** `TheaterStage.EnterStep`'s `RoutePass` case — when `s.Goal.HasBoundScorer`, routes
+  `_routeDotIx`/`_routeDotHome` straight to `(ScorerIsHome, ScorerRosterIndex % dots.Length)` instead
+  of calling `NearestOutfield` (spatial nearest-neighbor). This is the run step immediately before
+  the `RouteShot` step that fires `MkGoal` — `RouteShot` never reassigns the routed dot — so the
+  bound actor is genuinely the dot the ball is carried by into the shot, not a label attached after
+  the fact. `goal:` is threaded onto the run step (previously only the shot step carried it) in all
+  three script builders (`BuildFinalScript` Won/Lost, `BuildContinuationScript` Won/Lost) for
+  uniformity; only the Won branches can ever actually be bound, per `BindAnytimeScorer`'s grade gate.
+
+**Old mechanism removed.** `TheaterStage.SetScoringActor` and `TvSweatScreen.PrepareScoringActor` are
+deleted rather than left alongside the new mechanism — keeping a second, confirmed-inert "scorer
+actor" concept in the file risks a future reader assuming it does something. Their one call site
+(`TvSweatScreen.cs`, non-final beat branch) is removed with an inline comment pointing at the
+replacement. No test anywhere referenced either method (grepped clean before removal).
+
+**Forward-compatibility for §7.7.** The binding is a real (side, roster-index) pair carried on the
+goal that plans the whole final reveal, not a name computed at the last instant — the same shape
+§7.7's continuous backed-player locator will need (a stable roster identity, addressable on the
+stage, for the WHOLE sweat rather than one reveal moment). This dispatch deliberately does not build
+the continuous version (no locator, no visual treatment, no jersey numerals) — only the single-goal
+binding required to close TVS-H03 — but it does not paint that future work into a corner: extending
+`BindAnytimeScorer`'s (side, index) computation to run at leg-start instead of at the final plan, and
+threading it onto every step instead of just a goal's run+shot pair, is an additive change to the
+same mechanism, not a redesign.
+
+### Concurrency (PRD §8.2A)
+
+`BindAnytimeScorer` takes the leg and its own already-built `FinalPlan` as parameters — nothing reads
+"the active leg," a static/shared field, or any other global. Two anytime-scorer legs live on the
+same match (or an anytime-scorer leg live alongside a totals/moneyline leg on the same match) each
+call `BindAnytimeScorer` with their own `Leg`/`ScoreLedger`/`FinalPlan` instance — `TvSweatScreen`
+already runs one leg's sweat to completion per `ScoreLedger` instance (`_ledger` is reset and
+reconfigured per leg via `BeginStageLeg`), so this was already leg-scoped before this fix; the new
+method preserves that scoping rather than introducing a new "current leg" dependency.
+`BindAnytimeScorer_two_concurrent_scorer_legs_on_one_match_bind_independently` pins this directly:
+two separate tickets on the same matchup, one backing a home player and one an away player, planned
+and bound in interleaved call order, each producing only its own player's binding.
+
+### Real suite results
+
+```
+dotnet test engine.tests
+Passed!  - Failed:     0, Passed:   160, Skipped:     0, Total:   160, Duration: 479 ms - SBR.Engine.Tests.dll (net10.0)
+```
+
+```
+Unity.exe -batchmode -nographics -projectPath <repo>\unity\SBR -runTests -testPlatform EditMode -testResults ...editmode-results.xml -logFile ...editmode.log
+<test-run id="2" testcasecount="88" result="Passed" total="88" passed="88" failed="0" inconclusive="0" skipped="0" .../>
+```
+
+88 EditMode cases = the 80 baseline (§4C.5) plus the 8 new TVS-H03 regression cases listed above
+(80 + 8 = 88), all passing individually (confirmed by grepping each case's own `result="Passed"` in
+the results XML, not just the aggregate).
+
+```
+Unity.exe -batchmode -nographics -projectPath <repo>\unity\SBR -runTests -testPlatform PlayMode -testResults ...playmode-results.xml -logFile ...playmode.log
+<test-run id="2" testcasecount="30" result="Passed" total="30" passed="30" failed="0" inconclusive="0" skipped="0" .../>
+```
+
+30 PlayMode cases = the 27 baseline plus the 3 new TVS-H03 `TheaterStageTests` cases listed above
+(27 + 3 = 30), all passing individually. This run did not hit the known
+`never observed the cash-out amount mid-tween` flake (BUG-LEDGER.md §4C.4) — a single run was
+sufficient, no re-run was needed.
+
+Build side-effect hazard (§6.1.1) reproduced again as expected across both `dotnet test` and both
+Unity invocations: `SBR.Engine.dll`, `ProjectSettings/EditorBuildSettings.asset`, and
+`ProjectSettings/ProjectSettings.asset` were touched and reverted with `git checkout --` immediately
+after every run. `git status` after this pass shows only the five intended files
+(`SweatPresentationModel.cs`, `TheaterStage.cs`, `TvSweatScreen.cs`, `ScoreLedgerTests.cs`,
+`TheaterStageTests.cs`), plus the pre-existing `DESIGN.md` and
+`docs/tv-sweat-refinement/room-layout-update.md` working-tree modifications and the untracked
+`.impeccable/` directory that this agent did not create or modify.
+
+### Known scope boundary, stated rather than silently left
+
+`BindAnytimeScorer` only ever finds a goal to bind when the final plan's `PlanFinal` naturally leaves
+a committing correction for the backed side (the common case, by design — `MaxLiveLead` pushes most
+of a scorer leg's goal quota into the final correction). If a Won leg's backed-side quota was already
+fully spent during ordinary (non-final) play before the final sequence starts, no reveal fires this
+dispatch: `ScorerFor` was already suppressing identity before final for every case (pre-fix), so this
+is not a regression, and manufacturing a guaranteed reveal moment for that edge case would either
+move the causal reveal point or require the whole-sweat identity tracking §7.7 exists for — explicitly
+deferred, per the dispatch instruction not to build it here.
+
 ## 9. Three-sweat acceptance record
 
 | Gate sweat | Seed / build | Ticket and markets | Required stress | Muted result | Evidence | Open bugs |

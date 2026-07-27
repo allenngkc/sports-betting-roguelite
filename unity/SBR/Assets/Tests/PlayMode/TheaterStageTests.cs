@@ -172,6 +172,88 @@ namespace SBR.Tests.PlayMode
             Assert.AreEqual(plan.Goals.Length, goalsPlayed, "every staged goal must visibly play");
         }
 
+        // ------------------------------------------------------------ TVS-H03 regression
+        //
+        // The old SetScoringActor only renamed an unrendered GameObject.name — nothing in
+        // EnterStep/CompleteStep's route/carrier selection ever read it. The fix makes a
+        // plan-time-bound StagedGoal (ScoreLedger.BindAnytimeScorer) drive EnterStep's RoutePass
+        // case directly, so the actor the stage visibly carries into the shot IS the bound
+        // roster identity, not whichever dot spatial nearest-neighbor happens to prefer.
+
+        [UnityTest]
+        public IEnumerator Bound_goal_routes_the_carrier_to_the_exact_bound_actor()
+        {
+            TheaterStage stage = BuildStage();
+            stage.timeScale = 0.02f;
+            Assert.IsNull(stage.BoundActorRouted, "no scene has played yet");
+
+            // Bind to a specific away actor — the point is that the stage must use THIS exact
+            // identity, never whichever dot spatial proximity would otherwise have picked.
+            ScoreLedger.StagedGoal bound =
+                new ScoreLedger.StagedGoal(true, true).WithBoundScorer(isHome: false, rosterIndex: 5);
+            var plan = new ScoreLedger.FinalPlan(LegGrade.Won, new[] { bound });
+
+            bool done = false;
+            stage.PlayFinalScene(Spec(SceneTemplate.LegFinalWon), plan, g => { }, () => done = true);
+
+            float w = 0f;
+            while (stage.BoundActorRouted == null && w < 8f) { w += Time.deltaTime; yield return null; }
+            Assert.IsTrue(stage.BoundActorRouted.HasValue,
+                "the run step before the shot never routed to a bound actor");
+            Assert.AreEqual((false, 5), stage.BoundActorRouted.Value,
+                "the stage must route to the EXACT actor bound at plan time (away, roster index 5), " +
+                "not a spatially-nearest dot");
+
+            w = 0f;
+            while (!done && w < 8f) { w += Time.deltaTime; yield return null; }
+            Assert.IsTrue(done, "the bound scene never completed");
+        }
+
+        [UnityTest]
+        public IEnumerator Bound_goal_on_the_home_side_routes_home()
+        {
+            TheaterStage stage = BuildStage();
+            stage.timeScale = 0.02f;
+
+            ScoreLedger.StagedGoal bound =
+                new ScoreLedger.StagedGoal(true, true).WithBoundScorer(isHome: true, rosterIndex: 2);
+            var plan = new ScoreLedger.FinalPlan(LegGrade.Won, new[] { bound });
+
+            bool done = false;
+            stage.PlayFinalScene(Spec(SceneTemplate.LegFinalWon), plan, g => { }, () => done = true);
+
+            float w = 0f;
+            while (stage.BoundActorRouted == null && w < 8f) { w += Time.deltaTime; yield return null; }
+            Assert.AreEqual((true, 2), stage.BoundActorRouted.Value);
+
+            w = 0f;
+            while (!done && w < 8f) { w += Time.deltaTime; yield return null; }
+            Assert.IsTrue(done);
+        }
+
+        [UnityTest]
+        public IEnumerator Unbound_goals_never_report_a_routed_actor()
+        {
+            TheaterStage stage = BuildStage();
+            stage.timeScale = 0.02f;
+
+            var ledger = new ScoreLedger(); // 0-0 entering the final — ordinary, unbound plan
+            ScoreLedger.FinalPlan plan = ledger.PlanFinal(LegGrade.Won);
+            Assert.IsTrue(plan.Goals.Length > 0 && !plan.Goals[0].HasBoundScorer,
+                "test setup: this plan must be unbound");
+
+            bool done = false;
+            stage.PlayFinalScene(Spec(SceneTemplate.LegFinalWon), plan, g => { }, () => done = true);
+            float w = 0f;
+            while (!done && w < 10f)
+            {
+                Assert.IsNull(stage.BoundActorRouted, "an unbound goal must never report a routed actor");
+                w += Time.deltaTime;
+                yield return null;
+            }
+            Assert.IsTrue(done);
+        }
+
         [UnityTest]
         public IEnumerator Pending_window_suspends_at_the_shot_and_resumes_each_way()
         {

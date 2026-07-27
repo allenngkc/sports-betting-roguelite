@@ -134,17 +134,43 @@ namespace SBR.Game
             /// stoppage-time playback so the 60–90s sweat law does not turn a rare blowout
             /// into an unbounded scene sequence.</summary>
             public readonly int Amount;
+            /// <summary>TVS-H03: bound at PLAN time (see <see cref="ScoreLedger.BindAnytimeScorer"/>),
+            /// never reconciled afterward — the one roster identity both the reveal copy and the
+            /// stage's actor routing must read, so they can never disagree. False (the struct
+            /// default) for every goal on every non-anytime-scorer leg, and for every goal on an
+            /// anytime-scorer leg except its single causal reveal goal on a Won leg.</summary>
+            public readonly bool HasBoundScorer;
+            /// <summary>True when the bound actor plays for the home side. Meaningless unless
+            /// <see cref="HasBoundScorer"/>.</summary>
+            public readonly bool ScorerIsHome;
+            /// <summary>The bound actor's index within their own team's roster (never the
+            /// matchup-global <c>Leg.Selection.PlayerIndex</c>). Meaningless unless
+            /// <see cref="HasBoundScorer"/>.</summary>
+            public readonly int ScorerRosterIndex;
 
             public StagedGoal(bool forPicked, bool commits, int amount = 1)
                 : this(forPicked, forPicked, commits, amount) { }
 
             public StagedGoal(bool forPicked, bool scoredByPicked, bool commits, int amount)
+                : this(forPicked, scoredByPicked, commits, amount, false, false, -1) { }
+
+            private StagedGoal(bool forPicked, bool scoredByPicked, bool commits, int amount,
+                bool hasBoundScorer, bool scorerIsHome, int scorerRosterIndex)
             {
                 ForPicked = forPicked;
                 ScoredByPicked = scoredByPicked;
                 Commits = commits;
                 Amount = Math.Max(0, amount);
+                HasBoundScorer = hasBoundScorer;
+                ScorerIsHome = scorerIsHome;
+                ScorerRosterIndex = scorerRosterIndex;
             }
+
+            /// <summary>Returns this goal with a roster identity bound to it. Presentation-only:
+            /// the identity comes from the leg's own backed selection (see
+            /// <see cref="ScoreLedger.BindAnytimeScorer"/>), never RNG, never spatial proximity.</summary>
+            public StagedGoal WithBoundScorer(bool isHome, int rosterIndex)
+                => new StagedGoal(ForPicked, ScoredByPicked, Commits, Amount, true, isHome, rosterIndex);
         }
 
         /// <summary>The final whistle's staging order: the goals scene #12/#13 must play
@@ -206,8 +232,15 @@ namespace SBR.Game
         public void ConfigureEndpoint(Leg leg)
         {
             if (leg == null) throw new ArgumentNullException(nameof(leg));
-            ConfigureEndpoint(leg.Matchup.StatLine,
-                leg.Selection.Kind != MarketKind.Moneyline || leg.Selection.Choice == MarketChoice.Home);
+            // TVS-H03 follow-up: this MUST be the exact same "picked" anchor the stage and every
+            // other renderer use (SweatFlavor.PickedHomeForPresentation), not a locally-duplicated
+            // formula. They agreed for every market except anytime-scorer (whose backed player can
+            // be on either side) — a duplicated formula here silently forced this ledger's
+            // Picked/Opponent counters onto home/away while the stage's attacking-side convention
+            // followed the backed player's real side, so a goal this ledger called "Picked" could
+            // be the stage's "Opponent" for an away-backed scorer leg. Calling the shared helper
+            // makes the two conventions structurally identical instead of coincidentally aligned.
+            ConfigureEndpoint(leg.Matchup.StatLine, SweatFlavor.PickedHomeForPresentation(leg));
             // Goal sense binds only where GOALS are the market. Corners/cards legs keep the
             // neutral home-anchored goal decoration — their market coupling lives in the
             // CountLedger, not here.
@@ -351,6 +384,47 @@ namespace SBR.Game
                     break; // the scoreline freezes as-is under the cyan VOID treatment
             }
             return new FinalPlan(grade, goals.ToArray());
+        }
+
+        /// <summary>TVS-H03: binds an anytime-scorer leg's backed player onto the one committing
+        /// goal in <paramref name="plan"/> that represents that player's own side — at PLAN time,
+        /// before any playback, so the reveal copy (<c>TvSweatScreen.ScorerFor</c>) and the
+        /// stage's actor routing (<c>TheaterStage.EnterStep</c>) can only ever read the same
+        /// identity from the same field. No RNG, no wall clock, no frame timing: the actor is
+        /// read straight from the leg's own <c>Selection.PlayerIndex</c>, and which plan entry it
+        /// binds to falls out of <see cref="StagedGoal.ScoredByPicked"/> — deterministic from the
+        /// leg alone, so two or more legs live on the same match (PRD §8.2A) each bind from their
+        /// own leg and plan, never a shared "current leg" notion.
+        ///
+        /// A Lost (or Voided) leg binds nothing — <see cref="StagedGoal.HasBoundScorer"/> stays
+        /// false on every goal, so no identity can ever surface for it (PRD §4.1: no scorer
+        /// identity on a losing pick). A Won leg whose backed side already reached its target
+        /// before the final (no committing correction remains for that side) also binds nothing:
+        /// this method only ever attaches an identity to a goal that is actually about to play,
+        /// never invents a new one to force a reveal — doing so would move the causal reveal
+        /// point, which is out of scope here (see BUG-LEDGER.md TVS-H03).</summary>
+        public static FinalPlan BindAnytimeScorer(FinalPlan plan, Leg leg)
+        {
+            if (leg == null || leg.Selection.Kind != MarketKind.AnytimeScorer || plan.Grade != LegGrade.Won)
+                return plan;
+            if (plan.Goals == null || plan.Goals.Length == 0) return plan;
+
+            bool backedIsHome = leg.Matchup.PlayerSide(leg.Selection.PlayerIndex) == Side.Home;
+            int rosterIndex = backedIsHome
+                ? leg.Selection.PlayerIndex - leg.Matchup.Away.Players.Count
+                : leg.Selection.PlayerIndex;
+
+            StagedGoal[] goals = plan.Goals;
+            for (int i = 0; i < goals.Length; i++)
+            {
+                // ScoredByPicked is this leg's own presentation anchor (fixed above, in
+                // ConfigureEndpoint(Leg), to agree with SweatFlavor.PickedHomeForPresentation) —
+                // true means "the backed player's own side", never a literal home/away read.
+                if (!goals[i].Commits || !goals[i].ScoredByPicked) continue;
+                goals[i] = goals[i].WithBoundScorer(backedIsHome, rosterIndex);
+                return new FinalPlan(plan.Grade, goals);
+            }
+            return plan;
         }
 
         /// <summary>New leg, new match: the scoreline resets.</summary>
