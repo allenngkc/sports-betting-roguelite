@@ -149,6 +149,17 @@ What survives as genuinely binding:
 - **Typography carries heavy load**, because the surface is dense with numbers read at distance.
   *How* it does so is open.
 
+**Game-wide art direction, stated by Allen 2026-07-26: high-tech city, dystopian.** A rich, neon,
+functioning city outside; a rotting room inside. The player is not in a poor world — they are in a
+wealthy one that has no use for them. This reading is consistent with the satire pillar and with the
+TV thesis in `DESIGN.md` (the expensive machine glowing in a condemned space).
+
+**Open gap this exposes.** Deprecating `design/08-art-direction.md` removed the game's art authority,
+and `DESIGN.md` replaced it for the **TV sweat surface only**. The room, laptop/SureThing, and phone
+currently have no owning art document. The statement above is the seed of that replacement and needs
+a home in the design bible, decided by Allen — it governs surfaces the TV sweat worktree does not own
+and must not unilaterally define.
+
 Deliberately released, 2026-07-24 — the new visual world may reinvent all of these:
 
 - the color language, including whether green/red/gold retain money meanings at all;

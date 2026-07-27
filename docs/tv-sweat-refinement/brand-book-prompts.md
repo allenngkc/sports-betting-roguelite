@@ -142,6 +142,76 @@ Secondary: is the narrower column better balanced, and can you still read both l
 
 ---
 
+# P5 — the graded look
+
+P4 confirmed the composition works in the room. This one previews what the **unified grade** in
+[unified-grade-spec.md](unified-grade-spec.md) would do, so the look can be approved before anyone
+touches a Unity volume.
+
+Same scene as P4. The only difference is that room and TV now share one camera, one sensor, and one
+atmosphere.
+
+```
+A cramped bunker-like room at night, painterly semi-realistic concept art, cinematic wide interior, shot as a single photograph on one camera. Heavily peeling paint on walls, ceiling and floor. Exposed black conduit and pipes across every surface, bolted steel brackets. A heavy riveted industrial bunk bed frame on the left with a worn patched couch underneath. A small deep-set window in the far wall showing a dark city skyline. A battered metal desk on the right with an open laptop, a phone, and an ashtray full of cigarette butts. A metal stool. A coiled black cable on the floor. A wall-mounted fluorescent strip casting sickly yellow-green light. Room surfaces olive, khaki, drab yellow-green, damp and institutional.
+
+A large flat LED television mounted on the right wall, seen slightly off-axis from the couch, showing a live soccer betting broadcast: a narrow vertical bet-slip column on the left quarter of the screen with two bright white live legs, one dim gold won leg and one fully unlit dead leg, and a large soccer pitch filling the rest with dim green markings and small bright blue and magenta player dots. A gold band at the foot of the column is the brightest element on the screen. Invented fictional teams NORTHGATE and CALDER CITY.
+
+THE WHOLE IMAGE IS ONE PHOTOGRAPH, NOT A COMPOSITE. Critically: the television's black areas are NOT pure black — they are a very dark blue-grey, lifted, and are no darker than the darkest shadows in the room, because the panel catches ambient light and dust. Visible atmospheric haze fills the air between the camera and the screen, so the television's blue and magenta emission scatters through the room's dust before reaching the lens. A single consistent film grain lies over the entire frame, over the room and the screen equally. One shared bloom makes the TV's light bleed softly past its bezel into the air. Subtle chromatic aberration at the frame edges. A gentle vignette. Slightly hazy, slightly dirty, filmic, cohesive.
+
+The television is the dominant light source. Deep shadow elsewhere. Photographic depth of field, 16:9.
+```
+
+## What to judge
+
+**Cover the television with your thumb and compare P4 and P5.** If the grade is working, the *room*
+looks different too — grainier, hazier, slightly lifted in the shadows. A grade that only changes the
+TV is not a unifying grade, it is a filter on one asset.
+
+Then uncover it: does the screen sit *in* the space, or *on* it?
+
+Finally, check nothing broke: the dead leg still reads as dead, the gold band is still clearly the
+brightest thing, and the small text on the bet slip is still readable. Grain and chromatic aberration
+attack small type first — if legibility went, the grade is too strong.
+
+---
+
+# P6 — the grade, with the brand book back on the screen
+
+P5 succeeded at what it was testing. The grade, haze, grain, lifted shadows and panel physicality are
+**approved and final** — that combination is the target look for the room and the panel, and P6 must
+not change any of it.
+
+What P5 got wrong was the screen *content*. The generator abandoned `DESIGN.md` and produced a
+generic dark-mode sportsbook app: a `SINGLE / MULTI / SYSTEM` tab bar, rounded odds cards, four
+unrelated fixtures, a photographic pitch, and no LED matrix at all. That is precisely the category
+default this project set out to refuse.
+
+P6 keeps P5's photography and restores the world.
+
+```
+A cramped bunker-like room at night, painterly semi-realistic concept art, shot as a single photograph on one camera. Heavily peeling paint on walls, ceiling and floor. Exposed conduit and pipes, bolted steel brackets. A riveted industrial bunk bed frame on the left with a worn patched couch beneath it. A small deep-set window in the far wall showing a neon high-tech city skyline at night. A battered metal desk on the right with an open laptop and an ashtray of cigarette butts. A metal stool. A coiled black cable on the floor. A dim wall-mounted fluorescent strip. Room surfaces olive, khaki, drab yellow-green, damp and institutional.
+
+Heavy atmospheric haze fills the air between camera and screen. A single consistent film grain lies over the entire frame. The television's blacks are lifted dark blue-grey, never pure black, no darker than the room's deepest shadows. Shared bloom, subtle chromatic aberration at the edges, gentle vignette. Filmic, hazy, dirty, cohesive.
+
+A large flat television mounted proud of the right wall in a heavy bezel, seen slightly off-axis, catching a faint reflection of the fluorescent on its glass.
+
+THE SCREEN IS A COARSE LED DOT MATRIX, NOT A SMOOTH APP INTERFACE. Every element is built from individual visible circular lit dots with dark gaps between them and soft halation bleeding between adjacent dots — like a stadium scoreboard photographed close, not like a phone screen. There are NO rounded rectangle cards, NO tab bars, NO app chrome.
+
+Screen contents, one single match only: a narrow vertical column occupying the left quarter, listing four bet legs of ONE ticket stacked vertically — one dim gold row marked won, two bright white rows both live and expanded showing a requirement and a progress line, and one row completely unlit and black, dead. Small gold risk and payout figures beneath them, and at the foot a horizontal gold band showing a cash-out dollar figure, which is the single brightest element anywhere on the screen. The remaining three quarters: a compact scoreline with the invented team names NORTHGATE and CALDER CITY in electric blue and hot magenta either side of large white numerals, and below it a simple abstract top-down pitch with DIM green dotted markings and small bright blue and magenta player dots, one white ball dot, one player dot ringed and numbered. American odds, dollar amounts.
+
+The television is the dominant light source, its blue and magenta spilling through the haze onto the peeling walls, the couch and the floor. Deep shadow elsewhere. Photographic depth of field, 16:9.
+```
+
+## What to judge
+
+One question: **is it still the LED matrix?** Coarse visible dots with dark gaps, or has it smoothed
+back into an app? Everything else in this image is already approved.
+
+Secondary: the gold cash-out band should be the brightest thing on the screen — brighter than the
+pitch. In P5 the green pitch won that fight.
+
+---
+
 ## Negative prompt
 
 ```

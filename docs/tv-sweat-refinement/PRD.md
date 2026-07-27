@@ -80,7 +80,8 @@ Only the audit ledger can promote a hypothesis to a confirmed defect.
 - Audio changes of any kind. `TvAudioDirector.cs` is untouched.
 - Engine changes, balance changes, RNG-stream changes, or new sports outcomes.
 - New bet types. **Amended 2026-07-25:** exactly one new mid-sweat verb is authorized — the match
-  stats panel in §8.8. No other new verb may be introduced in this pass.
+  stats panel in §8.8. **Amended 2026-07-26:** a second is authorized — the held cash-out preview in
+  §8.10. These two are the complete list; no further verb may be introduced in this pass.
 - A full sports simulation, physics model, or AI opponent.
 - `Room.unity`, room geometry, camera rig, couch position, or environment art.
 - Laptop/SureThing changes.
@@ -658,6 +659,38 @@ pending-intervention window, or suppressed there? The freeze ruling above makes 
 defensible, since opening it cannot run down the intervention timer. Recommendation: allow it, and
 keep the intervention overlay visible on top of the panel so the player never loses the choice they
 are being asked to make.
+
+### 8.10 Held cash-out preview (Allen, 2026-07-26)
+
+Holding the cash-out key shows the settled future in place before committing to it. Releasing
+without confirming reverts completely, with no residue. Confirming merely keeps what is already
+visibly true.
+
+What the preview shows while held:
+
+- the bank at its post-cash-out value;
+- every remaining live leg struck out, since cashing out ends them;
+- the ticket in its cashed-out state;
+- the accepted amount, which is the amount currently displayed.
+
+Constraints:
+
+- **It previews a consequence, not a match fact.** This is the reason it is admissible under §4.1.
+  It shows what *this action* would do to the player's own position. It reveals nothing about the
+  match that has not already been revealed, and it may not consult a locked endpoint to do it.
+- **The previewed amount is the acceptable amount.** If the offer is mid-animation the preview may
+  not be entered at all, for the same reason acceptance is refused there — the displayed and accepted
+  numbers must never differ. The gate is `CanAcceptCashOutNow`, exactly as repaired in TVS-H01. If
+  cash-out cannot be accepted right now, it cannot be previewed right now.
+- **Release is a full revert.** No partial state, no lingering strike-throughs, no bank flicker.
+- **Standing while held cancels the preview** and freezes per §4.4. The preview is not a way to hold
+  the sweat still.
+- **The preview is not a second truth source** (§4.2). It renders from the same revealed facts and
+  the same offer the cash-out slot is already showing.
+
+Rendering is governed by `DESIGN.md`. The preview is the one moment the surface deliberately shows a
+state that is not yet true, so it must be unmistakably provisional and must never be confusable with
+a settled ticket.
 
 ### 8.9 Ticket and settle transitions
 

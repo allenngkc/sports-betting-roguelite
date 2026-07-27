@@ -53,23 +53,77 @@ That sentence decides more than any preference could:
   room's lighting rig is being briefed to carry this.
 - **Muted is the default, not the accessible fallback.** No state may depend on sound.
 
-## 2. The substrate: one LED matrix
+## 2. The substrate: maintained industrial equipment
 
-This is the material, and it is load-bearing. Everything on the surface is drawn on a **single
-fixed-pitch LED matrix** that spans the whole screen.
+**Revised twice. This is the settled version, 2026-07-26.** First the LED matrix, then briefly a
+high-end consumer panel, now this. Allen's ruling after the A/B/C exploration: **B's enclosure, and a
+display fidelity between A and C.**
+
+### The enclosure
+
+The screen is **not a television**. It is a hardened industrial display bolted into the wall —
+riveted steel frame, thick chipped paint, recessed glass, a stencilled equipment code, one physical
+indicator lamp, conduit feeding into it continuous with the room's own pipe runs.
+
+This is the change that finally seated the screen in the room. Every earlier concept read as a nice
+TV pasted onto a bad wall. Making the enclosure part of the building's own construction — the same
+riveted, painted, institutional language as the bunk frames — removes the seam. **The display was
+installed by an institution; it was not bought by the occupant.**
+
+The enclosure is a room prop and is briefed to the room lead in `room-layout-update.md`. It is not
+this slice's to build, but the design depends on it.
+
+### The fidelity target: old but maintained
+
+Direction A was too degraded, C too high-fidelity. The target sits between them, and the framing that
+resolves it:
+
+> **The display is a decade old and works perfectly. It is not failing, and it is not new.**
+
+| | Too far toward A | **Target** | Too far toward C |
+|---|---|---|---|
+| Resolution | Dithered, chunky, low-res blobs | Sharp forms on a visibly **coarse** grid — crisp, but never sub-pixel smooth | Fine hairlines, high-DPI, anti-aliased everything |
+| Colour | Near-monochrome amber only | **Restricted but real**: amber, white, two team hues, black. No gradients, no subtle greys | Full range with soft tonal steps |
+| Type | Chunky low-res letterforms | Technical, uppercase, medium weight, slightly condensed | Light weights, generous tracking, editorial |
+| Rules | Absent or noisy | Solid 1–2px, visibly drawn | Anti-aliased hairlines |
+| Imperfection | Signal noise, interference banding, scanlines | Slight uneven backlight, amber bloom | Pristine |
+
+**Still banned, unchanged:** scanlines, screen curvature, phosphor haze, interference noise, and any
+other treatment that says *broken*. The deprecated `08-art-direction.md` world is still the
+anti-reference. "Old but maintained" is a long way from "failing", and A's degradation is what put it
+too close to the rut.
+
+### Colour is settled separately
+
+Fidelity and palette are **independent axes**, and treating them as one produced two failed concepts
+in a row. Coarsening the rendering does not imply narrowing the colour, and vice versa.
+
+Fidelity: coarse, per the table above. Palette: **§4**, taken from concept render C.
+
+**The boundary that still holds.** The deprecated `08` world is banned for its *artifacts* —
+scanlines, screen curvature, phosphor haze, interference noise, degradation. A coarse grid is not a
+CRT. Keep the coarseness, keep the ban.
 
 | Rule | Why |
 |---|---|
-| One pixel pitch, whole surface, no exceptions | A shared grid is what makes zones physically unable to drift. The stability PRD §8.1 demands stops being discipline and becomes geometry. |
-| Unlit cells are visibly dark, not absent | The dark gaps between pixels are the material's signature. Remove them and this becomes a generic dark UI. |
-| Halation between adjacent lit cells | Real LED bleeds. This is the world's native glow and is **not** the banned CRT phosphor treatment — it is per-cell bloom on a hard grid, not a soft screen-wide haze. |
-| Type is drawn on the matrix, never off it | No anti-aliasing that ignores the grid. Letterforms sit on cells. |
-| Brightness is quantised, not continuous | A handful of levels, not a smooth ramp. Quantisation is what makes state changes read as *events* rather than drifts. |
-| No shadows, no depth, no bevels | An LED panel is flat and emissive. It has no lighting model. Drop shadows are the single fastest way to make this look like a web page. |
+| Crisp vector rendering, high resolution | The panel is expensive. Aliasing, chunky pixels, and low-res artefacts all read as cheap and break the thesis. |
+| Emissive, not lit | The screen is a light source. It has no lighting model of its own; brightness is emission, not illumination. |
+| Thin rules and hairline dividers are **native** and permitted | The matrix banned drawn lines in favour of unlit gutters. That rule dies with it: on a high-DPI panel a hairline rule is the correct, native divider, and P5 uses them well. |
+| Structural panels may sit on a subtly raised ground | Not floating cards with drop shadows — a flat value step. Depth comes from value, never from a shadow. |
+| Brightness stays quantised — see §3 | This is the one matrix rule that **survives and matters most**. State changes must read as events, not as smooth drifts. |
+| No drop shadows, no bevels, no glassmorphism, no gradient-filled buttons | These are the tells that turn a broadcast overlay into a web page. The panel is flat; its depth is value and emission. |
 
-**Deliberately not prohibited**, because the world uses them natively: intense saturation, bloom,
-full-brightness colour fields, monumental type scale. The failed density render was not too bold. It
-was undisciplined — see §3.
+### What the substrate change costs, recorded honestly
+
+The matrix gave PRD §8.1's zone stability for free: a shared grid meant zones could not drift. On a
+smooth panel that guarantee is gone and must be **replaced by an explicit fixed layout grid enforced
+in code** — column and row positions defined once and never computed from content. This is now a
+build requirement rather than a property of the material, and it is the thing most likely to erode
+during implementation. Reviewers should check it specifically.
+
+**Deliberately not prohibited**, because the surface uses them natively: intense saturation, bloom,
+full-bleed colour fields, monumental type scale, hairline rules. The failed density render was not
+too bold. It was undisciplined — see §3.
 
 ## 2A. The panel is an object in a room
 
@@ -130,36 +184,46 @@ rejected.
 
 ## 4. Colour
 
-**Strategy: committed, on true black.** The substrate is black because unlit LEDs are black. Colour
-is emitted, never applied.
+**Settled 2026-07-27 against concept render C**, which Allen selected. Two wrong turns preceded it:
+one restored saturated blue/magenta, one went fully monochrome amber. Both are void. The palette is
+described below **as it appears in C**, not as a direction to interpret.
 
-### Roles
+**Strategy: cold and quiet, with one warm bar.** A near-black display carrying cold white and grey,
+gold reserved strictly for money, and *muted* team hues appearing only on the pitch.
 
-| Role | Hue | Carries | Notes |
-|---|---|---|---|
-| **Team A** | Electric blue | Team identity, that team's dots, its name, its score | Identity only — never money meaning |
-| **Team B** | Hot magenta | As above | |
-| **Fact** | White | Score, clock, factual event copy, counts | The neutral truth channel. Highest legibility, no emotional load |
-| **Live** | Cyan | Active leg, labels, chrome, "this is happening now" | Distinct from Team A blue by being lighter and greener |
-| **Money & action** | Gold | Cash-out, payout, risk, won | The **only warm hue on the surface.** Maximum contrast against an all-cool palette, and it rhymes with the room's fluorescent just enough to belong |
-| **Dead** | *(none)* | Lost legs, expired offers | See below |
+| Role | Treatment | Where |
+|---|---|---|
+| **Fact** | **Cold white** at L3 | Score, clock, live leg names, market lines |
+| **Context** | **Grey** at L2 | Labels, odds, risk and payout figures, pitch markings |
+| **Structure / pending** | **Dim grey** at L1 | Not-yet legs, dividers, ticket header |
+| **Dead** | **L0** | Lost legs. Nearly extinguished |
+| **Money & won** | **Gold** at L3 | A won leg's name and its `WON` marker, payout figures |
+| **Action** | **Gold, inverted** at L4 | The cash-out band only — a solid gold field with dark type punched out |
+| **Team identity** | **Muted blue and muted pink**, desaturated, small | Player dots on the pitch, and nowhere else |
 
-### Two decisions worth defending
+### The three rules that make this palette work
 
-**Loss is not red. Loss is dark.** On an LED board the strongest available statement is a thing that
-stops emitting. A lost leg goes to L0 and remains only as unlit pixel structure. This is
-world-native, costs nothing, reads instantly at four metres, and is thematically exact — losing
-returns you to the room. It also removes a real collision: at LED saturation, red and hot magenta
-are hard to separate, and magenta is already a team.
+**Gold is rationed.** It appears on won legs, payout figures, and the cash-out band. Nothing else on
+the surface is warm. F failed by making everything amber, which destroyed gold's meaning — when
+everything is gold, gold means nothing. The scarcity *is* the signal.
 
-Red survives only as a rare alarm, never as a state colour.
+**Team hues are quiet and local.** Blue and pink are desaturated and confined to the pitch dots. They
+are the least prominent colours on the display, not the most. E failed by making them vivid and
+dominant. Team identity is carried primarily by the ticket column, which names the team in words; the
+dots only need to be *separable*, not loud.
 
-**The old green/red money language is not carried forward.** Allen released it on 2026-07-24. Two
-reasons not to re-adopt it by reflex: phosphor green would rhyme with the room's sickly yellow-green
-fluorescent and weaken the contrast the whole design depends on; and gold-versus-dark expresses the
-same axis with better couch legibility. Money-good is gold. Money-bad is unlit.
+**Everything else is colourless.** White and grey do the work. This is what makes the surface read as
+cold instrumentation rather than as an app, and it is what gives the single gold bar its force.
 
-Green returns in one place only — the pitch surface, which is a *place*, not a *state*, at L2.
+### Carried forward
+
+Loss is still darkness — a lost leg drops to L0 and nearly extinguishes. The old green/red money
+language stays retired.
+
+**Watch at couch distance:** muted blue and pink dots on a coarse grid, four metres away, in a dark
+room. This is the one place the palette could fail. If the two teams are not separable, the fix is
+**form** — filled dots versus hollow rings, as monochrome radar has always done — not louder colour.
+Adding saturation here is what produced E.
 
 ## 5. Typography
 
@@ -168,13 +232,19 @@ Type on this surface is a **light-emitting object on a grid**, not text on a pag
 **Required characteristics** rather than a locked file, since the face still needs choosing and
 installing:
 
-- Heavy condensed grotesque. Condensed because LED pixels are expensive and the world's own
-  signage is condensed; heavy because thin strokes disintegrate on a matrix.
-- **Tabular numerals, mandatory.** Scores, clocks, money, and counts all change in place. Non-tabular
-  figures make the whole surface twitch.
-- Uniform stroke weight, minimal contrast, closed apertures.
-- Legible at 2 cells of stroke width.
-- Uppercase for all labels and states. Mixed case only in long event copy, if anywhere.
+*Revised 2026-07-26 for the panel substrate. The matrix forced heavy condensed forms because thin
+strokes disintegrated on a grid. A high-DPI panel removes that constraint — finer weights and a wider
+range are now available, and P5 used them well.*
+
+- A grotesque with a strong technical character. Condensed for the ticket column where density
+  matters; the scoreline can breathe wider.
+- **Tabular numerals, mandatory, and non-negotiable.** Scores, clocks, money, and counts all change
+  in place. Non-tabular figures make the whole surface twitch on every tick. This is the one
+  typographic rule that survives every substrate change.
+- Weight is now a usable channel alongside brightness — light weights are legible on this panel and
+  were not on the matrix. Use it for the L1–L2 tiers rather than relying on dimming alone.
+- Uppercase for labels, states, and team names. Mixed case is permitted in longer event copy, which
+  the matrix could not really carry.
 
 **Not** any of: Space Grotesk, Space Mono, Inter as display, DM Sans, Outfit, Plus Jakarta Sans,
 Instrument Sans, IBM Plex. These are the defaults that mean the search stopped early.
@@ -207,9 +277,12 @@ boxes are.
 
 Rendering rules:
 
-- Every zone boundary falls on a matrix cell edge. No fractional positioning.
-- Zones are separated by **unlit gutters**, never by drawn lines. On an LED board, absence is the
-  divider. A stroked border is a web reflex.
+- **Every zone position comes from an explicit fixed layout grid defined once in code**, never
+  computed from content. On the retired matrix this was free; on a smooth panel it is the single
+  most important build discipline, and it is what PRD §8.1's stability now rests on.
+- Zones may be separated by **hairline rules or by unlit gutters**, both native to this substrate.
+  What remains banned is a *stroked box* around a region — an outlined card is the web reflex, a
+  dividing line is not.
 - No zone resizes in response to content. Reserved space stays reserved and simply goes dark, so
   nothing ever reflows — this is how PRD §8.5's six cash-out states share one rectangle.
 - The ticket column has a fixed width across every market.
@@ -257,6 +330,23 @@ free, which is precisely why this world suits that requirement.
 back. It never uses money hues, and it never covers the pitch.
 
 **Cash-out slot.** One fixed rectangle at the foot of the ticket column, owning all six states.
+
+**The held preview (PRD §8.10).** This is the only moment the surface deliberately shows something
+that is not yet true, so it must read as provisional at a glance and must never be mistakable for a
+settled ticket. The world already has the vocabulary:
+
+- **Preview lives one brightness level down.** The previewed bank and the struck legs render at L2,
+  not at the L3 they would occupy once real. On this surface, dimmer means *less true*, which is a
+  distinction the LED substrate can carry that a colour change could not.
+- **The held key is the only L4 element** for as long as it is held. The action being contemplated is
+  the subject; the consequence is context.
+- **Struck legs use the `VOID` strike**, not the `LOST` extinguish. They are being *cancelled*, not
+  lost, and the two must not be confused at the moment a player is deciding.
+- **Release restores in one discrete step**, no ease. Consistent with §9: this world changes state,
+  it does not tween between poses. An eased revert would read as the surface settling into the
+  preview rather than abandoning it.
+- **No pulse.** The `LIVE` pulse continues on live legs beneath, unaffected. The preview adds no
+  motion of its own, because motion here would read as commitment.
 
 **Stats panel (PRD §8.8).** Opens from the head of the ticket column and freezes playback. It expands
 over the ticket column and stage without moving either — when it closes, everything beneath is
@@ -311,11 +401,8 @@ between poses.
 
 ## 10. Open, deliberately
 
-- **The held cash-out preview.** The dealt staging proposed holding the key to see the settled future
-  in place — bank updated, legs struck — releasing to revert with no residue. It fits the one
-  decision this surface has, and confirming would merely keep what is already visibly true. It is
-  arguably a new mid-sweat verb, and PRD §3 now permits exactly one, already spent on the stats
-  panel. **Awaiting Allen's ruling.**
+- ~~The held cash-out preview.~~ **Approved by Allen 2026-07-26**, PRD §8.10. Rendering rules are in
+  §7 above under *Cash-out slot*.
 - **The typeface.** Characteristics are specified in §5; an actual file still needs choosing.
 - **Exact brightness values and pixel pitch.** Provisional until seen on the real TV at the real
   seated camera distance.
