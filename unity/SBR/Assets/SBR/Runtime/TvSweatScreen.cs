@@ -299,7 +299,7 @@ namespace SBR.Game
         public RevealedView RevealedView { get; } = new RevealedView();
         /// <summary>Test/debug hook: force the seated state (simulates sitting / looking away) without the
         /// couch. Normal play drives this through SitSpot.SeatedChanged.</summary>
-        public void ForceSeated(bool seated) => _seated = seated;
+        public void ForceSeated(bool seated) => SetSeated(seated);
         /// <summary>Test/debug hook (TVS-H01 regression): true while the cash-out amount is mid-tween
         /// (AnimateCashOut running). _cashOutAnimation is otherwise unobservable from outside the
         /// sweat, and this is the exact condition CanAcceptCashOutNow also refuses.</summary>
@@ -311,8 +311,9 @@ namespace SBR.Game
         // coroutine, and per-frame animator reads dt through SeatedDeltaTime (or samples this clock
         // in place of Time.time) instead of Unity's clock directly, so one gate freezes all of them
         // instead of 21 scattered `if (!_seated)` checks, and resuming never has to catch up.
-        // TheaterStage freezes independently through its own SetFrozen(!_seated) gate in Update()
-        // below — this accumulator does not touch the stage, which was already fully compliant.
+        // TheaterStage freezes independently through its own SetFrozen(!_seated) gate, propagated
+        // the instant _seated changes by SetSeated() below (see that method for why this must not
+        // wait for this object's own Update()).
         private float _seatedClock;
         private SweatSession _session;
         private Ticket _ticket;
@@ -423,7 +424,7 @@ namespace SBR.Game
             ResolveInput();
             SitSpot.SeatedChanged += OnSeatedChanged;
             SitSpot.InteractStandSuppressed = CashOutLive; // E is cash-out while an offer shows, not stand
-            _seated = SitSpot.Active != null;
+            SetSeated(SitSpot.Active != null);
             _audio?.Show(true);
             StartCoroutine(RunChannel());
         }
@@ -438,7 +439,25 @@ namespace SBR.Game
             _audio?.Show(false);
         }
 
-        private void OnSeatedChanged(bool seated) => _seated = seated;
+        private void OnSeatedChanged(bool seated) => SetSeated(seated);
+
+        /// <summary>TVS-H02 race fix: the single place _seated is ever assigned. Propagates the
+        /// freeze to TheaterStage SYNCHRONOUSLY, the instant seating changes, instead of waiting for
+        /// this object's own next Update() to reach `_stage.SetFrozen(!_seated)`. TvSweatScreen and
+        /// TheaterStage are two independent MonoBehaviours with no guaranteed relative Update() order;
+        /// if TheaterStage.Update() happened to run before TvSweatScreen.Update() in the frame standing
+        /// occurred, it would step once more on THIS frame's stale (pre-stand) frozen flag - long enough
+        /// to fire a scene's reveal (a new cash-out price) or complete the scene outright and unblock
+        /// the next beat's SuspendMarket(), overwriting the frozen cash-out text one tick after the
+        /// player stood (TVS-H02, the `MARKET SUSPENDED` flake in BUG-LEDGER.md §4C.4). Setting the
+        /// stage's frozen flag here, at the moment of change rather than at the next Update(), means
+        /// every Update() this frame or later - regardless of which script's Update() runs first -
+        /// observes a consistent frozen state, closing that window.</summary>
+        private void SetSeated(bool seated)
+        {
+            _seated = seated;
+            if (_stage != null) _stage.SetFrozen(!_seated);
+        }
 
         private void ResolveInput()
         {
@@ -589,6 +608,21 @@ namespace SBR.Game
         /// from the FINAL ticket-local grade (never WinProbAfter).</summary>
         private IEnumerator TheaterBeat(DramaEvent evt)
         {
+            // TVS-H02 race fix: PlaySweat's `yield return WaitSeated();` gates ENTRY to this loop
+            // iteration, but that check and this method's first side effect (SuspendMarket /
+            // RevealBeatChrome, both unconditional) are not the same instant - when PlaySweat hands
+            // off `yield return TheaterBeat(evt)`, Unity does not always give this freshly-returned
+            // coroutine its first step in the same frame as the WaitSeated() check that admitted it;
+            // it can land one frame later. Standing in exactly that gap let a new beat announce
+            // itself (SuspendMarket's "MARKET SUSPENDED" overwriting the frozen cash-out text) after
+            // the player had already stood - confirmed by direct instrumentation: WaitSeated() passed
+            // while _seated was still true, ForceSeated(false) ran later that same frame, and
+            // TheaterBeat's own entry (and SuspendMarket) then ran on the NEXT frame with _seated
+            // already false, with nothing in between re-checking it. Re-verifying here, as literally
+            // the first thing this method does, closes that gap regardless of which frame Unity
+            // chooses to hand this coroutine its first step.
+            while (!_seated) yield return null;
+
             Leg leg = _ticket.Legs[evt.LegIndex];
             _stage.timeScale = Mathf.Max(0f, TimeScaleOverride);
 
@@ -1779,6 +1813,9 @@ namespace SBR.Game
             // The stage freezes with the viewing contract: standing pauses mid-motion. The
             // pending-loss window's freeze is the stage's own suspension point (M-T3) — the
             // kill scene's buildup must PLAY before the shot hangs mid-flight.
+            // The frozen flag itself is already kept in sync by SetSeated() the instant seating
+            // changes (TVS-H02 race fix) — this call is a harmless, idempotent restatement, not
+            // the primary propagation path.
             if (_stage != null)
             {
                 _stage.SetFrozen(!_seated);

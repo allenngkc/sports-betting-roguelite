@@ -421,24 +421,73 @@ routing is separately keyed off `CountBeneficiaryIsHome`.
   concept model accurately (the first draft's comments asserted "Corner attribution is additionally
   encoded via the CornerFor/CornerAgainst template choice" — exactly the false claim being fixed).
 
-**A pre-existing flaky PlayMode test, investigated and ruled out as unrelated:** the first full
-PlayMode rerun after this correction showed `TvSweatScreenTests.Standing_Freezes_CashOutTween_
-NoResumeCatchUp` failing (`MARKET SUSPENDED` where `CASH OUT $25 [E]` was expected — a real-wall-
-clock 0.1s timing assertion), and failed again on an immediate full-suite rerun (2/2 full-suite
-failures). Investigation: (1) source proof this test's leg is always Moneyline —
-`DemoTicketPolicy.Choose` (`DemoTicketPolicy.cs`) only ever constructs `new Pick(index, Side)`, the
-moneyline convenience constructor, never a `MarketSelection.TotalCorners`/`TotalCards` — so the
-`market == MarketKind.TotalCorners || TotalCards` gate in `TheaterChoreographer.ResolveBeat` that
-this whole fix lives inside is provably unreachable for this test's leg, regardless of what changed
-inside it; (2) empirically, the identical test then passed 4/4 when run in isolation via
-`-testFilter`, and the full 27-test PlayMode suite passed clean (27/27) on a third full run. Recorded
-as a pre-existing environmental flake (this test already explicitly widens its polling windows in
-comments, e.g. "widen the real tween window for reliable polling" — F_0.4.0/Phase 1B authored it
-aware of exactly this risk class), not attributed to this fix, and not silently discarded — the
-`0 failures / 5 attempts` after the initial `2 failures / 2 attempts` is reported as real data below,
-per the "never invent a test result" rule. This test is Phase 1B's own (`TvSweatScreenTests.cs`,
-untouched by this agent) and outside this dispatch's scope to fix further; flagging for the
-reviewer's awareness.
+**Update — measured, root-caused, and fixed (later dispatch, same branch, HEAD `3d1b138`):** the
+flake above was not noise. A dedicated dispatch measured it properly per PRD §6.1 (≥10 full-suite
+attempts, `failures/attempts`, real assertion text on every failure) and found a **real, reproducible
+product race** in `TvSweatScreen.cs`, not a test-harness or cross-test-pollution defect.
+
+*Pre-fix baseline* (HEAD `3d1b138`, source unmodified, reverified with `git diff` after every run,
+forbidden files reverted every run): **6 failures / 10 full-suite attempts.** 5 of the 6 were the
+identical signature originally recorded here — `TVS-H02: cash-out amount kept ticking while
+standing`, expected `"CASH OUT $NN   [E]"`, actual `"MARKET SUSPENDED"` (dollar amount varies run to
+run, as expected from unseeded sim state; the signature does not). The 6th failure was a distinct
+message — `never observed the cash-out amount mid-tween (waited 20s)` — on a run whose total suite
+duration was 76s against a ~35s norm; see the environmental-flake note below, this is not the same
+defect. This is a materially higher rate than the `2/2` originally observed, not lower — the earlier
+`0 failures / 5 attempts` isolation/rerun finding undersold it.
+
+*Root cause, with `file:line` evidence:* confirmed directly by instrumenting `TvSweatScreen.cs` with
+temporary frame/timestamp logging (`Debug.Log` at `SetSeated`, `SuspendMarket`, `TheaterBeat` entry,
+`SetCashOutOffer`), reproducing the failure, then removing the instrumentation. The captured log for
+one repro:
+```
+frame=5263  SetCashOutOffer(104.29)   seated=True    <- FinalSlam's ReopenMarket starts a new tween
+frame=5263  SetSeated(False)          cashOutText="CASH OUT $101   [E]"   <- test stands
+frame=5264  TheaterBeat ENTER         seated=False   eventsEmitted=3
+frame=5264  SuspendMarket ENTER       seated=False   eventsEmitted=3
+```
+`PlaySweat`'s loop (`TvSweatScreen.cs`, `while (_session != null && !_session.IsComplete) { yield
+return WaitSeated(); ... yield return TheaterBeat(evt); }`) gates entry to each beat with
+`WaitSeated()`, but that check passed *while still seated* (frame 5263). `TheaterBeat(DramaEvent evt)`
+(`TvSweatScreen.cs`, then starting immediately with `Leg leg = _ticket.Legs[evt.LegIndex];` and
+unconditionally calling `SuspendMarket()`/`RevealBeatChrome()` for the new beat) did not get its first
+step from Unity's coroutine scheduler until the *next* frame (5264) — by which point `ForceSeated`
+had already run, `_seated` was already `false`, and nothing between the `WaitSeated()` pass and
+`SuspendMarket()`'s call re-checked it. The gap between "passed the seated gate" and "committed the
+beat's side effects" is exactly one scheduling frame, and standing in that window lets the new beat
+announce itself (overwriting the frozen cash-out text) after the player has already stood. This is
+candidate 1 from the dispatch brief — a real race in the Phase 1B freeze implementation — confirmed
+by direct evidence, not inferred. (An earlier hypothesis in this same investigation — that
+`TvSweatScreen.Update()` and `TheaterStage.Update()` have no guaranteed relative order — led to a
+first fix, synchronizing `_stage.SetFrozen()` immediately on every `_seated` change instead of waiting
+for `Update()`. That fix was applied and re-measured *first*, alone, and did **not** eliminate the
+failure — the identical `MARKET SUSPENDED` signature recurred on a normal-speed run. It is kept as a
+harmless, independently-defensible hardening of the freeze-propagation path, but it was not the actual
+defect; the instrumentation above found the real one afterward.)
+
+**Fix** (`TvSweatScreen.cs`): added `while (!_seated) yield return null;` as the first statement of
+`TheaterBeat`, re-verifying seated status at the last possible moment before any beat-committing side
+effect, regardless of which frame Unity schedules the coroutine's first step. Also kept the `SetSeated`
+helper (single assignment point for `_seated`, propagating `_stage.SetFrozen()` synchronously) as a
+secondary hardening.
+
+*Post-fix re-measurement* (same protocol, 10 more full-suite attempts): **0 failures / 10 attempts**
+with the `MARKET SUSPENDED` signature — it did not recur once. 2 of the 10 runs failed with the
+*different* `never observed the cash-out amount mid-tween (waited 20s)` message (one on this test, one
+on `Interact_DuringCashOutPriceAnimation_StandsAndDoesNotCashOut`), both on runs whose total suite
+duration was 52-54s against the ~35s norm — the same environmental pattern seen once in the pre-fix
+baseline. This is a distinct, pre-existing issue (present both before and after this fix, on more than
+one test, via a different assertion) — a fixed 20s real-time wait for a precondition occasionally not
+being met when the whole suite runs unusually slowly — not the race this dispatch was scoped to fix,
+and not touched here; flagging for whoever owns general suite timing robustness next.
+
+This test is Phase 1B's own (`TvSweatScreenTests.cs`); the fix lives entirely in `TvSweatScreen.cs`,
+the file this dispatch was scoped to. Build side-effect files (`SBR.Engine.dll`,
+`ProjectSettings/EditorBuildSettings.asset`, `ProjectSettings/ProjectSettings.asset`) were reverted
+with `git checkout --` after every one of the ~30 Unity invocations in this investigation; `git status`
+throughout showed only `TvSweatScreen.cs` plus pre-existing, unrelated working-tree state from other
+tracks (`DESIGN.md`, `PRODUCT.md`, `docs/tv-sweat-refinement/PRD.md`, `brand-book-prompts.md`,
+`.impeccable/`, `unified-grade-spec.md`) that this agent did not create or modify.
 
 ### 4C.5 — Real suite results (final, post-review)
 
