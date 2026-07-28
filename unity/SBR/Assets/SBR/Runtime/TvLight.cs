@@ -3,11 +3,14 @@ using UnityEngine;
 namespace SBR.Game
 {
     /// <summary>
-    /// The room's reaction shot (design/08: "the room is the reaction shot"). A point light near the TV
-    /// whose colour/intensity follows the screen state - phosphor idle, a green flare on a GREEN leg, a
-    /// red wash on a DEAD leg, a gold pulse on cash-out. It eases a transient Flash back to whatever the
-    /// current rest mood is, and adds a faint intensity flicker so the phosphor never sits perfectly
-    /// still. TvSweatScreen drives it; all code, no assets.
+    /// The room's reaction shot (DESIGN.md §1: "the surface is a light source, not a picture" — the
+    /// room's lighting rig is briefed to carry this). A point light near the TV whose colour/intensity
+    /// follows the screen state. Idle is a cold, quiet spill (DESIGN.md §4: cold white-grey, gold
+    /// rationed to money) — never the saturated green of the retired `design/08-art-direction.md`
+    /// world. Money/won beats pulse gold; loss beats drop the light toward darkness rather than
+    /// flashing a money-bad red, which DESIGN.md §4 retires along with green. It eases a transient
+    /// Flash back to whatever the current rest mood is, and adds a faint intensity flicker so the
+    /// idle spill never sits perfectly still. TvSweatScreen drives it; all code, no assets.
     /// </summary>
     public sealed class TvLight : MonoBehaviour
     {
@@ -15,7 +18,12 @@ namespace SBR.Game
         public Light pointLight;
 
         [Header("Idle (resting mood)")]
-        [ColorUsage(false)] public Color idleColor = new Color(0.35f, 1f, 0.5f);
+        // DESIGN.md §4 / room-layout-update.md §5: "predominantly cold white-grey ... a touch of gold
+        // near the cash-out band." A near-neutral cool grey-white (B > G > R keeps the cast cold) with
+        // R nudged toward G rather than left far below it, standing in for that small warm admixture —
+        // NOT the saturated (0.35, 1, 0.5) green of the deprecated design/08 world, which is why the
+        // room read green on the TV side regardless of what the room team did to materials.
+        [ColorUsage(false)] public Color idleColor = new Color(0.72f, 0.75f, 0.80f);
         public float idleIntensity = 0.5f;
 
         [Header("Flash + flicker dials")]

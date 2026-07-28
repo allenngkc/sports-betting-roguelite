@@ -200,11 +200,14 @@ namespace SBR.Game
     /// Outside the sweat the TV idles per phase: PLACE YOUR BETS during Betting, SHOP OPEN during Shop,
     /// and the run verdict card on RunWon/RunLost with the room light dropping cold (M4 grill decision).
     ///
-    /// Beats are all code-driven: GREEN = green flood + emissive spike, DEAD = static then the red DEAD
-    /// line + the screen dropping darker, ticket-dead = a dim-to-black beat, cash-out = a gold flood
+    /// Beats are all code-driven: WON = a gold flood + emissive spike, DEAD = static then the beat
+    /// dropping the screen toward darkness, ticket-dead = a dim-to-black beat, cash-out = a gold flood
     /// with the amount big. The TvLight makes the room the reaction shot.
     ///
-    /// Palette is law (design/08): green = money-good only, red = money-bad only, gold = cash-out.
+    /// Palette is law (DESIGN.md §4): gold is rationed to money/won/cash-out only, everything else is
+    /// cold white or grey, and loss is darkness — never a hue. Green and red are the retired
+    /// `design/08-art-direction.md` money language ("money-good green, money-bad red") and appear
+    /// nowhere in this file; see room-lead-reply.md §3.
     /// Pacing ports the console's table into <see cref="PacingFor"/> with serialized dials; no engine RNG
     /// is consumed by presentation (only MoveNext / CashOut* are called - everything is baked at lock).
     /// </summary>
@@ -242,7 +245,7 @@ namespace SBR.Game
         public float ticketCardDuration = 2.0f;
         [Tooltip("The settle card after the round's last sweat (target met / the bookie floats you).")]
         public float settleCardDuration = 3.0f;
-        public float greenFloodDuration = 0.3f;
+        public float wonFloodDuration = 0.3f;
         public float deadStaticDuration = 0.6f;
         public int staticRegens = 5;
         public float deadLineDuration = 0.7f;
@@ -277,21 +280,41 @@ namespace SBR.Game
                  "as the A/B fallback through M-T4 per the plan's reversibility clause.")]
         public bool theaterEnabled = true;
         public Color pitchLineColor = new Color(0.85f, 0.92f, 0.95f, 0.50f);
-        public Color pitchBgColor = new Color(0.012f, 0.016f, 0.022f, 0.95f);
+        // Canvas black floor (unified-grade-spec.md §2 / DESIGN.md §2A): opaque canvas pixels must
+        // never sit darker than the room's deepest shadow. RGB matches the room team's emissive-quad
+        // lift of (0.048, 0.055, 0.068) so the pitch's near-black backdrop and the quad's off-state
+        // agree on what "unlit" looks like; alpha unchanged.
+        public Color pitchBgColor = new Color(0.048f, 0.055f, 0.068f, 0.95f);
         [Tooltip("Scene-class → seconds (M-T3). The duration-acceptance test pins these bands.")]
         public SweatPacer pacer = new SweatPacer();
         [Tooltip("Idle gap between beat scenes, ms (the ≤1s filler law). Doubles as the " +
                  "guaranteed open-market window per beat (playtest #15).")]
         public float interSceneGapMs = 900f;
 
-        [Header("Palette (design/08)")]
-        [ColorUsage(false, true)] public Color phosphorGreen = new Color(0.20f, 1.15f, 0.40f);
-        [ColorUsage(false, true)] public Color hotRed = new Color(1.10f, 0.16f, 0.13f);
-        [ColorUsage(false, true)] public Color gold = new Color(1.15f, 0.82f, 0.18f);
-        public Color chromeCyan = new Color(0.62f, 0.86f, 0.96f, 0.95f);
-        public Color flavorColor = new Color(0.90f, 0.95f, 0.98f, 1f);
-        public Color screenBg = new Color(0.015f, 0.03f, 0.022f, 0.86f);
-        public Color barBgColor = new Color(0.05f, 0.08f, 0.06f, 0.92f);
+        // DESIGN.md §4: cold + quiet, gold rationed to money, loss is darkness. Green and red are
+        // the retired `design/08-art-direction.md` money language ("money-good green, money-bad red")
+        // and do not appear anywhere below — see room-lead-reply.md §3.
+        [Header("Palette (DESIGN.md §4)")]
+        [ColorUsage(false, true)] public Color gold = new Color(1.15f, 0.82f, 0.18f); // money, won, payout, cash-out — L3
+        // §3's L4: "exactly one element at a time" at full brightness — the cash-out accept punch,
+        // the ticket's final payout tally, the run's win card. Brighter than `gold` on purpose so the
+        // ordering idle < flash < L4 holds when both are driven through EmissionFlash/TvLight.Flash.
+        [ColorUsage(false, true)] public Color goldL4 = new Color(1.84f, 1.31f, 0.29f);
+        public Color chromeCyan = new Color(0.62f, 0.86f, 0.96f, 0.95f); // §8 VOID leg treatment only
+        public Color flavorColor = new Color(0.90f, 0.95f, 0.98f, 1f); // §4 Fact: cold white
+        // §4 Context: grey — for beat copy that is neither a live fact nor money (a loss confirmed, a
+        // deferred payment) but still needs to stay legible against the lifted black floor below.
+        public Color contextGrey = new Color(0.50f, 0.53f, 0.58f, 1f);
+        // §3/§4/§8: "Loss is still darkness ... the old green/red money language stays retired." A
+        // lost beat drops the quad/room-light toward this near-neutral, near-zero value instead of
+        // flashing red. Never used above ~0.1 magnitude — it must stay below `gold` unconditionally.
+        [ColorUsage(false, true)] public Color deadDark = new Color(0.045f, 0.05f, 0.065f, 1f);
+        // Canvas black floor (unified-grade-spec.md §2 / DESIGN.md §2A): where the canvas draws
+        // OPAQUE pixels (this backing panel, the bar trough) the visible black is the canvas's own,
+        // not the room's emissive-quad lift, which only shows through transparent regions. RGB
+        // matches that lift, (0.048, 0.055, 0.068), so both read as the same "off" state.
+        public Color screenBg = new Color(0.048f, 0.055f, 0.068f, 0.86f);
+        public Color barBgColor = new Color(0.048f, 0.055f, 0.068f, 0.92f);
 
         // ---- public test/debug surface ----
         public int EventsEmitted => _eventsEmitted;
@@ -336,7 +359,7 @@ namespace SBR.Game
         // ---- input ----
         private InputAction _interact;
 
-        // ---- emission (phosphor) ----
+        // ---- emission (the quad's own glow) ----
         private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
         private MaterialPropertyBlock _emissBlock;
         private Color _emissIdle;
@@ -345,13 +368,28 @@ namespace SBR.Game
         private float _emissFlash01;
         private float _emissSeed;
 
+        // ---- canvas HDR path (DESIGN.md §3 / unified-grade-spec.md §4) ----
+        // UGUI bakes Graphic.color into a Color32 vertex attribute, which clamps at 1.0 regardless of
+        // camera/URP HDR settings — a world-space canvas Image/Text can never exceed 1.0 through the
+        // ordinary `.color` setter, so the brightness ladder's L4 tier had nothing for the shared
+        // bloom volume to grab. TvSweatHdrUI.shader multiplies the (still 0-1) vertex colour by an
+        // unclamped `_HdrBoost` float material property instead, so only elements that opt in (given
+        // their own material instance below) can exceed 1.0 — everything else keeps the ordinary,
+        // SRP-batchable default UI material.
+        private const float HdrBoostL3 = 1f;   // default / "price animating" — DESIGN.md §8.5: never L4
+        private const float HdrBoostL4 = 1.8f; // the one full-brightness element — cash-out accept, payout tally
+        private static readonly int HdrBoostId = Shader.PropertyToID("_HdrBoost");
+        private Shader _hdrUiShader;
+        private bool _hdrShaderMissing;
+        private Material _cashOutHdrMat, _bigAmountHdrMat, _goldFloodHdrMat;
+
         // ---- UI ----
         private Font _font;
         private float _innerWidth;
         private float _barHeight;
         private int _resolvedThrough; // legs below this index are PRESENTED as resolved (not engine truth)
         private Text _tMatchup, _tRecords, _tLeg, _tClock, _tFlavor, _tWinPct, _tCashOut, _tChrome, _tAttract, _tBigAmount, _tSlipStrip, _tConsolation;
-        private Image _backing, _barBg, _barFill, _greenFlood, _goldFlood, _dimOverlay;
+        private Image _backing, _barBg, _barFill, _wonFlood, _goldFlood, _dimOverlay;
         private RawImage _staticNoise, _scanlines;
         private Texture2D _noiseTex;
 
@@ -412,7 +450,9 @@ namespace SBR.Game
 
             _emissIdle = emissiveScreen != null && emissiveScreen.sharedMaterial != null
                 ? emissiveScreen.sharedMaterial.GetColor(EmissionColorId)
-                : new Color(0.010f, 0.045f, 0.020f);
+                // Defensive fallback only (no emissiveScreen wired) — neutral cold-dim, not the old
+                // green-tinted (0.010, 0.045, 0.020) guess.
+                : new Color(0.012f, 0.014f, 0.018f);
             _emissRest = _emissIdle;
             _emissFlash = _emissIdle;
 
@@ -556,7 +596,7 @@ namespace SBR.Game
         {
             ResetForNewSession(); // clears floods/dim/static, resets the light, shows the attract
             _tAttract.text = "SIT TO WATCH THE SWEAT";
-            _tAttract.color = new Color(phosphorGreen.r, phosphorGreen.g, phosphorGreen.b, 1f);
+            _tAttract.color = flavorColor; // an instructional prompt, not money — §4 Fact: cold white
             RenderTicketCard();
 
             yield return WaitSeated();
@@ -794,7 +834,7 @@ namespace SBR.Game
             {
                 _audio?.Whistle();
                 _audio?.SlamWon();
-                yield return GreenLegBeat(k);
+                yield return WonLegBeat(k);
             }
             else if (grade == LegGrade.Lost)
             {
@@ -944,7 +984,8 @@ namespace SBR.Game
                     _tCashOut.enabled = false;
                     if (!_session.IsComplete)
                     {
-                        _tFlavor.color = new Color(phosphorGreen.r, phosphorGreen.g, phosphorGreen.b, 1f);
+                        // The leg is reinstated live — a fact, not a payout yet. §4 Fact: cold white.
+                        _tFlavor.color = flavorColor;
                         _tFlavor.text = "REVIEWED — OVERTURNED. THE LEG STANDS.";
                         _emissRest = _emissIdle;
                         tvLight?.ResetToIdle();
@@ -952,7 +993,9 @@ namespace SBR.Game
                     }
                     else
                     {
-                        _tFlavor.color = new Color(hotRed.r, hotRed.g, hotRed.b, 1f);
+                        // A loss confirmed — context, not a hue. §4/§8: loss is darkness, never red;
+                        // the text itself still has to stay legible, so it reads in grey, not black.
+                        _tFlavor.color = contextGrey;
                         _tFlavor.text = "REVIEWED — THE CALL IS CONFIRMED.";
                     }
                     yield return ScaledWait(deadLineDuration);
@@ -1019,7 +1062,7 @@ namespace SBR.Game
             _emissRest = _emissIdle;
             tvLight?.ResetToIdle();
 
-            SetAlpha(_greenFlood, 0f);
+            SetAlpha(_wonFlood, 0f);
             SetAlpha(_goldFlood, 0f);
             SetAlpha(_dimOverlay, 0f);
             SetRawAlpha(_staticNoise, 0f);
@@ -1029,6 +1072,11 @@ namespace SBR.Game
             _tCashOut.rectTransform.localScale = Vector3.one;
             _tAttract.enabled = true;
             _tFlavor.color = flavorColor;
+            // A new session starts with no L4 element live — see AnimateCashOutTaunt/WinBeat/
+            // CashOutFloodBeat for where these get pushed back above HdrBoostL3.
+            _cashOutHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
+            _bigAmountHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
+            _goldFloodHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
 
             RenderPregame();
         }
@@ -1267,22 +1315,25 @@ namespace SBR.Game
             if (s.TotemFired)
             {
                 _tMatchup.text = $"SHORT — ${Money(s.BankBefore)} AGAINST ${Money(s.Payment)}";
-                _tFlavor.color = new Color(hotRed.r, hotRed.g, hotRed.b, 1f);
+                // A deferred payment is bad news but not a payout — no gold. §4/§8: the bad-outcome
+                // treatment is darkness, never the retired money-bad red; text stays legible in grey.
+                _tFlavor.color = contextGrey;
                 _tFlavor.text = "THE TOTEM BURNS";
                 double juiced = s.Payment * (1.0 + (director?.Run?.Config.TotemJuiceRate ?? 0.5));
                 _tRecords.text = $"PAYMENT DEFERRED — YOUR BANK STANDS. THE NEXT ONE GROWS BY ${Money(juiced)}";
-                _emissRest = new Color(_emissIdle.r * 0.3f, _emissIdle.g * 0.12f, _emissIdle.b * 0.12f);
-                EmissionFlash(new Color(0.25f, 0.02f, 0.02f));
-                tvLight?.SetRest(new Color(0.7f, 0.18f, 0.15f), 0.32f);
+                _emissRest = deadDark;
+                EmissionFlash(deadDark);
+                tvLight?.SetRest(deadDark, 0.08f);
             }
             else
             {
                 _tMatchup.text = "PAYMENT MADE";
-                _tFlavor.color = new Color(phosphorGreen.r, phosphorGreen.g, phosphorGreen.b, 1f);
+                // A payment landing is money — gold, per §4.
+                _tFlavor.color = new Color(gold.r, gold.g, gold.b, 1f);
                 _tFlavor.text = $"−${Money(s.Payment)}   ·   BANK ${Money(s.BankAfter)}";
                 _tRecords.text = string.Empty;
-                EmissionFlash(phosphorGreen);
-                tvLight?.Flash(new Color(0.30f, 1f, 0.45f), 3.0f);
+                EmissionFlash(gold);
+                tvLight?.Flash(gold, 3.0f);
             }
 
             yield return ScaledWait(settleCardDuration);
@@ -1299,7 +1350,7 @@ namespace SBR.Game
 
             ClearToBlankScreen();
             _tAttract.enabled = true;
-            _tAttract.color = new Color(phosphorGreen.r, phosphorGreen.g, phosphorGreen.b, 1f);
+            _tAttract.color = flavorColor; // an instructional prompt, not money — §4 Fact: cold white
             _tAttract.text = title;
             _tWinPct.text = sub;
 
@@ -1326,23 +1377,26 @@ namespace SBR.Game
             ClearToBlankScreen();
             _tAttract.enabled = true;
             _tAttract.text = won ? "THE HOUSE BLINKS FIRST" : "THE BOOKIE COLLECTS";
+            // Won = money, gold. Lost = context, not a hue — legible grey, never the retired red.
             _tAttract.color = won
                 ? new Color(gold.r, gold.g, gold.b, 1f)
-                : new Color(hotRed.r, hotRed.g, hotRed.b, 1f);
+                : contextGrey;
             _tWinPct.text = $"FINAL BANK ${Money(r.Bank)}  —  NEW RUN AT THE LAPTOP";
 
             if (won)
             {
+                // The run's final payout — §3's L4, "the payoff at its callback".
                 _emissRest = gold * 0.08f;
-                EmissionFlash(gold);
+                EmissionFlash(goldL4);
                 tvLight?.Flash(new Color(1f, 0.82f, 0.25f), 3.4f);
                 tvLight?.SetRest(new Color(1f, 0.82f, 0.35f), 0.45f);
             }
             else
             {
-                // Cold and dark: desaturated blue-grey, barely lit - the room mourns.
+                // Cold and dark: desaturated blue-grey, barely lit - the room mourns. Already
+                // compliant with §4 (no hue involved) — only the flash below was still the retired red.
                 _emissRest = new Color(0.008f, 0.010f, 0.018f);
-                EmissionFlash(new Color(0.10f, 0.02f, 0.02f));
+                EmissionFlash(deadDark);
                 tvLight?.SetRest(new Color(0.30f, 0.34f, 0.48f), 0.10f);
             }
         }
@@ -1352,7 +1406,7 @@ namespace SBR.Game
             _stage?.Show(false);
             _tape?.Show(false);
             if (_tConsolation != null) _tConsolation.enabled = false;
-            SetAlpha(_greenFlood, 0f);
+            SetAlpha(_wonFlood, 0f);
             SetAlpha(_goldFlood, 0f);
             SetAlpha(_dimOverlay, 0f);
             SetRawAlpha(_staticNoise, 0f);
@@ -1460,11 +1514,10 @@ namespace SBR.Game
                 && _eventsEmitted >= 1 && _session.CashOutOffer().HasValue;
             if (offerExists)
             {
-                // Neutral pending-gray (the slip strip's not-yet color) — NOT cyan: in sweat
-                // semantics cyan is reserved for VOID (design/08), and a suspended market at
-                // peak tension must never read as a voided leg.
+                // Neutral pending-grey (DESIGN.md §4 Context) — NOT cyan: cyan is reserved for VOID
+                // (§8), and a suspended market at peak tension must never read as a voided leg.
                 _tCashOut.enabled = true;
-                _tCashOut.color = new Color(0.48f, 0.53f, 0.56f, 1f);
+                _tCashOut.color = contextGrey;
                 _tCashOut.text = "MARKET SUSPENDED";
             }
             else
@@ -1608,7 +1661,7 @@ namespace SBR.Game
             }
             else if (leg.GradesWon)
             {
-                yield return GreenLegBeat(k);
+                yield return WonLegBeat(k);
             }
             else
             {
@@ -1619,20 +1672,24 @@ namespace SBR.Game
             UpdateSlipStrip(evt.LegIndex + 1); // next leg reads LIVE once its events start
         }
 
-        private IEnumerator GreenLegBeat(int k)
+        private IEnumerator WonLegBeat(int k)
         {
-            _tFlavor.color = new Color(phosphorGreen.r, phosphorGreen.g, phosphorGreen.b, 1f);
-            _tFlavor.text = $"LEG {k} - GREEN";
-            EmissionFlash(phosphorGreen * 1.0f);
-            tvLight?.Flash(new Color(0.30f, 1f, 0.45f), 3.0f);
-            yield return FloodPulse(_greenFlood, new Color(0.15f, 1f, 0.35f), 0.55f, greenFloodDuration);
+            // A leg wins — money, gold, per §4. §8's `W` state: L3 gold, no pulse.
+            _tFlavor.color = new Color(gold.r, gold.g, gold.b, 1f);
+            _tFlavor.text = $"LEG {k} - WON";
+            EmissionFlash(gold);
+            tvLight?.Flash(gold, 3.0f);
+            yield return FloodPulse(_wonFlood, gold, 0.5f, wonFloodDuration);
         }
 
         private IEnumerator DeadLegBeat(int k)
         {
             // 1) static - regenerate the noise a few times so it crawls.
             SetRawAlpha(_staticNoise, 0.85f);
-            tvLight?.Flash(new Color(1f, 0.2f, 0.15f), 2.2f);
+            // The light drops toward black rather than flashing red — it eases back up toward
+            // whatever the current rest is (still idle here) while the static crawls, then the
+            // hard cut to the dim "mourning" rest below lands right as the static clears.
+            tvLight?.Flash(Color.black, 0f);
             float dur = Mathf.Max(0f, deadStaticDuration * Mathf.Max(0f, TimeScaleOverride));
             int regens = Mathf.Max(1, staticRegens);
             float per = dur / regens;
@@ -1643,19 +1700,21 @@ namespace SBR.Game
             }
             SetRawAlpha(_staticNoise, 0f);
 
-            // 2) the red DEAD line + the screen dropping darker.
-            _tFlavor.color = new Color(hotRed.r, hotRed.g, hotRed.b, 1f);
+            // 2) the DEAD line + the screen dropping darker — darkness, not the retired red (§4/§8:
+            // "Loss is still darkness ... the old green/red money language stays retired").
+            _tFlavor.color = contextGrey;
             _tFlavor.text = $"LEG {k} - DEAD";
-            _emissRest = new Color(_emissIdle.r * 0.3f, _emissIdle.g * 0.12f, _emissIdle.b * 0.12f); // darker, redder
-            EmissionFlash(new Color(0.25f, 0.02f, 0.02f));
-            tvLight?.SetRest(new Color(0.7f, 0.18f, 0.15f), 0.32f);
+            _emissRest = deadDark;
+            EmissionFlash(deadDark);
+            tvLight?.SetRest(deadDark, 0.08f);
             yield return ScaledWait(deadLineDuration);
         }
 
         private IEnumerator TicketDeadBeat()
         {
-            // TV dims to near-black for a beat before the next demo ticket.
-            tvLight?.SetRest(new Color(0.5f, 0.12f, 0.1f), 0.18f);
+            // TV dims to near-black for a beat before the next demo ticket. Same darkness treatment
+            // as a single dead leg, just dimmer still — the whole ticket is gone.
+            tvLight?.SetRest(deadDark, 0.05f);
             float dur = Mathf.Max(0f, ticketDeadDimDuration * Mathf.Max(0f, TimeScaleOverride));
             float t = 0f;
             while (t < dur)
@@ -1689,9 +1748,13 @@ namespace SBR.Game
             _audio?.SlamWon();
             _tBigAmount.color = new Color(gold.r, gold.g, gold.b, 1f);
             _tBigAmount.text = "+$0";
-            EmissionFlash(gold);
+            // The ticket's payout tally — §3's L4, "the payoff at its callback", brighter than a
+            // routine won-leg flash so the ordering idle < flash < L4 stays visible.
+            EmissionFlash(goldL4);
             tvLight?.Flash(new Color(1f, 0.82f, 0.25f), 3.4f);
-            StartCoroutine(FloodPulse(_goldFlood, new Color(1f, 0.78f, 0.15f), 0.5f, winFloodDuration));
+            _bigAmountHdrMat?.SetFloat(HdrBoostId, HdrBoostL4);
+            _goldFloodHdrMat?.SetFloat(HdrBoostId, HdrBoostL4);
+            StartCoroutine(FloodPulse(_goldFlood, gold, 0.5f, winFloodDuration));
             StartCoroutine(WinConfetti());
 
             float duration = Mathf.Max(0f, winTallyDuration * Mathf.Max(0f, TimeScaleOverride));
@@ -1771,9 +1834,13 @@ namespace SBR.Game
             _tBigAmount.color = new Color(gold.r, gold.g, gold.b, 1f);
             _tBigAmount.text = $"${Money(amount)}";
             _tCashOut.enabled = false;
-            EmissionFlash(gold);
+            // §8.5 "Accepted: gold, brief L4 punch" — the same brighter-than-routine flash as the
+            // ticket payout tally.
+            EmissionFlash(goldL4);
             tvLight?.Flash(new Color(1f, 0.82f, 0.25f), 3.4f);
-            yield return FloodPulse(_goldFlood, new Color(1f, 0.78f, 0.15f), 0.55f, cashOutFloodDuration);
+            _bigAmountHdrMat?.SetFloat(HdrBoostId, HdrBoostL4);
+            _goldFloodHdrMat?.SetFloat(HdrBoostId, HdrBoostL4);
+            yield return FloodPulse(_goldFlood, gold, 0.55f, cashOutFloodDuration);
             _tBigAmount.text = string.Empty;
         }
 
@@ -1913,6 +1980,15 @@ namespace SBR.Game
                 Color brightGold = Color.Lerp(gold, Color.white, 0.28f);
                 _tCashOut.color = Color.Lerp(gold, brightGold, _cashOutFlash);
             }
+            // §8.5: the slot's brightness is a promise about input — L4 only while a press would
+            // actually be accepted right now (same predicate as the accept gate itself, so this can
+            // never promise more than TryCashOut will honor). Suspended and mid-tween stay LDR.
+            if (_cashOutHdrMat != null)
+            {
+                bool actionable = _tCashOut.enabled && CanAcceptCashOutNow();
+                float boost = actionable ? Mathf.Lerp(HdrBoostL4, HdrBoostL4 * 1.15f, _cashOutFlash) : HdrBoostL3;
+                _cashOutHdrMat.SetFloat(HdrBoostId, boost);
+            }
         }
 
         private void AnimateFlavorPunch()
@@ -2009,7 +2085,8 @@ namespace SBR.Game
             _canvasHeight = h;
             float halfW = w / 2f, halfH = h / 2f;
 
-            // Backing panel (near-black; the phosphor glow bleeds through its slight transparency).
+            // Backing panel — near-black but lifted to the room's floor (screenBg), never pure black;
+            // the quad's own glow bleeds through its slight transparency.
             _backing = MakeStretchImage(root, "Backing", screenBg);
 
             // --- top scorebug ---
@@ -2034,7 +2111,7 @@ namespace SBR.Game
             var fillGo = new GameObject("BarFill", typeof(Image));
             fillGo.transform.SetParent(_barBg.transform, false);
             _barFill = fillGo.GetComponent<Image>();
-            _barFill.color = new Color(phosphorGreen.r, phosphorGreen.g, phosphorGreen.b, 1f);
+            _barFill.color = flavorColor; // a live probability track — §4 Fact: cold white, not money
             _barFill.raycastTarget = false;
             var frt = _barFill.rectTransform;
             frt.anchorMin = frt.anchorMax = new Vector2(0f, 0.5f);
@@ -2052,6 +2129,8 @@ namespace SBR.Game
                 new Vector2(0f, -140f), new Vector2(w - 60f, 50f), 34,
                 TextAnchor.MiddleCenter, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Bold);
             _tCashOut.enabled = false;
+            _cashOutHdrMat = MakeHdrMaterial();
+            if (_cashOutHdrMat != null) _tCashOut.material = _cashOutHdrMat;
 
             _tChrome = MakeText(root, "Chrome", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
                 new Vector2(0f, 12f), new Vector2(w - 30f, 28f), 16, TextAnchor.LowerCenter, chromeCyan);
@@ -2059,7 +2138,7 @@ namespace SBR.Game
             // --- attract state (before the sweat is live) ---
             _tAttract = MakeText(root, "Attract", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, -6f), new Vector2(w - 60f, 130f), 46,
-                TextAnchor.MiddleCenter, new Color(phosphorGreen.r, phosphorGreen.g, phosphorGreen.b, 1f), FontStyle.Bold);
+                TextAnchor.MiddleCenter, flavorColor, FontStyle.Bold); // §4 Fact: cold white, not money
             _tAttract.text = "SIT TO WATCH THE SWEAT";
 
             // --- the match theater stage (F_0.2.0 M-T2) ---
@@ -2081,14 +2160,22 @@ namespace SBR.Game
             }
 
             // --- overlays (front to back after content) ---
-            _greenFlood = MakeStretchImage(root, "GreenFlood", new Color(0.15f, 1f, 0.35f, 0f));
+            // A won leg is money, gold — not the retired green.
+            _wonFlood = MakeStretchImage(root, "WonFlood", new Color(gold.r, gold.g, gold.b, 0f));
             _staticNoise = MakeStretchRaw(root, "StaticNoise", new Color(1f, 1f, 1f, 0f));
-            _dimOverlay = MakeStretchImage(root, "DimOverlay", new Color(0f, 0f, 0f, 0f));
-            _goldFlood = MakeStretchImage(root, "GoldFlood", new Color(1f, 0.78f, 0.15f, 0f));
+            // Black floor (unified-grade-spec.md §2): even the "everything just went dark" overlay
+            // must not sit below the room's deepest shadow, so its RGB matches the same floor as
+            // screenBg/barBgColor/pitchBgColor rather than true (0,0,0). Only alpha animates.
+            _dimOverlay = MakeStretchImage(root, "DimOverlay", new Color(0.048f, 0.055f, 0.068f, 0f));
+            _goldFlood = MakeStretchImage(root, "GoldFlood", new Color(gold.r, gold.g, gold.b, 0f));
+            _goldFloodHdrMat = MakeHdrMaterial();
+            if (_goldFloodHdrMat != null) _goldFlood.material = _goldFloodHdrMat;
             _tBigAmount = MakeText(root, "BigAmount", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 0f), new Vector2(w - 40f, 200f), 96,
                 TextAnchor.MiddleCenter, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Bold);
             _tBigAmount.text = string.Empty;
+            _bigAmountHdrMat = MakeHdrMaterial();
+            if (_bigAmountHdrMat != null) _tBigAmount.material = _bigAmountHdrMat;
 
             // The bad-beat consolation line — built ABOVE the dim overlay so the sting stays
             // readable through the 94% dim (Sol, M-T4); neutral chrome, never money-red.
@@ -2229,6 +2316,25 @@ namespace SBR.Game
         }
 
         // ---------------------------------------------------------------- small helpers
+
+        /// <summary>A fresh instance of the HDR-capable UI material (SBR/TvSweatHdrUI.shader), for
+        /// the handful of Graphics that must carry §3's L4 tier above 1.0 — the ordinary UGUI
+        /// pipeline bakes Graphic.color into a Color32 vertex attribute and clamps there regardless
+        /// of camera/URP HDR settings, so this shader routes the boost through an unclamped float
+        /// material property (`_HdrBoost`) instead. Returns null (caller keeps the default UI
+        /// material) if the shader isn't in the build — never throws, never silently misrenders.</summary>
+        private Material MakeHdrMaterial()
+        {
+            if (_hdrUiShader == null && !_hdrShaderMissing)
+            {
+                _hdrUiShader = Shader.Find("SBR/TvSweatHdrUI");
+                _hdrShaderMissing = _hdrUiShader == null;
+                if (_hdrShaderMissing)
+                    Debug.LogWarning("[TvSweatScreen] SBR/TvSweatHdrUI shader not found; the L4 " +
+                        "cash-out/payout elements will render LDR-clamped at 1.0.");
+            }
+            return _hdrUiShader != null ? new Material(_hdrUiShader) : null;
+        }
 
         private static void SetAlpha(Image img, float a)
         {
