@@ -42,8 +42,21 @@ namespace SBR
             Material conduit = GrayboxRoomBuilder.Mat("ArtConduit",
                 new Color(0.038f, 0.036f, 0.032f), smoothness: 0.34f);
 
+            // Painted steel for the display enclosure - same wear language as the bunk frames,
+            // a touch lighter than the conduit so the housing reads as a separate installed
+            // object rather than dissolving into the pipe runs behind it.
+            Material steel = GrayboxRoomBuilder.Mat("ArtHousingSteel",
+                new Color(0.098f, 0.095f, 0.084f), smoothness: 0.28f);
+            Material stencilMat = GrayboxRoomBuilder.Mat("ArtStencil", Color.white,
+                smoothness: 0.10f, baseMap: GetOrCreateStencil("RM-4B 217-9C", 256, 64));
+            Material indicator = GrayboxRoomBuilder.Mat("ArtIndicator",
+                new Color(0.35f, 0.06f, 0.04f),
+                emission: new Color(0.85f, 0.14f, 0.08f), smoothness: 0.45f);
+
             BuildConduit(root, conduit, trim);
+            BuildDisplayHousing(root, steel, stencilMat, indicator);
             BuildWindowSurround(root, trim);
+            BuildRadiator(root, trim);
             BuildClutter(root, paper, grime, trim);
 
             Debug.Log($"[RoomArtDressing] built {root.childCount} dressing groups (collider-free)");
@@ -159,6 +172,176 @@ namespace SBR
             }
         }
 
+        // --------------------------------------------------------- display housing
+
+        /// <summary>
+        /// The display is not a television the occupant bought - it is bolted equipment an
+        /// institution installed, in the same riveted painted-steel language as the bunk frames.
+        /// Previous concepts kept reading as "a nice TV pasted onto a bad wall"; making the
+        /// enclosure part of the room's own construction is what seats it.
+        ///
+        /// The glass is recessed by standing the FRAME proud of it rather than by moving the
+        /// screen. The screen quad is functional geometry the TV slice composes against - its
+        /// world position and size feed TvSweatScreen's canvas - so it is not ours to move.
+        /// The housing front face sits ~42mm in front of the glass, which reads as a recess.
+        /// </summary>
+        private static void BuildDisplayHousing(Transform parent, Material steel, Material stencil,
+                                                Material indicator)
+        {
+            var g = new GameObject("Dressing_DisplayHousing").transform;
+            g.SetParent(parent, false);
+
+            // Screen: centre (1.232, 1.1, 0.3), 0.98 along Z by 0.55 along Y, facing -X.
+            const float cy = 1.1f, cz = 0.3f;
+            const float halfZ = 0.49f, halfY = 0.275f;
+            const float t = 0.085f;    // frame bar thickness
+            const float fx = 1.245f;   // frame centre in X -> spans 1.19..1.30 (wall face)
+            const float fd = 0.11f;    // frame depth
+            const float face = 1.19f;  // front face of the housing
+
+            ArtBox(g, "HousingTop", new Vector3(fx, cy + halfY + t * 0.5f, cz),
+                new Vector3(fd, t, halfZ * 2f + t * 2f), steel);
+            ArtBox(g, "HousingBottom", new Vector3(fx, cy - halfY - t * 0.5f, cz),
+                new Vector3(fd, t, halfZ * 2f + t * 2f), steel);
+            ArtBox(g, "HousingNear", new Vector3(fx, cy, cz - halfZ - t * 0.5f),
+                new Vector3(fd, halfY * 2f, t), steel);
+            ArtBox(g, "HousingFar", new Vector3(fx, cy, cz + halfZ + t * 0.5f),
+                new Vector3(fd, halfY * 2f, t), steel);
+
+            // Rivets around the bezel - the single detail that says "bolted in", so they are
+            // spaced like real fixings rather than scattered.
+            const float rx = face - 0.008f;
+            for (int i = 0; i < 9; i++)
+            {
+                float z = cz - halfZ - t * 0.5f + i * ((halfZ * 2f + t) / 8f);
+                Rivet(g, $"RivetT_{i}", new Vector3(rx, cy + halfY + t * 0.5f, z), steel);
+                Rivet(g, $"RivetB_{i}", new Vector3(rx, cy - halfY - t * 0.5f, z), steel);
+            }
+            for (int i = 1; i < 4; i++)
+            {
+                float y = cy - halfY + i * (halfY * 2f / 4f);
+                Rivet(g, $"RivetN_{i}", new Vector3(rx, y, cz - halfZ - t * 0.5f), steel);
+                Rivet(g, $"RivetF_{i}", new Vector3(rx, y, cz + halfZ + t * 0.5f), steel);
+            }
+
+            // Stencilled equipment code on the bottom bar. Deliberately a different string from
+            // the concept render's - the brief asked for that STYLE of marking, not that string.
+            ArtQuad(g, "StencilCode", new Vector3(face - 0.004f, cy - halfY - t * 0.52f, cz + 0.20f),
+                new Vector2(0.30f, 0.052f), Vector3.left, Vector3.up, stencil);
+
+            // One small physical indicator lamp beside the panel. Emissive only, no Light
+            // component - the room's lighting brief specifies its sources and this is not one.
+            ArtBox(g, "IndicatorBezel", new Vector3(face + 0.012f, cy - halfY - t * 0.5f, cz - 0.38f),
+                new Vector3(0.030f, 0.040f, 0.040f), steel);
+            ArtBox(g, "IndicatorLamp", new Vector3(face - 0.006f, cy - halfY - t * 0.5f, cz - 0.38f),
+                new Vector3(0.008f, 0.020f, 0.020f), indicator);
+
+            // Conduit gland where the wall run enters the housing, so the feed is continuous
+            // with the room's existing pipe runs rather than stopping short of them.
+            ArtBox(g, "HousingGland", new Vector3(1.275f, cy + halfY + t + 0.055f, cz),
+                new Vector3(0.075f, 0.075f, 0.075f), steel);
+        }
+
+        private static void Rivet(Transform parent, string name, Vector3 p, Material m) =>
+            ArtBox(parent, name, p, new Vector3(0.016f, 0.024f, 0.024f), m);
+
+        /// <summary>
+        /// Stencil plate texture. Real glyphs from a compact 3x5 bitmap font rather than a blank
+        /// plate - at couch distance a blank rectangle reads as a missing decal, and the marking
+        /// is the detail that sells the panel as inventoried equipment.
+        /// </summary>
+        public static Texture2D GetOrCreateStencil(string code, int width, int height)
+        {
+            if (!AssetDatabase.IsValidFolder(TexFolder))
+                AssetDatabase.CreateFolder("Assets/SBR/Environment", "Textures");
+
+            string safe = code.Replace(" ", "_");
+            string path = $"{TexFolder}/Stencil_{safe}.png";
+            var existing = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            if (existing != null)
+                return existing;
+
+            var px = new Color[width * height];
+            var plate = new Color(0.085f, 0.082f, 0.072f);
+            var paint = new Color(0.62f, 0.60f, 0.52f);
+            for (int i = 0; i < px.Length; i++) px[i] = plate;
+
+            const int gw = 3, gh = 5, gap = 1;
+            int cell = Mathf.Max(1, Mathf.Min(width / (code.Length * (gw + gap)), height / (gh + 2)));
+            int originX = (width - code.Length * (gw + gap) * cell) / 2;
+            int originY = (height - gh * cell) / 2;
+
+            for (int c = 0; c < code.Length; c++)
+            {
+                string[] rows = Glyph(code[c]);
+                if (rows == null) continue;
+                for (int r = 0; r < gh; r++)
+                for (int col = 0; col < gw; col++)
+                {
+                    if (rows[r][col] != '#') continue;
+                    // Row 0 is the TOP of the glyph; texture Y runs upward.
+                    int bx = originX + c * (gw + gap) * cell + col * cell;
+                    int by = originY + (gh - 1 - r) * cell;
+                    for (int dx = 0; dx < cell; dx++)
+                    for (int dy = 0; dy < cell; dy++)
+                    {
+                        int x = bx + dx, y = by + dy;
+                        if (x < 0 || x >= width || y < 0 || y >= height) continue;
+                        px[y * width + x] = paint;
+                    }
+                }
+            }
+
+            var tex = new Texture2D(width, height, TextureFormat.RGB24, false);
+            tex.SetPixels(px);
+            tex.Apply();
+            File.WriteAllBytes(path, tex.EncodeToPNG());
+            Object.DestroyImmediate(tex);
+
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+            var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+            importer.wrapMode = TextureWrapMode.Clamp;
+            importer.filterMode = FilterMode.Bilinear;
+            importer.sRGBTexture = true;
+            importer.mipmapEnabled = true;
+            importer.SaveAndReimport();
+
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
+        private static string[] Glyph(char c) => c switch
+        {
+            '0' => new[] { "###", "#.#", "#.#", "#.#", "###" },
+            '1' => new[] { ".#.", "##.", ".#.", ".#.", "###" },
+            '2' => new[] { "###", "..#", "###", "#..", "###" },
+            '3' => new[] { "###", "..#", "###", "..#", "###" },
+            '4' => new[] { "#.#", "#.#", "###", "..#", "..#" },
+            '5' => new[] { "###", "#..", "###", "..#", "###" },
+            '7' => new[] { "###", "..#", "..#", "..#", "..#" },
+            '9' => new[] { "###", "#.#", "###", "..#", "###" },
+            'B' => new[] { "##.", "#.#", "##.", "#.#", "##." },
+            'C' => new[] { "###", "#..", "#..", "#..", "###" },
+            'M' => new[] { "#.#", "###", "###", "#.#", "#.#" },
+            'R' => new[] { "##.", "#.#", "##.", "#.#", "#.#" },
+            '-' => new[] { "...", "...", "###", "...", "..." },
+            _ => null,   // space and anything unmapped render as bare plate
+        };
+
+        /// <summary>Collider-free quad, for decals whose UVs must run 0..1 across the face.</summary>
+        private static GameObject ArtQuad(Transform parent, string name, Vector3 center,
+                                          Vector2 size, Vector3 facing, Vector3 up, Material mat)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            go.name = name;
+            Object.DestroyImmediate(go.GetComponent<Collider>());   // dressing never collides
+            go.transform.SetParent(parent, false);
+            go.transform.position = center;
+            go.transform.rotation = Quaternion.LookRotation(-facing.normalized, up);
+            go.transform.localScale = new Vector3(size.x, size.y, 1f);
+            go.GetComponent<MeshRenderer>().sharedMaterial = mat;
+            return go;
+        }
+
         // ------------------------------------------------------------------ window
 
         /// <summary>
@@ -178,15 +361,58 @@ namespace SBR
             const float t = 0.075f;      // frame bar thickness
             const float d = 0.09f;       // how far the frame stands off the wall
 
-            ArtBox(g, "FrameTop", new Vector3(cx, cy + halfY + t * 0.5f, z),
-                new Vector3(halfX * 2f + t * 2f, t, d), trim);
-            ArtBox(g, "FrameLeft", new Vector3(cx - halfX - t * 0.5f, cy, z),
-                new Vector3(t, halfY * 2f, d), trim);
-            ArtBox(g, "FrameRight", new Vector3(cx + halfX + t * 0.5f, cy, z),
-                new Vector3(t, halfY * 2f, d), trim);
-            // The sill is deeper and sits proud - it is what sells the wall as having thickness.
-            ArtBox(g, "Sill", new Vector3(cx, cy - halfY - t * 0.5f, z - 0.035f),
-                new Vector3(halfX * 2f + t * 2f, t * 1.3f, d + 0.07f), trim);
+            // Chamfered industrial reveal (concept render C, approved 2026-07-27): two concentric
+            // rings at different depths rather than one flat frame. The outer ring sits proud on
+            // the wall, the inner ring steps back toward the glass, and the step between them
+            // reads as an angled reveal - a bunker window punched through a thick wall, not a
+            // picture frame stuck on a flat surface.
+            const float od = 0.055f;                 // outer ring, proud of the wall
+            const float id_ = 0.125f;                // inner ring, stepped back toward the glass
+            const float ot = 0.105f, it = 0.055f;    // ring bar thicknesses
+
+            // Outer ring - the proud edge.
+            ArtBox(g, "RevealOuterTop", new Vector3(cx, cy + halfY + ot * 0.5f, z - 0.02f),
+                new Vector3(halfX * 2f + ot * 2f, ot, od), trim);
+            ArtBox(g, "RevealOuterLeft", new Vector3(cx - halfX - ot * 0.5f, cy, z - 0.02f),
+                new Vector3(ot, halfY * 2f + ot * 2f, od), trim);
+            ArtBox(g, "RevealOuterRight", new Vector3(cx + halfX + ot * 0.5f, cy, z - 0.02f),
+                new Vector3(ot, halfY * 2f + ot * 2f, od), trim);
+
+            // Inner ring - stepped back, narrower. The offset between the two is the chamfer.
+            ArtBox(g, "RevealInnerTop", new Vector3(cx, cy + halfY + it * 0.5f, z + 0.03f),
+                new Vector3(halfX * 2f + it * 2f, it, id_), trim);
+            ArtBox(g, "RevealInnerLeft", new Vector3(cx - halfX - it * 0.5f, cy, z + 0.03f),
+                new Vector3(it, halfY * 2f, id_), trim);
+            ArtBox(g, "RevealInnerRight", new Vector3(cx + halfX + it * 0.5f, cy, z + 0.03f),
+                new Vector3(it, halfY * 2f, id_), trim);
+
+            // Heavy sill - deeper and proud. It is what sells the wall as having real thickness,
+            // and it is the surface the window's short-throw blue actually pools on.
+            ArtBox(g, "Sill", new Vector3(cx, cy - halfY - ot * 0.55f, z - 0.055f),
+                new Vector3(halfX * 2f + ot * 2f, ot * 1.2f, od + 0.13f), trim);
+        }
+
+        /// <summary>
+        /// Cast-iron radiator under the window (concept render C). Cheap, and it does real work:
+        /// it gives the window wall an object at floor level to catch the short-throw blue, so
+        /// the pool has something to fall across instead of dying on bare floor.
+        /// </summary>
+        private static void BuildRadiator(Transform parent, Material trim)
+        {
+            var g = new GameObject("Dressing_Radiator").transform;
+            g.SetParent(parent, false);
+
+            ArtBox(g, "RadiatorBody", new Vector3(0f, 0.34f, 1.88f),
+                new Vector3(0.78f, 0.52f, 0.11f), trim);
+            // Fins, read as a ribbed silhouette rather than modelled individually.
+            for (int i = 0; i < 7; i++)
+            {
+                float x = -0.30f + i * 0.10f;
+                ArtBox(g, $"RadiatorFin_{i}", new Vector3(x, 0.34f, 1.845f),
+                    new Vector3(0.045f, 0.46f, 0.055f), trim);
+            }
+            ArtBox(g, "RadiatorFeedPipe", new Vector3(0.36f, 0.16f, 1.86f),
+                new Vector3(0.045f, 0.30f, 0.045f), trim);
         }
 
         // ----------------------------------------------------------------- clutter
@@ -216,9 +442,35 @@ namespace SBR
             ArtBox(g, "FloorBox", new Vector3(1.16f, 0.055f, 1.72f),
                 new Vector3(0.24f, 0.11f, 0.30f), paper);
 
-            // Bunk: one thin folded blanket on the slab (slab top is y = 1.58).
+            // Bunk 1: one thin folded blanket on the slab (slab top is y = 1.58).
             ArtBox(g, "Blanket", new Vector3(-0.86f, 1.605f, 0.72f),
                 new Vector3(0.66f, 0.05f, 0.62f), grime);
+
+            // Bunk 2, over the desk. Dressed as though someone uses it - mattress, rumpled
+            // bedding, a pillow - but it sits outside every light cone in the room and stays
+            // in shadow. Allen's note on concept C: it should be legible as OCCUPIED, never
+            // legible as EMPTY. That ambiguity is the point, so nothing here is lit to confirm.
+            Material bunkShadow = GrayboxRoomBuilder.Mat("ArtBunk2Shadow",
+                new Color(0.058f, 0.055f, 0.047f), smoothness: 0.03f);
+
+            ArtBox(g, "Bunk2Mattress", new Vector3(0.92f, 1.615f, 1.28f),
+                new Vector3(0.70f, 0.07f, 1.34f), bunkShadow);
+            ArtBox(g, "Bunk2Bedding", new Vector3(0.95f, 1.665f, 1.52f),
+                new Vector3(0.62f, 0.05f, 0.78f), bunkShadow);
+            // The pillow is the one thing allowed to catch a little light - a single pale shape
+            // is what makes the bunk read as SLEPT IN rather than as an empty shelf. Everything
+            // else up there stays in shadow.
+            ArtBox(g, "Bunk2Pillow", new Vector3(0.90f, 1.678f, 0.78f),
+                new Vector3(0.46f, 0.09f, 0.26f), grime);
+
+            // Desk lamp housing for the fourth light source - a clamp-on task lamp. The light
+            // itself is built in GrayboxRoomBuilder.BuildLighting (DeskLampLight).
+            ArtBox(g, "DeskLampStem", new Vector3(1.245f, 1.10f, 1.80f),
+                new Vector3(0.030f, 0.62f, 0.030f), trim);
+            ArtBox(g, "DeskLampArm", new Vector3(1.185f, 1.395f, 1.755f),
+                new Vector3(0.155f, 0.028f, 0.115f), trim);
+            ArtBox(g, "DeskLampShade", new Vector3(1.115f, 1.335f, 1.720f),
+                new Vector3(0.145f, 0.090f, 0.145f), trim);
         }
 
         // ------------------------------------------------------------------ helper

@@ -193,8 +193,22 @@ namespace SBR
                     baseMap: Tex(ProceduralSurfaceTextures.SurfaceKind.FabricWeave, 512, 1.50f),
                     tiling: 6.0f),
                 Bezel = Mat("BezelBlack", new Color(0.045f, 0.045f, 0.040f), smoothness: 0.25f),
-                TvScreen = Mat("ScreenTV", new Color(0.01f, 0.02f, 0.015f),
-                    emission: new Color(0.010f, 0.045f, 0.020f), doubleSided: true),
+                // Unified-grade spec §2: lift the panel's black floor so nothing in frame is
+                // darker than the screen's own off state. Pure black on a panel in a dim, dusty
+                // room is physically impossible and is the clearest "this was composited" tell.
+                // Also retuned green -> cold white-grey per the 2026-07-27 three-source note:
+                // the display is a quiet, mostly colourless screen, and the room's cool light
+                // comes from the window, not from here.
+                //
+                // TvSweatScreen reads this material's emission as its idle baseline (_emissIdle)
+                // and eases every beat back to it, so this value IS the TV's rest state.
+                //
+                // Deliberately NOT pushed above 1.0. The grade spec's >1.0 requirement is for the
+                // BRIGHT tiers (canvas L4, beat flashes) - blowing the idle quad past 1.0 would
+                // both white out the panel at rest and invert the beat flashes, which currently
+                // sit at 0.02-0.25 in TvSweatScreen.cs. Ordering must stay idle < flash.
+                TvScreen = Mat("ScreenTV", new Color(0.012f, 0.014f, 0.018f),
+                    emission: new Color(0.048f, 0.055f, 0.068f), doubleSided: true),
                 LaptopScreen = Mat("ScreenLaptop", new Color(0.01f, 0.02f, 0.015f),
                     emission: new Color(0.025f, 0.055f, 0.035f), doubleSided: true),
                 PhoneScreen = Mat("ScreenPhone", new Color(0.01f, 0.015f, 0.02f),
@@ -412,6 +426,33 @@ namespace SBR
             Box("DeskLegD", deskRoot, new Vector3(1.245f, 0.355f, 1.945f),
                 new Vector3(0.05f, 0.71f, 0.05f), mats.Prop);
 
+            // Second bunk frame over the desk (2026-07-27 layout brief). The room now reads as
+            // built for two occupants; from the standing camera the window sits between this
+            // bunk and the one over the couch, which is the approved composition.
+            //
+            // Deliberately NOT lit - see the dressing pass. Allen's note on concept C: this bunk
+            // being darker than the rest of the room implies another occupant and reads as
+            // faintly unsettling. It should be legible as occupied, never legible as empty.
+            //
+            // Slab stops at the far wall (z 0.5..2.0) rather than mirroring the couch bunk's
+            // length, and the posts clear the stool's footprint in z.
+            // Its own much darker material - roughly 40% of the standard prop albedo. Moving the
+            // fluorescent clear of it is not enough on its own: TvLight still reaches this
+            // corner, and with prop-grey albedo the slab came back as the BRIGHTEST object in
+            // frame, which is the exact opposite of the brief. Dark albedo keeps it reading as
+            // shadow even when light does land on it.
+            Material bunkDark = Mat("Bunk2Dark", new Color(0.072f, 0.070f, 0.060f),
+                smoothness: 0.20f);
+
+            Box("Bunk2Slab", deskRoot, new Vector3(0.9f, 1.54f, 1.25f),
+                new Vector3(0.8f, 0.08f, 1.5f), bunkDark);
+            Box("Bunk2PostFront", deskRoot, new Vector3(0.53f, 0.77f, 0.57f),
+                new Vector3(0.06f, 1.54f, 0.06f), bunkDark);
+            Box("Bunk2PostBack", deskRoot, new Vector3(0.53f, 0.77f, 1.93f),
+                new Vector3(0.06f, 1.54f, 0.06f), bunkDark);
+
+            // Stays put: at 0.45m tall it passes under the 1.50m slab with clearance, and its
+            // z-span (1.275..1.625) misses both bunk posts.
             Box("Stool", null, new Vector3(0.55f, 0.225f, 1.45f),
                 new Vector3(0.35f, 0.45f, 0.35f), mats.Prop);
             // Door-end left corner, ~1m left of the player spawn (playtest #3: the old spot
@@ -617,8 +658,14 @@ namespace SBR
             // TvLight's green owned the room. A wide cone spreads energy too thin in a 2.6m
             // box, and sitting at z=1.05 it lit only the far end - the standing camera is at
             // z=-1.4 looking down the whole 4m. Narrower, stronger, pulled toward the middle.
+            // Pulled forward to z = -0.05 (was 0.85). The second bunk now occupies z 0.5..2.0 at
+            // slab height 1.58, and the tube was hanging almost directly above it - lighting its
+            // top face and making it the brightest object in the room. Moving the fixture toward
+            // the door end leaves that bunk in shadow per the brief, and gives a cleaner division
+            // of labour between the sources: the tube owns the aisle and the couch side, the desk
+            // lamp owns the desk.
             var tubeGo = new GameObject("FluorescentKey");
-            tubeGo.transform.position = new Vector3(0.95f, 2.06f, 0.85f);
+            tubeGo.transform.position = new Vector3(0.85f, 2.05f, -0.05f);
             tubeGo.transform.rotation =
                 Quaternion.LookRotation(new Vector3(-0.52f, -0.82f, -0.24f).normalized, Vector3.up);
             var tube = tubeGo.AddComponent<Light>();
@@ -645,16 +692,38 @@ namespace SBR
             bounce.color = new Color(0.85f, 0.80f, 0.45f);
             bounce.shadows = LightShadows.None;
 
-            // The window is a lit pane onto a night city, not a blue floodlight. Dim enough
-            // that the tube keeps the room, bright enough that the pane never reads boarded.
+            // WINDOW - short throw, not ambient fill (2026-07-27 lighting note).
+            // The previous brief asked for "more blue" and the result tinted the entire room
+            // blue-teal, which Allen rejected: "too blue, keep it natural". The correction is
+            // about REACH, not intensity. So: brighter and more saturated at the source, but
+            // range cut from 3.0 to 1.7 so the blue pools on the sill, the floor and wall right
+            // around the window and the near edge of the closest bunk - and dies well before the
+            // far wall, the display, or the room's own olive surfaces.
             var windowGo = new GameObject("WindowGlowLight");
-            windowGo.transform.position = new Vector3(0f, 1.45f, 1.72f);
+            windowGo.transform.position = new Vector3(0f, 1.42f, 1.80f);
             var glow = windowGo.AddComponent<Light>();
             glow.type = LightType.Point;
-            glow.intensity = 0.65f;
-            glow.range = 3.0f;
-            glow.color = new Color(0.46f, 0.54f, 0.72f);
+            glow.intensity = 2.4f;
+            glow.range = 1.70f;
+            glow.color = new Color(0.40f, 0.56f, 0.92f);
             glow.shadows = LightShadows.None;
+
+            // DESK LAMP - the fourth source, from concept render C (Allen approved 2026-07-27).
+            // Gives the desk its own warm pool and justifies why anyone would work there. Kept
+            // tight and low so it reads as a task light rather than a second room light, and
+            // aimed down at the laptop so it never spills onto the second bunk above it.
+            var lampGo = new GameObject("DeskLampLight");
+            lampGo.transform.position = new Vector3(1.12f, 1.28f, 1.72f);
+            lampGo.transform.rotation =
+                Quaternion.LookRotation(new Vector3(-0.28f, -0.95f, -0.14f).normalized, Vector3.up);
+            var lamp = lampGo.AddComponent<Light>();
+            lamp.type = LightType.Spot;
+            lamp.spotAngle = 64f;
+            lamp.innerSpotAngle = 22f;
+            lamp.intensity = 2.6f;
+            lamp.range = 1.5f;
+            lamp.color = new Color(1.00f, 0.82f, 0.52f);
+            lamp.shadows = LightShadows.None;
 
             // Gradient ambient does surface separation a single flat value cannot: the ceiling
             // catches the tube, the floor stays dirty and warm, the walls sit between. This is
@@ -663,6 +732,17 @@ namespace SBR
             // and had no dressing - at that point ambient was doing the work of making anything
             // read at all. With surface maps, conduit and a lit window carrying the frame, the
             // same values over-lift everything and kill the falloff.
+            // ATMOSPHERIC HAZE - grade spec item 3, the second half of the "single highest-
+            // leverage change". Puts air between the camera and the screen so the TV's emission
+            // has something to travel through instead of stopping dead at the bezel. In a room
+            // this filthy the haze is justified in-fiction. Tinted to the room's own olive so it
+            // does not read as a blue-grey wash. Lives in RenderSettings, not the volume: URP
+            // has no fog VolumeComponent.
+            RenderSettings.fog = true;
+            RenderSettings.fogMode = FogMode.ExponentialSquared;
+            RenderSettings.fogDensity = 0.085f;
+            RenderSettings.fogColor = new Color(0.082f, 0.079f, 0.061f);
+
             RenderSettings.ambientMode = AmbientMode.Trilight;
             RenderSettings.ambientSkyColor = new Color(0.090f, 0.087f, 0.061f);
             RenderSettings.ambientEquatorColor = new Color(0.057f, 0.057f, 0.048f);
@@ -693,37 +773,73 @@ namespace SBR
             tone.mode.overrideState = true;
             tone.mode.value = TonemappingMode.Neutral;
 
+            // UNIFIED GRADE (tv-sweat/docs/tv-sweat-refinement/unified-grade-spec.md).
+            // The room is painterly, the TV is a vector-crisp LED matrix on black; separately
+            // both are fine, together they read as two assets in one frame. The fix is to put
+            // them through one camera - one global volume, TV inside the pass, never exempt.
+
+            // LIFT THE BLACK FLOOR - the spec's "single highest-leverage change".
+            //
+            // Spec names Shadows/Midtones/Highlights for this. That component CANNOT do it:
+            // its shadow term is a MULTIPLIER, and any multiplier times pure black is still
+            // pure black. Raising a true black floor needs an ADDITIVE offset, which lives in
+            // LiftGammaGain.lift. Using SMH here would have looked like the fix was applied
+            // while the panel's #000000 stayed exactly #000000.
+            //
+            // Tinted slightly cool to land near the spec's #0a0c10 target rather than a grey.
+            // CALIBRATION NOTE: URP scales lift far harder than its raw value implies. A w of
+            // 0.055 - which reads like "raise black to ~5%" - came back as a flat mid-grey panel
+            // around 38%, milky and washed out, and it failed the spec's own §5 checks: the
+            // brightness ladder compressed and L0 stopped reading as darker than L1. Measured
+            // ratio is roughly 7x, so the value that actually lands near the spec's #0a0c10
+            // target is an order of magnitude smaller than it looks.
+            var lift = GetOrAddVolumeComponent<LiftGammaGain>(profile);
+            lift.lift.overrideState = true;
+            lift.lift.value = new Vector4(0.99f, 1.00f, 1.03f, 0.0075f);
+
             var bloom = GetOrAddVolumeComponent<Bloom>(profile);
             bloom.threshold.overrideState = true;
-            bloom.threshold.value = 0.75f;
+            bloom.threshold.value = 0.90f;   // spec: only real light sources bloom
             bloom.intensity.overrideState = true;
-            bloom.intensity.value = 0.90f;
+            bloom.intensity.value = 0.70f;
             bloom.scatter.overrideState = true;
-            bloom.scatter.value = 0.62f;
+            bloom.scatter.value = 0.70f;
+
+            // Shared lens. Kept under the spec's 0.08 because it attacks small type first and
+            // the TV's metadata row is already the tightest thing in frame (spec §5:
+            // legibility outranks integration).
+            var aberration = GetOrAddVolumeComponent<ChromaticAberration>(profile);
+            aberration.intensity.overrideState = true;
+            aberration.intensity.value = 0.065f;
 
             var grade = GetOrAddVolumeComponent<ColorAdjustments>(profile);
             grade.postExposure.overrideState = true;
             grade.postExposure.value = 0.35f;
             grade.contrast.overrideState = true;
             grade.contrast.value = 16f;
+            // Was +4. Grade spec item 8 wants slight DEsaturation of the room, and the lifted
+            // floor plus fog already soften it - pushing saturation on top fights both.
             grade.saturation.overrideState = true;
-            grade.saturation.value = 4f;
+            grade.saturation.value = 0f;
 
             // Compression, cheaply. The room should feel like it is closing in at the edges.
             var vignette = GetOrAddVolumeComponent<Vignette>(profile);
             vignette.intensity.overrideState = true;
-            vignette.intensity.value = 0.28f;
+            vignette.intensity.value = 0.30f;
             vignette.smoothness.overrideState = true;
-            vignette.smoothness.value = 0.50f;
+            vignette.smoothness.value = 0.40f;
 
             // Grime that costs nothing and reads at every camera distance.
             var grain = GetOrAddVolumeComponent<FilmGrain>(profile);
             grain.type.overrideState = true;
             grain.type.value = FilmGrainLookup.Medium1;
             grain.intensity.overrideState = true;
-            grain.intensity.value = 0.22f;
+            // Spec calls grain "the strongest single unifier" - one grain over the room and the
+            // TV together makes them share a sensor, which is most of why they stop reading as
+            // two separate images.
+            grain.intensity.value = 0.20f;
             grain.response.overrideState = true;
-            grain.response.value = 0.75f;
+            grain.response.value = 0.70f;
 
             EditorUtility.SetDirty(profile);
 
