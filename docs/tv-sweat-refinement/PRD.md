@@ -90,6 +90,9 @@ Only the audit ledger can promote a hypothesis to a confirmed defect.
   fixed top-down frame stays.
 - **Refinement v2 candidate, explicitly deferred:** a FIFA-style camera that follows the ball
   carrier (Allen, 2026-07-24). Not designed, prototyped, or costed in this pass.
+- **Deferred out of this worktree (Allen, 2026-07-27):** the bunkmate character — an occupant of the
+  second bunk who occasionally gives the player advice or charms. Recorded in `PRODUCT.md`; the room
+  lead is told to keep that bunk dark and suggestive, which does not foreclose the idea either way.
 - **Deferred out of this worktree (Allen, 2026-07-25):** a degrading visual register, where the TV
   surface grows louder and more desperate as the run goes bad, mirroring the room-state health bar
   in `design/08-art-direction.md`. The register for this pass is **expensive and slick**, held
@@ -124,8 +127,52 @@ Every discrete choice introduced or changed here—movement grammar, lane, press
 payoff shape, actor routing, and reaction pattern—must be derived from a presentation key:
 
 ```text
-run seed + round + ticket index + leg index + event step + scene template + beneficiary
+run seed + round + ticket index + match index + event step + scene template + beneficiary
 ```
+
+**Amended 2026-07-27: `leg index` → `match index`.** The original formula predates §8.2A. A scene beat
+belongs to the *match*, not to any one leg, so with two legs live on one match a leg-scoped key would
+hash the same beat two different ways — or pick a leg arbitrarily and go unstable as legs settle
+underneath a still-live match. `Leg.Matchup.Index` is shared by every leg referencing that matchup, so
+concurrent legs necessarily construct an identical key. Ticket index alone is insufficient because a
+multi-match parlay carries several matches per ticket.
+
+Corroborated by an existing engine pattern, verified in source: `RngHub.Derive(round, ticketId,
+legIndex, action, ordinal)` at `engine/RngHub.cs:56` and `RngHub.DeriveMatch(round, matchupIndex,
+purpose)` at `:61` already treat "which match" and "which leg's wager" as separate axes.
+
+Leg identity remains real for leg-*specific* presentation — per-leg `NEED`/`LIVE` copy, the §7.7
+locator. Those fold the leg index into the **channel name** they query rather than into shared key
+material, so the base key stays match-scoped.
+
+### 4.3.1 Open decision gate — the event stream is leg-scoped (2026-07-27)
+
+Amending the key removes *which leg* from key identity. It does not remove the deeper problem.
+
+**`DramaEvent.Step` is documented at `engine/DramaEvent.cs:20` as "1-based step within the leg,"** and
+`DramaEvent.LegIndex` sits beside it at `:18`. Each leg gets its own independently-stepped event
+stream. So under §8.2A, two legs live on one match do not currently share a notion of *what the same
+beat is* — and `event step` in the key above is fed from a per-leg counter.
+
+**Consequence: §8.2A is not fully deliverable inside this slice's file boundaries.** A shared
+per-match beat requires either an engine change or a presentation-layer merge. `engine/**` is §11
+forbidden.
+
+Options, none chosen:
+
+1. **Engine change** — make the event stream match-scoped so all legs on a match share one cursor.
+   Cleanest and correct, but crosses the boundary and needs Allen's authorization plus an owner.
+2. **Presentation-layer merge** — the TV slice deterministically merges concurrent legs' streams into
+   one match timeline. Stays inside the boundary but is complex, and risks contradicting engine facts,
+   which §4.1 forbids.
+3. **Scope §8.2A down** — concurrent legs are *displayed* together in the ticket column, but playback
+   still follows a single leg's stream per match. Cheapest; needs a ruling on whether that satisfies
+   the intent.
+
+**This gates Phase 2B.** The planner keys off event step, so its semantics must be settled before the
+planner is built. Investigation needed first: establish what the sweat actually does today when one
+ticket carries two legs on the same match — whether it plays the match twice, or whether current
+ticket generation simply never produces that case.
 
 Requirements:
 
@@ -188,7 +235,32 @@ Exit gate:
 - Source-confirmed candidates `TVS-H01` through `TVS-H03` are reproduced with full context or
   rejected with recorded counter-evidence.
 
-### Phase 1B — bounded reliability repairs
+### Phase 1B — bounded reliability repairs — **CLOSED 2026-07-27**
+
+Signed off by Allen. Four confirmed defects fixed and reviewed against source: `TVS-H01` cash-out
+input reservation, `TVS-H02` standing freeze (twice — the first fix left a coroutine handoff race
+measured at 6 failures / 10 full-suite runs), `TVS-S01` corner and card team attribution, and
+`TVS-H03` anytime-scorer identity binding. Each carries a regression test where the behaviour is
+mechanically observable. Suites at the fixing commit `e2f4fc0`: engine 160/160, EditMode 88/88,
+PlayMode 30/30.
+
+**Gate item explicitly waived by Allen:** *"the audit is rerun against the fixing commit."* Not
+performed. Recorded as a waiver rather than an omission. Partial mitigation: Phase 2's own exit gate
+requires all 48 legacy template/variant cells to still complete and reveal exactly once, which
+re-exercises most of the matrix against later code.
+
+**Two items carried forward, on the record:**
+
+1. An environmental test flake — roughly 2 in 10 full PlayMode runs fail `never observed the cash-out
+   amount mid-tween` on abnormally slow runs (52–54s against a ~35s norm). Test-side timing
+   fragility, not a product defect. Logged in `BUG-LEDGER.md` §4C.4.
+2. **The scorer-reveal gap.** If a won anytime-scorer leg's backed-side goals are all spent before
+   the final sequence begins, no scorer reveal fires — the player wins without seeing the moment.
+   Pre-existing, not a regression. Closing it requires the whole-sweat identity contract that §7.7
+   defers; the alternative moves the causal reveal point and breaks §4.1. **Severity: major, deferred
+   to §7.7's work in Phase 3.**
+
+### Phase 1B — original gate definition
 
 Fix confirmed blockers and majors first. Polish defects may be combined with later scene/UI work
 only when the ledger links the owning requirement.

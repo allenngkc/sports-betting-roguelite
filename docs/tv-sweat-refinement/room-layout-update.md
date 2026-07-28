@@ -75,12 +75,29 @@ The room is lit by **three sources that must stay distinguishable from each othe
 | Source | Colour | Note |
 |---|---|---|
 | **Fluorescent strip** | Slightly yellow, warm | Allen likes it as it is. Keep. |
-| **Window** | **Cool blue, and stronger than before** | Allen wants *more* blue coming from the window. This is now the room's main cool light and its main contrast against the fluorescent. |
+| **Window** | Cool blue, bright at the source, **short reach** | See the falloff note below — this is the one that needs care. |
 | **The display** | Predominantly cold white-grey with a small warm gold bar | Not an amber wash and not saturated blue/magenta. It is a mostly colourless screen; its spill is faint and cool, with a touch of gold near the cash-out band. |
 
-The important change: **the cool light in this room comes from the window, not from the display.**
-Earlier briefs had the TV as the dominant cool source. It is not — it is a quiet screen, and the
-window carries the blue.
+The cool light in this room comes from the **window**, not the display. The display is a quiet
+screen; its spill is faint.
+
+### Window falloff — the note that matters (Allen, 2026-07-27)
+
+Our previous brief asked for "more blue from the window" and the concept render took that as licence
+to tint the whole room. Allen's response: **too blue, keep it natural.**
+
+The correction is about **reach, not intensity**:
+
+- The window can be **bright and saturated at the source** — the neon skyline outside stays vivid.
+- Its light must **fall off fast**. Blue pools on the sill, the floor and wall immediately around the
+  window, and the near edge of the closest bunk. It does not reach the far wall, the display, or the
+  whole floor.
+- **The room's own surfaces stay natural** — olive, khaki, drab green, rust, damp concrete. Those are
+  the colours of the room, and they should still read as themselves everywhere the window is not
+  directly lighting. A blue-teal cast across every surface is the failure mode.
+
+Think of the window as a directional source with a short throw, not an ambient fill. The room is a
+dim natural olive space with a bright cold hole in one wall — not a blue room.
 
 ## 6. The second bunk should stay dark, and slightly wrong
 

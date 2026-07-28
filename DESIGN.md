@@ -10,8 +10,16 @@ the room itself, all of which have their own authority.
 neon on black, CRT phosphor and scanlines, green/red/gold colour purity — is an explicit
 anti-reference. Landing back on it means the redesign did not happen.
 
-**Status:** written 2026-07-25, before the first build edit. Tokens marked *provisional* settle when
-the first implementation lands.
+**Status: FINAL, approved by Allen 2026-07-27** against concept render G. The visual direction is
+closed after seven concept rounds. Numeric values marked *provisional* still settle against the real
+TV at the real seated camera distance, but the world, fidelity, palette, layout and state vocabulary
+are decided and are not reopened without an explicit ruling.
+
+**One implementation note that the approved render gets wrong.** Concept G displays risk and payout
+*per leg*. That is not how a parlay works and is not what this product does — PRD §8.4 specifies a
+single ticket-level `RISK` and `PAYS`. The render's composition is approved; that detail follows the
+PRD, not the render. Implementers: one risk figure, one payout figure, at the foot of the ticket
+column.
 
 ---
 
