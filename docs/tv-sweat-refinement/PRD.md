@@ -472,7 +472,13 @@ model and must not be inflated as the primary solution.
 The catalog must contain at minimum:
 
 - 4 buildup grammars: central, wing, switch, counter;
-- 5 scoring shapes: through ball, cross, cutback, rebound, set piece;
+- 5 scoring shapes: through ball, cross, cutback, rebound, **direct**;
+
+  *Clarified 2026-07-28.* §7.1 named this fifth shape `direct` while this list called it `set piece`,
+  which are not the same kind of thing — **set piece is a movement grammar, direct is a chance
+  shape**, and a set piece resolves through a direct strike. The dimension keeps `direct`; the
+  requirement is that a set-piece grammar paired with a direct chance shape is always available.
+
 - 6 non-goal endings: block, interception, keeper save, clearance, post, near wide;
 - 3 corner shapes: near post, far post, cleared;
 - 3 pressure modes and 3 spacing modes;
