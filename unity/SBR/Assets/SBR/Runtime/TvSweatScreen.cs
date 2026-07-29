@@ -403,6 +403,16 @@ namespace SBR.Game
         private readonly ScoreLedger _ledger = new ScoreLedger();
         private CountLedger _countLedger;
         private TheaterChoreographer _choreo;
+        // Phase 2C (PRD §9): the planner elaborates the choreographer's factual SceneSpec into a
+        // TheaterScenePlan; TheaterStage executes that plan. This screen is the session
+        // orchestrator, so it owns the PRD §7.4 repetition-control history across the WHOLE
+        // session's beats (every leg, every ticket) — constructed once, never reset at a leg or
+        // ticket boundary, because "the same move again" is a couch-viewer judgment that does not
+        // reset just because a new leg started; the ring buffer's own capacity naturally ages out
+        // stale entries. Recorded into only once a plan is actually accepted for playback — the
+        // planner deliberately never records for itself (see TheaterScenePlanner's type doc).
+        private readonly TheaterScenePlanner _scenePlanner = new TheaterScenePlanner();
+        private readonly TheaterSceneHistory _sceneHistory = new TheaterSceneHistory();
         private int _stageLeg = -1;
         private int _stageBeatCount;
         private bool _lastBeatUp;
@@ -670,6 +680,17 @@ namespace SBR.Game
             {
                 SceneSpec spec = _choreo.ResolveBeat(evt, _lastBeatUp, _lastBeatDelta, _ledger,
                     leg, _countLedger);
+                // Phase 2C: the planner elaborates this factual spec into a rich, deterministic
+                // TheaterScenePlan (PRD §9) — it never changes spec's truth contract, only picks
+                // grammar/pressure/spacing/payoff/reaction/lane from the presentation key. The
+                // beat is unconditionally staged below (no rejection path from here), so the plan
+                // is "accepted for playback" the instant it is built — recorded right here, per
+                // TheaterSceneHistory's own contract that only an accepting caller ever records
+                // (the planner deliberately never records for itself).
+                PresentationSceneKey sceneKey = BuildSceneKey(evt, spec, leg);
+                TheaterScenePlan scenePlan = _scenePlanner.Plan(spec, sceneKey, _sceneHistory);
+                _sceneHistory.Record(scenePlan.Signature, scenePlan.FactContract,
+                    scenePlan.FactContract == SceneFactContract.Structural);
                 bool nearMiss = spec.Template == SceneTemplate.NearMissHope
                     || spec.Template == SceneTemplate.NearMissScare;
                 _audioUrgency = spec.Urgent ? 1f : 0f;
@@ -731,14 +752,14 @@ namespace SBR.Game
                 if (dangerous)
                 {
                     SuspendMarket();
-                    _stage.PlayScene(spec, OnGoalPlayed,
+                    _stage.PlayPlannedScene(scenePlan, spec, OnGoalPlayed,
                         nearMiss || spec.Count.HasValue ? RevealBeatAudio : RevealBeatChrome, null,
                         OnCountPlayed);
                 }
                 else
                 {
                     RevealBeatChrome(); // low-information beat: prob drifts, price stays live
-                    _stage.PlayScene(spec, OnGoalPlayed, null, null, OnCountPlayed);
+                    _stage.PlayPlannedScene(scenePlan, spec, OnGoalPlayed, null, null, OnCountPlayed);
                 }
                 yield return WaitSceneDone();
                 _audioUrgency = 0f;
@@ -761,6 +782,17 @@ namespace SBR.Game
 
                 LegGrade grade = leg.IsVoided ? LegGrade.Voided
                     : leg.GradesWon ? LegGrade.Won : LegGrade.Lost;
+                // Phase 2C: no SceneSpec drives rendering for a suspended continuation (it stays
+                // on BuildContinuationScript, untouched), but the beat still belongs in the shared
+                // repetition-control history — otherwise a final that follows a suspended shot
+                // would silently vanish from what §7.4's rules can see. The null-ledger
+                // ResolveFinal overload is side-effect-free (it never reads _ledger/_countLedger),
+                // so this cannot double-consume either ledger ahead of the real planning below.
+                SceneSpec plannedFinalSpec = _choreo.ResolveFinal(grade, evt.Step);
+                PresentationSceneKey finalKey = BuildSceneKey(evt, plannedFinalSpec, leg);
+                TheaterScenePlan finalScenePlan = _scenePlanner.Plan(plannedFinalSpec, finalKey, _sceneHistory);
+                _sceneHistory.Record(finalScenePlan.Signature, finalScenePlan.FactContract, false);
+
                 ScoreLedger.FinalPlan plan = _ledger.PlanFinal(grade);
                 // TVS-S01 fix: PlanFinal derives each remaining batch's team attribution from
                 // its own HomeDelta/AwayDelta now — no bet-derived flag to compute here.
@@ -778,6 +810,14 @@ namespace SBR.Game
                 LegGrade grade = leg.IsVoided ? LegGrade.Voided
                     : leg.GradesWon ? LegGrade.Won : LegGrade.Lost;
                 SceneSpec spec = _choreo.ResolveFinal(grade, evt.Step, _ledger, _countLedger, leg);
+                // Phase 2C: history bookkeeping only (see the pending-loss branch above for why) —
+                // the Final fact contract's catalog is structurally degenerate (PRD §7.2: exactly
+                // one legal candidate per grade), so there is nothing for plan-shaping to vary;
+                // BuildFinalScript stays untouched.
+                PresentationSceneKey finalKey = BuildSceneKey(evt, spec, leg);
+                TheaterScenePlan finalScenePlan = _scenePlanner.Plan(spec, finalKey, _sceneHistory);
+                _sceneHistory.Record(finalScenePlan.Signature, finalScenePlan.FactContract, false);
+
                 ScoreLedger.FinalPlan plan = _ledger.PlanFinal(grade);
                 // TVS-H03 fix: see the ResumeSuspended branch above — same plan-time binding.
                 plan = ScoreLedger.BindAnytimeScorer(plan, leg);
@@ -785,6 +825,23 @@ namespace SBR.Game
                 yield return WaitSceneDone();
                 yield return FinalSlam(evt, grade);
             }
+        }
+
+        /// <summary>PRD §4.3's presentation key, built from whatever this beat's SceneSpec and
+        /// Leg actually carry. Match index is <c>Leg.Matchup.Index</c> — §4.3's amendment (match-
+        /// scoped, not leg-scoped; see <see cref="PresentationSceneKey"/>'s type doc). Beneficiary
+        /// prefers the count fact's explicit home/away beneficiary when this is a count scene,
+        /// falling back to <c>ForPicked</c> otherwise — mirroring the field's own documented
+        /// "which side benefits" convention. Never touches engine RNG.</summary>
+        private PresentationSceneKey BuildSceneKey(DramaEvent evt, SceneSpec spec, Leg leg)
+        {
+            Run run = director != null ? director.Run : null;
+            string seed = run != null ? run.Rng.RunSeed : string.Empty;
+            int round = run != null ? run.Round : 0;
+            int ticket = director != null ? director.SweatIndex : 0;
+            int match = leg != null && leg.Matchup != null ? leg.Matchup.Index : 0;
+            bool beneficiary = spec.CountBeneficiaryIsHome ?? spec.ForPicked;
+            return new PresentationSceneKey(seed, round, ticket, match, evt.Step, spec.Template, beneficiary);
         }
 
         /// <summary>Waits out the active scene. Seating freezes the stage (the scene stalls, so

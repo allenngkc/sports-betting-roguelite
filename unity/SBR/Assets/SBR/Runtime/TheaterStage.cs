@@ -352,6 +352,26 @@ namespace SBR.Game
             StartScript(BuildBeatScript(spec), onGoalPlayed, onCountPlayed, onReveal, onComplete);
         }
 
+        /// <summary>Phase 2C (PRD §9): executes a <see cref="TheaterScenePlan"/> — the same
+        /// factual <paramref name="spec"/> <see cref="PlayScene"/> would have played, elaborated
+        /// with the planner's grammar/pressure/spacing/lane choices (see
+        /// <see cref="BuildBeatScript(SceneSpec, TheaterScenePlan?)"/> and
+        /// <see cref="ApplyPlanShaping"/>). <paramref name="plan"/> never changes which step
+        /// carries the marker, its route, its staged Goal/Count payload, or any step's duration —
+        /// only tempo, chase, and the lane-axis ball coordinate on buildup (RoutePass) steps. The
+        /// caller owns recording <paramref name="plan"/>'s <c>Signature</c> into its
+        /// <see cref="TheaterSceneHistory"/> once it accepts the plan — this method does not.</summary>
+        public void PlayPlannedScene(TheaterScenePlan plan, SceneSpec spec,
+            Action<ScoreLedger.StagedGoal> onGoalPlayed, Action onReveal, Action onComplete)
+            => PlayPlannedScene(plan, spec, onGoalPlayed, onReveal, onComplete, null);
+
+        public void PlayPlannedScene(TheaterScenePlan plan, SceneSpec spec,
+            Action<ScoreLedger.StagedGoal> onGoalPlayed, Action onReveal, Action onComplete,
+            Action<CountLedger.StagedCount> onCountPlayed)
+        {
+            StartScript(BuildBeatScript(spec, plan), onGoalPlayed, onCountPlayed, onReveal, onComplete);
+        }
+
         // TVS-H03: SetScoringActor used to live here — it only ever renamed an unrendered
         // GameObject.name, with no read-side connection to EnterStep/CompleteStep's route/
         // carrier selection (Phase 1A). Removed in favor of a real binding: a bound StagedGoal
@@ -834,9 +854,17 @@ namespace SBR.Game
             return m;
         }
 
-        private Step[] BuildBeatScript(SceneSpec spec)
+        /// <summary>Phase 2C: <paramref name="plan"/> null keeps every prior caller's exact
+        /// behavior (§7.1: "the current Variant remains a compatibility input during migration"
+        /// — <see cref="PlayScene(SceneSpec, Action{ScoreLedger.StagedGoal}, Action, Action)"/>
+        /// still drives lane from <c>spec.Variant</c> alone). Non-null (from
+        /// <see cref="PlayPlannedScene(TheaterScenePlan, SceneSpec, Action{ScoreLedger.StagedGoal}, Action, Action)"/>)
+        /// drives lane from the plan's own independently-chosen <see cref="SceneLane"/> instead,
+        /// and shapes the built script's tempo/chase/lane-axis via <see cref="ApplyPlanShaping"/>
+        /// once the template switch below has produced its truth-authored waypoints.</summary>
+        private Step[] BuildBeatScript(SceneSpec spec, TheaterScenePlan? plan = null)
         {
-            float lane = Lane(spec.Variant);
+            float lane = plan.HasValue ? LaneOf(plan.Value.Lane) : Lane(spec.Variant);
             float T = spec.Duration;
             float u = spec.Urgent ? 1f : 0f;
             var goal = spec.Goal ?? default;
@@ -987,6 +1015,13 @@ namespace SBR.Game
                     break;
             }
 
+            // Phase 2C: shape the template's already-truth-authored waypoints with the planner's
+            // choices — after the switch above (so every template's Marker/Route/Goal/Count/
+            // duration stays exactly as authored) and before the #9 intro is composed (so a
+            // LeadChange intro, when one plays, still starts from the SAME base `lane` the shaped
+            // core now varies around).
+            if (plan.HasValue) core = ApplyPlanShaping(core, plan.Value);
+
             if (intro <= 0f) return core;
 
             // Steal → transition: the ball flips flanks at midfield before the move starts.
@@ -994,6 +1029,81 @@ namespace SBR.Game
             withIntro[0] = S(intro, 0.42f, 1f - lane, 0.46f, 1f, atkPicked: core[0].AtkPicked);
             Array.Copy(core, 0, withIntro, 1, core.Length);
             return withIntro;
+        }
+
+        /// <summary>Phase 2C: the plan's own independently-chosen <see cref="SceneLane"/> as a
+        /// pitch-fraction, matching <see cref="Lane(int)"/>'s legacy value set exactly (0.5 / 0.32
+        /// / 0.68) so a planned scene reads at the same on-screen widths a legacy-variant scene
+        /// always has — only WHICH dimension chooses the lane changes, not what the lane values
+        /// mean physically.</summary>
+        private static float LaneOf(SceneLane lane)
+            => lane == SceneLane.Center ? 0.5f : lane == SceneLane.NearFlank ? 0.32f : 0.68f;
+
+        /// <summary>Phase 2C (PRD §7.1, §9): renders the planner's Pressure/Spacing/Grammar
+        /// choices as visible motion differences on top of a template's already-authored
+        /// waypoints. Never changes which step carries the <c>Marker</c>, its <c>Route</c>, its
+        /// staged <c>Goal</c>/<c>Count</c> payload, or any step's <c>Dur</c> — the template's
+        /// truth contract (PRD §7.2) is exactly what the switch above already built; this only
+        /// adjusts <c>Tempo</c>, adds <c>Chase</c> under high pressure, and nudges the lane-axis
+        /// <c>Ball.y</c> — and ONLY on <see cref="RoutePass"/> steps, the sole route whose target
+        /// is resolved by nearest-outfield-dot-to-waypoint (<see cref="EnterStep"/>'s
+        /// <see cref="RoutePass"/> case), so a small y nudge only ever changes which already-
+        /// forming-up teammate a pass finds — it can never misdirect a shot (<see cref="RouteShot"/>
+        /// recomputes its own y from the keeper's position, ignoring the authored value entirely),
+        /// a restart, a corner arc, or a booking/back-line waypoint, all of which stay pixel-exact
+        /// to how the template author placed them.</summary>
+        private static Step[] ApplyPlanShaping(Step[] steps, TheaterScenePlan plan)
+        {
+            var shaped = new Step[steps.Length];
+            float pressureTempo = plan.Pressure == PressureMode.HighPress ? 1.15f
+                : plan.Pressure == PressureMode.LowBlock ? 0.85f : 1.0f;
+            float spacingSpread = plan.Spacing == SpacingMode.Stretched ? 1.18f
+                : plan.Spacing == SpacingMode.Compact ? 0.82f : 1.0f;
+
+            int passRouteIndex = 0;
+            for (int i = 0; i < steps.Length; i++)
+            {
+                Step s = steps[i];
+                s.Tempo = Mathf.Clamp01(s.Tempo * pressureTempo);
+                // High press visibly closes down the ball carrier and the back line (§7.3:
+                // "visibly different defending... behavior per pressure mode") without touching
+                // a template's own authored chase="true" moments (breakaways/corners already
+                // chase by truth, not by pressure — this only ever ADDS chase, never removes it).
+                if (plan.Pressure == PressureMode.HighPress && (s.Route == RoutePass || s.Route == RouteBackLine))
+                    s.Chase = true;
+
+                if (s.Route == RoutePass)
+                {
+                    float laneOffset = (s.Ball.y - 0.5f) * spacingSpread;
+                    switch (plan.Grammar)
+                    {
+                        case MovementGrammar.Central:
+                            laneOffset *= 0.55f; // pulled back toward the middle
+                            break;
+                        case MovementGrammar.Wing:
+                            laneOffset *= 1.25f; // pushed wide
+                            break;
+                        case MovementGrammar.Switch:
+                            // The move crosses the field partway through the buildup — every
+                            // OTHER RoutePass step flips side.
+                            if (passRouteIndex % 2 == 1) laneOffset = -laneOffset;
+                            break;
+                        case MovementGrammar.Counter:
+                            // A fast break reads faster from its very first step.
+                            if (passRouteIndex == 0) s.Tempo = Mathf.Clamp01(s.Tempo * 1.3f);
+                            break;
+                        case MovementGrammar.SetPiece:
+                            // A dead ball is held still, not run at.
+                            if (passRouteIndex == 0) s.Tempo *= 0.35f;
+                            break;
+                    }
+                    s.Ball = new Vector2(s.Ball.x, Mathf.Clamp01(0.5f + laneOffset));
+                    passRouteIndex++;
+                }
+
+                shaped[i] = s;
+            }
+            return shaped;
         }
 
         private Step[] BuildFinalScript(SceneSpec spec, ScoreLedger.FinalPlan plan,
