@@ -22,6 +22,19 @@ A degenerate's compact room at night, where every game surface is a glowing scre
 
 Rule: green/red never used for anything but money-good/money-bad — the gambling color language stays pure.
 
+> **AMENDED 2026-07-28 — this rule governs SCREENS, not the room's environment art.**
+> The reserved-palette law above still holds everywhere a colour carries a money meaning: the
+> sweat, the scorebug, the sportsbook OS, notifications. The plans that inherit it
+> (`design/04`, `docs/1-plans/F_0.2.0…`, `F_0.3.0…`) are unaffected.
+>
+> What Allen revoked on 2026-07-25 (`DECISIONS.md`) is its reach into **static room art**. The
+> room no longer has to be a cool-blue palette, and green/red/gold are no longer forbidden in
+> environment materials, lighting and props. The shipped room is olive and khaki lit by a
+> yellow-green fluorescent — none of which the original wording permitted.
+>
+> The distinction that matters: a colour is reserved when it *signals* money. A sickly fluorescent
+> tube is not a money signal, and never was — the old wording just could not tell the difference.
+
 ## The room (Allen's spec — scope-locked)
 
 Tokyo compact minimalist, **no kitchen**, CloverPit-sized, walkable in first person. Fixed prop list with interaction roles:
@@ -31,6 +44,22 @@ Tokyo compact minimalist, **no kitchen**, CloverPit-sized, walkable in first per
 - **Small desk table with laptop** — the book: ticket building, shop, run info
 - **Mini fridge** — flavor interaction (state-driven contents: heater = stocked, buried = empty)
 - **Phone** — bookie notifications, debt messages, cash-out buzz (audible anywhere in the room)
+
+> **AMENDED 2026-07-28 — the built room diverges from this list. Signed off; see
+> `docs/room-visual-pass/SIGNOFF.md`.**
+> Interaction roles above are all still accurate and unchanged. What changed is form and tone:
+>
+> - **Tone: "Tokyo compact minimalist" is superseded by direction B, "Vice Grip"** — a grimy,
+>   compressed bunker in olive and khaki. Chosen from a three-way concept round
+>   (`docs/room-visual-pass/concepts/`), ratified in `DECISIONS.md` 2026-07-25.
+> - **Two bunks, not one.** The second sits over the desk and is deliberately kept in shadow —
+>   legible as occupied, never as empty. A parked design idea (a character who sleeps in the
+>   bunker) would make that bunk their space; it is dressed to survive that decision either way.
+> - **The TV is not a television.** It is bolted institutional equipment: riveted steel housing,
+>   recessed glass, stencilled asset code, indicator lamp, conduit feeding in.
+> - **The window is a load-bearing light source**, not just mood: it is the room's only cool light,
+>   and deliberately short-throw so blue pools locally rather than tinting the room.
+> - Mini fridge and its state-driven contents are built but currently undressed.
 
 ### Room state = the health bar (~4 variants)
 

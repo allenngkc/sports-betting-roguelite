@@ -85,9 +85,16 @@ Two corrections were sent back to the grade spec and are worth not re-deriving:
 
 ## Evidence
 
-`baseline/` before · `concepts/` the A/B/C direction choice · `final/` after, graded.
+All captures live in **`artifacts/room-visual-pass/`**, which is now tracked — `artifacts/` was
+un-ignored on 2026-07-28, having been inherited from a .NET SDK convention this repo does not use
+and silently swallowing design evidence.
 
-The per-phase intermediate captures (phases 2, 3, 4, 6 and the ungraded Play Mode set, ~37 MB)
-were **deliberately not committed** — they are superseded by `final/` and are regenerable from the
-builder. They remain on disk under `artifacts/room-visual-pass/`, which is gitignored, and will be
-lost if that worktree is cleaned. Say so if they should be preserved too.
+| Folder | What |
+|---|---|
+| `baseline/` | the graybox, before anything |
+| `concepts/` | the A/B/C round that chose the direction |
+| `after-phase2/` `after-phase3/` `after-phase4/` `phase6/` | per-phase progression |
+| `final-playmode/` | ungraded Play Mode set |
+| `graded/` | final, graded — the current state |
+
+This directory holds the written record only; captures are not duplicated here.
