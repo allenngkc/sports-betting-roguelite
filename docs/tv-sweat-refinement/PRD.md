@@ -145,7 +145,18 @@ Leg identity remains real for leg-*specific* presentation — per-leg `NEED`/`LI
 locator. Those fold the leg index into the **channel name** they query rather than into shared key
 material, so the base key stays match-scoped.
 
-### 4.3.1 Open decision gate — the event stream is leg-scoped (2026-07-27)
+### 4.3.1 CLOSED 2026-07-28 — the event stream is leg-scoped
+
+**Resolved. Phase 2B is unblocked.** The investigation in `concurrent-legs-investigation.md` found
+that the engine forbids two legs on one matchup (`engine/Run.cs:181-182`), so leg-scoped and
+match-scoped event steps are currently identical and `event step` in the key is unambiguous.
+
+None of the three options below were taken; a fourth was — §8.2A is reclassified as a future feature
+with a betting-math dependency, and this slice carries a tolerance constraint rather than
+concurrency plumbing. The analysis below is retained because it becomes live again the moment
+same-match legs are ever enabled.
+
+### 4.3.1a Retained analysis — the event stream is leg-scoped (2026-07-27)
 
 Amending the key removes *which leg* from key identity. It does not remove the deeper problem.
 
@@ -575,14 +586,47 @@ The signed-off layout uses five non-overlapping zones:
 
 System chrome (round, bank, payment, seed) remains lowest priority and may stay small.
 
-### 8.2A Concurrent live legs (Allen, 2026-07-25)
+### 8.2A Concurrent live legs — reclassified 2026-07-28
 
-**The single-active-leg assumption is wrong and must be removed.** This PRD, the layout, and the
-brand book were all written as though exactly one leg is live per match. In later rounds a ticket can
-carry **two or more legs riding on the same match** — a moneyline and a total, a total and a scorer,
-and so on. Those legs are live *simultaneously*, not in sequence.
+**Original statement (Allen, 2026-07-25):** a ticket can carry two or more legs riding on the same
+match, live simultaneously, and the single-active-leg assumption must be removed.
 
-This is a structural correction, not a polish item. Everything below inherits it:
+**Investigation finding (2026-07-28, `concurrent-legs-investigation.md`): the engine explicitly
+forbids this and throws.** `engine/Run.cs:181-182` rejects any ticket carrying two picks on the same
+matchup index. It is an enforced invariant, not an unexercised path.
+
+The guard protects the betting math. Payout is a bare **product** of the legs' decimal odds
+(`Domain.cs:465`, `OddsMath.cs:59`), which is only valid for independent events. Two legs on one
+match are correlated, so lifting the guard without a correlation model misprices every such ticket.
+
+**Therefore this is a future game-design feature, not a TV sweat requirement.** Its real dependency
+chain, in order:
+
+1. a correlation model for same-match selections — `design/02-betting-math.md`, and required by
+   design pillar 3, which says a mechanic whose EV cannot be written down for the Monte Carlo audit
+   is not designed yet;
+2. an engine change lifting the guard — §11 forbidden here;
+3. six-gate re-validation on held-out seeds, since ticket pricing drives run economy;
+4. only then, the presentation work.
+
+Steps 1–3 sit entirely outside this worktree. **Allen's intent stands and is worth keeping — this
+finding only establishes that delivering it starts in the betting math, not on the television.**
+
+#### What this slice carries instead: a tolerance constraint, not plumbing
+
+Do **not** build concurrency machinery for an input that cannot arrive. Do keep the design tolerant,
+so the feature does not require a rewrite if it ever lands:
+
+- Nothing hard-codes "exactly one live leg" in a structure that would need replacing — the ticket
+  column, the planner, and the copy formatters should all read from a collection.
+- The presentation key's **match index** decision (§4.3) stands. It costs nothing while one leg maps
+  to one match, and is simply correct: a beat belongs to a match.
+- `DramaEvent.Step` being leg-scoped is **not** a defect while one leg maps to one match — the two
+  scopes are identical. It becomes a concern only alongside step 1 above, and whoever builds that
+  owns it.
+
+The requirements below are retained as the specification the feature would have to meet, and as the
+tolerance bar for current work. Where they say "each live leg", today that collection has one member:
 
 - The phrase `YOUR ACTIVE LEG`, singular, is retired. Copy must work for one live leg or several.
 - The ticket column shows **every** live leg in its live treatment at once, each with its own `NEED`

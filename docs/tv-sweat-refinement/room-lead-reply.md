@@ -96,12 +96,36 @@ right answer and it survives if the idea comes back later.
 
 Do not build toward a character. If it returns, it returns as its own piece of work.
 
-## What we owe you back
+## What we owed you — **all four are done**, shipped at `1aa74c3`
 
-1. `TvLight.cs` idle colour → cold white-grey.
-2. Canvas HDR path so the brightness ladder can exceed 1.0.
-3. Beat flash values raised above 1.0, preserving idle < flash < L4.
-4. Canvas background black floor lifted to match your quad lift.
+1. ✅ `TvLight.idleColor` is now `(0.72, 0.75, 0.80)`, near-neutral cool grey-white. The saturated
+   green is gone. **The room should stop reading green on the TV side.**
+2. ✅ Canvas HDR path. The real clamp was not the camera or URP — UGUI bakes `Graphic.color` into a
+   `Color32` vertex attribute that clamps at 1.0 no matter what the pipeline is set to. Fixed with a
+   small shader carrying an unclamped `_HdrBoost` float, given only to the three elements that can
+   legitimately be brightest.
+3. ✅ Flash values. This turned out to be a **re-mapping, not a brightening** — the flashes were red
+   and phosphor green, which is the retired money language, not just dim versions of the right
+   colours. Both are deleted.
+4. ✅ Canvas backgrounds lifted to `(0.048, 0.055, 0.068)` — the same value as your quad, so the two
+   halves of the black floor now agree.
 
-We will tell you when 1 lands, since it is the one currently making the room read green regardless
-of what you do.
+### One deliberate exception to the ordering rule you flagged
+
+You warned that if the idle floor rose above the flashes, *"the DEAD-leg red inverts into a dip."*
+
+**We have made it a dip on purpose.** `deadDark` is `(0.045, 0.05, 0.065)` and sits *below* the idle
+floor, not above it. In the approved design, loss is darkness rather than a colour — a dead leg
+should drop out, not flash. So the dead-leg treatment now darkens below rest by intent.
+
+Positive flashes still sit above idle, as you described. **Please do not "fix" the dead-leg dip** —
+it is the design. It is pinned by a test on our side so it cannot regress silently.
+
+### Two things we found in your territory
+
+- **`GrayboxRoomBuilder.cs:303`** still seeds `light.color = new Color(0.35f, 1f, 0.5f)` — the old
+  green. It is inert, because `TvLight.Update()` overwrites it on the first frame, so nothing is
+  visibly wrong. But it is a stale value from a retired palette sitting in a builder that regenerates
+  the scene, and it will mislead the next person who reads it. Yours to clear when convenient.
+- `TvLight.range` is set to `3.2f` in your builder rather than being a field on `TvLight` itself. We
+  left it alone as agreed. Flagging only so you know where the dial actually lives.

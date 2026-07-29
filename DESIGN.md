@@ -407,6 +407,32 @@ between poses.
   Phase 1B is currently repairing the 21 timers that ignore it.
 - No camera shake, cut, or zoom. Decision B holds.
 
+## 9A. Known palette debt in the shipped code
+
+Found while retiring the deprecated flash colours (`1aa74c3`). None are colour-role violations, so
+none were fixed in that pass, but all three contradict this document and are carried as debt for
+Phase 3's UI work.
+
+1. **Banned artifacts are still in `TvSweatScreen.cs`.** `DeadLegBeat` runs a static-noise crawl, and
+   a `_scanlines` overlay exists — roughly a dozen references between them. §2 bans scanlines and
+   interference noise by name as the deprecated `08` world's signature. **This is the approved design
+   being contradicted by code that is currently shipping**, and it is the highest-priority item here.
+2. **`chromeCyan` is used broadly** for leg, clock, records, chrome and slip-strip labels. Cyan was a
+   role in the *previous* palette and has none in §4, where context is grey. A retired hue doing
+   general duty across the surface.
+3. **`GrayboxRoomBuilder.cs:303`** seeds the old saturated green for the TV light. Inert — overwritten
+   on the first frame — but stale, and in a §11 forbidden file. Raised with the room lead, theirs to
+   clear.
+
+4. **Two hardcoded emission rest values bypass the room-owned idle.** `TvSweatScreen.cs:1389`
+   (`gold * 0.08f`) and `:1398` (`new Color(0.008f, 0.010f, 0.018f)`). The second is **darker than the
+   agreed black floor** of `(0.048, 0.055, 0.068)`, so in whatever state it applies it locally undoes
+   the lift whose whole purpose was that nothing in frame sits darker than the panel's off state.
+   Everywhere else the code correctly restores `_emissRest = _emissIdle`, read from the room team's
+   material — these two are the exceptions.
+
+Items 1, 2 and 4 are ours and belong in Phase 3.
+
 ## 10. Open, deliberately
 
 - ~~The held cash-out preview.~~ **Approved by Allen 2026-07-26**, PRD §8.10. Rendering rules are in
