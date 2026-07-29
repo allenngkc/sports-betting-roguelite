@@ -1,0 +1,671 @@
+<!--
+DIRECTION CONTRACT — Direction 2: The Catalogue Sleeve
+
+THESIS. A dense comparison board can be calm because rigour organises it, not because
+information is hidden. Every price stays literal; the sleeve's discipline supplies the
+hierarchy instead of a saturated accent doing it. Refuses the category default of the
+floating drawer, the rounded odds pill, and colour-as-only-signal.
+
+OWN-WORLD. Lifted matte-black ground (#17140F, never pure black). Body ink is warm
+off-white line-work, never pure white. One warm stamped-orange (#EE6B3C) decodes only the
+active/selected item. Every matchup is a numbered catalogue entry (CAT.01–06), each
+carrying a small multi-line pulse plot as its identity mark. Controls are square-cornered
+bordered rectangles — no rounded pills, no drop shadows, no gloss.
+
+STORY. The player reads a numbered index of six fixtures, recognises the two entries
+already decoded into the slip, replaces a pick by tapping the other side of an entry
+(never blocked), and commits with PLACE TICKET while LOCK IT IN plainly states why it
+can't fire yet. Every price on the sheet is open — v0 has no suspension or limiting.
+
+FIRST VIEWPORT. Fictional-OS chrome top and bottom framing the app. Below it, a run-context
+index strip (round, bank, target, debt, relics, tickets). Below that: a six-row catalogue
+slate on the left (~624px) and a numbered working slip on the right (~336px), PLACE TICKET
+anchoring the slip's base.
+
+FORM. World: The Catalogue Sleeve. Production face: FF DIN / DIN Next for all caps and
+labels (engraved-plate letterforms, not a display face) paired with a tabular monospace
+for every numeral — odds, catalogue numbers, bank, stake, payout — so six rows of prices
+align at a glance. Mocked here with Bahnschrift / Consolas system fallbacks.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SureThing — Direction 2: The Catalogue Sleeve</title>
+<style>
+  :root{
+    --bg-page:#0A0906;
+    --bg-app:#17140F;
+    --bg-raised:#1E1A13;
+    --bg-raised-2:#262017;
+    --bg-raised-3:#2B2419;
+    --line:#46402F;
+    --line-soft:#322C21;
+    --ink:#F3EEE2;
+    --ink-dim:#C9C0AC;
+    --accent:#EE6B3C;
+    --accent-ink:#14100A;
+    --disabled-fill:#322D22;
+    --disabled-border:#4A4436;
+    --disabled-text:#A69C86;
+    --font-caps:'Bahnschrift','DIN Alternate','Arial Narrow',sans-serif;
+    --font-mono:'Consolas','Cascadia Mono','Courier New',monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg-page);}
+  body{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:var(--font-caps);
+  }
+  .stage{padding:40px;}
+
+  .artboard{
+    position:relative;
+    width:1024px;
+    height:704px;
+    background:var(--bg-app);
+    color:var(--ink);
+    overflow:hidden;
+    box-shadow:0 50px 120px rgba(0,0,0,.65), 0 0 0 1px #0D0B07;
+    display:flex;
+    flex-direction:column;
+  }
+  .vignette{
+    position:absolute;inset:0;pointer-events:none;z-index:50;
+    background:radial-gradient(ellipse at 50% 42%, rgba(0,0,0,0) 58%, rgba(0,0,0,.34) 100%);
+  }
+
+  /* ===== OS TOP BAR ===== */
+  .os-topbar{
+    height:28px;flex:0 0 28px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 14px;
+    border-bottom:2px solid var(--line-soft);
+    background:var(--bg-app);
+    position:relative;z-index:2;
+  }
+  .os-brand{display:flex;align-items:center;gap:8px;color:var(--ink-dim);}
+  .os-brand svg{width:20px;height:14px;color:var(--ink-dim);}
+  .os-brand span{font-size:12px;letter-spacing:2.5px;text-transform:uppercase;}
+  .os-tray{display:flex;align-items:center;gap:12px;color:var(--ink-dim);}
+  .os-tray .icon{width:18px;height:14px;display:flex;align-items:center;color:var(--ink-dim);}
+  .os-tray .bell-wrap{position:relative;}
+  .os-tray .badge{
+    position:absolute;top:-4px;right:-6px;
+    background:var(--accent);color:var(--accent-ink);
+    font-family:var(--font-mono);font-size:12px;font-weight:700;
+    width:12px;height:12px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .os-clock{font-family:var(--font-mono);font-size:13px;color:var(--ink);letter-spacing:1px;}
+
+  /* ===== APP TITLEBAR + RUN CONTEXT (shared watermark band) ===== */
+  .header-band{position:relative;flex:0 0 68px;}
+  .bg-pulse{position:absolute;inset:0;width:100%;height:100%;opacity:.11;z-index:0;}
+  .bg-pulse rect{fill:var(--ink);}
+
+  .app-titlebar{
+    position:relative;z-index:2;
+    height:26px;flex:0 0 26px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 14px;
+  }
+  .app-brand{display:flex;align-items:center;gap:9px;}
+  .app-brand svg{width:22px;height:16px;color:var(--accent);}
+  .app-brand .name{font-size:14px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--ink);}
+  .app-brand .sub{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-dim);margin-left:6px;padding-left:9px;border-left:2px solid var(--line);}
+  .winctl{display:flex;gap:6px;}
+  .winctl button{
+    width:26px;height:20px;
+    background:transparent;border:2px solid var(--line);
+    color:var(--ink-dim);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;font-family:var(--font-caps);font-size:11px;line-height:1;
+    padding:0;
+  }
+  .winctl button:hover{border-color:var(--ink-dim);color:var(--ink);}
+
+  .run-context{
+    position:relative;z-index:2;
+    height:42px;flex:0 0 42px;
+    display:flex;align-items:stretch;
+    padding:0 14px;
+    border-top:2px solid var(--line-soft);
+    border-bottom:2px solid var(--line);
+  }
+  .rc-cell{
+    flex:1 1 0;
+    display:flex;flex-direction:column;justify-content:center;gap:2px;
+    padding:0 12px;
+    border-left:2px solid var(--line-soft);
+  }
+  .rc-cell:first-child{border-left:none;padding-left:0;}
+  .rc-label{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-dim);}
+  .rc-value{font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--ink);letter-spacing:.5px;}
+  .rc-value.crit{font-size:19px;}
+
+  /* ===== CONTENT ===== */
+  .content{
+    flex:1 1 578px;height:578px;
+    display:flex;gap:16px;
+    padding:14px 24px 16px;
+  }
+
+  /* ===== SLATE ===== */
+  .slate{
+    width:624px;height:100%;
+    background:var(--bg-raised);
+    border:2px solid var(--line-soft);
+    padding:12px 14px;
+    display:flex;flex-direction:column;
+  }
+  .slate-head{
+    display:flex;align-items:baseline;justify-content:space-between;
+    margin-bottom:8px;
+  }
+  .slate-head .title{font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--ink);font-weight:600;}
+  .slate-head .count{font-family:var(--font-mono);font-size:12px;color:var(--ink-dim);letter-spacing:1px;}
+  .slate-cols{display:flex;justify-content:space-between;margin-bottom:2px;}
+
+  .slate-list{display:flex;flex-direction:column;gap:8px;flex:1;}
+  .row{
+    display:grid;
+    grid-template-columns:46px 1fr 70px 32px 1fr 70px 44px;
+    column-gap:8px;
+    align-items:center;
+    background:var(--bg-raised-2);
+    border:2px solid var(--line-soft);
+    padding:0 8px;
+    transition:background-color .15s ease, border-color .15s ease;
+  }
+  .row:hover{background:var(--bg-raised-3);border-color:var(--line);}
+  .row.suspended-row{opacity:.96;}
+
+  .catnum{display:flex;flex-direction:column;gap:1px;}
+  .catnum .tag{font-size:12px;letter-spacing:1px;color:var(--ink-dim);text-transform:uppercase;}
+  .catnum .num{font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--ink);}
+
+  .team-cell{display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;}
+  .team-cell .name{font-size:14px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .team-cell .name .rec{font-family:var(--font-mono);font-size:12px;color:var(--ink-dim);font-weight:400;text-transform:none;margin-left:5px;}
+  .team-cell .suspend-tag{font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:var(--disabled-text);white-space:nowrap;}
+
+  .pill{
+    height:40px;width:70px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    background:var(--bg-app);
+    border:2px solid var(--line);
+    font-family:var(--font-mono);font-size:15px;font-weight:700;color:var(--ink);
+    cursor:pointer;
+    transition:background-color .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .pill.enabled:hover{background:rgba(238,107,60,.14);border-color:var(--accent);color:var(--accent);}
+  .pill.selected{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);}
+  .pill.disabled{
+    background:var(--disabled-fill);border-color:var(--disabled-border);
+    color:var(--disabled-text);cursor:not-allowed;
+  }
+  .pill.disabled .micro{font-size:12px;letter-spacing:.5px;text-transform:uppercase;}
+
+  .plot{width:32px;height:36px;display:flex;align-items:center;justify-content:center;}
+  .plot svg{width:22px;height:32px;}
+  .plot rect.t{fill:var(--ink-dim);}
+  .plot rect.t.hi{fill:var(--accent);}
+  .plot rect.t.mute{fill:var(--disabled-border);}
+
+  .chevron{
+    width:44px;height:40px;
+    background:transparent;border:2px solid var(--line);
+    color:var(--ink-dim);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+  }
+  .chevron:hover{border-color:var(--ink-dim);color:var(--ink);}
+  .chevron svg{width:9px;height:14px;}
+
+  /* ===== SLIP ===== */
+  .slip{
+    width:336px;height:100%;
+    background:var(--bg-raised);
+    border:2px solid var(--line-soft);
+    padding:14px;
+    display:flex;flex-direction:column;
+  }
+  .slip-head{margin-bottom:10px;}
+  .slip-head .eyebrow{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-dim);}
+  .slip-head .headline{font-size:18px;letter-spacing:1px;text-transform:uppercase;color:var(--ink);font-weight:700;margin-top:2px;}
+
+  .leg{
+    position:relative;
+    height:62px;
+    background:var(--bg-raised-2);
+    border:2px solid var(--line-soft);
+    padding:8px 10px;
+    display:flex;flex-direction:column;justify-content:center;gap:3px;
+    margin-bottom:8px;
+  }
+  .leg .row1{display:flex;justify-content:space-between;align-items:flex-start;padding-right:84px;}
+  .leg .pick{font-size:14px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink);font-weight:700;font-family:var(--font-mono);}
+  .leg .meta{font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-dim);}
+  .leg .remove{
+    position:absolute;top:8px;right:10px;
+    width:80px;height:32px;
+    background:transparent;border:2px solid var(--line);
+    color:var(--ink-dim);
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    font-family:var(--font-caps);font-size:12px;letter-spacing:1px;text-transform:uppercase;
+    cursor:pointer;
+  }
+  .leg .remove:hover{border-color:var(--accent);color:var(--accent);}
+  .leg .remove svg{width:9px;height:9px;}
+
+  .combined{
+    display:flex;justify-content:space-between;align-items:baseline;
+    padding:8px 0;
+  }
+  .combined .lbl{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-dim);}
+  .combined .val{font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--accent);}
+
+  .divider{height:2px;background:var(--line);margin:2px 0 10px;}
+
+  .stake{margin-bottom:12px;}
+  .stake .lbl{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-dim);margin-bottom:4px;}
+  .stake-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .stake-row .val{font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--ink);flex:1;}
+  .stepper{
+    width:56px;height:34px;
+    background:transparent;border:2px solid var(--line);
+    color:var(--ink);font-family:var(--font-mono);font-size:13px;font-weight:700;
+    cursor:pointer;
+  }
+  .stepper:hover{border-color:var(--accent);color:var(--accent);}
+  .quick-row{display:flex;gap:8px;}
+  .quick-row button{
+    flex:1;height:34px;
+    background:transparent;border:2px solid var(--line);
+    color:var(--ink-dim);font-family:var(--font-mono);font-size:13px;font-weight:700;
+    cursor:pointer;letter-spacing:.5px;
+  }
+  .quick-row button:hover{border-color:var(--accent);color:var(--accent);}
+
+  .payout{margin-bottom:14px;}
+  .payout .lbl{font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-dim);margin-bottom:3px;}
+  .payout .val{font-family:var(--font-mono);font-size:30px;font-weight:700;color:var(--accent);letter-spacing:.5px;}
+
+  .actions{display:flex;flex-direction:column;gap:8px;margin-top:auto;}
+  .btn-primary{
+    height:44px;width:100%;
+    background:var(--accent);border:2px solid var(--accent);
+    color:var(--accent-ink);
+    font-family:var(--font-caps);font-size:16px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+    cursor:pointer;
+  }
+  .btn-primary:hover{background:#F4824F;border-color:#F4824F;}
+
+  .btn-disabled-wrap{display:flex;flex-direction:column;gap:4px;}
+  .btn-disabled{
+    height:38px;width:100%;
+    background:var(--disabled-fill);border:2px solid var(--disabled-border);
+    color:var(--disabled-text);
+    font-family:var(--font-caps);font-size:15px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+    cursor:not-allowed;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .btn-disabled svg{width:11px;height:11px;}
+  .disabled-reason{font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:var(--disabled-text);text-align:center;}
+
+  .btn-skip{
+    height:32px;width:100%;
+    background:transparent;border:2px solid var(--line);
+    color:var(--ink-dim);
+    font-family:var(--font-caps);font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
+    cursor:pointer;
+  }
+  .btn-skip:hover{border-color:var(--ink-dim);color:var(--ink);}
+  .btn-skip.confirm{border-color:var(--accent);color:var(--accent);}
+  .btn-skip.done{border-color:var(--disabled-border);color:var(--disabled-text);cursor:default;}
+  .skip-sub{height:14px;font-size:12px;letter-spacing:.3px;text-transform:uppercase;color:var(--ink-dim);text-align:center;}
+
+  /* ===== OS TASKBAR ===== */
+  .os-taskbar{
+    height:30px;flex:0 0 30px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 14px;
+    border-top:2px solid var(--line-soft);
+    background:var(--bg-app);
+    position:relative;z-index:2;
+  }
+  .tb-apps{display:flex;align-items:center;gap:8px;}
+  .tb-app{
+    display:flex;align-items:center;gap:7px;
+    height:22px;padding:0 9px;
+    border:2px solid transparent;
+  }
+  .tb-app.active{border-color:var(--line);background:var(--bg-raised-2);}
+  .tb-app svg{width:16px;height:12px;color:var(--ink-dim);}
+  .tb-app.active svg{color:var(--accent);}
+  .tb-app span{font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-dim);}
+  .tb-app.active span{color:var(--ink);}
+  .tb-app .dot{width:4px;height:4px;background:var(--accent);border-radius:50%;margin-left:2px;}
+
+  .eq rect{fill:var(--ink-dim);transform-origin:center bottom;animation:eqbeat 3.6s ease-in-out infinite;}
+  .eq .b1{animation-delay:0s;}
+  .eq .b2{animation-delay:.3s;}
+  .eq .b3{animation-delay:.6s;}
+  .eq .b4{animation-delay:.15s;}
+  @keyframes eqbeat{
+    0%,100%{transform:scaleY(1);}
+    50%{transform:scaleY(.55);}
+  }
+
+  .pulse-sweep{animation:sweep 8s linear infinite;}
+  @keyframes sweep{
+    0%{opacity:.11;}
+    50%{opacity:.20;}
+    100%{opacity:.11;}
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+<div class="artboard">
+  <div class="vignette"></div>
+
+  <!-- OS TOP BAR -->
+  <div class="os-topbar">
+    <div class="os-brand">
+      <svg viewBox="0 0 28 20"><rect x="0" y="9" width="3" height="3"/><rect x="6" y="5" width="3" height="11"/><rect x="12" y="0" width="3" height="20"/><rect x="18" y="6" width="3" height="9"/><rect x="24" y="10" width="3" height="2"/></svg>
+      <span>Lacquer</span>
+    </div>
+    <div class="os-tray">
+      <div class="icon bell-wrap" title="1 notification">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2c-3 0-4.4 2.3-4.4 5.2v2.7L4 13.5h12l-1.6-3.6V7.2C14.4 4.3 13 2 10 2z"/><rect x="8" y="15.4" width="4" height="1.8"/></svg>
+        <div class="badge">1</div>
+      </div>
+      <div class="icon" title="Signal">
+        <svg viewBox="0 0 20 14" fill="currentColor"><rect x="0" y="9" width="3" height="5"/><rect x="6" y="6" width="3" height="8"/><rect x="12" y="3" width="3" height="11"/><rect x="17" y="0" width="3" height="14" opacity=".4"/></svg>
+      </div>
+      <div class="icon" title="Battery 74%">
+        <svg viewBox="0 0 26 14" fill="none"><rect x="0.5" y="0.5" width="22" height="13" stroke="currentColor" stroke-width="1.4"/><rect x="23" y="4" width="2.5" height="6" fill="currentColor"/><rect x="2.5" y="2.5" width="14" height="9" fill="currentColor"/></svg>
+      </div>
+      <div class="os-clock">02:47</div>
+    </div>
+  </div>
+
+  <!-- APP TITLEBAR + RUN CONTEXT -->
+  <div class="header-band">
+    <svg class="bg-pulse pulse-sweep" viewBox="0 0 1024 68" preserveAspectRatio="none">
+      <rect x="20"  y="30" width="4" height="10"/><rect x="34"  y="18" width="4" height="34"/><rect x="48"  y="40" width="4" height="6"/>
+      <rect x="70"  y="24" width="4" height="22"/><rect x="84"  y="10" width="4" height="48"/><rect x="98"  y="34" width="4" height="12"/>
+      <rect x="140" y="28" width="4" height="14"/><rect x="154" y="6"  width="4" height="56"/><rect x="168" y="36" width="4" height="8"/>
+      <rect x="210" y="20" width="4" height="26"/><rect x="224" y="14" width="4" height="40"/><rect x="238" y="32" width="4" height="10"/>
+      <rect x="780" y="26" width="4" height="18"/><rect x="794" y="8"  width="4" height="52"/><rect x="808" y="34" width="4" height="10"/>
+      <rect x="850" y="22" width="4" height="24"/><rect x="864" y="14" width="4" height="40"/><rect x="878" y="38" width="4" height="6"/>
+      <rect x="920" y="18" width="4" height="32"/><rect x="934" y="30" width="4" height="14"/><rect x="948" y="10" width="4" height="48"/>
+      <rect x="980" y="26" width="4" height="18"/><rect x="994" y="34" width="4" height="10"/>
+    </svg>
+
+    <div class="app-titlebar">
+      <div class="app-brand">
+        <svg viewBox="0 0 28 20"><rect x="0" y="8" width="3" height="4"/><rect x="6" y="3" width="3" height="14"/><rect x="12" y="0" width="3" height="20"/><rect x="18" y="5" width="3" height="10"/><rect x="24" y="9" width="3" height="2"/></svg>
+        <span class="name">SureThing</span>
+        <span class="sub">Side A · Round 03</span>
+      </div>
+      <div class="winctl">
+        <button title="Minimize">–</button>
+        <button title="Maximize">▢</button>
+        <button title="Close">×</button>
+      </div>
+    </div>
+
+    <div class="run-context">
+      <div class="rc-cell"><div class="rc-label">Round</div><div class="rc-value">3 / 8</div></div>
+      <div class="rc-cell"><div class="rc-label">Bank</div><div class="rc-value crit">$1,340</div></div>
+      <div class="rc-cell"><div class="rc-label">Target</div><div class="rc-value crit">$1,900</div></div>
+      <div class="rc-cell"><div class="rc-label">Debt</div><div class="rc-value">None</div></div>
+      <div class="rc-cell"><div class="rc-label">Relics</div><div class="rc-value">2 / 5</div></div>
+      <div class="rc-cell"><div class="rc-label">Tickets</div><div class="rc-value">0 / 3</div></div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- SLATE -->
+    <div class="slate">
+      <div class="slate-head">
+        <div class="title">Slate — Side A</div>
+        <div class="count">6 Fixtures</div>
+      </div>
+
+      <div class="slate-list">
+
+        <!-- ROW 1 -->
+        <div class="row">
+          <div class="catnum"><div class="tag">Cat.</div><div class="num">01</div></div>
+          <div class="team-cell"><div class="name">Yams<span class="rec">(7-2)</span></div></div>
+          <button class="pill enabled" data-decode>−145</button>
+          <div class="plot"><svg viewBox="0 0 22 32"><rect class="t" x="0" y="14" width="3" height="10"/><rect class="t" x="6" y="4" width="3" height="24"/><rect class="t" x="12" y="18" width="3" height="6"/><rect class="t" x="18" y="8" width="3" height="18"/></svg></div>
+          <div class="team-cell"><div class="name">Startups<span class="rec">(4-5)</span></div></div>
+          <button class="pill enabled">+125</button>
+          <button class="chevron" title="Open event detail — Goals, BTTS, Corners, Cards, Players"><svg viewBox="0 0 10 16"><path d="M1 1l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+
+        <!-- ROW 2 (Bricklayers -260 SELECTED) -->
+        <div class="row">
+          <div class="catnum"><div class="tag">Cat.</div><div class="num">02</div></div>
+          <div class="team-cell"><div class="name">Mallards<span class="rec">(3-6)</span></div></div>
+          <button class="pill enabled">+210</button>
+          <div class="plot"><svg viewBox="0 0 22 32"><rect class="t" x="0" y="18" width="3" height="6"/><rect class="t" x="6" y="10" width="3" height="14"/><rect class="t hi" data-decode-target x="12" y="0" width="6" height="32"/><rect class="t" x="18" y="14" width="3" height="10"/></svg></div>
+          <div class="team-cell"><div class="name">Bricklayers<span class="rec">(8-1)</span></div></div>
+          <button class="pill enabled selected" data-decode>−260</button>
+          <button class="chevron" title="Open event detail — Goals, BTTS, Corners, Cards, Players"><svg viewBox="0 0 10 16"><path d="M1 1l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+
+        <!-- ROW 3 -->
+        <div class="row">
+          <div class="catnum"><div class="tag">Cat.</div><div class="num">03</div></div>
+          <div class="team-cell"><div class="name">Nighthawks<span class="rec">(5-4)</span></div></div>
+          <button class="pill enabled" data-decode>+135</button>
+          <div class="plot"><svg viewBox="0 0 22 32"><rect class="t" x="0" y="4" width="3" height="24"/><rect class="t" x="6" y="16" width="3" height="8"/><rect class="t" x="12" y="10" width="3" height="18"/><rect class="t" x="18" y="0" width="3" height="28"/></svg></div>
+          <div class="team-cell"><div class="name">Foundry<span class="rec">(6-3)</span></div></div>
+          <button class="pill enabled">−155</button>
+          <button class="chevron" title="Open event detail — Goals, BTTS, Corners, Cards, Players"><svg viewBox="0 0 10 16"><path d="M1 1l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+
+        <!-- ROW 4 (Longhaulers +180 SELECTED) -->
+        <div class="row">
+          <div class="catnum"><div class="tag">Cat.</div><div class="num">04</div></div>
+          <div class="team-cell"><div class="name">Longhaulers<span class="rec">(6-3)</span></div></div>
+          <button class="pill enabled selected" data-decode>+180</button>
+          <div class="plot"><svg viewBox="0 0 22 32"><rect class="t hi" data-decode-target x="0" y="2" width="6" height="28"/><rect class="t" x="8" y="16" width="3" height="10"/><rect class="t" x="14" y="8" width="3" height="18"/><rect class="t" x="20" y="14" width="2" height="12"/></svg></div>
+          <div class="team-cell"><div class="name">Tidewater<span class="rec">(2-7)</span></div></div>
+          <button class="pill enabled">−215</button>
+          <button class="chevron" title="Open event detail — Goals, BTTS, Corners, Cards, Players"><svg viewBox="0 0 10 16"><path d="M1 1l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+
+        <!-- ROW 5 (pick'em — symmetric plot) -->
+        <div class="row">
+          <div class="catnum"><div class="tag">Cat.</div><div class="num">05</div></div>
+          <div class="team-cell"><div class="name">Saltmen<span class="rec">(4-5)</span></div></div>
+          <button class="pill enabled" data-decode>−110</button>
+          <div class="plot"><svg viewBox="0 0 22 32"><rect class="t" x="0" y="8" width="3" height="16"/><rect class="t" x="6" y="8" width="3" height="16"/><rect class="t" x="12" y="8" width="3" height="16"/><rect class="t" x="18" y="8" width="3" height="16"/></svg></div>
+          <div class="team-cell"><div class="name">Junction<span class="rec">(5-4)</span></div></div>
+          <button class="pill enabled">−110</button>
+          <button class="chevron" title="Open event detail — Goals, BTTS, Corners, Cards, Players"><svg viewBox="0 0 10 16"><path d="M1 1l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+
+        <!-- ROW 6 — both sides open. v0 has no suspension and no limiting (PRD §6). -->
+        <div class="row">
+          <div class="catnum"><div class="tag">Cat.</div><div class="num">06</div></div>
+          <div class="team-cell"><div class="name">Kestrels<span class="rec">(8-1)</span></div></div>
+          <button class="pill enabled" data-decode>−300</button>
+          <div class="plot"><svg viewBox="0 0 22 32"><rect class="t mute" x="0" y="12" width="3" height="12"/><rect class="t mute" x="6" y="2" width="3" height="28"/><rect class="t mute" x="12" y="18" width="3" height="6"/><rect class="t mute" x="18" y="10" width="3" height="16"/></svg></div>
+          <div class="team-cell">
+            <div class="name">Pressmen<span class="rec">(3-6)</span></div>
+          </div>
+          <button class="pill enabled" data-decode>+240</button>
+          <button class="chevron" title="Open event detail — Goals, BTTS, Corners, Cards, Players"><svg viewBox="0 0 10 16"><path d="M1 1l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SLIP -->
+    <div class="slip">
+      <div class="slip-head">
+        <div class="eyebrow">Working Slip</div>
+        <div class="headline">2 Selections</div>
+      </div>
+
+      <div class="leg">
+        <div class="row1">
+          <div>
+            <div class="pick">Bricklayers −260</div>
+            <div class="meta">Moneyline · Cat.02</div>
+          </div>
+        </div>
+        <button class="remove" title="Remove this selection">
+          <svg viewBox="0 0 14 14"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          Remove
+        </button>
+      </div>
+
+      <div class="leg">
+        <div class="row1">
+          <div>
+            <div class="pick">Longhaulers +180</div>
+            <div class="meta">Moneyline · Cat.04</div>
+          </div>
+        </div>
+        <button class="remove" title="Remove this selection">
+          <svg viewBox="0 0 14 14"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          Remove
+        </button>
+      </div>
+
+      <div class="combined">
+        <div class="lbl">Combined Odds</div>
+        <div class="val">+259</div>
+      </div>
+      <div class="divider"></div>
+
+      <div class="stake">
+        <div class="lbl">Stake</div>
+        <div class="stake-row">
+          <button class="stepper" title="Decrease stake by $10">−$10</button>
+          <div class="val">$200</div>
+          <button class="stepper" title="Increase stake by $10">+$10</button>
+        </div>
+        <div class="quick-row">
+          <button>10%</button>
+          <button>25%</button>
+          <button>50%</button>
+          <button>MAX</button>
+        </div>
+      </div>
+
+      <div class="payout">
+        <div class="lbl">Potential Payout</div>
+        <div class="val">$718</div>
+      </div>
+
+      <div class="actions">
+        <button class="btn-primary">Place Ticket</button>
+
+        <div class="btn-disabled-wrap">
+          <button class="btn-disabled" disabled>
+            <svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.6"/><path d="M2.5 2.5l9 9" stroke="currentColor" stroke-width="1.6"/></svg>
+            Lock It In
+          </button>
+          <div class="disabled-reason">Place or clear this working slip</div>
+        </div>
+
+        <button class="btn-skip" id="skipRound"><span class="label">Skip Round</span></button>
+        <div class="skip-sub" id="skipSub"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- OS TASKBAR -->
+  <div class="os-taskbar">
+    <div class="tb-apps">
+      <div class="tb-app active">
+        <svg viewBox="0 0 20 14"><rect x="0" y="6" width="2.5" height="3"/><rect x="4.5" y="2" width="2.5" height="10"/><rect x="9" y="0" width="2.5" height="14"/><rect x="13.5" y="4" width="2.5" height="6"/></svg>
+        <span>SureThing</span>
+        <div class="dot"></div>
+      </div>
+      <div class="tb-app">
+        <svg class="eq" viewBox="0 0 20 14"><rect class="eqb b1" x="0" y="6" width="3" height="8"/><rect class="eqb b2" x="6" y="2" width="3" height="12"/><rect class="eqb b3" x="12" y="5" width="3" height="9"/><rect class="eqb b4" x="18" y="8" width="3" height="6"/></svg>
+        <span>Stylus — Side B · Trk 4</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+  // Selection: choosing either price in a matchup replaces any prior pick in that row —
+  // never blocked, never disabled. Every price on this board is open to selection.
+  document.querySelectorAll('.row').forEach(function(row){
+    var pills = row.querySelectorAll('.pill.enabled');
+    var decodeTarget = row.querySelector('[data-decode-target]');
+    pills.forEach(function(p){
+      p.addEventListener('click', function(){
+        pills.forEach(function(sib){ sib.classList.remove('selected'); });
+        p.classList.add('selected');
+        if(decodeTarget){ decodeTarget.classList.add('hi'); }
+      });
+    });
+  });
+
+  // Skip Round: two-step confirmation, in place, no navigation away.
+  (function(){
+    var btn = document.getElementById('skipRound');
+    var label = btn.querySelector('.label');
+    var sub = document.getElementById('skipSub');
+    var state = 'idle', timer;
+
+    function reset(){
+      state = 'idle';
+      btn.classList.remove('confirm','done');
+      label.textContent = 'Skip Round';
+      sub.textContent = '';
+    }
+    btn.addEventListener('click', function(){
+      clearTimeout(timer);
+      if(state === 'idle'){
+        state = 'confirm';
+        btn.classList.add('confirm');
+        label.textContent = 'Confirm — Skip Round?';
+        sub.textContent = 'Tap again to confirm';
+        timer = setTimeout(reset, 4000);
+      } else if(state === 'confirm'){
+        state = 'done';
+        btn.classList.remove('confirm');
+        btn.classList.add('done');
+        label.textContent = 'Round Skipped';
+        sub.textContent = 'Forfeits all placed tickets';
+        timer = setTimeout(reset, 1800);
+      }
+    });
+  })();
+</script>
+</body>
+</html>
+<!--
+LOUD STATE — the sweat, in this world's own grammar.
+
+A leg resolves and its catalogue row does not flash the whole board — one pulse line
+fires a fast traverse along its full length in the stamped-orange accent, like a needle
+crossing a groove, while every other row stays matte and inert. That row's catalogue
+number (e.g. "02") flares to full saturation for a beat, then settles back to ink. Multiple
+simultaneous resolutions stagger their traverses rather than firing together, so one hot
+line is legible at a time. The payout numeral fast-counts to its new value — literal digits,
+no slot-machine roll — while the rest of the sleeve holds its calm, restrained register.
+-->

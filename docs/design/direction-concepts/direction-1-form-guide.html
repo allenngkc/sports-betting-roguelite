@@ -1,0 +1,480 @@
+<!--
+  DIRECTION CONTRACT — 1. THE ANNOTATED FORM GUIDE
+
+  THESIS: You do not tap a button, you mark up the form. The slate is a dense betting paper the
+  occupant is working over at 2 a.m., and every pick is a mark he leaves on it — selection is
+  annotation, drawn in biro, not a pill that lights up in an accent colour. It refuses the
+  sportsbook default outright: no cards, no drawer, no accent-on-navy.
+
+  OWN-WORLD: A cheap document reader with night mode on. Warm lifted olive-black ground (#16160F,
+  never pure black). The house's document is inverted toner — bone agate type on ruled columns,
+  visible grain, registration offset, dust. Over it sit HIS marks: ballpoint blue for anything he
+  chose, wax-pencil amber for money and action, oxide red reserved solely for the house's own
+  stamp. The right column is the margin, and the margin is his.
+
+  STORY: The house printed the page. He reads it, circles two prices, tallies the return in the
+  margin, and commits. The document never changes; only his marks accumulate.
+
+  FIRST VIEWPORT: His machine's rail across the top, then section tabs, then the sheet's masthead
+  carrying round and bank. The form owns the left 700px as six ruled two-line entries; the margin
+  holds the right 324px in ink. PLACE TICKET sits at the margin's foot as a solid amber bar.
+
+  FORM: Grounded candidate 4 of 7, assigned by the roll. Production face: Bell Centennial —
+  Matthew Carter's telephone-directory face, engineered with ink traps for legibility at tiny
+  sizes on cheap absorbent paper, which is exactly this document's problem.
+-->
+<title>SureThing — Direction 1: The Annotated Form Guide</title>
+<style>
+  :root{
+    /* ground — lifted, warm, olive-adjacent. Nothing on this screen is #000. */
+    --ground:#16160F; --ground-2:#1C1C13; --ground-3:#232319;
+    --rule:#3C3C2C; --rule-soft:#2C2C20;
+    /* the house's toner, inverted */
+    --toner:#D9D4C5; --toner-2:#9C9888; --toner-3:#6E6B5E;
+    /* his marks */
+    --biro:#5E86B8; --biro-deep:#3F6996;
+    --wax:#D9A441; --wax-lit:#F0C066; --wax-deep:#8A6620;
+    /* the house's own mark, and nothing else */
+    --stamp:#B4483A;
+    --data:"Franklin Gothic Book","Franklin Gothic Medium","Segoe UI",system-ui,sans-serif;
+    --head:"Franklin Gothic Demi Cond","Haettenschweiler","Arial Narrow",var(--data);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:#0A0B08;min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:24px;font-family:var(--data);-webkit-font-smoothing:antialiased;
+  }
+
+  .screen{
+    width:1024px;height:704px;position:relative;overflow:hidden;
+    background:var(--ground);color:var(--toner);
+    box-shadow:0 24px 64px rgba(0,0,0,.75);
+  }
+  /* toner grain + dust — the whole surface sits under it */
+  .screen::after{
+    content:"";position:absolute;inset:0;pointer-events:none;z-index:9;opacity:.05;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ── his machine's rail ─────────────────────────────────────────── */
+  .rail{
+    height:34px;background:var(--ground-3);border-bottom:1px solid var(--rule);
+    display:flex;align-items:center;padding:0 11px;gap:11px;position:relative;z-index:2;
+  }
+  .rail .mk{display:flex;align-items:center;gap:7px}
+  .rail .mk .sq{width:11px;height:11px;background:var(--toner-3)}
+  .rail .mk b{font-size:12px;letter-spacing:.13em;font-weight:600;color:var(--toner-2)}
+  .rail .sticker{
+    font-size:12px;letter-spacing:.09em;padding:2px 6px;color:var(--biro);
+    border:1px solid var(--biro-deep);transform:rotate(-.6deg);
+  }
+  .rail .right{margin-left:auto;display:flex;align-items:center;gap:13px;
+    font-size:12px;letter-spacing:.1em;color:var(--toner-2)}
+  .rail .batt{width:20px;height:9px;border:1px solid var(--toner-3);position:relative}
+  .rail .batt::before{content:"";position:absolute;inset:1.5px;width:5px;background:var(--stamp)}
+
+  /* ── section tabs ───────────────────────────────────────────────── */
+  .tabs{
+    height:38px;display:flex;align-items:flex-end;gap:2px;padding:0 14px;
+    background:var(--ground-2);border-bottom:2px solid var(--rule);position:relative;z-index:2;
+  }
+  .tab{
+    height:27px;padding:0 15px;display:flex;align-items:center;background:transparent;
+    border:1px solid var(--rule-soft);border-bottom:0;color:var(--toner-3);
+    font-size:13px;letter-spacing:.11em;font-family:var(--data);cursor:pointer;
+  }
+  .tab:hover{color:var(--toner-2)}
+  .tab.on{background:var(--ground);color:var(--toner);border-color:var(--rule);
+    box-shadow:0 2px 0 var(--ground)}
+  .tabs .pg{margin-left:auto;align-self:center;font-size:13px;letter-spacing:.12em;color:var(--toner-3)}
+
+  /* ── masthead ───────────────────────────────────────────────────── */
+  .mast{
+    height:68px;display:flex;align-items:center;padding:0 16px;gap:18px;
+    border-bottom:2px solid var(--rule);position:relative;z-index:2;
+  }
+  .mast .brand{display:flex;flex-direction:column;gap:2px;padding-right:18px;
+    border-right:1px solid var(--rule)}
+  .mast .brand h1{font-family:var(--head);font-size:25px;letter-spacing:.03em;color:var(--toner);
+    line-height:1;text-transform:uppercase}
+  .mast .brand .dl{font-size:13px;letter-spacing:.11em;color:var(--toner-3)}
+  .fig{display:flex;flex-direction:column;gap:3px}
+  .fig .k{font-size:13px;letter-spacing:.12em;color:var(--toner-3)}
+  .fig .v{font-family:var(--head);font-size:21px;letter-spacing:.02em;color:var(--toner);line-height:1}
+  .fig .v.wax{color:var(--wax)}
+  .mast .note{
+    margin-left:auto;max-width:212px;font-size:13px;line-height:1.45;letter-spacing:.02em;
+    color:var(--toner-3);border-left:2px solid var(--rule);padding-left:11px;
+  }
+
+  /* ── body: sheet + margin ───────────────────────────────────────── */
+  .body{height:530px;display:flex;position:relative;z-index:2}
+
+  .sheet{width:700px;border-right:2px solid var(--rule);display:flex;flex-direction:column}
+  .colhead{
+    height:26px;display:flex;align-items:center;padding:0 14px;
+    border-bottom:1px solid var(--rule);background:var(--ground-2);
+  }
+  .colhead .c{font-size:13px;letter-spacing:.12em;color:var(--toner-3)}
+  .c-no{width:30px}
+  .c-team{flex:1}
+  .c-price{width:112px;text-align:center}
+  .c-mkt{width:78px;text-align:right}
+
+  .entries{flex:1;display:flex;flex-direction:column}
+  .entry{
+    height:78px;display:flex;align-items:center;padding:0 14px;
+    border-bottom:1px solid var(--rule-soft);
+  }
+  .entry:last-child{border-bottom:0}
+  .entry.marked{background:linear-gradient(90deg,rgba(94,134,184,.07),transparent 70%)}
+
+  .e-no{width:30px;font-family:var(--head);font-size:15px;color:var(--toner-3)}
+  .e-teams{flex:1;display:flex;flex-direction:column;gap:8px;min-width:0}
+  .ln{display:flex;align-items:center;gap:9px;height:30px}
+  .nm{font-family:var(--head);font-size:19px;letter-spacing:.03em;color:var(--toner);
+    text-transform:uppercase;white-space:nowrap}
+  .rec{font-size:13px;letter-spacing:.08em;color:var(--toner-3)}
+
+  .e-prices{width:112px;display:flex;flex-direction:column;gap:8px;align-items:center}
+
+  /* a price is a printed figure. Choosing it means circling it. */
+  .pr{
+    position:relative;width:96px;height:30px;display:flex;align-items:center;justify-content:center;
+    background:transparent;border:0;cursor:pointer;font-family:var(--head);font-size:19px;
+    letter-spacing:.03em;color:var(--toner);
+  }
+  .pr:hover{color:var(--wax-lit)}
+  .pr:focus-visible{outline:2px solid var(--wax);outline-offset:1px}
+  /* The ring is a real drawn asset: a white alpha sprite, tinted by the ink
+     colour exactly as Unity tints it via Image.color. Generated by
+     tools/art/make-biro-rings.py — never a CSS approximation. */
+  .pr .ring{
+    position:absolute;left:-8px;top:-8px;width:112px;height:46px;pointer-events:none;
+    background-color:var(--biro);
+    -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+    -webkit-mask-size:112px 46px;mask-size:112px 46px;
+  }
+  .pr .ring.v-a{-webkit-mask-image:url("assets/ring-price-a@2x.png");
+                mask-image:url("assets/ring-price-a@2x.png")}
+  .pr .ring.v-b{-webkit-mask-image:url("assets/ring-price-b@2x.png");
+                mask-image:url("assets/ring-price-b@2x.png")}
+  .pr.picked{color:var(--toner)}
+
+  /* the other side of a marked entry: selectable, and it SWAPS the mark */
+  /* Not disabled — still selectable, and it swaps the mark on this matchup.
+     The glyph carries the meaning so it is never colour alone, and it sits inline
+     rather than as a sub-13px caption underneath. */
+  .pr.swaps{color:var(--toner-2)}
+  .pr.swaps .sg{font-family:var(--data);font-size:15px;margin-right:5px;color:var(--biro)}
+  .pr.swaps u{text-decoration:underline;text-decoration-style:dashed;
+    text-decoration-color:var(--biro-deep);text-underline-offset:5px}
+  .pr.swaps:hover{color:var(--toner)}
+
+  .e-mkt{width:78px;display:flex;justify-content:flex-end}
+  .mkt{
+    width:74px;height:44px;background:transparent;border:1px solid var(--rule);
+    color:var(--toner-2);cursor:pointer;font-family:var(--data);font-size:13px;
+    letter-spacing:.05em;display:flex;align-items:center;
+    justify-content:center;gap:4px;
+  }
+  .mkt i{font-style:normal;font-size:15px;line-height:1;color:var(--toner-2)}
+  .mkt:hover{border-color:var(--toner-3);color:var(--toner)}
+  .mkt:focus-visible{outline:2px solid var(--wax);outline-offset:1px}
+
+  /* ── the margin — his ───────────────────────────────────────────── */
+  .margin{
+    width:324px;display:flex;flex-direction:column;padding:0 14px;
+    background:
+      repeating-linear-gradient(180deg,transparent 0 25px,var(--rule-soft) 25px 26px);
+  }
+  .m-head{padding:12px 0 9px;border-bottom:2px solid var(--biro-deep);display:flex;align-items:baseline}
+  .m-head h2{font-family:var(--head);font-size:16px;letter-spacing:.15em;color:var(--biro);
+    text-transform:uppercase}
+  .m-head .n{margin-left:auto;font-size:13px;letter-spacing:.1em;color:var(--toner-2)}
+
+  .m-legs{padding-top:4px}
+  .m-leg{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px dotted var(--rule)}
+  .m-leg .tick{width:15px;flex:none;color:var(--biro);font-size:15px;line-height:1}
+  .m-leg .lb{flex:1;min-width:0}
+  .m-leg .l1{display:flex;align-items:baseline;gap:7px}
+  .m-leg .lt{font-family:var(--head);font-size:16px;color:var(--toner);text-transform:uppercase}
+  .m-leg .lp{margin-left:auto;font-family:var(--head);font-size:16px;color:var(--toner)}
+  .m-leg .l2{font-size:13px;letter-spacing:.08em;color:var(--toner-3);margin-top:3px}
+  .m-leg .x{
+    width:60px;height:32px;flex:none;background:transparent;border:1px solid var(--rule);
+    color:var(--toner-3);font-size:13px;letter-spacing:.06em;cursor:pointer;font-family:var(--data);
+  }
+  .m-leg .x:hover{border-color:var(--stamp);color:var(--stamp)}
+  .m-leg .x:focus-visible{outline:2px solid var(--wax);outline-offset:1px}
+
+  .m-row{display:flex;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--rule)}
+  .m-row .k{font-size:13px;letter-spacing:.12em;color:var(--toner-3)}
+  .m-row .v{margin-left:auto;font-family:var(--head);font-size:18px;color:var(--toner)}
+
+  .m-stake{padding:10px 0 0}
+  .m-stake .top{display:flex;align-items:baseline}
+  .m-stake .k{font-size:13px;letter-spacing:.12em;color:var(--toner-3)}
+  .m-stake .v{margin-left:auto;font-family:var(--head);font-size:26px;color:var(--toner);line-height:1}
+  .q{display:flex;gap:4px;margin-top:8px}
+  .q button{
+    flex:1;height:32px;background:transparent;border:1px solid var(--rule);color:var(--toner-2);
+    font-size:13px;letter-spacing:.03em;cursor:pointer;font-family:var(--data);
+  }
+  .q button:hover{border-color:var(--biro);color:var(--biro)}
+  .q button:focus-visible{outline:2px solid var(--wax);outline-offset:1px}
+  .n2{display:flex;gap:4px;margin-top:4px}
+  .n2 button{
+    flex:1;height:32px;background:var(--ground-3);border:1px solid var(--rule);color:var(--toner);
+    font-family:var(--head);font-size:14px;cursor:pointer;
+  }
+  .n2 button:hover{border-color:var(--biro);color:var(--biro)}
+  .n2 button:focus-visible{outline:2px solid var(--wax);outline-offset:1px}
+
+  /* money gets the wax pencil */
+  .m-pay{margin-top:10px;padding:9px 0 10px;border-top:1px solid var(--rule);position:relative}
+  .m-pay .k{font-size:13px;letter-spacing:.12em;color:var(--toner-3)}
+  .m-pay .v{
+    font-family:var(--head);font-size:31px;color:var(--wax);line-height:1.1;margin-top:2px;
+    display:inline-block;position:relative;
+  }
+  .m-pay .v::after{
+    content:"";position:absolute;left:-3px;right:-5px;bottom:-2px;height:6px;
+    background:var(--wax);opacity:.26;transform:rotate(-.5deg);
+  }
+
+  .m-acts{margin-top:auto;padding-bottom:13px;display:flex;flex-direction:column;gap:6px}
+  .place{
+    height:44px;border:0;cursor:pointer;background:var(--wax);color:#1A1305;
+    font-family:var(--head);font-size:17px;letter-spacing:.14em;text-transform:uppercase;
+    box-shadow:0 2px 0 var(--wax-deep);
+  }
+  .place:hover{background:var(--wax-lit)}
+  .place:active{transform:translateY(2px);box-shadow:none}
+  .place:focus-visible{outline:2px solid var(--toner);outline-offset:2px}
+
+  .lock{
+    height:52px;border:1px solid var(--rule);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:2px;cursor:not-allowed;background:transparent;
+  }
+  .lock b{font-family:var(--head);font-size:15px;letter-spacing:.14em;color:var(--toner-3);
+    font-weight:400;text-transform:uppercase}
+  .lock small{font-size:13px;letter-spacing:.04em;color:var(--stamp);
+    border:1px solid var(--stamp);padding:1px 7px}
+
+  .skip{
+    height:34px;background:transparent;border:1px dashed var(--rule);color:var(--toner-3);
+    font-size:13px;letter-spacing:.08em;cursor:pointer;font-family:var(--data);
+  }
+  .skip:hover{border-color:var(--stamp);color:var(--stamp);border-style:solid}
+  .skip:focus-visible{outline:2px solid var(--wax);outline-offset:1px}
+
+  /* ── tray ───────────────────────────────────────────────────────── */
+  .tray{
+    height:34px;background:var(--ground-3);border-top:1px solid var(--rule);
+    display:flex;align-items:center;padding:0 11px;gap:6px;position:relative;z-index:2;
+  }
+  .ap{
+    height:22px;padding:0 10px;display:flex;align-items:center;gap:6px;font-size:12px;
+    letter-spacing:.09em;color:var(--toner-3);border:1px solid var(--rule-soft);
+  }
+  .ap.on{color:var(--toner);border-color:var(--rule);background:var(--ground)}
+  .ap .d{width:5px;height:5px;background:var(--toner-3)}
+  .ap.on .d{background:var(--wax)}
+  .ap .b{background:var(--stamp);color:var(--toner);font-size:12px;padding:0 5px}
+  .tray .tm{margin-left:auto;font-size:12px;letter-spacing:.13em;color:var(--toner-3);
+    display:flex;gap:14px}
+</style>
+
+<div class="screen">
+
+  <div class="rail">
+    <div class="mk"><div class="sq"></div><b>NOTEBOOK</b></div>
+    <div class="sticker">property of nobody</div>
+    <div class="right"><span>02:47</span><div class="batt"></div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on">FORM</button>
+    <button class="tab">ENTRY</button>
+    <button class="tab">MY BETS</button>
+    <button class="tab">REWARDS</button>
+    <div class="pg">SHEET 1 OF 1</div>
+  </div>
+
+  <div class="mast">
+    <div class="brand">
+      <h1>SureThing Form</h1>
+      <div class="dl">ROUND 3 OF 8 · SEED 8F3K-22 · PRICES FINAL</div>
+    </div>
+    <div class="fig"><div class="k">BANK</div><div class="v">$1,340</div></div>
+    <div class="fig"><div class="k">TARGET</div><div class="v wax">$1,900</div></div>
+    <div class="fig"><div class="k">RELICS</div><div class="v">2/5</div></div>
+    <div class="fig"><div class="k">TICKETS</div><div class="v">0/3</div></div>
+    <div class="note">Prices are final. Nothing you do moves them.</div>
+  </div>
+
+  <div class="body">
+
+    <!-- THE HOUSE'S DOCUMENT -->
+    <div class="sheet">
+      <div class="colhead">
+        <div class="c c-no">NO.</div>
+        <div class="c c-team">MATCHUP · SEASON RECORD</div>
+        <div class="c c-price">MONEYLINE</div>
+        <div class="c c-mkt">MORE</div>
+      </div>
+      <div class="entries">
+
+        <div class="entry">
+          <div class="e-no">01</div>
+          <div class="e-teams">
+            <div class="ln"><div class="nm">Yams</div><div class="rec">7-2</div></div>
+            <div class="ln"><div class="nm">Startups</div><div class="rec">4-5</div></div>
+          </div>
+          <div class="e-prices">
+            <button class="pr">-145</button>
+            <button class="pr">+125</button>
+          </div>
+          <div class="e-mkt"><button class="mkt">MORE<i>›</i></button></div>
+        </div>
+
+        <div class="entry marked">
+          <div class="e-no">02</div>
+          <div class="e-teams">
+            <div class="ln"><div class="nm">Mallards</div><div class="rec">3-6</div></div>
+            <div class="ln"><div class="nm">Bricklayers</div><div class="rec">8-1</div></div>
+          </div>
+          <div class="e-prices">
+            <button class="pr swaps" title="Marking this swaps your Bricklayers -260 mark"><span class="sg">⇄</span><u>+210</u></button>
+            <button class="pr picked">-260<span class="ring v-a" aria-hidden="true"></span></button>
+          </div>
+          <div class="e-mkt"><button class="mkt">MORE<i>›</i></button></div>
+        </div>
+
+        <div class="entry">
+          <div class="e-no">03</div>
+          <div class="e-teams">
+            <div class="ln"><div class="nm">Nighthawks</div><div class="rec">5-4</div></div>
+            <div class="ln"><div class="nm">Foundry</div><div class="rec">6-3</div></div>
+          </div>
+          <div class="e-prices">
+            <button class="pr">+135</button>
+            <button class="pr">-155</button>
+          </div>
+          <div class="e-mkt"><button class="mkt">MORE<i>›</i></button></div>
+        </div>
+
+        <div class="entry marked">
+          <div class="e-no">04</div>
+          <div class="e-teams">
+            <div class="ln"><div class="nm">Longhaulers</div><div class="rec">6-3</div></div>
+            <div class="ln"><div class="nm">Tidewater</div><div class="rec">2-7</div></div>
+          </div>
+          <div class="e-prices">
+            <button class="pr picked">+180<span class="ring v-b" aria-hidden="true"></span></button>
+            <button class="pr swaps" title="Marking this swaps your Longhaulers +180 mark"><span class="sg">⇄</span><u>-215</u></button>
+          </div>
+          <div class="e-mkt"><button class="mkt">MORE<i>›</i></button></div>
+        </div>
+
+        <div class="entry">
+          <div class="e-no">05</div>
+          <div class="e-teams">
+            <div class="ln"><div class="nm">Saltmen</div><div class="rec">4-5</div></div>
+            <div class="ln"><div class="nm">Junction</div><div class="rec">5-4</div></div>
+          </div>
+          <div class="e-prices">
+            <button class="pr">-110</button>
+            <button class="pr">-110</button>
+          </div>
+          <div class="e-mkt"><button class="mkt">MORE<i>›</i></button></div>
+        </div>
+
+        <div class="entry">
+          <div class="e-no">06</div>
+          <div class="e-teams">
+            <div class="ln"><div class="nm">Kestrels</div><div class="rec">8-1</div></div>
+            <div class="ln"><div class="nm">Pressmen</div><div class="rec">3-6</div></div>
+          </div>
+          <div class="e-prices">
+            <button class="pr">-300</button>
+            <button class="pr">+240</button>
+          </div>
+          <div class="e-mkt"><button class="mkt">MORE<i>›</i></button></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- HIS MARGIN -->
+    <div class="margin">
+      <div class="m-head"><h2>My Marks</h2><div class="n">2 SELECTIONS</div></div>
+
+      <div class="m-legs">
+        <div class="m-leg">
+          <div class="tick">✓</div>
+          <div class="lb">
+            <div class="l1"><div class="lt">Bricklayers</div><div class="lp">-260</div></div>
+            <div class="l2">MONEYLINE · ENTRY 02</div>
+          </div>
+          <button class="x">RUB OUT</button>
+        </div>
+        <div class="m-leg">
+          <div class="tick">✓</div>
+          <div class="lb">
+            <div class="l1"><div class="lt">Longhaulers</div><div class="lp">+180</div></div>
+            <div class="l2">MONEYLINE · ENTRY 04</div>
+          </div>
+          <button class="x">RUB OUT</button>
+        </div>
+      </div>
+
+      <div class="m-row"><div class="k">COMBINED</div><div class="v">+259</div></div>
+
+      <div class="m-stake">
+        <div class="top"><div class="k">STAKE</div><div class="v">$200</div></div>
+        <div class="q"><button>10%</button><button>25%</button><button>50%</button><button>MAX</button></div>
+        <div class="n2"><button>− $10</button><button>+ $10</button></div>
+      </div>
+
+      <div class="m-pay">
+        <div class="k">POTENTIAL PAYOUT</div>
+        <div class="v">$718</div>
+      </div>
+
+      <div class="m-acts">
+        <button class="place">Place Ticket</button>
+        <div class="lock">
+          <b>Lock It In</b>
+          <small>PLACE OR CLEAR THESE MARKS</small>
+        </div>
+        <button class="skip">SKIP ROUND — PRESS TWICE</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="tray">
+    <div class="ap on"><div class="d"></div>SURETHING</div>
+    <div class="ap"><div class="d"></div>LEDGER</div>
+    <div class="ap"><div class="d"></div>MESSAGES <span class="b">1</span></div>
+    <div class="tm"><span>DISK 61% FULL</span><span>NO UPDATES AVAILABLE</span></div>
+  </div>
+
+</div>
+
+<!--
+  LOUD REGISTER — what the sweat looks like in this world
+
+  The document stops being his to mark and starts being marked AT him. As each leg resolves the
+  house's hand comes down on the sheet: a dead leg gets struck through in oxide and the entry
+  dims toward the ground; a won leg gets its figure filled in wax amber and the running return
+  in the margin is crossed out and rewritten higher, over and over, in the same ink. The margin
+  fills up. Motion is continuous and hand-paced — ink laid down, not panels flipping — which is
+  deliberately the opposite of the TV's quantised refresh in the same room.
+
+  DIEGESIS NOTE: designed for the unified grade. The ground is #16160F, lifted well clear of
+  black so the room's shadows stay darker than the screen; the grain layer above is the
+  document's own toner, and the post-process bloom and haze sit on top of it.
+-->
