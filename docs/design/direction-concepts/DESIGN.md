@@ -1,7 +1,7 @@
-# SureThing — Direction 1 UGUI design contract
+# SureThing — Approved Direction — The Annotated Form Guide
 
 > **Status:** authoritative pre-implementation contract for the SureThing laptop and its fictional OS.
-> **Chosen world:** Direction 1, *The Annotated Form Guide*.
+> **Chosen world:** Approved Direction — *The Annotated Form Guide*.
 > **Runtime:** Unity UGUI, fixed 1024 × 704 world-space laptop canvas.
 
 ## Overview
@@ -18,10 +18,10 @@ Resolve design questions in this order:
 
 1. [PRODUCT.md](../../../PRODUCT.md): product truth, surface ownership, accessibility, and scope.
 2. [SHARED-SPEC.md](SHARED-SPEC.md): fixed artboard content, states, and legibility.
-3. This contract, [element-kit.html](element-kit.html), and [direction-1-form-guide.html](direction-1-form-guide.html): Direction 1 implementation. Where the shared artboard asks for a state and the element kit defines that component's behavior, the element kit is the component-specific resolution.
+3. This contract, [element-kit.html](element-kit.html), and [direction-1-form-guide.html](direction-1-form-guide.html): approved implementation reference. Where the shared artboard asks for a state and the element kit defines that component's behavior, the element kit is the component-specific resolution.
 4. [ASSETS.md](assets/ASSETS.md): sprite generation and Unity import.
 
-[INDEX.html](INDEX.html) records Direction 1 as chosen. Direction 2 is comparison evidence only. The earlier violet package in `../surething-ui-revamp/` remains evidence for information architecture and behavior but is superseded as visual authority. Round 1 is rejected in full.
+[INDEX.html](INDEX.html) records **Approved Direction — The Annotated Form Guide**. **Rejected comparison — The Catalogue Sleeve** remains comparison evidence only. The earlier violet package in `../surething-ui-revamp/` remains evidence for information architecture and behavior but is superseded as visual authority. Earlier discarded explorations must not be revived.
 
 **The ownership rule.** Laptop owns slate, markets, working slip, stake, staging, lock, shop, and placed tickets. TV owns unrevealed drama. MY BETS renders only `TvSweatScreen.RevealedView`; it never derives engine truth or reveals score, clock, probability, or outcomes ahead of TV.
 
@@ -121,7 +121,7 @@ The Round 3 values in `SHARED-SPEC.md` prove density only; runtime figures remai
 
 ### Surface mappings
 
-| Product state | Direction 1 mapping | Authoritative data |
+| Product state | Form-guide mapping | Authoritative data |
 | --- | --- | --- |
 | Event detail / ENTRY | Preserve rail, tabs, masthead, matchup identity, working margin. Replace only form body with Goals, BTTS, Corners, Cards, Players. | Slate and `BetslipModel`. |
 | Staged ticket / ENTRY | Clear working marks; show placed ticket as dated/numbered form receipt with literal stake, odds, payout, legs. Enable LOCK only with ≥1 staged ticket and empty working marks. | `Run.Tickets`; no UI ticket model. |
@@ -358,7 +358,7 @@ No TV-style quantized refresh, panel flips, confetti, pulse loops, brightness-on
 
 ### Don't
 
-- **Don't** revive Direction 2, Round 1, violet ledger, modern sportsbook shell, retro-terminal costume, cyberpunk neon-on-black, or institutional TV vocabulary.
+- **Don't** revive Rejected comparison — The Catalogue Sleeve, earlier discarded explorations, violet ledger, modern sportsbook shell, retro-terminal costume, cyberpunk neon-on-black, or institutional TV vocabulary.
 - **Don't** use rounded odds pills, card grids, floating betslip drawer, promo rails, real operator branding/copy/marks, or pure black.
 - **Don't** use color-only status, sub-floor product text, hairline essential strokes, or low-opacity facts.
 - **Don't** re-derive odds, probability, outcome, payout, or disabled truth in UI.

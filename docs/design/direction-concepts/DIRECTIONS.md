@@ -1,8 +1,8 @@
-# Direction round 2 — SureThing UI redesign
+# Approved Direction — The Annotated Form Guide
 
 Date: 2026-07-28 · Seed key `d1441f6d` · Mode: **Operate**
 
-Round 1 (`6c7a4950`) was **dumped in full** by Allen on 2026-07-28. Its three directions — Tote
+Earlier discarded explorations (`6c7a4950`) were **dumped in full** by Allen on 2026-07-28. Their three directions — Tote
 Hall, Broadcast Alert, Night Board — were derived before the room/TV workstream published its
 approved world, and four of that round's seven candidate worlds were institutional. The pool was
 half-invalid for the real brief, so the round was discarded rather than salvaged.
@@ -19,9 +19,9 @@ The TV is a hardened industrial display bolted into the wall: steel housing, riv
 equipment code, conduit continuous with the room's pipe runs. Anything on the laptop built from
 that same vocabulary becomes a second TV.
 
-That killed round 1 outright:
+That discarded those explorations outright:
 
-| Round 1 direction | Why it died |
+| Earlier discarded exploration | Why it died |
 |---|---|
 | A · Tote Hall, Frozen | Institutional infrastructure in enamel, steel and rivets — the TV's exact object class. Its amber selection state also collided with money colour, and split-flap motion is the TV's quantised discipline, explicitly not to be carried over. |
 | B · Broadcast Alert | Broadcast *is* the TV's register, civil defence is institutional, and alarm escalation is hot where SureThing must be calm. Worst fit of the three. |
@@ -59,7 +59,7 @@ domestic metal hardware, illegitimate product, and personal document.
 | 1 | **The cracked corporate suite** — the city's premium product, defaced, running on his junk machine | Nails the satire directly: the machines are nicer than the life. Lets app and OS chrome deliberately not match |
 | 2 | **The skinned player** — custom themes, bevelled mini-players, a machine he decorated | "Possibly customised" made literal; deep OS-chrome vocabulary |
 | 3 | **The domestic hi-fi front panel** — brushed metal, VU ballistics, detented controls | An object chosen and kept; superb for stake and payout readouts |
-| 4 | **The annotated form guide** — his own marked-up betting paper, toner, biro, highlighter | ← **ASSIGNED.** The densest comparison document ever designed, and selection becomes annotation |
+| 4 | **The annotated form guide** — his own marked-up betting paper, toner, biro, highlighter | ← **APPROVED DIRECTION.** The densest comparison document ever designed, and selection becomes annotation |
 | 5 | **The pocket LCD organiser** — segment type, grey-green field, rubber keys | Charming and personal; risks reading as a toy at this density |
 | 6 | **The bootleg cartridge menu** — off-brand pirate multicart, garish and confident | On-satire and funny, but loud where the surface must be calm |
 | 7 | **The personal debt ledger** — his own handwritten accounting | Evocative; cannot hold six matchups across five markets |
@@ -78,9 +78,9 @@ his own machine, so **the document is inverted** — his cheap reader's night mo
 registration offset, stamp marks and biro all read *better* as scanned artefacts on a dark ground.
 No factual grounds to re-roll.
 
-## The fused challenger being built alongside it
+## Rejected comparison — The Catalogue Sleeve
 
-**The catalogue sleeve.** Matte black ground, white hairline plot as body ink, catalogue numbers
+Matte black ground, white hairline plot as body ink, catalogue numbers
 as the only headline, vast unprinted black, small engraved-feel caps used sparingly, the active
 item alone decoded to full colour. A record sleeve is a personal object he owns; the register is
 calm, dark, and precise, and it sits naturally against lifted blacks and an olive room.
@@ -90,7 +90,7 @@ dropped. Every price, state and disabled reason on this product must be literal 
 clarity wins conflicts. What carries over is the composition, the hairline plot, the catalogue
 rigour and the decode-on-selection state.
 
-Rejected without building: split-flap concourse (institutional, and round 1 already tried it),
+Rejected without building: split-flap concourse (institutional, and an earlier discarded exploration already tried it),
 ANSI BBS (dumped by Allen), papel picado (saturated and festive — fights both the calm register
 and the room palette), coiled earth tower and labanotation (not interface languages; cannot hold
 a dense priced board).
