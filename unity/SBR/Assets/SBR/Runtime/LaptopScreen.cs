@@ -92,7 +92,7 @@ namespace SBR.Game
             canvasGo.transform.localScale = Vector3.one * (screenWorldSize.x / w);
 
             Transform root = canvasGo.transform;
-            LaptopUi.MakeStretchImage(root, "DesktopBacking", Color.black).raycastTarget = false;
+            LaptopUi.MakeStretchImage(root, "DesktopBacking", LaptopOs.Ink).raycastTarget = false;
             _os = new LaptopOs((RectTransform)root, _font, this, w, h);
         }
 

@@ -9,16 +9,19 @@ namespace SBR.Game
     /// <summary>The small, app-switching shell around the SureThing sportsbook.</summary>
     public sealed class LaptopOs
     {
-        internal static readonly Color Accent = new Color(0.6078f, 0.3608f, 0.9647f, 1f); // #9B5CF6
-        internal static readonly Color Ink = new Color(0.035f, 0.028f, 0.065f, 0.98f);
-        internal static readonly Color Surface = new Color(0.075f, 0.060f, 0.125f, 0.98f);
-        internal static readonly Color SurfaceRaised = new Color(0.12f, 0.095f, 0.19f, 1f);
-        internal static readonly Color Muted = new Color(0.63f, 0.61f, 0.70f, 1f);
-        internal static readonly Color White = new Color(0.95f, 0.94f, 0.98f, 1f);
-        internal static readonly Color MoneyGood = new Color(0.25f, 0.95f, 0.45f, 1f);
-        internal static readonly Color MoneyBad = new Color(0.95f, 0.25f, 0.22f, 1f);
-        internal static readonly Color MoneyGold = new Color(0.98f, 0.78f, 0.25f, 1f);
-        internal static readonly Color SignalCyan = new Color(0.62f, 0.86f, 0.96f, 1f);
+        // SureThing Direction tokens. Keep the font seam separate: a licensed TMP asset replaces
+        // LegacyRuntime when Allen resolves the Bell Centennial / fallback decision.
+        internal static readonly Color Ink = new Color32(0x16, 0x16, 0x0F, 255);
+        internal static readonly Color Surface = new Color32(0x1C, 0x1C, 0x13, 255);
+        internal static readonly Color SurfaceRaised = new Color32(0x23, 0x23, 0x19, 255);
+        internal static readonly Color Rule = new Color32(0x3C, 0x3C, 0x2C, 255);
+        internal static readonly Color Muted = new Color32(0x6E, 0x6B, 0x5E, 255);
+        internal static readonly Color White = new Color32(0xD9, 0xD4, 0xC5, 255);
+        internal static readonly Color Accent = new Color32(0x5E, 0x86, 0xB8, 255); // biro
+        internal static readonly Color MoneyGold = new Color32(0xD9, 0xA4, 0x41, 255); // wax
+        internal static readonly Color MoneyGood = new Color32(0xD9, 0xA4, 0x41, 255);
+        internal static readonly Color MoneyBad = new Color32(0xB4, 0x48, 0x3A, 255); // house stamp
+        internal static readonly Color SignalCyan = new Color32(0x9C, 0x98, 0x88, 255);
 
         private enum App { Desktop, SureThing, OldSlips, Verdict }
 
@@ -294,10 +297,10 @@ namespace SBR.Game
         {
             vh.Clear();
             Rect r = rectTransform.rect;
-            Color topLeft = new Color(0.075f, 0.04f, 0.16f, 1f);
-            Color topRight = new Color(0.025f, 0.025f, 0.07f, 1f);
-            Color bottomLeft = new Color(0.02f, 0.025f, 0.06f, 1f);
-            Color bottomRight = new Color(0.08f, 0.025f, 0.13f, 1f);
+            Color topLeft = LaptopOs.SurfaceRaised;
+            Color topRight = LaptopOs.Ink;
+            Color bottomLeft = LaptopOs.Ink;
+            Color bottomRight = LaptopOs.Surface;
             vh.AddVert(new Vector3(r.xMin, r.yMin), (Color32)bottomLeft, Vector2.zero);
             vh.AddVert(new Vector3(r.xMin, r.yMax), (Color32)topLeft, Vector2.up);
             vh.AddVert(new Vector3(r.xMax, r.yMax), (Color32)topRight, Vector2.one);
@@ -322,7 +325,7 @@ namespace SBR.Game
             go.transform.SetParent(parent, false);
             Text text = go.GetComponent<Text>();
             if (font != null) text.font = font;
-            text.fontSize = fontSize;
+            text.fontSize = Mathf.Max(13, fontSize);
             text.alignment = align;
             text.color = color;
             text.text = content;
@@ -332,7 +335,7 @@ namespace SBR.Game
             RectTransform rt = text.rectTransform;
             rt.anchorMin = rt.anchorMax = anchor;
             rt.pivot = pivot;
-            rt.sizeDelta = size;
+            rt.sizeDelta = new Vector2(Mathf.Max(44f, size.x), Mathf.Max(32f, size.y));
             rt.anchoredPosition = position;
             return text;
         }
@@ -390,7 +393,7 @@ namespace SBR.Game
             button.colors = colors;
             if (onClick != null) button.onClick.AddListener(() => onClick());
             Text text = MakeText(rt, "Label", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                Vector2.zero, size, fontSize, TextAnchor.MiddleCenter, foreground, label, font);
+                Vector2.zero, rt.sizeDelta, fontSize, TextAnchor.MiddleCenter, foreground, label, font);
             text.horizontalOverflow = HorizontalWrapMode.Overflow;
             return button;
         }

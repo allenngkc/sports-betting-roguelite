@@ -12,7 +12,6 @@ namespace SBR.Game
         public enum Tab { Lobby, Detail, MyBets, Rewards }
 
         private enum DetailTab { Goals, Corners, Cards, Players }
-
         private readonly RectTransform _root;
         private readonly Font _font;
         private readonly LaptopScreen _host;
@@ -20,6 +19,7 @@ namespace SBR.Game
         private readonly Action<Tab> _selectTab;
         private readonly Action _home;
         private bool _lockArmed;
+        private int _armedRound = -1;
         private string _shopError = string.Empty;
         private int _detailMatchup = -1;
         private DetailTab _detailTab = DetailTab.Goals;
@@ -37,6 +37,12 @@ namespace SBR.Game
 
         public void Render(Run run, BetslipModel slip, Tab tab, bool boardFrozen)
         {
+            // A confirmation only survives a rebuild of this same betting lobby.
+            if (tab != Tab.Lobby || run.Phase != Phase.Betting || _armedRound != run.Round)
+            {
+                _lockArmed = false;
+                _armedRound = -1;
+            }
             LaptopUi.ClearChildren(_root);
             LaptopUi.MakePanel(_root, "AppBacking", Vector2.zero, Vector2.zero, Vector2.zero,
                 _root.sizeDelta, LaptopOs.Ink);
@@ -51,46 +57,31 @@ namespace SBR.Game
         private void BuildChrome(Run run, Tab tab, bool boardFrozen)
         {
             RectTransform top = LaptopUi.MakePanel(_root, "Chrome", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                Vector2.zero, new Vector2(_root.sizeDelta.x, 104f), new Color(0.035f, 0.025f, 0.075f, 1f));
-            LaptopUi.MakeText(top, "Sure", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(24f, -14f), new Vector2(92f, 30f), 22, TextAnchor.UpperLeft, LaptopOs.White,
-                "SURE", _font);
-            LaptopUi.MakeText(top, "Thing", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(110f, -14f), new Vector2(124f, 30f), 22, TextAnchor.UpperLeft, LaptopOs.Accent,
-                "THING.", _font);
-            LaptopUi.MakeText(top, "Tagline", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(25f, -44f), new Vector2(260f, 20f), 11, TextAnchor.UpperLeft, LaptopOs.Muted,
-                "the number never lies", _font);
-
-            string phase = boardFrozen ? "BOARD CLOSED" : run.Phase == Phase.Shop ? "REWARDS" : "LIVE BOARD";
-            LaptopUi.MakeText(top, "Status", new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-24f, -16f), new Vector2(420f, 22f), 12, TextAnchor.UpperRight,
-                boardFrozen ? LaptopOs.Muted : LaptopOs.Accent,
-                $"R{run.Round}/{run.Config.Rounds}   ·   {phase}", _font);
-            LaptopUi.MakeText(top, "Bank", new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-24f, -42f), new Vector2(420f, 22f), 12, TextAnchor.UpperRight, LaptopOs.White,
-                $"BANK {LaptopUi.Money(run.Bank)}   ·   DUE {LaptopUi.Money(run.CurrentPayment)}   ·   COMPS {run.Comps.ToString("0.#", CultureInfo.InvariantCulture)}", _font);
-            if (run.OwnedRelics.Count > 0)
-            {
-                string relics = "";
-                foreach (RelicDefinition relic in run.OwnedRelics) relics += relic.Name.ToUpperInvariant() + "   ";
-                LaptopUi.MakeText(top, "Relics", new Vector2(1f, 1f), new Vector2(1f, 1f),
-                    new Vector2(-24f, -66f), new Vector2(420f, 20f), 9, TextAnchor.UpperRight,
-                    LaptopOs.Muted, relics, _font);
-            }
-
-            MakeTab(top, "LOBBY", Tab.Lobby, tab, run.Phase == Phase.Shop);
-            MakeTab(top, "MY BETS", Tab.MyBets, tab, run.Phase == Phase.Shop);
-            MakeTab(top, "REWARDS", Tab.Rewards, tab, run.Phase != Phase.Shop);
+                Vector2.zero, new Vector2(_root.sizeDelta.x, 140f), LaptopOs.Ink);
+            RectTransform rail = LaptopUi.MakePanel(top, "NotebookRail", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                Vector2.zero, new Vector2(1024f, 34f), LaptopOs.SurfaceRaised);
+            LaptopUi.MakeText(rail, "Machine", new Vector2(0f, .5f), new Vector2(0f, .5f), new Vector2(14f, 0f), new Vector2(200f, 24f), 12, TextAnchor.MiddleLeft, LaptopOs.White, "■  NOTEBOOK", _font);
+            LaptopUi.MakeText(rail, "Sticker", new Vector2(0f, .5f), new Vector2(0f, .5f), new Vector2(150f, 0f), new Vector2(160f, 24f), 12, TextAnchor.MiddleLeft, LaptopOs.Accent, "PROPERTY OF NOBODY", _font);
+            LaptopUi.MakeText(rail, "Clock", new Vector2(1f, .5f), new Vector2(1f, .5f), new Vector2(-14f, 0f), new Vector2(140f, 24f), 12, TextAnchor.MiddleRight, LaptopOs.Muted, "02:47   ▰", _font);
+            RectTransform tabs = LaptopUi.MakePanel(top, "FormTabs", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, -34f), new Vector2(1024f, 38f), LaptopOs.Surface);
+            MakeTab(tabs, "FORM", Tab.Lobby, tab, run.Phase == Phase.Shop);
+            MakeTab(tabs, "ENTRY", Tab.Detail, tab, run.Phase == Phase.Shop);
+            MakeTab(tabs, "MY BETS", Tab.MyBets, tab, run.Phase == Phase.Shop);
+            MakeTab(tabs, "REWARDS", Tab.Rewards, tab, run.Phase != Phase.Shop);
+            LaptopUi.MakeText(tabs, "Sheet", new Vector2(1f, .5f), new Vector2(1f, .5f), new Vector2(-14f, 0f), new Vector2(170f, 24f), 13, TextAnchor.MiddleRight, LaptopOs.Muted, "SHEET 1 OF 1", _font);
+            RectTransform mast = LaptopUi.MakePanel(top, "FormMasthead", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, -72f), new Vector2(1024f, 68f), LaptopOs.Ink);
+            LaptopUi.MakeText(mast, "Brand", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(16f, -8f), new Vector2(300f, 28f), 26, TextAnchor.UpperLeft, LaptopOs.White, "SURETHING FORM", _font);
+            LaptopUi.MakeText(mast, "Run", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(17f, -38f), new Vector2(340f, 20f), 13, TextAnchor.UpperLeft, LaptopOs.Muted, $"ROUND {run.Round} OF {run.Config.Rounds}  ·  PRICES FINAL", _font);
+            LaptopUi.MakeText(mast, "Figures", new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-16f, -10f), new Vector2(610f, 48f), 21, TextAnchor.UpperRight, LaptopOs.White, $"BANK {LaptopUi.Money(run.Bank)}    TARGET {LaptopUi.Money(run.CurrentPayment)}    TICKETS {run.Tickets.Count}/{run.Config.MaxTicketsPerRound}", _font);
         }
 
         private void MakeTab(RectTransform top, string label, Tab tab, Tab selected, bool disabled)
         {
-            float x = tab == Tab.Lobby ? 292f : tab == Tab.MyBets ? 390f : 510f;
+            float x = tab == Tab.Lobby ? 14f : tab == Tab.Detail ? 122f : tab == Tab.MyBets ? 230f : 358f;
             bool active = tab == selected;
             LaptopUi.MakeButton(top, label, label, new Vector2(0f, 0f), new Vector2(0f, 0f),
-                new Vector2(x, 10f), new Vector2(tab == Tab.MyBets ? 112f : 94f, 32f), 12,
-                active ? LaptopOs.Accent : new Color(0f, 0f, 0f, 0f),
+                new Vector2(x, 3f), new Vector2(tab == Tab.MyBets ? 116f : 100f, 32f), 13,
+                active ? LaptopOs.Ink : LaptopOs.Surface,
                 disabled ? LaptopUi.Dim(LaptopOs.Muted) : active ? LaptopOs.White : LaptopOs.Muted,
                 disabled ? null : () => { _selectTab(tab); }, _font, !disabled);
         }
@@ -98,26 +89,16 @@ namespace SBR.Game
         private void BuildLobby(Run run, BetslipModel slip, bool boardFrozen)
         {
             RectTransform board = LaptopUi.MakePanel(_root, "Board", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(10f, -114f), new Vector2(660f, _root.sizeDelta.y - 178f), new Color(0f, 0f, 0f, 0f));
+                new Vector2(0f, -140f), new Vector2(700f, 530f), LaptopOs.Ink);
             LaptopUi.MakeText(board, "BoardTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(8f, -4f), new Vector2(640f, 24f), 13, TextAnchor.UpperLeft,
-                boardFrozen ? LaptopOs.Muted : LaptopOs.Accent,
-                boardFrozen ? "THE SHOW IS ON THE TV   ·   BOARD CLOSED" : "TODAY'S BOARD   ·   MONEYLINE", _font);
-            LaptopUi.MakeText(board, "BoardSub", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(8f, -27f), new Vector2(640f, 20f), 10, TextAnchor.UpperLeft, LaptopOs.Muted,
-                "records are season W-L   ·   every price is American odds", _font);
-            if (!boardFrozen && run.OwnsConsumable("bookies_marker"))
-                LaptopUi.MakeButton(board, "Marker", "MARKER −25%", new Vector2(1f, 1f), new Vector2(1f, 1f),
-                    new Vector2(-8f, -4f), new Vector2(132f, 25f), 10, LaptopOs.SurfaceRaised, LaptopOs.MoneyGold,
-                    () => { _host.director.TryPlayMarker(); _invalidate(); }, _font);
+                new Vector2(14f, -5f), new Vector2(670f, 26f), 13, TextAnchor.UpperLeft, LaptopOs.Muted,
+                boardFrozen ? "NO.   MATCHUP · RECORD                         MONEYLINE     BOARD CLOSED" : "NO.   MATCHUP · SEASON RECORD                         MONEYLINE     MORE", _font);
 
             for (int i = 0; i < run.CurrentSlate.Matchups.Count; i++)
             {
                 Matchup matchup = run.CurrentSlate.Matchups[i];
-                int column = i % 2;
-                int row = i / 2;
                 BuildMatchupCard(board, matchup, slip, boardFrozen,
-                    new Vector2(8f + column * 326f, -52f - row * 136f));
+                    new Vector2(0f, -26f - i * 78f));
             }
 
             BuildSlip(run, slip, boardFrozen);
@@ -127,36 +108,38 @@ namespace SBR.Game
             Vector2 position)
         {
             RectTransform card = LaptopUi.MakePanel(parent, "Matchup" + matchup.Index, new Vector2(0f, 1f),
-                new Vector2(0f, 1f), position, new Vector2(310f, 126f), LaptopOs.Surface);
-            (uint homeRgb, uint awayRgb) = TheaterPalette.TeamColors(matchup.Home.Name, matchup.Away.Name);
-            MakeDot(card, "AwayDot", new Vector2(14f, -19f), LaptopUi.FromRgb(awayRgb));
-            MakeDot(card, "HomeDot", new Vector2(14f, -47f), LaptopUi.FromRgb(homeRgb));
-            LaptopUi.MakeText(card, "Teams", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(28f, -8f), new Vector2(180f, 54f), 14, TextAnchor.UpperLeft, LaptopOs.White,
-                $"<color=#{awayRgb:X6}>{LaptopUi.TeamShort(matchup.Away)}</color>  @\n" +
-                $"<color=#{homeRgb:X6}>{LaptopUi.TeamShort(matchup.Home)}</color>", _font);
-            LaptopUi.MakeText(card, "Records", new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-12f, -10f), new Vector2(110f, 46f), 11, TextAnchor.UpperRight, LaptopOs.Muted,
-                $"{matchup.Away.Record}\n{matchup.Home.Record}", _font);
+                new Vector2(0f, 1f), position, new Vector2(700f, 78f), LaptopOs.Surface);
+            LaptopUi.MakeText(card, "Number", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, -10f), new Vector2(34f, 56f), 15, TextAnchor.UpperLeft, LaptopOs.Muted, (matchup.Index + 1).ToString("00"), _font);
+            LaptopUi.MakeText(card, "Teams", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(54f, -8f), new Vector2(360f, 60f), 19, TextAnchor.UpperLeft, LaptopOs.White,
+                $"{LaptopUi.TeamShort(matchup.Away)}  {matchup.Away.Record}\n{LaptopUi.TeamShort(matchup.Home)}  {matchup.Home.Record}", _font);
 
             bool awaySelected = slip.SelectionOn(matchup.Index) == MarketSelection.Moneyline(Side.Away);
             bool homeSelected = slip.SelectionOn(matchup.Index) == MarketSelection.Moneyline(Side.Home);
             LaptopUi.MakeButton(card, "AwayOdds", $"AWAY  {OddsFormat.American(matchup.AwayOdds)}",
-                new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(12f, 30f), new Vector2(136f, 28f), 11,
-                awaySelected ? LaptopOs.Accent : LaptopOs.SurfaceRaised,
-                frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, -8f), new Vector2(112f, 32f), 19,
+                LaptopOs.Ink, frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
                 frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Away)); _invalidate(); }, _font, !frozen);
             LaptopUi.MakeButton(card, "HomeOdds", $"HOME  {OddsFormat.American(matchup.HomeOdds)}",
-                new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(158f, 30f), new Vector2(136f, 28f), 11,
-                homeSelected ? LaptopOs.Accent : LaptopOs.SurfaceRaised,
-                frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, -43f), new Vector2(112f, 32f), 19,
+                LaptopOs.Ink, frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
                 frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Home)); _invalidate(); }, _font, !frozen);
-            LaptopUi.MakeButton(card, "Details", "DETAILS", new Vector2(1f, 0f), new Vector2(1f, 0f),
-                new Vector2(-12f, 7f), new Vector2(104f, 18f), 9, LaptopOs.SurfaceRaised, LaptopOs.Accent,
+            if (awaySelected || homeSelected)
+            {
+                Sprite ring = ResolvePriceRing(matchup.Index);
+                if (ring != null)
+                {
+                    RectTransform ink = LaptopUi.MakePanel(card, "BiroRing", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                        new Vector2(454f, awaySelected ? -1f : -36f), new Vector2(112f, 46f), LaptopOs.Accent);
+                    Image image = ink.GetComponent<Image>();
+                    image.sprite = ring;
+                    image.type = Image.Type.Simple;
+                    image.preserveAspect = false;
+                    image.raycastTarget = false;
+                }
+            }
+            LaptopUi.MakeButton(card, "Details", "MORE ›", new Vector2(1f, .5f), new Vector2(1f, .5f),
+                new Vector2(-12f, 0f), new Vector2(74f, 44f), 13, LaptopOs.Ink, LaptopOs.Muted,
                 () => OpenDetail(matchup.Index), _font);
-            LaptopUi.MakeText(card, "Soon", new Vector2(0f, 0f), new Vector2(0f, 0f),
-                new Vector2(14f, 7f), new Vector2(170f, 18f), 9, TextAnchor.LowerLeft, LaptopUi.Dim(LaptopOs.Muted),
-                "goals · corners · cards · BTTS", _font);
         }
 
         private void OpenDetail(int matchupIndex)
@@ -164,6 +147,17 @@ namespace SBR.Game
             _detailMatchup = matchupIndex;
             _detailTab = DetailTab.Goals;
             _selectTab(Tab.Detail);
+        }
+
+        private static Sprite ResolvePriceRing(int matchupIndex)
+        {
+            // Avoid a static Resources cache: a domain/import rebuild can touch this type before
+            // the newly imported sprites are available. Sorting preserves a stable matchup-index
+            // variant whenever the card tree is rebuilt.
+            Sprite[] imported = Resources.LoadAll<Sprite>("SureThing/Ink");
+            if (imported == null || imported.Length == 0) return null;
+            Array.Sort(imported, (left, right) => string.CompareOrdinal(left.name, right.name));
+            return imported[matchupIndex % imported.Length];
         }
 
         private void BuildDetail(Run run, BetslipModel slip, bool boardFrozen)
@@ -280,21 +274,22 @@ namespace SBR.Game
         private void BuildSlip(Run run, BetslipModel slip, bool boardFrozen)
         {
             RectTransform panel = LaptopUi.MakePanel(_root, "Slip", new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-12f, -114f), new Vector2(330f, _root.sizeDelta.y - 178f), LaptopOs.Surface);
+                new Vector2(0f, -140f), new Vector2(324f, 530f), LaptopOs.Ink);
+            panel.name = "WorkingMargin";
             LaptopUi.MakeText(panel, "Title", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -10f), new Vector2(300f, 24f), 15, TextAnchor.UpperLeft, LaptopOs.White,
-                $"BETSLIP   ·   {run.Tickets.Count}/{run.Config.MaxTicketsPerRound}", _font);
+                $"MY MARKS   ·   {slip.Picks.Count} SELECTIONS", _font);
             LaptopUi.MakeText(panel, "Rule", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, -33f), new Vector2(300f, 18f), 10, TextAnchor.UpperLeft,
+                new Vector2(14f, -33f), new Vector2(300f, 18f), 13, TextAnchor.UpperLeft,
                 boardFrozen ? LaptopOs.MoneyGold : LaptopOs.Muted,
-                boardFrozen ? "prices locked while the TV sweats" : "build a parlay, then lock it in", _font);
+                boardFrozen ? "PRICES FINAL — BOARD LOCKED" : "PRICES FINAL. NOTHING YOU DO MOVES THEM.", _font);
 
             float y = -58f;
             if (slip.Picks.Count == 0)
             {
                 LaptopUi.MakeText(panel, "Empty", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(14f, y), new Vector2(300f, 26f), 12, TextAnchor.UpperLeft, LaptopOs.Muted,
-                    "your slip is empty", _font);
+                    new Vector2(14f, y), new Vector2(300f, 26f), 13, TextAnchor.UpperLeft, LaptopOs.Muted,
+                    "YOUR MARGIN IS CLEAR", _font);
                 y -= 30f;
             }
             for (int i = 0; i < slip.Picks.Count; i++)
@@ -314,8 +309,8 @@ namespace SBR.Game
                         new Vector2(58f, 24f), 9, boosted ? LaptopOs.MoneyGold : LaptopOs.SurfaceRaised,
                         LaptopOs.White, () => { slip.ToggleBoost(legIndex); _invalidate(); }, _font);
                 }
-                LaptopUi.MakeButton(panel, "Remove" + i, "×", new Vector2(1f, 1f), new Vector2(1f, 1f),
-                    new Vector2(-12f, y + 8f), new Vector2(25f, 24f), 16, LaptopOs.SurfaceRaised, LaptopOs.MoneyBad,
+                LaptopUi.MakeButton(panel, "Remove" + i, "RUB OUT", new Vector2(1f, 1f), new Vector2(1f, 1f),
+                    new Vector2(-12f, y + 8f), new Vector2(60f, 32f), 13, LaptopOs.Ink, LaptopOs.Muted,
                     () => { slip.Remove(matchupIndex); _lockArmed = false; _invalidate(); }, _font);
                 y -= 27f;
             }
@@ -339,41 +334,62 @@ namespace SBR.Game
             }
 
             float chipX = 14f;
-            MakeChip(panel, "10%", chipX, y, () => slip.SetStakeFraction(0.10)); chipX += 62f;
-            MakeChip(panel, "25%", chipX, y, () => slip.SetStakeFraction(0.25)); chipX += 62f;
-            MakeChip(panel, "50%", chipX, y, () => slip.SetStakeFraction(0.50)); chipX += 62f;
+            MakeChip(panel, "10%", chipX, y, () => slip.SetStakeFraction(0.10)); chipX += 76f;
+            MakeChip(panel, "25%", chipX, y, () => slip.SetStakeFraction(0.25)); chipX += 76f;
+            MakeChip(panel, "50%", chipX, y, () => slip.SetStakeFraction(0.50)); chipX += 76f;
             MakeChip(panel, "MAX", chipX, y, () => slip.SetStakeFraction(1.00));
             y -= 34f;
-            MakeChip(panel, "−$10", 14f, y, () => slip.Nudge(-10), 70f);
-            MakeChip(panel, "+$10", 90f, y, () => slip.Nudge(10), 70f);
+            MakeChip(panel, "−$10", 14f, y, () => slip.Nudge(-10), 88f);
+            MakeChip(panel, "+$10", 110f, y, () => slip.Nudge(10), 88f);
             y -= 32f;
             LaptopUi.MakeText(panel, "Stake", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, y), new Vector2(300f, 24f), 15, TextAnchor.UpperLeft, LaptopOs.White,
-                $"STAKE {LaptopUi.Money(slip.Stake)}   →   TO WIN {LaptopUi.Money(slip.ToWin)}", _font);
+                new Vector2(14f, y), new Vector2(300f, 24f), 16, TextAnchor.UpperLeft, LaptopOs.White,
+                $"STAKE {LaptopUi.Money(slip.Stake)}", _font);
             y -= 32f;
+            LaptopUi.MakeText(panel, "Payout", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, y), new Vector2(300f, 36f), 31, TextAnchor.UpperLeft, LaptopOs.MoneyGold, $"{LaptopUi.Money(slip.ToWin)}", _font);
+            y -= 40f;
 
             string blocker = slip.PlaceBlocker;
-            LaptopUi.MakeButton(panel, "Place", blocker == null ? "PLACE TICKET" : blocker.ToUpperInvariant(),
-                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, y), new Vector2(302f, 34f), 12,
-                blocker == null ? LaptopOs.SurfaceRaised : LaptopOs.Surface,
-                blocker == null ? LaptopOs.MoneyGood : LaptopUi.Dim(LaptopOs.Muted),
-                blocker == null ? () => { slip.Place(); _lockArmed = false; _invalidate(); } : null, _font,
+            LaptopUi.MakeButton(panel, "Place", "PLACE TICKET",
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, y), new Vector2(296f, 44f), 17,
+                blocker == null ? LaptopOs.MoneyGold : LaptopOs.Surface,
+                blocker == null ? LaptopOs.Ink : LaptopUi.Dim(LaptopOs.Muted),
+                blocker == null ? () => { slip.Place(); _lockArmed = false; _armedRound = -1; _invalidate(); } : null, _font,
                 blocker == null && !boardFrozen);
+            if (blocker != null)
+                LaptopUi.MakeText(panel, "PlaceReason", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, y - 19f), new Vector2(296f, 18f), 13, TextAnchor.UpperLeft, LaptopOs.MoneyBad, blocker.ToUpperInvariant(), _font);
 
-            string lockLabel = boardFrozen ? "THE ROUND IS LOCKED" : run.Tickets.Count > 0 ? "LOCK IT IN" :
-                _lockArmed ? "NO BETS — SURE?" : "LOCK IT IN (NO BETS)";
-            bool canLock = !boardFrozen;
+            bool hasWorkingMarks = slip.Picks.Count > 0;
+            string lockLabel = boardFrozen ? "THE ROUND IS LOCKED" : "LOCK IT IN";
+            string lockReason = hasWorkingMarks ? "PLACE OR CLEAR THIS WORKING SLIP" : run.Tickets.Count == 0 ? "PLACE AT LEAST ONE TICKET" : string.Empty;
+            bool canLock = !boardFrozen && lockReason.Length == 0;
             LaptopUi.MakeButton(panel, "Lock", lockLabel, new Vector2(0f, 0f), new Vector2(0f, 0f),
-                new Vector2(14f, 12f), new Vector2(302f, 40f), 15,
-                _lockArmed ? LaptopOs.MoneyBad : LaptopOs.Accent,
-                LaptopOs.White,
+                new Vector2(14f, 52f), new Vector2(296f, 52f), 16,
+                LaptopOs.Ink, canLock ? LaptopOs.White : LaptopOs.Muted,
                 canLock ? () =>
                 {
-                    if (run.Tickets.Count == 0 && !_lockArmed) { _lockArmed = true; _invalidate(); return; }
                     _lockArmed = false;
+                    _armedRound = -1;
                     _host.director.LockRound();
                     _invalidate();
                 } : null, _font, canLock);
+            if (!canLock)
+                LaptopUi.MakeText(panel, "LockReason", new Vector2(.5f, 0f), new Vector2(.5f, 0f), new Vector2(0f, 26f), new Vector2(280f, 18f), 13, TextAnchor.MiddleCenter, LaptopOs.MoneyBad, lockReason, _font);
+            LaptopUi.MakeButton(panel, "Skip", _lockArmed ? "PRESS AGAIN TO SKIP" : "SKIP ROUND — PRESS TWICE", new Vector2(.5f, 0f), new Vector2(.5f, 0f), new Vector2(0f, 8f), new Vector2(230f, 34f), 13, LaptopOs.Ink, _lockArmed ? LaptopOs.MoneyBad : LaptopOs.Muted,
+                boardFrozen ? null : () =>
+                {
+                    if (!_lockArmed)
+                    {
+                        _lockArmed = true;
+                        _armedRound = run.Round;
+                        _invalidate();
+                        return;
+                    }
+                    _lockArmed = false;
+                    _armedRound = -1;
+                    _host.director.LockRound();
+                    _invalidate();
+                }, _font, !boardFrozen);
         }
 
         private void MakeModifier(RectTransform parent, string label, TicketModifier modifier, BetslipModel slip,
@@ -386,10 +402,10 @@ namespace SBR.Game
                 () => { slip.ToggleModifier(modifier); _invalidate(); }, _font);
         }
 
-        private void MakeChip(RectTransform parent, string label, float x, float y, Action onClick, float width = 56f)
+        private void MakeChip(RectTransform parent, string label, float x, float y, Action onClick, float width = 68f)
         {
             LaptopUi.MakeButton(parent, "Chip" + label, label, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(x, y), new Vector2(width, 26f), 10, LaptopOs.SurfaceRaised, LaptopOs.White,
+                new Vector2(x, y), new Vector2(width, 32f), 13, LaptopOs.SurfaceRaised, LaptopOs.White,
                 () => { onClick(); _invalidate(); }, _font);
         }
 
@@ -570,16 +586,17 @@ namespace SBR.Game
         private void BuildTaskbar()
         {
             RectTransform taskbar = LaptopUi.MakePanel(_root, "Taskbar", new Vector2(0f, 0f), new Vector2(0f, 0f),
-                Vector2.zero, new Vector2(_root.sizeDelta.x, 54f), new Color(0.025f, 0.02f, 0.05f, 0.96f));
-            LaptopUi.MakeButton(taskbar, "Home", "HOME", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
-                new Vector2(18f, 0f), new Vector2(90f, 34f), 12, LaptopOs.SurfaceRaised, LaptopOs.White,
+                Vector2.zero, new Vector2(_root.sizeDelta.x, 34f), LaptopOs.SurfaceRaised);
+            taskbar.name = "NotebookTray";
+            LaptopUi.MakeButton(taskbar, "Home", "SURETHING", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
+                new Vector2(12f, 0f), new Vector2(110f, 22f), 12, LaptopOs.Ink, LaptopOs.White,
                 _home, _font);
             LaptopUi.MakeText(taskbar, "AppName", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
-                new Vector2(126f, 0f), new Vector2(240f, 28f), 12, TextAnchor.MiddleLeft, LaptopOs.Muted,
-                "SureThing.", _font);
+                new Vector2(132f, 0f), new Vector2(310f, 24f), 12, TextAnchor.MiddleLeft, LaptopOs.Muted,
+                "LEDGER    MESSAGES  1", _font);
             LaptopUi.MakeText(taskbar, "Clock", new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                new Vector2(-24f, 0f), new Vector2(180f, 28f), 12, TextAnchor.MiddleRight, LaptopOs.Muted,
-                "03:17 AM   ·   battery low", _font);
+                new Vector2(-14f, 0f), new Vector2(260f, 24f), 12, TextAnchor.MiddleRight, LaptopOs.Muted,
+                "DISK 61% FULL    NO UPDATES", _font);
         }
 
         private void MakeDot(RectTransform parent, string name, Vector2 position, Color color)
