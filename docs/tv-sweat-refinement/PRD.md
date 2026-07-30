@@ -544,6 +544,22 @@ The `CornerFor` / `CornerAgainst` / `Booking` templates already carry the benefi
 Phase 1A must confirm the beneficiary is correct before Phase 2 builds attribution on top of it; if
 the beneficiary is unreliable, that is a blocker, not a polish item.
 
+**Status: implemented in Phase 2D, 2026-07-29.** `NearPost`, `FarPost` and `Cleared` are three
+authored corner sequences that differ in how the corner is won and where the delivery goes, each
+carrying the required causal beats — the beneficiary drives into the attacking third, the ball goes
+out off a **real defending-side actor** (`RouteBackLine`, never an authored point), then the delivery
+comes from that beneficiary's attacking corner. All three preserve the original total authored
+duration exactly (`B × 1.00`). Booking gained a visible challenge before the marker, and the card
+attaches to an actor of the fouling side rather than to the ball's coordinate. Mood
+(`CornerFor`/`CornerAgainst`, selection-derived) and routing (`CountBeneficiaryIsHome`) remain
+independent, guarded by a test where an Under leg's away team wins the corner so the two must
+disagree and both stay correct.
+
+Evidence: engine 160/160, EditMode 129/129, PlayMode 37/37 including the 48-cell matrix.
+**The on-screen appearance is `PENDING-VISUAL-EVIDENCE`** — `-nographics` rasterises no frame, so
+these tests prove the motion, actor and marker *data* are right, not that the scenes read correctly
+at couch distance.
+
 ### 7.7 Backed-player locator for anytime scorer (Allen, 2026-07-24)
 
 **Problem:** the anytime-scorer market exists, but a player watching the TV cannot tell where their

@@ -143,6 +143,25 @@ namespace SBR.Game
         private bool _boundActorActive;
         private bool _boundActorHome;
         private int _boundActorIx;
+        // Phase 2D (PRD §7.6): sticky "last real actor the routing touched" — refreshed at every
+        // EnterStep transition, but only OVERWRITTEN when the OUTGOING step itself resolved a
+        // real dot (RoutePass/RouteBackLine); a step whose own route never resolves an actor
+        // (RouteCorner, RouteAuthored, RouteShot, RouteKickoff) leaves it exactly as it was. This
+        // is what lets a test confirm a corner's "ball goes out off the defender" beat (routed via
+        // RouteBackLine, immediately before the RouteCorner delivery step) genuinely touched a
+        // defending-side actor — still readable at, and after, the corner marker fires even
+        // though the delivery step itself routes to the authored arc, not a dot. Test/debug only;
+        // nothing in playback reads it back.
+        private bool _priorRouteDotActive;
+        private bool _priorRouteDotHome;
+        private int _priorRouteDotIx;
+        // Phase 2D (PRD §7.6): the exact actor a BOOKING scene's marker attached to. Unlike
+        // Corner's RouteCorner delivery, Booking's MkBooking step resolves through RoutePass (see
+        // FlashBooking), so this is set once there and held until the next scene starts — a test
+        // can poll it after the scene completes instead of racing the callback. Test/debug only.
+        private bool _markerActorActive;
+        private bool _markerActorHome;
+        private int _markerActorIx;
 
         // ---- public test/debug surface ----
         /// <summary>The territory x the last Update spoke (honest prob + decaying pulse in idle,
@@ -161,6 +180,19 @@ namespace SBR.Game
         /// carried one. Gameplay never reads this.</summary>
         public (bool IsHome, int RosterIndex)? BoundActorRouted
             => _boundActorActive ? ((bool, int)?)(_boundActorHome, _boundActorIx) : null;
+        /// <summary>Phase 2D test/debug surface: the most recent REAL actor (RoutePass/
+        /// RouteBackLine only) the ball routing resolved to, sticky across any step whose own
+        /// routing never resolves one — see <see cref="_priorRouteDotActive"/>'s doc for exactly
+        /// what "sticky" means here. Null only when no step in the active (or most recently
+        /// active) scene has ever resolved a real actor. Gameplay never reads this.</summary>
+        public (bool IsHome, int RosterIndex)? LastTouchedActor
+            => _priorRouteDotActive ? ((bool, int)?)(_priorRouteDotHome, _priorRouteDotIx) : null;
+        /// <summary>Phase 2D test/debug surface: the actor a BOOKING scene's marker attached to
+        /// (see <see cref="FlashBooking"/>) — proves the card lands on a real actor of the
+        /// fouling side, not merely at the ball's coordinate. Null until a booking marker has
+        /// fired for the most recently started scene. Gameplay never reads this.</summary>
+        public (bool IsHome, int RosterIndex)? MarkerActorRouted
+            => _markerActorActive ? ((bool, int)?)(_markerActorHome, _markerActorIx) : null;
 
         // ------------------------------------------------------------------ construction
 
@@ -434,6 +466,8 @@ namespace SBR.Game
             _revealFired = false;
             _onSceneComplete = null;
             _boundActorActive = false;
+            _priorRouteDotActive = false;
+            _markerActorActive = false;
         }
 
         private void StartScript(Step[] script, Action<ScoreLedger.StagedGoal> onGoalPlayed,
@@ -450,6 +484,8 @@ namespace SBR.Game
             _revealFired = false;
             _onSceneComplete = onComplete;
             _boundActorActive = false;
+            _priorRouteDotActive = false;
+            _markerActorActive = false;
         }
 
         // ------------------------------------------------------------------ update
@@ -513,6 +549,14 @@ namespace SBR.Game
             _stepEntered = true;
             Step s = _script[_stepIx];
             bool atkHome = s.AtkPicked == _homeAttacksRight;
+            // Phase 2D: stash the OUTGOING step's routed actor (if it had one) before resetting
+            // for the step we're about to enter — see _priorRouteDotActive's doc.
+            if (_routeDotIx >= 0)
+            {
+                _priorRouteDotActive = true;
+                _priorRouteDotHome = _routeDotHome;
+                _priorRouteDotIx = _routeDotIx;
+            }
             _routeDotIx = -1;
 
             switch (s.Route)
@@ -912,16 +956,15 @@ namespace SBR.Game
                 case SceneTemplate.CornerFor:
                 case SceneTemplate.CornerAgainst:
                 {
-                    // A corner scene ends at the attacking corner: the count callback fires
-                    // at the kick, not when the approach begins.
-                    core = new[]
-                    {
-                        S(B * 0.30f, 0.42f, lane, 0.50f, Mathf.Max(0.5f, u), chase: true),
-                        S(B * 0.26f, 0.84f, lane, 0.68f, Mathf.Max(0.8f, u), chase: true),
-                        S(B * 0.16f, 0.97f, lane, 0.72f, 1f, MkCorner,
-                            route: RouteCorner, count: spec.Count ?? default),
-                        S(B * 0.28f, 0.72f, 0.58f, 0.56f, 0.35f, route: RouteBackLine),
-                    };
+                    // Phase 2D (PRD §7.6): NearPost/FarPost/Cleared are three visibly distinct
+                    // authored sequences (see BuildCornerCore), not one sequence a signature
+                    // varies. A plan supplies the grammar; the legacy plan:null PlayScene path
+                    // (§7.1 compatibility) still gets the full drive-in -> ball-out-off-the-
+                    // defender -> delivery beat structure, it just has no grammar to pick among
+                    // the three shapes, so it falls back to the NearPost shape. The count
+                    // callback still fires at the kick (MkCorner), not when the approach begins.
+                    MovementGrammar? grammar = plan.HasValue ? plan.Value.Grammar : (MovementGrammar?)null;
+                    core = BuildCornerCore(grammar, B, lane, u, spec.Count ?? default);
                     // TVS-S01 follow-up (reviewer correction): CornerFor/CornerAgainst is the
                     // bettor's hope/dread MOOD (selection-derived, TheaterChoreographer) — a
                     // SEPARATE concept from which team physically wins the corner. Mirroring off
@@ -942,18 +985,11 @@ namespace SBR.Game
                     // incoherent for a totals market with no picked team). The ?? true fallback
                     // only matters for a scene built with no staged count at all (e.g. a bare
                     // template-completion test); every real Booking scene from ResolveBeat
-                    // always sets this field.
+                    // always sets this field. Phase 2D adds the visible challenge beat and moves
+                    // the marker onto that side's actor (see BuildBookingCore) — team selection
+                    // itself is unchanged.
                     bool bookingAttacksHome = spec.CountBeneficiaryIsHome ?? true;
-                    core = new[]
-                    {
-                        S(B * 0.32f, 0.48f, lane, 0.50f, 0.45f, atkPicked: bookingAttacksHome),
-                        S(B * 0.24f, 0.60f, lane, 0.54f, 0.9f, chase: true,
-                            atkPicked: bookingAttacksHome),
-                        S(B * 0.12f, 0.55f, lane, 0.50f, 1f, MkBooking,
-                            route: RouteAuthored, atkPicked: bookingAttacksHome,
-                            count: spec.Count ?? default),
-                        S(B * 0.32f, 0.50f, 0.50f, 0.50f, 0.15f, route: RouteAuthored),
-                    };
+                    core = BuildBookingCore(bookingAttacksHome, B, lane, spec.Count ?? default);
                     break;
                 }
 
@@ -1030,6 +1066,90 @@ namespace SBR.Game
             Array.Copy(core, 0, withIntro, 1, core.Length);
             return withIntro;
         }
+
+        /// <summary>Phase 2D (PRD §7.6): three visibly distinct authored corner sequences, not
+        /// one sequence a signature varies. Every shape follows the same causal beats the PRD
+        /// requires — drive into the attacking third (RoutePass), the ball going out off the
+        /// DEFENDING side (RouteBackLine, a real actor, never an authored point), then the
+        /// delivery from the beneficiary's attacking corner (MkCorner/RouteCorner) — and differs
+        /// visibly in HOW the corner is won and WHERE the delivery goes:
+        /// <see cref="MovementGrammar.NearPost"/> wins it wide and delivers short to the near
+        /// side; <see cref="MovementGrammar.FarPost"/> wins it wide too but swings the delivery
+        /// across the whole box to the far side (<c>1 - lane</c> instead of <c>lane</c>);
+        /// <see cref="MovementGrammar.Cleared"/> cuts inside instead of going wide, and is
+        /// conceded by a hurried, heavily-chased last-ditch hack behind rather than a controlled
+        /// dispossession. <paramref name="grammar"/> is null only for the legacy plan-free
+        /// <see cref="PlayScene(SceneSpec, Action{ScoreLedger.StagedGoal}, Action, Action)"/>
+        /// path, which has no grammar to pick among the three shapes and falls back to NearPost's
+        /// (still fully attributed) shape — every branch here is built in the PICKED frame and
+        /// mirrored afterward by the caller, never baking home/away in directly (TVS-S01's
+        /// guard). Every shape's step-duration fractions sum to 1, so the scene's total authored
+        /// duration is identical regardless of which shape plays.</summary>
+        private static Step[] BuildCornerCore(MovementGrammar? grammar, float B, float lane, float u,
+            CountLedger.StagedCount count)
+        {
+            switch (grammar)
+            {
+                case MovementGrammar.FarPost:
+                    return new[]
+                    {
+                        S(B * 0.22f, 0.40f, lane, 0.48f, Mathf.Max(0.5f, u), chase: true),
+                        S(B * 0.22f, 0.80f, lane, 0.66f, Mathf.Max(0.8f, u), chase: true),
+                        // Won it back off the defending side — a real defender, not a point.
+                        S(B * 0.14f, 0.94f, lane, 0.70f, 0.9f, route: RouteBackLine, chase: true),
+                        // The delivery swings all the way across the box to the far post.
+                        S(B * 0.18f, 0.985f, 1f - lane, 0.74f, 1f, MkCorner, route: RouteCorner, count: count),
+                        S(B * 0.24f, 0.70f, 0.55f, 0.56f, 0.35f, route: RouteBackLine),
+                    };
+
+                case MovementGrammar.Cleared:
+                    return new[]
+                    {
+                        // Cuts inside rather than going wide first.
+                        S(B * 0.24f, 0.44f, lane, 0.50f, Mathf.Max(0.55f, u), chase: true),
+                        S(B * 0.20f, 0.82f, 0.5f, 0.68f, Mathf.Max(0.85f, u), chase: true),
+                        // Cleared's distinct beat: a hurried, heavily-pressed last-ditch hack
+                        // behind — the corner is conceded, not won by a clean dispossession.
+                        S(B * 0.10f, 0.92f, lane, 0.72f, 1f, route: RouteBackLine, chase: true),
+                        S(B * 0.18f, 0.975f, lane, 0.74f, 1f, MkCorner, route: RouteCorner, count: count),
+                        S(B * 0.28f, 0.68f, 0.60f, 0.55f, 0.30f, route: RouteBackLine),
+                    };
+
+                case MovementGrammar.NearPost:
+                default:
+                    return new[]
+                    {
+                        S(B * 0.30f, 0.42f, lane, 0.50f, Mathf.Max(0.5f, u), chase: true),
+                        S(B * 0.26f, 0.84f, lane, 0.68f, Mathf.Max(0.8f, u), chase: true),
+                        // Won it back off the defending side — a real defender, not a point.
+                        S(B * 0.12f, 0.94f, lane, 0.71f, 0.85f, route: RouteBackLine, chase: true),
+                        // The delivery stays short, near side.
+                        S(B * 0.14f, 0.97f, lane, 0.72f, 1f, MkCorner, route: RouteCorner, count: count),
+                        S(B * 0.18f, 0.72f, 0.58f, 0.56f, 0.35f, route: RouteBackLine),
+                    };
+            }
+        }
+
+        /// <summary>Phase 2D (PRD §7.6): the booking sequence, with a visible challenge beat
+        /// BEFORE the marker (a tight, high-tempo closing-down step distinct from the buildup
+        /// that precedes it, so the card never appears out of nowhere) and the marker step routed
+        /// via <see cref="RoutePass"/> (not <see cref="RouteAuthored"/>) so it resolves to a real
+        /// actor on <paramref name="bookingAttacksHome"/>'s side — see <see cref="FlashBooking"/>,
+        /// which reads that resolved actor to place the card on them instead of at the ball's raw
+        /// coordinate. Team selection itself (<paramref name="bookingAttacksHome"/>, sourced from
+        /// <c>CountBeneficiaryIsHome</c> by the caller) is unchanged from before Phase 2D.</summary>
+        private static Step[] BuildBookingCore(bool bookingAttacksHome, float B, float lane,
+            CountLedger.StagedCount count)
+            => new[]
+            {
+                S(B * 0.28f, 0.46f, lane, 0.50f, 0.45f, atkPicked: bookingAttacksHome),
+                S(B * 0.22f, 0.58f, lane, 0.54f, 0.85f, chase: true, atkPicked: bookingAttacksHome),
+                // The visible challenge itself: a tight, high-tempo closing-down beat.
+                S(B * 0.14f, 0.60f, lane, 0.52f, 1f, chase: true, atkPicked: bookingAttacksHome),
+                S(B * 0.10f, 0.60f, lane, 0.50f, 0.2f, MkBooking, route: RoutePass,
+                    atkPicked: bookingAttacksHome, count: count),
+                S(B * 0.26f, 0.50f, 0.50f, 0.50f, 0.15f, route: RouteAuthored),
+            };
 
         /// <summary>Phase 2C: the plan's own independently-chosen <see cref="SceneLane"/> as a
         /// pitch-fraction, matching <see cref="Lane(int)"/>'s legacy value set exactly (0.5 / 0.32
@@ -1277,18 +1397,28 @@ namespace SBR.Game
 
         private void FlashBooking()
         {
+            // Phase 2D (PRD §7.6): "the marker appears on that side's actor, not merely at the
+            // ball." Booking's MkBooking step routes via RoutePass (see BuildBookingCore), so
+            // _routeDotIx/_routeDotHome — resolved by THIS step's own EnterStep, still valid here
+            // since CompleteStep runs before the next step is entered — name the real fouling-
+            // side actor the card belongs on. _ballPos is only the fallback for a hand-built step
+            // that (unusually) never resolved one.
+            Vector2 markerPos = _routeDotIx >= 0 ? DotPos(_routeDotHome, _routeDotIx) : _ballPos;
             if (_bookingCard != null)
             {
                 _bookingCard.enabled = true;
-                _bookingCard.rectTransform.anchoredPosition = _ballPos;
+                _bookingCard.rectTransform.anchoredPosition = markerPos;
                 _bookingCard.rectTransform.localScale = Vector3.one;
                 _bookingCard.transform.SetAsLastSibling();
             }
-            _flashRight = _ballPos.x > 0f;
+            _flashRight = markerPos.x > 0f;
             _flashDur = 0.45f;
             _flashT = _flashDur;
             _flashRing.enabled = true;
             _flashRing.color = new Color(0.92f, 0.95f, 1f, 0.72f);
+            _markerActorActive = _routeDotIx >= 0;
+            _markerActorHome = _routeDotHome;
+            _markerActorIx = _routeDotIx;
         }
 
         private void UpdateFlash(float dt)

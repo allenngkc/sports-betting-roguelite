@@ -225,6 +225,76 @@ namespace SBR.Tests.PlayMode
             }
         }
 
+        // ---------------------------------------------------------------- Phase 2D strengthening
+        //
+        // The 48-cell matrix above plays CornerFor/CornerAgainst/Booking through the LEGACY
+        // PlayScene(SceneSpec) entry point (plan: null) exactly twice each per template (once per
+        // legacy variant that maps to a fixed beneficiary in BuildBeatSpec) — it never drives all
+        // three corner grammars (NearPost/FarPost/Cleared only exist on a TheaterScenePlan), and
+        // Booking's spec there is hard-coded to a HOME beneficiary, so AWAY never plays. This is
+        // the PRD §7.6/Phase 2D "strengthen it" evidence: every corner grammar x beneficiary side,
+        // and both booking beneficiary sides, actually start, complete, and fire their count
+        // callback exactly once through the real stage — without touching the 48-cell matrix
+        // itself, which stays exactly as it was.
+
+        private static TheaterScenePlan CornerPlanFor(MovementGrammar grammar, bool beneficiaryIsHome)
+        {
+            SceneTemplate template = beneficiaryIsHome ? SceneTemplate.CornerFor : SceneTemplate.CornerAgainst;
+            var sig = new PlanSignature(template, grammar, null, ScenePayoff.CornerDelivery,
+                PressureMode.MidPress, SpacingMode.Balanced, ReactionPattern.Recover);
+            var diag = new TheaterScenePlanDiagnostics(1, false, false, false, false, null);
+            return new TheaterScenePlan(template, SceneFactContract.Corner, grammar, null, ScenePayoff.CornerDelivery,
+                PressureMode.MidPress, SpacingMode.Balanced, ReactionPattern.Recover, SceneLane.Center,
+                beneficiaryIsHome, true, null, true, sig, diag);
+        }
+
+        [UnityTest]
+        public IEnumerator All_three_corner_grammars_and_both_booking_sides_are_actually_exercised()
+        {
+            TheaterStage stage = BuildStage();
+
+            foreach (MovementGrammar grammar in
+                new[] { MovementGrammar.NearPost, MovementGrammar.FarPost, MovementGrammar.Cleared })
+            foreach (bool beneficiaryHome in new[] { true, false })
+            {
+                string ctx = $"Corner {grammar}/beneficiaryHome={beneficiaryHome}";
+                var count = new CountLedger.StagedCount(beneficiaryHome ? 1 : 0, beneficiaryHome ? 0 : 1, 0);
+                SceneSpec spec = new SceneSpec(SceneTemplate.CornerFor, 0, false, false, true, null, count, null,
+                    MarketKind.TotalCorners, new SweatPacer().SceneSeconds(SceneTemplate.CornerFor, false),
+                    count.BeneficiaryIsHome);
+                TheaterScenePlan plan = CornerPlanFor(grammar, count.BeneficiaryIsHome);
+
+                int countCalls = 0, goalCalls = 0;
+                bool done = false;
+                stage.PlayPlannedScene(plan, spec, g => goalCalls++, null, () => done = true, c => countCalls++);
+                Assert.IsTrue(stage.ScenePlaying, $"{ctx}: never started");
+                int safety = 0;
+                while (!done && safety < 4000) { safety++; yield return null; }
+                Assert.IsTrue(done, $"{ctx}: never completed");
+                Assert.AreEqual(0, goalCalls, $"{ctx}: must never fire a goal callback");
+                Assert.AreEqual(1, countCalls, $"{ctx}: must fire the count callback exactly once");
+            }
+
+            foreach (bool beneficiaryHome in new[] { true, false })
+            {
+                string ctx = $"Booking beneficiaryHome={beneficiaryHome}";
+                var count = new CountLedger.StagedCount(beneficiaryHome ? 1 : 0, beneficiaryHome ? 0 : 1, 0);
+                SceneSpec spec = new SceneSpec(SceneTemplate.Booking, 0, false, false, true, null, count, null,
+                    MarketKind.TotalCards, new SweatPacer().SceneSeconds(SceneTemplate.Booking, false),
+                    count.BeneficiaryIsHome);
+
+                int countCalls = 0, goalCalls = 0;
+                bool done = false;
+                stage.PlayScene(spec, g => goalCalls++, null, () => done = true, c => countCalls++);
+                Assert.IsTrue(stage.ScenePlaying, $"{ctx}: never started");
+                int safety = 0;
+                while (!done && safety < 4000) { safety++; yield return null; }
+                Assert.IsTrue(done, $"{ctx}: never completed");
+                Assert.AreEqual(0, goalCalls, $"{ctx}: must never fire a goal callback");
+                Assert.AreEqual(1, countCalls, $"{ctx}: must fire the count callback exactly once");
+            }
+        }
+
         // ---------------------------------------------------------------- beat cells
 
         private static SceneSpec BuildBeatSpec(SceneTemplate t, int variant)

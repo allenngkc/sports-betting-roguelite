@@ -1,0 +1,313 @@
+using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
+using NUnit.Framework;
+using SBR.Engine;
+using SBR.Game;
+using UnityEngine;
+using UnityEngine.TestTools;
+
+namespace SBR.Tests.PlayMode
+{
+    /// <summary>
+    /// TV Sweat Refinement Phase 2D (PRD §7.6): market-attributed corner and booking scenes.
+    ///
+    /// Phase 2C left Corner and Booking with team attribution wired correctly at the DATA level
+    /// (<c>CountBeneficiaryIsHome</c> mirrors the right steps) but with no visible causal
+    /// difference on screen: every corner played the SAME four-step cutaway regardless of which
+    /// of the three staged grammars (near post / far post / cleared) drove it, with no beat
+    /// showing the ball actually leaving the defending side; every booking showed a bare marker
+    /// with no visible challenge and no actor attachment. This file proves the fix mechanically —
+    /// by reading the authored <c>Step[]</c> script and the stage's real actor-routing state,
+    /// never by diagnostics or by trusting a <c>PlanSignature</c> alone (a signature can differ
+    /// while the rendered motion stays identical, which is exactly the bug this phase closes).
+    /// </summary>
+    public class TheaterStageAttributionTests
+    {
+        private GameObject _canvasGo;
+
+        [TearDown]
+        public void TearDown()
+        {
+            if (_canvasGo != null) Object.Destroy(_canvasGo);
+        }
+
+        private TheaterStage BuildStage()
+        {
+            _canvasGo = new GameObject("AttributionTestCanvas", typeof(Canvas));
+            TheaterStage stage = TheaterStage.Build(_canvasGo.transform, Vector2.zero, new Vector2(720f, 252f),
+                new Color(0.9f, 0.9f, 0.9f, 0.5f), new Color(0.01f, 0.01f, 0.02f, 1f));
+            stage.Show(true);
+            // Count markets always present home attacking right (SweatFlavor.PickedHomeForPresentation,
+            // see AppendFinalCounts's comment in TheaterStage) — pickedIsHome: true matches that.
+            stage.BeginLeg(Color.blue, Color.magenta, pickedIsHome: true, openingProb: 0.5f);
+            stage.timeScale = 0.15f;
+            return stage;
+        }
+
+        // ---------------------------------------------------------------- reflection into the
+        // private authored Step[] script.
+        //
+        // TheaterStageMatrixTests already establishes reflection-into-private-state as this
+        // codebase's accepted pattern for an otherwise-unobservable internal contract (its
+        // _revealFired probe). This extends the same idiom to the Step[] script itself: reading
+        // the authored waypoints/routes/markers directly is the only timing-INDEPENDENT way to
+        // prove "the motion on screen differs" — sampling animated dot positions instead would
+        // race the SmoothDamp convergence against however many real frames a fast test timeScale
+        // happens to allow before a short step's logical duration elapses.
+
+        private static readonly FieldInfo ScriptField =
+            typeof(TheaterStage).GetField("_script", BindingFlags.NonPublic | BindingFlags.Instance);
+        private static readonly System.Type StepType = typeof(TheaterStage).GetNestedType("Step", BindingFlags.NonPublic);
+        private static readonly FieldInfo BallField = StepType.GetField("Ball");
+        private static readonly FieldInfo MarkerField = StepType.GetField("Marker");
+        private static readonly FieldInfo RouteField = StepType.GetField("Route");
+        private static readonly FieldInfo AtkPickedField = StepType.GetField("AtkPicked");
+        private static readonly FieldInfo ChaseField = StepType.GetField("Chase");
+        private static readonly FieldInfo TempoField = StepType.GetField("Tempo");
+
+        private static byte ByteConst(string name)
+            => (byte)typeof(TheaterStage).GetField(name, BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+
+        private static readonly byte MkGoalVal = ByteConst("MkGoal");
+        private static readonly byte MkCornerVal = ByteConst("MkCorner");
+        private static readonly byte MkBookingVal = ByteConst("MkBooking");
+        private static readonly byte RouteCornerVal = ByteConst("RouteCorner");
+        private static readonly byte RouteBackLineVal = ByteConst("RouteBackLine");
+
+        private struct StepView
+        {
+            public Vector2 Ball;
+            public byte Marker;
+            public byte Route;
+            public bool AtkPicked;
+            public bool Chase;
+            public float Tempo;
+        }
+
+        private static StepView[] ReadScript(TheaterStage stage)
+        {
+            var arr = (System.Array)ScriptField.GetValue(stage);
+            Assert.IsNotNull(arr, "no scene script active — call ReadScript right after Play(Planned)Scene");
+            var result = new StepView[arr.Length];
+            for (int i = 0; i < arr.Length; i++)
+            {
+                object step = arr.GetValue(i);
+                result[i] = new StepView
+                {
+                    Ball = (Vector2)BallField.GetValue(step),
+                    Marker = (byte)MarkerField.GetValue(step),
+                    Route = (byte)RouteField.GetValue(step),
+                    AtkPicked = (bool)AtkPickedField.GetValue(step),
+                    Chase = (bool)ChaseField.GetValue(step),
+                    Tempo = (float)TempoField.GetValue(step),
+                };
+            }
+            return result;
+        }
+
+        private static TheaterScenePlan CornerPlan(MovementGrammar grammar, bool beneficiaryIsHome, bool forPicked,
+            SceneLane lane)
+        {
+            SceneTemplate template = beneficiaryIsHome ? SceneTemplate.CornerFor : SceneTemplate.CornerAgainst;
+            var sig = new PlanSignature(template, grammar, null, ScenePayoff.CornerDelivery,
+                PressureMode.MidPress, SpacingMode.Balanced, ReactionPattern.Recover);
+            var diag = new TheaterScenePlanDiagnostics(1, false, false, false, false, null);
+            return new TheaterScenePlan(template, SceneFactContract.Corner, grammar, null, ScenePayoff.CornerDelivery,
+                PressureMode.MidPress, SpacingMode.Balanced, ReactionPattern.Recover, lane,
+                beneficiaryIsHome, forPicked, null, true, sig, diag);
+        }
+
+        // ---------------------------------------------------------------- corner attribution
+
+        private static readonly (MovementGrammar Grammar, bool BeneficiaryHome)[] CornerCells =
+        {
+            (MovementGrammar.NearPost, true), (MovementGrammar.NearPost, false),
+            (MovementGrammar.FarPost, true), (MovementGrammar.FarPost, false),
+            (MovementGrammar.Cleared, true), (MovementGrammar.Cleared, false),
+        };
+
+        [UnityTest]
+        public IEnumerator Corner_grammars_render_as_three_distinct_attributed_sequences()
+        {
+            TheaterStage stage = BuildStage();
+
+            // SceneLane.NearFlank (0.32), not Center (0.5): NearPost's delivery lands at `lane`
+            // and FarPost's at `1 - lane` — at Center those are the SAME value (0.5), which would
+            // silently hide the exact regression this test exists to catch.
+            var step1YByGrammar = new Dictionary<MovementGrammar, float>();
+            var deliveryYByGrammar = new Dictionary<MovementGrammar, float>();
+
+            foreach (var cell in CornerCells)
+            {
+                string ctx = $"{cell.Grammar}/beneficiaryHome={cell.BeneficiaryHome}";
+                var count = new CountLedger.StagedCount(cell.BeneficiaryHome ? 1 : 0, cell.BeneficiaryHome ? 0 : 1, 0);
+                Assert.AreEqual(cell.BeneficiaryHome, count.BeneficiaryIsHome, $"{ctx}: test setup");
+
+                SceneSpec spec = new SceneSpec(SceneTemplate.CornerFor, 0, false, false, true, null, count, null,
+                    MarketKind.TotalCorners, new SweatPacer().SceneSeconds(SceneTemplate.CornerFor, false),
+                    count.BeneficiaryIsHome);
+                TheaterScenePlan plan = CornerPlan(cell.Grammar, count.BeneficiaryIsHome, true, SceneLane.NearFlank);
+
+                int goalCalls = 0, countCalls = 0, revealCalls = 0;
+                CountLedger.StagedCount? played = null;
+                bool done = false;
+                stage.PlayPlannedScene(plan, spec, g => goalCalls++, () => revealCalls++, () => done = true,
+                    c => { countCalls++; played = c; });
+                Assert.IsTrue(stage.ScenePlaying, $"{ctx}: never started");
+
+                // Mechanical proof #1 (data level, no animation timing involved): the script
+                // itself never begins as an unattributed cutaway at the flag, a REAL defending-
+                // side actor is touched (RouteBackLine) immediately before the RouteCorner
+                // delivery step, and no step anywhere carries a goal marker.
+                StepView[] script = ReadScript(stage);
+                Assert.Greater(script.Length, 3, $"{ctx}: too few steps for a drive-in/deflect/deliver shape");
+                Assert.AreNotEqual(RouteCornerVal, script[0].Route,
+                    $"{ctx}: a corner must not begin as an unattributed cutaway at the flag");
+                Assert.AreNotEqual(MkCornerVal, script[0].Marker, $"{ctx}: the marker must not fire on step 0");
+
+                int deliveryIx = System.Array.FindIndex(script, s => s.Marker == MkCornerVal);
+                Assert.GreaterOrEqual(deliveryIx, 1, $"{ctx}: no MkCorner delivery step found");
+                Assert.AreEqual(RouteCornerVal, script[deliveryIx].Route,
+                    $"{ctx}: the delivery step must route via RouteCorner");
+                Assert.AreEqual(RouteBackLineVal, script[deliveryIx - 1].Route,
+                    $"{ctx}: the step immediately before delivery must be a real defending-side " +
+                    "touch — the ball going out off the defender");
+                foreach (StepView s in script)
+                    Assert.AreNotEqual(MkGoalVal, s.Marker, $"{ctx}: corner scenes must never carry a goal marker");
+
+                step1YByGrammar[cell.Grammar] = script[1].Ball.y;
+                deliveryYByGrammar[cell.Grammar] = script[deliveryIx].Ball.y;
+
+                float w = 0f;
+                while (!done && w < 8f) { w += Time.deltaTime; yield return null; }
+                Assert.IsTrue(done, $"{ctx}: never completed");
+                Assert.IsFalse(stage.ScenePlaying, $"{ctx}: left the stage mid-scene");
+                Assert.AreEqual(0, goalCalls, $"{ctx}: corner scenes must never fire a goal callback");
+                Assert.AreEqual(1, countCalls, $"{ctx}: must fire the count callback exactly once");
+                Assert.AreEqual(1, revealCalls, $"{ctx}: must reveal exactly once");
+                Assert.IsTrue(played.HasValue, $"{ctx}: count callback never delivered a payload");
+                Assert.AreEqual(count.HomeDelta, played.Value.HomeDelta, $"{ctx}: staged payload must be preserved");
+                Assert.AreEqual(count.AwayDelta, played.Value.AwayDelta, $"{ctx}: staged payload must be preserved");
+                Assert.AreEqual(count.BeneficiaryIsHome, played.Value.BeneficiaryIsHome,
+                    $"{ctx}: staged payload must be preserved");
+
+                // Mechanical proof #2 (playback level): the actor the ball-out-off-the-defender
+                // beat actually touched is the OPPOSITE team of the staged beneficiary — proving
+                // routing followed CountBeneficiaryIsHome, never the mood/template.
+                Assert.IsTrue(stage.LastTouchedActor.HasValue,
+                    $"{ctx}: the ball-out-off-the-defender beat never touched a real actor");
+                Assert.AreEqual(!cell.BeneficiaryHome, stage.LastTouchedActor.Value.IsHome,
+                    $"{ctx}: the defending-side actor touched must be the OPPOSITE of the beneficiary");
+            }
+
+            // Mechanical proof #3: the three grammars are visibly different sequences, not one
+            // sequence a signature varies — NearPost and FarPost deliver to different lanes;
+            // Cleared's second step stays central (0.5) instead of following `lane` like the
+            // other two, because it cuts inside rather than going wide first.
+            Assert.AreNotEqual(deliveryYByGrammar[MovementGrammar.NearPost], deliveryYByGrammar[MovementGrammar.FarPost],
+                "NearPost and FarPost must deliver to visibly different lanes (near vs far post)");
+            Assert.AreNotEqual(step1YByGrammar[MovementGrammar.NearPost], step1YByGrammar[MovementGrammar.Cleared],
+                "Cleared's approach must read differently on screen from NearPost's/FarPost's wide buildup");
+            Assert.AreNotEqual(step1YByGrammar[MovementGrammar.FarPost], step1YByGrammar[MovementGrammar.Cleared],
+                "Cleared's approach must read differently on screen from NearPost's/FarPost's wide buildup");
+        }
+
+        [UnityTest]
+        public IEnumerator Corner_mood_and_beneficiary_can_disagree_and_both_stay_correct()
+        {
+            TheaterStage stage = BuildStage();
+
+            // The bettor's hope/dread MOOD (ForPicked / the CornerFor template — TheaterChoreographer's
+            // reading of the selection's Over/Under sense) says "hope": ForPicked=true,
+            // Template=CornerFor. The staged FACT the engine actually committed says the AWAY
+            // side wins this corner. TVS-S01's guard: these must be free to disagree, and
+            // routing must follow the fact, never the mood.
+            var count = new CountLedger.StagedCount(0, 1, 0); // AWAY actually wins the corner
+            Assert.IsFalse(count.BeneficiaryIsHome, "test setup: this batch must credit AWAY");
+
+            SceneSpec spec = new SceneSpec(SceneTemplate.CornerFor, 0, false, false,
+                forPicked: true, null, count, null, MarketKind.TotalCorners,
+                new SweatPacer().SceneSeconds(SceneTemplate.CornerFor, false), count.BeneficiaryIsHome);
+            TheaterScenePlan plan = CornerPlan(MovementGrammar.NearPost, count.BeneficiaryIsHome,
+                spec.ForPicked, SceneLane.Center);
+
+            int goalCalls = 0, countCalls = 0, revealCalls = 0;
+            CountLedger.StagedCount? played = null;
+            bool done = false;
+            stage.PlayPlannedScene(plan, spec, g => goalCalls++, () => revealCalls++, () => done = true,
+                c => { countCalls++; played = c; });
+
+            float w = 0f;
+            while (!done && w < 8f) { w += Time.deltaTime; yield return null; }
+            Assert.IsTrue(done, "the disagreement scene never completed");
+            Assert.AreEqual(0, goalCalls);
+            Assert.AreEqual(1, countCalls);
+            Assert.AreEqual(1, revealCalls);
+            Assert.IsTrue(played.HasValue);
+            Assert.IsFalse(played.Value.BeneficiaryIsHome,
+                "the staged fact says AWAY won it — the count payload must say so regardless of the hope mood");
+            Assert.IsTrue(stage.LastTouchedActor.HasValue);
+            Assert.IsTrue(stage.LastTouchedActor.Value.IsHome,
+                "AWAY is the beneficiary, so HOME must be the side mechanically touched conceding the " +
+                "corner — the CornerFor/hope mood must never leak into physical routing");
+        }
+
+        // ---------------------------------------------------------------- booking attribution
+
+        [UnityTest]
+        public IEnumerator Booking_shows_a_challenge_before_the_marker_and_cards_the_fouling_actor()
+        {
+            TheaterStage stage = BuildStage();
+
+            foreach (bool beneficiaryHome in new[] { true, false })
+            {
+                string ctx = $"beneficiaryHome={beneficiaryHome}";
+                var count = new CountLedger.StagedCount(beneficiaryHome ? 1 : 0, beneficiaryHome ? 0 : 1, 0);
+                Assert.AreEqual(beneficiaryHome, count.BeneficiaryIsHome, $"{ctx}: test setup");
+
+                SceneSpec spec = new SceneSpec(SceneTemplate.Booking, 0, false, false, true, null, count, null,
+                    MarketKind.TotalCards, new SweatPacer().SceneSeconds(SceneTemplate.Booking, false),
+                    count.BeneficiaryIsHome);
+
+                int goalCalls = 0, countCalls = 0, revealCalls = 0;
+                CountLedger.StagedCount? played = null;
+                bool done = false;
+                // Plan-free (legacy PlayScene) path deliberately: Booking's fix applies there too
+                // (see BuildBookingCore's call site — it is not gated on a plan being present).
+                stage.PlayScene(spec, g => goalCalls++, () => revealCalls++, () => done = true,
+                    c => { countCalls++; played = c; });
+                Assert.IsTrue(stage.ScenePlaying, $"{ctx}: never started");
+
+                // Mechanical proof #1: a real challenge beat (chase, high tempo) immediately
+                // precedes the marker, on the SAME side, so the card never appears out of nowhere.
+                StepView[] script = ReadScript(stage);
+                int markerIx = System.Array.FindIndex(script, s => s.Marker == MkBookingVal);
+                Assert.GreaterOrEqual(markerIx, 1, $"{ctx}: no visible run-up before the marker");
+                Assert.IsTrue(script[markerIx - 1].Chase,
+                    $"{ctx}: the step before the marker must be a visible challenge (chase)");
+                Assert.GreaterOrEqual(script[markerIx - 1].Tempo, 0.9f,
+                    $"{ctx}: the challenge beat must read as urgent contact, not idle buildup");
+                Assert.AreEqual(script[markerIx].AtkPicked, script[markerIx - 1].AtkPicked,
+                    $"{ctx}: the marker step must stay on the SAME side as the challenge that led into it");
+
+                float w = 0f;
+                while (!done && w < 8f) { w += Time.deltaTime; yield return null; }
+                Assert.IsTrue(done, $"{ctx}: never completed");
+                Assert.IsFalse(stage.ScenePlaying, $"{ctx}: left the stage mid-scene");
+                Assert.AreEqual(0, goalCalls, $"{ctx}: booking scenes must never fire a goal callback");
+                Assert.AreEqual(1, countCalls, $"{ctx}: must fire the count callback exactly once");
+                Assert.AreEqual(1, revealCalls, $"{ctx}: must reveal exactly once");
+                Assert.IsTrue(played.HasValue, $"{ctx}: count callback never delivered a payload");
+                Assert.AreEqual(count.BeneficiaryIsHome, played.Value.BeneficiaryIsHome,
+                    $"{ctx}: staged payload must be preserved");
+
+                // Mechanical proof #2: the marker attached to a REAL actor on the fouling side —
+                // not merely at the ball's coordinate.
+                Assert.IsTrue(stage.MarkerActorRouted.HasValue, $"{ctx}: the marker never attached to a real actor");
+                Assert.AreEqual(beneficiaryHome, stage.MarkerActorRouted.Value.IsHome,
+                    $"{ctx}: the card must land on the fouling side's actor, matching the staged beneficiary");
+            }
+        }
+    }
+}
