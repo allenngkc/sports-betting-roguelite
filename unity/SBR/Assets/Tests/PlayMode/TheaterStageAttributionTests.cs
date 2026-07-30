@@ -65,6 +65,7 @@ namespace SBR.Tests.PlayMode
         private static readonly FieldInfo AtkPickedField = StepType.GetField("AtkPicked");
         private static readonly FieldInfo ChaseField = StepType.GetField("Chase");
         private static readonly FieldInfo TempoField = StepType.GetField("Tempo");
+        private static readonly FieldInfo DurField = StepType.GetField("Dur");
 
         private static byte ByteConst(string name)
             => (byte)typeof(TheaterStage).GetField(name, BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
@@ -74,6 +75,15 @@ namespace SBR.Tests.PlayMode
         private static readonly byte MkBookingVal = ByteConst("MkBooking");
         private static readonly byte RouteCornerVal = ByteConst("RouteCorner");
         private static readonly byte RouteBackLineVal = ByteConst("RouteBackLine");
+        // Phase 2E-1: one marker byte per non-goal near-miss payoff (MkSave reused for
+        // KeeperSave only — see TheaterStage's own doc on why the other five never reuse it).
+        private static readonly byte MkSaveVal = ByteConst("MkSave");
+        private static readonly byte MkBlockVal = ByteConst("MkBlock");
+        private static readonly byte MkInterceptVal = ByteConst("MkIntercept");
+        private static readonly byte MkClearanceVal = ByteConst("MkClearance");
+        private static readonly byte MkPostVal = ByteConst("MkPost");
+        private static readonly byte MkNearWideVal = ByteConst("MkNearWide");
+        private static readonly byte RouteShotVal = ByteConst("RouteShot");
 
         private struct StepView
         {
@@ -83,6 +93,7 @@ namespace SBR.Tests.PlayMode
             public bool AtkPicked;
             public bool Chase;
             public float Tempo;
+            public float Dur;
         }
 
         private static StepView[] ReadScript(TheaterStage stage)
@@ -101,6 +112,7 @@ namespace SBR.Tests.PlayMode
                     AtkPicked = (bool)AtkPickedField.GetValue(step),
                     Chase = (bool)ChaseField.GetValue(step),
                     Tempo = (float)TempoField.GetValue(step),
+                    Dur = (float)DurField.GetValue(step),
                 };
             }
             return result;
@@ -307,6 +319,151 @@ namespace SBR.Tests.PlayMode
                 Assert.IsTrue(stage.MarkerActorRouted.HasValue, $"{ctx}: the marker never attached to a real actor");
                 Assert.AreEqual(beneficiaryHome, stage.MarkerActorRouted.Value.IsHome,
                     $"{ctx}: the card must land on the fouling side's actor, matching the staged beneficiary");
+            }
+        }
+
+        // ---------------------------------------------------------------- near-miss payoffs
+        //
+        // Phase 2E-1 (PRD §7.2/§7.3/§10): the planner already chooses among six near-miss
+        // payoffs (Block/Interception/KeeperSave/Clearance/Post/NearWide), but until now the
+        // stage rendered ONE shape (approach, approach, shot, "off the bar" MkSave, a dead-air
+        // hold, "cleared off the line") regardless of which payoff was staged. This proves the
+        // fix the same way the corner/booking tests above do: reading the authored Step[] script
+        // mechanically, never trusting a PlanSignature or a diagnostics string alone.
+
+        private static TheaterScenePlan NearMissPlan(ScenePayoff payoff, bool hope, SceneLane lane)
+        {
+            SceneTemplate template = hope ? SceneTemplate.NearMissHope : SceneTemplate.NearMissScare;
+            var sig = new PlanSignature(template, MovementGrammar.Central, ChanceShape.Direct, payoff,
+                PressureMode.MidPress, SpacingMode.Balanced, ReactionPattern.Recover);
+            var diag = new TheaterScenePlanDiagnostics(1, false, false, false, false, null);
+            return new TheaterScenePlan(template, SceneFactContract.NearMiss, MovementGrammar.Central,
+                ChanceShape.Direct, payoff, PressureMode.MidPress, SpacingMode.Balanced,
+                ReactionPattern.Recover, lane, null, true, null, false, sig, diag);
+        }
+
+        private static readonly (ScenePayoff Payoff, byte ExpectedMarker)[] NearMissCells =
+        {
+            (ScenePayoff.Block, MkBlockVal),
+            (ScenePayoff.Interception, MkInterceptVal),
+            (ScenePayoff.KeeperSave, MkSaveVal),
+            (ScenePayoff.Clearance, MkClearanceVal),
+            (ScenePayoff.Post, MkPostVal),
+            (ScenePayoff.NearWide, MkNearWideVal),
+        };
+
+        [UnityTest]
+        public IEnumerator NearMiss_payoffs_render_as_six_distinct_authored_endings()
+        {
+            TheaterStage stage = BuildStage();
+            var routeSignatures = new Dictionary<ScenePayoff, string>();
+
+            foreach (var cell in NearMissCells)
+            {
+                string ctx = $"{cell.Payoff}";
+                SceneSpec spec = new SceneSpec(SceneTemplate.NearMissHope, 0, false, false, true, null,
+                    new SweatPacer().SceneSeconds(SceneTemplate.NearMissHope, false));
+                TheaterScenePlan plan = NearMissPlan(cell.Payoff, hope: true, SceneLane.Center);
+
+                int goalCalls = 0, revealCalls = 0;
+                bool done = false;
+                stage.PlayPlannedScene(plan, spec, g => goalCalls++, () => revealCalls++, () => done = true);
+                Assert.IsTrue(stage.ScenePlaying, $"{ctx}: never started");
+
+                // Mechanical proof #1 (data level): a near miss never carries a goal or corner
+                // marker, fires exactly one payoff marker matching the staged ScenePayoff, and
+                // the authored duration sums to the scene's total (B * 1.00 — Phase 2D's same
+                // invariant for the three corner shapes).
+                StepView[] script = ReadScript(stage);
+                int markerCount = 0, markerIx = -1;
+                float durSum = 0f;
+                foreach (StepView s in script)
+                {
+                    Assert.AreNotEqual(MkGoalVal, s.Marker, $"{ctx}: a near miss must never carry a goal marker");
+                    Assert.AreNotEqual(MkCornerVal, s.Marker,
+                        $"{ctx}: a near miss must never award a corner (no count fact exists on this spec)");
+                    durSum += s.Dur;
+                }
+                for (int i = 0; i < script.Length; i++)
+                    if (script[i].Marker != 0) { markerCount++; markerIx = i; }
+                Assert.AreEqual(1, markerCount, $"{ctx}: must fire exactly one payoff marker");
+                Assert.AreEqual(cell.ExpectedMarker, script[markerIx].Marker,
+                    $"{ctx}: the payoff marker must match the staged ScenePayoff");
+                Assert.AreEqual(spec.Duration, durSum, spec.Duration * 0.001f,
+                    $"{ctx}: authored total duration must be preserved (B * 1.00)");
+
+                // Mechanical proof #2: Interception is the only shape that wins the ball back
+                // BEFORE any shot is struck — no RouteShot step anywhere in its script.
+                bool hasShot = System.Array.Exists(script, s => s.Route == RouteShotVal);
+                if (cell.Payoff == ScenePayoff.Interception)
+                    Assert.IsFalse(hasShot, $"{ctx}: interception must win the ball back before any shot");
+
+                routeSignatures[cell.Payoff] = string.Join(",", System.Array.ConvertAll(script, s => s.Route.ToString()));
+
+                float w = 0f;
+                while (!done && w < 8f) { w += Time.deltaTime; yield return null; }
+                Assert.IsTrue(done, $"{ctx}: never completed");
+                Assert.IsFalse(stage.ScenePlaying, $"{ctx}: left the stage mid-scene");
+                Assert.AreEqual(0, goalCalls, $"{ctx}: a near miss must never fire a goal callback");
+                Assert.AreEqual(1, revealCalls, $"{ctx}: must reveal exactly once");
+            }
+
+            // Mechanical proof #3: all six are genuinely different Route sequences, not one
+            // sequence a signature varies.
+            var distinctShapes = new HashSet<string>(routeSignatures.Values);
+            Assert.AreEqual(6, distinctShapes.Count,
+                "all six near-miss payoffs must render as mechanically distinct Route sequences");
+        }
+
+        [UnityTest]
+        public IEnumerator NearMiss_payoff_shape_and_hope_dread_mood_stay_independent()
+        {
+            TheaterStage stage = BuildStage();
+
+            // TVS-S01's guard, restated for near miss: the payoff SHAPE (plan.Payoff) and the
+            // bettor's hope/dread MOOD (NearMissHope vs NearMissScare) must be free to vary
+            // independently. Proof: for the SAME payoff, Hope's script and Scare's script must
+            // carry the identical Marker/Route/Chase sequence (the shape), differing ONLY in the
+            // mirror-sensitive fields (Ball.x, AtkPicked) — exactly what Mirror() does and nothing
+            // else, i.e. choosing the mood never changes WHICH marker fires or the route taken.
+            foreach (var cell in NearMissCells)
+            {
+                string ctx = $"{cell.Payoff}";
+                SceneSpec hopeSpec = new SceneSpec(SceneTemplate.NearMissHope, 0, false, false, true, null,
+                    new SweatPacer().SceneSeconds(SceneTemplate.NearMissHope, false));
+                SceneSpec scareSpec = new SceneSpec(SceneTemplate.NearMissScare, 0, false, false, true, null,
+                    new SweatPacer().SceneSeconds(SceneTemplate.NearMissScare, false));
+                TheaterScenePlan hopePlan = NearMissPlan(cell.Payoff, hope: true, SceneLane.Center);
+                TheaterScenePlan scarePlan = NearMissPlan(cell.Payoff, hope: false, SceneLane.Center);
+
+                bool hopeDone = false;
+                stage.PlayPlannedScene(hopePlan, hopeSpec, null, null, () => hopeDone = true);
+                StepView[] hopeScript = ReadScript(stage);
+                float w = 0f;
+                while (!hopeDone && w < 8f) { w += Time.deltaTime; yield return null; }
+                Assert.IsTrue(hopeDone, $"{ctx} hope: never completed");
+
+                bool scareDone = false;
+                stage.PlayPlannedScene(scarePlan, scareSpec, null, null, () => scareDone = true);
+                StepView[] scareScript = ReadScript(stage);
+                w = 0f;
+                while (!scareDone && w < 8f) { w += Time.deltaTime; yield return null; }
+                Assert.IsTrue(scareDone, $"{ctx} scare: never completed");
+
+                Assert.AreEqual(hopeScript.Length, scareScript.Length, $"{ctx}: mood must not change step count");
+                for (int i = 0; i < hopeScript.Length; i++)
+                {
+                    Assert.AreEqual(hopeScript[i].Marker, scareScript[i].Marker,
+                        $"{ctx} step {i}: mood must not change which marker fires");
+                    Assert.AreEqual(hopeScript[i].Route, scareScript[i].Route,
+                        $"{ctx} step {i}: mood must not change the route taken");
+                    Assert.AreEqual(hopeScript[i].Chase, scareScript[i].Chase,
+                        $"{ctx} step {i}: mood must not change the chase beat");
+                    Assert.AreEqual(!hopeScript[i].AtkPicked, scareScript[i].AtkPicked,
+                        $"{ctx} step {i}: Scare must mirror AtkPicked (opposite side's story)");
+                    Assert.AreEqual(1f - hopeScript[i].Ball.x, scareScript[i].Ball.x, 0.0001f,
+                        $"{ctx} step {i}: Scare must mirror the ball's x coordinate");
+                }
             }
         }
     }

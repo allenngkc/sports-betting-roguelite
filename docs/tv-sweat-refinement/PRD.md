@@ -492,6 +492,32 @@ The catalog must contain at minimum:
 Not every cross-product is valid. The planner filters by the truth contract, then ranks valid
 candidates deterministically.
 
+**Status: the 6 non-goal endings are implemented in Phase 2E-1, 2026-07-29.** Until this phase the
+stage rendered one fixed shape (approach, approach, shot, "off the bar" save, a dead-air hold,
+"cleared off the line") for every near-miss payoff the planner chose — `Block`, `Interception`,
+`KeeperSave`, `Clearance`, `Post`, and `NearWide` all looked identical on screen. Six authored
+sequences now differ mechanically, keyed off `plan.Payoff` alone (movement grammar, chance shape,
+and reactions stay out of scope for this phase — that is 2E-2): `Block` lets the shot fly, then a
+REAL defender (`RouteBackLine`) stops it and the ball is recycled, still in play; `Interception` is
+the only shape with no shot step at all — a real defender wins it before any strike, and the
+carry-away visibly flips which side is attacking; `KeeperSave` is unchanged (also the plan-null
+legacy fallback, so a plan-free near miss looks exactly as it always has); `Clearance` plays the
+same shot-then-defender beat as `Block` but sends the loose ball well out of danger via
+`RouteBackLine` instead of recycling it; `Post` and `NearWide` are the two shapes with no actor at
+the payoff at all (the frame is not a character, and a wide miss is never touched) — `NearWide` is
+also the only shot-adjacent shape that never uses `RouteShot`, since that route forces an on-target
+aim that would contradict "passes outside the post". Each payoff fires its own marker
+(`MkBlock`/`MkIntercept`/`MkSave`/`MkClearance`/`MkPost`/`MkNearWide`) and exactly one reveal — none
+reuses `MkSave`'s keeper-lunge behavior for a chance the keeper never touched. All six sum to the
+same total authored duration, `B × 1.00`. `NearMissHope`/`NearMissScare` stays the bettor's
+hope/dread mood and keeps mirroring the whole shape; the payoff shape is independent, exactly as
+Corner's grammar and mood stay independent (TVS-S01's guard, restated).
+
+Evidence: engine 160/160, EditMode 129/129, PlayMode 40/40 (37 baseline + 3 new), including a
+strengthened 48-cell matrix that now exercises all six payoffs. **The on-screen appearance is
+`PENDING-VISUAL-EVIDENCE`** — `-nographics` rasterises no frame, so these tests prove the motion,
+actor, and marker data are right, not that the six endings read as distinct at couch distance.
+
 ### 7.4 Repetition control
 
 Maintain a revealed-history ring buffer of scene signatures. Candidate selection:

@@ -295,6 +295,57 @@ namespace SBR.Tests.PlayMode
             }
         }
 
+        // ---------------------------------------------------------------- Phase 2E-1 strengthening
+        //
+        // The 48-cell matrix above plays NearMissHope/NearMissScare through the LEGACY
+        // PlayScene(SceneSpec) entry point (plan: null) — by design (§6.2's 48 cells are the
+        // "16 templates x 3 legacy variants" contract). That path has no ScenePayoff to pick
+        // among (see BuildNearMissCore's plan-null fallback) and always renders KeeperSave, so
+        // the matrix alone never exercises Block/Interception/Clearance/Post/NearWide. This is
+        // the PRD §7.3 "6 non-goal endings" / this dispatch's "strengthen it" evidence: every one
+        // of the six payoffs actually starts, completes, reveals exactly once, and never fires a
+        // goal callback through the real stage — without touching the 48-cell matrix itself.
+
+        private static TheaterScenePlan NearMissPlanFor(ScenePayoff payoff, bool hope)
+        {
+            SceneTemplate template = hope ? SceneTemplate.NearMissHope : SceneTemplate.NearMissScare;
+            var sig = new PlanSignature(template, MovementGrammar.Central, ChanceShape.Direct, payoff,
+                PressureMode.MidPress, SpacingMode.Balanced, ReactionPattern.Recover);
+            var diag = new TheaterScenePlanDiagnostics(1, false, false, false, false, null);
+            return new TheaterScenePlan(template, SceneFactContract.NearMiss, MovementGrammar.Central,
+                ChanceShape.Direct, payoff, PressureMode.MidPress, SpacingMode.Balanced,
+                ReactionPattern.Recover, SceneLane.Center, null, true, null, false, sig, diag);
+        }
+
+        [UnityTest]
+        public IEnumerator All_six_near_miss_payoffs_are_actually_exercised()
+        {
+            TheaterStage stage = BuildStage();
+
+            foreach (ScenePayoff payoff in
+                new[] { ScenePayoff.Block, ScenePayoff.Interception, ScenePayoff.KeeperSave,
+                    ScenePayoff.Clearance, ScenePayoff.Post, ScenePayoff.NearWide })
+            foreach (bool hope in new[] { true, false })
+            {
+                string ctx = $"NearMiss {payoff}/hope={hope}";
+                SceneTemplate template = hope ? SceneTemplate.NearMissHope : SceneTemplate.NearMissScare;
+                SceneSpec spec = new SceneSpec(template, 0, false, false, true, null,
+                    new SweatPacer().SceneSeconds(template, false));
+                TheaterScenePlan plan = NearMissPlanFor(payoff, hope);
+
+                int goalCalls = 0, revealCalls = 0;
+                bool done = false;
+                stage.PlayPlannedScene(plan, spec, g => goalCalls++, () => revealCalls++, () => done = true);
+                Assert.IsTrue(stage.ScenePlaying, $"{ctx}: never started");
+                int safety = 0;
+                while (!done && safety < 4000) { safety++; yield return null; }
+                Assert.IsTrue(done, $"{ctx}: never completed");
+                Assert.IsFalse(stage.ScenePlaying, $"{ctx}: left the stage mid-scene");
+                Assert.AreEqual(0, goalCalls, $"{ctx}: a near miss must never fire a goal callback");
+                Assert.AreEqual(1, revealCalls, $"{ctx}: must reveal exactly once");
+            }
+        }
+
         // ---------------------------------------------------------------- beat cells
 
         private static SceneSpec BuildBeatSpec(SceneTemplate t, int variant)

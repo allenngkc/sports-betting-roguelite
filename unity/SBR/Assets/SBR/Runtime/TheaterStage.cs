@@ -97,6 +97,17 @@ namespace SBR.Game
         // ---- scene playback (M-T3) ----
         private const byte MkNone = 0, MkGoal = 1, MkSuspend = 2, MkSave = 3, MkVoid = 4,
             MkCorner = 5, MkBooking = 6;
+        // Phase 2E-1 (PRD §7.2/§7.3/§10): one marker per non-goal near-miss payoff. MkSave keeps
+        // its pre-existing "the save IS the near-miss payoff" meaning and is used ONLY for
+        // ScenePayoff.KeeperSave — it is the one payoff with a real actor (the keeper) physically
+        // reacting (KeeperLunge). The other five payoffs have no keeper action to key off, so
+        // each fires FireReveal() at ITS OWN causal moment instead of borrowing MkSave's (which
+        // would wrongly invoke KeeperLunge for a chance the keeper never touched) and instead of
+        // relying on the "no explicit marker -> reveal at scene end" fallback (that fallback
+        // exists for genuinely markerless templates like Territory/CalmPossession; a near-miss
+        // payoff always has a causal moment to mark). See BuildNearMissCore for which route/actor
+        // each marker pairs with.
+        private const byte MkBlock = 7, MkIntercept = 8, MkClearance = 9, MkPost = 10, MkNearWide = 11;
         // Ball routing per step (M-T3.1): how the authored waypoint finds a real actor.
         private const byte RoutePass = 0;      // nearest attacking OUTFIELD dot to the waypoint — a pass
         private const byte RouteAuthored = 1;  // fly to the authored point (holds, restarts to spots)
@@ -639,6 +650,31 @@ namespace SBR.Game
                     KeeperLunge();
                     FireReveal(); // the save IS the near-miss payoff
                     break;
+                case MkBlock:
+                    // The block IS the near-miss payoff: a REAL defender (RouteBackLine, see
+                    // BuildNearMissCore) already stopped it this step — the ball stays in play.
+                    FireReveal();
+                    break;
+                case MkIntercept:
+                    // The interception IS the near-miss payoff: possession changed BEFORE any
+                    // shot — this script never carried a RouteShot step at all.
+                    FireReveal();
+                    break;
+                case MkClearance:
+                    // The clearance IS the near-miss payoff: a REAL defender (RouteBackLine)
+                    // sends it well out of danger.
+                    FireReveal();
+                    break;
+                case MkPost:
+                    // The frame contact IS the near-miss payoff: no actor touches it
+                    // (RouteAuthored deflection) — never a goal flash.
+                    FireReveal();
+                    break;
+                case MkNearWide:
+                    // Passing wide IS the near-miss payoff: no keeper contact, no actor touches
+                    // it (RouteAuthored — never RouteShot's forced on-target aim).
+                    FireReveal();
+                    break;
                 case MkVoid:
                     ApplyVoidTint();
                     break;
@@ -1006,17 +1042,21 @@ namespace SBR.Game
 
                 case SceneTemplate.NearMissHope:
                 case SceneTemplate.NearMissScare:
-                    core = new[]
-                    {
-                        S(B * 0.26f, 0.62f, lane, 0.62f, 0.7f),
-                        S(B * 0.20f, 0.86f, lane, 0.68f, 1f),
-                        S(B * 0.12f, 0.99f, 0.47f, 0.72f, 1f, route: RouteShot),     // the shot
-                        S(B * 0.10f, 0.94f, 0.82f, 0.70f, 1f, MkSave, route: RouteAuthored), // off the bar
-                        S(B * 0.12f, 0.92f, 0.80f, 0.70f, 0f, route: RouteAuthored), // the hold — dead air
-                        S(B * 0.20f, 0.60f, 0.35f, 0.58f, 0.3f, route: RouteBackLine), // cleared off the line
-                    };
+                {
+                    // Phase 2E-1 (PRD §7.2/§7.3/§10): six visibly distinct authored non-goal
+                    // endings, chosen by plan.Payoff (BuildNearMissCore), not one keeper-save
+                    // shape rendering regardless of which of the six the planner chose. The
+                    // legacy plan-null PlayScene path has no payoff to pick among and falls back
+                    // to KeeperSave — the EXACT shape this template always rendered before this
+                    // phase (unlike Corner's plan-null fallback, which had to move OFF its old
+                    // uncaused shape to fix a defect; near miss's old shape was never wrong, just
+                    // the only one that ever played, so a plan-free near miss's on-screen
+                    // appearance is unchanged by this phase).
+                    ScenePayoff? payoff = plan.HasValue ? plan.Value.Payoff : (ScenePayoff?)null;
+                    core = BuildNearMissCore(payoff, B, lane);
                     if (spec.Template == SceneTemplate.NearMissScare) core = Mirror(core);
                     break;
+                }
 
                 case SceneTemplate.CalmPossession:
                 {
@@ -1150,6 +1190,122 @@ namespace SBR.Game
                     atkPicked: bookingAttacksHome, count: count),
                 S(B * 0.26f, 0.50f, 0.50f, 0.50f, 0.15f, route: RouteAuthored),
             };
+
+        /// <summary>Phase 2E-1 (PRD §7.2/§7.3/§10): six visibly distinct authored non-goal
+        /// endings, not one keeper-save shape a signature varies. Every shape is built in the
+        /// PICKED frame and mirrored whole by the caller for <see cref="SceneTemplate.NearMissScare"/>
+        /// — the payoff SHAPE (this method) and the bettor's hope/dread MOOD
+        /// (NearMissHope/NearMissScare) stay independent, exactly like Corner's grammar and
+        /// CornerFor/CornerAgainst mood do (TVS-S01's guard, restated for this phase). Each shape
+        /// differs mechanically — not merely by signature — in its <c>Route</c> sequence, which
+        /// actor (if any) the ball resolves to, and where the ball ends up:
+        /// <list type="bullet">
+        /// <item><description><see cref="ScenePayoff.Block"/>: the shot is struck
+        /// (<see cref="RouteShot"/>), then a REAL defender steps into its path
+        /// (<see cref="RouteBackLine"/>, <c>chase: true</c>) and the loose ball is recycled by
+        /// the attack (<see cref="RoutePass"/>) — it stays in play, never a dead-air hold.</description></item>
+        /// <item><description><see cref="ScenePayoff.Interception"/>: the ONLY shape with no
+        /// <see cref="RouteShot"/> step anywhere — a REAL defender
+        /// (<see cref="RouteBackLine"/>, <c>chase: true</c>) wins it back before any shot is
+        /// struck, and the tail explicitly switches <c>AtkPicked</c> to the interceptor's side so
+        /// the carry-away visibly reads as a possession change, settling neutrally rather than
+        /// building toward a second chance (a turnover must never imply a counter-goal).</description></item>
+        /// <item><description><see cref="ScenePayoff.KeeperSave"/>: unchanged from this
+        /// template's pre-Phase-2E-1 shape (<see cref="MkSave"/> + <see cref="KeeperLunge"/>) —
+        /// also the plan-null legacy fallback (<paramref name="payoff"/> null), so a plan-free
+        /// near miss's on-screen appearance is exactly what it always was.</description></item>
+        /// <item><description><see cref="ScenePayoff.Clearance"/>: the shot is struck, a REAL
+        /// defender wins it (<see cref="RouteBackLine"/>, <c>chase: true</c>), then the tail ALSO
+        /// routes via <see cref="RouteBackLine"/> — sent well out of danger, deep — distinct from
+        /// Block's tail, which stays live via <see cref="RoutePass"/> instead.</description></item>
+        /// <item><description><see cref="ScenePayoff.Post"/>: the shot is struck, then deflects
+        /// off the frame via <see cref="RouteAuthored"/> — no actor resolves at the marker step at
+        /// all (the frame is not a character) — never a goal flash.</description></item>
+        /// <item><description><see cref="ScenePayoff.NearWide"/>: the ONLY shot-adjacent shape
+        /// that never plays a <see cref="RouteShot"/> step — <see cref="RouteShot"/> forces an
+        /// on-target aim (see its own doc), which would contradict "passes outside the post", so
+        /// the strike is authored directly (<see cref="RouteAuthored"/>) to a point clearly
+        /// outside the goal mouth band; no actor resolves at the marker step, and no keeper
+        /// action fires (<see cref="MkNearWide"/> never invokes <see cref="KeeperLunge"/>).</description></item>
+        /// </list>
+        /// Every shape's step-duration fractions sum to 1, so the scene's total authored duration
+        /// (<c>B</c>) is identical regardless of which payoff plays — the same invariant Phase
+        /// 2D's <see cref="BuildCornerCore"/> holds for the three corner shapes.</summary>
+        private static Step[] BuildNearMissCore(ScenePayoff? payoff, float B, float lane)
+        {
+            switch (payoff)
+            {
+                case ScenePayoff.Block:
+                    return new[]
+                    {
+                        S(B * 0.24f, 0.60f, lane, 0.60f, 0.7f),
+                        S(B * 0.20f, 0.84f, lane, 0.68f, 1f),
+                        S(B * 0.12f, 0.97f, 0.47f, 0.72f, 1f, route: RouteShot), // the shot is struck
+                        // A REAL defender steps into its path — the ball stays in play.
+                        S(B * 0.14f, 0.90f, 0.72f, 0.70f, 1f, MkBlock, route: RouteBackLine, chase: true),
+                        S(B * 0.30f, 0.66f, 0.55f, 0.60f, 0.6f, route: RoutePass), // recycled, still live
+                    };
+
+                case ScenePayoff.Interception:
+                    return new[]
+                    {
+                        S(B * 0.28f, 0.58f, lane, 0.58f, 0.7f),
+                        S(B * 0.24f, 0.78f, lane, 0.66f, 0.9f, chase: true), // defense closing in
+                        // Won BEFORE any shot — no RouteShot step exists anywhere in this shape.
+                        S(B * 0.16f, 0.82f, 0.55f, 0.66f, 1f, MkIntercept, route: RouteBackLine, chase: true),
+                        // The interceptor's side visibly carries it away — a real possession flip.
+                        S(B * 0.16f, 0.60f, 0.48f, 0.58f, 0.8f, route: RoutePass, atkPicked: false),
+                        // Settles neutrally — never builds toward a second chance for the other side.
+                        S(B * 0.16f, 0.45f, 0.50f, 0.50f, 0.3f, route: RouteAuthored, atkPicked: false),
+                    };
+
+                case ScenePayoff.Clearance:
+                    return new[]
+                    {
+                        S(B * 0.24f, 0.60f, lane, 0.60f, 0.7f),
+                        S(B * 0.20f, 0.84f, lane, 0.68f, 1f),
+                        S(B * 0.12f, 0.97f, 0.47f, 0.72f, 1f, route: RouteShot), // the shot / cross
+                        // A REAL defender wins it and sends it well out of danger, deep.
+                        S(B * 0.12f, 0.86f, 0.62f, 0.72f, 1f, MkClearance, route: RouteBackLine, chase: true),
+                        S(B * 0.32f, 0.35f, 0.28f, 0.48f, 0.4f, route: RouteBackLine),
+                    };
+
+                case ScenePayoff.Post:
+                    return new[]
+                    {
+                        S(B * 0.26f, 0.62f, lane, 0.62f, 0.7f),
+                        S(B * 0.20f, 0.86f, lane, 0.68f, 1f),
+                        S(B * 0.12f, 0.99f, 0.47f, 0.72f, 1f, route: RouteShot), // the shot is struck
+                        // Clatters off the frame — no actor touches it, never a goal flash.
+                        S(B * 0.10f, 0.985f, 0.42f, 0.72f, 1f, MkPost, route: RouteAuthored),
+                        S(B * 0.32f, 0.55f, 0.45f, 0.55f, 0.3f, route: RouteAuthored), // rebound drifts away
+                    };
+
+                case ScenePayoff.NearWide:
+                    return new[]
+                    {
+                        S(B * 0.26f, 0.62f, lane, 0.62f, 0.7f),
+                        S(B * 0.22f, 0.86f, lane, 0.68f, 1f),
+                        S(B * 0.14f, 0.97f, 0.80f, 0.74f, 1f, route: RoutePass), // the strike shapes up
+                        // Dragged wide of the frame — never RouteShot's forced on-target aim, no
+                        // actor touches it, no keeper contact.
+                        S(B * 0.10f, 0.99f, 0.86f, 0.75f, 1f, MkNearWide, route: RouteAuthored),
+                        S(B * 0.28f, 0.55f, 0.50f, 0.55f, 0.3f, route: RouteAuthored), // goal kick, drifts back
+                    };
+
+                case ScenePayoff.KeeperSave:
+                default:
+                    return new[]
+                    {
+                        S(B * 0.26f, 0.62f, lane, 0.62f, 0.7f),
+                        S(B * 0.20f, 0.86f, lane, 0.68f, 1f),
+                        S(B * 0.12f, 0.99f, 0.47f, 0.72f, 1f, route: RouteShot),     // the shot
+                        S(B * 0.10f, 0.94f, 0.82f, 0.70f, 1f, MkSave, route: RouteAuthored), // off the bar
+                        S(B * 0.12f, 0.92f, 0.80f, 0.70f, 0f, route: RouteAuthored), // the hold — dead air
+                        S(B * 0.20f, 0.60f, 0.35f, 0.58f, 0.3f, route: RouteBackLine), // cleared off the line
+                    };
+            }
+        }
 
         /// <summary>Phase 2C: the plan's own independently-chosen <see cref="SceneLane"/> as a
         /// pitch-fraction, matching <see cref="Lane(int)"/>'s legacy value set exactly (0.5 / 0.32
