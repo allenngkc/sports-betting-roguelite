@@ -84,6 +84,9 @@ namespace SBR.Tests.PlayMode
         private static readonly byte MkPostVal = ByteConst("MkPost");
         private static readonly byte MkNearWideVal = ByteConst("MkNearWide");
         private static readonly byte RouteShotVal = ByteConst("RouteShot");
+        // Phase 2E-2: SetPiece's static-setup step is the only grammar buildup step that routes
+        // via RouteAuthored instead of RoutePass — see BuildGrammarBuildup's doc.
+        private static readonly byte RouteAuthoredVal = ByteConst("RouteAuthored");
 
         private struct StepView
         {
@@ -465,6 +468,144 @@ namespace SBR.Tests.PlayMode
                         $"{ctx} step {i}: Scare must mirror the ball's x coordinate");
                 }
             }
+        }
+
+        // ---------------------------------------------------------------- Phase 2E-2: grammars
+
+        private static TheaterScenePlan GrammarPlan(MovementGrammar grammar, SceneLane lane)
+        {
+            const SceneTemplate template = SceneTemplate.NearMissHope;
+            var sig = new PlanSignature(template, grammar, ChanceShape.Direct, ScenePayoff.KeeperSave,
+                PressureMode.MidPress, SpacingMode.Balanced, ReactionPattern.Recover);
+            var diag = new TheaterScenePlanDiagnostics(1, false, false, false, false, null);
+            return new TheaterScenePlan(template, SceneFactContract.NearMiss, grammar,
+                ChanceShape.Direct, ScenePayoff.KeeperSave, PressureMode.MidPress, SpacingMode.Balanced,
+                ReactionPattern.Recover, lane, null, true, null, false, sig, diag);
+        }
+
+        private static readonly MovementGrammar[] BuildupGrammars =
+        {
+            MovementGrammar.Central,
+            MovementGrammar.Wing,
+            MovementGrammar.Switch,
+            MovementGrammar.Counter,
+            MovementGrammar.SetPiece,
+        };
+
+        /// <summary>Phase 2E-2 (PRD §7.3, §2): the five buildup grammars must render as five
+        /// mechanically different approaches, not one approach with a different lane — that is the
+        /// exact defect PRD §2 names. Grammar is held as the ONLY variable here: same template,
+        /// same payoff, same lane, same pressure/spacing/reaction. Anything that differs between
+        /// these five scripts is therefore attributable to grammar alone.</summary>
+        [UnityTest]
+        public IEnumerator Buildup_grammars_render_as_five_distinct_approaches()
+        {
+            TheaterStage stage = BuildStage();
+            var fingerprints = new Dictionary<MovementGrammar, string>();
+            var totals = new Dictionary<MovementGrammar, float>();
+            var lateralTravel = new Dictionary<MovementGrammar, float>();
+
+            foreach (MovementGrammar grammar in BuildupGrammars)
+            {
+                string ctx = $"{grammar}";
+                // NearFlank, not Center: Wing widens a lane AWAY from centre and Switch transfers
+                // near-side to far-side, so a centred lane carries no side information for either
+                // to express. Center is covered by the matrix; this test isolates the grammars.
+                SceneSpec spec = new SceneSpec(SceneTemplate.NearMissHope, 0, false, false, true, null,
+                    new SweatPacer().SceneSeconds(SceneTemplate.NearMissHope, false));
+                TheaterScenePlan plan = GrammarPlan(grammar, SceneLane.NearFlank);
+
+                int goalCalls = 0, revealCalls = 0;
+                bool done = false;
+                stage.PlayPlannedScene(plan, spec, g => goalCalls++, () => revealCalls++, () => done = true);
+                Assert.IsTrue(stage.ScenePlaying, $"{ctx}: never started");
+
+                StepView[] script = ReadScript(stage);
+                Assert.Greater(script.Length, 0, $"{ctx}: empty script");
+
+                float durSum = 0f, maxLateral = 0f;
+                var fp = new System.Text.StringBuilder();
+                for (int i = 0; i < script.Length; i++)
+                {
+                    StepView s = script[i];
+                    durSum += s.Dur;
+                    Assert.AreNotEqual(MkGoalVal, s.Marker,
+                        $"{ctx} step {i}: a near miss must never carry a goal marker, whatever the grammar");
+                    Assert.AreNotEqual(MkCornerVal, s.Marker,
+                        $"{ctx} step {i}: no count fact on this spec, so no corner may be awarded");
+                    if (i > 0)
+                        maxLateral = Mathf.Max(maxLateral, Mathf.Abs(s.Ball.y - script[i - 1].Ball.y));
+                    // Route + chase + quantised lane is the mechanical shape of the approach —
+                    // deliberately NOT the plan signature, which is what §7.4 compares and what
+                    // this test must not be able to pass by merely varying.
+                    fp.Append(s.Route).Append(':').Append(s.Chase ? '1' : '0').Append(':')
+                      .Append(Mathf.RoundToInt(s.Ball.y * 20f)).Append('|');
+                }
+
+                fingerprints[grammar] = fp.ToString();
+                totals[grammar] = durSum;
+                lateralTravel[grammar] = maxLateral;
+
+                float timeout = spec.Duration * 4f + 2f;
+                float t = 0f;
+                while (!done && t < timeout) { t += Time.deltaTime; yield return null; }
+                Assert.IsTrue(done, $"{ctx}: did not complete within {timeout:0.0}s");
+                Assert.AreEqual(0, goalCalls, $"{ctx}: a near miss must never fire a goal callback");
+                Assert.AreEqual(1, revealCalls, $"{ctx}: exactly one reveal, whatever the grammar");
+            }
+
+            // Every grammar keeps the scene's authored duration — grammar reshapes the approach,
+            // it never buys or spends time (Phase 2D/2E-1 hold the same invariant).
+            float reference = totals[MovementGrammar.Central];
+            foreach (MovementGrammar g in BuildupGrammars)
+                Assert.AreEqual(reference, totals[g], 0.001f,
+                    $"{g}: authored duration must match every other grammar's ({reference:0.000}s)");
+
+            // Pairwise mechanical distinctness — the whole point of the phase.
+            foreach (MovementGrammar a in BuildupGrammars)
+                foreach (MovementGrammar b in BuildupGrammars)
+                {
+                    if (a == b) continue;
+                    Assert.AreNotEqual(fingerprints[a], fingerprints[b],
+                        $"{a} and {b} render an identical approach — grammar is not being expressed");
+                }
+
+            // Switch's defining move is the long diagonal transfer: it must cross more of the
+            // pitch laterally than Central, which deliberately compresses toward the middle.
+            Assert.Greater(lateralTravel[MovementGrammar.Switch], lateralTravel[MovementGrammar.Central],
+                "Switch must travel further laterally than Central — the transfer is its whole idea");
+        }
+
+        /// <summary>Phase 2E-2: SetPiece and Counter each have a defining beat the other grammars
+        /// must not accidentally acquire — a held dead-ball setup, and a turnover that only starts
+        /// being chased once possession has changed.</summary>
+        [UnityTest]
+        public IEnumerator SetPiece_holds_a_static_setup_and_Counter_chases_only_after_the_turnover()
+        {
+            TheaterStage stage = BuildStage();
+
+            SceneSpec spec = new SceneSpec(SceneTemplate.NearMissHope, 0, false, false, true, null,
+                new SweatPacer().SceneSeconds(SceneTemplate.NearMissHope, false));
+
+            stage.PlayPlannedScene(GrammarPlan(MovementGrammar.SetPiece, SceneLane.NearFlank), spec,
+                _ => { }, () => { }, () => { });
+            StepView[] setPiece = ReadScript(stage);
+            Assert.AreEqual(RouteAuthoredVal, setPiece[0].Route,
+                "SetPiece opens on a held dead-ball position, not a live pass");
+            Assert.Less(setPiece[0].Tempo, 0.5f,
+                "SetPiece's opening beat is a static setup — the ball barely moves");
+            stage.CancelScene();
+            yield return null;
+
+            stage.PlayPlannedScene(GrammarPlan(MovementGrammar.Counter, SceneLane.NearFlank), spec,
+                _ => { }, () => { }, () => { });
+            StepView[] counter = ReadScript(stage);
+            Assert.IsFalse(counter[0].Chase,
+                "Counter's turnover is won cleanly — nobody is chasing yet on the first beat");
+            Assert.IsTrue(System.Array.Exists(counter, s => s.Chase),
+                "Counter must show a recovering chase once the break is under way");
+            stage.CancelScene();
+            yield return null;
         }
     }
 }

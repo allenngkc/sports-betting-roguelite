@@ -959,11 +959,16 @@ namespace SBR.Game
             {
                 case SceneTemplate.GoalFor:
                 case SceneTemplate.GoalAgainst:
-                    core = new[]
+                {
+                    // Phase 2E-2 (PRD §7.2/§7.3/§10): the approach into the box is now the shared
+                    // grammar buildup (see BuildGrammarBuildup) instead of one hardcoded advance —
+                    // the shot/marker/restart tail is untouched truth, exactly as before. Grammar
+                    // null (legacy plan-free PlayScene) falls back to Central.
+                    MovementGrammar? grammar = plan.HasValue ? plan.Value.Grammar : (MovementGrammar?)null;
+                    Step[] buildup = BuildGrammarBuildup(grammar ?? MovementGrammar.Central, B * 0.54f,
+                        0.56f, 0.90f, lane, 0.60f, 0.72f, u, truthChase: false);
+                    Step[] tail =
                     {
-                        S(B * 0.22f, 0.56f, lane, 0.60f, Mathf.Max(0.55f, u)),
-                        S(B * 0.20f, 0.80f, lane, 0.68f, Mathf.Max(0.7f, u)),
-                        S(B * 0.12f, 0.90f, lane, 0.72f, 1f),                       // the final pass
                         S(B * 0.12f, 0.985f, 0.5f, 0.72f, 1f, MkGoal, goal, RouteShot),
                         // The long restart tail is deliberate (playtest #15): the reveal fires
                         // at the goal (66% in), so this whole walk-back plays with the market OPEN.
@@ -971,23 +976,33 @@ namespace SBR.Game
                             ? S(B * 0.34f, 0.5f, 0.5f, 0.55f, 0.4f, route: RouteKickoff)
                             : S(B * 0.34f, 0.84f, 0.30f, 0.60f, 0.3f, route: RouteBackLine), // chalked: defenders restart
                     };
+                    core = Concat(buildup, tail);
                     if (spec.Template == SceneTemplate.GoalAgainst) core = Mirror(core);
                     break;
+                }
 
                 case SceneTemplate.BreakawayFor:
                 case SceneTemplate.BreakawayAgainst:
-                    core = new[]
+                {
+                    // Phase 2E-2: the buildup is grammar-driven, same composition as Goal above.
+                    // Breakaway's fallback is Counter, not Central — PRD §10's "visible turnover,
+                    // stretched lines, two supporting runners, recovering chase" is already
+                    // exactly what this template's shape has always depicted (won it deep, then a
+                    // long hunted carry) — Counter is the grammar this template already WAS.
+                    MovementGrammar? grammar = plan.HasValue ? plan.Value.Grammar : (MovementGrammar?)null;
+                    Step[] buildup = BuildGrammarBuildup(grammar ?? MovementGrammar.Counter, B * 0.56f,
+                        0.30f, 0.88f, lane, 0.42f, 0.66f, u, truthChase: true);
+                    Step[] tail =
                     {
-                        S(B * 0.18f, 0.30f, 0.5f, 0.42f, 0.5f),                     // won it deep
-                        S(B * 0.26f, 0.70f, lane, 0.58f, 1f, chase: true),          // the long carry, hunted
-                        S(B * 0.12f, 0.88f, lane, 0.66f, 1f, chase: true),
                         S(B * 0.12f, 0.965f, spec.Variant == 2 ? 0.58f : 0.42f, 0.70f, 1f, MkGoal, goal, RouteShot),
                         commits
                             ? S(B * 0.32f, 0.5f, 0.5f, 0.55f, 0.4f, route: RouteKickoff)
                             : S(B * 0.32f, 0.84f, 0.30f, 0.60f, 0.3f, route: RouteBackLine),
                     };
+                    core = Concat(buildup, tail);
                     if (spec.Template == SceneTemplate.BreakawayAgainst) core = Mirror(core);
                     break;
+                }
 
                 case SceneTemplate.CornerFor:
                 case SceneTemplate.CornerAgainst:
@@ -1031,14 +1046,25 @@ namespace SBR.Game
 
                 case SceneTemplate.TerritoryFor:
                 case SceneTemplate.TerritoryAgainst:
+                {
+                    // Phase 2E-2 (PRD §7.2 Territory row: "central recycle, wing progression,
+                    // switch, controlled counter start" — a possession vocabulary, not the
+                    // chance-approach one Goal/Breakaway/NearMiss share, and SetPiece is not
+                    // legal here at all). This template's own x/territory/tempo pacing is
+                    // unchanged; only the lane axis (PossessionLanePattern) is grammar-driven.
+                    // Grammar null falls back to Switch — this shape (lane -> 1-lane -> center)
+                    // is exactly what Territory has always played.
+                    MovementGrammar? grammar = plan.HasValue ? plan.Value.Grammar : (MovementGrammar?)null;
+                    PossessionLanePattern(grammar, lane, out float ty1, out float ty2, out float ty3);
                     core = new[]
                     {
-                        S(B * 0.35f, 0.55f, lane, 0.56f, Mathf.Max(0.5f, u)),
-                        S(B * 0.35f, 0.62f, 1f - lane, 0.62f, Mathf.Max(0.5f, u)),
-                        S(B * 0.30f, 0.60f, 0.5f, 0.62f, 0.4f),
+                        S(B * 0.35f, 0.55f, ty1, 0.56f, Mathf.Max(0.5f, u)),
+                        S(B * 0.35f, 0.62f, ty2, 0.62f, Mathf.Max(0.5f, u)),
+                        S(B * 0.30f, 0.60f, ty3, 0.62f, 0.4f),
                     };
                     if (spec.Template == SceneTemplate.TerritoryAgainst) core = Mirror(core);
                     break;
+                }
 
                 case SceneTemplate.NearMissHope:
                 case SceneTemplate.NearMissScare:
@@ -1052,19 +1078,30 @@ namespace SBR.Game
                     // uncaused shape to fix a defect; near miss's old shape was never wrong, just
                     // the only one that ever played, so a plan-free near miss's on-screen
                     // appearance is unchanged by this phase).
+                    //
+                    // Phase 2E-2: the pre-marker HEAD (approach steps, before the shot/interception)
+                    // is now the shared grammar buildup (BuildGrammarBuildup) — grammar null falls
+                    // back to Central, same default as Goal/Breakaway.
                     ScenePayoff? payoff = plan.HasValue ? plan.Value.Payoff : (ScenePayoff?)null;
-                    core = BuildNearMissCore(payoff, B, lane);
+                    MovementGrammar? grammar = plan.HasValue ? plan.Value.Grammar : (MovementGrammar?)null;
+                    core = BuildNearMissCore(payoff, grammar, B, lane);
                     if (spec.Template == SceneTemplate.NearMissScare) core = Mirror(core);
                     break;
                 }
 
                 case SceneTemplate.CalmPossession:
                 {
+                    // Phase 2E-2: shares Territory's lane-axis grammar vocabulary — this template
+                    // never had a `lane` input pre-Phase-2E-2 (always 0.40/0.60/0.48 regardless of
+                    // Variant/plan.Lane); passing 0.40 as PossessionLanePattern's own `lane`
+                    // reproduces that exact pre-existing shape for the Switch/null fallback.
+                    MovementGrammar? grammar = plan.HasValue ? plan.Value.Grammar : (MovementGrammar?)null;
+                    PossessionLanePattern(grammar, 0.40f, out float cy1, out float cy2, out float cy3);
                     core = new[]
                     {
-                        S(B * 0.35f, 0.46f, 0.40f, 0.50f, 0.2f, atkPicked: spec.ForPicked),
-                        S(B * 0.35f, 0.54f, 0.60f, 0.50f, 0.2f, atkPicked: spec.ForPicked),
-                        S(B * 0.30f, 0.48f, 0.5f, 0.50f, 0.15f, atkPicked: spec.ForPicked),
+                        S(B * 0.35f, 0.46f, cy1, 0.50f, 0.2f, atkPicked: spec.ForPicked),
+                        S(B * 0.35f, 0.54f, cy2, 0.50f, 0.2f, atkPicked: spec.ForPicked),
+                        S(B * 0.30f, 0.48f, cy3, 0.50f, 0.15f, atkPicked: spec.ForPicked),
                     };
                     break;
                 }
@@ -1231,26 +1268,39 @@ namespace SBR.Game
         /// Every shape's step-duration fractions sum to 1, so the scene's total authored duration
         /// (<c>B</c>) is identical regardless of which payoff plays — the same invariant Phase
         /// 2D's <see cref="BuildCornerCore"/> holds for the three corner shapes.</summary>
-        private static Step[] BuildNearMissCore(ScenePayoff? payoff, float B, float lane)
+        private static Step[] BuildNearMissCore(ScenePayoff? payoff, MovementGrammar? grammar, float B, float lane)
         {
+            // Phase 2E-2 (PRD §7.2/§7.3/§10): the pre-marker HEAD (the approach before the shot,
+            // or before the interception's own back-line marker) is now the shared grammar
+            // buildup (see BuildGrammarBuildup) instead of two hand-fixed steps identical across
+            // all six payoffs — every payoff's own TAIL (shot/marker/ending, Phase 2E-1) is
+            // untouched. Grammar null falls back to Central, the same default Goal/Breakaway use.
+            MovementGrammar g = grammar ?? MovementGrammar.Central;
+
             switch (payoff)
             {
                 case ScenePayoff.Block:
-                    return new[]
+                {
+                    Step[] head = BuildGrammarBuildup(g, B * 0.44f, 0.60f, 0.84f, lane, 0.60f, 0.68f, 0.7f,
+                        truthChase: false);
+                    Step[] tail =
                     {
-                        S(B * 0.24f, 0.60f, lane, 0.60f, 0.7f),
-                        S(B * 0.20f, 0.84f, lane, 0.68f, 1f),
                         S(B * 0.12f, 0.97f, 0.47f, 0.72f, 1f, route: RouteShot), // the shot is struck
                         // A REAL defender steps into its path — the ball stays in play.
                         S(B * 0.14f, 0.90f, 0.72f, 0.70f, 1f, MkBlock, route: RouteBackLine, chase: true),
                         S(B * 0.30f, 0.66f, 0.55f, 0.60f, 0.6f, route: RoutePass), // recycled, still live
                     };
+                    return Concat(head, tail);
+                }
 
                 case ScenePayoff.Interception:
-                    return new[]
+                {
+                    // The only head with a TRUTH chase — defense visibly closing in is intrinsic
+                    // to "a defender wins it before any shot", not a grammar-added flourish.
+                    Step[] head = BuildGrammarBuildup(g, B * 0.52f, 0.58f, 0.78f, lane, 0.58f, 0.66f, 0.7f,
+                        truthChase: true);
+                    Step[] tail =
                     {
-                        S(B * 0.28f, 0.58f, lane, 0.58f, 0.7f),
-                        S(B * 0.24f, 0.78f, lane, 0.66f, 0.9f, chase: true), // defense closing in
                         // Won BEFORE any shot — no RouteShot step exists anywhere in this shape.
                         S(B * 0.16f, 0.82f, 0.55f, 0.66f, 1f, MkIntercept, route: RouteBackLine, chase: true),
                         // The interceptor's side visibly carries it away — a real possession flip.
@@ -1258,52 +1308,66 @@ namespace SBR.Game
                         // Settles neutrally — never builds toward a second chance for the other side.
                         S(B * 0.16f, 0.45f, 0.50f, 0.50f, 0.3f, route: RouteAuthored, atkPicked: false),
                     };
+                    return Concat(head, tail);
+                }
 
                 case ScenePayoff.Clearance:
-                    return new[]
+                {
+                    Step[] head = BuildGrammarBuildup(g, B * 0.44f, 0.60f, 0.84f, lane, 0.60f, 0.68f, 0.7f,
+                        truthChase: false);
+                    Step[] tail =
                     {
-                        S(B * 0.24f, 0.60f, lane, 0.60f, 0.7f),
-                        S(B * 0.20f, 0.84f, lane, 0.68f, 1f),
                         S(B * 0.12f, 0.97f, 0.47f, 0.72f, 1f, route: RouteShot), // the shot / cross
                         // A REAL defender wins it and sends it well out of danger, deep.
                         S(B * 0.12f, 0.86f, 0.62f, 0.72f, 1f, MkClearance, route: RouteBackLine, chase: true),
                         S(B * 0.32f, 0.35f, 0.28f, 0.48f, 0.4f, route: RouteBackLine),
                     };
+                    return Concat(head, tail);
+                }
 
                 case ScenePayoff.Post:
-                    return new[]
+                {
+                    Step[] head = BuildGrammarBuildup(g, B * 0.46f, 0.62f, 0.86f, lane, 0.62f, 0.68f, 0.7f,
+                        truthChase: false);
+                    Step[] tail =
                     {
-                        S(B * 0.26f, 0.62f, lane, 0.62f, 0.7f),
-                        S(B * 0.20f, 0.86f, lane, 0.68f, 1f),
                         S(B * 0.12f, 0.99f, 0.47f, 0.72f, 1f, route: RouteShot), // the shot is struck
                         // Clatters off the frame — no actor touches it, never a goal flash.
                         S(B * 0.10f, 0.985f, 0.42f, 0.72f, 1f, MkPost, route: RouteAuthored),
                         S(B * 0.32f, 0.55f, 0.45f, 0.55f, 0.3f, route: RouteAuthored), // rebound drifts away
                     };
+                    return Concat(head, tail);
+                }
 
                 case ScenePayoff.NearWide:
-                    return new[]
+                {
+                    Step[] head = BuildGrammarBuildup(g, B * 0.48f, 0.62f, 0.86f, lane, 0.62f, 0.68f, 0.7f,
+                        truthChase: false);
+                    Step[] tail =
                     {
-                        S(B * 0.26f, 0.62f, lane, 0.62f, 0.7f),
-                        S(B * 0.22f, 0.86f, lane, 0.68f, 1f),
                         S(B * 0.14f, 0.97f, 0.80f, 0.74f, 1f, route: RoutePass), // the strike shapes up
                         // Dragged wide of the frame — never RouteShot's forced on-target aim, no
                         // actor touches it, no keeper contact.
                         S(B * 0.10f, 0.99f, 0.86f, 0.75f, 1f, MkNearWide, route: RouteAuthored),
                         S(B * 0.28f, 0.55f, 0.50f, 0.55f, 0.3f, route: RouteAuthored), // goal kick, drifts back
                     };
+                    return Concat(head, tail);
+                }
 
                 case ScenePayoff.KeeperSave:
                 default:
-                    return new[]
+                {
+                    Step[] head = BuildGrammarBuildup(g, B * 0.46f, 0.62f, 0.86f, lane, 0.62f, 0.68f, 0.7f,
+                        truthChase: false);
+                    Step[] tail =
                     {
-                        S(B * 0.26f, 0.62f, lane, 0.62f, 0.7f),
-                        S(B * 0.20f, 0.86f, lane, 0.68f, 1f),
                         S(B * 0.12f, 0.99f, 0.47f, 0.72f, 1f, route: RouteShot),     // the shot
                         S(B * 0.10f, 0.94f, 0.82f, 0.70f, 1f, MkSave, route: RouteAuthored), // off the bar
                         S(B * 0.12f, 0.92f, 0.80f, 0.70f, 0f, route: RouteAuthored), // the hold — dead air
                         S(B * 0.20f, 0.60f, 0.35f, 0.58f, 0.3f, route: RouteBackLine), // cleared off the line
                     };
+                    return Concat(head, tail);
+                }
             }
         }
 
@@ -1315,19 +1379,28 @@ namespace SBR.Game
         private static float LaneOf(SceneLane lane)
             => lane == SceneLane.Center ? 0.5f : lane == SceneLane.NearFlank ? 0.32f : 0.68f;
 
-        /// <summary>Phase 2C (PRD §7.1, §9): renders the planner's Pressure/Spacing/Grammar
-        /// choices as visible motion differences on top of a template's already-authored
-        /// waypoints. Never changes which step carries the <c>Marker</c>, its <c>Route</c>, its
-        /// staged <c>Goal</c>/<c>Count</c> payload, or any step's <c>Dur</c> — the template's
-        /// truth contract (PRD §7.2) is exactly what the switch above already built; this only
-        /// adjusts <c>Tempo</c>, adds <c>Chase</c> under high pressure, and nudges the lane-axis
-        /// <c>Ball.y</c> — and ONLY on <see cref="RoutePass"/> steps, the sole route whose target
-        /// is resolved by nearest-outfield-dot-to-waypoint (<see cref="EnterStep"/>'s
-        /// <see cref="RoutePass"/> case), so a small y nudge only ever changes which already-
-        /// forming-up teammate a pass finds — it can never misdirect a shot (<see cref="RouteShot"/>
-        /// recomputes its own y from the keeper's position, ignoring the authored value entirely),
-        /// a restart, a corner arc, or a booking/back-line waypoint, all of which stay pixel-exact
-        /// to how the template author placed them.</summary>
+        /// <summary>Phase 2C (PRD §7.1, §9): renders the planner's Pressure/Spacing choices as
+        /// visible motion differences on top of a template's already-authored waypoints. Never
+        /// changes which step carries the <c>Marker</c>, its <c>Route</c>, its staged
+        /// <c>Goal</c>/<c>Count</c> payload, or any step's <c>Dur</c> — the template's truth
+        /// contract (PRD §7.2) is exactly what the switch above already built; this only adjusts
+        /// <c>Tempo</c>, adds <c>Chase</c> under high pressure, and nudges the lane-axis
+        /// <c>Ball.y</c> by <c>Spacing</c> — and ONLY on <see cref="RoutePass"/> steps, the sole
+        /// route whose target is resolved by nearest-outfield-dot-to-waypoint
+        /// (<see cref="EnterStep"/>'s <see cref="RoutePass"/> case), so a small y nudge only ever
+        /// changes which already-forming-up teammate a pass finds — it can never misdirect a shot
+        /// (<see cref="RouteShot"/> recomputes its own y from the keeper's position, ignoring the
+        /// authored value entirely), a restart, a corner arc, or a booking/back-line waypoint, all
+        /// of which stay pixel-exact to how the template author placed them.
+        ///
+        /// Phase 2E-2 note: this method used to ALSO carry a per-<c>Grammar</c> lane-offset
+        /// multiplier here — the thin stand-in Phase 2C shipped ("Grammar... not yet visible on
+        /// screen", per that phase's own dispatch) while grammar was computed but not yet
+        /// rendered. That stand-in is gone: <see cref="BuildGrammarBuildup"/> and
+        /// <see cref="PossessionLanePattern"/> now author each grammar's buildup/lane shape
+        /// directly, so a second, generic post-hoc nudge here would have doubled up on top of an
+        /// already-authored shape. Pressure and Spacing remain genuinely independent dimensions
+        /// layered on top of whichever grammar buildup already ran.</summary>
         private static Step[] ApplyPlanShaping(Step[] steps, TheaterScenePlan plan)
         {
             var shaped = new Step[steps.Length];
@@ -1336,7 +1409,6 @@ namespace SBR.Game
             float spacingSpread = plan.Spacing == SpacingMode.Stretched ? 1.18f
                 : plan.Spacing == SpacingMode.Compact ? 0.82f : 1.0f;
 
-            int passRouteIndex = 0;
             for (int i = 0; i < steps.Length; i++)
             {
                 Step s = steps[i];
@@ -1351,35 +1423,187 @@ namespace SBR.Game
                 if (s.Route == RoutePass)
                 {
                     float laneOffset = (s.Ball.y - 0.5f) * spacingSpread;
-                    switch (plan.Grammar)
-                    {
-                        case MovementGrammar.Central:
-                            laneOffset *= 0.55f; // pulled back toward the middle
-                            break;
-                        case MovementGrammar.Wing:
-                            laneOffset *= 1.25f; // pushed wide
-                            break;
-                        case MovementGrammar.Switch:
-                            // The move crosses the field partway through the buildup — every
-                            // OTHER RoutePass step flips side.
-                            if (passRouteIndex % 2 == 1) laneOffset = -laneOffset;
-                            break;
-                        case MovementGrammar.Counter:
-                            // A fast break reads faster from its very first step.
-                            if (passRouteIndex == 0) s.Tempo = Mathf.Clamp01(s.Tempo * 1.3f);
-                            break;
-                        case MovementGrammar.SetPiece:
-                            // A dead ball is held still, not run at.
-                            if (passRouteIndex == 0) s.Tempo *= 0.35f;
-                            break;
-                    }
                     s.Ball = new Vector2(s.Ball.x, Mathf.Clamp01(0.5f + laneOffset));
-                    passRouteIndex++;
                 }
 
                 shaped[i] = s;
             }
             return shaped;
+        }
+
+        /// <summary>Phase 2E-2 (PRD §7.2/§7.3/§10): the shared grammar-driven BUILDUP builder that
+        /// Goal, Breakaway, and Near Miss each prefix onto their own truth-authored payoff steps,
+        /// rather than every template authoring its own (template x grammar) sequence by hand.
+        /// Grammar governs HOW the ball reaches the final third — the template (and, for near
+        /// miss, the payoff) still owns WHAT happens once it gets there: this method never fires a
+        /// marker and never carries a <c>StagedGoal</c>/<c>StagedCount</c>. Every caller passes a
+        /// <paramref name="budget"/> that is a fixed fraction of the template's total <c>B</c>,
+        /// and every grammar's own internal step-duration fractions sum to exactly 1, so
+        /// <c>B * 1.00</c> stays intact regardless of which of the five renders — the same
+        /// invariant Phase 2D's <see cref="BuildCornerCore"/> and Phase 2E-1's
+        /// <see cref="BuildNearMissCore"/> hold for their own shape families.
+        ///
+        /// Silhouettes (VISUAL-DESIGN.md §10), rendered as real waypoint/tempo/chase/route data
+        /// instead of the single generic lane nudge <see cref="ApplyPlanShaping"/> used to apply:
+        /// <list type="bullet">
+        /// <item><description><see cref="MovementGrammar.Central"/>: the lane axis is pulled
+        /// tight toward the middle for the first two steps (compact triangles), releasing out to
+        /// <paramref name="lane"/> only on the final step that hands off to the caller's payoff —
+        /// the smallest lateral travel of the five. This is the documented default when no plan
+        /// is present.</description></item>
+        /// <item><description><see cref="MovementGrammar.Wing"/>: every step holds the SAME
+        /// widened lane (<see cref="WideLane"/>) — one touchline, overloaded, never switching
+        /// sides — zero lateral travel between its own steps, but the furthest offset from center
+        /// of the five.</description></item>
+        /// <item><description><see cref="MovementGrammar.Switch"/>: the first two steps build on
+        /// one side, then the final step (its largest duration share) flips the ball to the
+        /// mirrored far side in one jump — by far the largest single-step lateral travel of the
+        /// five, "one long diagonal transfer".</description></item>
+        /// <item><description><see cref="MovementGrammar.Counter"/>: the ONE grammar that adds
+        /// its own <c>Chase</c> (from the second step on) regardless of
+        /// <paramref name="truthChase"/> — stretched, high tempo throughout, the visible
+        /// turnover-to-recovering-chase read.</description></item>
+        /// <item><description><see cref="MovementGrammar.SetPiece"/>: the ONLY grammar whose
+        /// first step routes via <see cref="RouteAuthored"/> instead of <see cref="RoutePass"/> —
+        /// a brief, near-static setup (tempo fixed at 0.15, ignoring urgency) — before a
+        /// synchronised run and a full-tempo singular delivery.</description></item>
+        /// </list>
+        /// <paramref name="truthChase"/> threads a template's own TRUTH chase fact (Breakaway's
+        /// hunted carry, Near Miss Interception's closing defense) through every grammar
+        /// unconditionally — grammar may ADD a chase reaction (Counter) but never suppress one the
+        /// template itself staged.</summary>
+        private static Step[] BuildGrammarBuildup(MovementGrammar grammar, float budget, float startX,
+            float endX, float lane, float startTerr, float endTerr, float tempoFloor, bool truthChase)
+        {
+            switch (grammar)
+            {
+                case MovementGrammar.Wing:
+                {
+                    float wingLane = WideLane(lane);
+                    return new[]
+                    {
+                        S(budget * 0.36f, Mathf.Lerp(startX, endX, 0.32f), wingLane,
+                            Mathf.Lerp(startTerr, endTerr, 0.35f), Mathf.Max(0.55f, tempoFloor)),
+                        S(budget * 0.34f, Mathf.Lerp(startX, endX, 0.66f), wingLane,
+                            Mathf.Lerp(startTerr, endTerr, 0.7f), Mathf.Max(0.7f, tempoFloor), chase: truthChase),
+                        S(budget * 0.30f, endX, wingLane, endTerr, 1f, chase: truthChase),
+                    };
+                }
+
+                case MovementGrammar.Switch:
+                {
+                    float nearSide = WideLane(lane);
+                    float farSide = 1f - nearSide;
+                    return new[]
+                    {
+                        S(budget * 0.30f, Mathf.Lerp(startX, endX, 0.30f), nearSide,
+                            Mathf.Lerp(startTerr, endTerr, 0.30f), Mathf.Max(0.55f, tempoFloor)),
+                        S(budget * 0.26f, Mathf.Lerp(startX, endX, 0.55f), nearSide,
+                            Mathf.Lerp(startTerr, endTerr, 0.55f), Mathf.Max(0.7f, tempoFloor), chase: truthChase),
+                        // The long diagonal transfer — the far side opens.
+                        S(budget * 0.44f, endX, farSide, endTerr, 1f, chase: truthChase),
+                    };
+                }
+
+                case MovementGrammar.Counter:
+                {
+                    return new[]
+                    {
+                        // The visible turnover — won cleanly, no chase yet.
+                        S(budget * 0.22f, Mathf.Lerp(startX, endX, 0.15f), lane,
+                            Mathf.Lerp(startTerr, endTerr, 0.2f), Mathf.Max(0.85f, tempoFloor)),
+                        // Stretched lines; the recovering chase engages from here on — Counter's
+                        // own chase, independent of whatever truthChase the template carries.
+                        S(budget * 0.40f, Mathf.Lerp(startX, endX, 0.62f), lane,
+                            Mathf.Lerp(startTerr, endTerr, 0.6f), 1f, chase: true),
+                        S(budget * 0.38f, endX, lane, endTerr, 1f, chase: true),
+                    };
+                }
+
+                case MovementGrammar.SetPiece:
+                    return new[]
+                    {
+                        // Brief static setup — the ball barely moves; a dead-ball position, held.
+                        S(budget * 0.30f, startX, lane, startTerr, 0.15f, route: RouteAuthored),
+                        // Synchronised runs cover the ground.
+                        S(budget * 0.30f, Mathf.Lerp(startX, endX, 0.65f), lane,
+                            Mathf.Lerp(startTerr, endTerr, 0.6f), Mathf.Max(0.75f, tempoFloor)),
+                        // The singular delivery.
+                        S(budget * 0.40f, endX, lane, endTerr, 1f),
+                    };
+
+                case MovementGrammar.Central:
+                default:
+                {
+                    float tight = Mathf.Lerp(lane, 0.5f, 0.5f);
+                    return new[]
+                    {
+                        S(budget * 0.42f, Mathf.Lerp(startX, endX, 0.35f), tight,
+                            Mathf.Lerp(startTerr, endTerr, 0.4f), Mathf.Max(0.55f, tempoFloor)),
+                        S(budget * 0.32f, Mathf.Lerp(startX, endX, 0.68f), tight,
+                            Mathf.Lerp(startTerr, endTerr, 0.7f), Mathf.Max(0.7f, tempoFloor), chase: truthChase),
+                        S(budget * 0.26f, endX, lane, endTerr, 1f, chase: truthChase),
+                    };
+                }
+            }
+        }
+
+        /// <summary>Widens a lane value away from center — <see cref="MovementGrammar.Wing"/>'s
+        /// "overload one touchline" and <see cref="MovementGrammar.Switch"/>'s "pressure draws to
+        /// one side" both start from this. A near-center <paramref name="lane"/> (within 0.02 of
+        /// 0.5 — i.e. <see cref="SceneLane.Center"/>) carries no side information to amplify, so
+        /// it defaults to one fixed touchline rather than collapsing to 0.5 (which would make
+        /// Wing/Switch visually indistinguishable from Central for a center-lane scene).</summary>
+        private static float WideLane(float lane)
+            => Mathf.Abs(lane - 0.5f) < 0.02f ? 0.80f : Mathf.Clamp01(0.5f + (lane - 0.5f) * 1.5f);
+
+        /// <summary>Concatenates a grammar-driven buildup with a template's own truth-authored
+        /// payoff tail — see <see cref="BuildGrammarBuildup"/>'s doc for why this two-piece
+        /// composition, rather than one array per (template x grammar) pair, is how Phase 2E-2
+        /// avoids the N-times-M explosion.</summary>
+        private static Step[] Concat(Step[] a, Step[] b)
+        {
+            var r = new Step[a.Length + b.Length];
+            Array.Copy(a, 0, r, 0, a.Length);
+            Array.Copy(b, 0, r, a.Length, b.Length);
+            return r;
+        }
+
+        /// <summary>Phase 2E-2 (PRD §7.2's Territory row: "central recycle, wing progression,
+        /// switch, controlled counter start" — a possession vocabulary, deliberately distinct from
+        /// <see cref="BuildGrammarBuildup"/>'s chance-approach one; Territory/CalmPossession never
+        /// build toward a shot, so there is no "handoff to a payoff" to release out of, and
+        /// <see cref="MovementGrammar.SetPiece"/> is not in this row's legal set at all — §7.2:
+        /// "no dead-ball recycling in a possession scene"). Both templates already author their
+        /// OWN x/territory/tempo pacing and keep doing so; this method supplies only the shared
+        /// lane-axis (Y) shape grammar governs, so the two templates' otherwise very different
+        /// feel (Territory advances into the attacking third; CalmPossession barely leaves the
+        /// middle third) stays exactly as each one already authored it.</summary>
+        private static void PossessionLanePattern(MovementGrammar? grammar, float lane,
+            out float y1, out float y2, out float y3)
+        {
+            switch (grammar ?? MovementGrammar.Switch)
+            {
+                case MovementGrammar.Central:
+                    float tight = Mathf.Lerp(lane, 0.5f, 0.7f);
+                    y1 = tight; y2 = tight; y3 = 0.5f;
+                    break;
+                case MovementGrammar.Wing:
+                    float wingLane = WideLane(lane);
+                    y1 = wingLane; y2 = wingLane; y3 = wingLane;
+                    break;
+                case MovementGrammar.Counter:
+                    // A brisk start out wide, reined back in before it develops into a full
+                    // switch — "controlled counter start", never a genuine breakaway.
+                    y1 = WideLane(lane); y2 = lane; y3 = 0.5f;
+                    break;
+                case MovementGrammar.Switch:
+                default:
+                    // The pre-Phase-2E-2 shape both templates always played — lane, then the
+                    // mirrored far side, then it settles central. Already a switch.
+                    y1 = lane; y2 = 1f - lane; y3 = 0.5f;
+                    break;
+            }
         }
 
         private Step[] BuildFinalScript(SceneSpec spec, ScoreLedger.FinalPlan plan,
