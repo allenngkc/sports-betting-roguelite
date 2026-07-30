@@ -50,20 +50,14 @@ namespace SBR
             }
         }
 
-        public static Texture2D GetOrCreate(SurfaceKind kind, int resolution, int seed,
-                                            float contrast = 1f)
+        /// <summary>
+        /// The deterministic base field every map derives from. Same (kind, seed, contrast)
+        /// always yields the same pixels, which is what lets the normal, mask and occlusion maps
+        /// be generated independently and still describe the same surface - they never see each
+        /// other, they just re-derive the identical field.
+        /// </summary>
+        private static Color[] BuildPixels(SurfaceKind kind, int resolution, int seed, float contrast)
         {
-            string assetPath = Mathf.Approximately(contrast, 1f)
-                ? $"{FolderPath}/{kind}_{resolution}_{seed}.png"
-                : $"{FolderPath}/{kind}_{resolution}_{seed}_c{Mathf.RoundToInt(contrast * 100f)}.png";
-
-            Texture2D existing = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
-            if (existing != null)
-                return existing;
-
-            if (!AssetDatabase.IsValidFolder(FolderPath))
-                AssetDatabase.CreateFolder(ParentFolder, "Textures");
-
             var rng = new Random(seed);
             int[] perm = BuildPermutation(rng);
 
@@ -78,6 +72,177 @@ namespace SBR
 
             if (!Mathf.Approximately(contrast, 1f))
                 ApplyContrast(pixels, contrast);
+
+            return pixels;
+        }
+
+        /// <summary>
+        /// Luminance of the base field, used as a height field by the derived maps.
+        ///
+        /// Deliberately built at contrast 1.0, IGNORING the albedo's contrast setting. Contrast
+        /// pushes values away from the mean and clamps, so at the albedo's 1.5-2.1 range large
+        /// areas clip to pure black or white - and a clipped region has zero gradient. Deriving
+        /// normals from the contrasted field therefore erased the fine grain the Sobel needed,
+        /// exactly where surface detail lives, and the first PBR pass came back looking flat
+        /// everywhere the light was not already raking.
+        ///
+        /// Conceptually the split is right anyway: contrast says how dirty a surface LOOKS,
+        /// the height field says how bumpy it IS. The derived maps' cache keys never included
+        /// contrast, so they were already honest about this - the code just was not.
+        /// </summary>
+        private static float[] HeightField(SurfaceKind kind, int res, int seed, float _contrast)
+        {
+            Color[] px = BuildPixels(kind, res, seed, 1f);
+            var h = new float[px.Length];
+            for (int i = 0; i < px.Length; i++)
+                h[i] = px[i].r * 0.299f + px[i].g * 0.587f + px[i].b * 0.114f;
+            return h;
+        }
+
+        /// <summary>
+        /// Tangent-space normal map, Sobel-derived from the height field.
+        ///
+        /// This is the single highest-impact map for this room: every surface was flat-shaded,
+        /// so plaster damage, floor scuffs and fabric weave existed as albedo variation only and
+        /// vanished the moment light hit them at an angle. Sampling wraps, so the result tiles as
+        /// seamlessly as the albedo it came from.
+        /// </summary>
+        public static Texture2D GetOrCreateNormal(SurfaceKind kind, int resolution, int seed,
+                                                  float contrast, float strength)
+        {
+            string path = $"{FolderPath}/{kind}_{resolution}_{seed}_n{Mathf.RoundToInt(strength * 100f)}.png";
+            Texture2D existing = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            if (existing != null) return existing;
+            EnsureFolder();
+
+            float[] h = HeightField(kind, resolution, seed, contrast);
+            int r = resolution;
+            float H(int x, int y) => h[((y % r + r) % r) * r + ((x % r + r) % r)];
+
+            var px = new Color[r * r];
+            for (int y = 0; y < r; y++)
+            for (int x = 0; x < r; x++)
+            {
+                float gx = (H(x + 1, y - 1) + 2f * H(x + 1, y) + H(x + 1, y + 1))
+                         - (H(x - 1, y - 1) + 2f * H(x - 1, y) + H(x - 1, y + 1));
+                float gy = (H(x - 1, y + 1) + 2f * H(x, y + 1) + H(x + 1, y + 1))
+                         - (H(x - 1, y - 1) + 2f * H(x, y - 1) + H(x + 1, y - 1));
+
+                Vector3 n = new Vector3(-gx * strength, -gy * strength, 1f).normalized;
+                px[y * r + x] = new Color(n.x * 0.5f + 0.5f, n.y * 0.5f + 0.5f, n.z * 0.5f + 0.5f);
+            }
+
+            SaveMap(path, px, r, hasAlpha: false);
+            var imp = (TextureImporter)AssetImporter.GetAtPath(path);
+            imp.textureType = TextureImporterType.NormalMap;
+            imp.wrapMode = TextureWrapMode.Repeat;
+            imp.SaveAndReimport();
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
+        /// <summary>
+        /// URP metallic/gloss map: R = metallic (0 throughout - nothing here is a raw metal),
+        /// A = smoothness. Smoothness tracks the height field inversely, so dirt and wear sit
+        /// rougher than the clean surface around them. That variation is what stops a surface
+        /// reading as one uniform plastic sheet under a moving light.
+        /// </summary>
+        public static Texture2D GetOrCreateMask(SurfaceKind kind, int resolution, int seed,
+                                                float contrast, float smoothMin, float smoothMax)
+        {
+            string path = $"{FolderPath}/{kind}_{resolution}_{seed}_m{Mathf.RoundToInt(smoothMin * 100f)}_{Mathf.RoundToInt(smoothMax * 100f)}.png";
+            Texture2D existing = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            if (existing != null) return existing;
+            EnsureFolder();
+
+            float[] h = HeightField(kind, resolution, seed, contrast);
+            var px = new Color[h.Length];
+            for (int i = 0; i < h.Length; i++)
+            {
+                float clean = Mathf.InverseLerp(0.55f, 1f, h[i]);        // 0 = grime, 1 = clean
+                px[i] = new Color(0f, 0f, 0f, Mathf.Lerp(smoothMin, smoothMax, clean));
+            }
+
+            SaveMap(path, px, resolution, hasAlpha: true);
+            var imp = (TextureImporter)AssetImporter.GetAtPath(path);
+            imp.sRGBTexture = false;   // data, not colour
+            imp.alphaSource = TextureImporterAlphaSource.FromInput;
+            imp.alphaIsTransparency = false;
+            imp.wrapMode = TextureWrapMode.Repeat;
+            imp.SaveAndReimport();
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
+        /// <summary>
+        /// Ambient occlusion, approximated by how far each texel sits below its neighbourhood.
+        /// Crevices, weave gaps and paint-loss edges darken; flat areas stay open. URP reads
+        /// occlusion from the G channel.
+        /// </summary>
+        public static Texture2D GetOrCreateOcclusion(SurfaceKind kind, int resolution, int seed,
+                                                     float contrast, float strength)
+        {
+            string path = $"{FolderPath}/{kind}_{resolution}_{seed}_ao{Mathf.RoundToInt(strength * 100f)}.png";
+            Texture2D existing = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            if (existing != null) return existing;
+            EnsureFolder();
+
+            float[] h = HeightField(kind, resolution, seed, contrast);
+            int r = resolution;
+            float H(int x, int y) => h[((y % r + r) % r) * r + ((x % r + r) % r)];
+
+            const int rad = 4;
+            var px = new Color[r * r];
+            for (int y = 0; y < r; y++)
+            for (int x = 0; x < r; x++)
+            {
+                float sum = 0f; int n = 0;
+                for (int dy = -rad; dy <= rad; dy += 2)
+                for (int dx = -rad; dx <= rad; dx += 2) { sum += H(x + dx, y + dy); n++; }
+
+                float below = (sum / n) - H(x, y);                       // >0 = sits in a dip
+                float ao = Mathf.Clamp01(1f - Mathf.Max(0f, below) * strength * 6f);
+                px[y * r + x] = new Color(ao, ao, ao);
+            }
+
+            SaveMap(path, px, r, hasAlpha: false);
+            var imp = (TextureImporter)AssetImporter.GetAtPath(path);
+            imp.sRGBTexture = false;
+            imp.wrapMode = TextureWrapMode.Repeat;
+            imp.SaveAndReimport();
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
+        private static void EnsureFolder()
+        {
+            if (!AssetDatabase.IsValidFolder(FolderPath))
+                AssetDatabase.CreateFolder(ParentFolder, "Textures");
+        }
+
+        private static void SaveMap(string path, Color[] px, int res, bool hasAlpha)
+        {
+            var tex = new Texture2D(res, res,
+                hasAlpha ? TextureFormat.RGBA32 : TextureFormat.RGB24, false);
+            tex.SetPixels(px);
+            tex.Apply();
+            File.WriteAllBytes(path, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+        }
+
+        public static Texture2D GetOrCreate(SurfaceKind kind, int resolution, int seed,
+                                            float contrast = 1f)
+        {
+            string assetPath = Mathf.Approximately(contrast, 1f)
+                ? $"{FolderPath}/{kind}_{resolution}_{seed}.png"
+                : $"{FolderPath}/{kind}_{resolution}_{seed}_c{Mathf.RoundToInt(contrast * 100f)}.png";
+
+            Texture2D existing = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
+            if (existing != null)
+                return existing;
+
+            if (!AssetDatabase.IsValidFolder(FolderPath))
+                AssetDatabase.CreateFolder(ParentFolder, "Textures");
+
+            Color[] pixels = BuildPixels(kind, resolution, seed, contrast);
 
             var tex = new Texture2D(resolution, resolution, TextureFormat.RGB24, false);
             tex.SetPixels(pixels);

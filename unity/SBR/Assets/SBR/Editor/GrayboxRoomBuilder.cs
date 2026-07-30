@@ -173,25 +173,36 @@ namespace SBR
                 // pushing it darkens the dirt without darkening the surface overall. Highlights
                 // clip slightly at these values, which is wanted: clean stays uniformly clean and
                 // dirty gets properly dirty, instead of everything sitting in a soft mid-band.
-                Wall = Mat("WallDark", new Color(0.255f, 0.245f, 0.210f), smoothness: 0.08f,
-                    baseMap: Tex(ProceduralSurfaceTextures.SurfaceKind.Plaster, 1024, 2.10f),
-                    tiling: 0.75f),
+                Wall = SurfaceMat("WallDark", new Color(0.255f, 0.245f, 0.210f),
+                    ProceduralSurfaceTextures.SurfaceKind.Plaster, 1024,
+                    contrast: 2.10f, tiling: 0.75f,
+                    normalStrength: 7.0f, aoStrength: 0.8f,
+                    smoothMin: 0.06f, smoothMax: 0.22f),
                 // 4b: lifted and warmed so the floor belongs to the same room as the walls -
                 // it was reading as a cold blue-grey slab under warm plaster.
                 // Worn but INTACT, not the derelict full-coverage flaking of the concept.
-                Floor = Mat("FloorWorn", new Color(0.185f, 0.166f, 0.134f), smoothness: 0.22f,
-                    baseMap: Tex(ProceduralSurfaceTextures.SurfaceKind.WornFloor, 1024, 2.00f),
-                    tiling: 0.60f),
+                Floor = SurfaceMat("FloorWorn", new Color(0.185f, 0.166f, 0.134f),
+                    ProceduralSurfaceTextures.SurfaceKind.WornFloor, 1024,
+                    contrast: 2.00f, tiling: 0.60f,
+                    normalStrength: 6.0f, aoStrength: 0.9f,
+                    smoothMin: 0.14f, smoothMax: 0.42f),
                 // sits between wall and floor; takes the tube's uplight and the stain story
-                Ceiling = Mat("CeilingStained", new Color(0.208f, 0.198f, 0.166f), smoothness: 0.06f,
-                    baseMap: Tex(ProceduralSurfaceTextures.SurfaceKind.CeilingStain, 1024, 1.80f),
-                    tiling: 0.50f),
+                // Lowest relief of the four - water stains are discolouration, not topography.
+                Ceiling = SurfaceMat("CeilingStained", new Color(0.208f, 0.198f, 0.166f),
+                    ProceduralSurfaceTextures.SurfaceKind.CeilingStain, 1024,
+                    contrast: 1.80f, tiling: 0.50f,
+                    normalStrength: 3.5f, aoStrength: 0.5f,
+                    smoothMin: 0.05f, smoothMax: 0.15f),
                 Prop = Mat("PropGray", new Color(0.180f, 0.178f, 0.160f), smoothness: 0.35f),
                 // 4b: lifted so the weave actually reads - the couch was dark enough that its
                 // texture was invisible, which wasted the one fabric map in the room.
-                Couch = Mat("CouchGray", new Color(0.172f, 0.158f, 0.132f), smoothness: 0.04f,
-                    baseMap: Tex(ProceduralSurfaceTextures.SurfaceKind.FabricWeave, 512, 1.50f),
-                    tiling: 6.0f),
+                // Highest relief: the weave is the whole point, and at 17cm tiling it is the one
+                // surface the player gets close enough to read thread by thread.
+                Couch = SurfaceMat("CouchGray", new Color(0.172f, 0.158f, 0.132f),
+                    ProceduralSurfaceTextures.SurfaceKind.FabricWeave, 512,
+                    contrast: 1.50f, tiling: 6.0f,
+                    normalStrength: 10.0f, aoStrength: 1.2f,
+                    smoothMin: 0.03f, smoothMax: 0.11f),
                 Bezel = Mat("BezelBlack", new Color(0.045f, 0.045f, 0.040f), smoothness: 0.25f),
                 // Unified-grade spec §2: lift the panel's black floor so nothing in frame is
                 // darker than the screen's own off state. Pure black on a panel in a dim, dusty
@@ -224,9 +235,36 @@ namespace SBR
             };
         }
 
-        private static Texture2D Tex(ProceduralSurfaceTextures.SurfaceKind kind, int res,
-                                     float contrast = 1f) =>
-            ProceduralSurfaceTextures.GetOrCreate(kind, res, 20260725, contrast);
+        private const int TexSeed = 20260725;
+
+        /// <summary>
+        /// A full PBR surface: albedo + normal + metallic/gloss + occlusion, all derived from one
+        /// deterministic field so they describe the same surface.
+        ///
+        /// Before this every room surface was flat-shaded off a single albedo map, so plaster
+        /// damage, floor scuffs and fabric weave existed as tone variation only - they vanished
+        /// under raking light instead of catching it, which is most of why the room read as
+        /// painted-on rather than built.
+        ///
+        /// smoothMin/smoothMax are the rough (grimy) and clean ends of the surface; the mask map
+        /// interpolates between them off the same height field, so wear is rougher than the
+        /// material around it rather than the whole plane sharing one gloss value.
+        /// </summary>
+        private static Material SurfaceMat(string assetName, Color tint,
+                                           ProceduralSurfaceTextures.SurfaceKind kind, int res,
+                                           float contrast, float tiling,
+                                           float normalStrength, float aoStrength,
+                                           float smoothMin, float smoothMax) =>
+            Mat(assetName, tint,
+                smoothness: smoothMax,
+                baseMap: ProceduralSurfaceTextures.GetOrCreate(kind, res, TexSeed, contrast),
+                tiling: tiling,
+                normalMap: ProceduralSurfaceTextures.GetOrCreateNormal(
+                    kind, res, TexSeed, contrast, normalStrength),
+                maskMap: ProceduralSurfaceTextures.GetOrCreateMask(
+                    kind, res, TexSeed, contrast, smoothMin, smoothMax),
+                occlusionMap: ProceduralSurfaceTextures.GetOrCreateOcclusion(
+                    kind, res, TexSeed, contrast, aoStrength));
 
         // internal so RoomArtDressing can author its own dressing materials through the same
         // deterministic path rather than duplicating the URP/Lit setup.
@@ -234,7 +272,9 @@ namespace SBR
                                     Color? emission = null, bool doubleSided = false,
                                     float smoothness = 0.15f,
                                     Texture2D baseMap = null, Texture2D emissionMap = null,
-                                    float tiling = 1f)
+                                    float tiling = 1f,
+                                    Texture2D normalMap = null, float normalScale = 1f,
+                                    Texture2D maskMap = null, Texture2D occlusionMap = null)
         {
             Shader shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null)
@@ -257,7 +297,15 @@ namespace SBR
             if (emission.HasValue)
             {
                 mat.EnableKeyword("_EMISSION");
-                mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+                // MUST be an AnyEmissive flag, not None. URP's MaterialPostprocessor recomputes
+                // the _EMISSION keyword from exactly this field on every material import:
+                //   BaseShaderGUI.cs:946  shouldEmissionBeEnabled = flags & AnyEmissive
+                //   BaseShaderGUI.cs:953  CoreUtils.SetKeyword(material, _EMISSION, ...)
+                // With None the postprocessor stripped the keyword EnableKeyword had just set,
+                // silently killing emission on the TV, laptop, phone, window and indicator lamp
+                // the next time anyone opened the editor. RealtimeEmissive keeps the keyword
+                // alive through import and still bakes nothing - this project has no lightmaps.
+                mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
                 mat.SetColor("_EmissionColor", emission.Value);
             }
             else
@@ -276,6 +324,31 @@ namespace SBR
             {
                 mat.SetTexture("_EmissionMap", emissionMap);
                 mat.SetTextureScale("_EmissionMap", new Vector2(tiling, tiling));
+            }
+
+            // Surface relief. Unlike _EMISSION above, these keywords are derived by URP's
+            // postprocessor from whether the texture is actually assigned, so they survive
+            // import correctly - setting them here just makes the pre-import state honest.
+            if (normalMap != null)
+            {
+                mat.SetTexture("_BumpMap", normalMap);
+                mat.SetTextureScale("_BumpMap", new Vector2(tiling, tiling));
+                mat.SetFloat("_BumpScale", normalScale);
+                mat.EnableKeyword("_NORMALMAP");
+            }
+            if (maskMap != null)
+            {
+                mat.SetTexture("_MetallicGlossMap", maskMap);
+                mat.SetTextureScale("_MetallicGlossMap", new Vector2(tiling, tiling));
+                mat.SetFloat("_SmoothnessTextureChannel", 0f); // smoothness from metallic alpha
+                mat.EnableKeyword("_METALLICSPECGLOSSMAP");
+            }
+            if (occlusionMap != null)
+            {
+                mat.SetTexture("_OcclusionMap", occlusionMap);
+                mat.SetTextureScale("_OcclusionMap", new Vector2(tiling, tiling));
+                mat.SetFloat("_OcclusionStrength", 1f);
+                mat.EnableKeyword("_OCCLUSIONMAP");
             }
 
             if (doubleSided)
@@ -664,6 +737,9 @@ namespace SBR
             // the door end leaves that bunk in shadow per the brief, and gives a cleaner division
             // of labour between the sources: the tube owns the aisle and the couch side, the desk
             // lamp owns the desk.
+            // REVERTED to x 0.85. Nudging this to 1.02 to graze the right wall put it directly
+            // over the second bunk (x 0.5..1.3) and lit its mattress, which breaks the ratified
+            // "occupied, never empty" treatment. A ratified requirement outranks a surface effect.
             var tubeGo = new GameObject("FluorescentKey");
             tubeGo.transform.position = new Vector3(0.85f, 2.05f, -0.05f);
             tubeGo.transform.rotation =
@@ -738,6 +814,67 @@ namespace SBR
             // this filthy the haze is justified in-fiction. Tinted to the room's own olive so it
             // does not read as a blue-grey wash. Lives in RenderSettings, not the volume: URP
             // has no fog VolumeComponent.
+            // GRAZING WALL WASH - the fix for surface relief, and it is geometric, not cosmetic.
+            //
+            // Lambertian sensitivity to a normal perturbation scales with sin(theta), where theta
+            // is the light's incidence angle off the surface normal. Light arriving perpendicular
+            // to a surface reveals NO relief; light travelling nearly parallel reveals the most.
+            // The ceiling was the proof all along: it carries the weakest normal map in the room
+            // (channel sd ~9, vs the couch fabric's ~80) yet reads the strongest, purely because
+            // the tube hangs 0.25m beneath it and rakes across it at theta ~= 90 degrees.
+            //
+            // So these hug their wall and aim down its face, putting theta near 90 where the maps
+            // finally have light that varies across them. No map values changed to achieve this.
+            // A right-wall graze was tried here and REMOVED. The geometry was sound - for a wall
+            // and a light d off it, a point h below sees N.L = d / sqrt(d^2 + h^2), so d=0.26
+            // gives theta ~72deg: nearly all the relief sensitivity of a true graze with ~6x the
+            // brightness of hugging the wall at 45mm. But that offset necessarily puts the light
+            // out into the room, and the only wall it could graze here has the second bunk in
+            // front of it, so it lit the mattress and broke the ratified dark-bunk treatment.
+            //
+            // Recorded rather than deleted because the reasoning is reusable: this room cannot
+            // graze its right wall without relighting that bunk. If relief on plaster matters
+            // later, the lever is a wall the bunks do not occupy, or baked/APV indirect light -
+            // not a stronger normal map. See docs/room-visual-pass/PHASE_A_FINDINGS.md.
+
+            // Couch side, deliberately much dimmer. The fabric weave is the room's strongest
+            // normal map and was contributing nothing because that corner sits in shadow. Just
+            // enough raking light to let the weave read, without undoing the dark left half.
+            var couchGrazeGo = new GameObject("CouchGraze");
+            couchGrazeGo.transform.position = new Vector3(-1.04f, 1.44f, 0.35f);
+            couchGrazeGo.transform.rotation =
+                Quaternion.LookRotation(new Vector3(0.11f, -0.99f, 0f).normalized, Vector3.up);
+            var couchGraze = couchGrazeGo.AddComponent<Light>();
+            couchGraze.type = LightType.Spot;
+            couchGraze.spotAngle = 110f;
+            couchGraze.innerSpotAngle = 30f;
+            couchGraze.intensity = 0.32f;
+            couchGraze.range = 2.2f;
+            couchGraze.color = new Color(0.70f, 0.74f, 0.80f);
+            couchGraze.shadows = LightShadows.None;
+
+            // REFLECTION PROBE - without this the room has no environment specular at all.
+            // No skybox is assigned and there was no probe, so URP's reflection lookup returned
+            // near-black: every surface had a broad rough specular lobe with nothing to reflect
+            // into it. That is why the first two PBR passes looked flat - the normal maps were
+            // correct, but a normal map can only modulate light that VARIES with the normal, and
+            // ambient-only lighting does not. Box projection so the room's own walls reflect at
+            // the right parallax in a space this small.
+            var probeGo = new GameObject("RoomReflectionProbe");
+            probeGo.transform.position = new Vector3(0f, 1.15f, 0f);
+            var probe = probeGo.AddComponent<ReflectionProbe>();
+            probe.mode = UnityEngine.Rendering.ReflectionProbeMode.Realtime;
+            probe.refreshMode = UnityEngine.Rendering.ReflectionProbeRefreshMode.OnAwake;
+            probe.timeSlicingMode = UnityEngine.Rendering.ReflectionProbeTimeSlicingMode.NoTimeSlicing;
+            probe.size = new Vector3(2.8f, 2.4f, 4.2f);
+            probe.boxProjection = true;
+            probe.resolution = 128;
+            probe.clearFlags = UnityEngine.Rendering.ReflectionProbeClearFlags.SolidColor;
+            probe.backgroundColor = new Color(0.020f, 0.020f, 0.026f);
+            probe.nearClipPlane = 0.05f;
+            probe.farClipPlane = 12f;
+            probe.intensity = 1f;
+
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogDensity = 0.085f;
