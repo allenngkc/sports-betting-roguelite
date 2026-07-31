@@ -23,6 +23,11 @@ namespace SBR
     ///
     /// Run headless:
     ///   Unity.exe -batchmode -quit -projectPath (project) -executeMethod SBR.GrayboxRoomBuilder.Build
+    ///
+    /// ALWAYS FOLLOW A BUILD WITH <see cref="RoomLightingBake"/>. Rebuilding the scene from
+    /// scratch discards the baked Adaptive Probe Volume data along with it, and the room then
+    /// renders with direct light only - no bounce, no colour bleed, and flat walls. It still
+    /// looks like a room, which is what makes this easy to miss.
     /// </summary>
     public static class GrayboxRoomBuilder
     {
@@ -78,6 +83,7 @@ namespace SBR
             EnsureArtRootPrefab();
             InstantiateArtRoot();
             RoomArtDressing.Build();
+            MarkStaticForGI();
 
             if (!System.IO.Directory.Exists("Assets/Scenes"))
                 AssetDatabase.CreateFolder("Assets", "Scenes");
@@ -92,6 +98,9 @@ namespace SBR
             Debug.Log($"[GrayboxRoomBuilder] built {ScenePath}: layer '{InteractableLayerName}'={layer}, " +
                       $"interactables={interactables} (expect 3: couch, laptop, phone - the TV is the live " +
                       "sweat surface in M3, no longer interactable)");
+            Debug.LogWarning("[GrayboxRoomBuilder] indirect light is now UNBAKED - run " +
+                             "SBR/Bake Room Indirect Light (SBR.RoomLightingBake.Bake) or the " +
+                             "room renders with direct light only");
         }
 
         // ------------------------------------------------------------------ layer
@@ -875,6 +884,33 @@ namespace SBR
             probe.farClipPlane = 12f;
             probe.intensity = 1f;
 
+            // ---------------------------------------------------------- indirect light
+            // PHASE B. Everything above is direct-only. A URP realtime light bounces
+            // nothing: a surface it does not hit directly receives the flat ambient value
+            // and nothing else, which is why this room reads as one lamp in a black box and
+            // why relief only appears where the tube happens to rake (PHASE_A_FINDINGS.md).
+            //
+            // Mixed keeps every pool exactly as tuned - direct light and shadows still render
+            // in realtime, so the window's short throw and the desk lamp's tight cone are
+            // untouched - and adds their INDIRECT contribution to the Adaptive Probe Volume
+            // below. The two runtime-driven lights stay Realtime: TvLight belongs to the TV
+            // sweat slice and changes colour every frame, and PhoneBuzzLight is a flash. A
+            // baked bounce from either would be a lie the moment they change.
+            foreach (Light l in new[] { moon, tube, bounce, glow, lamp, couchGraze })
+                l.lightmapBakeType = LightmapBakeType.Mixed;
+
+            // Sized to the interior plus a small margin so the boundary probes sit inside the
+            // walls rather than on them. fillEmptySpaces places probes through the open air the
+            // player walks in, not only in the shell of geometry - without it the middle of the
+            // room interpolates between wall probes and the bounce loses its directionality.
+            var apvGo = new GameObject("AdaptiveProbeVolume");
+            apvGo.transform.position = new Vector3(0f, Height * 0.5f, 0f);
+            var apv = apvGo.AddComponent<ProbeVolume>();
+            apv.mode = ProbeVolume.Mode.Local;
+            apv.size = new Vector3(HalfW * 2f + 0.4f, Height + 0.4f, HalfL * 2f + 0.4f);
+            apv.fillEmptySpaces = true;
+            apv.overrideRendererFilters = false;
+
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogDensity = 0.085f;
@@ -1074,6 +1110,47 @@ namespace SBR
         /// world dimensions with localScale left at 1. Walkable clearance, the interaction rays
         /// and the CharacterController all behave identically to the graybox.
         /// </summary>
+        /// <summary>
+        /// PHASE B. Marks the room as bakeable geometry for the Adaptive Probe Volume.
+        ///
+        /// Two flags, and both are load-bearing:
+        ///
+        /// ContributeGI puts the renderer into the GI scene. Without it the baker sees an
+        /// empty box - probes get the flat ambient value and nothing bounces off anything,
+        /// which is the exact state this phase exists to fix.
+        ///
+        /// receiveGI = LightProbes says "sample the probe volume, do not lightmap me". That
+        /// matters here beyond preference: every mesh in this room is generated at runtime by
+        /// ChamferedBoxMesh / ConduitMesh and carries NO UV2. Lightmapping would need an
+        /// unwrap pass per mesh; APV is volumetric and needs no UVs at all. This is why the
+        /// bake is probes-only and why nothing here required a UV change.
+        ///
+        /// The Player is skipped deliberately - it moves, so it must sample probes as a
+        /// dynamic object rather than be baked into them. Canvas-based objects (the HUD, and
+        /// the TV / laptop / phone screens) have no MeshRenderer and are skipped for free.
+        /// </summary>
+        private static void MarkStaticForGI()
+        {
+            int marked = 0;
+            foreach (GameObject root in EditorSceneManager.GetActiveScene().GetRootGameObjects())
+            {
+                if (root.name == "Player")
+                    continue;
+
+                foreach (MeshRenderer mr in root.GetComponentsInChildren<MeshRenderer>(true))
+                {
+                    GameObjectUtility.SetStaticEditorFlags(
+                        mr.gameObject,
+                        GameObjectUtility.GetStaticEditorFlags(mr.gameObject) |
+                        StaticEditorFlags.ContributeGI);
+                    mr.receiveGI = ReceiveGI.LightProbes;
+                    marked++;
+                }
+            }
+
+            Debug.Log($"[GrayboxRoomBuilder] marked {marked} renderers ContributeGI + LightProbes");
+        }
+
         private static GameObject Box(string name, Transform parent, Vector3 center,
                                       Vector3 size, Material mat, int layer = 0,
                                       float bevel = -1f)
