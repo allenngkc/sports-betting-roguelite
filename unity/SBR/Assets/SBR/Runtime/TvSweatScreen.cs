@@ -210,6 +210,13 @@ namespace SBR.Game
     /// nowhere in this file; see room-lead-reply.md §3.
     /// Pacing ports the console's table into <see cref="PacingFor"/> with serialized dials; no engine RNG
     /// is consumed by presentation (only MoveNext / CashOut* are called - everything is baked at lock).
+    ///
+    /// Phase 3C (DESIGN.md §6, VISUAL-DESIGN.md §2): the canvas is Layout B, "Ticket Rail" — a
+    /// full-height ticket column at the left (26-28% of the surface), a compact scorebug/stage/event
+    /// strip filling the right region, and the cash-out slot anchored at the foot of the ticket column.
+    /// Every zone's position comes from <see cref="LayoutGrid"/>, an explicit fixed grid computed ONCE
+    /// per canvas build from the canvas's own configured pixel size — never from what is currently
+    /// displayed. See BuildCanvas and the "canvas construction" region below.
     /// </summary>
     public sealed class TvSweatScreen : MonoBehaviour
     {
@@ -261,14 +268,18 @@ namespace SBR.Game
         public float winTallyDuration = 1.2f;
         public float winConfettiDuration = 2.0f;
         public int winConfettiCount = 40;
+        [Tooltip("C3: how long the score-at-a-goal / ball-at-a-payoff momentary L4 punch holds "
+            + "the HDR token before yielding it back.")]
+        public float hdrPunchDuration = 0.4f;
 
         [Header("Feel dials")]
-        public float breathAmplitude = 0.06f;
-        public float breathSlowHz = 0.7f;
-        public float breathFastHz = 2.6f;
         [Tooltip("Idle phosphor emission flicker, fraction of the emissive quad's idle emission.")]
         public float idleEmissionFlicker = 0.05f;
         public float emissionDecay = 3.2f;
+        [Tooltip("DESIGN.md §8/§9: the LIVE leg row's slow pulse, in Hz — the surface's one " +
+                 "permitted pulse kind. Off the shared _seatedClock, so every LIVE row pulses in " +
+                 "phase and the pulse freezes exactly while standing (TVS-H02).")]
+        public float livePulseHz = 0.8f;
 
         [Header("Audio v0 (procedural, diegetic)")]
         [Range(0f, 1f)] public float masterVolume = 0.5f;
@@ -276,8 +287,9 @@ namespace SBR.Game
         [Range(0f, 1f)] public float stingVolume = 0.8f;
 
         [Header("Theater (F_0.2.0 — the match theater stage)")]
-        [Tooltip("The match theater stage (M-T2/T3). Off = the pre-theater text-ticker layout, kept " +
-                 "as the A/B fallback through M-T4 per the plan's reversibility clause.")]
+        [Tooltip("The match theater stage (M-T2/T3). Off = build the fixed grid without the stage " +
+                 "(EditMode isolation for the palette/geometry test suites — see " +
+                 "TvSweatScreenPaletteTests.cs's own doc comment).")]
         public bool theaterEnabled = true;
         public Color pitchLineColor = new Color(0.85f, 0.92f, 0.95f, 0.50f);
         // Canvas black floor (unified-grade-spec.md §2 / DESIGN.md §2A): opaque canvas pixels must
@@ -312,6 +324,10 @@ namespace SBR.Game
         // T9 (Phase 3B): §4 Structure/pending — dim grey at L1. §7 Scorebug: "Ticket/leg index at
         // L1, present but subordinate." Distinct from (and dimmer than) contextGrey's L2.
         public Color structureGrey = new Color(0.14f, 0.15f, 0.16f, 1f);
+        // Phase 3C: §5 scale table pins "Risk / pays: 0.40, L2, gold" — the one place gold sits at L2
+        // rather than L3/L4. A dimmed `gold`, comfortably above the black floor on every channel
+        // (unlike RunWonRest's 8% dim, which needed clamping) so no floor clamp is required here.
+        public Color goldL2 = new Color(0.575f, 0.41f, 0.09f, 1f);
         // §3/§4/§8: "Loss is still darkness ... the old green/red money language stays retired." A
         // lost beat drops the quad/room-light toward this near-neutral, near-zero value instead of
         // flashing red. Never used above ~0.1 magnitude — it must stay below `gold` unconditionally.
@@ -331,9 +347,12 @@ namespace SBR.Game
         /// couch. Normal play drives this through SitSpot.SeatedChanged.</summary>
         public void ForceSeated(bool seated) => SetSeated(seated);
         /// <summary>Test/debug hook (TVS-H01 regression): true while the cash-out amount is mid-tween
-        /// (AnimateCashOut running). _cashOutAnimation is otherwise unobservable from outside the
-        /// sweat, and this is the exact condition CanAcceptCashOutNow also refuses.</summary>
-        public bool DebugCashOutAnimating => _cashOutAnimation != null;
+        /// (AnimateCashOut running). Reads _cashOutTweening, not _cashOutAnimation directly — the
+        /// Coroutine handle isn't assigned until StartCoroutine returns, one instant after the
+        /// tween's own first render already ran (TVS-H02 fix, see _cashOutTweening's declaration).
+        /// _cashOutAnimation is otherwise unobservable from outside the sweat, and this is the exact
+        /// condition CanAcceptCashOutNow also refuses.</summary>
+        public bool DebugCashOutAnimating => _cashOutTweening;
 
         // ---- state ----
         private bool _seated;
@@ -351,17 +370,34 @@ namespace SBR.Game
         private int _eventsEmitted;
         private int _flavorLegSeen = -1;
         private double _prevProb;
-        private float _probTarget;
-        private float _probShown;
+        private float _probTarget; // data-only now (RevealedView.WinProbability) — Layout B carries
+                                    // no standalone win% visual; DESIGN.md §7's component list has no
+                                    // slot for one, and the ticket column's NEED/LIVE copy is the
+                                    // PRD-sanctioned channel for "what does the leg still need".
         private float _flavorScale = 1f;
         private double _lastCashOutAmount;
         private double _cashOutShown;
         private bool _hasCashOutShown;
         private Coroutine _cashOutAnimation;
+        // TVS-H02 (freeze regression, Phase 3C): tracks "a tween is in flight" SEPARATELY from
+        // _cashOutAnimation's own Coroutine handle. StartCoroutine runs AnimateCashOut's body
+        // synchronously up to its first yield BEFORE returning that handle, so RenderCashOut's
+        // very first call for a new tween used to see _cashOutAnimation still null (the value
+        // StopCashOutAnimation had just left it at) and paint the actionable "[E]" label instead
+        // of "UPDATING" for exactly one frame. If a poll caught that one mis-rendered frame right
+        // before standing, the coroutine's very next iteration (now correctly holding the
+        // assigned handle) repainted with the correct "UPDATING" suffix at the SAME frozen
+        // amount — a text change with no underlying tick, misread as TVS-H02. This flag is set
+        // true before StartCoroutine is called (so the coroutine's own first render already sees
+        // it) and false before each tween's final settle render (see AnimateCashOut/
+        // StopCashOutAnimation), so RenderCashOut's animating/idle branch is never a frame stale.
+        private bool _cashOutTweening;
         private float _cashOutScale = 1f;
         private float _cashOutFlash;
         private int _cashOutRoundShown;
-        private float _barPunch = 1f;
+        // Anytime-scorer, per leg: true only at the leg's causal identity payoff — see
+        // DescribeActiveLeg / OnGoalPlayed. Reset per-leg in BeginStageLeg.
+        private bool _scorerRevealedForActiveLeg;
 
         // ---- input ----
         private InputAction _interact;
@@ -380,27 +416,143 @@ namespace SBR.Game
         // camera/URP HDR settings — a world-space canvas Image/Text can never exceed 1.0 through the
         // ordinary `.color` setter, so the brightness ladder's L4 tier had nothing for the shared
         // bloom volume to grab. TvSweatHdrUI.shader multiplies the (still 0-1) vertex colour by an
-        // unclamped `_HdrBoost` float material property instead, so only elements that opt in (given
+        // unclamped `_HdrBoost` float material property instead, so elements that opt in (given
         // their own material instance below) can exceed 1.0 — everything else keeps the ordinary,
         // SRP-batchable default UI material.
+        //
+        // C3 (Design Director ruling): "eligibility is not simultaneity." Five graphics now carry
+        // this material — CashOut, BigAmount, GoldFlood, Score, Ball — which is strictly ELIGIBILITY
+        // (who is physically capable of exceeding 1.0), not a promise that only one of them is ever
+        // asked to. DESIGN.md §3's "at most one element at L4 at any instant" is enforced separately,
+        // by the named one-token invariant below (_l4Holder / RequestL4 / ReleaseL4) — every call
+        // site that wants L4 asks there, never sets a material's boost directly. The live-leg pulse
+        // was explicitly ruled to stay OUT of the eligible set.
         private const float HdrBoostL3 = 1f;   // default / "price animating" — DESIGN.md §8.5: never L4
-        private const float HdrBoostL4 = 1.8f; // the one full-brightness element — cash-out accept, payout tally
+        // The single L4 magnitude (C3 rule 5: "a single value" — no second, per-element scale).
+        private const float HdrBoostL4 = 1.8f;
         private static readonly int HdrBoostId = Shader.PropertyToID("_HdrBoost");
         private Shader _hdrUiShader;
         private bool _hdrShaderMissing;
-        private Material _cashOutHdrMat, _bigAmountHdrMat, _goldFloodHdrMat;
+        private Material _cashOutHdrMat, _bigAmountHdrMat, _goldFloodHdrMat, _scoreHdrMat, _ballHdrMat;
+
+        /// <summary>C3: the five HDR-eligible focuses. <see cref="Payout"/> drives BOTH the
+        /// BigAmount and GoldFlood materials together — a ticket's payout tally and its gold wash
+        /// are one visual moment (the payoff at its callback), not two independently competing
+        /// ones, so they move as a single participant in the one-token invariant below.</summary>
+        private enum HdrFocus { CashOut, Payout, Score, Ball }
+
+        /// <summary>C3's one-token invariant, named and enforced here rather than left as a
+        /// convention: at most one <see cref="HdrFocus"/> holds the L4 token at any instant. Null
+        /// means nothing currently sits at L4.</summary>
+        private HdrFocus? _l4Holder;
+
+        // ---- Layout B, "Ticket Rail" grid (DESIGN.md §6, VISUAL-DESIGN.md §2, PRD §8.1) ----
+        //
+        // "Every zone position comes from an explicit fixed layout grid defined once in code, never
+        // computed from content" (DESIGN.md §6). Every constant below is authored, not tuned per
+        // instance — see the header doc for why these are `const`, not serialized fields — and
+        // LayoutGrid's fields are a pure function of the canvas's own configured pixel size (w, h),
+        // which is itself configuration (screenWorldSize / referencePixelsWide), never the sweat's
+        // current content (leg count, text length, market kind). Ticket column width is corrected to
+        // 26-28% of the surface per DESIGN.md §6; TicketColumnWidthFraction sits at the middle.
+        private const float TicketColumnWidthFraction = 0.27f;
+        private const float ChromeStripHeight = 18f;   // PRD §8.1: system chrome stays lowest-priority
+        private const float ScoreBugHeight = 56f;
+        private const float BottomRowHeight = 52f;     // shared row: cash-out | event strip
+        private const float TicketHeaderHeight = 24f;
+        private const float TicketFooterHeight = 36f;  // RISK / PAYS
+        // RunConfig.MaxLegs defaults to 6 (engine\RunConfig.cs). BuildCanvas runs from Awake, before
+        // GrayboxRoomBuilder assigns `director` (AddComponent fires Awake synchronously, before the
+        // caller's next line runs) — the row-slot count cannot be read from the live run and must be
+        // a fixed constant per rule 1. Unused slots simply go dark (rule 2): a ticket with fewer legs
+        // never reflows the grid, and one with more (a future config change) silently truncates rather
+        // than resize anything.
+        private const int TicketRowSlots = 6;
+        // T16 (Design Director ruling): the momentum tape sits at the FOOT of the scorebug zone —
+        // a thin strip hugging its inside-bottom edge, matching MomentumTape's own fixed RowHeight
+        // so a single-row ticket fits exactly.
+        private const float MomentumTapeHeight = 14f;
+
+        /// <summary>PRD §8.1's five stable zones (plus system chrome), computed once per canvas
+        /// build. Rects use a top-left origin (x/y grow right/down, matching how the grid reads on
+        /// paper); AnchorTopLeft/AnchorTopRight/AnchorTopCenter/AnchorCenter below convert into
+        /// Unity's canvas-top-left-anchored coordinate space used throughout BuildCanvas.</summary>
+        private readonly struct LayoutGrid
+        {
+            public readonly Rect TicketColumn;   // header + leg rows + risk/pays footer (not cash-out)
+            public readonly Rect TicketHeader;
+            public readonly Rect TicketFooter;   // RISK / PAYS
+            public readonly Rect CashOut;        // DESIGN.md §6/§7: "anchored at the foot of the ticket column"
+            public readonly Rect ScoreBug;
+            public readonly Rect Stage;
+            public readonly Rect EventStrip;
+            public readonly Rect ChromeStrip;
+            public readonly float TicketRowHeight;
+
+            public LayoutGrid(float w, float h)
+            {
+                float ticketW = Mathf.Round(w * TicketColumnWidthFraction);
+                float contentH = h - ChromeStripHeight;
+                float rightX = ticketW;
+                float rightW = w - ticketW;
+                float bottomY = contentH - BottomRowHeight;
+
+                ScoreBug = new Rect(rightX, 0f, rightW, ScoreBugHeight);
+                Stage = new Rect(rightX, ScoreBugHeight, rightW, bottomY - ScoreBugHeight);
+                EventStrip = new Rect(rightX, bottomY, rightW, BottomRowHeight);
+                CashOut = new Rect(0f, bottomY, ticketW, BottomRowHeight);
+                TicketColumn = new Rect(0f, 0f, ticketW, bottomY);
+                TicketHeader = new Rect(0f, 0f, ticketW, TicketHeaderHeight);
+                TicketFooter = new Rect(0f, bottomY - TicketFooterHeight, ticketW, TicketFooterHeight);
+                ChromeStrip = new Rect(0f, contentH, w, ChromeStripHeight);
+                TicketRowHeight = (bottomY - TicketHeaderHeight - TicketFooterHeight) / TicketRowSlots;
+            }
+
+            /// <summary>Row <paramref name="index"/>'s rect (0-based, ticket order). A pure function
+            /// of the grid and the index alone — never of leg state, text, or which leg is live.</summary>
+            public Rect TicketRow(int index) => new Rect(
+                TicketColumn.x,
+                TicketHeader.yMax + index * TicketRowHeight,
+                TicketColumn.width,
+                TicketRowHeight);
+        }
 
         // ---- UI ----
         private Font _font;
-        private float _innerWidth;
-        private float _barHeight;
         private int _resolvedThrough; // legs below this index are PRESENTED as resolved (not engine truth)
-        private Text _tMatchup, _tRecords, _tLeg, _tClock, _tFlavor, _tWinPct, _tCashOut, _tChrome, _tAttract, _tBigAmount, _tSlipStrip, _tConsolation;
-        private Image _backing, _barBg, _barFill, _wonFlood, _goldFlood, _dimOverlay;
+        private Text _tMatchup, _tLeg, _tClock, _tFlavor, _tCashOut, _tChrome, _tAttract, _tBigAmount, _tConsolation;
+        private Text _tTicketHeader, _tRiskPays, _tInterventionPrompt, _tTakeoverTitle, _tTakeoverSub, _tSubtitle;
+        // C3: the score's momentary L4 punch overlay — see BuildScoreBug and OnGoalPlayed.
+        private Text _tScoreFlash;
+        private Image _backing, _wonFlood, _goldFlood, _dimOverlay;
+        // C3: the ball's momentary L4 punch overlay — built unconditionally (never gated behind
+        // theaterEnabled) so eligibility does not depend on whether the theater stage exists.
+        // TheaterStage.cs owns the real ball actor privately and is outside this phase's file
+        // boundary, so this stands in for it at the Stage zone's centre — see BuildCanvas and
+        // OnGoalPlayed.
+        private Image _ballFlash;
+
+        /// <summary>One ticket-column leg row's two text elements (DESIGN.md §7: "each live row
+        /// ... carries its own NEED and its own revealed progress"). Every slot is built once, in
+        /// BuildTicketColumn, at a fixed rect from LayoutGrid.TicketRow(i) — a row's <c>IsLive</c>
+        /// flag changes what text/colour it carries, never where it sits.</summary>
+        private struct LegRowUi
+        {
+            public Text Label;
+            public Text Detail;
+            public bool IsLive;
+        }
+
+        private LegRowUi[] _legRow;
 
         // ---- theater (F_0.2.0) ----
         private TheaterStage _stage;
+        // T16 (Design Director ruling): the momentum tape is back — restored at the foot of the
+        // scorebug, no numerals, no hue, never above L2. See BuildCanvas (construction, inside the
+        // theaterEnabled block alongside _stage), BeginStageLeg/ResetForNewSession (Show), RenderEvent
+        // (_pendingTapeBeat), RevealBeatChrome (AppendBeat), and FinalSlam (ResolveLeg).
         private MomentumTape _tape;
+        private bool _pendingTapeBeat;
         private Transform _canvasRoot;
         private float _canvasWidth;
         private float _canvasHeight;
@@ -438,9 +590,6 @@ namespace SBR.Game
         // Market suspend (M-T3.1, Allen's ruling): the engine reprices at MoveNext, so while a
         // scene plays the market is SUSPENDED — no stale-price accepts, no spoiler price.
         private bool _marketSuspended;
-        private double _pendingBeatDelta;
-        private Color _pendingBeatBeneficiary;
-        private bool _pendingTapeBeat;
         private TvAudioDirector _audio;
         private float _audioUrgency;
 
@@ -710,14 +859,11 @@ namespace SBR.Game
                 StartClockRun(SweatFlavor.Minute(evt), spec.Duration);
 
                 // A staged goal owns the beat's story (Sol, M-T4.1): the flavor speaks the
-                // goal call and the TAPE dot wears the SCORER'S color — both keyed to the
-                // goal's beneficiary, never the tie-broken beat direction (a flat floor
-                // beat reconciles for the opponent while the tie-break says "up").
+                // goal call, keyed to the goal's beneficiary, never the tie-broken beat
+                // direction (a flat floor beat reconciles for the opponent while the
+                // tie-break says "up").
                 if (spec.Goal.HasValue)
                 {
-                    // Scorer's color = the side that SCORES; the goal-call language = the
-                    // money direction. Decoupled for market legs (Sol, F_0.4.0 P3).
-                    _pendingBeatBeneficiary = TeamColor(leg, spec.Goal.Value.ScoredByPicked);
                     if (evt.Type == DramaEventType.Momentum)
                         _pendingFlavor = SweatFlavor.GoalLine(spec.Goal.Value.ForPicked, leg, evt.Step);
                     // TVS-H03 fix: the old PrepareScoringActor/SetScoringActor call here was a
@@ -874,23 +1020,14 @@ namespace SBR.Game
             RevealedView.SetClock(_tClock.text);
             _finalSequenceActive = false;
             _clockTicking = false;
-            if (grade == LegGrade.Won)
-            {
-                _probTarget = 1f;
-                _tWinPct.text = "WIN 100%";
-            }
-            else if (grade == LegGrade.Lost)
-            {
-                _probTarget = 0f;
-                _tWinPct.text = "WIN 0%";
-            }
+            if (grade == LegGrade.Won) _probTarget = 1f;
+            else if (grade == LegGrade.Lost) _probTarget = 0f;
             RevealedView.SetProbability(_probTarget);
             RevealedView.ResolveLeg(evt.LegIndex, grade);
+            _tape?.ResolveLeg(evt.LegIndex, grade); // T16: collapses the strip to its resolution cap
 
             _resolvedThrough = evt.LegIndex + 1;
-            UpdateSlipStrip(evt.LegIndex + 1);
-            _tape?.ResolveLeg(evt.LegIndex, grade);
-            PunchWinProbBar();
+            UpdateTicketColumn(evt.LegIndex + 1);
             int k = evt.LegIndex + 1;
             if (grade == LegGrade.Won)
             {
@@ -925,6 +1062,19 @@ namespace SBR.Game
             }
             if (_ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count)
                 UpdateScorebug(_ticket.Legs[_stageLeg]);
+
+            // C3 (Design Director ruling): every staged goal attempt reaches its payoff HERE,
+            // whether or not it commits. A commit means the score itself is the story — DESIGN.md
+            // §5: "Score numerals ... L3, L4 at a goal" — so the score punches to L4. A chalk-off
+            // has no score change to headline, so the ball's payoff punch takes the moment instead
+            // — DESIGN.md §7: "the ball is the only object permitted L4, and only at a payoff."
+            // Mutually exclusive by construction (never both for the same goal), which is what
+            // keeps the one-token invariant from ever having to arbitrate between these two.
+            if (goal.Commits && _ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count)
+                PlayScorePunch(ScoreOnlyLine(_ticket.Legs[_stageLeg]));
+            else if (!goal.Commits)
+                PlayBallPunch();
+
             if (!goal.Commits)
             {
                 _tFlavor.color = flavorColor;
@@ -936,12 +1086,63 @@ namespace SBR.Game
                 Leg leg = _ticket.Legs[_stageLeg];
                 bool pickedScorer = leg.Selection.Kind == MarketKind.AnytimeScorer
                     && object.ReferenceEquals(scorer, leg.Matchup.PlayerAt(leg.Selection.PlayerIndex));
-                _tFlavor.color = pickedScorer ? LaptopOs.MoneyGood : flavorColor;
+                // §4: money/won is gold, not the retired saturated green — LaptopOs.MoneyGood is
+                // the laptop OS's own retired-green token and has no role on this surface.
+                _tFlavor.color = pickedScorer ? new Color(gold.r, gold.g, gold.b, 1f) : flavorColor;
                 _tFlavor.text = pickedScorer
                     ? Surname(scorer.Name) + " STRIKES — THAT'S YOUR MAN"
                     : Surname(scorer.Name) + " FINDS THE NET";
                 _flavorScale = 1.12f;
+                // SweatActiveLegModel's ScorerRevealed gate: true only at this exact causal
+                // identity payoff, matching the model's own documented contract.
+                if (pickedScorer) _scorerRevealedForActiveLeg = true;
             }
+        }
+
+        /// <summary>The score-only numerals (no team names — PRD §4.2's "one revealed source of
+        /// truth": the SAME <c>_ledger.Picked</c>/<c>Opponent</c> fields UpdateScorebug already
+        /// reads, never re-derived). Feeds the momentary C3 score punch.</summary>
+        private string ScoreOnlyLine(Leg leg)
+        {
+            bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
+            int homeScore = pickedHome ? _ledger.Picked : _ledger.Opponent;
+            int awayScore = pickedHome ? _ledger.Opponent : _ledger.Picked;
+            return $"{awayScore} — {homeScore}";
+        }
+
+        /// <summary>C3: "the score at a goal" — a momentary L4 punch, layered over Matchup's own
+        /// persistent L3 score truth for <see cref="hdrPunchDuration"/>, then released.</summary>
+        private void PlayScorePunch(string scoreText)
+        {
+            if (_tScoreFlash == null) return;
+            _tScoreFlash.text = scoreText;
+            _tScoreFlash.enabled = true;
+            StartCoroutine(ScorePunchRoutine());
+        }
+
+        private IEnumerator ScorePunchRoutine()
+        {
+            RequestL4(HdrFocus.Score, momentary: true);
+            yield return ScaledWait(hdrPunchDuration);
+            ReleaseL4(HdrFocus.Score);
+            if (_tScoreFlash != null) _tScoreFlash.enabled = false;
+        }
+
+        /// <summary>C3: "the ball at a payoff" — a momentary L4 punch centred on the Stage zone
+        /// for <see cref="hdrPunchDuration"/>, then released.</summary>
+        private void PlayBallPunch()
+        {
+            if (_ballFlash == null) return;
+            _ballFlash.enabled = true;
+            StartCoroutine(BallPunchRoutine());
+        }
+
+        private IEnumerator BallPunchRoutine()
+        {
+            RequestL4(HdrFocus.Ball, momentary: true);
+            yield return ScaledWait(hdrPunchDuration);
+            ReleaseL4(HdrFocus.Ball);
+            if (_ballFlash != null) _ballFlash.enabled = false;
         }
 
         /// <summary>A corner kick or booking reaches its payoff. Count and market direction
@@ -1009,7 +1210,11 @@ namespace SBR.Game
         /// sweat resumes), [R] plays the Ref's Whistle (the call goes to review at the odds you
         /// were living on — overturned it STANDS at full odds, confirmed it dies), [N] declines.
         /// The drama holds as long as the decision does — the pause IS the moment. Without a
-        /// keyboard (batch tests) the window declines immediately, so autoplay never hangs.</summary>
+        /// keyboard (batch tests) the window declines immediately, so autoplay never hangs.
+        ///
+        /// PRD §8.7 / DESIGN.md §8.5: "intervention controls live in their own overlay, never in
+        /// [the cash-out] row." The cash-out slot stays MARKET SUSPENDED (structureGrey, L1) for
+        /// the duration; the M/R/N verbs render on the separate InterventionPrompt element.</summary>
         private IEnumerator PendingWindowBeat()
         {
             if (Keyboard.current == null)
@@ -1023,8 +1228,11 @@ namespace SBR.Game
             string verbs = (canM ? "[M] MULLIGAN   ·   " : "")
                 + (canR ? $"[R] SEND TO REVIEW ({Mathf.RoundToInt((float)(_session.PendingLossProbBefore * 100))}%)   ·   " : "");
             _tCashOut.enabled = true;
-            _tCashOut.color = new Color(gold.r, gold.g, gold.b, 1f); // the prompt is actionable — gold
-            _tCashOut.text = verbs + "[N] LET IT DIE";
+            _tCashOut.color = structureGrey; // §8.5 Pending window: "As suspended" — L1 unlit slate
+            _tCashOut.text = "MARKET SUSPENDED";
+            _tInterventionPrompt.enabled = true;
+            _tInterventionPrompt.color = new Color(gold.r, gold.g, gold.b, 1f);
+            _tInterventionPrompt.text = "SHOT FROZEN\n" + verbs + "[N] LET IT DIE";
 
             while (_session.HasPendingLoss)
             {
@@ -1032,11 +1240,12 @@ namespace SBR.Game
                 {
                     director.Run.PlayMulliganSlip(_session);
                     _tCashOut.enabled = false;
+                    _tInterventionPrompt.enabled = false;
                     _tFlavor.color = chromeCyan; // §8 VOID — the mulligan voids the leg, not chrome
                     _tFlavor.text = "THE SLIP COMES OUT — LEG VOIDED, THE TICKET LIVES";
                     _emissRest = _emissIdle; // the DEAD dim lifts: the ticket breathes again
                     tvLight?.ResetToIdle();
-                    UpdateSlipStrip(Mathf.Min(_resolvedThrough, _ticket.Legs.Count - 1));
+                    UpdateTicketColumn(Mathf.Min(_resolvedThrough, _ticket.Legs.Count - 1));
                     yield return ScaledWait(deadLineDuration);
                     yield break;
                 }
@@ -1044,6 +1253,7 @@ namespace SBR.Game
                 {
                     director.Run.PlayRefsWhistle(_session);
                     _tCashOut.enabled = false;
+                    _tInterventionPrompt.enabled = false;
                     if (!_session.IsComplete)
                     {
                         // The leg is reinstated live — a fact, not a payout yet. §4 Fact: cold white.
@@ -1051,7 +1261,7 @@ namespace SBR.Game
                         _tFlavor.text = "REVIEWED — OVERTURNED. THE LEG STANDS.";
                         _emissRest = _emissIdle;
                         tvLight?.ResetToIdle();
-                        UpdateSlipStrip(Mathf.Min(_resolvedThrough, _ticket.Legs.Count - 1));
+                        UpdateTicketColumn(Mathf.Min(_resolvedThrough, _ticket.Legs.Count - 1));
                     }
                     else
                     {
@@ -1067,11 +1277,13 @@ namespace SBR.Game
                 {
                     _session.DeclinePendingLoss();
                     _tCashOut.enabled = false;
+                    _tInterventionPrompt.enabled = false;
                     yield break;
                 }
                 yield return null;
             }
             _tCashOut.enabled = false;
+            _tInterventionPrompt.enabled = false;
         }
 
         private IEnumerator SettlementBeat()
@@ -1099,16 +1311,12 @@ namespace SBR.Game
             _eventsEmitted = 0;
             _flavorLegSeen = -1;
             _presModel.ResetForTicket();
-            _tape?.ResetForTicket(_ticket != null ? _ticket.Legs.Count : 0);
-            _tape?.Show(false);
             CleanupConfetti();
             StopCashOutAnimation();
             _hasCashOutShown = false;
             _cashOutShown = 0.0;
             _cashOutScale = 1f;
             _cashOutFlash = 0f;
-            _barPunch = 1f;
-            _pendingTapeBeat = false;
             _stageLeg = -1;
             _stageBeatCount = 0;
             _countLedger = null;
@@ -1116,10 +1324,19 @@ namespace SBR.Game
             _audioUrgency = 0f;
             _stoppageGoalCount = 0;
             _marketSuspended = false;
+            _scorerRevealedForActiveLeg = false;
             RevealedView.Reset(director != null ? director.Run : null, _ticket,
                 director != null ? director.SweatIndex : 0);
             _tCashOut.color = new Color(gold.r, gold.g, gold.b, 1f);
+            _tInterventionPrompt.enabled = false;
             _stage?.Show(false);
+            // T16: fresh ticket, fresh tape — a stale strip from the last ticket must not survive.
+            _tape?.ResetForTicket(_ticket != null ? _ticket.Legs.Count : 0);
+            _tape?.Show(false);
+            _pendingTapeBeat = false;
+            // C3: no punch overlay survives across a session boundary.
+            if (_tScoreFlash != null) _tScoreFlash.enabled = false;
+            if (_ballFlash != null) _ballFlash.enabled = false;
 
             _emissRest = _emissIdle;
             tvLight?.ResetToIdle();
@@ -1134,10 +1351,8 @@ namespace SBR.Game
             _tAttract.enabled = true;
             _tFlavor.color = flavorColor;
             // A new session starts with no L4 element live — see AnimateCashOutTaunt/WinBeat/
-            // CashOutFloodBeat for where these get pushed back above HdrBoostL3.
-            _cashOutHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
-            _bigAmountHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
-            _goldFloodHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
+            // CashOutFloodBeat/OnGoalPlayed for where these get pushed back above HdrBoostL3.
+            ResetL4();
 
             RenderPregame();
         }
@@ -1147,15 +1362,15 @@ namespace SBR.Game
             if (_ticket == null || _ticket.Legs.Count == 0) return;
             Leg leg = _ticket.Legs[0];
             _tMatchup.text = MatchupLine(leg);
-            _tRecords.text = RecordsLine(leg);
             _tLeg.text = $"LEG 1/{_ticket.Legs.Count}";
             _tClock.text = "PRE";
             _tFlavor.text = "the board is set.";
-            _probTarget = (float)leg.TrueProb;
-            _probShown = _probTarget;
-            _tWinPct.text = $"WIN {Mathf.RoundToInt(_probTarget * 100f)}%";
+            _probTarget = (float)leg.TrueProb; // data only — RevealedView, no visible bar
+            // The ticket-card takeover copy clears the instant the live sweat begins.
+            _tTakeoverTitle.text = string.Empty;
+            _tTakeoverSub.text = string.Empty;
             _resolvedThrough = 0;
-            UpdateSlipStrip(0);
+            UpdateTicketColumn(0);
             BeginStageLeg(0, leg, 0);
         }
 
@@ -1167,7 +1382,7 @@ namespace SBR.Game
             if (_stage == null) return;
             _stageLeg = legIndex;
             _stageBeatCount = beatCount;
-            _tape?.Show(true);
+            _scorerRevealedForActiveLeg = false; // fresh leg = fresh scorer-identity gate
             _ledger.ResetForLeg();
             _ledger.ConfigureEndpoint(leg);
             _countLedger = null;
@@ -1187,12 +1402,18 @@ namespace SBR.Game
                 pickedIsHome: SweatFlavor.PickedHomeForPresentation(leg), openingProb: (float)leg.TrueProb);
             RevealedView.BeginLeg(legIndex, leg);
             UpdateScorebug(leg);
+            _tape?.Show(true); // T16
         }
 
         /// <summary>The theater scorebug (M-T3, playtest #10 finding #2 pulled forward from
         /// chrome v2): team names IN their dot colors so the stage is instantly attributable,
         /// the running synthesized score between them, the picked side marked. Away @ home
-        /// order, matching the slate's convention everywhere else.</summary>
+        /// order, matching the slate's convention everywhere else.
+        ///
+        /// DESIGN.md §7 / PRD §8.3: "Records are removed from the primary scorebug during live
+        /// playback." No RecordsLine/market-chip suffix here — the market chip's information now
+        /// lives in the ticket column's active-leg row (SweatActiveLegModel), which is the
+        /// PRD-sanctioned channel for "what does this leg need".</summary>
         private void UpdateScorebug(Leg leg)
         {
             if (_tMatchup == null) return;
@@ -1204,48 +1425,57 @@ namespace SBR.Game
             string away = SweatFlavor.Short(leg.Matchup.Away.Name).ToUpperInvariant();
             string home = SweatFlavor.Short(leg.Matchup.Home.Name).ToUpperInvariant();
             // The pick dot marks YOUR TEAM — a market leg has none, so it wears no dot
-            // (the slip strip's market label carries the pick until Phase 3's market chip).
+            // (the ticket column's leg row carries the pick for market legs).
             bool isMl = leg.Selection.Kind == MarketKind.Moneyline;
             string awayMark = isMl && !pickedHome ? "● " : "";
             string homeMark = isMl && pickedHome ? " ●" : "";
             _tMatchup.text =
                 $"<color=#{awayRgb:X6}>{awayMark}{away}</color>  {awayScore} — {homeScore}  " +
                 $"<color=#{homeRgb:X6}>{home}{homeMark}</color>";
-            string chip = MarketChip(leg);
-            _tRecords.text = RecordsLine(leg) + (chip.Length > 0 ? $"   |   {chip}" : string.Empty);
             RevealedView.SetScore($"{away} {awayScore} — {home} {homeScore}");
         }
 
-        private string MarketChip(Leg leg)
+        /// <summary>Builds this leg's revealed-only <see cref="SweatActiveLegModel.ActiveLegInput"/>
+        /// and formats it. PRD §8.2/§9: every value passed here is the SAME revealed field the
+        /// scorebug already renders from (<c>_ledger.Picked/Opponent</c>, <c>_countLedger.Home/
+        /// Away</c>) — never re-derived from <c>Leg</c>/<c>ScoreLedger</c>/<c>CountLedger</c>/
+        /// <c>MatchStatLine</c> directly, and never a locked endpoint. The model's own factory
+        /// signatures (plain int/double/bool/string) make that the only thing this method CAN
+        /// pass, by construction.</summary>
+        private SweatActiveLegModel.ActiveLegCopy DescribeActiveLeg(Leg leg)
         {
-            MarketSelection selection = leg.Selection;
-            MatchStatLine line = leg.Matchup.StatLine;
-            if (line == null) return string.Empty;
-            string choice = selection.Choice == MarketChoice.Over ? "O"
-                : selection.Choice == MarketChoice.Under ? "U" : string.Empty;
-            switch (selection.Kind)
+            switch (leg.Selection.Kind)
             {
-                // The chip shows only REVEALED counts (0 before any payoff) — falling back to
-                // the baked stat line would leak the outcome (causal reveal law).
-                case MarketKind.TotalCorners:
-                    return $"CORNERS {_countLedger?.Home ?? 0}-{_countLedger?.Away ?? 0} | {choice} {selection.Line:0.0}";
-                case MarketKind.TotalCards:
-                    return $"CARDS {_countLedger?.Total ?? 0} | {choice} {selection.Line:0.0}";
-                case MarketKind.BothTeamsToScore:
-                    // Teams-scored progress, not a scoreline — BTTS asks "how many of the
-                    // two have scored", so the chip reads n/2 (Sol, F_0.4.0 P3).
-                    return $"BTTS {(_ledger.Picked > 0 ? 1 : 0) + (_ledger.Opponent > 0 ? 1 : 0)}/2";
+                case MarketKind.Moneyline:
+                {
+                    bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
+                    string team = SweatFlavor.Short(pickedHome ? leg.Matchup.Home.Name : leg.Matchup.Away.Name);
+                    return SweatActiveLegModel.Describe(
+                        SweatActiveLegModel.ActiveLegInput.Moneyline(team, _ledger.Picked, _ledger.Opponent));
+                }
                 case MarketKind.TotalGoals:
-                    return $"GOALS {_ledger.Picked}-{_ledger.Opponent} | {choice} {selection.Line:0.0}";
+                    return SweatActiveLegModel.Describe(SweatActiveLegModel.ActiveLegInput.TotalGoals(
+                        leg.Selection.Choice == MarketChoice.Over, leg.Selection.Line,
+                        _ledger.Picked, _ledger.Opponent));
+                case MarketKind.BothTeamsToScore:
+                    return SweatActiveLegModel.Describe(SweatActiveLegModel.ActiveLegInput.BothTeamsToScore(
+                        leg.Selection.Choice == MarketChoice.Yes, _ledger.Picked, _ledger.Opponent));
+                case MarketKind.TotalCorners:
+                    return SweatActiveLegModel.Describe(SweatActiveLegModel.ActiveLegInput.TotalCorners(
+                        leg.Selection.Choice == MarketChoice.Over, leg.Selection.Line,
+                        _countLedger?.Home ?? 0, _countLedger?.Away ?? 0));
+                case MarketKind.TotalCards:
+                    return SweatActiveLegModel.Describe(SweatActiveLegModel.ActiveLegInput.TotalCards(
+                        leg.Selection.Choice == MarketChoice.Over, leg.Selection.Line,
+                        _countLedger?.Home ?? 0, _countLedger?.Away ?? 0));
                 case MarketKind.AnytimeScorer:
-                    // Scorer IDENTITY is this market's outcome — mid-sweat the chip makes no
-                    // count claim at all (mapping revealed board goals onto the baked scorer
-                    // list resolves the market ahead of the live price; the shown state must
-                    // never say more than the quote does). Identity lands at the whistle.
-                    Player player = leg.Matchup.PlayerAt(selection.PlayerIndex);
-                    return $"{Surname(player.Name)} ANYTIME";
+                {
+                    Player player = leg.Matchup.PlayerAt(leg.Selection.PlayerIndex);
+                    return SweatActiveLegModel.Describe(SweatActiveLegModel.ActiveLegInput.AnytimeScorer(
+                        player.Name, _scorerRevealedForActiveLeg));
+                }
                 default:
-                    return string.Empty;
+                    return new SweatActiveLegModel.ActiveLegCopy(string.Empty, string.Empty, false, string.Empty);
             }
         }
 
@@ -1291,51 +1521,100 @@ namespace SBR.Game
             return TheaterStage.FromRgb(pickedSide ? picked : opponent);
         }
 
-        /// <summary>The always-on slip strip during a sweat (playtest #6: "what did I place, how much
-        /// is at risk, at what odds?"). Rich-text legs colored by PRESENTED status — resolved legs use
-        /// the presentation cursor, never engine truth (outcomes are baked at lock; the strip must not
-        /// leak them early): green W / red L / cyan VOID. Unresolved legs wear THEIR TEAM'S theater
-        /// color (playtest #13 — "which team am I sweating for?"): live at full strength, pending
-        /// dimmed; the money colors still take over the instant a leg resolves.</summary>
-        private void UpdateSlipStrip(int liveLeg)
+        /// <summary>The ticket column (DESIGN.md §6/§7, PRD §8.1/§8.2/§8.4): header (ticket
+        /// index), <see cref="TicketRowSlots"/> fixed leg-row slots in ticket order, and the
+        /// RISK/PAYS footer. Every row's RECT is fixed (LayoutGrid.TicketRow); only its text and
+        /// colour change with state — DESIGN.md §8's Leg-state table decides which:
+        /// NEXT = L1 structureGrey, LIVE = L3 flavorColor (pulsed by AnimateLegPulse), W = L3
+        /// gold solid, L = L0 deadDark, VOID = L2 chromeCyan. The live row additionally carries
+        /// its NEED/LIVE line from <see cref="DescribeActiveLeg"/> (SweatActiveLegModel).
+        ///
+        /// PRD §8.2A tolerance: this reads legs as a collection and checks each row's own live
+        /// state independently (never a single hard-coded "the active leg" index), so it does not
+        /// need a rewrite if concurrent live legs are ever re-authorized — today at most one row
+        /// is ever live, since the engine forbids two legs on one matchup.</summary>
+        private void UpdateTicketColumn(int liveLegIndex)
         {
-            if (_ticket == null) { _tSlipStrip.text = string.Empty; return; }
-
-            string strip = $"RISK ${Money(_ticket.Stake)} → PAYS ${Money(_ticket.PotentialPayout)}     ";
-            for (int i = 0; i < _ticket.Legs.Count; i++)
+            if (_ticket == null)
             {
+                _tTicketHeader.text = string.Empty;
+                for (int i = 0; i < _legRow.Length; i++) ClearLegRow(i);
+                _tRiskPays.text = string.Empty;
+                return;
+            }
+
+            _tTicketHeader.text = director != null
+                ? $"TICKET {director.SweatIndex + 1}/{director.Run.Sweats.Count}"
+                : string.Empty;
+
+            for (int i = 0; i < _legRow.Length; i++)
+            {
+                if (i >= _ticket.Legs.Count) { ClearLegRow(i); continue; }
+
                 Leg leg = _ticket.Legs[i];
                 string label = $"{leg.DisplayLabel} {OddsFormat.American(leg.OfferedOdds)}";
-                (uint homeRgb, uint awayRgb) = TheaterPalette.TeamColors(leg.Matchup.Home.Name, leg.Matchup.Away.Name);
-                uint pickedRgb = SweatFlavor.PickedHomeForPresentation(leg) ? homeRgb : awayRgb;
+                bool isLive = i == liveLegIndex && i >= _resolvedThrough;
+                _legRow[i].IsLive = isLive;
 
-                if (i > 0) strip += "  ·  ";
                 if (i < _resolvedThrough)
                 {
-                    strip += leg.IsVoided ? $"<color=#9EDCF6>{label} VOID</color>"
-                        : leg.GradesWon ? $"<color=#3CE873>{label} W</color>"
-                        : $"<color=#FF4038>{label} L</color>";
+                    if (leg.IsVoided)
+                    {
+                        _legRow[i].Label.color = chromeCyan; // §8 VOID: L2 cyan
+                        _legRow[i].Label.text = $"VOID   {label}";
+                    }
+                    else if (leg.GradesWon)
+                    {
+                        _legRow[i].Label.color = new Color(gold.r, gold.g, gold.b, 1f); // §8 W: L3 gold, solid
+                        _legRow[i].Label.text = $"W   {label}";
+                    }
+                    else
+                    {
+                        _legRow[i].Label.color = deadDark; // §8 L: L0, goes dark
+                        _legRow[i].Label.text = $"L   {label}";
+                    }
+                    _legRow[i].Detail.text = string.Empty;
                 }
-                else if (i == liveLeg)
+                else if (isLive)
                 {
-                    strip += $"<color=#{pickedRgb:X6}>{label} LIVE</color>";
+                    // §8 LIVE: L3 white — AnimateLegPulse drives the one permitted pulse.
+                    _legRow[i].Label.color = flavorColor;
+                    _legRow[i].Label.text = $"LIVE   {label}";
+                    SweatActiveLegModel.ActiveLegCopy copy = DescribeActiveLeg(leg);
+                    _legRow[i].Detail.color = flavorColor;
+                    _legRow[i].Detail.text = $"{copy.Need}\n{copy.Live}";
                 }
                 else
                 {
-                    strip += $"<color=#{pickedRgb:X6}99>{label}</color>"; // dimmed team color
+                    _legRow[i].Label.color = structureGrey; // §8 NEXT: L1, structure only
+                    _legRow[i].Label.text = $"NEXT   {label}";
+                    _legRow[i].Detail.text = string.Empty;
                 }
             }
-            _tSlipStrip.text = strip;
+
+            // §7: "Risk and pays sit at the foot in gold at L2."
+            _tRiskPays.text = $"RISK ${Money(_ticket.Stake)}     PAYS ${Money(_ticket.PotentialPayout)}";
         }
 
-        /// <summary>The auto-advance interstitial (M4): TICKET i/n, the legs line, stake → to-win.</summary>
+        private void ClearLegRow(int i)
+        {
+            _legRow[i].IsLive = false;
+            if (_legRow[i].Label != null) _legRow[i].Label.text = string.Empty;
+            if (_legRow[i].Detail != null) _legRow[i].Detail.text = string.Empty;
+        }
+
+        /// <summary>The auto-advance interstitial (M4): TICKET i/n, the legs line, stake → to-win.
+        /// PRD §8.9: clears the prior stage/score/tape but the ticket column is NOT one of the
+        /// things that clears — DESIGN.md §6: "The ticket column is stable. It does not resize
+        /// between markets." RenderPregame already populated it (via ResetForNewSession, which
+        /// runs immediately before this) with the incoming ticket's legs, all NEXT.</summary>
         private void RenderTicketCard()
         {
             _stage?.Show(false); // the interstitial card is stage-free; pregame re-raises it
             _stageLeg = -1;
-            _tLeg.text = string.Empty;
             _tClock.text = "PRE";
-            _tMatchup.text = $"TICKET {director.SweatIndex + 1}/{director.Run.Sweats.Count}";
+
+            _tTakeoverTitle.text = $"TICKET {director.SweatIndex + 1}/{director.Run.Sweats.Count}";
 
             string legs = string.Empty;
             foreach (Leg leg in _ticket.Legs)
@@ -1343,15 +1622,12 @@ namespace SBR.Game
                 if (legs.Length > 0) legs += "   ·   ";
                 legs += $"{leg.DisplayLabel} {OddsFormat.American(leg.OfferedOdds)}";
             }
-            _tRecords.text = legs;
-            _tSlipStrip.text = string.Empty;
+            _tTakeoverSub.text = legs;
 
             _tFlavor.color = flavorColor;
             _tFlavor.text = $"${Money(_ticket.Stake)} TO WIN ${Money(_ticket.PotentialPayout)}";
 
-            float p0 = (float)_ticket.Legs[0].TrueProb;
-            _probTarget = _probShown = p0;
-            _tWinPct.text = $"WIN {Mathf.RoundToInt(p0 * 100f)}%";
+            _probTarget = (float)_ticket.Legs[0].TrueProb; // data only
         }
 
         /// <summary>The round's settle card short of a run end (payment model): PAYMENT MADE green,
@@ -1368,30 +1644,28 @@ namespace SBR.Game
             _tAttract.enabled = false;
             _tLeg.text = string.Empty;
             _tClock.text = string.Empty;
-            _tWinPct.text = string.Empty;
             _tBigAmount.text = string.Empty;
-            _tSlipStrip.text = string.Empty;
 
             if (s.TotemFired)
             {
-                _tMatchup.text = $"SHORT — ${Money(s.BankBefore)} AGAINST ${Money(s.Payment)}";
+                _tTakeoverTitle.text = $"SHORT — ${Money(s.BankBefore)} AGAINST ${Money(s.Payment)}";
                 // A deferred payment is bad news but not a payout — no gold. §4/§8: the bad-outcome
                 // treatment is darkness, never the retired money-bad red; text stays legible in grey.
                 _tFlavor.color = contextGrey;
                 _tFlavor.text = "THE TOTEM BURNS";
                 double juiced = s.Payment * (1.0 + (director?.Run?.Config.TotemJuiceRate ?? 0.5));
-                _tRecords.text = $"PAYMENT DEFERRED — YOUR BANK STANDS. THE NEXT ONE GROWS BY ${Money(juiced)}";
+                _tTakeoverSub.text = $"PAYMENT DEFERRED — YOUR BANK STANDS. THE NEXT ONE GROWS BY ${Money(juiced)}";
                 _emissRest = deadDark;
                 EmissionFlash(deadDark);
                 tvLight?.SetRest(deadDark, 0.08f);
             }
             else
             {
-                _tMatchup.text = "PAYMENT MADE";
+                _tTakeoverTitle.text = "PAYMENT MADE";
                 // A payment landing is money — gold, per §4.
                 _tFlavor.color = new Color(gold.r, gold.g, gold.b, 1f);
                 _tFlavor.text = $"−${Money(s.Payment)}   ·   BANK ${Money(s.BankAfter)}";
-                _tRecords.text = string.Empty;
+                _tTakeoverSub.text = string.Empty;
                 EmissionFlash(gold);
                 tvLight?.Flash(gold, 3.0f);
             }
@@ -1412,7 +1686,7 @@ namespace SBR.Game
             _tAttract.enabled = true;
             _tAttract.color = flavorColor; // an instructional prompt, not money — §4 Fact: cold white
             _tAttract.text = title;
-            _tWinPct.text = sub;
+            _tSubtitle.text = sub;
 
             if (moneyIdle)
             {
@@ -1441,7 +1715,7 @@ namespace SBR.Game
             _tAttract.color = won
                 ? new Color(gold.r, gold.g, gold.b, 1f)
                 : contextGrey;
-            _tWinPct.text = $"FINAL BANK ${Money(r.Bank)}  —  NEW RUN AT THE LAPTOP";
+            _tSubtitle.text = $"FINAL BANK ${Money(r.Bank)}  —  NEW RUN AT THE LAPTOP";
 
             if (won)
             {
@@ -1494,27 +1768,27 @@ namespace SBR.Game
         private void ClearToBlankScreen()
         {
             _stage?.Show(false);
-            _tape?.Show(false);
+            _tape?.Show(false); // T16
             if (_tConsolation != null) _tConsolation.enabled = false;
             SetAlpha(_wonFlood, 0f);
             SetAlpha(_goldFlood, 0f);
             SetAlpha(_dimOverlay, 0f);
             _tCashOut.enabled = false;
+            _tInterventionPrompt.enabled = false;
             _tBigAmount.text = string.Empty;
             _tLeg.text = string.Empty;
             _tClock.text = string.Empty;
             _tMatchup.text = string.Empty;
-            _tRecords.text = string.Empty;
-            _tSlipStrip.text = string.Empty;
-            _tWinPct.text = string.Empty;
             _tFlavor.text = string.Empty;
+            _tTakeoverTitle.text = string.Empty;
+            _tTakeoverSub.text = string.Empty;
+            UpdateTicketColumn(-1);
         }
 
         private void RenderEvent(DramaEvent evt)
         {
             Leg leg = _ticket.Legs[evt.LegIndex];
 
-            _tRecords.text = RecordsLine(leg);
             _tLeg.text = $"LEG {evt.LegIndex + 1}/{_ticket.Legs.Count}";
 
             if (evt.LegIndex != _flavorLegSeen)
@@ -1529,13 +1803,13 @@ namespace SBR.Game
             _lastBeatUp = _presModel.RecordBeat(evt, leg);
             SweatPresentationModel.BeatRecord beat = _presModel.Beats[_presModel.Beats.Count - 1];
             _lastBeatDelta = beat.Delta;
-            _pendingBeatDelta = beat.Delta;
+            // T16: a non-final beat's dot lands at its reveal (RevealBeatChrome), never here —
+            // looking away must never spoil a beat.
             _pendingTapeBeat = evt.Type != DramaEventType.LegFinal;
-            _pendingBeatBeneficiary = TeamColor(leg, _lastBeatUp);
             if (_stage != null)
             {
                 // Causal reveal (M-T3.1): identity chrome may update now, but the win-prob,
-                // WIN %, flavor, and clock are STASHED — they land at the scene's payoff
+                // flavor, and clock are STASHED — they land at the scene's payoff
                 // (RevealBeatChrome / FinalSlam), never before the pitch has shown the story.
                 _pendingProb = (float)evt.WinProbAfter;
                 _pendingFlavor = flavor;
@@ -1552,7 +1826,6 @@ namespace SBR.Game
                 _tFlavor.text = flavor;
                 _flavorScale = 1.12f; // punch
                 _probTarget = (float)evt.WinProbAfter;
-                _tWinPct.text = $"WIN {Mathf.RoundToInt(_probTarget * 100f)}%";
                 _tMatchup.text = MatchupLine(leg);
                 RevealedView.SetProbability(_probTarget);
                 RevealedView.SetClock(_tClock.text);
@@ -1560,28 +1833,29 @@ namespace SBR.Game
             }
 
             _tAttract.enabled = false;
-            UpdateSlipStrip(evt.LegIndex);
+            UpdateTicketColumn(evt.LegIndex);
         }
 
         /// <summary>The beat's payoff moment on the stage: NOW the chrome may speak — the
-        /// win-prob bar moves, the flavor line lands, the clock ticks, the market re-opens
-        /// at the fresh price. Fired by the scene's onReveal (goal / save / scene end).</summary>
+        /// flavor line lands, the clock ticks, the market re-opens at the fresh price. Fired by
+        /// the scene's onReveal (goal / save / scene end).</summary>
         private void RevealBeatChrome()
         {
+            // T16: the tape's dot lands HERE, at the beat's reveal — not at RenderEvent — so
+            // looking away never spoils it. contextGrey, not a team hue (the ruling's "no hue"):
+            // the dot differentiates by size (the delta band) alone, never by colour, and stays
+            // at contextGrey's L2 ceiling, never brighter.
             if (_pendingTapeBeat)
             {
-                _tape?.AppendBeat(_stageLeg, _pendingBeatBeneficiary,
-                    SweatPresentationModel.MagnitudeBand(_pendingBeatDelta));
+                _tape?.AppendBeat(_stageLeg, contextGrey, SweatPresentationModel.MagnitudeBand(_lastBeatDelta));
                 _pendingTapeBeat = false;
             }
-            _probTarget = _pendingProb;
-            _tWinPct.text = $"WIN {Mathf.RoundToInt(_probTarget * 100f)}%";
+            _probTarget = _pendingProb; // data only — RevealedView
             RevealedView.SetProbability(_probTarget);
             RevealedView.SetClock(_tClock.text);
             _tFlavor.color = flavorColor;
             _tFlavor.text = _pendingFlavor;
             _flavorScale = 1.12f;
-            PunchWinProbBar();
             ReopenMarket();
         }
 
@@ -1603,10 +1877,11 @@ namespace SBR.Game
                 && _eventsEmitted >= 1 && _session.CashOutOffer().HasValue;
             if (offerExists)
             {
-                // Neutral pending-grey (DESIGN.md §4 Context) — NOT cyan: cyan is reserved for VOID
-                // (§8), and a suspended market at peak tension must never read as a voided leg.
+                // §8.5 Suspended: "L1, unlit slate" — structureGrey, not contextGrey. NOT cyan
+                // either: cyan is reserved for VOID (§8), and a suspended market at peak tension
+                // must never read as a voided leg.
                 _tCashOut.enabled = true;
-                _tCashOut.color = contextGrey;
+                _tCashOut.color = structureGrey;
                 _tCashOut.text = "MARKET SUSPENDED";
             }
             else
@@ -1661,6 +1936,12 @@ namespace SBR.Game
             bool dropped = offer < _cashOutShown;
             if (dropped) _cashOutFlash = 1f; // gold taunt, never a money-bad red signal
             StopCashOutAnimation();
+            // TVS-H02 fix: flip the flag BEFORE StartCoroutine, not after. StartCoroutine runs
+            // AnimateCashOut synchronously up to its first `yield return null` — including that
+            // first RenderCashOut call — before it returns the handle this line assigns; setting
+            // _cashOutTweening here means that very first render already sees "tweening", instead
+            // of reading the stale false StopCashOutAnimation just left behind.
+            _cashOutTweening = true;
             _cashOutAnimation = StartCoroutine(AnimateCashOut(_cashOutShown, offer));
         }
 
@@ -1671,6 +1952,7 @@ namespace SBR.Game
             {
                 _cashOutShown = to;
                 _cashOutRoundShown = RoundBucket(to);
+                _cashOutTweening = false; // settle before the render, so it paints "[E]" not "UPDATING"
                 RenderCashOut(to);
                 _cashOutAnimation = null;
                 yield break;
@@ -1694,6 +1976,7 @@ namespace SBR.Game
 
             _cashOutShown = to;
             _cashOutRoundShown = RoundBucket(to);
+            _cashOutTweening = false; // settle before the render, so it paints "[E]" not "UPDATING"
             RenderCashOut(to);
             _cashOutAnimation = null;
         }
@@ -1704,10 +1987,18 @@ namespace SBR.Game
             return (int)Math.Floor(amount / multiple);
         }
 
+        /// <summary>§8.5 "Price animating: gold at L3, amount visibly settling, UPDATING." — the
+        /// mid-tween label differs from the actionable one so the copy never promises input the
+        /// gate (CanAcceptCashOutNow, which also requires <c>_cashOutAnimation == null</c>) would
+        /// refuse. Reads <c>_cashOutTweening</c>, not <c>_cashOutAnimation != null</c> directly —
+        /// see that field's declaration for why (TVS-H02: the Coroutine handle lags its own
+        /// tween's first render by one synchronous step).</summary>
         private void RenderCashOut(double amount)
         {
             if (_tCashOut == null) return;
-            _tCashOut.text = $"CASH OUT ${Money(amount)}   [E]";
+            _tCashOut.text = _cashOutTweening
+                ? $"CASH OUT ${Money(amount)}   •   UPDATING"
+                : $"CASH OUT ${Money(amount)}   [E]";
         }
 
         private void StopCashOutAnimation()
@@ -1717,6 +2008,7 @@ namespace SBR.Game
                 StopCoroutine(_cashOutAnimation);
                 _cashOutAnimation = null;
             }
+            _cashOutTweening = false; // unconditional: always leaves "not tweening", idempotently
         }
 
         private string MatchupLine(Leg leg)
@@ -1724,16 +2016,13 @@ namespace SBR.Game
             string away = SweatFlavor.Short(leg.Matchup.Away.Name);
             string home = SweatFlavor.Short(leg.Matchup.Home.Name);
             // Mark the picked side with a dot so the player knows which team is theirs.
-            // Market legs have no team — no dot (their pick reads from the market label).
+            // Market legs have no team — no dot (their pick reads from the ticket column).
             bool isMl = leg.Selection.Kind == MarketKind.Moneyline;
             bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
             string awayMark = isMl && !pickedHome ? "● " : "";
             string homeMark = isMl && pickedHome ? " ●" : "";
             return $"{awayMark}{away.ToUpperInvariant()}  @  {home.ToUpperInvariant()}{homeMark}";
         }
-
-        private static string RecordsLine(Leg leg)
-            => $"({leg.Matchup.Away.Record})          ({leg.Matchup.Home.Record})"; // season W-L
 
         // ---------------------------------------------------------------- beats
 
@@ -1758,7 +2047,7 @@ namespace SBR.Game
             }
 
             _resolvedThrough = evt.LegIndex + 1;
-            UpdateSlipStrip(evt.LegIndex + 1); // next leg reads LIVE once its events start
+            UpdateTicketColumn(evt.LegIndex + 1); // next leg reads LIVE once its events start
         }
 
         private IEnumerator WonLegBeat(int k)
@@ -1836,11 +2125,11 @@ namespace SBR.Game
             _tBigAmount.color = new Color(gold.r, gold.g, gold.b, 1f);
             _tBigAmount.text = "+$0";
             // The ticket's payout tally — §3's L4, "the payoff at its callback", brighter than a
-            // routine won-leg flash so the ordering idle < flash < L4 stays visible.
+            // routine won-leg flash so the ordering idle < flash < L4 stays visible. C3: a momentary
+            // punch, so it takes the token from anything else currently holding it.
             EmissionFlash(goldL4);
             tvLight?.Flash(new Color(1f, 0.82f, 0.25f), 3.4f);
-            _bigAmountHdrMat?.SetFloat(HdrBoostId, HdrBoostL4);
-            _goldFloodHdrMat?.SetFloat(HdrBoostId, HdrBoostL4);
+            RequestL4(HdrFocus.Payout, momentary: true);
             StartCoroutine(FloodPulse(_goldFlood, gold, 0.5f, winFloodDuration));
             StartCoroutine(WinConfetti());
 
@@ -1919,14 +2208,13 @@ namespace SBR.Game
         private IEnumerator CashOutFloodBeat(double amount)
         {
             _tBigAmount.color = new Color(gold.r, gold.g, gold.b, 1f);
-            _tBigAmount.text = $"${Money(amount)}";
+            // §8.5 Accepted: "gold, brief L4 punch, then CASHED OUT $x at L3 into the settle
+            // transition."
+            _tBigAmount.text = $"CASHED OUT ${Money(amount)}";
             _tCashOut.enabled = false;
-            // §8.5 "Accepted: gold, brief L4 punch" — the same brighter-than-routine flash as the
-            // ticket payout tally.
             EmissionFlash(goldL4);
             tvLight?.Flash(new Color(1f, 0.82f, 0.25f), 3.4f);
-            _bigAmountHdrMat?.SetFloat(HdrBoostId, HdrBoostL4);
-            _goldFloodHdrMat?.SetFloat(HdrBoostId, HdrBoostL4);
+            RequestL4(HdrFocus.Payout, momentary: true); // C3: a momentary punch preempts CashOut's hold
             yield return FloodPulse(_goldFlood, gold, 0.55f, cashOutFloodDuration);
             _tBigAmount.text = string.Empty;
         }
@@ -1961,7 +2249,7 @@ namespace SBR.Game
 
             RefreshChrome();
             ApplyEmission();
-            AnimateBar();
+            AnimateLegPulse();
             AnimateFlavorPunch();
             AnimateCashOutTaunt();
             TickClock();
@@ -1971,7 +2259,7 @@ namespace SBR.Game
                 _audio.masterVolume = masterVolume;
                 _audio.crowdVolume = crowdVolume;
                 _audio.stingVolume = stingVolume;
-                _audio.SetTension(1f - Mathf.Abs(2f * _probShown - 1f), _audioUrgency);
+                _audio.SetTension(1f - Mathf.Abs(2f * (RevealedView.WinProbability) - 1f), _audioUrgency);
                 bool dread = !_seated || (_session != null && _session.HasPendingLoss);
                 _audio.Duck(dread, dread ? 0.15f : 0.8f);
             }
@@ -2038,22 +2326,29 @@ namespace SBR.Game
             _emissFlash01 = 1f;
         }
 
-        private void AnimateBar()
+        /// <summary>DESIGN.md §8/§9: the LIVE leg row's slow pulse — "the surface's only slow
+        /// pulse. Nothing else pulses, so this is unmistakable." Driven off the shared
+        /// _seatedClock (one clock for every LIVE row, "in phase"), which already only
+        /// accumulates while seated, so this freezes exactly on stand with no extra gating.</summary>
+        private void AnimateLegPulse()
         {
-            if (_barFill == null) return;
-            // TVS-H02: seated-only dt/clock throughout, so the win-prob animation (§4.4) holds
-            // exactly while standing, with no phase jump in the breathing wave on resume.
-            _probShown = Mathf.Lerp(_probShown, _probTarget, 1f - Mathf.Exp(-9f * SeatedDeltaTime));
-            float w = Mathf.Clamp01(_probShown) * _innerWidth;
-            float hz = Mathf.Lerp(breathSlowHz, breathFastHz, Mathf.Abs(2f * _probShown - 1f));
-            float breathe = 1f + Mathf.Sin(_seatedClock * hz * 2f * Mathf.PI) * breathAmplitude;
-            float punchDt = SeatedDeltaTime / Mathf.Max(0.0001f, TimeScaleOverride);
-            _barPunch = Mathf.MoveTowards(_barPunch, 1f, 2.8f * punchDt);
-            _barFill.rectTransform.sizeDelta = new Vector2(w, _barHeight - 8f);
-            _barFill.rectTransform.localScale = new Vector3(1f, breathe * _barPunch, 1f);
+            if (_legRow == null) return;
+            float pulse01 = 0.72f + 0.28f * (0.5f + 0.5f * Mathf.Sin(_seatedClock * livePulseHz * 2f * Mathf.PI));
+            for (int i = 0; i < _legRow.Length; i++)
+            {
+                if (!_legRow[i].IsLive) continue;
+                if (_legRow[i].Label != null)
+                {
+                    Color c = flavorColor; c.a *= pulse01;
+                    _legRow[i].Label.color = c;
+                }
+                if (_legRow[i].Detail != null)
+                {
+                    Color c = flavorColor; c.a *= pulse01;
+                    _legRow[i].Detail.color = c;
+                }
+            }
         }
-
-        private void PunchWinProbBar() => _barPunch = 1.15f;
 
         private void AnimateCashOutTaunt()
         {
@@ -2070,11 +2365,15 @@ namespace SBR.Game
             // §8.5: the slot's brightness is a promise about input — L4 only while a press would
             // actually be accepted right now (same predicate as the accept gate itself, so this can
             // never promise more than TryCashOut will honor). Suspended and mid-tween stay LDR.
+            // C3 rule 5: the boost is 1.8, a single value — no second, per-element scale on top of
+            // it (the old taunt-flash lerp up to HdrBoostL4 * 1.15 is retired). CashOut's request is
+            // SUSTAINED: it re-asks every frame while actionable, and yields the instant a momentary
+            // punch (a goal's score, a payoff's ball, a win/cash-out tally) takes the token instead.
             if (_cashOutHdrMat != null)
             {
                 bool actionable = _tCashOut.enabled && CanAcceptCashOutNow();
-                float boost = actionable ? Mathf.Lerp(HdrBoostL4, HdrBoostL4 * 1.15f, _cashOutFlash) : HdrBoostL3;
-                _cashOutHdrMat.SetFloat(HdrBoostId, boost);
+                if (actionable) RequestL4(HdrFocus.CashOut, momentary: false);
+                else ReleaseL4(HdrFocus.CashOut);
             }
         }
 
@@ -2147,9 +2446,6 @@ namespace SBR.Game
         {
             int w = referencePixelsWide;
             int h = Mathf.RoundToInt(referencePixelsWide * screenWorldSize.y / screenWorldSize.x);
-            _barHeight = 30f;
-            float barWidth = 700f;
-            _innerWidth = barWidth - 8f;
 
             var canvasGo = new GameObject("SweatCanvas", typeof(Canvas));
             canvasGo.transform.SetParent(transform, false);
@@ -2170,79 +2466,82 @@ namespace SBR.Game
             _canvasRoot = root;
             _canvasWidth = w;
             _canvasHeight = h;
-            float halfW = w / 2f, halfH = h / 2f;
 
             // Backing panel — near-black but lifted to the room's floor (screenBg), never pure black;
             // the quad's own glow bleeds through its slight transparency.
             _backing = MakeStretchImage(root, "Backing", screenBg);
 
-            // --- top scorebug ---
-            // §7 Scorebug: "Ticket/leg index at L1, present but subordinate" — structureGrey, not chrome.
-            _tLeg = MakeText(root, "Leg", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(16f, -12f), new Vector2(240f, 40f), 22, TextAnchor.UpperLeft, structureGrey);
-            // §4 Fact: "Score, clock, live leg names, market lines" — cold white at L3, not chrome.
-            _tClock = MakeText(root, "Clock", new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-16f, -12f), new Vector2(280f, 40f), 22, TextAnchor.UpperRight, flavorColor);
-            _tMatchup = MakeText(root, "Matchup", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                new Vector2(0f, -14f), new Vector2(w - 120f, 56f), 34, TextAnchor.UpperCenter, flavorColor, FontStyle.Bold);
-            // §4 Context: supplementary team/leg copy (records, the interstitial legs line, the
-            // deferred-payment line) — grey at L2, not chrome.
-            _tRecords = MakeText(root, "Records", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                new Vector2(0f, -74f), new Vector2(w - 120f, 30f), 20, TextAnchor.UpperCenter, contextGrey);
-            // The slip strip (playtest #6): stake at risk + every leg with odds and presented status.
-            // §4 Context: "risk and payout figures", "odds" — grey at L2, not chrome. (Per-leg spans
-            // inside the string still carry their own team/W/L/VOID rich-text colour overrides.)
-            _tSlipStrip = MakeText(root, "SlipStrip", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                new Vector2(0f, -106f), new Vector2(w - 80f, 26f), 15, TextAnchor.UpperCenter, contextGrey);
+            var grid = new LayoutGrid(w, h);
 
-            // --- middle: flavour ticker + win-prob bar ---
-            _tFlavor = MakeText(root, "Flavor", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, 60f), new Vector2(w - 60f, 96f), 40, TextAnchor.MiddleCenter, flavorColor, FontStyle.Bold);
-
-            _barBg = MakePanel(root, "BarBg", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, -46f), new Vector2(barWidth, _barHeight), barBgColor);
-            var fillGo = new GameObject("BarFill", typeof(Image));
-            fillGo.transform.SetParent(_barBg.transform, false);
-            _barFill = fillGo.GetComponent<Image>();
-            _barFill.color = flavorColor; // a live probability track — §4 Fact: cold white, not money
-            _barFill.raycastTarget = false;
-            var frt = _barFill.rectTransform;
-            frt.anchorMin = frt.anchorMax = new Vector2(0f, 0.5f);
-            frt.pivot = new Vector2(0f, 0.5f);
-            frt.sizeDelta = new Vector2(0f, _barHeight - 8f);
-            // Anchor is already the bar's LEFT edge; only the 4px inset remains (playtest #4 fix -
-            // the old -barWidth/2 offset assumed a center anchor and hung the fill outside the TV).
-            frt.anchoredPosition = new Vector2(4f, 0f);
-
-            _tWinPct = MakeText(root, "WinPct", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, -86f), new Vector2(barWidth, 34f), 24, TextAnchor.MiddleCenter, flavorColor, FontStyle.Bold);
-
-            // --- bottom: cash-out + chrome ---
-            _tCashOut = MakeText(root, "CashOut", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, -140f), new Vector2(w - 60f, 50f), 34,
-                TextAnchor.MiddleCenter, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Bold);
-            _tCashOut.enabled = false;
-            _cashOutHdrMat = MakeHdrMaterial();
-            if (_cashOutHdrMat != null) _tCashOut.material = _cashOutHdrMat;
-
-            // §4 Context: round/bank/pay/comps/seed meta — grey at L2, not chrome.
-            _tChrome = MakeText(root, "Chrome", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                new Vector2(0f, 12f), new Vector2(w - 30f, 28f), 16, TextAnchor.LowerCenter, contextGrey);
+            BuildHairlines(root, grid);
+            BuildTicketColumn(root, grid);
+            BuildScoreBug(root, grid);
+            BuildEventStrip(root, grid);
+            BuildCashOutZone(root, grid);
+            BuildChromeStrip(root, grid);
 
             // --- attract state (before the sweat is live) ---
             _tAttract = MakeText(root, "Attract", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, -6f), new Vector2(w - 60f, 130f), 46,
+                Vector2.zero, new Vector2(w - 60f, 130f), 46,
                 TextAnchor.MiddleCenter, flavorColor, FontStyle.Bold); // §4 Fact: cold white, not money
             _tAttract.text = "SIT TO WATCH THE SWEAT";
 
-            // --- the match theater stage (F_0.2.0 M-T2) ---
+            // Ticket-card / settle-card takeover copy (PRD §8.9): the stage goes quiet during these
+            // transitions, but the ticket column never clears (DESIGN.md §6: "does not resize
+            // between markets"). Sits inside the fixed Stage zone rather than floating over the
+            // whole canvas, so it never competes with the ticket rail.
+            _tTakeoverTitle = MakeText(root, "TakeoverTitle", new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
+                AnchorCenter(grid.Stage) + new Vector2(0f, 40f), new Vector2(grid.Stage.width - 60f, 60f), 30,
+                TextAnchor.MiddleCenter, flavorColor, FontStyle.Bold);
+            _tTakeoverSub = MakeText(root, "TakeoverSub", new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
+                AnchorCenter(grid.Stage) + new Vector2(0f, -20f), new Vector2(grid.Stage.width - 60f, 60f), 18,
+                TextAnchor.MiddleCenter, contextGrey);
+
+            // Subtitle line reused ONLY by the idle/run-over screens (non-sweat states); never
+            // shown during a live sweat — DESIGN.md §7's component list has no standalone win%/
+            // subtitle slot for the live grid.
+            _tSubtitle = MakeText(root, "Subtitle", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -60f), new Vector2(w - 120f, 34f), 22, TextAnchor.MiddleCenter, flavorColor);
+
+            // C3 (Design Director ruling): "the ball at a payoff" joins the HDR-eligible set. Built
+            // HERE, unconditionally — never gated behind `if (theaterEnabled)` — so eligibility does
+            // not depend on whether the theater stage exists (the closed-world L4 test runs with
+            // theaterEnabled=false). TheaterStage.cs owns the real ball actor privately and sits
+            // outside this phase's file boundary with no public hook for it, so this is a dedicated
+            // payoff-flash standing in for it, centred on the Stage zone, normally invisible.
+            _ballFlash = MakePanel(root, "Ball", new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
+                AnchorCenter(grid.Stage), new Vector2(28f, 28f),
+                new Color(flavorColor.r, flavorColor.g, flavorColor.b, 1f));
+            _ballFlash.enabled = false;
+            _ballHdrMat = MakeHdrMaterial();
+            if (_ballHdrMat != null) _ballFlash.material = _ballHdrMat;
+
+            // T16: "restore it: at the foot of the scorebug, no numerals, no hue, never above L2."
+            // An invisible anchor panel hugging the inside-bottom edge of grid.ScoreBug —
+            // MomentumTape.Build anchors CENTER-relative to whatever transform it is given, so this
+            // gives it a precisely positioned, fixed-grid parent without touching MomentumTape.cs
+            // itself. The win-probability numeral stays OUT permanently (§7's duplication ban) —
+            // this tape is dots and caps only, never a numeral.
+            //
+            // Built HERE, unconditionally, and deliberately NOT inside the `theaterEnabled` block
+            // below — for the same reason the ball flash above is not: the tape is SCOREBUG
+            // furniture, and the DD ruled it in at the scorebug foot. Whether the theater stage
+            // exists is a separate question, and coupling the two meant the tape silently vanished
+            // in any configuration without a stage.
+            Rect tapeFoot = new Rect(grid.ScoreBug.x, grid.ScoreBug.yMax - MomentumTapeHeight,
+                grid.ScoreBug.width, MomentumTapeHeight);
+            Image tapeAnchor = MakePanel(root, "MomentumTapeAnchor", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                AnchorTopLeft(tapeFoot), new Vector2(tapeFoot.width, tapeFoot.height), Color.clear);
+            _tape = MomentumTape.Build(tapeAnchor.transform, Vector2.zero,
+                new Vector2(tapeFoot.width - 20f, tapeFoot.height));
+
+            // --- the match theater stage (F_0.2.0 M-T2), built INTO the fixed Stage zone ---
             if (theaterEnabled)
             {
-                _stage = TheaterStage.Build(root, new Vector2(0f, 8f), new Vector2(720f, 252f),
-                    pitchLineColor, pitchBgColor);
+                _stage = TheaterStage.Build(root, AnchorCenter(grid.Stage),
+                    new Vector2(grid.Stage.width, grid.Stage.height), pitchLineColor, pitchBgColor);
                 _stage.paceScale = pacer.paceMultiplier; // stage playback matches the pacer's arithmetic
-                ApplyTheaterLayout(w);
-                _tape = MomentumTape.Build(root, new Vector2(-330f, -252f), new Vector2(300f, 50f));
+
                 Transform audioAnchor = emissiveScreen != null ? emissiveScreen.transform : transform;
                 _audio = TvAudioDirector.Build(audioAnchor);
                 if (_audio != null)
@@ -2267,7 +2566,7 @@ namespace SBR.Game
             _goldFloodHdrMat = MakeHdrMaterial();
             if (_goldFloodHdrMat != null) _goldFlood.material = _goldFloodHdrMat;
             _tBigAmount = MakeText(root, "BigAmount", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, 0f), new Vector2(w - 40f, 200f), 96,
+                Vector2.zero, new Vector2(w - 40f, 200f), 96,
                 TextAnchor.MiddleCenter, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Bold);
             _tBigAmount.text = string.Empty;
             _bigAmountHdrMat = MakeHdrMaterial();
@@ -2285,29 +2584,188 @@ namespace SBR.Game
             // design/08-art-direction.md world. The panel is a maintained modern display, not a
             // failing CRT; nothing is laid over the surface in its place.
 
-            _probShown = _probTarget = 0.5f;
+            _probTarget = 0.5f;
         }
 
-        /// <summary>With the stage in the center, the middle chrome re-flows beneath it: the
-        /// flavor line shrinks to a commentary strip under the pitch, the win-prob bar and
-        /// cash-out drop toward the bottom edge. Positions are graybox dials — Allen tunes at
-        /// the M-T2 gate.</summary>
-        private void ApplyTheaterLayout(int w)
+        // ---- zone builders (Layout B, DESIGN.md §6/§7) ----
+
+        /// <summary>C8 (Design Director ruling, DESIGN.md §12 question 4 /
+        /// docs/tv-sweat-refinement/c3-hdr-canvas-proposal.md): the bloom-floor protected set —
+        /// canvas elements that may NOT be sacrificed as the room's shared bloom volume brightens.
+        /// Contrasted with system chrome (the ChromeStrip's round/bank/payout/seed row), which PRD
+        /// §8.1 puts at lowest priority and is explicitly allowed to degrade. Originally the score,
+        /// the clock, each live leg's NEED line, and the cash-out state
+        /// (docs/tv-sweat-refinement/room-lead-reply.md §3); C8 adds risk/pays. This worktree
+        /// cannot itself verify the bloom outcome — that needs a seated capture on a GPU-backed
+        /// session only the room lead can produce — so this is the POLICY that capture gets checked
+        /// against, named here so a reviewer never has to re-derive it from prose.</summary>
+        private static readonly string[] BloomFloorProtectedElements =
         {
-            _tFlavor.fontSize = 22;
-            _tFlavor.rectTransform.sizeDelta = new Vector2(w - 80f, 30f);
-            _tFlavor.rectTransform.anchoredPosition = new Vector2(0f, -142f);
+            "Matchup",          // the score
+            "Clock",
+            "LegRowDetail0", "LegRowDetail1", "LegRowDetail2",
+            "LegRowDetail3", "LegRowDetail4", "LegRowDetail5", // each live leg's NEED line
+            "CashOut",          // the cash-out state
+            "RiskPays",         // C8: joins the protected set
+        };
 
-            _barBg.rectTransform.anchoredPosition = new Vector2(0f, -176f);
+        private void BuildTicketColumn(Transform root, LayoutGrid grid)
+        {
+            // Unpadded, exactly the zone's own rect — same colour as Backing (purely structural;
+            // also the grid's own geometric anchor for the Phase 3C layout-geometry tests).
+            MakePanel(root, "TicketColumnZone", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                AnchorTopLeft(grid.TicketColumn), new Vector2(grid.TicketColumn.width, grid.TicketColumn.height),
+                screenBg);
 
-            _tWinPct.fontSize = 20;
-            _tWinPct.rectTransform.sizeDelta = new Vector2(360f, 26f);
-            _tWinPct.rectTransform.anchoredPosition = new Vector2(0f, -206f);
+            // §7 Ticket column header — ticket index, L1 structure (one level up from the
+            // scorebug's per-leg index).
+            _tTicketHeader = MakeText(root, "TicketHeader", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                AnchorTopLeft(grid.TicketHeader, 8f, 4f),
+                new Vector2(grid.TicketHeader.width - 16f, grid.TicketHeader.height - 4f), 14,
+                TextAnchor.UpperLeft, structureGrey);
 
-            _tCashOut.fontSize = 26;
-            _tCashOut.rectTransform.sizeDelta = new Vector2(w - 60f, 34f);
-            _tCashOut.rectTransform.anchoredPosition = new Vector2(0f, -238f);
+            _legRow = new LegRowUi[TicketRowSlots];
+            for (int i = 0; i < TicketRowSlots; i++)
+            {
+                Rect row = grid.TicketRow(i);
+                Text label = MakeText(root, $"LegRowLabel{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    AnchorTopLeft(row, 8f, 4f), new Vector2(row.width - 16f, 20f), 14,
+                    TextAnchor.UpperLeft, structureGrey);
+                Text detail = MakeText(root, $"LegRowDetail{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    AnchorTopLeft(row, 8f, 26f), new Vector2(row.width - 16f, row.height - 28f), 12,
+                    TextAnchor.UpperLeft, flavorColor);
+                _legRow[i] = new LegRowUi { Label = label, Detail = detail, IsLive = false };
+            }
+
+            // §7: "Risk and pays sit at the foot in gold at L2."
+            _tRiskPays = MakeText(root, "RiskPays", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                AnchorTopLeft(grid.TicketFooter, 8f, 8f),
+                new Vector2(grid.TicketFooter.width - 16f, grid.TicketFooter.height - 8f), 15,
+                TextAnchor.UpperLeft, goldL2, FontStyle.Bold);
         }
+
+        private void BuildScoreBug(Transform root, LayoutGrid grid)
+        {
+            MakePanel(root, "ScoreBugZone", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                AnchorTopLeft(grid.ScoreBug), new Vector2(grid.ScoreBug.width, grid.ScoreBug.height), screenBg);
+
+            Rect sb = grid.ScoreBug;
+            // §7 Scorebug: "Ticket/leg index at L1, present but subordinate."
+            _tLeg = MakeText(root, "Leg", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                AnchorTopLeft(sb, 10f, 8f), new Vector2(140f, 20f), 14, TextAnchor.UpperLeft, structureGrey);
+            // §7: "Clock remains fixed at the right edge."
+            _tClock = MakeText(root, "Clock", new Vector2(0f, 1f), new Vector2(1f, 1f),
+                AnchorTopRight(sb, 10f, 8f), new Vector2(140f, 28f), 20, TextAnchor.UpperRight, flavorColor);
+            // §4 Fact: "Score, clock, live leg names, market lines" — cold white at L3.
+            _tMatchup = MakeText(root, "Matchup", new Vector2(0f, 1f), new Vector2(0.5f, 1f),
+                AnchorTopCenter(sb, 8f), new Vector2(sb.width - 40f, sb.height - 14f), 22,
+                TextAnchor.UpperCenter, flavorColor, FontStyle.Bold);
+
+            // C3 (Design Director ruling): "the score at a goal" joins the HDR-eligible set.
+            // Matchup above is the PERSISTENT, always-on score truth at L3 — this is a punch-only
+            // overlay at the SAME rect, normally hidden (§7's duplication ban is exactly why this
+            // must not also read as an always-visible second score display), shown only for the
+            // instant a goal commits and boosted through the shared HDR material to L4.
+            _tScoreFlash = MakeText(root, "Score", new Vector2(0f, 1f), new Vector2(0.5f, 1f),
+                AnchorTopCenter(sb, 8f), new Vector2(sb.width - 40f, sb.height - 14f), 22,
+                TextAnchor.UpperCenter, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Bold);
+            _tScoreFlash.enabled = false;
+            _scoreHdrMat = MakeHdrMaterial();
+            if (_scoreHdrMat != null) _tScoreFlash.material = _scoreHdrMat;
+        }
+
+        private void BuildEventStrip(Transform root, LayoutGrid grid)
+        {
+            MakePanel(root, "EventStripZone", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                AnchorTopLeft(grid.EventStrip), new Vector2(grid.EventStrip.width, grid.EventStrip.height), screenBg);
+
+            // §7 Event strip: "One line, white, L2 at rest, punching to L3 at its reveal
+            // callback." Reuses the "Flavor" GameObject name — required by PlayMode regression
+            // coverage (TVS-H02's flavor-punch freeze test) and by every live-beat message call
+            // site elsewhere in this file.
+            _tFlavor = MakeText(root, "Flavor", new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
+                AnchorCenter(grid.EventStrip), new Vector2(grid.EventStrip.width - 24f, grid.EventStrip.height - 8f),
+                20, TextAnchor.MiddleCenter, flavorColor, FontStyle.Bold);
+        }
+
+        private void BuildCashOutZone(Transform root, LayoutGrid grid)
+        {
+            MakePanel(root, "CashOutZone", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                AnchorTopLeft(grid.CashOut), new Vector2(grid.CashOut.width, grid.CashOut.height), screenBg);
+
+            _tCashOut = MakeText(root, "CashOut", new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
+                AnchorCenter(grid.CashOut), new Vector2(grid.CashOut.width - 16f, grid.CashOut.height - 8f), 18,
+                TextAnchor.MiddleCenter, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Bold);
+            _tCashOut.enabled = false;
+            _cashOutHdrMat = MakeHdrMaterial();
+            if (_cashOutHdrMat != null) _tCashOut.material = _cashOutHdrMat;
+
+            // §8.7 / §8.5 Pending window: "intervention controls live in their own overlay, never
+            // in [the cash-out] row." Centered over the stage's safe area, where the frozen shot
+            // remains visible.
+            _tInterventionPrompt = MakeText(root, "InterventionPrompt", new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
+                AnchorCenter(grid.Stage), new Vector2(grid.Stage.width - 80f, 90f), 22,
+                TextAnchor.MiddleCenter, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Bold);
+            _tInterventionPrompt.enabled = false;
+        }
+
+        private void BuildChromeStrip(Transform root, LayoutGrid grid)
+        {
+            // §8.1: "System chrome (round, bank, payment, seed) remains lowest priority and may
+            // stay small." A thin reserved strip along the very bottom edge, outside the five
+            // sweat zones.
+            _tChrome = MakeText(root, "Chrome", new Vector2(0f, 1f), new Vector2(0.5f, 1f),
+                AnchorTopCenter(grid.ChromeStrip, 2f), new Vector2(grid.ChromeStrip.width - 30f, grid.ChromeStrip.height),
+                14, TextAnchor.UpperCenter, contextGrey);
+        }
+
+        /// <summary>DESIGN.md §6: "Zones may be separated by hairline rules or by unlit gutters
+        /// ... What remains banned is a stroked box around a region." Five single dividing lines —
+        /// never a border loop around any zone.</summary>
+        private void BuildHairlines(Transform root, LayoutGrid grid)
+        {
+            const float hairline = 1.5f;
+            // Ticket rail | right region.
+            MakeHairlineV(root, "GridDividerVertical", grid.TicketColumn.width, 0f, grid.CashOut.yMax, hairline);
+            // Scorebug | stage.
+            MakeHairlineH(root, "GridDividerScoreStage", grid.Stage.x, grid.Stage.y, grid.Stage.width, hairline);
+            // [ticket column + stage] | [cash-out + event strip].
+            MakeHairlineH(root, "GridDividerBottomRow", 0f, grid.CashOut.y, grid.ScoreBug.xMax, hairline);
+            // Ticket header | leg rows.
+            MakeHairlineH(root, "GridDividerTicketHeader", 0f, grid.TicketHeader.yMax, grid.TicketColumn.width, hairline);
+            // Leg rows | RISK/PAYS footer.
+            MakeHairlineH(root, "GridDividerTicketFooter", 0f, grid.TicketFooter.y, grid.TicketColumn.width, hairline);
+        }
+
+        private void MakeHairlineH(Transform root, string name, float x, float yTop, float width, float thickness)
+        {
+            MakePanel(root, name, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(x, -yTop), new Vector2(width, thickness), structureGrey);
+        }
+
+        private void MakeHairlineV(Transform root, string name, float x, float yTop, float height, float thickness)
+        {
+            MakePanel(root, name, new Vector2(0f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(x, -yTop), new Vector2(thickness, height), structureGrey);
+        }
+
+        // ---- grid → canvas-space conversion ----
+        // All zone builders anchor their elements at (0,1) — the canvas's own top-left corner —
+        // and vary only the element's PIVOT to get left/right/center alignment. This keeps every
+        // element's anchoredPosition a direct read of LayoutGrid's top-left-origin Rects, with no
+        // per-element coordinate-system bookkeeping.
+
+        private static Vector2 AnchorTopLeft(Rect zone, float padX = 0f, float padY = 0f)
+            => new Vector2(zone.x + padX, -(zone.y + padY));
+
+        private static Vector2 AnchorTopRight(Rect zone, float padX = 0f, float padY = 0f)
+            => new Vector2(zone.xMax - padX, -(zone.y + padY));
+
+        private static Vector2 AnchorTopCenter(Rect zone, float padY = 0f)
+            => new Vector2(zone.x + zone.width * 0.5f, -(zone.y + padY));
+
+        private static Vector2 AnchorCenter(Rect zone)
+            => new Vector2(zone.x + zone.width * 0.5f, -(zone.y + zone.height * 0.5f));
 
         private Text MakeText(Transform parent, string name, Vector2 anchor, Vector2 pivot, Vector2 pos,
             Vector2 size, int fontSize, TextAnchor align, Color color, FontStyle style = FontStyle.Normal)
@@ -2396,6 +2854,70 @@ namespace SBR.Game
                         "cash-out/payout elements will render LDR-clamped at 1.0.");
             }
             return _hdrUiShader != null ? new Material(_hdrUiShader) : null;
+        }
+
+        /// <summary>C3's one-token invariant: the ONLY place any material's <c>_HdrBoost</c> is
+        /// pushed to <see cref="HdrBoostL4"/> or back to <see cref="HdrBoostL3"/>. Boosts the
+        /// requested <paramref name="focus"/> and, if it took the token from a different focus,
+        /// drops that previous holder back to L3 in the SAME call — so a loser never has to wait
+        /// for its own next frame to notice it lost (C3 rule 4: "the sustained element yields").
+        /// <paramref name="momentary"/> punches (a goal's score, a payoff's ball, a win/cash-out
+        /// tally) always take the token from whatever currently holds it. A sustained hold (the
+        /// cash-out band staying gold while actionable) only succeeds while nothing else holds the
+        /// token. Returns whether <paramref name="focus"/> now holds L4.</summary>
+        private bool RequestL4(HdrFocus focus, bool momentary)
+        {
+            if (_l4Holder == focus) return true; // already holding — idempotent, no re-apply needed
+            if (_l4Holder != null && !momentary) return false; // a sustained request never preempts
+
+            HdrFocus? previous = _l4Holder;
+            _l4Holder = focus;
+            if (previous.HasValue) ApplyBoost(previous.Value, HdrBoostL3);
+            ApplyBoost(focus, HdrBoostL4);
+            return true;
+        }
+
+        /// <summary>Gives the token back up, if <paramref name="focus"/> is the one currently
+        /// holding it (a no-op otherwise — releasing a token you never held must not clobber
+        /// whoever holds it now).</summary>
+        private void ReleaseL4(HdrFocus focus)
+        {
+            if (_l4Holder != focus) return;
+            _l4Holder = null;
+            ApplyBoost(focus, HdrBoostL3);
+        }
+
+        /// <summary>Clean slate: no focus holds the token and every HDR-eligible material sits at
+        /// L3. Called at the top of every new session (ResetForNewSession) — "a new session starts
+        /// with no L4 element live."</summary>
+        private void ResetL4()
+        {
+            _l4Holder = null;
+            _cashOutHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
+            _bigAmountHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
+            _goldFloodHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
+            _scoreHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
+            _ballHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
+        }
+
+        private void ApplyBoost(HdrFocus focus, float boost)
+        {
+            switch (focus)
+            {
+                case HdrFocus.CashOut:
+                    _cashOutHdrMat?.SetFloat(HdrBoostId, boost);
+                    break;
+                case HdrFocus.Payout:
+                    _bigAmountHdrMat?.SetFloat(HdrBoostId, boost);
+                    _goldFloodHdrMat?.SetFloat(HdrBoostId, boost);
+                    break;
+                case HdrFocus.Score:
+                    _scoreHdrMat?.SetFloat(HdrBoostId, boost);
+                    break;
+                case HdrFocus.Ball:
+                    _ballHdrMat?.SetFloat(HdrBoostId, boost);
+                    break;
+            }
         }
 
         private static void SetAlpha(Image img, float a)

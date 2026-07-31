@@ -100,12 +100,40 @@ harmless that time. The procedure below closes it.
    a. Hold an explicit grant from the orchestrator for the current slot. A general "queue is clear"
       from an earlier cycle is **not** a standing lease; a later sequencing note supersedes it.
    b. Confirm the editor is actually free: process count **and** `unity/SBR/Temp/UnityLockfile`.
+      **The check must ABORT the run, not merely print.** Amended 2026-07-31 after a slot opened on a
+      reported-free editor that read process count `1` — a straggler mid-exit. The check printed the
+      1 and the batch proceeded anyway, which made it advisory rather than a gate. A coordinator's
+      "verified free" and this lead's "free at my open" can differ by seconds.
    c. **Announce open** to the orchestrator.
+
+   **Known editor fault, three occurrences 2026-07-31:** Unity segfaults on `-quit` shutdown and
+   leaves a **stale `UnityLockfile` with zero processes**. Clear it (safe when process count is 0)
+   before opening. `-runTests` runs are unaffected and have produced valid XML every time — the
+   fault is on the shutdown path, not on results.
 1. **After the last run — announce close**, and confirm process count and lockfile are clear before
    saying so. Unity exits lazily; a finished command is not a released editor.
 2. The window between (0c) and (1) is yours and nobody else's. Anything that does not need the editor
    — reading source, writing tests, diagnosing from a results XML — belongs **outside** it. Diagnose
    from artifacts after closing rather than holding the editor open to think.
+3. **A silent automated run is indistinguishable from a slow one.** Added 2026-07-31 after a driver
+   sat dead for 35 minutes of a granted window while its process stayed `ALIVE` and its monitor,
+   tailing a log nobody was writing, never woke. **Liveness is artifact mtime, not process
+   aliveness.** Three named traps, all measured, all mine:
+   - **`Unity.exe` is a GUI-subsystem binary**, so `& $unity` returns *immediately* — a loop that
+     trusts it stacks overlapping editors inside your own window. Do **not** patch that with
+     `Start-Process -NoNewWindow -Wait`: from a console-less parent (a `-WindowStyle Hidden` pwsh)
+     that combination hangs forever *without ever spawning Unity*. `Start-Process -PassThru` then
+     `Wait-Process -Id` is the pair measured to work.
+   - **`$Args` is a PowerShell automatic variable.** `function Invoke-Unity([string[]]$Args)` leaves
+     it empty, so Unity launches with **no arguments at all** — no project, no filter, no `-logFile`
+     — and exits **0 in ~11s** having done nothing. It writes to the default
+     `%LOCALAPPDATA%\Unity\Editor\Editor.log`, whose `COMMAND LINE ARGUMENTS:` block is how you
+     prove it. Name the parameter anything else.
+   - Both failures reported **success**. §4 step 3's "the XML must exist and be newer" is what caught
+     each one; neither was visible from an exit code.
+   **Measured costs at `5d61a04`:** warm compile ~106s; one filtered `TvSweatScreenTests` PlayMode run
+   ~153s wall for ~31s of test time. Ten runs is ~26 min per arm — size batches against that, and
+   prefer a foreground batch you can read over a background driver you must trust.
 
 1. Warm compile: `Unity.exe -batchmode -nographics -projectPath unity/SBR -quit -logFile <log>`.
    `-runTests` and `-executeMethod` are **silently dropped** if scripts compile on the same run.
@@ -127,6 +155,114 @@ attempts on both arms before claiming any timing regression.**
 **Visual evidence.** `-nographics` rasterises no frame. Every visual claim is labelled
 `PENDING-VISUAL-EVIDENCE`; couch-distance acceptance cannot be asserted from headless tests and
 needs a GPU session. PRD §6.1.1 splits the evidence standard accordingly.
+
+## 4A. Design system — spec of record
+
+**`main-2/docs/design/design-system/`** is studio canon as of 2026-07-31, committed on `main`.
+**Reference it cross-worktree; do not fork copies into this worktree.**
+
+What this slice builds against:
+
+| Path | Use |
+| --- | --- |
+| `components/tv/*.jsx` + `*.prompt.md` | Built references and their specs. **The `.prompt.md` is the spec of record** — it is consistently stricter and more precise than a ruling summary |
+| `components/tv/tiers.js` | Canonical brightness tiers: **L4 1 · L3 0.7 · L2 0.4 · L1 0.15 · L0 0** |
+| `tokens/palette-tv.css` | Colour tokens |
+| `guidelines/` — `tv-brightness`, `type-tv` | The laws behind the tiers and the typeface |
+| `ui_kits/tv-sweat/` | Runnable kit of the whole surface |
+
+**Read the `.prompt.md` before implementing from a ruling line.** Concrete instance: T16's summary said
+"no numerals, no hue, never above L2"; `TvMomentumTape.prompt.md` additionally splits the tiers —
+label and current sample at L2, sample history at L1 — and states the reasoning that makes the rule
+enforceable ("the moment it needs a numeral it has become the banned win-probability readout"). A
+test written from the summary alone under-specified all three rules.
+
+Where a Unity test must assert against canon it cannot import (a C# test cannot load a JS module),
+mirror the values as named constants and **cite the source path in a comment** — never invent a
+threshold that happens to pass.
+
+## 4B. RESUME HERE — TVS-H02 verification (written 2026-07-31 before a planned session clear)
+
+**A verification slot is RESERVED and nothing takes the editor first. On re-seat: read this section,
+confirm the editor free per §4 step 0, and run it.**
+
+### State
+
+The working tree carries a large **uncommitted** stack on top of HEAD `5d61a04`:
+
+- Phase 3C — Layout B canvas rebuild (`TvSweatScreen.cs`)
+- The T16 / C3 / C8 Design Director rulings — momentum tape restored at the scorebug foot; HDR
+  eligibility widened to five with a one-token invariant; risk/pays in the bloom-floor protected set
+- A tape-coupling fix — `MomentumTape.Build` moved **out** of `if (theaterEnabled)`; it is scorebug
+  furniture, not stage furniture, matching the ball flash's existing precedent
+- The **TVS-H02 fix** described below
+- Tests: `TvSweatScreenLayoutGridTests.cs` (new), additions to `TvSweatScreenPaletteTests.cs`
+  (markup scan, one-token invariant, arbitration, tape rules)
+- Docs: `DESIGN.md` §9A, PRD §7.2.1 authored inventory, and 49 captures staged at
+  `docs/tv-sweat-refinement/visuals/phase-2-scene-grammar/` for the DD's T6 visual review
+
+### The defect and the fix
+
+`TvSweatScreenTests.Standing_Freezes_CashOutTween_NoResumeCatchUp` failed **3 of 4** runs with the
+stack and **0 of 3** at clean HEAD.
+
+**Mechanism (confirmed by static analysis, not yet by execution):** `StartCoroutine` runs a coroutine
+body **synchronously up to its first `yield`**, before returning the handle assigned to
+`_cashOutAnimation`. A new tween's first `RenderCashOut` therefore ran while `_cashOutAnimation` was
+still `null`, and the stack's new `_cashOutAnimation != null ? "UPDATING" : "[E]"` ternary painted
+the wrong branch for exactly one frame, self-correcting the next. If the test caught that frame, the
+correction landed *after* standing — a text change with the dollar amount frozen throughout. This
+predicts the observed 3/4 rather than 4/4, because it is frame-scheduling dependent.
+
+**The amount never ticked; the freeze held.** A one-frame render bug that freezing captured. The
+quirk pre-dated the stack; the new `UPDATING` state made text sensitive to it for the first time —
+exposed, not introduced.
+
+**Fix location:** `unity/SBR/Assets/SBR/Runtime/TvSweatScreen.cs` — new `bool _cashOutTweening`, set
+`true` **before** `StartCoroutine` so the coroutine's own first render sees it, and `false` before
+each settle-render. `RenderCashOut` and `DebugCashOutAnimating` read it instead of the handle.
+`elapsed += SeatedDeltaTime` — the actual freeze primitive — is untouched, as are `_l4Holder`,
+`RequestL4`, `ReleaseL4`.
+
+**Disqualified suspect, do not re-investigate:** the ungated C3 tail in `AnimateCashOutTaunt`.
+`CanAcceptCashOutNow()` requires `_cashOutAnimation == null`, so `actionable` was already `false`
+mid-tween — the block behaves identically before and after standing in this scenario. It *is*
+genuinely ungated by `_seated`, which is judged **correct**: standing means input is refused, so the
+L4 actionable promise should end (§8.5, "brightness is a promise about input"). Carried, not a bug.
+
+### Exit criteria — judge by failure MESSAGE, never by test name
+
+Two failure modes share this test name and mean opposite things:
+
+- `cash-out amount kept ticking while standing` → **the regression**
+- `never observed the cash-out amount mid-tween (waited 20s)` → the documented load-correlated flake
+  (`BUG-LEDGER.md` §4C.4; measured HEAD 1/4, 2E-2 1/10). **Permitted at its documented rate; not a
+  miss.**
+
+1. **≥10** filtered runs with the stack:
+   `-runTests -testPlatform PlayMode -testFilter "SBR.Tests.PlayMode.TvSweatScreenTests"`
+2. **≥10** at clean HEAD (`git stash push -- unity/SBR/Assets`, run, then **`git stash pop`** — the
+   stack is uncommitted and must not be lost).
+3. **Green = zero** `kept ticking while standing` in the stack arm.
+4. Then full `dotnet test engine.tests` + EditMode + PlayMode.
+5. On green: **commit 3C + T16/C3/C8 + the TVS-H02 fix**, then advance to **T17**.
+
+Baselines before this stack: engine **160**, EditMode **194**, PlayMode **44** (+1 `[Explicit]`
+capture harness, filtered out of routine runs).
+
+### After this: T17 is next, and it outranks all remaining visual work
+
+DD ruled the scorer-gap a **correctness defect**, above every Phase 3 visual refinement. Design
+instruction: **reserve, don't spend** — a scorer leg claims its backed-side goal *before* ordinary
+beats spend the baked goals. If binding is ever impossible, **stage the reveal; never suppress the
+win, never synthesise a reveal after resolution.** Acceptance is a **test**, not a capture: every
+settled anytime-scorer leg traceable to a staged, revealed scorer event that preceded or coincided
+with its resolution. The existing reproduction
+(`BindAnytimeScorer_binds_nothing_when_the_backed_sides_goals_are_spent_before_the_final`,
+`ScoreLedgerTests.cs`) is the red test that fix turns green — **invert it, do not delete it.**
+
+Then: T20 px re-derivation (live progress 23→19px, resolved rows 19→15px, NEED unchanged — and do
+**not** shorten §6's authored strings to fit), then 3D → 3E → 3F.
 
 ## 5. Standing context
 

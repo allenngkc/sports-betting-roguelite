@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
@@ -30,6 +32,74 @@ namespace SBR.Tests.EditMode
         // role in DESIGN.md §4 (context is grey). §8's VOID leg state is the ONE place cyan survives,
         // and only the `chromeCyan` field itself is allowed to read this way — see the test below.
         private static bool LooksLikeRetiredCyan(Color c) => c.b > 0.7f && c.g > 0.6f && c.r < 0.75f;
+
+        /// <summary>T15 (Design Director ruling, 2026-07-31): the retired money language survived a
+        /// full palette retirement by hiding in a place no palette test looked — embedded as raw hex
+        /// inside rich-text markup strings rather than as a serialised <see cref="Color"/> field.
+        ///
+        /// <para>Every other scan in this file reflects over public <c>Color</c> fields. A string
+        /// literal like <c>"&lt;color=#3CE873&gt;"</c> is invisible to all of them, which is exactly
+        /// how the slip-strip violation shipped through T8's palette retirement untouched. The
+        /// instance is gone — Phase 3C's Layout B rebuild removed the slip strip entirely and moved
+        /// risk/pays into the ticket column footer — but <b>the blind spot is what the ruling asked
+        /// us to close</b>, and nothing prevents the pattern returning tomorrow.</para>
+        ///
+        /// <para>So this scans the OWNED RUNTIME SOURCE rather than the object graph. That is an
+        /// unusual shape for a test, and deliberate: it is the only way to see a colour that exists
+        /// solely as text.</para>
+        ///
+        /// <para><b>Scope is this worktree's files only.</b> The identical pattern is live in
+        /// <c>SportsbookApp.cs</c> (the SureThing surface, a forbidden file here) with the same three
+        /// constants. That is routed to the Design Director, not fixed or asserted here — asserting
+        /// over another worktree's file would make this suite fail for a reason its owner cannot act
+        /// on from inside this repo boundary.</para></summary>
+        [Test]
+        public void No_retired_money_colour_hides_in_rich_text_markup_in_owned_runtime_source()
+        {
+            // The retired money language, as it appears in markup: money-good green, money-bad red,
+            // and the previous palette's general-chrome cyan. DESIGN.md §4 retires all three — loss
+            // is darkness, context is grey, and cyan survives only as §8's VOID leg state.
+            string[] retiredHex = { "3CE873", "FF4038", "9EDCF6" };
+
+            string runtimeDir = Path.Combine(
+                Directory.GetCurrentDirectory(), "Assets", "SBR", "Runtime");
+            Assert.IsTrue(Directory.Exists(runtimeDir),
+                $"could not locate the owned runtime source at {runtimeDir} — if the project layout " +
+                "moved, fix this path rather than deleting the scan");
+
+            // Only files this worktree owns. SportsbookApp.cs / LaptopOs.cs belong to SureThing and
+            // are excluded by name, not by accident — see the summary above.
+            string[] notOurs = { "SportsbookApp.cs", "LaptopOs.cs", "LaptopScreen.cs", "LaptopUi.cs" };
+
+            var offenders = new List<string>();
+            foreach (string path in Directory.GetFiles(runtimeDir, "*.cs", SearchOption.AllDirectories))
+            {
+                string file = Path.GetFileName(path);
+                if (notOurs.Contains(file)) continue;
+
+                string[] lines = File.ReadAllLines(path);
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    string line = lines[i];
+                    string trimmed = line.TrimStart();
+                    // A comment naming a retired colour is documentation, not a use of it — this
+                    // file's own summaries cite these constants, and flagging those would make the
+                    // scan unmaintainable.
+                    if (trimmed.StartsWith("//") || trimmed.StartsWith("///") || trimmed.StartsWith("*"))
+                        continue;
+
+                    foreach (string hex in retiredHex)
+                        if (line.IndexOf(hex, System.StringComparison.OrdinalIgnoreCase) >= 0)
+                            offenders.Add($"{file}:{i + 1}  {trimmed}");
+                }
+            }
+
+            Assert.IsEmpty(offenders,
+                "a retired money colour is present as raw hex in runtime source — DESIGN.md §4 retires " +
+                "green and red outright and scopes cyan to the VOID leg state. Markup is still palette: " +
+                "an approved colour system that a string can bypass is not enforced.\n  " +
+                string.Join("\n  ", offenders));
+        }
 
         [Test]
         public void Retired_green_and_red_fields_no_longer_exist_on_the_type()
@@ -126,6 +196,34 @@ namespace SBR.Tests.EditMode
                     "a loss/dead flash must drop below the idle floor to read as darkness, not a dim flash");
                 Assert.Less(Luminance(screen.deadDark), Luminance(screen.gold),
                     "loss must never be as bright as a money beat");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void GoldL2_sits_between_structure_and_the_L3_gold_flash()
+        {
+            // Phase 3C: goldL2 is the one new palette field this phase adds (the ticket column's
+            // RISK/PAYS footer — DESIGN.md §7: "sit at the foot in gold at L2"). §3's ladder
+            // requires L1 < L2 < L3 < L4; this pins goldL2 into that order against its neighbours
+            // rather than trusting the literal alone.
+            var go = new GameObject("GoldL2Ordering");
+            go.SetActive(false); // field defaults only — never let Awake/OnEnable fire here
+            try
+            {
+                var screen = go.AddComponent<TvSweatScreen>();
+
+                Assert.Greater(Luminance(screen.goldL2), Luminance(screen.structureGrey),
+                    "goldL2 (L2) must read brighter than structureGrey (L1)");
+                Assert.Less(Luminance(screen.goldL2), Luminance(screen.gold),
+                    "goldL2 (L2) must read dimmer than the L3 gold flash — it is a foot-of-column " +
+                    "label, never the actionable cash-out amount");
+                Assert.Less(Luminance(screen.goldL2), Luminance(screen.goldL4),
+                    "goldL2 must never approach L4 — DESIGN.md §3 permits exactly one full-" +
+                    "brightness element, and RISK/PAYS is not it");
             }
             finally
             {
@@ -287,6 +385,308 @@ namespace SBR.Tests.EditMode
                 "SBR/TvSweatHdrUI must be importable — without it the L4 canvas elements silently " +
                 "fall back to the LDR-clamped default UI material (TvSweatScreen.MakeHdrMaterial's " +
                 "documented, non-throwing fallback)");
+        }
+
+        /// <summary>The complete, closed-world list of canvas elements ELIGIBLE to reach L4 — i.e.
+        /// which graphics carry the unclamped HDR material and are therefore physically capable of
+        /// exceeding 1.0. Adding a name here is a DESIGN decision, not an implementation one.
+        ///
+        /// <para><b>C3 (Design Director ruling, superseding the Phase 3C rationale below the closed-
+        /// world test):</b> eligibility is NOT simultaneity. This list used to hold exactly three
+        /// names — CashOut, BigAmount, GoldFlood — on the theory that narrowing WHO could exceed 1.0
+        /// was itself what enforced `DESIGN.md` §3's "at most one full-brightness element at any
+        /// instant." That over-enforced: it also meant the score at a goal and the ball at a payoff
+        /// could never reach the brightness §3/§7 grant them, because they were never even eligible.
+        /// The DD ruled the set widened to five (Score and Ball join the original three; the live-leg
+        /// pulse stays explicitly OUT), and that §3's one-at-a-time rule is now enforced separately,
+        /// by the named <c>_l4Holder</c> / <c>RequestL4</c> / <c>ReleaseL4</c> invariant in
+        /// <c>TvSweatScreen.cs</c> — see <see cref="Only_one_eligible_focus_holds_the_L4_token_at_once"/>
+        /// and <see cref="Momentary_punch_preempts_sustained_hold_and_the_loser_yields"/> below.</para></summary>
+        private static readonly string[] SanctionedL4Elements =
+            { "CashOut", "BigAmount", "GoldFlood", "Score", "Ball" };
+
+        // ------------------------------------------------------------------ C3: the one-token
+        // invariant. Reflection, because RequestL4/ReleaseL4/_l4Holder are private and should stay
+        // that way — the invariant is enforced INSIDE the type, and widening its surface just to
+        // test it would create the very bypass the single choke point exists to prevent.
+
+        private static object HdrFocusValue(string name)
+        {
+            System.Type t = typeof(TvSweatScreen).GetNestedType("HdrFocus", BindingFlags.NonPublic);
+            Assert.IsNotNull(t, "HdrFocus enum not found — C3's token model was renamed or removed");
+            return System.Enum.Parse(t, name);
+        }
+
+        private static bool RequestL4(TvSweatScreen s, string focus, bool momentary)
+            => (bool)typeof(TvSweatScreen)
+                .GetMethod("RequestL4", BindingFlags.NonPublic | BindingFlags.Instance)
+                .Invoke(s, new[] { HdrFocusValue(focus), (object)momentary });
+
+        private static void ReleaseL4(TvSweatScreen s, string focus)
+            => typeof(TvSweatScreen)
+                .GetMethod("ReleaseL4", BindingFlags.NonPublic | BindingFlags.Instance)
+                .Invoke(s, new[] { HdrFocusValue(focus) });
+
+        private static string L4Holder(TvSweatScreen s)
+        {
+            object v = typeof(TvSweatScreen)
+                .GetField("_l4Holder", BindingFlags.NonPublic | BindingFlags.Instance)
+                .GetValue(s);
+            return v == null ? null : v.ToString();
+        }
+
+        /// <summary>Counts how many HDR-eligible materials are actually sitting at the L4 boost.
+        /// This reads the MATERIALS, not the holder field — the holder saying "one" while two
+        /// materials are lit would be exactly the bug the invariant exists to prevent, and a test
+        /// that only read the holder could never see it.</summary>
+        private static int MaterialsAtL4(TvSweatScreen s)
+        {
+            string[] mats = { "_cashOutHdrMat", "_bigAmountHdrMat", "_goldFloodHdrMat", "_scoreHdrMat", "_ballHdrMat" };
+            int boostId = Shader.PropertyToID("_HdrBoost");
+            int n = 0;
+            foreach (string f in mats)
+            {
+                var m = (Material)typeof(TvSweatScreen)
+                    .GetField(f, BindingFlags.NonPublic | BindingFlags.Instance).GetValue(s);
+                if (m != null && m.GetFloat(boostId) > 1.5f) n++;
+            }
+            return n;
+        }
+
+        private static TvSweatScreen BuiltScreen(GameObject go)
+        {
+            var screen = go.AddComponent<TvSweatScreen>();
+            screen.theaterEnabled = false;
+            InvokePrivate(screen, "Awake");
+            return screen;
+        }
+
+        /// <summary>C3 (Design Director ruling, 2026-07-31): <b>eligibility is not simultaneity.</b>
+        ///
+        /// <para>The previous implementation enforced "one full-brightness element" by making only
+        /// three graphics capable of exceeding 1.0. That was a ceiling wearing a guarantee's
+        /// clothes: it also meant the score at a goal and the ball at a payoff could never reach the
+        /// brightness §3 and §7 grant them. Five are now eligible, so simultaneity needs enforcing
+        /// for real — this is that test.</para>
+        ///
+        /// <para>Note it counts lit MATERIALS rather than trusting the holder field. A holder that
+        /// says "one" while two materials sit at L4 is precisely the failure worth catching, and it
+        /// is invisible to a test that only reads the bookkeeping.</para></summary>
+        [Test]
+        public void At_most_one_element_holds_the_L4_token_however_many_request_it()
+        {
+            var go = new GameObject("L4Token");
+            go.SetActive(false);
+            try
+            {
+                TvSweatScreen s = BuiltScreen(go);
+
+                Assert.AreEqual(0, MaterialsAtL4(s), "a freshly built canvas must have nothing at L4");
+
+                Assert.IsTrue(RequestL4(s, "CashOut", false), "an uncontested sustained request must succeed");
+                Assert.AreEqual(1, MaterialsAtL4(s));
+
+                // Every other eligible focus piles on. Whatever the arbitration decides, the count
+                // may never exceed one.
+                foreach (string f in new[] { "Payout", "Score", "Ball", "CashOut" })
+                {
+                    RequestL4(s, f, true);
+                    // The invariant is over FOCUSES, not materials. Payout deliberately drives both
+                    // BigAmount and GoldFlood — a payout tally and its gold wash are one visual
+                    // moment, so they move as a single participant. An earlier version of this test
+                    // asserted a flat material count of 1 and failed on exactly that, which is the
+                    // eligibility-vs-simultaneity confusion C3 corrected, made one level down:
+                    // "how many things are lit" is not "how many things decided to be lit".
+                    int expected = L4Holder(s) == "Payout" ? 2 : 1;
+                    Assert.AreEqual(expected, MaterialsAtL4(s),
+                        $"after {f} requested L4, the lit materials must correspond to exactly ONE " +
+                        $"focus (holder={L4Holder(s)}, so {expected} material(s)) — the token is the " +
+                        "whole enforcement now that eligibility is wider than one");
+                }
+
+                ReleaseL4(s, L4Holder(s));
+                Assert.AreEqual(0, MaterialsAtL4(s), "releasing the holder must leave nothing at L4");
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        /// <summary>C3 rule 4: a momentary punch preempts a sustained state, and the sustained
+        /// element yields — in the same call, not on its own next frame. A loser that waits a frame
+        /// to notice would put two elements at L4 across the frame boundary, which is the invariant
+        /// broken in the one place a per-frame check would not see it.</summary>
+        [Test]
+        public void A_momentary_punch_preempts_a_sustained_hold_and_the_loser_yields_immediately()
+        {
+            var go = new GameObject("L4Arbitration");
+            go.SetActive(false);
+            try
+            {
+                TvSweatScreen s = BuiltScreen(go);
+
+                RequestL4(s, "CashOut", false); // the cash-out band's sustained gold while actionable
+                Assert.AreEqual("CashOut", L4Holder(s));
+
+                Assert.IsTrue(RequestL4(s, "Score", true), "a momentary punch must take the token");
+                Assert.AreEqual("Score", L4Holder(s), "the goal's score punch outranks a sustained hold");
+                Assert.AreEqual(1, MaterialsAtL4(s),
+                    "the preempted holder must drop to L3 in the SAME call — never two lit at once");
+
+                // The reverse must NOT hold: a sustained request cannot evict an existing holder.
+                Assert.IsFalse(RequestL4(s, "CashOut", false),
+                    "a sustained request must not preempt — precedence is encoded, not call-ordered");
+                Assert.AreEqual("Score", L4Holder(s), "the momentary holder keeps the token");
+                Assert.AreEqual(1, MaterialsAtL4(s));
+
+                // Releasing a token you do not hold must not clobber whoever does.
+                ReleaseL4(s, "CashOut");
+                Assert.AreEqual("Score", L4Holder(s),
+                    "releasing a focus that is not the holder must be a no-op");
+                Assert.AreEqual(1, MaterialsAtL4(s));
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        // Canonical brightness tiers, from the studio design system
+        // (main-2/docs/design/design-system/components/tv/tiers.js). Referenced, not forked —
+        // mirrored here as constants because a Unity EditMode test cannot import a JS module, and
+        // asserting against invented thresholds would defeat the point of having canon.
+        private const float TierL2 = 0.4f;
+        private const float TierL3 = 0.7f;
+
+        /// <summary>T16 (Design Director ruling, 2026-07-31), asserted against the design system's
+        /// own spec-of-record — `components/tv/TvMomentumTape.prompt.md` — not against a paraphrase
+        /// of the ruling line. That spec is stricter than the summary and names three hard rules:
+        ///
+        /// <list type="bullet">
+        /// <item><b>No numerals</b> — "the moment it needs one it has become the banned
+        /// win-probability readout."</item>
+        /// <item><b>No hue</b> — white and grey only; everything on this surface except gold is
+        /// colourless.</item>
+        /// <item><b>Never above L2</b> — it must not compete with the score above it or the live
+        /// <c>NEED</c> line beside it.</item>
+        /// </list>
+        ///
+        /// <para>The win-probability numeral is OUT permanently (§7's duplication ban — locked odds
+        /// make that read the player's job), and the spec names the failure mode precisely: a tape
+        /// that acquires a numeral has silently become the thing that was banned.</para></summary>
+        [Test]
+        public void Momentum_tape_obeys_no_numerals_no_hue_and_the_L2_ceiling()
+        {
+            // NOT named "...Tape..." on purpose. A previous version called this root "TapeAndProb",
+            // and the substring search below matched the ROOT rather than the tape — so the test
+            // walked the entire canvas and reported a ticket-column leg row as a tape violation.
+            var go = new GameObject("T16Check");
+            go.SetActive(false);
+            try
+            {
+                TvSweatScreen s = BuiltScreen(go);
+
+                // Exact name, not a substring. MomentumTape.Build names the object "MomentumTape"
+                // and its children "LegTape_n" / "ResolutionCap" / "Beat_n" — a substring match on
+                // "Tape" is ambiguous by construction.
+                Transform tape = go.GetComponentsInChildren<Transform>(true)
+                    .FirstOrDefault(t => t.name == "MomentumTape");
+                Assert.IsNotNull(tape, "T16 rules the momentum tape IN — it must exist on the canvas");
+
+                foreach (Graphic g in tape.GetComponentsInChildren<Graphic>(true))
+                {
+                    Color c = g.color;
+
+                    // No hue: white and grey only. "Colourless" on this surface does NOT mean
+                    // perfectly neutral — the design system's own cold white, --tv-fact #E7F1F5
+                    // (main-2/.../tokens/palette-tv.css), is itself slightly cool with a channel
+                    // spread of ~0.055. So the tolerance is set from canon plus headroom, not from
+                    // a neutral ideal: a threshold of 0.06 admitted the token by a hair and rejected
+                    // anything marginally cooler, which is a false positive waiting to happen.
+                    // What this still catches is an actual hue — a green, red, or team colour.
+                    const float coldWhiteSpread = 0.055f; // --tv-fact
+                    float max = Mathf.Max(c.r, Mathf.Max(c.g, c.b));
+                    float min = Mathf.Min(c.r, Mathf.Min(c.g, c.b));
+                    Assert.LessOrEqual(max - min, coldWhiteSpread * 2f,
+                        $"the tape carries no hue (T16 / TvMomentumTape spec) — '{g.name}' is " +
+                        $"({c.r:0.00}, {c.g:0.00}, {c.b:0.00}), a channel spread of {max - min:0.00}");
+
+                    // Never above L2. Compared against the canonical tier, with headroom below L3
+                    // so the assertion fails on a real tier promotion rather than on rounding.
+                    Assert.Less(Luminance(c), (TierL2 + TierL3) / 2f,
+                        $"the tape never exceeds L2 ({TierL2}) — '{g.name}' reads " +
+                        $"{Luminance(c):0.00}, competing with the score above it or the NEED line beside it");
+                }
+
+                foreach (Text t in tape.GetComponentsInChildren<Text>(true))
+                    Assert.IsFalse(t.text != null && t.text.Any(char.IsDigit),
+                        $"the tape carries no numerals — '{t.name}' renders \"{t.text}\". The spec is " +
+                        "explicit about why: the moment it needs a numeral it has become the banned " +
+                        "win-probability readout.");
+
+                Assert.IsNull(typeof(TvSweatScreen).GetField("_tWinPct",
+                        BindingFlags.NonPublic | BindingFlags.Instance),
+                    "the win-probability numeral is OUT permanently (T16, §7 duplication ban) — " +
+                    "its field must be gone, not merely unbuilt");
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        /// <summary>Phase 3C guard, written BEFORE the Layout B canvas rebuild (PRD §8.1,
+        /// `DESIGN.md` §3/§6); widened for C3.
+        ///
+        /// <para>The sibling test below spot-checks known elements for the HDR material and one
+        /// known element without it. That is a whitelist, and a whitelist cannot catch a canvas
+        /// rebuild that hands the material to an UNSANCTIONED element — it would simply pass. This
+        /// test closes the world: it walks every <see cref="Graphic"/> in the built hierarchy and
+        /// asserts the HDR-capable set is exactly <see cref="SanctionedL4Elements"/>, no more and no
+        /// less.</para>
+        ///
+        /// <para><b>What this test does and does not prove (C3).</b> This is an ELIGIBILITY test —
+        /// it proves exactly these five graphics are physically capable of exceeding 1.0, and nothing
+        /// else is. It does NOT prove, and was never a substitute for proving, that at most one of
+        /// them actually sits at L4 at any given instant — five eligible graphics could in principle
+        /// all be boosted simultaneously by careless call sites, and this scan would still pass,
+        /// because it only inspects which MATERIAL each graphic carries, never the boost each
+        /// material's `_HdrBoost` currently holds. `DESIGN.md` §3's one-at-a-time rule is real
+        /// simultaneity, and simultaneity is enforced by the one-token invariant tested below, not by
+        /// this list's narrowness. A future reader must not re-derive "the ceiling is enforced by only
+        /// five names existing" from this test — that reasoning is exactly what C3 ruled wrong.</para>
+        ///
+        /// <para>If this list widens further without a corresponding DD ruling, or drops a name (a
+        /// cash-out band that silently lost its HDR material would leave the one moment the player
+        /// can act on unable to reach full brightness), this test fails and names the offender.</para></summary>
+        [Test]
+        public void Exactly_the_sanctioned_elements_can_reach_L4_and_nothing_else()
+        {
+            var go = new GameObject("CanvasL4ClosedWorld");
+            go.SetActive(false);
+            try
+            {
+                var screen = go.AddComponent<TvSweatScreen>();
+                screen.theaterEnabled = false;
+                InvokePrivate(screen, "Awake");
+
+                var hdr = new List<string>();
+                foreach (Graphic g in go.GetComponentsInChildren<Graphic>(true))
+                {
+                    Material m = g.material;
+                    if (m != null && m.shader != null && m.shader.name == "SBR/TvSweatHdrUI")
+                        hdr.Add(g.gameObject.name);
+                }
+                hdr.Sort();
+
+                var expected = new List<string>(SanctionedL4Elements);
+                expected.Sort();
+
+                CollectionAssert.AreEqual(expected, hdr,
+                    "the set of canvas elements able to exceed 1.0 must be EXACTLY the sanctioned list. " +
+                    "Extra names mean the canvas widened L4 — DESIGN.md §3 permits one full-brightness " +
+                    "element at a time and that is enforced here by construction, not by discipline. " +
+                    "Missing names mean an element that must reach L4 silently fell back to the clamped " +
+                    "default material. Either way this is a design decision, not an implementation one: " +
+                    "route it before editing SanctionedL4Elements.\n" +
+                    $"expected: [{string.Join(", ", expected)}]\nactual:   [{string.Join(", ", hdr)}]");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
         }
 
         [Test]

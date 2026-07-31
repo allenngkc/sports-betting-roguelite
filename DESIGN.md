@@ -431,12 +431,21 @@ Phase 3's UI work.
    Everywhere else the code correctly restores `_emissRest = _emissIdle`, read from the room team's
    material — these two are the exceptions.
 
-5. **The retired money language survives as raw hex rich-text in `UpdateSlipStrip`.** Found during
-   T9 (2026-07-31) and **not** covered by items 1–4: the per-leg slip-strip spans embed
-   `#3CE873` (green, W), `#FF4038` (red, L) and `#9EDCF6` (cyan, VOID) as literal markup rather than
-   as palette fields. §4 retires green and red as money colours outright — loss is darkness — so this
-   is the same class of defect as item 1: **approved design contradicted by shipping code**, hiding
-   from every field-level palette scan because it is a string. Phase 3.
+5. ~~**The retired money language survives as raw hex rich-text in `UpdateSlipStrip`.**~~
+   **CLEARED 2026-07-31.** Ruled a T8-class violation by the Design Director (T15). The TV instance
+   was removed as a side effect of Phase 3C: Layout B has no slip strip, and risk/pays moved to the
+   ticket column footer per §7. No hex markup remains in this worktree's runtime source.
+
+   **The blind spot is closed separately, and that was the point of the ruling.** Every other palette
+   scan reflects over public `Color` fields, so a colour living only inside a string was invisible to
+   all of them — which is how this survived T8's retirement untouched.
+   `No_retired_money_colour_hides_in_rich_text_markup_in_owned_runtime_source` now scans the owned
+   runtime *source* for the retired constants. Unusual shape for a test, deliberately: it is the only
+   way to see a colour that exists solely as text.
+
+   **Still live outside this worktree.** `SportsbookApp.cs:469-472` carries the identical pattern with
+   the identical three constants. That is a SureThing file and forbidden here; routed to the Design
+   Director rather than fixed or asserted over.
 
 Items 1, 2, 4 and 5 are ours; 1 is cleared and 2 and 4 are in flight at the time of writing.
 

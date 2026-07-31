@@ -467,6 +467,20 @@ model and must not be inflated as the primary solution.
 | Final | deterministic plan from final grade plus staged goal/count corrections | visible correction callbacks, whistle, win/loss/void reaction | hidden score/count jump or ending selected from stale `WinProbAfter` |
 | Kickoff / fallback | structural restart or neutral possession | no statistical payoff | any score/count or decisive outcome |
 
+### 7.2.1 Authored inventory — non-renderable cells
+
+Cells the planner can legally select but the stage deliberately does **not** render as authored,
+recorded so the gap between "planned" and "seen" is never silently assumed to be zero.
+
+| Cell | Behaviour | Why |
+|---|---|---|
+| `ChanceShape.Rebound` × a near-miss payoff that is itself a save or a block | **Degrades to `ChanceShape.Direct`.** In code, deliberately, not by omission. | A rebound authors a first attempt that is visibly stopped; a save or block payoff authors a second stopped attempt. Rendered together they read as two stops in a row — a sequence the match never staged. Shipped in Phase 2E-3 (`220c5ec`). |
+
+**This is the whole list.** A new entry means variety was planned and not delivered, which is the exact
+failure PRD §2 exists to prevent, so adding one is a reviewable decision rather than an implementation
+detail. The planner's diagnostics still record the original selection, so a degraded cell is
+observable rather than lost.
+
 ### 7.3 Variety floor
 
 The catalog must contain at minimum:
