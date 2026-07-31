@@ -23,6 +23,12 @@ referenced documents via Import before the DD will rule on them.
 6. **Studio constitution** — thin top layer per the approved two-tier authority;
    room's owning doc is done (R13), laptop/TV owning docs eventually consolidate
    from DESIGN.md + the design system.
+7. **R12 amendment proposal (room, from R10's measurements):** "surface detail is
+   gated by lighting" sharpens to — bounce fills shadow but does not reveal
+   surface; only direct light at a grazing angle raises relief. As written, R12
+   would have predicted the failed baked-light route works.
+8. **Room re-review** — now due (R9/R10 landed per your batch-2 sequencing);
+   package incoming to `dd-import/`, includes the couch-headroom design question.
 
 ## Cleared 2026-07-31, batch 2 (transcribed to REGISTER.md by the orchestrator)
 
