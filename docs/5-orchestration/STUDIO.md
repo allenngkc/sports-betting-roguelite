@@ -72,6 +72,41 @@ reverted.
 - `docs/5-orchestration/STATUS.md` is the live board; the orchestrator updates it each
   sweep. No other status ledger exists.
 
+## Autonomy policy (Allen, 2026-07-31)
+
+Per-phase and per-gate approval by Allen is retired. The orchestrator runs an
+autonomous sweep–dispatch–verify loop (ORCHESTRATOR.md §6) and involves Allen
+only as Creative Director or for genuinely critical calls.
+
+**Stops for Allen — nothing else does:**
+
+- New or materially changed design direction (the Design Director brings it);
+  within-direction spec detail no longer waits for him.
+- Scope or milestone changes, licensing, spending money, anything that leaves
+  the machine.
+- A merge into `main` that fails the clean-merge checklist below. A merge that
+  passes it proceeds autonomously and is logged.
+- Anything irreversible: reverting approved work, deleting assets. (Force-push
+  and history rewrites stay banned outright — not escalatable.)
+
+**Clean-merge checklist** (autonomous merge only if all hold): tests at the
+lead's stated baseline; no integration-only file drift (ProjectSettings,
+packages) or drift already justified and reverted; handoff current; no open
+conflict-register item touching the branch; merge applies without conflicts.
+Any miss → Allen.
+
+**Evidence-based gates:** a phase advances when the exit criteria in the lead's
+approved plan are met with evidence artifacts. The orchestrator verifies and
+advances — leads do not park waiting for a per-phase nod. Every autonomous
+decision lands in `STATUS.md` under **Autonomous decisions (Allen veto
+window)** with enough context to veto after the fact; a veto rolls that
+decision back without reopening this policy.
+
+**Design review is async:** the Design Director seat is reached through Allen
+(Claude Design), so implementation does not block on DD review. The
+orchestrator batches review requests at natural checkpoints so Allen relays
+one bundle, not per-item pings. Only new-direction calls block work.
+
 ## Context hygiene
 
 - The orchestrator and Design Director consume summaries and evidence artifacts only —

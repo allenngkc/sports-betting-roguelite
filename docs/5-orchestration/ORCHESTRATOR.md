@@ -84,7 +84,33 @@ Rules:
 - A dispatch carries the decision or task plus minimum context — never a log dump.
 - Record every dispatch in `STATUS.md` (what, to whom, why).
 - Allen's direct word to a lead outranks any orchestrator dispatch.
-- No scheduled or unattended automation without Allen's explicit approval — sweeps and
-  dispatches run when Allen or an interactive orchestrator session triggers them. The
-  previous coordinator died as an unattended automation loop; keep the capability,
-  skip the cron.
+- Autonomous operation is authorized (Allen, 2026-07-31) — see §6. The previous
+  coordinator died as an unattended watcher that kept sweeping after its subject was
+  gone; §6's stop conditions exist so this loop halts and pings instead of degrading.
+
+## 6. Autonomous loop (authorized by Allen, 2026-07-31)
+
+Replaces per-phase approval. Run continuously while seated; STUDIO.md's autonomy
+policy defines what stops for Allen.
+
+One cycle:
+
+1. Sweep (§4).
+2. For each lead at a natural boundary: check the reported evidence against the
+   phase's exit criteria — spot-check diffs and evidence artifacts, never session
+   logs. Criteria met → advance the phase and dispatch the next task (§3a). Not
+   met → send it back with the gap named.
+3. Merge a branch that passes the clean-merge checklist (STUDIO.md); queue any
+   other merge for Allen.
+4. Log every autonomous decision in `STATUS.md` under **Autonomous decisions
+   (Allen veto window)**: the decision, evidence checked, and the reversal path.
+5. Heartbeat-stamp the cycle in `STATUS.md`. Between cycles block on
+   `orca terminal wait` or a scheduled wake-up — do not poll hot.
+
+Stop the loop and ping Allen (push notification or a waiting message) instead of
+continuing when:
+
+- two consecutive cycles move no worktree forward;
+- a lead terminal is gone or unresponsive;
+- any Allen-listed decision arises (STUDIO.md autonomy policy);
+- evidence contradicts a lead's report.
