@@ -41,6 +41,11 @@
 >   work yourself is now a contract deviation. Every dispatch names allowed files,
 >   forbidden files, required evidence, and an exit gate; sub-agents never commit
 >   unless the dispatch says so. Use an Opus sub-agent only for genuinely hard tasks.
+> - **Autonomy update (Allen, 2026-07-31):** per-phase approval is retired. The
+>   orchestrator verifies your evidence against the phase's exit criteria and advances
+>   you — do not park waiting for Allen between phases. Allen still gates: new design
+>   direction, scope, licensing, spend, and anything irreversible. `Need Allen` now
+>   means one of those, nothing else. See STUDIO.md "Autonomy policy".
 
 ## 1. Ownership transfer
 
