@@ -54,6 +54,11 @@ Reach them with the Orca CLI, never by spawning stand-in sub-agents for lead wor
 `orchestrator-brief.md` at a worktree root is the durable briefing artifact; the
 terminal send is the tap on the shoulder to go read it.
 
+Composer rule: a draft staged in a session's composer belongs to Allen. A bare Enter
+or `--text " " --enter` clears the composer WITHOUT delivering — the draft is lost,
+no turn runs. Never submit a staged draft from the CLI. Ask Allen to press Enter, or
+take his wording and send it as a fresh `--text` message ("relaying Allen: …").
+
 ## 4. One sweep
 
 1. `git status --porcelain` + `git log --oneline -5` in each registered worktree

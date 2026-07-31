@@ -7,8 +7,9 @@
   red-on-dead-leg ruling (`8822971`). Tree clean. Next: S8 OS chrome, then S9.
   Green re-confirmed at HEAD `8822971` (EditMode 74/74, PlayMode 37/37, captures
   visually spot-checked; ~4-min slot window, released). **S8 OS chrome underway.**
-  S11 typeface licence still unresolved — lead warns S8 built in the fallback face
-  may need redoing once the licence clears. Lead: Claude (Opus 5).
+  S11 ruled (no licence-encumbered type; Bell Centennial dropped) — free-licence
+  replacement comes from the Design Director; S8 continues in fallback, structured
+  for a cheap face swap. Lead: Claude (Opus 5).
 - **room-refinement:** handoff tracked (`49a7c55`); R7 wear plan committed and
   R9/R10 routed to the Design Director (`e59921f`). Unblocked on the TV wall — C3
   capability resolved. **R7.0 wear texture generator underway** (no editor needed).
@@ -33,5 +34,9 @@
 - **Blocked:** none.
 - **Rulings (Allen, 2026-07-31):** C1 — latest document governs, `DESIGN.md` §6
   stands, layout closed. C2 — interim: shipped green tolerated, cold white-grey
-  target lands with TV Phase 3. T8 — remove: done, verified `842382d`.
+  target lands with TV Phase 3. T8 — remove: done, verified `842382d`. S11 — no
+  licence-encumbered typefaces in the product; Bell Centennial dropped.
+- **Watch:** TV needs a GPU capture path to close Phase 3 (and Phase 4's sweats) —
+  checking the room worktree's harness first; may become an interactive session
+  booking for Allen.
 - **Need Allen:** nothing.

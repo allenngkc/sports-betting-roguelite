@@ -16,8 +16,10 @@ Items routed to this seat. Clear a line when it's registered or resolved.
    lead; studio-level. Needs a proposal (scope + format) for Allen.
 3. **SureThing form-guide identity.** The SureThing lead flags the shipped lobby as a
    "competent dark app": default sans, airy rows, no toner quality — the direction's
-   most recognisable traits absent. Re-routed here under the new decision routing;
-   related: S11 typeface licence unresolved, build renders in `LegacyRuntime.ttf`.
+   most recognisable traits absent. Re-routed here under the new decision routing.
+   S11 is **ruled** (Allen, 2026-07-31): no licence-encumbered typefaces — Bell
+   Centennial is dropped; spec a free-licence replacement (OFL or similar) as part of
+   this item. Build currently renders in `LegacyRuntime.ttf`.
 4. **R9 — ambient rebalance (room).** Candidate. Room lead's Phase B data says flat
    ambient now suppresses relief that directional bounce carries better. Changes the
    8/8-gated value structure, so approval + gate re-run required.

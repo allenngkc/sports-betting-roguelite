@@ -26,7 +26,7 @@ under this seat. That is the gap this register exists to close.
 | S8 | OS chrome — fictional OS identity, clock `02:47`, second affordance; personal not institutional | Approved (spec) | `[ST] .../SHARED-SPEC.md`; impl. state unconfirmed |
 | S9 | Event detail, staged ticket, MY BETS, rewards, old slips | Approved (spec) · not implemented | `[ST] .../DESIGN.md` §Components |
 | S10 | Sweat "loud register" for the laptop | Candidate | direction contract comment only; no built spec |
-| S11 | Production typeface — Bell Centennial intended | Candidate · **licence unresolved** | `[ST] handoff.md` §6 |
+| S11 | Production typeface | **Ruled** · Allen 2026-07-31 — no licence-encumbered type in the product; Bell Centennial dropped. Free-licence replacement specced by the Design Director with the identity work | `[ST] handoff.md` §6 |
 | S12 | Rejected comparison — "The Catalogue Sleeve" | Exploration (closed) | `[ST] .../direction-2-catalogue-sleeve.html` |
 | S13 | Earlier explorations — Tote Hall / Broadcast Alert / Night Board | Dumped · Allen 2026-07-28 | `[ST] .../DIRECTIONS.md`; do not revive |
 
