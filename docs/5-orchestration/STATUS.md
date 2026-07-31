@@ -13,12 +13,14 @@
   not pixels). Follow-up: desktop taskbar still a third chrome surface.
   Lead: Claude (Opus 5).
 - **room-refinement:** handoff tracked (`49a7c55`); R7 wear plan committed and
-  R9/R10 routed to the Design Director (`e59921f`). **R7.0 + generator + Tier 1
-  committed** (`1e99f11`): GI opt-out verified (ContributeGI unchanged at 103), but
-  Tier 1 under-landed visually (1.69% of pixels — wear placed against causes without
-  checking the camera envelope; Streak 2–11px, too thin at 3.4 m). Lead owns the
-  planning error; Tier 1b goes to a bounded Sonnet sub-agent. Lease violation owned;
-  editor released clean. Lead: Claude (Opus 5).
+  **Tier 1b nearly home** — capture slot diagnosed three real defects: a texture
+  cache that ignored field-math changes (the earlier 10.87% was a real render of
+  stale inputs — FieldVersion added to the key), decals casting their own
+  quad-outline shadows, and mipmaps averaging grazing-angle decal borders (mean
+  alpha 0.25 made quad edges visible). Sub-agent's Python prediction matched Unity
+  within 0.05% once the cache was bypassed. Fix 3 unverified — scene deliberately
+  uncommitted; one short verification cycle granted (in slot now). Coverage
+  16.93% / 9.98% vs gate 12% / 8%. Bunk 2 held at 43.94. Lead: Claude (Opus 5).
 - **tv-sweat:** `842382d` — **T8 removed and verified** (engine 160/160, EditMode
   129/129, PlayMode 44/44 on rerun; single failure matched the documented cash-out
   flake signature in a path T8 doesn't touch). Contract/C1/T6/C3 at `4cdd98c`.
@@ -39,7 +41,7 @@
 - **Orchestrator:** Fable 5 session in `main-2`; lead channel chartered in
   `ORCHESTRATOR.md` §3a. Completion watchers armed on all three lead terminals and
   the Design Director session.
-- **Unity queue:** room holds the slot (Tier 1b build/bake/capture, granted) →
+- **Unity queue:** room holds the slot (short Tier 1b verification cycle) →
   surething-ui S9 verification when requested → tv-sweat capture-harness spike
   (timeboxed, one slot).
 - **Blocked:** none.
