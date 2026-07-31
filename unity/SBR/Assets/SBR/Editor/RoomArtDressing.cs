@@ -96,6 +96,19 @@ namespace SBR
                     ProceduralWearTextures.WearKind.Bloom, 256, WearSeed + 11, 1.0f),
                 transparent: true);
 
+            // Soot shares the damp map but NOT its strength. Tier 1b lifted the bloom field to
+            // roughly half opacity inside the blob, which is right for a damp patch on a wall and
+            // wrong for the ceiling: Phase A measured the ceiling as the room's best-reading
+            // surface precisely because the tube rakes it at theta ~= 87deg, and dropping a
+            // half-opaque dark patch over that would kill the one thing already working. The
+            // alpha on _BaseColor scales the whole thing down, so this stays a stain rather than
+            // a hole.
+            Material wearSoot = GrayboxRoomBuilder.Mat("ArtWearSoot",
+                new Color(0.044f, 0.042f, 0.038f, 0.40f), doubleSided: true, smoothness: 0.10f,
+                baseMap: ProceduralWearTextures.GetOrCreate(
+                    ProceduralWearTextures.WearKind.Bloom, 256, WearSeed + 11, 1.0f),
+                transparent: true);
+
             // Slightly SMOOTHER than the floor it sits on: traffic polishes, it does not only
             // dirty. Getting that inversion right is what separates wear from more noise.
             Material wearScuff = GrayboxRoomBuilder.Mat("ArtWearScuff",
@@ -109,7 +122,7 @@ namespace SBR
             BuildWindowSurround(root, trim);
             BuildRadiator(root, trim);
             BuildClutter(root, paper, grime, trim);
-            BuildWear(root, wearGrime, wearRust, wearCondensation, wearDamp, wearScuff);
+            BuildWear(root, wearGrime, wearRust, wearCondensation, wearDamp, wearScuff, wearSoot);
 
             Debug.Log($"[RoomArtDressing] built {root.childCount} dressing groups (collider-free)");
         }
@@ -145,13 +158,23 @@ namespace SBR
             ClampsAlong(g, clamp, main[0], main[1], 6, wx, true);
             ClampsAlong(g, clamp, main[1], main[2], 2, wx, true);
 
-            // Branch across the ceiling to the fluorescent fixture at (0.95, 2.06, 0.85).
+            // Branch across the ceiling to the fluorescent fixture at (0.85, 2.05, -0.05).
+            //
+            // This run used to stop at z = 0.86, which is where the tube USED to hang. Phase 6
+            // pulled the fixture forward to z = -0.05 to keep the second bunk in shadow and the
+            // conduit that supplies it was never moved with it, so the feed has been terminating
+            // at bare ceiling ~0.9m short of the thing it powers. The whole point of routing this
+            // network properly was that every run starts at a plausible source and ends at
+            // something that draws power; this one ended at nothing. Caught while adding the
+            // R7 soot halo, which marks where the tube actually is and would have made the
+            // disconnect obvious.
             var feed = new[]
             {
                 new Vector3(wx, cy, 0.95f),
                 new Vector3(0.98f, cy, 0.95f),
-                new Vector3(0.98f, cy, 0.86f),
-                new Vector3(0.98f, 2.11f, 0.86f),
+                new Vector3(0.98f, cy, -0.05f),
+                new Vector3(0.88f, cy, -0.05f),
+                new Vector3(0.88f, 2.11f, -0.05f),
             };
             AddTube(g, "ConduitFixtureFeed", "feed", feed, 0.012f, 8, conduit);
 
@@ -541,13 +564,14 @@ namespace SBR
         /// GrayboxRoomBuilder excludes from the probe bake.
         /// </summary>
         private static void BuildWear(Transform parent, Material grime, Material rust,
-                                      Material condensation, Material damp, Material scuff)
+                                      Material condensation, Material damp, Material scuff,
+                                      Material soot)
         {
             var g = new GameObject(WearRootName).transform;
             g.SetParent(parent, false);
 
             const float off = 0.003f;    // 3mm off the surface: true world size, so this is literal
-            const float skirt = 0.30f;   // the coverage field fades out well inside this
+            const float skirt = 0.45f;   // the coverage field fades out well inside this
             const float tile = 1.2f;     // metres per texture repeat along a run
 
             // R7.1 SKIRTING GRIME. The longest continuous line in the room and the most reliable
@@ -591,6 +615,21 @@ namespace SBR
             // Where the stool at (0.55, 0.225, 1.45) gets dragged in and out from the desk.
             WearQuad(g, "StoolScuff", new Vector3(0.55f, off * 1.5f, 1.30f),
                      new Vector2(0.58f, 0.52f), Vector3.up, Vector3.forward, scuff, 1f);
+
+            // R7.5 CEILING SOOT. FluorescentKey (GrayboxRoomBuilder) sits at (0.85, 2.05, -0.05)
+            // and is deliberately a failing tube - one that has earned its own key light runs hot
+            // and dirty, and heat plus soot from it settle on the ceiling directly above. The
+            // ceiling is the room's most visible surface, so this is the highest-value placement
+            // in the tier: nothing else in Tier 1 touched it at all.
+            WearQuad(g, "FluorescentSoot", new Vector3(0.85f, Height - 0.004f, -0.05f),
+                     new Vector2(1.30f, 1.30f), Vector3.down, Vector3.forward, soot, 1f);
+
+            // R7.6 CONDUIT DRIP. The main run clings to the right wall (inner face x = 1.3) on
+            // its way down to the TV; moisture that beads on the surface-mounted pipe has nowhere
+            // to go but down the wall it is stapled to, so the wall stains along the run rather
+            // than the pipe itself.
+            WearQuad(g, "ConduitDrip", new Vector3(HalfW - off, 1.55f, 0.55f),
+                     new Vector2(0.70f, 0.90f), Vector3.left, Vector3.up, condensation, 1f);
         }
 
         /// <summary>
@@ -612,7 +651,17 @@ namespace SBR
             // repeating it vertically would stack tide-lines up the wall.
             go.AddComponent<MeshFilter>().sharedMesh =
                 ChamferedBoxMesh.GetOrCreateQuad(size, new Vector2(Mathf.Max(uRepeats, 0.05f), 1f));
-            go.AddComponent<MeshRenderer>().sharedMaterial = mat;
+            var mr = go.AddComponent<MeshRenderer>();
+            mr.sharedMaterial = mat;
+
+            // DIRT DOES NOT CAST SHADOWS. A MeshRenderer defaults to shadowCastingMode.On, so
+            // every decal was throwing a hard-edged shadow of its own quad. The ceiling soot was
+            // the obvious victim - a 1.3m plane 4mm under the ceiling with the fluorescent below
+            // it projected a crisp RECTANGLE onto the brightest surface in the room - but the
+            // skirting was doing the same thing to the walls and the traffic path to the floor.
+            // The stain is meant to be a mark ON a surface, not an object floating in front of it.
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            mr.receiveShadows = true;   // it must still sit inside the room's lighting
             return go;
         }
 

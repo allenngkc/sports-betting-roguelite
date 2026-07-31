@@ -31,6 +31,19 @@ namespace SBR
     {
         private const string TexFolder = "Assets/SBR/Environment/Textures";
 
+        /// <summary>
+        /// BUMP THIS WHENEVER ANY FIELD FUNCTION BELOW CHANGES.
+        ///
+        /// GetOrCreate caches by asset path, and the path used to encode only kind/res/seed/shape
+        /// - nothing about the maths that produced the pixels. So editing a field function did
+        /// NOTHING: the next build found a texture already at that path and reused the stale one.
+        /// That is a silent failure with no error and no visual change, and it cost a full
+        /// build/bake/capture cycle to notice, because the numbers looked plausible and simply
+        /// measured the wrong thing. Including a version in the key makes a maths change produce a
+        /// different path, which forces regeneration and leaves the old asset to be collected.
+        /// </summary>
+        private const int FieldVersion = 3;
+
         public enum WearKind
         {
             /// <summary>Dirt tide-line along a floor/wall junction. Tiles horizontally.</summary>
@@ -48,7 +61,7 @@ namespace SBR
             if (!AssetDatabase.IsValidFolder(TexFolder))
                 AssetDatabase.CreateFolder("Assets/SBR/Environment", "Textures");
 
-            string path = $"{TexFolder}/Wear_{kind}_{res}_{seed}_{shape:0.00}.png";
+            string path = $"{TexFolder}/Wear_{kind}_v{FieldVersion}_{res}_{seed}_{shape:0.00}.png";
             var existing = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
             if (existing != null)
                 return existing;
@@ -76,7 +89,22 @@ namespace SBR
             imp.sRGBTexture = true;
             imp.alphaSource = TextureImporterAlphaSource.FromInput;
             imp.alphaIsTransparency = true;
-            imp.mipmapEnabled = true;
+            // NO MIPMAPS. This is the fix for a decal that rendered as a hard-edged RECTANGLE on
+            // the ceiling despite its alpha being exactly 0.0 at every border texel.
+            //
+            // A decal quad on the ceiling is viewed at a near-grazing angle. Isotropic mip
+            // selection takes the LARGER of the two screen-space derivatives, so a surface that
+            // is huge along one axis and nearly edge-on along the other selects a very high mip -
+            // one whose texels are the average of a large region, or of the whole image. At that
+            // level the border alpha is no longer 0, it is the texture's mean (0.25 for Bloom),
+            // so the stain becomes a uniform translucent film and the QUAD'S OWN OUTLINE becomes
+            // the edge of the effect. Anisotropic filtering is the textbook answer, but at this
+            // angle the ratio exceeds what aniso covers, and for the alpha-clipped kinds mip
+            // averaging separately drags coverage below _Cutoff and dissolves the stain at range.
+            //
+            // Wear textures are small (256-512) and always land on small, close quads, so the
+            // memory and aliasing cost of dropping mips is low and the failure it removes is not.
+            imp.mipmapEnabled = false;
             // Uncompressed: DXT5 quantises alpha in 4x4 blocks, and since _Cutoff slices a level
             // set through that channel the artefact would show up directly as a blocky stain
             // edge. These are small textures; the memory is not worth the ugliness.
@@ -124,7 +152,7 @@ namespace SBR
         {
             var px = new Color[res * res];
             var rng = new System.Random(seed);
-            int count = Mathf.Max(4, Mathf.RoundToInt(11 * shape));
+            int count = Mathf.Max(4, Mathf.RoundToInt(16 * shape));
 
             var cx = new float[count];
             var halfW = new float[count];
@@ -133,7 +161,10 @@ namespace SBR
             for (int i = 0; i < count; i++)
             {
                 cx[i] = (float)rng.NextDouble();
-                halfW[i] = 0.004f + (float)rng.NextDouble() * 0.017f;
+                // Was 0.004..0.021 (2..11px of a 512 texture) - sub-pixel at the room's 3.4m
+                // viewing distance, which is why R7 Tier 1 streaks were nearly invisible. Widened
+                // so a streak still reads as a distinct drip rather than a haze.
+                halfW[i] = 0.020f + (float)rng.NextDouble() * 0.100f;
                 len[i] = 0.25f + (float)rng.NextDouble() * 0.70f;
                 gain[i] = 0.55f + (float)rng.NextDouble() * 0.45f;
             }
@@ -186,8 +217,20 @@ namespace SBR
                     float lobe = Fbm(u * 2.5f, v * 2.5f, 5, 5, seed + 43, 3);
                     float r = radius * (0.7f + lobe * 0.6f);
                     float cov = 1f - Smooth01(d / Mathf.Max(r, 0.02f));
-                    // Damp is darkest at the centre and never fully opaque at the rim.
-                    px[y * res + x] = Neutral(lobe, Mathf.Clamp01(cov * cov * 0.85f));
+                    // Damp is darkest at the centre and never fully opaque at the rim. This is the
+                    // opacity itself (no _Cutoff downstream), so unlike the other kinds the curve
+                    // must be soft, not thresholded - squaring (the old curve) crushed the whole
+                    // field toward zero and made the patch read as barely-there; a fractional
+                    // power lifts the mid-tones back up while the smoothstep edge still fades out.
+                    // The fractional power lifts the mid-tones, but it lifts near-zero values
+                    // hardest: at the quad's edge midpoint cov is about 0.02, and 0.02^0.35 is
+                    // 0.25. Without the window below the radial field would never reach zero
+                    // before the texture ran out, so the QUAD'S OWN SQUARE BORDER would become
+                    // the visible edge of a supposedly soft stain. The window forces alpha to
+                    // zero by d = 0.5, which is the closest the border ever comes to the centre.
+                    float window = 1f - Smooth01((d - 0.30f) / 0.20f);
+                    float alpha = Mathf.Pow(cov, 0.35f) * 0.90f * window;
+                    px[y * res + x] = Neutral(lobe, Mathf.Clamp01(alpha));
                 }
             }
             return px;
