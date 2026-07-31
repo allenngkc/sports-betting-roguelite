@@ -11,20 +11,13 @@
   **falsified** — generator untouched, diagnostic committed, fix from evidence in
   the next capture window rather than a third guess. DD rulings S11/S14/S15/S16
   dispatched into S9 planning. Lead: Claude (Opus 5).
-- **room-refinement:** handoff tracked (`49a7c55`); R7 wear plan committed and
-  **Tier 1b committed with an honest record** — ceiling clean and verified; four
-  decal defects fixed (stale-cache versioning, default shadow casting, URP BlendMode
-  enum confusion — additive where multiply was meant, and alpha-blend vs multiply
-  for stains). Mips-off hypothesis tested and disproved in-window. FluorescentSoot
-  held back — unresolved contradiction, lead refused to guess a fifth time. Earlier
-  coverage numbers withdrawn (unvalidated metric). **R7 parked per Allen
-  (2026-07-31)** at the committed state; Decal Renderer Feature deferred to
-  integration with DD input. **Design-review package committed** (`65b4122`,
-  `[RM] docs/6-memo/2026-07-31-room-design-review-package.md`) — written for a
-  reader with no repo access, framed as three design questions (pursue ceiling
-  soot?; do decals justify the shared-renderer change?; is current state the
-  target, or the concept?). Mid-cycle coverage correction recorded plainly (true
-  figure 1.92% vs 1.69% baseline). Idle and holding; R8 waits on the review.
+- **room-refinement:** **R5/R6 Design-verified — the studio's first; R9/R10
+  approved and dispatched.** R9 bounded (30–40% ambient cut, full 8/8 gate re-run,
+  mattress 43.9 ±1, region means within 10%); R10 via bounce-first with
+  grazing-source fallback (y < 1.50). FluorescentSoot dropped per DD; R7 stays
+  parked (frusta re-place is the precondition if it resumes; direction's read is
+  the bar, re-review after R9/R10). Tier 1b remains committed with its honest
+  record. Room planning R9 → R10; editor lease on request.
   Lead: Claude (Opus 5).
 - **tv-sweat:** `842382d` — **T8 removed and verified** (engine 160/160, EditMode
   129/129, PlayMode 44/44 on rerun; single failure matched the documented cash-out
@@ -41,14 +34,14 @@
   editor now verifying harness + scan.** 3D awaits the DD's C3 ruling.
   Lead: Claude (Opus 5).
 - **feat/soccer-markets (Documents checkout):** Dormant — F_0.4.0 awaiting playtest.
-- **Design Director:** **five rulings issued 2026-07-31**, transcribed to the
-  register by the orchestrator — S11 closed (Archivo + Archivo Narrow, OFL), S14
-  identity spec issued, S15 lost-ticket violation, S16 naming closed (LEDGER), T15
-  slip-strip violation. **Seat lost its document mounts** — C3 (gates 3D), Layout B
-  item (gates 3C commit), R9/R10, the art-authority gap, and the room review
-  package all wait on Allen re-attaching files via Import. S14's reference
-  implementation is held in the DD seat pending hand-over. Nothing Design-verified
-  yet.
+- **Design Director:** batch 1 + batch 2 complete — **every routed item ruled**.
+  Highlights: C3 ruled (3D unblocked, HDR set widened), T16 ruled (3C unblocked on
+  tape restore), R5/R6 **Design-verified — the studio's first**, R9/R10 approved
+  bounded, R12 standing law, two-tier art authority **approved by Allen** (C9; DD
+  drafts the room's owning doc, phone stays a stub). Remaining on DD: TV typeface
+  (not Archivo), review backlog (S6/S7/S8, T6), room owning doc. Exports still
+  pending from the DD seat: S14 reference implementation +
+  `proposal-art-authority-2026-07-31.md`.
 - **Orchestrator:** Fable 5 session in `main-2`; lead channel chartered in
   `ORCHESTRATOR.md` §3a. Completion watchers armed on all three lead terminals and
   the Design Director session.

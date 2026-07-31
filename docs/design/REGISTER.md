@@ -41,13 +41,14 @@ under this seat. That is the gap this register exists to close.
 | R2 | Two-bunk layout, riveted institutional TV housing, persistent `RoomArtRoot` | Approved · Implemented (8/8 gates) | `[RM] .../SIGNOFF.md` |
 | R3 | Unified room/TV grade — one image, not two assets | Approved · Implemented room-side | `[TV] docs/tv-sweat-refinement/unified-grade-spec.md` |
 | R4 | Cool-blue + money-colour palette laws | **REVOKED** · Allen 2026-07-25 | `DECISIONS.md`; four repo docs still assert them |
-| R5 | Refinement A — full PBR material response (normal/smoothness/AO) | Implemented · review pending | `cd62855` |
-| R6 | Refinement C — indirect light via Adaptive Probe Volumes (relief ×4–5 right wall) | Implemented · review pending | `[RM] .../PHASE_B_INDIRECT_LIGHT.md`, `fb44ac2` |
-| R7 | Refinement B — localised wear, decals, contact grime | **Parked** · Allen 2026-07-31 at the committed Tier 1b state; URP Decal Renderer Feature deferred to integration with DD input | `[RM] handoff.md` §6B; Tier 1b commits |
+| R5 | Refinement A — full PBR material response (normal/smoothness/AO) | **Design-verified** · DD 2026-07-31 — the studio's first | `cd62855` |
+| R6 | Refinement C — indirect light via Adaptive Probe Volumes (relief ×4–5 right wall) | **Design-verified** · DD 2026-07-31 | `[RM] .../PHASE_B_INDIRECT_LIGHT.md`, `fb44ac2` |
+| R7 | Refinement B — localised wear, decals, contact grime | **Parked** · Allen 2026-07-31 at the committed Tier 1b state. DD 2026-07-31: FluorescentSoot **dropped** (the ceiling already reads); Decal Renderer Feature **not yet** — re-place against the frusta first if R7 resumes; the direction's read is the bar — re-review after R9/R10 | `[RM] handoff.md` §6B; Tier 1b commits |
 | R8 | Refinement D — geometry detail, last priority | Approved (direction) · not started | `[RM] handoff.md` §6D |
-| R9 | Ambient rebalance — lower flat ambient to let bounce carry relief | Candidate · needs 8/8 gate re-run | `[RM] .../PHASE_B_INDIRECT_LIGHT.md` §7.1 |
-| R10 | Couch-corner grazing source — strongest normal map still reads at 2.3% | Candidate | `[RM] .../PHASE_B_INDIRECT_LIGHT.md` §7.2 |
+| R9 | Ambient rebalance — lower flat ambient to let bounce carry relief; also raises the screen-to-room contrast the thesis rests on | **Approved, bounded** · DD 2026-07-31 — 30–40% reduction; full 8/8 gate re-run; mattress 43.9 ±1; region means within 10% | `[RM] .../PHASE_B_INDIRECT_LIGHT.md` §7.1 |
+| R10 | Couch-corner — requirement is **directional variation, not a fifth light** | **Approved, route changed** · DD 2026-07-31 — bounce first (four reverts say so, and R6 proved bounce is the lever); grazing source is the fallback, y < 1.50, same gate | `[RM] .../PHASE_B_INDIRECT_LIGHT.md` §7.2 |
 | R11 | All room art generated; nothing hand-authored | Approved (law) | `[RM] .../SIGNOFF.md` |
+| R12 | Standing law — **surface detail is gated by lighting, not texture authoring** (promoted from R5's finding) | Law · DD 2026-07-31 | DD batch-2 |
 
 ## TV — match theater
 
@@ -67,7 +68,8 @@ under this seat. That is the gap this register exists to close.
 | T12 | Brightness values + pixel pitch | Provisional until seen on the real TV at seated distance | `[TV] DESIGN.md` §10 |
 | T13 | Bunkmate character | Deferred out of worktree · Allen 2026-07-27 | `[TV] docs/.../PRD.md` |
 | T14 | No camera shake/cut/zoom; fixed top-down framing | Approved (Decision B) | `[TV] docs/.../PRD.md` §13 |
-| T15 | Slip-strip raw-hex markup in `UpdateSlipStrip` (retired green/red + dead chromeCyan as rich-text) | **Ruled — violation, T8 class** · DD 2026-07-31: remediate as T8; extend the palette scan to markup, not just serialised colour fields — that blind spot is why it survived | `[TV] DESIGN.md` §9A.5 |
+| T15 | Slip-strip raw-hex markup in `UpdateSlipStrip` (retired green/red + dead chromeCyan as rich-text) | **Ruled — violation, T8 class** · DD 2026-07-31: remediate as T8; extend the palette scan to markup, not just serialised colour fields — that blind spot is why it survived. Remediated; scan then caught the same class in `[ST] SportsbookApp.cs` (routed) | `[TV] DESIGN.md` §9A.5 |
+| T16 | Layout B occupants — **momentum tape IN** (PRD §4.2 names it in the one-revealed-source-of-truth law; a construction call can't narrow that), restored at the scorebug foot: no numerals, no hue, never above L2. **Win-probability numeral OUT** (§7 bans duplicating it; locked odds make the read the player's job). **3C commit unblocks once the tape is restored** | Ruled · DD 2026-07-31 | DD batch-2 |
 
 ## Cross-surface
 
@@ -75,11 +77,13 @@ under this seat. That is the gap this register exists to close.
 |---|---|---|---|
 | C1 | **TV Decision A status** — ruled: latest document governs, so `DESIGN.md` §6 stands and the layout is closed. Phase 3 gate lifted; PRD §13/§14 to be amended. | Ruled · Allen 2026-07-31 | T5 |
 | C2 | **TV light spill colour into the room** — interim ruling: shipped green tolerated for now; target remains `[TV] DESIGN.md` §5 cold white-grey, corrected in TV Phase 3. `DECISIONS.md` 2026-07-25 blue/magenta lock superseded. Merge does not auto-resolve this. | Interim · Allen 2026-07-31 | `[RM] docs/6-memo/2026-07-27-room-to-tv-sweat.md` |
-| C3 | **TV canvas HDR** — capability fixed `1aa74c3` (2026-07-28): unclamped material float in `TvSweatHdrUI.shader` bypasses the UGUI `Color32` clamp. Remaining: coverage — which elements may exceed 1.0 under the one-full-brightness rule. Room unblocked. | Coverage → Design Director · 2026-07-31 | `[TV] docs/tv-sweat-refinement/c3-hdr-canvas-proposal.md` |
+| C3 | **TV canvas HDR coverage** — ruled: coverage OVER-enforces. §3's four L4 occupants and §7's ball are eligible but only two carry the shader — add score-at-goal and ball-at-payoff. Live-leg pulse stays out (scarcity is what makes L4 mean *now*). Eligibility ≠ simultaneity: explicit one-token invariant required; arbitration — momentary punch preempts sustained state. Boost stays 1.8, one value. **3D unblocked.** | Ruled · DD 2026-07-31 | DD batch-2 |
 | C4 | **Money colour is now per-surface** — TV gold, SureThing wax amber, green/red retired game-wide. Coherence is a choice, not a constraint (Allen 2026-07-28). | Approved | `[ST] .../DIRECTIONS.md` |
 | C5 | **Room re-tint from TV light in-engine** — if the rig supports it, big payoffs drive it | Open, deliberately | `[TV] DESIGN.md` §10 |
 | C6 | **Stale colour law in TV PRD §14.1** — carries the deprecated `08` green/red/gold language as binding on the brand book | Documentation conflict · could misdirect Phase 3 | `[TV] docs/.../PRD.md` §14.1 vs `[TV] DESIGN.md` header |
 | C7 | **Four repo documents still assert the revoked room palette laws** | Documentation debt | `[RM] .../SIGNOFF.md` |
+| C8 | Bloom floor — "chrome may degrade" confirmed, amended: **risk/pays joins the protected set** (§12 makes it question 4; failures 1–5 are major) | Ruled · DD 2026-07-31 | DD batch-2 |
+| C9 | **Art authority — two-tier approved:** a thin studio constitution plus one owning document per surface (one document across four registers is what killed `08`). DD drafts the room's owning doc; phone stays a stub | Approved · Allen 2026-07-31 | DD `proposal-art-authority-2026-07-31.md` (DD seat — export pending) |
 
 ---
 

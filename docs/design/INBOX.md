@@ -6,26 +6,28 @@ Items routed to this seat. Clear a line when it's registered or resolved.
 dropped. Items below marked *awaiting re-mount* need Allen to re-attach the
 referenced documents via Import before the DD will rule on them.
 
-## Pending — awaiting re-mount
+## Pending
 
-1. **C3 coverage rule (TV HDR).** Which elements may exceed 1.0 under the
-   one-full-brightness rule. **Gates TV 3D.** Needs:
-   `[TV] docs/tv-sweat-refinement/c3-hdr-canvas-proposal.md`.
-2. **Studio art-authority gap.** Nothing governs room/laptop/phone art since `08`
-   was deprecated 2026-07-24. Needs a proposal (scope + format) for Allen.
-3. **R9 — ambient rebalance (room).** Candidate; changes the 8/8-gated value
-   structure, needs approval + gate re-run. Needs:
-   `[RM] docs/6-memo/2026-07-31-room-to-design-director-R9-R10.md`.
-4. **R10 — couch-corner grazing source (room).** Candidate; same memo as R9.
-5. **Layout B: win-probability display and momentum tape — in or out, where?**
-   **Gates TV's 3C commit.** 3C's sub-agent dropped both without authority;
-   reversal cheap; PRD §4.2 names the tape, §8.4 is permissive.
-6. **Room design-review package** — R5/R6/R7-Tier-1b evidence + three questions
-   (pursue ceiling soot?; do decals justify the shared-renderer change?; current
-   state vs concept as the bar). Written repo-free for paste-in:
-   `[RM] docs/6-memo/2026-07-31-room-design-review-package.md`.
+1. **TV production typeface (T11).** Must not be Archivo; Archivo stands in.
+2. **Review backlog:** S6/S7/S8 (SureThing lobby, ink pipeline, chrome), T6 (TV
+   scene grammar evidence pack). Room re-review comes after R9/R10 land.
+3. **Room owning doc** — DD drafts it per the approved two-tier art authority (C9).
 
-## Cleared 2026-07-31 (transcribed to REGISTER.md by the orchestrator)
+## Cleared 2026-07-31, batch 2 (transcribed to REGISTER.md by the orchestrator)
+
+- C3 → ruled, 3D unblocked (coverage over-enforced; add score-at-goal +
+  ball-at-payoff; one-token invariant; boost 1.8).
+- C8 → bloom floor: risk/pays joins the protected set.
+- Layout B → **T16 ruled**, 3C commit unblocked once the tape is restored
+  (scorebug foot, no numerals, no hue, ≤L2); win-prob numeral out.
+- R5, R6 → **Design-verified** — the studio's first. R5's finding promoted to
+  standing law R12.
+- R9 → approved bounded; R10 → approved, bounce-first route.
+- Room package questions → soot dropped; decals not-yet (frusta re-place first);
+  the direction's read is the bar.
+- Art authority → **two-tier approved by Allen** (C9); phone stays a stub.
+
+## Cleared 2026-07-31, batch 1 (transcribed to REGISTER.md by the orchestrator)
 
 - Form-guide identity → **S14 spec issued** (three build gaps; reference
   implementation held in DD seat, pending hand-over).
@@ -37,7 +39,3 @@ referenced documents via Import before the DD will rule on them.
   FYI: the markup-aware scan then found the same class in `[ST] SportsbookApp.cs` —
   routed to the SureThing lead for remediation under the T15 class ruling.
 
-## Review backlog (behind the pending items)
-
-- S6/S7/S8 (SureThing lobby, ink pipeline, chrome), R5/R6 (room light passes),
-  T6 (TV scene grammar evidence pack).
