@@ -5,13 +5,13 @@
   evidence cleanup + gitignore, ProjectSettings isolated commit (`63cf1bc`,
   Allen-approved), S7 ink pipeline complete (`1090527`), defect fixes (`4eb2cba`),
   red-on-dead-leg ruling (`8822971`). Tree clean. Next: S8 OS chrome, then S9.
-  **S8 landed** (`0b693f9`); S9 triage done via two bounded sub-agents — 2 of 4
-  claimed ink defects real and fixed (ring-crescent geometry, strike overhang), 2
-  disproved by the sub-agent sampling pixels instead of trusting the lead's
-  description (wax amber misread as red; ring inside panel bounds). New capture
-  states built for Ledger, Rewards, Old Slips (first-ever pixels). All unverified —
-  slot requested, queued behind room's verification cycle. Two new DD questions
-  routed (inbox items 7–8). Lead: Claude (Opus 5).
+  **S8 + S9 ink fixes landed and pixel-verified** — ink inversion (blue marks only
+  his pick) and dead-strike sizing fixed; first-ever Ledger/Rewards/Old Slips
+  captures, all eight states navigating. Wide ring honestly reverted — the agent's
+  fix moved strokes without closing them; documented hypothesis: 2:1 downscale in
+  `make-biro-rings.py` kills the thin end-curves. Now fixing the generator (no
+  editor); ring verification folds into its next capture window. DD questions 7–8
+  outstanding. Lead: Claude (Opus 5).
 - **room-refinement:** handoff tracked (`49a7c55`); R7 wear plan committed and
   **Tier 1b committed with an honest record** — ceiling clean and verified; four
   decal defects fixed (stale-cache versioning, default shadow casting, URP BlendMode
@@ -47,9 +47,9 @@
 - **Orchestrator:** Fable 5 session in `main-2`; lead channel chartered in
   `ORCHESTRATOR.md` §3a. Completion watchers armed on all three lead terminals and
   the Design Director session.
-- **Unity queue:** surething-ui holds the slot (S9 capture verification) →
-  tv-sweat one window (3C verification + capture-harness spike). TV's 3C commit is
-  additionally gated on DD inbox item 9 (win-prob display + momentum tape ruling).
+- **Unity queue:** tv-sweat holds the slot (3C verification + capture-harness
+  spike, one window). TV's 3C commit additionally gated on DD inbox item 9. Next
+  in line: SureThing capture window for the regenerated wide ring, when requested.
 - **Blocked:** none.
 - **Rulings (Allen, 2026-07-31):** C1 — latest document governs, `DESIGN.md` §6
   stands, layout closed. C2 — interim: shipped green tolerated, cold white-grey
