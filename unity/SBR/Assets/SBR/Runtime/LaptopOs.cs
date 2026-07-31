@@ -216,17 +216,22 @@ namespace SBR.Game
             MakeDesktopIcon("Mail", "@", "Mail (soon)", new Vector2(34f, -330f), Muted, null);
             MakeDesktopIcon("Bank", "¤", "Bank (soon)", new Vector2(34f, -435f), Muted, null);
 
+            // Was rgba(0.025, 0.02, 0.05, 0.94): effectively black, and blue-tinted. That broke two
+            // laws at once — nothing on this screen may be pure black, and the room physically
+            // cannot return a saturated cool colour, so a cool-cast bar reads as composited into
+            // the scene rather than photographed in it. Uses the same lifted warm ground as the
+            // in-app tray now; the desktop is the same machine.
             RectTransform taskbar = LaptopUi.MakePanel(_desktop, "Taskbar", new Vector2(0f, 0f), new Vector2(0f, 0f),
-                new Vector2(0f, 0f), new Vector2(_width, 54f), new Color(0.025f, 0.02f, 0.05f, 0.94f));
+                new Vector2(0f, 0f), new Vector2(_width, 54f), SurfaceRaised);
             LaptopUi.MakeButton(taskbar, "Home", "HOME", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
                 new Vector2(18f, 0f), new Vector2(90f, 34f), 12, SurfaceRaised, White, null, _font);
             Text taskbarText = LaptopUi.MakeText(taskbar, "TaskbarText", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 0f), new Vector2(320f, 30f), 12, TextAnchor.MiddleCenter, Muted,
                 "SURETHING.   ·   old slips", _font);
-            // See SportsbookApp.BuildSlip's LockReason for why: MiddleCenter + the Wrap default is a
-            // real Unity legacy-Text bug (glyphs bake as slivers), and MakeButton's own centered
-            // labels avoid it only because they override to Overflow. Every standalone MiddleCenter
-            // MakeText call does the same here.
+            // Overflow rather than the Wrap default because this label is a single line that must
+            // not re-flow. (An earlier comment here blamed a Unity legacy-Text bug for the
+            // "renders only a couple of glyphs" defect; that diagnosis was wrong — the real cause
+            // was one control being drawn on top of another. See SportsbookApp.BuildSlip.)
             taskbarText.horizontalOverflow = HorizontalWrapMode.Overflow;
             LaptopUi.MakeText(taskbar, "Clock", new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
                 new Vector2(-24f, 0f), new Vector2(180f, 30f), 12, TextAnchor.MiddleRight, Muted,
@@ -524,6 +529,100 @@ namespace SBR.Game
         {
             return new Color(((rgb >> 16) & 0xff) / 255f, ((rgb >> 8) & 0xff) / 255f,
                 (rgb & 0xff) / 255f, 1f);
+        }
+    }
+
+    /// <summary>
+    /// The machine's own chrome — the rail across the top and the tray across the bottom. It
+    /// belongs to the notebook, not to whichever app is running, so it is defined once here and
+    /// every screen calls into it.
+    ///
+    /// It used to be copy-pasted into each screen's builder, which let the two copies drift: the
+    /// sportsbook drew the rail at 12px and the ledger drew the same rail at 13px, so the machine's
+    /// own furniture changed size when you switched app. The same roles also carried different
+    /// object names in each copy ("AppName" vs "Messages", "Clock" vs "SystemFacts"), which made
+    /// the duplication invisible to a name-based test.
+    ///
+    /// Chrome text is 12px by deliberate exception: the type floor is 13px for anything stating a
+    /// product fact, and 12px is allowed only for OS furniture carrying no product meaning. Every
+    /// string here — machine mark, sticker, clock, unread count, disk and update state — is set
+    /// dressing. Nothing a player needs to make a decision may be added at this size.
+    /// </summary>
+    internal static class NotebookChrome
+    {
+        public const float RailHeight = 34f;
+        public const float TrayHeight = 34f;
+
+        /// OS-furniture size. See the class note before reusing it for anything else.
+        private const int ChromeText = 12;
+
+        public const string MachineMark = "■  NOTEBOOK";
+        public const string StickerText = "PROPERTY OF NOBODY";
+
+        /// Fixed fiction, not a live clock: the shared spec pins the machine at 02:47 so every
+        /// capture and every direction concept is comparable. The trailing mark is the battery.
+        public const string ClockText = "02:47   ▰";
+
+        private const string MessagesText = "MESSAGES  1";
+        private const string SystemFactsText = "DISK 61% FULL    NO UPDATES";
+
+        public enum Running { Sportsbook, Ledger }
+
+        public static RectTransform BuildRail(RectTransform parent, float width, Font font)
+        {
+            RectTransform rail = LaptopUi.MakePanel(parent, "NotebookRail", new Vector2(0f, 1f),
+                new Vector2(0f, 1f), Vector2.zero, new Vector2(width, RailHeight),
+                LaptopOs.SurfaceRaised);
+            LaptopUi.MakeText(rail, "Machine", new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(14f, 0f), new Vector2(200f, 24f), ChromeText, TextAnchor.MiddleLeft,
+                LaptopOs.White, MachineMark, font);
+            LaptopUi.MakeText(rail, "Sticker", new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(150f, 0f), new Vector2(200f, 24f), ChromeText, TextAnchor.MiddleLeft,
+                LaptopOs.Accent, StickerText, font);
+            LaptopUi.MakeText(rail, "Clock", new Vector2(1f, .5f), new Vector2(1f, .5f),
+                new Vector2(-14f, 0f), new Vector2(140f, 24f), ChromeText, TextAnchor.MiddleRight,
+                LaptopOs.Muted, ClockText, font);
+            return rail;
+        }
+
+        /// <param name="minimize">
+        /// Invoked by the slot of the app that is already running. A tray slot for the running app
+        /// cannot "launch" it, so it drops to the desktop instead — the same thing a real taskbar
+        /// button does. This is why the running slot stays clickable rather than being disabled.
+        /// </param>
+        public static RectTransform BuildTray(RectTransform parent, float width, Font font,
+            Running running, Action openSportsbook, Action openLedger, Action minimize)
+        {
+            RectTransform tray = LaptopUi.MakePanel(parent, "NotebookTray", new Vector2(0f, 0f),
+                new Vector2(0f, 0f), Vector2.zero, new Vector2(width, TrayHeight),
+                LaptopOs.SurfaceRaised);
+
+            bool sportsbookRunning = running == Running.Sportsbook;
+            MakeSlot(tray, "SureThing", "SURETHING", 12f, 110f, sportsbookRunning,
+                sportsbookRunning ? minimize : openSportsbook, font);
+            MakeSlot(tray, "Ledger", "LEDGER", 132f, 88f, !sportsbookRunning,
+                sportsbookRunning ? openLedger : minimize, font);
+
+            LaptopUi.MakeText(tray, "Messages", new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(232f, 0f), new Vector2(210f, 24f), ChromeText, TextAnchor.MiddleLeft,
+                LaptopOs.Muted, MessagesText, font);
+            LaptopUi.MakeText(tray, "SystemFacts", new Vector2(1f, .5f), new Vector2(1f, .5f),
+                new Vector2(-14f, 0f), new Vector2(270f, 24f), ChromeText, TextAnchor.MiddleRight,
+                LaptopOs.Muted, SystemFactsText, font);
+            return tray;
+        }
+
+        /// The running app reads as pressed-in — ink ground, full-strength label. A backgrounded
+        /// app reads as raised and muted. That is the only state difference, and it is carried by
+        /// ground and weight rather than colour alone.
+        private static void MakeSlot(RectTransform tray, string name, string label, float x,
+            float width, bool running, Action onClick, Font font)
+        {
+            LaptopUi.MakeButton(tray, name, label, new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(x, 0f), new Vector2(width, 32f), ChromeText,
+                running ? LaptopOs.Ink : LaptopOs.SurfaceRaised,
+                running ? LaptopOs.White : LaptopOs.Muted,
+                onClick, font);
         }
     }
 }

@@ -61,11 +61,7 @@ namespace SBR.Game
         {
             RectTransform top = LaptopUi.MakePanel(_root, "Chrome", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 Vector2.zero, new Vector2(_root.sizeDelta.x, 140f), LaptopOs.Ink);
-            RectTransform rail = LaptopUi.MakePanel(top, "NotebookRail", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                Vector2.zero, new Vector2(1024f, 34f), LaptopOs.SurfaceRaised);
-            LaptopUi.MakeText(rail, "Machine", new Vector2(0f, .5f), new Vector2(0f, .5f), new Vector2(14f, 0f), new Vector2(200f, 24f), 12, TextAnchor.MiddleLeft, LaptopOs.White, "■  NOTEBOOK", _font);
-            LaptopUi.MakeText(rail, "Sticker", new Vector2(0f, .5f), new Vector2(0f, .5f), new Vector2(150f, 0f), new Vector2(160f, 24f), 12, TextAnchor.MiddleLeft, LaptopOs.Accent, "PROPERTY OF NOBODY", _font);
-            LaptopUi.MakeText(rail, "Clock", new Vector2(1f, .5f), new Vector2(1f, .5f), new Vector2(-14f, 0f), new Vector2(140f, 24f), 12, TextAnchor.MiddleRight, LaptopOs.Muted, "02:47   ▰", _font);
+            NotebookChrome.BuildRail(top, 1024f, _font);
             RectTransform tabs = LaptopUi.MakePanel(top, "FormTabs", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, -34f), new Vector2(1024f, 38f), LaptopOs.Surface);
             MakeTab(tabs, "FORM", Tab.Lobby, tab, run.Phase == Phase.Shop);
             MakeTab(tabs, "ENTRY", Tab.Detail, tab, run.Phase == Phase.Shop);
@@ -1019,21 +1015,8 @@ namespace SBR.Game
 
         private void BuildTaskbar()
         {
-            RectTransform taskbar = LaptopUi.MakePanel(_root, "Taskbar", new Vector2(0f, 0f), new Vector2(0f, 0f),
-                Vector2.zero, new Vector2(_root.sizeDelta.x, 34f), LaptopOs.SurfaceRaised);
-            taskbar.name = "NotebookTray";
-            LaptopUi.MakeButton(taskbar, "Home", "SURETHING", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
-                new Vector2(12f, 0f), new Vector2(110f, 22f), 12, LaptopOs.Ink, LaptopOs.White,
-                _home, _font);
-            LaptopUi.MakeButton(taskbar, "Ledger", "LEDGER", new Vector2(0f, 0.5f),
-                new Vector2(0f, 0.5f), new Vector2(132f, 0f), new Vector2(88f, 32f), 12,
-                LaptopOs.SurfaceRaised, LaptopOs.Muted, _ledger, _font);
-            LaptopUi.MakeText(taskbar, "AppName", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
-                new Vector2(232f, 0f), new Vector2(210f, 24f), 12, TextAnchor.MiddleLeft, LaptopOs.Muted,
-                "MESSAGES  1", _font);
-            LaptopUi.MakeText(taskbar, "Clock", new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                new Vector2(-14f, 0f), new Vector2(260f, 24f), 12, TextAnchor.MiddleRight, LaptopOs.Muted,
-                "DISK 61% FULL    NO UPDATES", _font);
+            NotebookChrome.BuildTray(_root, _root.sizeDelta.x, _font,
+                NotebookChrome.Running.Sportsbook, null, _ledger, _home);
         }
 
         private void MakeDot(RectTransform parent, string name, Vector2 position, Color color)
@@ -1126,17 +1109,7 @@ namespace SBR.Game
         {
             RectTransform chrome = LaptopUi.MakePanel(_root, "Chrome", new Vector2(0f, 1f),
                 new Vector2(0f, 1f), Vector2.zero, new Vector2(1024f, 140f), LaptopOs.Ink);
-            RectTransform rail = LaptopUi.MakePanel(chrome, "NotebookRail", new Vector2(0f, 1f),
-                new Vector2(0f, 1f), Vector2.zero, new Vector2(1024f, 34f), LaptopOs.SurfaceRaised);
-            LaptopUi.MakeText(rail, "Machine", new Vector2(0f, .5f), new Vector2(0f, .5f),
-                new Vector2(14f, 0f), new Vector2(200f, 24f), 13, TextAnchor.MiddleLeft,
-                LaptopOs.White, "■  NOTEBOOK", _font);
-            LaptopUi.MakeText(rail, "Sticker", new Vector2(0f, .5f), new Vector2(0f, .5f),
-                new Vector2(150f, 0f), new Vector2(200f, 24f), 13, TextAnchor.MiddleLeft,
-                LaptopOs.Accent, "PROPERTY OF NOBODY", _font);
-            LaptopUi.MakeText(rail, "Clock", new Vector2(1f, .5f), new Vector2(1f, .5f),
-                new Vector2(-14f, 0f), new Vector2(140f, 24f), 13, TextAnchor.MiddleRight,
-                LaptopOs.Muted, "02:47   ▰", _font);
+            NotebookChrome.BuildRail(chrome, 1024f, _font);
 
             RectTransform tabs = LaptopUi.MakePanel(chrome, "FormTabs", new Vector2(0f, 1f),
                 new Vector2(0f, 1f), new Vector2(0f, -34f), new Vector2(1024f, 38f), LaptopOs.Surface);
@@ -1251,23 +1224,11 @@ namespace SBR.Game
 
         private void BuildLedgerTray()
         {
-            RectTransform tray = LaptopUi.MakePanel(_root, "NotebookTray", new Vector2(0f, 0f),
-                new Vector2(0f, 0f), Vector2.zero, new Vector2(1024f, 34f), LaptopOs.SurfaceRaised);
-            LaptopUi.MakeButton(tray, "SureThing", "SURETHING", new Vector2(0f, .5f),
-                new Vector2(0f, .5f), new Vector2(12f, 0f), new Vector2(110f, 32f), 13,
-                LaptopOs.Ink, LaptopOs.White, _sportsbook, _font);
-            LaptopUi.MakeText(tray, "LedgerActive", new Vector2(0f, .5f), new Vector2(0f, .5f),
-                new Vector2(136f, 0f), new Vector2(90f, 24f), 13, TextAnchor.MiddleLeft,
-                LaptopOs.White, "LEDGER", _font);
-            LaptopUi.MakeText(tray, "Messages", new Vector2(0f, .5f), new Vector2(0f, .5f),
-                new Vector2(232f, 0f), new Vector2(150f, 24f), 13, TextAnchor.MiddleLeft,
-                LaptopOs.Muted, "MESSAGES  1", _font);
-            LaptopUi.MakeButton(tray, "Home", "HOME", new Vector2(1f, .5f), new Vector2(1f, .5f),
-                new Vector2(-300f, 0f), new Vector2(72f, 32f), 13, LaptopOs.SurfaceRaised,
-                LaptopOs.Muted, _home, _font);
-            LaptopUi.MakeText(tray, "SystemFacts", new Vector2(1f, .5f), new Vector2(1f, .5f),
-                new Vector2(-14f, 0f), new Vector2(270f, 24f), 13, TextAnchor.MiddleRight,
-                LaptopOs.Muted, "DISK 61% FULL    NO UPDATES", _font);
+            // The ledger's separate HOME button is gone: the running app's own tray slot drops to
+            // the desktop, so HOME was a second control for a job the tray already did — and only
+            // this screen had it, which is exactly the asymmetry the shared chrome removes.
+            NotebookChrome.BuildTray(_root, 1024f, _font,
+                NotebookChrome.Running.Ledger, _sportsbook, null, _home);
         }
     }
 }
