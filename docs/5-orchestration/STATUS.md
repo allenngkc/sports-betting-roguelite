@@ -84,3 +84,9 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-07-31 cycle 2 · **S11 verified closed** — spot-checked `ed07ee3` (fonts +
+  OFL licences), `a3d8876` (rulings + document layer), `b820624` (markup guard),
+  `7169c95` (policy in handoff); evidence matches report. SureThing's font-wiring
+  slot queued third (TV investigation → room R9 → SureThing fonts). Room dispatch
+  still blocked on its composer (Allen's staged draft + survey prompt). Reversal:
+  reorder the queue or veto the S11 close.
