@@ -48,3 +48,23 @@ When the current session ends, any new session takes the seat like this:
 3. Update `STATUS.md`: per-worktree state, blocked items, Need Allen.
 4. Escalate anything critical to Allen; route design questions to the Design Director.
 5. Report telegraphically: `Done / Next / Risk / Need Allen`.
+
+## 5. Messaging leads (Orca CLI)
+
+The `orca` CLI reaches lead terminals directly — this is how dispatches flow without
+Allen relaying:
+
+- `orca terminal list --worktree path:<worktree-path> --json` — find the lead's terminal.
+- `orca terminal send --terminal <id> --text "<message>" --enter` — dispatch to it.
+- `orca terminal wait --terminal <id> --for exit --timeout-ms <ms> --json` — wait on a run.
+
+Rules:
+
+- Dispatch only at natural boundaries — never interrupt a busy lead mid-task.
+- A dispatch carries the decision or task plus minimum context — never a log dump.
+- Record every dispatch in `STATUS.md` (what, to whom, why).
+- Allen's direct word to a lead outranks any orchestrator dispatch.
+- No scheduled or unattended automation without Allen's explicit approval — sweeps and
+  dispatches run when Allen or an interactive orchestrator session triggers them. The
+  previous coordinator died as an unattended automation loop; keep the capability,
+  skip the cron.
