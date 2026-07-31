@@ -923,6 +923,45 @@ namespace SBR
             couchGraze.color = new Color(0.70f, 0.74f, 0.80f);
             couchGraze.shadows = LightShadows.None;
 
+            // BAKED-ONLY BOUNCE - directional variation without a seventh visible lamp.
+            // A Baked light contributes only through the probe field's bake; Unity strips it out
+            // of the realtime light list entirely, so the player never sees a new source switch
+            // on. What is missing on the couch is a DIRECTION for the bounce to carry across the
+            // seat, not another visible lamp in the shot - Baked is the only type that gives the
+            // first without the second.
+            //
+            // Sits at y=0.58, well below BunkSlab's underside at y=1.5 (BuildCouch above), so it
+            // cannot reach either bunk. That is not a nice-to-have margin - four earlier attempts
+            // at lighting this corner were reverted for lighting the second bunk's mattress, and
+            // that history is the hard constraint on anything placed here.
+            //
+            // Aimed +Z, straight down the couch's own length, at seat height - seat top is y=0.42
+            // (BuildCouch), this sits 0.16m above it - so light arrives near-tangent to the fabric
+            // rather than square-on. That is the condition under which a normal map reads at all
+            // (standing law R12): Lambertian sensitivity to a normal perturbation scales with
+            // sin(theta) off the surface normal, and light hitting perpendicular shows no relief
+            // no matter how strong the map is. See the GRAZING WALL WASH note above for the same
+            // argument applied to the ceiling and the (reverted) right-wall graze.
+            //
+            // Known risk, stated plainly: probe lighting is spherical harmonics - a handful of
+            // low-order coefficients per probe - and is inherently low-frequency. It may land as a
+            // soft directional gradient across the cushion rather than the crisp graze a realtime
+            // spot gives (compare CouchGraze immediately above, which stays realtime for exactly
+            // that reason). Whether a gradient is enough to make the fabric weave read at all is
+            // exactly what the bake will show; this is not proven to work going in.
+            var couchBounceGo = new GameObject("CouchBounceBaked");
+            couchBounceGo.transform.position = new Vector3(-0.95f, 0.58f, -1.05f);
+            couchBounceGo.transform.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
+            var couchBounce = couchBounceGo.AddComponent<Light>();
+            couchBounce.type = LightType.Spot;
+            couchBounce.spotAngle = 100f;
+            couchBounce.innerSpotAngle = 25f;
+            couchBounce.intensity = 1.8f;
+            couchBounce.range = 3.2f;
+            couchBounce.color = new Color(0.72f, 0.75f, 0.80f);
+            couchBounce.shadows = LightShadows.None;
+            couchBounce.lightmapBakeType = LightmapBakeType.Baked;
+
             // REFLECTION PROBE - without this the room has no environment specular at all.
             // No skybox is assigned and there was no probe, so URP's reflection lookup returned
             // near-black: every surface had a broad rough specular lobe with nothing to reflect

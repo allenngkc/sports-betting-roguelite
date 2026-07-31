@@ -238,6 +238,84 @@ def region_mean_luminance(img, box):
     return total / count
 
 
+def region_relief_pct(img, box):
+    """Relief% for a region: 100 * mean(|dL| at a 4px stride) / mean(L).
+
+    THESE NUMBERS ARE NOT COMPARABLE TO THE RELIEF FIGURES IN THE PHASE DOCS.
+    PHASE_A_FINDINGS.md and PHASE_B_INDIRECT_LIGHT.md quote 8.7% for the right
+    wall and 2.3% for the couch; this function reports about 10.0% and 2.6% for
+    the same pixels. Nothing regressed and nothing improved - those figures were
+    measured at stride 3 over EVERY pixel, while this strides 4 over the 2-stride
+    grid, and a coarser stride crosses more surface detail per sample. Both are
+    self-consistent; only one of them is reproducible on demand, which is why the
+    harness uses this one.
+
+    Only ever read this metric as a RATIO between two captures measured by this
+    same function. The absolute value is an artefact of the sampling, so do not
+    compare it against a published figure and conclude anything changed.
+
+    Mean luminance (region_mean_luminance above) cannot see fine surface
+    detail -- a flat grey patch and a richly normal-mapped patch can share
+    the same mean. Relief is the thing actually being judged, so measure it
+    directly: take the absolute luminance difference between pixel pairs 4
+    apart, both horizontally and vertically, average over every sampled
+    pair, and divide by the region's mean luminance.
+
+    SAMPLE GRID: region_mean_luminance strides both axes by 2 -- its
+    docstring explains why that stride is part of the gate, not an
+    implementation detail. This function's stride-4 pairs MUST land on that
+    same 2-stride grid, or every lookup silently misses and the region
+    reports 0.00 -- that is exactly the failure a previous attempt at this
+    metric hit. 4 is a multiple of 2, so pairing grid point (x, y) with
+    (x+4, y) and (x, y+4) always lands on a sample that grid already took;
+    no separate/independent sample set is introduced here.
+
+    Raises ValueError if a region yields zero valid stride-4 pairs, instead
+    of silently returning 0.0 -- a 0.00 reading must mean "measured and
+    genuinely flat", never "the sampling missed".
+    """
+    crop = img.crop(box)
+    w, h = crop.size
+    px = crop.load()
+
+    # Luminance at every point on the same 2x2 grid region_mean_luminance
+    # samples, keyed by local (x, y), so the mean and the stride-4 diffs
+    # below are computed from identical samples.
+    lum = {}
+    for y in range(0, h, 2):
+        for x in range(0, w, 2):
+            r, g, b = px[x, y]
+            lum[(x, y)] = 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+    if not lum:
+        raise ValueError(f"region {box} is empty after cropping")
+    mean_l = sum(lum.values()) / len(lum)
+
+    diff_total = 0.0
+    diff_count = 0
+    for (x, y), l in lum.items():
+        right = lum.get((x + 4, y))
+        if right is not None:
+            diff_total += abs(l - right)
+            diff_count += 1
+        down = lum.get((x, y + 4))
+        if down is not None:
+            diff_total += abs(l - down)
+            diff_count += 1
+
+    if diff_count == 0:
+        raise ValueError(
+            f"region {box} yielded zero stride-4 sample pairs -- grid/stride "
+            "misalignment (see region_relief_pct docstring); refusing to "
+            "silently report 0.0"
+        )
+    if mean_l == 0:
+        raise ValueError(f"region {box} has zero mean luminance; relief% is undefined")
+
+    mean_abs_dl = diff_total / diff_count
+    return 100.0 * mean_abs_dl / mean_l
+
+
 # ---------------------------------------------------------------------------
 # Result plumbing + table printing.
 # ---------------------------------------------------------------------------
@@ -425,13 +503,42 @@ def main():
                 detail,
             ))
 
+        # --- R10: relief% -- fine surface detail, INFORMATIONAL ONLY ---------
+        # Mean luminance (R9-B above) cannot see relief at all; this is the metric
+        # the room is actually judged on. Always reported, never fails the run and
+        # never affects the exit code -- there is no ratified tolerance for it yet,
+        # only the hand-measured sanity values this was built to reproduce.
+        if reference_captures_dir is None:
+            results.append(skip("R10", "relief% (informational)", "no --reference given"))
+        else:
+            ref_img = load_capture(reference_captures_dir, R9B_IMAGE)
+            cur_img = load_capture(captures_dir, R9B_IMAGE)
+            detail = []
+            for name, box in R9B_REGIONS.items():
+                ref_relief = region_relief_pct(ref_img, box)
+                cur_relief = region_relief_pct(cur_img, box)
+                ratio = cur_relief / ref_relief if ref_relief != 0 else float("inf")
+                detail.append(
+                    f"{name:20s} reference={ref_relief:6.2f}% current={cur_relief:6.2f}% "
+                    f"ratio={ratio:5.2f}x"
+                )
+            results.append(GateResult(
+                "R10", "relief% (informational)",
+                "INFO",
+                "n/a -- informational, never fails",
+                "see detail below",
+                detail,
+            ))
+
     except (FileNotFoundError, ValueError, AssertionError, KeyError, json.JSONDecodeError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         sys.exit(1)
 
     print_table(results)
 
-    exit_code = 0 if all(r.status in ("PASS", "SKIP") for r in results) else 1
+    # "INFO" (R10) is deliberately excluded from ever failing the run -- it has no
+    # ratified tolerance, only sanity values it should reproduce approximately.
+    exit_code = 0 if all(r.status in ("PASS", "SKIP", "INFO") for r in results) else 1
     sys.exit(exit_code)
 
 
