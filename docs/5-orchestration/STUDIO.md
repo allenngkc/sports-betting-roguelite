@@ -22,10 +22,18 @@ reverted.
   post-implementation design review. Does not assign production work to leads —
   approved specs flow through the orchestrator.
 - **Worktree leads — Claude (Opus 5), one per active worktree.**
-  Own the local plan, file ownership, delegation (at most two bounded sub-agents),
-  review, verification, commits, and the integration handoff. Implement approved design
-  specs; they make essentially no design decisions. Contract lives in the worktree's
-  `handoff.md`.
+  Own the local plan, file ownership, delegation, review, verification, commits, and
+  the integration handoff. Implement approved design specs; they make essentially no
+  design decisions. Contract lives in the worktree's `handoff.md`.
+- **Sub-agents — Sonnet 5 by default, at most two per lead at once.**
+  Delegation is the expected operating mode, not an option (Allen, 2026-07-31):
+  implementation, testing, validation, bulk reading, and other grunt work go to
+  bounded sub-agents; the lead plans, dispatches, reviews diffs, and integrates. A
+  lead doing sustained grunt work itself is a contract deviation. Use an Opus 5
+  sub-agent only for genuinely hard dispatches (architecture-adjacent, subtle
+  concurrency, gnarly debugging). Every dispatch names allowed files, forbidden
+  files, required evidence, and an exit gate; sub-agents never commit unless the
+  dispatch says so.
 
 ## Worktree registry
 
