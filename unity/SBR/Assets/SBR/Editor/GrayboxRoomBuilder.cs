@@ -284,7 +284,8 @@ namespace SBR
                                     float tiling = 1f,
                                     Texture2D normalMap = null, float normalScale = 1f,
                                     Texture2D maskMap = null, Texture2D occlusionMap = null,
-                                    float alphaClip = -1f, bool transparent = false)
+                                    float alphaClip = -1f, bool transparent = false,
+                                    bool multiply = false)
         {
             Shader shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null)
@@ -380,16 +381,44 @@ namespace SBR
 
             // Transparent is reserved for damp blooms, where a soft falloff IS the effect. It
             // costs depth-write, so these get no SSAO and must stay few.
-            if (transparent)
+            //
+            // MULTIPLY, NOT ALPHA BLEND, for anything that is meant to be a STAIN. Alpha blending
+            // a Lit surface does not darken what is behind it - it REPLACES it with a second lit
+            // surface. The ceiling soot proved this the expensive way: albedo 0.044, but with no
+            // occlusion map and no normal map it was a flatter, less-occluded surface than the
+            // ceiling underneath, so the "soot" rendered 5-20 luminance levels BRIGHTER than the
+            // ceiling it was dirtying, as a uniform film bounded by the quad's own outline.
+            // Multiply makes the decal a filter over the existing surface, which is what dirt
+            // physically is, and URP's _ALPHAMODULATE_ON makes alpha 0 mean "leave it alone" -
+            // so the quad border becomes invisible for free instead of needing to be hidden.
+            if (transparent || multiply)
             {
                 mat.SetFloat("_Surface", 1f);
-                mat.SetFloat("_Blend", 0f);
-                mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
                 mat.SetFloat("_ZWrite", 0f);
                 mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
                 mat.SetOverrideTag("RenderType", "Transparent");
                 mat.renderQueue = (int)RenderQueue.Transparent;
+
+                if (multiply)
+                {
+                    // URP's BaseShaderGUI.BlendMode is Alpha=0, Premultiply=1, Additive=2,
+                    // Multiply=3 - NOT the order you would guess. Setting 2 here gave One/One,
+                    // i.e. additive, which brightens exactly what a stain is meant to darken.
+                    // The postprocessor derives _SrcBlend/_DstBlend and _ALPHAMODULATE_ON from
+                    // this field on import, so this number is the one that actually matters.
+                    mat.SetFloat("_Blend", 3f); // BlendMode.Multiply
+                    mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.DstColor);
+                    mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.Zero);
+                    mat.EnableKeyword("_ALPHAMODULATE_ON");
+                }
+                else
+                {
+                    mat.SetFloat("_Blend", 0f);
+                    mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                    mat.SetFloat("_DstBlend",
+                                 (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                    mat.DisableKeyword("_ALPHAMODULATE_ON");
+                }
             }
 
             if (doubleSided)

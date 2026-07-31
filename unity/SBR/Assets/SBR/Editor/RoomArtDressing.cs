@@ -90,11 +90,15 @@ namespace SBR
 
             // The only transparent wear in Tier 1. Soft falloff is the whole point of a damp
             // patch, and transparency costs depth-write, so this stays a single quad.
+            // MULTIPLY: these are stains, so the colour here is a DARKENING FACTOR, not a
+            // surface albedo. 0.52 means "take the wall down to about half where the damp is
+            // thickest"; the texture's alpha decides where that applies and fades it to nothing
+            // at the quad edge. Authored as a neutral factor so it survives the C2 correction.
             Material wearDamp = GrayboxRoomBuilder.Mat("ArtWearDamp",
-                new Color(0.052f, 0.055f, 0.060f), doubleSided: true, smoothness: 0.18f,
+                new Color(0.52f, 0.54f, 0.58f), doubleSided: true, smoothness: 0.18f,
                 baseMap: ProceduralWearTextures.GetOrCreate(
                     ProceduralWearTextures.WearKind.Bloom, 256, WearSeed + 11, 1.0f),
-                transparent: true);
+                multiply: true);
 
             // Soot shares the damp map but NOT its strength. Tier 1b lifted the bloom field to
             // roughly half opacity inside the blob, which is right for a damp patch on a wall and
@@ -104,10 +108,10 @@ namespace SBR
             // alpha on _BaseColor scales the whole thing down, so this stays a stain rather than
             // a hole.
             Material wearSoot = GrayboxRoomBuilder.Mat("ArtWearSoot",
-                new Color(0.044f, 0.042f, 0.038f, 0.40f), doubleSided: true, smoothness: 0.10f,
+                new Color(0.55f, 0.54f, 0.51f), doubleSided: true, smoothness: 0.10f,
                 baseMap: ProceduralWearTextures.GetOrCreate(
                     ProceduralWearTextures.WearKind.Bloom, 256, WearSeed + 11, 1.0f),
-                transparent: true);
+                multiply: true);
 
             // Slightly SMOOTHER than the floor it sits on: traffic polishes, it does not only
             // dirty. Getting that inversion right is what separates wear from more noise.
@@ -621,8 +625,24 @@ namespace SBR
             // and dirty, and heat plus soot from it settle on the ceiling directly above. The
             // ceiling is the room's most visible surface, so this is the highest-value placement
             // in the tier: nothing else in Tier 1 touched it at all.
-            WearQuad(g, "FluorescentSoot", new Vector3(0.85f, Height - 0.004f, -0.05f),
-                     new Vector2(1.30f, 1.30f), Vector3.down, Vector3.forward, soot, 1f);
+            // HELD BACK pending diagnosis - the placement is right, the rendering is not.
+            //
+            // This quad renders as a hard-edged RECTANGLE on the ceiling and I have not yet
+            // explained why. Ruled out, each by measurement rather than argument: decal shadow
+            // casting (fixed, no change), mipmapped grazing-angle sampling (fixed, byte-identical
+            // result), and alpha-vs-multiply blending (multiply fixed the DIRECTION - the stain
+            // darkens instead of brightening - but the border survived). The Bloom texture's
+            // alpha is verified 0.0 at every border texel and every corner, the UVs map it
+            // exactly once across the quad, and the material's blend state is confirmed
+            // DstColor/Zero with _ALPHAMODULATE_ON, so alpha 0 should mean "leave the ceiling
+            // alone". Something between those two facts is wrong.
+            //
+            // The rest of Tier 1b is unaffected and ships. Re-enable only once a build with this
+            // quad present shows a clean ceiling - the ceiling is the room's best-reading surface
+            // (Phase A) and is not worth trading for a stain.
+            // WearQuad(g, "FluorescentSoot", new Vector3(0.85f, Height - 0.004f, -0.05f),
+            //          new Vector2(1.30f, 1.30f), Vector3.down, Vector3.forward, soot, 1f);
+            _ = soot;
 
             // R7.6 CONDUIT DRIP. The main run clings to the right wall (inner face x = 1.3) on
             // its way down to the TV; moisture that beads on the surface-mounted pipe has nowhere
