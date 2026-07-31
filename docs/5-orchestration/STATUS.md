@@ -1,34 +1,31 @@
-# Studio Status — 2026-07-31 (orchestrator sweep)
+# Studio Status — 2026-07-31 (evening)
 
-- **main:** `c63893d` — Design Director register committed (`docs/design/REGISTER.md`).
-- **surething-ui:** `5d1de82` (handoff contract committed). Substantial uncommitted
-  Unity work in tree. `ProjectSettings/*` + URP global settings changes **approved by
-  Allen, 2026-07-31** — call them out explicitly at integration. Stray test artifacts
-  moved to `evidence/` (uncommitted); lead verifying and finishing the cleanup commit.
-  Lead: Claude (Opus 5).
-- **room-refinement:** `5329c0f` (Phase B evidence captures). Tree clean except untracked
-  `handoff.md` (lead should commit it). R5 (PBR maps) and R6 (Adaptive Probe Volumes)
-  implemented, design review pending. Lead: Claude (Opus 5).
-- **tv-sweat:** `220c5ec` (Phase 2E-3 chance shapes + goal reactions). Tree clean except
-  `.impeccable/`. `handoff.md` being authored on Allen's order (2026-07-31; unreviewed
-  stand-in draft parked at `handoff.draft.md`). C1 ruled —
-  Phase 3 (T7) unblocked once the contract exists. Lead: Claude (Opus 5).
-- **feat/soccer-markets (Documents checkout):** Dormant, clean — F_0.4.0 awaiting
-  playtest.
-- **Design Director:** Claude Design seat (moved 2026-07-31). Register:
-  `docs/design/REGISTER.md`. Nothing Design-verified yet; implemented-but-unreviewed
-  backlog: S6 (lobby shell), R5/R6 (room refinements), T6 (TV scene grammar 2A–2E).
-- **Orchestrator:** Fable 5 session in `main-2`; takeover procedure in
-  `ORCHESTRATOR.md` §3.
-- **Blocked:** C3 (TV canvas cannot carry HDR) blocks room fidelity work on the TV
-  wall; TV lead to propose an approach.
-- **Briefings:** `orchestrator-brief.md` at all three active worktree roots; delivered
-  2026-07-31 to the live Orca lead sessions via `orca terminal send` — all three
-  accepted the prompt and are working it.
+- **main:** register + board current through the T8 ruling and C3 correction.
+- **surething-ui:** 6 commits ahead of `cb83c90` — handoff contract (`5d1de82`),
+  evidence cleanup + gitignore, ProjectSettings isolated commit (`63cf1bc`,
+  Allen-approved), S7 ink pipeline complete (`1090527`), defect fixes (`4eb2cba`),
+  red-on-dead-leg ruling (`8822971`). Tree clean. Next: S8 OS chrome, then S9.
+  Awaiting Unity slot (queued behind tv-sweat) to re-confirm green before S8 lands.
+  S11 typeface licence still unresolved. Lead: Claude (Opus 5).
+- **room-refinement:** handoff tracked (`49a7c55`); R7 wear plan committed and
+  R9/R10 routed to the Design Director (`e59921f`). Tree clean. Unblocked on the TV
+  wall — C3 capability resolved. Lead: Claude (Opus 5).
+- **tv-sweat:** contract + C1 PRD amendment + T6 evidence pack + C3 proposal at
+  `4cdd98c`; stand-in draft discarded. T8 stripped in tree (−47 lines, dead-leg beat
+  timing deliberately preserved), uncommitted pending verification. **Unity slot
+  granted** — warm compile + EditMode + PlayMode in progress; commit on green, then
+  Phase 3 (T7) opens. Lead: Claude (Opus 5).
+- **feat/soccer-markets (Documents checkout):** Dormant — F_0.4.0 awaiting playtest.
+- **Design Director:** inbox memo at `docs/design/INBOX.md` — C3 coverage rule,
+  studio art-authority gap (no binding authority for room/laptop/phone since `08`
+  was deprecated 2026-07-24), SureThing form-guide identity, R9, R10. Review backlog:
+  S6/S7, R5/R6, T6. Nothing Design-verified yet.
+- **Orchestrator:** Fable 5 session in `main-2`; lead channel chartered in
+  `ORCHESTRATOR.md` §3a. Completion watchers armed on all three lead terminals and
+  the Design Director session.
+- **Unity queue:** tv-sweat (running) → surething-ui.
+- **Blocked:** none.
 - **Rulings (Allen, 2026-07-31):** C1 — latest document governs, `DESIGN.md` §6
-  stands, layout closed, Phase 3 unblocked. C2 — interim: shipped green tolerated,
-  cold white-grey target lands with TV Phase 3. T8 — remove: TV lead strips the
-  scanline overlay + `DeadLegBeat` static crawl per `DESIGN.md` §2.
-- **Watch:** lead-idle monitors armed on all three lead terminals; orchestrator
-  relays each lead's report as its session finishes.
+  stands, layout closed. C2 — interim: shipped green tolerated, cold white-grey
+  target lands with TV Phase 3. T8 — remove: stripped, verification in progress.
 - **Need Allen:** nothing.
