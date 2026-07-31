@@ -33,10 +33,13 @@
   PlayMode baseline-equal ex-spike; L4 guard held — the canvas rebuild widened
   nothing). Commit gated on the DD's Layout B ruling (inbox pending item 5).
   **Capture-harness spike succeeded both arms** — PlayMode capture survives domain
-  reload; interactive GPU booking **stood down** (Allen, 2026-07-31); visual
-  evidence is now repeatable and self-serve. Now: T15 remediation + markup-aware
-  palette scan + seated-camera sweat capture build (no editor until verification).
-  3D awaits the DD's C3 ruling. Lead: Claude (Opus 5).
+  reload; interactive GPU booking **stood down** (Allen, 2026-07-31). T15
+  remediated; markup-aware palette scan written (and immediately caught the same
+  class in `[ST] SportsbookApp.cs` — routed to SureThing). Sweat-capture harness
+  built: `[Explicit]`-gated (protects the flake-prone suite), reuses room's exact
+  seated camera through the live URP/HDR path, no hooks into gated files. **In the
+  editor now verifying harness + scan.** 3D awaits the DD's C3 ruling.
+  Lead: Claude (Opus 5).
 - **feat/soccer-markets (Documents checkout):** Dormant — F_0.4.0 awaiting playtest.
 - **Design Director:** **five rulings issued 2026-07-31**, transcribed to the
   register by the orchestrator — S11 closed (Archivo + Archivo Narrow, OFL), S14
@@ -49,9 +52,8 @@
 - **Orchestrator:** Fable 5 session in `main-2`; lead channel chartered in
   `ORCHESTRATOR.md` §3a. Completion watchers armed on all three lead terminals and
   the Design Director session.
-- **Unity queue:** editor free (TV released clean). Next requests expected:
-  SureThing capture window (wide-ring evidence read + S9 work), TV verification
-  window (T15 + sweat capture) — first to announce takes it, orchestrator grants.
+- **Unity queue:** tv-sweat holds the slot (harness + markup-scan verification).
+  Next expected: SureThing capture window (wide-ring evidence read + S9 work).
 - **Blocked:** none.
 - **Rulings (Allen, 2026-07-31):** C1 — latest document governs, `DESIGN.md` §6
   stands, layout closed. C2 — interim: shipped green tolerated, cold white-grey

@@ -34,6 +34,8 @@ referenced documents via Import before the DD will rule on them.
   `--toner-3`, `$0` in toner).
 - Naming → **S16 closed**: LEDGER only; S9 unblocked.
 - Slip-strip raw-hex → **T15 ruled violation, T8 class**; scan extended to markup.
+  FYI: the markup-aware scan then found the same class in `[ST] SportsbookApp.cs` —
+  routed to the SureThing lead for remediation under the T15 class ruling.
 
 ## Review backlog (behind the pending items)
 
