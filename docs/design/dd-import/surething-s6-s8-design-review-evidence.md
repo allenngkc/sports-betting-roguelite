@@ -3,7 +3,7 @@
 **From:** SureThing UI lead · **Date:** 2026-07-31 · **HEAD:** `7169c95` (+ one uncommitted change, noted below)
 **Suites:** EditMode 75/75 · PlayMode 38/38
 **Captures:** `surething-s6-s8-captures/` — eight flat 1024×704 renders of the real UI, plus one angled main-camera render in the room
-**Visual status:** `PRE-TYPOGRAPHY` — every capture renders in Unity's `LegacyRuntime.ttf` fallback, **not** the ruled production faces. Read the closing section before drawing conclusions about type.
+**Visual status:** `TYPOGRAPHY LANDED` — captures render in the ruled production faces, Archivo and Archivo Narrow. Structure and voice can be reviewed together.
 
 ---
 
@@ -57,15 +57,29 @@ The other three document-layer elements are in: the marked wash, the wax highlig
 
 ---
 
-## The typography caveat — read before judging any capture
+## Typography — now wired, with one caveat
 
-Every image here renders in `LegacyRuntime.ttf`. The ruled faces (Archivo + Archivo Narrow, OFL 1.1) are committed but **not yet wired**; that needs an editor session, which is queued.
+The ruled faces are live. `--font-data` is Archivo (labels, copy, OS chrome) and `--font-cond` is
+Archivo Narrow (figures, prices, team names, terminal-state words), routed through one seam so the
+two voices are one hand doing different jobs rather than a pairing.
 
-So these captures are evidence of **structure, hierarchy, geometry and colour**. They are **not** evidence of the surface's voice, and the direction's most recognisable trait — a condensed figure set against a roman data face — is absent from all of them. The two-voice seam is already wired structurally (`_font` / `_fontCond` route to the right elements) and both currently resolve to the same fallback, so the change will be one assignment and every glyph on the surface will move.
+**Wiring them broke three display elements, which is worth knowing because of how it failed.**
+Archivo's line metrics are taller than the fallback's, and Unity's `Text` truncation clips whole
+*lines* — so a box shorter than one line of its own font renders **nothing at all**, not a clipped
+glyph. The masthead and the payout figure silently vanished, and every test stayed green, because
+the objects existed and held the right strings. Found by comparing pixels, not by the suite.
 
-A second caveat on those faces: `google/fonts` ships no static instances, so both are variable fonts, and Unity's legacy UGUI `Text` renders only a font's default instance. The 400–700 weight range the design system treats as a usable channel is **not** addressable on this surface. It costs nothing today because tier is carried by size, colour and position — but if a spec asks for a weight tier, the answer is TextMeshPro font assets, not a TTF per weight.
+Fixed at the helper: a box may still clip a long wrapped paragraph, but one too short for its *first*
+line now falls back to overflow instead of rendering emptiness. Authored heights and positions are
+unchanged; only the failure mode is. An audit of every text box on the surface found exactly three
+at risk, all three being the ones that had vanished.
 
-**Recommendation:** review S6/S7/S8 on structure now, and treat type as a separate pass once the wiring lands. I will refresh this capture set at that point.
+**The remaining caveat:** `google/fonts` ships no static instances, so both are variable fonts, and
+Unity's legacy UGUI `Text` renders only a font's default instance. The 400–700 weight range the
+design system treats as a usable channel is **not** addressable on this surface. It costs nothing
+today, because tier is carried by size, colour and position rather than weight — but if a spec asks
+for a weight tier, the answer is TextMeshPro font assets with named instances, not a TTF per weight
+and not `FontStyle.Bold`.
 
 ---
 
