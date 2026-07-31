@@ -1,0 +1,52 @@
+/* TYPE — two surfaces, two jobs, one fact floor.
+   THE FACT-FLOOR RULE  any text stating a product fact is >= 13px. 12px exists only for OS chrome
+   carrying no product meaning. Nothing goes below 12px at all. Written after an audit found 24
+   sub-floor rules in a direction that had already passed review, including an 8.5px disabled reason. */
+:root{
+  /* SureThing — px on the fixed 1024x704 laptop canvas (DESIGN.md "Typography") */
+  --st-size-payout:31px;   /* potential payout, the one loud margin figure */
+  --st-size-mast:26px;     /* SureThing Form masthead (direction-1 rendered 25px) */
+  --st-size-stake:26px;    /* stake figure in the margin */
+  --st-size-figure:21px;   /* persistent bank / target */
+  --st-size-price:19px;    /* team names and prices */
+  --st-size-row:18px;      /* combined odds and margin row values */
+  --st-size-leg:16px;      /* margin legs, action labels */
+  --st-size-fact:13px;     /* FLOOR for product facts: labels, records, reasons, market nav */
+  --st-size-chrome:12px;   /* OS chrome only. Never product meaning. */
+  --st-lh-tight:1; /* @kind other */
+  --st-lh-fig:1.1; /* @kind other */
+  --st-lh-copy:1.45; /* @kind other */
+  --st-track-name:.03em; /* @kind other */   /* team names, prices, masthead */
+  --st-track-rec:.08em; /* @kind other */    /* records, secondary facts */
+  --st-track-tab:.11em; /* @kind other */    /* section tabs */
+  --st-track-label:.12em; /* @kind other */  /* field keys, column heads */
+  --st-track-action:.14em; /* @kind other */ /* action labels */
+  --st-track-head:.15em; /* @kind other */   /* MY MARKS margin header */
+
+  /* TV — reference px against the 980x550 world-space canvas (VISUAL-DESIGN §3) */
+  --tv-size-score:36px;
+  --tv-size-team:28px;
+  --tv-size-clock:28px;
+  --tv-size-need:28px;
+  --tv-size-cashout:29px;
+  --tv-size-risk:24px;
+  --tv-size-progress:23px;
+  --tv-size-event:22px;
+  --tv-size-leg:19px;
+  --tv-size-eyebrow:15px;
+  /* TV hierarchy ratios (DESIGN.md §5) — the score is the largest element on the surface at all
+     times and nothing outgrows it, including cash-out. Ratios are the law; the px above are one
+     provisional instantiation of it and the two tables do not perfectly agree. */
+  --tv-ratio-score:1; /* @kind other */
+  --tv-ratio-cashout:.70; /* @kind other */
+  --tv-ratio-team:.55; /* @kind other */
+  --tv-ratio-clock:.50; /* @kind other */
+  --tv-ratio-need:.50; /* @kind other */
+  --tv-ratio-progress:.40; /* @kind other */
+  --tv-ratio-risk:.40; /* @kind other */
+  --tv-ratio-event:.36; /* @kind other */
+  --tv-ratio-leg:.34; /* @kind other */
+  --tv-ratio-label:.22; /* @kind other */
+  --tv-track-label:.16em; /* @kind other */
+  --tv-track-name:.02em; /* @kind other */
+}

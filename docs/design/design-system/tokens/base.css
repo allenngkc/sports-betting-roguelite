@@ -1,0 +1,6 @@
+/* Element defaults. Deliberately thin: this system's components carry their own styling and the
+   runtime is Unity UGUI, not a browser. Links exist only in documentation surfaces. */
+a{color:var(--biro);text-decoration:underline;text-decoration-color:var(--biro-deep);text-underline-offset:3px}
+a:hover{color:var(--wax-lit);text-decoration-color:var(--wax-deep)}
+a:focus-visible{outline:var(--focus-w) solid var(--focus-ring);outline-offset:var(--focus-offset)}
+::selection{background:var(--biro-deep);color:var(--toner)}

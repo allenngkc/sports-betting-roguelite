@@ -1,0 +1,32 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400..700&family=Archivo+Narrow:wght@400..700&display=swap");
+
+/* PRODUCTION FACES — RULED 2026-07-31 (Design Director, S11-A), under S11: no licence-encumbered
+   typefaces anywhere in the product. BELL CENTENNIAL IS DROPPED and is not to be revived; the
+   licensing risk that made it an open item is now a closed decision, not a pending one.
+
+   SureThing laptop: ARCHIVO (data) + ARCHIVO NARROW (condensed). SIL OFL 1.1.
+   Why this pair, against the brief Bell Centennial was chosen for:
+   · Bell Centennial's ink traps existed to hold small type together on cheap absorbent paper. The
+     equivalent problem here is small type on an angled, graded, bloomed surface. No OFL face
+     reproduces ink traps, so this picks for the FUNCTION rather than the look: Archivo is drawn
+     specifically for high performance at small sizes and in headlines.
+   · It is a real superfamily — Archivo and Archivo Narrow share proportions, metrics and one hand —
+     so the document's two voices (roman labels, condensed figures) are one type system, which is
+     exactly what a printed directory is. A Franklin-revival-plus-unrelated-condensed pairing is not.
+   · Tabular figures across both widths. Values change in place on both surfaces; non-tabular figures
+     make the whole thing twitch.
+   · Weight is a usable channel (400..700) for the tiers, so dimming is not the only lever.
+   · It is on neither exhausted-defaults list (SHARED-SPEC's, nor TV DESIGN.md §5's).
+
+   TV face: STILL OPEN. DESIGN.md §5 specifies characteristics, not a file, and this ruling does not
+   close it. It must NOT be Archivo: the laptop and the TV are required to feel like the same hand
+   doing different jobs, and sharing one superfamily across both collapses that split. Archivo is
+   used below as the TV's PLACEHOLDER only, pending that pick. */
+:root{
+  --font-data:"Archivo",system-ui,sans-serif;
+  --font-cond:"Archivo Narrow",var(--font-data);
+  --font-tv:"Archivo","Archivo Narrow",system-ui,sans-serif;
+  --font-tv-cond:"Archivo Narrow",var(--font-tv);
+  --font-mono:ui-monospace,Consolas,"SF Mono",monospace;
+  --numerals-tabular:tabular-nums; /* @kind other */
+}

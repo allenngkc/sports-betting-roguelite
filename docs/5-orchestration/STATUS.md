@@ -39,9 +39,12 @@
   tape restore), R5/R6 **Design-verified — the studio's first**, R9/R10 approved
   bounded, R12 standing law, two-tier art authority **approved by Allen** (C9; DD
   drafts the room's owning doc, phone stays a stub). Remaining on DD: TV typeface
-  (not Archivo), review backlog (S6/S7/S8, T6), room owning doc. Exports still
-  pending from the DD seat: S14 reference implementation +
-  `proposal-art-authority-2026-07-31.md`.
+  (not Archivo), review backlog (S6/S7/S8, T6), room owning doc. **Design system
+  exported and landed** at `docs/design/design-system/` (canonical, on main):
+  tokens, component library (incl. built `TvMomentumTape.jsx`), guideline-card
+  laws, runnable UI kits for both surfaces, regenerated ink sprites, the
+  art-authority proposal, and an adherence lint config. Leads reference it
+  cross-worktree; do not fork copies.
 - **Orchestrator:** Fable 5 session in `main-2`; lead channel chartered in
   `ORCHESTRATOR.md` §3a. Completion watchers armed on all three lead terminals and
   the Design Director session.
