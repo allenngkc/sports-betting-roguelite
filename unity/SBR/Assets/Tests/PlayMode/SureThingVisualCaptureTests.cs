@@ -64,6 +64,40 @@ namespace SBR.Tests.PlayMode
             Assert.IsNotNull(wideRing);
             Assert.IsNotNull(wideRing.sprite);
             StringAssert.StartsWith("ring-wide-", wideRing.sprite.name);
+
+            // Instrumentation for the open wide-ring defect: the ring does not close on screen,
+            // and every static explanation has now been falsified. The sprite downsamples to a
+            // clean ellipse at exactly this rect size; its import settings are byte-identical to
+            // ring-price, which renders correctly; the mesh is FullRect and mipmaps are off. So the
+            // fault is in what the rect and its ancestors actually resolve to at runtime, which
+            // cannot be read from source. Dump it rather than guess again — the last two
+            // hypotheses were both wrong and one of them was acted on before it was tested.
+            {
+                RectTransform ringRect = wideRing.rectTransform;
+                Sprite sprite = wideRing.sprite;
+                var chain = new System.Text.StringBuilder();
+                chain.AppendLine("=== WIDE RING DIAGNOSTIC ===");
+                chain.AppendLine($"sprite={sprite.name} texture={sprite.texture.width}x{sprite.texture.height} " +
+                    $"rect={sprite.rect} ppu={sprite.pixelsPerUnit} pivot={sprite.pivot} " +
+                    $"border={sprite.border} packed={sprite.packed} tightCount={sprite.triangles.Length}");
+                chain.AppendLine($"image type={wideRing.type} preserveAspect={wideRing.preserveAspect} " +
+                    $"fillCenter={wideRing.fillCenter} useSpriteMesh={wideRing.useSpriteMesh} " +
+                    $"pixelsPerUnitMultiplier={wideRing.pixelsPerUnitMultiplier}");
+                Transform walk = ringRect;
+                while (walk != null)
+                {
+                    var rt = walk as RectTransform;
+                    chain.AppendLine(rt != null
+                        ? $"[{walk.name}] size={rt.rect.width:F1}x{rt.rect.height:F1} " +
+                          $"anchoredPos={rt.anchoredPosition} anchorMin={rt.anchorMin} " +
+                          $"anchorMax={rt.anchorMax} pivot={rt.pivot} localScale={rt.localScale} " +
+                          $"mask2D={(walk.GetComponent<RectMask2D>() != null)} " +
+                          $"mask={(walk.GetComponent<Mask>() != null)}"
+                        : $"[{walk.name}] (no RectTransform) localScale={walk.localScale}");
+                    walk = walk.parent;
+                }
+                Debug.Log(chain.ToString());
+            }
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "02-entry-selected-wide-ring", capturedPaths);
 
