@@ -140,3 +140,8 @@ Recorded here rather than edited directly, per STUDIO.md's shared-docs rule:
    the replacement. **This is a studio-level gap, not a TV one** — flagged for the Design Director.
 3. **Unified post-process grade** — spec at `docs/tv-sweat-refinement/unified-grade-spec.md`, needs a
    global volume in `Room.unity`. Room lead owns implementation; this worktree owns the spec.
+4. **`UnityEngine.Random` survives at `TvSweatScreen.cs` `_emissSeed`** (idle emission flicker phase).
+   Found while removing T8, which took out the other use. PRD §4.3 bans the API for a *discrete scene
+   choice*; a flicker phase seed is not one, so it was left alone rather than widening T8's scope.
+   Consequence worth knowing: the idle flicker differs run to run. Phase 3 decides whether to move it
+   onto the presentation key.

@@ -246,8 +246,9 @@ namespace SBR.Game
         [Tooltip("The settle card after the round's last sweat (target met / the bookie floats you).")]
         public float settleCardDuration = 3.0f;
         public float wonFloodDuration = 0.3f;
+        [Tooltip("The dark hold on a dead leg. T8: kept at its original length after the static "
+            + "crawl was removed — the hold is pacing, the static was decoration.")]
         public float deadStaticDuration = 0.6f;
-        public int staticRegens = 5;
         public float deadLineDuration = 0.7f;
         public float ticketDeadDimDuration = 0.9f;
         [Tooltip("Silence after a dead ticket dims before the consolation line speaks.")]
@@ -268,7 +269,6 @@ namespace SBR.Game
         [Tooltip("Idle phosphor emission flicker, fraction of the emissive quad's idle emission.")]
         public float idleEmissionFlicker = 0.05f;
         public float emissionDecay = 3.2f;
-        [Range(0f, 1f)] public float scanlineAlpha = 0.15f;
 
         [Header("Audio v0 (procedural, diegetic)")]
         [Range(0f, 1f)] public float masterVolume = 0.5f;
@@ -390,8 +390,6 @@ namespace SBR.Game
         private int _resolvedThrough; // legs below this index are PRESENTED as resolved (not engine truth)
         private Text _tMatchup, _tRecords, _tLeg, _tClock, _tFlavor, _tWinPct, _tCashOut, _tChrome, _tAttract, _tBigAmount, _tSlipStrip, _tConsolation;
         private Image _backing, _barBg, _barFill, _wonFlood, _goldFlood, _dimOverlay;
-        private RawImage _staticNoise, _scanlines;
-        private Texture2D _noiseTex;
 
         // ---- theater (F_0.2.0) ----
         private TheaterStage _stage;
@@ -1122,7 +1120,6 @@ namespace SBR.Game
             SetAlpha(_wonFlood, 0f);
             SetAlpha(_goldFlood, 0f);
             SetAlpha(_dimOverlay, 0f);
-            SetRawAlpha(_staticNoise, 0f);
             _tBigAmount.text = string.Empty;
             if (_tConsolation != null) _tConsolation.enabled = false;
             _tCashOut.enabled = false;
@@ -1360,7 +1357,6 @@ namespace SBR.Game
             if (s.Outcome == Phase.RunWon || s.Outcome == Phase.RunLost) yield break;
 
             SetAlpha(_dimOverlay, 0f);
-            SetRawAlpha(_staticNoise, 0f);
             _tCashOut.enabled = false;
             _tAttract.enabled = false;
             _tLeg.text = string.Empty;
@@ -1466,7 +1462,6 @@ namespace SBR.Game
             SetAlpha(_wonFlood, 0f);
             SetAlpha(_goldFlood, 0f);
             SetAlpha(_dimOverlay, 0f);
-            SetRawAlpha(_staticNoise, 0f);
             _tCashOut.enabled = false;
             _tBigAmount.text = string.Empty;
             _tLeg.text = string.Empty;
@@ -1741,21 +1736,19 @@ namespace SBR.Game
 
         private IEnumerator DeadLegBeat(int k)
         {
-            // 1) static - regenerate the noise a few times so it crawls.
-            SetRawAlpha(_staticNoise, 0.85f);
-            // The light drops toward black rather than flashing red — it eases back up toward
-            // whatever the current rest is (still idle here) while the static crawls, then the
-            // hard cut to the dim "mourning" rest below lands right as the static clears.
+            // 1) The dark beat. T8 (Allen, 2026-07-31): the static-noise crawl that used to fill
+            // this hold is REMOVED — DESIGN.md §2 bans interference noise by name as a signature of
+            // the deprecated design/08-art-direction.md world. The hold itself is kept at exactly
+            // its old length (deadStaticDuration, still scaled by TimeScaleOverride) because it is
+            // load-bearing pacing, not decoration: the light's ease toward black plays across it and
+            // the hard cut to the dim "mourning" rest lands at its end. Removing the effect must not
+            // silently shorten the beat.
+            //
+            // Losing is darkness, which is what this beat now is, with nothing laid over it
+            // (DESIGN.md §4: "Loss is still darkness ... the old green/red money language stays
+            // retired").
             tvLight?.Flash(Color.black, 0f);
-            float dur = Mathf.Max(0f, deadStaticDuration * Mathf.Max(0f, TimeScaleOverride));
-            int regens = Mathf.Max(1, staticRegens);
-            float per = dur / regens;
-            for (int i = 0; i < regens; i++)
-            {
-                RegenNoise();
-                yield return WaitRealtime(per);
-            }
-            SetRawAlpha(_staticNoise, 0f);
+            yield return WaitRealtime(Mathf.Max(0f, deadStaticDuration * Mathf.Max(0f, TimeScaleOverride)));
 
             // 2) the DEAD line + the screen dropping darker — darkness, not the retired red (§4/§8:
             // "Loss is still darkness ... the old green/red money language stays retired").
@@ -2219,7 +2212,9 @@ namespace SBR.Game
             // --- overlays (front to back after content) ---
             // A won leg is money, gold — not the retired green.
             _wonFlood = MakeStretchImage(root, "WonFlood", new Color(gold.r, gold.g, gold.b, 0f));
-            _staticNoise = MakeStretchRaw(root, "StaticNoise", new Color(1f, 1f, 1f, 0f));
+            // T8 (Allen, 2026-07-31): the StaticNoise overlay is REMOVED — DESIGN.md §2 bans
+            // interference noise by name. Nothing replaces it; loss is darkness, which DimOverlay
+            // below already provides.
             // Black floor (unified-grade-spec.md §2): even the "everything just went dark" overlay
             // must not sit below the room's deepest shadow, so its RGB matches the same floor as
             // screenBg/barBgColor/pitchBgColor rather than true (0,0,0). Only alpha animates.
@@ -2241,14 +2236,10 @@ namespace SBR.Game
                 TextAnchor.MiddleCenter, flavorColor, FontStyle.Italic);
             _tConsolation.enabled = false;
 
-            // Scanlines on very top - a thin repeating dark line at ~15% alpha.
-            _scanlines = MakeStretchRaw(root, "Scanlines", Color.white);
-            _scanlines.texture = BuildScanlineTexture();
-            _scanlines.uvRect = new Rect(0f, 0f, 1f, h / 4f); // one 4px line pair per ~4 screen px
-
-            _noiseTex = new Texture2D(160, 90, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point };
-            RegenNoise();
-            _staticNoise.texture = _noiseTex;
+            // T8 (Allen, 2026-07-31): the Scanlines overlay is REMOVED — DESIGN.md §2 bans
+            // scanlines by name as a signature artifact of the deprecated
+            // design/08-art-direction.md world. The panel is a maintained modern display, not a
+            // failing CRT; nothing is laid over the surface in its place.
 
             _probShown = _probTarget = 0.5f;
         }
@@ -2323,16 +2314,6 @@ namespace SBR.Game
             return img;
         }
 
-        private static RawImage MakeStretchRaw(Transform parent, string name, Color color)
-        {
-            var go = new GameObject(name, typeof(RawImage));
-            go.transform.SetParent(parent, false);
-            var img = go.GetComponent<RawImage>();
-            img.color = color;
-            img.raycastTarget = false;
-            Stretch(img.rectTransform);
-            return img;
-        }
 
         private static void Stretch(RectTransform rt)
         {
@@ -2342,35 +2323,15 @@ namespace SBR.Game
             rt.offsetMax = Vector2.zero;
         }
 
-        private Texture2D BuildScanlineTexture()
-        {
-            var tex = new Texture2D(1, 4, TextureFormat.RGBA32, false)
-            {
-                wrapMode = TextureWrapMode.Repeat,
-                filterMode = FilterMode.Point,
-            };
-            var dark = new Color(0f, 0f, 0f, scanlineAlpha);
-            var clear = new Color(0f, 0f, 0f, 0f);
-            tex.SetPixel(0, 0, dark);
-            tex.SetPixel(0, 1, dark);
-            tex.SetPixel(0, 2, clear);
-            tex.SetPixel(0, 3, clear);
-            tex.Apply();
-            return tex;
-        }
-
-        private void RegenNoise()
-        {
-            if (_noiseTex == null) return;
-            var px = new Color32[_noiseTex.width * _noiseTex.height];
-            for (int i = 0; i < px.Length; i++)
-            {
-                byte v = (byte)UnityEngine.Random.Range(0, 256);
-                px[i] = new Color32(v, v, v, 255);
-            }
-            _noiseTex.SetPixels32(px);
-            _noiseTex.Apply();
-        }
+        // T8 (Allen, 2026-07-31): BuildScanlineTexture and RegenNoise are REMOVED with the two
+        // overlays they fed, along with MakeStretchRaw/SetRawAlpha, which had no other callers once
+        // both RawImage overlays were gone.
+        //
+        // RegenNoise was one of two UnityEngine.Random uses in this file; the other survives at
+        // _emissSeed's initialisation. PRD §4.3 bans that API for any *discrete scene choice* — a
+        // flicker phase seed is not one, so it is out of T8's scope and is left alone. It is
+        // recorded in handoff.md §6 rather than changed here, because it does mean the idle
+        // emission flicker differs run to run.
 
         // ---------------------------------------------------------------- small helpers
 
@@ -2394,14 +2355,6 @@ namespace SBR.Game
         }
 
         private static void SetAlpha(Image img, float a)
-        {
-            if (img == null) return;
-            Color c = img.color;
-            c.a = a;
-            img.color = c;
-        }
-
-        private static void SetRawAlpha(RawImage img, float a)
         {
             if (img == null) return;
             Color c = img.color;
