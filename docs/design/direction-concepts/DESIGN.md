@@ -56,9 +56,13 @@ The form is an inverted document: warm lifted olive-black ground, house toner, a
 
 ## Typography
 
-**Production face:** Bell Centennial, condensed for figures and team names and book weight for running text. It was chosen for telephone-directory ink traps and small-size legibility.
+**Production face:** undecided, pending the Design Director. **Bell Centennial is dropped for good** (Allen, 2026-07-31): no licence-encumbered typeface ships in this product, so the intended face is out regardless of whether a licence could be bought. The replacement must be free-licence (OFL or equivalent) and is being specced by the Design Director as part of the form-guide identity work.
 
-**Licensing policy:** do not download, commit, or distribute Bell Centennial without a project license. No production substitute is approved. If the licensed face is unavailable, Allen must make one concise licensed-fallback decision; implementation then creates the selected face's TextMeshPro font asset(s) and validates them on the angled laptop. Do not select or download a commercial substitute preemptively.
+What the face still has to do, as the brief for whoever picks it: carry three-digit American prices and W–L records at 13px on a surface read at an angle, hold a condensed figure set so a price column stays narrow, and read as a cheap personal machine rather than institutional signage.
+
+**Licensing policy:** free-licence faces only. Do not download, commit, or distribute a commercial face, and do not preemptively pick a substitute — that call belongs to the Design Director.
+
+**Swap cost:** the runtime resolves its face through one seam (`LaptopScreen.LoadFont`), and every builder takes the resulting `Font` by parameter. Swapping the face is a one-function change plus a font asset; nothing else in the UI names a typeface. Keep it that way.
 
 **Final runtime route:** production uses licensed TextMeshPro font assets. `LegacyRuntime.ttf` and legacy UGUI `Text` are current implementation evidence only; they are not acceptable final visual implementation because the 50% legibility contract needs the selected face, stable glyph metrics, and a reproducible asset import path. HTML system stacks are mockup-only.
 
@@ -378,6 +382,6 @@ Validate targeted behavior with `BetslipModelTests`, `AnytimeScorerBetslipTests`
 
 ### Open risks
 
-1. **Bell Centennial licensing:** unresolved. Do not ship it without a license or approved licensed substitute.
+1. **Production typeface:** Bell Centennial dropped (Allen, 2026-07-31) — no licence-encumbered typefaces in this product. A free-licence replacement is pending from the Design Director. Until it lands the build renders in `LegacyRuntime.ttf`, so no capture to date shows the direction's intended voice; judge captures on structure, not type.
 2. **Current implementation divergence:** purple tokens, 660px board/right slip, sub-13px product text, `LegacyRuntime.ttf`, nested BTTS, lock-with-working-slip behavior, and no separate skip confirmation do not meet this contract. They are implementation work.
 3. **Perspective proof:** HTML/fixed-size concept is not proof at physical laptop angle; final acceptance requires the in-room readability check.

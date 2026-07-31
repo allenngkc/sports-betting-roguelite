@@ -35,6 +35,12 @@
 > - Sweep flags for this worktree: modified `ProjectSettings/*` and URP global settings
 >   are integration-only files — justify them to the orchestrator or revert before
 >   merge; clean the stray test XML/log files at `unity/SBR/` root; commit `handoff.md`.
+> - **Delegation directive (Allen, 2026-07-31):** grunt work — implementation, testing,
+>   validation, bulk reading — goes to bounded sub-agents (Sonnet 5 by default, max two
+>   at once); you plan, dispatch, review diffs, and integrate. Doing sustained grunt
+>   work yourself is now a contract deviation. Every dispatch names allowed files,
+>   forbidden files, required evidence, and an exit gate; sub-agents never commit
+>   unless the dispatch says so. Use an Opus sub-agent only for genuinely hard tasks.
 
 ## 1. Ownership transfer
 
@@ -160,9 +166,11 @@ Five component laws from the element kit:
 4. Product facts never fall below 13px.
 5. Status is never color alone.
 
-The intended Bell Centennial production face may require a commercial license. Do not download
-or commit an unlicensed font. Use a licensed project asset or bring one concise font decision to
-Allen.
+**S11 RULED (Allen, 2026-07-31): no licence-encumbered typefaces in this product. Bell Centennial
+is dropped for good** — not deferred, not pending a purchase. The Design Director specs a
+free-licence replacement as part of the form-guide identity work. Until then the build renders in
+`LegacyRuntime.ttf`, and the runtime resolves its face through one seam (`LaptopScreen.LoadFont`)
+with every builder taking the `Font` by parameter, so the swap stays a one-function change.
 
 ## 7. Implementation scope and file ownership
 
