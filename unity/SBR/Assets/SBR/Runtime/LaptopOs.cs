@@ -418,24 +418,23 @@ namespace SBR.Game
             rt.pivot = pivot;
             rt.sizeDelta = size;
             rt.anchoredPosition = position;
-            if (name == "LockReason")
-            {
-                var sb = new System.Text.StringBuilder();
-                sb.Append($"[DIAG2:{name}] text='{text.text}' font={(text.font != null ? text.font.name : "null")} " +
-                    $"dynamic={text.font?.dynamic} actualSize={text.fontSize} " +
-                    $"fontNamesArray=[{(text.font != null ? string.Join(",", text.font.fontNames) : "")}]");
-                if (text.font != null)
-                {
-                    foreach (char c in "PLACEORWSKI ")
-                    {
-                        bool ok = text.font.GetCharacterInfo(c, out CharacterInfo info, text.fontSize, FontStyle.Normal);
-                        sb.Append($"\n  '{c}' found={ok} advance={info.advance} glyphW={info.glyphWidth} glyphH={info.glyphHeight} " +
-                            $"minX={info.minX} maxX={info.maxX} minY={info.minY} maxY={info.maxY} " +
-                            $"uvBL={info.uvBottomLeft} uvBR={info.uvBottomRight} uvTL={info.uvTopLeft} uvTR={info.uvTopRight}");
-                    }
-                }
-                Debug.Log(sb.ToString());
-            }
+
+            // Truncate clips whole LINES, so a box shorter than one line of its own font renders
+            // NOTHING — not a clipped glyph, nothing at all. Silent and total, with every test still
+            // green because the Text object exists and holds the right string.
+            //
+            // Wiring the production faces cost three display elements exactly this way in one go:
+            // Archivo's line metrics are taller than the built-in fallback's, so boxes authored at
+            // 1.08x and 1.16x their font size stopped fitting a single line, and the masthead and
+            // the payout figure simply vanished.
+            //
+            // A box may legitimately be shorter than its content — clipping a long wrapped paragraph
+            // is a real layout choice. It is never useful for a box to be too short for its FIRST
+            // line, so that case falls back to Overflow rather than rendering emptiness. Callers keep
+            // their authored height and position; only the failure mode changes. Evaluated after
+            // sizeDelta because preferredHeight depends on the wrap width.
+            if (text.preferredHeight > size.y)
+                text.verticalOverflow = VerticalWrapMode.Overflow;
             return text;
         }
 

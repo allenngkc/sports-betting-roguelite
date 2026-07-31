@@ -52,11 +52,13 @@ namespace SBR.Game
 
         private void Awake()
         {
-            _font = LoadFont();
-            // Two-voice type seam: --font-data (roman, labels/copy) stays _font; --font-cond
-            // (condensed, figures/prices/names) is _fontCond. Both point at the same built-in
-            // fallback until Archivo Narrow is added — see the field comment above.
-            _fontCond = _font;
+            // Two-voice type seam, now carrying the ruled production faces (S11, OFL 1.1):
+            // --font-data is Archivo (roman — labels, copy, OS chrome), --font-cond is Archivo
+            // Narrow (condensed — figures, prices, names, terminal-state words). One superfamily,
+            // so this is two voices of one hand rather than a pairing. Licences ship beside the
+            // fonts in Resources/SureThing/Fonts and must stay with them.
+            _font = LoadFont("SureThing/Fonts/Archivo");
+            _fontCond = LoadFont("SureThing/Fonts/ArchivoNarrow");
             _emissBlock = new MaterialPropertyBlock();
             if (tv == null) tv = FindAnyObjectByType<TvSweatScreen>();
             BuildSkeleton();
@@ -124,9 +126,23 @@ namespace SBR.Game
             lidRenderer.SetPropertyBlock(_emissBlock);
         }
 
-        private static Font LoadFont()
+        /// <summary>
+        /// Resolves one of the two production faces, falling back to Unity's built-in font if the
+        /// asset is missing so a bad import degrades to readable text rather than to a blank screen.
+        /// A fallback is loud in the log on purpose: silently rendering the wrong face is the kind
+        /// of defect that survives a review, because nothing looks broken.
+        /// </summary>
+        private static Font LoadFont(string resourcePath)
         {
-            Font font;
+            var font = Resources.Load<Font>(resourcePath);
+            if (font != null)
+            {
+                WarmFontAtlas(font);
+                return font;
+            }
+
+            Debug.LogWarning($"[LaptopScreen] production face '{resourcePath}' did not load; "
+                + "falling back to LegacyRuntime. The surface will render in the wrong voice.");
             try { font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); }
             catch
             {

@@ -121,13 +121,17 @@ namespace SBR.Game
             if (awaySelected || homeSelected)
                 LaptopUi.MakeMarkedWash(card, "MarkedWash");
             LaptopUi.MakeText(card, "Number", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, -10f), new Vector2(30f, 56f), 15, TextAnchor.UpperLeft, LaptopOs.Muted, (matchup.Index + 1).ToString("00"), _fontCond);
-            // Team names (19px) and W-L records (13px) are two distinct product-fact sizes per
-            // DESIGN.md's Lobby contract, so they are two Text components, not one string at a
-            // single size.
-            LaptopUi.MakeText(card, "Teams", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(54f, -8f), new Vector2(250f, 60f), 19, TextAnchor.UpperLeft, LaptopOs.White,
-                $"{LaptopUi.TeamShort(matchup.Away)}\n{LaptopUi.TeamShort(matchup.Home)}", _fontCond);
-            LaptopUi.MakeText(card, "Records", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(310f, -8f), new Vector2(140f, 60f), 13, TextAnchor.UpperLeft, LaptopOs.TonerSecondary,
-                $"{matchup.Away.Record}\n{matchup.Home.Record}", _font);
+            // A record belongs to the name it follows, so it is set on the same line, 9px after it —
+            // the design system's FormEntry.line() lays out exactly that: one 30px flex line holding
+            // the name in the condensed voice and the record in the data voice beside it.
+            //
+            // An earlier pass split them into two fixed columns, names at x=54 and records parked at
+            // x=310. That satisfied the two type sizes the spec asks for but broke the association:
+            // the record floated in open space with nothing tying it to its team. Fixed columns
+            // cannot express "immediately after", because the name's width varies per team, so each
+            // record is positioned off its own name's measured width instead.
+            TeamLine(card, "Away", LaptopUi.TeamShort(matchup.Away), matchup.Away.Record, -6f);
+            TeamLine(card, "Home", LaptopUi.TeamShort(matchup.Home), matchup.Home.Record, -44f);
 
             LaptopUi.MakeButton(card, "AwayOdds", $"AWAY  {OddsFormat.American(matchup.AwayOdds)}",
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, -8f), new Vector2(112f, 32f), 19,
@@ -167,6 +171,33 @@ namespace SBR.Game
                 () => OpenDetail(matchup.Index), _font);
             LaptopUi.MakeRule(card, "EntryRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
                 Vector2.zero, new Vector2(700f, 1f));
+        }
+
+        /// <summary>
+        /// One 30px line of a lobby entry: the team name in the condensed voice with its W-L record
+        /// set 9px after it in the data voice, per the design system's FormEntry.line().
+        ///
+        /// The record's x comes from the name's own measured width rather than a column constant,
+        /// because team names differ in length and the record has to stay attached to its name. Both
+        /// are middle-aligned in the same 30px box so the 19px name and 13px record sit on a shared
+        /// centre line — UGUI Text gives no baseline alignment, and centring is the closer read.
+        /// </summary>
+        private void TeamLine(RectTransform card, string side, string name, string record, float y)
+        {
+            const float nameX = 54f;
+            const float gap = 9f;
+            const float lineHeight = 30f;
+
+            Text nameText = LaptopUi.MakeText(card, "Team" + side, new Vector2(0f, 1f),
+                new Vector2(0f, 1f), new Vector2(nameX, y), new Vector2(250f, lineHeight), 19,
+                TextAnchor.MiddleLeft, LaptopOs.White, name, _fontCond);
+            // A long name must push its record along, never wrap onto a second line inside a 30px box.
+            nameText.horizontalOverflow = HorizontalWrapMode.Overflow;
+
+            LaptopUi.MakeText(card, "Record" + side, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(nameX + nameText.preferredWidth + gap, y), new Vector2(90f, lineHeight),
+                13, TextAnchor.MiddleLeft, LaptopOs.Muted, record, _font)
+                .horizontalOverflow = HorizontalWrapMode.Overflow;
         }
 
         private void OpenDetail(int matchupIndex)
