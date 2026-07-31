@@ -90,3 +90,11 @@ decision · evidence checked · reversal path.
   slot queued third (TV investigation → room R9 → SureThing fonts). Room dispatch
   still blocked on its composer (Allen's staged draft + survey prompt). Reversal:
   reorder the queue or veto the S11 close.
+- 2026-07-31 cycle 3 · **TVS-H02 verdict accepted** — pre-existing one-frame
+  ordering quirk exposed (not introduced) by 3C's UPDATING state; fix landed
+  uncommitted with a mechanism that predicts the observed rate; lead's own suspect
+  disqualified on evidence. **Queue reordered:** TV verification slot before room
+  R9 (room's channel is composer-blocked; editor must not idle). **TV session
+  hygiene ordered before its slot** — 97% context; state written to handoff.md,
+  then session clear, then re-seat and run. Reversal: veto the reorder; the fix
+  diff is in TV's working tree, revertible.
