@@ -106,3 +106,9 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-07-31 cycle 5 · **§6 stop tripped** — two consecutive cycles moved nothing:
+  all three lead composers hold staged drafts (TV `clear the session`, SureThing
+  `wire the fonts…`, room `Editor lease granted…`), every dispatch channel blocked,
+  editor idle. Desktop notification sent with the one-pass fix (room: Enter ·
+  SureThing: Esc · TV: Esc + `/clear`). Watchers stay armed; loop resumes on any
+  composer change. No work lost; no state at risk.
