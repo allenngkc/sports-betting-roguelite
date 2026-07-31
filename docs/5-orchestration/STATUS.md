@@ -27,6 +27,8 @@
   accepted the prompt and are working it.
 - **Rulings (Allen, 2026-07-31):** C1 — latest document governs, `DESIGN.md` §6
   stands, layout closed, Phase 3 unblocked. C2 — interim: shipped green tolerated,
-  cold white-grey target lands with TV Phase 3.
-- **Need Allen:** confirm T8 removal (orchestrator recommends stripping the scanline
-  overlay + `DeadLegBeat` static crawl to match the approved design).
+  cold white-grey target lands with TV Phase 3. T8 — remove: TV lead strips the
+  scanline overlay + `DeadLegBeat` static crawl per `DESIGN.md` §2.
+- **Watch:** lead-idle monitors armed on all three lead terminals; orchestrator
+  relays each lead's report as its session finishes.
+- **Need Allen:** nothing.

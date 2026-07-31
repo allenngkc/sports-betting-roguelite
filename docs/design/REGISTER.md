@@ -57,7 +57,7 @@ under this seat. That is the gap this register exists to close.
 | T5 | Layout + five-zone stability (PRD "Decision A") | Settled · Allen 2026-07-31 — latest document governs (`DESIGN.md` §6); TV lead amends PRD §13/§14 | see C1 |
 | T6 | Scene grammar — Phase 2A–2E: planner, 48-cell matrix, corner/booking, 6 near-miss endings, 5 buildup grammars, chance shapes + goal reactions | Implemented · review pending | `220c5ec` and predecessors |
 | T7 | Phase 3 — UI refinement to the approved hierarchy | Not started · gated on T5 | `[TV] docs/.../PRD.md` §5 |
-| T8 | Scanline overlay + `DeadLegBeat` static-noise crawl in `TvSweatScreen.cs` | **Implemented against approved design** — §2 bans both by name; orchestrator recommends removal, awaiting Allen confirm (2026-07-31) | `[TV] DESIGN.md` §9A.1 |
+| T8 | Scanline overlay + `DeadLegBeat` static-noise crawl in `TvSweatScreen.cs` | **Ruled — remove** · Allen 2026-07-31; TV lead strips both per `DESIGN.md` §2 | `[TV] DESIGN.md` §9A.1 |
 | T9 | `chromeCyan` used broadly for leg/clock/records/chrome labels — retired hue, no role in §4 | Debt · Phase 3 | `[TV] DESIGN.md` §9A.2 |
 | T10 | Two hardcoded emission rest values, one darker than the agreed black floor | Debt · Phase 3 | `[TV] DESIGN.md` §9A.4 |
 | T11 | TV typeface — characteristics specified, file unchosen | Open | `[TV] DESIGN.md` §10 |
@@ -84,6 +84,5 @@ under this seat. That is the gap this register exists to close.
 - Item states move only on evidence: *Implemented* needs a commit; *Design-verified* needs a review
   note from this seat against the item's spec.
 - 2026-07-31: C1 ruled (latest document governs — `DESIGN.md`), C2 given an interim ruling
-  (shipped green tolerated; cold white-grey target lands with TV Phase 3). T8 is the remaining
-  divergence — removal recommended, awaiting Allen confirm. It ranks ahead of any new
-  exploration.
+  (shipped green tolerated; cold white-grey target lands with TV Phase 3). T8 ruled: remove —
+  TV lead strips both effects per `DESIGN.md` §2. No divergence items remain open.
