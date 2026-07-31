@@ -977,10 +977,22 @@ namespace SBR
             RenderSettings.fogDensity = 0.085f;
             RenderSettings.fogColor = new Color(0.082f, 0.079f, 0.061f);
 
+            // R9 - ambient rebalanced DOWN 35% (DD-approved band 30-40%, taking the midpoint).
+            //
+            // Flat ambient arrives equally from every direction, so it is the one light in the
+            // room that can never reveal relief - standing law R12, surface detail is gated by
+            // lighting. Since R6 gave the room real directional bounce, every unit of flat fill
+            // left in the mix is actively diluting what R6 bought.
+            //
+            // NOTE FOR ANYONE RE-TUNING THIS: these values are also the environment input to the
+            // Adaptive Probe Volume bake, so they are not a runtime-only term. Lowering them
+            // lowers the baked indirect too, and unevenly - regions lit directly barely move
+            // while regions living on indirect take close to the full cut. Re-bake after any
+            // change here or the room will not show what the numbers say.
             RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.090f, 0.087f, 0.061f);
-            RenderSettings.ambientEquatorColor = new Color(0.057f, 0.057f, 0.048f);
-            RenderSettings.ambientGroundColor = new Color(0.036f, 0.032f, 0.025f);
+            RenderSettings.ambientSkyColor = new Color(0.0585f, 0.0566f, 0.0397f);
+            RenderSettings.ambientEquatorColor = new Color(0.0371f, 0.0371f, 0.0312f);
+            RenderSettings.ambientGroundColor = new Color(0.0234f, 0.0208f, 0.0163f);
         }
 
         // ------------------------------------------------------------- post-effects
