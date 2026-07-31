@@ -40,7 +40,7 @@ under this seat. That is the gap this register exists to close.
 | R4 | Cool-blue + money-colour palette laws | **REVOKED** · Allen 2026-07-25 | `DECISIONS.md`; four repo docs still assert them |
 | R5 | Refinement A — full PBR material response (normal/smoothness/AO) | Implemented · review pending | `cd62855` |
 | R6 | Refinement C — indirect light via Adaptive Probe Volumes (relief ×4–5 right wall) | Implemented · review pending | `[RM] .../PHASE_B_INDIRECT_LIGHT.md`, `fb44ac2` |
-| R7 | Refinement B — localised wear, decals, contact grime | Approved (direction) · not started | `[RM] handoff.md` §6B |
+| R7 | Refinement B — localised wear, decals, contact grime | **Parked** · Allen 2026-07-31 at the committed Tier 1b state; URP Decal Renderer Feature deferred to integration with DD input | `[RM] handoff.md` §6B; Tier 1b commits |
 | R8 | Refinement D — geometry detail, last priority | Approved (direction) · not started | `[RM] handoff.md` §6D |
 | R9 | Ambient rebalance — lower flat ambient to let bounce carry relief | Candidate · needs 8/8 gate re-run | `[RM] .../PHASE_B_INDIRECT_LIGHT.md` §7.1 |
 | R10 | Couch-corner grazing source — strongest normal map still reads at 2.3% | Candidate | `[RM] .../PHASE_B_INDIRECT_LIGHT.md` §7.2 |

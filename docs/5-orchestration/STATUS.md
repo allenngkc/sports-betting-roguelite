@@ -18,10 +18,10 @@
   enum confusion — additive where multiply was meant, and alpha-blend vs multiply
   for stains). Mips-off hypothesis tested and disproved in-window. FluorescentSoot
   held back — unresolved contradiction, lead refused to guess a fifth time. Earlier
-  coverage numbers withdrawn (unvalidated metric). **Need Allen: R7 steer** — keep
-  iterating quads, escalate the URP Decal Renderer Feature (shared-renderer =
-  integration decision), or park R7. Lead recommends against more quad iteration.
-  Lead: Claude (Opus 5).
+  coverage numbers withdrawn (unvalidated metric). **R7 parked per Allen
+  (2026-07-31)** at the committed state; Decal Renderer Feature deferred to
+  integration with DD input. Now assembling the design-review evidence package
+  (R5/R6/Tier 1b); R8 held pending that review. Lead: Claude (Opus 5).
 - **tv-sweat:** `842382d` — **T8 removed and verified** (engine 160/160, EditMode
   129/129, PlayMode 44/44 on rerun; single failure matched the documented cash-out
   flake signature in a path T8 doesn't touch). Contract/C1/T6/C3 at `4cdd98c`.
