@@ -59,6 +59,12 @@ or `--text " " --enter` clears the composer WITHOUT delivering — the draft is 
 no turn runs. Never submit a staged draft from the CLI. Ask Allen to press Enter, or
 take his wording and send it as a fresh `--text` message ("relaying Allen: …").
 
+Send-length rule: terminal sends above roughly 500 bytes truncate unpredictably
+(observed: a 1.2KB and a 1.0KB dispatch each arrived as a fragment). Put content in
+a worktree file (orchestrator-brief.md) and send a short tap pointing at it. Control
+keys (Esc, Ctrl+U, backspace) do not reach the composer through the send path;
+double-Esc opens the rewind menu — do not attempt remote composer editing.
+
 ## 4. One sweep
 
 1. `git status --porcelain` + `git log --oneline -5` in each registered worktree
