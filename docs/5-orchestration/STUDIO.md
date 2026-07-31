@@ -14,7 +14,8 @@ reverted.
   integration approval, Unity scheduling. Does not implement slice code. Treated as a
   scarce resource: enters for planning, disputes, architecture, and integration — not
   routine status relay.
-- **Design Director — Claude (Opus 5), its own dedicated session.**
+- **Design Director — Claude Design, its own dedicated session (seat moved from
+  Opus 5 per Allen, 2026-07-31).**
   Positioned alongside the orchestrator, not under engineering. Direct conversations
   with Allen. Owns every design decision: UI design flows, interaction flows, visual
   direction, art direction, 3D modeling. Produces design specifications and does
