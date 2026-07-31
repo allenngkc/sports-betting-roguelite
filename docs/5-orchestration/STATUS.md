@@ -106,6 +106,13 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-07-31 cycle 6 · **Loop resumed** — Allen's one-pass completed all three
+  steps. Room in the editor (R9 gate re-run). TV re-seated post-clear on a fresh
+  session: verified HEAD, stack, fix lines, and correctly held on seeing room's
+  live run. SureThing parked third. Long-send truncation chartered
+  (ORCHESTRATOR.md §3a); re-seat brief moved to the durable file channel. Allen's
+  staged TV grant fires (with timing note appended) when room releases — logged
+  here as the planned action; reversal: don't fire, hold TV.
 - 2026-07-31 cycle 5 · **§6 stop tripped** — two consecutive cycles moved nothing:
   all three lead composers hold staged drafts (TV `clear the session`, SureThing
   `wire the fonts…`, room `Editor lease granted…`), every dispatch channel blocked,
