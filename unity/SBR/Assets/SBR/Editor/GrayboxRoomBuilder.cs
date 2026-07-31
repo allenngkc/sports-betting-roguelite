@@ -977,18 +977,27 @@ namespace SBR
             RenderSettings.fogDensity = 0.085f;
             RenderSettings.fogColor = new Color(0.082f, 0.079f, 0.061f);
 
-            // R9 - ambient rebalanced DOWN 35% (DD-approved band 30-40%, taking the midpoint).
+            // R9 - ambient down 35% (DD-approved band 30-40%). MEASURED EFFECT: NONE.
             //
-            // Flat ambient arrives equally from every direction, so it is the one light in the
-            // room that can never reveal relief - standing law R12, surface detail is gated by
-            // lighting. Since R6 gave the room real directional bounce, every unit of flat fill
-            // left in the mix is actively diluting what R6 bought.
+            // These values are kept because they are approved and within band, but do not expect
+            // them to do anything, and do not re-derive R9 from first principles later. A/B at
+            // 100% vs 65% with everything else identical moved every region by 0.00-0.02% and
+            // 0.10% of pixels by more than one luminance level, which is film grain:
             //
-            // NOTE FOR ANYONE RE-TUNING THIS: these values are also the environment input to the
-            // Adaptive Probe Volume bake, so they are not a runtime-only term. Lowering them
-            // lowers the baked indirect too, and unevenly - regions lit directly barely move
-            // while regions living on indirect take close to the full cut. Re-bake after any
-            // change here or the room will not show what the numbers say.
+            //   ceiling plaster 29.12 -> 29.12    couch corner  35.15 -> 35.14
+            //   under bunk 2    49.36 -> 49.35    whole frame   37.75 -> 37.76
+            //
+            // WHY: R6 already removed the flat-ambient problem as a side effect. Every static
+            // renderer is receiveGI = LightProbes, so it samples the Adaptive Probe Volume and
+            // not the ambient probe. RenderSettings ambient now reaches the room ONLY as
+            // environment input to the bake - and this room is a sealed box, so that environment
+            // is fully occluded and contributes essentially nothing.
+            //
+            // The premise behind R9 - "flat fill is diluting the directional bounce" - was true
+            // before R6 and false after it. What fills the shadows now IS R6's bounce, which is
+            // directional and is the thing worth keeping. If deeper shadows are ever wanted, the
+            // levers are the grade or individual light intensities; turning down indirect
+            // (m_IndirectOutputScale) would just undo R6.
             RenderSettings.ambientMode = AmbientMode.Trilight;
             RenderSettings.ambientSkyColor = new Color(0.0585f, 0.0566f, 0.0397f);
             RenderSettings.ambientEquatorColor = new Color(0.0371f, 0.0371f, 0.0312f);
