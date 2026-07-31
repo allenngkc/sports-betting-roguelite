@@ -28,9 +28,9 @@
 - **Orchestrator:** Fable 5 session in `main-2`; lead channel chartered in
   `ORCHESTRATOR.md` §3a. Completion watchers armed on all three lead terminals and
   the Design Director session.
-- **Unity queue:** editor free (surething-ui re-confirm done and released) → room
-  R7 captures when ready → surething-ui again when S8 lands → tv Phase 3 visual
-  evidence.
+- **Unity queue:** room holds the editor NOW (R7.0 cycle — launched unannounced,
+  flagged, lease granted retroactively) → surething-ui S8 verification → tv-sweat
+  lease (3A/3B verify + graphics-mode experiment).
 - **Blocked:** none.
 - **Rulings (Allen, 2026-07-31):** C1 — latest document governs, `DESIGN.md` §6
   stands, layout closed. C2 — interim: shipped green tolerated, cold white-grey
