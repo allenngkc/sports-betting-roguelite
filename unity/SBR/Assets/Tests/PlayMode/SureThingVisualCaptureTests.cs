@@ -18,6 +18,13 @@ namespace SBR.Tests.PlayMode
     /// Test-only production UGUI reference capture. The fixture deliberately drives the same named
     /// controls and presentation seams as the behavioral PlayMode suite, then renders both a
     /// canvas-aligned reference and the real Main Camera at the laptop's authored focus pose.
+    ///
+    /// Eight states are captured across two UnityTests. The first continues the single-run,
+    /// ticket-carrying flow through six states (the original five plus the shared Ledger/Old
+    /// Slips screen reached from the tray). The second boots a fresh run to reach REWARDS —
+    /// which requires the deterministic zero-ticket lock seam SureThingRewardsTests.EnterShop
+    /// uses, and so cannot share the first run's already-placed ticket — and from there also
+    /// reaches the same Ledger/Old Slips screen via its other entry point, the desktop icon.
     /// </summary>
     public class SureThingVisualCaptureTests
     {
@@ -28,7 +35,7 @@ namespace SBR.Tests.PlayMode
         private const int CaptureLayer = 30;
 
         [UnityTest]
-        public IEnumerator Capture_five_truthful_surething_states_as_flat_and_angled_pngs()
+        public IEnumerator Capture_six_truthful_surething_states_as_flat_and_angled_pngs()
         {
             yield return Boot();
             LaptopScreen laptop = Laptop();
@@ -118,7 +125,74 @@ namespace SBR.Tests.PlayMode
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "05-my-bets-green-dead", capturedPaths);
 
-            Assert.AreEqual(10, capturedPaths.Count, "five states must emit paired captures");
+            // The rail and tray are now built once by NotebookChrome and shared between the
+            // sportsbook and the ledger screen (LaptopOs.OpenLedger routes to the same
+            // App.OldSlips state the desktop's "Old Slips" icon does — OldSlipsApp.Render is
+            // the one screen both entry points share). Reach it exactly the way
+            // SureThingLedgerTests.OpenLedgerThroughTray does: through the tray, not the API.
+            Invoke(Required(Required(App(laptop), "NotebookTray"), "Ledger"));
+            yield return WaitForRebuild();
+            Assert.IsNotNull(Required(App(laptop), "LedgerBoard"),
+                "real tray navigation did not open LEDGER");
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "06-ledger", capturedPaths);
+
+            Assert.AreEqual(12, capturedPaths.Count, "six states must emit paired captures");
+            foreach (string path in capturedPaths)
+            {
+                Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
+                Assert.Greater(new FileInfo(path).Length, 0L, $"capture is empty: {path}");
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator Capture_two_more_truthful_surething_states_as_flat_and_angled_pngs()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            string outputDirectory = Path.GetFullPath(Path.Combine(
+                Application.dataPath, "..", "..", "..", "artifacts", "surething-ui"));
+            Directory.CreateDirectory(outputDirectory);
+            string runPrefix = DateTime.UtcNow.ToString(
+                "yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture);
+            var capturedPaths = new List<string>();
+
+            // REWARDS is gated to Phase.Shop (SportsbookApp.BuildChrome: the REWARDS tab is
+            // disabled whenever run.Phase != Phase.Shop). The only deterministic, already-
+            // established way there is the zero-ticket lock seam
+            // SureThingRewardsTests.EnterShop uses: on a fresh boot Run.Tickets.Count is 0, so
+            // LockRound settles the round without any TV ceremony and lands directly in Shop
+            // with the book defaulted to REWARDS (LaptopOs.ApplyPhaseDefault). This state must
+            // come from a fresh Boot() rather than continuing the first test's run, because
+            // that run already carries a placed ticket and would not take the zero-ticket path.
+            Assert.AreEqual(0, laptop.director.Run.Tickets.Count,
+                "zero-ticket lock is the deterministic shop-entry test seam");
+            laptop.director.LockRound();
+            yield return WaitForRebuild();
+            Assert.AreEqual(Phase.Shop, laptop.director.Run.Phase);
+            Assert.AreEqual(SportsbookApp.Tab.Rewards, laptop.Os.CurrentTab,
+                "the Shop phase default did not land on REWARDS");
+            Assert.IsNotNull(Required(App(laptop), "RewardsBoard"),
+                "REWARDS did not render its board");
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "07-rewards", capturedPaths);
+
+            // Old Slips is LaptopOs's App.OldSlips reached from the desktop icon rather than the
+            // in-app tray — the same screen as 06-ledger above (OldSlipsApp.Render), just via
+            // its other named entry point (LaptopOs.MakeDesktopIcon("OldSlips", ...)).
+            laptop.Os.OpenDesktop();
+            yield return WaitForRebuild();
+            Assert.IsTrue(laptop.Os.OnDesktop, "OpenDesktop did not leave the sportsbook");
+            Invoke(Required(laptop.transform, "OldSlips"));
+            yield return WaitForRebuild();
+            Assert.IsFalse(laptop.Os.OnDesktop,
+                "the desktop Old Slips icon did not leave the desktop");
+            Assert.IsNotNull(Required(App(laptop), "LedgerBoard"),
+                "the desktop Old Slips icon did not open the ledger screen");
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "08-old-slips", capturedPaths);
+
+            Assert.AreEqual(4, capturedPaths.Count, "two states must emit paired captures");
             foreach (string path in capturedPaths)
             {
                 Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
