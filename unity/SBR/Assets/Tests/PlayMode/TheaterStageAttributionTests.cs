@@ -87,6 +87,8 @@ namespace SBR.Tests.PlayMode
         // Phase 2E-2: SetPiece's static-setup step is the only grammar buildup step that routes
         // via RouteAuthored instead of RoutePass — see BuildGrammarBuildup's doc.
         private static readonly byte RouteAuthoredVal = ByteConst("RouteAuthored");
+        // Phase 2E-3: the goal-family restart's two truth-tied routes.
+        private static readonly byte RouteKickoffVal = ByteConst("RouteKickoff");
 
         private struct StepView
         {
@@ -574,6 +576,146 @@ namespace SBR.Tests.PlayMode
             // pitch laterally than Central, which deliberately compresses toward the middle.
             Assert.Greater(lateralTravel[MovementGrammar.Switch], lateralTravel[MovementGrammar.Central],
                 "Switch must travel further laterally than Central — the transfer is its whole idea");
+        }
+
+        // ---------------------------------------------------------------- Phase 2E-3: chance
+        // shapes and reactions.
+
+        private static TheaterScenePlan GoalPlan(ChanceShape shape, ReactionPattern reaction)
+        {
+            const SceneTemplate template = SceneTemplate.GoalFor;
+            var sig = new PlanSignature(template, MovementGrammar.Central, shape, ScenePayoff.Goal,
+                PressureMode.MidPress, SpacingMode.Balanced, reaction);
+            var diag = new TheaterScenePlanDiagnostics(1, false, false, false, false, null);
+            return new TheaterScenePlan(template, SceneFactContract.Goal, MovementGrammar.Central,
+                shape, ScenePayoff.Goal, PressureMode.MidPress, SpacingMode.Balanced,
+                reaction, SceneLane.NearFlank, null, true, null, false, sig, diag);
+        }
+
+        private static readonly ChanceShape[] ChanceShapes =
+        {
+            ChanceShape.ThroughBall,
+            ChanceShape.Cross,
+            ChanceShape.Cutback,
+            ChanceShape.Rebound,
+            ChanceShape.Direct,
+        };
+
+        /// <summary>Phase 2E-3 (PRD §7.1, §7.3): the five chance shapes must deliver the ball into
+        /// the box five mechanically different ways. Chance shape is held as the ONLY variable —
+        /// same template, grammar, payoff, pressure, spacing, reaction, lane — so anything that
+        /// differs between these scripts is attributable to the shape alone.
+        ///
+        /// The truth assertion carried here matters more than the distinctness one: a goal scene
+        /// stages exactly ONE goal, so however many touches a shape takes to arrive, exactly one
+        /// MkGoal marker may fire. Rebound is the shape that could break this — it authors a first
+        /// attempt that is visibly stopped — so it is checked like every other shape rather than
+        /// exempted.</summary>
+        [UnityTest]
+        public IEnumerator Chance_shapes_deliver_five_distinct_ways_and_still_stage_one_goal()
+        {
+            TheaterStage stage = BuildStage();
+            var fingerprints = new Dictionary<ChanceShape, string>();
+            var totals = new Dictionary<ChanceShape, float>();
+
+            foreach (ChanceShape shape in ChanceShapes)
+            {
+                string ctx = $"{shape}";
+                SceneSpec spec = new SceneSpec(SceneTemplate.GoalFor, 0, false, false, true,
+                    new ScoreLedger.StagedGoal(true, true),
+                    new SweatPacer().SceneSeconds(SceneTemplate.GoalFor, false));
+
+                int goalCalls = 0, revealCalls = 0;
+                bool done = false;
+                stage.PlayPlannedScene(GoalPlan(shape, ReactionPattern.Celebrate), spec,
+                    _ => goalCalls++, () => revealCalls++, () => done = true);
+                Assert.IsTrue(stage.ScenePlaying, $"{ctx}: never started");
+
+                StepView[] script = ReadScript(stage);
+                int goalMarkers = 0;
+                float durSum = 0f;
+                var fp = new System.Text.StringBuilder();
+                foreach (StepView s in script)
+                {
+                    durSum += s.Dur;
+                    if (s.Marker == MkGoalVal) goalMarkers++;
+                    fp.Append(s.Route).Append(':')
+                      .Append(Mathf.RoundToInt(s.Ball.x * 20f)).Append(',')
+                      .Append(Mathf.RoundToInt(s.Ball.y * 20f)).Append('|');
+                }
+
+                Assert.AreEqual(1, goalMarkers,
+                    $"{ctx}: a goal scene stages exactly one goal — however many touches the shape takes");
+
+                fingerprints[shape] = fp.ToString();
+                totals[shape] = durSum;
+
+                float timeout = spec.Duration * 4f + 2f;
+                float t = 0f;
+                while (!done && t < timeout) { t += Time.deltaTime; yield return null; }
+                Assert.IsTrue(done, $"{ctx}: did not complete within {timeout:0.0}s");
+                Assert.AreEqual(1, goalCalls, $"{ctx}: exactly one goal callback");
+                Assert.AreEqual(1, revealCalls, $"{ctx}: exactly one reveal");
+            }
+
+            float reference = totals[ChanceShape.Direct];
+            foreach (ChanceShape s in ChanceShapes)
+                Assert.AreEqual(reference, totals[s], 0.001f,
+                    $"{s}: authored duration must match every other shape's ({reference:0.000}s)");
+
+            foreach (ChanceShape a in ChanceShapes)
+                foreach (ChanceShape b in ChanceShapes)
+                {
+                    if (a == b) continue;
+                    Assert.AreNotEqual(fingerprints[a], fingerprints[b],
+                        $"{a} and {b} deliver identically — the chance shape is not being expressed");
+                }
+        }
+
+        /// <summary>Phase 2E-3: Celebrate and Collapse are read from the plan, not from the
+        /// template's hardcoded tail (Phase 2C's report flagged that they were not). The same
+        /// staged goal with the same shape must therefore produce two different tails.</summary>
+        [UnityTest]
+        public IEnumerator Celebrate_and_Collapse_produce_different_tails_from_the_same_staged_goal()
+        {
+            TheaterStage stage = BuildStage();
+
+            SceneSpec spec = new SceneSpec(SceneTemplate.GoalFor, 0, false, false, true,
+                new ScoreLedger.StagedGoal(true, true),
+                new SweatPacer().SceneSeconds(SceneTemplate.GoalFor, false));
+
+            stage.PlayPlannedScene(GoalPlan(ChanceShape.Direct, ReactionPattern.Celebrate), spec,
+                _ => { }, () => { }, () => { });
+            StepView[] celebrate = ReadScript(stage);
+            float celebrateDur = 0f;
+            var celebrateFp = new System.Text.StringBuilder();
+            foreach (StepView s in celebrate)
+            {
+                celebrateDur += s.Dur;
+                celebrateFp.Append(s.Route).Append(':').Append(s.AtkPicked ? '1' : '0')
+                           .Append(':').Append(Mathf.RoundToInt(s.Ball.x * 20f)).Append('|');
+            }
+            stage.CancelScene();
+            yield return null;
+
+            stage.PlayPlannedScene(GoalPlan(ChanceShape.Direct, ReactionPattern.Collapse), spec,
+                _ => { }, () => { }, () => { });
+            StepView[] collapse = ReadScript(stage);
+            float collapseDur = 0f;
+            var collapseFp = new System.Text.StringBuilder();
+            foreach (StepView s in collapse)
+            {
+                collapseDur += s.Dur;
+                collapseFp.Append(s.Route).Append(':').Append(s.AtkPicked ? '1' : '0')
+                          .Append(':').Append(Mathf.RoundToInt(s.Ball.x * 20f)).Append('|');
+            }
+            stage.CancelScene();
+            yield return null;
+
+            Assert.AreNotEqual(celebrateFp.ToString(), collapseFp.ToString(),
+                "Celebrate and Collapse must render different reactions to the same staged goal");
+            Assert.AreEqual(celebrateDur, collapseDur, 0.001f,
+                "a reaction reshapes the tail; it never buys or spends time");
         }
 
         /// <summary>Phase 2E-2: SetPiece and Counter each have a defining beat the other grammars

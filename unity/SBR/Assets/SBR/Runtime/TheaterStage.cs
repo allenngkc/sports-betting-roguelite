@@ -960,23 +960,50 @@ namespace SBR.Game
                 case SceneTemplate.GoalFor:
                 case SceneTemplate.GoalAgainst:
                 {
-                    // Phase 2E-2 (PRD §7.2/§7.3/§10): the approach into the box is now the shared
-                    // grammar buildup (see BuildGrammarBuildup) instead of one hardcoded advance —
-                    // the shot/marker/restart tail is untouched truth, exactly as before. Grammar
-                    // null (legacy plan-free PlayScene) falls back to Central.
+                    // Phase 2E-3 (PRD §7.1/§10): the chance shape (HOW the final ball into the
+                    // box is delivered) is now its own segment — BuildChanceShapeDelivery,
+                    // inserted between the grammar buildup (how the ball reaches the final
+                    // third) and the truth-authored shot/marker/restart tail. Sequential
+                    // composition, exactly like grammar + payoff already compose in Phase 2E-2/
+                    // 2E-1, never a (grammar x chance shape) product. ChanceShape null (legacy
+                    // plan-free PlayScene) falls back to Direct — BuildChanceShapeDelivery's own
+                    // simplest default. Grammar null still falls back to Central as before; the
+                    // grammar buildup's own budget shrinks from 0.54 to 0.40 to make room for the
+                    // new 0.14 delivery segment, so the pre-shot total (0.54) is unchanged.
                     MovementGrammar? grammar = plan.HasValue ? plan.Value.Grammar : (MovementGrammar?)null;
-                    Step[] buildup = BuildGrammarBuildup(grammar ?? MovementGrammar.Central, B * 0.54f,
+                    ChanceShape? chanceShape = plan.HasValue ? plan.Value.ChanceShape : (ChanceShape?)null;
+                    Step[] buildup = BuildGrammarBuildup(grammar ?? MovementGrammar.Central, B * 0.40f,
                         0.56f, 0.90f, lane, 0.60f, 0.72f, u, truthChase: false);
-                    Step[] tail =
-                    {
-                        S(B * 0.12f, 0.985f, 0.5f, 0.72f, 1f, MkGoal, goal, RouteShot),
-                        // The long restart tail is deliberate (playtest #15): the reveal fires
-                        // at the goal (66% in), so this whole walk-back plays with the market OPEN.
-                        commits
-                            ? S(B * 0.34f, 0.5f, 0.5f, 0.55f, 0.4f, route: RouteKickoff)
-                            : S(B * 0.34f, 0.84f, 0.30f, 0.60f, 0.3f, route: RouteBackLine), // chalked: defenders restart
-                    };
-                    core = Concat(buildup, tail);
+                    Step[] delivery = BuildChanceShapeDelivery(chanceShape, B * 0.14f, 0.90f, lane,
+                        0.735f, u, chase: false);
+                    // Celebrate (plan.Reaction) is only ever legal on a COMMITTING goal (§7.2's
+                    // "forbidden implication" bars it from ChalkedGoal, and the planner's catalog
+                    // never offers it there — guarded here too in case a hand-built plan
+                    // disagrees) — a visible cluster near the goal before the walk-back, its own
+                    // beat rather than folding straight into the restart. Every other reaction
+                    // (Step/Chase/Drop/Recover) keeps the exact single-step restart this template
+                    // always played — those four already arrive via the Pressure -> tempo/chase
+                    // coupling ApplyPlanShaping applies below, not via anything reaction-specific
+                    // here (verified against TheaterScenePlanner.PrimaryReactionFor/ReactionsFor:
+                    // Step/Chase/Drop are each the exclusive primary for exactly one PressureMode).
+                    bool celebrate = commits && plan.HasValue && plan.Value.Reaction == ReactionPattern.Celebrate;
+                    Step[] tail = celebrate
+                        ? new[]
+                          {
+                              S(B * 0.12f, 0.985f, 0.5f, 0.72f, 1f, MkGoal, goal, RouteShot),
+                              S(B * 0.12f, 0.60f, 0.5f, 0.66f, 0f, route: RouteAuthored), // the cluster
+                              S(B * 0.22f, 0.5f, 0.5f, 0.55f, 0.4f, route: RouteKickoff), // then the walk-back
+                          }
+                        : new[]
+                          {
+                              S(B * 0.12f, 0.985f, 0.5f, 0.72f, 1f, MkGoal, goal, RouteShot),
+                              // The long restart tail is deliberate (playtest #15): the reveal fires
+                              // at the goal (66% in), so this whole walk-back plays with the market OPEN.
+                              commits
+                                  ? S(B * 0.34f, 0.5f, 0.5f, 0.55f, 0.4f, route: RouteKickoff)
+                                  : S(B * 0.34f, 0.84f, 0.30f, 0.60f, 0.3f, route: RouteBackLine), // chalked: defenders restart
+                          };
+                    core = Concat(Concat(buildup, delivery), tail);
                     if (spec.Template == SceneTemplate.GoalAgainst) core = Mirror(core);
                     break;
                 }
@@ -984,22 +1011,36 @@ namespace SBR.Game
                 case SceneTemplate.BreakawayFor:
                 case SceneTemplate.BreakawayAgainst:
                 {
-                    // Phase 2E-2: the buildup is grammar-driven, same composition as Goal above.
-                    // Breakaway's fallback is Counter, not Central — PRD §10's "visible turnover,
-                    // stretched lines, two supporting runners, recovering chase" is already
-                    // exactly what this template's shape has always depicted (won it deep, then a
-                    // long hunted carry) — Counter is the grammar this template already WAS.
+                    // Phase 2E-3: the same chance-shape-delivery composition as Goal above.
+                    // Breakaway's grammar fallback stays Counter (Phase 2E-2's reasoning: "the
+                    // grammar this template already WAS"); chance shape falls back to Direct,
+                    // same as every other path. The grammar buildup's own budget shrinks from
+                    // 0.56 to 0.42 to make room for the new 0.14 delivery segment, so the
+                    // pre-shot total (0.56) is unchanged.
                     MovementGrammar? grammar = plan.HasValue ? plan.Value.Grammar : (MovementGrammar?)null;
-                    Step[] buildup = BuildGrammarBuildup(grammar ?? MovementGrammar.Counter, B * 0.56f,
+                    ChanceShape? chanceShape = plan.HasValue ? plan.Value.ChanceShape : (ChanceShape?)null;
+                    Step[] buildup = BuildGrammarBuildup(grammar ?? MovementGrammar.Counter, B * 0.42f,
                         0.30f, 0.88f, lane, 0.42f, 0.66f, u, truthChase: true);
-                    Step[] tail =
-                    {
-                        S(B * 0.12f, 0.965f, spec.Variant == 2 ? 0.58f : 0.42f, 0.70f, 1f, MkGoal, goal, RouteShot),
-                        commits
-                            ? S(B * 0.32f, 0.5f, 0.5f, 0.55f, 0.4f, route: RouteKickoff)
-                            : S(B * 0.32f, 0.84f, 0.30f, 0.60f, 0.3f, route: RouteBackLine),
-                    };
-                    core = Concat(buildup, tail);
+                    Step[] delivery = BuildChanceShapeDelivery(chanceShape, B * 0.14f, 0.88f, lane,
+                        0.68f, u, chase: true);
+                    float shotY = spec.Variant == 2 ? 0.58f : 0.42f;
+                    // Celebrate, same guard and reasoning as Goal above.
+                    bool celebrate = commits && plan.HasValue && plan.Value.Reaction == ReactionPattern.Celebrate;
+                    Step[] tail = celebrate
+                        ? new[]
+                          {
+                              S(B * 0.12f, 0.965f, shotY, 0.70f, 1f, MkGoal, goal, RouteShot),
+                              S(B * 0.10f, 0.60f, 0.5f, 0.64f, 0f, route: RouteAuthored),
+                              S(B * 0.22f, 0.5f, 0.5f, 0.55f, 0.4f, route: RouteKickoff),
+                          }
+                        : new[]
+                          {
+                              S(B * 0.12f, 0.965f, shotY, 0.70f, 1f, MkGoal, goal, RouteShot),
+                              commits
+                                  ? S(B * 0.32f, 0.5f, 0.5f, 0.55f, 0.4f, route: RouteKickoff)
+                                  : S(B * 0.32f, 0.84f, 0.30f, 0.60f, 0.3f, route: RouteBackLine),
+                          };
+                    core = Concat(Concat(buildup, delivery), tail);
                     if (spec.Template == SceneTemplate.BreakawayAgainst) core = Mirror(core);
                     break;
                 }
@@ -1082,9 +1123,14 @@ namespace SBR.Game
                     // Phase 2E-2: the pre-marker HEAD (approach steps, before the shot/interception)
                     // is now the shared grammar buildup (BuildGrammarBuildup) — grammar null falls
                     // back to Central, same default as Goal/Breakaway.
+                    // Phase 2E-3: chance shape and reaction are threaded through the same way —
+                    // see BuildNearMissCore for how each payoff's own delivery budget and
+                    // Collapse-reaction handling work.
                     ScenePayoff? payoff = plan.HasValue ? plan.Value.Payoff : (ScenePayoff?)null;
                     MovementGrammar? grammar = plan.HasValue ? plan.Value.Grammar : (MovementGrammar?)null;
-                    core = BuildNearMissCore(payoff, grammar, B, lane);
+                    ChanceShape? chanceShape = plan.HasValue ? plan.Value.ChanceShape : (ChanceShape?)null;
+                    ReactionPattern? reaction = plan.HasValue ? plan.Value.Reaction : (ReactionPattern?)null;
+                    core = BuildNearMissCore(payoff, grammar, chanceShape, reaction, B, lane);
                     if (spec.Template == SceneTemplate.NearMissScare) core = Mirror(core);
                     break;
                 }
@@ -1267,8 +1313,20 @@ namespace SBR.Game
         /// </list>
         /// Every shape's step-duration fractions sum to 1, so the scene's total authored duration
         /// (<c>B</c>) is identical regardless of which payoff plays — the same invariant Phase
-        /// 2D's <see cref="BuildCornerCore"/> holds for the three corner shapes.</summary>
-        private static Step[] BuildNearMissCore(ScenePayoff? payoff, MovementGrammar? grammar, float B, float lane)
+        /// 2D's <see cref="BuildCornerCore"/> holds for the three corner shapes.
+        ///
+        /// <para><b>Phase 2E-3 additions.</b> Each payoff's HEAD budget shrinks by exactly 0.12
+        /// (e.g. Block/Clearance: 0.44 -> 0.32) to make room for a new
+        /// <see cref="BuildChanceShapeDelivery"/> segment of that same 0.12, inserted between the
+        /// head and the (byte-identical, untouched) tail — the total pre-tail budget is
+        /// unchanged. Interception is the one payoff <see cref="ChanceShape.Rebound"/> cannot
+        /// legally compose with (see that case's own comment for why and how it is handled).
+        /// <see cref="ReactionPattern.Collapse"/> is legal only opposite
+        /// <see cref="ScenePayoff.KeeperSave"/> (the planner's catalog never offers it to any
+        /// other payoff), and only changes the marker-free aftermath of the save — see that
+        /// case's <c>collapse</c> branch.</para></summary>
+        private static Step[] BuildNearMissCore(ScenePayoff? payoff, MovementGrammar? grammar,
+            ChanceShape? chanceShape, ReactionPattern? reaction, float B, float lane)
         {
             // Phase 2E-2 (PRD §7.2/§7.3/§10): the pre-marker HEAD (the approach before the shot,
             // or before the interception's own back-line marker) is now the shared grammar
@@ -1281,8 +1339,10 @@ namespace SBR.Game
             {
                 case ScenePayoff.Block:
                 {
-                    Step[] head = BuildGrammarBuildup(g, B * 0.44f, 0.60f, 0.84f, lane, 0.60f, 0.68f, 0.7f,
+                    Step[] head = BuildGrammarBuildup(g, B * 0.32f, 0.60f, 0.84f, lane, 0.60f, 0.68f, 0.7f,
                         truthChase: false);
+                    Step[] delivery = BuildChanceShapeDelivery(chanceShape, B * 0.12f, 0.84f, lane, 0.69f,
+                        0.7f, chase: false);
                     Step[] tail =
                     {
                         S(B * 0.12f, 0.97f, 0.47f, 0.72f, 1f, route: RouteShot), // the shot is struck
@@ -1290,15 +1350,29 @@ namespace SBR.Game
                         S(B * 0.14f, 0.90f, 0.72f, 0.70f, 1f, MkBlock, route: RouteBackLine, chase: true),
                         S(B * 0.30f, 0.66f, 0.55f, 0.60f, 0.6f, route: RoutePass), // recycled, still live
                     };
-                    return Concat(head, tail);
+                    return Concat(Concat(head, delivery), tail);
                 }
 
                 case ScenePayoff.Interception:
                 {
                     // The only head with a TRUTH chase — defense visibly closing in is intrinsic
                     // to "a defender wins it before any shot", not a grammar-added flourish.
-                    Step[] head = BuildGrammarBuildup(g, B * 0.52f, 0.58f, 0.78f, lane, 0.58f, 0.66f, 0.7f,
+                    Step[] head = BuildGrammarBuildup(g, B * 0.40f, 0.58f, 0.78f, lane, 0.58f, 0.66f, 0.7f,
                         truthChase: true);
+                    // Phase 2E-3: Rebound cannot compose with Interception. Rebound's own
+                    // definition requires a shot to already have been struck (visibly blocked,
+                    // before a different second touch) — Interception is the ONE payoff whose
+                    // entire truth contract is "a defender wins it back BEFORE any shot is
+                    // struck" (no RouteShot step exists anywhere in this shape, asserted below
+                    // and by TheaterStageAttributionTests). Rendering Rebound here would either
+                    // fabricate a shot that contradicts the payoff or silently drop Rebound's
+                    // defining beat — neither is acceptable, so this is the one shape/payoff pair
+                    // that genuinely cannot compose: Rebound falls back to Direct (the simplest
+                    // of the five) for this payoff only. Every other chance shape composes
+                    // normally, continuing the head's own truth chase through the delivery.
+                    ChanceShape? effectiveShape = chanceShape == ChanceShape.Rebound ? ChanceShape.Direct : chanceShape;
+                    Step[] delivery = BuildChanceShapeDelivery(effectiveShape, B * 0.12f, 0.78f, lane, 0.665f,
+                        0.7f, chase: true);
                     Step[] tail =
                     {
                         // Won BEFORE any shot — no RouteShot step exists anywhere in this shape.
@@ -1308,13 +1382,15 @@ namespace SBR.Game
                         // Settles neutrally — never builds toward a second chance for the other side.
                         S(B * 0.16f, 0.45f, 0.50f, 0.50f, 0.3f, route: RouteAuthored, atkPicked: false),
                     };
-                    return Concat(head, tail);
+                    return Concat(Concat(head, delivery), tail);
                 }
 
                 case ScenePayoff.Clearance:
                 {
-                    Step[] head = BuildGrammarBuildup(g, B * 0.44f, 0.60f, 0.84f, lane, 0.60f, 0.68f, 0.7f,
+                    Step[] head = BuildGrammarBuildup(g, B * 0.32f, 0.60f, 0.84f, lane, 0.60f, 0.68f, 0.7f,
                         truthChase: false);
+                    Step[] delivery = BuildChanceShapeDelivery(chanceShape, B * 0.12f, 0.84f, lane, 0.69f,
+                        0.7f, chase: false);
                     Step[] tail =
                     {
                         S(B * 0.12f, 0.97f, 0.47f, 0.72f, 1f, route: RouteShot), // the shot / cross
@@ -1322,13 +1398,15 @@ namespace SBR.Game
                         S(B * 0.12f, 0.86f, 0.62f, 0.72f, 1f, MkClearance, route: RouteBackLine, chase: true),
                         S(B * 0.32f, 0.35f, 0.28f, 0.48f, 0.4f, route: RouteBackLine),
                     };
-                    return Concat(head, tail);
+                    return Concat(Concat(head, delivery), tail);
                 }
 
                 case ScenePayoff.Post:
                 {
-                    Step[] head = BuildGrammarBuildup(g, B * 0.46f, 0.62f, 0.86f, lane, 0.62f, 0.68f, 0.7f,
+                    Step[] head = BuildGrammarBuildup(g, B * 0.34f, 0.62f, 0.86f, lane, 0.62f, 0.68f, 0.7f,
                         truthChase: false);
+                    Step[] delivery = BuildChanceShapeDelivery(chanceShape, B * 0.12f, 0.86f, lane, 0.69f,
+                        0.7f, chase: false);
                     Step[] tail =
                     {
                         S(B * 0.12f, 0.99f, 0.47f, 0.72f, 1f, route: RouteShot), // the shot is struck
@@ -1336,13 +1414,15 @@ namespace SBR.Game
                         S(B * 0.10f, 0.985f, 0.42f, 0.72f, 1f, MkPost, route: RouteAuthored),
                         S(B * 0.32f, 0.55f, 0.45f, 0.55f, 0.3f, route: RouteAuthored), // rebound drifts away
                     };
-                    return Concat(head, tail);
+                    return Concat(Concat(head, delivery), tail);
                 }
 
                 case ScenePayoff.NearWide:
                 {
-                    Step[] head = BuildGrammarBuildup(g, B * 0.48f, 0.62f, 0.86f, lane, 0.62f, 0.68f, 0.7f,
+                    Step[] head = BuildGrammarBuildup(g, B * 0.36f, 0.62f, 0.86f, lane, 0.62f, 0.68f, 0.7f,
                         truthChase: false);
+                    Step[] delivery = BuildChanceShapeDelivery(chanceShape, B * 0.12f, 0.86f, lane, 0.69f,
+                        0.7f, chase: false);
                     Step[] tail =
                     {
                         S(B * 0.14f, 0.97f, 0.80f, 0.74f, 1f, route: RoutePass), // the strike shapes up
@@ -1351,22 +1431,41 @@ namespace SBR.Game
                         S(B * 0.10f, 0.99f, 0.86f, 0.75f, 1f, MkNearWide, route: RouteAuthored),
                         S(B * 0.28f, 0.55f, 0.50f, 0.55f, 0.3f, route: RouteAuthored), // goal kick, drifts back
                     };
-                    return Concat(head, tail);
+                    return Concat(Concat(head, delivery), tail);
                 }
 
                 case ScenePayoff.KeeperSave:
                 default:
                 {
-                    Step[] head = BuildGrammarBuildup(g, B * 0.46f, 0.62f, 0.86f, lane, 0.62f, 0.68f, 0.7f,
+                    Step[] head = BuildGrammarBuildup(g, B * 0.34f, 0.62f, 0.86f, lane, 0.62f, 0.68f, 0.7f,
                         truthChase: false);
-                    Step[] tail =
-                    {
-                        S(B * 0.12f, 0.99f, 0.47f, 0.72f, 1f, route: RouteShot),     // the shot
-                        S(B * 0.10f, 0.94f, 0.82f, 0.70f, 1f, MkSave, route: RouteAuthored), // off the bar
-                        S(B * 0.12f, 0.92f, 0.80f, 0.70f, 0f, route: RouteAuthored), // the hold — dead air
-                        S(B * 0.20f, 0.60f, 0.35f, 0.58f, 0.3f, route: RouteBackLine), // cleared off the line
-                    };
-                    return Concat(head, tail);
+                    Step[] delivery = BuildChanceShapeDelivery(chanceShape, B * 0.12f, 0.86f, lane, 0.69f,
+                        0.7f, chase: false);
+                    // Collapse (plan.Reaction) is legal only opposite KeeperSave — the planner's
+                    // catalog never offers it to any other payoff. The shot and the save itself
+                    // (MkSave) stay byte-identical either way; only the marker-free aftermath
+                    // differs — Collapse lets the ball die near the shooter instead of bouncing
+                    // clear, a longer, low-tempo hold reading as the attack's energy draining
+                    // away. Every other reaction keeps the brisk recovery this template always
+                    // played (Step/Chase/Drop/Recover arrive via the Pressure coupling instead —
+                    // see ApplyPlanShaping).
+                    bool collapse = reaction == ReactionPattern.Collapse;
+                    Step[] tail = collapse
+                        ? new[]
+                          {
+                              S(B * 0.12f, 0.99f, 0.47f, 0.72f, 1f, route: RouteShot),
+                              S(B * 0.10f, 0.94f, 0.82f, 0.70f, 1f, MkSave, route: RouteAuthored),
+                              S(B * 0.12f, 0.88f, 0.62f, 0.68f, 0f, route: RouteAuthored),    // dies near the shooter
+                              S(B * 0.20f, 0.55f, 0.50f, 0.52f, 0.08f, route: RouteBackLine), // no urgency to recover it
+                          }
+                        : new[]
+                          {
+                              S(B * 0.12f, 0.99f, 0.47f, 0.72f, 1f, route: RouteShot),     // the shot
+                              S(B * 0.10f, 0.94f, 0.82f, 0.70f, 1f, MkSave, route: RouteAuthored), // off the bar
+                              S(B * 0.12f, 0.92f, 0.80f, 0.70f, 0f, route: RouteAuthored), // the hold — dead air
+                              S(B * 0.20f, 0.60f, 0.35f, 0.58f, 0.3f, route: RouteBackLine), // cleared off the line
+                          };
+                    return Concat(Concat(head, delivery), tail);
                 }
             }
         }
@@ -1556,6 +1655,107 @@ namespace SBR.Game
         /// Wing/Switch visually indistinguishable from Central for a center-lane scene).</summary>
         private static float WideLane(float lane)
             => Mathf.Abs(lane - 0.5f) < 0.02f ? 0.80f : Mathf.Clamp01(0.5f + (lane - 0.5f) * 1.5f);
+
+        /// <summary>Phase 2E-3 (PRD §7.1's "chance shape" dimension; §10's payoff-silhouette
+        /// table): the final DELIVERY into a shooting chance, inserted between a template's
+        /// grammar buildup (how the ball reaches the final third — <see cref="BuildGrammarBuildup"/>)
+        /// and its own truth-authored payoff tail (what happens once the chance exists) —
+        /// sequential composition, exactly like grammar and payoff already compose in Phase
+        /// 2E-2/2E-1, never a (grammar x chance shape) product. This method never fires a marker
+        /// and never carries a <c>StagedGoal</c>, so it composes unchanged with every Goal/
+        /// Breakaway tail and every near-miss payoff tail except one (see
+        /// <see cref="ChanceShape.Rebound"/>'s entry below). Every caller passes a
+        /// <paramref name="budget"/> carved out of what the grammar buildup previously spent
+        /// alone (the pre-shot total is unchanged), and every shape's own step-duration fractions
+        /// sum to exactly the budget, so <c>B * 1.00</c> stays intact regardless of which of the
+        /// five renders — the same invariant every prior phase's shape family holds.
+        ///
+        /// Silhouettes (VISUAL-DESIGN.md §10's payoff-silhouette table, verbatim):
+        /// <list type="bullet">
+        /// <item><description><see cref="ChanceShape.ThroughBall"/>: "runner crosses the back
+        /// line before the final touch" — the deepest single run of the five, held at a fixed
+        /// lane with almost no lateral drift.</description></item>
+        /// <item><description><see cref="ChanceShape.Cross"/>: "delivery originates wide and
+        /// enters the goal area laterally" — starts at <see cref="WideLane"/>, then sweeps its Y
+        /// back toward center while X pushes to the edge of the area.</description></item>
+        /// <item><description><see cref="ChanceShape.Cutback"/>: "ball reaches the byline, then
+        /// travels backward to the shooter" — the ONLY shape whose X ever DECREASES; every other
+        /// shape's X only ever advances toward the goal it is attacking.</description></item>
+        /// <item><description><see cref="ChanceShape.Rebound"/>: "first shot visibly blocked/
+        /// saved; a different second touch completes the fact" — the only shape that is itself
+        /// three steps carrying real routes (<see cref="RouteShot"/>, then a REAL defender via
+        /// <see cref="RouteBackLine"/>, then a DIFFERENT attacker via <see cref="RoutePass"/>),
+        /// not a waypoint/tempo variation on the others. Carries no marker of its own — the
+        /// payoff tail that follows still supplies the scene's one and only marker, so a
+        /// Rebound-shaped GOAL still fires exactly one <see cref="MkGoal"/> (the rebound's own
+        /// first attempt is visibly stopped by a defender; the tail's own shot completes the
+        /// single staged fact) and a Rebound-shaped near miss still fires exactly one payoff
+        /// marker. Structurally incompatible with <see cref="ScenePayoff.Interception"/> — see
+        /// <see cref="BuildNearMissCore"/>'s Interception case for why and how that is
+        /// handled.</description></item>
+        /// <item><description><see cref="ChanceShape.Direct"/>: no flourish — a single
+        /// high-tempo advance, the simplest of the five and the legacy plan-free fallback
+        /// (<paramref name="shape"/> null).</description></item>
+        /// </list>
+        /// <paramref name="chase"/> threads a template's own truth chase fact (Breakaway's
+        /// hunted carry, near-miss Interception's closing defense) through every shape,
+        /// exactly like <see cref="BuildGrammarBuildup"/>'s <c>truthChase</c> — Rebound's own
+        /// block step always chases regardless (its own defining fact, not a threaded one).</summary>
+        private static Step[] BuildChanceShapeDelivery(ChanceShape? shape, float budget, float startX,
+            float lane, float terr, float tempoFloor, bool chase)
+        {
+            switch (shape)
+            {
+                case ChanceShape.Cross:
+                {
+                    float wide = WideLane(lane);
+                    return new[]
+                    {
+                        S(budget * 0.5f, Mathf.Lerp(startX, 0.93f, 0.7f), wide, terr,
+                            Mathf.Max(0.7f, tempoFloor), chase: chase),
+                        S(budget * 0.5f, 0.95f, Mathf.Lerp(wide, 0.5f, 0.65f), terr, 1f, chase: chase),
+                    };
+                }
+
+                case ChanceShape.Cutback:
+                    return new[]
+                    {
+                        S(budget * 0.5f, 0.98f, WideLane(lane), terr, Mathf.Max(0.75f, tempoFloor), chase: chase),
+                        // Backward — the one shape where X ever decreases; the shooter waits centrally.
+                        S(budget * 0.5f, 0.78f, 0.5f, terr, 1f, chase: chase),
+                    };
+
+                case ChanceShape.Rebound:
+                    return new[]
+                    {
+                        // The chance shape's OWN first attempt: a shot struck...
+                        S(budget * 0.34f, Mathf.Lerp(startX, 0.95f, 0.8f), lane, terr, 1f, route: RouteShot),
+                        // ...blocked by a REAL defender...
+                        S(budget * 0.33f, Mathf.Lerp(startX, 0.95f, 0.7f), 1f - lane, terr, 1f,
+                            route: RouteBackLine, chase: true),
+                        // ...and a DIFFERENT attacker recycles the loose ball — the second touch.
+                        // No marker anywhere here: the payoff tail supplies the scene's one marker.
+                        S(budget * 0.33f, Mathf.Lerp(startX, 0.95f, 0.9f), lane, terr, 0.8f,
+                            route: RoutePass, chase: chase),
+                    };
+
+                case ChanceShape.ThroughBall:
+                    return new[]
+                    {
+                        S(budget * 0.5f, Mathf.Lerp(startX, 0.96f, 0.6f), lane, terr,
+                            Mathf.Max(0.85f, tempoFloor), chase: chase),
+                        S(budget * 0.5f, 0.975f, lane, terr, 1f, chase: chase),
+                    };
+
+                case ChanceShape.Direct:
+                default:
+                    return new[]
+                    {
+                        S(budget, Mathf.Lerp(startX, 0.96f, 1f), lane, terr, Mathf.Max(0.8f, tempoFloor),
+                            chase: chase),
+                    };
+            }
+        }
 
         /// <summary>Concatenates a grammar-driven buildup with a template's own truth-authored
         /// payoff tail — see <see cref="BuildGrammarBuildup"/>'s doc for why this two-piece
