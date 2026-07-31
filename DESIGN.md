@@ -413,10 +413,10 @@ Found while retiring the deprecated flash colours (`1aa74c3`). None are colour-r
 none were fixed in that pass, but all three contradict this document and are carried as debt for
 Phase 3's UI work.
 
-1. **Banned artifacts are still in `TvSweatScreen.cs`.** `DeadLegBeat` runs a static-noise crawl, and
-   a `_scanlines` overlay exists — roughly a dozen references between them. §2 bans scanlines and
-   interference noise by name as the deprecated `08` world's signature. **This is the approved design
-   being contradicted by code that is currently shipping**, and it is the highest-priority item here.
+1. ~~**Banned artifacts are still in `TvSweatScreen.cs`.**~~ **CLEARED 2026-07-31 (T8, `842382d`).**
+   The `_scanlines` overlay and `DeadLegBeat`'s static-noise crawl are removed, with their textures,
+   tunables, and the two RawImage helpers left without callers. `DeadLegBeat`'s hold is preserved at
+   its original length — the static was decoration, the hold is pacing.
 2. **`chromeCyan` is used broadly** for leg, clock, records, chrome and slip-strip labels. Cyan was a
    role in the *previous* palette and has none in §4, where context is grey. A retired hue doing
    general duty across the surface.
