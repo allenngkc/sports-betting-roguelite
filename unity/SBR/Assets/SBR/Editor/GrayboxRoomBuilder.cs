@@ -918,49 +918,42 @@ namespace SBR
             couchGraze.type = LightType.Spot;
             couchGraze.spotAngle = 110f;
             couchGraze.innerSpotAngle = 30f;
-            couchGraze.intensity = 0.32f;
+            // R10 FALLBACK, raised 0.32 -> 1.60. Bounce was tried first per the approved route
+            // and measured as structurally unable to raise relief (see the note below the probe
+            // block). This light is Mixed, so its DIRECT contribution stays realtime - which is
+            // the whole point: direct light at a grazing angle is the only thing that produces
+            // the across-surface gradient a normal map needs. It already sits at y = 1.44, under
+            // BunkSlab's underside at 1.50, so it cannot reach either bunk - the constraint four
+            // earlier attempts at this corner were reverted for.
+            couchGraze.intensity = 1.60f;
             couchGraze.range = 2.2f;
             couchGraze.color = new Color(0.70f, 0.74f, 0.80f);
             couchGraze.shadows = LightShadows.None;
 
-            // BAKED-ONLY BOUNCE - directional variation without a seventh visible lamp.
-            // A Baked light contributes only through the probe field's bake; Unity strips it out
-            // of the realtime light list entirely, so the player never sees a new source switch
-            // on. What is missing on the couch is a DIRECTION for the bounce to carry across the
-            // seat, not another visible lamp in the shot - Baked is the only type that gives the
-            // first without the second.
+            // A BAKED-ONLY BOUNCE LIGHT WAS TRIED HERE TWICE AND REMOVED. Do not re-add one.
             //
-            // Sits at y=0.58, well below BunkSlab's underside at y=1.5 (BuildCouch above), so it
-            // cannot reach either bunk. That is not a nice-to-have margin - four earlier attempts
-            // at lighting this corner were reverted for lighting the second bunk's mattress, and
-            // that history is the hard constraint on anything placed here.
+            // R10 asked for directional variation on the couch rather than another visible lamp,
+            // so a Light with lightmapBakeType = Baked looked ideal: it contributes only through
+            // the probe field and Unity strips it from the realtime list, so the player never
+            // sees a new source. It measured the exact opposite of the goal, twice.
             //
-            // Aimed +Z, straight down the couch's own length, at seat height - seat top is y=0.42
-            // (BuildCouch), this sits 0.16m above it - so light arrives near-tangent to the fabric
-            // rather than square-on. That is the condition under which a normal map reads at all
-            // (standing law R12): Lambertian sensitivity to a normal perturbation scales with
-            // sin(theta) off the surface normal, and light hitting perpendicular shows no relief
-            // no matter how strong the map is. See the GRAZING WALL WASH note above for the same
-            // argument applied to the ceiling and the (reverted) right-wall graze.
+            //   wide, close  (100deg, 0.45m off the couch): couch mean +2.50%, relief 0.93x
+            //   narrow, back ( 50deg, 1.15m off the couch): couch mean +2.28%, relief 0.94x
             //
-            // Known risk, stated plainly: probe lighting is spherical harmonics - a handful of
-            // low-order coefficients per probe - and is inherently low-frequency. It may land as a
-            // soft directional gradient across the cushion rather than the crisp graze a realtime
-            // spot gives (compare CouchGraze immediately above, which stays realtime for exactly
-            // that reason). Whether a gradient is enough to make the fabric weave read at all is
-            // exactly what the bake will show; this is not proven to work going in.
-            var couchBounceGo = new GameObject("CouchBounceBaked");
-            couchBounceGo.transform.position = new Vector3(-0.95f, 0.58f, -1.05f);
-            couchBounceGo.transform.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up);
-            var couchBounce = couchBounceGo.AddComponent<Light>();
-            couchBounce.type = LightType.Spot;
-            couchBounce.spotAngle = 100f;
-            couchBounce.innerSpotAngle = 25f;
-            couchBounce.intensity = 1.8f;
-            couchBounce.range = 3.2f;
-            couchBounce.color = new Color(0.72f, 0.75f, 0.80f);
-            couchBounce.shadows = LightShadows.None;
-            couchBounce.lightmapBakeType = LightmapBakeType.Baked;
+            // Brighter AND flatter, and narrowing the source barely moved it - so this is not a
+            // tuning miss, it is structural. Relief% is a GRADIENT DIVIDED BY A MEAN. Probe
+            // lighting is spherical harmonics, which is smooth at the scale of a cushion, so it
+            // raises the mean without raising the gradient - it can only ever move the
+            // denominator. Any probe-mediated addition lowers relief on a surface that is
+            // already lit, which is also why raising the bunk slab's underside albedo to bounce
+            // more light down was not tried: same mechanism, same outcome.
+            //
+            // This does NOT contradict R6, where probes raised wall relief 6.3x. There the walls
+            // went from flat ambient to bounce that varied across metres of surface. Here the
+            // couch is already lit and the addition is smooth across the whole cushion.
+            //
+            // Conclusion, and it sharpens R12: only light arriving at a grazing angle as DIRECT
+            // light can raise relief. Bounce fills shadow; it does not reveal surface.
 
             // REFLECTION PROBE - without this the room has no environment specular at all.
             // No skybox is assigned and there was no probe, so URP's reflection lookup returned

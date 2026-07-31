@@ -40,7 +40,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 EXPECTED_SINGLETONS = ["RoomArtRoot", "RoomArtGenerated", "RoomPostFx", "AdaptiveProbeVolume"]
-EXPECTED_LIGHT_COUNT = 8
+EXPECTED_LIGHT_COUNT = 8   # 6 Mixed + 2 Realtime (the R10 baked bounce was measured and removed)
 EXPECTED_DRESSING_COUNT = 6
 EXPECTED_COLLIDER_COUNT = 27
 
