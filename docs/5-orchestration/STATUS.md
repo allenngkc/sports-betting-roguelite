@@ -5,11 +5,13 @@
   evidence cleanup + gitignore, ProjectSettings isolated commit (`63cf1bc`,
   Allen-approved), S7 ink pipeline complete (`1090527`), defect fixes (`4eb2cba`),
   red-on-dead-leg ruling (`8822971`). Tree clean. Next: S8 OS chrome, then S9.
-  Green re-confirmed at HEAD `8822971` (EditMode 74/74, PlayMode 37/37, captures
-  visually spot-checked; ~4-min slot window, released). **S8 OS chrome underway.**
-  S11 ruled (no licence-encumbered type; Bell Centennial dropped) — free-licence
-  replacement comes from the Design Director; S8 continues in fallback, structured
-  for a cheap face swap. Lead: Claude (Opus 5).
+  **S8 landed** (`0b693f9`; EditMode 74/74, PlayMode 37/37, tree clean; S11 ruling
+  recorded `02e18eb`). Delegated verification worked — lead re-verified the
+  sub-agent's claims against XMLs, captures, and diff personally. Next: S9,
+  dispatched from planning per the directive. Open offer accepted: a Ledger capture
+  state folds into the S9 slot (Ledger chrome is currently verified by construction,
+  not pixels). Follow-up: desktop taskbar still a third chrome surface.
+  Lead: Claude (Opus 5).
 - **room-refinement:** handoff tracked (`49a7c55`); R7 wear plan committed and
   R9/R10 routed to the Design Director (`e59921f`). **R7.0 + generator + Tier 1
   committed** (`1e99f11`): GI opt-out verified (ContributeGI unchanged at 103), but
@@ -36,9 +38,9 @@
 - **Orchestrator:** Fable 5 session in `main-2`; lead channel chartered in
   `ORCHESTRATOR.md` §3a. Completion watchers armed on all three lead terminals and
   the Design Director session.
-- **Unity queue:** surething-ui holds the slot (S8 verification sub-agent mid-run)
-  → room Tier 1b build/bake/capture → tv-sweat final slot (corrected repro re-run +
-  PlayMode + graphics-mode experiment + commit).
+- **Unity queue:** tv-sweat holds the final slot (corrected repro re-run + PlayMode
+  + graphics-mode experiment + commit; granted while room's review runs) → room
+  Tier 1b build/bake/capture → surething-ui S9 verification when ready.
 - **Blocked:** none.
 - **Rulings (Allen, 2026-07-31):** C1 — latest document governs, `DESIGN.md` §6
   stands, layout closed. C2 — interim: shipped green tolerated, cold white-grey
