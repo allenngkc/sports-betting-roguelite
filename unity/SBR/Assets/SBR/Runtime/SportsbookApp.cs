@@ -14,6 +14,10 @@ namespace SBR.Game
         private enum DetailTab { Goals, Btts, Corners, Cards, Players }
         private readonly RectTransform _root;
         private readonly Font _font;
+        // --font-cond (Archivo Narrow) seam: figures, prices, team names and the wax/lock/rub-out
+        // action labels route through this instead of _font. See LaptopScreen's field comment — both
+        // currently resolve to the same fallback Font on purpose.
+        private readonly Font _fontCond;
         private readonly LaptopScreen _host;
         private readonly Action _invalidate;
         private readonly Action<Tab> _selectTab;
@@ -26,11 +30,12 @@ namespace SBR.Game
         private int _detailMatchup = -1;
         private DetailTab _detailTab = DetailTab.Goals;
 
-        public SportsbookApp(RectTransform root, Font font, LaptopScreen host, Action invalidate,
+        public SportsbookApp(RectTransform root, Font font, Font fontCond, LaptopScreen host, Action invalidate,
             Action<Tab> selectTab, Action home, Action ledger)
         {
             _root = root;
             _font = font;
+            _fontCond = fontCond;
             _host = host;
             _invalidate = invalidate;
             _selectTab = selectTab;
@@ -69,7 +74,7 @@ namespace SBR.Game
             MakeTab(tabs, "REWARDS", Tab.Rewards, tab, run.Phase != Phase.Shop);
             LaptopUi.MakeText(tabs, "Sheet", new Vector2(1f, .5f), new Vector2(1f, .5f), new Vector2(-14f, 0f), new Vector2(170f, 24f), 13, TextAnchor.MiddleRight, LaptopOs.Muted, "SHEET 1 OF 1", _font);
             RectTransform mast = LaptopUi.MakePanel(top, "FormMasthead", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, -72f), new Vector2(1024f, 68f), LaptopOs.Ink);
-            LaptopUi.MakeText(mast, "Brand", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(16f, -8f), new Vector2(300f, 28f), 26, TextAnchor.UpperLeft, LaptopOs.White, "SURETHING FORM", _font);
+            LaptopUi.MakeText(mast, "Brand", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(16f, -8f), new Vector2(300f, 28f), 26, TextAnchor.UpperLeft, LaptopOs.White, "SURETHING FORM", _fontCond);
             LaptopUi.MakeText(mast, "Run", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(17f, -38f), new Vector2(340f, 20f), 13, TextAnchor.UpperLeft, LaptopOs.Muted, $"ROUND {run.Round} OF {run.Config.Rounds}  ·  PRICES FINAL", _font);
             LaptopUi.MakeText(mast, "Figures", new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-16f, -10f), new Vector2(610f, 48f), 21, TextAnchor.UpperRight, LaptopOs.White, $"BANK {LaptopUi.Money(run.Bank)}    TARGET {LaptopUi.Money(run.CurrentPayment)}    TICKETS {run.Tickets.Count}/{run.Config.MaxTicketsPerRound}", _font);
         }
@@ -108,20 +113,30 @@ namespace SBR.Game
         {
             RectTransform card = LaptopUi.MakePanel(parent, "Matchup" + matchup.Index, new Vector2(0f, 1f),
                 new Vector2(0f, 1f), position, new Vector2(700f, 78f), LaptopOs.Surface);
-            LaptopUi.MakeText(card, "Number", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, -10f), new Vector2(34f, 56f), 15, TextAnchor.UpperLeft, LaptopOs.Muted, (matchup.Index + 1).ToString("00"), _font);
-            LaptopUi.MakeText(card, "Teams", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(54f, -8f), new Vector2(360f, 60f), 19, TextAnchor.UpperLeft, LaptopOs.White,
-                $"{LaptopUi.TeamShort(matchup.Away)}  {matchup.Away.Record}\n{LaptopUi.TeamShort(matchup.Home)}  {matchup.Home.Record}", _font);
-
             bool awaySelected = slip.SelectionOn(matchup.Index) == MarketSelection.Moneyline(Side.Away);
             bool homeSelected = slip.SelectionOn(matchup.Index) == MarketSelection.Moneyline(Side.Home);
+            // The wash behind a form entry he has marked (palette-surething.css --marked-wash).
+            // Added first, before any text/buttons, so it sits behind them; sized to fill the whole
+            // card so it is trivially contained within it.
+            if (awaySelected || homeSelected)
+                LaptopUi.MakeMarkedWash(card, "MarkedWash");
+            LaptopUi.MakeText(card, "Number", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, -10f), new Vector2(30f, 56f), 15, TextAnchor.UpperLeft, LaptopOs.Muted, (matchup.Index + 1).ToString("00"), _fontCond);
+            // Team names (19px) and W-L records (13px) are two distinct product-fact sizes per
+            // DESIGN.md's Lobby contract, so they are two Text components, not one string at a
+            // single size.
+            LaptopUi.MakeText(card, "Teams", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(54f, -8f), new Vector2(250f, 60f), 19, TextAnchor.UpperLeft, LaptopOs.White,
+                $"{LaptopUi.TeamShort(matchup.Away)}\n{LaptopUi.TeamShort(matchup.Home)}", _fontCond);
+            LaptopUi.MakeText(card, "Records", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(310f, -8f), new Vector2(140f, 60f), 13, TextAnchor.UpperLeft, LaptopOs.TonerSecondary,
+                $"{matchup.Away.Record}\n{matchup.Home.Record}", _font);
+
             LaptopUi.MakeButton(card, "AwayOdds", $"AWAY  {OddsFormat.American(matchup.AwayOdds)}",
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, -8f), new Vector2(112f, 32f), 19,
                 LaptopOs.Ink, frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
-                frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Away)); _invalidate(); }, _font, !frozen);
+                frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Away)); _invalidate(); }, _fontCond, !frozen);
             LaptopUi.MakeButton(card, "HomeOdds", $"HOME  {OddsFormat.American(matchup.HomeOdds)}",
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, -43f), new Vector2(112f, 32f), 19,
                 LaptopOs.Ink, frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
-                frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Home)); _invalidate(); }, _font, !frozen);
+                frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Home)); _invalidate(); }, _fontCond, !frozen);
             if (awaySelected || homeSelected)
             {
                 Sprite ring = ResolvePriceRing(matchup.Index);
@@ -144,9 +159,14 @@ namespace SBR.Game
                     image.raycastTarget = false;
                 }
             }
+            // Button stays the Shapes-exact 74x44 (line 223 of DESIGN.md); the -14 offset (matching
+            // the 14px padding used everywhere else on this row) reserves the full 78px More
+            // column from the Lobby contract, with the button flush against its right edge.
             LaptopUi.MakeButton(card, "Details", "MORE ›", new Vector2(1f, .5f), new Vector2(1f, .5f),
-                new Vector2(-12f, 0f), new Vector2(74f, 44f), 13, LaptopOs.Ink, LaptopOs.Muted,
+                new Vector2(-14f, 0f), new Vector2(74f, 44f), 13, LaptopOs.Ink, LaptopOs.Muted,
                 () => OpenDetail(matchup.Index), _font);
+            LaptopUi.MakeRule(card, "EntryRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
+                Vector2.zero, new Vector2(700f, 1f));
         }
 
         private void OpenDetail(int matchupIndex)
@@ -162,7 +182,10 @@ namespace SBR.Game
         private static Sprite ResolveWideRing(int identity)
             => ResolveInkSprite("ring-wide-", identity);
 
-        private static Sprite ResolveStrike(int identity)
+        // Internal rather than private: OldSlipsApp (a sibling class in this file) reuses the same
+        // deterministic strike lookup for the ledger's LOST-ticket treatment (Ruling S15) instead
+        // of inventing a second strike mechanism.
+        internal static Sprite ResolveStrike(int identity)
             => ResolveInkSprite("strike-", identity);
 
         private static Sprite ResolveInkSprite(string familyPrefix, int identity)
@@ -195,7 +218,7 @@ namespace SBR.Game
                 () => { _detailMatchup = -1; _selectTab(Tab.Lobby); }, _font);
             LaptopUi.MakeText(panel, "EventIdentity", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(132f, -6f), new Vector2(398f, 32f), 19, TextAnchor.UpperLeft, LaptopOs.White,
-                $"{LaptopUi.TeamShort(matchup.Away)}  @  {LaptopUi.TeamShort(matchup.Home)}", _font);
+                $"{LaptopUi.TeamShort(matchup.Away)}  @  {LaptopUi.TeamShort(matchup.Home)}", _fontCond);
             LaptopUi.MakeText(panel, "EventRecords", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-14f, -7f), new Vector2(150f, 32f), 13, TextAnchor.UpperRight, LaptopOs.TonerSecondary,
                 $"{matchup.Away.Record}   ·   {matchup.Home.Record}", _font);
@@ -315,28 +338,25 @@ namespace SBR.Game
                 Sprite ring = ResolveWideRing(matchup.Index);
                 if (ring != null)
                 {
-                    // KNOWN DEFECT — the wide ring does not close. Top and bottom pen strokes
-                    // render, the left cap renders as a detached stub, and the right cap is absent.
+                    // Y offset is POSITIVE. With a top-left pivot, anchoredPosition.y moves the rect
+                    // DOWN when negative, so the long-standing (-8,-8) pushed the ring 8px below the
+                    // cell instead of overshooting 8px above it: the ring spanned -8..-54 against a
+                    // cell of 0..-32, sitting under the number rather than around it. Only its upper
+                    // arcs reached the row, which is what read as "the ring does not close".
                     //
-                    // Ruled out so far, with evidence: the sprite is fine (ring-wide-a@2x is a
-                    // clean closed ellipse when inspected directly); Image.type is Simple with
-                    // preserveAspect false, so this is a plain stretch and not a 9-slice artifact;
-                    // and re-deriving the rect from the cell via the +8px overshoot rule did not
-                    // fix it — it moved the strokes without closing them.
+                    // The sprite, its import settings, the mesh (FullRect, verified) and the stretch
+                    // (Image.Simple) were all correct the whole time — the runtime dump confirmed no
+                    // mask anywhere in the chain. Diagnosis cost three passes because a correct wide
+                    // ellipse around a short price genuinely looks like two flat strokes plus distant
+                    // end caps, and that was twice mistaken for a broken ring.
                     //
-                    // Leading hypothesis, unconfirmed: ring-wide is 352x92 drawn into 176x46, a 2:1
-                    // downscale. The near-horizontal top and bottom strokes stay thick in Y and
-                    // survive it; the end curves are thin in X and fall under a pixel, so they
-                    // antialias away. GreenRing does not show this because InkRingGeometry sizes it
-                    // to a short word, nowhere near a 2:1 reduction. If that is right, the fix is in
-                    // tools/art/make-biro-rings.py — thicken the wide variant's ends — not here.
-                    //
-                    // Restored to the original geometry deliberately: the derived version was no
-                    // better and the surrounding tests pin these numbers. Do not "fix" this by
-                    // nudging the rect again without first testing the downscale hypothesis.
+                    // Size is the cell + 16 per assets/ASSETS.md and the design system's
+                    // InkMark.rect(): the real cell is 160x32, so 176x48.
+                    const float overshoot = 8f;
+                    Vector2 cellSize = new Vector2(160f, 32f);
                     LaptopUi.MakeSprite(offer, "WideBiroRing", ring, new Vector2(0f, 1f),
-                        new Vector2(0f, 1f), new Vector2(-8f, -8f),
-                        new Vector2(176f, 46f), LaptopOs.Accent);
+                        new Vector2(0f, 1f), new Vector2(-overshoot, overshoot),
+                        cellSize + new Vector2(overshoot * 2f, overshoot * 2f), LaptopOs.Accent);
                 }
             }
             // Law Two: biro blue marks the selection he made, nothing else. This offer's label/
@@ -353,7 +373,7 @@ namespace SBR.Game
                 replacement ? "⇄  " + price : price, new Vector2(0f, 1f), new Vector2(0f, 1f),
                 Vector2.zero, new Vector2(160f, 32f), 19, LaptopOs.Ink,
                 frozen ? LaptopUi.Dim(LaptopOs.Muted) : selected ? LaptopOs.Accent : LaptopOs.White,
-                frozen ? null : () => { slip.Toggle(matchup.Index, selection); _invalidate(); }, _font, !frozen);
+                frozen ? null : () => { slip.Toggle(matchup.Index, selection); _invalidate(); }, _fontCond, !frozen);
             if (replacement)
             {
                 RectTransform hint = LaptopUi.MakePanel(offer, "ReplacementHint",
@@ -394,12 +414,15 @@ namespace SBR.Game
                 Pick pick = slip.Picks[i];
                 Matchup matchup = run.CurrentSlate.Matchups[pick.MatchupIndex];
                 const float legWidth = 230f;
-                string legText = LaptopUi.FitLabelKeepingSuffix(_font, $"{i + 1}. ",
+                // Team names and prices are both condensed per MarginLeg.jsx; the "N. " index and the
+                // "ML — v" connector are minor structural filler riding along in the same string, not
+                // field labels, so the whole line routes through _fontCond rather than being split.
+                string legText = LaptopUi.FitLabelKeepingSuffix(_fontCond, $"{i + 1}. ",
                     CompactLegLabel(matchup, pick.Selection),
                     $"   {OddsFormat.American(matchup.Odds(pick.Selection))}", 13, legWidth);
                 LaptopUi.MakeText(panel, "Leg" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(14f, y), new Vector2(legWidth, 24f), 13, TextAnchor.UpperLeft, LaptopOs.White,
-                    legText, _font);
+                    legText, _fontCond);
                 int matchupIndex = pick.MatchupIndex;
                 if (run.OwnsConsumable("profit_boost"))
                 {
@@ -410,9 +433,10 @@ namespace SBR.Game
                         new Vector2(58f, 24f), 13, boosted ? LaptopOs.MoneyGold : LaptopOs.SurfaceRaised,
                         LaptopOs.White, () => { slip.ToggleBoost(legIndex); _invalidate(); }, _font);
                 }
+                // RUB OUT is an action label, set in the condensed face — RubOutButton.prompt.md.
                 LaptopUi.MakeButton(panel, "Remove" + i, "RUB OUT", new Vector2(1f, 1f), new Vector2(1f, 1f),
                     new Vector2(-12f, y + 8f), new Vector2(60f, 32f), 13, LaptopOs.Ink, LaptopOs.Muted,
-                    () => { slip.Remove(matchupIndex); _lockArmed = false; _invalidate(); }, _font);
+                    () => { slip.Remove(matchupIndex); _lockArmed = false; _invalidate(); }, _fontCond);
                 y -= 27f;
             }
 
@@ -443,22 +467,39 @@ namespace SBR.Game
             MakeChip(panel, "50%", chipX, y, () => slip.SetStakeFraction(0.50)); chipX += 76f;
             MakeChip(panel, "MAX", chipX, y, () => slip.SetStakeFraction(1.00));
             y -= 34f;
-            MakeChip(panel, "−$10", 14f, y, () => slip.Nudge(-10), 88f);
-            MakeChip(panel, "+$10", 110f, y, () => slip.Nudge(10), 88f);
+            // Nudge keys are "raised chrome" per StakeButton.jsx and set in the condensed face;
+            // the quick fraction chips above (10%/25%/50%/MAX) stay on the data face.
+            MakeChip(panel, "−$10", 14f, y, () => slip.Nudge(-10), 88f, _fontCond);
+            MakeChip(panel, "+$10", 110f, y, () => slip.Nudge(10), 88f, _fontCond);
             y -= 32f;
             LaptopUi.MakeText(panel, "Stake", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, y), new Vector2(300f, 24f), 16, TextAnchor.UpperLeft, LaptopOs.White,
                 $"STAKE {LaptopUi.Money(slip.Stake)}", _font);
             y -= 32f;
-            LaptopUi.MakeText(panel, "Payout", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, y), new Vector2(300f, 36f), 31, TextAnchor.UpperLeft, LaptopOs.MoneyGold, $"{LaptopUi.Money(slip.ToWin)}", _font);
+            Text payout = LaptopUi.MakeText(panel, "Payout", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, y), new Vector2(300f, 36f), 31, TextAnchor.UpperLeft, LaptopOs.MoneyGold, $"{LaptopUi.Money(slip.ToWin)}", _fontCond);
+            // Hand-laid wax highlight behind the one loud figure (palette-surething.css
+            // --wax-highlight-*): a thin amber band, tilted, sized from the figure's own measured
+            // width the same way InkRingGeometry sizes a ring — plus the highlight's own -3/+5 left/
+            // right overshoot, not the ring's symmetric +8. Created after the text, then the text is
+            // moved back to the top of the sibling order so it still draws over the band.
+            float highlightWidth = Mathf.Max(40f, payout.preferredWidth) + 8f;
+            RectTransform highlight = LaptopUi.MakePanel(panel, "PayoutHighlight", new Vector2(0f, 1f),
+                new Vector2(0f, 1f), new Vector2(14f - 3f, y - 34f),
+                new Vector2(highlightWidth, LaptopOs.WaxHighlightHeight), LaptopOs.MoneyGold);
+            highlight.GetComponent<Image>().color = new Color(LaptopOs.MoneyGold.r, LaptopOs.MoneyGold.g,
+                LaptopOs.MoneyGold.b, LaptopOs.WaxHighlightOpacity);
+            highlight.localEulerAngles = new Vector3(0f, 0f, LaptopOs.WaxHighlightRotateDeg);
+            payout.transform.SetAsLastSibling();
             y -= 40f;
 
             string blocker = slip.PlaceBlocker;
+            // The one solid wax field on the surface (PlaceAction.jsx). Enabled, its label is
+            // --wax-ink — punched-out type on wax, not the general document Ink used everywhere else.
             LaptopUi.MakeButton(panel, "Place", "PLACE TICKET",
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, y), new Vector2(296f, 44f), 17,
                 blocker == null ? LaptopOs.MoneyGold : LaptopOs.Surface,
-                blocker == null ? LaptopOs.Ink : LaptopUi.Dim(LaptopOs.Muted),
-                blocker == null ? () => { slip.Place(); _lockArmed = false; _armedRound = -1; _invalidate(); } : null, _font,
+                blocker == null ? LaptopOs.WaxInk : LaptopUi.Dim(LaptopOs.Muted),
+                blocker == null ? () => { slip.Place(); _lockArmed = false; _armedRound = -1; _invalidate(); } : null, _fontCond,
                 blocker == null && !boardFrozen);
             if (blocker != null)
                 // Same overlap class as LockReason: the Place button spans y..y-44 and this label
@@ -479,7 +520,7 @@ namespace SBR.Game
                     _armedRound = -1;
                     _host.director.LockRound();
                     _invalidate();
-                } : null, _font, canLock);
+                } : null, _fontCond, canLock);
             if (!canLock)
             {
                 // The two-stray-red-"P" defect was occlusion, not text rendering. The reason label
@@ -538,22 +579,25 @@ namespace SBR.Game
                 // first thing dropped to make room. The payout is the figure that matters most on
                 // this line, so it is a protected suffix — FitText only ever trims the label ahead
                 // of it, and only ever behind an ellipsis, never a silent cut.
-                string receiptHeaderText = LaptopUi.FitLabelKeepingSuffix(_font, string.Empty,
+                // Ticket identity/stake/combined/payout are all condensed per TicketReceipt.jsx; the
+                // "TICKET"/"PAYS" words are structural, not field labels, so the whole header string
+                // routes through _fontCond rather than being split across two Text components.
+                string receiptHeaderText = LaptopUi.FitLabelKeepingSuffix(_fontCond, string.Empty,
                     $"TICKET {identity} · {LaptopUi.Money(ticket.Stake)} · {OddsFormat.American(combined)}",
                     $" · PAYS {LaptopUi.Money(ticket.PotentialPayout)}", 13, receiptTextWidth);
                 LaptopUi.MakeText(receipt, "ReceiptHeader", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(8f, -4f), new Vector2(receiptTextWidth, 22f), 13, TextAnchor.UpperLeft,
-                    LaptopOs.MoneyGold, receiptHeaderText, _font);
+                    LaptopOs.MoneyGold, receiptHeaderText, _fontCond);
                 for (int legIndex = 0; legIndex < ticket.Legs.Count; legIndex++)
                 {
                     Leg leg = ticket.Legs[legIndex];
-                    string ticketLegText = LaptopUi.FitLabelKeepingSuffix(_font, $"{legIndex + 1}. ",
+                    string ticketLegText = LaptopUi.FitLabelKeepingSuffix(_fontCond, $"{legIndex + 1}. ",
                         CompactLegLabel(leg.Matchup, leg.Selection),
                         $"  {OddsFormat.American(leg.OfferedOdds)}", 13, receiptTextWidth);
                     LaptopUi.MakeText(receipt, "TicketLeg" + legIndex, new Vector2(0f, 1f),
                         new Vector2(0f, 1f), new Vector2(8f, -26f - legIndex * 18f),
                         new Vector2(receiptTextWidth, 18f), 13, TextAnchor.UpperLeft, LaptopOs.TonerSecondary,
-                        ticketLegText, _font);
+                        ticketLegText, _fontCond);
                 }
                 LaptopUi.MakeRule(receipt, "ReceiptRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
                     Vector2.zero, new Vector2(296f, 2f));
@@ -619,11 +663,12 @@ namespace SBR.Game
                 () => { slip.ToggleModifier(modifier); _invalidate(); }, _font);
         }
 
-        private void MakeChip(RectTransform parent, string label, float x, float y, Action onClick, float width = 68f)
+        private void MakeChip(RectTransform parent, string label, float x, float y, Action onClick,
+            float width = 68f, Font font = null)
         {
             LaptopUi.MakeButton(parent, "Chip" + label, label, new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(x, y), new Vector2(width, 32f), 13, LaptopOs.SurfaceRaised, LaptopOs.White,
-                () => { onClick(); _invalidate(); }, _font);
+                () => { onClick(); _invalidate(); }, font != null ? font : _font);
         }
 
         private Text _mirrorMarket;
@@ -701,9 +746,11 @@ namespace SBR.Game
                 : ticket.State == RevealedTicketState.Lost ? LaptopOs.Muted
                 : ticket.State == RevealedTicketState.CashedOut ? LaptopOs.MoneyGold
                 : LaptopOs.White;
+            // Ticket identity ("TICKET n") and the terminal state word are both condensed per
+            // TicketReceipt.jsx / RevealedState.jsx.
             LaptopUi.MakeText(card, "TicketTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(8f, -8f), new Vector2(width - 16f, 24f), 16, TextAnchor.UpperLeft,
-                stateColor, $"TICKET {ticket.Index + 1}  ·  {state}", _font);
+                stateColor, $"TICKET {ticket.Index + 1}  ·  {state}", _fontCond);
             LaptopUi.MakeText(card, "TicketFigures", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(8f, -32f), new Vector2(width - 16f, 22f), 13, TextAnchor.UpperLeft,
                 LaptopOs.TonerSecondary,
@@ -733,15 +780,18 @@ namespace SBR.Game
             Color stateColor = leg.State == RevealedLegState.Won ? LaptopOs.MoneyGold
                 : leg.State == RevealedLegState.Lost ? LaptopOs.Muted
                 : leg.State == RevealedLegState.Live ? LaptopOs.Accent : LaptopOs.TonerSecondary;
+            // RevealedLeg.jsx's "team" slot (occupied here by either the team name or the market
+            // label, whichever the leg carries) and its price are condensed; the state word matches
+            // RevealedState.jsx.
             LaptopUi.MakeText(row, "LegLabel", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(8f, -4f), new Vector2(width - 16f, 22f), 13, TextAnchor.UpperLeft,
-                leg.State == RevealedLegState.Lost ? LaptopOs.Muted : LaptopOs.White, label, _font);
+                leg.State == RevealedLegState.Lost ? LaptopOs.Muted : LaptopOs.White, label, _fontCond);
             LaptopUi.MakeText(row, "LegPrice", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(8f, -27f), new Vector2(84f, 22f), 13, TextAnchor.UpperLeft,
-                stateColor, leg.AmericanOdds, _font);
+                stateColor, leg.AmericanOdds, _fontCond);
             Text stateText = LaptopUi.MakeText(row, "LegState", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-8f, -27f), new Vector2(112f, 22f), 13, TextAnchor.UpperRight,
-                stateColor, state, _font);
+                stateColor, state, _fontCond);
             int identity = ticketIndex * 17 + leg.Index;
             if (leg.State == RevealedLegState.Won)
             {
@@ -873,16 +923,18 @@ namespace SBR.Game
             string reason = !hasSlot ? "RELIC SLOTS FULL"
                 : !enoughComps ? $"NEED {(offer.Price - run.Comps).ToString("0.#", CultureInfo.InvariantCulture)} COMPS"
                 : "AFFORDABLE";
+            // Name and price are condensed per OfferEntry.jsx; description, reason and the BUY button
+            // itself stay on the data face.
             LaptopUi.MakeText(row, "OfferName", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -5f), new Vector2(430f, 22f), 15, TextAnchor.UpperLeft,
-                LaptopOs.White, offer.Name.ToUpperInvariant(), _font);
+                LaptopOs.White, offer.Name.ToUpperInvariant(), _fontCond);
             LaptopUi.MakeText(row, "OfferDescription", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -28f), new Vector2(430f, 36f), 13, TextAnchor.UpperLeft,
                 LaptopOs.TonerSecondary, offer.Description, _font);
             LaptopUi.MakeText(row, "Affordability", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-124f, -5f), new Vector2(118f, 22f), 13, TextAnchor.UpperRight,
                 canBuy ? LaptopOs.MoneyGold : LaptopOs.MoneyBad,
-                $"{offer.Price.ToString("0.#", CultureInfo.InvariantCulture)} COMPS", _font);
+                $"{offer.Price.ToString("0.#", CultureInfo.InvariantCulture)} COMPS", _fontCond);
             LaptopUi.MakeText(row, "BuyReason", new Vector2(1f, 0f), new Vector2(1f, 0f),
                 new Vector2(-124f, 3f), new Vector2(160f, 20f), 13, TextAnchor.LowerRight,
                 canBuy ? LaptopOs.TonerSecondary : LaptopOs.MoneyBad, reason, _font);
@@ -911,16 +963,19 @@ namespace SBR.Game
             string reason = !hasSlot ? "CHARM SLOTS FULL"
                 : !enoughComps ? $"NEED {(offer.Price - run.Comps).ToString("0.#", CultureInfo.InvariantCulture)} COMPS"
                 : "AFFORDABLE";
+            // Same OfferEntry.jsx split as BuildRewardOffer above. "SINGLE USE" is a trailing
+            // qualifier riding along with the name rather than a field label, so the combined string
+            // stays on the condensed face as one run rather than being split.
             LaptopUi.MakeText(row, "OfferName", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -5f), new Vector2(430f, 22f), 15, TextAnchor.UpperLeft,
-                LaptopOs.White, offer.Name.ToUpperInvariant() + "  ·  SINGLE USE", _font);
+                LaptopOs.White, offer.Name.ToUpperInvariant() + "  ·  SINGLE USE", _fontCond);
             LaptopUi.MakeText(row, "OfferDescription", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -28f), new Vector2(430f, 36f), 13, TextAnchor.UpperLeft,
                 LaptopOs.TonerSecondary, offer.Description, _font);
             LaptopUi.MakeText(row, "Affordability", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-124f, -5f), new Vector2(118f, 22f), 13, TextAnchor.UpperRight,
                 canBuy ? LaptopOs.MoneyGold : LaptopOs.MoneyBad,
-                $"{offer.Price.ToString("0.#", CultureInfo.InvariantCulture)} COMPS", _font);
+                $"{offer.Price.ToString("0.#", CultureInfo.InvariantCulture)} COMPS", _fontCond);
             LaptopUi.MakeText(row, "BuyReason", new Vector2(1f, 0f), new Vector2(1f, 0f),
                 new Vector2(-124f, 3f), new Vector2(160f, 20f), 13, TextAnchor.LowerRight,
                 canBuy ? LaptopOs.TonerSecondary : LaptopOs.MoneyBad, reason, _font);
@@ -943,7 +998,7 @@ namespace SBR.Game
             LaptopUi.MakeText(margin, "RewardsTally", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -8f), new Vector2(296f, 28f), 20, TextAnchor.UpperLeft,
                 LaptopOs.MoneyGold,
-                $"{run.Comps.ToString("0.#", CultureInfo.InvariantCulture)} COMPS", _font);
+                $"{run.Comps.ToString("0.#", CultureInfo.InvariantCulture)} COMPS", _fontCond);
             LaptopUi.MakeText(margin, "RewardsResources", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -38f), new Vector2(296f, 24f), 13, TextAnchor.UpperLeft,
                 LaptopOs.Muted,
@@ -968,7 +1023,7 @@ namespace SBR.Game
                     new Vector2(0f, 1f), new Vector2(0f, y), new Vector2(324f, 44f), LaptopOs.Ink);
                 LaptopUi.MakeText(row, "OwnedName", new Vector2(0f, .5f), new Vector2(0f, .5f),
                     new Vector2(14f, 0f), new Vector2(176f, 36f), 13, TextAnchor.MiddleLeft,
-                    LaptopOs.White, relic.Name.ToUpperInvariant(), _font);
+                    LaptopOs.White, relic.Name.ToUpperInvariant(), _fontCond);
                 LaptopUi.MakeButton(row, "Sell", $"+{run.GetResaleValue(relic):0.#}C  SELL",
                     new Vector2(1f, .5f), new Vector2(1f, .5f), new Vector2(-14f, 0f),
                     new Vector2(112f, 32f), 13, LaptopOs.SurfaceRaised, LaptopOs.MoneyBad,
@@ -991,7 +1046,7 @@ namespace SBR.Game
                     new Vector2(324f, 44f), LaptopOs.Ink);
                 LaptopUi.MakeText(row, "OwnedName", new Vector2(0f, .5f), new Vector2(0f, .5f),
                     new Vector2(14f, 0f), new Vector2(176f, 36f), 13, TextAnchor.MiddleLeft,
-                    LaptopOs.White, consumable.Name.ToUpperInvariant(), _font);
+                    LaptopOs.White, consumable.Name.ToUpperInvariant(), _fontCond);
                 LaptopUi.MakeButton(row, "Sell",
                     $"+{(consumable.Price * run.Config.SellBackFraction):0.#}C  SELL",
                     new Vector2(1f, .5f), new Vector2(1f, .5f), new Vector2(-14f, 0f),
@@ -1068,13 +1123,15 @@ namespace SBR.Game
     {
         private readonly RectTransform _root;
         private readonly Font _font;
+        private readonly Font _fontCond; // see SportsbookApp's field comment — same seam
         private readonly Action _home;
         private readonly Action _sportsbook;
 
-        public OldSlipsApp(RectTransform root, Font font, Action home, Action sportsbook)
+        public OldSlipsApp(RectTransform root, Font font, Font fontCond, Action home, Action sportsbook)
         {
             _root = root;
             _font = font;
+            _fontCond = fontCond;
             _home = home;
             _sportsbook = sportsbook;
         }
@@ -1163,7 +1220,7 @@ namespace SBR.Game
                 new Vector2(0f, 1f), new Vector2(0f, -72f), new Vector2(1024f, 68f), LaptopOs.Ink);
             LaptopUi.MakeText(masthead, "Brand", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(16f, -8f), new Vector2(420f, 28f), 26, TextAnchor.UpperLeft,
-                LaptopOs.White, "SURETHING LEDGER", _font);
+                LaptopOs.White, "LEDGER", _fontCond);
             LaptopUi.MakeText(masthead, "Scope", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(17f, -38f), new Vector2(520f, 20f), 13, TextAnchor.UpperLeft,
                 LaptopOs.Muted, "CURRENT RUN  ·  SETTLED TICKETS ONLY  ·  READ ONLY", _font);
@@ -1186,18 +1243,41 @@ namespace SBR.Game
                 : "AMOUNT NOT RETAINED";
             Color stateColor = ticket.State == TicketState.Won ? LaptopOs.MoneyGold
                 : ticket.State == TicketState.Lost ? LaptopOs.MoneyBad : LaptopOs.TonerSecondary;
+            // Ruling S15: oxide is the house's stamp, not a generic loss wash. Only the struck
+            // LOST word keeps the stamp color; the rest of this row recedes to toner-3, and the
+            // returned $0 is pinned to plain toner — never oxide, never wax.
+            bool lost = ticket.State == TicketState.Lost;
+            Color identityColor = lost ? LaptopOs.Muted : LaptopOs.White;
+            Color stakeColor = lost ? LaptopOs.Muted : LaptopOs.TonerSecondary;
+            Color payoutColor = lost ? LaptopOs.White : stateColor;
+            // "TICKET n" is condensed for the same reason as the MY BETS mirror's TicketTitle; the
+            // state word matches LedgerEntry.jsx's terminal field / RevealedState.jsx.
             LaptopUi.MakeText(row, "TicketIdentity", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -4f), new Vector2(180f, 24f), 15, TextAnchor.UpperLeft,
-                LaptopOs.White, "TICKET " + identity, _font);
-            LaptopUi.MakeText(row, "TicketState", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(198f, -4f), new Vector2(120f, 24f), 13, TextAnchor.UpperLeft,
-                stateColor, state, _font);
+                identityColor, "TICKET " + identity, _fontCond);
+            // Anchor/pivot (1,1) plus right-aligned content, matching BuildMirrorLeg's LegState —
+            // InkRingGeometry requires that exact top-right convention to size/place a strike.
+            Text ticketStateText = LaptopUi.MakeText(row, "TicketState", new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-382f, -4f), new Vector2(120f, 24f), 13, TextAnchor.UpperRight,
+                stateColor, state, _fontCond);
+            if (lost)
+            {
+                Sprite strike = SportsbookApp.ResolveStrike(index);
+                if (strike != null)
+                {
+                    // Same fix already applied to the MY BETS dead leg: size/place the strike from
+                    // the state text's own measured bounds, never a fixed sprite-native box.
+                    (Vector2 position, Vector2 size) = SportsbookApp.InkRingGeometry(ticketStateText);
+                    LaptopUi.MakeSprite(row, "LedgerDeadStrike", strike, new Vector2(1f, 1f),
+                        new Vector2(1f, 1f), position, size, LaptopOs.MoneyBad);
+                }
+            }
             LaptopUi.MakeText(row, "TicketStake", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(322f, -4f), new Vector2(132f, 24f), 13, TextAnchor.UpperLeft,
-                LaptopOs.TonerSecondary, "STAKE " + LaptopUi.Money(ticket.Stake), _font);
+                stakeColor, "STAKE " + LaptopUi.Money(ticket.Stake), _font);
             LaptopUi.MakeText(row, "TicketPayout", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-14f, -4f), new Vector2(228f, 24f), 13, TextAnchor.UpperRight,
-                stateColor, "PAYOUT " + payout, _font);
+                payoutColor, "PAYOUT " + payout, _font);
             LaptopUi.MakeRule(row, "TicketRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(0f, -30f), new Vector2(700f, 1f));
 
@@ -1210,13 +1290,15 @@ namespace SBR.Game
                 string legState = leg.IsVoided ? "VOID"
                     : leg.RescuedWon || leg.State == LegState.Won ? "WON"
                     : leg.State == LegState.Lost ? "LOST" : "PENDING";
+                // Same team-name/price-dominated combined string as the working margin's Leg/
+                // TicketLeg rows above — condensed as one run.
                 LaptopUi.MakeText(legRow, "LegIdentity", new Vector2(0f, .5f), new Vector2(0f, .5f),
                     new Vector2(28f, 0f), new Vector2(470f, 22f), 13, TextAnchor.MiddleLeft,
                     LaptopOs.TonerSecondary,
-                    $"{legIndex + 1}. {leg.DisplayLabel}  {OddsFormat.American(leg.OfferedOdds)}", _font);
+                    $"{legIndex + 1}. {leg.DisplayLabel}  {OddsFormat.American(leg.OfferedOdds)}", _fontCond);
                 LaptopUi.MakeText(legRow, "LegState", new Vector2(1f, .5f), new Vector2(1f, .5f),
                     new Vector2(-14f, 0f), new Vector2(140f, 22f), 13, TextAnchor.MiddleRight,
-                    LaptopOs.Muted, legState, _font);
+                    LaptopOs.Muted, legState, _fontCond);
                 LaptopUi.MakeRule(legRow, "LegRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
                     Vector2.zero, new Vector2(700f, 1f));
             }
@@ -1238,9 +1320,11 @@ namespace SBR.Game
             LaptopUi.MakeText(summary, "SettledCount", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -104f), new Vector2(296f, 24f), 15, TextAnchor.UpperLeft,
                 LaptopOs.White, $"SETTLED  {settled}", _font);
+            // Each line leads with a terminal-state word (WON/LOST/CASHED OUT), not a field label —
+            // same convention as LedgerEntry.jsx's terminal field, so condensed.
             LaptopUi.MakeText(summary, "TerminalCounts", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -136f), new Vector2(296f, 52f), 13, TextAnchor.UpperLeft,
-                LaptopOs.TonerSecondary, $"WON  {won}\nLOST  {lost}\nCASHED OUT  {cashed}", _font);
+                LaptopOs.TonerSecondary, $"WON  {won}\nLOST  {lost}\nCASHED OUT  {cashed}", _fontCond);
             LaptopUi.MakeText(summary, "SettledStake", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -208f), new Vector2(296f, 24f), 13, TextAnchor.UpperLeft,
                 LaptopOs.TonerSecondary, "SETTLED STAKE  " + LaptopUi.Money(stake), _font);

@@ -31,6 +31,13 @@ namespace SBR.Game
 
         private Canvas _canvas;
         private Font _font;
+        // Condensed voice seam (DESIGN.md / tokens/fonts.css --font-cond, Archivo Narrow). Archivo
+        // Narrow is not in the repo yet — a separate item, not this one — so this currently resolves
+        // to the SAME fallback Font object as _font (see LoadFont/Awake). That is deliberate, not a
+        // bug: every element routed through _fontCond today renders pixel-identical to _font, and the
+        // moment the real condensed face lands, only Awake needs to change for the whole surface to
+        // pick it up.
+        private Font _fontCond;
         private BetslipModel _slip;
         private int _slipRunGen = -1;
         private LaptopOs _os;
@@ -46,6 +53,10 @@ namespace SBR.Game
         private void Awake()
         {
             _font = LoadFont();
+            // Two-voice type seam: --font-data (roman, labels/copy) stays _font; --font-cond
+            // (condensed, figures/prices/names) is _fontCond. Both point at the same built-in
+            // fallback until Archivo Narrow is added — see the field comment above.
+            _fontCond = _font;
             _emissBlock = new MaterialPropertyBlock();
             if (tv == null) tv = FindAnyObjectByType<TvSweatScreen>();
             BuildSkeleton();
@@ -93,7 +104,7 @@ namespace SBR.Game
 
             Transform root = canvasGo.transform;
             LaptopUi.MakeStretchImage(root, "DesktopBacking", LaptopOs.Ink).raycastTarget = false;
-            _os = new LaptopOs((RectTransform)root, _font, this, w, h);
+            _os = new LaptopOs((RectTransform)root, _font, _fontCond, this, w, h);
         }
 
         private void Glow()

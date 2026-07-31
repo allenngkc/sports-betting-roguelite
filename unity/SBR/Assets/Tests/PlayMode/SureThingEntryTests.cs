@@ -103,7 +103,10 @@ namespace SBR.Tests.PlayMode
             StringAssert.StartsWith("ring-wide-", firstRing.sprite.name,
                 "wide selection ink must be prefix-filtered from the wide family");
             Assert.IsFalse(firstRing.raycastTarget, "decorative wide ink must not intercept the price");
-            AssertRect(firstRing.rectTransform, 176f, 46f, "WideBiroRing");
+            // 46 was the ring-wide sprite's native height, which happened to sit 2px under the rule.
+            // The rule is cell + 16 on both axes (ASSETS.md, and the design system's InkMark.rect):
+            // the real market cell is 160x32, so the ring is 176x48.
+            AssertRect(firstRing.rectTransform, 176f, 48f, "WideBiroRing");
             string variant = firstRing.sprite.name;
 
             Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTabBTTS"));

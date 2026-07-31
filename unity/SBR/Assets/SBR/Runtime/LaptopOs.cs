@@ -27,11 +27,23 @@ namespace SBR.Game
         internal static readonly Color MoneyGood = new Color32(0xD9, 0xA4, 0x41, 255);
         internal static readonly Color MoneyBad = new Color32(0xB4, 0x48, 0x3A, 255); // house stamp
         internal static readonly Color SignalCyan = new Color32(0x9C, 0x98, 0x88, 255);
+        // Punched-out type on a solid wax field (PLACE TICKET's label). Distinct from Ink: Ink is the
+        // general document ground, WaxInk is specifically the colour type takes when it sits ON wax.
+        internal static readonly Color WaxInk = new Color32(0x1A, 0x13, 0x05, 255);
+
+        // Document-layer tokens with no Color shape (opacity/rotation/height), kept here alongside the
+        // palette so every SureThing constant traces back to one place.
+        internal const float MarkedWashAlpha = 0.07f; // --marked-wash: rgba(94,134,184,.07) == Accent at this alpha
+        internal const float WaxHighlightOpacity = 0.26f; // --wax-highlight-opacity
+        internal const float WaxHighlightRotateDeg = -0.5f; // --wax-highlight-rotate
+        internal const float WaxHighlightHeight = 6f; // --wax-highlight-h, px
+        internal const float TonerGrainOpacity = 0.05f; // --toner-grain-opacity
 
         private enum App { Desktop, SureThing, OldSlips, Verdict }
 
         private readonly RectTransform _root;
         private readonly Font _font;
+        private readonly Font _fontCond;
         private readonly LaptopScreen _host;
         private readonly int _width;
         private readonly int _height;
@@ -48,10 +60,11 @@ namespace SBR.Game
         private string _toast;
         private float _toastUntil;
 
-        public LaptopOs(RectTransform root, Font font, LaptopScreen host, int width, int height)
+        public LaptopOs(RectTransform root, Font font, Font fontCond, LaptopScreen host, int width, int height)
         {
             _root = root;
             _font = font;
+            _fontCond = fontCond;
             _host = host;
             _width = width;
             _height = height;
@@ -75,9 +88,31 @@ namespace SBR.Game
                 Vector2.zero, new Vector2(width, height), Ink);
             _app.gameObject.SetActive(false);
 
-            _sportsbook = new SportsbookApp(_app, _font, _host, Invalidate, SelectTab, OpenHome, OpenLedger);
-            _oldSlips = new OldSlipsApp(_app, _font, OpenHome, OpenSportsbook);
+            _sportsbook = new SportsbookApp(_app, _font, _fontCond, _host, Invalidate, SelectTab, OpenHome, OpenLedger);
+            _oldSlips = new OldSlipsApp(_app, _font, _fontCond, OpenHome, OpenSportsbook);
             BuildDesktop();
+
+            // The document's own toner grain (palette-surething.css --toner-grain-opacity), built
+            // once here and parented directly to the top-level canvas root rather than to Desktop or
+            // App. Render()/ClearChildren only ever touch _app's children, so this survives every
+            // rebuild untouched — zero per-rebuild cost — and being the last sibling under _root, it
+            // sits above whichever of Desktop/App is currently active, matching the reference kit
+            // (app.jsx z-index:9 over the whole 1024x704 sheet).
+            // DISABLED — the implementation is wrong, not the token. Measured off the captures with
+            // grain on, the ground went from (24,24,16) to (52,52,48): more than double the
+            // luminance, and neutral grey where the ground is warm olive (#16160F has R=G above B).
+            //
+            // The cause is structural rather than a value to tune. MakeTonerGrain lays pure white
+            // texels at a mean alpha near 0.5, tinted by a 0.05 Image alpha, over the whole sheet.
+            // Under normal alpha blending a white overlay can only ever lighten, so it lifts and
+            // desaturates the ground instead of texturing it. Lowering the opacity would only make
+            // a fainter version of the same wrong thing — real grain has to darken as well as
+            // lighten, which needs an overlay/soft-light blend and therefore a custom UI shader.
+            //
+            // Kept rather than deleted: the tile generation, the once-per-laptop placement outside
+            // _app, and the zero-per-rebuild cost are all correct and worth reusing when the shader
+            // exists. The other three document-layer elements are unaffected and stay on.
+            // LaptopUi.MakeTonerGrain(_root);
         }
 
         public void Tick(Run run, BetslipModel slip)
@@ -211,7 +246,7 @@ namespace SBR.Game
 
             MakeDesktopIcon("SureThing", "S", "Sportsbook", new Vector2(34f, -120f), Accent,
                 () => { _activeApp = App.SureThing; Invalidate(); });
-            MakeDesktopIcon("OldSlips", "$", "Old Slips", new Vector2(34f, -225f), SurfaceRaised,
+            MakeDesktopIcon("OldSlips", "$", "LEDGER", new Vector2(34f, -225f), SurfaceRaised,
                 () => { _activeApp = App.OldSlips; Invalidate(); });
             MakeDesktopIcon("Mail", "@", "Mail (soon)", new Vector2(34f, -330f), Muted, null);
             MakeDesktopIcon("Bank", "¤", "Bank (soon)", new Vector2(34f, -435f), Muted, null);
@@ -227,7 +262,7 @@ namespace SBR.Game
                 new Vector2(18f, 0f), new Vector2(90f, 34f), 12, SurfaceRaised, White, null, _font);
             Text taskbarText = LaptopUi.MakeText(taskbar, "TaskbarText", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 0f), new Vector2(320f, 30f), 12, TextAnchor.MiddleCenter, Muted,
-                "SURETHING.   ·   old slips", _font);
+                "SURETHING.   ·   LEDGER", _font);
             // Overflow rather than the Wrap default because this label is a single line that must
             // not re-flow. (An earlier comment here blamed a Unity legacy-Text bug for the
             // "renders only a couple of glyphs" defect; that diagnosis was wrong — the real cause
@@ -328,6 +363,29 @@ namespace SBR.Game
             vh.AddVert(new Vector3(r.xMin, r.yMax), (Color32)topLeft, Vector2.up);
             vh.AddVert(new Vector3(r.xMax, r.yMax), (Color32)topRight, Vector2.one);
             vh.AddVert(new Vector3(r.xMax, r.yMin), (Color32)bottomRight, Vector2.right);
+            vh.AddTriangle(0, 1, 2);
+            vh.AddTriangle(2, 3, 0);
+        }
+    }
+
+    /// <summary>Code-built wash behind a marked form entry: a left-to-right fade from a flat colour
+    /// to fully transparent by 70% of the element's width, matching the reference kit's
+    /// <c>linear-gradient(90deg, var(--marked-wash), transparent 70%)</c>. Same per-vertex-gradient
+    /// technique as <see cref="LaptopWallpaperGraphic"/> — four vertices, no texture — because the
+    /// rest of the fade (70%-100%) is already fully transparent and costs nothing left undrawn.</summary>
+    internal sealed class MarkedWashGraphic : Graphic
+    {
+        protected override void OnPopulateMesh(VertexHelper vh)
+        {
+            vh.Clear();
+            Rect r = rectTransform.rect;
+            Color32 tint = color;
+            Color32 clear = new Color32(tint.r, tint.g, tint.b, 0);
+            float stopX = r.xMin + r.width * 0.7f;
+            vh.AddVert(new Vector3(r.xMin, r.yMin), tint, Vector2.zero);
+            vh.AddVert(new Vector3(r.xMin, r.yMax), tint, Vector2.up);
+            vh.AddVert(new Vector3(stopX, r.yMax), clear, Vector2.one);
+            vh.AddVert(new Vector3(stopX, r.yMin), clear, Vector2.right);
             vh.AddTriangle(0, 1, 2);
             vh.AddTriangle(2, 3, 0);
         }
@@ -510,6 +568,73 @@ namespace SBR.Game
         public static RectTransform MakeRule(RectTransform parent, string name, Vector2 anchor,
             Vector2 pivot, Vector2 position, Vector2 size)
             => MakePanel(parent, name, anchor, pivot, position, size, LaptopOs.RuleSoft);
+
+        /// <summary>The marked-form-entry wash (palette-surething.css --marked-wash), stretched to
+        /// fill <paramref name="parent"/> exactly — sized this way (rather than a hand-picked rect)
+        /// so it is trivially contained within whatever row it marks. Caller is responsible for only
+        /// adding this when the row is actually selected, and for adding it before any sibling text/
+        /// buttons so it draws underneath them.</summary>
+        public static void MakeMarkedWash(RectTransform parent, string name)
+        {
+            var go = new GameObject(name, typeof(MarkedWashGraphic));
+            go.transform.SetParent(parent, false);
+            MarkedWashGraphic wash = go.GetComponent<MarkedWashGraphic>();
+            wash.color = new Color(LaptopOs.Accent.r, LaptopOs.Accent.g, LaptopOs.Accent.b,
+                LaptopOs.MarkedWashAlpha);
+            wash.raycastTarget = false;
+            RectTransform rt = wash.rectTransform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+        }
+
+        /// <summary>Builds the document's own toner grain (palette-surething.css
+        /// --toner-grain-opacity) exactly once and stretches it to fill <paramref name="root"/>.
+        /// Cost: one small (128x128) runtime RGBA32 texture and one Image, built a single time per
+        /// laptop — never regenerated, never touched by a rebuild. This is a deliberate exception to
+        /// this file's usual texture-free approach (see <see cref="LaptopWallpaperGraphic"/>): true
+        /// per-pixel grain has no per-vertex-gradient equivalent, so a baked noise texture is the only
+        /// way to get it in UGUI. The reference kit's SVG feTurbulence filter is not reproduced —
+        /// this is a flat static noise tile, an approximation of it, not a match.</summary>
+        public static void MakeTonerGrain(RectTransform root)
+        {
+            const int size = 128;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            {
+                name = "SureThingTonerGrain",
+                wrapMode = TextureWrapMode.Repeat,
+                filterMode = FilterMode.Bilinear
+            };
+            var rng = new System.Random(0xC0FFEE);
+            var pixels = new Color32[size * size];
+            for (int i = 0; i < pixels.Length; i++)
+            {
+                // Alpha-only noise on a flat white texel: tinted by the Image's own low overall alpha
+                // below, so this reads as faint toner static rather than a visible checker pattern.
+                byte a = (byte)rng.Next(40, 216);
+                pixels[i] = new Color32(255, 255, 255, a);
+            }
+            texture.SetPixels32(pixels);
+            texture.Apply(false, true);
+            Sprite sprite = Sprite.Create(texture, new Rect(0f, 0f, size, size),
+                new Vector2(0.5f, 0.5f), size);
+
+            var go = new GameObject("TonerGrain", typeof(Image));
+            go.transform.SetParent(root, false);
+            Image image = go.GetComponent<Image>();
+            image.sprite = sprite;
+            image.type = Image.Type.Tiled;
+            image.color = new Color(1f, 1f, 1f, LaptopOs.TonerGrainOpacity);
+            // Full-bleed and on top of everything: without this it silently eats every click on the
+            // laptop screen.
+            image.raycastTarget = false;
+            RectTransform rt = image.rectTransform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+        }
 
         public static Color Dim(Color color) => new Color(color.r, color.g, color.b, 0.55f);
 
