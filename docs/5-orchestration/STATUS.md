@@ -98,3 +98,11 @@ decision · evidence checked · reversal path.
   hygiene ordered before its slot** — 97% context; state written to handoff.md,
   then session clear, then re-seat and run. Reversal: veto the reorder; the fix
   diff is in TV's working tree, revertible.
+- 2026-07-31 cycle 4 · TV state-write confirmed ("ready to be cleared", handoff
+  +83 lines). Attempted remote composer clear for the `/clear` step: Esc, Ctrl+U,
+  backspace all filtered by the send path; double-Esc opened the rewind menu
+  (cancelled, no action taken). **Blocked on a human step** — Allen: Esc + `/clear`
+  in the TV terminal. Loop resumes automatically on the fresh session. Standing
+  note: staged composer drafts are the recurring channel blocker (TV now, room
+  still) — under autonomy, decisions sent to the orchestrator instead keep lead
+  channels clear.
