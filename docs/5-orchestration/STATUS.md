@@ -22,14 +22,15 @@
 - **tv-sweat:** `842382d` — **T8 removed and verified** (engine 160/160, EditMode
   129/129, PlayMode 44/44 on rerun; single failure matched the documented cash-out
   flake signature in a path T8 doesn't touch). Contract/C1/T6/C3 at `4cdd98c`.
-  **3A verified (leak-proof by signature); 3B done** (T9 chromeCyan + T10 emission
-  floors, plus an unbriefed gold-blue-channel floor violation); scorer-gap confirmed
-  structurally (the `Picked < _targetPicked` guard in `PlanFinal` is the gap) with
-  the reproduction test corrected; warm compile clean, EditMode 187/188 (sole
-  failure is the deliberate repro). Nothing committed until its final slot (re-run +
-  PlayMode + graphics experiment). **Flagged: ran its suite during SureThing's slot
-  — transient two-editor overlap, no harm, queue rule restated.** 3B also surfaced
-  slip-strip raw-hex colours → DD inbox item 6. Lead: Claude (Opus 5).
+  **Phase 3A/3B landed all-green and committed** (engine 160/160, EditMode 188/188,
+  PlayMode 44/44, no flake). Scorer-gap confirmed twice — structurally (the
+  `Picked < _targetPicked` guard in `PlanFinal`) and by corrected reproduction; the
+  first test was vacuous and would have reported "gap absent." Graphics experiment:
+  batchmode without `-nographics` yields a real D3D12 device, PlayMode 9/9 on GPU —
+  the open question is only a capture harness surviving domain reload. 3C (Layout B
+  build) green-lit, no editor needed; one timeboxed slot approved for the
+  capture-harness spike; interactive booking only if the spike fails. 3D awaits the
+  DD's C3 ruling. Lead: Claude (Opus 5).
 - **feat/soccer-markets (Documents checkout):** Dormant — F_0.4.0 awaiting playtest.
 - **Design Director:** inbox memo at `docs/design/INBOX.md` — C3 coverage rule,
   studio art-authority gap (no binding authority for room/laptop/phone since `08`
@@ -38,9 +39,9 @@
 - **Orchestrator:** Fable 5 session in `main-2`; lead channel chartered in
   `ORCHESTRATOR.md` §3a. Completion watchers armed on all three lead terminals and
   the Design Director session.
-- **Unity queue:** tv-sweat holds the final slot (corrected repro re-run + PlayMode
-  + graphics-mode experiment + commit; granted while room's review runs) → room
-  Tier 1b build/bake/capture → surething-ui S9 verification when ready.
+- **Unity queue:** room holds the slot (Tier 1b build/bake/capture, granted) →
+  surething-ui S9 verification when requested → tv-sweat capture-harness spike
+  (timeboxed, one slot).
 - **Blocked:** none.
 - **Rulings (Allen, 2026-07-31):** C1 — latest document governs, `DESIGN.md` §6
   stands, layout closed. C2 — interim: shipped green tolerated, cold white-grey
