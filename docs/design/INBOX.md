@@ -30,3 +30,10 @@ Items routed to this seat. Clear a line when it's registered or resolved.
    language surviving where field-level palette scans can't see it. Same violation
    class as T8. Logged as `[TV] DESIGN.md` §9A item 5; untouched pending your
    ruling.
+7. **Lost-ticket oxide red (SureThing).** `OldSlipsApp.BuildLedgerTicket` tints a
+   lost ticket's state and payout in oxide red. Plausibly legitimate as the house's
+   mark on a settled ticket; sits against the amended red law (S3, house's mark
+   only). Untouched pending your ruling.
+8. **Three-way naming clash (SureThing).** LEDGER / Old Slips / SURETHING LEDGER —
+   overlapping names across surfaces; needs a naming ruling before S9's screens
+   harden the copy.

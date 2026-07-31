@@ -5,13 +5,13 @@
   evidence cleanup + gitignore, ProjectSettings isolated commit (`63cf1bc`,
   Allen-approved), S7 ink pipeline complete (`1090527`), defect fixes (`4eb2cba`),
   red-on-dead-leg ruling (`8822971`). Tree clean. Next: S8 OS chrome, then S9.
-  **S8 landed** (`0b693f9`; EditMode 74/74, PlayMode 37/37, tree clean; S11 ruling
-  recorded `02e18eb`). Delegated verification worked — lead re-verified the
-  sub-agent's claims against XMLs, captures, and diff personally. Next: S9,
-  dispatched from planning per the directive. Open offer accepted: a Ledger capture
-  state folds into the S9 slot (Ledger chrome is currently verified by construction,
-  not pixels). Follow-up: desktop taskbar still a third chrome surface.
-  Lead: Claude (Opus 5).
+  **S8 landed** (`0b693f9`); S9 triage done via two bounded sub-agents — 2 of 4
+  claimed ink defects real and fixed (ring-crescent geometry, strike overhang), 2
+  disproved by the sub-agent sampling pixels instead of trusting the lead's
+  description (wax amber misread as red; ring inside panel bounds). New capture
+  states built for Ledger, Rewards, Old Slips (first-ever pixels). All unverified —
+  slot requested, queued behind room's verification cycle. Two new DD questions
+  routed (inbox items 7–8). Lead: Claude (Opus 5).
 - **room-refinement:** handoff tracked (`49a7c55`); R7 wear plan committed and
   **Tier 1b nearly home** — capture slot diagnosed three real defects: a texture
   cache that ignored field-math changes (the earlier 10.87% was a real render of
