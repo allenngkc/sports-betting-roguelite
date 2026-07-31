@@ -15,10 +15,15 @@ namespace SBR.Game
         internal static readonly Color Surface = new Color32(0x1C, 0x1C, 0x13, 255);
         internal static readonly Color SurfaceRaised = new Color32(0x23, 0x23, 0x19, 255);
         internal static readonly Color Rule = new Color32(0x3C, 0x3C, 0x2C, 255);
+        internal static readonly Color RuleSoft = new Color32(0x2C, 0x2C, 0x20, 255);
         internal static readonly Color Muted = new Color32(0x6E, 0x6B, 0x5E, 255);
         internal static readonly Color White = new Color32(0xD9, 0xD4, 0xC5, 255);
+        internal static readonly Color TonerSecondary = new Color32(0x9C, 0x98, 0x88, 255);
         internal static readonly Color Accent = new Color32(0x5E, 0x86, 0xB8, 255); // biro
+        internal static readonly Color BiroDeep = new Color32(0x3F, 0x69, 0x96, 255);
         internal static readonly Color MoneyGold = new Color32(0xD9, 0xA4, 0x41, 255); // wax
+        internal static readonly Color WaxLit = new Color32(0xF0, 0xC0, 0x66, 255);
+        internal static readonly Color WaxDeep = new Color32(0x8A, 0x66, 0x20, 255);
         internal static readonly Color MoneyGood = new Color32(0xD9, 0xA4, 0x41, 255);
         internal static readonly Color MoneyBad = new Color32(0xB4, 0x48, 0x3A, 255); // house stamp
         internal static readonly Color SignalCyan = new Color32(0x9C, 0x98, 0x88, 255);
@@ -70,8 +75,8 @@ namespace SBR.Game
                 Vector2.zero, new Vector2(width, height), Ink);
             _app.gameObject.SetActive(false);
 
-            _sportsbook = new SportsbookApp(_app, _font, _host, Invalidate, SelectTab, OpenHome);
-            _oldSlips = new OldSlipsApp(_app, _font, OpenHome);
+            _sportsbook = new SportsbookApp(_app, _font, _host, Invalidate, SelectTab, OpenHome, OpenLedger);
+            _oldSlips = new OldSlipsApp(_app, _font, OpenHome, OpenSportsbook);
             BuildDesktop();
         }
 
@@ -129,6 +134,12 @@ namespace SBR.Game
         public void OpenDesktop()
         {
             _activeApp = App.Desktop;
+            Invalidate();
+        }
+
+        private void OpenLedger()
+        {
+            _activeApp = App.OldSlips;
             Invalidate();
         }
 
@@ -209,9 +220,14 @@ namespace SBR.Game
                 new Vector2(0f, 0f), new Vector2(_width, 54f), new Color(0.025f, 0.02f, 0.05f, 0.94f));
             LaptopUi.MakeButton(taskbar, "Home", "HOME", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
                 new Vector2(18f, 0f), new Vector2(90f, 34f), 12, SurfaceRaised, White, null, _font);
-            LaptopUi.MakeText(taskbar, "TaskbarText", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            Text taskbarText = LaptopUi.MakeText(taskbar, "TaskbarText", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 0f), new Vector2(320f, 30f), 12, TextAnchor.MiddleCenter, Muted,
                 "SURETHING.   ·   old slips", _font);
+            // See SportsbookApp.BuildSlip's LockReason for why: MiddleCenter + the Wrap default is a
+            // real Unity legacy-Text bug (glyphs bake as slivers), and MakeButton's own centered
+            // labels avoid it only because they override to Overflow. Every standalone MiddleCenter
+            // MakeText call does the same here.
+            taskbarText.horizontalOverflow = HorizontalWrapMode.Overflow;
             LaptopUi.MakeText(taskbar, "Clock", new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
                 new Vector2(-24f, 0f), new Vector2(180f, 30f), 12, TextAnchor.MiddleRight, Muted,
                 "03:17 AM   ·   12%", _font);
@@ -237,13 +253,15 @@ namespace SBR.Game
             LaptopUi.MakeText(_app, "VerdictBrand", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
                 new Vector2(0f, -54f), new Vector2(800f, 36f), 22, TextAnchor.UpperCenter, White,
                 "SureThing.", _font);
-            LaptopUi.MakeText(_app, "Verdict", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            Text verdict = LaptopUi.MakeText(_app, "Verdict", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 70f), new Vector2(900f, 60f), 30, TextAnchor.MiddleCenter,
                 won ? MoneyGold : MoneyBad,
                 won ? "THE HOUSE BLINKS FIRST" : "THE BOOKIE COLLECTS", _font);
-            LaptopUi.MakeText(_app, "Final", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            verdict.horizontalOverflow = HorizontalWrapMode.Overflow;
+            Text final = LaptopUi.MakeText(_app, "Final", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 14f), new Vector2(900f, 36f), 18, TextAnchor.MiddleCenter, White,
                 $"FINAL BANK {LaptopUi.Money(run.Bank)}   ·   SEED {run.Rng.RunSeed}", _font);
+            final.horizontalOverflow = HorizontalWrapMode.Overflow;
             LaptopUi.MakeButton(_app, "NewRun", "NEW RUN", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
                 new Vector2(0f, 58f), new Vector2(300f, 52f), 19, Accent, White,
                 () => { _host.director.StartNewRun(); Invalidate(); }, _font);
@@ -335,9 +353,75 @@ namespace SBR.Game
             RectTransform rt = text.rectTransform;
             rt.anchorMin = rt.anchorMax = anchor;
             rt.pivot = pivot;
-            rt.sizeDelta = new Vector2(Mathf.Max(44f, size.x), Mathf.Max(32f, size.y));
+            rt.sizeDelta = size;
             rt.anchoredPosition = position;
+            if (name == "LockReason")
+            {
+                var sb = new System.Text.StringBuilder();
+                sb.Append($"[DIAG2:{name}] text='{text.text}' font={(text.font != null ? text.font.name : "null")} " +
+                    $"dynamic={text.font?.dynamic} actualSize={text.fontSize} " +
+                    $"fontNamesArray=[{(text.font != null ? string.Join(",", text.font.fontNames) : "")}]");
+                if (text.font != null)
+                {
+                    foreach (char c in "PLACEORWSKI ")
+                    {
+                        bool ok = text.font.GetCharacterInfo(c, out CharacterInfo info, text.fontSize, FontStyle.Normal);
+                        sb.Append($"\n  '{c}' found={ok} advance={info.advance} glyphW={info.glyphWidth} glyphH={info.glyphHeight} " +
+                            $"minX={info.minX} maxX={info.maxX} minY={info.minY} maxY={info.maxY} " +
+                            $"uvBL={info.uvBottomLeft} uvBR={info.uvBottomRight} uvTL={info.uvTopLeft} uvTR={info.uvTopRight}");
+                    }
+                }
+                Debug.Log(sb.ToString());
+            }
             return text;
+        }
+
+        /// <summary>Measures a string's natural (unwrapped) width in a dynamic font at a given size,
+        /// requesting the glyphs into the font's atlas first so a cold cache never reports zero.</summary>
+        public static float MeasureWidth(Font font, string text, int fontSize)
+        {
+            if (font == null || string.IsNullOrEmpty(text)) return 0f;
+            int size = Mathf.Max(13, fontSize);
+            font.RequestCharactersInTexture(text, size, FontStyle.Normal);
+            float width = 0f;
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (font.GetCharacterInfo(text[i], out CharacterInfo info, size, FontStyle.Normal))
+                    width += info.advance;
+            }
+            return width;
+        }
+
+        /// <summary>Shortens content to fit maxWidth, trailing with an ellipsis rather than ever
+        /// silently cutting mid-word. A no-op when the string already fits.</summary>
+        public static string FitText(Font font, string content, int fontSize, float maxWidth)
+        {
+            if (font == null || string.IsNullOrEmpty(content)) return content;
+            if (MeasureWidth(font, content, fontSize) <= maxWidth) return content;
+            const string ellipsis = "…";
+            float budget = maxWidth - MeasureWidth(font, ellipsis, fontSize);
+            if (budget <= 0f) return ellipsis;
+            int lo = 0, hi = content.Length;
+            while (lo < hi)
+            {
+                int mid = (lo + hi + 1) / 2;
+                if (MeasureWidth(font, content.Substring(0, mid), fontSize) <= budget) lo = mid;
+                else hi = mid - 1;
+            }
+            string trimmed = content.Substring(0, lo).TrimEnd();
+            return trimmed.Length > 0 ? trimmed + ellipsis : ellipsis;
+        }
+
+        /// <summary>Fits a variable-length label between a fixed prefix and suffix (e.g. "1. " and
+        /// the price) so the parts that always carry meaning — the index, the price — never get
+        /// truncated; only the label in between ever loses characters, and only behind an ellipsis.</summary>
+        public static string FitLabelKeepingSuffix(Font font, string prefix, string label, string suffix,
+            int fontSize, float maxWidth)
+        {
+            if (font == null) return prefix + label + suffix;
+            float reserved = MeasureWidth(font, prefix, fontSize) + MeasureWidth(font, suffix, fontSize);
+            string fitLabel = FitText(font, label, fontSize, Mathf.Max(0f, maxWidth - reserved));
+            return prefix + fitLabel + suffix;
         }
 
         public static RectTransform MakePanel(RectTransform parent, string name, Vector2 anchor, Vector2 pivot,
@@ -382,7 +466,7 @@ namespace SBR.Game
             RectTransform rt = image.rectTransform;
             rt.anchorMin = rt.anchorMax = anchor;
             rt.pivot = pivot;
-            rt.sizeDelta = size;
+            rt.sizeDelta = new Vector2(Mathf.Max(44f, size.x), Mathf.Max(32f, size.y));
             rt.anchoredPosition = position;
             Button button = go.GetComponent<Button>();
             button.targetGraphic = image;
@@ -390,6 +474,7 @@ namespace SBR.Game
             ColorBlock colors = button.colors;
             colors.highlightedColor = new Color(1.25f, 1.25f, 1.25f, 1f);
             colors.pressedColor = new Color(0.8f, 0.8f, 0.8f, 1f);
+            colors.fadeDuration = 0.12f;
             button.colors = colors;
             if (onClick != null) button.onClick.AddListener(() => onClick());
             Text text = MakeText(rt, "Label", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
@@ -397,6 +482,29 @@ namespace SBR.Game
             text.horizontalOverflow = HorizontalWrapMode.Overflow;
             return button;
         }
+
+        public static Image MakeSprite(RectTransform parent, string name, Sprite sprite, Vector2 anchor,
+            Vector2 pivot, Vector2 position, Vector2 size, Color tint)
+        {
+            var go = new GameObject(name, typeof(Image));
+            go.transform.SetParent(parent, false);
+            Image image = go.GetComponent<Image>();
+            image.sprite = sprite;
+            image.type = Image.Type.Simple;
+            image.preserveAspect = false;
+            image.color = tint;
+            image.raycastTarget = false;
+            RectTransform rt = image.rectTransform;
+            rt.anchorMin = rt.anchorMax = anchor;
+            rt.pivot = pivot;
+            rt.anchoredPosition = position;
+            rt.sizeDelta = size;
+            return image;
+        }
+
+        public static RectTransform MakeRule(RectTransform parent, string name, Vector2 anchor,
+            Vector2 pivot, Vector2 position, Vector2 size)
+            => MakePanel(parent, name, anchor, pivot, position, size, LaptopOs.RuleSoft);
 
         public static Color Dim(Color color) => new Color(color.r, color.g, color.b, 0.55f);
 

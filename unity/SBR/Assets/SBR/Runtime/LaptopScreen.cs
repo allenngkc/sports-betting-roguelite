@@ -115,12 +115,34 @@ namespace SBR.Game
 
         private static Font LoadFont()
         {
-            try { return Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); }
+            Font font;
+            try { font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); }
             catch
             {
                 Debug.LogWarning("[LaptopScreen] built-in font not found; text will not render.");
                 return null;
             }
+            WarmFontAtlas(font);
+            return font;
+        }
+
+        /// <summary>Bakes every character/size pair SureThing renders into the dynamic font's atlas
+        /// once, synchronously, before the first UI build, so no Text build is ever the "first use"
+        /// that makes the atlas repack. This is a robustness/hitch measure, not a bug fix: it was
+        /// written against a suspected atlas race behind the "reason label paints only two glyphs"
+        /// defect, and it did not fix it — that defect was pure occlusion (the Skip button was drawn
+        /// over the label; see SportsbookApp.BuildSlip). Kept because pre-warming a dynamic atlas on
+        /// a world-space canvas that rebuilds every interaction is worth the one-time cost. The
+        /// charset is best-effort; an unlisted character still rasterizes on demand as before.</summary>
+        private static void WarmFontAtlas(Font font)
+        {
+            if (font == null) return;
+            const string charset =
+                " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" +
+                ".,:;!?'\"()[]/%$+-—−·■▰›←→⇄@¤✓";
+            int[] sizes = { 9, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 26, 28, 30, 31 };
+            foreach (int size in sizes)
+                font.RequestCharactersInTexture(charset, size, FontStyle.Normal);
         }
     }
 }

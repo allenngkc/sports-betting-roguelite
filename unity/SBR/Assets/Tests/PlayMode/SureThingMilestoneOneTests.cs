@@ -175,7 +175,10 @@ namespace SBR.Tests.PlayMode
             Assert.IsNotNull(firstImage.sprite, "selected ring sprite missing");
             StringAssert.StartsWith("ring-price-", firstImage.sprite.name);
             Assert.IsFalse(firstImage.raycastTarget, "decorative ink must not intercept the price button");
-            AssertRect(firstImage.rectTransform, 112f, 46f, "price-ring sprite");
+            // Ring overshoots the real 112x32 odds-button cell by 8px per edge (ASSETS.md), not the
+            // stale 96x30 cell the ring sprite was originally sized against — see SportsbookApp
+            // BuildMatchupCard for the defect this corrects (the ring's edge used to cross the price).
+            AssertRect(firstImage.rectTransform, 128f, 48f, "price-ring sprite");
             string variant = firstImage.sprite.name;
 
             Invoke(Required(Required(App(laptop), "WorkingMargin"), "Chip25%"));
