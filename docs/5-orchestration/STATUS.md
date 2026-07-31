@@ -10,11 +10,11 @@
 - **room-refinement:** handoff tracked (`49a7c55`); R7 wear plan committed and
   R9/R10 routed to the Design Director (`e59921f`). Tree clean. Unblocked on the TV
   wall — C3 capability resolved. Lead: Claude (Opus 5).
-- **tv-sweat:** contract + C1 PRD amendment + T6 evidence pack + C3 proposal at
-  `4cdd98c`; stand-in draft discarded. T8 stripped in tree (−47 lines, dead-leg beat
-  timing deliberately preserved), uncommitted pending verification. **Unity slot
-  granted** — warm compile + EditMode + PlayMode in progress; commit on green, then
-  Phase 3 (T7) opens. Lead: Claude (Opus 5).
+- **tv-sweat:** `842382d` — **T8 removed and verified** (engine 160/160, EditMode
+  129/129, PlayMode 44/44 on rerun; single failure matched the documented cash-out
+  flake signature in a path T8 doesn't touch). Contract/C1/T6/C3 at `4cdd98c`.
+  Phase 3 (T7) planning underway — carries the two PENDING-VISUAL-EVIDENCE items
+  (TVS-H03 locator binding, scorer-reveal gap). Lead: Claude (Opus 5).
 - **feat/soccer-markets (Documents checkout):** Dormant — F_0.4.0 awaiting playtest.
 - **Design Director:** inbox memo at `docs/design/INBOX.md` — C3 coverage rule,
   studio art-authority gap (no binding authority for room/laptop/phone since `08`
@@ -23,9 +23,10 @@
 - **Orchestrator:** Fable 5 session in `main-2`; lead channel chartered in
   `ORCHESTRATOR.md` §3a. Completion watchers armed on all three lead terminals and
   the Design Director session.
-- **Unity queue:** tv-sweat (running) → surething-ui.
+- **Unity queue:** editor free (tv-sweat released, lockfile clear) → surething-ui
+  green re-confirm (grant queues when its composer clears) → room R7 captures.
 - **Blocked:** none.
 - **Rulings (Allen, 2026-07-31):** C1 — latest document governs, `DESIGN.md` §6
   stands, layout closed. C2 — interim: shipped green tolerated, cold white-grey
-  target lands with TV Phase 3. T8 — remove: stripped, verification in progress.
+  target lands with TV Phase 3. T8 — remove: done, verified `842382d`.
 - **Need Allen:** nothing.
