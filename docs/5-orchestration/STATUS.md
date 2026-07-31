@@ -106,6 +106,14 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-07-31 cycle 10 · **Phase 3C LANDED** (`4969eb1`: Layout B canvas +
+  T16/C3/C8 + TVS-H02 fix; both n≥10 arms green, full suites green, stash
+  round-trip byte-verified against a CRLF rewrite). Editor: room R10 cycle opened
+  (Allen's staged lease fired at validity); TV implements T17 editor-free, window
+  after SureThing's pixel check. Three automated-run traps recorded in TV's
+  handoff §4. **Two Allen gates raised by TV:** LFS is inert repo-wide (macro in
+  a non-root .gitattributes is ignored by git) and 49 T6 captures (28.8 MB) held
+  out of commit pending the call. Reversal: revert `4969eb1`; reorder queue.
 - 2026-07-31 cycle 9 · SureThing continue delivered: S9 audited and committed,
   build-out halted at its own unverified-stack line, and the **S6–S8 review bundle
   placed in the orchestrator tree and committed** (pre-typography caveat leads;
