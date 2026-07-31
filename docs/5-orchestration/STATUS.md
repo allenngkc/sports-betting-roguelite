@@ -72,3 +72,15 @@
   lease-holder must keep checking process count + lockfile at open. GPU booking
   remains stood down.
 - **Need Allen:** nothing.
+
+## Autonomous decisions (Allen veto window)
+
+Autonomy authorized 2026-07-31 (STUDIO.md policy; ORCHESTRATOR.md §6). Every entry:
+decision · evidence checked · reversal path.
+
+- 2026-07-31 · Loop started. Policy dispatched to tv-sweat and surething-ui;
+  room-refinement's copy rides its R9 lease grant (composer blocked by Allen's
+  staged draft + survey prompt — not touched per composer rule). Reversal: Allen
+  says stop.
+- Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
+  cycle) with Unity-process checks; 25-minute fallback heartbeat running.
