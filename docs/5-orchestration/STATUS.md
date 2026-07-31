@@ -55,7 +55,8 @@
   stands, layout closed. C2 — interim: shipped green tolerated, cold white-grey
   target lands with TV Phase 3. T8 — remove: done, verified `842382d`. S11 — no
   licence-encumbered typefaces in the product; Bell Centennial dropped.
-- **Watch:** interactive GPU booking **stood down** (Allen, 2026-07-31) — the
-  capture-harness spike succeeded; visual evidence is repeatable in batch. Only
-  revisit if the seated-camera sweat capture fails.
+- **Watch:** Unity **segfaults on `-quit`** (exit path only; 0 errors, lockfile
+  clears, nothing corrupted — observed on tv-sweat warm compile 2026-07-31). Every
+  lease-holder must keep checking process count + lockfile at open. GPU booking
+  remains stood down.
 - **Need Allen:** nothing.
