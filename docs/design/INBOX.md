@@ -2,43 +2,40 @@
 
 Items routed to this seat. Clear a line when it's registered or resolved.
 
-## 2026-07-31
+**Seat note (2026-07-31):** the DD seat has no repo access and its worktree mounts
+dropped. Items below marked *awaiting re-mount* need Allen to re-attach the
+referenced documents via Import before the DD will rule on them.
 
-1. **C3 coverage rule (TV HDR).** Capability is fixed — since `1aa74c3` (2026-07-28)
-   `TvSweatHdrUI.shader` carries an unclamped material float past the UGUI `Color32`
-   clamp. The open question is coverage: which elements may exceed 1.0 without
-   breaking the one-full-brightness rule. TV lead's detail:
-   `[TV] docs/tv-sweat-refinement/c3-hdr-canvas-proposal.md`. Register C3 updated;
-   room worktree is unblocked.
-2. **Studio art-authority gap.** `design/08-art-direction.md` was deprecated
-   2026-07-24 and nothing replaced it for the non-TV surfaces: `DESIGN.md` covers the
-   TV only — room, laptop, and phone have no binding art authority. Raised by the TV
-   lead; studio-level. Needs a proposal (scope + format) for Allen.
-3. **SureThing form-guide identity.** The SureThing lead flags the shipped lobby as a
-   "competent dark app": default sans, airy rows, no toner quality — the direction's
-   most recognisable traits absent. Re-routed here under the new decision routing.
-   S11 is **ruled** (Allen, 2026-07-31): no licence-encumbered typefaces — Bell
-   Centennial is dropped; spec a free-licence replacement (OFL or similar) as part of
-   this item. Build currently renders in `LegacyRuntime.ttf`.
-4. **R9 — ambient rebalance (room).** Candidate. Room lead's Phase B data says flat
-   ambient now suppresses relief that directional bounce carries better. Changes the
-   8/8-gated value structure, so approval + gate re-run required.
-5. **R10 — couch-corner grazing source (room).** Candidate. Strongest normal map in
-   the room still reads at 2.3%; bounce cannot rescue that corner.
-6. **TV slip-strip raw-hex colours.** `UpdateSlipStrip` embeds `#3CE873` (green),
-   `#FF4038` (red), `#9EDCF6` (cyan) as rich-text string markup — the retired money
-   language surviving where field-level palette scans can't see it. Same violation
-   class as T8. Logged as `[TV] DESIGN.md` §9A item 5; untouched pending your
-   ruling.
-7. **Lost-ticket oxide red (SureThing).** `OldSlipsApp.BuildLedgerTicket` tints a
-   lost ticket's state and payout in oxide red. Plausibly legitimate as the house's
-   mark on a settled ticket; sits against the amended red law (S3, house's mark
-   only). Untouched pending your ruling.
-8. **Three-way naming clash (SureThing).** LEDGER / Old Slips / SURETHING LEDGER —
-   overlapping names across surfaces; needs a naming ruling before S9's screens
-   harden the copy.
-9. **Layout B: win-probability display and momentum tape — in or out, and where?**
-   TV's 3C sub-agent dropped both construction calls (classes and tests survive;
-   reversal cheap). PRD §4.2 names the tape in the one-revealed-source-of-truth law;
-   §8.4 says it "may remain" — permissive, not mandated. The TV lead deliberately
-   made no unilateral call either way. **Gates the 3C commit.**
+## Pending — awaiting re-mount
+
+1. **C3 coverage rule (TV HDR).** Which elements may exceed 1.0 under the
+   one-full-brightness rule. **Gates TV 3D.** Needs:
+   `[TV] docs/tv-sweat-refinement/c3-hdr-canvas-proposal.md`.
+2. **Studio art-authority gap.** Nothing governs room/laptop/phone art since `08`
+   was deprecated 2026-07-24. Needs a proposal (scope + format) for Allen.
+3. **R9 — ambient rebalance (room).** Candidate; changes the 8/8-gated value
+   structure, needs approval + gate re-run. Needs:
+   `[RM] docs/6-memo/2026-07-31-room-to-design-director-R9-R10.md`.
+4. **R10 — couch-corner grazing source (room).** Candidate; same memo as R9.
+5. **Layout B: win-probability display and momentum tape — in or out, where?**
+   **Gates TV's 3C commit.** 3C's sub-agent dropped both without authority;
+   reversal cheap; PRD §4.2 names the tape, §8.4 is permissive.
+6. **Room design-review package** — R5/R6/R7-Tier-1b evidence + three questions
+   (pursue ceiling soot?; do decals justify the shared-renderer change?; current
+   state vs concept as the bar). Written repo-free for paste-in:
+   `[RM] docs/6-memo/2026-07-31-room-design-review-package.md`.
+
+## Cleared 2026-07-31 (transcribed to REGISTER.md by the orchestrator)
+
+- Form-guide identity → **S14 spec issued** (three build gaps; reference
+  implementation held in DD seat, pending hand-over).
+- Typeface → **S11 closed**: Archivo + Archivo Narrow, OFL 1.1.
+- Lost-ticket oxide → **S15 ruled violation** (LOST struck in oxide, row
+  `--toner-3`, `$0` in toner).
+- Naming → **S16 closed**: LEDGER only; S9 unblocked.
+- Slip-strip raw-hex → **T15 ruled violation, T8 class**; scan extended to markup.
+
+## Review backlog (behind the pending items)
+
+- S6/S7/S8 (SureThing lobby, ink pipeline, chrome), R5/R6 (room light passes),
+  T6 (TV scene grammar evidence pack).

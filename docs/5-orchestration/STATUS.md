@@ -7,11 +7,10 @@
   red-on-dead-leg ruling (`8822971`). Tree clean. Next: S8 OS chrome, then S9.
   **S8 + S9 ink fixes landed and pixel-verified** — ink inversion (blue marks only
   his pick) and dead-strike sizing fixed; first-ever Ledger/Rewards/Old Slips
-  captures, all eight states navigating. Wide ring honestly reverted — the agent's
-  fix moved strokes without closing them; documented hypothesis: 2:1 downscale in
-  `make-biro-rings.py` kills the thin end-curves. Now fixing the generator (no
-  editor); ring verification folds into its next capture window. DD questions 7–8
-  outstanding. Lead: Claude (Opus 5).
+  captures, all eight states navigating. Wide ring: downscale hypothesis tested and
+  **falsified** — generator untouched, diagnostic committed, fix from evidence in
+  the next capture window rather than a third guess. DD rulings S11/S14/S15/S16
+  dispatched into S9 planning. Lead: Claude (Opus 5).
 - **room-refinement:** handoff tracked (`49a7c55`); R7 wear plan committed and
   **Tier 1b committed with an honest record** — ceiling clean and verified; four
   decal defects fixed (stale-cache versioning, default shadow casting, URP BlendMode
@@ -40,10 +39,14 @@
   capture-harness spike; interactive booking only if the spike fails. 3D awaits the
   DD's C3 ruling. Lead: Claude (Opus 5).
 - **feat/soccer-markets (Documents checkout):** Dormant — F_0.4.0 awaiting playtest.
-- **Design Director:** inbox memo at `docs/design/INBOX.md` — C3 coverage rule,
-  studio art-authority gap (no binding authority for room/laptop/phone since `08`
-  was deprecated 2026-07-24), SureThing form-guide identity, R9, R10. Review backlog:
-  S6/S7, R5/R6, T6. Nothing Design-verified yet.
+- **Design Director:** **five rulings issued 2026-07-31**, transcribed to the
+  register by the orchestrator — S11 closed (Archivo + Archivo Narrow, OFL), S14
+  identity spec issued, S15 lost-ticket violation, S16 naming closed (LEDGER), T15
+  slip-strip violation. **Seat lost its document mounts** — C3 (gates 3D), Layout B
+  item (gates 3C commit), R9/R10, the art-authority gap, and the room review
+  package all wait on Allen re-attaching files via Import. S14's reference
+  implementation is held in the DD seat pending hand-over. Nothing Design-verified
+  yet.
 - **Orchestrator:** Fable 5 session in `main-2`; lead channel chartered in
   `ORCHESTRATOR.md` §3a. Completion watchers armed on all three lead terminals and
   the Design Director session.

@@ -26,9 +26,12 @@ under this seat. That is the gap this register exists to close.
 | S8 | OS chrome — fictional OS identity, clock `02:47`, second affordance; personal not institutional | Approved (spec) | `[ST] .../SHARED-SPEC.md`; impl. state unconfirmed |
 | S9 | Event detail, staged ticket, MY BETS, rewards, old slips | Approved (spec) · not implemented | `[ST] .../DESIGN.md` §Components |
 | S10 | Sweat "loud register" for the laptop | Candidate | direction contract comment only; no built spec |
-| S11 | Production typeface | **Ruled** · Allen 2026-07-31 — no licence-encumbered type in the product; Bell Centennial dropped. Free-licence replacement specced by the Design Director with the identity work | `[ST] handoff.md` §6 |
+| S11 | Production typeface | **Closed** · DD 2026-07-31 — **Archivo + Archivo Narrow** (OFL 1.1). Chosen for the function Bell's ink traps served (small type surviving a degraded surface); true superfamily, shared metrics, tabular figures both widths. One `LoadFont` + two TMP assets | DD ruling S11-A |
 | S12 | Rejected comparison — "The Catalogue Sleeve" | Exploration (closed) | `[ST] .../direction-2-catalogue-sleeve.html` |
 | S13 | Earlier explorations — Tote Hall / Broadcast Alert / Night Board | Dumped · Allen 2026-07-28 | `[ST] .../DIRECTIONS.md`; do not revive |
+| S14 | Form-guide identity — three build gaps, all already specified: two-voice type system unwired (condensed figures vs roman labels); 78px entry geometry drifted (pre-contract 660px board suspected); document layer missing (warm olive-black ground, warm bone toner, 1–2px rules, 0.05 grain under the room grade, biro wash, ink-sprite rings not pills) | **Spec issued** · DD 2026-07-31; reference implementation held in the DD seat — hand over, do not re-derive | DD ruling S12 |
+| S15 | Lost-ticket treatment in Old Slips | **Ruled — violation** · DD 2026-07-31: LOST struck in oxide, row to `--toner-3`, returned figure `$0` in toner — not oxide, not wax | DD ruling S13 |
+| S16 | App naming | **Closed** · DD 2026-07-31 — one name: **LEDGER**. "Old Slips" retired from copy (code identifier only); "SURETHING LEDGER" deleted (brands a machine-level app, drifts toward institutional hardware). S9 unblocked | DD ruling S14 |
 
 ## Room
 
@@ -60,10 +63,11 @@ under this seat. That is the gap this register exists to close.
 | T8 | Scanline overlay + `DeadLegBeat` static-noise crawl in `TvSweatScreen.cs` | Resolved · removed and verified `842382d` (2026-07-31); dead-leg beat timing preserved | `[TV] DESIGN.md` §9A.1 |
 | T9 | `chromeCyan` used broadly for leg/clock/records/chrome labels — retired hue, no role in §4 | Debt · Phase 3 | `[TV] DESIGN.md` §9A.2 |
 | T10 | Two hardcoded emission rest values, one darker than the agreed black floor | Debt · Phase 3 | `[TV] DESIGN.md` §9A.4 |
-| T11 | TV typeface — characteristics specified, file unchosen | Open | `[TV] DESIGN.md` §10 |
+| T11 | TV typeface — file unchosen; **must not be Archivo** (the two screens must feel like one hand doing different jobs — a shared superfamily collapses the register split). Archivo stands in meanwhile | Open · constraint added DD 2026-07-31 | `[TV] DESIGN.md` §10 |
 | T12 | Brightness values + pixel pitch | Provisional until seen on the real TV at seated distance | `[TV] DESIGN.md` §10 |
 | T13 | Bunkmate character | Deferred out of worktree · Allen 2026-07-27 | `[TV] docs/.../PRD.md` |
 | T14 | No camera shake/cut/zoom; fixed top-down framing | Approved (Decision B) | `[TV] docs/.../PRD.md` §13 |
+| T15 | Slip-strip raw-hex markup in `UpdateSlipStrip` (retired green/red + dead chromeCyan as rich-text) | **Ruled — violation, T8 class** · DD 2026-07-31: remediate as T8; extend the palette scan to markup, not just serialised colour fields — that blind spot is why it survived | `[TV] DESIGN.md` §9A.5 |
 
 ## Cross-surface
 
