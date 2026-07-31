@@ -314,18 +314,45 @@ namespace SBR.Game
             {
                 Sprite ring = ResolveWideRing(matchup.Index);
                 if (ring != null)
+                {
+                    // KNOWN DEFECT — the wide ring does not close. Top and bottom pen strokes
+                    // render, the left cap renders as a detached stub, and the right cap is absent.
+                    //
+                    // Ruled out so far, with evidence: the sprite is fine (ring-wide-a@2x is a
+                    // clean closed ellipse when inspected directly); Image.type is Simple with
+                    // preserveAspect false, so this is a plain stretch and not a 9-slice artifact;
+                    // and re-deriving the rect from the cell via the +8px overshoot rule did not
+                    // fix it — it moved the strokes without closing them.
+                    //
+                    // Leading hypothesis, unconfirmed: ring-wide is 352x92 drawn into 176x46, a 2:1
+                    // downscale. The near-horizontal top and bottom strokes stay thick in Y and
+                    // survive it; the end curves are thin in X and fall under a pixel, so they
+                    // antialias away. GreenRing does not show this because InkRingGeometry sizes it
+                    // to a short word, nowhere near a 2:1 reduction. If that is right, the fix is in
+                    // tools/art/make-biro-rings.py — thicken the wide variant's ends — not here.
+                    //
+                    // Restored to the original geometry deliberately: the derived version was no
+                    // better and the surrounding tests pin these numbers. Do not "fix" this by
+                    // nudging the rect again without first testing the downscale hypothesis.
                     LaptopUi.MakeSprite(offer, "WideBiroRing", ring, new Vector2(0f, 1f),
                         new Vector2(0f, 1f), new Vector2(-8f, -8f),
                         new Vector2(176f, 46f), LaptopOs.Accent);
+                }
             }
+            // Law Two: biro blue marks the selection he made, nothing else. This offer's label/
+            // price used to key off "replacement" (true for every OTHER offer in a matchup that
+            // already has a pick) instead of "selected" — so every unpicked row rendered blue and
+            // the actual pick rendered in plain toner, exactly backwards. Keyed off "selected" now;
+            // "replacement" still drives the "⇄" swap-hint affordance and its underline, just no
+            // longer in biro.
             LaptopUi.MakeText(offer, "MarketLabel" + key, new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(-164f, 0f), new Vector2(156f, 32f), 13, TextAnchor.MiddleLeft,
-                replacement ? LaptopOs.Accent : LaptopOs.TonerSecondary, label, _font);
+                selected ? LaptopOs.Accent : LaptopOs.TonerSecondary, label, _font);
             string price = OddsFormat.American(matchup.Odds(selection));
             LaptopUi.MakeButton(offer, "Market" + key,
                 replacement ? "⇄  " + price : price, new Vector2(0f, 1f), new Vector2(0f, 1f),
                 Vector2.zero, new Vector2(160f, 32f), 19, LaptopOs.Ink,
-                frozen ? LaptopUi.Dim(LaptopOs.Muted) : replacement ? LaptopOs.Accent : LaptopOs.White,
+                frozen ? LaptopUi.Dim(LaptopOs.Muted) : selected ? LaptopOs.Accent : LaptopOs.White,
                 frozen ? null : () => { slip.Toggle(matchup.Index, selection); _invalidate(); }, _font, !frozen);
             if (replacement)
             {
@@ -333,7 +360,7 @@ namespace SBR.Game
                     new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, -31f),
                     new Vector2(160f, 2f), new Color(0f, 0f, 0f, 0f));
                 LaptopUi.MakePanel(hint, "ReplacementUnderline" + key, Vector2.zero, Vector2.zero,
-                    Vector2.zero, new Vector2(160f, 2f), LaptopOs.BiroDeep);
+                    Vector2.zero, new Vector2(160f, 2f), LaptopOs.TonerSecondary);
             }
         }
 
@@ -734,9 +761,18 @@ namespace SBR.Game
             {
                 Sprite strike = ResolveStrike(identity);
                 if (strike != null)
+                {
+                    // Was a fixed 112x46 box at a hand-picked (-4,-20) offset — the strike-a
+                    // sprite's own native size, not derived from "DEAD" at all. "DEAD" measures
+                    // well under half that width, so the mark ran far past the word on its left
+                    // side while landing short of a full 8px overshoot on the right. Same fix as
+                    // GreenRing above: derive position/size from the state text's own measured
+                    // bounds via InkRingGeometry so the strike overshoots the actual word, not a
+                    // stale asset-sized box.
+                    (Vector2 position, Vector2 size) = InkRingGeometry(stateText);
                     LaptopUi.MakeSprite(row, "DeadStrike", strike, new Vector2(1f, 1f),
-                        new Vector2(1f, 1f), new Vector2(-4f, -20f),
-                        new Vector2(112f, 46f), LaptopOs.MoneyBad);
+                        new Vector2(1f, 1f), position, size, LaptopOs.MoneyBad);
+                }
             }
             LaptopUi.MakeRule(row, "LegRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
                 Vector2.zero, new Vector2(width, 1f));

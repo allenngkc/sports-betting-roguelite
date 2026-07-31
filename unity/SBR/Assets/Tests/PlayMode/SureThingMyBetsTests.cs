@@ -80,7 +80,12 @@ namespace SBR.Tests.PlayMode
             StringAssert.Contains("DEAD", TextOf(Required(mirrorTicket, "TicketTitle")));
             green = DecorativeInk(mirrorLeg0, "GreenRing", "ring-price-");
             Image strike = DecorativeInk(mirrorLeg1, "DeadStrike", "strike-");
-            AssertRect(strike.rectTransform, 112f, 46f, "DEAD strike");
+            // Was 112x46 — the strike sprite's own native size, fixed regardless of what it struck
+            // through. "DEAD" is about 38px wide, so the strike ran roughly 70px past the word and
+            // out toward the panel edge. It now derives from the text via InkRingGeometry, the same
+            // way the GREEN ring beside it always did. Confirmed against the rendered capture: the
+            // strike sits across the word with a short overshoot each side, as a pen would leave it.
+            AssertRect(strike.rectTransform, 56f, 34f, "DEAD strike");
             string strikeVariant = strike.sprite.name;
             AssertNoMutatingButtons(board, margin);
 
