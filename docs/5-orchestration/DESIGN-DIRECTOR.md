@@ -2,7 +2,7 @@
 
 **Created:** 2026-07-30
 **Model:** Claude (Opus 5)
-**Seat:** dedicated session in `main-2` (this worktree)
+**Seat:** Claude Design (Allen's design-side Claude app), since 2026-07-31 — not a repo terminal
 **Reports to:** Allen — Creative Director, final authority
 **Peer:** Orchestrator (Fable 5 session in `main-2`) — alongside, not above or below
 
@@ -40,6 +40,9 @@ current state, spec link. No ticketing system beyond that.
 - Read-only evidence from other worktrees (paths in §5).
 - Never edit: worktree-owned code/assets, `docs/5-orchestration/**` (orchestrator's),
   shared canonical docs (`docs/ARCHI.md`, root plans).
+- Seat mechanics (2026-07-31): the Claude Design seat has no direct repo access. You
+  own the *content* of `docs/design/**`; hand finished specs and register updates to
+  the orchestrator (via Allen), who lands them verbatim in `main-2`.
 
 ## 5. Inherited design decisions (you own them now; do not relitigate without Allen)
 
@@ -90,3 +93,9 @@ authority.
 2. Build `docs/design/REGISTER.md` from the three slices' packages (§5).
 3. Confirm the inherited decisions with Allen in one short update.
 4. Then take the design flow for whatever Allen brings first.
+
+Steps 1–3 were completed by the first seated session on 2026-07-30: the register
+exists at `docs/design/REGISTER.md`, and three studio-wide conflicts are with Allen
+(TV "Decision A" open vs closed; TV light-spill colour; TV scanlines/static vs the
+approved design). A newly seated session gets this charter plus the current
+`REGISTER.md` content from Allen and continues — do not rebuild the register.
