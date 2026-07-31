@@ -54,10 +54,10 @@ under this seat. That is the gap this register exists to close.
 | T2 | Palette — concept C: cold white/grey facts, gold rationed to money/won/cash-out, muted blue+pink dots on pitch only | Approved · Allen 2026-07-27 | `[TV] DESIGN.md` §4 |
 | T3 | `design/08-art-direction.md` — casino neon on black, CRT scanlines, green/red/gold purity | **Deprecated anti-reference** · Allen 2026-07-24 | `[TV] DESIGN.md` header |
 | T4 | Held cash-out preview | Approved · Allen 2026-07-26 | `[TV] docs/.../PRD.md` §8.10 |
-| T5 | Layout + five-zone stability (PRD "Decision A") | **CONFLICT** — PRD §13/§14 says open; `DESIGN.md` §6 says settled by the 07-27 approval | see C1 |
+| T5 | Layout + five-zone stability (PRD "Decision A") | Settled · Allen 2026-07-31 — latest document governs (`DESIGN.md` §6); TV lead amends PRD §13/§14 | see C1 |
 | T6 | Scene grammar — Phase 2A–2E: planner, 48-cell matrix, corner/booking, 6 near-miss endings, 5 buildup grammars, chance shapes + goal reactions | Implemented · review pending | `220c5ec` and predecessors |
 | T7 | Phase 3 — UI refinement to the approved hierarchy | Not started · gated on T5 | `[TV] docs/.../PRD.md` §5 |
-| T8 | Scanline overlay + `DeadLegBeat` static-noise crawl in `TvSweatScreen.cs` | **Implemented against approved design** — §2 bans both by name | `[TV] DESIGN.md` §9A.1 |
+| T8 | Scanline overlay + `DeadLegBeat` static-noise crawl in `TvSweatScreen.cs` | **Implemented against approved design** — §2 bans both by name; orchestrator recommends removal, awaiting Allen confirm (2026-07-31) | `[TV] DESIGN.md` §9A.1 |
 | T9 | `chromeCyan` used broadly for leg/clock/records/chrome labels — retired hue, no role in §4 | Debt · Phase 3 | `[TV] DESIGN.md` §9A.2 |
 | T10 | Two hardcoded emission rest values, one darker than the agreed black floor | Debt · Phase 3 | `[TV] DESIGN.md` §9A.4 |
 | T11 | TV typeface — characteristics specified, file unchosen | Open | `[TV] DESIGN.md` §10 |
@@ -69,8 +69,8 @@ under this seat. That is the gap this register exists to close.
 
 | # | Item | State | Spec |
 |---|---|---|---|
-| C1 | **TV Decision A status** — PRD and DESIGN.md disagree on whether layout is closed. Phase 3 is gated on it either way. | **Needs ruling** | T5 |
-| C2 | **TV light spill colour into the room** — three live positions: `DECISIONS.md` 2026-07-25 locks saturated stadium-LED blue/magenta; `[TV] DESIGN.md` §5 asks cold white-grey; shipped `TvLight.idleColor` is `(0.35, 1.0, 0.5)` saturated green. | **Needs ruling** | `[RM] docs/6-memo/2026-07-27-room-to-tv-sweat.md` |
+| C1 | **TV Decision A status** — ruled: latest document governs, so `DESIGN.md` §6 stands and the layout is closed. Phase 3 gate lifted; PRD §13/§14 to be amended. | Ruled · Allen 2026-07-31 | T5 |
+| C2 | **TV light spill colour into the room** — interim ruling: shipped green tolerated for now; target remains `[TV] DESIGN.md` §5 cold white-grey, corrected in TV Phase 3. `DECISIONS.md` 2026-07-25 blue/magenta lock superseded. Merge does not auto-resolve this. | Interim · Allen 2026-07-31 | `[RM] docs/6-memo/2026-07-27-room-to-tv-sweat.md` |
 | C3 | **TV canvas cannot carry HDR** — until it can, bright tiers do not bloom as light sources and the grade's black-floor fix only reaches transparent areas | Open · TV-owned, blocks room fidelity | same memo |
 | C4 | **Money colour is now per-surface** — TV gold, SureThing wax amber, green/red retired game-wide. Coherence is a choice, not a constraint (Allen 2026-07-28). | Approved | `[ST] .../DIRECTIONS.md` |
 | C5 | **Room re-tint from TV light in-engine** — if the rig supports it, big payoffs drive it | Open, deliberately | `[TV] DESIGN.md` §10 |
@@ -83,5 +83,7 @@ under this seat. That is the gap this register exists to close.
 
 - Item states move only on evidence: *Implemented* needs a commit; *Design-verified* needs a review
   note from this seat against the item's spec.
-- C1, C2 and T8 are the three items where shipped or planned work currently diverges from an
-  approved design. They rank ahead of any new exploration.
+- 2026-07-31: C1 ruled (latest document governs — `DESIGN.md`), C2 given an interim ruling
+  (shipped green tolerated; cold white-grey target lands with TV Phase 3). T8 is the remaining
+  divergence — removal recommended, awaiting Allen confirm. It ranks ahead of any new
+  exploration.
