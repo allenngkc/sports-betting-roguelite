@@ -35,6 +35,12 @@
 > - Report telegraphically (Done / Next / Risk / Need Allen); keep evidence local;
 >   never send raw logs upward.
 > - Sweep flag for this worktree: commit `handoff.md`.
+> - **Delegation directive (Allen, 2026-07-31):** grunt work — implementation, testing,
+>   validation, bulk reading — goes to bounded sub-agents (Sonnet 5 by default, max two
+>   at once); you plan, dispatch, review diffs, and integrate. Doing sustained grunt
+>   work yourself is now a contract deviation. Every dispatch names allowed files,
+>   forbidden files, required evidence, and an exit gate; sub-agents never commit
+>   unless the dispatch says so. Use an Opus sub-agent only for genuinely hard tasks.
 
 ## 1. Ownership transfer
 
