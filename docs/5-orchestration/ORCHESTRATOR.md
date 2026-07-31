@@ -39,6 +39,21 @@ When the current session ends, any new session takes the seat like this:
    Then run one sweep (§4) and report Done / Next / Risk / Need Allen.
    ```
 
+## 3a. Talking to leads
+
+Leads are live Claude (Opus 5) sessions in Orca terminals — one per active worktree.
+Reach them with the Orca CLI, never by spawning stand-in sub-agents for lead work:
+
+1. `orca terminal list --json` — find the worktree's terminal handle (the lead session
+   shows a named status line, e.g. `SureThing Lead`, `room-art-lead`, `tv-sweat-lead`).
+2. `orca terminal send --terminal <handle> --enter --text "<message>"` — telegraphic,
+   result-first, ending with what to report back.
+3. `orca terminal read --terminal <handle> --limit <n>` — confirm the prompt was
+   accepted ("esc to interrupt" in the status bar) and later read the lead's report.
+
+`orchestrator-brief.md` at a worktree root is the durable briefing artifact; the
+terminal send is the tap on the shoulder to go read it.
+
 ## 4. One sweep
 
 1. `git status --porcelain` + `git log --oneline -5` in each registered worktree
