@@ -106,6 +106,13 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-07-31 cycle 8 · **Stall caught and broken** — TV's stack arm died silently
+  (~14:20: Temp mtime + upm.log at 14:17, zero Unity processes 34+ min, task list
+  unmoved) while its driver-monitor waited on a log that would never grow —
+  evidence contradicted the apparent "running" state. Woke the lead by firing
+  Allen's staged report-request with the evidence appended; window remains TV's;
+  lead decides rerun-vs-diagnose. R9 closed as measured no-op earlier this cycle
+  (`b1d2ccc`); R10 prepped and queued. Reversal: none needed — no state changed.
 - 2026-07-31 cycle 6 · **Loop resumed** — Allen's one-pass completed all three
   steps. Room in the editor (R9 gate re-run). TV re-seated post-clear on a fresh
   session: verified HEAD, stack, fix lines, and correctly held on seeing room's
