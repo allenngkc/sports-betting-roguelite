@@ -13,14 +13,15 @@
   slot requested, queued behind room's verification cycle. Two new DD questions
   routed (inbox items 7–8). Lead: Claude (Opus 5).
 - **room-refinement:** handoff tracked (`49a7c55`); R7 wear plan committed and
-  **Tier 1b nearly home** — capture slot diagnosed three real defects: a texture
-  cache that ignored field-math changes (the earlier 10.87% was a real render of
-  stale inputs — FieldVersion added to the key), decals casting their own
-  quad-outline shadows, and mipmaps averaging grazing-angle decal borders (mean
-  alpha 0.25 made quad edges visible). Sub-agent's Python prediction matched Unity
-  within 0.05% once the cache was bypassed. Fix 3 unverified — scene deliberately
-  uncommitted; one short verification cycle granted (in slot now). Coverage
-  16.93% / 9.98% vs gate 12% / 8%. Bunk 2 held at 43.94. Lead: Claude (Opus 5).
+  **Tier 1b committed with an honest record** — ceiling clean and verified; four
+  decal defects fixed (stale-cache versioning, default shadow casting, URP BlendMode
+  enum confusion — additive where multiply was meant, and alpha-blend vs multiply
+  for stains). Mips-off hypothesis tested and disproved in-window. FluorescentSoot
+  held back — unresolved contradiction, lead refused to guess a fifth time. Earlier
+  coverage numbers withdrawn (unvalidated metric). **Need Allen: R7 steer** — keep
+  iterating quads, escalate the URP Decal Renderer Feature (shared-renderer =
+  integration decision), or park R7. Lead recommends against more quad iteration.
+  Lead: Claude (Opus 5).
 - **tv-sweat:** `842382d` — **T8 removed and verified** (engine 160/160, EditMode
   129/129, PlayMode 44/44 on rerun; single failure matched the documented cash-out
   flake signature in a path T8 doesn't touch). Contract/C1/T6/C3 at `4cdd98c`.
@@ -41,9 +42,9 @@
 - **Orchestrator:** Fable 5 session in `main-2`; lead channel chartered in
   `ORCHESTRATOR.md` §3a. Completion watchers armed on all three lead terminals and
   the Design Director session.
-- **Unity queue:** room holds the slot (short Tier 1b verification cycle) →
-  surething-ui S9 verification when requested → tv-sweat capture-harness spike
-  (timeboxed, one slot).
+- **Unity queue:** surething-ui holds the slot (S9 capture verification) →
+  tv-sweat one window (3C verification + capture-harness spike). TV's 3C commit is
+  additionally gated on DD inbox item 9 (win-prob display + momentum tape ruling).
 - **Blocked:** none.
 - **Rulings (Allen, 2026-07-31):** C1 — latest document governs, `DESIGN.md` §6
   stands, layout closed. C2 — interim: shipped green tolerated, cold white-grey

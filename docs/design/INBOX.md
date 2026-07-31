@@ -37,3 +37,8 @@ Items routed to this seat. Clear a line when it's registered or resolved.
 8. **Three-way naming clash (SureThing).** LEDGER / Old Slips / SURETHING LEDGER —
    overlapping names across surfaces; needs a naming ruling before S9's screens
    harden the copy.
+9. **Layout B: win-probability display and momentum tape — in or out, and where?**
+   TV's 3C sub-agent dropped both construction calls (classes and tests survive;
+   reversal cheap). PRD §4.2 names the tape in the one-revealed-source-of-truth law;
+   §8.4 says it "may remain" — permissive, not mandated. The TV lead deliberately
+   made no unilateral call either way. **Gates the 3C commit.**
