@@ -6,12 +6,23 @@ Items routed to this seat. Clear a line when it's registered or resolved.
 dropped. Items below marked *awaiting re-mount* need Allen to re-attach the
 referenced documents via Import before the DD will rule on them.
 
-## Pending
+## Pending (next DD batch)
 
-1. **TV production typeface (T11).** Must not be Archivo; Archivo stands in.
-2. **Review backlog:** S6/S7/S8 (SureThing lobby, ink pipeline, chrome), T6 (TV
-   scene grammar evidence pack). Room re-review comes after R9/R10 land.
-3. **Room owning doc** — DD drafts it per the approved two-tier art authority (C9).
+1. **T17 presentation confirm:** reserve-don't-spend means a scorer leg's backed
+   side reads one goal short until the final sequence — player-visible; confirm
+   intended. (Fix implemented as ruled; not blocking.)
+2. **"LEAVE — NEXT ROUND" in saturated biro** (SureThing S9 audit): primary action
+   in the player's ink — neither his mark nor optional. Detail in the S6–S8 bundle.
+3. **Baked-only-light design read** (room R10): does a baked-only bounce source sit
+   inside the direction's lighting language? Room proceeded on its interpretation.
+4. **T6 visual half:** rendered captures now exist (49, held out of git pending the
+   evidence-storage ruling) — attach via import when storage is settled.
+5. **Review backlog:** S6/S7/S8 (bundle committed at
+   `dd-import/surething-s6-s8-design-review-evidence.md`, ships after the Archivo
+   capture refresh); room re-review after R10 lands.
+6. **Studio constitution** — thin top layer per the approved two-tier authority;
+   room's owning doc is done (R13), laptop/TV owning docs eventually consolidate
+   from DESIGN.md + the design system.
 
 ## Cleared 2026-07-31, batch 2 (transcribed to REGISTER.md by the orchestrator)
 
