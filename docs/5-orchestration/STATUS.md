@@ -20,8 +20,13 @@
   held back — unresolved contradiction, lead refused to guess a fifth time. Earlier
   coverage numbers withdrawn (unvalidated metric). **R7 parked per Allen
   (2026-07-31)** at the committed state; Decal Renderer Feature deferred to
-  integration with DD input. Now assembling the design-review evidence package
-  (R5/R6/Tier 1b); R8 held pending that review. Lead: Claude (Opus 5).
+  integration with DD input. **Design-review package committed** (`65b4122`,
+  `[RM] docs/6-memo/2026-07-31-room-design-review-package.md`) — written for a
+  reader with no repo access, framed as three design questions (pursue ceiling
+  soot?; do decals justify the shared-renderer change?; is current state the
+  target, or the concept?). Mid-cycle coverage correction recorded plainly (true
+  figure 1.92% vs 1.69% baseline). Idle and holding; R8 waits on the review.
+  Lead: Claude (Opus 5).
 - **tv-sweat:** `842382d` — **T8 removed and verified** (engine 160/160, EditMode
   129/129, PlayMode 44/44 on rerun; single failure matched the documented cash-out
   flake signature in a path T8 doesn't touch). Contract/C1/T6/C3 at `4cdd98c`.
