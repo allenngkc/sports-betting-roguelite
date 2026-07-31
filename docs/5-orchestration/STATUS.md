@@ -36,7 +36,10 @@
   stands, layout closed. C2 — interim: shipped green tolerated, cold white-grey
   target lands with TV Phase 3. T8 — remove: done, verified `842382d`. S11 — no
   licence-encumbered typefaces in the product; Bell Centennial dropped.
-- **Watch:** TV needs a GPU capture path to close Phase 3 (and Phase 4's sweats) —
-  checking the room worktree's harness first; may become an interactive session
-  booking for Allen.
+- **Watch:** TV's GPU booking is ON HOLD — its investigation found the machine
+  rasterizes fine (room's `RoomViewCapture.cs` proves it); its own runs were
+  `-nographics` by inherited convention. One lease tests batchmode-with-graphics +
+  PlayMode-harness domain-reload survival; booking only if that fails (needs:
+  PlayMode live, temporal capture around payoffs, seated 17° pose, ~6 recordings
+  covering Phase 3 evidence + Phase 4 sweats).
 - **Need Allen:** nothing.
