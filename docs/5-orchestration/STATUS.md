@@ -11,14 +11,11 @@
   **falsified** — generator untouched, diagnostic committed, fix from evidence in
   the next capture window rather than a third guess. DD rulings S11/S14/S15/S16
   dispatched into S9 planning. Lead: Claude (Opus 5).
-- **room-refinement:** **R5/R6 Design-verified — the studio's first; R9/R10
-  approved and dispatched.** R9 bounded (30–40% ambient cut, full 8/8 gate re-run,
-  mattress 43.9 ±1, region means within 10%); R10 via bounce-first with
-  grazing-source fallback (y < 1.50). FluorescentSoot dropped per DD; R7 stays
-  parked (frusta re-place is the precondition if it resumes; direction's read is
-  the bar, re-review after R9/R10). Tier 1b remains committed with its honest
-  record. Room planning R9 → R10; editor lease on request.
-  Lead: Claude (Opus 5).
+- **room-refinement:** **R9 implemented and committed** (`9dce6f7` soot dropped +
+  ambient rebalance; `13fedd1` gate-check harness for the R9/R10 acceptance
+  re-runs) — awaiting its editor lease (third in queue) for build + bake + 8/8
+  gate re-run. R10 planning next. R5/R6 Design-verified; R7 parked; owning doc
+  approved (R13). Lead: Claude (Opus 5).
 - **tv-sweat:** `842382d` — **T8 removed and verified** (engine 160/160, EditMode
   129/129, PlayMode 44/44 on rerun; single failure matched the documented cash-out
   flake signature in a path T8 doesn't touch). Contract/C1/T6/C3 at `4cdd98c`.
@@ -57,7 +54,15 @@
   `docs/design/room-design.md` (R13). Room session context at ~507k tokens —
   recommend `/clear` at its next natural boundary; handoff.md + committed docs make
   it safe.
-- **Blocked:** none.
+- **Blocked:** TV 3C merge blocked on the TVS-H02 verdict (its own hold, correct).
+- **Integration plan (draft, for Allen when slices stabilise):** merge order
+  1) `surething-ui` (most landed, all green, ProjectSettings changes approved and
+  isolated), 2) `room-refinement` (after the R9 gate re-run passes), 3)
+  `slice/tv-sweat-refinement` (after TVS-H02 is understood, 3C commits, and the
+  T17 scorer-gap fix lands). Canonical Unity validation pass in `main-2` after
+  each merge. Cross-tree conflict surface is small — each slice owns disjoint
+  files; the shared risks are ProjectSettings (surething, approved) and
+  `Room.unity` (room-owned; TV deliberately never touched it).
 - **Rulings (Allen, 2026-07-31):** C1 — latest document governs, `DESIGN.md` §6
   stands, layout closed. C2 — interim: shipped green tolerated, cold white-grey
   target lands with TV Phase 3. T8 — remove: done, verified `842382d`. S11 — no
