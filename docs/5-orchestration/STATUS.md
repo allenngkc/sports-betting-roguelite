@@ -106,6 +106,14 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-07-31 cycle 9 · SureThing continue delivered: S9 audited and committed,
+  build-out halted at its own unverified-stack line, and the **S6–S8 review bundle
+  placed in the orchestrator tree and committed** (pre-typography caveat leads;
+  includes withdrawn self-misreads; grain flagged as shader work with measurement;
+  new violation logged for DD review — "LEAVE — NEXT ROUND" primary action drawn
+  in saturated biro). Bundle ships to the DD after the Archivo capture refresh so
+  type and structure review together. Room continue undeliverable — composer still
+  holds Allen's staged R10 draft. Reversal: veto the bundle hold, ship it now.
 - 2026-07-31 cycle 8 · **Stall caught and broken** — TV's stack arm died silently
   (~14:20: Temp mtime + upm.log at 14:17, zero Unity processes 34+ min, task list
   unmoved) while its driver-monitor waited on a log that would never grow —
