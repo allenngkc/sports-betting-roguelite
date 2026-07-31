@@ -25,3 +25,8 @@ Items routed to this seat. Clear a line when it's registered or resolved.
    8/8-gated value structure, so approval + gate re-run required.
 5. **R10 — couch-corner grazing source (room).** Candidate. Strongest normal map in
    the room still reads at 2.3%; bounce cannot rescue that corner.
+6. **TV slip-strip raw-hex colours.** `UpdateSlipStrip` embeds `#3CE873` (green),
+   `#FF4038` (red), `#9EDCF6` (cyan) as rich-text string markup — the retired money
+   language surviving where field-level palette scans can't see it. Same violation
+   class as T8. Logged as `[TV] DESIGN.md` §9A item 5; untouched pending your
+   ruling.
