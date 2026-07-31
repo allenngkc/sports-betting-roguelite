@@ -62,6 +62,64 @@ namespace SBR
             return mesh;
         }
 
+        /// <summary>
+        /// R7. A flat quad for wear decals, cached as an asset like the boxes.
+        ///
+        /// Matches Unity's own Quad convention - it renders on its local -Z side - so callers can
+        /// keep using <c>LookRotation(-facing, up)</c> and the normal ends up pointing along
+        /// <c>facing</c>. Local +X is the run direction, local +Y is the height.
+        ///
+        /// UVs carry an EXPLICIT repeat count rather than the 0..1 of Unity's primitive. Wear
+        /// runs vary in length - the long walls are 4.0m and the short ones 2.6m - and with 0..1
+        /// UVs a single shared material would stretch the same texture across both, so the dirt
+        /// would visibly change scale at the corner where they meet. Baking repeats into the mesh
+        /// keeps texel density authored per run and leaves one material serving every wall.
+        /// </summary>
+        public static Mesh GetOrCreateQuad(Vector2 size, Vector2 uvRepeats)
+        {
+            size = new Vector2(Mathf.Abs(size.x), Mathf.Abs(size.y));
+
+            if (!AssetDatabase.IsValidFolder(MeshFolder))
+                AssetDatabase.CreateFolder("Assets/SBR/Environment", "Meshes");
+
+            string F(float v) => Mathf.RoundToInt(v * 10000f).ToString();
+            string path = $"{MeshFolder}/quad_{F(size.x)}_{F(size.y)}" +
+                          $"_u{F(uvRepeats.x)}_v{F(uvRepeats.y)}.asset";
+            var existing = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+            if (existing != null)
+                return existing;
+
+            float hx = size.x * 0.5f, hy = size.y * 0.5f;
+            var mesh = new Mesh
+            {
+                name = System.IO.Path.GetFileNameWithoutExtension(path),
+                vertices = new[]
+                {
+                    new Vector3(-hx, -hy, 0f), // 0 bottom-left
+                    new Vector3( hx, -hy, 0f), // 1 bottom-right
+                    new Vector3(-hx,  hy, 0f), // 2 top-left
+                    new Vector3( hx,  hy, 0f), // 3 top-right
+                },
+                normals = new[] { -Vector3.forward, -Vector3.forward,
+                                  -Vector3.forward, -Vector3.forward },
+                uv = new[]
+                {
+                    new Vector2(0f, 0f),
+                    new Vector2(uvRepeats.x, 0f),
+                    new Vector2(0f, uvRepeats.y),
+                    new Vector2(uvRepeats.x, uvRepeats.y),
+                },
+                // Viewed from -Z with +Y up, world +X is screen-right, so clockwise - Unity's
+                // front-face winding - runs top-left, top-right, bottom-right.
+                triangles = new[] { 2, 3, 1, 2, 1, 0 },
+            };
+            mesh.RecalculateTangents();
+            mesh.RecalculateBounds();
+
+            AssetDatabase.CreateAsset(mesh, path);
+            return mesh;
+        }
+
         private static string Key(Vector3 s, float b)
         {
             string F(float v) => Mathf.RoundToInt(v * 10000f).ToString();

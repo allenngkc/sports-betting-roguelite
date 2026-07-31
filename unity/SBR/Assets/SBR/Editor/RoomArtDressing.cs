@@ -20,7 +20,19 @@ namespace SBR
     public static class RoomArtDressing
     {
         private const string TexFolder = "Assets/SBR/Environment/Textures";
-        private const string GeneratedRootName = "RoomArtGenerated";
+        internal const string GeneratedRootName = "RoomArtGenerated";
+
+        /// <summary>
+        /// R7.0. Everything under this root is excluded from the Adaptive Probe Volume bake by
+        /// <c>GrayboxRoomBuilder.MarkStaticForGI</c>. Wear is thin quads sitting 2-3mm off a
+        /// surface: as GI geometry they are actively harmful, occluding at probe scale and able
+        /// to invalidate or leak the probes behind the wall they are decorating. Dirt must not
+        /// change how the room is lit - it has no business in the bake at all.
+        /// </summary>
+        internal const string WearRootName = "Dressing_Wear";
+
+        /// <summary>R7 wear seed. Fixed so every rebuild produces byte-identical masks.</summary>
+        private const int WearSeed = 20260731;
 
         // Room interior, mirrored from the builder.
         private const float HalfW = 1.3f;
@@ -53,11 +65,51 @@ namespace SBR
                 new Color(0.35f, 0.06f, 0.04f),
                 emission: new Color(0.85f, 0.14f, 0.08f), smoothness: 0.45f);
 
+            // R7 Tier 1 wear. Colour lives here, never in the textures - see
+            // ProceduralWearTextures. Cutoffs are the shape control: the alpha channel stores a
+            // coverage field and _Cutoff picks which contour through it becomes the stain edge.
+            Material wearGrime = GrayboxRoomBuilder.Mat("ArtWearGrime",
+                new Color(0.048f, 0.045f, 0.038f), doubleSided: true, smoothness: 0.07f,
+                baseMap: ProceduralWearTextures.GetOrCreate(
+                    ProceduralWearTextures.WearKind.EdgeGrime, 512, WearSeed, 1.0f),
+                alphaClip: 0.46f);
+
+            // Real rust, not a grade compensation - the radiator is a water fixture and this is
+            // the one place in the room where a warm oxide colour is physically motivated.
+            Material wearRust = GrayboxRoomBuilder.Mat("ArtWearRust",
+                new Color(0.150f, 0.070f, 0.032f), doubleSided: true, smoothness: 0.11f,
+                baseMap: ProceduralWearTextures.GetOrCreate(
+                    ProceduralWearTextures.WearKind.Streak, 512, WearSeed + 5, 1.0f),
+                alphaClip: 0.44f);
+
+            Material wearCondensation = GrayboxRoomBuilder.Mat("ArtWearCondensation",
+                new Color(0.058f, 0.060f, 0.064f), doubleSided: true, smoothness: 0.22f,
+                baseMap: ProceduralWearTextures.GetOrCreate(
+                    ProceduralWearTextures.WearKind.Streak, 512, WearSeed + 23, 0.7f),
+                alphaClip: 0.52f);
+
+            // The only transparent wear in Tier 1. Soft falloff is the whole point of a damp
+            // patch, and transparency costs depth-write, so this stays a single quad.
+            Material wearDamp = GrayboxRoomBuilder.Mat("ArtWearDamp",
+                new Color(0.052f, 0.055f, 0.060f), doubleSided: true, smoothness: 0.18f,
+                baseMap: ProceduralWearTextures.GetOrCreate(
+                    ProceduralWearTextures.WearKind.Bloom, 256, WearSeed + 11, 1.0f),
+                transparent: true);
+
+            // Slightly SMOOTHER than the floor it sits on: traffic polishes, it does not only
+            // dirty. Getting that inversion right is what separates wear from more noise.
+            Material wearScuff = GrayboxRoomBuilder.Mat("ArtWearScuff",
+                new Color(0.052f, 0.049f, 0.042f), doubleSided: true, smoothness: 0.26f,
+                baseMap: ProceduralWearTextures.GetOrCreate(
+                    ProceduralWearTextures.WearKind.Scuff, 256, WearSeed + 31, 1.0f),
+                alphaClip: 0.50f);
+
             BuildConduit(root, conduit, trim);
             BuildDisplayHousing(root, steel, stencilMat, indicator);
             BuildWindowSurround(root, trim);
             BuildRadiator(root, trim);
             BuildClutter(root, paper, grime, trim);
+            BuildWear(root, wearGrime, wearRust, wearCondensation, wearDamp, wearScuff);
 
             Debug.Log($"[RoomArtDressing] built {root.childCount} dressing groups (collider-free)");
         }
@@ -471,6 +523,97 @@ namespace SBR
                 new Vector3(0.155f, 0.028f, 0.115f), trim);
             ArtBox(g, "DeskLampShade", new Vector3(1.115f, 1.335f, 1.720f),
                 new Vector3(0.145f, 0.090f, 0.145f), trim);
+        }
+
+        // ------------------------------------------------------------------- R7 wear
+
+        /// <summary>
+        /// R7 Tier 1. Localised wear, placed against causes the room's own construction supplies.
+        ///
+        /// R6 created the need for this. Before indirect light the skirting line, the corners and
+        /// the space under the bunks were near-black, so their uniformity was invisible. Bounce
+        /// now reaches all of them, and the remaining tell is no longer "this room is flat" but
+        /// "this room is evenly dirty" - every surface map tiles at world scale, so a wall is
+        /// identically grimy at the ceiling and at the floor. Real dirt has causes. This room
+        /// supplies four: a water fixture, a cold pane, one walking lane, and gravity.
+        ///
+        /// Everything here is collider-free and lives under <see cref="WearRootName"/>, which
+        /// GrayboxRoomBuilder excludes from the probe bake.
+        /// </summary>
+        private static void BuildWear(Transform parent, Material grime, Material rust,
+                                      Material condensation, Material damp, Material scuff)
+        {
+            var g = new GameObject(WearRootName).transform;
+            g.SetParent(parent, false);
+
+            const float off = 0.003f;    // 3mm off the surface: true world size, so this is literal
+            const float skirt = 0.30f;   // the coverage field fades out well inside this
+            const float tile = 1.2f;     // metres per texture repeat along a run
+
+            // R7.1 SKIRTING GRIME. The longest continuous line in the room and the most reliable
+            // dirt gradient there is - everything that settles ends up at the bottom of a wall.
+            // Runs the full length of all four walls including behind the couch and the radiator,
+            // because dirt does not stop where the furniture starts.
+            float y = skirt * 0.5f;
+            WearQuad(g, "SkirtLeft", new Vector3(-HalfW + off, y, 0f), new Vector2(HalfL * 2f, skirt),
+                     Vector3.right, Vector3.up, grime, HalfL * 2f / tile);
+            WearQuad(g, "SkirtRight", new Vector3(HalfW - off, y, 0f), new Vector2(HalfL * 2f, skirt),
+                     Vector3.left, Vector3.up, grime, HalfL * 2f / tile);
+            WearQuad(g, "SkirtFar", new Vector3(0f, y, HalfL - off), new Vector2(HalfW * 2f, skirt),
+                     Vector3.back, Vector3.up, grime, HalfW * 2f / tile);
+            WearQuad(g, "SkirtDoor", new Vector3(0f, y, -HalfL + off), new Vector2(HalfW * 2f, skirt),
+                     Vector3.forward, Vector3.up, grime, HalfW * 2f / tile);
+
+            // R7.2 RADIATOR RUST. Down the front face of the radiator body, which sits at
+            // z = 1.88 with depth 0.11, so its front plane is z = 1.825. Best-motivated wear in
+            // the room: the cause and the effect are in the same frame.
+            WearQuad(g, "RadiatorRust", new Vector3(0.06f, 0.30f, 1.825f - off),
+                     new Vector2(0.56f, 0.44f), Vector3.back, Vector3.up, rust, 1f);
+
+            // Rising damp on the wall the radiator is bolted to. Sits in front of the skirting
+            // and behind the condensation run, so the three read as one damp story rather than
+            // three unrelated stains.
+            WearQuad(g, "RadiatorDamp", new Vector3(0f, 0.66f, HalfL - off * 1.8f),
+                     new Vector2(1.05f, 0.72f), Vector3.back, Vector3.up, damp, 1f);
+
+            // R7.3 WINDOW CONDENSATION. The pane at (0, 1.4, 1.99) is the coldest surface in the
+            // room and sits directly above a heat source; water condenses on it and runs down the
+            // wall toward the radiator.
+            WearQuad(g, "WindowRun", new Vector3(0f, 1.02f, HalfL - off),
+                     new Vector2(0.95f, 0.44f), Vector3.back, Vector3.up, condensation, 1f);
+
+            // R7.4 FLOOR TRAFFIC. The walkable lane is bounded by the couch front face at
+            // x = -0.60 and the desk legs at x = 0.855, so the track sits just off centre. This
+            // is the one piece of wear that implies a person without showing one.
+            WearQuad(g, "TrafficPath", new Vector3(0.13f, off, 0f), new Vector2(1.15f, 3.70f),
+                     Vector3.up, Vector3.forward, scuff, 1f);
+
+            // Where the stool at (0.55, 0.225, 1.45) gets dragged in and out from the desk.
+            WearQuad(g, "StoolScuff", new Vector3(0.55f, off * 1.5f, 1.30f),
+                     new Vector2(0.58f, 0.52f), Vector3.up, Vector3.forward, scuff, 1f);
+        }
+
+        /// <summary>
+        /// A flat decal quad with NO collider, oriented like the builder's screens: local -Z is
+        /// aimed along <paramref name="facing"/>, so the surface normal ends up facing the room.
+        /// Double-sided materials mean a facing mistake can never blank a decal.
+        /// </summary>
+        private static GameObject WearQuad(Transform parent, string name, Vector3 center,
+                                           Vector2 size, Vector3 facing, Vector3 up,
+                                           Material mat, float uRepeats)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.position = center;
+            go.transform.rotation = Quaternion.LookRotation(-facing.normalized, up);
+            go.transform.localScale = Vector3.one;
+
+            // V always maps exactly once: every wear field is a gradient down its height, and
+            // repeating it vertically would stack tide-lines up the wall.
+            go.AddComponent<MeshFilter>().sharedMesh =
+                ChamferedBoxMesh.GetOrCreateQuad(size, new Vector2(Mathf.Max(uRepeats, 0.05f), 1f));
+            go.AddComponent<MeshRenderer>().sharedMaterial = mat;
+            return go;
         }
 
         // ------------------------------------------------------------------ helper

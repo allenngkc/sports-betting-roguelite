@@ -283,7 +283,8 @@ namespace SBR
                                     Texture2D baseMap = null, Texture2D emissionMap = null,
                                     float tiling = 1f,
                                     Texture2D normalMap = null, float normalScale = 1f,
-                                    Texture2D maskMap = null, Texture2D occlusionMap = null)
+                                    Texture2D maskMap = null, Texture2D occlusionMap = null,
+                                    float alphaClip = -1f, bool transparent = false)
         {
             Shader shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null)
@@ -358,6 +359,37 @@ namespace SBR
                 mat.SetTextureScale("_OcclusionMap", new Vector2(tiling, tiling));
                 mat.SetFloat("_OcclusionStrength", 1f);
                 mat.EnableKeyword("_OCCLUSIONMAP");
+            }
+
+            // R7 wear surfaces. As with _EMISSION above, URP recomputes these keywords from the
+            // float properties on every import, so the floats are the durable state and the
+            // keywords here only make the pre-import material honest.
+            //
+            // Alpha clip is the default for wear because it writes depth: the decal then sorts
+            // correctly against everything and still receives the renderer's SSAO. The texture
+            // stores a coverage FIELD rather than a finished shape, so _Cutoff picks the contour
+            // - a lower cutoff spreads the stain, a higher one shrinks it, with no new texture.
+            if (alphaClip >= 0f)
+            {
+                mat.SetFloat("_AlphaClip", 1f);
+                mat.SetFloat("_Cutoff", alphaClip);
+                mat.EnableKeyword("_ALPHATEST_ON");
+                mat.SetOverrideTag("RenderType", "TransparentCutout");
+                mat.renderQueue = (int)RenderQueue.AlphaTest;
+            }
+
+            // Transparent is reserved for damp blooms, where a soft falloff IS the effect. It
+            // costs depth-write, so these get no SSAO and must stay few.
+            if (transparent)
+            {
+                mat.SetFloat("_Surface", 1f);
+                mat.SetFloat("_Blend", 0f);
+                mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                mat.SetFloat("_ZWrite", 0f);
+                mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                mat.SetOverrideTag("RenderType", "Transparent");
+                mat.renderQueue = (int)RenderQueue.Transparent;
             }
 
             if (doubleSided)
@@ -1131,7 +1163,13 @@ namespace SBR
         /// </summary>
         private static void MarkStaticForGI()
         {
-            int marked = 0;
+            // R7.0. Wear decals are deliberately kept OUT of the bake - see
+            // RoomArtDressing.WearRootName for why thin quads make bad GI geometry.
+            GameObject wearGo = GameObject.Find(
+                $"{RoomArtDressing.GeneratedRootName}/{RoomArtDressing.WearRootName}");
+            Transform wear = wearGo != null ? wearGo.transform : null;
+
+            int marked = 0, skipped = 0;
             foreach (GameObject root in EditorSceneManager.GetActiveScene().GetRootGameObjects())
             {
                 if (root.name == "Player")
@@ -1139,6 +1177,12 @@ namespace SBR
 
                 foreach (MeshRenderer mr in root.GetComponentsInChildren<MeshRenderer>(true))
                 {
+                    if (wear != null && mr.transform.IsChildOf(wear))
+                    {
+                        skipped++;
+                        continue;
+                    }
+
                     GameObjectUtility.SetStaticEditorFlags(
                         mr.gameObject,
                         GameObjectUtility.GetStaticEditorFlags(mr.gameObject) |
@@ -1148,7 +1192,8 @@ namespace SBR
                 }
             }
 
-            Debug.Log($"[GrayboxRoomBuilder] marked {marked} renderers ContributeGI + LightProbes");
+            Debug.Log($"[GrayboxRoomBuilder] marked {marked} renderers ContributeGI + LightProbes, " +
+                      $"skipped {skipped} wear decals (excluded from the bake by design)");
         }
 
         private static GameObject Box(string name, Transform parent, Vector3 center,
