@@ -36,19 +36,30 @@ export function TvLegRow({
     background: dead ? "var(--tv-extinguished)" : "transparent", ...style
   };
 
-  /* A resolved or pending leg is ONE line: eyebrow, statement, price, state. Vertical budget goes to
-     what is live, and a won leg does not need the same height as a leg still in play. */
+  /* A resolved or pending leg is ONE line: statement, price, state. Vertical budget goes to what is
+     live, and a won leg does not need the same height as a leg still in play.
+
+     The market eyebrow is DROPPED here, not shrunk. Four items do not fit one line in the production
+     face, and of the four the eyebrow is the only redundant one — every authored statement already
+     names its market ("OVER 2.5 GOALS" is the total, "FOUNDRY TO WIN" is the moneyline, "MARCUS VALE
+     TO SCORE" is the scorer prop). Keeping it cost the statement its space and ellipsised it down to
+     a single character, which is the fact the row exists to carry.
+
+     A compact row also drops to the eyebrow scale throughout. LIVE ROWS ARE DISPLAY; RESOLVED AND
+     PENDING ROWS ARE INDEX. Same re-derivation as the progress line (T20): the column's px values
+     were written against a ~37% column and three items at the leg scale do not fit 242px, so the
+     shortest statements were ellipsising by a few pixels — the worst possible clip. At the eyebrow
+     scale every statement fits but the longest in the product, which compresses honestly. */
   if (!open) {
     return (
       <div {...rest} style={shell}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
-          <span style={meta}>{market}</span>
+        <div style={{ display: "flex", alignItems: "baseline", gap: "10px" }}>
           <span style={{
-            flex: 1, minWidth: 0, fontSize: "var(--tv-size-leg)", fontWeight: 700, color: hue,
+            flex: 1, minWidth: 0, fontSize: "var(--tv-size-eyebrow)", fontWeight: 700, color: hue,
             opacity: dim, textTransform: "uppercase", letterSpacing: "var(--tv-track-name)",
             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"
           }}>{statement}</span>
-          <span style={{ ...meta, fontFamily: "var(--font-tv-cond)", fontSize: "var(--tv-size-leg)" }}>{price}</span>
+          <span style={{ ...meta, fontFamily: "var(--font-tv-cond)", fontSize: "var(--tv-size-eyebrow)" }}>{price}</span>
           <span style={stateChip}>{state}</span>
         </div>
       </div>

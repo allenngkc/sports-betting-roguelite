@@ -30,13 +30,22 @@
   --tv-size-need:28px;
   --tv-size-cashout:29px;
   --tv-size-risk:24px;
-  --tv-size-progress:23px;
+  --tv-size-progress:19px;   /* re-derived — see note below */
   --tv-size-event:22px;
   --tv-size-leg:19px;
   --tv-size-eyebrow:15px;
   /* TV hierarchy ratios (DESIGN.md §5) — the score is the largest element on the surface at all
-     times and nothing outgrows it, including cash-out. Ratios are the law; the px above are one
-     provisional instantiation of it and the two tables do not perfectly agree. */
+     times and nothing outgrows it, including cash-out. RATIOS ARE THE LAW; the px above are one
+     provisional instantiation, and the two tables do not agree.
+
+     Re-derived 2026-07-31 (DD, T20): the px table was written against a ticket column at ~37% of the
+     surface and was never revisited when §6 corrected the column down to 26-28%. At 28% the content
+     box is 242px, and §6's own authored progress strings ("LIVE • 0 GOALS • 3 MORE", "LIVE • WAITING
+     FOR VALE") do not fit on one line at 23px in the production face — and §3 permits only the NEED
+     statement to wrap. The ratio table resolves it: progress is 0.40 against NEED's 0.50, so it must
+     read as subordinate. 19px keeps that order intact (NEED 28 > progress 19 > eyebrow 15) and fits.
+     Shortening §6's strings was rejected — paraphrasing authored copy to fit a stale measurement is
+     how the statement line was lost once already. */
   --tv-ratio-score:1; /* @kind other */
   --tv-ratio-cashout:.70; /* @kind other */
   --tv-ratio-team:.55; /* @kind other */

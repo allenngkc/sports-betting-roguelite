@@ -42,8 +42,8 @@
         "message": "Raw px value — use a design-system spacing token via var()."
       },
       {
-        "selector": "Literal[value=/font-family\\s*:\\s*(?!['\\\"]?(?:Archivo|Archivo Narrow))/i]",
-        "message": "Font not provided by the design system. Available: Archivo, Archivo Narrow."
+        "selector": "Literal[value=/font-family\\s*:\\s*(?!['\\\"]?(?:Archivo|Archivo Narrow|Encode Sans|Encode Sans Condensed))/i]",
+        "message": "Font not provided by the design system. Available: Archivo, Archivo Narrow, Encode Sans, Encode Sans Condensed."
       },
       {
         "selector": "JSXOpeningElement[name.name='ColumnHead'] > JSXAttribute > JSXIdentifier[name!=/^(?:no|matchup|price|more|style|key|ref|className|style|children)$/]",
@@ -780,7 +780,9 @@
     },
     "fontFamilies": [
       "Archivo",
-      "Archivo Narrow"
+      "Archivo Narrow",
+      "Encode Sans",
+      "Encode Sans Condensed"
     ]
   }
 }
