@@ -22,9 +22,14 @@ namespace SBR.Tests.EditMode
 
         // Calibrated against the OLD retired literals so a reintroduction of either hue at a similar
         // magnitude is caught, without false-flagging the approved gold (r-dominant but g moderate)
-        // or the approved cyan/white/grey (no channel dominates by this margin).
+        // or the approved white/grey (no channel dominates by this margin).
         private static bool LooksLikeRetiredRed(Color c) => c.r > 0.7f && c.g < 0.25f && c.b < 0.25f;
         private static bool LooksLikeRetiredGreen(Color c) => c.g > 0.7f && c.r < 0.35f && c.b < 0.6f;
+        // T9 (Phase 3B): calibrated against chromeCyan's literal (0.62, 0.86, 0.96) — blue and green
+        // both bright, red held back. This is the previous palette's general-chrome cyan; it has no
+        // role in DESIGN.md §4 (context is grey). §8's VOID leg state is the ONE place cyan survives,
+        // and only the `chromeCyan` field itself is allowed to read this way — see the test below.
+        private static bool LooksLikeRetiredCyan(Color c) => c.b > 0.7f && c.g > 0.6f && c.r < 0.75f;
 
         [Test]
         public void Retired_green_and_red_fields_no_longer_exist_on_the_type()
@@ -54,6 +59,40 @@ namespace SBR.Tests.EditMode
                 Assert.IsEmpty(offenders,
                     $"these public Color fields still read as the retired money-good-green / " +
                     $"money-bad-red language: {string.Join(", ", offenders)}");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void No_public_colour_field_reads_as_retired_general_chrome_cyan_except_the_documented_VOID_field()
+        {
+            // T9 (Phase 3B): chromeCyan used to be used broadly for leg/clock/records/chrome/slip-strip
+            // labels — general chrome duty that cyan has no role for in §4. Every one of those call
+            // sites now resolves to flavorColor/contextGrey/structureGrey instead. The single exception
+            // is `chromeCyan` itself, which DESIGN.md §8 still assigns to the `VOID` leg state — this
+            // scan asserts that field is the ONLY public colour that is still allowed to read as cyan,
+            // rather than silently permitting a reintroduction elsewhere under a different name.
+            var go = new GameObject("CyanScan");
+            go.SetActive(false); // field defaults only — never let Awake/OnEnable fire here
+            try
+            {
+                var screen = go.AddComponent<TvSweatScreen>();
+                var offenders = typeof(TvSweatScreen)
+                    .GetFields(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(f => f.FieldType == typeof(Color))
+                    .Select(f => (f.Name, Color: (Color)f.GetValue(screen)))
+                    .Where(x => LooksLikeRetiredCyan(x.Color))
+                    .Select(x => x.Name)
+                    .Where(name => name != nameof(TvSweatScreen.chromeCyan))
+                    .ToList();
+
+                Assert.IsEmpty(offenders,
+                    $"these public Color fields read as the retired general-chrome cyan (DESIGN.md §4 " +
+                    $"assigns context to grey; only chromeCyan, scoped to §8's VOID state, may read " +
+                    $"this way): {string.Join(", ", offenders)}");
             }
             finally
             {
@@ -131,6 +170,106 @@ namespace SBR.Tests.EditMode
             {
                 Object.DestroyImmediate(go);
             }
+        }
+
+        [Test]
+        public void DeadDark_is_the_single_documented_dip_below_the_black_floor()
+        {
+            // T10 (Phase 3B): the ordering law is `deadDark < idle < gold < goldL4`, and deadDark
+            // sitting BELOW the black floor is deliberate — "loss is a dip, not a smaller flash" — and
+            // is pinned separately by Ordering_gold_below_goldL4_and_deadDark_below_gold_holds above.
+            // This test names the exception explicitly, rather than the floor-scan below silently
+            // excluding it, so a future reader sees the dip is intentional and singular.
+            var go = new GameObject("DeadDarkException");
+            go.SetActive(false); // field defaults only — never let Awake/OnEnable fire here
+            try
+            {
+                var screen = go.AddComponent<TvSweatScreen>();
+                var floor = new Color(0.048f, 0.055f, 0.068f);
+
+                Assert.Less(screen.deadDark.r, floor.r, "deadDark.r should sit below the black floor");
+                Assert.Less(screen.deadDark.g, floor.g, "deadDark.g should sit below the black floor");
+                Assert.Less(screen.deadDark.b, floor.b, "deadDark.b should sit below the black floor");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void No_public_colour_field_sits_below_the_black_floor_except_deadDark()
+        {
+            var go = new GameObject("FloorFieldScan");
+            go.SetActive(false); // field defaults only — never let Awake/OnEnable fire here
+            try
+            {
+                var screen = go.AddComponent<TvSweatScreen>();
+                var floor = new Color(0.048f, 0.055f, 0.068f);
+                const float tol = 1e-4f;
+
+                var offenders = typeof(TvSweatScreen)
+                    .GetFields(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(f => f.FieldType == typeof(Color))
+                    .Where(f => f.Name != nameof(TvSweatScreen.deadDark)) // the one documented exception
+                    .Select(f => (f.Name, Color: (Color)f.GetValue(screen)))
+                    .Where(x => x.Color.r < floor.r - tol || x.Color.g < floor.g - tol || x.Color.b < floor.b - tol)
+                    .Select(x => x.Name)
+                    .ToList();
+
+                Assert.IsEmpty(offenders,
+                    $"these public Color fields sit darker than the agreed black floor (0.048, 0.055, " +
+                    $"0.068) on at least one channel, undoing the room's emissive-quad lift: " +
+                    $"{string.Join(", ", offenders)}");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void RunOver_emission_rest_values_do_not_undo_the_black_floor_lift()
+        {
+            // T10 (Phase 3B): TvSweatScreen used to set `_emissRest` from two hardcoded literals in
+            // RenderRunOver — `gold * 0.08f` (RunWon) and `new Color(0.008f, 0.010f, 0.018f)` (RunLost)
+            // — that bypassed the room-owned `_emissIdle` and, on inspection, both sat under the agreed
+            // black floor on at least one channel (RunLost on all three; RunWon on blue alone, since
+            // gold's blue component at 8% is only 0.0144). They are now RunWonRest()/RunLostRest(),
+            // each clamped component-wise to the floor. This exercises the actual production values via
+            // reflection rather than re-deriving the arithmetic here.
+            var go = new GameObject("EmissRestFloor");
+            go.SetActive(false); // field defaults only — never let Awake/OnEnable fire here
+            try
+            {
+                var screen = go.AddComponent<TvSweatScreen>();
+                var floor = new Color(0.048f, 0.055f, 0.068f);
+                const float tol = 1e-4f;
+
+                Color won = InvokePrivateFunc<Color>(screen, "RunWonRest");
+                Color lost = InvokePrivateFunc<Color>(screen, "RunLostRest");
+
+                Assert.GreaterOrEqual(won.r, floor.r - tol, "RunWonRest.r must not undo the black-floor lift");
+                Assert.GreaterOrEqual(won.g, floor.g - tol, "RunWonRest.g must not undo the black-floor lift");
+                Assert.GreaterOrEqual(won.b, floor.b - tol,
+                    "RunWonRest.b must not undo the black-floor lift (gold's blue channel at 8% used to sit under it)");
+
+                Assert.GreaterOrEqual(lost.r, floor.r - tol, "RunLostRest.r must not undo the black-floor lift");
+                Assert.GreaterOrEqual(lost.g, floor.g - tol, "RunLostRest.g must not undo the black-floor lift");
+                Assert.GreaterOrEqual(lost.b, floor.b - tol,
+                    "RunLostRest.b must not undo the black-floor lift (the old (0.008, 0.010, 0.018) sat roughly 6x darker)");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        private static T InvokePrivateFunc<T>(object target, string method)
+        {
+            MethodInfo m = target.GetType().GetMethod(method, BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(m, $"{target.GetType().Name}.{method} not found by reflection — was it renamed?");
+            return (T)m.Invoke(target, null);
         }
 
         private static void AssertRgbApprox(Color expected, Color actual, float tol, string label)

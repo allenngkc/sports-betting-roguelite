@@ -755,6 +755,74 @@ namespace SBR.Tests.EditMode
             }
         }
 
+        /// <summary>Phase 3 reproduction of the SCORER-REVEAL GAP, deferred by name from Phase 1B
+        /// and carried in PRD §5's Phase 1B closure note.
+        ///
+        /// <para><b>This test pins a known product gap, not desired behaviour.</b> It exists so the
+        /// question reaching the Design Director is "here is the case, reproduced" rather than "we
+        /// think this can happen", and so any future fix has a red test to turn green. If someone
+        /// closes the gap, this test SHOULD fail — read the summary before repairing it.</para>
+        ///
+        /// <para>The mechanism: <see cref="ScoreLedger.BindAnytimeScorer"/> scans the FINAL plan for
+        /// a goal that both <c>Commits</c> and is <c>ScoredByPicked</c>, and binds the backed
+        /// player's identity onto it. That is the causal reveal point. The sibling test above notes
+        /// its own precondition — a fresh ledger with nothing committed "always leaves a correction
+        /// to bind". The inverse is this gap: when the backed side's baked goals are ALL spent
+        /// during ordinary beats, <c>PlanFinal</c> has no backed-side correction left, the loop
+        /// matches nothing, and the plan comes back unbound.</para>
+        ///
+        /// <para>Player-visible consequence: an anytime-scorer bet WINS and the scorer is never
+        /// revealed. Closing it needs the whole-sweat identity contract PRD §7.7 defers;
+        /// manufacturing a reveal here would move the causal reveal point and break §4.1.</para></summary>
+        [Test]
+        public void BindAnytimeScorer_binds_nothing_when_the_backed_sides_goals_are_spent_before_the_final()
+        {
+            int awayRosterSize = new RunConfig().PlayersPerTeam;
+
+            foreach (bool backedHome in new[] { false, true })
+            {
+                int playerIndex = backedHome ? awayRosterSize : 0;
+                Leg leg = BuildScorerLeg(playerIndex, $"GAP-SPENT-{backedHome}");
+
+                var ledger = new ScoreLedger();
+                ledger.ConfigureEndpoint(leg);
+
+                // Spend the backed side's baked goals during ORDINARY beats, before any final
+                // sequence exists.
+                //
+                // Driven directly against TargetPicked rather than through StageBeatGoal: that
+                // method routes by prob reconciliation and remaining-goal balance, and on a scorer
+                // leg it does NOT reliably drive the picked side to exhaustion — an earlier version
+                // of this test assumed it did, never reached the state, and reported the gap as
+                // absent. CompleteGoal clamps to the remaining target itself (see its `applied`
+                // computation), so this cannot overshoot the endpoint.
+                Assert.Greater(ledger.TargetPicked, 0,
+                    $"backedHome={backedHome}: this seed bakes no goals for the backed side, so the " +
+                    "scenario is not constructible here — pick another run id rather than deleting this");
+
+                for (int i = 0; i < 64 && ledger.Picked < ledger.TargetPicked; i++)
+                    ledger.CompleteGoal(new ScoreLedger.StagedGoal(true, true));
+
+                Assert.AreEqual(ledger.TargetPicked, ledger.Picked,
+                    $"backedHome={backedHome}: setup precondition — every one of the backed side's baked " +
+                    "goals must be spent before the final sequence, or this reproduces nothing");
+
+                ScoreLedger.FinalPlan plan = ledger.PlanFinal(LegGrade.Won);
+                ScoreLedger.FinalPlan bound = ScoreLedger.BindAnytimeScorer(plan, leg);
+
+                bool anyBound = false;
+                foreach (ScoreLedger.StagedGoal g in bound.Goals)
+                    if (g.HasBoundScorer) anyBound = true;
+
+                Assert.IsFalse(anyBound,
+                    $"backedHome={backedHome}: THE GAP — a Won anytime-scorer leg whose backed-side goals " +
+                    "were all played before the final sequence carries no bound scorer, so no causal reveal " +
+                    "ever fires and the player wins without seeing who scored. If this assertion fails, the " +
+                    "gap has been CLOSED: verify the fix did not move the causal reveal point (PRD §4.1), " +
+                    "then invert this test rather than deleting it.");
+            }
+        }
+
         [Test]
         public void BindAnytimeScorer_lost_leg_binds_nothing()
         {

@@ -300,11 +300,18 @@ namespace SBR.Game
         // the ticket's final payout tally, the run's win card. Brighter than `gold` on purpose so the
         // ordering idle < flash < L4 holds when both are driven through EmissionFlash/TvLight.Flash.
         [ColorUsage(false, true)] public Color goldL4 = new Color(1.84f, 1.31f, 0.29f);
+        // T9 (Phase 3B): retired from general chrome duty — cyan has no role in §4's role table.
+        // The ONE surviving use is §8's `VOID` leg state ("L2 cyan, struck through on the matrix");
+        // every other call site that used to read this field has moved to flavorColor/contextGrey/
+        // structureGrey below, judged per its actual §4 role.
         public Color chromeCyan = new Color(0.62f, 0.86f, 0.96f, 0.95f); // §8 VOID leg treatment only
         public Color flavorColor = new Color(0.90f, 0.95f, 0.98f, 1f); // §4 Fact: cold white
         // §4 Context: grey — for beat copy that is neither a live fact nor money (a loss confirmed, a
         // deferred payment) but still needs to stay legible against the lifted black floor below.
         public Color contextGrey = new Color(0.50f, 0.53f, 0.58f, 1f);
+        // T9 (Phase 3B): §4 Structure/pending — dim grey at L1. §7 Scorebug: "Ticket/leg index at
+        // L1, present but subordinate." Distinct from (and dimmer than) contextGrey's L2.
+        public Color structureGrey = new Color(0.14f, 0.15f, 0.16f, 1f);
         // §3/§4/§8: "Loss is still darkness ... the old green/red money language stays retired." A
         // lost beat drops the quad/room-light toward this near-neutral, near-zero value instead of
         // flashing red. Never used above ~0.1 magnitude — it must stay below `gold` unconditionally.
@@ -1025,7 +1032,7 @@ namespace SBR.Game
                 {
                     director.Run.PlayMulliganSlip(_session);
                     _tCashOut.enabled = false;
-                    _tFlavor.color = chromeCyan;
+                    _tFlavor.color = chromeCyan; // §8 VOID — the mulligan voids the leg, not chrome
                     _tFlavor.text = "THE SLIP COMES OUT — LEG VOIDED, THE TICKET LIVES";
                     _emissRest = _emissIdle; // the DEAD dim lifts: the ticket breathes again
                     tvLight?.ResetToIdle();
@@ -1439,7 +1446,7 @@ namespace SBR.Game
             if (won)
             {
                 // The run's final payout — §3's L4, "the payoff at its callback".
-                _emissRest = gold * 0.08f;
+                _emissRest = RunWonRest();
                 EmissionFlash(goldL4);
                 tvLight?.Flash(new Color(1f, 0.82f, 0.25f), 3.4f);
                 tvLight?.SetRest(new Color(1f, 0.82f, 0.35f), 0.45f);
@@ -1448,11 +1455,41 @@ namespace SBR.Game
             {
                 // Cold and dark: desaturated blue-grey, barely lit - the room mourns. Already
                 // compliant with §4 (no hue involved) — only the flash below was still the retired red.
-                _emissRest = new Color(0.008f, 0.010f, 0.018f);
+                _emissRest = RunLostRest();
                 EmissionFlash(deadDark);
                 tvLight?.SetRest(new Color(0.30f, 0.34f, 0.48f), 0.10f);
             }
         }
+
+        // T10 (Phase 3B): the agreed black floor (unified-grade-spec.md §2 / DESIGN.md §2A), matching
+        // screenBg/barBgColor/pitchBgColor exactly — the room's emissive-quad lift. `_emissRest` must
+        // never sit darker than this on any channel outside the one documented exception, `deadDark`
+        // (a deliberate per-leg dip; see Ordering_gold_below_goldL4_and_deadDark_below_gold_holds).
+        private static readonly Color EmissBlackFloor = new Color(0.048f, 0.055f, 0.068f);
+
+        /// <summary>Rest glow for the RunWon verdict card. DESIGN.md §4: money/won stays gold, so this
+        /// keeps a dim warm-gold afterglow (M4 grill decision) instead of falling back to the room's
+        /// neutral idle — but clamped component-wise to <see cref="EmissBlackFloor"/>. Unclamped,
+        /// `gold`'s low blue channel at 8% (0.0144) sits under the floor's blue (0.068) even though red
+        /// and green already clear it, which would locally undo the room's black-floor lift on that
+        /// channel alone (T10, found while auditing the two flagged literals).</summary>
+        private Color RunWonRest()
+        {
+            Color dim = gold * 0.08f;
+            return new Color(
+                Mathf.Max(dim.r, EmissBlackFloor.r),
+                Mathf.Max(dim.g, EmissBlackFloor.g),
+                Mathf.Max(dim.b, EmissBlackFloor.b),
+                dim.a);
+        }
+
+        /// <summary>Rest glow for the RunLost verdict card: cold and barely lit, the room mourns — but
+        /// clamped to <see cref="EmissBlackFloor"/> rather than the old (0.008, 0.010, 0.018), which
+        /// sat roughly 6x darker than the floor on every channel and locally undid the room's lift
+        /// (T10). All three channels of the old mourning colour were below the floor, so the clamp
+        /// resolves to the floor itself — already a cool near-black, so "barely lit, the room mourns"
+        /// still reads; only the floor violation is gone.</summary>
+        private Color RunLostRest() => EmissBlackFloor;
 
         private void ClearToBlankScreen()
         {
@@ -1707,7 +1744,7 @@ namespace SBR.Game
 
             if (leg.IsVoided)
             {
-                _tFlavor.color = chromeCyan;
+                _tFlavor.color = chromeCyan; // §8 VOID — the leg-resolve VOID state, not chrome
                 _tFlavor.text = $"LEG {k} - VOIDED, the ticket lives";
                 yield return ScaledWait(deadLineDuration);
             }
@@ -2140,17 +2177,23 @@ namespace SBR.Game
             _backing = MakeStretchImage(root, "Backing", screenBg);
 
             // --- top scorebug ---
+            // §7 Scorebug: "Ticket/leg index at L1, present but subordinate" — structureGrey, not chrome.
             _tLeg = MakeText(root, "Leg", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(16f, -12f), new Vector2(240f, 40f), 22, TextAnchor.UpperLeft, chromeCyan);
+                new Vector2(16f, -12f), new Vector2(240f, 40f), 22, TextAnchor.UpperLeft, structureGrey);
+            // §4 Fact: "Score, clock, live leg names, market lines" — cold white at L3, not chrome.
             _tClock = MakeText(root, "Clock", new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-16f, -12f), new Vector2(280f, 40f), 22, TextAnchor.UpperRight, chromeCyan);
+                new Vector2(-16f, -12f), new Vector2(280f, 40f), 22, TextAnchor.UpperRight, flavorColor);
             _tMatchup = MakeText(root, "Matchup", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
                 new Vector2(0f, -14f), new Vector2(w - 120f, 56f), 34, TextAnchor.UpperCenter, flavorColor, FontStyle.Bold);
+            // §4 Context: supplementary team/leg copy (records, the interstitial legs line, the
+            // deferred-payment line) — grey at L2, not chrome.
             _tRecords = MakeText(root, "Records", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                new Vector2(0f, -74f), new Vector2(w - 120f, 30f), 20, TextAnchor.UpperCenter, chromeCyan);
+                new Vector2(0f, -74f), new Vector2(w - 120f, 30f), 20, TextAnchor.UpperCenter, contextGrey);
             // The slip strip (playtest #6): stake at risk + every leg with odds and presented status.
+            // §4 Context: "risk and payout figures", "odds" — grey at L2, not chrome. (Per-leg spans
+            // inside the string still carry their own team/W/L/VOID rich-text colour overrides.)
             _tSlipStrip = MakeText(root, "SlipStrip", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                new Vector2(0f, -106f), new Vector2(w - 80f, 26f), 15, TextAnchor.UpperCenter, chromeCyan);
+                new Vector2(0f, -106f), new Vector2(w - 80f, 26f), 15, TextAnchor.UpperCenter, contextGrey);
 
             // --- middle: flavour ticker + win-prob bar ---
             _tFlavor = MakeText(root, "Flavor", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
@@ -2182,8 +2225,9 @@ namespace SBR.Game
             _cashOutHdrMat = MakeHdrMaterial();
             if (_cashOutHdrMat != null) _tCashOut.material = _cashOutHdrMat;
 
+            // §4 Context: round/bank/pay/comps/seed meta — grey at L2, not chrome.
             _tChrome = MakeText(root, "Chrome", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                new Vector2(0f, 12f), new Vector2(w - 30f, 28f), 16, TextAnchor.LowerCenter, chromeCyan);
+                new Vector2(0f, 12f), new Vector2(w - 30f, 28f), 16, TextAnchor.LowerCenter, contextGrey);
 
             // --- attract state (before the sweat is live) ---
             _tAttract = MakeText(root, "Attract", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),

@@ -431,7 +431,20 @@ Phase 3's UI work.
    Everywhere else the code correctly restores `_emissRest = _emissIdle`, read from the room team's
    material — these two are the exceptions.
 
-Items 1, 2 and 4 are ours and belong in Phase 3.
+5. **The retired money language survives as raw hex rich-text in `UpdateSlipStrip`.** Found during
+   T9 (2026-07-31) and **not** covered by items 1–4: the per-leg slip-strip spans embed
+   `#3CE873` (green, W), `#FF4038` (red, L) and `#9EDCF6` (cyan, VOID) as literal markup rather than
+   as palette fields. §4 retires green and red as money colours outright — loss is darkness — so this
+   is the same class of defect as item 1: **approved design contradicted by shipping code**, hiding
+   from every field-level palette scan because it is a string. Phase 3.
+
+Items 1, 2, 4 and 5 are ours; 1 is cleared and 2 and 4 are in flight at the time of writing.
+
+**Note on `chromeCyan` (item 2).** The field name is retained deliberately. It is serialized in
+`Room.unity`, which is a §11 forbidden file, so renaming without `[FormerlySerializedAs]` would
+silently orphan scene data this worktree cannot repair. Usages were retargeted; the name stays. Two
+call sites keep cyan legitimately — both are genuine `VOID` leg narration, which §8's state table
+assigns to cyan.
 
 ## 10. Open, deliberately
 

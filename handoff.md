@@ -90,7 +90,22 @@ by name; removal is recommended and awaiting Allen. **Nothing further is built o
 
 ## 4. Verification procedure
 
-**Announce Unity runs to the orchestrator before launching** — one editor instance studio-wide.
+**Unity is a single-instance studio-wide resource. A lease is a WINDOW, not a moment.**
+
+Added 2026-07-31 after a queue violation: this lead confirmed the editor free at *close* but never at
+*open*, and a still-exiting Unity process overlapped another worktree's granted slot. Transient and
+harmless that time. The procedure below closes it.
+
+0. **Before opening — every time, not just the first:**
+   a. Hold an explicit grant from the orchestrator for the current slot. A general "queue is clear"
+      from an earlier cycle is **not** a standing lease; a later sequencing note supersedes it.
+   b. Confirm the editor is actually free: process count **and** `unity/SBR/Temp/UnityLockfile`.
+   c. **Announce open** to the orchestrator.
+1. **After the last run — announce close**, and confirm process count and lockfile are clear before
+   saying so. Unity exits lazily; a finished command is not a released editor.
+2. The window between (0c) and (1) is yours and nobody else's. Anything that does not need the editor
+   — reading source, writing tests, diagnosing from a results XML — belongs **outside** it. Diagnose
+   from artifacts after closing rather than holding the editor open to think.
 
 1. Warm compile: `Unity.exe -batchmode -nographics -projectPath unity/SBR -quit -logFile <log>`.
    `-runTests` and `-executeMethod` are **silently dropped** if scripts compile on the same run.
