@@ -48,8 +48,15 @@
 - **Orchestrator:** Fable 5 session in `main-2`; lead channel chartered in
   `ORCHESTRATOR.md` §3a. Completion watchers armed on all three lead terminals and
   the Design Director session.
-- **Unity queue:** tv-sweat holds the slot (harness + markup-scan verification).
-  Next expected: SureThing capture window (wide-ring evidence read + S9 work).
+- **Unity queue:** surething-ui holds the slot (seven-change verification in
+  dependency order + wide-ring dump read) → tv-sweat TVS-H02 regression
+  investigation (freeze-contract regression; 3C held uncommitted until understood)
+  → room R9 lease (build + bake + 8/8 gate re-run). Hold room's staged lease draft
+  until granted.
+- **Approved (Allen, 2026-07-31):** room owning doc — canonical at
+  `docs/design/room-design.md` (R13). Room session context at ~507k tokens —
+  recommend `/clear` at its next natural boundary; handoff.md + committed docs make
+  it safe.
 - **Blocked:** none.
 - **Rulings (Allen, 2026-07-31):** C1 — latest document governs, `DESIGN.md` §6
   stands, layout closed. C2 — interim: shipped green tolerated, cold white-grey

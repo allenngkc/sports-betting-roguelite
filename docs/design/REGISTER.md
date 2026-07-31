@@ -49,6 +49,7 @@ under this seat. That is the gap this register exists to close.
 | R10 | Couch-corner — requirement is **directional variation, not a fifth light** | **Approved, route changed** · DD 2026-07-31 — bounce first (four reverts say so, and R6 proved bounce is the lever); grazing source is the fallback, y < 1.50, same gate | `[RM] .../PHASE_B_INDIRECT_LIGHT.md` §7.2 |
 | R11 | All room art generated; nothing hand-authored | Approved (law) | `[RM] .../SIGNOFF.md` |
 | R12 | Standing law — **surface detail is gated by lighting, not texture authoring** (promoted from R5's finding) | Law · DD 2026-07-31 | DD batch-2 |
+| R13 | Room owning document — the surface's binding art authority under the two-tier system (C9) | **Approved** · Allen 2026-07-31 — canonical at `[M2] docs/design/room-design.md`, drafted by the DD; C7's four stale palette-law docs reconcile against it at integration | DD `room-design-2026-07-31-DRAFT.md` |
 
 ## TV — match theater
 
