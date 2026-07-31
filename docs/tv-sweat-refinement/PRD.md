@@ -995,7 +995,7 @@ Allen returned `APPROVED WITH CHANGES` on 2026-07-24.
 
 | # | Decision | Ruling | Notes |
 |---|---|---|---|
-| A | **Layout** | **APPROVED 2026-07-25 — Layout B, "Ticket Rail"** | Chosen from five greybox concepts in `visuals/layout-concepts.html`. The bet slip is a permanent left column carrying all legs, the active leg expanded, and risk/pays; the stage takes the remaining width; cash-out anchors the foot of the ticket column. Allen's reasoning: the F-pattern puts first fixation on the ticket, which is where the product's value lives. The originally recommended right-rail layout is **not** adopted. |
+| A | **Layout** | **CLOSED. Approved 2026-07-25 (Layout B, "Ticket Rail"); reaffirmed by the C1 ruling 2026-07-31.** Governing document: **`DESIGN.md` §6.** | Chosen from five greybox concepts in `visuals/layout-concepts.html`. The bet slip is a permanent left column carrying all legs, the active leg expanded, and risk/pays; the stage takes the remaining width; cash-out anchors the foot of the ticket column. Allen's reasoning: the F-pattern puts first fixation on the ticket, which is where the product's value lives. The originally recommended right-rail layout is **not** adopted. §14's stale "not settled" premise is superseded — see the note at the head of §14. |
 | B | **Camera:** no camera/framing variation in this pass | **APPROVED** | Fixed top-down retained. A FIFA-style camera that follows the ball carrier is recorded as a refinement-v2 candidate and is explicitly out of scope here. |
 | C | **Variety:** deterministic `ScenePlan` with truth filtering and revealed-history cooldown | **APPROVED** | Scope extended by §7.6 (market-attributed scenes) and §7.7 (backed-player locator). |
 | D | **Sequence:** audit → reliability fixes → scene variety → UI → integrated gate | **APPROVED** | The visual-design track (§14) runs in parallel and does not touch production code. |
@@ -1011,7 +1011,26 @@ Sign-off options for future gates:
 - `APPROVED WITH CHANGES` — list changes; the documents are revised first.
 - `NOT APPROVED` — no implementation or audit execution begins.
 
-## 14. Visual-design track (Allen, 2026-07-24)
+## 14. Visual-design track (Allen, 2026-07-24) — **COMPLETE, and its premise is superseded**
+
+> **C1 ruled by Allen, 2026-07-31: the latest document governs. `DESIGN.md` §6 stands and the layout
+> is closed.**
+>
+> This section was written on 2026-07-24, *before* the track it describes had run. Its opening
+> premise — that Decision A is unsettled and needs competing options — was true then and is false
+> now. The track ran to completion: five greybox layout concepts, seven visual-direction rounds, a
+> brand book, and Allen's selection of Layout B on 2026-07-25.
+>
+> **Authority on layout is `DESIGN.md` §6.** This section is retained as the record of how the
+> decision was reached, not as an open work item. Where it and `DESIGN.md` disagree, `DESIGN.md`
+> wins.
+>
+> **One factual correction:** §14.1 below calls `design/08-art-direction.md` "binding product truth."
+> That was accurate on 2026-07-24 and became false the same day — Allen deprecated that file, and it
+> is now an explicit **anti-reference**. The constraints §14.1 lists as "carried in" were released
+> with it. `DESIGN.md` §2 and §4 carry the replacement world and palette.
+
+The original text follows unchanged.
 
 Decision A is not settled by picking the layout already drawn in
 [VISUAL-DESIGN.md](VISUAL-DESIGN.md). Allen accepts its intent but requires competing options and a
