@@ -91,9 +91,16 @@ G1–G6 PASS, **G7 FAIL by design**, verdict NOT DONE, **exit code 1**.
 
 ## 6. Traps — all of these cost time here
 
-- **`dotnet` rewrites a tracked binary.** Any `build`/`test`/`run` rewrites
-  `unity/SBR/Assets/Plugins/SBR/SBR.Engine.dll` (Debug 92160 → Release 87040 bytes).
-  `git checkout --` it before every commit or you ship integration drift.
+- **`unity/SBR/Assets/Plugins/SBR/SBR.Engine.dll` is how the engine reaches Unity —
+  DO NOT revert it.** Unity does not compile `engine/**`; it binds to this prebuilt
+  binary, which `SBR.Engine.csproj:19-26` copies on every build *"so the Plugins DLL can
+  never go stale"*. **When engine source changes, rebuild and COMMIT the DLL.** Build
+  **Debug** (the default) — that is the committed convention; a Release build produces
+  different, smaller bytes and would look like drift.
+  *An earlier version of this file said the opposite — "`git checkout --` it before every
+  commit". That was wrong and cost a full lease window: reverting it made Unity compile
+  against a stale engine, so `MatchModel.Fields` did not exist and batch 4 failed to
+  build. It also means any Unity run done after such a revert verified the OLD engine.*
 - **Unity's exit code is not a completion signal.** A `-batchmode -quit` launch
   reported exit 0 while the editor kept importing for another ~16 minutes. Judge
   liveness by CPU time, log mtime/size and `Library` file count — not the exit code,

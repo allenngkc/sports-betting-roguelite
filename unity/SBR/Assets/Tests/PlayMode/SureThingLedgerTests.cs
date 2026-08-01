@@ -71,8 +71,13 @@ namespace SBR.Tests.PlayMode
             {
                 Leg leg = ticket.Legs[legIndex];
                 Transform ledgerLeg = Required(ledgerTicket, "LedgerLeg" + legIndex);
+                // S22 ruling: the ledger composes from MatchModel.Fields via the shared
+                // CompactLegLabel, not from the engine's legacy packed DisplayLabel, so the
+                // ledger and the working margin can never disagree about how a leg reads.
+                // Asserted against the production formula rather than a hand-kept duplicate —
+                // the reason CompactLegLabel is internal in the first place.
                 Assert.AreEqual(
-                    $"{legIndex + 1}. {leg.DisplayLabel}  {OddsFormat.American(leg.OfferedOdds)}",
+                    $"{legIndex + 1}. {SportsbookApp.CompactLegLabel(leg.Matchup, leg.Selection)}  {OddsFormat.American(leg.OfferedOdds)}",
                     TextOf(Required(ledgerLeg, "LegIdentity")));
                 Assert.AreEqual(LegStateText(leg),
                     TextOf(Required(ledgerLeg, "LegState")));

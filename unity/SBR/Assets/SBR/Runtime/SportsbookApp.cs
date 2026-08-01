@@ -1527,7 +1527,7 @@ namespace SBR.Game
                 LaptopUi.MakeText(legRow, "LegIdentity", new Vector2(0f, .5f), new Vector2(0f, .5f),
                     new Vector2(28f, 0f), new Vector2(470f, 22f), 13, TextAnchor.MiddleLeft,
                     LaptopOs.TonerSecondary,
-                    $"{legIndex + 1}. {CompactLegLabel(leg.Matchup, leg.Selection)}  {OddsFormat.American(leg.OfferedOdds)}", _fontCond);
+                    $"{legIndex + 1}. {SportsbookApp.CompactLegLabel(leg.Matchup, leg.Selection)}  {OddsFormat.American(leg.OfferedOdds)}", _fontCond);
                 LaptopUi.MakeText(legRow, "LegState", new Vector2(1f, .5f), new Vector2(1f, .5f),
                     new Vector2(-14f, 0f), new Vector2(140f, 22f), 13, TextAnchor.MiddleRight,
                     LaptopOs.Muted, legState, _fontCond);
