@@ -1,5 +1,19 @@
 # Design Director inbox — from the orchestrator
 
+## NEED ALLEN (from Batch 5, 2026-08-01)
+
+1. **C15 — the stack decision:** tracking, tabular figures, and weight 600 are
+   unreachable in UnityEngine.UI.Text on both surfaces. Either canon relaxes the
+   three requirements, or both surfaces migrate to TextMeshPro (touches every
+   slot, the HDR material path, and C3's one-token invariant — a scheduled
+   migration, not an afternoon). All current type deviations expire at this call.
+2. **R22 — human walkthrough:** Gates 6–8 are void (certified geometry that no
+   longer exists; bunk 2 added a slab overhanging the aisle). Only instrument: a
+   human walks the two-bunk build — or you confirm you already have.
+3. **S36 — engine retention:** the engine discards cash-out amounts, so the
+   LEDGER prints an honest absence. DD's position: the right fix is the engine
+   retaining the figure — "a fact the player earned." Approve as an engine ask?
+
 Items routed to this seat. Clear a line when it's registered or resolved.
 
 **Seat note (2026-07-31):** the DD seat has no repo access and its worktree mounts
