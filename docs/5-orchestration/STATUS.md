@@ -106,6 +106,12 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-07-31 cycle 19 · **MERGE: room-refinement → main at `bb457af`**
+  (autonomous; checklist all-green: R-gates at baseline, zero integration-file
+  drift, contract current at `docs/handoffs/room-refinement.md`, no open conflict
+  items, merge-tree clean after the contract re-homing; 21 commits). Canonical
+  validation running on merged main (compile + EditMode headless + PlayMode with
+  GPU). **Reversal: `git revert -m 1 bb457af`.**
 - 2026-07-31 cycle 17 · **Validation pass, first arm:** compile 0 errors,
   EditMode 75/75, PlayMode 36/38 — both failures are SureThing capture tests on
   `RenderTexture.Create` under `-nographics` (the device-less mode; TV's
