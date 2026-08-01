@@ -106,6 +106,14 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-07-31 cycle 16 · T20 closed (`48a9fbd`, canon type scale on the TV
+  surface); TV advanced to 3D. **Interim evidence policy made operative** (bulk
+  binaries/captures stay out of git until Allen's LFS ruling — codifies existing
+  practice; the repo-wide inert-LFS defect makes this load-bearing). **Editor
+  taken by the orchestrator seat: canonical validation pass on merged main**
+  running in main-2 via a bounded read-only agent (warm compile + EditMode +
+  PlayMode, leads' documented traps applied). Lead windows queue behind it.
+  Reversal: stop the agent, release the editor.
 - 2026-07-31 cycle 15 · **MERGE: surething-ui → main at `2e97d13`** (autonomous;
   all five checklist items verified: suites green at baseline, ProjectSettings
   drift Allen-approved and isolated at `63cf1bc`, handoff current, no open
