@@ -311,12 +311,12 @@ internal static class BettingScreen
             return new Pick(idx, scorer);
         }
         if (code.Length < 3)
-            throw new ArgumentException($"Bad market in '{token}'. Use GO/GU, CO/CU, KO/KU, or Y/N.");
+            throw new ArgumentException($"Bad market in '{token}'. Use GO/GU, CO/CU, KO/KU, Y/N, or S#.");
         string prefix = code.Substring(0, 2);
         if (!double.TryParse(code.Substring(2), NumberStyles.Float, CultureInfo.InvariantCulture, out double line))
             throw new ArgumentException($"Bad line in '{token}'.");
         if (prefix[1] != 'O' && prefix[1] != 'U')
-            throw new ArgumentException($"Bad market in '{token}'. Use GO/GU, CO/CU, KO/KU, or Y/N.");
+            throw new ArgumentException($"Bad market in '{token}'. Use GO/GU, CO/CU, KO/KU, Y/N, or S#.");
         bool over = prefix[1] == 'O';
         MarketSelection selection = prefix[0] == 'G'
             ? MarketSelection.TotalGoals(line, over)
@@ -324,7 +324,7 @@ internal static class BettingScreen
                 ? MarketSelection.TotalCorners(line, over)
                 : prefix[0] == 'K'
                     ? MarketSelection.TotalCards(line, over)
-                    : throw new ArgumentException($"Bad market in '{token}'.");
+                    : throw new ArgumentException($"Bad market in '{token}'. Use GO/GU, CO/CU, KO/KU, Y/N, or S#.");
         // This also rejects syntactically valid but unavailable ladder lines.
         matchup.Odds(selection);
         return new Pick(idx, selection);

@@ -197,7 +197,12 @@ public static class MatchModel
         }
     }
 
-    public static bool Grades(MatchStatLine line, MarketSelection selection)
+    /// <summary>Roster-blind grading for every <see cref="MarketKind"/> except AnytimeScorer.
+    /// Private: the safe public entry point is <see cref="Grades(Matchup, MatchStatLine, MarketSelection)"/>,
+    /// which has the roster context scorer legs need and forwards here for the other five kinds.
+    /// A caller outside this class can no longer reach the AnytimeScorer branch below by picking
+    /// the wrong overload (M-02).</summary>
+    private static bool Grades(MatchStatLine line, MarketSelection selection)
     {
         switch (selection.Kind)
         {
@@ -212,6 +217,9 @@ public static class MatchModel
             case MarketKind.TotalCards:
                 return Compare(line.HomeCards + line.AwayCards, selection.Line, selection.Choice);
             case MarketKind.AnytimeScorer:
+                // Unreachable now that this overload is private: the only call site is the 3-arg
+                // overload's guard clause below, which never forwards AnytimeScorer here. Left in
+                // as a defensive invariant in case that guard is ever changed.
                 throw new ArgumentException("Anytime scorer grading requires matchup roster context");
             default:
                 throw new ArgumentOutOfRangeException(nameof(selection));
