@@ -108,6 +108,11 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-07-31 cycle 28 · **markets-2 phase 1 COMPLETE** — M-01, M-03A, M-02, doc
+  debt all landed (`82011e1`, `f05d20f`); scorer grading trap closed; four
+  sub-agent dispatches all lead-reviewed. Idle awaiting Allen's arm-B go/no-go
+  (economy re-baseline — gate flips come back as findings, not silent retunes).
+  Studio now gated on two Allen touchpoints only: the DD batch return, and arm B.
 - 2026-07-31 cycle 27 · Allen returned; away-mode ended. LFS root-macro fix
   landed (Allen-approved; warnings gone repo-wide). dd-import rebuilt (night
   brief, fresh snapshots, evidence split <20MB ×4) and sent to the DD by Allen.
