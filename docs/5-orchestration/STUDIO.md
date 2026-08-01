@@ -24,7 +24,9 @@ reverted.
 - **Worktree leads — Claude (Opus 5), one per active worktree.**
   Own the local plan, file ownership, delegation, review, verification, commits, and
   the integration handoff. Implement approved design specs; they make essentially no
-  design decisions. Contract lives in the worktree's `handoff.md`.
+  design decisions. Contract lives at `docs/handoffs/<worktree>.md` (root
+  `handoff.md` retired 2026-07-31 — every worktree root is the same repo path, so
+  committed root contracts collide at merge).
 - **Sub-agents — Sonnet 5 by default, at most two per lead at once.**
   Delegation is the expected operating mode, not an option (Allen, 2026-07-31):
   implementation, testing, validation, bulk reading, and other grunt work go to
