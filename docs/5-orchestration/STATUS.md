@@ -73,6 +73,10 @@
   remains stood down. **New trap (markets, 2026-07-31): `dotnet build/test/run`
   silently rewrites the tracked `unity/SBR/Assets/Plugins/SBR/SBR.Engine.dll` —
   every lead using dotnet must check for and revert that file before committing.**
+  **Second trap (markets, 2026-07-31): Unity can return exit 0 while still
+  mid-import — process + lockfile stayed live ~16 min after "exit". Exit code is
+  not a completion signal; leases close on process count + lockfile + log growth,
+  never on exit alone.**
 - **Need Allen:** nothing.
 
 ## Autonomous decisions (Allen veto window)
@@ -108,6 +112,11 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-07-31 cycle 29 · markets phase 2 underway (`32b234c` type/state
+  conformance landed; more in flight). **Boundary watch:** markets now edits the
+  SureThing surface post-merge — before the DD batch reactivates the SureThing
+  lead (S10/grain), the two seats need an explicit file split on
+  `SportsbookApp.cs`/`LaptopOs.cs`; orchestrator arbitrates at that moment.
 - 2026-07-31 cycle 28 · **markets-2 phase 1 COMPLETE** — M-01, M-03A, M-02, doc
   debt all landed (`82011e1`, `f05d20f`); scorer grading trap closed; four
   sub-agent dispatches all lead-reviewed. Idle awaiting Allen's arm-B go/no-go
