@@ -11,14 +11,11 @@
   **falsified** — generator untouched, diagnostic committed, fix from evidence in
   the next capture window rather than a third guess. DD rulings S11/S14/S15/S16
   dispatched into S9 planning. Lead: Claude (Opus 5).
-- **room-refinement:** **R5/R6 Design-verified — the studio's first; R9/R10
-  approved and dispatched.** R9 bounded (30–40% ambient cut, full 8/8 gate re-run,
-  mattress 43.9 ±1, region means within 10%); R10 via bounce-first with
-  grazing-source fallback (y < 1.50). FluorescentSoot dropped per DD; R7 stays
-  parked (frusta re-place is the precondition if it resumes; direction's read is
-  the bar, re-review after R9/R10). Tier 1b remains committed with its honest
-  record. Room planning R9 → R10; editor lease on request.
-  Lead: Claude (Opus 5).
+- **room-refinement:** **R9 implemented and committed** (`9dce6f7` soot dropped +
+  ambient rebalance; `13fedd1` gate-check harness for the R9/R10 acceptance
+  re-runs) — awaiting its editor lease (third in queue) for build + bake + 8/8
+  gate re-run. R10 planning next. R5/R6 Design-verified; R7 parked; owning doc
+  approved (R13). Lead: Claude (Opus 5).
 - **tv-sweat:** `842382d` — **T8 removed and verified** (engine 160/160, EditMode
   129/129, PlayMode 44/44 on rerun; single failure matched the documented cash-out
   flake signature in a path T8 doesn't touch). Contract/C1/T6/C3 at `4cdd98c`.
@@ -48,14 +45,168 @@
 - **Orchestrator:** Fable 5 session in `main-2`; lead channel chartered in
   `ORCHESTRATOR.md` §3a. Completion watchers armed on all three lead terminals and
   the Design Director session.
-- **Unity queue:** tv-sweat holds the slot (harness + markup-scan verification).
-  Next expected: SureThing capture window (wide-ring evidence read + S9 work).
-- **Blocked:** none.
+- **Unity queue:** surething-ui holds the slot (seven-change verification in
+  dependency order + wide-ring dump read) → tv-sweat TVS-H02 regression
+  investigation (freeze-contract regression; 3C held uncommitted until understood)
+  → room R9 lease (build + bake + 8/8 gate re-run). Hold room's staged lease draft
+  until granted.
+- **Approved (Allen, 2026-07-31):** room owning doc — canonical at
+  `docs/design/room-design.md` (R13). Room session context at ~507k tokens —
+  recommend `/clear` at its next natural boundary; handoff.md + committed docs make
+  it safe.
+- **Blocked:** TV 3C merge blocked on the TVS-H02 verdict (its own hold, correct).
+- **Integration plan (draft, for Allen when slices stabilise):** merge order
+  1) `surething-ui` (most landed, all green, ProjectSettings changes approved and
+  isolated), 2) `room-refinement` (after the R9 gate re-run passes), 3)
+  `slice/tv-sweat-refinement` (after TVS-H02 is understood, 3C commits, and the
+  T17 scorer-gap fix lands). Canonical Unity validation pass in `main-2` after
+  each merge. Cross-tree conflict surface is small — each slice owns disjoint
+  files; the shared risks are ProjectSettings (surething, approved) and
+  `Room.unity` (room-owned; TV deliberately never touched it).
 - **Rulings (Allen, 2026-07-31):** C1 — latest document governs, `DESIGN.md` §6
   stands, layout closed. C2 — interim: shipped green tolerated, cold white-grey
   target lands with TV Phase 3. T8 — remove: done, verified `842382d`. S11 — no
   licence-encumbered typefaces in the product; Bell Centennial dropped.
-- **Watch:** interactive GPU booking **stood down** (Allen, 2026-07-31) — the
-  capture-harness spike succeeded; visual evidence is repeatable in batch. Only
-  revisit if the seated-camera sweat capture fails.
+- **Watch:** Unity **segfaults on `-quit`** (exit path only; 0 errors, lockfile
+  clears, nothing corrupted — observed on tv-sweat warm compile 2026-07-31). Every
+  lease-holder must keep checking process count + lockfile at open. GPU booking
+  remains stood down. **New trap (markets, 2026-07-31): `dotnet build/test/run`
+  silently rewrites the tracked `unity/SBR/Assets/Plugins/SBR/SBR.Engine.dll` —
+  every lead using dotnet must check for and revert that file before committing.**
 - **Need Allen:** nothing.
+
+## Autonomous decisions (Allen veto window)
+
+Autonomy authorized 2026-07-31 (STUDIO.md policy; ORCHESTRATOR.md §6). Every entry:
+decision · evidence checked · reversal path.
+
+- 2026-07-31 · Loop started. Policy dispatched to tv-sweat and surething-ui;
+  room-refinement's copy rides its R9 lease grant (composer blocked by Allen's
+  staged draft + survey prompt — not touched per composer rule). Reversal: Allen
+  says stop.
+- Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
+  cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-07-31 cycle 2 · **S11 verified closed** — spot-checked `ed07ee3` (fonts +
+  OFL licences), `a3d8876` (rulings + document layer), `b820624` (markup guard),
+  `7169c95` (policy in handoff); evidence matches report. SureThing's font-wiring
+  slot queued third (TV investigation → room R9 → SureThing fonts). Room dispatch
+  still blocked on its composer (Allen's staged draft + survey prompt). Reversal:
+  reorder the queue or veto the S11 close.
+- 2026-07-31 cycle 3 · **TVS-H02 verdict accepted** — pre-existing one-frame
+  ordering quirk exposed (not introduced) by 3C's UPDATING state; fix landed
+  uncommitted with a mechanism that predicts the observed rate; lead's own suspect
+  disqualified on evidence. **Queue reordered:** TV verification slot before room
+  R9 (room's channel is composer-blocked; editor must not idle). **TV session
+  hygiene ordered before its slot** — 97% context; state written to handoff.md,
+  then session clear, then re-seat and run. Reversal: veto the reorder; the fix
+  diff is in TV's working tree, revertible.
+- 2026-07-31 cycle 4 · TV state-write confirmed ("ready to be cleared", handoff
+  +83 lines). Attempted remote composer clear for the `/clear` step: Esc, Ctrl+U,
+  backspace all filtered by the send path; double-Esc opened the rewind menu
+  (cancelled, no action taken). **Blocked on a human step** — Allen: Esc + `/clear`
+  in the TV terminal. Loop resumes automatically on the fresh session. Standing
+  note: staged composer drafts are the recurring channel blocker (TV now, room
+  still) — under autonomy, decisions sent to the orchestrator instead keep lead
+  channels clear.
+- 2026-07-31 cycle 25 · **Resting state reached.** TV 3F binding half committed
+  (`949c041`); its contract itself records the gate (`e93dbed`: "resume at items
+  10–12, not at a fragment"). All three leads idle-by-design: SureThing merged,
+  room merged and awaiting re-review, TV DD-gated. markets-2 parked for Allen.
+  Awaiting: DD import drag (13 items + 2 review packages + 98-frame evidence zip),
+  LFS ruling, markets-2 briefing. Loop stays armed on heartbeat.
+- 2026-07-31 cycle 23 · TV 3E committed (`4597b60`, preview shipped dark) and the
+  **visual-evidence bundle exists**: 98 rendered frames + manifest (two uncaptured
+  states honestly stated), staged durably at `dd-import/tv-sweat-evidence-4597b60.zip`
+  (gitignored, rides Allen's next DD import — no LFS needed). 3F underway
+  editor-free. TV's only remaining blocks are DD items 10/11.
+- 2026-07-31 cycle 21 · TV 3D committed (`0fd2ce5`, VOID strike + contract move);
+  3E started editor-free. Scheduled: post-3E capture window (seated-sweat harness →
+  evidence dir → repo-free DD bundle incl. the 49 held T6 captures) to convert the
+  accumulated analytical-only visual change into reviewable frames without the LFS
+  ruling. Reversal: skip the capture window.
+- 2026-07-31 cycle 20 · **Both merges validated green on merged main** — compile
+  0 errors, EditMode 75/75, PlayMode 38/38 on the GPU device, no flake. Suite
+  duration 47.5s→82.5s under room lighting (awareness only — affects future
+  flake-rate reads). Settings-file side effects restored. Main now carries the
+  sportsbook redesign + the room's full visual arc, validated together.
+- 2026-07-31 cycle 19 · **MERGE: room-refinement → main at `bb457af`**
+  (autonomous; checklist all-green: R-gates at baseline, zero integration-file
+  drift, contract current at `docs/handoffs/room-refinement.md`, no open conflict
+  items, merge-tree clean after the contract re-homing; 21 commits). Canonical
+  validation running on merged main (compile + EditMode headless + PlayMode with
+  GPU). **Reversal: `git revert -m 1 bb457af`.**
+- 2026-07-31 cycle 17 · **Validation pass, first arm:** compile 0 errors,
+  EditMode 75/75, PlayMode 36/38 — both failures are SureThing capture tests on
+  `RenderTexture.Create` under `-nographics` (the device-less mode; TV's
+  experiment already proved capture needs the graphics device). Diagnosed as
+  harness-config mismatch, not regression; **PlayMode re-running with a graphics
+  device** (same agent, same bounds). Unity's four dirtied settings files
+  restored per lead practice. Gate to accept the merge: 38/38 or the documented
+  flake only. Reversal unchanged: `git revert -m 1 2e97d13` if the rerun fails.
+- 2026-07-31 cycle 16 · T20 closed (`48a9fbd`, canon type scale on the TV
+  surface); TV advanced to 3D. **Interim evidence policy made operative** (bulk
+  binaries/captures stay out of git until Allen's LFS ruling — codifies existing
+  practice; the repo-wide inert-LFS defect makes this load-bearing). **Editor
+  taken by the orchestrator seat: canonical validation pass on merged main**
+  running in main-2 via a bounded read-only agent (warm compile + EditMode +
+  PlayMode, leads' documented traps applied). Lead windows queue behind it.
+  Reversal: stop the agent, release the editor.
+- 2026-07-31 cycle 15 · **MERGE: surething-ui → main at `2e97d13`** (autonomous;
+  all five checklist items verified: suites green at baseline, ProjectSettings
+  drift Allen-approved and isolated at `63cf1bc`, handoff current, no open
+  conflict items, merge-tree clean; 22 commits). Canonical main-2 validation pass
+  queued after TV's T20 window. **Reversal: `git revert -m 1 2e97d13`.**
+  Residual honesty from the lead: BUY-in-wax visually unverified (no affordable
+  state captured yet) — queued for its next window, not blocking.
+- 2026-07-31 cycle 14 · **Allen away — full-auto confirmed** for surething-ui,
+  tv-sweat, room-refinement; pings only for critical/DD items. **markets-2 spun up
+  and PARKED per Allen** (worktree + branch from main `65a30d1`, handoff contract
+  written, Opus lead seated but in manual permission mode — no dispatches until
+  Allen returns). Dormant Documents checkout retired from the registry (fully
+  merged, 56 behind). S17 ruled by Allen (offer rule-text never truncates — fewer
+  offers instead). SureThing in verification slot; TV's T20 window queued behind
+  it; T20 live-row deviation → DD inbox 9a. Reversal: unpark markets-2, reorder
+  queue.
+- 2026-07-31 cycle 13 · **T20 scope decision made autonomously** — TV surfaced a
+  canon-vs-Layout-B conflict via option dialog; orchestrator selected its
+  recommended option 1 (adopt the T20 ruled type scale within the no-reflow law,
+  NEED one-line on Unity, deviation documented) because it amends no law and the
+  later ruling governs over the canon reference (C1 precedent). Row-model question
+  routed to DD as inbox item 9. Reversal: DD rules for expanding rows → option 2
+  executes then. Also this cycle: T17 resolved (`ea28c9b`), scorer-gap closed.
+- 2026-07-31 cycle 10 · **Phase 3C LANDED** (`4969eb1`: Layout B canvas +
+  T16/C3/C8 + TVS-H02 fix; both n≥10 arms green, full suites green, stash
+  round-trip byte-verified against a CRLF rewrite). Editor: room R10 cycle opened
+  (Allen's staged lease fired at validity); TV implements T17 editor-free, window
+  after SureThing's pixel check. Three automated-run traps recorded in TV's
+  handoff §4. **Two Allen gates raised by TV:** LFS is inert repo-wide (macro in
+  a non-root .gitattributes is ignored by git) and 49 T6 captures (28.8 MB) held
+  out of commit pending the call. Reversal: revert `4969eb1`; reorder queue.
+- 2026-07-31 cycle 9 · SureThing continue delivered: S9 audited and committed,
+  build-out halted at its own unverified-stack line, and the **S6–S8 review bundle
+  placed in the orchestrator tree and committed** (pre-typography caveat leads;
+  includes withdrawn self-misreads; grain flagged as shader work with measurement;
+  new violation logged for DD review — "LEAVE — NEXT ROUND" primary action drawn
+  in saturated biro). Bundle ships to the DD after the Archivo capture refresh so
+  type and structure review together. Room continue undeliverable — composer still
+  holds Allen's staged R10 draft. Reversal: veto the bundle hold, ship it now.
+- 2026-07-31 cycle 8 · **Stall caught and broken** — TV's stack arm died silently
+  (~14:20: Temp mtime + upm.log at 14:17, zero Unity processes 34+ min, task list
+  unmoved) while its driver-monitor waited on a log that would never grow —
+  evidence contradicted the apparent "running" state. Woke the lead by firing
+  Allen's staged report-request with the evidence appended; window remains TV's;
+  lead decides rerun-vs-diagnose. R9 closed as measured no-op earlier this cycle
+  (`b1d2ccc`); R10 prepped and queued. Reversal: none needed — no state changed.
+- 2026-07-31 cycle 6 · **Loop resumed** — Allen's one-pass completed all three
+  steps. Room in the editor (R9 gate re-run). TV re-seated post-clear on a fresh
+  session: verified HEAD, stack, fix lines, and correctly held on seeing room's
+  live run. SureThing parked third. Long-send truncation chartered
+  (ORCHESTRATOR.md §3a); re-seat brief moved to the durable file channel. Allen's
+  staged TV grant fires (with timing note appended) when room releases — logged
+  here as the planned action; reversal: don't fire, hold TV.
+- 2026-07-31 cycle 5 · **§6 stop tripped** — two consecutive cycles moved nothing:
+  all three lead composers hold staged drafts (TV `clear the session`, SureThing
+  `wire the fonts…`, room `Editor lease granted…`), every dispatch channel blocked,
+  editor idle. Desktop notification sent with the one-pass fix (room: Enter ·
+  SureThing: Esc · TV: Esc + `/clear`). Watchers stay armed; loop resumes on any
+  composer change. No work lost; no state at risk.
