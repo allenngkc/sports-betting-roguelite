@@ -106,6 +106,15 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-07-31 cycle 14 · **Allen away — full-auto confirmed** for surething-ui,
+  tv-sweat, room-refinement; pings only for critical/DD items. **markets-2 spun up
+  and PARKED per Allen** (worktree + branch from main `65a30d1`, handoff contract
+  written, Opus lead seated but in manual permission mode — no dispatches until
+  Allen returns). Dormant Documents checkout retired from the registry (fully
+  merged, 56 behind). S17 ruled by Allen (offer rule-text never truncates — fewer
+  offers instead). SureThing in verification slot; TV's T20 window queued behind
+  it; T20 live-row deviation → DD inbox 9a. Reversal: unpark markets-2, reorder
+  queue.
 - 2026-07-31 cycle 13 · **T20 scope decision made autonomously** — TV surfaced a
   canon-vs-Layout-B conflict via option dialog; orchestrator selected its
   recommended option 1 (adopt the T20 ruled type scale within the no-reflow law,

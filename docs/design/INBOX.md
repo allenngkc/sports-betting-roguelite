@@ -29,6 +29,11 @@ referenced documents via Import before the DD will rule on them.
    would have predicted the failed baked-light route works.
 8. **Room re-review** — now due (R9/R10 landed per your batch-2 sequencing);
    package in `dd-import/`, includes the couch-headroom design question.
+9a. **T20 live-row deviation (TV):** canon's three-line live row costs ~73px
+   against a 69px slot — knife-edge glyph clipping in the real font. Built with
+   no market/price/state meta line on the live row (state survives via the word,
+   price via compact form), documented in the struct's doc comment. Needs your
+   nod alongside item 9.
 9. **TV row model: canon vs Layout B.** `TvLegRow.jsx` says live rows expand in
    place and NEED may wrap to two lines; Layout B's no-reflow law (pinned by two
    3C tests) fixes 70px slots, and a wrapped NEED needs ~98px. Orchestrator

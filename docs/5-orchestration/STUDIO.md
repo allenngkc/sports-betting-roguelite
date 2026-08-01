@@ -43,7 +43,8 @@ reverted.
 | `surething-ui` | `surething-ui` | Claude (Opus 5) | Active |
 | `room-refinement` | `room-refinement` | Claude (Opus 5) | Active |
 | `tv-sweat` | `slice/tv-sweat-refinement` | Claude (Opus 5) | Active |
-| `Documents/CodingProjects/sports-betting-roguelite` | `feat/soccer-markets` | — | Dormant (F_0.4.0 awaiting playtest); ignore for coordination |
+| `markets-2` | `markets-2` | Claude (Opus 5) | Active (seated 2026-07-31; F_0.4.0 follow-up, sim/data scope until surething-ui merges) |
+| `Documents/CodingProjects/sports-betting-roguelite` | `feat/soccer-markets` | — | Retired 2026-07-31 — fully merged into main (56 behind); superseded by `markets-2` |
 
 ## Ownership rules
 

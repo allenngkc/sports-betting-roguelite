@@ -32,6 +32,7 @@ under this seat. That is the gap this register exists to close.
 | S14 | Form-guide identity — three build gaps, all already specified: two-voice type system unwired (condensed figures vs roman labels); 78px entry geometry drifted (pre-contract 660px board suspected); document layer missing (warm olive-black ground, warm bone toner, 1–2px rules, 0.05 grain under the room grade, biro wash, ink-sprite rings not pills) | **Spec issued** · DD 2026-07-31; reference implementation held in the DD seat — hand over, do not re-derive | DD ruling S12 |
 | S15 | Lost-ticket treatment in Old Slips | **Ruled — violation** · DD 2026-07-31: LOST struck in oxide, row to `--toner-3`, returned figure `$0` in toner — not oxide, not wax | DD ruling S13 |
 | S16 | App naming | **Closed** · DD 2026-07-31 — one name: **LEDGER**. "Old Slips" retired from copy (code identifier only); "SURETHING LEDGER" deleted (brands a machine-level app, drifts toward institutional hardware). S9 unblocked | DD ruling S14 |
+| S17 | Offer descriptions | **Ruled** · Allen 2026-07-31 — an offer's rule text (especially cost/downside clauses) is never truncated; show fewer offers instead. Truncation that drops the rule is misleading at the point of spending | lead report + Allen draft |
 
 ## Room
 
