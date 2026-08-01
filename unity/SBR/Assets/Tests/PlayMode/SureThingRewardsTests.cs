@@ -35,23 +35,50 @@ namespace SBR.Tests.PlayMode
             {
                 RelicDefinition offer = run.ShopOffers[i];
                 Transform row = Required(board, "RewardOffer" + i);
-                Assert.AreEqual(FormatComps(offer.Price) + " COMPS",
+                // S9 defect 1/3: price is wax regardless of affordability, and grammatically agreed
+                // ("1 COMPS" was the reported defect — ask_manager's price is exactly 1).
+                Assert.AreEqual(CompsLabel(offer.Price),
                     TextOf(Required(row, "Affordability")));
-                Assert.AreEqual("NEED " + FormatComps(offer.Price - run.Comps) + " COMPS",
+                Assert.AreEqual("NEED " + CompsLabel(offer.Price - run.Comps),
                     TextOf(Required(row, "BuyReason")));
                 Assert.IsFalse(Required(row, "Buy").GetComponent<Button>().interactable,
                     $"RewardOffer{i} BUY must be disabled at {run.Comps} comps");
             }
+            // Allen ruled 2026-07-31 that an offer keeps its whole rule text and the board shows
+            // however many offers fit, so a row is no longer guaranteed to exist for every dealt
+            // offer. What must still hold is stricter than "row i exists": every row that IS shown
+            // states affordability truthfully, and every offer that is NOT shown is accounted for
+            // on screen rather than silently dropped.
+            int consumablesShown = 0;
             for (int i = 0; i < run.ConsumableOffers.Count; i++)
             {
+                Transform row = Find(board, "ConsumableOffer" + i);
+                if (row == null) continue;
+                consumablesShown++;
                 ConsumableDefinition offer = run.ConsumableOffers[i];
-                Transform row = Required(board, "ConsumableOffer" + i);
-                Assert.AreEqual(FormatComps(offer.Price) + " COMPS",
+                Assert.AreEqual(CompsLabel(offer.Price),
                     TextOf(Required(row, "Affordability")));
-                Assert.AreEqual("NEED " + FormatComps(offer.Price - run.Comps) + " COMPS",
+                Assert.AreEqual("NEED " + CompsLabel(offer.Price - run.Comps),
                     TextOf(Required(row, "BuyReason")));
                 Assert.IsFalse(Required(row, "Buy").GetComponent<Button>().interactable,
                     $"ConsumableOffer{i} BUY must be disabled at {run.Comps} comps");
+            }
+
+            int relicsShown = 0;
+            for (int i = 0; i < run.ShopOffers.Count; i++)
+                if (Find(board, "RewardOffer" + i) != null) relicsShown++;
+            int hidden = run.ShopOffers.Count + run.ConsumableOffers.Count
+                - relicsShown - consumablesShown;
+            Transform notShown = Find(board, "OffersNotShown");
+            if (hidden > 0)
+            {
+                Assert.IsNotNull(notShown,
+                    $"{hidden} offer(s) did not fit and the board must say so, not drop them silently");
+                StringAssert.Contains(hidden.ToString(), TextOf(notShown));
+            }
+            else
+            {
+                Assert.IsNull(notShown, "nothing was hidden, so the board must not claim otherwise");
             }
             AssertProductFloors(board, margin);
 
@@ -219,6 +246,16 @@ namespace SBR.Tests.PlayMode
 
         private static string FormatComps(double value)
             => value.ToString("0.#", CultureInfo.InvariantCulture);
+
+        // Mirrors SportsbookApp's private FormatComps (S9 defect 3): RewardsTally intentionally
+        // keeps the old unconditional " COMPS" suffix (asserted above) since run.Comps landing on
+        // exactly 1 is not the reported defect and not exercised by this deterministic run; only the
+        // per-offer price/reason lines route through the pluralized helper.
+        private static string CompsLabel(double value)
+        {
+            string formatted = FormatComps(value);
+            return formatted + (formatted == "1" ? " COMP" : " COMPS");
+        }
 
         private static void AssertRect(RectTransform rect, float width, float height, string label)
         {

@@ -226,9 +226,19 @@ namespace SBR.Game
 
             if (_toast != null)
             {
-                LaptopUi.MakeText(_app, "Toast", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                    new Vector2(0f, 62f), new Vector2(760f, 24f), 11, TextAnchor.LowerCenter,
-                    Accent, _toast, _font);
+                // S9 defect 6: this used to float 62px above the tray, which is inside the Rewards
+                // board's own content band — it rendered across the offer rows and over the LEAVE
+                // button rather than beside them (same occlusion class already fixed for
+                // SportsbookApp's LockReason). The whole work area and masthead are packed on every
+                // destination, but the rail has a genuinely empty stretch between the sticker and the
+                // clock (NotebookChrome.BuildRail, x 350-870) on every screen, toast included, so the
+                // toast sits there now — its own space, not drawn over anyone else's. White rather
+                // than Accent: a house-generated status line is not a mark HE chose (Law Two).
+                // Overflow (not the Wrap default) for the same single-line reason as TaskbarText —
+                // this must not re-flow into a second line and spill past the rail band.
+                LaptopUi.MakeText(_app, "Toast", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(360f, -5f), new Vector2(500f, 24f), 13, TextAnchor.MiddleCenter,
+                    White, _toast, _font).horizontalOverflow = HorizontalWrapMode.Overflow;
             }
         }
 

@@ -100,14 +100,17 @@ namespace SBR.Tests.PlayMode
             Transform summary = Required(margin, "RecordSummary");
             AssertRect(summary as RectTransform, 324f, 530f, "record summary");
 
-            Assert.AreEqual("SETTLED CURRENT-RUN RECORDS  ·  READ ONLY",
+            // S9 defect 7: "READ ONLY" is said once now, by the masthead's Scope line
+            // (BuildLedgerChrome) — this caption keeps only the information it alone carries.
+            Assert.AreEqual("SETTLED CURRENT-RUN RECORDS",
                 TextOf(Required(board, "LedgerScope")));
             Assert.AreEqual("SETTLED TICKETS EXPOSED BY\nRUN.TICKETS ONLY",
                 TextOf(Required(summary, "RecordScope")));
             StringAssert.Contains("NO CROSS-RUN HISTORY IS INVENTED.",
                 TextOf(Required(summary, "CashOutDisclosure")));
             Assert.AreEqual("SETTLED  0", TextOf(Required(summary, "SettledCount")));
-            Assert.AreEqual($"ROUND {run.Round}  ·  READ ONLY",
+            // S9 defect 7: same consolidation as LedgerScope above.
+            Assert.AreEqual($"ROUND {run.Round}",
                 TextOf(Required(summary, "RoundIdentity")));
 
             AssertProductFloors(chrome, board, margin, tray);

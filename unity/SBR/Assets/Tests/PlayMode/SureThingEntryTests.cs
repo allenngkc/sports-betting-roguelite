@@ -288,7 +288,7 @@ namespace SBR.Tests.PlayMode
                 // Matches BuildStagedReceipt's own width-fitting formula rather than a duplicated
                 // literal, so a legitimate format change (fixing the mid-word truncation defect)
                 // can never quietly desync the fixture from the render code.
-                Font font = TestFont();
+                Font font = TestFont(receipt);
                 const float receiptTextWidth = 280f;
                 // "STAGED" was dropped from the header on purpose: the block itself is the staged
                 // receipt, and the word was what pushed "PAYS $167" past the 280px fit and into a
@@ -433,7 +433,21 @@ namespace SBR.Tests.PlayMode
 
         /// <summary>The same built-in font LaptopScreen loads, fetched independently so fixture-side
         /// width calculations measure glyphs identically to production.</summary>
-        private static Font TestFont() => Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        /// <summary>
+        /// The face the receipt is actually rendered in, read off the rendered element rather than
+        /// assumed. This fixture recomputes expected strings through the same FitText the runtime
+        /// uses, so it has to measure with the same font: it was pinned to LegacyRuntime and started
+        /// failing the moment the production faces were wired, because Archivo Narrow is narrower
+        /// and more characters now fit before the ellipsis. That was the fixture being wrong about
+        /// the font, not the UI being wrong about the text.
+        /// </summary>
+        private static Font TestFont(Transform receipt)
+        {
+            var sample = Required(receipt, "ReceiptHeader").GetComponent<Text>();
+            Assert.IsNotNull(sample, "ReceiptHeader must carry a Text to measure against");
+            Assert.IsNotNull(sample.font, "ReceiptHeader has no font; the production face failed to load");
+            return sample.font;
+        }
 
         private static string AllText(Transform root)
         {

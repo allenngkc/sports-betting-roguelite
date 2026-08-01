@@ -639,6 +639,17 @@ namespace SBR.Game
 
         private static string Pluralize(int count, string singular) => count == 1 ? singular : singular + "S";
 
+        /// <summary>"N COMP"/"N COMPS" — the shop's second currency, grammatically agreed (S9 defect
+        /// 3: "1 COMPS"). Decides singular off the FORMATTED value, not the raw double, so "1.0"
+        /// reads the same as "1" and no fractional amount (e.g. "0.5") is ever mistaken for one.
+        /// Routes the actual singular/plural call through the existing Pluralize rather than
+        /// re-deciding it here.</summary>
+        private static string FormatComps(double amount)
+        {
+            string formatted = amount.ToString("0.#", CultureInfo.InvariantCulture);
+            return formatted + " " + Pluralize(formatted == "1" ? 1 : 0, "COMP");
+        }
+
         /// <summary>A short-form of <see cref="MatchModel.DisplayLabel"/> for the width-starved
         /// working-margin and staged-receipt columns: team names are shortened the same way the
         /// board already does (<see cref="LaptopUi.TeamShort"/>), and a moneyline pick never repeats
@@ -928,51 +939,118 @@ namespace SBR.Game
             }
             else
             {
+                // S9 defect 5: at 72px pitch, the dealt maximum (PassiveOfferCount 4 +
+                // ConsumableOfferCount 3 = 7 rows) needs ~500px against the 456px actually free
+                // below the header rule, so the last row ran under the taskbar. 60px (56px row + 4px
+                // gap, same ratio as before) fits all seven with room to spare, matching the
+                // narrower row height BuildRewardOffer/BuildConsumableOffer now use.
+                // Rows are no longer a fixed pitch: each one is as tall as its own rule text, which
+                // is the point of Allen's 2026-07-31 ruling — descriptions keep their rule text and
+                // the board shows however many offers fit. Nothing may run off the sheet and nothing
+                // may be silently dropped, so the count that did not fit is stated in place.
+                //
+                // BoardBottomPadding leaves the last rule clear of the tray rather than flush to it.
+                const float boardBottomPadding = 10f;
                 float y = -74f;
+                float floorY = -(530f - boardBottomPadding);
+                int shown = 0;
+                int total = run.ShopOffers.Count + run.ConsumableOffers.Count;
+
                 for (int i = 0; i < run.ShopOffers.Count; i++)
                 {
-                    BuildRewardOffer(board, run, run.ShopOffers[i], i, y);
-                    y -= 72f;
+                    if (y - EstimateOfferHeight(run.ShopOffers[i].Description) < floorY) break;
+                    y -= BuildRewardOffer(board, run, run.ShopOffers[i], i, y);
+                    shown++;
                 }
                 for (int i = 0; i < run.ConsumableOffers.Count; i++)
                 {
-                    BuildConsumableOffer(board, run, run.ConsumableOffers[i], i, y);
-                    y -= 72f;
+                    if (y - EstimateOfferHeight(run.ConsumableOffers[i].Description) < floorY) break;
+                    y -= BuildConsumableOffer(board, run, run.ConsumableOffers[i], i, y);
+                    shown++;
+                }
+
+                if (shown < total)
+                {
+                    // Hiding a purchasable offer without saying so would be the same class of
+                    // untruth as the truncation this replaced: the screen would read as the whole
+                    // shop. Stated as a plain fact, in toner — it is the house's document telling
+                    // him what is on it, not a blocked action, so it is not the oxide stamp.
+                    LaptopUi.MakeText(board, "OffersNotShown", new Vector2(0f, 0f), new Vector2(0f, 0f),
+                        new Vector2(14f, 8f), new Vector2(672f, 20f), 13, TextAnchor.LowerLeft,
+                        LaptopOs.TonerSecondary,
+                        $"{total - shown} MORE {Pluralize(total - shown, "OFFER")} THIS ROUND — NOT ENOUGH SHEET",
+                        _font);
                 }
             }
 
             BuildRewardsMargin(margin, run);
         }
 
-        private void BuildRewardOffer(RectTransform board, Run run, RelicDefinition offer, int index, float y)
+        /// <summary>
+        /// Predicts a row's height before it is built, so the board can decide whether the next
+        /// offer fits without creating it and then destroying it again. Mirrors the real layout in
+        /// BuildRewardOffer: 29px of name block, the wrapped description, 9px of tail.
+        ///
+        /// Deliberately pessimistic — it assumes a slightly narrower line than the 430px box really
+        /// allows, so it over-estimates rather than under-estimates. An over-estimate costs at most
+        /// one offer that would just have fitted; an under-estimate puts a row under the taskbar,
+        /// which is the defect this replaced.
+        /// </summary>
+        private float EstimateOfferHeight(string description)
+        {
+            const float lineHeight = 17f;
+            const float charsPerLine = 66f;
+            int lines = Mathf.Max(1, Mathf.CeilToInt((description ?? string.Empty).Length / charsPerLine));
+            return 29f + lines * lineHeight + 9f;
+        }
+
+        private float BuildRewardOffer(RectTransform board, Run run, RelicDefinition offer, int index, float y)
         {
             RectTransform row = LaptopUi.MakePanel(board, "RewardOffer" + index, new Vector2(0f, 1f),
-                new Vector2(0f, 1f), new Vector2(0f, y), new Vector2(700f, 68f), LaptopOs.Ink);
+                new Vector2(0f, 1f), new Vector2(0f, y), new Vector2(700f, 56f), LaptopOs.Ink);
             bool enoughComps = offer.Price <= run.Comps;
             bool hasSlot = run.OwnedRelics.Count < run.Config.RelicSlots;
             bool canBuy = enoughComps && hasSlot && run.Phase == Phase.Shop;
             string reason = !hasSlot ? "RELIC SLOTS FULL"
-                : !enoughComps ? $"NEED {(offer.Price - run.Comps).ToString("0.#", CultureInfo.InvariantCulture)} COMPS"
+                : !enoughComps ? "NEED " + FormatComps(offer.Price - run.Comps)
                 : "AFFORDABLE";
             // Name and price are condensed per OfferEntry.jsx; description, reason and the BUY button
             // itself stay on the data face.
             LaptopUi.MakeText(row, "OfferName", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -5f), new Vector2(430f, 22f), 15, TextAnchor.UpperLeft,
                 LaptopOs.White, offer.Name.ToUpperInvariant(), _fontCond);
-            LaptopUi.MakeText(row, "OfferDescription", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, -28f), new Vector2(430f, 36f), 13, TextAnchor.UpperLeft,
-                LaptopOs.TonerSecondary, offer.Description, _font);
+            // Ruled by Allen 2026-07-31: an offer's description NEVER loses its rule text. These
+            // are the mechanics the player is spending comps on, and the earlier one-line fit kept
+            // each entry's opening clause while dropping the rule itself — on two entries it
+            // dropped the downside, which is worse than clipping, because it reads as complete.
+            // The copy is rendered whole and the row grows to hold it; the board shows however many
+            // offers fit and says how many it could not (see BuildRewards).
+            Text description = LaptopUi.MakeText(row, "OfferDescription", new Vector2(0f, 1f),
+                new Vector2(0f, 1f), new Vector2(14f, -29f), new Vector2(430f, 22f), 13,
+                TextAnchor.UpperLeft, LaptopOs.TonerSecondary, offer.Description, _font);
+            float descriptionHeight = Mathf.Max(18f, description.preferredHeight);
+            description.rectTransform.sizeDelta = new Vector2(430f, descriptionHeight);
+            float rowHeight = 29f + descriptionHeight + 9f;
+            row.sizeDelta = new Vector2(700f, rowHeight);
+            // S9 defect 1: a price is a printed figure, not the house's mark — wax regardless of
+            // affordability. The BLOCKED reason beside it stays oxide; that IS the house acting.
             LaptopUi.MakeText(row, "Affordability", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-124f, -5f), new Vector2(118f, 22f), 13, TextAnchor.UpperRight,
-                canBuy ? LaptopOs.MoneyGold : LaptopOs.MoneyBad,
-                $"{offer.Price.ToString("0.#", CultureInfo.InvariantCulture)} COMPS", _fontCond);
-            LaptopUi.MakeText(row, "BuyReason", new Vector2(1f, 0f), new Vector2(1f, 0f),
-                new Vector2(-124f, 3f), new Vector2(160f, 20f), 13, TextAnchor.LowerRight,
+                LaptopOs.MoneyGold, FormatComps(offer.Price), _fontCond);
+            LaptopUi.MakeText(row, "BuyReason", new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-124f, -29f), new Vector2(160f, 20f), 13, TextAnchor.UpperRight,
                 canBuy ? LaptopOs.TonerSecondary : LaptopOs.MoneyBad, reason, _font);
-            LaptopUi.MakeButton(row, "Buy", "BUY", new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                new Vector2(-14f, 0f), new Vector2(96f, 40f), 13,
-                canBuy ? LaptopOs.Accent : LaptopOs.SurfaceRaised,
-                canBuy ? LaptopOs.White : LaptopUi.Dim(LaptopOs.Muted),
+            // Top-anchored, not centred: the row's height now follows its description, and a
+            // vertically centred button would slide down the taller rows and sit on the copy.
+            LaptopUi.MakeButton(row, "Buy", "BUY", new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-14f, -4f), new Vector2(96f, 40f), 13,
+                // Law Two: BUY spends money, so an affordable one is wax with punched-out type,
+                // exactly like PLACE TICKET and LEAVE. Biro is reserved for marks the player made;
+                // a purchase control is not one. (LEAVE was corrected under S9 defect 2 and this
+                // was the same violation one control over, missed because no offer was affordable
+                // in the capture the defect list was written from.)
+                canBuy ? LaptopOs.MoneyGold : LaptopOs.SurfaceRaised,
+                canBuy ? LaptopOs.WaxInk : LaptopUi.Dim(LaptopOs.Muted),
                 canBuy ? () =>
                 {
                     string error = _host.director.TryBuyRelic(index);
@@ -981,18 +1059,19 @@ namespace SBR.Game
                 } : null, _font, canBuy);
             LaptopUi.MakeRule(row, "OfferRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
                 Vector2.zero, new Vector2(700f, 2f));
+            return rowHeight;
         }
 
-        private void BuildConsumableOffer(RectTransform board, Run run, ConsumableDefinition offer,
+        private float BuildConsumableOffer(RectTransform board, Run run, ConsumableDefinition offer,
             int index, float y)
         {
             RectTransform row = LaptopUi.MakePanel(board, "ConsumableOffer" + index, new Vector2(0f, 1f),
-                new Vector2(0f, 1f), new Vector2(0f, y), new Vector2(700f, 68f), LaptopOs.Ink);
+                new Vector2(0f, 1f), new Vector2(0f, y), new Vector2(700f, 56f), LaptopOs.Ink);
             bool enoughComps = offer.Price <= run.Comps;
             bool hasSlot = run.OwnedConsumables.Count < run.Config.ConsumableSlots;
             bool canBuy = enoughComps && hasSlot && run.Phase == Phase.Shop;
             string reason = !hasSlot ? "CHARM SLOTS FULL"
-                : !enoughComps ? $"NEED {(offer.Price - run.Comps).ToString("0.#", CultureInfo.InvariantCulture)} COMPS"
+                : !enoughComps ? "NEED " + FormatComps(offer.Price - run.Comps)
                 : "AFFORDABLE";
             // Same OfferEntry.jsx split as BuildRewardOffer above. "SINGLE USE" is a trailing
             // qualifier riding along with the name rather than a field label, so the combined string
@@ -1000,20 +1079,37 @@ namespace SBR.Game
             LaptopUi.MakeText(row, "OfferName", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -5f), new Vector2(430f, 22f), 15, TextAnchor.UpperLeft,
                 LaptopOs.White, offer.Name.ToUpperInvariant() + "  ·  SINGLE USE", _fontCond);
-            LaptopUi.MakeText(row, "OfferDescription", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, -28f), new Vector2(430f, 36f), 13, TextAnchor.UpperLeft,
-                LaptopOs.TonerSecondary, offer.Description, _font);
+            // Ruled by Allen 2026-07-31: an offer's description NEVER loses its rule text. These
+            // are the mechanics the player is spending comps on, and the earlier one-line fit kept
+            // each entry's opening clause while dropping the rule itself — on two entries it
+            // dropped the downside, which is worse than clipping, because it reads as complete.
+            // The copy is rendered whole and the row grows to hold it; the board shows however many
+            // offers fit and says how many it could not (see BuildRewards).
+            Text description = LaptopUi.MakeText(row, "OfferDescription", new Vector2(0f, 1f),
+                new Vector2(0f, 1f), new Vector2(14f, -29f), new Vector2(430f, 22f), 13,
+                TextAnchor.UpperLeft, LaptopOs.TonerSecondary, offer.Description, _font);
+            float descriptionHeight = Mathf.Max(18f, description.preferredHeight);
+            description.rectTransform.sizeDelta = new Vector2(430f, descriptionHeight);
+            float rowHeight = 29f + descriptionHeight + 9f;
+            row.sizeDelta = new Vector2(700f, rowHeight);
+            // S9 defect 1: price is wax regardless of affordability; see BuildRewardOffer above.
             LaptopUi.MakeText(row, "Affordability", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-124f, -5f), new Vector2(118f, 22f), 13, TextAnchor.UpperRight,
-                canBuy ? LaptopOs.MoneyGold : LaptopOs.MoneyBad,
-                $"{offer.Price.ToString("0.#", CultureInfo.InvariantCulture)} COMPS", _fontCond);
-            LaptopUi.MakeText(row, "BuyReason", new Vector2(1f, 0f), new Vector2(1f, 0f),
-                new Vector2(-124f, 3f), new Vector2(160f, 20f), 13, TextAnchor.LowerRight,
+                LaptopOs.MoneyGold, FormatComps(offer.Price), _fontCond);
+            LaptopUi.MakeText(row, "BuyReason", new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-124f, -29f), new Vector2(160f, 20f), 13, TextAnchor.UpperRight,
                 canBuy ? LaptopOs.TonerSecondary : LaptopOs.MoneyBad, reason, _font);
-            LaptopUi.MakeButton(row, "Buy", "BUY", new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                new Vector2(-14f, 0f), new Vector2(96f, 40f), 13,
-                canBuy ? LaptopOs.Accent : LaptopOs.SurfaceRaised,
-                canBuy ? LaptopOs.White : LaptopUi.Dim(LaptopOs.Muted),
+            // Top-anchored, not centred: the row's height now follows its description, and a
+            // vertically centred button would slide down the taller rows and sit on the copy.
+            LaptopUi.MakeButton(row, "Buy", "BUY", new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-14f, -4f), new Vector2(96f, 40f), 13,
+                // Law Two: BUY spends money, so an affordable one is wax with punched-out type,
+                // exactly like PLACE TICKET and LEAVE. Biro is reserved for marks the player made;
+                // a purchase control is not one. (LEAVE was corrected under S9 defect 2 and this
+                // was the same violation one control over, missed because no offer was affordable
+                // in the capture the defect list was written from.)
+                canBuy ? LaptopOs.MoneyGold : LaptopOs.SurfaceRaised,
+                canBuy ? LaptopOs.WaxInk : LaptopUi.Dim(LaptopOs.Muted),
                 canBuy ? () =>
                 {
                     string error = _host.director.TryBuyConsumable(index);
@@ -1022,6 +1118,7 @@ namespace SBR.Game
                 } : null, _font, canBuy);
             LaptopUi.MakeRule(row, "OfferRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
                 Vector2.zero, new Vector2(700f, 2f));
+            return rowHeight;
         }
 
         private void BuildRewardsMargin(RectTransform margin, Run run)
@@ -1112,10 +1209,13 @@ namespace SBR.Game
                     _shopError, _font);
 
             bool canLeave = run.Phase == Phase.Shop;
+            // S9 defect 2: this is the primary, phase-advancing action on the screen — not a mark HE
+            // chose — so it is wax like PLACE TICKET (Law Two), not biro. WaxInk is the same
+            // punched-out-type-on-wax convention PLACE TICKET uses, not the general document Ink.
             LaptopUi.MakeButton(margin, "LeaveRewards", "LEAVE — NEXT ROUND",
                 new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(14f, 12f),
-                new Vector2(296f, 48f), 15, canLeave ? LaptopOs.Accent : LaptopOs.SurfaceRaised,
-                canLeave ? LaptopOs.White : LaptopUi.Dim(LaptopOs.Muted),
+                new Vector2(296f, 48f), 15, canLeave ? LaptopOs.MoneyGold : LaptopOs.SurfaceRaised,
+                canLeave ? LaptopOs.WaxInk : LaptopUi.Dim(LaptopOs.Muted),
                 canLeave ? () =>
                 {
                     _host.director.ExitShop();
@@ -1178,12 +1278,20 @@ namespace SBR.Game
                 new Vector2(0f, 1f), new Vector2(0f, -140f), new Vector2(700f, 530f), LaptopOs.Ink);
             RectTransform margin = LaptopUi.MakePanel(_root, "LedgerMargin", new Vector2(1f, 1f),
                 new Vector2(1f, 1f), new Vector2(0f, -140f), new Vector2(324f, 530f), LaptopOs.Ink);
-            LaptopUi.MakeText(board, "LedgerColumnHead", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, -8f), new Vector2(672f, 24f), 13, TextAnchor.UpperLeft,
-                LaptopOs.Muted, "TICKET              STATE        STAKE             PAYOUT", _font);
+            // S9 defect 8: the column head used to sit ABOVE the scope caption, which put the caveat
+            // prose between the head and the rows it labels — head and rows are separated now
+            // (defect 7 below), so the caption reads first, then the head sits directly over its
+            // table.
             LaptopUi.MakeText(board, "LedgerScope", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(14f, -8f), new Vector2(672f, 24f), 13, TextAnchor.UpperLeft,
+                // S9 defect 7: "READ ONLY" also said once by the masthead's Scope line 64px above
+                // (BuildLedgerChrome) — same meaning, said twice. The masthead is the one, prominent,
+                // always-visible statement; this caption keeps only what it alone conveys — that the
+                // list below is scoped to settled current-run records.
+                LaptopOs.TonerSecondary, "SETTLED CURRENT-RUN RECORDS", _font);
+            LaptopUi.MakeText(board, "LedgerColumnHead", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -34f), new Vector2(672f, 24f), 13, TextAnchor.UpperLeft,
-                LaptopOs.TonerSecondary, "SETTLED CURRENT-RUN RECORDS  ·  READ ONLY", _font);
+                LaptopOs.Muted, "TICKET              STATE        STAKE             PAYOUT", _font);
             LaptopUi.MakeRule(board, "LedgerHeaderRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(0f, -66f), new Vector2(700f, 2f));
 
@@ -1368,9 +1476,11 @@ namespace SBR.Game
                 new Vector2(0f, 1f), new Vector2(14f, -322f), new Vector2(296f, 74f), 13,
                 TextAnchor.UpperLeft, LaptopOs.Muted,
                 "CASH-OUT AMOUNTS ARE NOT RETAINED.\nNO CROSS-RUN HISTORY IS INVENTED.", _font);
+            // S9 defect 7: third "READ ONLY" of four — see BuildLedgerChrome's Scope, the one place
+            // that now says it. This footer keeps only its own information, the round identity.
             LaptopUi.MakeText(summary, "RoundIdentity", new Vector2(0f, 0f), new Vector2(0f, 0f),
                 new Vector2(14f, 16f), new Vector2(296f, 24f), 13, TextAnchor.LowerLeft,
-                LaptopOs.Muted, $"ROUND {run.Round}  ·  READ ONLY", _font);
+                LaptopOs.Muted, $"ROUND {run.Round}", _font);
         }
 
         private void BuildLedgerTray()
