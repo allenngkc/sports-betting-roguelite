@@ -73,6 +73,12 @@
   remains stood down. **New trap (markets, 2026-07-31): `dotnet build/test/run`
   silently rewrites the tracked `unity/SBR/Assets/Plugins/SBR/SBR.Engine.dll` —
   every lead using dotnet must check for and revert that file before committing.**
+  **Second trap (markets, 2026-07-31): Unity can return exit 0 while still
+  mid-import — process + lockfile stayed live ~16 min after "exit". Exit code is
+  not a completion signal; leases close on process count + lockfile + log growth,
+  never on exit alone.** **Third lesson (markets, 2026-08-01): editor-free green
+  means little for Unity-side work — engine suites and dotnet cannot see asmdef
+  code or the DLL boundary; "uncompiled" is treated as genuinely unverified.**
 - **Need Allen:** nothing.
 
 ## Autonomous decisions (Allen veto window)
@@ -108,6 +114,38 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-08-01 cycle 34 · **Orchestrator + Orca restarted overnight** (watchers
+  re-armed on fresh handles; no work lost). Allen's morning directives executed:
+  **C14 hardened** (exceptional quality, 1:1 match, register updated), **all four
+  leads switched to Opus 5 max effort** (via /model + /effort per terminal;
+  Git-Bash slash-mangling discovered — slash commands go via PowerShell now),
+  **C14 audits dispatched to all four** (sub-agent sweeps, gap-list format).
+  SureThing's overdue verification slot granted (last night's grant was lost to a
+  send fault). Encode Sans landed on TV overnight (`ccc6f56`).
+- 2026-08-01 cycle 32 · **DD Batch 4 + addendum transcribed** (27 register lines;
+  T21–T27, S18–S26, R14–R15, C10–C14) and **dispatched to all three affected
+  leads** — TV corrected on T24 (fixed rows STAND) before it built the wrong
+  direction. Design-verified firsts: laptop (S6/S7/S8) and room (R9/R10, R15
+  slice-closed). T6 verified-refused pending T25.1. **Orchestrator-owned: C13**
+  (room scene renders superseded screen content — integration re-take after
+  T25.1/T27 land). Watch: SureThing session ~567k uncached — hygiene clear at
+  next boundary. Reversal: veto any ruling, I re-dispatch.
+- 2026-07-31 cycle 29 · markets phase 2 underway (`32b234c` type/state
+  conformance landed; more in flight). **Boundary watch:** markets now edits the
+  SureThing surface post-merge — before the DD batch reactivates the SureThing
+  lead (S10/grain), the two seats need an explicit file split on
+  `SportsbookApp.cs`/`LaptopOs.cs`; orchestrator arbitrates at that moment.
+- 2026-07-31 cycle 28 · **markets-2 phase 1 COMPLETE** — M-01, M-03A, M-02, doc
+  debt all landed (`82011e1`, `f05d20f`); scorer grading trap closed; four
+  sub-agent dispatches all lead-reviewed. Idle awaiting Allen's arm-B go/no-go
+  (economy re-baseline — gate flips come back as findings, not silent retunes).
+  Studio now gated on two Allen touchpoints only: the DD batch return, and arm B.
+- 2026-07-31 cycle 27 · Allen returned; away-mode ended. LFS root-macro fix
+  landed (Allen-approved; warnings gone repo-wide). dd-import rebuilt (night
+  brief, fresh snapshots, evidence split <20MB ×4) and sent to the DD by Allen.
+  markets-2 activated: M-01 (`cc40e8a`) and M-03 arm A (`bf8a03e`) landed;
+  M-02 + doc debt dispatched. Queued for Allen: arm B re-baseline tables +
+  scorer EV-harness finding, together.
 - 2026-07-31 cycle 25 · **Resting state reached.** TV 3F binding half committed
   (`949c041`); its contract itself records the gate (`e93dbed`: "resume at items
   10–12, not at a fragment"). All three leads idle-by-design: SureThing merged,
