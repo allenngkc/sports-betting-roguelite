@@ -6,6 +6,10 @@ Items routed to this seat. Clear a line when it's registered or resolved.
 dropped. Items below marked *awaiting re-mount* need Allen to re-attach the
 referenced documents via Import before the DD will rule on them.
 
+**T25.1 scope note (Allen, direct observation, 2026-07-31):** the glass-containment
+failure is wider than the actor layer — charts and plain text lines also pass in
+and out of the TV panel. TV lead's fix is now a full-layer containment audit.
+
 ## Pending (next DD batch)
 
 1. **T17 presentation confirm:** reserve-don't-spend means a scorer leg's backed
