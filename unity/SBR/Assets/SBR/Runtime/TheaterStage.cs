@@ -154,6 +154,30 @@ namespace SBR.Game
         private bool _boundActorActive;
         private bool _boundActorHome;
         private int _boundActorIx;
+
+        // ---- §7.7 backed-player locator: the BINDING half ----
+        //
+        // PRD §7.7's hard constraint is not the decoration, it is continuity: "if the backed player
+        // is marked throughout the sweat, the marked actor must be the actor that takes the visible
+        // final touch at a scoring payoff." That is the constraint TVS-H03 failed once already, when
+        // identity was cosmetically correct and causally unconnected — so the index is resolved by
+        // the SAME expression RoutePass uses on the bound goal, not by a parallel one that merely
+        // happens to agree today. `_homeDots`/`_awayDots` are built once at a fixed
+        // PitchLayout.OutfieldPerTeam, so the mapping is stable for the whole sweat.
+        //
+        // Deliberately NOT reset by StartScript/StartScene: it survives scene changes, because
+        // "continuous, not reveal-only" is the whole requirement. It is cleared per LEG.
+        //
+        // The TREATMENT is absent on purpose — numeral vs ring vs halo is reserved to the design
+        // track by §7.7 ("not decided here"), and the two candidates are not equivalent here:
+        // DESIGN.md §7's "numbered cell" is justified by "the matrix gives legible small numerals
+        // for free", but §6 records that matrix as RETIRED, and this file has no Text or Font at all
+        // (MakeImage/MakeDot/MakeRect only), so a numeral means a new font dependency on a stale
+        // rationale. A ring is nearly free — RingSprite() already exists for the net ripple. Routed
+        // rather than chosen.
+        private bool _backedActorActive;
+        private bool _backedActorHome;
+        private int _backedActorIx;
         // Phase 2D (PRD §7.6): sticky "last real actor the routing touched" — refreshed at every
         // EnterStep transition, but only OVERWRITTEN when the OUTGOING step itself resolved a
         // real dot (RoutePass/RouteBackLine); a step whose own route never resolves an actor
@@ -191,6 +215,38 @@ namespace SBR.Game
         /// carried one. Gameplay never reads this.</summary>
         public (bool IsHome, int RosterIndex)? BoundActorRouted
             => _boundActorActive ? ((bool, int)?)(_boundActorHome, _boundActorIx) : null;
+
+        /// <summary>§7.7: the actor currently marked as the backed player, or null on any leg that
+        /// is not an anytime-scorer market. Null is the correct and only answer elsewhere — a
+        /// locator on a moneyline leg would point at a player the bet does not depend on.</summary>
+        public (bool IsHome, int DotIndex)? BackedActorMarked
+            => _backedActorActive ? ((bool, int)?)(_backedActorHome, _backedActorIx) : null;
+
+        /// <summary>The one place a roster index becomes a dot index. RoutePass resolves the bound
+        /// scorer's actor with this same expression, which is what makes §7.7's continuity contract
+        /// — marked actor IS final-touch actor — hold by construction rather than by coincidence.</summary>
+        private static int DotIndexFor(int rosterIndex, int dotCount)
+            => dotCount > 0 ? Mathf.Abs(rosterIndex) % dotCount : -1;
+
+        /// <summary>§7.7: mark the backed player for the whole sweat. Idempotent, and independent of
+        /// grade, scene, and outcome — the locator reveals POSITION, never RESULT (§4.2), so nothing
+        /// about when or whether it appears may correlate with the payoff.</summary>
+        public void SetBackedPlayer(bool isHome, int rosterIndex)
+        {
+            Image[] dots = isHome ? _homeDots : _awayDots;
+            int ix = DotIndexFor(rosterIndex, dots != null ? dots.Length : 0);
+            if (ix < 0) { ClearBackedPlayer(); return; }
+            _backedActorActive = true;
+            _backedActorHome = isHome;
+            _backedActorIx = ix;
+        }
+
+        /// <summary>Clears the locator. Called per leg, never per scene.</summary>
+        public void ClearBackedPlayer()
+        {
+            _backedActorActive = false;
+            _backedActorIx = -1;
+        }
         /// <summary>Phase 2D test/debug surface: the most recent REAL actor (RoutePass/
         /// RouteBackLine only) the ball routing resolved to, sticky across any step whose own
         /// routing never resolves one — see <see cref="_priorRouteDotActive"/>'s doc for exactly
@@ -584,8 +640,12 @@ namespace SBR.Game
                     if (s.Goal.HasBoundScorer)
                     {
                         Image[] boundDots = s.Goal.ScorerIsHome ? _homeDots : _awayDots;
-                        int boundIx = boundDots != null && boundDots.Length > 0
-                            ? Mathf.Abs(s.Goal.ScorerRosterIndex) % boundDots.Length : -1;
+                        // DotIndexFor is shared with SetBackedPlayer (§7.7). Two expressions that
+                        // merely agreed today would let a future edit break the continuity contract
+                        // silently — the marked actor drifting off the final-touch actor is exactly
+                        // TVS-H03's "cosmetically correct, causally unconnected" failure returning.
+                        int boundIx = DotIndexFor(s.Goal.ScorerRosterIndex,
+                            boundDots != null ? boundDots.Length : 0);
                         _routeDotIx = boundIx;
                         _routeDotHome = s.Goal.ScorerIsHome;
                         _boundActorActive = boundIx >= 0;

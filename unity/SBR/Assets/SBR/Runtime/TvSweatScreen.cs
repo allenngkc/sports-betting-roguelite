@@ -1545,6 +1545,28 @@ namespace SBR.Game
             _clockTicking = false;
             _finalSequenceActive = false;
             _stoppageGoalCount = 0;
+            // §7.7: the backed player is marked for the WHOLE leg, set here at kickoff rather than at
+            // the reveal — "continuous, not reveal-only". The identity comes from the leg's own
+            // Selection.PlayerIndex, exactly as BindAnytimeScorer derives it, so the locator and the
+            // payoff routing cannot disagree. Cleared on every non-scorer leg: a locator on a
+            // moneyline leg would point at a player the bet does not depend on.
+            //
+            // This is the BINDING half only. The visible treatment (numeral vs ring vs halo) is
+            // reserved to the design track by §7.7 and is not decided here — see TheaterStage's
+            // _backedActor fields for why the two candidates are not interchangeable in this engine.
+            if (leg.Selection.Kind == MarketKind.AnytimeScorer)
+            {
+                bool backedIsHome = leg.Matchup.PlayerSide(leg.Selection.PlayerIndex) == Side.Home;
+                int rosterIndex = backedIsHome
+                    ? leg.Selection.PlayerIndex - leg.Matchup.Away.Players.Count
+                    : leg.Selection.PlayerIndex;
+                _stage.SetBackedPlayer(backedIsHome, rosterIndex);
+            }
+            else
+            {
+                _stage.ClearBackedPlayer();
+            }
+
             (uint home, uint away) = TheaterPalette.TeamColors(leg.Matchup.Home.Name, leg.Matchup.Away.Name);
             _stage.Show(true);
             _stage.BeginLeg(TheaterStage.FromRgb(home), TheaterStage.FromRgb(away),

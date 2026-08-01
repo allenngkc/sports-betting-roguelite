@@ -209,6 +209,81 @@ namespace SBR.Tests.PlayMode
             Assert.IsTrue(done, "the bound scene never completed");
         }
 
+        /// <summary>§7.7's hard constraint, and the only part of the backed-player locator that can
+        /// be proven headless: "if the backed player is marked throughout the sweat, the marked
+        /// actor must be the actor that takes the visible final touch at a scoring payoff."
+        ///
+        /// <para>This is the contract TVS-H03 failed once already — identity that was cosmetically
+        /// correct and causally unconnected. A test that recomputed the index the same way the
+        /// implementation does would reproduce that error one level up, so this compares the two
+        /// PUBLIC observations against each other: what the stage says it marked, and what the stage
+        /// actually routed the ball to.</para></summary>
+        [UnityTest]
+        public IEnumerator The_marked_backed_actor_is_the_actor_that_takes_the_final_touch()
+        {
+            TheaterStage stage = BuildStage();
+            stage.timeScale = 0.02f;
+            Assert.IsNull(stage.BackedActorMarked, "nothing is marked on a stage with no scorer leg");
+
+            // Mark the backed player exactly as a sweat would at leg start, then play the payoff
+            // bound to that same roster identity.
+            stage.SetBackedPlayer(isHome: false, rosterIndex: 5);
+            Assert.IsTrue(stage.BackedActorMarked.HasValue, "the locator did not take");
+            (bool markedHome, int markedIx) = stage.BackedActorMarked.Value;
+
+            ScoreLedger.StagedGoal bound =
+                new ScoreLedger.StagedGoal(true, true).WithBoundScorer(isHome: false, rosterIndex: 5);
+            var plan = new ScoreLedger.FinalPlan(LegGrade.Won, new[] { bound });
+
+            bool done = false;
+            stage.PlayFinalScene(Spec(SceneTemplate.LegFinalWon), plan, g => { }, () => done = true);
+
+            float w = 0f;
+            while (stage.BoundActorRouted == null && w < 8f) { w += Time.deltaTime; yield return null; }
+            Assert.IsTrue(stage.BoundActorRouted.HasValue, "the payoff never routed to a bound actor");
+
+            Assert.AreEqual((markedHome, markedIx), stage.BoundActorRouted.Value,
+                "THE §7.7 CONTRACT: the actor marked as the backed player all sweat is not the actor " +
+                "the ball was routed to at the payoff. A viewer tracking the marked dot would watch " +
+                "the wrong player take the goal — which is TVS-H03's 'cosmetically correct, causally " +
+                "unconnected' identity returning, one level up.");
+
+            w = 0f;
+            while (!done && w < 8f) { w += Time.deltaTime; yield return null; }
+            Assert.IsTrue(done, "the bound scene never completed");
+
+            // "Continuous, not reveal-only": the mark belongs to the LEG, so a scene ending must not
+            // clear it. StartScript/StartScene reset the reveal-time bound actor; they must not
+            // reset this one.
+            Assert.IsTrue(stage.BackedActorMarked.HasValue,
+                "the locator was cleared by a scene ending — §7.7 requires it to persist across the " +
+                "whole sweat, not appear only at the reveal");
+            Assert.AreEqual((markedHome, markedIx), stage.BackedActorMarked.Value,
+                "the marked actor drifted across a scene");
+        }
+
+        /// <summary>§4.2 no-outcome-leak: the locator reveals POSITION, never RESULT. Marking must
+        /// therefore be identical for a leg that will win and one that will lose — if the mark
+        /// varied with grade, a viewer could read the payoff off the stage before the causal reveal,
+        /// which §7.7 calls a blocker.</summary>
+        [UnityTest]
+        public IEnumerator The_locator_is_identical_whatever_the_leg_will_grade()
+        {
+            TheaterStage won = BuildStage();
+            won.SetBackedPlayer(isHome: true, rosterIndex: 3);
+            TheaterStage lost = BuildStage();
+            lost.SetBackedPlayer(isHome: true, rosterIndex: 3);
+
+            Assert.AreEqual(won.BackedActorMarked, lost.BackedActorMarked,
+                "the same backed player marked differently on two stages — the locator must not " +
+                "carry any information about how the leg will resolve (§4.2, §7.7)");
+
+            won.ClearBackedPlayer();
+            Assert.IsNull(won.BackedActorMarked, "clearing the locator must leave nothing behind");
+            Assert.IsTrue(lost.BackedActorMarked.HasValue, "clearing one stage cleared another");
+            yield return null;
+        }
+
         [UnityTest]
         public IEnumerator Bound_goal_on_the_home_side_routes_home()
         {
