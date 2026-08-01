@@ -30,6 +30,11 @@ namespace SBR.Game
         private int _detailMatchup = -1;
         private DetailTab _detailTab = DetailTab.Goals;
 
+        /// <summary>Fixed gap between an offer's label cell and its price cell (MakeMarketOffer).
+        /// Shared as a class constant so BuildPlayerLines' single-column label width (S24 ruling)
+        /// and MakeMarketOffer's own price placement can never silently drift apart.</summary>
+        private const float OfferLabelGap = 8f;
+
         public SportsbookApp(RectTransform root, Font font, Font fontCond, LaptopScreen host, Action invalidate,
             Action<Tab> selectTab, Action home, Action ledger)
         {
@@ -334,33 +339,95 @@ namespace SBR.Game
                 1, 354f, -48f, frozen);
         }
 
+        /// <summary>Capacity arithmetic for a fixed-body offer list (S25 ruling, "S17 binds the
+        /// PLAYERS tab"): how many <see cref="MakeMarketOffer"/> rows (32px cells) fit a container
+        /// of <paramref name="containerHeight"/>, given the first row's y-offset from the
+        /// container's top edge, the vertical pitch between successive row-groups, and how many
+        /// offers share one row-group (columns). Pure and internal so a test can pin it as
+        /// arithmetic — independent of any <c>RunConfig</c> dial — rather than only observing it
+        /// at one shipped roster size. Never negative.</summary>
+        internal static int VisibleOfferCapacity(float containerHeight, float firstRowOffset,
+            float rowPitch, int columns)
+        {
+            const float offerCellHeight = 32f;
+            if (columns <= 0 || rowPitch <= 0f) return 0;
+            float available = containerHeight - firstRowOffset - offerCellHeight;
+            if (available < 0f) return 0;
+            int rowGroups = (int)Math.Floor(available / rowPitch) + 1;
+            return rowGroups * columns;
+        }
+
         private void BuildPlayerLines(RectTransform parent, BetslipModel slip, Matchup matchup, bool frozen)
         {
             LaptopUi.MakeText(parent, "PlayersTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -8f), new Vector2(670f, 32f), 16, TextAnchor.UpperLeft, LaptopOs.White,
                 "ANYTIME GOALSCORER", _font);
+
+            // S24 ruling: the scorer board is a one-sided YES-only market with no "other side" to
+            // pair against, so it renders single column — never a paired row with a dead second
+            // cell. MakeMarketOffer's shared label cell (156px, sized for the two-column ladder
+            // offers) is too narrow for this row's "{PLAYER} ANYTIME — {ROLE}" text now that the
+            // role is spelled out as a full word rather than a bracketed code (S22); rather than
+            // forking a second offer renderer, the width is passed through so this destination
+            // alone uses the container's full width, with the price cell pinned to the same 14px
+            // right margin the container uses on the left (MarketBody is 700 wide; not itself
+            // changed).
+            const float x = 14f;
+            const float firstRowOffset = 48f;
+            const float rowPitch = 42f;
+            const float priceCellWidth = 160f; // MakeMarketOffer's own price cell, mirrored here.
+            const float rightMargin = 14f;
+            float labelWidth = parent.rect.width - rightMargin - priceCellWidth - OfferLabelGap - x;
+
+            // S25 ruling: fixed body, no scroll. Render only what the container actually fits and
+            // print the remainder as a literal count rather than truncating silently or growing
+            // the container.
+            int capacity = VisibleOfferCapacity(parent.rect.height, firstRowOffset, rowPitch, 1);
+
+            int total = 0;
+            foreach (MarketOffer offer in matchup.Markets)
+                if (offer.Selection.Kind == MarketKind.AnytimeScorer) total++;
+            int shown = Math.Min(capacity, total);
+
             int row = 0;
             foreach (MarketOffer offer in matchup.Markets)
             {
                 if (offer.Selection.Kind != MarketKind.AnytimeScorer) continue;
-                Player player = matchup.PlayerAt(offer.Selection.PlayerIndex);
-                float x = row % 2 == 0 ? 14f : 354f;
-                float rowY = -48f - (row / 2) * 42f;
+                if (row >= shown) break;
+                float rowY = -firstRowOffset - row * rowPitch;
+                // S22 ruling: the bracketed [FW]/[MF]/[DF] tag is struck. The label uses the DS
+                // MarketOffer.line form ("{PLAYER NAME} ANYTIME") plus the role as a full word —
+                // both engine-emitted (MatchModel.Fields), not re-derived here.
+                MatchModel.MarketFields fields = MatchModel.Fields(matchup, offer.Selection);
+                string playerLabel = LaptopUi.FitText(_font, $"{fields.Line} — {fields.Role}", 13, labelWidth);
                 MakeMarketOffer(parent, slip, matchup, offer.Selection,
-                    $"{player.Name.ToUpperInvariant()} [{player.Role}]", row, x, rowY, frozen);
+                    playerLabel, row, x, rowY, frozen, labelWidth);
                 row++;
+            }
+
+            int hidden = total - shown;
+            if (hidden > 0)
+            {
+                // The fact floor: 13px, LaptopOs.Muted — same register as the mirror margin's own
+                // read-only facts ("READ ONLY · NO SCORE · NO PROBABILITY"). Never printed at all
+                // when nothing is hidden (never "0 NOT SHOWN").
+                float notShownY = -firstRowOffset - shown * rowPitch;
+                LaptopUi.MakeText(parent, "PlayersNotShown", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(x, notShownY), new Vector2(670f, 22f), 13, TextAnchor.UpperLeft,
+                    LaptopOs.Muted, $"{hidden} NOT SHOWN", _font);
             }
         }
 
         private void MakeMarketOffer(RectTransform parent, BetslipModel slip, Matchup matchup,
-            MarketSelection selection, string label, int offerIndex, float x, float y, bool frozen)
+            MarketSelection selection, string label, int offerIndex, float x, float y, bool frozen,
+            float labelWidth = 156f)
         {
             MarketSelection? existing = slip.SelectionOn(matchup.Index);
             bool selected = existing.HasValue && existing.Value == selection;
             bool replacement = existing.HasValue && !selected;
             string key = selection.Kind + selection.Choice.ToString()
                 + selection.Line.ToString(CultureInfo.InvariantCulture) + selection.PlayerIndex;
-            float priceX = x + 164f;
+            float priceX = x + labelWidth + OfferLabelGap;
             RectTransform offer = LaptopUi.MakePanel(parent, "MarketOffer" + offerIndex,
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(priceX, y),
                 new Vector2(160f, 32f), new Color(0f, 0f, 0f, 0f));
@@ -397,7 +464,8 @@ namespace SBR.Game
             // "replacement" still drives the "⇄" swap-hint affordance and its underline, just no
             // longer in biro.
             LaptopUi.MakeText(offer, "MarketLabel" + key, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(-164f, 0f), new Vector2(156f, 32f), 13, TextAnchor.MiddleLeft,
+                new Vector2(-(labelWidth + OfferLabelGap), 0f), new Vector2(labelWidth, 32f), 13,
+                TextAnchor.MiddleLeft,
                 selected ? LaptopOs.Accent : LaptopOs.TonerSecondary, label, _font);
             string price = OddsFormat.American(matchup.Odds(selection));
             LaptopUi.MakeButton(offer, "Market" + key,
@@ -654,35 +722,44 @@ namespace SBR.Game
             return formatted + " " + Pluralize(formatted == "1" ? 1 : 0, "COMP");
         }
 
-        /// <summary>A short-form of <see cref="MatchModel.DisplayLabel"/> for the width-starved
-        /// working-margin and staged-receipt columns: team names are shortened the same way the
-        /// board already does (<see cref="LaptopUi.TeamShort"/>), and a moneyline pick never repeats
-        /// the picked team's name a second time the way the engine's own DisplayLabel does
-        /// ("Duluth Plumbers ML — Duluth Plumbers v Tulsa Loopholes"). Internal so the PlayMode
-        /// fixture can assert against the exact same production formula rather than a hand-kept
-        /// duplicate that could quietly drift out of sync.</summary>
+        /// <summary>Composes the width-starved working-margin and staged-receipt leg text from
+        /// <see cref="MatchModel.Fields"/> (S22 ruling) instead of its own market-vocabulary switch:
+        /// this maps onto the DS <c>MarginLeg</c>/<c>ReceiptLeg</c> shape (<c>{ team, market, price }</c>
+        /// — <c>components/margin/MarginLeg.d.ts</c>). The DS's own composed example keeps the ladder
+        /// value — <c>LedgerEntry.d.ts</c> prints "Bricklayers ML −260 · Over 2.5 −110" — so the
+        /// over/under and its number must survive composition; see the head rule below.
+        /// Team names are shortened the same way the board already does
+        /// (<see cref="LaptopUi.TeamShort"/>); a moneyline pick never repeats the picked team's name
+        /// a second time (the way the engine's own <see cref="MatchModel.DisplayLabel"/> does) —
+        /// generalized here by checking whether Fields.Subject IS one of the two fixture teams,
+        /// rather than switching on MarketKind. Internal so the PlayMode fixture can assert against
+        /// the exact same production formula rather than a hand-kept duplicate that could quietly
+        /// drift out of sync.</summary>
         internal static string CompactLegLabel(Matchup matchup, MarketSelection selection)
         {
+            MatchModel.MarketFields fields = MatchModel.Fields(matchup, selection);
             string away = LaptopUi.TeamShort(matchup.Away);
             string home = LaptopUi.TeamShort(matchup.Home);
-            switch (selection.Kind)
+            bool subjectIsHome = fields.Subject == matchup.Home.Name;
+            bool subjectIsAway = !subjectIsHome && fields.Subject == matchup.Away.Name;
+            string subject = subjectIsHome ? home : subjectIsAway ? away : fields.Subject;
+            string fixtureTail = subjectIsHome ? $"v {away}" : subjectIsAway ? $"v {home}" : $"{away} v {home}";
+
+            // The head must UNIQUELY identify the selection: two selections on one matchup may
+            // never compose to the same row. Which field carries that discriminator genuinely
+            // differs by market, so the surface picks it rather than the engine pre-composing —
+            // Line carries it for the ladders ("OVER 2.5 GOALS") and the scorer ("VALE ANYTIME"),
+            // Market carries it for BTTS ("BTTS — YES" / "— NO"), and moneyline needs the picked
+            // team. Composing subject+Market uniformly reads fine and is wrong: it collapses
+            // OVER 2.5 and UNDER 3.5 into one identical row, so the bettor cannot tell which side
+            // of the total they backed. Pinned by MarketFieldsTests' uniqueness fact.
+            string head = selection.Kind switch
             {
-                case MarketKind.Moneyline:
-                    bool pickedHome = selection.Choice == MarketChoice.Home;
-                    return $"{(pickedHome ? home : away)} ML — v {(pickedHome ? away : home)}";
-                case MarketKind.TotalGoals:
-                    return $"{selection.Choice.ToString().ToUpperInvariant()} {selection.Line:0.0} GOALS — {away} v {home}";
-                case MarketKind.BothTeamsToScore:
-                    return $"BTTS {selection.Choice.ToString().ToUpperInvariant()} — {away} v {home}";
-                case MarketKind.TotalCorners:
-                    return $"{selection.Choice.ToString().ToUpperInvariant()} {selection.Line:0.0} CORNERS — {away} v {home}";
-                case MarketKind.TotalCards:
-                    return $"{selection.Choice.ToString().ToUpperInvariant()} {selection.Line:0.0} CARDS — {away} v {home}";
-                case MarketKind.AnytimeScorer:
-                    return $"{matchup.PlayerAt(selection.PlayerIndex).Name.ToUpperInvariant()} ANYTIME — {away} v {home}";
-                default:
-                    return selection.Kind.ToString();
-            }
+                MarketKind.Moneyline => $"{subject} {fields.Market}",
+                MarketKind.BothTeamsToScore => fields.Market,
+                _ => fields.Line,
+            };
+            return $"{head} — {fixtureTail}";
         }
 
         /// <summary>Sizes and places an ink ring so it overshoots the text it frames by a fixed
@@ -780,14 +857,29 @@ namespace SBR.Game
             BuildMirrorMargin(margin, view);
         }
 
+        /// <summary>The ticket-level state word (S23 ruling: RIDING is ticket-level only). Never
+        /// returns "LIVE" — that word belongs to <see cref="LegStateWord"/> alone. Extracted so
+        /// every call site prints the same word the same way, and so the contract is testable.</summary>
+        internal static string TicketStateWord(RevealedTicketState state)
+            => state == RevealedTicketState.Won ? "GREEN"
+                : state == RevealedTicketState.Lost ? "DEAD"
+                : state == RevealedTicketState.CashedOut ? "CASHED OUT" : "RIDING";
+
+        /// <summary>The leg-level state word (S23 ruling: LIVE is leg-level only). Never returns
+        /// "RIDING" — that word belongs to <see cref="TicketStateWord"/> alone.</summary>
+        internal static string LegStateWord(RevealedLegState state)
+            => state == RevealedLegState.Won ? "GREEN"
+                : state == RevealedLegState.Lost ? "DEAD"
+                : state == RevealedLegState.Voided ? "VOID"
+                : state == RevealedLegState.Live ? "LIVE" : "PENDING";
+
         private void BuildMirrorTicket(RectTransform parent, RevealedTicket ticket, Vector2 position,
             float width)
         {
             RectTransform card = LaptopUi.MakePanel(parent, "MirrorTicket" + ticket.Index,
                 new Vector2(0f, 1f), new Vector2(0f, 1f), position, new Vector2(width, 448f),
                 LaptopOs.Ink);
-            string state = ticket.State == RevealedTicketState.Won ? "GREEN" : ticket.State == RevealedTicketState.Lost
-                ? "DEAD" : ticket.State == RevealedTicketState.CashedOut ? "CASHED OUT" : "RIDING";
+            string state = TicketStateWord(ticket.State);
             Color stateColor = ticket.State == RevealedTicketState.Won ? LaptopOs.MoneyGold
                 : ticket.State == RevealedTicketState.Lost ? LaptopOs.Muted
                 : ticket.State == RevealedTicketState.CashedOut ? LaptopOs.MoneyGold
@@ -819,10 +911,7 @@ namespace SBR.Game
             RectTransform row = LaptopUi.MakePanel(parent, "MirrorLeg" + leg.Index,
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, y),
                 new Vector2(width, 54f), ground);
-            string state = leg.State == RevealedLegState.Won ? "GREEN"
-                : leg.State == RevealedLegState.Lost ? "DEAD"
-                : leg.State == RevealedLegState.Voided ? "VOID"
-                : leg.State == RevealedLegState.Live ? "LIVE" : "PENDING";
+            string state = LegStateWord(leg.State);
             Color stateColor = leg.State == RevealedLegState.Won ? LaptopOs.MoneyGold
                 : leg.State == RevealedLegState.Lost ? LaptopOs.Muted
                 : leg.State == RevealedLegState.Live ? LaptopOs.White : LaptopOs.TonerSecondary;
@@ -894,9 +983,7 @@ namespace SBR.Game
             for (int i = 0; i < view.Tickets.Count; i++)
             {
                 RevealedTicket ticket = view.Tickets[i];
-                string state = ticket.State == RevealedTicketState.Won ? "GREEN"
-                    : ticket.State == RevealedTicketState.Lost ? "DEAD"
-                    : ticket.State == RevealedTicketState.CashedOut ? "CASHED OUT" : "RIDING";
+                string state = TicketStateWord(ticket.State);
                 LaptopUi.MakeText(margin, "TicketSummary" + ticket.Index, new Vector2(0f, 1f),
                     new Vector2(0f, 1f), new Vector2(14f, -90f - i * 58f),
                     new Vector2(296f, 50f), 13, TextAnchor.UpperLeft,
@@ -1434,11 +1521,13 @@ namespace SBR.Game
                     : leg.RescuedWon || leg.State == LegState.Won ? "WON"
                     : leg.State == LegState.Lost ? "LOST" : "PENDING";
                 // Same team-name/price-dominated combined string as the working margin's Leg/
-                // TicketLeg rows above — condensed as one run.
+                // TicketLeg rows above — condensed as one run. Composed via CompactLegLabel (S22
+                // ruling) rather than leg.DisplayLabel, so the ledger and the working margin always
+                // agree on how a leg reads.
                 LaptopUi.MakeText(legRow, "LegIdentity", new Vector2(0f, .5f), new Vector2(0f, .5f),
                     new Vector2(28f, 0f), new Vector2(470f, 22f), 13, TextAnchor.MiddleLeft,
                     LaptopOs.TonerSecondary,
-                    $"{legIndex + 1}. {leg.DisplayLabel}  {OddsFormat.American(leg.OfferedOdds)}", _fontCond);
+                    $"{legIndex + 1}. {CompactLegLabel(leg.Matchup, leg.Selection)}  {OddsFormat.American(leg.OfferedOdds)}", _fontCond);
                 LaptopUi.MakeText(legRow, "LegState", new Vector2(1f, .5f), new Vector2(1f, .5f),
                     new Vector2(-14f, 0f), new Vector2(140f, 22f), 13, TextAnchor.MiddleRight,
                     LaptopOs.Muted, legState, _fontCond);

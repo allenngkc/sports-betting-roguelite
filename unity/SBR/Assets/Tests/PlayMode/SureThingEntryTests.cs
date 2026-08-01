@@ -226,6 +226,158 @@ namespace SBR.Tests.PlayMode
             }
         }
 
+        [UnityTest, Order(5)]
+        public IEnumerator Players_destination_renders_single_column_while_ladder_destinations_stay_two_column()
+        {
+            // S24 ruling: the scorer board is single column (never a paired row with a dead
+            // second cell) — distinguished here from a ladder destination, which legitimately
+            // stays two-column (paired OVER/UNDER offers).
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            yield return OpenEntry(laptop);
+
+            Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTabPLAYERS"));
+            yield return WaitForRebuild();
+            List<float> playersX = OfferPriceCellX(Required(App(laptop), "MarketBody"));
+            Assert.Greater(playersX.Count, 1,
+                "PLAYERS must render more than one offer for a single-column claim to mean anything");
+            for (int i = 1; i < playersX.Count; i++)
+                Assert.AreEqual(playersX[0], playersX[i], 0.01f,
+                    "S24: every PLAYERS offer row must share the same column (price-cell x position)");
+
+            Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTabGOALS"));
+            yield return WaitForRebuild();
+            List<float> goalsX = OfferPriceCellX(Required(App(laptop), "MarketBody"));
+            var distinctGoalsX = new HashSet<float>();
+            foreach (float x in goalsX) distinctGoalsX.Add(Mathf.Round(x * 10f) / 10f);
+            Assert.AreEqual(2, distinctGoalsX.Count,
+                "GOALS legitimately remains two-column (paired OVER/UNDER offers), unlike PLAYERS");
+        }
+
+        [Test, Order(6)]
+        public void VisibleOfferCapacity_holds_as_pure_arithmetic_independent_of_any_config_dial()
+        {
+            // S25 ruling ("S17 binds the PLAYERS tab"): container correctness never depends on a
+            // config dial. Shipped geometry is MarketBody 700x412, first row at -48, 42px pitch.
+            // At PlayersPerTeam's shipped value of 7 the scorer board is 14 offers; single-column
+            // capacity below is 8, so today 6 offers are hidden behind "N NOT SHOWN".
+            Assert.AreEqual(8, SportsbookApp.VisibleOfferCapacity(412f, 48f, 42f, 1),
+                "shipped single-column PLAYERS capacity");
+            Assert.AreEqual(16, SportsbookApp.VisibleOfferCapacity(412f, 48f, 42f, 2),
+                "capacity scales with column count for the same row geometry");
+            Assert.AreEqual(24, SportsbookApp.VisibleOfferCapacity(412f, 48f, 42f, 3),
+                "capacity scales with column count for the same row geometry");
+            Assert.AreEqual(0, SportsbookApp.VisibleOfferCapacity(0f, 48f, 42f, 1),
+                "container shorter than the first row fits nothing");
+            Assert.AreEqual(1, SportsbookApp.VisibleOfferCapacity(100f, 48f, 42f, 1),
+                "a container that fits only the first row");
+            Assert.AreEqual(0, SportsbookApp.VisibleOfferCapacity(412f, 5000f, 42f, 1),
+                "a first-row offset past the container fits nothing");
+            Assert.AreEqual(0, SportsbookApp.VisibleOfferCapacity(412f, 48f, 42f, 0),
+                "zero columns fits nothing");
+            Assert.AreEqual(0, SportsbookApp.VisibleOfferCapacity(412f, 48f, 42f, -3),
+                "negative columns must clamp to zero, not negative");
+            Assert.AreEqual(0, SportsbookApp.VisibleOfferCapacity(412f, 48f, -1f, 1),
+                "negative pitch must clamp to zero, not throw or go negative");
+            Assert.AreEqual(0, SportsbookApp.VisibleOfferCapacity(412f, 48f, 0f, 1),
+                "zero pitch must clamp to zero rather than divide by zero");
+            Assert.AreEqual(0, SportsbookApp.VisibleOfferCapacity(-100f, 48f, 42f, 1),
+                "negative container height fits nothing");
+            Assert.AreEqual(11, SportsbookApp.VisibleOfferCapacity(412f, -48f, 42f, 1),
+                "an unusual but valid negative offset still computes correctly, not just non-negatively");
+
+            // Broad sweep: whatever the inputs, capacity must never be negative.
+            for (float height = -50f; height <= 1000f; height += 37f)
+                for (float pitch = -10f; pitch <= 100f; pitch += 13f)
+                    for (int columns = -2; columns <= 5; columns++)
+                        Assert.GreaterOrEqual(SportsbookApp.VisibleOfferCapacity(height, 48f, pitch, columns), 0,
+                            $"capacity must never be negative (height={height}, pitch={pitch}, columns={columns})");
+        }
+
+        [Test, Order(7)]
+        public void TicketStateWord_and_LegStateWord_never_cross_contaminate_their_vocabularies()
+        {
+            // S23 ruling: RIDING is ticket-level only, LIVE is leg-level only — contractual.
+            // Driven over every enum member via Enum.GetValues so a future enum addition cannot
+            // slip through unchecked.
+            foreach (RevealedTicketState state in Enum.GetValues(typeof(RevealedTicketState)))
+                Assert.AreNotEqual("LIVE", SportsbookApp.TicketStateWord(state),
+                    $"TicketStateWord must never say LIVE (checked for {state})");
+
+            foreach (RevealedLegState state in Enum.GetValues(typeof(RevealedLegState)))
+                Assert.AreNotEqual("RIDING", SportsbookApp.LegStateWord(state),
+                    $"LegStateWord must never say RIDING (checked for {state})");
+        }
+
+        [UnityTest, Order(8)]
+        public IEnumerator CompactLegLabel_is_unique_for_every_distinct_selection_on_one_matchup()
+        {
+            // Composer uniqueness guard: a composer that reaches for the wrong field collapses
+            // e.g. OVER 2.5 and UNDER 3.5 into one identical row while settlement still grades
+            // them differently. Builds the full selection set for one matchup — both moneylines,
+            // both BTTS sides, over+under for every goal/corner/card line in run.Config, and every
+            // scorer index — and asserts CompactLegLabel never collides.
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            Run run = laptop.director.Run;
+            Matchup matchup = run.CurrentSlate.Matchups[0];
+
+            var selections = new List<MarketSelection>
+            {
+                MarketSelection.Moneyline(Side.Home),
+                MarketSelection.Moneyline(Side.Away),
+                MarketSelection.BothTeamsToScore(true),
+                MarketSelection.BothTeamsToScore(false),
+            };
+            foreach (double line in run.Config.GoalLines)
+            {
+                selections.Add(MarketSelection.TotalGoals(line, true));
+                selections.Add(MarketSelection.TotalGoals(line, false));
+            }
+            foreach (double line in run.Config.CornerLines)
+            {
+                selections.Add(MarketSelection.TotalCorners(line, true));
+                selections.Add(MarketSelection.TotalCorners(line, false));
+            }
+            foreach (double line in run.Config.CardLines)
+            {
+                selections.Add(MarketSelection.TotalCards(line, true));
+                selections.Add(MarketSelection.TotalCards(line, false));
+            }
+            int scorerCount = matchup.Away.Players.Count + matchup.Home.Players.Count;
+            for (int i = 0; i < scorerCount; i++)
+                selections.Add(MarketSelection.AnytimeScorer(i));
+
+            Assert.Greater(selections.Count, 10, "the selection set must be non-trivial for this guard to mean anything");
+
+            var seen = new HashSet<string>();
+            foreach (MarketSelection selection in selections)
+            {
+                string label = SportsbookApp.CompactLegLabel(matchup, selection);
+                Assert.IsTrue(seen.Add(label),
+                    "CompactLegLabel collision: '" + label + "' for selection Kind=" + selection.Kind
+                        + " Choice=" + selection.Choice + " Line=" + selection.Line
+                        + " PlayerIndex=" + selection.PlayerIndex);
+            }
+        }
+
+        /// <summary>Every "MarketOffer"+index panel's price-cell x position within
+        /// <paramref name="body"/>, used to distinguish single-column (S24) from two-column
+        /// destinations without depending on any particular label-width choice.</summary>
+        private static List<float> OfferPriceCellX(Transform body)
+        {
+            var xs = new List<float>();
+            for (int i = 0; i < body.childCount; i++)
+            {
+                Transform child = body.GetChild(i);
+                if (!child.name.StartsWith("MarketOffer", StringComparison.Ordinal)) continue;
+                var rect = child as RectTransform;
+                Assert.IsNotNull(rect, $"{child.name} must be a RectTransform");
+                xs.Add(rect.anchoredPosition.x);
+            }
+            return xs;
+        }
+
         /// <summary>Fails if any part of <paramref name="child"/>'s rendered rect falls outside
         /// <paramref name="container"/>'s rendered rect, measured in world space via
         /// GetWorldCorners so it holds regardless of anchor/pivot plumbing on either transform.

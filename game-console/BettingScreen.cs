@@ -158,7 +158,7 @@ internal static class BettingScreen
         {
             if (offer.Selection.Kind == MarketKind.AnytimeScorer) continue;
             Ui.WriteLine(ConsoleColor.Gray,
-                $" {MarketCode(offer.Selection),-8} {Ui.American(offer.Odds),5}  p {Ui.Pct(offer.TrueProb),2}%");
+                $" {MarketLabel(m, offer.Selection),-32} {Ui.American(offer.Odds),5}  p {Ui.Pct(offer.TrueProb),2}%");
         }
         Ui.Line();
         Ui.WriteLine(ConsoleColor.White, "PLAYERS  (S# = anytime scorer)");
@@ -172,18 +172,23 @@ internal static class BettingScreen
         Ui.Pause();
     }
 
-    private static string MarketCode(MarketSelection s)
+    /// <summary>Composes a market's console label from the engine's own
+    /// <see cref="MatchModel.Fields"/> (S22 ruling) instead of a hand-rolled code table, so the
+    /// console and the laptop UI can never print two different names for the same market. Unlike
+    /// the laptop's compact leg label — which maps onto the DS <c>MarginLeg</c>'s two-field
+    /// <c>{ team, market }</c> shape and so drops the specific over/under line — the console has no
+    /// other place to show that detail, so it keeps every non-empty field <c>Fields</c> exposes
+    /// (Subject, Market, Line) rather than dropping any of them; for the scorer market Subject is
+    /// already folded into Line ("{PLAYER} ANYTIME"), so only Line is used there to avoid repeating
+    /// the player's name.</summary>
+    private static string MarketLabel(Matchup matchup, MarketSelection selection)
     {
-        switch (s.Kind)
-        {
-            case MarketKind.Moneyline: return s.Choice == MarketChoice.Home ? "HOME ML" : "AWAY ML";
-            case MarketKind.TotalGoals: return $"G{(s.Choice == MarketChoice.Over ? "O" : "U")}{s.Line:0.0}";
-            case MarketKind.TotalCorners: return $"C{(s.Choice == MarketChoice.Over ? "O" : "U")}{s.Line:0.0}";
-            case MarketKind.TotalCards: return $"K{(s.Choice == MarketChoice.Over ? "O" : "U")}{s.Line:0.0}";
-            case MarketKind.BothTeamsToScore: return s.Choice == MarketChoice.Yes ? "BTTS YES" : "BTTS NO";
-            case MarketKind.AnytimeScorer: return $"S{s.PlayerIndex + 1} ANYTIME";
-            default: return s.Kind.ToString();
-        }
+        MatchModel.MarketFields f = MatchModel.Fields(matchup, selection);
+        if (f.Subject.Length > 0 && f.Line.Length > 0)
+            return f.Line;
+        string subject = f.Subject.Length > 0 ? f.Subject + " " : "";
+        string descriptor = f.Line.Length > 0 ? $"{f.Market} {f.Line}" : f.Market;
+        return subject + descriptor;
     }
 
     private static string DescribeLegs(Ticket t)
@@ -192,7 +197,7 @@ internal static class BettingScreen
         foreach (Leg leg in t.Legs)
         {
             string mark = Math.Abs(leg.OfferedOdds - leg.BaseOdds) > 1e-9 ? " ^boosted" : "";
-            parts.Add($"{MarketCode(leg.Selection)} {Ui.American(leg.OfferedOdds)}{mark}");
+            parts.Add($"{MarketLabel(leg.Matchup, leg.Selection)} {Ui.American(leg.OfferedOdds)}{mark}");
         }
         return string.Join(", ", parts);
     }

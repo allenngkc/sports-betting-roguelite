@@ -56,6 +56,42 @@ public static class MatchModel
         }
     }
 
+    /// <summary>Per-surface composable market fields (S22 ruling, Design Director batch 4): the
+    /// DS vocabulary split into named parts instead of one packed string. See <see cref="Fields"/>.</summary>
+    public readonly struct MarketFields
+    {
+        /// <summary>DS market name. Verbatim where the design system enumerates it — "MONEYLINE",
+        /// "TOTAL GOALS", "BTTS — YES", "ANYTIME SCORER" (<c>components/margin/MarginLeg.d.ts</c>).
+        /// "BTTS — NO" and the corner/card categories are pattern-extensions of that enumerated
+        /// set, not DS-verbatim entries — see the case comments in <see cref="MatchModel.Fields"/>.</summary>
+        public string Market { get; }
+
+        /// <summary>The thing backed: the picked team for Moneyline, the player for AnytimeScorer,
+        /// empty for every other market (BTTS/TotalGoals/TotalCorners/TotalCards back the match
+        /// itself, not a single subject).</summary>
+        public string Subject { get; }
+
+        /// <summary>DS offer-line form (<c>components/form/MarketOffer.d.ts</c>'s <c>line</c>), e.g.
+        /// "OVER 2.5 GOALS". Empty for Moneyline, which has no line.</summary>
+        public string Line { get; }
+
+        /// <summary>The matchup, "{Away.Name} v {Home.Name}".</summary>
+        public string Fixture { get; }
+
+        /// <summary>Scorer role spelled out as a word ("FORWARD"/"MIDFIELDER"/"DEFENDER") — the
+        /// ruling struck the bracketed [FW]/[MF]/[DF] tag. Empty for every non-scorer market.</summary>
+        public string Role { get; }
+
+        public MarketFields(string market, string subject, string line, string fixture, string role)
+        {
+            Market = market;
+            Subject = subject;
+            Line = line;
+            Fixture = fixture;
+            Role = role;
+        }
+    }
+
     public static MatchLatents LatentsFor(double trueHomeProb, double goalTempo,
         double cornerTempo, double disciplineTempo, RunConfig config)
     {
@@ -239,6 +275,11 @@ public static class MatchModel
         return false;
     }
 
+    /// <summary>Legacy single-string market label, one packed string per selection. Retained
+    /// behaviourally unchanged for <c>TvSweatScreen.cs</c> (another lead's surface, forbidden to
+    /// this ruling's batch) pending that lead's own migration to <see cref="Fields"/>. New surfaces
+    /// should compose their own display text from <see cref="Fields"/> instead of parsing or
+    /// extending this packed string (S22, Design Director batch 4).</summary>
     public static string DisplayLabel(Matchup matchup, MarketSelection selection)
     {
         string match = $"{matchup.Away.Name} v {matchup.Home.Name}";
@@ -260,6 +301,76 @@ public static class MatchModel
                 return selection.Kind.ToString();
         }
     }
+
+    /// <summary>Per-surface composable market fields (S22 ruling, Design Director batch 4): the
+    /// DS vocabulary split into named parts instead of one packed string, so each surface composes
+    /// its own display text (<see cref="SBR.Engine"/> callers include the laptop's compact leg
+    /// label/ledger row and the console's market list). <see cref="DisplayLabel"/> keeps returning
+    /// the legacy packed form for the surface that has not migrated yet.</summary>
+    public static MarketFields Fields(Matchup matchup, MarketSelection selection)
+    {
+        string fixture = $"{matchup.Away.Name} v {matchup.Home.Name}";
+        switch (selection.Kind)
+        {
+            case MarketKind.Moneyline:
+                RequireChoice(selection, MarketChoice.Home, MarketChoice.Away);
+                string team = selection.Choice == MarketChoice.Home ? matchup.Home.Name : matchup.Away.Name;
+                return new MarketFields("MONEYLINE", team, "", fixture, "");
+
+            case MarketKind.TotalGoals:
+            {
+                RequireChoice(selection, MarketChoice.Over, MarketChoice.Under);
+                string overUnder = selection.Choice == MarketChoice.Over ? "OVER" : "UNDER";
+                return new MarketFields("TOTAL GOALS", "", $"{overUnder} {selection.Line:0.0} GOALS", fixture, "");
+            }
+
+            case MarketKind.BothTeamsToScore:
+                RequireChoice(selection, MarketChoice.Yes, MarketChoice.No);
+                // Pattern-extension: the DS enumerates only "BTTS — YES"; "BTTS — NO" follows the
+                // same em-dash pattern for the mirrored choice (not DS-verbatim).
+                string bttsMarket = selection.Choice == MarketChoice.Yes ? "BTTS — YES" : "BTTS — NO";
+                return new MarketFields(bttsMarket, "", "BOTH TEAMS TO SCORE", fixture, "");
+
+            case MarketKind.TotalCorners:
+            {
+                // Pattern-extension of TOTAL GOALS / "OVER n.n GOALS" — the DS does not separately
+                // enumerate a corners market.
+                RequireChoice(selection, MarketChoice.Over, MarketChoice.Under);
+                string overUnder = selection.Choice == MarketChoice.Over ? "OVER" : "UNDER";
+                return new MarketFields("TOTAL CORNERS", "", $"{overUnder} {selection.Line:0.0} CORNERS", fixture, "");
+            }
+
+            case MarketKind.TotalCards:
+            {
+                // Pattern-extension, same basis as TotalCorners above.
+                RequireChoice(selection, MarketChoice.Over, MarketChoice.Under);
+                string overUnder = selection.Choice == MarketChoice.Over ? "OVER" : "UNDER";
+                return new MarketFields("TOTAL CARDS", "", $"{overUnder} {selection.Line:0.0} CARDS", fixture, "");
+            }
+
+            case MarketKind.AnytimeScorer:
+            {
+                if (selection.Choice != MarketChoice.Yes)
+                    throw new ArgumentException("Anytime scorer is a YES-only market");
+                Player player = matchup.PlayerAt(selection.PlayerIndex);
+                string name = player.Name.ToUpperInvariant();
+                return new MarketFields("ANYTIME SCORER", name, $"{name} ANYTIME", fixture, RoleWord(player.Role));
+            }
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(selection));
+        }
+    }
+
+    /// <summary>Spells the scorer's role out as a word — the DS ruling struck the bracketed
+    /// [FW]/[MF]/[DF] tag (S22).</summary>
+    private static string RoleWord(PlayerRole role) => role switch
+    {
+        PlayerRole.FW => "FORWARD",
+        PlayerRole.MF => "MIDFIELDER",
+        PlayerRole.DF => "DEFENDER",
+        _ => throw new ArgumentOutOfRangeException(nameof(role)),
+    };
 
     public static IReadOnlyList<ScoreOutcome> EnumerateScores(MatchLatents latents, bool homeWon, RunConfig config)
     {
