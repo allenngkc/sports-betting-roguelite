@@ -75,8 +75,19 @@ namespace SBR.Tests.PlayMode
         private const int CaptureHeight = 1440;
 
         // Any non-blank string is a legal RunDirector seed (StartNewRun trims but does not
-        // restrict the charset) — this one is just easy to grep back out of an artifact filename.
-        private const string CaptureSeed = "TVCAPTURE01";
+        // restrict the charset) — these are just easy to grep back out of an artifact filename.
+        //
+        // FIVE seeds, not one. A single seed produces one match, and the containment claim T25.1
+        // has to prove is "no layer leaves the glass in ANY sweat" — which one match cannot show.
+        // Five different matches vary scoreline, market state and scene grammar, so a layer that
+        // only escapes under some conditions has somewhere to show itself. TVCAPTURE01 stays first
+        // so the new frames are directly comparable to the 49 already in the DD's hands.
+        private static readonly string[] CaptureSeeds =
+            { "TVCAPTURE01", "TVCAPTURE02", "TVCAPTURE03", "TVCAPTURE04", "TVCAPTURE05" };
+
+        // The seed of the run currently being captured; drives both StartNewRun and the filename.
+        // Static because CaptureBurst is static and the test cases run one at a time.
+        private static string _seed = CaptureSeeds[0];
 
         // Leg 2 (0-based) of the fixed ticket built below is always the AnytimeScorer leg.
         private const int ScorerLegIndex = 2;
@@ -100,9 +111,18 @@ namespace SBR.Tests.PlayMode
         [Explicit("Evidence capture, not verification: ship-paced and up to 240s. Run by filter only — "
             + "including it in routine suites would slow them enough to aggravate the documented "
             + "load-correlated flake (BUG-LEDGER §4C.4).")]
+        // NUnit's default UnityTest timeout is 180s, but this harness runs at SHIP pacing behind its
+        // own 240s deadline — so NUnit was killing the run before the harness's own guard could ever
+        // fire. Latent since the harness was written and invisible while only one seed was used:
+        // TVCAPTURE01 happens to finish inside 180s, and seeds 02-05 do not. 300s clears the
+        // internal deadline with headroom, so a genuine hang still fails on the harness's own
+        // message ("...never reached a terminal state") rather than on an opaque framework timeout.
+        [Timeout(300000)]
         [UnityTest]
-        public IEnumerator Capture_SeatedSweat_NamedMoments()
+        public IEnumerator Capture_SeatedSweat_NamedMoments(
+            [ValueSource(nameof(CaptureSeeds))] string seed)
         {
+            _seed = seed;
             Directory.CreateDirectory(OutputDir);
 
             yield return LoadRoom();
@@ -124,7 +144,7 @@ namespace SBR.Tests.PlayMode
                 Time.realtimeSinceStartup + 10f, "director never started a run");
 
             // Override whatever random seed Start() rolled - deterministic from here on.
-            director.StartNewRun(CaptureSeed);
+            director.StartNewRun(_seed);
             Run run = director.Run;
             Assert.AreEqual(Phase.Betting, run.Phase, "a fresh run opens in Betting");
 
@@ -256,7 +276,7 @@ namespace SBR.Tests.PlayMode
             }, deadline, "the scorer leg never reached a terminal state before the deadline");
             yield return CaptureBurst(screen, cam, "scorer-leg-resolved", 8, 0.15f);
 
-            Debug.Log($"[TvSweatCaptureHarness] seed={CaptureSeed} capture complete -> {OutputDir}");
+            Debug.Log($"[TvSweatCaptureHarness] seed={_seed} capture complete -> {OutputDir}");
         }
 
         // ---------------------------------------------------------------- capture
@@ -272,7 +292,7 @@ namespace SBR.Tests.PlayMode
         {
             for (int i = 0; i < frameCount; i++)
             {
-                string file = $"seed-{CaptureSeed}__moment-{momentName}__frame{i:000}.png";
+                string file = $"seed-{_seed}__moment-{momentName}__frame{i:000}.png";
                 string path = Path.Combine(OutputDir, file);
                 CaptureCamera(cam, path, CaptureWidth, CaptureHeight);
                 Debug.Log($"[TvSweatCaptureHarness] {file} :: score='{screen.RevealedView.ScoreText}' " +
