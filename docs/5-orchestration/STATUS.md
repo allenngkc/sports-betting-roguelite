@@ -106,6 +106,11 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-07-31 cycle 23 · TV 3E committed (`4597b60`, preview shipped dark) and the
+  **visual-evidence bundle exists**: 98 rendered frames + manifest (two uncaptured
+  states honestly stated), staged durably at `dd-import/tv-sweat-evidence-4597b60.zip`
+  (gitignored, rides Allen's next DD import — no LFS needed). 3F underway
+  editor-free. TV's only remaining blocks are DD items 10/11.
 - 2026-07-31 cycle 21 · TV 3D committed (`0fd2ce5`, VOID strike + contract move);
   3E started editor-free. Scheduled: post-3E capture window (seated-sweat harness →
   evidence dir → repo-free DD bundle incl. the 49 held T6 captures) to convert the
