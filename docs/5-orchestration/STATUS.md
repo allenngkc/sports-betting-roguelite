@@ -112,6 +112,14 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-08-01 cycle 34 · **Orchestrator + Orca restarted overnight** (watchers
+  re-armed on fresh handles; no work lost). Allen's morning directives executed:
+  **C14 hardened** (exceptional quality, 1:1 match, register updated), **all four
+  leads switched to Opus 5 max effort** (via /model + /effort per terminal;
+  Git-Bash slash-mangling discovered — slash commands go via PowerShell now),
+  **C14 audits dispatched to all four** (sub-agent sweeps, gap-list format).
+  SureThing's overdue verification slot granted (last night's grant was lost to a
+  send fault). Encode Sans landed on TV overnight (`ccc6f56`).
 - 2026-08-01 cycle 32 · **DD Batch 4 + addendum transcribed** (27 register lines;
   T21–T27, S18–S26, R14–R15, C10–C14) and **dispatched to all three affected
   leads** — TV corrected on T24 (fixed rows STAND) before it built the wrong
