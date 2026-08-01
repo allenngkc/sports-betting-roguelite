@@ -2650,6 +2650,24 @@ namespace SBR.Game
             var canvasRt = canvas.GetComponent<RectTransform>();
             canvasRt.sizeDelta = new Vector2(w, h);
 
+            // T25.1 — THE GLASS CLIPS. Allen, direct observation: the stage actors, the tape and
+            // plain text lines were all passing in and out of the TV panel, drawn into the room.
+            //
+            // A UGUI canvas does NOT clip its children by default, and the escapes had three
+            // different causes: the stage was misanchored (fixed separately), MomentumTape's dot
+            // cursor advances per beat with no row-width bound, and this canvas's Text is
+            // overflow-enabled so long copy renders past its own rect. Fixing placement per layer
+            // cannot answer "nothing may leave the panel" — it only removes today's offenders and
+            // leaves the next one to be found by eye.
+            //
+            // RectMask2D makes containment STRUCTURAL: the glass is a clip rect, so anything drawn
+            // outside it stops existing on screen no matter which layer misplaces itself or how far
+            // a future element overflows. Verified compatible with the HDR path before adding it —
+            // TvSweatHdrUI.shader carries `#pragma multi_compile_local _ UNITY_UI_CLIP_RECT` and
+            // applies UnityGet2DClipping, so the L4-eligible elements clip too rather than being
+            // the one layer that still escapes.
+            canvasGo.AddComponent<RectMask2D>();
+
             // Float toward the couch, but aim +Z INTO the wall: UGUI text reads correctly from the
             // canvas's -Z side (playtest #4 fix - +Z at the viewer shows the back face, mirrored).
             Vector3 normal = emissiveScreen != null ? -emissiveScreen.transform.forward : Vector3.left;
@@ -2941,8 +2959,13 @@ namespace SBR.Game
             // §8.1: "System chrome (round, bank, payment, seed) remains lowest priority and may
             // stay small." A thin reserved strip along the very bottom edge, outside the five
             // sweat zones.
+            // T25.1: the height compensates for the 2px top pad. Padding shifted the row down
+            // without shrinking it, so its last 2px sat BELOW the glass — the containment audit
+            // caught this one, which no capture ever would have: 2px of the lowest-priority row is
+            // invisible to the eye and still a layer rendering off the panel.
             _tChrome = MakeText(root, "Chrome", new Vector2(0f, 1f), new Vector2(0.5f, 1f),
-                AnchorTopCenter(grid.ChromeStrip, 2f), new Vector2(grid.ChromeStrip.width - 30f, grid.ChromeStrip.height),
+                AnchorTopCenter(grid.ChromeStrip, 2f),
+                new Vector2(grid.ChromeStrip.width - 30f, grid.ChromeStrip.height - 2f),
                 14, TextAnchor.UpperCenter, contextGrey);
         }
 

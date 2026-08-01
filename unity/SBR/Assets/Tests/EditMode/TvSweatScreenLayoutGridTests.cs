@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using SBR.Game;
@@ -295,6 +296,125 @@ namespace SBR.Tests.EditMode
                 Assert.AreEqual(0f, topPad, 0.01f,
                     "progress must sit immediately beneath NEED — a gap here means the two lines are " +
                     "no longer one stacked block and the row's budget is being spent on whitespace.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void The_glass_clips_every_layer_and_nothing_is_built_outside_it()
+        {
+            // T25.1, widened by Allen's direct observation: it was never only the stage actors —
+            // charts and plain text were passing in and out of the panel too. Three different
+            // causes (a misanchored stage, MomentumTape's unbounded dot cursor, overflow-enabled
+            // Text), which is why the answer is structural rather than per-layer.
+            //
+            // Two claims, because they fail differently:
+            //   1. The glass CLIPS. A RectMask2D on the canvas means nothing can be drawn outside
+            //      it at runtime, whatever a layer does mid-sweat.
+            //   2. Nothing is BUILT outside. Clipping hides an escape; it does not make a
+            //      mispositioned element correct, and content silently cut off is still a defect.
+            var go = new GameObject("GlassContainment");
+            try
+            {
+                go.SetActive(false);
+                var screen = go.AddComponent<TvSweatScreen>();
+                screen.theaterEnabled = true; // audit the stage layer too, not just the chrome
+                screen.referencePixelsWide = 980;
+                InvokePrivate(screen, "Awake");
+
+                var canvas = screen.GetComponentInChildren<Canvas>(true);
+                Assert.IsNotNull(canvas, "no canvas was built");
+                var canvasRt = canvas.GetComponent<RectTransform>();
+
+                Assert.IsNotNull(canvas.GetComponent<RectMask2D>(),
+                    "the canvas has no RectMask2D — the TV's glass does not clip. Without it, any " +
+                    "layer that overflows its rect renders into the room, which is what Allen saw.");
+
+                float halfW = canvasRt.sizeDelta.x * 0.5f, halfH = canvasRt.sizeDelta.y * 0.5f;
+                const float eps = 0.75f;
+                var corners = new Vector3[4];
+                var escapees = new List<string>();
+
+                foreach (Graphic g in screen.GetComponentsInChildren<Graphic>(true))
+                {
+                    if (g.rectTransform == canvasRt) continue;
+                    g.rectTransform.GetWorldCorners(corners);
+                    float minX = float.MaxValue, maxX = float.MinValue;
+                    float minY = float.MaxValue, maxY = float.MinValue;
+                    foreach (Vector3 wc in corners)
+                    {
+                        Vector3 lc = canvasRt.InverseTransformPoint(wc);
+                        minX = Mathf.Min(minX, lc.x); maxX = Mathf.Max(maxX, lc.x);
+                        minY = Mathf.Min(minY, lc.y); maxY = Mathf.Max(maxY, lc.y);
+                    }
+                    if (minX < -halfW - eps || maxX > halfW + eps ||
+                        minY < -halfH - eps || maxY > halfH + eps)
+                        escapees.Add($"{g.name} [x {minX:F0}..{maxX:F0}, y {minY:F0}..{maxY:F0}]");
+                }
+
+                Assert.IsEmpty(escapees,
+                    "these layers are built outside the TV's glass (canvas is " +
+                    $"{canvasRt.sizeDelta.x}x{canvasRt.sizeDelta.y}, so x is ±{halfW} and y is ±{halfH}):\n  " +
+                    string.Join("\n  ", escapees) +
+                    "\nThe mask stops them being DRAWN outside, but an element positioned off the " +
+                    "panel is still cut off content. Fix the placement; do not relax this test.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void The_theater_stage_sits_wholly_inside_the_TV_glass()
+        {
+            // T25.1 regression guard. Phase 3C's Layout B rebuild started passing
+            // AnchorCenter(grid.Stage) — a TOP-LEFT space coordinate — to a TheaterStage that
+            // anchored itself CENTRE, so the pitch and every actor drew roughly half a canvas down
+            // and right, entirely OUTSIDE the TV's glass. Five commits shipped over it with every
+            // suite green, because nothing asserted where the stage actually was; it took seated
+            // capture frames to see it at all.
+            //
+            // This is that assertion. It is deliberately about CONTAINMENT rather than an exact
+            // rect: the stage may be repositioned by a later layout pass, but it may never leave
+            // the panel, because anything outside the glass is rendering into the room.
+            var go = new GameObject("StageInsideGlass");
+            try
+            {
+                go.SetActive(false);
+                var screen = go.AddComponent<TvSweatScreen>();
+                screen.theaterEnabled = true; // the whole point: the stage must exist to be placed
+                screen.referencePixelsWide = 980;
+                InvokePrivate(screen, "Awake");
+
+                var stage = screen.GetComponentInChildren<TheaterStage>(true);
+                Assert.IsNotNull(stage, "no TheaterStage was built with theaterEnabled = true");
+                var rt = (RectTransform)stage.transform;
+
+                // Canvas extents, read off the built canvas rather than recomputed from constants.
+                var canvasRt = screen.GetComponentInChildren<Canvas>(true).GetComponent<RectTransform>();
+                float cw = canvasRt.sizeDelta.x, ch = canvasRt.sizeDelta.y;
+                Assert.Greater(cw, 0f, "canvas has no width");
+
+                // The stage is anchored top-left with a centre pivot: x right-positive, y negative
+                // downward from the canvas's top-left corner.
+                Vector2 c = rt.anchoredPosition;
+                Vector2 half = rt.sizeDelta * 0.5f;
+                float left = c.x - half.x, right = c.x + half.x;
+                float top = -c.y - half.y, bottom = -c.y + half.y;
+
+                Assert.GreaterOrEqual(left, -0.5f,
+                    $"the stage's left edge ({left}) is off the glass — actors would render outside the TV");
+                Assert.LessOrEqual(right, cw + 0.5f,
+                    $"the stage's right edge ({right}) runs past the canvas width ({cw}). This is the " +
+                    "T25.1 signature: a top-left coordinate consumed as a centre-relative one.");
+                Assert.GreaterOrEqual(top, -0.5f,
+                    $"the stage's top edge ({top}) is above the glass");
+                Assert.LessOrEqual(bottom, ch + 0.5f,
+                    $"the stage's bottom edge ({bottom}) runs past the canvas height ({ch})");
             }
             finally
             {

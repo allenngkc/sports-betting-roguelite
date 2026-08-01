@@ -21,7 +21,10 @@ namespace SBR.Tests.PlayMode
         private TheaterStage BuildStage()
         {
             _canvasGo = new GameObject("TestCanvas", typeof(Canvas));
-            _stage = TheaterStage.Build(_canvasGo.transform, Vector2.zero, new Vector2(720f, 252f),
+            // T25.1: Build's centre is measured from the canvas TOP-LEFT (y negative downward), so
+            // half the size places the stage flush into that corner. It was Vector2.zero while the
+            // stage was centre-anchored; passing zero now would mean "centre on the corner itself".
+            _stage = TheaterStage.Build(_canvasGo.transform, new Vector2(360f, -126f), new Vector2(720f, 252f),
                 new Color(0.9f, 0.9f, 0.9f, 0.5f), new Color(0.01f, 0.01f, 0.02f, 1f));
             _stage.Show(true);
             _stage.BeginLeg(Color.blue, Color.magenta, pickedIsHome: true, openingProb: 0.5f);

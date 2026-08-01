@@ -264,22 +264,42 @@ namespace SBR.Game
         // ------------------------------------------------------------------ construction
 
         /// <summary>Builds the stage under a world-space canvas. Center/size in canvas pixels.</summary>
-        public static TheaterStage Build(Transform canvasRoot, Vector2 center, Vector2 size, Color lineColor, Color pitchBg)
+        /// <summary>Builds the stage into a TV canvas.
+        ///
+        /// <para><paramref name="centerFromTopLeft"/> is the rect's centre point measured from the
+        /// canvas's TOP-LEFT, x right-positive and y NEGATIVE downward — the same space
+        /// <c>TvSweatScreen</c>'s <c>AnchorTopLeft</c>/<c>AnchorCenter</c> helpers produce and every
+        /// other element on that canvas is placed in. It is named for its space on purpose: see
+        /// BuildInternal for what a silent disagreement here costs.</para></summary>
+        public static TheaterStage Build(Transform canvasRoot, Vector2 centerFromTopLeft, Vector2 size,
+            Color lineColor, Color pitchBg)
         {
             var go = new GameObject("TheaterStage", typeof(RectTransform), typeof(TheaterStage));
             go.transform.SetParent(canvasRoot, false);
             var stage = go.GetComponent<TheaterStage>();
-            stage.BuildInternal(center, size, lineColor, pitchBg);
+            stage.BuildInternal(centerFromTopLeft, size, lineColor, pitchBg);
             return stage;
         }
 
-        private void BuildInternal(Vector2 center, Vector2 size, Color lineColor, Color pitchBg)
+        private void BuildInternal(Vector2 centerFromTopLeft, Vector2 size, Color lineColor, Color pitchBg)
         {
             _rt = (RectTransform)transform;
-            _rt.anchorMin = _rt.anchorMax = new Vector2(0.5f, 0.5f);
+            // T25.1 — anchored TOP-LEFT, matching every other element TvSweatScreen builds.
+            //
+            // This was (0.5, 0.5), centre-anchored, and was correct while the only caller passed a
+            // centre-relative offset (pre-3C: `Build(root, new Vector2(0f, 8f), ...)`). Phase 3C's
+            // Layout B rebuild switched the call site to `AnchorCenter(grid.Stage)` — a TOP-LEFT
+            // space coordinate — without changing this line, so the stage read a top-left
+            // coordinate as centre-relative and drew itself roughly half a canvas down and right:
+            // the pitch and every actor rendered OUTSIDE the TV's glass entirely.
+            //
+            // Every suite stayed green through five subsequent commits because nothing asserted the
+            // stage's rect; it took seated capture frames to see it. The regression test added with
+            // this fix is what makes it visible to a headless run.
+            _rt.anchorMin = _rt.anchorMax = new Vector2(0f, 1f);
             _rt.pivot = new Vector2(0.5f, 0.5f);
             _rt.sizeDelta = size;
-            _rt.anchoredPosition = center;
+            _rt.anchoredPosition = centerFromTopLeft;
             _w = size.x;
             _h = size.y;
 
