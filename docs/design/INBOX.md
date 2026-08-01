@@ -10,6 +10,11 @@ referenced documents via Import before the DD will rule on them.
 failure is wider than the actor layer — charts and plain text lines also pass in
 and out of the TV panel. TV lead's fix is now a full-layer containment audit.
 
+**Fidelity standard (Allen, 2026-07-31):** UI should match the design system as
+close to 1:1 as possible. Deviations minimal, documented, DD-signed; close past
+deviations where cheap. To be registered with a safe number at Batch-4
+transcription.
+
 ## Pending (next DD batch)
 
 1. **T17 presentation confirm:** reserve-don't-spend means a scorer leg's backed
