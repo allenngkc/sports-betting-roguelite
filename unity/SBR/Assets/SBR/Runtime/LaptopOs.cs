@@ -59,6 +59,11 @@ namespace SBR.Game
         private int _lastDisplayRevision = -1;
         private string _toast;
         private float _toastUntil;
+        // S35(b): the destination a toast was raised for — captured at ShowToast time, so a
+        // toast only ever draws on the screen that raised it and never bleeds onto one it does
+        // not own (LEDGER, MY BETS' read-only mirror, or anywhere else the player navigates to).
+        private App _toastApp;
+        private SportsbookApp.Tab _toastTab;
 
         public LaptopOs(RectTransform root, Font font, Font fontCond, LaptopScreen host, int width, int height)
         {
@@ -216,7 +221,13 @@ namespace SBR.Game
             else
                 RenderVerdict(run);
 
-            if (_toast != null)
+            // S35(b): a toast belongs to the destination that raised it and never draws over a
+            // read-only mirror — the shop's toast used to persist across navigation and had been
+            // observed rendering on top of LEDGER. Gated on both the current app AND tab matching
+            // the ones recorded in ShowToast, so it is also suppressed on MY BETS (the other
+            // read-only mirror living inside App.SureThing) and reappears only if the player
+            // returns to the exact destination that raised it before it expires.
+            if (_toast != null && _activeApp == _toastApp && _tab == _toastTab)
             {
                 // S9 defect 6: this used to float 62px above the tray, which is inside the Rewards
                 // board's own content band — it rendered across the offer rows and over the LEAVE
@@ -313,6 +324,11 @@ namespace SBR.Game
         {
             _toast = toast;
             _toastUntil = Time.unscaledTime + 4f;
+            // S35(b): record the destination raising this toast. Safe to read _activeApp/_tab
+            // here — every call site sets them before calling ShowToast (ApplyPhaseDefault's
+            // Phase.Shop case sets both immediately above its own ShowToast call).
+            _toastApp = _activeApp;
+            _toastTab = _tab;
         }
 
         private void Invalidate()

@@ -997,9 +997,12 @@ namespace SBR.Game
                     // untruth as the truncation this replaced: the screen would read as the whole
                     // shop. Stated as a plain fact, in toner — it is the house's document telling
                     // him what is on it, not a blocked action, so it is not the oxide stamp.
+                    // C19 / S25 amended: REWARDS is the one list a ruling deliberately caps (S17),
+                    // so its count line prints in --toner (LaptopOs.White) — was TonerSecondary
+                    // (--toner-2), one step dimmer than the comment above already said it should be.
                     LaptopUi.MakeText(board, "OffersNotShown", new Vector2(0f, 0f), new Vector2(0f, 0f),
                         new Vector2(14f, 8f), new Vector2(672f, 20f), 13, TextAnchor.LowerLeft,
-                        LaptopOs.TonerSecondary,
+                        LaptopOs.White,
                         $"{total - shown} MORE {Pluralize(total - shown, "OFFER")} THIS ROUND — NOT ENOUGH SHEET",
                         _font);
                 }
@@ -1426,9 +1429,12 @@ namespace SBR.Game
             string state = ticket.State == TicketState.Won ? "WON"
                 : ticket.State == TicketState.Lost ? "LOST"
                 : ticket.State == TicketState.CashedOut ? "CASHED OUT" : "OPEN";
+            // S36: the engine retains no cash-out amount. The absence is honest — never a
+            // fabricated $0 and never "AMOUNT NOT RETAINED" — so the money column prints a plain
+            // em dash, coloured toner-3 below, until engine retention lands.
             string payout = ticket.State == TicketState.Won ? LaptopUi.Money(ticket.PotentialPayout)
                 : ticket.State == TicketState.Lost ? LaptopUi.Money(0)
-                : "AMOUNT NOT RETAINED";
+                : "—";
             // F5/F6 / LedgerEntry.jsx: `color: won ? var(--wax) : var(--toner-3)` applies to BOTH
             // the terminal word and the RETURNED figure. Ruling S15 read as "LOST struck in oxide
             // … the returned figure in toner", and this originally built that literally — oxide
@@ -1436,12 +1442,16 @@ namespace SBR.Game
             // it more precisely: oxide belongs only to the strike drawn ACROSS the word
             // (LedgerDeadStrike, below, unchanged), never to a glyph fill. The word and the figure
             // both recede to toner-3 (LaptopOs.Muted) instead.
-            Color stateColor = ticket.State == TicketState.Won ? LaptopOs.MoneyGold
+            // S36: CASHED OUT is wax, paired with WON exactly as the kit pairs them, on the
+            // terminal word only. That pairing stops at the payout column — an em dash is an
+            // absence, not a fact to celebrate, so it stays toner-3 even beside a wax word.
+            Color stateColor = ticket.State == TicketState.Won || ticket.State == TicketState.CashedOut
+                ? LaptopOs.MoneyGold
                 : ticket.State == TicketState.Lost ? LaptopOs.Muted : LaptopOs.TonerSecondary;
             bool lost = ticket.State == TicketState.Lost;
             Color identityColor = lost ? LaptopOs.Muted : LaptopOs.White;
             Color stakeColor = lost ? LaptopOs.Muted : LaptopOs.TonerSecondary;
-            Color payoutColor = lost ? LaptopOs.Muted : stateColor;
+            Color payoutColor = lost || ticket.State == TicketState.CashedOut ? LaptopOs.Muted : stateColor;
             // "TICKET n" is condensed for the same reason as the MY BETS mirror's TicketTitle; the
             // state word matches LedgerEntry.jsx's terminal field / RevealedState.jsx.
             // F9: --st-size-leg (16px) — LedgerEntry.jsx sizes the ticket identity the same as
@@ -1501,6 +1511,13 @@ namespace SBR.Game
                 string legState = leg.IsVoided ? "VOID"
                     : leg.RescuedWon || leg.State == LegState.Won ? "WON"
                     : leg.State == LegState.Lost ? "LOST" : "PENDING";
+                // S35(c): RevealedLeg.jsx is the spec of record for a leg row's state — the ✓,
+                // the word, the strike and opacity .55 carry it, never a per-outcome hue. Both
+                // colours below were already flat regardless of outcome, so there was no hue to
+                // remove; what was missing was the .55 dim RevealedLeg applies to the whole row
+                // once a leg is dead (LaptopUi.Dim already implements that exact alpha), so a
+                // settled LOST leg now recedes the way the word beside it already says it should.
+                bool legLost = legState == "LOST";
                 // F7: routes through CompactLegLabel + FitLabelKeepingSuffix exactly as BuildSlip's
                 // Leg rows and BuildStagedReceipt's TicketLeg rows already do (same call shape,
                 // same 2-space odds separator as the latter), instead of the engine's own
@@ -1513,10 +1530,11 @@ namespace SBR.Game
                     $"  {OddsFormat.American(leg.OfferedOdds)}", 13, legIdentityWidth);
                 LaptopUi.MakeText(legRow, "LegIdentity", new Vector2(0f, .5f), new Vector2(0f, .5f),
                     new Vector2(28f, 0f), new Vector2(legIdentityWidth, 22f), 13, TextAnchor.MiddleLeft,
-                    LaptopOs.TonerSecondary, legIdentityText, _fontCond);
+                    legLost ? LaptopUi.Dim(LaptopOs.TonerSecondary) : LaptopOs.TonerSecondary,
+                    legIdentityText, _fontCond);
                 LaptopUi.MakeText(legRow, "LegState", new Vector2(1f, .5f), new Vector2(1f, .5f),
                     new Vector2(-14f, 0f), new Vector2(140f, 22f), 13, TextAnchor.MiddleRight,
-                    LaptopOs.Muted, legState, _fontCond);
+                    legLost ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.Muted, legState, _fontCond);
                 LaptopUi.MakeRule(legRow, "LegRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
                     Vector2.zero, new Vector2(700f, 1f));
             }
@@ -1530,9 +1548,22 @@ namespace SBR.Game
             LaptopUi.MakeText(summary, "RecordTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -10f), new Vector2(296f, 26f), 18, TextAnchor.UpperLeft,
                 LaptopOs.White, "CURRENT-RUN RECORD", _font);
+            // S35(a): "SETTLED TICKETS EXPOSED BY RUN.TICKETS ONLY" was a leaked property path,
+            // not machine flavour — satire never occupies a slot where a fact belongs. Replaced
+            // with the kit's own wording (screens.jsx LedgerScreen()): SETTLED TICKETS · THIS RUN
+            // paired with N RECORDS. The kit sets those as two spans in one header band; this
+            // panel has no second slot at this position, so both facts fold into the one caption.
             LaptopUi.MakeText(summary, "RecordScope", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -40f), new Vector2(296f, 44f), 13, TextAnchor.UpperLeft,
-                LaptopOs.Muted, "SETTLED TICKETS EXPOSED BY\nRUN.TICKETS ONLY", _font);
+                LaptopOs.Muted,
+                // S33: the passive margin carries ONE note, and this is the kit's own
+                // (app.jsx:97). S35(a) required the leaked "RUN.TICKETS ONLY" property path to go,
+                // and the kit's replacement wording — SETTLED TICKETS · THIS RUN with N RECORDS —
+                // belongs to the 44px board header that S31 mandates, not here. Putting it in this
+                // slot would have read correctly today and then duplicated the moment S31 landed,
+                // which is an S37 restatement violation built in advance.
+                "READ-ONLY. THE LEDGER COPIES SETTLED TICKETS AND DERIVES NOTHING.",
+                _font);
             LaptopUi.MakeRule(summary, "RecordRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(0f, -88f), new Vector2(324f, 2f));
             LaptopUi.MakeText(summary, "SettledCount", new Vector2(0f, 1f), new Vector2(0f, 1f),
@@ -1555,12 +1586,11 @@ namespace SBR.Game
                 new Vector2(0f, 1f), new Vector2(14f, -322f), new Vector2(296f, 74f), 13,
                 TextAnchor.UpperLeft, LaptopOs.Muted,
                 "CASH-OUT AMOUNTS ARE NOT RETAINED.\nNO CROSS-RUN HISTORY IS INVENTED.", _font);
-            // S9 defect 7: see BuildLedgerChrome's tabs meta (F4), the one place on this screen
-            // that now says "READ ONLY". This footer keeps only its own information, the round
-            // identity.
-            LaptopUi.MakeText(summary, "RoundIdentity", new Vector2(0f, 0f), new Vector2(0f, 0f),
-                new Vector2(14f, 16f), new Vector2(296f, 24f), 13, TextAnchor.LowerLeft,
-                LaptopOs.Muted, $"ROUND {run.Round}", _font);
+            // S37: the live round number appears exactly once on the surface. The masthead
+            // already carries it (BuildLedgerChrome's "Run" text, ROUND {run.Round}), so this
+            // footer's former "RoundIdentity" — a second, standalone restatement of that same
+            // figure, once justified as "its own information" under S9 defect 7 — is removed
+            // rather than kept: it was not its own information, it was a repeat.
         }
 
         private void BuildLedgerTray()

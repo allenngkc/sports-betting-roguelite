@@ -101,7 +101,9 @@ namespace SBR.Tests.PlayMode
         {
             yield return Boot();
             LaptopScreen laptop = Laptop();
-            Run run = laptop.director.Run;
+            // S37: this test no longer reads run.Round — the round number belongs to the
+            // masthead alone (see the RoundIdentity absence assertion below), so there is
+            // nothing left in this method for a local Run reference to do.
             yield return OpenLedgerThroughTray(laptop);
 
             Transform app = App(laptop);
@@ -117,14 +119,20 @@ namespace SBR.Tests.PlayMode
             // (BuildLedgerChrome) — this caption keeps only the information it alone carries.
             Assert.AreEqual("SETTLED CURRENT-RUN RECORDS",
                 TextOf(Required(board, "LedgerScope")));
-            Assert.AreEqual("SETTLED TICKETS EXPOSED BY\nRUN.TICKETS ONLY",
+            // S35(a) removed the leaked RUN.TICKETS property path from this slot. What replaces it
+            // is the passive margin's single note (S33, app.jsx:97) — NOT the kit's board-header
+            // wording, which belongs to the 44px header S31 mandates. Asserting the header's words
+            // here would pin the duplicate that S37 forbids, in the fixture, before S31 even lands.
+            Assert.AreEqual("READ-ONLY. THE LEDGER COPIES SETTLED TICKETS AND DERIVES NOTHING.",
                 TextOf(Required(summary, "RecordScope")));
             StringAssert.Contains("NO CROSS-RUN HISTORY IS INVENTED.",
                 TextOf(Required(summary, "CashOutDisclosure")));
             Assert.AreEqual("SETTLED  0", TextOf(Required(summary, "SettledCount")));
-            // S9 defect 7: same consolidation as LedgerScope above.
-            Assert.AreEqual($"ROUND {run.Round}",
-                TextOf(Required(summary, "RoundIdentity")));
+            // S37: the live round number appears exactly once on the surface, in the masthead
+            // (BuildLedgerChrome's "Run" text). The margin's former "RoundIdentity" — a second,
+            // standalone restatement of the same figure — is gone, not just reworded.
+            Assert.IsNull(Find(summary, "RoundIdentity"),
+                "S37: the round number belongs to the masthead alone, not this margin too");
 
             AssertProductFloors(chrome, board, margin, tray);
             AssertChildrenContained(chrome);
@@ -157,9 +165,11 @@ namespace SBR.Tests.PlayMode
                 : ticket.State == TicketState.CashedOut ? "CASHED OUT" : "OPEN";
 
         private static string PayoutText(Ticket ticket)
+            // S36: the engine retains no cash-out amount; the money column prints an honest
+            // absence (an em dash), never a fabricated $0 and never "AMOUNT NOT RETAINED".
             => ticket.State == TicketState.Won ? Money(ticket.PotentialPayout)
                 : ticket.State == TicketState.Lost ? Money(0)
-                : "AMOUNT NOT RETAINED";
+                : "—";
 
         private static string LegStateText(Leg leg)
             => leg.IsVoided ? "VOID"
