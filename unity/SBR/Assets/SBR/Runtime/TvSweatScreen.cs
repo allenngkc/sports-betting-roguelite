@@ -457,10 +457,14 @@ namespace SBR.Game
         // 26-28% of the surface per DESIGN.md §6; TicketColumnWidthFraction sits at the middle.
         private const float TicketColumnWidthFraction = 0.27f;
         private const float ChromeStripHeight = 18f;   // PRD §8.1: system chrome stays lowest-priority
-        private const float ScoreBugHeight = 56f;
+        // T20: 56 -> 62. The score is the canon scale's largest element (36px) and shares this zone
+        // with the momentum tape's fixed 14px foot; 56 left it 42px, which a 36px line does not
+        // clear once its line box is counted. Raised rather than shrinking the score, because
+        // DESIGN.md §5's ratio table makes the score the thing nothing may outgrow.
+        private const float ScoreBugHeight = 62f;
         private const float BottomRowHeight = 52f;     // shared row: cash-out | event strip
         private const float TicketHeaderHeight = 24f;
-        private const float TicketFooterHeight = 36f;  // RISK / PAYS
+        private const float TicketFooterHeight = 40f;  // RISK / PAYS — T20: 36 -> 40 to hold 24px
         // RunConfig.MaxLegs defaults to 6 (engine\RunConfig.cs). BuildCanvas runs from Awake, before
         // GrayboxRoomBuilder assigns `director` (AddComponent fires Awake synchronously, before the
         // caller's next line runs) — the row-slot count cannot be read from the live run and must be
@@ -472,6 +476,43 @@ namespace SBR.Game
         // a thin strip hugging its inside-bottom edge, matching MomentumTape's own fixed RowHeight
         // so a single-row ticket fits exactly.
         private const float MomentumTapeHeight = 14f;
+
+        // ---- T20: the canon TV type scale ------------------------------------------------------
+        //
+        // Mirrored from `main-2/docs/design/design-system/tokens/typography.css` (studio canon).
+        // §4A's rule: reference the design system, never fork it — but a C# const cannot import a
+        // CSS custom property, so the values are mirrored here WITH their source cited. None of
+        // these numbers was chosen to make something fit.
+        //
+        // They are reference px against the 980x550 world-space canvas, which is exactly what
+        // `referencePixelsWide` builds, so they map 1:1 onto Unity canvas units.
+        //
+        // DESIGN.md §5's RATIO table is the law and this px table is its instantiation:
+        // score 1 > cash-out .70 > team .55 > clock/need .50 > progress/risk .40 > event .36 >
+        // leg .34 > label .22. Nothing on the surface may outgrow the score.
+        //
+        // T20 re-derivation (DD, 2026-07-31): progress was 23px, written against a ticket column at
+        // ~37%. DESIGN.md §6 corrected the column to 26-28%, and at that width §6's own authored
+        // progress strings ("LIVE • 0 GOALS • 3 MORE") no longer fit one line at 23px, while §3
+        // permits only the NEED statement to wrap. 19px fits and keeps NEED 28 > progress 19 >
+        // eyebrow 15 intact. Shortening the authored strings was rejected BY NAME: paraphrasing
+        // authored copy to fit a stale measurement is how the statement line was lost once already.
+        private const int TypeScore = 36;
+        private const int TypeCashOut = 29;
+        private const int TypeTeam = 28;
+        private const int TypeClock = 28;
+        private const int TypeNeed = 28;
+        private const int TypeRisk = 24;
+        private const int TypeEvent = 22;
+        private const int TypeProgress = 19;
+        private const int TypeLeg = 19;
+        private const int TypeEyebrow = 15;
+
+        /// <summary>Unity lays one line of <c>Text</c> out in roughly this multiple of its
+        /// fontSize. Used to budget the leg row's stacked lines against the FIXED row height.
+        /// Deliberately generous, and pinned by a test rather than trusted — a knife-edge fit here
+        /// clips glyphs on the real font, which no headless run can see.</summary>
+        private const float LineBox = 1.18f;
 
         /// <summary>PRD §8.1's five stable zones (plus system chrome), computed once per canvas
         /// build. Rects use a top-left origin (x/y grow right/down, matching how the grid reads on
@@ -532,14 +573,32 @@ namespace SBR.Game
         // OnGoalPlayed.
         private Image _ballFlash;
 
-        /// <summary>One ticket-column leg row's two text elements (DESIGN.md §7: "each live row
-        /// ... carries its own NEED and its own revealed progress"). Every slot is built once, in
-        /// BuildTicketColumn, at a fixed rect from LayoutGrid.TicketRow(i) — a row's <c>IsLive</c>
-        /// flag changes what text/colour it carries, never where it sits.</summary>
+        /// <summary>One ticket-column leg row (DESIGN.md §7: "each live row ... carries its own
+        /// NEED and its own revealed progress"). Every slot is built once, in BuildTicketColumn, at
+        /// a fixed rect from LayoutGrid.TicketRow(i) — a row's <c>IsLive</c> flag changes what text
+        /// and colour it carries, never where it sits.
+        ///
+        /// <para>T20 split this from one <c>Detail</c> element into two. NEED and progress are
+        /// different sizes in canon (28 and 19), and a single <c>Text</c> cannot carry two sizes —
+        /// the old <c>$"{Need}\n{Live}"</c> rendered both at 12px, so the re-derivation was not
+        /// even expressible before the split. <c>Line</c> is the compact single-line form used by
+        /// resolved and pending rows; <c>Need</c>/<c>Progress</c> are the live form. Exactly one of
+        /// the two forms carries text at a time.</para>
+        ///
+        /// <para><b>Deviation from the DD's TvLegRow reference, deliberate and load-bearing:</b> the
+        /// live form has NO market/price/state meta line. The reference is a web component whose
+        /// rows expand; these rows are a fixed height by approved Layout B law. Canon's three-line
+        /// live row costs (15+28+19)*LineBox ≈ 73px against the 70px slot, and reclaiming header and
+        /// footer px only reaches ~73 — a knife-edge that clips glyphs in the real font. Two lines
+        /// fit with room to spare. State survives the cut because canon itself orders it that way:
+        /// "the state is carried by brightness first, by the literal state word second" — a live row
+        /// is the pulsing one. Price survives on the compact form and on the ticket card. Flagged to
+        /// the Design Director rather than absorbed silently.</para></summary>
         private struct LegRowUi
         {
-            public Text Label;
-            public Text Detail;
+            public Text Line;      // compact: resolved / pending
+            public Text Need;      // live: the authored §6 statement, printed verbatim
+            public Text Progress;  // live: the revealed causal progress line
             public bool IsLive;
         }
 
@@ -1560,35 +1619,44 @@ namespace SBR.Game
                 {
                     if (leg.IsVoided)
                     {
-                        _legRow[i].Label.color = chromeCyan; // §8 VOID: L2 cyan
-                        _legRow[i].Label.text = $"VOID   {label}";
+                        _legRow[i].Line.color = chromeCyan; // §8 VOID: L2 cyan
+                        _legRow[i].Line.text = $"VOID   {label}";
                     }
                     else if (leg.GradesWon)
                     {
-                        _legRow[i].Label.color = new Color(gold.r, gold.g, gold.b, 1f); // §8 W: L3 gold, solid
-                        _legRow[i].Label.text = $"W   {label}";
+                        _legRow[i].Line.color = new Color(gold.r, gold.g, gold.b, 1f); // §8 W: L3 gold, solid
+                        _legRow[i].Line.text = $"W   {label}";
                     }
                     else
                     {
-                        _legRow[i].Label.color = deadDark; // §8 L: L0, goes dark
-                        _legRow[i].Label.text = $"L   {label}";
+                        _legRow[i].Line.color = deadDark; // §8 L: L0, goes dark
+                        _legRow[i].Line.text = $"L   {label}";
                     }
-                    _legRow[i].Detail.text = string.Empty;
+                    _legRow[i].Need.text = string.Empty;
+                    _legRow[i].Progress.text = string.Empty;
                 }
                 else if (isLive)
                 {
-                    // §8 LIVE: L3 white — AnimateLegPulse drives the one permitted pulse.
-                    _legRow[i].Label.color = flavorColor;
-                    _legRow[i].Label.text = $"LIVE   {label}";
+                    // §8 LIVE: L3 white — AnimateLegPulse drives the one permitted pulse, which is
+                    // what carries "live" now that the row has no state word of its own (T20; canon:
+                    // "the state is carried by brightness first, by the literal state word second").
+                    //
+                    // The compact line is blanked rather than reused: it printed leg.DisplayLabel,
+                    // which IS the authored statement, so leaving it would print the statement twice
+                    // at two different sizes. NEED is the one place it appears on a live row.
                     SweatActiveLegModel.ActiveLegCopy copy = DescribeActiveLeg(leg);
-                    _legRow[i].Detail.color = flavorColor;
-                    _legRow[i].Detail.text = $"{copy.Need}\n{copy.Live}";
+                    _legRow[i].Line.text = string.Empty;
+                    _legRow[i].Need.color = flavorColor;
+                    _legRow[i].Need.text = copy.Need;         // §6 verbatim — never paraphrased
+                    _legRow[i].Progress.color = flavorColor;
+                    _legRow[i].Progress.text = copy.Live;
                 }
                 else
                 {
-                    _legRow[i].Label.color = structureGrey; // §8 NEXT: L1, structure only
-                    _legRow[i].Label.text = $"NEXT   {label}";
-                    _legRow[i].Detail.text = string.Empty;
+                    _legRow[i].Line.color = structureGrey; // §8 NEXT: L1, structure only
+                    _legRow[i].Line.text = $"NEXT   {label}";
+                    _legRow[i].Need.text = string.Empty;
+                    _legRow[i].Progress.text = string.Empty;
                 }
             }
 
@@ -1599,8 +1667,9 @@ namespace SBR.Game
         private void ClearLegRow(int i)
         {
             _legRow[i].IsLive = false;
-            if (_legRow[i].Label != null) _legRow[i].Label.text = string.Empty;
-            if (_legRow[i].Detail != null) _legRow[i].Detail.text = string.Empty;
+            if (_legRow[i].Line != null) _legRow[i].Line.text = string.Empty;
+            if (_legRow[i].Need != null) _legRow[i].Need.text = string.Empty;
+            if (_legRow[i].Progress != null) _legRow[i].Progress.text = string.Empty;
         }
 
         /// <summary>The auto-advance interstitial (M4): TICKET i/n, the legs line, stake → to-win.
@@ -2337,16 +2406,12 @@ namespace SBR.Game
             for (int i = 0; i < _legRow.Length; i++)
             {
                 if (!_legRow[i].IsLive) continue;
-                if (_legRow[i].Label != null)
-                {
-                    Color c = flavorColor; c.a *= pulse01;
-                    _legRow[i].Label.color = c;
-                }
-                if (_legRow[i].Detail != null)
-                {
-                    Color c = flavorColor; c.a *= pulse01;
-                    _legRow[i].Detail.color = c;
-                }
+                // T20: a live row's two elements are NEED and progress — the compact Line is blank
+                // while live, so pulsing it would animate nothing. Both live lines share the one
+                // phase, which is what makes the row read as a single breathing thing.
+                Color c = flavorColor; c.a *= pulse01;
+                if (_legRow[i].Need != null) _legRow[i].Need.color = c;
+                if (_legRow[i].Progress != null) _legRow[i].Progress.color = c;
             }
         }
 
@@ -2603,8 +2668,10 @@ namespace SBR.Game
         {
             "Matchup",          // the score
             "Clock",
-            "LegRowDetail0", "LegRowDetail1", "LegRowDetail2",
-            "LegRowDetail3", "LegRowDetail4", "LegRowDetail5", // each live leg's NEED line
+            // T20 renamed these: the old LegRowDetail{i} carried NEED and progress in one element,
+            // and the protected set follows the NEED statement, which is now its own element.
+            "LegRowNeed0", "LegRowNeed1", "LegRowNeed2",
+            "LegRowNeed3", "LegRowNeed4", "LegRowNeed5", // each live leg's NEED line
             "CashOut",          // the cash-out state
             "RiskPays",         // C8: joins the protected set
         };
@@ -2621,26 +2688,40 @@ namespace SBR.Game
             // scorebug's per-leg index).
             _tTicketHeader = MakeText(root, "TicketHeader", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 AnchorTopLeft(grid.TicketHeader, 8f, 4f),
-                new Vector2(grid.TicketHeader.width - 16f, grid.TicketHeader.height - 4f), 14,
+                new Vector2(grid.TicketHeader.width - 16f, grid.TicketHeader.height - 4f), TypeEyebrow,
                 TextAnchor.UpperLeft, structureGrey);
 
             _legRow = new LegRowUi[TicketRowSlots];
+            // T20 row stack, budgeted from the canon type scale rather than hand-placed. The two
+            // live lines must fit inside TicketRowHeight with the row's own padding; asserted by
+            // TvSweatScreenLayoutGridTests so a future size change cannot silently start clipping.
+            float lineW = grid.TicketColumn.width - 16f;
+            float needH = Mathf.Ceil(TypeNeed * LineBox);
+            float progressH = Mathf.Ceil(TypeProgress * LineBox);
+            float compactH = Mathf.Ceil(TypeEyebrow * LineBox);
             for (int i = 0; i < TicketRowSlots; i++)
             {
                 Rect row = grid.TicketRow(i);
-                Text label = MakeText(root, $"LegRowLabel{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    AnchorTopLeft(row, 8f, 4f), new Vector2(row.width - 16f, 20f), 14,
+                // Compact form (resolved / pending): ONE line, at the eyebrow scale, carrying state,
+                // statement and price. Canon drops the market eyebrow here rather than shrinking it —
+                // every authored statement already names its own market.
+                Text line = MakeText(root, $"LegRowLine{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    AnchorTopLeft(row, 8f, 4f), new Vector2(lineW, compactH), TypeEyebrow,
                     TextAnchor.UpperLeft, structureGrey);
-                Text detail = MakeText(root, $"LegRowDetail{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    AnchorTopLeft(row, 8f, 26f), new Vector2(row.width - 16f, row.height - 28f), 12,
+                // Live form: the authored NEED statement, then the revealed progress beneath it.
+                Text need = MakeText(root, $"LegRowNeed{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    AnchorTopLeft(row, 8f, 4f), new Vector2(lineW, needH), TypeNeed,
+                    TextAnchor.UpperLeft, flavorColor, FontStyle.Bold);
+                Text progress = MakeText(root, $"LegRowProgress{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    AnchorTopLeft(row, 8f, 4f + needH), new Vector2(lineW, progressH), TypeProgress,
                     TextAnchor.UpperLeft, flavorColor);
-                _legRow[i] = new LegRowUi { Label = label, Detail = detail, IsLive = false };
+                _legRow[i] = new LegRowUi { Line = line, Need = need, Progress = progress, IsLive = false };
             }
 
             // §7: "Risk and pays sit at the foot in gold at L2."
             _tRiskPays = MakeText(root, "RiskPays", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 AnchorTopLeft(grid.TicketFooter, 8f, 8f),
-                new Vector2(grid.TicketFooter.width - 16f, grid.TicketFooter.height - 8f), 15,
+                new Vector2(grid.TicketFooter.width - 16f, grid.TicketFooter.height - 8f), TypeRisk,
                 TextAnchor.UpperLeft, goldL2, FontStyle.Bold);
         }
 
@@ -2652,13 +2733,15 @@ namespace SBR.Game
             Rect sb = grid.ScoreBug;
             // §7 Scorebug: "Ticket/leg index at L1, present but subordinate."
             _tLeg = MakeText(root, "Leg", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                AnchorTopLeft(sb, 10f, 8f), new Vector2(140f, 20f), 14, TextAnchor.UpperLeft, structureGrey);
+                AnchorTopLeft(sb, 10f, 8f), new Vector2(140f, Mathf.Ceil(TypeEyebrow * LineBox)),
+                TypeEyebrow, TextAnchor.UpperLeft, structureGrey);
             // §7: "Clock remains fixed at the right edge."
             _tClock = MakeText(root, "Clock", new Vector2(0f, 1f), new Vector2(1f, 1f),
-                AnchorTopRight(sb, 10f, 8f), new Vector2(140f, 28f), 20, TextAnchor.UpperRight, flavorColor);
+                AnchorTopRight(sb, 10f, 8f), new Vector2(140f, Mathf.Ceil(TypeClock * LineBox)),
+                TypeClock, TextAnchor.UpperRight, flavorColor);
             // §4 Fact: "Score, clock, live leg names, market lines" — cold white at L3.
             _tMatchup = MakeText(root, "Matchup", new Vector2(0f, 1f), new Vector2(0.5f, 1f),
-                AnchorTopCenter(sb, 8f), new Vector2(sb.width - 40f, sb.height - 14f), 22,
+                AnchorTopCenter(sb, 8f), new Vector2(sb.width - 40f, sb.height - MomentumTapeHeight), TypeScore,
                 TextAnchor.UpperCenter, flavorColor, FontStyle.Bold);
 
             // C3 (Design Director ruling): "the score at a goal" joins the HDR-eligible set.
@@ -2667,7 +2750,7 @@ namespace SBR.Game
             // must not also read as an always-visible second score display), shown only for the
             // instant a goal commits and boosted through the shared HDR material to L4.
             _tScoreFlash = MakeText(root, "Score", new Vector2(0f, 1f), new Vector2(0.5f, 1f),
-                AnchorTopCenter(sb, 8f), new Vector2(sb.width - 40f, sb.height - 14f), 22,
+                AnchorTopCenter(sb, 8f), new Vector2(sb.width - 40f, sb.height - MomentumTapeHeight), TypeScore,
                 TextAnchor.UpperCenter, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Bold);
             _tScoreFlash.enabled = false;
             _scoreHdrMat = MakeHdrMaterial();
@@ -2685,7 +2768,7 @@ namespace SBR.Game
             // site elsewhere in this file.
             _tFlavor = MakeText(root, "Flavor", new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
                 AnchorCenter(grid.EventStrip), new Vector2(grid.EventStrip.width - 24f, grid.EventStrip.height - 8f),
-                20, TextAnchor.MiddleCenter, flavorColor, FontStyle.Bold);
+                TypeEvent, TextAnchor.MiddleCenter, flavorColor, FontStyle.Bold);
         }
 
         private void BuildCashOutZone(Transform root, LayoutGrid grid)
@@ -2694,7 +2777,7 @@ namespace SBR.Game
                 AnchorTopLeft(grid.CashOut), new Vector2(grid.CashOut.width, grid.CashOut.height), screenBg);
 
             _tCashOut = MakeText(root, "CashOut", new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
-                AnchorCenter(grid.CashOut), new Vector2(grid.CashOut.width - 16f, grid.CashOut.height - 8f), 18,
+                AnchorCenter(grid.CashOut), new Vector2(grid.CashOut.width - 16f, grid.CashOut.height - 8f), TypeCashOut,
                 TextAnchor.MiddleCenter, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Bold);
             _tCashOut.enabled = false;
             _cashOutHdrMat = MakeHdrMaterial();

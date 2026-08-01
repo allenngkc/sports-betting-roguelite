@@ -56,25 +56,25 @@ namespace SBR.Tests.EditMode
                 var screen = BuildScreen(go);
 
                 Text cashOut = FindChild<Text>(screen, "CashOut");
-                Text legRowLabel = FindChild<Text>(screen, "LegRowLabel0");
+                Text legRowLine = FindChild<Text>(screen, "LegRowLine0");
                 Text ticketHeader = FindChild<Text>(screen, "TicketHeader");
                 Assert.IsNotNull(cashOut, "CashOut text not found — canvas layout changed?");
-                Assert.IsNotNull(legRowLabel, "LegRowLabel0 not found — canvas layout changed?");
+                Assert.IsNotNull(legRowLine, "LegRowLine0 not found — canvas layout changed?");
                 Assert.IsNotNull(ticketHeader, "TicketHeader not found — canvas layout changed?");
 
                 Vector2 cashOutPosBefore = cashOut.rectTransform.anchoredPosition;
                 Vector2 cashOutSizeBefore = cashOut.rectTransform.sizeDelta;
-                Vector2 legRowPosBefore = legRowLabel.rectTransform.anchoredPosition;
-                Vector2 legRowSizeBefore = legRowLabel.rectTransform.sizeDelta;
+                Vector2 legRowPosBefore = legRowLine.rectTransform.anchoredPosition;
+                Vector2 legRowSizeBefore = legRowLine.rectTransform.sizeDelta;
                 Vector2 headerPosBefore = ticketHeader.rectTransform.anchoredPosition;
 
                 // Dramatically different content: empty, then a single wide char, then a long run.
                 cashOut.text = string.Empty;
-                legRowLabel.text = "W";
+                legRowLine.text = "W";
                 ticketHeader.text = new string('X', 200);
 
                 AssertRectUnchanged(cashOut.rectTransform, cashOutPosBefore, cashOutSizeBefore, "CashOut");
-                AssertRectUnchanged(legRowLabel.rectTransform, legRowPosBefore, legRowSizeBefore, "LegRowLabel0");
+                AssertRectUnchanged(legRowLine.rectTransform, legRowPosBefore, legRowSizeBefore, "LegRowLine0");
                 Assert.AreEqual(headerPosBefore, ticketHeader.rectTransform.anchoredPosition,
                     "TicketHeader's rect moved when its text grew from empty to 200 characters — a " +
                     "zone whose position derives from content length is exactly the defect DESIGN.md " +
@@ -82,9 +82,9 @@ namespace SBR.Tests.EditMode
 
                 // And the reverse direction: shrink back down. The rect must still not move.
                 cashOut.text = "CASH OUT $184,000,000   [E]";
-                legRowLabel.text = string.Empty;
+                legRowLine.text = string.Empty;
                 AssertRectUnchanged(cashOut.rectTransform, cashOutPosBefore, cashOutSizeBefore, "CashOut");
-                AssertRectUnchanged(legRowLabel.rectTransform, legRowPosBefore, legRowSizeBefore, "LegRowLabel0");
+                AssertRectUnchanged(legRowLine.rectTransform, legRowPosBefore, legRowSizeBefore, "LegRowLine0");
             }
             finally
             {
@@ -200,6 +200,143 @@ namespace SBR.Tests.EditMode
                     Assert.AreEqual(sizeBefore, cashOut.rectTransform.sizeDelta,
                         $"CashOut's size changed entering the '{label}' state.");
                 }
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        // ---------------------------------------------------------------------------------------
+        // 4. T20 — the canon type scale, and the geometry it has to survive.
+        // ---------------------------------------------------------------------------------------
+
+        // Mirrored from main-2/docs/design/design-system/tokens/typography.css. A C# test cannot
+        // import a CSS custom property, so handoff.md §4A's rule applies: restate the value and CITE
+        // the source. Never a threshold reverse-engineered from whatever the code currently renders.
+        private const int CanonScore = 36, CanonCashOut = 29, CanonClock = 28, CanonNeed = 28;
+        private const int CanonRisk = 24, CanonEvent = 22, CanonProgress = 19, CanonEyebrow = 15;
+
+        [Test]
+        public void Leg_row_type_sizes_are_the_canon_scale_not_a_local_invention()
+        {
+            var go = new GameObject("T20Scale");
+            try
+            {
+                var screen = BuildScreen(go);
+
+                Text need = FindChild<Text>(screen, "LegRowNeed0");
+                Text progress = FindChild<Text>(screen, "LegRowProgress0");
+                Text line = FindChild<Text>(screen, "LegRowLine0");
+                Assert.IsNotNull(need, "LegRowNeed0 not found — T20 split the row's Detail element into NEED + progress");
+                Assert.IsNotNull(progress, "LegRowProgress0 not found");
+                Assert.IsNotNull(line, "LegRowLine0 not found");
+
+                Assert.AreEqual(CanonNeed, need.fontSize,
+                    "the NEED statement must render at the canon --tv-size-need. T20 left it unchanged " +
+                    "at 28 by name; if this fails, something re-derived it locally.");
+                Assert.AreEqual(CanonProgress, progress.fontSize,
+                    "the live progress line must render at the canon --tv-size-progress of 19. It was " +
+                    "23, written against a ~37% ticket column; DESIGN.md §6 corrected the column to " +
+                    "26-28% and at that width §6's own authored strings no longer fit one line at 23.");
+                Assert.AreEqual(CanonEyebrow, line.fontSize,
+                    "a resolved/pending row compresses to the canon --tv-size-eyebrow of 15.");
+
+                // The ordering is the part that actually carries meaning: DESIGN.md §5's ratio table
+                // is the law and the px are only its instantiation, so the ladder must hold even if
+                // every absolute value is someday re-derived again.
+                Assert.Greater(need.fontSize, progress.fontSize,
+                    "NEED must outrank the progress line beneath it — the statement is the headline.");
+                Assert.Greater(progress.fontSize, line.fontSize,
+                    "a live row's progress must outrank a compressed row: live rows are DISPLAY, " +
+                    "resolved and pending rows are INDEX.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void A_live_rows_two_lines_fit_inside_its_fixed_row_height()
+        {
+            // The row height is FIXED (DESIGN.md §6) and the live form stacks NEED above progress
+            // inside it. If that stack ever outgrows the row, glyphs clip on the production face —
+            // which a -nographics run rasterises nothing to reveal, so it is asserted geometrically
+            // here instead. This is also why the canon three-line row (market/price/state eyebrow +
+            // NEED + progress) is NOT built: it needs ~73px against this row and would clip.
+            var go = new GameObject("T20RowFit");
+            try
+            {
+                var screen = BuildScreen(go);
+
+                Text need0 = FindChild<Text>(screen, "LegRowNeed0");
+                Text need1 = FindChild<Text>(screen, "LegRowNeed1");
+                Text progress0 = FindChild<Text>(screen, "LegRowProgress0");
+                Assert.IsNotNull(need0, "LegRowNeed0 not found");
+                Assert.IsNotNull(need1, "LegRowNeed1 not found");
+                Assert.IsNotNull(progress0, "LegRowProgress0 not found");
+
+                // Row pitch, read off the grid itself rather than recomputed from the constants the
+                // code under test uses — two adjacent slots are exactly one row apart.
+                float rowPitch = Mathf.Abs(need1.rectTransform.anchoredPosition.y
+                                         - need0.rectTransform.anchoredPosition.y);
+                Assert.Greater(rowPitch, 0f, "two adjacent row slots occupy the same y — the grid collapsed");
+
+                float topPad = Mathf.Abs(progress0.rectTransform.anchoredPosition.y
+                                       - need0.rectTransform.anchoredPosition.y) - need0.rectTransform.sizeDelta.y;
+                float stack = need0.rectTransform.sizeDelta.y + progress0.rectTransform.sizeDelta.y;
+
+                Assert.LessOrEqual(stack, rowPitch,
+                    $"a live row's NEED ({need0.rectTransform.sizeDelta.y}px) + progress " +
+                    $"({progress0.rectTransform.sizeDelta.y}px) = {stack}px overflows its {rowPitch}px " +
+                    "row. Either the row grew or a type size did; both clip the authored statement, " +
+                    "and DESIGN.md §6 forbids shortening the statement to fit.");
+                Assert.AreEqual(0f, topPad, 0.01f,
+                    "progress must sit immediately beneath NEED — a gap here means the two lines are " +
+                    "no longer one stacked block and the row's budget is being spent on whitespace.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void Nothing_in_the_sweat_surface_outgrows_the_score()
+        {
+            // DESIGN.md §5: "the score is the largest element on the surface at all times and nothing
+            // outgrows it, including cash-out." Scoped deliberately to the five sweat zones — the
+            // attract/payout takeover screens are different states, not this surface, and their type
+            // is sized against a full-screen moment rather than the scorebug.
+            var go = new GameObject("T20Ladder");
+            try
+            {
+                var screen = BuildScreen(go);
+
+                Text score = FindChild<Text>(screen, "Matchup"); // the persistent score line
+                Assert.IsNotNull(score, "Matchup (the score) not found");
+                Assert.AreEqual(CanonScore, score.fontSize, "the score must render at the canon --tv-size-score");
+
+                foreach (string name in new[]
+                    { "Clock", "CashOut", "RiskPays", "Flavor", "TicketHeader", "Leg",
+                      "LegRowNeed0", "LegRowProgress0", "LegRowLine0" })
+                {
+                    Text t = FindChild<Text>(screen, name);
+                    Assert.IsNotNull(t, $"{name} not found — canvas layout changed?");
+                    Assert.LessOrEqual(t.fontSize, score.fontSize,
+                        $"{name} renders at {t.fontSize}px against the score's {score.fontSize}px. " +
+                        "DESIGN.md §5's ratio table makes the score the thing nothing may outgrow.");
+                }
+
+                // Spot-check the rungs that carry a named ruling rather than every pair.
+                Assert.AreEqual(CanonCashOut, FindChild<Text>(screen, "CashOut").fontSize,
+                    "cash-out sits at .70 of the score and must never reach it (DESIGN.md §5).");
+                Assert.AreEqual(CanonClock, FindChild<Text>(screen, "Clock").fontSize);
+                Assert.AreEqual(CanonRisk, FindChild<Text>(screen, "RiskPays").fontSize,
+                    "C8 put risk/pays in the protected set; it sits at the canon --tv-size-risk.");
+                Assert.AreEqual(CanonEvent, FindChild<Text>(screen, "Flavor").fontSize,
+                    "the event strip is one line at the canon --tv-size-event.");
             }
             finally
             {
