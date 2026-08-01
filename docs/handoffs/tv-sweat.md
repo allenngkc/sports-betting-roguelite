@@ -252,7 +252,7 @@ Two failure modes share this test name and mean opposite things:
 Baselines before this stack: engine **160**, EditMode **194**, PlayMode **44** (+1 `[Explicit]`
 capture harness, filtered out of routine runs).
 
-## 4C. RESUME HERE — 3E, then 3F
+## 4C. RESUME HERE — 3F (and two DD answers)
 
 **T17 is CLOSED** (`ea28c9b`): the ledger reserves the backed side's last baked goal at configure
 time, enforced in `CompleteGoal` and released by `PlanFinal`; `BindAnytimeScorer` is unchanged and
@@ -288,7 +288,26 @@ collapsed them into one count; both facts are recorded there now. The gate word 
 not unique — suspended and pending-window share a treatment on purpose, so a uniqueness test fails on
 a pair the design intends.
 
-**Next: 3E** (§8.8 stats panel, §8.10 held cash-out preview), then 3F.
+**3E is PART-CLOSED** (`4597b60`). §8.10's preview is built, tested and **deliberately unbound** —
+PRD §8.10 never says what *confirming* is, and today `E` accepts on `WasPressedThisFrame` (pinned by
+TVS-H01), so hold-to-preview cannot coexist with press-to-accept: acceptance fires on frame one and
+no hold is observable. Binding it is one call site once the DD rules. Do not guess the gesture; it
+breaks a pinned contract either way.
+
+**§8.8's stats panel is NOT built and should not be started blind.** Two of its five required rows
+cannot be sourced: the engine has **no formation and no shots concept at all**, and `Player` carries
+only `Name`/`Role`/`ScoringWeight`, where `ScoringWeight` is hidden generator truth — the only
+per-player number in the game is itself the leak §8.8 calls blocker-class. Per-team corners/cards
+*are* available (the §7.6 fix landed; `CountLedger` tracks `Home`/`Away`). So it is three-fifths
+buildable, and shipping that is a scope call, not this lead's.
+
+**Visual evidence now EXISTS.** 98 frames bundled repo-free at
+`scratchpad/tv-sweat-evidence-4597b60.zip` (57 MB): 49 new seated-sweat captures through the live
+URP path plus the 49 held T6 scene-grammar frames, with a manifest. **Two gaps stated there and worth
+repeating:** the seed produces no VOID leg, so 3D's strike appears in no frame; and the §8.10 preview
+is unreachable while unbound, so it cannot be captured at all yet.
+
+**Next: 3F** (§7.7 backed-player locator) — gated on visual evidence, which now partly exists.
 
 **Blocked on Allen, studio-level:** `[attr]lfs` is declared in `unity/SBR/.gitattributes`, but git
 honours attribute macros only in a **top-level** `.gitattributes`, and this repo has none at root —
