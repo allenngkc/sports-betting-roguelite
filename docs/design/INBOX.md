@@ -47,6 +47,11 @@ referenced documents via Import before the DD will rule on them.
 11. **§8.10 held cash-out preview — confirm gesture (TV):** preview built and
     tested (struck-and-dimmed, never extinguished, exact revert) but unbound
     pending your gesture ruling.
+12. **§7.7 backed-player locator — treatment (TV):** binding half wired and
+    tested; visually nothing until you rule the treatment. Concrete finding
+    attached from the lead: the numeral's stated justification in §7.7 no longer
+    holds. **Items 10–12 together gate the rest of Phase 3** — one batch answers
+    most of what remains.
 
 ## Cleared 2026-07-31, batch 2 (transcribed to REGISTER.md by the orchestrator)
 
