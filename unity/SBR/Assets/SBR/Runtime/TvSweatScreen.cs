@@ -402,6 +402,36 @@ namespace SBR.Game
         // ---- input ----
         private InputAction _interact;
 
+        // ---- §8.10 held cash-out preview ----
+        //
+        /// <summary>True while the player is previewing the settled future (PRD §8.10). The preview
+        /// is RENDER-AWARE rather than a one-shot overwrite: <see cref="UpdateTicketColumn"/> and
+        /// <see cref="RefreshChrome"/> both consult this flag and recompute from truth, so §8.10's
+        /// "release is a full revert — no partial state, no lingering strike-throughs, no bank
+        /// flicker" holds BY CONSTRUCTION. A snapshot-and-restore implementation would make that
+        /// guarantee depend on remembering to restore every field a future edit adds.
+        ///
+        /// <para>It is not a second truth source (§4.2): it renders the same revealed facts and the
+        /// same offer the cash-out slot is already showing, and consults no locked endpoint.</para></summary>
+        private bool _cashOutPreview;
+
+        /// <summary>The amount the preview is quoting — captured at entry from the very offer the
+        /// slot displays, so the previewed and accepted numbers can never differ (§8.10).</summary>
+        private double _cashOutPreviewAmount;
+
+        /// <summary>The live-leg index the ticket column was last rendered with, so entering and
+        /// leaving the preview can re-render the same column without inventing a live leg.</summary>
+        private int _liveLegIndexShown = -1;
+
+        /// <summary>The cash-out slot's text as it stood before the preview, restored verbatim on
+        /// release (§8.10's "no residue").</summary>
+        private string _cashOutTextBeforePreview = string.Empty;
+
+        /// <summary>DESIGN.md §3's tiers, mirrored from
+        /// main-2/docs/design/design-system/components/tv/tiers.js: L4 1 · L3 0.7 · L2 0.4 · L1 0.15
+        /// · L0 0. Used to step a previewed row exactly one level down.</summary>
+        private const float TierL3 = 0.7f, TierL2 = 0.4f, TierL1 = 0.15f;
+
         // ---- emission (the quad's own glow) ----
         private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
         private MaterialPropertyBlock _emissBlock;
@@ -720,8 +750,67 @@ namespace SBR.Game
         private void SetSeated(bool seated)
         {
             _seated = seated;
+            // §8.10: "Standing while held cancels the preview and freezes per §4.4. The preview is
+            // not a way to hold the sweat still." Cancelled BEFORE the freeze below, so the reverted
+            // rows are what gets frozen — freezing a previewed ticket would leave a standing player
+            // looking at struck legs that were never actually cashed out.
+            if (!seated) ExitCashOutPreview();
             if (_stage != null) _stage.SetFrozen(!_seated);
         }
+
+        /// <summary>PRD §8.10. Enters only when the offer could be ACCEPTED right now — the gate is
+        /// <see cref="CanAcceptCashOutNow"/>, exactly as repaired in TVS-H01: "if cash-out cannot be
+        /// accepted right now, it cannot be previewed right now." That is also what keeps the
+        /// previewed amount and the acceptable amount the same number, since a mid-tween offer is
+        /// refused by both.</summary>
+        private bool EnterCashOutPreview()
+        {
+            if (_cashOutPreview) return true;
+            if (!CanAcceptCashOutNow()) return false;
+            double? offer = _session.CashOutOffer();
+            if (!offer.HasValue) return false;
+            _cashOutPreview = true;
+            _cashOutPreviewAmount = offer.Value;
+            // "the ticket in its cashed-out state; the accepted amount, which is the amount
+            // currently displayed." Snapshot-and-restore for this one field, because unlike the rows
+            // and the bank the slot's text is written at discrete moments rather than rebuilt every
+            // frame — there is no render pass to make preview-aware.
+            if (_tCashOut != null)
+            {
+                _cashOutTextBeforePreview = _tCashOut.text;
+                _tCashOut.text = $"CASHED OUT ${Money(_cashOutPreviewAmount)}";
+            }
+            UpdateTicketColumn(_liveLegIndexShown);
+            return true;
+        }
+
+        /// <summary>Full revert (§8.10). Clearing the flag and re-rendering is the whole revert:
+        /// every row is recomputed from leg state, so no residue can survive by construction.
+        /// Idempotent — a release, a stand, and a settle may all call it for the same preview.</summary>
+        private void ExitCashOutPreview()
+        {
+            if (!_cashOutPreview) return;
+            _cashOutPreview = false;
+            _cashOutPreviewAmount = 0.0;
+            if (_tCashOut != null) _tCashOut.text = _cashOutTextBeforePreview;
+            _cashOutTextBeforePreview = string.Empty;
+            UpdateTicketColumn(_liveLegIndexShown);
+        }
+
+        /// <summary>Steps a colour exactly one brightness level, by the ratio of DESIGN.md §3's
+        /// tiers. Alpha only: the hue is the element's role and a level change must not restate it.</summary>
+        private static Color SteppedDown(Color c, float fromTier, float toTier)
+        {
+            c.a *= toTier / fromTier;
+            return c;
+        }
+
+        /// <summary>The bank as the preview quotes it (§8.10: "the bank at its post-cash-out
+        /// value"). Derived from the same offer the slot displays plus the player's own balance —
+        /// never from a locked endpoint, which is what keeps the preview admissible under §4.1: it
+        /// previews a CONSEQUENCE of this action, not a match fact.</summary>
+        private double PreviewedBank(Run r)
+            => _cashOutPreview ? r.Bank + _cashOutPreviewAmount : r.Bank;
 
         private void ResolveInput()
         {
@@ -1595,6 +1684,7 @@ namespace SBR.Game
         /// is ever live, since the engine forbids two legs on one matchup.</summary>
         private void UpdateTicketColumn(int liveLegIndex)
         {
+            _liveLegIndexShown = liveLegIndex;
             if (_ticket == null)
             {
                 _tTicketHeader.text = string.Empty;
@@ -1650,17 +1740,25 @@ namespace SBR.Game
                     // at two different sizes. NEED is the one place it appears on a live row.
                     SweatActiveLegModel.ActiveLegCopy copy = DescribeActiveLeg(leg);
                     _legRow[i].Line.text = string.Empty;
-                    if (_legRow[i].Strike != null) _legRow[i].Strike.enabled = false;
-                    _legRow[i].Need.color = flavorColor;
+                    // §8.10: while previewing, a remaining leg is struck (cashing out ends it) and
+                    // drops ONE level — L3 to L2. It uses the VOID strike, never the LOST
+                    // extinguish: a leg being CANCELLED must not read as a leg LOST at the exact
+                    // moment the player is deciding whether to cancel it.
+                    Color liveInk = _cashOutPreview ? SteppedDown(flavorColor, TierL3, TierL2) : flavorColor;
+                    if (_legRow[i].Strike != null) _legRow[i].Strike.enabled = _cashOutPreview;
+                    _legRow[i].Need.color = liveInk;
                     _legRow[i].Need.text = copy.Need;         // §6 verbatim — never paraphrased
-                    _legRow[i].Progress.color = flavorColor;
+                    _legRow[i].Progress.color = liveInk;
                     _legRow[i].Progress.text = copy.Live;
                 }
                 else
                 {
                     _legRow[i].Line.color = structureGrey; // §8 NEXT: L1, structure only
                     _legRow[i].Line.text = $"NEXT   {label}";
-                    if (_legRow[i].Strike != null) _legRow[i].Strike.enabled = false;
+                    // A pending leg is equally ended by cashing out, so it is struck too. It does
+                    // NOT step down: NEXT already sits at L1 and the next level is L0, which is the
+                    // LOST extinguish this preview must never borrow.
+                    if (_legRow[i].Strike != null) _legRow[i].Strike.enabled = _cashOutPreview;
                     _legRow[i].Need.text = string.Empty;
                     _legRow[i].Progress.text = string.Empty;
                 }
@@ -2379,8 +2477,12 @@ namespace SBR.Game
                 if (s.Value > 0)
                     stacks.Append("   ·   ").Append(s.Label).Append(' ')
                         .Append(s.Value.ToString("0.#", CultureInfo.InvariantCulture));
+            // §8.10: the bank shows its post-cash-out value while the preview is held. Rendered
+            // here, inside the per-frame chrome rebuild, rather than written once at entry — an
+            // overwrite would be stomped on the very next frame and read as the "bank flicker"
+            // §8.10 forbids by name.
             _tChrome.text =
-                $"R{r.Round}/{r.Config.Rounds}   ·   BANK ${Money(r.Bank)}   ·   PAY ${Money(r.CurrentPayment)}" +
+                $"R{r.Round}/{r.Config.Rounds}   ·   BANK ${Money(PreviewedBank(r))}   ·   PAY ${Money(r.CurrentPayment)}" +
                 $"   ·   COMPS {r.Comps.ToString("0.#", CultureInfo.InvariantCulture)}{stacks}   ·   {r.Rng.RunSeed}";
         }
 

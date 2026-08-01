@@ -966,5 +966,121 @@ namespace SBR.Tests.EditMode
 
         private static float ChannelDistance(Color a, Color b)
             => Mathf.Abs(a.r - b.r) + Mathf.Abs(a.g - b.g) + Mathf.Abs(a.b - b.b);
+
+        // ---------------------------------------------------------------------------------------
+        // 3E — §8.10 held cash-out preview.
+        // ---------------------------------------------------------------------------------------
+
+        private static void SetPreview(TvSweatScreen s, bool on)
+            => typeof(TvSweatScreen).GetField("_cashOutPreview", BindingFlags.NonPublic | BindingFlags.Instance)
+                .SetValue(s, on);
+
+        [Test]
+        public void The_preview_is_refused_wherever_acceptance_is_refused()
+        {
+            // §8.10: "The gate is CanAcceptCashOutNow, exactly as repaired in TVS-H01. If cash-out
+            // cannot be accepted right now, it cannot be previewed right now." That single shared
+            // gate is what keeps the previewed and accepted amounts the same number — a mid-tween
+            // offer is refused by both, so the preview can never quote a price acceptance would not
+            // honour. A screen with no live session cannot accept, so it must not preview.
+            var go = new GameObject("PreviewGate");
+            try
+            {
+                TvSweatScreen s = BuiltScreen(go);
+                object entered = typeof(TvSweatScreen)
+                    .GetMethod("EnterCashOutPreview", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .Invoke(s, null);
+
+                Assert.IsFalse((bool)entered,
+                    "the preview entered without an acceptable offer — it would be quoting a price " +
+                    "the accept path would refuse (§8.10, TVS-H01)");
+                Assert.IsFalse((bool)typeof(TvSweatScreen)
+                        .GetField("_cashOutPreview", BindingFlags.NonPublic | BindingFlags.Instance)
+                        .GetValue(s),
+                    "a refused preview must leave no state behind");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void A_previewed_leg_is_struck_and_dimmed_one_level_never_extinguished()
+        {
+            // 3E: "renders one brightness level down and uses the VOID strike rather than the LOST
+            // extinguish, because legs being CANCELLED must not read as legs LOST at the exact
+            // moment a player is deciding." The strike says cancelled; L0 would say lost.
+            var go = new GameObject("PreviewTreatment");
+            try
+            {
+                TvSweatScreen s = BuiltScreen(go);
+                Ticket ticket = TwoLegTicket("3E-PREVIEW-TREATMENT");
+
+                RenderTicketColumn(s, ticket, resolvedThrough: 0, liveLegIndex: 0);
+                Color liveInkBefore = FindChild<Text>(s, "LegRowNeed0").color;
+                Assert.IsFalse(FindChild<Image>(s, "LegRowStrike0").enabled, "not previewing yet");
+
+                SetPreview(s, true);
+                RenderTicketColumn(s, ticket, resolvedThrough: 0, liveLegIndex: 0);
+
+                Assert.IsTrue(FindChild<Image>(s, "LegRowStrike0").enabled,
+                    "a remaining live leg must be struck while previewing — cashing out ends it");
+                Assert.IsTrue(FindChild<Image>(s, "LegRowStrike1").enabled,
+                    "a pending leg is equally ended by cashing out and must be struck too");
+
+                Color liveInkAfter = FindChild<Text>(s, "LegRowNeed0").color;
+                Assert.Less(liveInkAfter.a, liveInkBefore.a,
+                    "the previewed row must drop one brightness level (L3 to L2)");
+                Assert.Greater(liveInkAfter.a, 0f,
+                    "the previewed row must NOT go to L0 — that is the LOST extinguish, and a leg " +
+                    "being cancelled must never read as a leg lost while the player is deciding");
+                AssertRgbApprox(liveInkBefore, liveInkAfter, 0.001f,
+                    "a brightness step must not restate the hue — alpha only");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void Releasing_the_preview_reverts_completely_with_no_residue()
+        {
+            // §8.10: "Release is a full revert. No partial state, no lingering strike-throughs, no
+            // bank flicker." The implementation earns this by re-rendering from truth rather than
+            // restoring a snapshot — this test is what pins that it actually does.
+            var go = new GameObject("PreviewRevert");
+            try
+            {
+                TvSweatScreen s = BuiltScreen(go);
+                Ticket ticket = TwoLegTicket("3E-PREVIEW-REVERT");
+
+                RenderTicketColumn(s, ticket, resolvedThrough: 0, liveLegIndex: 0);
+                Color needBefore = FindChild<Text>(s, "LegRowNeed0").color;
+                string needTextBefore = FindChild<Text>(s, "LegRowNeed0").text;
+                Color lineBefore = FindChild<Text>(s, "LegRowLine1").color;
+
+                SetPreview(s, true);
+                RenderTicketColumn(s, ticket, resolvedThrough: 0, liveLegIndex: 0);
+                SetPreview(s, false);
+                RenderTicketColumn(s, ticket, resolvedThrough: 0, liveLegIndex: 0);
+
+                Assert.IsFalse(FindChild<Image>(s, "LegRowStrike0").enabled,
+                    "a strike survived the release — §8.10's 'no lingering strike-throughs'");
+                Assert.IsFalse(FindChild<Image>(s, "LegRowStrike1").enabled,
+                    "a pending row's strike survived the release");
+                Assert.AreEqual(needBefore, FindChild<Text>(s, "LegRowNeed0").color,
+                    "the live row's brightness did not return to L3 after release");
+                Assert.AreEqual(needTextBefore, FindChild<Text>(s, "LegRowNeed0").text,
+                    "the authored NEED statement changed across a preview round trip");
+                Assert.AreEqual(lineBefore, FindChild<Text>(s, "LegRowLine1").color,
+                    "the pending row's treatment did not revert");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
     }
 }
