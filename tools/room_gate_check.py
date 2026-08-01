@@ -20,13 +20,16 @@ Usage:
                        current BoxCollider dimensions instead of comparing
                        against it (Gate 4 reports SKIP for this run).
 
-Exit code 0 if every non-SKIP gate passes, 1 otherwise.
+Exit code 0 unless some gate FAILs (SKIP, VOID and INFO gates never fail the
+run), 1 otherwise.
 """
 
 import argparse
 import json
 import re
 import sys
+from collections import Counter
+from datetime import datetime
 from pathlib import Path
 
 try:
@@ -42,7 +45,35 @@ except ImportError:
 EXPECTED_SINGLETONS = ["RoomArtRoot", "RoomArtGenerated", "RoomPostFx", "AdaptiveProbeVolume"]
 EXPECTED_LIGHT_COUNT = 8   # 6 Mixed + 2 Realtime (the R10 baked bounce was measured and removed)
 EXPECTED_DRESSING_COUNT = 6
-EXPECTED_COLLIDER_COUNT = 27
+
+# Unity class IDs for the collider types Gate 3 inventories, plus the
+# CharacterController, which is detected and reported separately because it
+# is the player, not room collision, and must never be folded into the room
+# total (see gate3_collider_inventory).
+COLLIDER_CLASS_IDS = {
+    "64": "MeshCollider",
+    "65": "BoxCollider",
+    "135": "SphereCollider",
+    "136": "CapsuleCollider",
+}
+CHARACTER_CONTROLLER_CLASS_ID = "143"
+CHARACTER_CONTROLLER_CLASS_NAME = "CharacterController"
+
+# R16 / C18: the room's true collider inventory, declared as DATA so Gate 3
+# diffs against named, explicit expected members instead of a bare count --
+# "an inventory names its members, a gate names the build it certifies."
+# LaptopScreen and PhoneScreen keep MeshColliders because interaction
+# raycasting is not re-plumbed to satisfy a number. TVScreen and WindowPane's
+# MeshColliders are being removed in a parallel change and are deliberately
+# NOT in this expected set -- until that lands, Gate 3 must FAIL and name
+# them, which is the proof the gate can see them at all.
+EXPECTED_COLLIDER_INVENTORY = {
+    "BoxCollider": {"total": 27, "solid": 24, "trigger": 3},
+    "MeshCollider": {"total": 2, "owners": {"LaptopScreen", "PhoneScreen"}},
+    "SphereCollider": {"total": 0},
+    "CapsuleCollider": {"total": 0},
+}
+EXPECTED_TOTAL_ROOM_COLLIDERS = 29  # 27 BoxCollider + 2 MeshCollider
 
 CAPTURE_NAMES = ["standing-overview.png", "seated-tv-couch.png", "focused-laptop-desk.png"]
 CAPTURE_SIZE = (2560, 1440)
@@ -107,14 +138,18 @@ PREFAB_NAME_OVERRIDE_RE = re.compile(r'propertyPath:\s*m_Name\s*\n\s*value:\s*(.
 SIZE_RE = re.compile(r'm_Size:\s*\{x:\s*(-?[\d.eE+-]+),\s*y:\s*(-?[\d.eE+-]+),\s*z:\s*(-?[\d.eE+-]+)\}')
 CENTER_RE = re.compile(r'm_Center:\s*\{x:\s*(-?[\d.eE+-]+),\s*y:\s*(-?[\d.eE+-]+),\s*z:\s*(-?[\d.eE+-]+)\}')
 DANGLING_MESH_RE = re.compile(r'm_Mesh:\s*\{fileID:\s*0\}')
+GAMEOBJECT_REF_RE = re.compile(r'm_GameObject:\s*\{fileID:\s*(-?\d+)\}')
+IS_TRIGGER_RE = re.compile(r'm_IsTrigger:\s*(\d+)')
 
 
 def split_documents(text):
-    """Split a Unity scene file into (class_id, class_name, body) tuples.
+    """Split a Unity scene file into (class_id, anchor, class_name, body) tuples.
 
     Each document starts with `--- !u!<classID> &<anchor>` and the following
     line names the class, e.g. `GameObject:`. The body runs until the next
-    `---` marker (or EOF).
+    `---` marker (or EOF). The anchor is kept (not just class id/name)
+    because Gate 3 must resolve each collider to its owning GameObject by
+    following `m_GameObject: {fileID: N}` to the document anchored at N.
     """
     headers = list(DOC_HEADER_RE.finditer(text))
     docs = []
@@ -124,7 +159,7 @@ def split_documents(text):
         body = text[start:end]
         class_match = CLASS_NAME_RE.match(body)
         class_name = class_match.group(1) if class_match else ""
-        docs.append((m.group("type"), class_name, body))
+        docs.append((m.group("type"), m.group("anchor"), class_name, body))
     return docs
 
 
@@ -146,7 +181,7 @@ def gate2_object_counts(docs):
     """
     name_counts = {}
 
-    for _class_id, class_name, body in docs:
+    for _class_id, _anchor, class_name, body in docs:
         if class_name == "GameObject":
             m = NAME_FIELD_RE.search(body)
             if m:
@@ -158,24 +193,176 @@ def gate2_object_counts(docs):
                 if name:
                     name_counts[name] = name_counts.get(name, 0) + 1
 
-    light_count = sum(1 for _cid, cname, _b in docs if cname == "Light")
+    light_count = sum(1 for _cid, _anchor, cname, _b in docs if cname == "Light")
     dressing_count = sum(count for name, count in name_counts.items() if name.startswith("Dressing_"))
 
     return name_counts, light_count, dressing_count
 
 
-def gate3_collider_docs(docs):
-    """Gate 3: BoxCollider documents. Cross-check class-id 65 against the
-    literal `BoxCollider:` class line -- if these ever disagree, the class-id
-    table or the tag name changed and the count should not be trusted."""
-    by_id = [b for cid, cname, b in docs if cid == "65"]
-    by_name = [b for cid, cname, b in docs if cname == "BoxCollider"]
-    if len(by_id) != len(by_name):
+def collect_collider_docs(docs):
+    """Group every collider document by Unity class id (Box/Mesh/Sphere/
+    Capsule), plus the CharacterController (143) kept in its own bucket
+    since it is the player, not room collision, and must never be folded
+    into the room total.
+
+    Cross-checks each class-id against its literal class-name tag (e.g. 65
+    vs `BoxCollider:`) the same way the old single-type gate did -- if these
+    ever disagree for any type, the class-id table or a tag name changed and
+    nothing downstream should be trusted.
+    """
+    by_class_id = {cid: [] for cid in COLLIDER_CLASS_IDS}
+    controller_docs = []
+    for cid, anchor, _cname, body in docs:
+        if cid in by_class_id:
+            by_class_id[cid].append((anchor, body))
+        elif cid == CHARACTER_CONTROLLER_CLASS_ID:
+            controller_docs.append((anchor, body))
+
+    for cid, expected_name in COLLIDER_CLASS_IDS.items():
+        by_name_count = sum(1 for _c, _a, cname, _b in docs if cname == expected_name)
+        if by_name_count != len(by_class_id[cid]):
+            raise AssertionError(
+                f"{expected_name} detection disagreement: {len(by_class_id[cid])} by class-id {cid} "
+                f"vs {by_name_count} by '{expected_name}:' tag -- scene format may have changed"
+            )
+
+    cc_by_name_count = sum(1 for _c, _a, cname, _b in docs if cname == CHARACTER_CONTROLLER_CLASS_NAME)
+    if cc_by_name_count != len(controller_docs):
         raise AssertionError(
-            f"BoxCollider detection disagreement: {len(by_id)} by class-id 65 "
-            f"vs {len(by_name)} by 'BoxCollider:' tag -- scene format may have changed"
+            f"CharacterController detection disagreement: {len(controller_docs)} by class-id "
+            f"{CHARACTER_CONTROLLER_CLASS_ID} vs {cc_by_name_count} by 'CharacterController:' tag"
         )
-    return by_name
+
+    return by_class_id, controller_docs
+
+
+def resolve_owner_names(docs, anchored_bodies):
+    """Resolve each (anchor, body) collider document to its owning
+    GameObject's m_Name, by following `m_GameObject: {fileID: N}` to the
+    GameObject document anchored at N.
+
+    Returns a list of (collider_anchor, owner_name, owner_fileID, body).
+    owner_name is None when no GameObject document with that anchor exists
+    in the scene (e.g. a stripped prefab member) -- callers must surface
+    that as a named mismatch, never drop it silently.
+    """
+    go_by_anchor = {
+        anchor: body for _cid, anchor, cname, body in docs if cname == "GameObject"
+    }
+
+    out = []
+    for anchor, body in anchored_bodies:
+        gm = GAMEOBJECT_REF_RE.search(body)
+        owner_id = gm.group(1) if gm else None
+        owner_name = None
+        if owner_id is not None and owner_id in go_by_anchor:
+            nm = NAME_FIELD_RE.search(go_by_anchor[owner_id])
+            owner_name = nm.group(1) if nm else None
+        out.append((anchor, owner_name, owner_id, body))
+    return out
+
+
+def _owner_label(name, fileid):
+    return name if name is not None else f"<unresolved fileID {fileid}>"
+
+
+def gate3_collider_inventory(docs):
+    """Gate 3 (C18): a NAMED inventory of every collider in the scene, not a
+    bare count. Parses every collider class present, resolves each to its
+    owning GameObject, reads solid vs trigger, and diffs the result against
+    EXPECTED_COLLIDER_INVENTORY -- naming exactly what is unexpected and
+    exactly what expected member is missing, never just "N vs M".
+
+    Returns (GateResult, box_collider_bodies) -- the BoxCollider body list is
+    handed back so Gate 4 (dimension comparison) can reuse it without a
+    second parse of the scene.
+    """
+    by_class_id, controller_docs = collect_collider_docs(docs)
+
+    box = resolve_owner_names(docs, by_class_id["65"])
+    mesh = resolve_owner_names(docs, by_class_id["64"])
+    sphere = resolve_owner_names(docs, by_class_id["135"])
+    capsule = resolve_owner_names(docs, by_class_id["136"])
+    controllers = resolve_owner_names(docs, controller_docs)
+
+    box_solid, box_trigger = [], []
+    for anchor, name, fileid, body in box:
+        tm = IS_TRIGGER_RE.search(body)
+        is_trigger = tm is not None and tm.group(1) != "0"
+        (box_trigger if is_trigger else box_solid).append((anchor, _owner_label(name, fileid)))
+
+    mesh_owners = [(anchor, _owner_label(name, fileid)) for anchor, name, fileid, _b in mesh]
+    mesh_owner_names = {n for _a, n in mesh_owners}
+
+    exp = EXPECTED_COLLIDER_INVENTORY
+    expected_mesh_owners = exp["MeshCollider"]["owners"]
+
+    problems = []
+
+    box_total = len(box)
+    if box_total != exp["BoxCollider"]["total"]:
+        problems.append(f"BoxCollider total: expected {exp['BoxCollider']['total']}, observed {box_total}")
+    if len(box_solid) != exp["BoxCollider"]["solid"]:
+        problems.append(f"BoxCollider solid: expected {exp['BoxCollider']['solid']}, observed {len(box_solid)}")
+    if len(box_trigger) != exp["BoxCollider"]["trigger"]:
+        problems.append(f"BoxCollider trigger: expected {exp['BoxCollider']['trigger']}, observed {len(box_trigger)}")
+
+    if len(mesh_owners) != exp["MeshCollider"]["total"]:
+        problems.append(f"MeshCollider total: expected {exp['MeshCollider']['total']}, observed {len(mesh_owners)}")
+    for anchor, name in sorted(mesh_owners, key=lambda t: t[1]):
+        if name not in expected_mesh_owners:
+            problems.append(f"unexpected MeshCollider on '{name}' (anchor {anchor})")
+    for missing_name in sorted(expected_mesh_owners - mesh_owner_names):
+        problems.append(f"missing expected MeshCollider on '{missing_name}'")
+
+    for label, found, expected_count in (
+        ("SphereCollider", sphere, exp["SphereCollider"]["total"]),
+        ("CapsuleCollider", capsule, exp["CapsuleCollider"]["total"]),
+    ):
+        if len(found) != expected_count:
+            problems.append(f"{label} total: expected {expected_count}, observed {len(found)}")
+        for anchor, name, fileid, _b in found:
+            problems.append(f"unexpected {label} on '{_owner_label(name, fileid)}' (anchor {anchor})")
+
+    total_room_colliders = box_total + len(mesh_owners) + len(sphere) + len(capsule)
+    if total_room_colliders != EXPECTED_TOTAL_ROOM_COLLIDERS:
+        problems.append(
+            f"total room colliders: expected {EXPECTED_TOTAL_ROOM_COLLIDERS}, observed {total_room_colliders}"
+        )
+
+    detail = list(problems)
+    detail.append(
+        f"inventory: BoxCollider {box_total} ({len(box_solid)} solid, {len(box_trigger)} trigger); "
+        f"MeshCollider {len(mesh_owners)} on {sorted(mesh_owner_names) if mesh_owner_names else '-'}; "
+        f"SphereCollider {len(sphere)}; CapsuleCollider {len(capsule)}"
+    )
+    if controllers:
+        cc_names = ", ".join(_owner_label(name, fileid) for _a, name, fileid, _b in controllers)
+        detail.append(
+            f"CharacterController (player -- excluded from room inventory): "
+            f"{len(controllers)} on {cc_names}"
+        )
+
+    expected_summary = (
+        f"{EXPECTED_TOTAL_ROOM_COLLIDERS} room colliders = Box {exp['BoxCollider']['total']} "
+        f"[{exp['BoxCollider']['solid']} solid/{exp['BoxCollider']['trigger']} trig] "
+        f"+ Mesh {exp['MeshCollider']['total']} on {sorted(expected_mesh_owners)} "
+        f"+ Sphere {exp['SphereCollider']['total']} + Capsule {exp['CapsuleCollider']['total']}"
+    )
+    observed_summary = (
+        f"{total_room_colliders} room colliders = Box {box_total} "
+        f"[{len(box_solid)} solid/{len(box_trigger)} trig] "
+        f"+ Mesh {len(mesh_owners)} on {sorted(mesh_owner_names) if mesh_owner_names else []} "
+        f"+ Sphere {len(sphere)} + Capsule {len(capsule)}"
+    )
+
+    result = GateResult(
+        3, "collider inventory (named, C18)",
+        "PASS" if not problems else "FAIL",
+        expected_summary, observed_summary, detail,
+    )
+    box_bodies = [body for _a, _n, _f, body in box]
+    return result, box_bodies
 
 
 def gate4_collider_dimensions(collider_bodies):
@@ -324,7 +511,7 @@ class GateResult:
     def __init__(self, gate, check, status, expected, observed, detail=None):
         self.gate = gate
         self.check = check
-        self.status = status  # "PASS" | "FAIL" | "SKIP"
+        self.status = status  # "PASS" | "FAIL" | "SKIP" | "VOID" | "INFO"
         self.expected = expected
         self.observed = observed
         self.detail = detail or []
@@ -332,6 +519,14 @@ class GateResult:
 
 def skip(gate, check, reason):
     return GateResult(gate, check, "SKIP", "-", reason)
+
+
+def void(gate, check, reason):
+    """A gate that has been explicitly ruled out by a design decision (R22),
+    as distinct from SKIP (un-runnable by this tool). VOID must not count as
+    a pass and must not silently disappear into SKIP's bucket -- it needs a
+    human to re-verify it before it can be trusted again."""
+    return GateResult(gate, check, "VOID", "-", reason)
 
 
 def print_table(results):
@@ -348,6 +543,43 @@ def print_table(results):
         print(fmt_row(row))
         for line in r.detail:
             print("       " + line)
+
+
+def format_mtime(path):
+    dt = datetime.fromtimestamp(path.stat().st_mtime).astimezone()
+    return dt.strftime("%Y-%m-%d %H:%M:%S %Z")
+
+
+def print_header(scene_path, captures_dir):
+    """C18: the report must say what build it certifies -- a PASS must never
+    be misreadable as covering geometry other than what this run actually
+    parsed and captured. Prints the scene and capture paths plus their
+    last-modified timestamps, and warns if the captures predate the scene
+    (meaning the frames do not show the geometry just parsed, and every
+    capture-derived result below -- R9-A, R9-B, R10 -- is stale)."""
+    scene_mtime = scene_path.stat().st_mtime
+    capture_path = captures_dir / CAPTURE_NAMES[0]
+
+    print(f"Scene:    {scene_path}  (modified {format_mtime(scene_path)})")
+    if capture_path.is_file():
+        print(f"Captures: {captures_dir}  ({CAPTURE_NAMES[0]} modified {format_mtime(capture_path)})")
+        if capture_path.stat().st_mtime < scene_mtime:
+            print(
+                f"WARNING: {CAPTURE_NAMES[0]} is OLDER than the scene -- these captures do not "
+                "show the geometry this run just parsed. Every capture-derived result below "
+                "(R9-A, R9-B, R10) is stale until the room is recaptured."
+            )
+    else:
+        print(f"Captures: {captures_dir}  ({CAPTURE_NAMES[0]} not found)")
+    print()
+
+
+def print_summary(results, exit_code):
+    counts = Counter(r.status for r in results)
+    order = ["PASS", "FAIL", "SKIP", "VOID", "INFO"]
+    parts = ", ".join(f"{counts[s]} {s}" for s in order if counts.get(s))
+    print()
+    print(f"Summary: {parts} -- exit code {exit_code}")
 
 
 # ---------------------------------------------------------------------------
@@ -379,6 +611,9 @@ def main():
         scene_text = load_scene_text(scene_path)
         docs = split_documents(scene_text)
 
+        # --- Header (C18): state the build this run certifies --------------
+        print_header(scene_path, captures_dir)
+
         # --- Gate 1: pre/post capture diff -- needs two Unity runs ---------
         results.append(skip(1, "pre/post capture diff", "requires two separate Unity editor captures (before and after the change); nothing to compare from a single scene/capture set"))
 
@@ -404,14 +639,9 @@ def main():
             detail,
         ))
 
-        # --- Gate 3: collider count -----------------------------------------
-        collider_bodies = gate3_collider_docs(docs)
-        collider_count = len(collider_bodies)
-        results.append(GateResult(
-            3, "collider count",
-            "PASS" if collider_count == EXPECTED_COLLIDER_COUNT else "FAIL",
-            str(EXPECTED_COLLIDER_COUNT), str(collider_count),
-        ))
+        # --- Gate 3: named collider inventory (C18 / R16) --------------------
+        gate3_result, collider_bodies = gate3_collider_inventory(docs)
+        results.append(gate3_result)
 
         # --- Gate 4: collision dimensions unchanged -------------------------
         current_dims = gate4_collider_dimensions(collider_bodies)
@@ -461,10 +691,13 @@ def main():
             "0", str(dangling),
         ))
 
-        # --- Gates 6, 7, 8: not automatable / out of scope by agreement -----
-        results.append(skip(6, "UI/HUD readability", "requires a human reading rendered UI text; not checkable from files on disk"))
-        results.append(skip(7, "UI/HUD contrast", "requires a human reading rendered UI text; not checkable from files on disk"))
-        results.append(skip(8, "structural-only check", "out of scope for this tool by prior agreement"))
+        # --- Gates 6, 7, 8: VOIDed by R22, pending human re-verification -----
+        # Not SKIP: SKIP means "this tool cannot run it". VOID means a design
+        # ruling took the prior result off the board entirely -- it must not
+        # read as a pass, and must not silently blend into SKIP's bucket.
+        results.append(void(6, "UI/HUD readability", "voided by R22 pending human re-verification"))
+        results.append(void(7, "UI/HUD contrast", "voided by R22 pending human re-verification"))
+        results.append(void(8, "structural-only check", "voided by R22 pending human re-verification"))
 
         # --- R9-A: bunk 2 mattress luminance ---------------------------------
         current_img = load_capture(captures_dir, R9A_IMAGE)
@@ -538,7 +771,12 @@ def main():
 
     # "INFO" (R10) is deliberately excluded from ever failing the run -- it has no
     # ratified tolerance, only sanity values it should reproduce approximately.
-    exit_code = 0 if all(r.status in ("PASS", "SKIP", "INFO") for r in results) else 1
+    # "VOID" (Gates 6/7/8, R22) is likewise excluded -- a ruling took them off
+    # the board pending human re-verification; that is not the same as a pass,
+    # but it must not hard-fail the exit code either. Both are reported
+    # distinctly in the summary line below, never silently merged into PASS.
+    exit_code = 0 if all(r.status in ("PASS", "SKIP", "INFO", "VOID") for r in results) else 1
+    print_summary(results, exit_code)
     sys.exit(exit_code)
 
 

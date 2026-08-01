@@ -148,6 +148,9 @@ namespace SBR
             public Material Prop;
             public Material Couch;
             public Material Bezel;
+            public Material LaptopShell;
+            public Material PhoneShell;
+            public Material BunkFrame;
             public Material TvScreen;
             public Material LaptopScreen;
             public Material PhoneScreen;
@@ -203,6 +206,15 @@ namespace SBR
                     normalStrength: 3.5f, aoStrength: 0.5f,
                     smoothMin: 0.05f, smoothMax: 0.15f),
                 Prop = Mat("PropGray", new Color(0.180f, 0.178f, 0.160f), smoothness: 0.35f),
+                // R19(c): the palette's Drab green #3A4230 was instantiated nowhere in the built
+                // room. Applied to both bunks' structural frames only - BunkSlab/BunkPostFront/
+                // BunkPostBack (was Prop) and Bunk2Slab/Bunk2PostFront/Bunk2PostBack (was the
+                // Bunk2Dark material, now retired - see BuildDeskCluster). The bedding half of
+                // this ruling (bunk 2's mattress fabric) lives in RoomArtDressing on
+                // ArtBunk2Shadow. The couch is a separate "couch fabric" in the design doc and is
+                // deliberately untouched here - it carries a design-verified relief result.
+                BunkFrame = Mat("BunkFrameGreen", new Color(0.0423f, 0.0545f, 0.0296f),
+                    smoothness: 0.30f),
                 // 4b: lifted so the weave actually reads - the couch was dark enough that its
                 // texture was invisible, which wasted the one fabric map in the room.
                 // Highest relief: the weave is the whole point, and at 17cm tiling it is the one
@@ -213,6 +225,20 @@ namespace SBR
                     normalStrength: 10.0f, aoStrength: 1.2f,
                     smoothMin: 0.03f, smoothMax: 0.11f),
                 Bezel = Mat("BezelBlack", new Color(0.045f, 0.045f, 0.040f), smoothness: 0.25f),
+                // R19(a), the highest violation in the slice: TVBody, LaptopBase and PhoneBody
+                // all pointed at Bezel, so the institution's hardware and the occupant's own read
+                // as materially identical - the doc's whole story is the contrast between them.
+                // Split so the laptop differs from the TV housing on at least two of the three
+                // required channels (value, hue temperature, finish) and reads lighter, warmer
+                // and lower-cost: 2.17x lighter than the housing by luminance (0.1052 vs 0.0485),
+                // warm where the housing is cool (R-B +0.0270 vs -0.0122), and glossier (0.42 vs
+                // 0.28) - three channels satisfied where the ruling required two. TVBody keeps
+                // Bezel unchanged. The phone "is his too and sits near the laptop, not on it", so
+                // it gets its own close-but-distinct shell rather than sharing LaptopShell.
+                LaptopShell = Mat("LaptopShell", new Color(0.115f, 0.104f, 0.088f),
+                    smoothness: 0.42f),
+                PhoneShell = Mat("PhoneShell", new Color(0.092f, 0.085f, 0.076f),
+                    smoothness: 0.50f),
                 // Unified-grade spec §2: lift the panel's black floor so nothing in frame is
                 // darker than the screen's own off state. Pure black on a panel in a dim, dusty
                 // room is physically impossible and is the clearest "this was composited" tell.
@@ -461,12 +487,15 @@ namespace SBR
             GameObject back = Box("CouchBackrest", root.transform,
                 new Vector3(-1.225f, 0.62f, 0.3f), new Vector3(0.15f, 0.4f, 1.8f), mats.Couch);
             // Upper bunk slab, underside at 1.5m.
+            // R19(c): frame is BunkFrame (drab green #3A4230), not Prop - see BuildMaterials.
             Box("BunkSlab", root.transform,
-                new Vector3(-0.9f, 1.54f, 0.3f), new Vector3(0.8f, 0.08f, 1.9f), mats.Prop);
+                new Vector3(-0.9f, 1.54f, 0.3f), new Vector3(0.8f, 0.08f, 1.9f), mats.BunkFrame);
             Box("BunkPostFront", root.transform,
-                new Vector3(-0.53f, 0.77f, -0.62f), new Vector3(0.06f, 1.54f, 0.06f), mats.Prop);
+                new Vector3(-0.53f, 0.77f, -0.62f), new Vector3(0.06f, 1.54f, 0.06f),
+                mats.BunkFrame);
             Box("BunkPostBack", root.transform,
-                new Vector3(-0.53f, 0.77f, 1.22f), new Vector3(0.06f, 1.54f, 0.06f), mats.Prop);
+                new Vector3(-0.53f, 0.77f, 1.22f), new Vector3(0.06f, 1.54f, 0.06f),
+                mats.BunkFrame);
 
             // Forgiving hover volume over the whole seat (trigger: no physics blocking).
             var hoverVolume = root.AddComponent<BoxCollider>();
@@ -579,20 +608,23 @@ namespace SBR
             //
             // Slab stops at the far wall (z 0.5..2.0) rather than mirroring the couch bunk's
             // length, and the posts clear the stool's footprint in z.
-            // Its own much darker material - roughly 40% of the standard prop albedo. Moving the
-            // fluorescent clear of it is not enough on its own: TvLight still reaches this
-            // corner, and with prop-grey albedo the slab came back as the BRIGHTEST object in
-            // frame, which is the exact opposite of the brief. Dark albedo keeps it reading as
-            // shadow even when light does land on it.
-            Material bunkDark = Mat("Bunk2Dark", new Color(0.072f, 0.070f, 0.060f),
-                smoothness: 0.20f);
-
+            // R19(c): frame is BunkFrame (drab green #3A4230, shared with bunk 1's frame - see
+            // BuildMaterials), not the old Bunk2Dark. Bunk2Dark's own darker-than-Prop albedo
+            // existed only to keep this slab from becoming the brightest object in frame even
+            // when TvLight reached the corner; BunkFrame is itself dark enough to hold that job,
+            // so Bunk2Dark's creation is retired rather than left as an orphan - nothing else in
+            // this file references it after this change.
+            //
+            // FLAGGED, NOT FIXED (R19(c)): drab green's luminance (0.0501) is brighter than the
+            // Bunk2Dark it replaces (0.0389). Bunk 2's mattress is a ratified test at 43.9 +/-1
+            // measured luminance - see RoomArtDressing.BuildClutter (ArtBunk2Shadow) for the full
+            // note. This is a known, deliberate, measured risk; do not compensate here either.
             Box("Bunk2Slab", deskRoot, new Vector3(0.9f, 1.54f, 1.25f),
-                new Vector3(0.8f, 0.08f, 1.5f), bunkDark);
+                new Vector3(0.8f, 0.08f, 1.5f), mats.BunkFrame);
             Box("Bunk2PostFront", deskRoot, new Vector3(0.53f, 0.77f, 0.57f),
-                new Vector3(0.06f, 1.54f, 0.06f), bunkDark);
+                new Vector3(0.06f, 1.54f, 0.06f), mats.BunkFrame);
             Box("Bunk2PostBack", deskRoot, new Vector3(0.53f, 0.77f, 1.93f),
-                new Vector3(0.06f, 1.54f, 0.06f), bunkDark);
+                new Vector3(0.06f, 1.54f, 0.06f), mats.BunkFrame);
 
             // Stays put: at 0.45m tall it passes under the 1.50m slab with clearance, and its
             // z-span (1.275..1.625) misses both bunk posts.
@@ -612,8 +644,10 @@ namespace SBR
             var root = new GameObject("Laptop");
             root.transform.position = new Vector3(1.15f, 0.85f, 1.62f);
 
+            // R19(a): LaptopShell, not Bezel - see BuildMaterials for the channel breakdown.
             GameObject lapBase = Box("LaptopBase", root.transform,
-                new Vector3(1.08f, 0.76f, 1.62f), new Vector3(0.22f, 0.02f, 0.32f), mats.Bezel);
+                new Vector3(1.08f, 0.76f, 1.62f), new Vector3(0.22f, 0.02f, 0.32f),
+                mats.LaptopShell);
 
             // Lid: 0.32 x 0.22 quad hinged on the wall-side edge of the base, tilted 20
             // degrees back toward the wall (+X), screen facing the room (-X and up).
@@ -623,8 +657,10 @@ namespace SBR
             Vector3 lidUp = Quaternion.AngleAxis(-lidTiltDeg, Vector3.forward) * Vector3.up;
             Vector3 lidNormal = Vector3.Cross(widthDir, lidUp); // -X and slightly up
             Vector3 lidCenter = hinge + lidUp * 0.11f;
+            // R16: keeps its MeshCollider - LaptopScreen is on the Interactable layer.
             GameObject lid = Quad("LaptopScreen", root.transform, lidCenter,
-                new Vector2(0.32f, 0.22f), lidNormal, lidUp, mats.LaptopScreen);
+                new Vector2(0.32f, 0.22f), lidNormal, lidUp, mats.LaptopScreen,
+                keepCollider: true);
 
             // Generous interaction volume - the laptop itself is too small to raycast comfortably.
             var grabVolume = root.AddComponent<BoxCollider>();
@@ -664,11 +700,15 @@ namespace SBR
             var root = new GameObject("Phone");
             root.transform.position = new Vector3(1.0f, 0.80f, 1.15f);
 
+            // R19(a): PhoneShell, not Bezel - the phone "is his too" but sits near the laptop,
+            // not on it, so it gets its own close-but-distinct shell (see BuildMaterials).
             GameObject body = Box("PhoneBody", root.transform,
-                new Vector3(1.0f, 0.754f, 1.15f), new Vector3(0.075f, 0.008f, 0.15f), mats.Bezel);
+                new Vector3(1.0f, 0.754f, 1.15f), new Vector3(0.075f, 0.008f, 0.15f),
+                mats.PhoneShell);
+            // R16: keeps its MeshCollider - PhoneScreen is on the Interactable layer.
             GameObject screen = Quad("PhoneScreen", root.transform,
                 new Vector3(1.0f, 0.759f, 1.15f), new Vector2(0.065f, 0.135f),
-                Vector3.up, Vector3.forward, mats.PhoneScreen);
+                Vector3.up, Vector3.forward, mats.PhoneScreen, keepCollider: true);
 
             var grabVolume = root.AddComponent<BoxCollider>();
             grabVolume.center = Vector3.zero;
@@ -1302,11 +1342,22 @@ namespace SBR
             return go;
         }
 
+        // R16: GameObject.CreatePrimitive(PrimitiveType.Quad) silently brings its own
+        // MeshCollider, so every screen built here was quietly adding an undocumented solid
+        // collider. TVScreen and WindowPane are redundant with the wall/body colliders already
+        // sitting directly behind them, so their primitive collider is destroyed by default (same
+        // pattern as RoomArtDressing.ArtQuad). LaptopScreen and PhoneScreen pass keepCollider:
+        // true - they sit on the Interactable layer and interaction raycasting is not re-plumbed
+        // to satisfy a collider count. True inventory: 29 = 27 BoxColliders (24 solid, 3 triggers)
+        // + 2 named interaction MeshColliders (LaptopScreen, PhoneScreen).
         private static GameObject Quad(string name, Transform parent, Vector3 center,
-                                       Vector2 size, Vector3 facing, Vector3 up, Material mat)
+                                       Vector2 size, Vector3 facing, Vector3 up, Material mat,
+                                       bool keepCollider = false)
         {
             GameObject go = GameObject.CreatePrimitive(PrimitiveType.Quad);
             go.name = name;
+            if (!keepCollider)
+                UnityEngine.Object.DestroyImmediate(go.GetComponent<Collider>());
             if (parent != null)
                 go.transform.SetParent(parent, true);
             go.transform.position = center;

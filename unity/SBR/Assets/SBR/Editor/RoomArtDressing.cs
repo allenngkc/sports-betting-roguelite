@@ -51,14 +51,22 @@ namespace SBR
             Material grime = GrayboxRoomBuilder.Mat("ArtGrime",
                 new Color(0.085f, 0.080f, 0.068f), smoothness: 0.12f);
 
+            // R19(b): restored to the spec's cool #22252A (B>G>R). The built value had drifted
+            // hue-flipped WARM (R>G>B), which undercuts the reason this palette exists: the
+            // institution's metal being colder than the room is the contrast the whole story
+            // runs on. GUARD: if this reads too dark under the approved one-tube rig, that is a
+            // lighting finding under R12, NOT a licence to lighten the albedo back up.
             Material conduit = GrayboxRoomBuilder.Mat("ArtConduit",
-                new Color(0.038f, 0.036f, 0.032f), smoothness: 0.34f);
+                new Color(0.0160f, 0.0185f, 0.0232f), smoothness: 0.34f);
 
             // Painted steel for the display enclosure - same wear language as the bunk frames,
             // a touch lighter than the conduit so the housing reads as a separate installed
             // object rather than dissolving into the pipe runs behind it.
+            // R19(b): restored to the spec's cool #3A3F42 (B>G>R), same hue-flip fix and same
+            // R12 guard as ArtConduit above - do not lighten this to compensate for how it reads
+            // under the rig; that is a lighting finding, not an albedo problem.
             Material steel = GrayboxRoomBuilder.Mat("ArtHousingSteel",
-                new Color(0.098f, 0.095f, 0.084f), smoothness: 0.28f);
+                new Color(0.0423f, 0.0497f, 0.0545f), smoothness: 0.28f);
             Material stencilMat = GrayboxRoomBuilder.Mat("ArtStencil", Color.white,
                 smoothness: 0.10f, baseMap: GetOrCreateStencil("RM-4B 217-9C", 256, 64));
             Material indicator = GrayboxRoomBuilder.Mat("ArtIndicator",
@@ -516,8 +524,19 @@ namespace SBR
             // bedding, a pillow - but it sits outside every light cone in the room and stays
             // in shadow. Allen's note on concept C: it should be legible as OCCUPIED, never
             // legible as EMPTY. That ambiguity is the point, so nothing here is lit to confirm.
+            // R19(c): mattress fabric colour is the palette's Drab green #3A4230, matching the
+            // bunk frames (GrayboxRoomBuilder.BunkFrame) rather than its own bespoke near-black.
+            // The couch is a separate "couch fabric" in the design doc and is untouched by this
+            // ruling - it carries a design-verified relief result that must not be disturbed.
+            //
+            // FLAGGED, NOT FIXED: drab green's luminance (0.0501) is brighter than the material
+            // it replaces here (0.058/0.055/0.047) and brighter than the Bunk2Dark frame colour
+            // it also replaces elsewhere (0.0389). Bunk 2's mattress is a ratified test at
+            // 43.9 +/-1 measured luminance, and this change may lift it. That is a known,
+            // deliberate, measured risk - the lead will measure and escalate if it breaks. Do
+            // NOT compensate, darken, or "fix" it here.
             Material bunkShadow = GrayboxRoomBuilder.Mat("ArtBunk2Shadow",
-                new Color(0.058f, 0.055f, 0.047f), smoothness: 0.03f);
+                new Color(0.0423f, 0.0545f, 0.0296f), smoothness: 0.03f);
 
             ArtBox(g, "Bunk2Mattress", new Vector3(0.92f, 1.615f, 1.28f),
                 new Vector3(0.70f, 0.07f, 1.34f), bunkShadow);
