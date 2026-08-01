@@ -112,6 +112,14 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-08-01 cycle 32 · **DD Batch 4 + addendum transcribed** (27 register lines;
+  T21–T27, S18–S26, R14–R15, C10–C14) and **dispatched to all three affected
+  leads** — TV corrected on T24 (fixed rows STAND) before it built the wrong
+  direction. Design-verified firsts: laptop (S6/S7/S8) and room (R9/R10, R15
+  slice-closed). T6 verified-refused pending T25.1. **Orchestrator-owned: C13**
+  (room scene renders superseded screen content — integration re-take after
+  T25.1/T27 land). Watch: SureThing session ~567k uncached — hygiene clear at
+  next boundary. Reversal: veto any ruling, I re-dispatch.
 - 2026-07-31 cycle 29 · markets phase 2 underway (`32b234c` type/state
   conformance landed; more in flight). **Boundary watch:** markets now edits the
   SureThing surface post-merge — before the DD batch reactivates the SureThing
