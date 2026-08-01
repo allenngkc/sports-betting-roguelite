@@ -34,6 +34,15 @@ namespace SBR.Tests.EditMode
         // and only the `chromeCyan` field itself is allowed to read this way — see the test below.
         private static bool LooksLikeRetiredCyan(Color c) => c.b > 0.7f && c.g > 0.6f && c.r < 0.75f;
 
+        // The retired money language as literal constants. These were inline in the markup scan
+        // below; they are hoisted here UNCHANGED — same three values, same order — because more than
+        // one scan now needs to name them, and two scans each carrying a private copy of "the
+        // retired colours" are two lists that eventually disagree. A palette law with two
+        // definitions is the same class of blind spot TV-S3 was raised to close.
+        private const string RetiredGreenHex = "3CE873"; // money-good green — DESIGN.md §4 retires it outright
+        private const string RetiredRedHex = "FF4038";   // money-bad red — retired outright alongside green
+        private const string RetiredCyanHex = "9EDCF6";  // the previous palette's general-chrome cyan
+
         /// <summary>T15 (Design Director ruling, 2026-07-31): the retired money language survived a
         /// full palette retirement by hiding in a place no palette test looked — embedded as raw hex
         /// inside rich-text markup strings rather than as a serialised <see cref="Color"/> field.
@@ -60,7 +69,7 @@ namespace SBR.Tests.EditMode
             // The retired money language, as it appears in markup: money-good green, money-bad red,
             // and the previous palette's general-chrome cyan. DESIGN.md §4 retires all three — loss
             // is darkness, context is grey, and cyan survives only as §8's VOID leg state.
-            string[] retiredHex = { "3CE873", "FF4038", "9EDCF6" };
+            string[] retiredHex = { RetiredGreenHex, RetiredRedHex, RetiredCyanHex };
 
             string runtimeDir = Path.Combine(
                 Directory.GetCurrentDirectory(), "Assets", "SBR", "Runtime");
@@ -137,15 +146,291 @@ namespace SBR.Tests.EditMode
             }
         }
 
+        // ---------------------------------------------------------------------------------------
+        // TV-S3 — the colour-field scan, widened from one type's public surface to the whole TV
+        // surface. Everything above this line reads TvSweatScreen's PUBLIC fields or reads source
+        // text. The helpers below exist so a single test can look everywhere else a Color can hide.
+        // ---------------------------------------------------------------------------------------
+
+        private const BindingFlags EveryDeclaredField =
+            BindingFlags.Public | BindingFlags.NonPublic |
+            BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+
+        /// <summary>TV-S3 (Design Director ruling, 2026-08-01): <b>the scan that kept missing this
+        /// class is the finding, not the pixel.</b>
+        ///
+        /// <para>Three guards in this file already claim to enforce "no retired money colour", and
+        /// all three were looking in the wrong place at once. <see cref="Retired_green_and_red_fields_no_longer_exist_on_the_type"/>
+        /// and <see cref="No_public_colour_field_reads_as_the_retired_saturated_red_or_green"/>
+        /// reflect over <c>TvSweatScreen</c>'s PUBLIC <see cref="Color"/> fields;
+        /// <see cref="No_retired_money_colour_hides_in_rich_text_markup_in_owned_runtime_source"/>
+        /// scans source for hex inside markup. The actual violation was three PRIVATE
+        /// <see cref="Color"/> fields — <c>_green</c> #3CE873, <c>_red</c> #FF4038, <c>_cyan</c>
+        /// #9EDCF6 — on <c>MomentumTape</c>, a DIFFERENT owned type on the same surface. Wrong
+        /// visibility, wrong type, not markup: invisible to all three by construction, not by
+        /// accident. Each guard passed while the retired palette was live on screen.</para>
+        ///
+        /// <para><b>How scope is decided.</b> Namespace alone cannot decide it: every owned runtime
+        /// type is in <c>SBR.Game</c>, including <c>LaptopOs</c>, <c>PhoneScreen</c> and
+        /// <c>SportsbookApp</c>, which are other surfaces with their own legitimate palettes and are
+        /// not owned by this worktree (<c>LaptopOs.MoneyGood</c> is a live, sanctioned green over
+        /// there). A hardcoded list of TV types cannot decide it either — a list is precisely the
+        /// blind spot this test exists to close, and the next type added to the surface would not be
+        /// on it. So the scope is DISCOVERED and the rule is reachability: <b>a type is on the TV
+        /// surface if <see cref="TvSweatScreen"/> can reach it through declared fields</b>,
+        /// transitively, staying inside <c>SBR.Game</c> in the owned runtime assembly. That picks up
+        /// <c>MomentumTape</c>, <c>TheaterStage</c>, <c>TvLight</c>, the audio/choreography
+        /// collaborators and every nested type, and it picks up anything wired in tomorrow with no
+        /// edit here. The other surfaces fall out on their own: the TV holds no reference to any of
+        /// them, which is the same fact that makes them a different surface.</para>
+        ///
+        /// <para><b>What is hardcoded, and why.</b> Exactly one thing: the four names in
+        /// <c>mustBeFound</c>. That is not the scope — it is the anti-regression on the DISCOVERY.
+        /// If someone stops holding <c>MomentumTape</c> in a field and builds it some other way, the
+        /// reachability walk silently stops covering it and this test would quietly pass over the
+        /// very type TV-S3 was raised about. The floor makes that shrinkage loud instead.</para>
+        ///
+        /// <para><b>What "retired" means here is not re-invented.</b> This reuses this file's own
+        /// <see cref="LooksLikeRetiredGreen"/> / <see cref="LooksLikeRetiredRed"/> helpers unchanged
+        /// — a second, divergent definition of the money law would be the same defect wearing a new
+        /// hat. It then asks a second, strictly narrower question against the same file's own
+        /// retired constants: is this field one of them VERBATIM? Both questions are needed, and the
+        /// reason is uncomfortable: <c>LooksLikeRetiredRed</c> requires <c>g &lt; 0.25</c>, and
+        /// #FF4038's green channel is 0x40/255 = 0.25098 — the heuristic misses the retired red it
+        /// was calibrated against, by 0.00098. The identity check catches what the hair's-breadth
+        /// costs us. Tightening the shared threshold instead would change what three shipped guards
+        /// assert, which is a palette ruling and not this test's call to make — routed, not
+        /// unilaterally fixed.</para>
+        ///
+        /// <para><b>HDR is not a violation.</b> <c>gold</c>, <c>goldL4</c> and <c>goldL2</c> are
+        /// sanctioned money colours and the first two carry components above 1.0 on purpose
+        /// (DESIGN.md §3's L4 tier). The heuristics already pass them — gold's green channel is far
+        /// too high to read as red — and the identity check refuses to quantise anything above 1.0,
+        /// because every retired constant is an LDR value and an HDR colour therefore cannot BE
+        /// one.</para></summary>
+        [Test]
+        public void No_colour_field_anywhere_on_the_TV_surface_reads_as_the_retired_money_language()
+        {
+            var scratch = new List<Object>();
+            var offenders = new List<string>();
+            var unreadable = new List<string>();
+            try
+            {
+                List<System.Type> surface = TvSurfaceTypes();
+
+                // The floor on the discovery rule — see the summary. These are the types the audit
+                // named; if the walk stops reaching one of them, the walk broke, not the palette.
+                string[] mustBeFound = { "TvSweatScreen", "MomentumTape", "TheaterStage", "TvLight" };
+                foreach (string required in mustBeFound)
+                    Assert.IsTrue(surface.Any(candidate => candidate.Name == required),
+                        $"the TV surface walk no longer reaches {required}. That is a failure of this " +
+                        "SCAN, not a pass: reachability from TvSweatScreen is how the scope is decided, " +
+                        "so a type that drops out of the walk drops out of every colour law this test " +
+                        "enforces — silently, which is exactly how TV-S3's violation shipped.");
+
+                foreach (System.Type t in surface)
+                {
+                    // Compiler-generated types are not palette. A coroutine's state machine
+                    // (TvSweatScreen+<FloodPulse>d__264) hoists captured locals into fields, so a
+                    // Color local inside an iterator surfaces here as an unconstructible "colour
+                    // field". That is a local the SOURCE scan can see and this one cannot, and
+                    // treating it as the scan going blind would keep this test permanently red for
+                    // a shape it was never about.
+                    if (t.IsDefined(typeof(System.Runtime.CompilerServices.CompilerGeneratedAttribute), false)
+                        || t.Name.IndexOf('<') >= 0)
+                        continue;
+
+                    List<FieldInfo> colourFields = t.GetFields(EveryDeclaredField)
+                        .Where(field => field.FieldType == typeof(Color) || field.FieldType == typeof(Color32))
+                        .ToList();
+                    if (colourFields.Count == 0) continue;
+
+                    // Static fields read off the type; instance fields need an object to read the
+                    // declared defaults from. Only pay for an instance when something needs one.
+                    object instance = null;
+                    if (colourFields.Any(field => !field.IsStatic))
+                    {
+                        instance = DefaultsOnlyInstance(t, scratch);
+                        if (instance == null)
+                        {
+                            unreadable.Add($"{t.FullName} ({colourFields.Count(field => !field.IsStatic)} instance " +
+                                           "colour field(s)) — could not be constructed for a defaults read");
+                            continue;
+                        }
+                    }
+
+                    foreach (FieldInfo f in colourFields)
+                    {
+                        object raw = f.GetValue(f.IsStatic ? null : instance);
+                        if (raw == null) continue;
+                        Color c = f.FieldType == typeof(Color) ? (Color)raw : (Color)(Color32)raw;
+
+                        string verdict = RetiredMoneyVerdict(c);
+                        if (verdict != null)
+                            offenders.Add($"{t.Name}.{f.Name} [{Visibility(f)} {f.FieldType.Name}] = " +
+                                          $"({c.r:0.###}, {c.g:0.###}, {c.b:0.###}) — {verdict}");
+                    }
+                }
+
+                // A type the scan could not read is not a type that passed. Reporting it as a
+                // failure is the whole lesson of TV-S3: a sweep that quietly skips what it cannot
+                // reach is a sweep that reports clean while the violation is on screen.
+                Assert.IsEmpty(unreadable,
+                    "these TV-surface types declare instance Color fields this scan could not read, " +
+                    "because it could not build a defaults-only instance of them. Treat that as the " +
+                    "scan going blind on the surface it exists to cover — teach DefaultsOnlyInstance " +
+                    "how to build them rather than letting them fall out of the sweep:\n  " +
+                    string.Join("\n  ", unreadable));
+
+                Assert.IsEmpty(offenders,
+                    "a retired money colour is live as a Color field on the TV surface. DESIGN.md §4 " +
+                    "retires money-good green and money-bad red OUTRIGHT: gold is the only money " +
+                    "colour and loss is darkness, so a field still carrying either hue is the old " +
+                    "palette still speaking, through a name the palette retirement never looked at.\n" +
+                    "Read the VISIBILITY and the OWNING TYPE below before assuming this is " +
+                    "TvSweatScreen's problem. This scan exists because the three guards above it only " +
+                    "ever read TvSweatScreen's public fields, while the real violation was three " +
+                    "private fields on MomentumTape — the same surface, a different type, and no " +
+                    "guard pointed at it.\n  " + string.Join("\n  ", offenders));
+            }
+            finally
+            {
+                foreach (Object o in scratch)
+                    if (o != null) Object.DestroyImmediate(o);
+            }
+        }
+
+        /// <summary>Discovers the TV surface instead of listing it: every <c>SBR.Game</c> type in the
+        /// owned runtime assembly that <see cref="TvSweatScreen"/> can reach through declared fields,
+        /// transitively, plus the nested types of everything reached. See the calling test's summary
+        /// for why reachability is the scope rule and a name list is not.</summary>
+        private static List<System.Type> TvSurfaceTypes()
+        {
+            Assembly owned = typeof(TvSweatScreen).Assembly;
+            var found = new HashSet<System.Type>();
+            var pending = new Queue<System.Type>();
+            pending.Enqueue(typeof(TvSweatScreen));
+
+            while (pending.Count > 0)
+            {
+                System.Type t = pending.Dequeue();
+                if (t == null || t.Assembly != owned || t.Namespace != "SBR.Game") continue;
+                if (!found.Add(t)) continue;
+
+                // Nested types are part of the same surface and carry the same palette law — and
+                // they are the single easiest place for a colour to sit unobserved.
+                foreach (System.Type nested in t.GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic))
+                    pending.Enqueue(nested);
+
+                foreach (FieldInfo f in t.GetFields(EveryDeclaredField))
+                    foreach (System.Type reached in Reachable(f.FieldType))
+                        pending.Enqueue(reached);
+            }
+            return found.ToList();
+        }
+
+        /// <summary>Arrays and generics hide their element types behind a wrapper the walk must not
+        /// stop at: a <c>List&lt;Row&gt;</c> field reaches <c>Row</c>, and a <c>Dot[]</c> reaches
+        /// <c>Dot</c>. Missing that would put whole types out of scope for no reason a reader could
+        /// ever guess from the failure.</summary>
+        private static IEnumerable<System.Type> Reachable(System.Type t)
+        {
+            if (t == null) yield break;
+            if (t.IsArray)
+            {
+                foreach (System.Type element in Reachable(t.GetElementType())) yield return element;
+                yield break;
+            }
+            if (t.IsGenericType)
+                foreach (System.Type arg in t.GetGenericArguments())
+                    foreach (System.Type element in Reachable(arg)) yield return element;
+            yield return t;
+        }
+
+        /// <summary>Builds an instance carrying only DECLARED FIELD DEFAULTS — never a live one.
+        /// Components go onto an inactive <see cref="GameObject"/> so <c>Awake</c>/<c>OnEnable</c>
+        /// never fire, matching the pattern every other scan in this file uses. Returns null when the
+        /// type cannot be built, and the caller reports that as a failure rather than a skip.</summary>
+        private static object DefaultsOnlyInstance(System.Type t, List<Object> scratch)
+        {
+            if (t.IsAbstract || t.IsInterface || t.ContainsGenericParameters) return null;
+
+            if (typeof(Component).IsAssignableFrom(t))
+            {
+                var go = new GameObject("TvS3_" + t.Name);
+                go.SetActive(false); // field defaults only — never let Awake/OnEnable fire here
+                scratch.Add(go);
+                return go.AddComponent(t);
+            }
+
+            if (typeof(ScriptableObject).IsAssignableFrom(t))
+            {
+                ScriptableObject so = ScriptableObject.CreateInstance(t);
+                scratch.Add(so);
+                return so;
+            }
+
+            try { return System.Activator.CreateInstance(t, nonPublic: true); }
+            catch { return null; }
+        }
+
+        /// <summary>Two questions against one vocabulary: does this colour READ as a retired money
+        /// hue (this file's own heuristics, reused unchanged), and failing that, IS it one of this
+        /// file's own retired constants verbatim? The second exists because #FF4038 misses
+        /// <see cref="LooksLikeRetiredRed"/>'s green bound by 0.00098 — see the calling test's
+        /// summary. Returns null when the colour is clean, otherwise the reason, phrased for someone
+        /// reading a red test they did not write.</summary>
+        private static string RetiredMoneyVerdict(Color c)
+        {
+            if (LooksLikeRetiredGreen(c)) return "reads as the retired money-good green (DESIGN.md §4 retires green outright)";
+            if (LooksLikeRetiredRed(c)) return "reads as the retired money-bad red (DESIGN.md §4: loss is darkness, never red)";
+
+            // HDR is sanctioned money, not a violation: DESIGN.md §3's L4 tier puts gold above 1.0 on
+            // purpose. Every retired constant is an LDR value, so a colour with a component over 1.0
+            // cannot BE one — and quantising it into range would manufacture a match that is not there.
+            if (c.r > 1f || c.g > 1f || c.b > 1f) return null;
+
+            string hex = Hex24(c);
+            if (hex == RetiredGreenHex) return $"IS the retired money-good green #{RetiredGreenHex}, verbatim";
+            if (hex == RetiredRedHex) return $"IS the retired money-bad red #{RetiredRedHex}, verbatim";
+            return null;
+        }
+
+        private static string Hex24(Color c) =>
+            $"{Mathf.RoundToInt(Mathf.Clamp01(c.r) * 255f):X2}" +
+            $"{Mathf.RoundToInt(Mathf.Clamp01(c.g) * 255f):X2}" +
+            $"{Mathf.RoundToInt(Mathf.Clamp01(c.b) * 255f):X2}";
+
+        /// <summary>Names the visibility in the failure text on purpose. "private" in that line is
+        /// the TV-S3 finding restated: the guard that was missing is the one that looks past
+        /// <c>public</c>.</summary>
+        private static string Visibility(FieldInfo f)
+        {
+            string access = f.IsPublic ? "public"
+                : f.IsPrivate ? "private"
+                : f.IsAssembly ? "internal"
+                : "protected";
+            return f.IsStatic ? access + " static" : access;
+        }
+
         [Test]
         public void No_public_colour_field_reads_as_retired_general_chrome_cyan_except_the_documented_VOID_field()
         {
             // T9 (Phase 3B): chromeCyan used to be used broadly for leg/clock/records/chrome/slip-strip
             // labels — general chrome duty that cyan has no role for in §4. Every one of those call
             // sites now resolves to flavorColor/contextGrey/structureGrey instead. The single exception
-            // is `chromeCyan` itself, which DESIGN.md §8 still assigns to the `VOID` leg state — this
-            // scan asserts that field is the ONLY public colour that is still allowed to read as cyan,
-            // rather than silently permitting a reintroduction elsewhere under a different name.
+            // is the VOID leg state, which DESIGN.md §8 still assigns a cyan — this scan asserts those
+            // fields are the ONLY public colours allowed to read as cyan, rather than silently
+            // permitting a reintroduction elsewhere under a different name.
+            //
+            // TV-20 added a SECOND exempt field. Canon's actual VOID token is `--tv-void` #7FB2C4
+            // (`palette-tv.css:25`); `chromeCyan` #9EDBF5 was standing in for it and is markedly
+            // brighter. `tvVoid` now carries the state and `chromeCyan` is kept only because its name
+            // is serialized in `Room.unity`, a §11 forbidden file this worktree cannot rename.
+            //
+            // The exemption is by ROLE, not by one hardcoded name: both fields that legitimately
+            // carry §8's VOID state are named here together, so the next colour added for that role
+            // is an explicit decision rather than a test that quietly went red.
             var go = new GameObject("CyanScan");
             go.SetActive(false); // field defaults only — never let Awake/OnEnable fire here
             try
@@ -157,7 +442,8 @@ namespace SBR.Tests.EditMode
                     .Select(f => (f.Name, Color: (Color)f.GetValue(screen)))
                     .Where(x => LooksLikeRetiredCyan(x.Color))
                     .Select(x => x.Name)
-                    .Where(name => name != nameof(TvSweatScreen.chromeCyan))
+                    .Where(name => name != nameof(TvSweatScreen.chromeCyan)
+                                && name != nameof(TvSweatScreen.tvVoid))
                     .ToList();
 
                 Assert.IsEmpty(offenders,
@@ -310,7 +596,21 @@ namespace SBR.Tests.EditMode
                 var offenders = typeof(TvSweatScreen)
                     .GetFields(BindingFlags.Public | BindingFlags.Instance)
                     .Where(f => f.FieldType == typeof(Color))
-                    .Where(f => f.Name != nameof(TvSweatScreen.deadDark)) // the one documented exception
+                    .Where(f => f.Name != nameof(TvSweatScreen.deadDark))  // documented exception 1
+                    // Documented exception 2 — TV-03, and a genuine canon-vs-DESIGN.md conflict
+                    // routed to the DD rather than silently resolved either way.
+                    //
+                    // Canon names `--tv-gold-ink` #0A0C10 = (0.039, 0.047, 0.063), which is darker
+                    // than the floor on all three channels. It is exempt because it is not a PANEL
+                    // colour: it is type punched out of a solid L4 gold field, so it is a hole in a
+                    // lit shape, not a dark region of the panel. The floor exists so nothing undoes
+                    // the room's emissive-quad lift — ink surrounded by the brightest element on
+                    // the surface does not.
+                    //
+                    // Stated as a conflict, not a preference: C14 says 1:1 unless physically
+                    // impossible, canon gives an exact hex, and DESIGN.md's floor forbids it. If the
+                    // DD rules the floor wins, raise the token here and record the deviation.
+                    .Where(f => f.Name != nameof(TvSweatScreen.goldInk))
                     .Select(f => (f.Name, Color: (Color)f.GetValue(screen)))
                     .Where(x => x.Color.r < floor.r - tol || x.Color.g < floor.g - tol || x.Color.b < floor.b - tol)
                     .Select(x => x.Name)
@@ -820,7 +1120,9 @@ namespace SBR.Tests.EditMode
 
                 Text voidLine = FindChild<Text>(s, "LegRowLine0");
                 Assert.IsNotNull(voidLine);
-                AssertRgbApprox(s.chromeCyan, voidLine.color, 0.001f, "VOID row");
+                // TV-20: the VOID token is canon's `--tv-void` #7FB2C4 now, not chromeCyan #9EDBF5 —
+                // the old value was markedly brighter and lighter than the token it stood in for.
+                AssertRgbApprox(s.tvVoid, voidLine.color, 0.001f, "VOID row");
             }
             finally
             {

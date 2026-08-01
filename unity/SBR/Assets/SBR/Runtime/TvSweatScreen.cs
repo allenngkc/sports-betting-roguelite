@@ -317,6 +317,26 @@ namespace SBR.Game
         // every other call site that used to read this field has moved to flavorColor/contextGrey/
         // structureGrey below, judged per its actual §4 role.
         public Color chromeCyan = new Color(0.62f, 0.86f, 0.96f, 0.95f); // §8 VOID leg treatment only
+
+        /// <summary>TV-20: canon's `--tv-void` #7FB2C4 (`palette-tv.css:25`). The VOID leg treatment
+        /// was using `chromeCyan` #9EDBF5, which is markedly brighter and lighter than the token.
+        /// Kept as its own field rather than retuning chromeCyan, which is still the field name
+        /// serialized in `Room.unity` (a §11 forbidden file) and cannot be renamed from here.</summary>
+        public Color tvVoid = new Color(0x7F / 255f, 0xB2 / 255f, 0xC4 / 255f, 1f);
+
+        /// <summary>TV-03: canon's `--tv-gold-ink` #0A0C10 (`palette-tv.css:20-21`). The actionable
+        /// cash-out state is INVERTED — a solid gold field with the type punched out of it, not gold
+        /// type on dark. That inversion is the one canonical L4 treatment on this surface and was
+        /// never built; "brightness is a promise about input" is carried by the field, not the
+        /// letters.</summary>
+        public Color goldInk = new Color(0x0A / 255f, 0x0C / 255f, 0x10 / 255f, 1f);
+
+        /// <summary>TV-21: canon's `--tv-extinguished` #151B21 (`palette-tv.css:32-33`). A lost leg is
+        /// "unlit pixel structure" — the ROW carries this background and the text drops to L1
+        /// (`TvLegRow.jsx:22,36`). Note the subtlety: the state table says L0, but a dead row's text
+        /// renders at L1, because L0 on the text alone would erase the structure the law asks to
+        /// keep. Loss is darkness, not absence.</summary>
+        public Color extinguished = new Color(0x15 / 255f, 0x1B / 255f, 0x21 / 255f, 1f);
         public Color flavorColor = new Color(0.90f, 0.95f, 0.98f, 1f); // §4 Fact: cold white
         // §4 Context: grey — for beat copy that is neither a live fact nor money (a loss confirmed, a
         // deferred payment) but still needs to stay legible against the lifted black floor below.
@@ -430,7 +450,24 @@ namespace SBR.Game
         /// <summary>DESIGN.md §3's tiers, mirrored from
         /// main-2/docs/design/design-system/components/tv/tiers.js: L4 1 · L3 0.7 · L2 0.4 · L1 0.15
         /// · L0 0. Used to step a previewed row exactly one level down.</summary>
-        private const float TierL3 = 0.7f, TierL2 = 0.4f, TierL1 = 0.15f;
+        private const float TierL4 = 1f, TierL3 = 0.7f, TierL2 = 0.4f, TierL1 = 0.15f, TierL0 = 0f;
+
+        /// <summary>TV-S1: returns <paramref name="c"/> at a canon brightness tier.
+        ///
+        /// <para>The ladder is the surface's PRIMARY semantic channel (`palette-tv.css`,
+        /// `tiers.js`) — "brightness is the state" — and it was declared here but applied to
+        /// exactly one element, so score, clock, NEED, progress and the event strip all rendered at
+        /// identical maximum brightness and the ladder carried no hierarchy at all. Every slot now
+        /// states its tier at the point it is built, so a reader can check a slot against canon
+        /// without tracing where its colour came from.</para>
+        ///
+        /// <para>Multiplies alpha rather than replacing it, so a colour that is already partly
+        /// transparent by design (pitch lines) composes instead of being overridden.</para></summary>
+        private static Color AtTier(Color c, float tier)
+        {
+            c.a *= tier;
+            return c;
+        }
 
         // ---- emission (the quad's own glow) ----
         private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
@@ -589,10 +626,32 @@ namespace SBR.Game
         }
 
         // ---- UI ----
-        private Font _font;
+        //
+        // Canon splits the surface across TWO faces (tokens/fonts.css), and which slot gets which is
+        // not a stylistic choice — it is read off the component references one by one. Condensed
+        // carries the dense, numeric and long-string slots (NEED, the compact statement, price,
+        // progress, the cash-out band, risk/pays figures, team names); regular carries the market
+        // eyebrow, the state chip, the event line and the SCORE figures.
+        //
+        // NOT YET WIRED: _fontCond is loaded but MakeText still assigns _font to every slot, so the
+        // whole surface renders regular. Tracked as TV-19 in docs/tv-sweat-refinement/C14-gap-list.md.
+        // Stated here rather than left as a comment that describes an intention as if it were the
+        // code — the audit caught an earlier version of this comment claiming call sites that did
+        // not exist.
+        private Font _font;       // --font-tv           : "Encode Sans"
+        private Font _fontCond;   // --font-tv-cond      : "Encode Sans Condensed"
+
+        /// <summary>Which canon face a text slot is set in. Named rather than a bool so a call site
+        /// reads as the component reference does, and so adding a third face later is not a
+        /// boolean-blindness bug waiting to happen.</summary>
+        private enum Face { Regular, Condensed }
         private int _resolvedThrough; // legs below this index are PRESENTED as resolved (not engine truth)
         private Text _tMatchup, _tLeg, _tClock, _tFlavor, _tCashOut, _tChrome, _tAttract, _tBigAmount, _tConsolation;
         private Text _tTicketHeader, _tRiskPays, _tInterventionPrompt, _tTakeoverTitle, _tTakeoverSub, _tSubtitle;
+        // TV-03/TV-04: the cash-out slot is three things, not one — an actionable FIELD, the money
+        // figure, and a status word at label scale beside it.
+        private Image _cashOutField;
+        private Text _tCashOutStatus;
         // C3: the score's momentary L4 punch overlay — see BuildScoreBug and OnGoalPlayed.
         private Text _tScoreFlash;
         private Image _backing, _wonFlood, _goldFlood, _dimOverlay;
@@ -629,7 +688,8 @@ namespace SBR.Game
             public Text Line;      // compact: resolved / pending
             public Text Need;      // live: the authored §6 statement, printed verbatim
             public Text Progress;  // live: the revealed causal progress line
-            public Image Strike;   // §8 VOID only: the struck-through rule
+            public Image Strike;      // §8 VOID only: the struck-through rule
+            public Image Extinguish;  // TV-21: a LOST row's unlit background, --tv-extinguished
             public bool IsLive;
         }
 
@@ -698,6 +758,7 @@ namespace SBR.Game
         private void Awake()
         {
             _font = LoadFont();
+            _fontCond = LoadFontCondensed();
             _choreo = new TheaterChoreographer(pacer);
             _emissBlock = new MaterialPropertyBlock();
             _emissSeed = UnityEngine.Random.value * 100f;
@@ -856,8 +917,17 @@ namespace SBR.Game
                         break;
 
                     case Phase.Betting:
-                        RenderIdle("betting", "PLACE YOUR BETS",
-                            "the book is open on the laptop", moneyIdle: true);
+                        // T27: "PLACE YOUR BETS" was banned on two counts — celebratory exhortation,
+                        // and a retired hue at L4. The idle screen states where the run is and
+                        // nothing else; the TV never instructs the player to bet. moneyIdle is off
+                        // because the ruling is explicit that the bar carries no hue.
+                        //
+                        // T25.4 takes the subtitle with it: "the book is open on the laptop" sat at
+                        // the visual centre of the match theatre at fact brightness in every frame.
+                        // Satire never occupies a slot where a fact belongs.
+                        RenderIdle("betting",
+                            $"ROUND {director.Run.Round} OF {director.Run.Config.Rounds} · BOARD OPEN",
+                            string.Empty, moneyIdle: false);
                         yield return null;
                         break;
 
@@ -1730,21 +1800,29 @@ namespace SBR.Game
 
                 if (i < _resolvedThrough)
                 {
+                    // TV-S1/TV-20/TV-21: every state states its tier here. The ladder is the primary
+                    // semantic channel and was previously declared but never applied, so every one
+                    // of these rendered at identical maximum brightness.
+                    bool dead = !leg.IsVoided && !leg.GradesWon;
                     if (leg.IsVoided)
                     {
-                        _legRow[i].Line.color = chromeCyan; // §8 VOID: L2 cyan
+                        _legRow[i].Line.color = AtTier(tvVoid, TierL2);   // §8 VOID: L2, --tv-void
                         _legRow[i].Line.text = $"VOID   {label}";
                     }
                     else if (leg.GradesWon)
                     {
-                        _legRow[i].Line.color = new Color(gold.r, gold.g, gold.b, 1f); // §8 W: L3 gold, solid
+                        _legRow[i].Line.color = AtTier(gold, TierL3);     // §8 W: L3 gold
                         _legRow[i].Line.text = $"W   {label}";
                     }
                     else
                     {
-                        _legRow[i].Line.color = deadDark; // §8 L: L0, goes dark
+                        // A dead row's TEXT sits at L1, not L0 (TvLegRow.jsx:22) — L0 on the text
+                        // would erase the "unlit pixel structure" the law asks to keep. The
+                        // extinguishment is the row's background, below.
+                        _legRow[i].Line.color = AtTier(flavorColor, TierL1);
                         _legRow[i].Line.text = $"L   {label}";
                     }
+                    if (_legRow[i].Extinguish != null) _legRow[i].Extinguish.enabled = dead;
                     // §8: the strike belongs to VOID and to nothing else. A struck W or L would
                     // read as cancelled, which is the one thing the strike must never say.
                     if (_legRow[i].Strike != null) _legRow[i].Strike.enabled = leg.IsVoided;
@@ -1766,8 +1844,10 @@ namespace SBR.Game
                     // drops ONE level — L3 to L2. It uses the VOID strike, never the LOST
                     // extinguish: a leg being CANCELLED must not read as a leg LOST at the exact
                     // moment the player is deciding whether to cancel it.
-                    Color liveInk = _cashOutPreview ? SteppedDown(flavorColor, TierL3, TierL2) : flavorColor;
+                    // §8 LIVE: L3. Previewing steps it one level to L2 (§8.10).
+                    Color liveInk = AtTier(flavorColor, _cashOutPreview ? TierL2 : TierL3);
                     if (_legRow[i].Strike != null) _legRow[i].Strike.enabled = _cashOutPreview;
+                    if (_legRow[i].Extinguish != null) _legRow[i].Extinguish.enabled = false;
                     _legRow[i].Need.color = liveInk;
                     _legRow[i].Need.text = copy.Need;         // §6 verbatim — never paraphrased
                     _legRow[i].Progress.color = liveInk;
@@ -1775,8 +1855,12 @@ namespace SBR.Game
                 }
                 else
                 {
-                    _legRow[i].Line.color = structureGrey; // §8 NEXT: L1, structure only
+                    // T25.6: NEXT rows go to L2, NOT L1. "Every tier except L0 is a legible tier, and
+                    // L0 means the thing is dead. A NEXT leg is not dead — it is the next thing that
+                    // can take his money." This overrides canon's own LEVEL.NEXT = L1.
+                    _legRow[i].Line.color = AtTier(flavorColor, TierL2);
                     _legRow[i].Line.text = $"NEXT   {label}";
+                    if (_legRow[i].Extinguish != null) _legRow[i].Extinguish.enabled = false;
                     // A pending leg is equally ended by cashing out, so it is struck too. It does
                     // NOT step down: NEXT already sits at L1 and the next level is L0, which is the
                     // LOST extinguish this preview must never borrow.
@@ -1797,6 +1881,7 @@ namespace SBR.Game
             if (_legRow[i].Need != null) _legRow[i].Need.text = string.Empty;
             if (_legRow[i].Progress != null) _legRow[i].Progress.text = string.Empty;
             if (_legRow[i].Strike != null) _legRow[i].Strike.enabled = false;
+            if (_legRow[i].Extinguish != null) _legRow[i].Extinguish.enabled = false;
         }
 
         /// <summary>The auto-advance interstitial (M4): TICKET i/n, the legs line, stake → to-win.
@@ -1810,7 +1895,9 @@ namespace SBR.Game
             _stageLeg = -1;
             _tClock.text = "PRE";
 
-            _tTakeoverTitle.text = $"TICKET {director.SweatIndex + 1}/{director.Run.Sweats.Count}";
+            // TV-31: canon prints "TICKET 2 OF 2" (TvTicketCard.prompt.md:4, ui_kits data.js:54),
+            // not the slashed form.
+            _tTakeoverTitle.text = $"TICKET {director.SweatIndex + 1} OF {director.Run.Sweats.Count}";
 
             string legs = string.Empty;
             foreach (Leg leg in _ticket.Legs)
@@ -2192,9 +2279,16 @@ namespace SBR.Game
         private void RenderCashOut(double amount)
         {
             if (_tCashOut == null) return;
-            _tCashOut.text = _cashOutTweening
-                ? $"CASH OUT ${Money(amount)}   •   UPDATING"
-                : $"CASH OUT ${Money(amount)}   [E]";
+            // TV-04: the figure alone. T22 retires `[E]` outright — "not a label, it is a debug
+            // token, and it is on a shipped surface in every frame" — and rules the slot to read
+            // `CASH OUT $183` with `HOLD E` beneath. Where another product would draw a glyph, this
+            // one prints the word.
+            _tCashOut.text = $"CASH OUT ${Money(amount)}";
+            if (_tCashOutStatus != null)
+            {
+                _tCashOutStatus.enabled = true;
+                _tCashOutStatus.text = _cashOutTweening ? "UPDATING" : "HOLD E";
+            }
         }
 
         private void StopCashOutAnimation()
@@ -2229,8 +2323,12 @@ namespace SBR.Game
 
             if (leg.IsVoided)
             {
-                _tFlavor.color = chromeCyan; // §8 VOID — the leg-resolve VOID state, not chrome
-                _tFlavor.text = $"LEG {k} - VOIDED, the ticket lives";
+                // TV-05: the event strip is neutral — "it never uses money hues" and "stays neutral
+                // even when the event helps or hurts; money semantics live on the leg rows and the
+                // cash-out slot" (TvEventStrip.jsx:5, prompt.md:7). The VOID hue belongs to the leg
+                // row, which already carries it. TV-32: em dash, not a hyphen.
+                _tFlavor.color = AtTier(flavorColor, TierL2);
+                _tFlavor.text = $"LEG {k} — VOIDED, THE TICKET LIVES";
                 yield return ScaledWait(deadLineDuration);
             }
             else if (leg.GradesWon)
@@ -2274,8 +2372,8 @@ namespace SBR.Game
 
             // 2) the DEAD line + the screen dropping darker — darkness, not the retired red (§4/§8:
             // "Loss is still darkness ... the old green/red money language stays retired").
-            _tFlavor.color = contextGrey;
-            _tFlavor.text = $"LEG {k} - DEAD";
+            _tFlavor.color = AtTier(contextGrey, TierL2);
+            _tFlavor.text = $"LEG {k} — DEAD"; // TV-32: em dash, the system's own dash
             _emissRest = deadDark;
             EmissionFlash(deadDark);
             tvLight?.SetRest(deadDark, 0.08f);
@@ -2540,7 +2638,10 @@ namespace SBR.Game
                 // T20: a live row's two elements are NEED and progress — the compact Line is blank
                 // while live, so pulsing it would animate nothing. Both live lines share the one
                 // phase, which is what makes the row read as a single breathing thing.
-                Color c = flavorColor; c.a *= pulse01;
+                // TV-S1: the pulse rides ON the L3 tier rather than replacing it. Pulsing raw
+                // flavorColor put a live row at alpha 1.0 at the top of every cycle, which is the
+                // L4 tier — the one the surface reserves for a single element at a time.
+                Color c = AtTier(flavorColor, TierL3); c.a *= pulse01;
                 if (_legRow[i].Need != null) _legRow[i].Need.color = c;
                 if (_legRow[i].Progress != null) _legRow[i].Progress.color = c;
             }
@@ -2549,6 +2650,23 @@ namespace SBR.Game
         private void AnimateCashOutTaunt()
         {
             if (_tCashOut == null) return;
+
+            // TV-03, render-aware rather than set at eight call sites. The slot is disabled from
+            // many places; making the field and the status word FOLLOW the money element's own
+            // state means a future path that hides the slot cannot leave a gold field or a stale
+            // status word behind it. Same reasoning as §8.10's preview: recompute from truth.
+            //
+            // The inversion is gated on CanAcceptCashOutNow, not on visibility — DESIGN.md §8:
+            // "brightness is a promise about input. L4 means the key will work right now." A gold
+            // field over an offer that would be refused is the surface lying.
+            // Named fieldLit, not `actionable`: the C3 taunt tail further down this method already
+            // has a local by that name computing the same predicate. Two locals with one name in
+            // nested scopes is a CS0136 today and a reader's trap tomorrow.
+            bool slotVisible = _tCashOut.enabled;
+            bool fieldLit = slotVisible && CanAcceptCashOutNow();
+            if (_cashOutField != null) _cashOutField.enabled = fieldLit;
+            if (_tCashOutStatus != null && !fieldLit && !slotVisible) _tCashOutStatus.enabled = false;
+
             float scaledDt = SeatedDeltaTime / Mathf.Max(0.0001f, TimeScaleOverride); // TVS-H02
             _cashOutScale = Mathf.MoveTowards(_cashOutScale, 1f, 3.2f * scaledDt);
             _cashOutFlash = Mathf.MoveTowards(_cashOutFlash, 0f, 4.5f * scaledDt);
@@ -2851,19 +2969,25 @@ namespace SBR.Game
             for (int i = 0; i < TicketRowSlots; i++)
             {
                 Rect row = grid.TicketRow(i);
+                // TV-21: built FIRST so it sits behind the row's text — a lost leg is "unlit pixel
+                // structure", which is a field the words sit on, not a tint over them.
+                Image extinguish = MakePanel(root, $"LegRowExtinguish{i}", new Vector2(0f, 1f),
+                    new Vector2(0f, 1f), AnchorTopLeft(row), new Vector2(row.width, row.height),
+                    extinguished);
+                extinguish.enabled = false;
                 // Compact form (resolved / pending): ONE line, at the eyebrow scale, carrying state,
                 // statement and price. Canon drops the market eyebrow here rather than shrinking it —
                 // every authored statement already names its own market.
                 Text line = MakeText(root, $"LegRowLine{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     AnchorTopLeft(row, 8f, 4f), new Vector2(lineW, compactH), TypeEyebrow,
-                    TextAnchor.UpperLeft, structureGrey);
+                    TextAnchor.UpperLeft, structureGrey, FontStyle.Normal, Face.Condensed); // TvLegRow.jsx:35 shell
                 // Live form: the authored NEED statement, then the revealed progress beneath it.
                 Text need = MakeText(root, $"LegRowNeed{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     AnchorTopLeft(row, 8f, 4f), new Vector2(lineW, needH), TypeNeed,
-                    TextAnchor.UpperLeft, flavorColor, FontStyle.Bold);
+                    TextAnchor.UpperLeft, flavorColor, FontStyle.Bold, Face.Condensed); // inherits TvLegRow.jsx:35
                 Text progress = MakeText(root, $"LegRowProgress{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     AnchorTopLeft(row, 8f, 4f + needH), new Vector2(lineW, progressH), TypeProgress,
-                    TextAnchor.UpperLeft, flavorColor);
+                    TextAnchor.UpperLeft, flavorColor, FontStyle.Normal, Face.Condensed); // TvLegRow.jsx:82
                 // T20/3D — §8's VOID treatment is "L2 cyan, STRUCK THROUGH on the matrix". Colour
                 // alone was carrying the whole state before; this is the strike. A fixed-width rule
                 // across the compact line, never measured from the text: §6 forbids geometry
@@ -2872,11 +2996,13 @@ namespace SBR.Game
                 // whole surface is UI.Text and swapping one row's renderer for a glyph effect is a
                 // far larger change than drawing the line the design already calls a matrix rule.
                 Image strike = MakePanel(root, $"LegRowStrike{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    AnchorTopLeft(row, 8f, 4f + compactH * 0.5f), new Vector2(lineW, 1.5f), chromeCyan);
+                    AnchorTopLeft(row, 8f, 4f + compactH * 0.5f), new Vector2(lineW, 1.5f),
+                    AtTier(tvVoid, TierL2)); // TV-20: the rule is the VOID token at its own tier
                 strike.enabled = false;
                 _legRow[i] = new LegRowUi
                 {
-                    Line = line, Need = need, Progress = progress, Strike = strike, IsLive = false
+                    Line = line, Need = need, Progress = progress, Strike = strike,
+                    Extinguish = extinguish, IsLive = false
                 };
             }
 
@@ -2884,7 +3010,7 @@ namespace SBR.Game
             _tRiskPays = MakeText(root, "RiskPays", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 AnchorTopLeft(grid.TicketFooter, 8f, 8f),
                 new Vector2(grid.TicketFooter.width - 16f, grid.TicketFooter.height - 8f), TypeRisk,
-                TextAnchor.UpperLeft, goldL2, FontStyle.Bold);
+                TextAnchor.UpperLeft, goldL2, FontStyle.Bold, Face.Condensed); // TvRiskPays.jsx:14
         }
 
         private void BuildScoreBug(Transform root, LayoutGrid grid)
@@ -2938,10 +3064,32 @@ namespace SBR.Game
             MakePanel(root, "CashOutZone", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 AnchorTopLeft(grid.CashOut), new Vector2(grid.CashOut.width, grid.CashOut.height), screenBg);
 
-            _tCashOut = MakeText(root, "CashOut", new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
-                AnchorCenter(grid.CashOut), new Vector2(grid.CashOut.width - 16f, grid.CashOut.height - 8f), TypeCashOut,
-                TextAnchor.MiddleCenter, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Bold);
+            // TV-03: the actionable field. Built BEFORE the type so the type punches out of it, and
+            // sized to the zone exactly — canon's inversion is a solid field, not a tinted panel.
+            // Disabled by default: the field IS the actionable state, so it exists only while the
+            // key will actually work.
+            _cashOutField = MakePanel(root, "CashOutField", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                AnchorTopLeft(grid.CashOut), new Vector2(grid.CashOut.width, grid.CashOut.height),
+                new Color(gold.r, gold.g, gold.b, 1f));
+            _cashOutField.enabled = false;
+
+            // TV-04: money and status are SEPARATE elements. Canon is explicit that "the status word
+            // rides at label scale beside the figure, NEVER at money scale" (TvCashOutSlot.jsx:35-47)
+            // — the build rendered `CASH OUT $184   •   UPDATING` as one 29px string, which says the
+            // status is as important as the number. Money keeps the name "CashOut" because the L4
+            // token, the bloom-floor protected set and three tests all address it by that name.
+            _tCashOut = MakeText(root, "CashOut", new Vector2(0f, 1f), new Vector2(0f, 0.5f),
+                AnchorCenter(grid.CashOut) + new Vector2(-grid.CashOut.width * 0.5f + 12f, 0f),
+                new Vector2(grid.CashOut.width - 24f, grid.CashOut.height - 8f), TypeCashOut,
+                TextAnchor.MiddleLeft, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Bold,
+                Face.Condensed); // TvCashOutSlot.jsx:33
             _tCashOut.enabled = false;
+
+            _tCashOutStatus = MakeText(root, "CashOutStatus", new Vector2(0f, 1f), new Vector2(1f, 0.5f),
+                AnchorCenter(grid.CashOut) + new Vector2(grid.CashOut.width * 0.5f - 12f, 0f),
+                new Vector2(grid.CashOut.width - 24f, Mathf.Ceil(TypeEyebrow * LineBox)), TypeEyebrow,
+                TextAnchor.MiddleRight, AtTier(contextGrey, TierL2));
+            _tCashOutStatus.enabled = false;
             _cashOutHdrMat = MakeHdrMaterial();
             if (_cashOutHdrMat != null) _tCashOut.material = _cashOutHdrMat;
 
@@ -3018,12 +3166,17 @@ namespace SBR.Game
             => new Vector2(zone.x + zone.width * 0.5f, -(zone.y + zone.height * 0.5f));
 
         private Text MakeText(Transform parent, string name, Vector2 anchor, Vector2 pivot, Vector2 pos,
-            Vector2 size, int fontSize, TextAnchor align, Color color, FontStyle style = FontStyle.Normal)
+            Vector2 size, int fontSize, TextAnchor align, Color color,
+            FontStyle style = FontStyle.Normal, Face face = Face.Regular)
         {
             var go = new GameObject(name, typeof(Text));
             go.transform.SetParent(parent, false);
             var t = go.GetComponent<Text>();
-            if (_font != null) t.font = _font;
+            // TV-19: canon assigns the face per slot (tokens/fonts.css), read off the component
+            // references one at a time — it is not a stylistic default. Falls back to the regular
+            // face if the condensed asset is missing, rather than rendering nothing.
+            Font want = face == Face.Condensed && _fontCond != null ? _fontCond : _font;
+            if (want != null) t.font = want;
             t.fontSize = fontSize;
             t.fontStyle = style;
             t.alignment = align;
@@ -3198,14 +3351,26 @@ namespace SBR.Game
         /// should degrade to readable-but-wrong, never to an invisible surface. The fallback is
         /// logged loudly because silently rendering in the wrong face is exactly the failure this
         /// change exists to end.</para></summary>
-        private static Font LoadFont()
-        {
-            Font tv = Resources.Load<Font>("Tv/Fonts/EncodeSans");
-            if (tv != null) return tv;
+        private static Font LoadFont() => LoadFace("Tv/Fonts/EncodeSans", "--font-tv");
 
-            Debug.LogWarning("[TvSweatScreen] Encode Sans not found at Resources/Tv/Fonts/EncodeSans — " +
-                "falling back to the built-in face. Every px value on this surface was derived " +
-                "against Encode Sans, so copy fit and the T20 type scale are NOT valid in the fallback.");
+        private static Font LoadFontCondensed()
+            => LoadFace("Tv/Fonts/EncodeSansCondensed", "--font-tv-cond");
+
+        /// <summary>Resolves one of canon's two TV faces (`tokens/fonts.css`). Falls back to the
+        /// built-in face rather than to null: a missing font asset should degrade to
+        /// readable-but-wrong, never to an invisible surface.
+        ///
+        /// <para>The fallback logs loudly and names the token, because every px value on this
+        /// surface was derived against Encode Sans — T20's whole re-derivation is a metrics
+        /// argument — so copy fit and the type scale are NOT valid in the fallback. Silently
+        /// rendering in the wrong face is the failure this exists to end.</para></summary>
+        private static Font LoadFace(string resourcePath, string token)
+        {
+            Font face = Resources.Load<Font>(resourcePath);
+            if (face != null) return face;
+
+            Debug.LogWarning($"[TvSweatScreen] {token} not found at Resources/{resourcePath} — falling " +
+                "back to the built-in face. Copy fit and the T20 type scale are NOT valid in the fallback.");
             try { return Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); }
             catch
             {
