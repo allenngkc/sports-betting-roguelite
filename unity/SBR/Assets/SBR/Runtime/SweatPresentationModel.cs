@@ -208,10 +208,39 @@ namespace SBR.Game
         /// reconciliation bands must not fire (the prob is not a lead).</summary>
         private bool _suppressBandReconcile;
 
+        /// <summary>T17 (Design Director: "reserve, don't spend"): how many of the backed side's
+        /// baked goals ordinary beats may NOT spend, so the final sequence always still has one
+        /// left to reveal. 1 on an anytime-scorer leg that bakes at least one backed-side goal,
+        /// 0 on every other market — whose arithmetic is therefore bit-for-bit unchanged.
+        ///
+        /// <para>The gap this closes: <see cref="BindAnytimeScorer"/> binds the backed player onto
+        /// a goal that is ACTUALLY ABOUT TO PLAY, and deliberately never invents one — inventing
+        /// would move the causal reveal point (PRD §4.1). So when ordinary beats had spent every
+        /// backed-side baked goal, <see cref="PlanFinal"/> had no backed-side correction left,
+        /// nothing bound, and a WON anytime-scorer bet paid out without ever revealing who scored.
+        /// Claiming the goal up front, before the beats can spend it, is why the fix lives here and
+        /// not in BindAnytimeScorer: the reveal point is unmoved, it is merely still available.</para></summary>
+        private int _reservePicked;
+
+        /// <summary>Set once <see cref="PlanFinal"/> has run. The final sequence is the reserve's
+        /// entire purpose, so from that point the backed side may spend down to its true endpoint
+        /// and the scoreline still converges exactly on the locked stat line.</summary>
+        private bool _reserveReleased;
+
+        /// <summary>The picked-side ceiling ORDINARY play may reach. Equal to
+        /// <see cref="TargetPicked"/> for every non-scorer leg, and for every leg once the reserve
+        /// is released.</summary>
+        private int SpendableTargetPicked
+            => _reserveReleased ? _targetPicked : Math.Max(0, _targetPicked - _reservePicked);
+
         /// <summary>Whether this ledger has been bound to the locked match stat line.</summary>
         public bool HasEndpoint => _hasEndpoint;
         public int TargetPicked => _targetPicked;
         public int TargetOpponent => _targetOpponent;
+
+        /// <summary>T17: the backed-side goal ordinary beats are forbidden to spend (0 or 1).
+        /// Exposed so a test can assert the reserve HELD, rather than inferring it from a score.</summary>
+        public int ReservedPicked => _reserveReleased ? 0 : _reservePicked;
 
         /// <summary>Binds the presentation ledger to the locked score endpoint. Non-moneyline
         /// markets use the home side as their presentation anchor; the market itself, not a
@@ -222,6 +251,7 @@ namespace SBR.Game
             _hasEndpoint = true;
             _goalSense = 0; // moneyline unless the Leg overload widens it
             _suppressBandReconcile = false;
+            _reservePicked = 0; // no reserve unless the Leg overload declares a scorer leg
             _targetPicked = pickedHome ? statLine.HomeGoals : statLine.AwayGoals;
             _targetOpponent = pickedHome ? statLine.AwayGoals : statLine.HomeGoals;
             ResetForLeg();
@@ -252,6 +282,11 @@ namespace SBR.Game
             // scorer leg it tracks one player's chance — the bands are meaningless there
             // (F_0.4.0 P4 review; same law as the market-leg skip above).
             _suppressBandReconcile = leg.Selection.Kind == MarketKind.AnytimeScorer;
+            // T17: claim the reveal goal HERE, at configure time, before a single beat has run.
+            // Guarded on TargetPicked so a stat line that bakes no backed-side goal reserves
+            // nothing — reserving 1 of 0 would starve the ordinary beats to no purpose, and such a
+            // leg cannot grade Won as an anytime-scorer anyway.
+            _reservePicked = leg.Selection.Kind == MarketKind.AnytimeScorer && _targetPicked >= 1 ? 1 : 0;
         }
 
         /// <summary>Attribution + clamp for a non-final beat. Null = this beat stages no goal.
@@ -294,7 +329,10 @@ namespace SBR.Game
             {
                 // Type goals keep the original direction rule (ties up — EventText's law);
                 // their |delta| ≥ 0.07 means they are never actually flat.
-                if (_hasEndpoint && ((up && Picked >= _targetPicked) || (!up && Opponent >= _targetOpponent)))
+                // SpendableTargetPicked, not _targetPicked (T17): on a scorer leg the last
+                // backed-side goal is reserved for the reveal, so a beat that would spend it
+                // stages CHALKED-OFF instead. The beat still plays; only the commit is withheld.
+                if (_hasEndpoint && ((up && Picked >= SpendableTargetPicked) || (!up && Opponent >= _targetOpponent)))
                     return new StagedGoal(forPicked: up, commits: false);
                 int typeLeadAfter = up ? Picked + 1 - Opponent : Opponent + 1 - Picked;
                 return new StagedGoal(forPicked: up, commits: typeLeadAfter <= MaxLiveLead);
@@ -320,7 +358,7 @@ namespace SBR.Game
             if (!reconcileUp && !reconcileDown) return null;
 
             bool forPicked = reconcileUp;
-            if (_hasEndpoint && ((forPicked && Picked >= _targetPicked)
+            if (_hasEndpoint && ((forPicked && Picked >= SpendableTargetPicked)
                 || (!forPicked && Opponent >= _targetOpponent)))
                 return new StagedGoal(forPicked, commits: false);
             int leadAfter = forPicked ? Picked + 1 - Opponent : Opponent + 1 - Picked;
@@ -335,7 +373,10 @@ namespace SBR.Game
             int amount = Math.Max(0, goal.Amount);
             if (goal.ScoredByPicked)
             {
-                int applied = _hasEndpoint ? Math.Min(amount, Math.Max(0, _targetPicked - Picked)) : amount;
+                // Clamped to the SPENDABLE ceiling (T17), not the raw endpoint. This is the only
+                // score mutator, so enforcing the reserve here holds it for every caller — a beat
+                // routed through StageBeatGoal, and equally a goal handed straight to this method.
+                int applied = _hasEndpoint ? Math.Min(amount, Math.Max(0, SpendableTargetPicked - Picked)) : amount;
                 Picked += applied;
                 CommittedGoals += applied;
             }
@@ -352,6 +393,13 @@ namespace SBR.Game
         /// from WinProbAfter). Pure planning: nothing commits until playback completes.</summary>
         public FinalPlan PlanFinal(LegGrade grade)
         {
+            // T17: the final sequence is what the reserve was being held FOR, so release it here.
+            // Both production callers (TvSweatScreen's two LegFinal branches) call this and then
+            // BindAnytimeScorer immediately, with playback next — never speculatively — so the
+            // release cannot hand a beat the goal it was denied. Idempotent, and it restores the
+            // exact-convergence guarantee below: Picked can be at most one short of its endpoint,
+            // and this method emits that remainder.
+            _reserveReleased = true;
             var goals = new System.Collections.Generic.List<StagedGoal>(3);
             if (_hasEndpoint)
             {
@@ -398,11 +446,16 @@ namespace SBR.Game
         ///
         /// A Lost (or Voided) leg binds nothing — <see cref="StagedGoal.HasBoundScorer"/> stays
         /// false on every goal, so no identity can ever surface for it (PRD §4.1: no scorer
-        /// identity on a losing pick). A Won leg whose backed side already reached its target
-        /// before the final (no committing correction remains for that side) also binds nothing:
-        /// this method only ever attaches an identity to a goal that is actually about to play,
-        /// never invents a new one to force a reveal — doing so would move the causal reveal
-        /// point, which is out of scope here (see BUG-LEDGER.md TVS-H03).</summary>
+        /// identity on a losing pick).
+        ///
+        /// <para>This method still only ever attaches an identity to a goal that is actually about
+        /// to play, and still never invents one to force a reveal — that would move the causal
+        /// reveal point. It is unchanged by T17. What changed is upstream: the ledger now RESERVES
+        /// the backed side's last baked goal (see <c>_reservePicked</c>) so ordinary beats can no
+        /// longer spend the very goal this loop needs. A Won anytime-scorer leg whose stat line
+        /// bakes at least one backed-side goal therefore always reaches here with a committing
+        /// <c>ScoredByPicked</c> entry to bind, and the starvation case that produced the
+        /// scorer-reveal gap is unreachable rather than merely unlikely.</para></summary>
         public static FinalPlan BindAnytimeScorer(FinalPlan plan, Leg leg)
         {
             if (leg == null || leg.Selection.Kind != MarketKind.AnytimeScorer || plan.Grade != LegGrade.Won)
@@ -433,6 +486,9 @@ namespace SBR.Game
             Picked = 0;
             Opponent = 0;
             CommittedGoals = 0;
+            // The reserve itself is leg CONFIGURATION and survives; only its spent/released state
+            // is playback state, so a re-run of the same leg re-arms the reveal.
+            _reserveReleased = false;
         }
     }
 

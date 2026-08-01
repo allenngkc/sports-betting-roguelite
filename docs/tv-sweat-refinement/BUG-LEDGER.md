@@ -743,6 +743,62 @@ is not a regression, and manufacturing a guaranteed reveal moment for that edge 
 move the causal reveal point or require the whole-sweat identity tracking §7.7 exists for — explicitly
 deferred, per the dispatch instruction not to build it here.
 
+### T17 — the scope boundary above is now CLOSED (2026-07-31)
+
+The Design Director reclassified the gap as a **correctness defect**, above every remaining Phase 3
+visual refinement, and ruled the approach: **reserve, don't spend**. A scorer leg claims its
+backed-side goal *before* ordinary beats can spend the baked goals. If binding were ever impossible,
+stage the reveal — never suppress the win, never synthesise a reveal after resolution.
+
+**The fix is upstream of `BindAnytimeScorer`, which is unchanged.** `ScoreLedger` now reserves one
+backed-side goal (`_reservePicked`, set in `ConfigureEndpoint(Leg)` for `MarketKind.AnytimeScorer`
+when the stat line bakes at least one; **0 for every other market**). It is enforced inside
+`CompleteGoal` — the single score mutator — so the reserve holds for *any* caller, not only goals
+routed through `StageBeatGoal`; `StageBeatGoal` itself stages **chalked-off** rather than committing
+once only the reserve remains, so the beat still plays and only the commit is withheld. `PlanFinal`
+releases the reserve, which is what it was held for. Both production callers (`TvSweatScreen`'s two
+LegFinal branches) call `PlanFinal` and then `BindAnytimeScorer` with playback next — never
+speculatively — so the release cannot hand a beat back the goal it was denied.
+
+**Exact convergence is preserved:** ordinary play can reach at most `TargetPicked - 1`, and
+`PlanFinal` emits the remainder, so the scoreline still lands exactly on the locked stat line. The
+causal reveal point is unmoved; the goal the binding loop needs is simply still available.
+
+**Player-visible consequence, stated rather than buried:** on an anytime-scorer leg the backed side's
+on-screen score now holds one goal short until the final sequence. That is what "reserve, don't
+spend" *means*, but it is a presentation change and is flagged to the Design Director as such.
+
+**Tests.** The Phase 3 reproduction was **inverted in place, not deleted** (DD instruction): same
+seeds, same both-sides loop, same direct-`CompleteGoal` attack, now asserting the reserve holds at
+`TargetPicked - 1` and that exactly one bound reveal exists, commits, and is the backed player by
+reference. Added `Every_won_anytime_scorer_leg_reveals_exactly_one_scorer_however_its_beats_ran`
+(the DD's acceptance property, a 4-seed × 2-side sweep driven through the real beat path, with a
+non-vacuity guard) and `Non_scorer_markets_reserve_nothing_and_still_spend_to_their_full_endpoint`
+(pins the "every other market is bit-for-bit unchanged" claim).
+
+```
+dotnet test engine.tests                 Passed 160/160
+-runTests -testPlatform EditMode         total=199 passed=199 failed=0
+-runTests -testPlatform PlayMode         total=45  passed=43  failed=1  skipped=1
+```
+
+EditMode 197 → 199: the inversion replaces one case, the two new tests add two. Every pre-existing
+scorer guard stayed green, including `StageBeatGoal_never_produces_a_bound_scorer_the_pre_final_
+causal_reveal_guard` and `BindAnytimeScorer_two_concurrent_scorer_legs_on_one_match_bind_independently`.
+
+**The one PlayMode failure is the §4C.4 flake, and T17 is ruled out by mechanism rather than by
+allowance.** It failed `Interact_DuringCashOutPriceAnimation_StandsAndDoesNotCashOut` with
+`never observed the cash-out amount mid-tween (waited 20s)` — the documented message, not
+`kept ticking while standing`. That test builds its ticket from `DemoTicketPolicy`, which constructs
+picks as `new Pick(m.Index, side)` — **moneyline only, never `AnytimeScorer`**. T17 reserves 0 on
+such a leg, making `SpendableTargetPicked == TargetPicked`, so every expression on that test's path
+is bit-for-bit what it was before the change. There is no code path by which T17 could reach it.
+
+**New flake datum worth recording:** it failed **2 of 2 full PlayMode runs** here, against a measured
+**3 of 10** on `-testFilter`-isolated runs (both stack and clean-HEAD arms, 2026-07-31, TVS-H02
+verification). Consistent with §4C.4's load-correlated characterisation — the full suite is the
+heavier load — and a caution against reading the isolated 3/10 as the whole-suite rate.
+
 ## 9. Three-sweat acceptance record
 
 | Gate sweat | Seed / build | Ticket and markets | Required stress | Muted result | Evidence | Open bugs |

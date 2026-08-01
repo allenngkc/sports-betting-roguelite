@@ -755,27 +755,31 @@ namespace SBR.Tests.EditMode
             }
         }
 
-        /// <summary>Phase 3 reproduction of the SCORER-REVEAL GAP, deferred by name from Phase 1B
-        /// and carried in PRD §5's Phase 1B closure note.
+        /// <summary>The SCORER-REVEAL GAP — reproduced in Phase 3, deferred by name from Phase 1B,
+        /// carried in PRD §5's Phase 1B closure note, and CLOSED by T17.
         ///
-        /// <para><b>This test pins a known product gap, not desired behaviour.</b> It exists so the
-        /// question reaching the Design Director is "here is the case, reproduced" rather than "we
-        /// think this can happen", and so any future fix has a red test to turn green. If someone
-        /// closes the gap, this test SHOULD fail — read the summary before repairing it.</para>
-        ///
-        /// <para>The mechanism: <see cref="ScoreLedger.BindAnytimeScorer"/> scans the FINAL plan for
-        /// a goal that both <c>Commits</c> and is <c>ScoredByPicked</c>, and binds the backed
-        /// player's identity onto it. That is the causal reveal point. The sibling test above notes
-        /// its own precondition — a fresh ledger with nothing committed "always leaves a correction
-        /// to bind". The inverse is this gap: when the backed side's baked goals are ALL spent
-        /// during ordinary beats, <c>PlanFinal</c> has no backed-side correction left, the loop
-        /// matches nothing, and the plan comes back unbound.</para>
+        /// <para>The mechanism it pinned: <see cref="ScoreLedger.BindAnytimeScorer"/> scans the
+        /// FINAL plan for a goal that both <c>Commits</c> and is <c>ScoredByPicked</c>, and binds
+        /// the backed player's identity onto it. That is the causal reveal point. The sibling test
+        /// above notes its own precondition — a fresh ledger with nothing committed "always leaves
+        /// a correction to bind". The gap was the inverse: when the backed side's baked goals were
+        /// ALL spent during ordinary beats, <c>PlanFinal</c> had no backed-side correction left,
+        /// the loop matched nothing, and the plan came back unbound.</para>
         ///
         /// <para>Player-visible consequence: an anytime-scorer bet WINS and the scorer is never
-        /// revealed. Closing it needs the whole-sweat identity contract PRD §7.7 defers;
-        /// manufacturing a reveal here would move the causal reveal point and break §4.1.</para></summary>
+        /// revealed.</para>
+        ///
+        /// <para><b>T17 — CLOSED, and this test is the original reproduction INVERTED IN PLACE</b>
+        /// (Design Director's instruction: invert, do not delete). The scenario, both seeds and both
+        /// backed sides are byte-for-byte the ones that pinned the gap red, so what used to prove
+        /// "no reveal" now proves the reveal happens. The fix is upstream and the ruling was
+        /// "reserve, don't spend": <see cref="ScoreLedger.ConfigureEndpoint(Leg)"/> reserves the
+        /// backed side's last baked goal before a single beat runs, so the spending loop below
+        /// cannot exhaust it however hard it tries. <see cref="ScoreLedger.BindAnytimeScorer"/> is
+        /// itself unchanged — the causal reveal point has not moved, the goal it needs is simply
+        /// still there. Nothing is synthesised after resolution and no win is suppressed.</para></summary>
         [Test]
-        public void BindAnytimeScorer_binds_nothing_when_the_backed_sides_goals_are_spent_before_the_final()
+        public void BindAnytimeScorer_binds_even_when_ordinary_beats_try_to_spend_the_backed_sides_goals()
         {
             int awayRosterSize = new RunConfig().PlayersPerTeam;
 
@@ -783,44 +787,147 @@ namespace SBR.Tests.EditMode
             {
                 int playerIndex = backedHome ? awayRosterSize : 0;
                 Leg leg = BuildScorerLeg(playerIndex, $"GAP-SPENT-{backedHome}");
+                Player backedPlayer = leg.Matchup.PlayerAt(playerIndex);
 
                 var ledger = new ScoreLedger();
                 ledger.ConfigureEndpoint(leg);
 
-                // Spend the backed side's baked goals during ORDINARY beats, before any final
-                // sequence exists.
-                //
-                // Driven directly against TargetPicked rather than through StageBeatGoal: that
-                // method routes by prob reconciliation and remaining-goal balance, and on a scorer
-                // leg it does NOT reliably drive the picked side to exhaustion — an earlier version
-                // of this test assumed it did, never reached the state, and reported the gap as
-                // absent. CompleteGoal clamps to the remaining target itself (see its `applied`
-                // computation), so this cannot overshoot the endpoint.
                 Assert.Greater(ledger.TargetPicked, 0,
                     $"backedHome={backedHome}: this seed bakes no goals for the backed side, so the " +
                     "scenario is not constructible here — pick another run id rather than deleting this");
+                Assert.AreEqual(1, ledger.ReservedPicked,
+                    $"backedHome={backedHome}: an anytime-scorer leg must claim its reveal goal at " +
+                    "CONFIGURE time, before any beat has had the chance to spend it");
+
+                // The original attack, unchanged: drive CompleteGoal directly at the backed side,
+                // harder than any real beat sequence could. It bypasses StageBeatGoal deliberately
+                // (that method will not reliably drive a scorer leg to exhaustion), which is
+                // precisely why the reserve is enforced inside CompleteGoal — the single score
+                // mutator — and not merely at staging, where this loop would walk straight past it.
+                for (int i = 0; i < 64; i++)
+                    ledger.CompleteGoal(new ScoreLedger.StagedGoal(true, true));
+
+                Assert.AreEqual(ledger.TargetPicked - 1, ledger.Picked,
+                    $"backedHome={backedHome}: the reserve must HOLD — ordinary play may spend the backed " +
+                    "side down to exactly one short of its endpoint and no further");
+
+                ScoreLedger.FinalPlan plan = ledger.PlanFinal(LegGrade.Won);
+                ScoreLedger.FinalPlan bound = ScoreLedger.BindAnytimeScorer(plan, leg);
+
+                int boundCount = 0;
+                foreach (ScoreLedger.StagedGoal g in bound.Goals)
+                {
+                    if (!g.HasBoundScorer) continue;
+                    boundCount++;
+                    Assert.IsTrue(g.Commits,
+                        $"backedHome={backedHome}: a reveal must ride a goal that actually commits — a " +
+                        "chalked-off goal reveals a scorer for a goal that never counted");
+                    Assert.AreEqual(backedHome, g.ScorerIsHome,
+                        $"backedHome={backedHome}: the bound side must match the backed player's real side");
+                    var roster = g.ScorerIsHome ? leg.Matchup.Home.Players : leg.Matchup.Away.Players;
+                    Assert.AreSame(backedPlayer, roster[g.ScorerRosterIndex],
+                        $"backedHome={backedHome}: the bound identity must BE the backed player, by reference");
+                }
+                Assert.AreEqual(1, boundCount,
+                    $"backedHome={backedHome}: THE GAP, INVERTED — a won anytime-scorer leg whose backed-side " +
+                    "goals were played early must still reveal its scorer, exactly once and never twice");
+
+                // The reserve must not distort the endpoint: playing the plan still converges exactly
+                // on the locked stat line, which is what makes this a presentation fix and not a
+                // scoreline change.
+                foreach (ScoreLedger.StagedGoal g in bound.Goals) ledger.CompleteGoal(g);
+                Assert.AreEqual(ledger.TargetPicked, ledger.Picked,
+                    $"backedHome={backedHome}: the backed side must still converge exactly on the stat line");
+                Assert.AreEqual(ledger.TargetOpponent, ledger.Opponent,
+                    $"backedHome={backedHome}: the opponent side must converge exactly too");
+            }
+        }
+
+        /// <summary>T17 acceptance, as the Design Director specified it: a PROPERTY over settled
+        /// legs, not a single scenario, and a test rather than a capture. Every anytime-scorer leg
+        /// that grades Won must be traceable to a staged, revealed scorer event that preceded or
+        /// coincided with its resolution — here, a committing backed-side goal inside the final
+        /// plan, carrying the bound identity, before any of it plays.</summary>
+        [Test]
+        public void Every_won_anytime_scorer_leg_reveals_exactly_one_scorer_however_its_beats_ran()
+        {
+            int awayRosterSize = new RunConfig().PlayersPerTeam;
+            int exercised = 0;
+
+            foreach (string runId in new[] { "T17-SWEEP-A", "T17-SWEEP-B", "T17-SWEEP-C", "T17-SWEEP-D" })
+            {
+                foreach (bool backedHome in new[] { false, true })
+                {
+                    int playerIndex = backedHome ? awayRosterSize : 0;
+                    Leg leg = BuildScorerLeg(playerIndex, $"{runId}-{backedHome}");
+                    var ledger = new ScoreLedger();
+                    ledger.ConfigureEndpoint(leg);
+                    // A stat line baking no backed-side goal cannot grade Won as an anytime scorer.
+                    if (ledger.TargetPicked < 1) continue;
+                    exercised++;
+
+                    // Ordinary play through the real beat path first, then the direct attack — the
+                    // property must hold however the beats happened to fall.
+                    for (int i = 0; i < 24; i++)
+                    {
+                        ScoreLedger.StagedGoal? staged =
+                            ledger.StageBeatGoal(DramaEventType.Score, up: true, 0.09, 0.5);
+                        if (staged.HasValue) ledger.CompleteGoal(staged.Value);
+                    }
+                    for (int i = 0; i < 24; i++)
+                        ledger.CompleteGoal(new ScoreLedger.StagedGoal(true, true));
+
+                    ScoreLedger.FinalPlan bound =
+                        ScoreLedger.BindAnytimeScorer(ledger.PlanFinal(LegGrade.Won), leg);
+
+                    int reveals = 0;
+                    foreach (ScoreLedger.StagedGoal g in bound.Goals)
+                    {
+                        if (!g.HasBoundScorer) continue;
+                        reveals++;
+                        Assert.IsTrue(g.Commits && g.ScoredByPicked,
+                            $"{runId} backedHome={backedHome}: the revealed goal must be a committing " +
+                            "goal on the backed player's own side");
+                    }
+                    Assert.AreEqual(1, reveals,
+                        $"{runId} backedHome={backedHome}: every settled WON anytime-scorer leg must carry " +
+                        "exactly one revealed scorer, whatever its beats did (T17 acceptance)");
+                }
+            }
+
+            Assert.Greater(exercised, 0,
+                "the sweep exercised no legs at all — these run ids bake no backed-side goals, so this " +
+                "test proves nothing; pick others rather than leaving it vacuously green");
+        }
+
+        /// <summary>T17 must be surgical. Only anytime-scorer legs reserve anything, so every other
+        /// market's ordinary play must still spend its backed side all the way to the locked
+        /// endpoint exactly as it did before the fix.</summary>
+        [Test]
+        public void Non_scorer_markets_reserve_nothing_and_still_spend_to_their_full_endpoint()
+        {
+            int exercised = 0;
+
+            foreach (string runId in new[] { "T17-NO-RESERVE-A", "T17-NO-RESERVE-B", "T17-NO-RESERVE-C" })
+            {
+                Leg ml = BuildCountLeg(MarketSelection.Moneyline(Side.Home), runId);
+                var ledger = new ScoreLedger();
+                ledger.ConfigureEndpoint(ml);
+
+                Assert.AreEqual(0, ledger.ReservedPicked,
+                    $"{runId}: a moneyline leg must reserve nothing — T17 changes the arithmetic for " +
+                    "anytime-scorer legs and for nothing else");
+                if (ledger.TargetPicked < 1) continue;
+                exercised++;
 
                 for (int i = 0; i < 64 && ledger.Picked < ledger.TargetPicked; i++)
                     ledger.CompleteGoal(new ScoreLedger.StagedGoal(true, true));
 
                 Assert.AreEqual(ledger.TargetPicked, ledger.Picked,
-                    $"backedHome={backedHome}: setup precondition — every one of the backed side's baked " +
-                    "goals must be spent before the final sequence, or this reproduces nothing");
-
-                ScoreLedger.FinalPlan plan = ledger.PlanFinal(LegGrade.Won);
-                ScoreLedger.FinalPlan bound = ScoreLedger.BindAnytimeScorer(plan, leg);
-
-                bool anyBound = false;
-                foreach (ScoreLedger.StagedGoal g in bound.Goals)
-                    if (g.HasBoundScorer) anyBound = true;
-
-                Assert.IsFalse(anyBound,
-                    $"backedHome={backedHome}: THE GAP — a Won anytime-scorer leg whose backed-side goals " +
-                    "were all played before the final sequence carries no bound scorer, so no causal reveal " +
-                    "ever fires and the player wins without seeing who scored. If this assertion fails, the " +
-                    "gap has been CLOSED: verify the fix did not move the causal reveal point (PRD §4.1), " +
-                    "then invert this test rather than deleting it.");
+                    $"{runId}: a non-scorer leg's ordinary play must still reach its full endpoint");
             }
+
+            Assert.Greater(exercised, 0, "no moneyline seed here bakes a home goal; pick other run ids");
         }
 
         [Test]
