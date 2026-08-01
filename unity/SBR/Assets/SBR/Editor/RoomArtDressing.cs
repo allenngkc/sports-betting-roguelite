@@ -65,8 +65,18 @@ namespace SBR
             // R19(b): restored to the spec's cool #3A3F42 (B>G>R), same hue-flip fix and same
             // R12 guard as ArtConduit above - do not lighten this to compensate for how it reads
             // under the rig; that is a lighting finding, not an albedo problem.
-            Material steel = GrayboxRoomBuilder.Mat("ArtHousingSteel",
-                new Color(0.0423f, 0.0497f, 0.0545f), smoothness: 0.28f);
+            //
+            // R20 (Design Director, 2026-08-01): "the TV housing's chipped paint" is unbuilt
+            // required work, so this moves from a flat Mat to a SurfaceMat carrying
+            // ChippedPaint. TINT UNCHANGED from R19(b) - new maps, not a re-colour.
+            // smoothMin/smoothMax straddle the old flat 0.28: intact paint (0.34) is glossier
+            // than the dull exposed metal (0.08) in the chips.
+            Material steel = GrayboxRoomBuilder.SurfaceMat("ArtHousingSteel",
+                new Color(0.0423f, 0.0497f, 0.0545f),
+                ProceduralSurfaceTextures.SurfaceKind.ChippedPaint, 512,
+                contrast: 1.90f, tiling: 3.0f,
+                normalStrength: 8.0f, aoStrength: 1.0f,
+                smoothMin: 0.08f, smoothMax: 0.34f);
             Material stencilMat = GrayboxRoomBuilder.Mat("ArtStencil", Color.white,
                 smoothness: 0.10f, baseMap: GetOrCreateStencil("RM-4B 217-9C", 256, 64));
             Material indicator = GrayboxRoomBuilder.Mat("ArtIndicator",

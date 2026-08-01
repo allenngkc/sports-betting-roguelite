@@ -146,6 +146,10 @@ namespace SBR
             public Material Floor;
             public Material Ceiling;
             public Material Prop;
+            // R20 (Design Director, 2026-08-01): "the battered metal desk" is unbuilt
+            // required work - it currently shares Prop with the stool and mini-fridge, so
+            // giving it a wear surface would batter them too. Own material, see below.
+            public Material Desk;
             public Material Couch;
             public Material Bezel;
             public Material LaptopShell;
@@ -206,6 +210,19 @@ namespace SBR
                     normalStrength: 3.5f, aoStrength: 0.5f,
                     smoothMin: 0.05f, smoothMax: 0.15f),
                 Prop = Mat("PropGray", new Color(0.180f, 0.178f, 0.160f), smoothness: 0.35f),
+                // R20: the desk is a NAMED gap in the ruling ("a battered metal desk"), not a
+                // generic prop, so it gets its own SurfaceMat rather than staying on Prop -
+                // Prop is also the stool and the mini-fridge, and neither was named. Tint is
+                // UNCHANGED from Prop's own value: the desk's hue was not ruled, only its
+                // surface was, so this is the same colour the desk already had.
+                // res/tiling/relief per R20's spec: a desktop is a big, close, mostly-flat
+                // panel, so tiling stays low (1.4) so a dent reads as one broad event rather
+                // than a repeating stamp at 3m viewing distance.
+                Desk = SurfaceMat("DeskBattered", new Color(0.180f, 0.178f, 0.160f),
+                    ProceduralSurfaceTextures.SurfaceKind.BatteredMetal, 512,
+                    contrast: 1.60f, tiling: 1.4f,
+                    normalStrength: 5.0f, aoStrength: 0.7f,
+                    smoothMin: 0.16f, smoothMax: 0.44f),
                 // R19(c): the palette's Drab green #3A4230 was instantiated nowhere in the built
                 // room. Applied to both bunks' structural frames only - BunkSlab/BunkPostFront/
                 // BunkPostBack (was Prop) and Bunk2Slab/Bunk2PostFront/Bunk2PostBack (was the
@@ -285,7 +302,10 @@ namespace SBR
         /// interpolates between them off the same height field, so wear is rougher than the
         /// material around it rather than the whole plane sharing one gloss value.
         /// </summary>
-        private static Material SurfaceMat(string assetName, Color tint,
+        // internal so RoomArtDressing can build its own SurfaceMat materials (R20: the TV
+        // housing's ChippedPaint) through the same deterministic albedo+normal+mask+AO path
+        // rather than duplicating its body - see Mat() below for the same reasoning.
+        internal static Material SurfaceMat(string assetName, Color tint,
                                            ProceduralSurfaceTextures.SurfaceKind kind, int res,
                                            float contrast, float tiling,
                                            float normalStrength, float aoStrength,
@@ -587,16 +607,19 @@ namespace SBR
             Transform deskRoot = new GameObject("Desk").transform;
 
             // Desk 1.1 long x 0.75 high x 0.5 deep against the far end of the right wall.
+            // R20: DeskTop and all four legs are the desk's own SurfaceMat (Desk, not
+            // Prop) - see BuildMaterials. Only these five; the stool and mini-fridge below
+            // stay on Prop deliberately, the ruling did not name them.
             Box("DeskTop", deskRoot, new Vector3(1.05f, 0.73f, 1.45f),
-                new Vector3(0.5f, 0.04f, 1.1f), mats.Prop);
+                new Vector3(0.5f, 0.04f, 1.1f), mats.Desk);
             Box("DeskLegA", deskRoot, new Vector3(0.855f, 0.355f, 0.955f),
-                new Vector3(0.05f, 0.71f, 0.05f), mats.Prop);
+                new Vector3(0.05f, 0.71f, 0.05f), mats.Desk);
             Box("DeskLegB", deskRoot, new Vector3(1.245f, 0.355f, 0.955f),
-                new Vector3(0.05f, 0.71f, 0.05f), mats.Prop);
+                new Vector3(0.05f, 0.71f, 0.05f), mats.Desk);
             Box("DeskLegC", deskRoot, new Vector3(0.855f, 0.355f, 1.945f),
-                new Vector3(0.05f, 0.71f, 0.05f), mats.Prop);
+                new Vector3(0.05f, 0.71f, 0.05f), mats.Desk);
             Box("DeskLegD", deskRoot, new Vector3(1.245f, 0.355f, 1.945f),
-                new Vector3(0.05f, 0.71f, 0.05f), mats.Prop);
+                new Vector3(0.05f, 0.71f, 0.05f), mats.Desk);
 
             // Second bunk frame over the desk (2026-07-27 layout brief). The room now reads as
             // built for two occupants; from the standing camera the window sits between this
