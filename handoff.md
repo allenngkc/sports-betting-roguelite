@@ -252,7 +252,7 @@ Two failure modes share this test name and mean opposite things:
 Baselines before this stack: engine **160**, EditMode **194**, PlayMode **44** (+1 `[Explicit]`
 capture harness, filtered out of routine runs).
 
-## 4C. RESUME HERE — T20, then 3D → 3E → 3F
+## 4C. RESUME HERE — 3D, then 3E → 3F
 
 **T17 is CLOSED** (`ea28c9b`): the ledger reserves the backed side's last baked goal at configure
 time, enforced in `CompleteGoal` and released by `PlanFinal`; `BindAnytimeScorer` is unchanged and
@@ -264,8 +264,19 @@ record, including the closure evidence, is in `BUG-LEDGER.md` under "T17".
 score now holds one goal short until the final sequence. Intended by the ruling, but confirm it reads
 right on screen.
 
-**Next: T20** px re-derivation (live progress 23→19px, resolved rows 19→15px, NEED unchanged — and do
-**not** shorten §6's authored strings to fit), then 3D → 3E → 3F.
+**T20 is CLOSED** (`48a9fbd`). The ticket's "23→19px" described the *canon's* change, already applied
+upstream in `tokens/typography.css`; neither number existed here. The Unity surface had never matched
+that table, and the real blocker was structural — NEED and progress shared one `Text` at 12px, so the
+re-derivation was not expressible until the row was split into `Line`/`Need`/`Progress`. The whole
+surface is now on the canon scale, with two zone heights grown to hold it rather than type shrunk to
+fit. **Deviation with the DD:** the live row has no market/price/state meta line — canon's three-line
+row needs ~73px against a 69px fixed slot. Reasoning is in the `LegRowUi` doc comment; do not "fix"
+it by shrinking NEED.
+
+**Every size in T20 is verified analytically and none of it visually.** The next seated GPU capture is
+unusually load-bearing: it is the first look at a surface whose every element changed size.
+
+**Next: 3D**, then 3E → 3F.
 
 **Blocked on Allen, studio-level:** `[attr]lfs` is declared in `unity/SBR/.gitattributes`, but git
 honours attribute macros only in a **top-level** `.gitattributes`, and this repo has none at root —
