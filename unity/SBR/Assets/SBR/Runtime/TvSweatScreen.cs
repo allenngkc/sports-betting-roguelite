@@ -374,6 +374,18 @@ namespace SBR.Game
         /// condition CanAcceptCashOutNow also refuses.</summary>
         public bool DebugCashOutAnimating => _cashOutTweening;
 
+        /// <summary>PRD §9's read-only diagnostic surface: the scene grammar the stage is currently
+        /// playing, as its <c>SceneTemplate</c> name.
+        ///
+        /// <para>Exists for evidence, not for gameplay — nothing in playback reads it back, exactly
+        /// like <c>BoundActorRouted</c>. T26 refused the T6 visual half because "nothing that
+        /// distinguishes one scene grammar from another is visible at four metres" and the bundle
+        /// "carries no scene index, no per-frame grammar label". A reviewer cannot check whether the
+        /// grammars differ without knowing which grammar each frame IS, and the capture harness had
+        /// no way to ask. This is that question, answered from the same <c>SceneSpec</c> the stage
+        /// actually played rather than from a planner re-run that might disagree.</para></summary>
+        public string DebugSceneTemplate { get; private set; } = string.Empty;
+
         // ---- state ----
         private bool _seated;
         // TVS-H02: accumulates real time only while seated. Every TvSweatScreen-owned timer,
@@ -1051,8 +1063,11 @@ namespace SBR.Game
 
             if (evt.Type != DramaEventType.LegFinal)
             {
-                SceneSpec spec = _choreo.ResolveBeat(evt, _lastBeatUp, _lastBeatDelta, _ledger,
+                // PRD §9 diagnostic — set from the spec the stage is about to play, at every one of the
+            // three resolution sites, so a capture frame can name its own grammar (T26).
+            SceneSpec spec = _choreo.ResolveBeat(evt, _lastBeatUp, _lastBeatDelta, _ledger,
                     leg, _countLedger);
+                DebugSceneTemplate = spec.Template.ToString();
                 // Phase 2C: the planner elaborates this factual spec into a rich, deterministic
                 // TheaterScenePlan (PRD §9) — it never changes spec's truth contract, only picks
                 // grammar/pressure/spacing/payoff/reaction/lane from the presentation key. The
@@ -1159,6 +1174,7 @@ namespace SBR.Game
                 // ResolveFinal overload is side-effect-free (it never reads _ledger/_countLedger),
                 // so this cannot double-consume either ledger ahead of the real planning below.
                 SceneSpec plannedFinalSpec = _choreo.ResolveFinal(grade, evt.Step);
+                DebugSceneTemplate = plannedFinalSpec.Template.ToString();
                 PresentationSceneKey finalKey = BuildSceneKey(evt, plannedFinalSpec, leg);
                 TheaterScenePlan finalScenePlan = _scenePlanner.Plan(plannedFinalSpec, finalKey, _sceneHistory);
                 _sceneHistory.Record(finalScenePlan.Signature, finalScenePlan.FactContract, false);
@@ -1180,6 +1196,7 @@ namespace SBR.Game
                 LegGrade grade = leg.IsVoided ? LegGrade.Voided
                     : leg.GradesWon ? LegGrade.Won : LegGrade.Lost;
                 SceneSpec spec = _choreo.ResolveFinal(grade, evt.Step, _ledger, _countLedger, leg);
+                DebugSceneTemplate = spec.Template.ToString();
                 // Phase 2C: history bookkeeping only (see the pending-loss branch above for why) —
                 // the Final fact contract's catalog is structurally degenerate (PRD §7.2: exactly
                 // one legal candidate per grade), so there is nothing for plan-shaping to vary;

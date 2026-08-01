@@ -89,6 +89,11 @@ namespace SBR.Tests.PlayMode
         // Static because CaptureBurst is static and the test cases run one at a time.
         private static string _seed = CaptureSeeds[0];
 
+        /// <summary>Monotonic across the whole run, so the frames sort into the order the sweat
+        /// actually played them — which is the "scene index" T26 asked for. Reset per seed so an
+        /// index is readable as "the Nth captured moment of THIS sweat".</summary>
+        private static int s_sceneIndex;
+
         // Leg 2 (0-based) of the fixed ticket built below is always the AnytimeScorer leg.
         private const int ScorerLegIndex = 2;
 
@@ -117,12 +122,13 @@ namespace SBR.Tests.PlayMode
         // TVCAPTURE01 happens to finish inside 180s, and seeds 02-05 do not. 300s clears the
         // internal deadline with headroom, so a genuine hang still fails on the harness's own
         // message ("...never reached a terminal state") rather than on an opaque framework timeout.
-        [Timeout(300000)]
+        [Timeout(480000)]
         [UnityTest]
         public IEnumerator Capture_SeatedSweat_NamedMoments(
             [ValueSource(nameof(CaptureSeeds))] string seed)
         {
             _seed = seed;
+            s_sceneIndex = 0; // per seed, so an index reads as "the Nth moment of THIS sweat"
             Directory.CreateDirectory(OutputDir);
 
             yield return LoadRoom();
@@ -198,7 +204,14 @@ namespace SBR.Tests.PlayMode
             // per-moment timeouts stacking worst-case. Ship pacing across three matches plus a
             // final sequence is comfortably under this in the ordinary case; if it is not, that is
             // itself useful evidence, not a harness bug.
-            float deadline = Time.realtimeSinceStartup + 240f;
+            // Raised 240 -> 420. Measured: seeds 02-05 all hit the old budget mid-sweat at 242-246s
+            // with the harness's OWN messages ("the scorer leg never reached a terminal state",
+            // "cash-out never became actionable"), while TVCAPTURE01 finishes inside it. A full
+            // ship-paced three-leg sweat simply costs more than 240s on most seeds — seed 01 is the
+            // one that happens to fit, which is exactly the sampling error five seeds exist to end.
+            // Ship pacing is kept: the point of this harness is real pacing, so the budget moves,
+            // not the clock. [Timeout(300000)] on the test moves with it — see the attribute.
+            float deadline = Time.realtimeSinceStartup + 420f;
 
             // Reference frame: the ticket card, before any event has fired. Not a named "moment" in
             // the evidence-question sense - just an anchor a reviewer can orient the rest against.
@@ -290,9 +303,19 @@ namespace SBR.Tests.PlayMode
         private static IEnumerator CaptureBurst(TvSweatScreen screen, Camera cam, string momentName,
             int frameCount, float intervalSeconds)
         {
+            s_sceneIndex++; // one index per captured moment, in the order the sweat played them
             for (int i = 0; i < frameCount; i++)
             {
-                string file = $"seed-{_seed}__moment-{momentName}__frame{i:000}.png";
+                // T26: every frame names its own scene grammar and carries a scene index. The
+                // refusal was that "nothing that distinguishes one scene grammar from another is
+                // visible" and the bundle "carries no scene index, no per-frame grammar label" — a
+                // set whose whole claim is variation cannot be reviewed without an index saying
+                // which frame is which grammar. Read from the surface's own PRD §9 diagnostic, so
+                // the label is the grammar the stage PLAYED, not one a re-run might disagree about.
+                string grammar = string.IsNullOrEmpty(screen.DebugSceneTemplate)
+                    ? "none" : screen.DebugSceneTemplate;
+                string file = $"seed-{_seed}__scene{s_sceneIndex:000}__grammar-{grammar}" +
+                              $"__moment-{momentName}__frame{i:000}.png";
                 string path = Path.Combine(OutputDir, file);
                 CaptureCamera(cam, path, CaptureWidth, CaptureHeight);
                 Debug.Log($"[TvSweatCaptureHarness] {file} :: score='{screen.RevealedView.ScoreText}' " +
