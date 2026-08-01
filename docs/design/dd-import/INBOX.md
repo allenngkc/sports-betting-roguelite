@@ -20,6 +20,12 @@ the shipped build" section is stale — scanlines + static crawl were removed at
 `842382d` (T8); chromeCyan and emission rest values remain accurate. Now that the
 kit is standard-bearing under the 1:1 rule, please correct it in the next export.
 
+**TV evidenced items (2026-08-01, post-C14 window):** (1) `goldInk #0A0C10` sits
+below DESIGN.md's black floor — canon self-contradiction, both are yours; (2)
+`LooksLikeRetiredRed` misses `#FF4038` by 0.00098 — three shipped guards assert
+less than they read as asserting; (3) **T24 amendment needed:** six authored 76px
+slots require 456px against 416px available — the ruling as written cannot fit.
+
 **SureThing C14-audit dispositions (2026-08-01, from `571675c`):** 14 needs-DD
 items headed by a record-row hierarchy inversion — full list in
 `[ST] docs/.../C14 audit` doc. Caveat the DD should hold: populated-ledger states
