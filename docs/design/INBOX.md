@@ -28,7 +28,14 @@ referenced documents via Import before the DD will rule on them.
    surface; only direct light at a grazing angle raises relief. As written, R12
    would have predicted the failed baked-light route works.
 8. **Room re-review** — now due (R9/R10 landed per your batch-2 sequencing);
-   package incoming to `dd-import/`, includes the couch-headroom design question.
+   package in `dd-import/`, includes the couch-headroom design question.
+9. **TV row model: canon vs Layout B.** `TvLegRow.jsx` says live rows expand in
+   place and NEED may wrap to two lines; Layout B's no-reflow law (pinned by two
+   3C tests) fixes 70px slots, and a wrapped NEED needs ~98px. Orchestrator
+   selected the lead's recommended interim: T20's ruled px values adopted within
+   the no-reflow law, NEED capped at one line on Unity, deviation documented.
+   Rule: fixed rows with one-line NEED as the TV-surface constraint, or amend the
+   no-reflow law to canon's expanding rows.
 
 ## Cleared 2026-07-31, batch 2 (transcribed to REGISTER.md by the orchestrator)
 

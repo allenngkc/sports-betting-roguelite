@@ -106,6 +106,13 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-07-31 cycle 13 · **T20 scope decision made autonomously** — TV surfaced a
+  canon-vs-Layout-B conflict via option dialog; orchestrator selected its
+  recommended option 1 (adopt the T20 ruled type scale within the no-reflow law,
+  NEED one-line on Unity, deviation documented) because it amends no law and the
+  later ruling governs over the canon reference (C1 precedent). Row-model question
+  routed to DD as inbox item 9. Reversal: DD rules for expanding rows → option 2
+  executes then. Also this cycle: T17 resolved (`ea28c9b`), scorer-gap closed.
 - 2026-07-31 cycle 10 · **Phase 3C LANDED** (`4969eb1`: Layout B canvas +
   T16/C3/C8 + TVS-H02 fix; both n≥10 arms green, full suites green, stash
   round-trip byte-verified against a CRLF rewrite). Editor: room R10 cycle opened
