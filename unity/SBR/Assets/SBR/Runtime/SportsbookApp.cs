@@ -1316,9 +1316,14 @@ namespace SBR.Game
                 // meta is the one, always-visible statement; this caption keeps only what it alone
                 // conveys — that the list below is scoped to settled current-run records.
                 LaptopOs.TonerSecondary, "SETTLED CURRENT-RUN RECORDS", _font);
+            // S32: word order follows the rebuilt row below — STAKE, RETURNED, then STATE
+            // rightmost as the row's own last scan point (LedgerEntry.jsx column order). "PAYOUT"
+            // is retired for "RETURNED", matching the row's own RETURNED key and the ruling's own
+            // wording ("the returned figure"). Spacing is a by-eye hint, not pixel-locked to the
+            // columns below — same limitation the original header text already had.
             LaptopUi.MakeText(board, "LedgerColumnHead", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -34f), new Vector2(672f, 24f), 13, TextAnchor.UpperLeft,
-                LaptopOs.Muted, "TICKET              STATE        STAKE             PAYOUT", _font);
+                LaptopOs.Muted, "TICKET                    STAKE          RETURNED                    STATE", _font);
             LaptopUi.MakeRule(board, "LedgerHeaderRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(0f, -66f), new Vector2(700f, 2f));
 
@@ -1334,7 +1339,11 @@ namespace SBR.Game
                 Ticket ticket = run.Tickets[i];
                 if (ticket.State == TicketState.Open) continue;
                 BuildLedgerTicket(board, ticket, settledCount, run.Round, y);
-                y -= 48f + ticket.Legs.Count * 24f;
+                // S32: LedgerEntry.jsx's own borderBottom (--rule-w solid --rule-soft) is the
+                // separator now, drawn as this entry's own bottom edge inside BuildLedgerTicket —
+                // so entries sit flush and the next one starts exactly one entry height down, not
+                // one entry height plus the blank 2px gap this file used to leave.
+                y -= LedgerEntryHeight(ticket);
                 settledCount++;
                 settledStake += ticket.Stake;
                 if (ticket.State == TicketState.Won)
@@ -1420,9 +1429,43 @@ namespace SBR.Game
                 LaptopOs.White, $"ROUND {run.Round}  ·  BANK {LaptopUi.Money(run.Bank)}", _font);
         }
 
+        // S32 canon column geometry, from LedgerEntry.jsx: a 16px gap between five flex cells —
+        // number(112, flex:none) / legs(flex:1) / STAKE(96) / RETURNED(104) / terminal(104,
+        // flex:none, textAlign right) — inside --st-pad-x (14px) padding on both row edges. The
+        // terminal word is the LAST cell and nothing follows it — that is the entire point of the
+        // S32 ruling (DD 2026-08-01): "the state is the row's subject and the money is its
+        // object," so the terminal word, not the payout, is the row's last scan point.
+        //
+        // Row content width is 672 (700 - 14 - 14). The four fixed cells plus their four 16px gaps
+        // consume 480 (112 + 96 + 104 + 104 + 4*16), leaving the legs flex cell 192px in canon.
+        // This build does not put text in that 192px slot — see the discrepancy comment in
+        // BuildLedgerTicket below — so it is reserved space, not a rendered cell.
+        private const float LedgerPadX = 14f;
+        private const float LedgerColGap = 16f;
+        private const float LedgerNumberWidth = 112f;
+        private const float LedgerStakeWidth = 96f;
+        private const float LedgerReturnedWidth = 104f;
+        private const float LedgerTerminalWidth = 104f;
+        private const float LedgerNumberX = LedgerPadX; // 14
+        private const float LedgerLegsFlexWidth = 192f; // 672 - 480, unused: see discrepancy note
+        private const float LedgerStakeX =
+            LedgerNumberX + LedgerNumberWidth + LedgerColGap + LedgerLegsFlexWidth + LedgerColGap; // 350
+        private const float LedgerReturnedX = LedgerStakeX + LedgerStakeWidth + LedgerColGap; // 462
+
+        // Summary-band vertical budget: canon stacks a 13px key ("STAKE"/"RETURNED") over a
+        // 16px value inside one flex row, vertically centered by alignItems. This build gives that
+        // stack 56px total (room for an 11px-ish pad, the 13px key, a small gap, the 16-18px value
+        // and a matching pad below). Sure-by-reading on structure/order/colour; the exact 56 is a
+        // by-eye pick like every other row height in this file and needs a capture to confirm.
+        private const float LedgerSummaryHeight = 56f;
+        private const float LedgerLegRowHeight = 24f;
+
+        private static float LedgerEntryHeight(Ticket ticket)
+            => LedgerSummaryHeight + ticket.Legs.Count * LedgerLegRowHeight;
+
         private void BuildLedgerTicket(RectTransform board, Ticket ticket, int index, int round, float y)
         {
-            float height = 46f + ticket.Legs.Count * 24f;
+            float height = LedgerEntryHeight(ticket);
             RectTransform row = LaptopUi.MakePanel(board, "LedgerTicket" + index, new Vector2(0f, 1f),
                 new Vector2(0f, 1f), new Vector2(0f, y), new Vector2(700f, height), LaptopOs.Ink);
             string identity = string.IsNullOrEmpty(ticket.Id) ? $"{round}.{index + 1}" : ticket.Id;
@@ -1430,40 +1473,79 @@ namespace SBR.Game
                 : ticket.State == TicketState.Lost ? "LOST"
                 : ticket.State == TicketState.CashedOut ? "CASHED OUT" : "OPEN";
             // S36: the engine retains no cash-out amount. The absence is honest — never a
-            // fabricated $0 and never "AMOUNT NOT RETAINED" — so the money column prints a plain
+            // fabricated $0 and never "AMOUNT NOT RETAINED" — so the RETURNED value prints a plain
             // em dash, coloured toner-3 below, until engine retention lands.
-            string payout = ticket.State == TicketState.Won ? LaptopUi.Money(ticket.PotentialPayout)
+            string returnedValue = ticket.State == TicketState.Won ? LaptopUi.Money(ticket.PotentialPayout)
                 : ticket.State == TicketState.Lost ? LaptopUi.Money(0)
                 : "—";
             // F5/F6 / LedgerEntry.jsx: `color: won ? var(--wax) : var(--toner-3)` applies to BOTH
-            // the terminal word and the RETURNED figure. Ruling S15 read as "LOST struck in oxide
-            // … the returned figure in toner", and this originally built that literally — oxide
-            // (--stamp) on the word glyphs, plain toner (--toner) on the figure. The kit resolves
-            // it more precisely: oxide belongs only to the strike drawn ACROSS the word
-            // (LedgerDeadStrike, below, unchanged), never to a glyph fill. The word and the figure
-            // both recede to toner-3 (LaptopOs.Muted) instead.
+            // the terminal word and the RETURNED value. S15 resolved LOST more precisely: oxide
+            // belongs only to the strike drawn ACROSS the word (LedgerDeadStrike, below,
+            // unchanged), never to a glyph fill — the word and the RETURNED value both recede to
+            // toner-3 (LaptopOs.Muted) instead.
             // S36: CASHED OUT is wax, paired with WON exactly as the kit pairs them, on the
-            // terminal word only. That pairing stops at the payout column — an em dash is an
-            // absence, not a fact to celebrate, so it stays toner-3 even beside a wax word.
+            // terminal word only. That pairing stops at RETURNED — an em dash is an absence, not a
+            // fact to celebrate, so it stays toner-3 even beside a wax word.
             Color stateColor = ticket.State == TicketState.Won || ticket.State == TicketState.CashedOut
                 ? LaptopOs.MoneyGold
                 : ticket.State == TicketState.Lost ? LaptopOs.Muted : LaptopOs.TonerSecondary;
             bool lost = ticket.State == TicketState.Lost;
-            Color identityColor = lost ? LaptopOs.Muted : LaptopOs.White;
-            Color stakeColor = lost ? LaptopOs.Muted : LaptopOs.TonerSecondary;
-            Color payoutColor = lost || ticket.State == TicketState.CashedOut ? LaptopOs.Muted : stateColor;
-            // "TICKET n" is condensed for the same reason as the MY BETS mirror's TicketTitle; the
-            // state word matches LedgerEntry.jsx's terminal field / RevealedState.jsx.
-            // F9: --st-size-leg (16px) — LedgerEntry.jsx sizes the ticket identity the same as
-            // every other margin/leg figure; this was 15px, one below the token.
-            LaptopUi.MakeText(row, "TicketIdentity", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, -4f), new Vector2(180f, 24f), 16, TextAnchor.UpperLeft,
-                identityColor, "TICKET " + identity, _fontCond);
-            // Anchor/pivot (1,1) plus right-aligned content, matching BuildMirrorLeg's LegState —
-            // InkRingGeometry requires that exact top-right convention to size/place a strike.
+            Color returnedColor = lost || ticket.State == TicketState.CashedOut ? LaptopOs.Muted : stateColor;
+
+            // --- number (112px, flex:none). LedgerEntry.jsx colours this --toner-2 unconditionally
+            // — no won/lost branch — so, unlike the previous build, it no longer dims on a LOST
+            // ticket. The terminal word and RETURNED value already carry that signal; canon does
+            // not repeat it here.
+            Text identityText = LaptopUi.MakeText(row, "TicketIdentity", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(LedgerNumberX, -16f), new Vector2(LedgerNumberWidth, 24f), 16, TextAnchor.UpperLeft,
+                LaptopOs.TonerSecondary, "TICKET " + identity, _fontCond);
+            identityText.horizontalOverflow = HorizontalWrapMode.Overflow; // canon: whiteSpace nowrap
+
+            // --- legs (flex:1, ~192px in canon): deliberately blank. LedgerEntry.jsx renders one
+            // condensed leg string in this cell; this build instead carries full per-leg sub-rows
+            // below (odds, per-leg state) that the canon string does not. Collapsing them into the
+            // canon string would discard information the player currently has, which is a product
+            // call outside this rebuild's authority — flagged, not resolved. Implementing the
+            // canon column order does not require populating this slot, so it is left reserved
+            // rather than duplicating the sub-rows' content or inventing a summary canon never
+            // specified.
+
+            // --- STAKE (96px): key line + value line. LedgerEntry.jsx colours the value --toner
+            // unconditionally (no won/lost branch), unlike the previous build's lost-dims-to-Muted
+            // treatment.
+            Text stakeKeyText = LaptopUi.MakeText(row, "TicketStakeKey", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(LedgerStakeX, -10f), new Vector2(LedgerStakeWidth, 16f), 13, TextAnchor.UpperLeft,
+                LaptopOs.Muted, "STAKE", _font);
+            stakeKeyText.horizontalOverflow = HorizontalWrapMode.Overflow; // canon "key" style: nowrap
+            LaptopUi.MakeText(row, "TicketStakeValue", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(LedgerStakeX, -28f), new Vector2(LedgerStakeWidth, 20f), 16, TextAnchor.UpperLeft,
+                LaptopOs.White, LaptopUi.Money(ticket.Stake), _fontCond);
+
+            // --- RETURNED (104px): key line + value line; value colour carries won/lost/cashed. ---
+            Text returnedKeyText = LaptopUi.MakeText(row, "TicketReturnedKey", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(LedgerReturnedX, -10f), new Vector2(LedgerReturnedWidth, 16f), 13, TextAnchor.UpperLeft,
+                LaptopOs.Muted, "RETURNED", _font);
+            returnedKeyText.horizontalOverflow = HorizontalWrapMode.Overflow; // canon "key" style: nowrap
+            LaptopUi.MakeText(row, "TicketReturnedValue", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(LedgerReturnedX, -28f), new Vector2(LedgerReturnedWidth, 20f), 16, TextAnchor.UpperLeft,
+                returnedColor, returnedValue, _fontCond);
+
+            // --- terminal word (104px, flex:none, textAlign right) — S32: the row's rightmost
+            // element and its last scan point. Anchor/pivot (1,1) top-right, matching
+            // InkRingGeometry's required convention (as BuildMirrorLeg's LegState already does).
+            //
+            // A consequence of being rightmost: nothing is laid out to its right by construction,
+            // so the collision this file used to work around (a lost ticket's strike overshooting
+            // into a neighbouring column, previously fixed by moving STAKE to x=338) cannot happen
+            // here. The strike still overshoots 8px past this box's right edge (InkRingGeometry),
+            // eating into the row's 14px right pad and landing 6px shy of the row edge (700). That
+            // 6-of-14px clearance is the requirement the old fix protected; it still holds here,
+            // satisfied by geometry instead of a moved column. If a future change ever puts a
+            // control right of this word, it must clear that same 8px overshoot.
             Text ticketStateText = LaptopUi.MakeText(row, "TicketState", new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-382f, -4f), new Vector2(120f, 24f), 13, TextAnchor.UpperRight,
+                new Vector2(-LedgerPadX, -16f), new Vector2(LedgerTerminalWidth, 24f), 13, TextAnchor.UpperRight,
                 stateColor, state, _fontCond);
+            ticketStateText.horizontalOverflow = HorizontalWrapMode.Overflow; // canon: whiteSpace nowrap
             if (lost)
             {
                 Sprite strike = SportsbookApp.ResolveStrike(index);
@@ -1476,38 +1558,28 @@ namespace SBR.Game
                         new Vector2(1f, 1f), position, size, LaptopOs.MoneyBad);
                 }
             }
-            // Starts at 338, not 322, and the 16px is load-bearing rather than taste. A lost ticket's
-            // strike is sized from the state word plus a pen overshoot, and measured on a real
-            // settled capture it runs to x=323 while this column began at x=322 — one pixel of
-            // overlap, which rendered as a single struck phrase reading "LOST STAKE $87". That says
-            // the stake was voided, which is not what happened: the stake was lost and is gone.
-            //
-            // A truth defect, so it is corrected ahead of the queued record-row rebuild rather than
-            // waiting for it. Moving this column is the narrow fix — the strike's own geometry is
-            // shared with the MY BETS dead leg and must not be reshaped to solve a packing problem
-            // on one screen. If the rebuild re-columns this row, it inherits the requirement:
-            // whatever sits right of the terminal word starts clear of that word's overshoot.
-            LaptopUi.MakeText(row, "TicketStake", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                // Width drops 132 -> 116 with the move, so this box ends at 454 and stays clear of
-                // TicketPayout's, which begins at 458. At 132 the two would have overlapped by 12px.
-                // Nothing would have shown — payout right-aligns and its content never reaches that
-                // far left — but an invisible overlap between two live boxes is exactly the state
-                // that produced the LockReason occlusion, where a control drew over a label and the
-                // label simply stopped existing with every test still green.
-                new Vector2(338f, -4f), new Vector2(116f, 24f), 13, TextAnchor.UpperLeft,
-                stakeColor, "STAKE " + LaptopUi.Money(ticket.Stake), _font);
-            LaptopUi.MakeText(row, "TicketPayout", new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-14f, -4f), new Vector2(228f, 24f), 13, TextAnchor.UpperRight,
-                payoutColor, "PAYOUT " + payout, _font);
+
+            // Summary-band / leg-sub-row divider — internal to this entry, separate from the canon
+            // borderBottom (LedgerEntryRule, at the very bottom of the whole entry, below).
             LaptopUi.MakeRule(row, "TicketRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(0f, -30f), new Vector2(700f, 1f));
+                new Vector2(0f, -LedgerSummaryHeight), new Vector2(700f, 1f));
 
             for (int legIndex = 0; legIndex < ticket.Legs.Count; legIndex++)
             {
                 Leg leg = ticket.Legs[legIndex];
                 RectTransform legRow = LaptopUi.MakePanel(row, "LedgerLeg" + legIndex,
                     new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(0f, -32f - legIndex * 24f), new Vector2(700f, 23f), LaptopOs.Ink);
+                    new Vector2(0f, -LedgerSummaryHeight - legIndex * LedgerLegRowHeight),
+                    new Vector2(700f, 23f), LaptopOs.Ink);
+                // W4 (audit question — resolved not-reachable, see the report): leg.State can only
+                // read Pending here if Matchup.StatLine is still null. Run.LockRound (engine/Run.cs)
+                // samples StatLine for every matchup on the slate — bet or not — before it
+                // constructs a single SweatSession, and no Ticket leaves TicketState.Open before a
+                // SweatSession exists (engine/Run.cs FinishSweat; engine/SweatSession.cs's Lost/
+                // CashedOut assignments). So by the time a ticket is settled enough to reach this
+                // loop, every one of its legs' matchups already has a StatLine, and leg.State
+                // (engine/Domain.cs) can only be Won or Lost. This PENDING fallback is kept for
+                // defensive completeness, not because engine data can reach it.
                 string legState = leg.IsVoided ? "VOID"
                     : leg.RescuedWon || leg.State == LegState.Won ? "WON"
                     : leg.State == LegState.Lost ? "LOST" : "PENDING";
@@ -1538,6 +1610,13 @@ namespace SBR.Game
                 LaptopUi.MakeRule(legRow, "LegRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
                     Vector2.zero, new Vector2(700f, 1f));
             }
+
+            // S32 canon: "every entry carries a borderBottom in --rule-soft" (LedgerEntry.jsx:
+            // borderBottom: var(--rule-w) solid var(--rule-soft)). Replaces the blank 2px gap this
+            // file used to leave between entries — entries now sit flush and this hairline is the
+            // only separator, drawn at the entry's own bottom edge so it costs no extra height.
+            LaptopUi.MakeRule(row, "LedgerEntryRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(0f, -height), new Vector2(700f, 1f));
         }
 
         private void BuildRecordSummary(RectTransform margin, Run run, int settled, int won,

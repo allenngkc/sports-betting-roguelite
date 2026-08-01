@@ -60,10 +60,14 @@ namespace SBR.Tests.PlayMode
                 TextOf(Required(ledgerTicket, "TicketIdentity")));
             Assert.AreEqual(TicketStateText(ticket),
                 TextOf(Required(ledgerTicket, "TicketState")));
-            Assert.AreEqual("STAKE " + Money(ticket.Stake),
-                TextOf(Required(ledgerTicket, "TicketStake")));
-            Assert.AreEqual("PAYOUT " + PayoutText(ticket),
-                TextOf(Required(ledgerTicket, "TicketPayout")));
+            // S32: LedgerEntry.jsx's STAKE/RETURNED cells are a key line over a value line, not
+            // one "LABEL $n" string — updated from the pre-S32 single-line "STAKE $n"/"PAYOUT $n"
+            // pins to match. "RETURNED" also retires "PAYOUT" as the label word, per the ruling's
+            // own wording ("the returned figure").
+            Assert.AreEqual("STAKE", TextOf(Required(ledgerTicket, "TicketStakeKey")));
+            Assert.AreEqual(Money(ticket.Stake), TextOf(Required(ledgerTicket, "TicketStakeValue")));
+            Assert.AreEqual("RETURNED", TextOf(Required(ledgerTicket, "TicketReturnedKey")));
+            Assert.AreEqual(PayoutText(ticket), TextOf(Required(ledgerTicket, "TicketReturnedValue")));
             Assert.Zero(ledgerTicket.GetComponentsInChildren<Button>(true).Length,
                 "settled ledger ticket must expose no action");
 
