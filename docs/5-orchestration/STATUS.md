@@ -106,6 +106,11 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-07-31 cycle 21 · TV 3D committed (`0fd2ce5`, VOID strike + contract move);
+  3E started editor-free. Scheduled: post-3E capture window (seated-sweat harness →
+  evidence dir → repo-free DD bundle incl. the 49 held T6 captures) to convert the
+  accumulated analytical-only visual change into reviewable frames without the LFS
+  ruling. Reversal: skip the capture window.
 - 2026-07-31 cycle 20 · **Both merges validated green on merged main** — compile
   0 errors, EditMode 75/75, PlayMode 38/38 on the GPU device, no flake. Suite
   duration 47.5s→82.5s under room lighting (awareness only — affects future
