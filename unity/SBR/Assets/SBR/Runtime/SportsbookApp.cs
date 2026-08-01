@@ -1466,8 +1466,25 @@ namespace SBR.Game
                         new Vector2(1f, 1f), position, size, LaptopOs.MoneyBad);
                 }
             }
+            // Starts at 338, not 322, and the 16px is load-bearing rather than taste. A lost ticket's
+            // strike is sized from the state word plus a pen overshoot, and measured on a real
+            // settled capture it runs to x=323 while this column began at x=322 — one pixel of
+            // overlap, which rendered as a single struck phrase reading "LOST STAKE $87". That says
+            // the stake was voided, which is not what happened: the stake was lost and is gone.
+            //
+            // A truth defect, so it is corrected ahead of the queued record-row rebuild rather than
+            // waiting for it. Moving this column is the narrow fix — the strike's own geometry is
+            // shared with the MY BETS dead leg and must not be reshaped to solve a packing problem
+            // on one screen. If the rebuild re-columns this row, it inherits the requirement:
+            // whatever sits right of the terminal word starts clear of that word's overshoot.
             LaptopUi.MakeText(row, "TicketStake", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(322f, -4f), new Vector2(132f, 24f), 13, TextAnchor.UpperLeft,
+                // Width drops 132 -> 116 with the move, so this box ends at 454 and stays clear of
+                // TicketPayout's, which begins at 458. At 132 the two would have overlapped by 12px.
+                // Nothing would have shown — payout right-aligns and its content never reaches that
+                // far left — but an invisible overlap between two live boxes is exactly the state
+                // that produced the LockReason occlusion, where a control drew over a label and the
+                // label simply stopped existing with every test still green.
+                new Vector2(338f, -4f), new Vector2(116f, 24f), 13, TextAnchor.UpperLeft,
                 stakeColor, "STAKE " + LaptopUi.Money(ticket.Stake), _font);
             LaptopUi.MakeText(row, "TicketPayout", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-14f, -4f), new Vector2(228f, 24f), 13, TextAnchor.UpperRight,
