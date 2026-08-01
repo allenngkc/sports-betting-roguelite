@@ -20,6 +20,13 @@ the shipped build" section is stale — scanlines + static crawl were removed at
 `842382d` (T8); chromeCyan and emission rest values remain accurate. Now that the
 kit is standard-bearing under the 1:1 rule, please correct it in the next export.
 
+**Markets C14-audit calls (2026-08-01, from `50e19ae`):** (a) ladder letter-spacing —
+accept a documented deviation or move the element to TMP; (b) the scroll position
+indicator's form for the PLAYERS tab (S25 requires one if scroll ships); (c) an
+S24/S25 interaction conflict the lead wants confirmed before reversing a shipped
+decision — details in the audit doc. Plus the two-column→single-column ladder
+rebuild is large; DD sequencing preference welcome.
+
 ## Pending (next DD batch)
 
 1. **T17 presentation confirm:** reserve-don't-spend means a scorer leg's backed
