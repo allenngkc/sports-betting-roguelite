@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SureThing — Approved Direction — The Annotated Form Guide</title>
+<style>
+  :root{
+    --bg:#0B0C0E;--panel:#15171A;--line:#2A2E34;--txt:#E6E8EA;--dim:#8B929B;--hot:#D9A441;
+    --sans:"Franklin Gothic Book","Segoe UI",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--txt);font-family:var(--sans);padding:28px 32px 60px}
+  header{max-width:1180px;margin:0 auto 24px}
+  h1{font-size:26px;letter-spacing:.04em;font-weight:600}
+  .sub{color:var(--dim);font-size:14px;margin-top:7px;line-height:1.55;max-width:76ch}
+  .kill{
+    margin-top:16px;padding:12px 15px;background:#191308;border-left:3px solid var(--hot);
+    font-size:13px;color:#E3C692;line-height:1.55;max-width:82ch;
+  }
+  .warn{margin-top:12px;padding:11px 14px;background:var(--panel);border:1px solid var(--line);
+    font-size:12.5px;color:var(--dim);line-height:1.5;max-width:82ch}
+  .warn a{color:var(--hot)}
+  nav{max-width:1180px;margin:0 auto 20px;display:flex;gap:8px;flex-wrap:wrap}
+  nav button{padding:11px 18px;background:var(--panel);border:1px solid var(--line);color:var(--dim);
+    font-family:var(--sans);font-size:14px;letter-spacing:.06em;cursor:pointer}
+  nav button:hover{color:var(--txt);border-color:#3D444C}
+  nav button[aria-selected="true"]{background:var(--hot);border-color:var(--hot);color:#1A1305;font-weight:600}
+  .stage{max-width:1180px;margin:0 auto}
+  .view{display:none}.view.on{display:block}
+  .meta{margin-bottom:14px;padding:14px 16px;background:var(--panel);border:1px solid var(--line)}
+  .meta h2{font-size:17px;letter-spacing:.05em;margin-bottom:6px}
+  .meta p{font-size:13.5px;color:var(--dim);line-height:1.6;max-width:82ch}
+  .meta .open{display:inline-block;margin-top:10px;font-size:12px;letter-spacing:.07em;color:var(--hot)}
+  .frame{width:1024px;height:704px;border:1px solid var(--line);background:#16160F}
+  .frame iframe{width:1024px;height:704px;border:0;display:block}
+  .sheet{display:flex;gap:20px;flex-wrap:wrap}
+  .cell{width:560px}
+  .cell .cap{font-size:12px;letter-spacing:.1em;color:var(--dim);margin-bottom:6px}
+  .clip{width:560px;height:385px;overflow:hidden;border:1px solid var(--line);background:#16160F}
+  .clip iframe{width:1024px;height:704px;border:0;transform:scale(.547);transform-origin:0 0;display:block}
+  .sheetnote{width:100%;margin-top:4px;padding:12px 14px;background:var(--panel);
+    border:1px solid var(--line);font-size:13px;color:var(--dim);line-height:1.6;max-width:82ch}
+  .sheetnote b{color:var(--txt)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>SureThing — Approved Direction — The Annotated Form Guide</h1>
+  <p class="sub">
+    Two visual worlds, one identical Round&nbsp;3 lobby. Same bank, same slate, same two legs, same
+    stake. Judge on two axes only: <b>does the audience recognise this world</b>, and <b>does it
+    make the product clearer</b>.
+  </p>
+  <div class="kill">
+    <b>Earlier discarded explorations were dumped in full.</b> Their three directions were derived before the room and TV
+    workstream published its approved world. The decisive fact: the TV is a hardened industrial
+    display <i>installed by an institution</i>, while the laptop is <b>the occupant's own
+    machine</b> — personal, cheap, grubby, possibly customised. Four of their seven candidate
+    worlds were institutional, so the pool was half-invalid and the explorations were discarded rather
+    than salvaged.
+  </div>
+  <div class="warn">
+    If the panels are blank, your browser is blocking local frames — open the files directly, they
+    are self-contained:
+    <a href="direction-1-form-guide.html">Approved Direction — The Annotated Form Guide</a> ·
+    <a href="direction-2-catalogue-sleeve.html">Rejected comparison — The Catalogue Sleeve</a>
+  </div>
+  <div class="warn" style="border-left:3px solid var(--hot)">
+    <b style="color:var(--hot)">APPROVED DIRECTION — THE ANNOTATED FORM GUIDE.</b>
+    The implementation reference is the <a href="element-kit.html">UI element kit</a>: every
+    component at real pixel size, in every state, with the rules that govern it. Ink assets and
+    their Unity import settings are in <a href="assets/ASSETS.md">assets/ASSETS.md</a>. The durable
+    design-to-UGUI contract is <a href="DESIGN.md">DESIGN.md</a>.
+  </div>
+</header>
+
+<nav>
+  <button aria-selected="true" data-v="sheet">BOTH @ 55%</button>
+  <button aria-selected="false" data-v="a">APPROVED DIRECTION</button>
+  <button aria-selected="false" data-v="b">REJECTED COMPARISON</button>
+</nav>
+
+<div class="stage">
+
+  <section class="view on" id="v-sheet">
+    <div class="sheet">
+      <div class="cell">
+        <div class="cap">APPROVED DIRECTION · THE ANNOTATED FORM GUIDE</div>
+        <div class="clip"><iframe src="direction-1-form-guide.html" title="Approved Direction — The Annotated Form Guide"></iframe></div>
+      </div>
+      <div class="cell">
+        <div class="cap">REJECTED COMPARISON · THE CATALOGUE SLEEVE</div>
+        <div class="clip"><iframe src="direction-2-catalogue-sleeve.html" title="Rejected comparison — The Catalogue Sleeve"></iframe></div>
+      </div>
+      <div class="sheetnote">
+        <b>This view is the real test.</b> The laptop is a 0.32×0.22m surface on a battered desk,
+        read at an angle in a dim olive room. At roughly half size the bank, the matchup names, the
+        marked price, the stake, the payout and the primary action must all still be findable.
+        Anything that dissolves here is a defect, not a detail. Check the grounds too — neither
+        screen may show pure black, or it reads as composited into the room rather than
+        photographed in it.
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-a">
+    <div class="meta">
+      <h2>Approved Direction — The Annotated Form Guide</h2>
+      <p>
+        You do not tap a button — you mark up the form. The slate is a dense betting paper being
+        worked over at 2 a.m. in a cheap reader's night mode, and every pick is a mark left on it:
+        selection is a biro ring drawn round the price, not a pill that lights up. The house
+        printed the document; the right-hand margin is his. Wax-pencil amber is reserved for money
+        and the primary action, and oxide red appears only where the <i>house</i> stamps something.
+        Loud register: the sheet stops being his to mark and starts being marked at him.
+      </p>
+      <div class="open">production face pending (Bell Centennial dropped, licence-encumbered) · ground #16160F · grounded candidate 4 of 7, assigned by the roll</div>
+    </div>
+    <div class="frame"><iframe src="direction-1-form-guide.html" title="Approved Direction — The Annotated Form Guide, full size"></iframe></div>
+  </section>
+
+  <section class="view" id="v-b">
+    <div class="meta">
+      <h2>Rejected comparison — The Catalogue Sleeve</h2>
+      <p>
+        A record-label catalogue identity: lifted matte black, a white hairline plot as body ink,
+        catalogue numbers as the only headline, vast unprinted ground, small engraved caps used
+        sparingly, and the active entry alone decoded to full colour. A sleeve is a personal object
+        he owns, and the register is calm, dark and precise. Its native cipher — colour strips
+        standing in for words — was dropped in fusion, because every price and reason on this
+        product must stay literal.
+      </p>
+      <div class="open">fused challenger · dealt against the assigned direction</div>
+    </div>
+    <div class="frame"><iframe src="direction-2-catalogue-sleeve.html" title="Rejected comparison — The Catalogue Sleeve, full size"></iframe></div>
+  </section>
+
+</div>
+
+<script>
+  const btns=document.querySelectorAll('nav button');
+  btns.forEach(b=>b.addEventListener('click',()=>{
+    btns.forEach(x=>x.setAttribute('aria-selected',String(x===b)));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+    document.getElementById('v-'+b.dataset.v).classList.add('on');
+    window.scrollTo({top:0,behavior:'smooth'});
+  }));
+</script>
+
+</body>
+</html>
