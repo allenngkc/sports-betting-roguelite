@@ -252,7 +252,7 @@ Two failure modes share this test name and mean opposite things:
 Baselines before this stack: engine **160**, EditMode **194**, PlayMode **44** (+1 `[Explicit]`
 capture harness, filtered out of routine runs).
 
-## 4C. RESUME HERE — 3F (and two DD answers)
+## 4C. RESUME HERE — Phase 3 is DD-GATED. Do not start a fragment; wait for items 10–12
 
 **T17 is CLOSED** (`ea28c9b`): the ledger reserves the backed side's last baked goal at configure
 time, enforced in `CompleteGoal` and released by `PlanFinal`; `BindAnytimeScorer` is unchanged and
@@ -307,7 +307,27 @@ URP path plus the 49 held T6 scene-grammar frames, with a manifest. **Two gaps s
 repeating:** the seed produces no VOID leg, so 3D's strike appears in no frame; and the §8.10 preview
 is unreachable while unbound, so it cannot be captured at all yet.
 
-**Next: 3F** (§7.7 backed-player locator) — gated on visual evidence, which now partly exists.
+**3F is PART-CLOSED** (`949c041`). §7.7's binding half is built, wired at kickoff and tested:
+`DotIndexFor` is the single expression both `SetBackedPlayer` and `RoutePass` use, so "the marked
+actor IS the final-touch actor" holds by construction rather than by two formulas that agree today.
+The locator is **wired but invisible** — the treatment is DD item 12.
+
+### The three open DD answers, and why each blocks rather than bends
+
+Phase 3's remaining work is **all** behind these. Every one is a case where the spec ran out before
+the work did, and guessing would have broken something already pinned:
+
+| # | Question | Why it cannot be guessed |
+| --- | --- | --- |
+| 10 | §8.8's two unsourceable rows | The engine has **no formation and no shots**, and `Player` carries only `Name`/`Role`/`ScoringWeight` — the sole per-player number is hidden generator truth, i.e. the leak §8.8 calls blocker-class. Three of five rows are buildable; shipping that is a scope call |
+| 11 | §8.10's confirm gesture | `E` accepts on `WasPressedThisFrame`, pinned by TVS-H01. Hold-to-preview cannot coexist with press-to-accept — acceptance fires frame one, so no hold is observable. Either binding breaks a contract |
+| 12 | §7.7's locator treatment | `DESIGN.md` §7's "numbered cell" is justified by "the matrix gives legible small numerals for free"; §6 records that matrix as **retired**. `TheaterStage` has no `Text`/`Font` at all, so a numeral adds a font dependency on a dead rationale, while a ring is nearly free (`RingSprite()` exists) |
+
+**Do not pick up a fragment while these are open.** Two of the three are one-line changes once
+answered; starting adjacent work instead produces more half-built features, which is how this slice
+accumulated three in a row.
+
+**When answers land:** 12 first (smallest, and it makes the locator capturable), then 11, then 10.
 
 **Blocked on Allen, studio-level:** `[attr]lfs` is declared in `unity/SBR/.gitattributes`, but git
 honours attribute macros only in a **top-level** `.gitattributes`, and this repo has none at root —
