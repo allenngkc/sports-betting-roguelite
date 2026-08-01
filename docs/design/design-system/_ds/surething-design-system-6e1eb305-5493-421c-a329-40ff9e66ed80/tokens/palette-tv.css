@@ -1,0 +1,39 @@
+/* TV SWEAT — stadium LED, hardened industrial display. DESIGN.md FINAL 2026-07-27 (render C).
+   BRIGHTNESS IS THE PRIMARY SEMANTIC CHANNEL; HUE IS SECONDARY. At most ONE L4 element at a time.
+   Strategy: cold and quiet, with one warm bar. Gold is rationed to money, won legs, cash-out.
+   Team hues are muted and confined to the pitch dots.
+
+   PROVISIONAL VALUES — DESIGN.md §4 names roles, not hexes. Every hex below is either lifted from
+   the superseded VISUAL-DESIGN §4 table (retained there because "the semantic distinctions are
+   still correct even though its values are not") or desaturated from it to satisfy the approved
+   "muted" instruction. NONE of them is ratified. They settle against the real panel at the real
+   seated camera distance. See readme.md "Provisional and unratified". */
+:root{
+  /* substrate — lifted per unified-grade-spec §3: screen black lands near #0a0c10, never #000 */
+  --tv-substrate:#0A0C10;
+  --tv-panel:#0E1319;
+  --tv-black-floor:#0A0C10;
+  /* hues */
+  --tv-fact:#E7F1F5;        /* cold white — score, clock, live leg names, market lines */
+  --tv-context:#7A878F;     /* grey — labels, odds, risk/pays, pitch markings */
+  --tv-structure:#4A555C;   /* dim grey — NEXT legs, dividers, ticket header */
+  --tv-gold:#F2BC45;        /* money, won legs, payout figures, the cash-out band */
+  --tv-gold-ink:#0A0C10;    /* type punched out of the inverted gold cash-out field */
+  --tv-team-a:#5C7BA8;      /* muted blue — pitch dots only */
+  --tv-team-b:#B2739E;      /* muted pink — pitch dots only */
+  --tv-pitch:#3E4A3C;       /* the pitch is a place, not an event: L1-L2 green */
+  --tv-void:#7FB2C4;        /* VOID strike — struck, not extinguished */
+  /* brightness ladder — the one law. Applied as alpha/emission, not as new hues. */
+  --tv-L4:1; /* @kind other */
+  --tv-L3:.70; /* @kind other */
+  --tv-L2:.40; /* @kind other */
+  --tv-L1:.15; /* @kind other */
+  --tv-L0:0; /* @kind other */
+  /* unlit pixel structure a dead leg leaves behind */
+  --tv-extinguished:#151B21;
+  --tv-rule:#1D242A;
+  /* enclosure — riveted steel installed by an institution, continuous with the room's conduit */
+  --tv-housing:#3A3F42;
+  --tv-housing-chipped:#4C4F49;
+  --tv-rivet:#5A5F60;
+}

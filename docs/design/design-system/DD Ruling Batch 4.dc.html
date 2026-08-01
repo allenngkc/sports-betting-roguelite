@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/surething-design-system-6e1eb305-5493-421c-a329-40ff9e66ed80/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/surething-design-system-6e1eb305-5493-421c-a329-40ff9e66ed80/tokens/palette-surething.css">
+<link rel="stylesheet" href="_ds/surething-design-system-6e1eb305-5493-421c-a329-40ff9e66ed80/tokens/palette-tv.css">
+<link rel="stylesheet" href="_ds/surething-design-system-6e1eb305-5493-421c-a329-40ff9e66ed80/tokens/palette-room.css">
+<link rel="stylesheet" href="_ds/surething-design-system-6e1eb305-5493-421c-a329-40ff9e66ed80/tokens/typography.css">
+<link rel="stylesheet" href="_ds/surething-design-system-6e1eb305-5493-421c-a329-40ff9e66ed80/tokens/space.css">
+<link rel="stylesheet" href="_ds/surething-design-system-6e1eb305-5493-421c-a329-40ff9e66ed80/tokens/motion.css">
+<link rel="stylesheet" href="_ds/surething-design-system-6e1eb305-5493-421c-a329-40ff9e66ed80/tokens/semantic.css">
+<link rel="stylesheet" href="_ds/surething-design-system-6e1eb305-5493-421c-a329-40ff9e66ed80/tokens/base.css">
+<link rel="stylesheet" href="_ds/surething-design-system-6e1eb305-5493-421c-a329-40ff9e66ed80/styles.css">
+<script src="_ds/surething-design-system-6e1eb305-5493-421c-a329-40ff9e66ed80/_ds_bundle.js"></script>
+<style>
+  html,body{margin:0;padding:0;background:#16160F;}
+  a{color:#5E86B8;text-decoration:none;border-bottom:1px solid #3F6996;}
+  a:hover{color:#8FB0D8;border-bottom-color:#8FB0D8;}
+</style>
+</helmet>
+
+<div style="background:var(--ground);min-height:100vh;padding:56px 48px 120px;font-family:var(--font-data);color:var(--toner);-webkit-font-smoothing:antialiased">
+<div style="max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:0">
+
+<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:32px;padding-bottom:14px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--toner-3)">Design Director · main-2 · seat ruling</div>
+<div style="font-family:var(--font-cond);font-size:44px;line-height:1;letter-spacing:.02em;text-transform:uppercase;color:var(--toner)">Ruling Batch 4</div>
+</div>
+<div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--toner-3);text-align:right;line-height:1.9">
+<div>To · Orchestrator</div>
+<div>2026-07-31 · night</div>
+<div>Against · night brief P1–P5</div>
+</div>
+</div>
+
+<div style="height:2px;background:var(--rule)"></div>
+
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:1fr 340px;gap:48px;padding:26px 0 30px;border-bottom:1px solid var(--rule-soft)">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner-2);text-wrap:pretty">
+Read against the night brief, <span style="color:var(--toner)">INBOX</span> items 1–13, the three review packages, the markets gap-list, and the TV frame evidence. Nothing here lands in the repo. Every item carries a one-line <span style="color:var(--toner)">REGISTER</span> entry to transcribe; the prose above it is for the lead who has to build it. Proposed ids are proposed — the orchestrator owns final numbering.
+<div style="margin-top:14px;font-size:14px;color:var(--toner-3)">Ink in this document: <span style="color:var(--wax)">wax</span> is a decision, <span style="color:var(--stamp)">oxide</span> is the house marking a violation, <span style="color:var(--biro)">biro</span> is this seat annotating in the margin. Same grammar as the surface, applied to the paperwork.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:0;border-left:1px solid var(--rule-soft);padding-left:28px">
+<div style="display:flex;align-items:baseline;gap:12px;padding:5px 0"><span style="position:relative;font-family:var(--font-cond);font-size:31px;line-height:1;color:var(--toner);font-variant-numeric:tabular-nums"><span style="position:absolute;left:-4px;right:-6px;bottom:3px;height:var(--wax-highlight-h);background:var(--wax);opacity:var(--wax-highlight-opacity);transform:rotate(var(--wax-highlight-rotate))"></span><span style="position:relative">29</span></span><span style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">rulings issued</span></div>
+<div style="display:flex;align-items:baseline;gap:12px;padding:5px 0"><span style="font-family:var(--font-cond);font-size:31px;line-height:1;color:var(--stamp);font-variant-numeric:tabular-nums">11</span><span style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">violations found</span></div>
+<div style="display:flex;align-items:baseline;gap:12px;padding:5px 0"><span style="font-family:var(--font-cond);font-size:31px;line-height:1;color:var(--toner);font-variant-numeric:tabular-nums">3</span><span style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">standing laws added</span></div>
+<div style="display:flex;align-items:baseline;gap:12px;padding:5px 0"><span style="font-family:var(--font-cond);font-size:31px;line-height:1;color:var(--toner);font-variant-numeric:tabular-nums">5</span><span style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">design-verified</span></div>
+</div>
+</div>
+
+<div style="background:var(--ground-2);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:22px 26px;margin-top:30px;display:grid;grid-template-columns:150px 1fr;gap:26px">
+<div style="font-family:var(--font-cond);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--stamp);line-height:1.5">Evidence gap<br>Read first</div>
+<div style="font-family:var(--font-data);font-size:14px;line-height:1.55;color:var(--toner-2);text-wrap:pretty">
+<span style="color:var(--wax)">Closed 2026-08-01 — the missing frames arrived; see the addendum below. Kept as written because the finding it produced (<a href="#C11">C11</a>) stands.</span> Four review packages were routed. <span style="color:var(--toner)">One arrived complete.</span> The TV import contains 49 frames — <span style="color:var(--toner)">Set A only</span>, the seated sweat. Set B, the 49 phase-2 scene-grammar frames that carry the T6 variation claim, is not in it. The SureThing bundle references <span style="color:var(--toner)">surething-s6-s8-captures/</span> and the room bundle references <span style="color:var(--toner)">room-r9-r10-captures/</span>; neither folder arrived. That is why this batch design-verifies nothing. It is not a judgement on the work — three packages simply are not reviewable, and I will not verify a surface from a description of it. See <a href="#C11">C11</a>.
+</div>
+</div>
+</sc-if>
+
+<div style="display:flex;align-items:baseline;gap:16px;padding:46px 0 8px"><span style="font-family:var(--font-cond);font-size:26px;letter-spacing:.06em;text-transform:uppercase;color:var(--toner)">Addendum · 2026-08-01</span><span style="flex:1;height:1px;background:var(--rule)"></span><span style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">the frames arrived · supersedes T26 · S21 · R15</span></div>
+
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner-2);padding:18px 0 6px;max-width:900px;text-wrap:pretty">Three packages that were held for want of frames now have them: the room's four captures, the SureThing eight flats plus the angled in-room render, and a second TV set. Reviewed same night. <span style="color:var(--toner)">Five items move to Design-verified — the first on the laptop and the first pair on the room. Two verdicts get worse, not better.</span></div>
+</sc-if>
+
+<sc-if value="{{ frames }}" hint-placeholder-val="{{ true }}">
+<div style="padding-top:18px">
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<img src="uploads/room-r9-r10-captures/01-standing-overview-CURRENT.png" alt="Room, standing overview, current state" style="width:100%;display:block;border:1px solid var(--rule)">
+<div style="font-family:var(--font-data);font-size:13px;line-height:1.5;color:var(--toner-2)"><span style="font-family:var(--font-cond);letter-spacing:.1em;color:var(--toner-3)">ROOM · 01 CURRENT</span><br>Warm olive under the fluorescent, one cool window with short reach, left half dark as ratified. Wall plaster carries. Both screens in it are stale content — see <a href="#C13">C13</a>.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<img src="uploads/surething-s6-s8-captures/02-entry-selected-wide-ring-flat-1024x704.png" alt="SureThing ENTRY, selection ringed in biro" style="width:100%;display:block;border:1px solid var(--rule)">
+<div style="font-family:var(--font-data);font-size:13px;line-height:1.5;color:var(--toner-2)"><span style="font-family:var(--font-cond);letter-spacing:.1em;color:var(--toner-3)">SURETHING · 02 ENTRY</span><br>The ring closes around the price, the alternatives carry the ⇄ underline and not his ink, PLACE is the only wax field. This is the direction, built.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<img src="uploads/tv-setB-t6-part1/seed-TVCAPTURE01__moment-goal__frame004.png" alt="Second TV set, goal moment" style="width:100%;display:block;border:1px solid var(--rule)">
+<div style="font-family:var(--font-data);font-size:13px;line-height:1.5;color:var(--toner-2)"><span style="font-family:var(--font-cond);letter-spacing:.1em;color:var(--toner-3)">TV · SECOND SET</span><br>A different matchup and a different beat, and the composition is indistinguishable from the first set at any distance. This is the T6 verdict in one frame.</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft);margin-top:30px">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">T26·a</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--stamp);padding-top:4px">Refused</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">T6 visual half — variation does not read</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">Design-verified is no longer withheld. It is <span style="color:var(--stamp)">refused</span>. Across the second set the composition is byte-identical frame to frame: same rail, same green field, same flavour line dead-centre, same pitch diagram off the bottom-right corner. Matchup, clock, ticket rows and dot positions change. <span style="color:var(--toner)">Nothing that distinguishes one scene grammar from another is visible at four metres</span> — a near-miss ending and a routine passage differ by one sentence in the event strip and by nothing else. That is precisely the failure <a href="#T19">T19</a> was written after.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">I do not think the grammar is absent. I think it is <span style="color:var(--toner)">happening off-screen</span>: the actor layer is outside the panel (<a href="#T25">T25.1</a>), so whatever the planner composes spatially is being drawn where the player cannot see it. Fix 25.1, re-capture, re-submit — I expect a different verdict and I would rather record that expectation than a verdict that reads as a judgement on the grammar itself. The structural approval from 2026-07-31 stands untouched.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner-2);text-wrap:pretty">One documentation finding with it: <span style="color:var(--toner)">the second set ships Set A's manifest verbatim</span> — same title, same commit, same "two sets, 98 PNGs" text, same per-moment table. It does not describe the frames it travels with, carries no scene index, no per-frame grammar label, and still does not name the rendered face. A set whose whole claim is variation cannot be reviewed without an index saying which frame is which grammar.</div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">T26 (T6 visual half) · <span style="color:var(--stamp)">Design-verified REFUSED</span> · DD 2026-08-01: variation does not read at the review distance — composition is identical across the set; grammars differ only by an event-strip sentence. Probable cause is T25.1 (actor layer outside the panel), so re-capture after that fix and re-submit. Structural approval unaffected. Second set shipped Set A's manifest verbatim: no scene index, no grammar labels, face still unnamed.</div></div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">S21·a</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--wax);padding-top:4px">Design-verified</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">S6 · S7 · S8 — the laptop's first verification</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty"><span style="color:var(--wax)">All three Design-verified against the eight flats and the angled in-room render.</span> The document is a document: three tonal grounds, structural rules, no card anywhere, radius zero, no shadow but the wax edge under PLACE. Selection is annotation — the ring closes around the figure, alternatives carry the ⇄ underline in toner rather than his ink, and the margin fills in order. The two inks hold: biro only where he chose, wax on money and the one primary field, oxide only where the house acts. GREEN is ringed, DEAD is struck, and neither state rests on colour. The chrome is his machine and not an institution: NOTEBOOK, 02:47, <span style="color:var(--toner)">PROPERTY OF NOBODY</span>, DISK 61% FULL, and the tray shared byte-for-byte across FORM, LEDGER and REWARDS. The angled render is the one that matters and it holds at angle, under the grade, at size.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">Two findings on REWARDS, both new, both mine to raise and neither blocking the verification above. <span style="color:var(--stamp)">S26 —</span> offer rule text truncates mid-sentence and the rows collide, which is an <a href="#S17">S17</a> violation at the exact moment he is spending; show fewer offers. And the banner <span style="color:var(--toner)">"REWARDS IS OPEN — spend your comps before the next payment."</span> draws over the offer rows in biro: it is the product talking, not a mark he made, so it is not his ink, and it must occupy its own space rather than overprint the thing it interrupts. It is also close to fake urgency — "REWARDS OPEN · 0 COMPS" states the same fact and exhorts nobody.</div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">S6 · S7 · S8 · <span style="color:var(--wax)">Design-verified</span> · DD 2026-08-01, against eight flats + the angled in-room render — the laptop's first. — S26 · <span style="color:var(--stamp)">Ruled — violation</span>: REWARDS truncates offer rule text and collides rows (S17 class, show fewer offers); the REWARDS-OPEN banner is drawn in biro over the rows — it is the product speaking, so toner, in its own space, and re-worded to state rather than exhort.</div></div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">R15·a</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--wax);padding-top:4px">Design-verified</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">R9 · R10 — the room, against the 04 → 01 pair</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty"><span style="color:var(--wax)">Design-verified.</span> The capture agrees with the measurements: warm olive under a dim fluorescent, one cool window whose reach is short and local, the left half dark exactly as ratified, wall plaster carrying its relief, the ceiling reading without help. It is not the cool-blue failure mode. The couch is a quiet dark mass and I am content with that — <a href="#R14">R14</a> stands, and this image is the reason it should: the corner is lit almost entirely by the TV, and the TV is a placeholder.</div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">R9 · R10 · <span style="color:var(--wax)">Design-verified</span> · DD 2026-08-01 against the 04 → 01 pair: the direction's read is met, the grade is warm and not cool-blue, the change is confined to the couch as measured. R14 unchanged — the couch is lit by a placeholder.</div></div>
+</div>
+</div>
+
+<div id="C13" style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">C13</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--stamp);padding-top:4px">Ruled · violation</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">Both screens in the room are showing the wrong thing</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">In every room capture the laptop renders the <span style="color:var(--stamp)">superseded violet package</span> — the navy-and-accent sportsbook with rounded pills and a betslip drawer that the direction names as its anti-reference — and the TV renders green. Both surfaces merged to main days ago. The room scene has not picked them up.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">This does not touch <a href="#R15">R15</a> — walls, ceiling, floor and couch are unaffected by what the screens paint, which is why the room verifies anyway. It does mean <span style="color:var(--toner)">no room capture may be used as evidence for anything on either screen</span>, and it means the first integration image anyone shows Allen currently contains the one package we retired. Route it as an integration item, not a room defect.</div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">C13 · Stale screen content in the room scene · <span style="color:var(--stamp)">Ruled — violation</span> · DD 2026-08-01: the room renders the superseded violet laptop package and green TV content despite both surfaces having merged. Integration item, not a room defect; R15 unaffected. No room capture is evidence for anything on either screen until it is re-taken.</div></div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">T27</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--stamp);padding-top:4px">Ruled · violation</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">"PLACE YOUR BETS" — the TV's idle screen</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">The TV's idle state reads <span style="color:var(--stamp)">PLACE YOUR BETS</span> in saturated green at the largest size on the surface, over a green progress bar. It is the single loudest thing in the room and it is an exhortation — the anti-personality, verbatim, in the retired hue, on the surface whose whole job is to state facts. The second set also shows the same string on the ticket interstitial's foot.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">Out. The idle screen states where the run is and nothing else — <span style="font-family:var(--font-cond);letter-spacing:.08em">ROUND 1 OF 8 · BOARD OPEN</span> — in cold white, and the bar carries no hue. The TV never tells him to bet. It shows him what is happening and lets the laptop take his money; that division is the product, and a screen bolted to the wall by an institution telling the occupant to place bets is the joke landing on the wrong side of the satire.</div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">T27 · TV idle copy · <span style="color:var(--stamp)">Ruled — violation</span> · DD 2026-08-01: "PLACE YOUR BETS" is celebratory exhortation in a retired hue at L4 — banned on both counts. Idle state prints ROUND n OF 8 · BOARD OPEN in --tv-fact; the bar carries no hue. The TV never instructs the player to bet.</div></div>
+</div>
+</div>
+
+<sc-if value="{{ frames }}" hint-placeholder-val="{{ true }}">
+<div style="padding-top:38px">
+<div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--toner-3);padding-bottom:12px">Evidence · TV seated sweat, seed TVCAPTURE01, built at 4597b60 · three of forty-nine</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<img src="uploads/tv-evidence-part1/seed-TVCAPTURE01__moment-goal__frame001.png" alt="Seated sweat frame, 36 minutes, Regulators v Turnips" style="width:100%;display:block;border:1px solid var(--rule)">
+<div style="font-family:var(--font-data);font-size:13px;line-height:1.5;color:var(--toner-2)"><span style="font-family:var(--font-cond);letter-spacing:.1em;color:var(--toner-3)">GOAL · 36'</span><br>Scoreline team names in saturated orange and violet. Live statement runs past the column divider and paints across the stage. Flavour line at the exact centre of the match theatre.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<img src="uploads/tv-evidence-part1/seed-TVCAPTURE01__moment-cashout-actionable__frame001.png" alt="Seated sweat frame, 41 minutes, heavy render state" style="width:100%;display:block;border:1px solid var(--rule)">
+<div style="font-family:var(--font-data);font-size:13px;line-height:1.5;color:var(--toner-2)"><span style="font-family:var(--font-cond);letter-spacing:.1em;color:var(--toner-3)">CASH-OUT · 41'</span><br>The heavy state. PLUMBERS reads as two words; the score digits fuse with the rule below them. A saturated green rule crosses the scorebug.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<img src="uploads/tv-evidence-part4/seed-TVCAPTURE01__moment-scorer-leg-resolved__frame005.png" alt="Seated sweat frame, full time, dark state" style="width:100%;display:block;border:1px solid var(--rule)">
+<div style="font-family:var(--font-data);font-size:13px;line-height:1.5;color:var(--toner-2)"><span style="font-family:var(--font-cond);letter-spacing:.1em;color:var(--toner-3)">RESOLVED · FT</span><br>Clearest look at the stage layer: the pitch sits outside the panel entirely, off the bottom-right corner, cropped by the frame rather than by its own glass.</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<div style="display:flex;align-items:baseline;gap:16px;padding:46px 0 8px"><span style="font-family:var(--font-cond);font-size:26px;letter-spacing:.06em;text-transform:uppercase;color:var(--toner)">P1 · TV items 10–12</span><span style="flex:1;height:1px;background:var(--rule)"></span><span style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">these three gate the rest of phase 3</span></div>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">T21</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--wax);padding-top:4px">Ruled · drop</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">§8.8 stats panel — the two rows the sim cannot source</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">Drop both rows. Do not re-source them in the presentation layer and do not respec them into something adjacent that the sim happens to emit. The panel ships with the rows it can fill, at its authored height, and does not reserve dark space for rows that have no source. A dropped row returns only when the sim emits that quantity as a first-class value — if the number already exists under another name, that is re-sourcing and it is allowed; if the panel would have to compute, infer, or approximate it, it is not.</div>
+</sc-if>
+<sc-if value="{{ reasons }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:64px 1fr;gap:16px"><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3);padding-top:2px">Why</div><div style="font-family:var(--font-data);font-size:14px;line-height:1.55;color:var(--toner-2);text-wrap:pretty">The number never lies. A row the sim cannot source can only be filled by fabrication or by a proxy the player will read as the stated thing — and the stats panel is exactly where a player goes to check a fact. Respec is the tempting option and it is the wrong one: it keeps the slot and changes what fills it, which is how a panel ends up meaning something nobody specified. Name the two rows in the transcription so the register records what was dropped.</div></div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">T21 · §8.8 stats panel · <span style="color:var(--wax)">Ruled — drop</span> · DD 2026-07-31: two unsourceable rows removed, panel ships at authored height with no reserved space; a row returns only when the sim emits it as a first-class value, never computed in presentation.</div></div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">T22</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--wax);padding-top:4px">Ruled</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">§8.10 held cash-out preview — the confirm gesture</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty"><span style="color:var(--wax)">Hold previews. Release always abandons. Release is never confirm.</span> Bind the preview to a held key on the TV — legs struck and dimmed, never extinguished, figures replaced by the offer, exact revert the instant the key is released. Confirm is a separate deliberate act and it belongs on the laptop: taking the money is a commitment, and commitment is SureThing's, not the TV's. The player has to stop watching to take it.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">If the cross-surface binding is out of Phase 3's scope, the bounded fallback is: confirm is a <span style="color:var(--toner)">second, different key pressed while the preview is held</span> — never the release, never a timer, never an auto-commit, no countdown of any kind. Print both keys as words in the slot at eyebrow size or above.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">Copy, ruled with it: <span style="color:var(--stamp)">[E]</span> alone is not a label, it is a debug token, and it is on a shipped surface in every frame. The slot reads <span style="font-family:var(--font-cond);letter-spacing:.08em">CASH OUT $183</span> with <span style="font-family:var(--font-cond);letter-spacing:.08em">HOLD E</span> beneath it in context grey. Where another product would draw a glyph, this one prints the word.</div>
+</sc-if>
+<sc-if value="{{ reasons }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:64px 1fr;gap:16px"><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3);padding-top:2px">Why</div><div style="font-family:var(--font-data);font-size:14px;line-height:1.55;color:var(--toner-2);text-wrap:pretty">Release-to-commit makes abandoning and committing the same physical motion, and money dies on the difference. Beyond that: the surface split is a hard product law. The TV is an instrument you watch; it reveals. The laptop is a tool you operate; it owns the slip, the stake and the lock. A cash-out taken entirely on the TV quietly makes the TV a second sportsbook. And the friction is not a cost here, it is the point — a game whose thesis is that the bettor watches the app instead of the game should make him look away from the reveal to take the money.</div></div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">T22 · §8.10 confirm gesture · <span style="color:var(--wax)">Ruled</span> · DD 2026-07-31: hold to preview, release always abandons, release is never confirm; commit is an act on the laptop. Fallback if cross-surface is out of Phase 3: a second key pressed during the hold — no timer, no auto-commit. <span style="color:var(--stamp)">[E]</span> retired from copy; the slot prints HOLD E.</div></div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">T23</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--wax);padding-top:4px">Ruled</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">§7.7 backed-player locator — treatment</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">The lead is right that the numeral's justification no longer holds, and the numeral goes with it. <span style="color:var(--wax)">No numeral, no glyph, no label on the pitch.</span> The backed player's actor is the only actor in the match that carries a ring: a 2px cold-white outline detached from the dot by a 1px gap, dot hue unchanged, held for exactly as long as the scorer leg is live and removed on the same frame as its resolving callback. It sits at L3 and never becomes the surface's L4 token.</div>
+<div style="display:flex;gap:36px;align-items:center;background:var(--tv-pitch);padding:22px 26px;margin:2px 0">
+<div style="display:flex;align-items:center;gap:14px"><span style="width:14px;height:14px;border-radius:50%;background:var(--tv-team-a);display:inline-block"></span><span style="font-family:var(--font-cond);font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--tv-fact)">Any actor</span></div>
+<div style="display:flex;align-items:center;gap:14px"><span style="width:14px;height:14px;border-radius:50%;background:var(--tv-team-a);display:inline-block;box-shadow:0 0 0 3px var(--tv-pitch),0 0 0 5px var(--tv-fact);margin:0 5px"></span><span style="font-family:var(--font-cond);font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--tv-fact)">The one he backed</span></div>
+<div style="font-family:var(--font-data);font-size:13px;line-height:1.5;color:var(--tv-fact);max-width:300px">Dot ⌀14 · gap 1 · ring 2, <span style="color:var(--tv-fact)">--tv-fact</span>. Hue unchanged so identity is not overloaded. No pulse — LIVE is the only pulse on this surface.</div>
+</div>
+</sc-if>
+<sc-if value="{{ reasons }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:64px 1fr;gap:16px"><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3);padding-top:2px">Why</div><div style="font-family:var(--font-data);font-size:14px;line-height:1.55;color:var(--toner-2);text-wrap:pretty">Three reasons and they stack. A numeral inside a dot is below the fact floor by construction — the dot is 14px and a legible numeral needs 15px, so either the numeral cannot be read at four metres or the dot has to grow into something that is no longer a dot. The system has no icon vocabulary on purpose; the actor layer is diagrammatic, not symbolic. And the ring is not a new dimension, it is a value added to the mark dimension the system already has — <a href="#T18">T18</a>. The word that names him is already printed in the ticket column; the ring only has to answer <span style="color:var(--toner)">which one</span>. Note the rhyme, which is deliberate: a ring means <span style="color:var(--toner)">his</span> on both screens, in each screen's own ink — biro on the laptop, cold white here. It borrows the gesture, not the colour.</div></div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">T23 · §7.7 backed-player locator · <span style="color:var(--wax)">Ruled</span> · DD 2026-07-31: numeral out (sub-floor by construction, and the system has no glyph vocabulary). Treatment is a detached 2px --tv-fact ring at the dot, hue unchanged, L3, held while the scorer leg is live, removed on the resolving frame. Never the L4 token; no pulse.</div></div>
+</div>
+</div>
+
+<div style="display:flex;align-items:baseline;gap:16px;padding:46px 0 8px"><span style="font-family:var(--font-cond);font-size:26px;letter-spacing:.06em;text-transform:uppercase;color:var(--toner)">P2 · The row model</span><span style="flex:1;height:1px;background:var(--rule)"></span><span style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">closes inbox 9 and 9a</span></div>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">T24</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--wax);padding-top:4px">Ruled</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">Fixed rows, one-line NEED — and every slot sized for the live row</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty"><span style="color:var(--wax)">Fixed rows. The no-reflow law stands; canon amends to match it, not the other way round.</span> NEED is one line. The interim the orchestrator selected is adopted as the TV-surface constraint.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">On 9a, the 73px-against-69px deviation: <span style="color:var(--wax)">it is not a deviation, it is the spec, and the slot is wrong rather than the row.</span> Any leg can become the live leg, so every leg slot must already be able to hold the live row without moving. Author one slot height for all legs, measured from the live row in the production face with headroom for its line metrics — on the lead's measurement that is 76px, not 69 — and reserve it always, whether the leg is next, live or dead. Reserved space stays reserved and goes dark; that is the same law, applied one level down.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">The live row carries <span style="color:var(--toner)">no market/price/state meta line</span>, and that is now specified rather than tolerated: state survives in the word, price in the compact form, and §7 bans duplicating a fact that is already on the surface. Amend the struct's doc comment from "deviation, documented" to the spec.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">One clause attached, because it is where this goes wrong next: a NEED statement that will not fit at 28px in the production face is <span style="color:var(--toner)">re-authored by the writer against a current measurement recorded at the call site</span> — never wrapped by the layout, never auto-truncated. T20 rejected shortening against a stale measurement. That objection does not survive a fresh one.</div>
+</sc-if>
+<sc-if value="{{ reasons }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:64px 1fr;gap:16px"><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3);padding-top:2px">Why</div><div style="font-family:var(--font-data);font-size:14px;line-height:1.55;color:var(--toner-2);text-wrap:pretty">Expanding rows make the ticket column's height a function of its content, which is the precise thing Layout B exists to prevent and which two 3C tests pin. The evidence already shows what happens when content is allowed to drive this column — the live statement escapes it and paints across the stage (<a href="#T25">T25.3</a>). Sizing every slot from the live row costs vertical space in the quiet rows and buys a column that never moves; the captures show that emptiness reads as an instrument at rest, not as a bug.</div></div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">T24 · TV row model · <span style="color:var(--wax)">Ruled</span> · DD 2026-07-31: fixed rows, NEED one line, no-reflow law stands and canon amends to it. Every leg slot authored at the live row's measured height (76px) and reserved always — the slot was wrong, not the row. Live row carries no meta line: specified, not tolerated. Over-long NEED is re-authored against a current measurement recorded at the call site; never wrapped, never truncated. Closes inbox 9 + 9a.</div></div>
+</div>
+</div>
+
+<div style="display:flex;align-items:baseline;gap:16px;padding:46px 0 8px"><span style="font-family:var(--font-cond);font-size:26px;letter-spacing:.06em;text-transform:uppercase;color:var(--toner)">P3 · Reviews</span><span style="flex:1;height:1px;background:var(--rule)"></span><span style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">tv · surething · room</span></div>
+
+<div id="T25" style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">T25</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--stamp);padding-top:4px">Reviewed · not verified</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">Seated-sweat design review — Set A, 49 frames at 4597b60</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">The set answers the question it was built to answer, and the answer is <span style="color:var(--toner)">no, not yet</span>. Six findings, first one blocking. Everything else in this review is provisional on it, because a mis-parented stage invalidates every judgement about the composition around it.</div>
+<div style="display:flex;flex-direction:column;gap:0;border-top:1px solid var(--rule-soft)">
+<div style="display:grid;grid-template-columns:52px 1fr 110px;gap:18px;padding:13px 0;border-bottom:1px solid var(--rule-soft);align-items:baseline"><div style="font-family:var(--font-cond);font-size:13px;color:var(--toner-3)">25.1</div><div style="font-family:var(--font-data);font-size:14px;line-height:1.5;color:var(--toner-2)"><span style="color:var(--toner)">The stage actor layer is outside the panel.</span> The pitch is anchored to the bottom-right, oversized, and bleeds past the TV's right and bottom edges into the room in every frame of the set. It is cropped by the capture, not by its own glass. This breaks the fixed five-zone grid and it breaks diegesis — a screen cannot paint outside itself.</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--stamp)">Violation<br>Blocking</div></div>
+<div style="display:grid;grid-template-columns:52px 1fr 110px;gap:18px;padding:13px 0;border-bottom:1px solid var(--rule-soft);align-items:baseline"><div style="font-family:var(--font-cond);font-size:13px;color:var(--toner-3)">25.2</div><div style="font-family:var(--font-data);font-size:14px;line-height:1.5;color:var(--toner-2)"><span style="color:var(--toner)">Team hue on the scoreline, and both hues are saturated.</span> REGULATORS in orange, TURNIPS in violet, MIDDLEMEN in blue, OVERHEADS in orange. §4 is explicit: facts are cold white, identity is carried by the words in the ticket column, and the two muted hues are confined to the pitch dots. The dots are wrong too — saturated orange and violet, not the muted pair. Scoreline names go to --tv-fact; dots go to --tv-team-a / --tv-team-b as ratified.</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--stamp)">Violation<br>T2 class</div></div>
+<div style="display:grid;grid-template-columns:52px 1fr 110px;gap:18px;padding:13px 0;border-bottom:1px solid var(--rule-soft);align-items:baseline"><div style="font-family:var(--font-cond);font-size:13px;color:var(--toner-3)">25.3</div><div style="font-family:var(--font-data);font-size:14px;line-height:1.5;color:var(--toner-2)"><span style="color:var(--toner)">The ticket statement overflows its column</span> and continues across the stage at reduced alpha — legible enough to read, which makes it worse than a clip. The column clips to its box; strings are authored to fit it; nothing paints outside its own zone. This is the failure mode <a href="#T24">T24</a> exists to prevent, already happening.</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--stamp)">Violation</div></div>
+<div style="display:grid;grid-template-columns:52px 1fr 110px;gap:18px;padding:13px 0;border-bottom:1px solid var(--rule-soft);align-items:baseline"><div style="font-family:var(--font-cond);font-size:13px;color:var(--toner-3)">25.4</div><div style="font-family:var(--font-data);font-size:14px;line-height:1.5;color:var(--toner-2)"><span style="color:var(--toner)">"the book is open on the laptop" sits at the visual centre of the match theatre</span>, permanently, at fact brightness, in every frame. Satire never occupies a slot where a fact belongs, and the stage's slot is the match. Out. If the line is wanted it belongs on the laptop, in the tray or the masthead where flavour lives — once, and never on this surface above L2.</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--stamp)">Violation</div></div>
+<div style="display:grid;grid-template-columns:52px 1fr 110px;gap:18px;padding:13px 0;border-bottom:1px solid var(--rule-soft);align-items:baseline"><div style="font-family:var(--font-cond);font-size:13px;color:var(--toner-3)">25.5</div><div style="font-family:var(--font-data);font-size:14px;line-height:1.5;color:var(--toner-2)"><span style="color:var(--toner)">Two saturated rules — one green, one red — cross the scorebug in the heavy frames.</span> Retired hues on the TV surface: T8 and T15 class. Identify the element and remediate it as those were, and extend the markup-aware palette scan to whatever draws it — a scan that keeps missing this class is the finding, not the pixel. If it is the momentum tape, <a href="#T16">T16</a> already ruled it: no numerals, no hue, never above L2.</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--stamp)">Violation<br>T8 class</div></div>
+<div style="display:grid;grid-template-columns:52px 1fr 110px;gap:18px;padding:13px 0;border-bottom:1px solid var(--rule-soft);align-items:baseline"><div style="font-family:var(--font-cond);font-size:13px;color:var(--toner-3)">25.6</div><div style="font-family:var(--font-data);font-size:14px;line-height:1.5;color:var(--toner-2)"><span style="color:var(--toner)">NEXT legs are below the legible floor.</span> "NEXT BIFF RACKET ANYTIME — Tulsa Middlemen v Waterloo Overheads +188" fades into the ground before it reaches its price. Every tier except L0 is a legible tier, and L0 means the thing is dead. A NEXT leg is not dead — it is the next thing that can take his money. NEXT rows go to L2 and must be readable at four metres; only a dead leg may sit at the extinguished tier.</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--toner-2)">Defect</div></div>
+<div style="display:grid;grid-template-columns:52px 1fr 110px;gap:18px;padding:13px 0;border-bottom:1px solid var(--rule-soft);align-items:baseline"><div style="font-family:var(--font-cond);font-size:13px;color:var(--toner-3)">25.7</div><div style="font-family:var(--font-data);font-size:14px;line-height:1.5;color:var(--toner-2)">Minor, batch with Phase 3: the capture seed <span style="color:var(--toner)">TVCAPTURE01</span> prints in the shipped footer — a debug string on a player-facing surface. <span style="color:var(--toner)">COMPS 10.4</span> gives a count a decimal; counts are literal. And the event strip and dead-leg word use a hyphen where the system uses an em dash — "LEG 3 - DEAD", "the crowd loses it".</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--toner-3)">Minor</div></div>
+</div>
+<div style="display:grid;grid-template-columns:64px 1fr;gap:16px;padding-top:6px"><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--biro);padding-top:2px">Passed</div><div style="font-family:var(--font-data);font-size:14px;line-height:1.55;color:var(--toner-2);text-wrap:pretty">Said plainly, because a review that only lists faults is a bad review. Gold is correctly rationed — won legs, risk/pays, the cash-out band, and nothing else on the surface touches it. The score is the largest element in every frame and nothing outgrows it, cash-out included. State never rests on colour alone: W, LIVE, NEXT, MARKET SUSPENDED, LEG 3 — DEAD are all words. And <span style="color:var(--toner)">T20's re-derivation is vindicated at distance</span> — NEED and the live statement read cleanly, progress reads as subordinate, and the order NEED &gt; progress &gt; eyebrow survives the couch. That was the call this set existed to test and it holds.</div></div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">T25 · Seated-sweat review (Set A, 4597b60) · <span style="color:var(--stamp)">Reviewed — not Design-verified</span> · DD 2026-07-31: six findings, 25.1 blocking (stage actor layer renders outside the panel). Violations 25.1–25.5; 25.6 defect; 25.7 minor. Passed: gold rationing, score dominance, word-carried state, and T20's type scale at seated distance.</div></div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">C8·a</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--wax);padding-top:4px">Amended</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">Bloom floor — asserted, not measured</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">In roughly half the frames the scoreline, the live leg name, the cash-out and risk/pays all render markedly heavier: letterforms merge — PLUMBERS reads as two words — and the score digits fuse with the rule beneath them. Risk/pays is in C8's protected set and it is at the edge of the floor. Whatever produces the heavy state, <span style="color:var(--toner)">it is not a legible tier</span>.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">C8 is amended: <span style="color:var(--wax)">the bloom floor is measured on rendered frames at the seated distance, not asserted from a boost value.</span> The 1.8 boost stays only if the scoreline holds there. Next capture window brings one A/B pair — 1.8 against 1.4, same seed, same moment, both at the seated pose — and the floor settles against those two images.</div>
+</sc-if>
+<sc-if value="{{ reasons }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:64px 1fr;gap:16px"><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3);padding-top:2px">Why</div><div style="font-family:var(--font-data);font-size:14px;line-height:1.55;color:var(--toner-2);text-wrap:pretty">C8 was ruled from a specification, before there were frames. It named a protected set and a value and asserted the floor held. The first set of frames says it does not. That is the correct outcome of having evidence and it is <a href="#C11">C11</a> working as intended — I would rather amend a ruling of mine than defend it against an image.</div></div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">C8 · <span style="color:var(--wax)">Amended</span> · DD 2026-07-31: the bloom legibility floor is measured on rendered frames at the seated distance, not asserted from a boost value. Set A shows the protected set at or past the floor in the heavy state. Boost 1.8 holds provisionally pending a 1.8/1.4 A/B at the next capture window.</div></div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">T26</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--toner-2);padding-top:4px">Still withheld</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">T6 visual half — the wrong 49 frames arrived</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">The import carries 49 frames and they are all Set A — seven seated-sweat moments on seed TVCAPTURE01. Set B, the phase-2 scene-grammar set that carries the variation claim, is not in it. T6's Design-verified stays withheld for the same reason as before, with no fault attaching to the lead: the bundle exists, it just did not travel. Send Set B and this is a short review.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">Two things to fix in the same window, both mine to ask for. Set A is <span style="color:var(--toner)">one seed</span>, and a variation claim cannot be made from one seed by definition — bring five. And the manifest does not state the face; if these frames are not rendered in Encode Sans then every type judgement in <a href="#T25">T25</a>, including the good one, is provisional on the swap. <span style="color:var(--biro)">State the face in the manifest from now on.</span></div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">T26 (T6 visual half) · <span style="color:var(--toner-2)">Withheld — evidence absent</span> · DD 2026-07-31: the import carries Set A only; Set B did not travel. Re-submit Set B, five seeds not one, and state the rendered face in the manifest. T20's type verdict in T25 is provisional until frames render in Encode Sans.</div></div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">S18</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--stamp);padding-top:4px">Ruled · violation</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">"LEAVE — NEXT ROUND" drawn in saturated biro</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">Violation, and the same class as <a href="#S15">S15</a>. Biro is <span style="color:var(--toner)">anything he chose</span> and nothing else. Leaving the round is an action the product offers him, not a mark he made — and it is the primary action on that screen, which means it is wax: solid <span style="color:var(--wax)">--wax</span> field, <span style="background:var(--wax);color:var(--wax-ink);padding:0 5px">--wax-ink</span> punched type, the 2px --wax-deep edge that drops 2px on press. Saturated blue also made it the loudest element on the screen, which compounds the error rather than causing it.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">On the S9 defects the lead listed as theirs: correct dispositions, no ruling needed, one correction. The rewards <span style="color:var(--toner)">price</span> is not toner — it is what he spends, so it is wax. The blocked reason beside it stays oxide. Price in wax, reason in stamp, never the reverse.</div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">S18 · "LEAVE — NEXT ROUND" in biro · <span style="color:var(--stamp)">Ruled — violation, S15 class</span> · DD 2026-07-31: a primary action is wax (field, --wax-ink type, 2px --wax-deep edge). Biro is only what he chose. Rewards price is wax, its blocked reason stays oxide.</div></div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">S19</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--wax);padding-top:4px">Ruled</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">Toner grain — scoped shader work, and disabling it was right</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">The lead measured it, found white texels under normal alpha can only lighten, saw the sheet bleach from (24,24,16) to (52,52,48), and switched it off rather than dial it down. <span style="color:var(--wax)">That is the correct move and I am recording it as one.</span> Grain is the last outstanding element of S14's document layer; it needs an overlay-blend UI shader and it is a scoped task, not a tuning pass. It does not block S9.</div>
+</sc-if>
+<sc-if value="{{ reasons }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:64px 1fr;gap:16px"><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3);padding-top:2px">Why</div><div style="font-family:var(--font-data);font-size:14px;line-height:1.55;color:var(--toner-2);text-wrap:pretty">Real grain darkens as well as lightens. A lightening-only grain at any opacity is a fainter version of the wrong thing, and shipping it would have quietly redefined the document's ground as neutral grey. Promoted to a standing law — see <a href="#C10">C10</a>.</div></div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">S19 · Toner grain · <span style="color:var(--wax)">Ruled</span> · DD 2026-07-31: overlay-blend UI shader, scoped task, last element of S14's document layer, not blocking S9. Disabling the lightening-only implementation was correct; no reduced-opacity version ships. Finding promoted to C10.</div></div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">S20<br><span style="font-size:14px;color:var(--toner-3)">S2·a</span></div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--wax);padding-top:4px">Ruled</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">The weight channel, and a companion to the fact floor</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty"><span style="color:var(--toner-3);font-family:var(--font-cond);letter-spacing:.1em">S20 ·</span> UGUI's legacy Text renders a variable font's default instance only, so Archivo's 400–700 range is not addressable on the laptop. <span style="color:var(--wax)">Accept it as a constraint rather than carry it as debt.</span> Tier on this surface is carried by size, colour and position, which is already the law. Ruling: no spec may introduce a weight tier on the SureThing surface until that element moves to TextMeshPro with named instances — not a TTF per weight, not FontStyle.Bold.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty"><span style="color:var(--toner-3);font-family:var(--font-cond);letter-spacing:.1em">S2·a ·</span> The three display elements that rendered <span style="color:var(--toner)">nothing at all</span> when Archivo's taller metrics met a too-short box are a defect class, not a tuning miss, and the suite could not see them because the objects existed and held the right strings. The helper fix is right. The law gets a companion clause: alongside the 13px fact floor, <span style="color:var(--wax)">a text box is at least one line of its own production face tall</span>. A box that cannot hold its first line must overflow, never render empty.</div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">S20 · Weight channel · <span style="color:var(--wax)">Ruled</span> · DD 2026-07-31: variable-weight unaddressable in UGUI Text is a constraint, not debt; no weight tier may be specified on SureThing without moving the element to TMP named instances. — S2 · <span style="color:var(--wax)">Amended</span>: a text box is at least one line of its production face tall; too-short boxes overflow, never render empty.</div></div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">S21</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--toner-2);padding-top:4px">Held</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">S6 / S7 / S8 verification — held for its captures</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">The written bundle is the best evidence document this studio has produced — measured defects, two self-misreads withdrawn against pixels rather than argument, and the grain honestly flagged as shader work. It still cannot carry a verification on its own. The eight 1024×704 renders and the angled in-room render did not arrive. Send those and S6, S7 and S8 verify in one pass; on the document alone I have no findings to add beyond <a href="#S18">S18</a>. <span style="color:var(--wax)">Superseded by the addendum — the captures arrived and this is now verified.</span></div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty"><span style="color:var(--biro)">One note for that pass:</span> include the angled in-room render, not only the flats. Every legibility law on this surface is written for a screen read at an angle, through glass, under the room's grade — the flats cannot fail the test the laws were written for.</div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">S21 (S6/S7/S8 review) · <span style="color:var(--toner-2)">Held — evidence absent</span> · DD 2026-07-31: surething-s6-s8-captures/ did not travel with the bundle. Re-submit including the angled in-room render; the laws under test are written for the angled, graded surface. No findings on the document beyond S18.</div></div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">R12·a</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--wax);padding-top:4px">Amended · as proposed</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">Surface detail is gated by grazing light</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">Approved as the lead wrote it, with the mechanism attached — the mechanism is the whole value of the amendment, because R12 v1 failed precisely by having none. A law without a mechanism cannot be tested against a plan before the bake.</div>
+<div style="background:var(--ground-2);border-left:none;padding:18px 22px;font-family:var(--font-data);font-size:15px;line-height:1.6;color:var(--toner);text-wrap:pretty">Surface detail is gated by lighting, not texture authoring — and specifically by <span style="color:var(--toner)">direct light arriving at a grazing angle</span>. Bounce fills shadow; it does not reveal surface.<div style="padding-top:10px;font-size:14px;color:var(--toner-2)">Relief is a gradient divided by a mean. Probe lighting is spherical harmonics, smooth at the scale of a cushion, so it raises the mean without raising the gradient and can only move the denominator. Any probe-mediated addition therefore lowers relief on a surface that is already lit. This does not contradict R6, where bounce replaced flat ambient and created gradient across metres of wall where there had been none.</div></div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner-2);text-wrap:pretty">Recorded with it: the amendment retired the slab-albedo lever without spending a bake, because that too is a probe-mediated addition. <span style="color:var(--toner)">That is a law paying for itself the day it is written</span>, and it is the argument for writing mechanisms into all of them.</div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">R12 · <span style="color:var(--wax)">Amended</span> · DD 2026-07-31, as proposed by the room lead: surface detail is gated by lighting, not texture authoring — and specifically by direct light at a grazing angle; bounce fills shadow, it does not reveal surface. Mechanism recorded (relief = gradient/mean; SH probe light raises the mean only). Retired the slab-albedo lever unbaked.</div></div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">R14</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--wax);padding-top:4px">Ruled · leave it</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">Couch headroom — the design call</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty"><span style="color:var(--wax)">Leave it at 1.24×.</span> Do not spend the headroom now. Re-open only after C2's cold white-grey lands on the TV, and only if the couch still reads as a mass at that point.</div>
+</sc-if>
+<sc-if value="{{ reasons }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:64px 1fr;gap:16px"><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3);padding-top:2px">Why</div><div style="font-family:var(--font-data);font-size:14px;line-height:1.55;color:var(--toner-2);text-wrap:pretty">The decisive reason is not composition, it is that we would be judging the wrong image. The TV is the dominant light source at that corner, it is currently shipping a placeholder green under the C2 interim, and it changes at TV Phase 3. Tuning the couch's read against a light that is scheduled to be replaced is how a room gets tuned twice. The composition argument agrees anyway: Vice Grip depends on the left half staying dark, 3.27% against the right wall's 9.85% is the room having depth rather than the couch failing, and the lead's own third option — some surfaces are quiet by design — is the correct read of a bunker at night. It is one number and one bake whenever we want it, which is exactly why it can wait for the right image.</div></div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">R14 · Couch headroom · <span style="color:var(--wax)">Ruled — leave at 1.24×</span> · DD 2026-07-31: headroom unspent. The TV is the dominant light at that corner and is shipping a C2 placeholder; re-open only after cold white-grey lands, and only if the couch still reads as a mass. CouchGraze stays 1.60.</div></div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">R15</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--wax);padding-top:4px">Ruled</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">Room re-review — the read is the bar; the slice closes</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">Answering the lead's question directly: <span style="color:var(--wax)">yes, the room's read is the bar, and no surface is to be carried further before this slice closes.</span> R7 stays parked at Tier 1b, R8 stays unstarted, the Decal Renderer Feature stays not-yet. The floor is accepted as the room's second quiet surface — under the amended R12 it is lit at 10–30°, the near-worst case for relief, and the only lever is a new grazing source, which is a direction risk out of proportion to a floor nobody looks at.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">On R9: no action, and nothing to forgive. A change that measures as a no-op and explains why is worth more than a change that moves a number — the finding that <span style="color:var(--toner)">there is no flat fill left in this room to remove</span> is the durable output, and deeper shadow from here is a grade or per-light ask, not an ambient one. Record it so nobody re-derives R9 in three months.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">What I cannot do is stamp it. <span style="color:var(--toner)">room-r9-r10-captures/</span> did not arrive, so R9 and R10 close on their measurements — which are sufficient for closure — but Design-verified needs the four images, and specifically the 04 → 01 pair. Send them and this is a formality.</div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">R15 · Room re-review · <span style="color:var(--wax)">Ruled</span> · DD 2026-07-31: the room's read is the bar; slice closes. R7 parked, R8 unstarted, decals not-yet. Floor accepted as a quiet surface under amended R12. R9's finding recorded: no flat fill remains; deeper shadow is a grade or per-light ask. Design-verified pending the four captures (04 → 01 pair).</div></div>
+</div>
+</div>
+
+<div style="display:flex;align-items:baseline;gap:16px;padding:46px 0 8px"><span style="font-family:var(--font-cond);font-size:26px;letter-spacing:.06em;text-transform:uppercase;color:var(--toner)">P4 · Markets D-01…D-05</span><span style="flex:1;height:1px;background:var(--rule)"></span><span style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">f_0.4.0 reconciliation</span></div>
+
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:20px 0 4px">
+<div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--biro);padding-top:3px">First</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">Before the five: <span style="color:var(--toner)">M-01 is a design defect, not only an engine one, and it outranks everything else in this section.</span> Two rows that are byte-identical apart from price make the surface lie about which player he backed, in 26% of matchups, with the ledger unable to disambiguate it afterwards. There is no presentation fix — no label, no tag, no ordering rule makes two identical rows different. Dedupe at generation, as the lead proposed. The role tag is not a workaround for it; 3.52% of duplicate pairs share a role.</div>
+</div>
+</sc-if>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">S22</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--wax);padding-top:4px">D-01 · ruled</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">Label vocabulary — the fields win</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty"><span style="color:var(--wax)">The engine emits fields; the surface composes the label.</span> A packed string is a presentation artifact and must not be the source of truth. Leg exposes market kind, selection, line, team or player, and price; DisplayLabel becomes a per-surface composer rather than a stored string. Adopt the design system's vocabulary verbatim — MONEYLINE, TOTAL GOALS, BTTS — YES / BTTS — NO, TOTAL CORNERS, TOTAL CARDS, ANYTIME SCORER; offer lines OVER 2.5 GOALS, BOTH TEAMS TO SCORE, VALE ANYTIME.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">The role tag has no field in the contract because it should not be a tag. Add <span style="color:var(--toner)">role</span> as a first-class field on the scorer offer and print it as a tracked-uppercase word in --toner-3 after the name. The form prints words; brackets are a code smell that reached the page.</div>
+</sc-if>
+<sc-if value="{{ reasons }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:64px 1fr;gap:16px"><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3);padding-top:2px">Why</div><div style="font-family:var(--font-data);font-size:14px;line-height:1.55;color:var(--toner-2);text-wrap:pretty">The same leg has to render into four different widths — a 324px margin, a printed receipt, a ledger row, and a 242px TV ticket column. One packed string cannot serve all four, and we already have the failure in hand: the TV's statement line overflows its column with exactly this kind of string (<a href="#T25">T25.3</a>). Fields let each surface decide what it can afford to print. This is also the cheapest possible fix for T25.3.</div></div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">S22 (D-01) · Market label vocabulary · <span style="color:var(--wax)">Ruled</span> · DD 2026-07-31: engine emits fields, surface composes; DisplayLabel becomes a per-surface composer. DS vocabulary adopted verbatim. Role becomes a first-class field printed as a word, not a bracketed tag.</div></div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">S23</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--wax);padding-top:4px">D-02 · ruled</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">RIDING — the design system is short a word, not the product</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty"><span style="color:var(--wax)">Keep RIDING. Amend the enum.</span> PENDING · RIDING · LIVE · GREEN · DEAD · VOID · CASHED OUT, with RIDING ticket-level only and LIVE leg-level only, and the split written into the contract so it cannot drift back.</div>
+</sc-if>
+<sc-if value="{{ reasons }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:64px 1fr;gap:16px"><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3);padding-top:2px">Why</div><div style="font-family:var(--font-data);font-size:14px;line-height:1.55;color:var(--toner-2);text-wrap:pretty">"This ticket can still win" and "this leg is being played right now" are two different facts, and the obvious fix — reuse LIVE — would give one word two meanings, which is the exact failure the two-vocabulary split was designed to prevent. RIDING is literal (the stake is still riding), impersonal, and not celebratory, so it passes the voice test the enum exists to enforce. The vocabulary had a hole; the product found it.</div></div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">S23 (D-02) · RIDING · <span style="color:var(--wax)">Ruled</span> · DD 2026-07-31: RIDING kept; TicketReceipt.d.ts and RevealedState.d.ts amended to PENDING | RIDING | LIVE | GREEN | DEAD | VOID | CASHED OUT. RIDING is ticket-level only, LIVE is leg-level only; the split is contractual.</div></div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">S24</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--wax);padding-top:4px">D-03 · ruled</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">A one-sided market is not a paired row with a hole in it</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">Paired pricing describes <span style="color:var(--toner)">two-outcome markets</span>, not the price cell as such. Anytime scorer renders as a single-column offer list — one player, one price, one row — and <span style="color:var(--wax)">never occupies a paired row with an empty or disabled second cell.</span> No disabled state is introduced; the contract keeps its ban. Replacement still applies between rows: if the ticket rule is one leg per matchup, a second scorer replaces the first with the ⇄ underline. Add the clarifying sentence to PriceCell.d.ts so the next reader does not have to derive it.</div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">S24 (D-03) · One-sided scorer market · <span style="color:var(--wax)">Ruled</span> · DD 2026-07-31: paired pricing describes two-outcome markets; scorer renders as a single-column offer list and never as a paired row with a dead cell. No disabled state introduced. Replacement applies between rows. Clarification added to PriceCell.d.ts.</div></div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">S25</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--wax);padding-top:4px">D-04 · ruled</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">The PLAYERS tab — S17 binds it</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">S17's principle is that the player is never silently shown less than exists. <span style="color:var(--wax)">It binds the PLAYERS tab.</span> The tab takes the shop's mechanism: a fixed body and a printed <span style="font-family:var(--font-cond);letter-spacing:.08em">N NOT SHOWN</span> count at the fact floor in toner. An interior market list may legally scroll, but only with a visible position indicator — an invisible scroll is the same silent drop wearing a different coat.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">And the general form, because this will happen again: <span style="color:var(--toner)">a container's correctness may not depend on a config dial's current value.</span> PlayersPerTeam = 7 fits and 9 does not; that the shipped value happens to fit is luck, not compliance. Guard it with a test, not a convention.</div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">S25 (D-04) · PLAYERS tab overflow · <span style="color:var(--wax)">Ruled</span> · DD 2026-07-31: S17 binds it — fixed body plus a printed N NOT SHOWN at the fact floor; scroll permitted only with a visible position indicator. General clause: a container's correctness may not depend on a config dial's current value; guard with a test. D-05 acknowledged clean, no action.</div></div>
+</div>
+</div>
+
+<div style="display:flex;align-items:baseline;gap:16px;padding:46px 0 8px"><span style="font-family:var(--font-cond);font-size:26px;letter-spacing:.06em;text-transform:uppercase;color:var(--toner)">P5 · T17 presentation</span><span style="flex:1;height:1px;background:var(--rule)"></span></div>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">T17·a</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--wax);padding-top:4px">Confirmed · conditional</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">The backed side reading one goal short</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty"><span style="color:var(--wax)">Confirmed intended.</span> The score is not wrong, it is late, and lateness is this surface's entire job — the TV owns unrevealed drama and the number never lies about <span style="color:var(--toner)">now</span>. Watching your side trail while your scorer has not yet arrived is the product working.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">One condition, and it is the real risk: <span style="color:var(--wax)">the reserved goal's spend window must vary.</span> If it always lands in the final sequence, the player learns within a few rounds that a scorer leg guarantees a late equaliser, and the sweat dies of predictability — not of dishonesty. Weight it late, do not pin it there. If beat-spending cannot vary the window, that is a defect and it comes back to me.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">The presentation half is already right and should stay: <span style="color:var(--toner)">WAITING FOR RACKET</span> states the fact without leaking the reservation. No "one more", no probability nudge, no tell. And note that this is a claim about pattern, which one seed cannot show — fold five scorer-leg seeds into the capture window that brings Set B.</div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">T17 · Presentation consequence · <span style="color:var(--wax)">Confirmed intended</span> · DD 2026-07-31, conditional: the reserved goal's spend window must vary — weighted late, never pinned to the final sequence, or the pattern becomes learnable and the sweat dies. Progress copy stays non-leaking (WAITING FOR RACKET). Five-seed evidence requested with the next capture window.</div></div>
+</div>
+</div>
+
+<div style="display:flex;align-items:baseline;gap:16px;padding:46px 0 8px"><span style="font-family:var(--font-cond);font-size:26px;letter-spacing:.06em;text-transform:uppercase;color:var(--toner)">Standing laws added</span><span style="flex:1;height:1px;background:var(--rule)"></span><span style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">cross-surface</span></div>
+
+<div id="C10" style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">C10</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--wax);padding-top:4px">Law</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">Wrong in kind is not fixed by opacity</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">An effect that is wrong in kind is not corrected by reducing its strength. A lightening-only grain at 5% is a fainter version of the wrong thing, not a subtler version of the right one. When an effect fails on mechanism, turn it off and scope the correct one — do not tune toward invisibility and call it shipped. Promoted from S19; the same test applies to bloom, wear, aberration and every future overlay.</div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">C10 · Standing law · DD 2026-07-31: <span style="color:var(--toner)">wrong in kind is not fixed by opacity</span> — an effect that fails on mechanism is disabled and re-scoped, never tuned toward invisibility. Promoted from S19.</div></div>
+</div>
+</div>
+
+<div id="C11" style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">C11</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--wax);padding-top:4px">Law</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">Rendered evidence, or no claim</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">T19 generalises off the TV and out of variation. <span style="color:var(--wax)">Any design claim about how something reads — variation, legibility, hierarchy, verification — is made against rendered frames at the review distance, or it is not made.</span> Design-verified is a claim about how something reads, so it requires frames on every surface, not only the TV. T19 remains as this law's TV instance.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">Second clause, from today: <span style="color:var(--wax)">a review package is its document plus its frames, and a package that arrives without its frames is not in review.</span> Three of four arrived that way tonight. This is not a rebuke of the leads — the bundles exist and the import dropped them — but the register should stop showing items as "with the DD" when the DD cannot see them.</div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">C11 · Standing law · DD 2026-07-31: <span style="color:var(--toner)">rendered evidence or no claim</span> — every design claim about how something reads, including Design-verified, is made against rendered frames at the review distance, on every surface. T19 becomes this law's TV instance. Second clause: a review package is its document plus its frames; a package without its frames is not in review.</div></div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:110px 1fr;gap:28px;padding:24px 0;border-bottom:1px solid var(--rule-soft)">
+<div><div style="font-family:var(--font-cond);font-size:21px;letter-spacing:.03em;color:var(--toner)">C12</div><div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--wax);padding-top:4px">Ruled</div></div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-family:var(--font-cond);font-size:17px;letter-spacing:.03em;text-transform:uppercase;color:var(--toner)">Evidence rides the import — LFS is not a design blocker</div>
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner);text-wrap:pretty">The manifest asks whether frames must be committed. From this seat: <span style="color:var(--wax)">no.</span> This seat requires frames <span style="color:var(--toner)">in the import</span>, not in git. Bundles are the correct vehicle and the interim binaries policy is right. Whatever Allen decides about the inert LFS macro, no design review is waiting on it — three reviews are waiting on the bundles reaching the import, which is a different problem with a cheaper fix. Unblock the leads on that basis.</div>
+</sc-if>
+<div style="background:var(--ground-2);padding:12px 16px;display:grid;grid-template-columns:74px 1fr;gap:16px;align-items:baseline"><div style="font-family:var(--font-cond);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3)">Register</div><div style="font-family:var(--font-data);font-size:13.5px;line-height:1.5;color:var(--toner-2)">C12 · <span style="color:var(--wax)">Ruled</span> · DD 2026-07-31: design review requires frames in the import, not in git. Bundles are the correct vehicle; the interim binaries policy stands. The LFS question blocks no design item and should not be treated as gating one.</div></div>
+</div>
+</div>
+
+<sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;align-items:baseline;gap:16px;padding:46px 0 8px"><span style="font-family:var(--font-cond);font-size:26px;letter-spacing:.06em;text-transform:uppercase;color:var(--toner)">What this batch does not do</span><span style="flex:1;height:1px;background:var(--rule)"></span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;padding:22px 0 8px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner-2);text-wrap:pretty"><span style="color:var(--toner)">No Design-verified.</span> Four packages, one complete, and the complete one has a blocking finding. Zero is the honest number and <a href="#C11">C11</a> exists so it stops being the usual one.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner-2);text-wrap:pretty"><span style="color:var(--toner)">No scope call on markets-2.</span> Whether that seat widens into the presentation reconciliation is the orchestrator's, not mine. The design dependency is worth stating though: S22 and S24 are SureThing surface-contract changes and belong with the SureThing lead's S9, not in the markets seat, whoever writes the engine half.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner-2);text-wrap:pretty"><span style="color:var(--toner)">No studio constitution.</span> Inbox 6 stays open deliberately. Three laws landed tonight and two rulings of mine were amended by evidence; a constitution written this week would codify a moving position. It follows the TV owning doc, not the other way round.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner-2);text-wrap:pretty"><span style="color:var(--toner)">Not a ruling, a risk worth naming.</span> M-03 says the gate campaign certifies a two-market game — the skilled bot never touches BTTS, corners, cards or scorer. Four of six shipped markets have never been felt by anything, which is a design exposure as much as a balance one. It sits above the D-items in my order.</div>
+<div style="font-family:var(--font-data);font-size:15px;line-height:1.55;color:var(--toner-2);text-wrap:pretty"><span style="color:var(--toner)">What I need next, in one window.</span> Set B, five seeds. The 1.8/1.4 bloom A/B. The SureThing captures including the angled in-room render. The four room captures. The face named in every manifest. That is one capture window and it clears most of the review backlog in the next batch.</div>
+</div>
+</div>
+<div style="border-top:1px solid var(--rule);margin-top:38px;padding-top:18px;display:flex;justify-content:space-between;align-items:baseline;gap:24px">
+<div style="font-family:var(--font-data);font-size:14px;line-height:1.55;color:var(--toner-3);max-width:760px;text-wrap:pretty">Items 10, 11 and 12 are answered, so Phase 3 is ungated. T24 closes inbox 9 and 9a. The row-model, locator and confirm-gesture rulings can all be built without another word from this seat; T25.1 should be fixed before any of them is reviewed.</div>
+<div style="font-family:var(--font-cond);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--toner-3);text-align:right;line-height:1.9">Design Director<br>main-2 · 2026-07-31</div>
+</div>
+</sc-if>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;review&quot;,&quot;transcription&quot;],&quot;default&quot;:&quot;review&quot;,&quot;tsType&quot;:&quot;\&quot;review\&quot; | \&quot;transcription\&quot;&quot;,&quot;section&quot;:&quot;Document&quot;,&quot;label&quot;:&quot;Mode&quot;},&quot;showRationale&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Document&quot;,&quot;label&quot;:&quot;Show reasoning&quot;},&quot;showEvidence&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Document&quot;,&quot;label&quot;:&quot;Show frame evidence&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const transcription = (this.props.mode ?? "review") === "transcription";
+    return {
+      full: !transcription,
+      reasons: !transcription && (this.props.showRationale ?? true),
+      frames: !transcription && (this.props.showEvidence ?? true)
+    };
+  }
+}
+</script>
+</body>
+</html>
