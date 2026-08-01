@@ -181,10 +181,12 @@ Where a Unity test must assert against canon it cannot import (a C# test cannot 
 mirror the values as named constants and **cite the source path in a comment** — never invent a
 threshold that happens to pass.
 
-## 4B. RESUME HERE — TVS-H02 verification (written 2026-07-31 before a planned session clear)
+## 4B. TVS-H02 verification — **CLOSED 2026-07-31.** Do not re-run; resume at §4C
 
-**A verification slot is RESERVED and nothing takes the editor first. On re-seat: read this section,
-confirm the editor free per §4 step 0, and run it.**
+Kept as the record of how the fix was judged, not as a live instruction. Outcome: both arms n=10,
+**zero** `kept ticking while standing` in each, 3 documented mid-tween flakes in each — identical
+rates, so the flake is not stack-induced. The defect failed 3 of 4 before the fix and 0 of 10 after.
+Committed with 3C + T16/C3/C8 as `4969eb1`. **T17 is also done** (`ea28c9b`); see §4C for what is next.
 
 ### State
 
@@ -250,7 +252,29 @@ Two failure modes share this test name and mean opposite things:
 Baselines before this stack: engine **160**, EditMode **194**, PlayMode **44** (+1 `[Explicit]`
 capture harness, filtered out of routine runs).
 
-### After this: T17 is next, and it outranks all remaining visual work
+## 4C. RESUME HERE — T20, then 3D → 3E → 3F
+
+**T17 is CLOSED** (`ea28c9b`): the ledger reserves the backed side's last baked goal at configure
+time, enforced in `CompleteGoal` and released by `PlanFinal`; `BindAnytimeScorer` is unchanged and
+the causal reveal point did not move. The reproduction was inverted in place, and the DD's acceptance
+property is `Every_won_anytime_scorer_leg_reveals_exactly_one_scorer_however_its_beats_ran`. Full
+record, including the closure evidence, is in `BUG-LEDGER.md` under "T17".
+
+**Open for the Design Director:** the reserve is player-visible — on a scorer leg the backed side's
+score now holds one goal short until the final sequence. Intended by the ruling, but confirm it reads
+right on screen.
+
+**Next: T20** px re-derivation (live progress 23→19px, resolved rows 19→15px, NEED unchanged — and do
+**not** shorten §6's authored strings to fit), then 3D → 3E → 3F.
+
+**Blocked on Allen, studio-level:** `[attr]lfs` is declared in `unity/SBR/.gitattributes`, but git
+honours attribute macros only in a **top-level** `.gitattributes`, and this repo has none at root —
+that is what the `not allowed:` warning on every git command means. So `*.png`, `*.dll`, `*.fbx`,
+`*.wav` go through **no** LFS filter anywhere, including inside `unity/SBR`. The 49 phase-2
+scene-grammar captures (28.8 MB) are held out of history pending that call and Allen's decision on
+where they should live.
+
+### Superseded: the T17 dispatch note this section replaced
 
 DD ruled the scorer-gap a **correctness defect**, above every Phase 3 visual refinement. Design
 instruction: **reserve, don't spend** — a scorer leg claims its backed-side goal *before* ordinary
