@@ -76,7 +76,9 @@
   **Second trap (markets, 2026-07-31): Unity can return exit 0 while still
   mid-import — process + lockfile stayed live ~16 min after "exit". Exit code is
   not a completion signal; leases close on process count + lockfile + log growth,
-  never on exit alone.**
+  never on exit alone.** **Third lesson (markets, 2026-08-01): editor-free green
+  means little for Unity-side work — engine suites and dotnet cannot see asmdef
+  code or the DLL boundary; "uncompiled" is treated as genuinely unverified.**
 - **Need Allen:** nothing.
 
 ## Autonomous decisions (Allen veto window)
