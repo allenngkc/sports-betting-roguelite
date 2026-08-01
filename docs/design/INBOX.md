@@ -42,6 +42,12 @@ referenced documents via Import before the DD will rule on them.
    Rule: fixed rows with one-line NEED as the TV-surface constraint, or amend the
    no-reflow law to canon's expanding rows.
 
+10. **§8.8 stats panel — two unsourceable rows (TV):** the spec names two rows the
+    sim cannot source; panel blocked. Rule: drop, re-source, or respec.
+11. **§8.10 held cash-out preview — confirm gesture (TV):** preview built and
+    tested (struck-and-dimmed, never extinguished, exact revert) but unbound
+    pending your gesture ruling.
+
 ## Cleared 2026-07-31, batch 2 (transcribed to REGISTER.md by the orchestrator)
 
 - C3 → ruled, 3D unblocked (coverage over-enforced; add score-at-goal +
