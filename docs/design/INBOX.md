@@ -20,6 +20,16 @@ the shipped build" section is stale — scanlines + static crawl were removed at
 `842382d` (T8); chromeCyan and emission rest values remain accurate. Now that the
 kit is standard-bearing under the 1:1 rule, please correct it in the next export.
 
+**SureThing C14-audit dispositions (2026-08-01, from `571675c`):** 14 needs-DD
+items headed by a record-row hierarchy inversion — full list in
+`[ST] docs/.../C14 audit` doc. Caveat the DD should hold: populated-ledger states
+are unphotographed (all captures show the empty ledger); a populated capture
+precedes any record-row rebuild.
+
+**TV C14 audit (2026-08-01, committed gap-list):** 38 gaps, 4 falsified prior
+claims; ~20 fix-now in flight; capture window = your exact evidence list; TV-12/
+TV-13 unjudged until those frames exist.
+
 **Markets C14-audit calls (2026-08-01, from `50e19ae`):** (a) ladder letter-spacing —
 accept a documented deviation or move the element to TMP; (b) the scroll position
 indicator's form for the PLAYERS tab (S25 requires one if scroll ships); (c) an
