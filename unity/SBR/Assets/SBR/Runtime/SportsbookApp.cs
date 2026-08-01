@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using SBR.Engine;
 using UnityEngine;
@@ -30,10 +31,16 @@ namespace SBR.Game
         private int _detailMatchup = -1;
         private DetailTab _detailTab = DetailTab.Goals;
 
-        /// <summary>Fixed gap between an offer's label cell and its price cell (MakeMarketOffer).
-        /// Shared as a class constant so BuildPlayerLines' single-column label width (S24 ruling)
-        /// and MakeMarketOffer's own price placement can never silently drift apart.</summary>
+        /// <summary>Fixed gap between an offer row's label cell and its price cell (MakeOfferRow).
+        /// Shared as a class constant so every destination's row layout and MakeOfferRow's own
+        /// price placement can never silently drift apart.</summary>
         private const float OfferLabelGap = 8f;
+
+        /// <summary>A1 ruling: every destination's offer row is 54px tall, full content width,
+        /// single column. Shared so BuildMarketLines/BuildBothTeamsScore/BuildPlayerLines,
+        /// BuildScrollingBody's content-height math, and MakeOfferRow's own row rect can never
+        /// independently drift.</summary>
+        private const float OfferRowHeight = 54f;
 
         public SportsbookApp(RectTransform root, Font font, Font fontCond, LaptopScreen host, Action invalidate,
             Action<Tab> selectTab, Action home, Action ledger)
@@ -277,24 +284,30 @@ namespace SBR.Game
 
             RectTransform body = LaptopUi.MakePanel(panel, "MarketBody", new Vector2(0f, 1f),
                 new Vector2(0f, 1f), new Vector2(0f, -118f), new Vector2(700f, 412f), LaptopOs.Ink);
+
+            // A2 ruling: the per-destination panel title ("GOALS TOTAL" etc.) is deleted — each row
+            // now names its own market and the tab strip already names the destination; the kit has
+            // no such heading.
+            if (_detailTab == DetailTab.Goals)
+                BuildMarketLines(body, slip, matchup, run.Config.GoalLines, MarketKind.TotalGoals, boardFrozen);
+            else if (_detailTab == DetailTab.Btts)
+                BuildBothTeamsScore(body, slip, matchup, boardFrozen);
+            else if (_detailTab == DetailTab.Corners)
+                BuildMarketLines(body, slip, matchup, run.Config.CornerLines, MarketKind.TotalCorners, boardFrozen);
+            else if (_detailTab == DetailTab.Cards)
+                BuildMarketLines(body, slip, matchup, run.Config.CardLines, MarketKind.TotalCards, boardFrozen);
+            else
+                BuildPlayerLines(body, slip, matchup, boardFrozen);
+
+            // Drawn last (after the market body's scroll content) so it always renders on top of
+            // row 0 instead of being hidden behind that row's opaque price-cell button. Under the
+            // old fixed layout this banner floated clear of the offer rows because a title row
+            // reserved the first 48px; A2 deleted that title, so the list now begins flush with the
+            // body's top edge and this has to out-order it instead.
             if (boardFrozen)
                 LaptopUi.MakeText(body, "LockedMarketReason", new Vector2(1f, 1f), new Vector2(1f, 1f),
                     new Vector2(-14f, -8f), new Vector2(280f, 32f), 13, TextAnchor.UpperRight,
                     LaptopOs.MoneyBad, "ROUND LOCKED — WATCH MY BETS", _font);
-
-            if (_detailTab == DetailTab.Goals)
-                BuildMarketLines(body, slip, matchup, run.Config.GoalLines, MarketKind.TotalGoals,
-                    "GOALS TOTAL", boardFrozen);
-            else if (_detailTab == DetailTab.Btts)
-                BuildBothTeamsScore(body, slip, matchup, boardFrozen);
-            else if (_detailTab == DetailTab.Corners)
-                BuildMarketLines(body, slip, matchup, run.Config.CornerLines, MarketKind.TotalCorners,
-                    "CORNERS TOTAL", boardFrozen);
-            else if (_detailTab == DetailTab.Cards)
-                BuildMarketLines(body, slip, matchup, run.Config.CardLines, MarketKind.TotalCards,
-                    "CARDS TOTAL", boardFrozen);
-            else
-                BuildPlayerLines(body, slip, matchup, boardFrozen);
 
             BuildSlip(run, slip, boardFrozen);
         }
@@ -309,178 +322,252 @@ namespace SBR.Game
         }
 
         private void BuildMarketLines(RectTransform parent, BetslipModel slip, Matchup matchup,
-            double[] lines, MarketKind kind, string title, bool frozen)
+            double[] lines, MarketKind kind, bool frozen)
         {
-            LaptopUi.MakeText(parent, "MarketTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, -8f), new Vector2(670f, 32f), 16, TextAnchor.UpperLeft,
-                LaptopOs.White, title, _font);
+            RectTransform content = BuildScrollingBody(parent, lines.Length * 2, out float rowWidth);
             for (int i = 0; i < lines.Length; i++)
             {
                 double line = lines[i];
                 MarketSelection over = new MarketSelection(kind, line, MarketChoice.Over);
                 MarketSelection under = new MarketSelection(kind, line, MarketChoice.Under);
-                float rowY = -48f - i * 42f;
-                MakeMarketOffer(parent, slip, matchup, over, $"OVER {line:0.0}",
-                    i * 2, 14f, rowY, frozen);
-                MakeMarketOffer(parent, slip, matchup, under, $"UNDER {line:0.0}",
-                    i * 2 + 1, 354f, rowY, frozen);
+                // A2 ruling: the label is the engine's own DD-verbatim string (MatchModel.Fields'
+                // Line), not a locally re-formatted "OVER {line:0.0}" — the local format dropped
+                // the noun ("GOALS"/"CORNERS"/"CARDS").
+                string overLabel = MatchModel.Fields(matchup, over).Line;
+                string underLabel = MatchModel.Fields(matchup, under).Line;
+                MakeOfferRow(content, slip, matchup, over, overLabel, null, i * 2,
+                    -(i * 2) * OfferRowHeight, rowWidth, frozen);
+                MakeOfferRow(content, slip, matchup, under, underLabel, null, i * 2 + 1,
+                    -(i * 2 + 1) * OfferRowHeight, rowWidth, frozen);
             }
         }
 
         private void BuildBothTeamsScore(RectTransform parent, BetslipModel slip, Matchup matchup,
             bool frozen)
         {
-            LaptopUi.MakeText(parent, "BttsTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, -8f), new Vector2(670f, 32f), 16, TextAnchor.UpperLeft, LaptopOs.White,
-                "BOTH TEAMS TO SCORE", _font);
-            MakeMarketOffer(parent, slip, matchup, MarketSelection.BothTeamsToScore(true), "YES",
-                0, 14f, -48f, frozen);
-            MakeMarketOffer(parent, slip, matchup, MarketSelection.BothTeamsToScore(false), "NO",
-                1, 354f, -48f, frozen);
-        }
-
-        /// <summary>Capacity arithmetic for a fixed-body offer list (S25 ruling, "S17 binds the
-        /// PLAYERS tab"): how many <see cref="MakeMarketOffer"/> rows (32px cells) fit a container
-        /// of <paramref name="containerHeight"/>, given the first row's y-offset from the
-        /// container's top edge, the vertical pitch between successive row-groups, and how many
-        /// offers share one row-group (columns). Pure and internal so a test can pin it as
-        /// arithmetic — independent of any <c>RunConfig</c> dial — rather than only observing it
-        /// at one shipped roster size. Never negative.</summary>
-        internal static int VisibleOfferCapacity(float containerHeight, float firstRowOffset,
-            float rowPitch, int columns)
-        {
-            const float offerCellHeight = 32f;
-            if (columns <= 0 || rowPitch <= 0f) return 0;
-            float available = containerHeight - firstRowOffset - offerCellHeight;
-            if (available < 0f) return 0;
-            int rowGroups = (int)Math.Floor(available / rowPitch) + 1;
-            return rowGroups * columns;
+            RectTransform content = BuildScrollingBody(parent, 2, out float rowWidth);
+            MarketSelection yes = MarketSelection.BothTeamsToScore(true);
+            MarketSelection no = MarketSelection.BothTeamsToScore(false);
+            // A2 ruling: BTTS's choice lives in Fields.Market ("BTTS — YES"/"BTTS — NO"); Fields.Line
+            // is just "BOTH TEAMS TO SCORE" and does not carry which side this row is.
+            MakeOfferRow(content, slip, matchup, yes, MatchModel.Fields(matchup, yes).Market, null,
+                0, 0f, rowWidth, frozen);
+            MakeOfferRow(content, slip, matchup, no, MatchModel.Fields(matchup, no).Market, null,
+                1, -OfferRowHeight, rowWidth, frozen);
         }
 
         private void BuildPlayerLines(RectTransform parent, BetslipModel slip, Matchup matchup, bool frozen)
         {
-            LaptopUi.MakeText(parent, "PlayersTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, -8f), new Vector2(670f, 32f), 16, TextAnchor.UpperLeft, LaptopOs.White,
-                "ANYTIME GOALSCORER", _font);
-
-            // S24 ruling: the scorer board is a one-sided YES-only market with no "other side" to
-            // pair against, so it renders single column — never a paired row with a dead second
-            // cell. MakeMarketOffer's shared label cell (156px, sized for the two-column ladder
-            // offers) is too narrow for this row's "{PLAYER} ANYTIME — {ROLE}" text now that the
-            // role is spelled out as a full word rather than a bracketed code (S22); rather than
-            // forking a second offer renderer, the width is passed through so this destination
-            // alone uses the container's full width, with the price cell pinned to the same 14px
-            // right margin the container uses on the left (MarketBody is 700 wide; not itself
-            // changed).
-            const float x = 14f;
-            const float firstRowOffset = 48f;
-            const float rowPitch = 42f;
-            const float priceCellWidth = 160f; // MakeMarketOffer's own price cell, mirrored here.
-            const float rightMargin = 14f;
-            float labelWidth = parent.rect.width - rightMargin - priceCellWidth - OfferLabelGap - x;
-
-            // S25 ruling: fixed body, no scroll. Render only what the container actually fits and
-            // print the remainder as a literal count rather than truncating silently or growing
-            // the container.
-            int capacity = VisibleOfferCapacity(parent.rect.height, firstRowOffset, rowPitch, 1);
-
-            int total = 0;
+            // S25 amended / A5 / C19: the withdrawn fixed-body cap is gone — every priced scorer
+            // offer renders, full stop. The interior list scrolls instead (A4/S27) rather than
+            // truncating with an "N NOT SHOWN" remainder.
+            var scorers = new List<MarketOffer>();
             foreach (MarketOffer offer in matchup.Markets)
-                if (offer.Selection.Kind == MarketKind.AnytimeScorer) total++;
-            int shown = Math.Min(capacity, total);
+                if (offer.Selection.Kind == MarketKind.AnytimeScorer) scorers.Add(offer);
 
-            int row = 0;
-            foreach (MarketOffer offer in matchup.Markets)
+            RectTransform content = BuildScrollingBody(parent, scorers.Count, out float rowWidth);
+            for (int row = 0; row < scorers.Count; row++)
             {
-                if (offer.Selection.Kind != MarketKind.AnytimeScorer) continue;
-                if (row >= shown) break;
-                float rowY = -firstRowOffset - row * rowPitch;
-                // S22 ruling: the bracketed [FW]/[MF]/[DF] tag is struck. The label uses the DS
-                // MarketOffer.line form ("{PLAYER NAME} ANYTIME") plus the role as a full word —
-                // both engine-emitted (MatchModel.Fields), not re-derived here.
-                MatchModel.MarketFields fields = MatchModel.Fields(matchup, offer.Selection);
-                string playerLabel = LaptopUi.FitText(_font, $"{fields.Line} — {fields.Role}", 13, labelWidth);
-                MakeMarketOffer(parent, slip, matchup, offer.Selection,
-                    playerLabel, row, x, rowY, frozen, labelWidth);
-                row++;
-            }
-
-            int hidden = total - shown;
-            if (hidden > 0)
-            {
-                // The fact floor: 13px, LaptopOs.Muted — same register as the mirror margin's own
-                // read-only facts ("READ ONLY · NO SCORE · NO PROBABILITY"). Never printed at all
-                // when nothing is hidden (never "0 NOT SHOWN").
-                float notShownY = -firstRowOffset - shown * rowPitch;
-                LaptopUi.MakeText(parent, "PlayersNotShown", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(x, notShownY), new Vector2(670f, 22f), 13, TextAnchor.UpperLeft,
-                    LaptopOs.Muted, $"{hidden} NOT SHOWN", _font);
+                MarketSelection selection = scorers[row].Selection;
+                // S22/A3/E-24: the name is the fact (Fields.Line carries the noun — "VALE ANYTIME");
+                // the role is its own field (Fields.Role), engine-emitted, never concatenated into
+                // the name's own string or colour.
+                MatchModel.MarketFields fields = MatchModel.Fields(matchup, selection);
+                MakeOfferRow(content, slip, matchup, selection, fields.Line, fields.Role, row,
+                    -row * OfferRowHeight, rowWidth, frozen);
             }
         }
 
-        private void MakeMarketOffer(RectTransform parent, BetslipModel slip, Matchup matchup,
-            MarketSelection selection, string label, int offerIndex, float x, float y, bool frozen,
-            float labelWidth = 156f)
+        /// <summary>A4/S27: builds the market body's scroll plumbing — a masked <see cref="ScrollRect"/>
+        /// viewport sized to <paramref name="body"/>'s own rect (kept fixed per the ruling) and a
+        /// content <see cref="RectTransform"/> whose height is the true content height
+        /// (<paramref name="rowCount"/> × <see cref="OfferRowHeight"/>), never a capacity clamp.
+        /// Draws the S27 position rail — present only when the content overflows the viewport,
+        /// absent when it fits — and returns the row width every row must use so content never
+        /// runs under the rail (out <paramref name="rowWidth"/>). Shared by BuildMarketLines,
+        /// BuildBothTeamsScore and BuildPlayerLines (A1 ruling) so their scroll/rail plumbing can
+        /// never independently drift.</summary>
+        private static RectTransform BuildScrollingBody(RectTransform body, int rowCount, out float rowWidth)
         {
+            const float railReserve = 8f; // 4px RuleSoft track + 4px clearance (A4: never under the rail).
+            float bodyWidth = body.rect.width;
+            float bodyHeight = body.rect.height;
+            float contentHeight = rowCount * OfferRowHeight;
+            bool overflows = contentHeight > bodyHeight;
+            rowWidth = overflows ? bodyWidth - railReserve : bodyWidth;
+
+            RectTransform scroll = LaptopUi.MakePanel(body, "MarketScroll", new Vector2(0f, 1f),
+                new Vector2(0f, 1f), Vector2.zero, new Vector2(bodyWidth, bodyHeight),
+                new Color(0f, 0f, 0f, 0f));
+            ScrollRect scrollRect = scroll.gameObject.AddComponent<ScrollRect>();
+
+            RectTransform viewport = LaptopUi.MakePanel(scroll, "MarketViewport", new Vector2(0f, 1f),
+                new Vector2(0f, 1f), Vector2.zero, new Vector2(bodyWidth, bodyHeight),
+                new Color(0f, 0f, 0f, 0f));
+            // Same lightweight, Graphic-free mask already used on this stack (PhoneScreen.cs's
+            // _threadRoot) rather than a new masking mechanism.
+            viewport.gameObject.AddComponent<RectMask2D>();
+            // MakePanel defaults every Image to raycastTarget=false (decorative by default
+            // everywhere else in this file). A ScrollRect needs the opposite: EventSystem only
+            // routes wheel/drag to a handler by first hitting a raycastable Graphic and bubbling up
+            // from there, so without this, wheel/drag over the empty space between rows — most of
+            // the body — would never reach the ScrollRect at all. Row buttons stay on top and keep
+            // receiving clicks as normal; this only fills in the gaps between them.
+            viewport.GetComponent<Image>().raycastTarget = true;
+
+            RectTransform content = LaptopUi.MakePanel(viewport, "MarketContent", new Vector2(0f, 1f),
+                new Vector2(0f, 1f), Vector2.zero, new Vector2(rowWidth, contentHeight),
+                new Color(0f, 0f, 0f, 0f));
+
+            scrollRect.horizontal = false;
+            scrollRect.vertical = true;
+            scrollRect.movementType = ScrollRect.MovementType.Clamped;
+            scrollRect.inertia = false;
+            scrollRect.viewport = viewport;
+            scrollRect.content = content;
+
+            // Rebuild-safety (A4): scrollRect.verticalNormalizedPosition is only ever read inside
+            // BuildPositionRail, and BuildPositionRail is only ever called in this branch — so a
+            // content height <= viewport height (the degenerate 0/0 case) never risks a NaN or a
+            // divide-by-zero; that branch simply never touches it.
+            if (overflows)
+                BuildPositionRail(body, scrollRect, bodyHeight, contentHeight);
+
+            return content;
+        }
+
+        /// <summary>S27 ruling: the printed position rail for a scrolling interior list — exactly
+        /// two <see cref="Image"/>s, never a Unity <see cref="Scrollbar"/> (no drag handle, no
+        /// glyph; never fades, auto-hides or overlays content). The track is
+        /// <see cref="LaptopOs.RuleSoft"/>, full body height, flush with the body's right edge; the
+        /// thumb is <see cref="LaptopOs.Muted"/>, sized to the visible fraction with a 24px floor
+        /// (and never taller than the track), and tracks the ScrollRect's live normalized position
+        /// via <c>onValueChanged</c> so a wheel/drag scroll updates it without a full canvas
+        /// rebuild. Only ever called when the content overflows (<see cref="BuildScrollingBody"/>)
+        /// — the rail is absent otherwise, per the ruling.</summary>
+        private static void BuildPositionRail(RectTransform body, ScrollRect scrollRect,
+            float trackHeight, float contentHeight)
+        {
+            const float trackWidth = 4f;
+            float visibleFraction = Mathf.Clamp01(trackHeight / contentHeight);
+            float thumbHeight = Mathf.Clamp(visibleFraction * trackHeight, 24f, trackHeight);
+
+            LaptopUi.MakePanel(body, "PositionRailTrack", new Vector2(1f, 1f), new Vector2(1f, 1f),
+                Vector2.zero, new Vector2(trackWidth, trackHeight), LaptopOs.RuleSoft);
+            RectTransform thumb = LaptopUi.MakePanel(body, "PositionRailThumb", new Vector2(1f, 1f),
+                new Vector2(1f, 1f), Vector2.zero, new Vector2(trackWidth, thumbHeight), LaptopOs.Muted);
+
+            float travel = trackHeight - thumbHeight;
+            void Reposition(Vector2 normalized)
+            {
+                float hidden = 1f - Mathf.Clamp01(normalized.y);
+                thumb.anchoredPosition = new Vector2(thumb.anchoredPosition.x, -hidden * travel);
+            }
+            Reposition(new Vector2(0f, scrollRect.verticalNormalizedPosition));
+            scrollRect.onValueChanged.AddListener(Reposition);
+        }
+
+        /// <summary>A1's shared single-column offer row (S27 ruling): 54px tall, full content
+        /// width, a fact-coloured line/name label on the left (<see cref="LaptopOs.White"/>,
+        /// condensed, 19px, uppercase — E-12, load-bearing under S28) and a 176px right-aligned
+        /// price cell, with a 1px <see cref="LaptopOs.RuleSoft"/> rule along the row's bottom edge
+        /// (kit: screens.jsx:59-72). <paramref name="role"/> is the S22/E-24 scorer-role word
+        /// printed after the name in <see cref="LaptopOs.Muted"/> — null/empty for every
+        /// non-scorer row. Shared by BuildMarketLines, BuildBothTeamsScore and BuildPlayerLines so
+        /// their row geometry, the selection ring and the replacement-hint plumbing can never
+        /// independently drift.</summary>
+        private void MakeOfferRow(RectTransform parent, BetslipModel slip, Matchup matchup,
+            MarketSelection selection, string label, string role, int offerIndex, float y,
+            float rowWidth, bool frozen)
+        {
+            const float leftPad = 14f;
+            const float rightPad = 14f;
+            const float priceCellWidth = 176f;
+            const float priceCellHeight = 32f;
+            const float priceCellY = -(OfferRowHeight - priceCellHeight) / 2f; // vertical centre of the row.
+
             MarketSelection? existing = slip.SelectionOn(matchup.Index);
             bool selected = existing.HasValue && existing.Value == selection;
             bool replacement = existing.HasValue && !selected;
             string key = selection.Kind + selection.Choice.ToString()
                 + selection.Line.ToString(CultureInfo.InvariantCulture) + selection.PlayerIndex;
-            float priceX = x + labelWidth + OfferLabelGap;
-            RectTransform offer = LaptopUi.MakePanel(parent, "MarketOffer" + offerIndex,
-                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(priceX, y),
-                new Vector2(160f, 32f), new Color(0f, 0f, 0f, 0f));
+
+            RectTransform row = LaptopUi.MakePanel(parent, "MarketOffer" + offerIndex,
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, y),
+                new Vector2(rowWidth, OfferRowHeight), new Color(0f, 0f, 0f, 0f));
+
+            float priceX = rowWidth - rightPad - priceCellWidth;
+            float labelWidth = priceX - OfferLabelGap - leftPad;
+
+            // The market line is a FACT: condensed, --st-size-price, --toner. It does NOT turn biro
+            // when picked — MarketOffer.jsx:11 sets the picked figure to var(--toner) and gives the
+            // ring alone the biro. Tinting the type as well spends the player's ink on something he
+            // did not write, which is what the two-ink law forbids (audit E-13).
+            Text labelText = LaptopUi.MakeText(row, "MarketLabel" + key, new Vector2(0f, 1f),
+                new Vector2(0f, 1f), new Vector2(leftPad, 0f), new Vector2(labelWidth, OfferRowHeight),
+                19, TextAnchor.MiddleLeft, LaptopOs.White, label, _fontCond);
+
+            if (!string.IsNullOrEmpty(role))
+            {
+                // The role is a LABEL, not a figure (audit E-24, named load-bearing by S28). With
+                // tracking unreachable, the only channels left to separate label from fact are the
+                // colour split (--toner-3 label against --toner fact) and the two-voice type split
+                // (roman label against condensed figure). Both must therefore be exact here: roman
+                // face, fact floor, --toner-3 — a condensed 19px role would read as a second fact.
+                float roleX = leftPad + labelText.preferredWidth + 8f;
+                float roleWidth = Mathf.Max(0f, leftPad + labelWidth - roleX);
+                LaptopUi.MakeText(row, "MarketRole" + key, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(roleX, 0f), new Vector2(roleWidth, OfferRowHeight), 13,
+                    TextAnchor.MiddleLeft, LaptopOs.Muted, role, _font)
+                    .horizontalOverflow = HorizontalWrapMode.Overflow;
+            }
+
+            RectTransform offer = LaptopUi.MakePanel(row, "PriceCell" + key, new Vector2(0f, 1f),
+                new Vector2(0f, 1f), new Vector2(priceX, priceCellY),
+                new Vector2(priceCellWidth, priceCellHeight), new Color(0f, 0f, 0f, 0f));
+
             if (selected)
             {
                 Sprite ring = ResolveWideRing(matchup.Index);
                 if (ring != null)
                 {
-                    // Y offset is POSITIVE. With a top-left pivot, anchoredPosition.y moves the rect
-                    // DOWN when negative, so the long-standing (-8,-8) pushed the ring 8px below the
-                    // cell instead of overshooting 8px above it: the ring spanned -8..-54 against a
-                    // cell of 0..-32, sitting under the number rather than around it. Only its upper
-                    // arcs reached the row, which is what read as "the ring does not close".
+                    // Y offset is POSITIVE — see the historic note this geometry inherits (the old
+                    // MakeMarketOffer, same math): with a top-left pivot a negative anchoredPosition.y
+                    // moves the rect DOWN, so the ring must overshoot with a positive Y to sit above
+                    // the cell rather than under it.
                     //
-                    // The sprite, its import settings, the mesh (FullRect, verified) and the stretch
-                    // (Image.Simple) were all correct the whole time — the runtime dump confirmed no
-                    // mask anywhere in the chain. Diagnosis cost three passes because a correct wide
-                    // ellipse around a short price genuinely looks like two flat strokes plus distant
-                    // end caps, and that was twice mistaken for a broken ring.
-                    //
-                    // Size is the cell + 16 per assets/ASSETS.md and the design system's
-                    // InkMark.rect(): the real cell is 160x32, so 176x48.
+                    // Size is the cell + 16 per ASSETS.md/InkMark.rect(): A1 widened the price cell
+                    // from 160 to 176, so the ring is now 192x48 (was 176x48).
                     const float overshoot = 8f;
-                    Vector2 cellSize = new Vector2(160f, 32f);
+                    Vector2 cellSize = new Vector2(priceCellWidth, priceCellHeight);
                     LaptopUi.MakeSprite(offer, "WideBiroRing", ring, new Vector2(0f, 1f),
                         new Vector2(0f, 1f), new Vector2(-overshoot, overshoot),
                         cellSize + new Vector2(overshoot * 2f, overshoot * 2f), LaptopOs.Accent);
                 }
             }
-            // Law Two: biro blue marks the selection he made, nothing else. This offer's label/
-            // price used to key off "replacement" (true for every OTHER offer in a matchup that
-            // already has a pick) instead of "selected" — so every unpicked row rendered blue and
-            // the actual pick rendered in plain toner, exactly backwards. Keyed off "selected" now;
-            // "replacement" still drives the "⇄" swap-hint affordance and its underline, just no
-            // longer in biro.
-            LaptopUi.MakeText(offer, "MarketLabel" + key, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(-(labelWidth + OfferLabelGap), 0f), new Vector2(labelWidth, 32f), 13,
-                TextAnchor.MiddleLeft,
-                selected ? LaptopOs.Accent : LaptopOs.TonerSecondary, label, _font);
             string price = OddsFormat.American(matchup.Odds(selection));
+            // Ground is TRANSPARENT, not Ink (MarketOffer.jsx:19-23 `background:"transparent"`). The
+            // ring is a child created BEFORE this button, so an opaque ground paints over its
+            // shoulder arcs — the long-standing "the ring does not close" read (audit E-15). A
+            // zero-alpha Image still raycasts, so the control keeps its hit area.
+            // The figure stays --toner when picked; only the ring is biro (E-13, as on the label).
             LaptopUi.MakeButton(offer, "Market" + key,
                 replacement ? "⇄  " + price : price, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                Vector2.zero, new Vector2(160f, 32f), 19, LaptopOs.Ink,
-                frozen ? LaptopUi.Dim(LaptopOs.Muted) : selected ? LaptopOs.Accent : LaptopOs.White,
+                Vector2.zero, new Vector2(priceCellWidth, priceCellHeight), 19, new Color(0f, 0f, 0f, 0f),
+                frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
                 frozen ? null : () => { slip.Toggle(matchup.Index, selection); _invalidate(); }, _fontCond, !frozen);
             if (replacement)
             {
                 RectTransform hint = LaptopUi.MakePanel(offer, "ReplacementHint",
-                    new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, -31f),
-                    new Vector2(160f, 2f), new Color(0f, 0f, 0f, 0f));
+                    new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, -(priceCellHeight - 1f)),
+                    new Vector2(priceCellWidth, 2f), new Color(0f, 0f, 0f, 0f));
                 LaptopUi.MakePanel(hint, "ReplacementUnderline" + key, Vector2.zero, Vector2.zero,
-                    Vector2.zero, new Vector2(160f, 2f), LaptopOs.TonerSecondary);
+                    Vector2.zero, new Vector2(priceCellWidth, 2f), LaptopOs.TonerSecondary);
             }
+
+            // S27 ruling: the printed row rule (kit: screens.jsx:64, 1px --rule-soft).
+            LaptopUi.MakeRule(row, "OfferRowRule" + offerIndex, new Vector2(0f, 0f), new Vector2(0f, 0f),
+                Vector2.zero, new Vector2(rowWidth, 1f));
         }
 
         private void BuildSlip(Run run, BetslipModel slip, bool boardFrozen)

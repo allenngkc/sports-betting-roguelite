@@ -45,23 +45,10 @@ namespace SBR.Tests.PlayMode
                 "DetailTabPLAYERS",
                 "DetailTabGOALS",
             };
-            string[] titleNames =
-            {
-                "BttsTitle",
-                "MarketTitle",
-                "MarketTitle",
-                "PlayersTitle",
-                "MarketTitle",
-            };
-            string[] titles =
-            {
-                "BOTH TEAMS TO SCORE",
-                "CORNERS TOTAL",
-                "CARDS TOTAL",
-                "ANYTIME GOALSCORER",
-                "GOALS TOTAL",
-            };
-
+            // A2 ruling: the per-destination panel title ("BOTH TEAMS TO SCORE" etc.) is deleted —
+            // each row now names its own market, so there is no longer a fixed title node to pin
+            // per destination. The body-content diff below is what actually proves the destination
+            // switched.
             for (int i = 0; i < destinationNames.Length; i++)
             {
                 Transform destinations = Required(App(laptop), "MarketDestinations");
@@ -75,7 +62,6 @@ namespace SBR.Tests.PlayMode
                 AssertEntryPersistence(laptop, persistent, destinationNames[i]);
 
                 Transform body = Required(app, "MarketBody");
-                Assert.AreEqual(titles[i], TextOf(Required(body, titleNames[i])));
                 string currentBodyContent = AllText(body);
                 Assert.AreNotEqual(previousBodyContent, currentBodyContent,
                     $"{destinationNames[i]} must change the displayed MarketBody destination/content");
@@ -103,10 +89,10 @@ namespace SBR.Tests.PlayMode
             StringAssert.StartsWith("ring-wide-", firstRing.sprite.name,
                 "wide selection ink must be prefix-filtered from the wide family");
             Assert.IsFalse(firstRing.raycastTarget, "decorative wide ink must not intercept the price");
-            // 46 was the ring-wide sprite's native height, which happened to sit 2px under the rule.
             // The rule is cell + 16 on both axes (ASSETS.md, and the design system's InkMark.rect):
-            // the real market cell is 160x32, so the ring is 176x48.
-            AssertRect(firstRing.rectTransform, 176f, 48f, "WideBiroRing");
+            // A1 widened the market cell from 160 to 176 wide (32 tall, unchanged), so the ring is
+            // 192x48.
+            AssertRect(firstRing.rectTransform, 192f, 48f, "WideBiroRing");
             string variant = firstRing.sprite.name;
 
             Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTabBTTS"));
@@ -180,21 +166,19 @@ namespace SBR.Tests.PlayMode
         }
 
         [UnityTest, Order(4)]
-        public IEnumerator Market_offer_rows_stay_fully_within_the_MarketBody_panel_on_every_destination()
+        public IEnumerator Market_offer_rows_stay_within_the_market_viewport_horizontally_on_every_destination()
         {
             yield return Boot();
             LaptopScreen laptop = Laptop();
             yield return OpenEntry(laptop);
 
-            // Pins the offer-container overflow invariant: BuildMarketLines/BuildBothTeamsScore/
-            // BuildPlayerLines all lay "MarketOffer"+index rows directly into MarketBody (700x412,
-            // MakeMarketOffer's cell 160x32, 42px pitch, two columns). At the shipped roster size
-            // every destination's rows fit, but nothing clamps or scrolls them — this test measures
-            // each rendered offer row's real corners against MarketBody's real corners so a future
-            // change that pushes row count past capacity (e.g. a larger PlayersPerTeam) fails here
-            // instead of silently rendering offers outside the panel with no scroll/clamp/"N not
-            // shown". It does not judge how that should eventually be treated — only whether the
-            // invariant holds right now.
+            // A4/S27: the list now scrolls, so a row is expected to sit below the visible viewport
+            // once content overflows — that is exactly what RectMask2D/ScrollRect exist to clip, so
+            // vertical containment is no longer the invariant (see the S27 rail test for the
+            // overflow/clip behaviour itself). What must always hold, on every destination, whether
+            // it scrolls or not, is horizontal containment against the viewport — A4 requires
+            // content to stay clear of the S27 rail, so a row (and its price cell) may never run
+            // wider than the viewport it is masked by.
             string[] destinationNames =
             {
                 "DetailTabBTTS",
@@ -210,91 +194,153 @@ namespace SBR.Tests.PlayMode
                 yield return WaitForRebuild();
 
                 Transform bodyTransform = Required(App(laptop), "MarketBody");
-                RectTransform body = bodyTransform as RectTransform;
-                Assert.IsNotNull(body, $"{destinationName} MarketBody must be a RectTransform");
+                RectTransform viewport = Required(bodyTransform, "MarketViewport") as RectTransform;
+                Assert.IsNotNull(viewport, $"{destinationName} MarketViewport must be a RectTransform");
 
-                int offerCount = 0;
-                for (int i = 0; i < bodyTransform.childCount; i++)
-                {
-                    Transform child = bodyTransform.GetChild(i);
-                    if (!child.name.StartsWith("MarketOffer", StringComparison.Ordinal)) continue;
-                    offerCount++;
-                    AssertWithinContainer(body, child as RectTransform, $"{destinationName} {child.name}");
-                }
-                Assert.Greater(offerCount, 0,
+                List<Transform> rows = AllNamed(bodyTransform, "MarketOffer");
+                foreach (Transform row in rows)
+                    AssertWithinContainerHorizontally(viewport, row as RectTransform, $"{destinationName} {row.name}");
+                Assert.Greater(rows.Count, 0,
                     $"{destinationName} must render at least one market offer row for this invariant to mean anything");
             }
         }
 
         [UnityTest, Order(5)]
-        public IEnumerator Players_destination_renders_single_column_while_ladder_destinations_stay_two_column()
+        public IEnumerator Every_destination_renders_a_single_column_of_offer_rows()
         {
-            // S24 ruling: the scorer board is single column (never a paired row with a dead
-            // second cell) — distinguished here from a ladder destination, which legitimately
-            // stays two-column (paired OVER/UNDER offers).
+            // S25 amended / A1: the fixed-body two-up ladder layout is withdrawn. Every destination
+            // — including the ladders, which used to legitimately stay two-column — now renders one
+            // offer per row, full body width. Inverts the old two-column-ladder assertion this
+            // replaced.
             yield return Boot();
             LaptopScreen laptop = Laptop();
             yield return OpenEntry(laptop);
 
+            string[] destinationNames =
+            {
+                "DetailTabGOALS",
+                "DetailTabBTTS",
+                "DetailTabCORNERS",
+                "DetailTabCARDS",
+                "DetailTabPLAYERS",
+            };
+
+            foreach (string destinationName in destinationNames)
+            {
+                Invoke(Required(Required(App(laptop), "MarketDestinations"), destinationName));
+                yield return WaitForRebuild();
+
+                List<float> rowX = OfferRowX(Required(App(laptop), "MarketBody"));
+                Assert.Greater(rowX.Count, 0,
+                    $"{destinationName} must render at least one offer for a single-column claim to mean anything");
+                var distinctX = new HashSet<float>();
+                foreach (float x in rowX) distinctX.Add(Mathf.Round(x * 10f) / 10f);
+                Assert.AreEqual(1, distinctX.Count,
+                    $"A1: every {destinationName} offer row must share the same column (row x position)");
+            }
+        }
+
+        [UnityTest, Order(6)]
+        public IEnumerator Every_engine_priced_offer_is_reachable_on_every_destination_C19()
+        {
+            // C19 (law): "an offer the engine prices is reachable on the surface." For every
+            // destination, the number of rendered market-offer rows must equal the number of
+            // offers the engine actually priced for that destination on this matchup — derived
+            // from the engine (matchup.Markets filtered by kind), never a hardcoded number, so a
+            // silently hidden offer fails here.
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            yield return OpenEntry(laptop);
+            Run run = laptop.director.Run;
+            Matchup matchup = run.CurrentSlate.Matchups[0];
+
+            (string destination, MarketKind kind)[] destinations =
+            {
+                ("DetailTabGOALS", MarketKind.TotalGoals),
+                ("DetailTabBTTS", MarketKind.BothTeamsToScore),
+                ("DetailTabCORNERS", MarketKind.TotalCorners),
+                ("DetailTabCARDS", MarketKind.TotalCards),
+                ("DetailTabPLAYERS", MarketKind.AnytimeScorer),
+            };
+
+            foreach ((string destinationName, MarketKind kind) in destinations)
+            {
+                Invoke(Required(Required(App(laptop), "MarketDestinations"), destinationName));
+                yield return WaitForRebuild();
+
+                int expected = 0;
+                foreach (MarketOffer offer in matchup.Markets)
+                    if (offer.Selection.Kind == kind) expected++;
+                Assert.Greater(expected, 0,
+                    $"{destinationName} must have at least one engine-priced offer for C19 to mean anything");
+
+                int rendered = AllNamed(Required(App(laptop), "MarketBody"), "MarketOffer").Count;
+                Assert.AreEqual(expected, rendered,
+                    $"C19: {destinationName} must render exactly the offers the engine priced ({expected}) — none hidden");
+            }
+
+            // Ladder counts must also match the run's own line configuration, not just an internal
+            // engine-list/render-count agreement, so a config change is caught too.
+            Assert.AreEqual(run.Config.GoalLines.Length * 2,
+                CountByKind(matchup, MarketKind.TotalGoals), "GOALS offer count must track GoalLines");
+            Assert.AreEqual(run.Config.CornerLines.Length * 2,
+                CountByKind(matchup, MarketKind.TotalCorners), "CORNERS offer count must track CornerLines");
+            Assert.AreEqual(run.Config.CardLines.Length * 2,
+                CountByKind(matchup, MarketKind.TotalCards), "CARDS offer count must track CardLines");
+        }
+
+        [UnityTest, Order(7)]
+        public IEnumerator S27_position_rail_appears_only_when_the_list_overflows()
+        {
+            // S27 ruling: a scrolling interior list carries a printed position rail — exactly two
+            // images, present only when the content overflows the viewport, absent when it fits;
+            // the thumb is clamped to a 24px floor, never taller than the track, and always lies
+            // within the track.
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            yield return OpenEntry(laptop);
+
+            // PLAYERS: S25 amended removed the capacity cap, and the shipped roster (PlayersPerTeam
+            // per side, both teams) comfortably exceeds the ~7-row viewport at 54px/row, so PLAYERS
+            // overflows and must carry the rail.
             Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTabPLAYERS"));
             yield return WaitForRebuild();
-            List<float> playersX = OfferPriceCellX(Required(App(laptop), "MarketBody"));
-            Assert.Greater(playersX.Count, 1,
-                "PLAYERS must render more than one offer for a single-column claim to mean anything");
-            for (int i = 1; i < playersX.Count; i++)
-                Assert.AreEqual(playersX[0], playersX[i], 0.01f,
-                    "S24: every PLAYERS offer row must share the same column (price-cell x position)");
+            Transform overflowingBody = Required(App(laptop), "MarketBody");
+            var trackRect = Required(overflowingBody, "PositionRailTrack") as RectTransform;
+            var thumbRect = Required(overflowingBody, "PositionRailThumb") as RectTransform;
+            Assert.IsNotNull(trackRect, "S27 track must be a RectTransform");
+            Assert.IsNotNull(thumbRect, "S27 thumb must be a RectTransform");
+            Assert.GreaterOrEqual(thumbRect.sizeDelta.y, 24f, "S27 thumb must never be shorter than its 24px floor");
+            Assert.LessOrEqual(thumbRect.sizeDelta.y, trackRect.sizeDelta.y, "S27 thumb must never exceed the track");
 
-            Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTabGOALS"));
+            var trackCorners = new Vector3[4];
+            var thumbCorners = new Vector3[4];
+            trackRect.GetWorldCorners(trackCorners);
+            thumbRect.GetWorldCorners(thumbCorners);
+            const float epsilon = 0.5f;
+            Assert.GreaterOrEqual(thumbCorners[0].y, trackCorners[0].y - epsilon,
+                "S27 thumb bottom must lie within the track");
+            Assert.LessOrEqual(thumbCorners[2].y, trackCorners[2].y + epsilon,
+                "S27 thumb top must lie within the track");
+
+            // BTTS is always exactly 2 rows (108px of content against a 412px viewport) — it never
+            // overflows, so the rail must be entirely absent.
+            Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTabBTTS"));
             yield return WaitForRebuild();
-            List<float> goalsX = OfferPriceCellX(Required(App(laptop), "MarketBody"));
-            var distinctGoalsX = new HashSet<float>();
-            foreach (float x in goalsX) distinctGoalsX.Add(Mathf.Round(x * 10f) / 10f);
-            Assert.AreEqual(2, distinctGoalsX.Count,
-                "GOALS legitimately remains two-column (paired OVER/UNDER offers), unlike PLAYERS");
+            Transform fittingBody = Required(App(laptop), "MarketBody");
+            Assert.IsNull(Find(fittingBody, "PositionRailTrack"), "S27 rail track must be absent when the list fits");
+            Assert.IsNull(Find(fittingBody, "PositionRailThumb"), "S27 rail thumb must be absent when the list fits");
         }
 
-        [Test, Order(6)]
-        public void VisibleOfferCapacity_holds_as_pure_arithmetic_independent_of_any_config_dial()
+        private static int CountByKind(Matchup matchup, MarketKind kind)
         {
-            // S25 ruling ("S17 binds the PLAYERS tab"): container correctness never depends on a
-            // config dial. Shipped geometry is MarketBody 700x412, first row at -48, 42px pitch.
-            // At PlayersPerTeam's shipped value of 7 the scorer board is 14 offers; single-column
-            // capacity below is 8, so today 6 offers are hidden behind "N NOT SHOWN".
-            Assert.AreEqual(8, SportsbookApp.VisibleOfferCapacity(412f, 48f, 42f, 1),
-                "shipped single-column PLAYERS capacity");
-            Assert.AreEqual(16, SportsbookApp.VisibleOfferCapacity(412f, 48f, 42f, 2),
-                "capacity scales with column count for the same row geometry");
-            Assert.AreEqual(24, SportsbookApp.VisibleOfferCapacity(412f, 48f, 42f, 3),
-                "capacity scales with column count for the same row geometry");
-            Assert.AreEqual(0, SportsbookApp.VisibleOfferCapacity(0f, 48f, 42f, 1),
-                "container shorter than the first row fits nothing");
-            Assert.AreEqual(1, SportsbookApp.VisibleOfferCapacity(100f, 48f, 42f, 1),
-                "a container that fits only the first row");
-            Assert.AreEqual(0, SportsbookApp.VisibleOfferCapacity(412f, 5000f, 42f, 1),
-                "a first-row offset past the container fits nothing");
-            Assert.AreEqual(0, SportsbookApp.VisibleOfferCapacity(412f, 48f, 42f, 0),
-                "zero columns fits nothing");
-            Assert.AreEqual(0, SportsbookApp.VisibleOfferCapacity(412f, 48f, 42f, -3),
-                "negative columns must clamp to zero, not negative");
-            Assert.AreEqual(0, SportsbookApp.VisibleOfferCapacity(412f, 48f, -1f, 1),
-                "negative pitch must clamp to zero, not throw or go negative");
-            Assert.AreEqual(0, SportsbookApp.VisibleOfferCapacity(412f, 48f, 0f, 1),
-                "zero pitch must clamp to zero rather than divide by zero");
-            Assert.AreEqual(0, SportsbookApp.VisibleOfferCapacity(-100f, 48f, 42f, 1),
-                "negative container height fits nothing");
-            Assert.AreEqual(11, SportsbookApp.VisibleOfferCapacity(412f, -48f, 42f, 1),
-                "an unusual but valid negative offset still computes correctly, not just non-negatively");
-
-            // Broad sweep: whatever the inputs, capacity must never be negative.
-            for (float height = -50f; height <= 1000f; height += 37f)
-                for (float pitch = -10f; pitch <= 100f; pitch += 13f)
-                    for (int columns = -2; columns <= 5; columns++)
-                        Assert.GreaterOrEqual(SportsbookApp.VisibleOfferCapacity(height, 48f, pitch, columns), 0,
-                            $"capacity must never be negative (height={height}, pitch={pitch}, columns={columns})");
+            int count = 0;
+            foreach (MarketOffer offer in matchup.Markets)
+                if (offer.Selection.Kind == kind) count++;
+            return count;
         }
 
-        [Test, Order(7)]
+        [Test, Order(8)]
         public void TicketStateWord_and_LegStateWord_never_cross_contaminate_their_vocabularies()
         {
             // S23 ruling: RIDING is ticket-level only, LIVE is leg-level only — contractual.
@@ -309,7 +355,7 @@ namespace SBR.Tests.PlayMode
                     $"LegStateWord must never say RIDING (checked for {state})");
         }
 
-        [UnityTest, Order(8)]
+        [UnityTest, Order(9)]
         public IEnumerator CompactLegLabel_is_unique_for_every_distinct_selection_on_one_matchup()
         {
             // Composer uniqueness guard: a composer that reaches for the wrong field collapses
@@ -361,28 +407,48 @@ namespace SBR.Tests.PlayMode
             }
         }
 
-        /// <summary>Every "MarketOffer"+index panel's price-cell x position within
-        /// <paramref name="body"/>, used to distinguish single-column (S24) from two-column
-        /// destinations without depending on any particular label-width choice.</summary>
-        private static List<float> OfferPriceCellX(Transform body)
+        /// <summary>Every "MarketOffer"+index row's own x position (anchoredPosition.x, relative to
+        /// its MarketContent parent), used to prove a destination renders a single column (A1)
+        /// without depending on any particular label-width choice. Recursive — under A4 the rows
+        /// are nested inside MarketScroll/MarketViewport/MarketContent, not direct children of
+        /// <paramref name="body"/>.</summary>
+        private static List<float> OfferRowX(Transform body)
         {
             var xs = new List<float>();
-            for (int i = 0; i < body.childCount; i++)
+            foreach (Transform row in AllNamed(body, "MarketOffer"))
             {
-                Transform child = body.GetChild(i);
-                if (!child.name.StartsWith("MarketOffer", StringComparison.Ordinal)) continue;
-                var rect = child as RectTransform;
-                Assert.IsNotNull(rect, $"{child.name} must be a RectTransform");
+                var rect = row as RectTransform;
+                Assert.IsNotNull(rect, $"{row.name} must be a RectTransform");
                 xs.Add(rect.anchoredPosition.x);
             }
             return xs;
         }
 
+        /// <summary>Every descendant of <paramref name="root"/> (root included) whose name starts
+        /// with <paramref name="prefix"/>, depth-first. Unlike <see cref="FindPrefix"/> (first
+        /// match only), this collects all of them — needed once offer rows can nest arbitrarily
+        /// deep under a scroll/viewport/content hierarchy (A4).</summary>
+        private static List<Transform> AllNamed(Transform root, string prefix)
+        {
+            var results = new List<Transform>();
+            CollectNamed(root, prefix, results);
+            return results;
+        }
+
+        private static void CollectNamed(Transform root, string prefix, List<Transform> results)
+        {
+            if (root.name.StartsWith(prefix, StringComparison.Ordinal)) results.Add(root);
+            for (int i = 0; i < root.childCount; i++) CollectNamed(root.GetChild(i), prefix, results);
+        }
+
         /// <summary>Fails if any part of <paramref name="child"/>'s rendered rect falls outside
-        /// <paramref name="container"/>'s rendered rect, measured in world space via
+        /// <paramref name="container"/>'s rendered rect on the X axis, measured in world space via
         /// GetWorldCorners so it holds regardless of anchor/pivot plumbing on either transform.
-        /// corners[0]/[2] are the bottom-left/top-right corners for an unrotated rect.</summary>
-        private static void AssertWithinContainer(RectTransform container, RectTransform child, string label)
+        /// corners[0]/[2] are the bottom-left/top-right corners for an unrotated rect. Horizontal
+        /// only (A4): under a scrolling list a row may legitimately sit above/below the viewport's
+        /// visible Y range — RectMask2D exists precisely to clip that — but a row must never run
+        /// wider than the viewport, since A4 requires content to stay clear of the S27 rail.</summary>
+        private static void AssertWithinContainerHorizontally(RectTransform container, RectTransform child, string label)
         {
             Assert.IsNotNull(child, $"{label} RectTransform missing");
             var containerCorners = new Vector3[4];
@@ -391,13 +457,9 @@ namespace SBR.Tests.PlayMode
             child.GetWorldCorners(childCorners);
             const float epsilon = 0.5f;
             Assert.GreaterOrEqual(childCorners[0].x, containerCorners[0].x - epsilon,
-                $"{label} left edge escapes MarketBody");
+                $"{label} left edge escapes the viewport");
             Assert.LessOrEqual(childCorners[2].x, containerCorners[2].x + epsilon,
-                $"{label} right edge escapes MarketBody");
-            Assert.GreaterOrEqual(childCorners[0].y, containerCorners[0].y - epsilon,
-                $"{label} bottom edge escapes MarketBody");
-            Assert.LessOrEqual(childCorners[2].y, containerCorners[2].y + epsilon,
-                $"{label} top edge escapes MarketBody");
+                $"{label} right edge escapes the viewport");
         }
 
         private static ReceiptExpectation Capture(BetslipModel slip)
