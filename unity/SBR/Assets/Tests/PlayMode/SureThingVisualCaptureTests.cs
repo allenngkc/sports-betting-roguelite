@@ -19,13 +19,16 @@ namespace SBR.Tests.PlayMode
     /// controls and presentation seams as the behavioral PlayMode suite, then renders both a
     /// canvas-aligned reference and the real Main Camera at the laptop's authored focus pose.
     ///
-    /// Nine states are captured across two UnityTests. The first continues the single-run,
+    /// Ten states are captured across three UnityTests. The first continues the single-run,
     /// ticket-carrying flow through six states (the original five plus the shared Ledger/Old
     /// Slips screen reached from the tray). The second boots a fresh run to reach REWARDS —
     /// which requires the deterministic zero-ticket lock seam SureThingRewardsTests.EnterShop
     /// uses, and so cannot share the first run's already-placed ticket — and from there also
     /// reaches the same Ledger/Old Slips screen via its other entry point, the desktop icon, and
-    /// the shop again with comps to spend so an enabled BUY is actually photographed.
+    /// the shop again with comps to spend so an enabled BUY is actually photographed. The third
+    /// runs a real place-lock-sweat cycle purely so the LEDGER can be photographed with a settled
+    /// ticket in it — every other capture of that screen shows it empty, which left its entire
+    /// settled-record treatment unphotographed and readable only from source.
     /// </summary>
     public class SureThingVisualCaptureTests
     {
@@ -211,6 +214,85 @@ namespace SBR.Tests.PlayMode
                 "08-old-slips", capturedPaths);
 
             Assert.AreEqual(6, capturedPaths.Count, "three states must emit paired captures");
+            foreach (string path in capturedPaths)
+            {
+                Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
+                Assert.Greater(new FileInfo(path).Length, 0L, $"capture is empty: {path}");
+            }
+        }
+
+        /// <summary>
+        /// The ledger with a genuinely settled ticket in it.
+        ///
+        /// Every other capture of this screen shows it empty, which means the entire settled-record
+        /// treatment — the terminal word, the strike, the returned figure, the row's recession —
+        /// has never been photographed once. The C14 audit had to read all of it out of source.
+        ///
+        /// That gap is not hypothetical. A Law Two violation on the rewards BUY control survived
+        /// weeks of review on this surface because no capture ever showed an affordable offer, and
+        /// every reviewer looked at a screenshot where the control was greyed out. This is the same
+        /// shape of blind spot, one screen over.
+        ///
+        /// It needs its own run rather than riding along with the others: the ledger only shows
+        /// tickets the engine has actually settled, so it needs a real place-lock-sweat cycle. The
+        /// other fixtures deliberately fake the TV mirror instead, which populates MY BETS and
+        /// leaves the ledger empty. Sequence is the one SureThingLedgerTests already proves.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Capture_the_populated_ledger_so_settled_states_are_photographed()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            string outputDirectory = Path.GetFullPath(Path.Combine(
+                Application.dataPath, "..", "..", "..", "artifacts", "surething-ui"));
+            Directory.CreateDirectory(outputDirectory);
+            string runPrefix = DateTime.UtcNow.ToString(
+                "yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture);
+            var capturedPaths = new List<string>();
+
+            Run run = laptop.director.Run;
+            (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run);
+            Ticket ticket = run.PlaceTicket(picks, stake);
+
+            // Collapse the sweat rather than skip it: the ledger reads engine state, so the ticket
+            // has to travel the real path to a terminal state, not be written into one.
+            TvSweatScreen screen = laptop.tv;
+            screen.TimeScaleOverride = 0.0001f;
+            screen.ForceSeated(true);
+            laptop.director.LockRound();
+            Assert.AreEqual(Phase.Sweat, run.Phase);
+
+            float start = Time.realtimeSinceStartup;
+            while (run.Phase == Phase.Sweat)
+            {
+                if (Time.realtimeSinceStartup - start > 60f)
+                {
+                    Assert.Fail("the ticket never settled, so there is no populated ledger to shoot");
+                    yield break;
+                }
+                yield return null;
+            }
+            Assert.AreNotEqual(TicketState.Open, ticket.State,
+                "a settled ledger row is the entire point of this capture");
+            yield return WaitForRebuild();
+
+            Invoke(Required(Required(App(laptop), "NotebookTray"), "Ledger"));
+            yield return WaitForRebuild();
+            Transform board = Required(App(laptop), "LedgerBoard");
+            Assert.IsNull(Find(board, "LedgerEmpty"),
+                "ledger still rendered its empty state after a ticket settled");
+            Assert.IsNotNull(Required(board, "LedgerTicket0"));
+
+            // Which terminal state this run produced decides what the capture can actually prove.
+            // The LOST treatment (word in toner-3, strike in oxide, returned figure in toner-3)
+            // is only verifiable from a capture that contains a lost ticket.
+            Debug.Log($"[LedgerCapture] ticket settled as {ticket.State} — "
+                + "LOST colour work is only verifiable from this capture if that reads Lost");
+
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "10-ledger-populated", capturedPaths);
+
+            Assert.AreEqual(2, capturedPaths.Count, "one state must emit paired captures");
             foreach (string path in capturedPaths)
             {
                 Assert.IsTrue(File.Exists(path), $"capture missing: {path}");

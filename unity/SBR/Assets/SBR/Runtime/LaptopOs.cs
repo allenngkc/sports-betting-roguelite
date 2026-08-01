@@ -613,9 +613,16 @@ namespace SBR.Game
             return image;
         }
 
+        /// <summary>F3: the only way to draw a rule. Defaults to <see cref="LaptopOs.RuleSoft"/>
+        /// (--rule-soft) so every pre-existing call site — all horizontal, all internal-content
+        /// rules — keeps rendering exactly the pixel it always has without passing a 7th argument.
+        /// Pass <paramref name="color"/> explicitly (typically <see cref="LaptopOs.Rule"/>,
+        /// --rule, the stronger token) for a seam between document bands rather than a rule inside
+        /// one. Before this, LaptopOs.Rule had zero references anywhere in the runtime — the
+        /// strong token existed in the palette but nothing could reach it.</summary>
         public static RectTransform MakeRule(RectTransform parent, string name, Vector2 anchor,
-            Vector2 pivot, Vector2 position, Vector2 size)
-            => MakePanel(parent, name, anchor, pivot, position, size, LaptopOs.RuleSoft);
+            Vector2 pivot, Vector2 position, Vector2 size, Color? color = null)
+            => MakePanel(parent, name, anchor, pivot, position, size, color ?? LaptopOs.RuleSoft);
 
         /// <summary>The marked-form-entry wash (palette-surething.css --marked-wash), stretched to
         /// fill <paramref name="parent"/> exactly — sized this way (rather than a hand-picked rect)
@@ -773,15 +780,23 @@ namespace SBR.Game
             RectTransform rail = LaptopUi.MakePanel(parent, "NotebookRail", new Vector2(0f, 1f),
                 new Vector2(0f, 1f), Vector2.zero, new Vector2(width, RailHeight),
                 LaptopOs.SurfaceRaised);
+            // F8: OsRail.jsx's own padding is --st-rail-pad-x (11px) on both edges — this rail
+            // (and the tray below) used 14px. Shared here, so the correction lands on every screen
+            // that calls BuildRail/BuildTray, not just the ledger.
             LaptopUi.MakeText(rail, "Machine", new Vector2(0f, .5f), new Vector2(0f, .5f),
-                new Vector2(14f, 0f), new Vector2(200f, 24f), ChromeText, TextAnchor.MiddleLeft,
+                new Vector2(11f, 0f), new Vector2(200f, 24f), ChromeText, TextAnchor.MiddleLeft,
                 LaptopOs.White, MachineMark, font);
             LaptopUi.MakeText(rail, "Sticker", new Vector2(0f, .5f), new Vector2(0f, .5f),
                 new Vector2(150f, 0f), new Vector2(200f, 24f), ChromeText, TextAnchor.MiddleLeft,
                 LaptopOs.Accent, StickerText, font);
             LaptopUi.MakeText(rail, "Clock", new Vector2(1f, .5f), new Vector2(1f, .5f),
-                new Vector2(-14f, 0f), new Vector2(140f, 24f), ChromeText, TextAnchor.MiddleRight,
+                new Vector2(-11f, 0f), new Vector2(140f, 24f), ChromeText, TextAnchor.MiddleRight,
                 LaptopOs.Muted, ClockText, font);
+            // F1: OsRail.jsx's own border-bottom (--rule-w solid var(--rule)) — the rail was a flat
+            // colour step into whatever the app draws next (FormTabs, or the ledger's own copy of
+            // it), with no seam actually drawn.
+            LaptopUi.MakeRule(rail, "RailRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
+                Vector2.zero, new Vector2(width, 1f), LaptopOs.Rule);
             return rail;
         }
 
@@ -798,7 +813,9 @@ namespace SBR.Game
                 LaptopOs.SurfaceRaised);
 
             bool sportsbookRunning = running == Running.Sportsbook;
-            MakeSlot(tray, "SureThing", "SURETHING", 12f, 110f, sportsbookRunning,
+            // F8: --st-rail-pad-x (11px) on the left edge too — was 12px, the one inset in this
+            // class that did not already match the pattern (rail's left/right corrected above).
+            MakeSlot(tray, "SureThing", "SURETHING", 11f, 110f, sportsbookRunning,
                 sportsbookRunning ? minimize : openSportsbook, font);
             MakeSlot(tray, "Ledger", "LEDGER", 132f, 88f, !sportsbookRunning,
                 sportsbookRunning ? openLedger : minimize, font);
@@ -807,7 +824,7 @@ namespace SBR.Game
                 new Vector2(232f, 0f), new Vector2(210f, 24f), ChromeText, TextAnchor.MiddleLeft,
                 LaptopOs.Muted, MessagesText, font);
             LaptopUi.MakeText(tray, "SystemFacts", new Vector2(1f, .5f), new Vector2(1f, .5f),
-                new Vector2(-14f, 0f), new Vector2(270f, 24f), ChromeText, TextAnchor.MiddleRight,
+                new Vector2(-11f, 0f), new Vector2(270f, 24f), ChromeText, TextAnchor.MiddleRight,
                 LaptopOs.Muted, SystemFactsText, font);
             return tray;
         }

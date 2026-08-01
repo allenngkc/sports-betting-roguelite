@@ -71,9 +71,22 @@ namespace SBR.Tests.PlayMode
             {
                 Leg leg = ticket.Legs[legIndex];
                 Transform ledgerLeg = Required(ledgerTicket, "LedgerLeg" + legIndex);
+                Text legIdentityText = Required(ledgerLeg, "LegIdentity").GetComponent<Text>();
+                Assert.IsNotNull(legIdentityText, "LegIdentity has no Text to measure against");
+                Assert.IsNotNull(legIdentityText.font,
+                    "LegIdentity has no font; the production face failed to load");
+                // F7 (was: raw leg.DisplayLabel, which repeats the picked team a second time —
+                // that literal was the bug, not this assertion's job to preserve). The ledger leg
+                // label now routes through the same CompactLegLabel/FitLabelKeepingSuffix formula
+                // as BuildSlip and BuildStagedReceipt, so it is asserted against that same
+                // production formula here — same convention SureThingEntryTests already uses for
+                // BuildStagedReceipt's TicketLeg rows — rather than a hand-kept literal that could
+                // quietly drift out of sync.
                 Assert.AreEqual(
-                    $"{legIndex + 1}. {leg.DisplayLabel}  {OddsFormat.American(leg.OfferedOdds)}",
-                    TextOf(Required(ledgerLeg, "LegIdentity")));
+                    LaptopUi.FitLabelKeepingSuffix(legIdentityText.font, $"{legIndex + 1}. ",
+                        SportsbookApp.CompactLegLabel(leg.Matchup, leg.Selection),
+                        $"  {OddsFormat.American(leg.OfferedOdds)}", 13, 470f),
+                    legIdentityText.text);
                 Assert.AreEqual(LegStateText(leg),
                     TextOf(Required(ledgerLeg, "LegState")));
                 Assert.Zero(ledgerLeg.GetComponentsInChildren<Button>(true).Length,

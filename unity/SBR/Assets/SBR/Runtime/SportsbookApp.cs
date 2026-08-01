@@ -68,12 +68,20 @@ namespace SBR.Game
                 Vector2.zero, new Vector2(_root.sizeDelta.x, 140f), LaptopOs.Ink);
             NotebookChrome.BuildRail(top, 1024f, _font);
             RectTransform tabs = LaptopUi.MakePanel(top, "FormTabs", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, -34f), new Vector2(1024f, 38f), LaptopOs.Surface);
+            // F1: SectionTabs.jsx's own border-bottom (--rule-w-strong solid var(--rule)) — flat
+            // colour step into the masthead below, no seam drawn.
+            LaptopUi.MakeRule(tabs, "TabsRule", new Vector2(0f, 0f), new Vector2(0f, 0f), Vector2.zero, new Vector2(1024f, 2f), LaptopOs.Rule);
             MakeTab(tabs, "FORM", Tab.Lobby, tab, run.Phase == Phase.Shop);
             MakeTab(tabs, "ENTRY", Tab.Detail, tab, run.Phase == Phase.Shop);
             MakeTab(tabs, "MY BETS", Tab.MyBets, tab, run.Phase == Phase.Shop);
             MakeTab(tabs, "REWARDS", Tab.Rewards, tab, run.Phase != Phase.Shop);
             LaptopUi.MakeText(tabs, "Sheet", new Vector2(1f, .5f), new Vector2(1f, .5f), new Vector2(-14f, 0f), new Vector2(170f, 24f), 13, TextAnchor.MiddleRight, LaptopOs.Muted, "SHEET 1 OF 1", _font);
             RectTransform mast = LaptopUi.MakePanel(top, "FormMasthead", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, -72f), new Vector2(1024f, 68f), LaptopOs.Ink);
+            // F1: Masthead.jsx's own border-bottom (--rule-w-strong solid var(--rule)) — same
+            // missing seam, into the board below. Board and masthead share LaptopOs.Ink, which is
+            // why this one never showed up as a flat-colour pixel step even though the kit calls
+            // for it unconditionally.
+            LaptopUi.MakeRule(mast, "MastheadRule", new Vector2(0f, 0f), new Vector2(0f, 0f), Vector2.zero, new Vector2(1024f, 2f), LaptopOs.Rule);
             LaptopUi.MakeText(mast, "Brand", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(16f, -8f), new Vector2(300f, 28f), 26, TextAnchor.UpperLeft, LaptopOs.White, "SURETHING FORM", _fontCond);
             LaptopUi.MakeText(mast, "Run", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(17f, -38f), new Vector2(340f, 20f), 13, TextAnchor.UpperLeft, LaptopOs.Muted, $"ROUND {run.Round} OF {run.Config.Rounds}  ·  PRICES FINAL", _font);
             LaptopUi.MakeText(mast, "Figures", new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-16f, -10f), new Vector2(610f, 48f), 21, TextAnchor.UpperRight, LaptopOs.White, $"BANK {LaptopUi.Money(run.Bank)}    TARGET {LaptopUi.Money(run.CurrentPayment)}    TICKETS {run.Tickets.Count}/{run.Config.MaxTicketsPerRound}", _font);
@@ -420,6 +428,12 @@ namespace SBR.Game
             RectTransform panel = LaptopUi.MakePanel(_root, "Slip", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(0f, -140f), new Vector2(324f, 530f), LaptopOs.Ink);
             panel.name = "WorkingMargin";
+            // F2: screens.jsx's sheet.borderRight (2px solid var(--rule)) — every screen's 700px
+            // sheet and 324px margin meet with no seam between them. Drawn as this margin's own
+            // left edge (global x=700) rather than the sheet's right edge so FORM and ENTRY, which
+            // both call BuildSlip for this one panel, get it from a single call.
+            LaptopUi.MakeRule(panel, "SheetDivider", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                Vector2.zero, new Vector2(2f, 530f), LaptopOs.Rule);
             const float titleWidth = 300f;
             string titleText = LaptopUi.FitText(_font,
                 $"MY MARKS · {slip.Picks.Count} {Pluralize(slip.Picks.Count, "SELECTION")} · {run.Tickets.Count} STAGED",
@@ -737,6 +751,9 @@ namespace SBR.Game
                 new Vector2(0f, 1f), new Vector2(0f, -140f), new Vector2(700f, 530f), LaptopOs.Ink);
             RectTransform margin = LaptopUi.MakePanel(_root, "MyBetsMargin", new Vector2(1f, 1f),
                 new Vector2(1f, 1f), new Vector2(0f, -140f), new Vector2(324f, 530f), LaptopOs.Ink);
+            // F2: same sheet/margin seam as every other screen — see BuildSlip's SheetDivider.
+            LaptopUi.MakeRule(margin, "SheetDivider", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                Vector2.zero, new Vector2(2f, 530f), LaptopOs.Rule);
             LaptopUi.MakeText(board, "MirrorOwnership", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -8f), new Vector2(670f, 26f), 16, TextAnchor.UpperLeft,
                 LaptopOs.White, "MY BETS  ·  READ-ONLY TV MIRROR", _font);
@@ -910,6 +927,9 @@ namespace SBR.Game
                 new Vector2(0f, 1f), new Vector2(0f, -140f), new Vector2(700f, 530f), LaptopOs.Ink);
             RectTransform margin = LaptopUi.MakePanel(_root, "RewardsMargin", new Vector2(1f, 1f),
                 new Vector2(1f, 1f), new Vector2(0f, -140f), new Vector2(324f, 530f), LaptopOs.Ink);
+            // F2: same sheet/margin seam as every other screen — see BuildSlip's SheetDivider.
+            LaptopUi.MakeRule(margin, "SheetDivider", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                Vector2.zero, new Vector2(2f, 530f), LaptopOs.Rule);
             LaptopUi.MakeText(board, "RewardsTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -8f), new Vector2(672f, 26f), 18, TextAnchor.UpperLeft,
                 LaptopOs.White, "REWARDS  ·  CLAIM FORM", _font);
@@ -1288,10 +1308,10 @@ namespace SBR.Game
             // table.
             LaptopUi.MakeText(board, "LedgerScope", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -8f), new Vector2(672f, 24f), 13, TextAnchor.UpperLeft,
-                // S9 defect 7: "READ ONLY" also said once by the masthead's Scope line 64px above
-                // (BuildLedgerChrome) — same meaning, said twice. The masthead is the one, prominent,
-                // always-visible statement; this caption keeps only what it alone conveys — that the
-                // list below is scoped to settled current-run records.
+                // S9 defect 7: "READ ONLY" is said once, by the tabs meta (BuildLedgerChrome's
+                // "Sheet" line, F4) — same meaning, said twice if this caption repeated it. That
+                // meta is the one, always-visible statement; this caption keeps only what it alone
+                // conveys — that the list below is scoped to settled current-run records.
                 LaptopOs.TonerSecondary, "SETTLED CURRENT-RUN RECORDS", _font);
             LaptopUi.MakeText(board, "LedgerColumnHead", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -34f), new Vector2(672f, 24f), 13, TextAnchor.UpperLeft,
@@ -1338,6 +1358,15 @@ namespace SBR.Game
 
             BuildRecordSummary(margin, run, settledCount, wonCount, lostCount, cashedCount,
                 settledStake, knownWinPayout);
+
+            // F2: the same sheet/margin seam every screen carries — see BuildSlip's SheetDivider.
+            // Built LAST here, and only here, for a reason worth keeping: BuildRecordSummary above
+            // lays an opaque full-bleed 324x530 panel over this whole margin, so a divider created
+            // before it is painted out. It was, and the seam was missing from this one screen while
+            // rendering correctly on every other — caught by sampling x=700 on both, not by eye.
+            // If this call moves back up, the seam disappears again and nothing will fail.
+            LaptopUi.MakeRule(margin, "SheetDivider", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                Vector2.zero, new Vector2(2f, 530f), LaptopOs.Rule);
             BuildLedgerTray();
         }
 
@@ -1349,24 +1378,40 @@ namespace SBR.Game
 
             RectTransform tabs = LaptopUi.MakePanel(chrome, "FormTabs", new Vector2(0f, 1f),
                 new Vector2(0f, 1f), new Vector2(0f, -34f), new Vector2(1024f, 38f), LaptopOs.Surface);
+            // F1: SectionTabs.jsx's own border-bottom (--rule-w-strong solid var(--rule)); see the
+            // matching TabsRule in SportsbookApp.BuildChrome — duplicated here because this screen
+            // keeps its own FormTabs rather than sharing that one.
+            LaptopUi.MakeRule(tabs, "TabsRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
+                Vector2.zero, new Vector2(1024f, 2f), LaptopOs.Rule);
             RectTransform active = LaptopUi.MakePanel(tabs, "LedgerTab", new Vector2(0f, 0f),
                 new Vector2(0f, 0f), new Vector2(14f, 3f), new Vector2(100f, 32f), LaptopOs.Ink);
             Text ledgerTabLabel = LaptopUi.MakeText(active, "LedgerTabLabel", new Vector2(.5f, .5f), new Vector2(.5f, .5f),
                 Vector2.zero, new Vector2(100f, 30f), 13, TextAnchor.MiddleCenter,
                 LaptopOs.White, "LEDGER", _font);
             ledgerTabLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
+            // F4 / app.jsx:121 (tray === "LEDGER" ? "READ ONLY" : "SHEET 1 OF 1"): a settled-record
+            // screen has no sheet to page through, so its tabs meta states that instead. Moved out
+            // of the masthead's Scope line below in the same change — see that line's comment — so
+            // S9 defect 7 ("READ ONLY" said once) still holds; this is now the one place on the
+            // ledger that says it.
             LaptopUi.MakeText(tabs, "Sheet", new Vector2(1f, .5f), new Vector2(1f, .5f),
                 new Vector2(-14f, 0f), new Vector2(170f, 24f), 13, TextAnchor.MiddleRight,
-                LaptopOs.Muted, "SHEET 1 OF 1", _font);
+                LaptopOs.Muted, "READ ONLY", _font);
 
             RectTransform masthead = LaptopUi.MakePanel(chrome, "FormMasthead", new Vector2(0f, 1f),
                 new Vector2(0f, 1f), new Vector2(0f, -72f), new Vector2(1024f, 68f), LaptopOs.Ink);
+            // F1: Masthead.jsx's own border-bottom (--rule-w-strong solid var(--rule)); same
+            // duplication note as TabsRule above.
+            LaptopUi.MakeRule(masthead, "MastheadRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
+                Vector2.zero, new Vector2(1024f, 2f), LaptopOs.Rule);
             LaptopUi.MakeText(masthead, "Brand", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(16f, -8f), new Vector2(420f, 28f), 26, TextAnchor.UpperLeft,
                 LaptopOs.White, "LEDGER", _fontCond);
+            // F4: "READ ONLY" is now said once, by the tabs meta above, not here — the rest of this
+            // scope line (what "CURRENT RUN" and "SETTLED TICKETS ONLY" alone convey) is unchanged.
             LaptopUi.MakeText(masthead, "Scope", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(17f, -38f), new Vector2(520f, 20f), 13, TextAnchor.UpperLeft,
-                LaptopOs.Muted, "CURRENT RUN  ·  SETTLED TICKETS ONLY  ·  READ ONLY", _font);
+                LaptopOs.Muted, "CURRENT RUN  ·  SETTLED TICKETS ONLY", _font);
             LaptopUi.MakeText(masthead, "Run", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-16f, -10f), new Vector2(360f, 30f), 20, TextAnchor.UpperRight,
                 LaptopOs.White, $"ROUND {run.Round}  ·  BANK {LaptopUi.Money(run.Bank)}", _font);
@@ -1384,19 +1429,25 @@ namespace SBR.Game
             string payout = ticket.State == TicketState.Won ? LaptopUi.Money(ticket.PotentialPayout)
                 : ticket.State == TicketState.Lost ? LaptopUi.Money(0)
                 : "AMOUNT NOT RETAINED";
+            // F5/F6 / LedgerEntry.jsx: `color: won ? var(--wax) : var(--toner-3)` applies to BOTH
+            // the terminal word and the RETURNED figure. Ruling S15 read as "LOST struck in oxide
+            // … the returned figure in toner", and this originally built that literally — oxide
+            // (--stamp) on the word glyphs, plain toner (--toner) on the figure. The kit resolves
+            // it more precisely: oxide belongs only to the strike drawn ACROSS the word
+            // (LedgerDeadStrike, below, unchanged), never to a glyph fill. The word and the figure
+            // both recede to toner-3 (LaptopOs.Muted) instead.
             Color stateColor = ticket.State == TicketState.Won ? LaptopOs.MoneyGold
-                : ticket.State == TicketState.Lost ? LaptopOs.MoneyBad : LaptopOs.TonerSecondary;
-            // Ruling S15: oxide is the house's stamp, not a generic loss wash. Only the struck
-            // LOST word keeps the stamp color; the rest of this row recedes to toner-3, and the
-            // returned $0 is pinned to plain toner — never oxide, never wax.
+                : ticket.State == TicketState.Lost ? LaptopOs.Muted : LaptopOs.TonerSecondary;
             bool lost = ticket.State == TicketState.Lost;
             Color identityColor = lost ? LaptopOs.Muted : LaptopOs.White;
             Color stakeColor = lost ? LaptopOs.Muted : LaptopOs.TonerSecondary;
-            Color payoutColor = lost ? LaptopOs.White : stateColor;
+            Color payoutColor = lost ? LaptopOs.Muted : stateColor;
             // "TICKET n" is condensed for the same reason as the MY BETS mirror's TicketTitle; the
             // state word matches LedgerEntry.jsx's terminal field / RevealedState.jsx.
+            // F9: --st-size-leg (16px) — LedgerEntry.jsx sizes the ticket identity the same as
+            // every other margin/leg figure; this was 15px, one below the token.
             LaptopUi.MakeText(row, "TicketIdentity", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, -4f), new Vector2(180f, 24f), 15, TextAnchor.UpperLeft,
+                new Vector2(14f, -4f), new Vector2(180f, 24f), 16, TextAnchor.UpperLeft,
                 identityColor, "TICKET " + identity, _fontCond);
             // Anchor/pivot (1,1) plus right-aligned content, matching BuildMirrorLeg's LegState —
             // InkRingGeometry requires that exact top-right convention to size/place a strike.
@@ -1433,12 +1484,19 @@ namespace SBR.Game
                 string legState = leg.IsVoided ? "VOID"
                     : leg.RescuedWon || leg.State == LegState.Won ? "WON"
                     : leg.State == LegState.Lost ? "LOST" : "PENDING";
-                // Same team-name/price-dominated combined string as the working margin's Leg/
-                // TicketLeg rows above — condensed as one run.
+                // F7: routes through CompactLegLabel + FitLabelKeepingSuffix exactly as BuildSlip's
+                // Leg rows and BuildStagedReceipt's TicketLeg rows already do (same call shape,
+                // same 2-space odds separator as the latter), instead of the engine's own
+                // DisplayLabel — which repeats the picked team a second time ("DULUTH PLUMBERS ML
+                // — DULUTH PLUMBERS V TULSA LOOPHOLES"). The odds suffix is protected from the trim
+                // the same way theirs is.
+                const float legIdentityWidth = 470f;
+                string legIdentityText = LaptopUi.FitLabelKeepingSuffix(_fontCond, $"{legIndex + 1}. ",
+                    SportsbookApp.CompactLegLabel(leg.Matchup, leg.Selection),
+                    $"  {OddsFormat.American(leg.OfferedOdds)}", 13, legIdentityWidth);
                 LaptopUi.MakeText(legRow, "LegIdentity", new Vector2(0f, .5f), new Vector2(0f, .5f),
-                    new Vector2(28f, 0f), new Vector2(470f, 22f), 13, TextAnchor.MiddleLeft,
-                    LaptopOs.TonerSecondary,
-                    $"{legIndex + 1}. {leg.DisplayLabel}  {OddsFormat.American(leg.OfferedOdds)}", _fontCond);
+                    new Vector2(28f, 0f), new Vector2(legIdentityWidth, 22f), 13, TextAnchor.MiddleLeft,
+                    LaptopOs.TonerSecondary, legIdentityText, _fontCond);
                 LaptopUi.MakeText(legRow, "LegState", new Vector2(1f, .5f), new Vector2(1f, .5f),
                     new Vector2(-14f, 0f), new Vector2(140f, 22f), 13, TextAnchor.MiddleRight,
                     LaptopOs.Muted, legState, _fontCond);
@@ -1480,8 +1538,9 @@ namespace SBR.Game
                 new Vector2(0f, 1f), new Vector2(14f, -322f), new Vector2(296f, 74f), 13,
                 TextAnchor.UpperLeft, LaptopOs.Muted,
                 "CASH-OUT AMOUNTS ARE NOT RETAINED.\nNO CROSS-RUN HISTORY IS INVENTED.", _font);
-            // S9 defect 7: third "READ ONLY" of four — see BuildLedgerChrome's Scope, the one place
-            // that now says it. This footer keeps only its own information, the round identity.
+            // S9 defect 7: see BuildLedgerChrome's tabs meta (F4), the one place on this screen
+            // that now says "READ ONLY". This footer keeps only its own information, the round
+            // identity.
             LaptopUi.MakeText(summary, "RoundIdentity", new Vector2(0f, 0f), new Vector2(0f, 0f),
                 new Vector2(14f, 16f), new Vector2(296f, 24f), 13, TextAnchor.LowerLeft,
                 LaptopOs.Muted, $"ROUND {run.Round}", _font);
