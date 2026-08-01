@@ -1,6 +1,6 @@
 # R7 — localised wear, decals, contact grime (plan)
 
-**Date:** 2026-07-31 · **Register item:** R7, approved direction · **Source:** `handoff.md` §6B
+**Date:** 2026-07-31 · **Register item:** R7, approved direction · **Source:** `docs/handoffs/room-refinement.md` §6B
 **Status:** plan only. No Unity run performed. Implementation needs an editor lease.
 
 ---
