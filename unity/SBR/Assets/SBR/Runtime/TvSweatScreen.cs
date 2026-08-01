@@ -3184,12 +3184,32 @@ namespace SBR.Game
             return n.ToString("N0", CultureInfo.InvariantCulture);
         }
 
+        /// <summary>The TV's typeface. Canon names it — `tokens/fonts.css`:
+        /// <c>--font-tv: "Encode Sans"</c> — and until now this surface rendered
+        /// <c>LegacyRuntime.ttf</c> instead, so it had never once been seen in its own face.
+        ///
+        /// <para>That was not only a fidelity gap. T20 re-derived the whole px scale from canon
+        /// values that were measured against Encode Sans, then shipped them into a WIDER face, which
+        /// is why the seated captures show <c>MARKET SUSPENDED</c> clipped to <c>ARKET SUSPENDED</c>
+        /// and leg copy running out of the ticket column. The strings are correct and §6 forbids
+        /// shortening them; the face was wrong.</para>
+        ///
+        /// <para>Falls back to the built-in font rather than returning null: a missing font asset
+        /// should degrade to readable-but-wrong, never to an invisible surface. The fallback is
+        /// logged loudly because silently rendering in the wrong face is exactly the failure this
+        /// change exists to end.</para></summary>
         private static Font LoadFont()
         {
+            Font tv = Resources.Load<Font>("Tv/Fonts/EncodeSans");
+            if (tv != null) return tv;
+
+            Debug.LogWarning("[TvSweatScreen] Encode Sans not found at Resources/Tv/Fonts/EncodeSans — " +
+                "falling back to the built-in face. Every px value on this surface was derived " +
+                "against Encode Sans, so copy fit and the T20 type scale are NOT valid in the fallback.");
             try { return Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); }
             catch
             {
-                Debug.LogWarning("[TvSweatScreen] built-in font not found; text will not render.");
+                Debug.LogWarning("[TvSweatScreen] built-in font not found either; text will not render.");
                 return null;
             }
         }
