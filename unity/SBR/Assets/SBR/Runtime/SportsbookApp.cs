@@ -448,11 +448,15 @@ namespace SBR.Game
                 // Team names and prices are both condensed per MarginLeg.jsx; the "N. " index and the
                 // "ML — v" connector are minor structural filler riding along in the same string, not
                 // field labels, so the whole line routes through _fontCond rather than being split.
+                // The fit MUST be measured at the size the row actually renders at (--st-size-leg,
+                // 16). Measuring at 13 and drawing at 16 fits a string ~23% too wide for legWidth,
+                // which wraps to a second line, exceeds the 24px box and trips MakeText's
+                // Overflow fallback — the row then bleeds down over the next leg.
                 string legText = LaptopUi.FitLabelKeepingSuffix(_fontCond, $"{i + 1}. ",
                     CompactLegLabel(matchup, pick.Selection),
-                    $"   {OddsFormat.American(matchup.Odds(pick.Selection))}", 13, legWidth);
+                    $"   {OddsFormat.American(matchup.Odds(pick.Selection))}", 16, legWidth);
                 LaptopUi.MakeText(panel, "Leg" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(14f, y), new Vector2(legWidth, 24f), 13, TextAnchor.UpperLeft, LaptopOs.White,
+                    new Vector2(14f, y), new Vector2(legWidth, 24f), 16, TextAnchor.UpperLeft, LaptopOs.White,
                     legText, _fontCond);
                 int matchupIndex = pick.MatchupIndex;
                 if (run.OwnsConsumable("profit_boost"))
@@ -476,7 +480,7 @@ namespace SBR.Game
 
             y -= 4f;
             LaptopUi.MakeText(panel, "Combined", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, y), new Vector2(300f, 22f), 13, TextAnchor.UpperLeft, LaptopOs.Muted,
+                new Vector2(14f, y), new Vector2(300f, 22f), 18, TextAnchor.UpperLeft, LaptopOs.Muted,
                 slip.Picks.Count > 0 ? $"COMBINED {OddsFormat.American(slip.CombinedOdds)}" : "COMBINED —", _font);
             y -= 28f;
 
@@ -821,7 +825,7 @@ namespace SBR.Game
                 : leg.State == RevealedLegState.Live ? "LIVE" : "PENDING";
             Color stateColor = leg.State == RevealedLegState.Won ? LaptopOs.MoneyGold
                 : leg.State == RevealedLegState.Lost ? LaptopOs.Muted
-                : leg.State == RevealedLegState.Live ? LaptopOs.Accent : LaptopOs.TonerSecondary;
+                : leg.State == RevealedLegState.Live ? LaptopOs.White : LaptopOs.TonerSecondary;
             // RevealedLeg.jsx's "team" slot (occupied here by either the team name or the market
             // label, whichever the leg carries) and its price are condensed; the state word matches
             // RevealedState.jsx.

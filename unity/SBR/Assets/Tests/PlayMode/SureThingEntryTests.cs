@@ -179,6 +179,75 @@ namespace SBR.Tests.PlayMode
                 TextOf(Required(margin, "LockReason")));
         }
 
+        [UnityTest, Order(4)]
+        public IEnumerator Market_offer_rows_stay_fully_within_the_MarketBody_panel_on_every_destination()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            yield return OpenEntry(laptop);
+
+            // Pins the offer-container overflow invariant: BuildMarketLines/BuildBothTeamsScore/
+            // BuildPlayerLines all lay "MarketOffer"+index rows directly into MarketBody (700x412,
+            // MakeMarketOffer's cell 160x32, 42px pitch, two columns). At the shipped roster size
+            // every destination's rows fit, but nothing clamps or scrolls them — this test measures
+            // each rendered offer row's real corners against MarketBody's real corners so a future
+            // change that pushes row count past capacity (e.g. a larger PlayersPerTeam) fails here
+            // instead of silently rendering offers outside the panel with no scroll/clamp/"N not
+            // shown". It does not judge how that should eventually be treated — only whether the
+            // invariant holds right now.
+            string[] destinationNames =
+            {
+                "DetailTabBTTS",
+                "DetailTabCORNERS",
+                "DetailTabCARDS",
+                "DetailTabPLAYERS",
+                "DetailTabGOALS",
+            };
+
+            foreach (string destinationName in destinationNames)
+            {
+                Invoke(Required(Required(App(laptop), "MarketDestinations"), destinationName));
+                yield return WaitForRebuild();
+
+                Transform bodyTransform = Required(App(laptop), "MarketBody");
+                RectTransform body = bodyTransform as RectTransform;
+                Assert.IsNotNull(body, $"{destinationName} MarketBody must be a RectTransform");
+
+                int offerCount = 0;
+                for (int i = 0; i < bodyTransform.childCount; i++)
+                {
+                    Transform child = bodyTransform.GetChild(i);
+                    if (!child.name.StartsWith("MarketOffer", StringComparison.Ordinal)) continue;
+                    offerCount++;
+                    AssertWithinContainer(body, child as RectTransform, $"{destinationName} {child.name}");
+                }
+                Assert.Greater(offerCount, 0,
+                    $"{destinationName} must render at least one market offer row for this invariant to mean anything");
+            }
+        }
+
+        /// <summary>Fails if any part of <paramref name="child"/>'s rendered rect falls outside
+        /// <paramref name="container"/>'s rendered rect, measured in world space via
+        /// GetWorldCorners so it holds regardless of anchor/pivot plumbing on either transform.
+        /// corners[0]/[2] are the bottom-left/top-right corners for an unrotated rect.</summary>
+        private static void AssertWithinContainer(RectTransform container, RectTransform child, string label)
+        {
+            Assert.IsNotNull(child, $"{label} RectTransform missing");
+            var containerCorners = new Vector3[4];
+            var childCorners = new Vector3[4];
+            container.GetWorldCorners(containerCorners);
+            child.GetWorldCorners(childCorners);
+            const float epsilon = 0.5f;
+            Assert.GreaterOrEqual(childCorners[0].x, containerCorners[0].x - epsilon,
+                $"{label} left edge escapes MarketBody");
+            Assert.LessOrEqual(childCorners[2].x, containerCorners[2].x + epsilon,
+                $"{label} right edge escapes MarketBody");
+            Assert.GreaterOrEqual(childCorners[0].y, containerCorners[0].y - epsilon,
+                $"{label} bottom edge escapes MarketBody");
+            Assert.LessOrEqual(childCorners[2].y, containerCorners[2].y + epsilon,
+                $"{label} top edge escapes MarketBody");
+        }
+
         private static ReceiptExpectation Capture(BetslipModel slip)
             => new ReceiptExpectation(slip.Stake, slip.CombinedOdds, slip.ToWin);
 
