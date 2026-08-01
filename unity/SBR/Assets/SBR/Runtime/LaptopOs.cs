@@ -98,21 +98,11 @@ namespace SBR.Game
             // rebuild untouched — zero per-rebuild cost — and being the last sibling under _root, it
             // sits above whichever of Desktop/App is currently active, matching the reference kit
             // (app.jsx z-index:9 over the whole 1024x704 sheet).
-            // DISABLED — the implementation is wrong, not the token. Measured off the captures with
-            // grain on, the ground went from (24,24,16) to (52,52,48): more than double the
-            // luminance, and neutral grey where the ground is warm olive (#16160F has R=G above B).
-            //
-            // The cause is structural rather than a value to tune. MakeTonerGrain lays pure white
-            // texels at a mean alpha near 0.5, tinted by a 0.05 Image alpha, over the whole sheet.
-            // Under normal alpha blending a white overlay can only ever lighten, so it lifts and
-            // desaturates the ground instead of texturing it. Lowering the opacity would only make
-            // a fainter version of the same wrong thing — real grain has to darken as well as
-            // lighten, which needs an overlay/soft-light blend and therefore a custom UI shader.
-            //
-            // Kept rather than deleted: the tile generation, the once-per-laptop placement outside
-            // _app, and the zero-per-rebuild cost are all correct and worth reusing when the shader
-            // exists. The other three document-layer elements are unaffected and stay on.
-            // LaptopUi.MakeTonerGrain(_root);
+            // Re-enabled: the shader that makes this a grain rather than a wash now exists. It was
+            // disabled while the pass used normal alpha blending, which could only add light and so
+            // lifted the ground from (24,24,16) to (52,52,48). SBR/TonerGrain blends around a 0.5
+            // midpoint instead, so the mean effect is zero and only the texture changes.
+            LaptopUi.MakeTonerGrain(_root);
         }
 
         public void Tick(Run run, BetslipModel slip)
@@ -202,7 +192,9 @@ namespace SBR.Game
                 case Phase.Shop:
                     _activeApp = App.SureThing;
                     _tab = SportsbookApp.Tab.Rewards;
-                    ShowToast("REWARDS IS OPEN — spend your comps before the next payment.");
+                    // S26: states the fact (rewards is open, when it closes), never an imperative —
+                    // "spend your comps" told the player what to do, which this surface's toasts don't.
+                    ShowToast("REWARDS OPEN UNTIL THE NEXT PAYMENT");
                     break;
                 case Phase.RunWon:
                 case Phase.RunLost:
@@ -555,6 +547,53 @@ namespace SBR.Game
             return button;
         }
 
+        /// <summary>Ruling S18: a wax primary action is a wax field, wax-ink type, and a 2px
+        /// wax-deep edge — never all three by hand at each call site. PLACE TICKET and LEAVE — NEXT
+        /// ROUND are the two controls on this surface that qualify (the phase-advancing or
+        /// ticket-committing action on their screen, never a mark the player chose — that stays
+        /// biro), so this is written once and both route through it.
+        ///
+        /// The edge is four 2px panels drawn INSET inside the button's own rect, added after
+        /// MakeButton has already clamped that rect to the >=44x32 hit-target floor — so the edge
+        /// spends none of that budget. The button's sizeDelta, and therefore its hit target and
+        /// layout footprint, is identical to a plain MakeButton call.
+        ///
+        /// <paramref name="interactable"/> gates the edge, not the passed-in colours: callers already
+        /// pass their own muted background/foreground for the disabled case exactly as before, and a
+        /// disabled Button additionally gets Unity's own automatic dim tint on top of whatever colour
+        /// it was given. So "disabled" here means Unity's ColorTint-dimmed look, and the edge is
+        /// skipped for it — the greyed-out state keeps its current appearance untouched, per the
+        /// ruling, even in the edge case where a caller's colours are still nominally wax but
+        /// interactable is false.</summary>
+        public static Button MakeWaxPrimary(RectTransform parent, string name, string label, Vector2 anchor,
+            Vector2 pivot, Vector2 position, Vector2 size, int fontSize, Color background, Color foreground,
+            Action onClick, Font font, bool interactable = true)
+        {
+            Button button = MakeButton(parent, name, label, anchor, pivot, position, size, fontSize,
+                background, foreground, onClick, font, interactable);
+            if (interactable)
+            {
+                RectTransform rt = button.GetComponent<RectTransform>();
+                Vector2 rectSize = rt.sizeDelta;
+                const float t = 2f;
+                MakePanel(rt, "WaxEdgeTop", new Vector2(0f, 1f), new Vector2(0f, 1f), Vector2.zero,
+                    new Vector2(rectSize.x, t), LaptopOs.WaxDeep);
+                MakePanel(rt, "WaxEdgeBottom", new Vector2(0f, 0f), new Vector2(0f, 0f), Vector2.zero,
+                    new Vector2(rectSize.x, t), LaptopOs.WaxDeep);
+                MakePanel(rt, "WaxEdgeLeft", new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(0f, t),
+                    new Vector2(t, rectSize.y - t * 2f), LaptopOs.WaxDeep);
+                MakePanel(rt, "WaxEdgeRight", new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(0f, t),
+                    new Vector2(t, rectSize.y - t * 2f), LaptopOs.WaxDeep);
+
+                // Keep the label drawn on top of the frame: the edges are added after MakeButton's
+                // "Label" child, so without this they'd be the last (topmost) siblings. Same
+                // SetAsLastSibling convention SportsbookApp.BuildSlip uses for PayoutHighlight.
+                Text labelText = button.GetComponentInChildren<Text>();
+                if (labelText != null) labelText.transform.SetAsLastSibling();
+            }
+            return button;
+        }
+
         public static Image MakeSprite(RectTransform parent, string name, Sprite sprite, Vector2 anchor,
             Vector2 pivot, Vector2 position, Vector2 size, Color tint)
         {
@@ -600,12 +639,20 @@ namespace SBR.Game
 
         /// <summary>Builds the document's own toner grain (palette-surething.css
         /// --toner-grain-opacity) exactly once and stretches it to fill <paramref name="root"/>.
-        /// Cost: one small (128x128) runtime RGBA32 texture and one Image, built a single time per
-        /// laptop — never regenerated, never touched by a rebuild. This is a deliberate exception to
-        /// this file's usual texture-free approach (see <see cref="LaptopWallpaperGraphic"/>): true
-        /// per-pixel grain has no per-vertex-gradient equivalent, so a baked noise texture is the only
-        /// way to get it in UGUI. The reference kit's SVG feTurbulence filter is not reproduced —
-        /// this is a flat static noise tile, an approximation of it, not a match.</summary>
+        /// Cost: one 128x128 runtime texture, one material and one Image, built a single time per
+        /// laptop — never regenerated, never touched by a rebuild.
+        ///
+        /// Noise is centred on 0.5 and drawn through SBR/TonerGrain, which blends DstColor SrcColor
+        /// so that 0.5 is a no-op, above it lightens and below it darkens. That is what makes this a
+        /// grain pass rather than a wash: the mean effect on the ground is zero.
+        ///
+        /// The first version of this was an ordinary white Image at 5% alpha, and it bleached the
+        /// sheet — measured (24,24,16) to (52,52,48), double the luminance and neutral grey against
+        /// a warm olive ground — because normal alpha blending can only add light. If this ever
+        /// reverts to a plain UI material, that is the failure it will reintroduce.
+        ///
+        /// Still an approximation, not a match: the reference kit's SVG feTurbulence is a filter, and
+        /// this is a static tile.</summary>
         public static void MakeTonerGrain(RectTransform root)
         {
             const int size = 128;
@@ -615,14 +662,20 @@ namespace SBR.Game
                 wrapMode = TextureWrapMode.Repeat,
                 filterMode = FilterMode.Bilinear
             };
+            // Fixed seed: the grain is part of the document, not an animation. It must be identical
+            // on every boot and every rebuild, or the sheet would visibly reshuffle its own texture.
             var rng = new System.Random(0xC0FFEE);
             var pixels = new Color32[size * size];
             for (int i = 0; i < pixels.Length; i++)
             {
-                // Alpha-only noise on a flat white texel: tinted by the Image's own low overall alpha
-                // below, so this reads as faint toner static rather than a visible checker pattern.
-                byte a = (byte)rng.Next(40, 216);
-                pixels[i] = new Color32(255, 255, 255, a);
+                // Full-range luminance noise. 128 (= 0.5) is the shader's "leave this pixel alone"
+                // midpoint, and _Strength alone decides how far from it the pass actually pulls —
+                // which is what --toner-grain-opacity means. An earlier version also narrowed the
+                // noise to 108..148 before applying strength, so the two limits multiplied and the
+                // grain landed at about +/-0.004 of a luminance level: measurably present, visually
+                // nothing. Constrain this in one place, not two.
+                byte v = (byte)rng.Next(0, 256);
+                pixels[i] = new Color32(v, v, v, 255);
             }
             texture.SetPixels32(pixels);
             texture.Apply(false, true);
@@ -634,7 +687,20 @@ namespace SBR.Game
             Image image = go.GetComponent<Image>();
             image.sprite = sprite;
             image.type = Image.Type.Tiled;
-            image.color = new Color(1f, 1f, 1f, LaptopOs.TonerGrainOpacity);
+
+            Shader shader = Shader.Find("SBR/TonerGrain");
+            if (shader == null)
+            {
+                // Without the signed-blend material this element does active harm, so it removes
+                // itself rather than falling back to a plain white overlay.
+                Debug.LogWarning("[LaptopOs] SBR/TonerGrain shader missing; skipping toner grain "
+                    + "rather than bleaching the sheet with an additive fallback.");
+                UnityEngine.Object.Destroy(go);
+                return;
+            }
+            var material = new Material(shader) { name = "SureThingTonerGrain" };
+            material.SetFloat("_Strength", LaptopOs.TonerGrainOpacity);
+            image.material = material;
             // Full-bleed and on top of everything: without this it silently eats every click on the
             // laptop screen.
             image.raycastTarget = false;

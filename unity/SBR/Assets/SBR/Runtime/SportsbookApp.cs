@@ -526,7 +526,9 @@ namespace SBR.Game
             string blocker = slip.PlaceBlocker;
             // The one solid wax field on the surface (PlaceAction.jsx). Enabled, its label is
             // --wax-ink — punched-out type on wax, not the general document Ink used everywhere else.
-            LaptopUi.MakeButton(panel, "Place", "PLACE TICKET",
+            // S18: a wax primary action is field + wax-ink + a 2px wax-deep edge — MakeWaxPrimary
+            // builds all three so this and LEAVE — NEXT ROUND can't drift apart.
+            LaptopUi.MakeWaxPrimary(panel, "Place", "PLACE TICKET",
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, y), new Vector2(296f, 44f), 17,
                 blocker == null ? LaptopOs.MoneyGold : LaptopOs.Surface,
                 blocker == null ? LaptopOs.WaxInk : LaptopUi.Dim(LaptopOs.Muted),
@@ -1212,7 +1214,9 @@ namespace SBR.Game
             // S9 defect 2: this is the primary, phase-advancing action on the screen — not a mark HE
             // chose — so it is wax like PLACE TICKET (Law Two), not biro. WaxInk is the same
             // punched-out-type-on-wax convention PLACE TICKET uses, not the general document Ink.
-            LaptopUi.MakeButton(margin, "LeaveRewards", "LEAVE — NEXT ROUND",
+            // S18: routed through MakeWaxPrimary so the field + wax-ink + 2px wax-deep edge treatment
+            // is written once, shared with PLACE TICKET.
+            LaptopUi.MakeWaxPrimary(margin, "LeaveRewards", "LEAVE — NEXT ROUND",
                 new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(14f, 12f),
                 new Vector2(296f, 48f), 15, canLeave ? LaptopOs.MoneyGold : LaptopOs.SurfaceRaised,
                 canLeave ? LaptopOs.WaxInk : LaptopUi.Dim(LaptopOs.Muted),

@@ -19,12 +19,13 @@ namespace SBR.Tests.PlayMode
     /// controls and presentation seams as the behavioral PlayMode suite, then renders both a
     /// canvas-aligned reference and the real Main Camera at the laptop's authored focus pose.
     ///
-    /// Eight states are captured across two UnityTests. The first continues the single-run,
+    /// Nine states are captured across two UnityTests. The first continues the single-run,
     /// ticket-carrying flow through six states (the original five plus the shared Ledger/Old
     /// Slips screen reached from the tray). The second boots a fresh run to reach REWARDS —
     /// which requires the deterministic zero-ticket lock seam SureThingRewardsTests.EnterShop
     /// uses, and so cannot share the first run's already-placed ticket — and from there also
-    /// reaches the same Ledger/Old Slips screen via its other entry point, the desktop icon.
+    /// reaches the same Ledger/Old Slips screen via its other entry point, the desktop icon, and
+    /// the shop again with comps to spend so an enabled BUY is actually photographed.
     /// </summary>
     public class SureThingVisualCaptureTests
     {
@@ -65,39 +66,6 @@ namespace SBR.Tests.PlayMode
             Assert.IsNotNull(wideRing.sprite);
             StringAssert.StartsWith("ring-wide-", wideRing.sprite.name);
 
-            // Instrumentation for the open wide-ring defect: the ring does not close on screen,
-            // and every static explanation has now been falsified. The sprite downsamples to a
-            // clean ellipse at exactly this rect size; its import settings are byte-identical to
-            // ring-price, which renders correctly; the mesh is FullRect and mipmaps are off. So the
-            // fault is in what the rect and its ancestors actually resolve to at runtime, which
-            // cannot be read from source. Dump it rather than guess again — the last two
-            // hypotheses were both wrong and one of them was acted on before it was tested.
-            {
-                RectTransform ringRect = wideRing.rectTransform;
-                Sprite sprite = wideRing.sprite;
-                var chain = new System.Text.StringBuilder();
-                chain.AppendLine("=== WIDE RING DIAGNOSTIC ===");
-                chain.AppendLine($"sprite={sprite.name} texture={sprite.texture.width}x{sprite.texture.height} " +
-                    $"rect={sprite.rect} ppu={sprite.pixelsPerUnit} pivot={sprite.pivot} " +
-                    $"border={sprite.border} packed={sprite.packed} tightCount={sprite.triangles.Length}");
-                chain.AppendLine($"image type={wideRing.type} preserveAspect={wideRing.preserveAspect} " +
-                    $"fillCenter={wideRing.fillCenter} useSpriteMesh={wideRing.useSpriteMesh} " +
-                    $"pixelsPerUnitMultiplier={wideRing.pixelsPerUnitMultiplier}");
-                Transform walk = ringRect;
-                while (walk != null)
-                {
-                    var rt = walk as RectTransform;
-                    chain.AppendLine(rt != null
-                        ? $"[{walk.name}] size={rt.rect.width:F1}x{rt.rect.height:F1} " +
-                          $"anchoredPos={rt.anchoredPosition} anchorMin={rt.anchorMin} " +
-                          $"anchorMax={rt.anchorMax} pivot={rt.pivot} localScale={rt.localScale} " +
-                          $"mask2D={(walk.GetComponent<RectMask2D>() != null)} " +
-                          $"mask={(walk.GetComponent<Mask>() != null)}"
-                        : $"[{walk.name}] (no RectTransform) localScale={walk.localScale}");
-                    walk = walk.parent;
-                }
-                Debug.Log(chain.ToString());
-            }
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "02-entry-selected-wide-ring", capturedPaths);
 
@@ -180,7 +148,7 @@ namespace SBR.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Capture_two_more_truthful_surething_states_as_flat_and_angled_pngs()
+        public IEnumerator Capture_three_more_truthful_surething_states_as_flat_and_angled_pngs()
         {
             yield return Boot();
             LaptopScreen laptop = Laptop();
@@ -211,6 +179,22 @@ namespace SBR.Tests.PlayMode
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "07-rewards", capturedPaths);
 
+            // The same shop with the comps to spend. This state exists because its absence hid a
+            // real defect: every earlier rewards capture was taken at zero comps, so every BUY
+            // rendered in its disabled grey and a Law Two violation — an affordable BUY drawn in
+            // the player's biro rather than in wax — was invisible in every screenshot we had. A
+            // control's enabled appearance is not evidence unless something captures it enabled.
+            laptop.director.Run.GrantComps(1000);
+            laptop.Os.OpenSportsbook(SportsbookApp.Tab.Rewards);
+            yield return WaitForRebuild();
+            Transform affordableBoard = Required(App(laptop), "RewardsBoard");
+            Button firstBuy = FirstNamedButton(affordableBoard, "Buy");
+            Assert.IsNotNull(firstBuy, "no BUY control on the rewards board");
+            Assert.IsTrue(firstBuy.interactable,
+                "1000 comps must make at least one offer affordable, or this state proves nothing");
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "09-rewards-affordable", capturedPaths);
+
             // Old Slips is LaptopOs's App.OldSlips reached from the desktop icon rather than the
             // in-app tray — the same screen as 06-ledger above (OldSlipsApp.Render), just via
             // its other named entry point (LaptopOs.MakeDesktopIcon("OldSlips", ...)).
@@ -226,7 +210,7 @@ namespace SBR.Tests.PlayMode
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "08-old-slips", capturedPaths);
 
-            Assert.AreEqual(4, capturedPaths.Count, "two states must emit paired captures");
+            Assert.AreEqual(6, capturedPaths.Count, "three states must emit paired captures");
             foreach (string path in capturedPaths)
             {
                 Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
