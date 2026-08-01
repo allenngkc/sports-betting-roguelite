@@ -15,6 +15,11 @@ close to 1:1 as possible. Deviations minimal, documented, DD-signed; close past
 deviations where cheap. To be registered with a safe number at Batch-4
 transcription.
 
+**Kit hygiene (TV lead, 2026-07-31):** the tv-sweat kit README's "Known debt in
+the shipped build" section is stale — scanlines + static crawl were removed at
+`842382d` (T8); chromeCyan and emission rest values remain accurate. Now that the
+kit is standard-bearing under the 1:1 rule, please correct it in the next export.
+
 ## Pending (next DD batch)
 
 1. **T17 presentation confirm:** reserve-don't-spend means a scorer leg's backed
