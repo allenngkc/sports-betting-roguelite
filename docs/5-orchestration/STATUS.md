@@ -106,6 +106,14 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-07-31 cycle 17 · **Validation pass, first arm:** compile 0 errors,
+  EditMode 75/75, PlayMode 36/38 — both failures are SureThing capture tests on
+  `RenderTexture.Create` under `-nographics` (the device-less mode; TV's
+  experiment already proved capture needs the graphics device). Diagnosed as
+  harness-config mismatch, not regression; **PlayMode re-running with a graphics
+  device** (same agent, same bounds). Unity's four dirtied settings files
+  restored per lead practice. Gate to accept the merge: 38/38 or the documented
+  flake only. Reversal unchanged: `git revert -m 1 2e97d13` if the rerun fails.
 - 2026-07-31 cycle 16 · T20 closed (`48a9fbd`, canon type scale on the TV
   surface); TV advanced to 3D. **Interim evidence policy made operative** (bulk
   binaries/captures stay out of git until Allen's LFS ruling — codifies existing
