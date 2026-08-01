@@ -70,7 +70,9 @@
 - **Watch:** Unity **segfaults on `-quit`** (exit path only; 0 errors, lockfile
   clears, nothing corrupted — observed on tv-sweat warm compile 2026-07-31). Every
   lease-holder must keep checking process count + lockfile at open. GPU booking
-  remains stood down.
+  remains stood down. **New trap (markets, 2026-07-31): `dotnet build/test/run`
+  silently rewrites the tracked `unity/SBR/Assets/Plugins/SBR/SBR.Engine.dll` —
+  every lead using dotnet must check for and revert that file before committing.**
 - **Need Allen:** nothing.
 
 ## Autonomous decisions (Allen veto window)

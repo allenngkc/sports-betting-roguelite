@@ -52,6 +52,10 @@ referenced documents via Import before the DD will rule on them.
     attached from the lead: the numeral's stated justification in §7.7 no longer
     holds. **Items 10–12 together gate the rest of Phase 3** — one batch answers
     most of what remains.
+13. **Markets D-01…D-05:** five design questions from the F_0.4.0 reconciliation
+    (label vocabulary, RIDING absent from the DS enum, a one-sided scorer market
+    in a paired-price grammar, an S17-class overflow, one more). Full text in the
+    committed gap-list in the `markets-2` worktree — Allen attaches on import.
 
 ## Cleared 2026-07-31, batch 2 (transcribed to REGISTER.md by the orchestrator)
 
