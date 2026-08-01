@@ -108,6 +108,12 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-07-31 cycle 27 · Allen returned; away-mode ended. LFS root-macro fix
+  landed (Allen-approved; warnings gone repo-wide). dd-import rebuilt (night
+  brief, fresh snapshots, evidence split <20MB ×4) and sent to the DD by Allen.
+  markets-2 activated: M-01 (`cc40e8a`) and M-03 arm A (`bf8a03e`) landed;
+  M-02 + doc debt dispatched. Queued for Allen: arm B re-baseline tables +
+  scorer EV-harness finding, together.
 - 2026-07-31 cycle 25 · **Resting state reached.** TV 3F binding half committed
   (`949c041`); its contract itself records the gate (`e93dbed`: "resume at items
   10–12, not at a fragment"). All three leads idle-by-design: SureThing merged,
