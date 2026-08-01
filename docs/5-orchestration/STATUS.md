@@ -106,6 +106,12 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-07-31 cycle 25 · **Resting state reached.** TV 3F binding half committed
+  (`949c041`); its contract itself records the gate (`e93dbed`: "resume at items
+  10–12, not at a fragment"). All three leads idle-by-design: SureThing merged,
+  room merged and awaiting re-review, TV DD-gated. markets-2 parked for Allen.
+  Awaiting: DD import drag (13 items + 2 review packages + 98-frame evidence zip),
+  LFS ruling, markets-2 briefing. Loop stays armed on heartbeat.
 - 2026-07-31 cycle 23 · TV 3E committed (`4597b60`, preview shipped dark) and the
   **visual-evidence bundle exists**: 98 rendered frames + manifest (two uncaptured
   states honestly stated), staged durably at `dd-import/tv-sweat-evidence-4597b60.zip`
