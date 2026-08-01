@@ -106,6 +106,11 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-07-31 cycle 20 · **Both merges validated green on merged main** — compile
+  0 errors, EditMode 75/75, PlayMode 38/38 on the GPU device, no flake. Suite
+  duration 47.5s→82.5s under room lighting (awareness only — affects future
+  flake-rate reads). Settings-file side effects restored. Main now carries the
+  sportsbook redesign + the room's full visual arc, validated together.
 - 2026-07-31 cycle 19 · **MERGE: room-refinement → main at `bb457af`**
   (autonomous; checklist all-green: R-gates at baseline, zero integration-file
   drift, contract current at `docs/handoffs/room-refinement.md`, no open conflict
