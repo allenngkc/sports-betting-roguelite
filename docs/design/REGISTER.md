@@ -112,7 +112,7 @@ under this seat. That is the gap this register exists to close.
 | C11 | Standing law — **rendered evidence or no claim**: every design claim about how something reads, including Design-verified, is made against rendered frames at review distance, on every surface (T19 is this law's TV instance). A review package is its document plus its frames; a package without its frames is not in review | Law · DD 2026-07-31 | DD batch-4 |
 | C12 | Review-evidence transport | **Ruled** · DD 2026-07-31: design review requires frames in the import, not in git; bundles are the correct vehicle; the interim binaries policy stands. The LFS question blocks no design item | DD batch-4 |
 | C13 | Stale screen content in the room scene | **Ruled — violation** · DD 2026-08-01: the room renders the superseded violet laptop package and green TV content despite both surfaces having merged. **Integration item (orchestrator), not a room defect**; R15 unaffected. No room capture is evidence for either screen until re-taken | DD addendum |
-| C14 | Fidelity standard | **Directive** · Allen 2026-07-31: UI matches the design system as close to 1:1 as the platform allows; deviations minimal, documented, DD-signed; close past deviations where cheap | Allen, relayed 2026-07-31 |
+| C14 | Fidelity standard | **Directive, hardened** · Allen 2026-08-01: all work is exceptional quality and a **1:1 match** to the intended designs — 1:1 is the bar, not the aspiration; deviations only where physically impossible, each DD-signed before build. (Original 07-31 form: as close as the platform allows.) Leads run Opus 5 at max effort per Allen | Allen, 07-31 + 08-01 |
 
 ---
 
