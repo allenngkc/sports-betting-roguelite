@@ -212,7 +212,7 @@ namespace SBR.Tests.EditMode
         // ---------------------------------------------------------------------------------------
 
         // Mirrored from main-2/docs/design/design-system/tokens/typography.css. A C# test cannot
-        // import a CSS custom property, so handoff.md §4A's rule applies: restate the value and CITE
+        // import a CSS custom property, so §4A's rule (docs/handoffs/tv-sweat.md) applies: CITE
         // the source. Never a threshold reverse-engineered from whatever the code currently renders.
         private const int CanonScore = 36, CanonCashOut = 29, CanonClock = 28, CanonNeed = 28;
         private const int CanonRisk = 24, CanonEvent = 22, CanonProgress = 19, CanonEyebrow = 15;

@@ -599,6 +599,7 @@ namespace SBR.Game
             public Text Line;      // compact: resolved / pending
             public Text Need;      // live: the authored §6 statement, printed verbatim
             public Text Progress;  // live: the revealed causal progress line
+            public Image Strike;   // §8 VOID only: the struck-through rule
             public bool IsLive;
         }
 
@@ -1632,6 +1633,9 @@ namespace SBR.Game
                         _legRow[i].Line.color = deadDark; // §8 L: L0, goes dark
                         _legRow[i].Line.text = $"L   {label}";
                     }
+                    // §8: the strike belongs to VOID and to nothing else. A struck W or L would
+                    // read as cancelled, which is the one thing the strike must never say.
+                    if (_legRow[i].Strike != null) _legRow[i].Strike.enabled = leg.IsVoided;
                     _legRow[i].Need.text = string.Empty;
                     _legRow[i].Progress.text = string.Empty;
                 }
@@ -1646,6 +1650,7 @@ namespace SBR.Game
                     // at two different sizes. NEED is the one place it appears on a live row.
                     SweatActiveLegModel.ActiveLegCopy copy = DescribeActiveLeg(leg);
                     _legRow[i].Line.text = string.Empty;
+                    if (_legRow[i].Strike != null) _legRow[i].Strike.enabled = false;
                     _legRow[i].Need.color = flavorColor;
                     _legRow[i].Need.text = copy.Need;         // §6 verbatim — never paraphrased
                     _legRow[i].Progress.color = flavorColor;
@@ -1655,6 +1660,7 @@ namespace SBR.Game
                 {
                     _legRow[i].Line.color = structureGrey; // §8 NEXT: L1, structure only
                     _legRow[i].Line.text = $"NEXT   {label}";
+                    if (_legRow[i].Strike != null) _legRow[i].Strike.enabled = false;
                     _legRow[i].Need.text = string.Empty;
                     _legRow[i].Progress.text = string.Empty;
                 }
@@ -1670,6 +1676,7 @@ namespace SBR.Game
             if (_legRow[i].Line != null) _legRow[i].Line.text = string.Empty;
             if (_legRow[i].Need != null) _legRow[i].Need.text = string.Empty;
             if (_legRow[i].Progress != null) _legRow[i].Progress.text = string.Empty;
+            if (_legRow[i].Strike != null) _legRow[i].Strike.enabled = false;
         }
 
         /// <summary>The auto-advance interstitial (M4): TICKET i/n, the legs line, stake → to-win.
@@ -2715,7 +2722,20 @@ namespace SBR.Game
                 Text progress = MakeText(root, $"LegRowProgress{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     AnchorTopLeft(row, 8f, 4f + needH), new Vector2(lineW, progressH), TypeProgress,
                     TextAnchor.UpperLeft, flavorColor);
-                _legRow[i] = new LegRowUi { Line = line, Need = need, Progress = progress, IsLive = false };
+                // T20/3D — §8's VOID treatment is "L2 cyan, STRUCK THROUGH on the matrix". Colour
+                // alone was carrying the whole state before; this is the strike. A fixed-width rule
+                // across the compact line, never measured from the text: §6 forbids geometry
+                // computed from content, and a rule that resizes per statement would be exactly
+                // that. Legacy UI.Text has no strikethrough of its own — TextMeshPro does, but the
+                // whole surface is UI.Text and swapping one row's renderer for a glyph effect is a
+                // far larger change than drawing the line the design already calls a matrix rule.
+                Image strike = MakePanel(root, $"LegRowStrike{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    AnchorTopLeft(row, 8f, 4f + compactH * 0.5f), new Vector2(lineW, 1.5f), chromeCyan);
+                strike.enabled = false;
+                _legRow[i] = new LegRowUi
+                {
+                    Line = line, Need = need, Progress = progress, Strike = strike, IsLive = false
+                };
             }
 
             // §7: "Risk and pays sit at the foot in gold at L2."
@@ -2915,7 +2935,7 @@ namespace SBR.Game
         // RegenNoise was one of two UnityEngine.Random uses in this file; the other survives at
         // _emissSeed's initialisation. PRD §4.3 bans that API for any *discrete scene choice* — a
         // flicker phase seed is not one, so it is out of T8's scope and is left alone. It is
-        // recorded in handoff.md §6 rather than changed here, because it does mean the idle
+        // recorded in docs/handoffs/tv-sweat.md §6 rather than changed here, because it means the idle
         // emission flicker differs run to run.
 
         // ---------------------------------------------------------------- small helpers

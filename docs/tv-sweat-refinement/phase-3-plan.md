@@ -2,7 +2,8 @@
 
 **Lead:** TV sweat (Claude Opus 5) · **Written:** 2026-07-31 · **Baseline:** `842382d`
 **Suites at baseline:** engine 160/160 · EditMode 129/129 · PlayMode 44/44
-**Unblocked by:** C1 ruling (layout closed, `DESIGN.md` §6 governs) + `handoff.md` landing
+**Unblocked by:** C1 ruling (layout closed, `DESIGN.md` §6 governs) + the ownership contract landing
+(`docs/handoffs/tv-sweat.md`, at the repo root as `handoff.md` until 2026-07-31)
 
 ---
 
@@ -51,10 +52,26 @@ boxes, no zone resizing.
 *Depends on 3A (the column renders what the model formats). The largest single piece.*
 
 ### 3D — State vocabulary
-Eight cash-out states in one non-reflowing rectangle; five leg states; the brightness ladder with **at
-most one L4 element at any instant** — already enforced structurally by the HDR material being given
-to only three graphics, which 3C must not weaken. **Closes gate item 3.**
+**Six** cash-out states in one non-reflowing rectangle; five leg states; the brightness ladder with
+**at most one L4 element at any instant** — already enforced structurally by the HDR material being
+given to only three graphics, which 3C must not weaken. **Closes gate item 3.**
 *Depends on 3C.*
+
+> **Corrected 2026-07-31 (T20/3D): this line said EIGHT cash-out states.** The cash-out rectangle
+> holds **six** — PRD §8.5 lists six, PRD §14.3 says "all six states in §8.5", and `DESIGN.md` §6 and
+> §8 both say six.
+>
+> The "eight" was real but attached to the wrong thing. PRD §5's Phase 3 exit gate names eight states
+> across two different surfaces: *"Open, suspended, unavailable, pending-window, cashed-out, won,
+> lost, and void states do not reuse contradictory colors or labels."* Five of those live in the
+> cash-out slot and three are leg outcomes. Collapsing them into "eight cash-out states" is what
+> produced a count no document supports.
+>
+> **Also note what the gate does NOT ask for.** Suspended and pending-window share one treatment
+> deliberately (`DESIGN.md` §8: pending window is "As suspended"), so a uniqueness test over the eight
+> would fail on a pair the design intends. The gate word is *contradictory*: a state that promises
+> input must not wear the treatment of one that refuses it. `The_eight_gate_states_never_contradict_
+> one_another` asserts that, not uniqueness.
 
 ### 3E — §8.8 stats panel and §8.10 held cash-out preview
 The two authorized mid-sweat verbs. Both freeze playback per §4.4. The preview renders one brightness

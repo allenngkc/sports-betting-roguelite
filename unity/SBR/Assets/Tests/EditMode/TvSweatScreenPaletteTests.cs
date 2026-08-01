@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
+using SBR.Engine;
 using SBR.Game;
 using UnityEngine;
 using UnityEngine.UI;
@@ -752,5 +753,218 @@ namespace SBR.Tests.EditMode
                 if (c.name == childName) return c;
             return null;
         }
+
+        // ---------------------------------------------------------------------------------------
+        // 3D — state vocabulary (DESIGN.md §8). Five leg states, six cash-out states.
+        // ---------------------------------------------------------------------------------------
+
+        /// <summary>Drives the real UpdateTicketColumn against a real ticket. The private
+        /// <c>_ticket</c>/<c>_resolvedThrough</c> fields are set directly because the alternative is
+        /// standing up a whole live session for a question that is purely about what a resolved row
+        /// renders — and the method under test reads leg state, never how the state was reached.</summary>
+        private static void RenderTicketColumn(TvSweatScreen s, Ticket ticket, int resolvedThrough, int liveLegIndex)
+        {
+            typeof(TvSweatScreen).GetField("_ticket", BindingFlags.NonPublic | BindingFlags.Instance)
+                .SetValue(s, ticket);
+            typeof(TvSweatScreen).GetField("_resolvedThrough", BindingFlags.NonPublic | BindingFlags.Instance)
+                .SetValue(s, resolvedThrough);
+            typeof(TvSweatScreen).GetMethod("UpdateTicketColumn", BindingFlags.NonPublic | BindingFlags.Instance)
+                .Invoke(s, new object[] { liveLegIndex });
+        }
+
+        private static Ticket TwoLegTicket(string runId)
+        {
+            var run = new Run(runId, new RunConfig());
+            Ticket t = run.PlaceTicket(new[]
+            {
+                new Pick(0, MarketSelection.Moneyline(Side.Home)),
+                new Pick(1, MarketSelection.Moneyline(Side.Home)),
+            }, 10);
+            run.LockRound();
+            return t;
+        }
+
+        [Test]
+        public void Void_is_the_only_leg_state_that_carries_the_struck_through_rule()
+        {
+            // DESIGN.md §8: "VOID | L2 cyan, struck through on the matrix." Colour alone was
+            // carrying that state — the strike did not exist, though the palette field's own comment
+            // quoted the spec. The strike is what distinguishes CANCELLED from lost or won, so a row
+            // that struck the wrong state would say the opposite of what happened.
+            var go = new GameObject("VoidStrike");
+            try
+            {
+                TvSweatScreen s = BuiltScreen(go);
+                Ticket ticket = TwoLegTicket("3D-VOID-STRIKE");
+                Assert.GreaterOrEqual(ticket.Legs.Count, 2, "this fixture needs two legs");
+
+                // internal setter — the engine voids legs through SweatSession, which this test has no
+                // business driving just to reach a rendered state. GetSetMethod(nonPublic: true) is
+                // required: PropertyInfo.SetValue alone throws "property set method not found" here.
+                MethodInfo setVoided = typeof(Leg).GetProperty("IsVoided").GetSetMethod(nonPublic: true);
+                Assert.IsNotNull(setVoided, "Leg.IsVoided has no setter — engine shape changed?");
+                setVoided.Invoke(ticket.Legs[0], new object[] { true });
+
+                RenderTicketColumn(s, ticket, resolvedThrough: 2, liveLegIndex: -1);
+
+                Image struck = FindChild<Image>(s, "LegRowStrike0");
+                Image unstruck = FindChild<Image>(s, "LegRowStrike1");
+                Assert.IsNotNull(struck, "LegRowStrike0 not found — §8's VOID strike is not built");
+                Assert.IsNotNull(unstruck, "LegRowStrike1 not found");
+
+                Assert.IsTrue(struck.enabled,
+                    "a VOID leg must be struck through (DESIGN.md §8) — cyan alone does not say cancelled");
+                Assert.IsFalse(unstruck.enabled,
+                    "a non-void resolved leg must NOT be struck: a struck W or L reads as cancelled, " +
+                    "which is the one thing the strike must never say");
+
+                Text voidLine = FindChild<Text>(s, "LegRowLine0");
+                Assert.IsNotNull(voidLine);
+                AssertRgbApprox(s.chromeCyan, voidLine.color, 0.001f, "VOID row");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void The_strike_is_a_fixed_rule_never_measured_from_the_row_text()
+        {
+            // §6 forbids geometry computed from content. A strike sized to the statement would be
+            // exactly that, and would also silently change width every time copy changed.
+            var go = new GameObject("StrikeFixed");
+            try
+            {
+                TvSweatScreen s = BuiltScreen(go);
+                Image strike = FindChild<Image>(s, "LegRowStrike0");
+                Text line = FindChild<Text>(s, "LegRowLine0");
+                Assert.IsNotNull(strike, "LegRowStrike0 not found");
+                Assert.IsNotNull(line, "LegRowLine0 not found");
+
+                Assert.IsFalse(strike.enabled, "a freshly built row is not struck — VOID is a state, not a default");
+                Assert.AreEqual(line.rectTransform.sizeDelta.x, strike.rectTransform.sizeDelta.x, 0.01f,
+                    "the strike spans the compact line's fixed width, not its glyphs");
+
+                Vector2 sizeBefore = strike.rectTransform.sizeDelta;
+                line.text = "V";
+                Assert.AreEqual(sizeBefore, strike.rectTransform.sizeDelta,
+                    "the strike resized when the row's text changed — content must never drive geometry");
+                line.text = new string('X', 120);
+                Assert.AreEqual(sizeBefore, strike.rectTransform.sizeDelta,
+                    "the strike resized on long copy — same defect, other direction");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void The_five_leg_states_are_five_distinguishable_treatments()
+        {
+            // §8's leg table assigns NEXT/LIVE/W/L/VOID five different treatments. A vocabulary whose
+            // words look alike is not a vocabulary — this pins that no two collapsed onto one colour,
+            // which is the failure mode a palette refactor produces without ever failing a test that
+            // checks each colour in isolation.
+            var go = new GameObject("FiveLegStates");
+            try
+            {
+                TvSweatScreen s = BuiltScreen(go);
+                var byState = new Dictionary<string, Color>
+                {
+                    { "NEXT (L1 structure)", s.structureGrey },
+                    { "LIVE (L3 cold white)", s.flavorColor },
+                    { "W (L3 gold)", new Color(s.gold.r, s.gold.g, s.gold.b, 1f) },
+                    { "L (L0 dark)", s.deadDark },
+                    { "VOID (L2 cyan)", s.chromeCyan },
+                };
+
+                foreach (KeyValuePair<string, Color> a in byState)
+                    foreach (KeyValuePair<string, Color> b in byState)
+                    {
+                        if (a.Key == b.Key) continue;
+                        float d = Mathf.Abs(a.Value.r - b.Value.r)
+                                + Mathf.Abs(a.Value.g - b.Value.g)
+                                + Mathf.Abs(a.Value.b - b.Value.b);
+                        Assert.Greater(d, 0.05f,
+                            $"'{a.Key}' and '{b.Key}' are the same treatment (channel distance {d:F3}). " +
+                            "DESIGN.md §8 gives the five leg states five distinct treatments; brightness " +
+                            "IS the state here, so two states that look alike are one state.");
+                    }
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void The_eight_gate_states_never_contradict_one_another()
+        {
+            // PRD §5's Phase 3 exit gate, item 3, verbatim: "Open, suspended, unavailable,
+            // pending-window, cashed-out, won, lost, and void states do not reuse contradictory
+            // colors or labels." Eight states across TWO surfaces — five in the cash-out slot, three
+            // leg outcomes. (phase-3-plan.md read this as "eight cash-out states"; the rectangle
+            // holds six. Corrected 2026-07-31, with the real source recorded there.)
+            //
+            // The gate word is CONTRADICTORY, not unique. Suspended and pending-window share one
+            // treatment on purpose (DESIGN.md §8: pending window is "As suspended"), so a uniqueness
+            // assertion would fail on a pair the design intends. What must never happen is a state
+            // that PROMISES input wearing the treatment of one that REFUSES it — DESIGN.md §8:
+            // "brightness is a promise about input", the visual half of the TVS-H01 contract.
+            var go = new GameObject("EightGateStates");
+            try
+            {
+                TvSweatScreen s = BuiltScreen(go);
+                Color live = new Color(s.gold.r, s.gold.g, s.gold.b, 1f);
+
+                // Promises input: open (actionable), cashed-out (the accepted punch/settle).
+                // Refuses input: suspended, pending-window, unavailable.
+                var promises = new Dictionary<string, Color> { { "open", live }, { "cashed-out", live } };
+                var refuses = new Dictionary<string, Color>
+                {
+                    { "suspended", s.structureGrey },
+                    { "pending-window", s.structureGrey },
+                    { "unavailable", s.structureGrey },
+                };
+
+                foreach (KeyValuePair<string, Color> p in promises)
+                    foreach (KeyValuePair<string, Color> r in refuses)
+                        Assert.Greater(ChannelDistance(p.Value, r.Value), 0.2f,
+                            $"'{p.Key}' and '{r.Key}' wear the same treatment. One accepts the key and " +
+                            "the other refuses it; if the slot looks the same in both, the surface has " +
+                            "lied about what the press will do (PRD §5 gate item 3, DESIGN.md §8).");
+
+                // The three leg outcomes must not contradict each other either: won is money, lost is
+                // darkness, void is cancellation. Any two collapsing means a settled leg reads as the
+                // wrong outcome — the most expensive contradiction on the surface.
+                var outcomes = new Dictionary<string, Color>
+                {
+                    { "won", live }, { "lost", s.deadDark }, { "void", s.chromeCyan },
+                };
+                foreach (KeyValuePair<string, Color> a in outcomes)
+                    foreach (KeyValuePair<string, Color> b in outcomes)
+                    {
+                        if (a.Key == b.Key) continue;
+                        Assert.Greater(ChannelDistance(a.Value, b.Value), 0.2f,
+                            $"'{a.Key}' and '{b.Key}' share a treatment — a settled leg would read as " +
+                            "the wrong outcome (PRD §5 gate item 3).");
+                    }
+
+                // And the labels: the two states that share a colour by design must still be
+                // separable, which is what the VOID strike exists for on the leg side.
+                Assert.IsFalse(FindChild<Text>(s, "CashOut").enabled,
+                    "the cash-out slot starts unavailable and quiet — §8.5's 'reserved slot remains " +
+                    "visually quiet without reflow'");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        private static float ChannelDistance(Color a, Color b)
+            => Mathf.Abs(a.r - b.r) + Mathf.Abs(a.g - b.g) + Mathf.Abs(a.b - b.b);
     }
 }

@@ -29,7 +29,7 @@ discarded.
 | `unity/SBR/Assets/Tests/EditMode/PresentationSceneKeyTests.cs`, `TheaterScenePlannerTests.cs`, `TvLightTests.cs`, `TvSweatScreenPaletteTests.cs` | |
 | `DESIGN.md`, `PRODUCT.md` (root) | TV surface design system; product record |
 | `docs/tv-sweat-refinement/**` | PRD, visual design, bug ledger, briefs, evidence |
-| `handoff.md` | This contract |
+| `docs/handoffs/tv-sweat.md` | This contract. Moved from the repo root 2026-07-31 — a committed root `handoff.md` collides across worktrees at merge time (studio convention) |
 
 ### Read-only (diagnosis permitted, edits are an escalation)
 
@@ -252,7 +252,7 @@ Two failure modes share this test name and mean opposite things:
 Baselines before this stack: engine **160**, EditMode **194**, PlayMode **44** (+1 `[Explicit]`
 capture harness, filtered out of routine runs).
 
-## 4C. RESUME HERE — 3D, then 3E → 3F
+## 4C. RESUME HERE — 3E, then 3F
 
 **T17 is CLOSED** (`ea28c9b`): the ledger reserves the backed side's last baked goal at configure
 time, enforced in `CompleteGoal` and released by `PlanFinal`; `BindAnytimeScorer` is unchanged and
@@ -276,7 +276,19 @@ it by shrinking NEED.
 **Every size in T20 is verified analytically and none of it visually.** The next seated GPU capture is
 unusually load-bearing: it is the first look at a surface whose every element changed size.
 
-**Next: 3D**, then 3E → 3F.
+**3D is CLOSED.** The find was that §8's `VOID` treatment — "L2 cyan, **struck through** on the
+matrix" — had never been implemented; colour alone was carrying the state that means *cancelled*,
+against `W` gold and `L` dark. The strike is now a fixed-width hairline rule per row, enabled only on
+a voided leg. Do not re-derive its width from the text: §6 forbids geometry from content, and a test
+pins it across empty/short/120-char copy.
+
+**Gate item 3's "eight states" is not eight cash-out states** — the rectangle holds six. PRD §5 names
+eight across two surfaces: five cash-out slot states plus won/lost/void. `phase-3-plan.md` had
+collapsed them into one count; both facts are recorded there now. The gate word is *contradictory*,
+not unique — suspended and pending-window share a treatment on purpose, so a uniqueness test fails on
+a pair the design intends.
+
+**Next: 3E** (§8.8 stats panel, §8.10 held cash-out preview), then 3F.
 
 **Blocked on Allen, studio-level:** `[attr]lfs` is declared in `unity/SBR/.gitattributes`, but git
 honours attribute macros only in a **top-level** `.gitattributes`, and this repo has none at root —
