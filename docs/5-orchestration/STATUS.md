@@ -106,6 +106,13 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-07-31 cycle 15 · **MERGE: surething-ui → main at `2e97d13`** (autonomous;
+  all five checklist items verified: suites green at baseline, ProjectSettings
+  drift Allen-approved and isolated at `63cf1bc`, handoff current, no open
+  conflict items, merge-tree clean; 22 commits). Canonical main-2 validation pass
+  queued after TV's T20 window. **Reversal: `git revert -m 1 2e97d13`.**
+  Residual honesty from the lead: BUY-in-wax visually unverified (no affordable
+  state captured yet) — queued for its next window, not blocking.
 - 2026-07-31 cycle 14 · **Allen away — full-auto confirmed** for surething-ui,
   tv-sweat, room-refinement; pings only for critical/DD items. **markets-2 spun up
   and PARKED per Allen** (worktree + branch from main `65a30d1`, handoff contract
