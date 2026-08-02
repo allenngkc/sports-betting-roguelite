@@ -18,3 +18,5 @@ measured chroma/hue on the room's own surfaces under its full grade. This is a
 grade-parameter question spanning BOTH slices (room implements, TV owns the
 grade spec). Room's DD package with the measurements follows; ruling needed from
 you + the TV context together. No lead can fix it unilaterally.
+
+**TV-15 (2026-08-02):** stacked label-above-value does not fit (66.7 vs 67px); side-by-side does. Canon says stacked. Rule which yields: the layout or the 0.3px.
