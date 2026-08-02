@@ -96,8 +96,13 @@ namespace SBR.Tests.PlayMode
                 Assert.Zero(ledgerLeg.GetComponentsInChildren<Button>(true).Length,
                     $"settled ledger leg {legIndex} must expose no action");
             }
-            Assert.AreEqual($"SETTLED  {run.Tickets.Count}",
-                TextOf(Required(margin, "SettledCount")));
+            // S33: the passive margin's first MarginRow — TICKETS SETTLED, in the kit's own order
+            // and wording (app.jsx:95) — replaces the pre-S33 single "SETTLED  N" line this used
+            // to pin; label and value are now separate nodes, matching MarginRow.jsx's own split.
+            Assert.AreEqual("TICKETS SETTLED",
+                TextOf(Required(margin, "RecordRowSettledLabel")));
+            Assert.AreEqual(run.Tickets.Count.ToString(CultureInfo.InvariantCulture),
+                TextOf(Required(margin, "RecordRowSettledValue")));
         }
 
         [UnityTest, Order(2)]
@@ -105,9 +110,10 @@ namespace SBR.Tests.PlayMode
         {
             yield return Boot();
             LaptopScreen laptop = Laptop();
-            // S37: this test no longer reads run.Round — the round number belongs to the
-            // masthead alone (see the RoundIdentity absence assertion below), so there is
-            // nothing left in this method for a local Run reference to do.
+            // S31 needs a live Run reference again: the masthead's run figures (BANK/TARGET/
+            // TICKETS) and its ROUND-number scope line are both asserted below against the same
+            // production formula SportsbookApp.BuildRunFigures/BuildChrome use.
+            Run run = laptop.director.Run;
             yield return OpenLedgerThroughTray(laptop);
 
             Transform app = App(laptop);
@@ -119,22 +125,37 @@ namespace SBR.Tests.PlayMode
             Transform summary = Required(margin, "RecordSummary");
             AssertRect(summary as RectTransform, 324f, 530f, "record summary");
 
-            // S9 defect 7: "READ ONLY" is said once now, by the masthead's Scope line
-            // (BuildLedgerChrome) — this caption keeps only the information it alone carries.
-            Assert.AreEqual("SETTLED CURRENT-RUN RECORDS",
-                TextOf(Required(board, "LedgerScope")));
-            // S35(a) removed the leaked RUN.TICKETS property path from this slot. What replaces it
-            // is the passive margin's single note (S33, app.jsx:97) — NOT the kit's board-header
-            // wording, which belongs to the 44px header S31 mandates. Asserting the header's words
-            // here would pin the duplicate that S37 forbids, in the fixture, before S31 even lands.
+            // S31: the masthead's run figures are unchanged from the rest of the surface — reused
+            // verbatim from SportsbookApp.BuildRunFigures rather than a parallel condensed string.
+            Transform masthead = Required(chrome, "FormMasthead");
+            Assert.AreEqual(
+                $"BANK {Money(run.Bank)}    TARGET {Money(run.CurrentPayment)}    TICKETS {run.Tickets.Count}/{run.Config.MaxTicketsPerRound}",
+                TextOf(Required(masthead, "Figures")));
+            Assert.AreEqual($"ROUND {run.Round} OF {run.Config.Rounds}  ·  SETTLED TICKETS ONLY",
+                TextOf(Required(masthead, "Scope")));
+
+            // S31: LedgerScreen()'s own 44px board header replaces the old "LedgerScope" caption —
+            // same fact (the list below is scoped to settled current-run records), now stated
+            // once, in the kit's own words, by the header this ruling mandates.
+            Assert.AreEqual("SETTLED TICKETS · THIS RUN",
+                TextOf(Required(board, "LedgerBoardHeaderScope")));
+            Assert.AreEqual("0 RECORDS",
+                TextOf(Required(board, "LedgerBoardHeaderCount")));
+            // S33: the passive margin's biro MarginHeader + exactly three MarginRows + one note
+            // (app.jsx:94-97) replaces the pre-S33 seven-block panel. The note keeps its pre-S33
+            // wording — S35(a) removed the leaked RUN.TICKETS property path from this slot, and
+            // this is the kit's own single note (app.jsx:97), not the board header's wording
+            // (S31's trap: asserting the header's words here would pin the duplicate S37 forbids).
             Assert.AreEqual("READ-ONLY. THE LEDGER COPIES SETTLED TICKETS AND DERIVES NOTHING.",
-                TextOf(Required(summary, "RecordScope")));
-            StringAssert.Contains("NO CROSS-RUN HISTORY IS INVENTED.",
-                TextOf(Required(summary, "CashOutDisclosure")));
-            Assert.AreEqual("SETTLED  0", TextOf(Required(summary, "SettledCount")));
-            // S37: the live round number appears exactly once on the surface, in the masthead
-            // (BuildLedgerChrome's "Run" text). The margin's former "RoundIdentity" — a second,
-            // standalone restatement of the same figure — is gone, not just reworded.
+                TextOf(Required(summary, "RecordNote")));
+            // S33 caps the passive margin at exactly three MarginRows and one note — the separate
+            // CashOutDisclosure paragraph this used to pin is retired along with the other four
+            // content blocks S33 replaces, not renamed.
+            Assert.AreEqual("TICKETS SETTLED", TextOf(Required(summary, "RecordRowSettledLabel")));
+            Assert.AreEqual("0", TextOf(Required(summary, "RecordRowSettledValue")));
+            // S37: the live round number appears exactly once on the surface, in the masthead's
+            // Scope line asserted above. The margin's former "RoundIdentity" — a second,
+            // standalone restatement of the same figure — stays gone.
             Assert.IsNull(Find(summary, "RoundIdentity"),
                 "S37: the round number belongs to the masthead alone, not this margin too");
 

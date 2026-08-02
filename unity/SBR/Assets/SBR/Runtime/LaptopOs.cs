@@ -94,7 +94,10 @@ namespace SBR.Game
             _app.gameObject.SetActive(false);
 
             _sportsbook = new SportsbookApp(_app, _font, _fontCond, _host, Invalidate, SelectTab, OpenHome, OpenLedger);
-            _oldSlips = new OldSlipsApp(_app, _font, _fontCond, OpenHome, OpenSportsbook);
+            // S31: OldSlipsApp reuses SportsbookApp.BuildTabStrip for its four-tab strip, so it
+            // needs the same per-tab navigation the strip's own buttons drive elsewhere — SelectTab
+            // is that mechanism, unchanged from what SportsbookApp above already uses.
+            _oldSlips = new OldSlipsApp(_app, _font, _fontCond, OpenHome, OpenSportsbook, SelectTab);
             BuildDesktop();
 
             // The document's own toner grain (palette-surething.css --toner-grain-opacity), built
@@ -409,6 +412,46 @@ namespace SBR.Game
         }
     }
 
+    /// <summary>S34: the 26px ruled-paper ground margin.jsx paints behind every margin —
+    /// <c>repeating-linear-gradient(180deg, transparent 0 25px, var(--rule-soft) 25px 26px)</c> —
+    /// as untextured geometry rather than a texture asset. One shared class, the same technique as
+    /// <see cref="LaptopWallpaperGraphic"/> and <see cref="MarkedWashGraphic"/>: it emits one flat
+    /// quad per 26px line directly in <see cref="OnPopulateMesh"/> (no texture, no per-rebuild
+    /// allocation — everything here is stack arithmetic feeding VertexHelper's own buffers), so the
+    /// same GameObject/Component this stack already recreates on every rebuild of the panel it
+    /// sits on costs one extra ~20-quad (80-vertex, 40-triangle) mesh for a 530px-tall margin —
+    /// negligible next to the panel's own text and button churn, and drawn in the same batch as
+    /// every other flat-colour Graphic here (no material or shader of its own).</summary>
+    internal sealed class MarginRuledPaperGraphic : Graphic
+    {
+        private const float Period = 26f; // margin.jsx: repeating-linear-gradient period
+        private const float LineHeight = 1f; // the "25px 26px" band — the rule itself
+
+        protected override void OnPopulateMesh(VertexHelper vh)
+        {
+            vh.Clear();
+            Rect r = rectTransform.rect;
+            Color32 rule = LaptopOs.RuleSoft;
+            int vertexIndex = 0;
+            // The gradient's 0% origin is the rect's TOP edge (CSS "180deg" runs top to bottom),
+            // so the first line sits Period px below the top rather than Period px above the
+            // bottom — depth is measured down from r.yMax.
+            for (float depth = Period; depth - LineHeight < r.height; depth += Period)
+            {
+                float bandTop = r.yMax - (depth - LineHeight);
+                float bandBottom = r.yMax - depth;
+                if (bandBottom < r.yMin) bandBottom = r.yMin;
+                vh.AddVert(new Vector3(r.xMin, bandBottom), rule, Vector2.zero);
+                vh.AddVert(new Vector3(r.xMin, bandTop), rule, Vector2.up);
+                vh.AddVert(new Vector3(r.xMax, bandTop), rule, Vector2.one);
+                vh.AddVert(new Vector3(r.xMax, bandBottom), rule, Vector2.right);
+                vh.AddTriangle(vertexIndex, vertexIndex + 1, vertexIndex + 2);
+                vh.AddTriangle(vertexIndex + 2, vertexIndex + 3, vertexIndex);
+                vertexIndex += 4;
+            }
+        }
+    }
+
     internal static class LaptopUi
     {
         public static void ClearChildren(RectTransform root)
@@ -654,6 +697,24 @@ namespace SBR.Game
                 LaptopOs.MarkedWashAlpha);
             wash.raycastTarget = false;
             RectTransform rt = wash.rectTransform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+        }
+
+        /// <summary>S34: the ruled-paper ground (margin.jsx, MarginRuledPaperGraphic), stretched to
+        /// fill <paramref name="parent"/> exactly. Ships on the working margin and every passive
+        /// margin alike from this one call — there is no second implementation. Caller adds this
+        /// before any sibling text/buttons so it sits behind them, same convention as
+        /// <see cref="MakeMarkedWash"/>.</summary>
+        public static void MakeMarginRuledPaper(RectTransform parent, string name)
+        {
+            var go = new GameObject(name, typeof(MarginRuledPaperGraphic));
+            go.transform.SetParent(parent, false);
+            MarginRuledPaperGraphic graphic = go.GetComponent<MarginRuledPaperGraphic>();
+            graphic.raycastTarget = false;
+            RectTransform rt = graphic.rectTransform;
             rt.anchorMin = Vector2.zero;
             rt.anchorMax = Vector2.one;
             rt.offsetMin = Vector2.zero;
