@@ -60,10 +60,14 @@ namespace SBR.Tests.PlayMode
                 TextOf(Required(ledgerTicket, "TicketIdentity")));
             Assert.AreEqual(TicketStateText(ticket),
                 TextOf(Required(ledgerTicket, "TicketState")));
-            Assert.AreEqual("STAKE " + Money(ticket.Stake),
-                TextOf(Required(ledgerTicket, "TicketStake")));
-            Assert.AreEqual("PAYOUT " + PayoutText(ticket),
-                TextOf(Required(ledgerTicket, "TicketPayout")));
+            // S32: LedgerEntry.jsx's STAKE/RETURNED cells are a key line over a value line, not
+            // one "LABEL $n" string — updated from the pre-S32 single-line "STAKE $n"/"PAYOUT $n"
+            // pins to match. "RETURNED" also retires "PAYOUT" as the label word, per the ruling's
+            // own wording ("the returned figure").
+            Assert.AreEqual("STAKE", TextOf(Required(ledgerTicket, "TicketStakeKey")));
+            Assert.AreEqual(Money(ticket.Stake), TextOf(Required(ledgerTicket, "TicketStakeValue")));
+            Assert.AreEqual("RETURNED", TextOf(Required(ledgerTicket, "TicketReturnedKey")));
+            Assert.AreEqual(PayoutText(ticket), TextOf(Required(ledgerTicket, "TicketReturnedValue")));
             Assert.Zero(ledgerTicket.GetComponentsInChildren<Button>(true).Length,
                 "settled ledger ticket must expose no action");
 
@@ -71,16 +75,34 @@ namespace SBR.Tests.PlayMode
             {
                 Leg leg = ticket.Legs[legIndex];
                 Transform ledgerLeg = Required(ledgerTicket, "LedgerLeg" + legIndex);
+                Text legIdentityText = Required(ledgerLeg, "LegIdentity").GetComponent<Text>();
+                Assert.IsNotNull(legIdentityText, "LegIdentity has no Text to measure against");
+                Assert.IsNotNull(legIdentityText.font,
+                    "LegIdentity has no font; the production face failed to load");
+                // F7 (was: raw leg.DisplayLabel, which repeats the picked team a second time —
+                // that literal was the bug, not this assertion's job to preserve). The ledger leg
+                // label now routes through the same CompactLegLabel/FitLabelKeepingSuffix formula
+                // as BuildSlip and BuildStagedReceipt, so it is asserted against that same
+                // production formula here — same convention SureThingEntryTests already uses for
+                // BuildStagedReceipt's TicketLeg rows — rather than a hand-kept literal that could
+                // quietly drift out of sync.
                 Assert.AreEqual(
-                    $"{legIndex + 1}. {leg.DisplayLabel}  {OddsFormat.American(leg.OfferedOdds)}",
-                    TextOf(Required(ledgerLeg, "LegIdentity")));
+                    LaptopUi.FitLabelKeepingSuffix(legIdentityText.font, $"{legIndex + 1}. ",
+                        SportsbookApp.CompactLegLabel(leg.Matchup, leg.Selection),
+                        $"  {OddsFormat.American(leg.OfferedOdds)}", 13, 470f),
+                    legIdentityText.text);
                 Assert.AreEqual(LegStateText(leg),
                     TextOf(Required(ledgerLeg, "LegState")));
                 Assert.Zero(ledgerLeg.GetComponentsInChildren<Button>(true).Length,
                     $"settled ledger leg {legIndex} must expose no action");
             }
-            Assert.AreEqual($"SETTLED  {run.Tickets.Count}",
-                TextOf(Required(margin, "SettledCount")));
+            // S33: the passive margin's first MarginRow — TICKETS SETTLED, in the kit's own order
+            // and wording (app.jsx:95) — replaces the pre-S33 single "SETTLED  N" line this used
+            // to pin; label and value are now separate nodes, matching MarginRow.jsx's own split.
+            Assert.AreEqual("TICKETS SETTLED",
+                TextOf(Required(margin, "RecordRowSettledLabel")));
+            Assert.AreEqual(run.Tickets.Count.ToString(CultureInfo.InvariantCulture),
+                TextOf(Required(margin, "RecordRowSettledValue")));
         }
 
         [UnityTest, Order(2)]
@@ -88,6 +110,9 @@ namespace SBR.Tests.PlayMode
         {
             yield return Boot();
             LaptopScreen laptop = Laptop();
+            // S31 needs a live Run reference again: the masthead's run figures (BANK/TARGET/
+            // TICKETS) and its ROUND-number scope line are both asserted below against the same
+            // production formula SportsbookApp.BuildRunFigures/BuildChrome use.
             Run run = laptop.director.Run;
             yield return OpenLedgerThroughTray(laptop);
 
@@ -100,18 +125,39 @@ namespace SBR.Tests.PlayMode
             Transform summary = Required(margin, "RecordSummary");
             AssertRect(summary as RectTransform, 324f, 530f, "record summary");
 
-            // S9 defect 7: "READ ONLY" is said once now, by the masthead's Scope line
-            // (BuildLedgerChrome) — this caption keeps only the information it alone carries.
-            Assert.AreEqual("SETTLED CURRENT-RUN RECORDS",
-                TextOf(Required(board, "LedgerScope")));
-            Assert.AreEqual("SETTLED TICKETS EXPOSED BY\nRUN.TICKETS ONLY",
-                TextOf(Required(summary, "RecordScope")));
-            StringAssert.Contains("NO CROSS-RUN HISTORY IS INVENTED.",
-                TextOf(Required(summary, "CashOutDisclosure")));
-            Assert.AreEqual("SETTLED  0", TextOf(Required(summary, "SettledCount")));
-            // S9 defect 7: same consolidation as LedgerScope above.
-            Assert.AreEqual($"ROUND {run.Round}",
-                TextOf(Required(summary, "RoundIdentity")));
+            // S31: the masthead's run figures are unchanged from the rest of the surface — reused
+            // verbatim from SportsbookApp.BuildRunFigures rather than a parallel condensed string.
+            Transform masthead = Required(chrome, "FormMasthead");
+            Assert.AreEqual(
+                $"BANK {Money(run.Bank)}    TARGET {Money(run.CurrentPayment)}    TICKETS {run.Tickets.Count}/{run.Config.MaxTicketsPerRound}",
+                TextOf(Required(masthead, "Figures")));
+            Assert.AreEqual($"ROUND {run.Round} OF {run.Config.Rounds}  ·  SETTLED TICKETS ONLY",
+                TextOf(Required(masthead, "Scope")));
+
+            // S31: LedgerScreen()'s own 44px board header replaces the old "LedgerScope" caption —
+            // same fact (the list below is scoped to settled current-run records), now stated
+            // once, in the kit's own words, by the header this ruling mandates.
+            Assert.AreEqual("SETTLED TICKETS · THIS RUN",
+                TextOf(Required(board, "LedgerBoardHeaderScope")));
+            Assert.AreEqual("0 RECORDS",
+                TextOf(Required(board, "LedgerBoardHeaderCount")));
+            // S33: the passive margin's biro MarginHeader + exactly three MarginRows + one note
+            // (app.jsx:94-97) replaces the pre-S33 seven-block panel. The note keeps its pre-S33
+            // wording — S35(a) removed the leaked RUN.TICKETS property path from this slot, and
+            // this is the kit's own single note (app.jsx:97), not the board header's wording
+            // (S31's trap: asserting the header's words here would pin the duplicate S37 forbids).
+            Assert.AreEqual("READ-ONLY. THE LEDGER COPIES SETTLED TICKETS AND DERIVES NOTHING.",
+                TextOf(Required(summary, "RecordNote")));
+            // S33 caps the passive margin at exactly three MarginRows and one note — the separate
+            // CashOutDisclosure paragraph this used to pin is retired along with the other four
+            // content blocks S33 replaces, not renamed.
+            Assert.AreEqual("TICKETS SETTLED", TextOf(Required(summary, "RecordRowSettledLabel")));
+            Assert.AreEqual("0", TextOf(Required(summary, "RecordRowSettledValue")));
+            // S37: the live round number appears exactly once on the surface, in the masthead's
+            // Scope line asserted above. The margin's former "RoundIdentity" — a second,
+            // standalone restatement of the same figure — stays gone.
+            Assert.IsNull(Find(summary, "RoundIdentity"),
+                "S37: the round number belongs to the masthead alone, not this margin too");
 
             AssertProductFloors(chrome, board, margin, tray);
             AssertChildrenContained(chrome);
@@ -144,9 +190,11 @@ namespace SBR.Tests.PlayMode
                 : ticket.State == TicketState.CashedOut ? "CASHED OUT" : "OPEN";
 
         private static string PayoutText(Ticket ticket)
+            // S36: the engine retains no cash-out amount; the money column prints an honest
+            // absence (an em dash), never a fabricated $0 and never "AMOUNT NOT RETAINED".
             => ticket.State == TicketState.Won ? Money(ticket.PotentialPayout)
                 : ticket.State == TicketState.Lost ? Money(0)
-                : "AMOUNT NOT RETAINED";
+                : "—";
 
         private static string LegStateText(Leg leg)
             => leg.IsVoided ? "VOID"

@@ -56,15 +56,17 @@ The form is an inverted document: warm lifted olive-black ground, house toner, a
 
 ## Typography
 
-**Production face:** undecided, pending the Design Director. **Bell Centennial is dropped for good** (Allen, 2026-07-31): no licence-encumbered typeface ships in this product, so the intended face is out regardless of whether a licence could be bought. The replacement must be free-licence (OFL or equivalent) and is being specced by the Design Director as part of the form-guide identity work.
+**Production faces — CLOSED (S11, 2026-07-31): Archivo and Archivo Narrow, SIL OFL 1.1.** Wired and shipping. `--font-data` is Archivo for labels, copy and OS chrome; `--font-cond` is Archivo Narrow for figures, prices, team names and terminal-state words. They are one superfamily sharing proportions, metrics and one hand, so the document has two voices rather than a pairing — which is what a printed directory is. Both carry tabular figures, because values change in place and non-tabular digits make the surface twitch.
 
-What the face still has to do, as the brief for whoever picks it: carry three-digit American prices and W–L records at 13px on a surface read at an angle, hold a condensed figure set so a price column stays narrow, and read as a cheap personal machine rather than institutional signage.
+**Bell Centennial is dropped for good.** No licence-encumbered typeface ships in this product. That is a closed decision, not a pending one; do not revive it. Archivo was chosen for the *function* the ink traps served — holding small type together, there on absorbent paper, here on an angled and bloomed screen — since no OFL face reproduces ink traps.
 
-**Licensing policy:** free-licence faces only. Do not download, commit, or distribute a commercial face, and do not preemptively pick a substitute — that call belongs to the Design Director.
+**Licensing policy:** free-licence faces only. The OFL licence files ship beside the fonts in `Resources/SureThing/Fonts` and must stay with them; that is a condition of redistribution, not housekeeping.
 
 **Swap cost:** the runtime resolves its face through one seam (`LaptopScreen.LoadFont`), and every builder takes the resulting `Font` by parameter. Swapping the face is a one-function change plus a font asset; nothing else in the UI names a typeface. Keep it that way.
 
-**Final runtime route:** production uses licensed TextMeshPro font assets. `LegacyRuntime.ttf` and legacy UGUI `Text` are current implementation evidence only; they are not acceptable final visual implementation because the 50% legibility contract needs the selected face, stable glyph metrics, and a reproducible asset import path. HTML system stacks are mockup-only.
+**Final runtime route:** the faces resolve through one seam (`LaptopScreen.LoadFont`) and every builder takes a `Font` by parameter, so nothing else in the UI names a typeface — keep it that way. `LegacyRuntime.ttf` survives only as the fallback when a face fails to load, and that path logs loudly, because rendering the wrong voice silently is a defect that survives review.
+
+`google/fonts` ships no static instances for these families, so both files are variable fonts and legacy UGUI `Text` renders only a font's default instance. Per **S20**, weight is therefore not an addressable channel here: tier is carried by size, colour and position. A spec needing a weight tier needs TextMeshPro font assets with named instances first — not a TTF per weight, and not `FontStyle.Bold`. HTML system stacks remain mockup-only.
 
 | Size | Use |
 | --- | --- |
@@ -349,6 +351,48 @@ Never randomize per frame or rebuild; stake changes must not redraw a selected r
 
 No TV-style quantized refresh, panel flips, confetti, pulse loops, brightness-only status, or casino urgency.
 
+## Craft laws (Design Director batch 4, 2026-07-31)
+
+Three rulings that generalise past the cases that produced them. Each was written after the failure
+it describes actually shipped on this surface, so they are recorded with that failure attached —
+a law with its evidence is harder to argue away later than a law on its own.
+
+### C10 — never tune a wrong-in-kind effect toward invisibility
+
+If an effect is wrong in *kind*, reducing its strength does not fix it; it produces a fainter version
+of the same wrong thing while making the wrongness harder to see and therefore harder to argue about.
+Diagnose the kind first, then decide whether to build it properly or not at all.
+
+*Origin.* The toner grain was a white overlay under normal alpha blending, which can only add light.
+It lifted the ground from `(24,24,16)` to `(52,52,48)` — double the luminance, and neutral grey
+against a warm olive ground. Lowering the opacity was the obvious response and would have been the
+wrong one. The right move was to recognise that grain must darken as well as lighten, disable the
+pass until a signed-blend shader existed, and record the measurement in the meantime.
+
+### S2 (amended) — a text box is at least one line tall, or it overflows. Never empty.
+
+Unity's `Text` truncation clips whole **lines**, so a box shorter than one line of its own font
+renders *nothing at all* — not a clipped glyph. Silent, total, and invisible to any test that checks
+the string rather than the pixels.
+
+A box may legitimately be shorter than its content: clipping a long wrapped paragraph is a real
+layout choice. It may never be too short for its **first** line. `LaptopUi.MakeText` enforces this by
+falling back to overflow rather than rendering emptiness; do not defeat it by pre-clamping heights.
+
+*Origin.* Wiring the production faces deleted the masthead and the payout figure in one go — Archivo's
+line metrics are taller than the fallback's, and three boxes authored at 1.08× and 1.16× their font
+size stopped fitting a line. All 38 tests stayed green: the objects existed and held the right
+strings.
+
+### S20 — no weight tiers without TextMeshPro named instances
+
+Weight is only a usable channel where the runtime can actually address it. Legacy UGUI `Text` renders
+a font's default instance, so on a variable font the 400–700 range is not reachable. Do not fake it
+with `FontStyle.Bold`, and do not ship a TTF per weight. A spec that needs a weight tier needs TMP
+font assets with named instances first.
+
+Until then, tier is carried by size, colour and position — which is what this surface already does.
+
 ## Do's and Don'ts
 
 ### Do
@@ -379,6 +423,12 @@ Presentation may change and staging/skip UI may be added, but preserve these sea
 - MY BETS remains a `RevealedView` causal mirror with no direct engine reads.
 
 Validate targeted behavior with `BetslipModelTests`, `AnytimeScorerBetslipTests`, and `LaptopOsTests`, then the relevant Unity suite. Capture actual angled laptop lobby, event detail, staged ticket, disabled lock reason, and revealed MY BETS. Check persistent Chrome, deterministic ring stability across rebuilds, and no clipping at 1024 × 704.
+
+### Design-verified
+
+**S6 (lobby shell), S7 (ink sprites) and S8 (OS chrome) are DESIGN-VERIFIED** by the Design Director,
+2026-07-31 — the laptop's first — against the eight flat captures plus the angled in-room render.
+They are no longer open work. Changes to them are regressions, not iteration.
 
 ### Open risks
 
