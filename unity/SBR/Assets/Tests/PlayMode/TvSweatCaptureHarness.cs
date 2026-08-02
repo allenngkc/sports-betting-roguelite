@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Globalization;
 using System.Collections.Generic;
 using System.IO;
 using NUnit.Framework;
@@ -374,7 +375,10 @@ namespace SBR.Tests.PlayMode
                 // the label is the grammar the stage PLAYED, not one a re-run might disagree about.
                 string grammar = string.IsNullOrEmpty(screen.DebugSceneTemplate)
                     ? "none" : screen.DebugSceneTemplate;
-                string file = $"seed-{_seed}__scene{s_sceneIndex:000}__grammar-{grammar}" +
+                // C8·a: the boost rides in the filename so a frame is self-evidencing. The first A/B
+                // was undeliverable because nothing in the image said which arm it was.
+                string boost = screen.DebugHdrBoostL4.ToString("0.0", CultureInfo.InvariantCulture);
+                string file = $"seed-{_seed}__boost{boost}__scene{s_sceneIndex:000}__grammar-{grammar}" +
                               $"__moment-{momentName}__frame{i:000}.png";
                 string path = Path.Combine(OutputDir, file);
                 CaptureCamera(cam, path, CaptureWidth, CaptureHeight);

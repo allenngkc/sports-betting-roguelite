@@ -386,6 +386,16 @@ namespace SBR.Game
         /// actually played rather than from a planner re-run that might disagree.</para></summary>
         public string DebugSceneTemplate { get; private set; } = string.Empty;
 
+        /// <summary>PRD §9 diagnostic: the L4 HDR boost this build is compiled with.
+        ///
+        /// <para>Exists because the first C8·a A/B was UNDELIVERABLE. Both arms were captured
+        /// correctly and neither frame carried any token saying which arm it was — the manifest
+        /// asserted the pairing and the images could not corroborate it, so the pair proved nothing
+        /// on its own. Same failure as an unlabelled grammar set, one review apart. A frame that
+        /// needs a document to say what it is has not been delivered; every capture now states its
+        /// own boost in its filename.</para></summary>
+        public float DebugHdrBoostL4 => HdrBoostL4;
+
         // ---- state ----
         private bool _seated;
         // TVS-H02: accumulates real time only while seated. Every TvSweatScreen-owned timer,
