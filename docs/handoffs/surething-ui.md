@@ -138,8 +138,23 @@ that money column prints an em dash in `--toner-3`. **Keep printing the honest a
   commit. **Tell them explicitly not to use `run_in_background` for Unity runs and not to end a turn
   with a run pending** — that pattern burned two cycles.
 - **Verify against pixels, not test output.** On this surface a fully green suite has hidden a
-  defect that was obvious in a screenshot at least three times. Tests here assert structure; they do
+  defect that was obvious in a screenshot at least four times. Tests here assert structure; they do
   not assert appearance.
+- **This project renders in LINEAR colour space** (`ProjectSettings.asset`, `m_ActiveColorSpace: 1`).
+  When checking a measured pixel against a token — a `rgba(...)` overlay, an alpha blend, any
+  composite — **blend in linear and convert back**, or the number will be wrong and the build will
+  look guilty. Naive sRGB arithmetic under-predicts badly on this surface's dark ground, and most on
+  blue: for the marked wash it predicted 27 where the correct model and the build both give 55.
+
+  I reported that wash as 2–3× over-strength and queued a fix for it. It was correct all along; my
+  model was wrong. Note what saved every earlier measurement: they were **comparisons** — ground
+  before and after grain, strike x-extent against a column's x, one rule colour against another —
+  and comparisons are unaffected by the colour space because both sides carry the same error. The
+  first absolute check against a hand-computed token is the one that bit.
+- **A `Graphic` subclass needs `typeof(CanvasRenderer)` in its `GameObject` constructor.**
+  `[RequireComponent]` is honoured by `AddComponent` and ignored by the constructor's type list.
+  Without it, `OnPopulateMesh` is never called — the element draws nothing, throws nothing, and
+  passes every test. All three custom graphics here shipped that way and none had ever drawn.
 - **Unverified work is not committed.** Hold it in the working tree until a slot proves it.
 
 ### Commands
