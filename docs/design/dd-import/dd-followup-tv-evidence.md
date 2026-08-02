@@ -20,3 +20,5 @@ grade spec). Room's DD package with the measurements follows; ruling needed from
 you + the TV context together. No lead can fix it unilaterally.
 
 **TV-15 (2026-08-02):** stacked label-above-value does not fit (66.7 vs 67px); side-by-side does. Canon says stacked. Rule which yields: the layout or the 0.3px.
+
+**TV-02 (2026-08-02):** tape shape - canon's single 28px strip vs per-leg rows; TV asks for an explicit confirm against T28's one-strip ruling before Phase 4 builds on it.
