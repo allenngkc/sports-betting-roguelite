@@ -50,7 +50,14 @@ namespace SBR.Game
             _flickerSeed = Random.value * 100f;
         }
 
-        /// <summary>Sets the steady mood the flash eases back toward (e.g. dimmer + redder after a bust).</summary>
+        /// <summary>Sets the steady mood the flash eases back toward (e.g. dimmer after a bust).
+        ///
+        /// <para>T34: this said "dimmer + REDDER after a bust", which contradicts this file's own
+        /// header — "never ... a money-bad red, which DESIGN.md §4 retires along with green" — and
+        /// contradicts §4/§8's "loss is still darkness". No red is passed here by any TV caller
+        /// (<c>DeadLegBeat</c> rests on <c>deadDark</c>), so the wording was the last surviving
+        /// instruction to do the banned thing. A comment that licenses a violation is how the
+        /// violation comes back.</para></summary>
         public void SetRest(Color color, float intensity)
         {
             _restColor = color;
