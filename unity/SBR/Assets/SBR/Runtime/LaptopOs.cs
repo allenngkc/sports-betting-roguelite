@@ -79,7 +79,7 @@ namespace SBR.Game
             // The wallpaper Graphic lives on its OWN child: MakePanel's GameObject already
             // carries an Image, and Unity allows one Graphic per object — AddComponent on
             // the panel returns null (the room-boot NRE this comment buries).
-            var wallGo = new GameObject("Wallpaper", typeof(LaptopWallpaperGraphic));
+            var wallGo = new GameObject("Wallpaper", typeof(CanvasRenderer), typeof(LaptopWallpaperGraphic));
             wallGo.transform.SetParent(_desktop, false);
             var wallpaper = wallGo.GetComponent<LaptopWallpaperGraphic>();
             wallpaper.raycastTarget = false;
@@ -433,9 +433,6 @@ namespace SBR.Game
             Rect r = rectTransform.rect;
             Color32 rule = LaptopOs.RuleSoft;
             int vertexIndex = 0;
-            // The gradient's 0% origin is the rect's TOP edge (CSS "180deg" runs top to bottom),
-            // so the first line sits Period px below the top rather than Period px above the
-            // bottom — depth is measured down from r.yMax.
             for (float depth = Period; depth - LineHeight < r.height; depth += Period)
             {
                 float bandTop = r.yMax - (depth - LineHeight);
@@ -690,7 +687,7 @@ namespace SBR.Game
         /// buttons so it draws underneath them.</summary>
         public static void MakeMarkedWash(RectTransform parent, string name)
         {
-            var go = new GameObject(name, typeof(MarkedWashGraphic));
+            var go = new GameObject(name, typeof(CanvasRenderer), typeof(MarkedWashGraphic));
             go.transform.SetParent(parent, false);
             MarkedWashGraphic wash = go.GetComponent<MarkedWashGraphic>();
             wash.color = new Color(LaptopOs.Accent.r, LaptopOs.Accent.g, LaptopOs.Accent.b,
@@ -710,15 +707,32 @@ namespace SBR.Game
         /// <see cref="MakeMarkedWash"/>.</summary>
         public static void MakeMarginRuledPaper(RectTransform parent, string name)
         {
-            var go = new GameObject(name, typeof(MarginRuledPaperGraphic));
+            // typeof(CanvasRenderer) is NOT optional and NOT decoration. Graphic declares it via
+            // [RequireComponent], but that attribute is only honoured by AddComponent — the
+            // GameObject constructor's type list ignores it. A Graphic without a CanvasRenderer is
+            // never asked for geometry at all: OnPopulateMesh simply never runs, nothing renders,
+            // nothing errors, and every test stays green. All three Graphic subclasses on this
+            // surface were built this way and none of them had ever drawn.
+            var go = new GameObject(name, typeof(CanvasRenderer), typeof(MarginRuledPaperGraphic));
             go.transform.SetParent(parent, false);
             MarginRuledPaperGraphic graphic = go.GetComponent<MarginRuledPaperGraphic>();
             graphic.raycastTarget = false;
             RectTransform rt = graphic.rectTransform;
-            rt.anchorMin = Vector2.zero;
-            rt.anchorMax = Vector2.one;
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
+            // Explicit size from the parent's already-resolved rect, NOT anchor-stretch.
+            //
+            // Stretching leaves the size to a layout pass, and this canvas is built imperatively:
+            // the rect read zero at build time, UGUI culls a zero-size graphic before asking it for
+            // geometry, and OnPopulateMesh was never called once — the diagnostic added to it
+            // printed nothing at all, which is what pointed here. Every panel on this surface is
+            // built with an explicit sizeDelta for the same reason; this was the one that was not.
+            //
+            // The parent is always a MakePanel-built panel with its own explicit size, so its rect
+            // is resolved by the time this runs.
+            rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
+            rt.pivot = new Vector2(0f, 1f);
+            rt.sizeDelta = parent.rect.size;
+            rt.anchoredPosition = Vector2.zero;
+
         }
 
         /// <summary>Builds the document's own toner grain (palette-surething.css

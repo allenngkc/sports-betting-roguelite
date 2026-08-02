@@ -1363,22 +1363,28 @@ namespace SBR.Game
             // restate the header's own fact (S37).
             BuildLedgerBoardHeader(board, settled.Count);
 
-            // S32: word order follows the rebuilt row below — STAKE, RETURNED, then STATE
-            // rightmost as the row's own last scan point (LedgerEntry.jsx column order). "PAYOUT"
-            // is retired for "RETURNED", matching the row's own RETURNED key and the ruling's own
-            // wording ("the returned figure"). Spacing is a by-eye hint, not pixel-locked to the
-            // columns below — same limitation the original header text already had. Shifted 44px
-            // down from its pre-S31 position to make room for the new board header above it.
-            LaptopUi.MakeText(board, "LedgerColumnHead", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, -78f), new Vector2(672f, 24f), 13, TextAnchor.UpperLeft,
-                LaptopOs.Muted, "TICKET                    STAKE          RETURNED                    STATE", _font);
-            LaptopUi.MakeRule(board, "LedgerHeaderRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(0f, -110f), new Vector2(700f, 2f));
-
+            // The column-head row is gone, and deliberately not realigned. Three reasons, in order
+            // of weight:
+            //
+            // LedgerScreen() has no such row — it renders the 44px board header and then entries.
+            // The head was a build invention, so under C14 the 1:1 move is to delete it rather than
+            // to perfect it.
+            //
+            // Since S32 rebuilt the row into LedgerEntry's stacked key/value cells, every row now
+            // prints its own STAKE and RETURNED keys. A head above them restates each row's labels
+            // once per screen, which is what S37 exists to stop.
+            //
+            // And it never worked: it was one string padded with spaces, so in a proportional face
+            // it could not line up with the columns it claimed to head. Measured on the populated
+            // capture, the STAKE head sat at x=122 against its value at x=351 — the head pointed at
+            // nothing. Its own comment conceded the spacing was "a by-eye hint, not pixel-locked".
+            //
+            // The board header carries its own 1px --rule bottom border (S31), so the separator
+            // rule that sat under the head goes with it rather than leaving a second line.
             int cashedCount = 0;
             double settledStake = 0.0;
             double knownWinPayout = 0.0;
-            float y = -116f;
+            float y = -52f;
             for (int i = 0; i < settled.Count; i++)
             {
                 Ticket ticket = settled[i];
