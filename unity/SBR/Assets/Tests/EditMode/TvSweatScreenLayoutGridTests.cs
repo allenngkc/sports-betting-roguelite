@@ -474,6 +474,72 @@ namespace SBR.Tests.EditMode
             }
         }
 
+        /// <summary>TV-15's measurement, taken before the rebuild rather than reasoned from LineBox.
+        ///
+        /// <para>Canon's TvRiskPays is FOUR elements — an eyebrow label ABOVE a value, twice
+        /// (`TvRiskPays.jsx:7-18`). Estimated, that stack is 18+29 = 47px against a 40px footer, and
+        /// growing the footer to 48 leaves the live row a ONE pixel margin (slot 68.0 vs a measured
+        /// need of 67). One pixel is not a margin, and the T24 re-measure just showed the estimate
+        /// and the measurement differ by 2px — enough to swallow it entirely.</para>
+        ///
+        /// <para>So this measures the real cell in the production faces (label regular, value
+        /// condensed, per canon) and reports both geometries: STACKED, which canon specifies, and
+        /// SIDE-BY-SIDE, which costs no vertical space and may fit a 265px column. TV-14 and TV-15
+        /// build from these numbers. It asserts only the thing that is not a judgement call — that
+        /// the measurement happened in Encode Sans — and leaves the layout choice to the DD.</para></summary>
+        [Test]
+        public void T15_measure_the_risk_pays_cell_in_the_production_face()
+        {
+            var go = new GameObject("T15Measure");
+            try
+            {
+                var screen = BuildScreen(go);
+                Text riskPays = FindChild<Text>(screen, "RiskPays");   // condensed, per TvRiskPays.jsx:14
+                Text eventLine = FindChild<Text>(screen, "Flavor");    // regular, per TvEventStrip.jsx:10
+                Assert.IsNotNull(riskPays, "RiskPays not found");
+                Assert.IsNotNull(eventLine, "Flavor not found");
+                Assert.IsNotNull(riskPays.font, "no font resolved — a measurement in the fallback is void");
+                Assert.IsTrue(riskPays.font.name.Contains("Encode"),
+                    $"measured in '{riskPays.font.name}', not Encode Sans — the same mistake T20 made once");
+
+                Text label = MeasureText(riskPays.transform.parent, eventLine.font, 15, "PAYS");
+                Text value = MeasureText(riskPays.transform.parent, riskPays.font, 24, "$1,234");
+
+                float stackedH = label.preferredHeight + value.preferredHeight;
+                float cellW = Mathf.Max(label.preferredWidth, value.preferredWidth);
+                float sideBySideH = Mathf.Max(label.preferredHeight, value.preferredHeight);
+                float sideBySideW = label.preferredWidth + 8f + value.preferredWidth;
+
+                var columnZone = FindChild<Image>(screen, "TicketColumnZone");
+                float columnW = columnZone != null ? columnZone.rectTransform.sizeDelta.x : 0f;
+
+                Debug.Log($"[T15] label '{label.text}' {label.preferredWidth:0.0}x{label.preferredHeight:0.0} " +
+                          $"({eventLine.font.name}) | value '{value.text}' " +
+                          $"{value.preferredWidth:0.0}x{value.preferredHeight:0.0} ({riskPays.font.name})");
+                Debug.Log($"[T15] STACKED cell = {cellW:0.0}w x {stackedH:0.0}h — two cells need " +
+                          $"{cellW * 2 + 24:0.0}w, footer must be >= {stackedH + 8:0.0}h (is 40)");
+                Debug.Log($"[T15] SIDE-BY-SIDE cell = {sideBySideW:0.0}w x {sideBySideH:0.0}h — two cells need " +
+                          $"{sideBySideW * 2 + 24:0.0}w of the {columnW:0.0}px column, footer unchanged at 40");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        /// <summary>A throwaway Text used only to ask Unity what a string actually measures.</summary>
+        private static Text MeasureText(Transform parent, Font font, int size, string content)
+        {
+            var go = new GameObject("Measure", typeof(Text));
+            go.transform.SetParent(parent, false);
+            var t = go.GetComponent<Text>();
+            t.font = font;
+            t.fontSize = size;
+            t.fontStyle = FontStyle.Bold;
+            t.text = content;
+            return t;
+        }
+
         [Test]
         public void Nothing_in_the_sweat_surface_outgrows_the_score()
         {

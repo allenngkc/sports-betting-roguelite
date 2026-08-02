@@ -93,15 +93,19 @@ namespace SBR.Game
 
         private static readonly string[] BigUp =
         {
-            "{picked} tear away - IT'S IN!",
-            "{picked} break the line and finish - the crowd loses it.",
+            // T39: no second person, no hype. This surface reports the match; it does not address
+            // the player and it does not celebrate. "IT'S IN!" is a commentator's shout and the
+            // crowd's reaction is not a match fact — the correct voice was already one line away
+            // ("...cleared off the line. it's slipping away"): flat, third person, observed.
+            "{picked} tear away and finish.",
+            "{picked} break the line and score.",
             "{picked} counter at full sprint. This is happening.",
         };
 
         private static readonly string[] BigDown =
         {
             "Disaster - {other} go the length of the pitch.",
-            "{other} rip through on the break. Cover your eyes.",
+            "{other} rip through on the break.", // T39: "Cover your eyes" instructs the viewer
             "{other} walk it in. That one hurt.",
         };
 

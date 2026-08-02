@@ -1355,7 +1355,18 @@ namespace SBR.Game
         private void PlayScorePunch(string scoreText)
         {
             if (_tScoreFlash == null) return;
-            _tScoreFlash.text = scoreText;
+
+            // T38: the punch mirrors what is ALREADY on screen — it never carries a string of its
+            // own. It used to be handed the INCOMING score while _tMatchup still showed the
+            // outgoing one, two scorelines at the same rect, same size, one gold over one white.
+            // Different digits superimposed read as a crossed-out score: the margin's rub-out
+            // gesture, on a scoreboard, where a number is either true or it is not.
+            //
+            // DESIGN.md §9: "State changes are quantised — a brightness level swaps in a discrete
+            // step." The score swaps discretely and the punch is BRIGHTNESS ONLY. Sourcing the text
+            // from _tMatchup rather than the caller makes that structural: this overlay cannot
+            // display a value the surface is not already showing, whatever a future caller passes.
+            _tScoreFlash.text = _tMatchup != null ? _tMatchup.text : scoreText;
             _tScoreFlash.enabled = true;
             StartCoroutine(ScorePunchRoutine());
         }
@@ -1691,9 +1702,13 @@ namespace SBR.Game
             bool isMl = leg.Selection.Kind == MarketKind.Moneyline;
             string awayMark = isMl && !pickedHome ? "● " : "";
             string homeMark = isMl && pickedHome ? " ●" : "";
-            _tMatchup.text =
-                $"<color=#{awayRgb:X6}>{awayMark}{away}</color>  {awayScore} — {homeScore}  " +
-                $"<color=#{homeRgb:X6}>{home}{homeMark}</color>";
+            // T32.1 / T25.2: the scoreline carries NO team hue. §4 is explicit — facts are cold
+            // white, identity is carried by the words in the ticket column, and the two muted team
+            // hues are confined to the pitch dots. The names were injected here as
+            // <color=#RRGGBB> markup straight from the saturated team pool, which is both the wrong
+            // hue and the wrong place: markup is still palette, and a colour system a string can
+            // bypass is not enforced. The element's own --tv-fact colour now carries the whole line.
+            _tMatchup.text = $"{awayMark}{away}  {awayScore} — {homeScore}  {home}{homeMark}";
             RevealedView.SetScore($"{away} {awayScore} — {home} {homeScore}");
         }
 
@@ -2367,12 +2382,24 @@ namespace SBR.Game
 
         private IEnumerator WonLegBeat(int k)
         {
-            // A leg wins — money, gold, per §4. §8's `W` state: L3 gold, no pulse.
-            _tFlavor.color = new Color(gold.r, gold.g, gold.b, 1f);
-            _tFlavor.text = $"LEG {k} - WON";
+            // T40: the full-field gold wash is GONE. It flooded the whole canvas at 0.5 alpha, and
+            // §4 rations gold to won leg rows, risk/pays and the cash-out band — a screen-wide wash
+            // is gold everywhere, which is the precise inverse of rationing. The leg's win is
+            // already stated where §8 puts it: the row itself goes L3 gold.
+            //
+            // TV-05: the event strip stays NEUTRAL. "It never uses money hues ... money semantics
+            // live on the leg rows and the cash-out slot" (TvEventStrip.jsx:5, prompt.md:7). The
+            // VOID and DEAD paths were corrected earlier and this one was missed — the same
+            // violation, three beats apart.
+            //
+            // TV-32: em dash, the system's own dash.
+            _tFlavor.color = AtTier(flavorColor, TierL2);
+            _tFlavor.text = $"LEG {k} — WON";
+            // The panel's own glow and the room light still warm: those are the TV being a lit
+            // object in a room, not the canvas painting itself gold.
             EmissionFlash(gold);
             tvLight?.Flash(gold, 3.0f);
-            yield return FloodPulse(_wonFlood, gold, 0.5f, wonFloodDuration);
+            yield return ScaledWait(wonFloodDuration);
         }
 
         private IEnumerator DeadLegBeat(int k)
