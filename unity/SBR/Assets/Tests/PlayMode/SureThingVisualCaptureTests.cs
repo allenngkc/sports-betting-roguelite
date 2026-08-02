@@ -101,6 +101,19 @@ namespace SBR.Tests.PlayMode
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "02-entry-selected-wide-ring", capturedPaths);
 
+            // C17: no rebuild verdict on a state no capture shows. Every previously captured ENTRY
+            // state is GOALS, which fits its body and therefore correctly renders NO position rail
+            // — so the scrolling branch and the S27 rail had no photograph at all. PLAYERS is the
+            // one shipped destination whose list overflows (14 scorer offers against a body that
+            // shows ~7 at the 54px row), so this is the state that actually exercises S25's scroll
+            // and S27's track-and-thumb.
+            Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTabPLAYERS"));
+            yield return WaitForRebuild();
+            Assert.IsNotNull(Required(App(laptop), "PositionRailTrack"),
+                "PLAYERS overflows its body, so S27's rail must be present");
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "02b-entry-players-scrolling-rail", capturedPaths);
+
             Invoke(Required(App(laptop), "BackToForm"));
             yield return WaitForRebuild();
             Assert.AreEqual(SportsbookApp.Tab.Lobby, laptop.Os.CurrentTab);
@@ -171,7 +184,7 @@ namespace SBR.Tests.PlayMode
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "06-ledger", capturedPaths);
 
-            Assert.AreEqual(12, capturedPaths.Count, "six states must emit paired captures");
+            Assert.AreEqual(14, capturedPaths.Count, "seven states must emit paired captures");
             foreach (string path in capturedPaths)
             {
                 Assert.IsTrue(File.Exists(path), $"capture missing: {path}");

@@ -60,9 +60,35 @@ E-16 replace underline spans the cell rather than the figure (more prominent now
 is 176px) · E-18 ring derived from hit area not printed figure · E-19/E-20 tab strip and
 buttons · E-21 biro on the back control · E-22 hover · M-04…M-07, M-09…M-15 · B-01, B-03.
 
-**One thing this audit cannot yet claim:** the S27 rail is test-verified but **not**
-capture-verified — the harness photographs GOALS, which fits and correctly shows no rail.
-Under C17 that is exactly a state no capture shows. A PLAYERS capture is owed.
+**~~One thing this audit cannot yet claim~~ — CLOSED 2026-08-02.** The scrolling branch and
+the S27 rail now have a photograph. A permanent capture state `02b-entry-players-scrolling-rail`
+was added to the harness: PLAYERS is the one shipped destination whose list overflows, so
+it is the state that actually exercises S25's scroll and S27's track-and-thumb. Every prior
+ENTRY capture was GOALS, which fits and therefore correctly renders no rail — the branch had
+never been photographed. Confirmed in-frame: single column, all 14 offers present (C19), the
+role as a word in `--toner-3` against the `--toner` name, the row cut off at the mask edge,
+and the rail's thumb over its track.
+
+### ⚠ New finding from the capture — the scorer board has only six distinct prices
+
+Visible in `02b`: three forwards priced identically at **+263**, two midfielders at **+572**,
+two defenders at **+1814**, and the opposing team's forward at **+253**.
+
+This is not a rendering bug — it is what the model does. `SlateGenerator.MakeRoster:107-108`
+assigns `ScoringWeight` purely by role (`ForwardScoringWeight` 3.0 / `Midfielder` 1.5 /
+`Defender` 0.5), and `MatchModel.TrueProbability` prices a scorer off his share of the team's
+weight. So every player of the same role on the same team is priced identically, and a
+14-offer board carries at most **2 teams × 3 roles = 6 distinct prices**.
+
+The consequence for play: on the PLAYERS tab the player is choosing a *name*, not a price.
+Three interchangeable forwards is not a market, it is one offer printed three times. It also
+makes M-01's name-dedupe load-bearing in a way I had not appreciated — the name is the only
+thing distinguishing those rows.
+
+Market-owned and mine to fix; the cheap version is per-player weight jitter within a role, on
+the roster stream, which would preserve determinism and role ordering while making the board
+read as a board. **Not actioned** — it moves scorer pricing, so it is a balance change that
+belongs with arm B's re-baseline rather than riding a presentation pass.
 
 ### ⚠ New, from building phase B1 — the margin overflows at the legal maximum
 
