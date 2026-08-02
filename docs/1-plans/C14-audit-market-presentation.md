@@ -16,6 +16,82 @@ recorded below rather than quietly fixed.
 
 ---
 
+## 0a. Disposition after DD Batch 5 (2026-08-01)
+
+Batch 5 answered all three open calls and dispositioned much of this audit. Status of
+every section below, so no one works from the pre-batch-5 reading.
+
+**Resolved and shipped** (`8df6d65` phase A, verified under lease — compile 0 errors,
+EditMode 75/75, PlayMode 44/44):
+E-01 single column · E-02 scroll · E-03 ladder literals · E-04 BTTS labels · E-05
+invented titles deleted · E-08 row rules · E-12 row line label (cond 19px `--toner`) ·
+E-13 picked figure stays toner, ring alone is biro · E-15 transparent price ground — **the
+capture confirms the ring now closes**, which is the long-running "the ring does not
+close" read · E-17 176px cell · E-23 the `N NOT SHOWN` colour question is moot, the cap
+itself is withdrawn · E-24 role as its own roman 13px `--toner-3` field.
+
+**Resolved in the engine** (`9e55d0d`): the retained cash-out figure and the run-long
+settled record. Reaches SureThing at the next merge round; the honest absence prints until
+then, by design.
+
+**Newly specified by batch 5 — build to the ruling, not to this audit:**
+| Was | Now |
+|---|---|
+| §1 the S24/S25 conflict | **S25 amended** — fixed-body withdrawn, every interior market list scrolls. **S24 stands**; the conflict is recorded as the DD seat's own defect, and the escalation as the correct instrument. |
+| I-01 letter-spacing | **S28 signed**, bounded, expiring at C15 — but **conditional**: it holds only where the colour split and two-voice split carry the load 1:1, which makes **E-12, E-24, M-02, M-03, M-08 load-bearing, not cosmetic**. |
+| I-02 tabular figures | **S29 signed**; lapses only for roman above 64px, and the largest figure here is 31px, so it holds by construction. |
+| the scroll indicator | **S27** — 4px track, `--rule-soft` ground, `--toner-3` thumb at the visible fraction, 24px floor, square, no fade, no overlay, two images. |
+| M-01 ruled-paper ground | **S34** — ships on working *and* passive margin as one shared `Graphic` subclass. |
+| P-01 passive margin | **S33** — biro `MarginHeader` + 2px `--biro-deep` rule on every destination, exactly three `MarginRow`s and one note. |
+| L-06 minus sign | **S30** — U+2212 everywhere a signed number prints. No per-region exception. My audit's "ledger-specific, confirm first" reading is superseded. |
+| L-07 cash-out payout | **S36** — an em dash in `--toner-3`; never `$0`, never `AMOUNT NOT RETAINED`. |
+| L-03 LOST styling | **S15 amended** — only the *strike* is oxide; the LOST word and the returned figure are both `--toner-3`. The original wording was ambiguous and the DD records F5/F6 as its own defect, not the lead's. |
+| B-02 leg hue | **S35c** — leg rows carry no per-outcome hue; the ✓, word, strike and `opacity .55` carry state. |
+| L-08 header copy | **S35a** — print `SETTLED TICKETS · THIS RUN` with `N RECORDS`; the shipped string leaked a property path. |
+
+**BLOCKED — do not rebuild yet:** the LEDGER row model and column order (L-01, L-04, and
+the terminal-word-rightmost violation **S32**). C17: no rebuild verdict on a state no
+capture shows, and the column arithmetic is only visible in a **populated** ledger. That
+capture is a named deliverable of the next window.
+
+**Still open, still mine, unchanged by batch 5:** E-06 invented FORM stats strip · E-07
+receipts in the wrong region · E-09 header band · E-10 records line · E-11 `at` vs `@` ·
+E-16 replace underline spans the cell rather than the figure (more prominent now the cell
+is 176px) · E-18 ring derived from hit area not printed figure · E-19/E-20 tab strip and
+buttons · E-21 biro on the back control · E-22 hover · M-04…M-07, M-09…M-15 · B-01, B-03.
+
+**One thing this audit cannot yet claim:** the S27 rail is test-verified but **not**
+capture-verified — the harness photographs GOALS, which fits and correctly shows no rail.
+Under C17 that is exactly a state no capture shows. A PLAYERS capture is owed.
+
+### ⚠ New, from building phase B1 — the margin overflows at the legal maximum
+
+Building `MarginLeg` to the kit (M-02: a two-line leg — ✓ + subject + price, then
+`{market} · ENTRY {n}` beneath) takes a leg row from **27px to 42px**. The working margin
+is a fixed **530px** panel and a ticket may legally carry **6 legs** (`MaxLegs = 6`, and
+`MatchupsPerSlate = 6` supplies them). At 6 legs the content **overflows the panel's
+bottom edge by ~16px**; overlap with the fixed `LOCK`/`SKIP` band begins at 4.
+
+This is reachable in normal play, not a hypothetical, and it is a **regression introduced
+by building to spec** — the old one-line leg fitted. I did not shrink type below the 13px
+fact floor to hide it.
+
+Under **C16** this is *"impossible under the approved design"*, not physically impossible:
+the blocking design decisions are nameable — the 324×530 fixed margin, the two-line leg,
+and a 6-leg maximum. C16 says that classification is not mine to assume and the item comes
+to the DD as a signed deviation with a named cost and an expiry. Options I can cost, none
+of which I should pick:
+- the margin's leg list scrolls, carrying the S27 rail it already has a spec for — but the
+  kit's `marginShell` does not scroll, so this adds a behaviour the reference lacks;
+- the leg row compresses back toward one line, which is M-02 partly un-built and
+  re-opens exactly the S28 load-bearing question;
+- `MaxLegs` drops, which is mine to change but is a gameplay decision, not a layout fix.
+
+**Phase B1 should not merge until this is ruled.** The rest of B1 is correct and verified
+green on the engine side; it is only the 6-leg state that is broken.
+
+---
+
 ## 0. Headline
 
 **~60 divergences from the intended design.** Two are physically impossible on the shipped

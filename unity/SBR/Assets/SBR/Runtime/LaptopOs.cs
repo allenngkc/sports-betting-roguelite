@@ -401,6 +401,45 @@ namespace SBR.Game
         }
     }
 
+    /// <summary>S34 ruling: the 26px ruled-paper ground shared by the working margin and (later)
+    /// the passive margin — "one shared Graphic subclass emitting untextured geometry... not a
+    /// texture asset, and not two implementations." Reference (kit):
+    /// <c>ui_kits/surething/margin.jsx:9</c> —
+    /// <c>repeating-linear-gradient(180deg, transparent 0 25px, var(--rule-soft) 25px 26px)</c>,
+    /// i.e. a 1px <see cref="LaptopOs.RuleSoft"/> line every 26px, starting 25px down from the
+    /// rect's top edge. Same per-vertex-quad technique as <see cref="LaptopWallpaperGraphic"/>/
+    /// <see cref="MarkedWashGraphic"/>: one quad (four verts, two triangles) per rule line, and
+    /// nothing at all drawn in the 25px transparent gaps between them — cheaper than a tiled
+    /// texture and, like the wallpaper, colour-exact rather than an approximation.</summary>
+    internal sealed class RuledPaperGraphic : Graphic
+    {
+        private const float Period = 26f;
+        private const float Gap = 25f; // transparent run before each 1px rule line.
+
+        protected override void OnPopulateMesh(VertexHelper vh)
+        {
+            vh.Clear();
+            Rect r = rectTransform.rect;
+            Color32 line = LaptopOs.RuleSoft;
+            int vertIndex = 0;
+            float lineTop = r.yMax - Gap;
+            // Bounded by the rect's own height / Period — a 530px margin panel draws ~20 lines,
+            // never an unbounded loop.
+            while (lineTop > r.yMin)
+            {
+                float lineBottom = Mathf.Max(r.yMin, lineTop - 1f);
+                vh.AddVert(new Vector3(r.xMin, lineBottom), line, Vector2.zero);
+                vh.AddVert(new Vector3(r.xMin, lineTop), line, Vector2.up);
+                vh.AddVert(new Vector3(r.xMax, lineTop), line, Vector2.one);
+                vh.AddVert(new Vector3(r.xMax, lineBottom), line, Vector2.right);
+                vh.AddTriangle(vertIndex, vertIndex + 1, vertIndex + 2);
+                vh.AddTriangle(vertIndex + 2, vertIndex + 3, vertIndex);
+                vertIndex += 4;
+                lineTop -= Period;
+            }
+        }
+    }
+
     internal static class LaptopUi
     {
         public static void ClearChildren(RectTransform root)
@@ -592,6 +631,24 @@ namespace SBR.Game
                 LaptopOs.MarkedWashAlpha);
             wash.raycastTarget = false;
             RectTransform rt = wash.rectTransform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+        }
+
+        /// <summary>The 26px ruled-paper ground (S34 ruling — see <see cref="RuledPaperGraphic"/>),
+        /// stretched to fill <paramref name="parent"/> exactly. Used by the working margin now
+        /// (<c>SportsbookApp.BuildSlip</c>); written as a plain stretch-fill helper, with no
+        /// working-margin-specific state, so the passive margin can call it too when its turn
+        /// comes, per S34's "not two implementations."</summary>
+        public static void MakeRuledPaper(RectTransform parent, string name)
+        {
+            var go = new GameObject(name, typeof(RuledPaperGraphic));
+            go.transform.SetParent(parent, false);
+            RuledPaperGraphic ruled = go.GetComponent<RuledPaperGraphic>();
+            ruled.raycastTarget = false;
+            RectTransform rt = ruled.rectTransform;
             rt.anchorMin = Vector2.zero;
             rt.anchorMax = Vector2.one;
             rt.offsetMin = Vector2.zero;

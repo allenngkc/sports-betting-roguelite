@@ -575,19 +575,44 @@ namespace SBR.Game
             RectTransform panel = LaptopUi.MakePanel(_root, "Slip", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(0f, -140f), new Vector2(324f, 530f), LaptopOs.Ink);
             panel.name = "WorkingMargin";
-            const float titleWidth = 300f;
-            string titleText = LaptopUi.FitText(_font,
-                $"MY MARKS · {slip.Picks.Count} {Pluralize(slip.Picks.Count, "SELECTION")} · {run.Tickets.Count} STAGED",
-                15, titleWidth);
-            LaptopUi.MakeText(panel, "Title", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, -10f), new Vector2(titleWidth, 24f), 15, TextAnchor.UpperLeft, LaptopOs.White,
-                titleText, _font);
+            // S34 ruling: the 26px ruled-paper ground is one shared Graphic subclass emitting
+            // untextured geometry (RuledPaperGraphic in LaptopOs.cs, beside LaptopWallpaperGraphic
+            // and MarkedWashGraphic) rather than a texture asset or a second implementation. Added
+            // first, before any text/rule, so it sits behind everything the margin draws below —
+            // same draw-order rule LaptopUi.MakeMarkedWash already documents.
+            LaptopUi.MakeRuledPaper(panel, "RuledPaper");
+
+            // B1-1/M-08 ruling (load-bearing under S28): MarginHeader.jsx (kit) is a title plus a
+            // right-flushed count and its own 2px biro-deep rule — not one joined White string.
+            // With letter-spacing unreachable (S28), colour is the only channel left telling the
+            // literal title ("MY MARKS", --biro — this is the player's OWN margin, S33 confirms
+            // biro-ruled headers name whose margin it is) from the dynamic count fact (--toner-2).
+            // The old joined string also folded the staged-ticket count into the title; that fact
+            // survives here in the count slot, since the kit's own count prop only defines the
+            // selections half of it (margin.jsx:20) and nowhere else on this panel prints it.
+            const float headerRight = 296f; // 324 - 14 - 14, the content width every row below uses.
+            Text headerTitle = LaptopUi.MakeText(panel, "Title", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(14f, -10f), new Vector2(150f, 24f), 16, TextAnchor.UpperLeft, LaptopOs.Accent,
+                "MY MARKS", _fontCond);
+            string countText = $"{slip.Picks.Count} {Pluralize(slip.Picks.Count, "SELECTION")} · {run.Tickets.Count} STAGED";
+            float countMaxWidth = Mathf.Max(0f, headerRight - headerTitle.preferredWidth - 8f);
+            countText = LaptopUi.FitText(_font, countText, 13, countMaxWidth);
+            LaptopUi.MakeText(panel, "Count", new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-14f, -12f), new Vector2(countMaxWidth, 18f), 13, TextAnchor.UpperRight,
+                LaptopOs.TonerSecondary, countText, _font);
+            LaptopUi.MakePanel(panel, "HeaderRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(14f, -34f), new Vector2(headerRight, 2f), LaptopOs.BiroDeep);
+
+            // House status line, not part of the kit's MarginHeader — kept under its original name
+            // ("Rule") because SureThingMilestoneOneTests/Form_product_text_and_controls_meet_the_
+            // contract_floor and SureThingEntryTests' persistence snapshot both look this node up by
+            // that name; only its position moved, to clear the new header rule above it.
             LaptopUi.MakeText(panel, "Rule", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, -33f), new Vector2(300f, 18f), 13, TextAnchor.UpperLeft,
+                new Vector2(14f, -39f), new Vector2(300f, 18f), 13, TextAnchor.UpperLeft,
                 boardFrozen ? LaptopOs.MoneyGold : LaptopOs.Muted,
                 boardFrozen ? "PRICES FINAL — BOARD LOCKED" : "PRICES FINAL. NOTHING YOU DO MOVES THEM.", _font);
 
-            float y = -58f;
+            float y = -62f;
             if (slip.Picks.Count == 0)
             {
                 LaptopUi.MakeText(panel, "Empty", new Vector2(0f, 1f), new Vector2(0f, 1f),
@@ -599,44 +624,103 @@ namespace SBR.Game
             {
                 Pick pick = slip.Picks[i];
                 Matchup matchup = run.CurrentSlate.Matchups[pick.MatchupIndex];
-                const float legWidth = 230f;
-                // Team names and prices are both condensed per MarginLeg.jsx; the "N. " index and the
-                // "ML — v" connector are minor structural filler riding along in the same string, not
-                // field labels, so the whole line routes through _fontCond rather than being split.
-                // The fit MUST be measured at the size the row actually renders at (--st-size-leg,
-                // 16). Measuring at 13 and drawing at 16 fits a string ~23% too wide for legWidth,
-                // which wraps to a second line, exceeds the 24px box and trips MakeText's
-                // Overflow fallback — the row then bleeds down over the next leg.
-                string legText = LaptopUi.FitLabelKeepingSuffix(_fontCond, $"{i + 1}. ",
-                    CompactLegLabel(matchup, pick.Selection),
-                    $"   {OddsFormat.American(matchup.Odds(pick.Selection))}", 16, legWidth);
+                MatchModel.MarketFields fields = MatchModel.Fields(matchup, pick.Selection);
+
+                // B1-2/M-02 ruling (load-bearing under S28): MarginLeg.jsx is two lines, not one
+                // joined string — a biro check + condensed team/price on line 1, and a roman
+                // "{market} · ENTRY {entry}" fact line under it in --toner-3. With tracking gone,
+                // the colour split (--toner team/price vs --toner-3 market/entry) and the face split
+                // (condensed fact vs roman label) are the only two channels left telling them apart.
+                // Subject falls back to Line when empty, same as CompactLegLabel's own switch —
+                // every market but Moneyline/AnytimeScorer backs the match itself, not one subject.
+                // Team names are shortened the same way CompactLegLabel/the board already do; a
+                // moneyline pick never repeats the picked team's own full name.
+                string away = LaptopUi.TeamShort(matchup.Away);
+                string home = LaptopUi.TeamShort(matchup.Home);
+                bool subjectIsHome = fields.Subject == matchup.Home.Name;
+                bool subjectIsAway = !subjectIsHome && fields.Subject == matchup.Away.Name;
+                string subjectRaw = subjectIsHome ? home : subjectIsAway ? away : fields.Subject;
+                string subject = string.IsNullOrEmpty(subjectRaw) ? fields.Line : subjectRaw;
+                string price = OddsFormat.American(matchup.Odds(pick.Selection));
+                // ENTRY is the matchup's own FORM board position — same "(index+1):00" the board's
+                // Number badge already prints (BuildMatchupCard) — not a per-selection identity.
+                string entry = (matchup.Index + 1).ToString("00");
+
+                const float rowRight = 244f; // 14 (row left) + 230 (old legWidth) — clear of RUB OUT.
+                const float checkBoxWidth = 18f; // kit's check column is 15px; padded for the glyph.
+                const float contentX = 38f; // leftPad(14) + kit check column(15) + kit gap(9).
+                const float priceWidth = 70f;
+                const float priceX = rowRight - priceWidth;
+                const float teamWidth = priceX - 6f - contentX;
+
+                // Line 1: biro check, team/subject (condensed, toner), price (condensed, toner,
+                // right-flushed in its own cell so it stays flush regardless of team width).
+                LaptopUi.MakeText(panel, "LegCheck" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(14f, y), new Vector2(checkBoxWidth, 20f), 15, TextAnchor.UpperLeft,
+                    LaptopOs.Accent, "✓", _font);
+                // Named "Leg" + i (not e.g. "LegTeam") — SureThingEntryTests' entry-persistence
+                // snapshot looks up "Leg0" by that exact name; this is the closest surviving analog
+                // to the old single joined-string node, so the lookup still resolves.
                 LaptopUi.MakeText(panel, "Leg" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(14f, y), new Vector2(legWidth, 24f), 16, TextAnchor.UpperLeft, LaptopOs.White,
-                    legText, _fontCond);
+                    new Vector2(contentX, y), new Vector2(teamWidth, 20f), 16, TextAnchor.UpperLeft,
+                    LaptopOs.White, subject, _fontCond)
+                    .horizontalOverflow = HorizontalWrapMode.Overflow;
+                LaptopUi.MakeText(panel, "LegPrice" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(priceX, y), new Vector2(priceWidth, 20f), 16, TextAnchor.UpperRight,
+                    LaptopOs.White, price, _fontCond);
+
+                // Line 2: "{market} · ENTRY {entry}" — roman, fact floor, --toner-3. Indented to the
+                // content column past the check (kit: the check sits outside the flex column that
+                // holds both lines), not the row's own left edge.
+                LaptopUi.MakeText(panel, "LegDetail" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(contentX, y - 22f), new Vector2(rowRight - contentX, 16f), 13,
+                    TextAnchor.UpperLeft, LaptopOs.Muted, $"{fields.Market} · ENTRY {entry}", _font);
+
+                // 1px --rule bottom rule (M-02), spanning the FULL row including the RUB OUT column
+                // (kit: the border sits on the outer flex row, check+content+button together) — the
+                // shared LaptopUi.MakeRule is hardcoded to --rule-soft and cannot be reused here.
+                LaptopUi.MakePanel(panel, "LegRule" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(14f, y - 38f), new Vector2(headerRight, 1f), LaptopOs.Rule);
+
                 int matchupIndex = pick.MatchupIndex;
                 if (run.OwnsConsumable("profit_boost"))
                 {
                     bool boosted = slip.BoostLeg == i;
                     int legIndex = i;
                     LaptopUi.MakeButton(panel, "Boost" + i, boosted ? "BOOST ✓" : "BOOST",
-                        new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-76f, y + 8f),
+                        new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-76f, y + 5f),
                         new Vector2(58f, 24f), 13, boosted ? LaptopOs.MoneyGold : LaptopOs.SurfaceRaised,
                         LaptopOs.White, () => { slip.ToggleBoost(legIndex); _invalidate(); }, _font);
                 }
                 // RUB OUT is an action label, set in the condensed face — RubOutButton.prompt.md.
                 LaptopUi.MakeButton(panel, "Remove" + i, "RUB OUT", new Vector2(1f, 1f), new Vector2(1f, 1f),
-                    new Vector2(-12f, y + 8f), new Vector2(60f, 32f), 13, LaptopOs.Ink, LaptopOs.Muted,
+                    new Vector2(-12f, y + 5f), new Vector2(60f, 32f), 13, LaptopOs.Ink, LaptopOs.Muted,
                     () => { slip.Remove(matchupIndex); _lockArmed = false; _invalidate(); }, _fontCond);
-                y -= 27f;
+                // B1-2's two-line row replaces the old single 16px line, so the per-leg vertical step
+                // grows from 27px to 42px — see this method's header-comment rhythm note for the
+                // panel-overflow consequence at high leg counts (BuildSlip class-level, S32-adjacent).
+                y -= 42f;
             }
 
             if (run.Tickets.Count > 0)
                 y = BuildStagedReceipt(panel, run, y - 4f);
 
             y -= 4f;
+            // B1-3/M-03 ruling (load-bearing under S28): MarginRow.jsx is a label/value pair with
+            // its own 1px --rule bottom rule, not one joined "COMBINED {odds}" string in one face
+            // and one colour — S28 names this the exact failure that leaves label and fact
+            // indistinguishable once tracking is dropped. Value is condensed and right-flushed
+            // across the full row width (kit: value gets marginLeft:auto); label stays roman,
+            // --toner-3. "Combined" (not e.g. "CombinedValue") is kept on the value node because
+            // SureThingMilestoneOneTests' contract-floor test looks this node up by that name.
+            LaptopUi.MakeText(panel, "CombinedLabel", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(14f, y), new Vector2(120f, 18f), 13, TextAnchor.UpperLeft, LaptopOs.Muted,
+                "COMBINED", _font);
             LaptopUi.MakeText(panel, "Combined", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, y), new Vector2(300f, 22f), 18, TextAnchor.UpperLeft, LaptopOs.Muted,
-                slip.Picks.Count > 0 ? $"COMBINED {OddsFormat.American(slip.CombinedOdds)}" : "COMBINED —", _font);
+                new Vector2(14f, y), new Vector2(headerRight, 22f), 18, TextAnchor.UpperRight, LaptopOs.White,
+                slip.Picks.Count > 0 ? OddsFormat.American(slip.CombinedOdds) : "—", _fontCond);
+            LaptopUi.MakePanel(panel, "CombinedRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(14f, y - 24f), new Vector2(headerRight, 1f), LaptopOs.Rule);
             y -= 28f;
 
             bool freeHeld = run.OwnsConsumable("free_bet");
@@ -666,6 +750,15 @@ namespace SBR.Game
                 new Vector2(14f, y), new Vector2(300f, 24f), 16, TextAnchor.UpperLeft, LaptopOs.White,
                 $"STAKE {LaptopUi.Money(slip.Stake)}", _font);
             y -= 32f;
+            // B1-5/M-06: PayoutFigure.jsx (kit) carries a "POTENTIAL PAYOUT" label — roman, fact
+            // floor, --toner-3 — above the value; shipped had none. Added by moving the cursor down
+            // to make room, not by touching the 31px wax figure's own size/colour/font or the hand-
+            // laid highlight band math below it, which still reads off whatever `y` the figure ends
+            // up at (PayoutFigure.jsx:6,10).
+            LaptopUi.MakeText(panel, "PayoutLabel", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(14f, y), new Vector2(300f, 16f), 13, TextAnchor.UpperLeft, LaptopOs.Muted,
+                "POTENTIAL PAYOUT", _font);
+            y -= 18f;
             Text payout = LaptopUi.MakeText(panel, "Payout", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, y), new Vector2(300f, 36f), 31, TextAnchor.UpperLeft, LaptopOs.MoneyGold, $"{LaptopUi.Money(slip.ToWin)}", _fontCond);
             // Hand-laid wax highlight behind the one loud figure (palette-surething.css
             // --wax-highlight-*): a thin amber band, tilted, sized from the figure's own measured
