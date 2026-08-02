@@ -192,6 +192,45 @@ namespace SBR.Tests.PlayMode
             }
         }
 
+        /// <summary>C17: no rebuild verdict on a state no capture shows. B1 rebuilt the margin's
+        /// leg row to the kit's two-line MarginLeg, and the state that decides whether that rebuild
+        /// is correct is a FULL slip — which no capture showed. Allen capped MaxLegs at 4
+        /// (2026-08-02) to close the overflow; this photographs the cap actually holding. Fills to
+        /// run.Config.MaxLegs rather than a literal 4, so raising the dial changes what is captured
+        /// instead of quietly capturing a state that is no longer the maximum. Its own Boot(),
+        /// because the other two capture flows each depend on their starting ticket count.</summary>
+        [UnityTest]
+        public IEnumerator Capture_the_working_margin_at_the_legal_maximum_leg_count()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            string outputDirectory = Path.GetFullPath(Path.Combine(
+                Application.dataPath, "..", "..", "..", "artifacts", "surething-ui"));
+            Directory.CreateDirectory(outputDirectory);
+            string runPrefix = DateTime.UtcNow.ToString(
+                "yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture);
+            var capturedPaths = new List<string>();
+
+            int maxLegs = laptop.director.Run.Config.MaxLegs;
+            for (int i = 0; i < maxLegs; i++)
+            {
+                Invoke(Required(Required(App(laptop), "Matchup" + i), "AwayOdds"));
+                yield return WaitForRebuild();
+            }
+            Assert.AreEqual(maxLegs, laptop.Slip.Picks.Count,
+                "the captured state must actually be a full slip");
+
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "09-margin-max-legs", capturedPaths);
+
+            Assert.AreEqual(2, capturedPaths.Count, "one state must emit paired captures");
+            foreach (string path in capturedPaths)
+            {
+                Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
+                Assert.Greater(new FileInfo(path).Length, 0L, $"capture is empty: {path}");
+            }
+        }
+
         [UnityTest]
         public IEnumerator Capture_two_more_truthful_surething_states_as_flat_and_angled_pngs()
         {

@@ -448,18 +448,128 @@ namespace SBR.Tests.PlayMode
         /// only (A4): under a scrolling list a row may legitimately sit above/below the viewport's
         /// visible Y range — RectMask2D exists precisely to clip that — but a row must never run
         /// wider than the viewport, since A4 requires content to stay clear of the S27 rail.</summary>
+        /// <summary>S25's general clause: "a container's correctness may not depend on a config
+        /// dial's current value. Guard it with a test, not a convention." Allen capped MaxLegs at 4
+        /// (2026-08-02) because the kit's two-line MarginLeg overflowed the fixed 324x530 margin at
+        /// 6. That cap closes the overflow, but only for as long as nobody raises the dial — so this
+        /// reads MaxLegs rather than assuming 4, fills a slip to it, and fails if the margin stops
+        /// containing its own content. Both halves of the reported symptom are covered: content
+        /// escaping the panel, and the PLACE button colliding with the bottom-fixed LOCK/SKIP band.
+        /// </summary>
+        [UnityTest, Order(9)]
+        public IEnumerator Working_margin_contains_its_content_at_the_legal_maximum_leg_count()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            Run run = laptop.director.Run;
+            int maxLegs = run.Config.MaxLegs;
+
+            Assert.GreaterOrEqual(run.Config.MatchupsPerSlate, maxLegs,
+                "the slate must be able to supply one leg per matchup up to the cap");
+
+            // One selection per matchup — a second pick on the same matchup replaces rather than
+            // adds — so filling to the cap means touching maxLegs distinct entries.
+            for (int i = 0; i < maxLegs; i++)
+            {
+                Invoke(Required(Required(App(laptop), "Matchup" + i), "AwayOdds"));
+                yield return WaitForRebuild();
+            }
+            Assert.AreEqual(maxLegs, laptop.Slip.Picks.Count,
+                "the slip must actually reach the cap for this invariant to mean anything");
+
+            var margin = Required(App(laptop), "WorkingMargin") as RectTransform;
+            Assert.IsNotNull(margin, "WorkingMargin must be a RectTransform");
+
+            // MEASURE IN CANVAS-LOCAL PIXELS, never world units. The laptop is a world-space canvas
+            // on a 3D quad: the whole 530px margin spans about 0.043 world units, so a pixel-shaped
+            // tolerance like 0.5f is ~12x the entire panel and silently swallows every violation.
+            // An earlier version of this test compared world corners with a 0.5f epsilon and passed
+            // while the margin was visibly overlapping itself in the captures.
+            const float epsilonPx = 0.5f;
+            float marginTop = LocalTop(margin, margin);
+            float marginBottom = LocalBottom(margin, margin);
+
+            foreach (Graphic graphic in margin.GetComponentsInChildren<Graphic>(true))
+            {
+                var rect = graphic.rectTransform;
+                if (rect == margin) continue;
+                Assert.GreaterOrEqual(LocalBottom(rect, margin), marginBottom - epsilonPx,
+                    $"{PathOf(rect, margin)} escapes the margin's bottom edge at {maxLegs} legs");
+                Assert.LessOrEqual(LocalTop(rect, margin), marginTop + epsilonPx,
+                    $"{PathOf(rect, margin)} escapes the margin's top edge at {maxLegs} legs");
+            }
+
+            // The reported 4-leg symptom was the action stack colliding, which containment alone
+            // would not catch — PLACE is top-anchored below the legs, LOCK/SKIP are bottom-fixed.
+            // Every element in the action stack, in the order they must appear down the margin.
+            // Comparing only PLACE against LOCK is not enough: the blocked-action reason is its own
+            // absolutely-positioned element and can collide with the payout figure above it while
+            // PLACE and LOCK stay clear of each other.
+            string[] stack = { "Payout", "PlaceReason", "Place", "LockReason", "Lock", "Skip" };
+            var present = new List<(string Name, float Top, float Bottom)>();
+            foreach (string name in stack)
+            {
+                Transform node = margin.Find(name);
+                if (node == null) continue;          // not every element exists in every state
+                var rt = (RectTransform)node;
+                present.Add((name, LocalTop(rt, margin), LocalBottom(rt, margin)));
+            }
+
+            // Sorted by position, so the check is "nothing occupies the same band as anything else"
+            // rather than "the authored order happens to hold" — an element that jumps the stack is
+            // still a collision.
+            present.Sort((a, b) => b.Top.CompareTo(a.Top));
+            for (int i = 1; i < present.Count; i++)
+            {
+                var above = present[i - 1];
+                var below = present[i];
+                Assert.GreaterOrEqual(above.Bottom, below.Top - epsilonPx,
+                    $"{above.Name} (bottom {above.Bottom:F1}px) overlaps {below.Name} "
+                    + $"(top {below.Top:F1}px) at {maxLegs} legs — the action stack collides");
+            }
+        }
+
+        /// <summary>A RectTransform's top/bottom edge expressed in <paramref name="basis"/>'s local
+        /// pixels. Every containment check on this surface must go through these: the laptop canvas
+        /// is world-space on a 3D quad, so GetWorldCorners yields metres and any pixel-shaped
+        /// tolerance compared against them is orders of magnitude too large to catch anything.</summary>
+        private static float LocalTop(RectTransform rect, RectTransform basis)
+        {
+            var corners = new Vector3[4];
+            rect.GetWorldCorners(corners);
+            return basis.InverseTransformPoint(corners[1]).y;
+        }
+
+        private static float LocalBottom(RectTransform rect, RectTransform basis)
+        {
+            var corners = new Vector3[4];
+            rect.GetWorldCorners(corners);
+            return basis.InverseTransformPoint(corners[3]).y;
+        }
+
+        private static string PathOf(Transform node, Transform root)
+        {
+            string path = node.name;
+            for (Transform t = node.parent; t != null && t != root; t = t.parent) path = t.name + "/" + path;
+            return path;
+        }
+
         private static void AssertWithinContainerHorizontally(RectTransform container, RectTransform child, string label)
         {
             Assert.IsNotNull(child, $"{label} RectTransform missing");
-            var containerCorners = new Vector3[4];
+            // Canvas-local pixels, for the same reason as LocalTop/LocalBottom: this comparison used
+            // to run against world corners with a 0.5f tolerance, which on a world-space canvas is
+            // larger than the whole surface — it could not have failed for any layout.
             var childCorners = new Vector3[4];
-            container.GetWorldCorners(containerCorners);
             child.GetWorldCorners(childCorners);
-            const float epsilon = 0.5f;
-            Assert.GreaterOrEqual(childCorners[0].x, containerCorners[0].x - epsilon,
-                $"{label} left edge escapes the viewport");
-            Assert.LessOrEqual(childCorners[2].x, containerCorners[2].x + epsilon,
-                $"{label} right edge escapes the viewport");
+            float childLeft = container.InverseTransformPoint(childCorners[0]).x;
+            float childRight = container.InverseTransformPoint(childCorners[2]).x;
+            Rect bounds = container.rect;
+            const float epsilonPx = 0.5f;
+            Assert.GreaterOrEqual(childLeft, bounds.xMin - epsilonPx,
+                $"{label} left edge escapes the viewport ({childLeft:F1}px vs {bounds.xMin:F1}px)");
+            Assert.LessOrEqual(childRight, bounds.xMax + epsilonPx,
+                $"{label} right edge escapes the viewport ({childRight:F1}px vs {bounds.xMax:F1}px)");
         }
 
         private static ReceiptExpectation Capture(BetslipModel slip)
