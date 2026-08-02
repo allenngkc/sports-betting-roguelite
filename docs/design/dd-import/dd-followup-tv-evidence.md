@@ -10,3 +10,11 @@ manifest, not failed runs.
 
 Not included: the 90MB T25.1 before/after pair (finding already resolved on the
 lead's verification) - available on request.
+
+## New joint question (room, 2026-08-01, `46d2e4c`)
+
+**§1.1 fails on the correct screens-dark set, and the unified grade is why** —
+measured chroma/hue on the room's own surfaces under its full grade. This is a
+grade-parameter question spanning BOTH slices (room implements, TV owns the
+grade spec). Room's DD package with the measurements follows; ruling needed from
+you + the TV context together. No lead can fix it unilaterally.
