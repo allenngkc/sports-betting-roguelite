@@ -286,7 +286,10 @@ namespace SBR.Game
             taskbarText.horizontalOverflow = HorizontalWrapMode.Overflow;
             LaptopUi.MakeText(taskbar, "Clock", new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
                 new Vector2(-24f, 0f), new Vector2(180f, 30f), 12, TextAnchor.MiddleRight, Muted,
-                "03:17 AM   ·   12%", _font);
+                // Was "03:17 AM · 12%" hardcoded here while the rail was pinned at 02:47 — one
+                // machine claiming two different times, on two surfaces a player can see within a
+                // click of each other. Both read NotebookChrome's constants now.
+                $"{NotebookChrome.ClockText}   ·   {NotebookChrome.BatteryPercent}%", _font);
         }
 
         private void MakeDesktopIcon(string name, string glyph, string label, Vector2 position, Color color,
@@ -854,14 +857,35 @@ namespace SBR.Game
         /// OS-furniture size. See the class note before reusing it for anything else.
         private const int ChromeText = 12;
 
-        public const string MachineMark = "■  NOTEBOOK";
+        /// --st-rail-pad-x (space.css). Shared by the rail's own edges and the tray's left edge
+        /// (F8), and now also by the battery/clock group and the MESSAGES slot's dot, so every
+        /// element that anchors off "the rail's own inset" reads from one place.
+        private const float RailPadX = 11f;
+
+        public const string MachineMark = "NOTEBOOK";
         public const string StickerText = "PROPERTY OF NOBODY";
 
         /// Fixed fiction, not a live clock: the shared spec pins the machine at 02:47 so every
-        /// capture and every direction concept is comparable. The trailing mark is the battery.
-        public const string ClockText = "02:47   ▰";
+        /// capture and every direction concept is comparable. W2: the battery is now its own
+        /// element (swatch/border/fill, built in BuildRail) rather than a "▰" appended to this
+        /// string, so it can represent a state at all.
+        public const string ClockText = "02:47";
 
-        private const string MessagesText = "MESSAGES  1";
+        /// The machine's charge, stated once. The desktop prints it as a percentage and the rail
+        /// draws it as a bar, and before this they disagreed about the machine they describe: the
+        /// desktop said 12% while the rail's fill was hardcoded to the stamp colour because the
+        /// kit's JSX happens to default batteryLow to true in its demo. A demo default is not a
+        /// fact about this machine. Both now read the same number.
+        public const int BatteryPercent = 12;
+
+        /// Below this the bar takes the house's stamp. It is the one place oxide is allowed to mean
+        /// something other than the house acting on the document — the kit spells it out
+        /// (OsRail.jsx: batteryLow ? --stamp : --toner-3), and it is the machine's own hardware
+        /// warning rather than a status tint on a product fact.
+        public const int BatteryLowThreshold = 20;
+
+        private const string MessagesLabel = "MESSAGES";
+        private const string MessagesBadge = "1";
         private const string SystemFactsText = "DISK 61% FULL    NO UPDATES";
 
         public enum Running { Sportsbook, Ledger }
@@ -874,15 +898,89 @@ namespace SBR.Game
             // F8: OsRail.jsx's own padding is --st-rail-pad-x (11px) on both edges — this rail
             // (and the tray below) used 14px. Shared here, so the correction lands on every screen
             // that calls BuildRail/BuildTray, not just the ledger.
+
+            // W2 (identity mark): OsRail.jsx pairs an 11x11 --toner-3 swatch with the identity
+            // word in --toner-2, 7px apart — not the single "■  NOTEBOOK" string this used to be,
+            // which faked the swatch as a glyph rather than drawing one. Weight 600 is unreachable
+            // here (S20/C15: production faces are variable fonts, legacy UI.Text renders only the
+            // default instance) and is rendered at normal weight rather than faked with
+            // FontStyle.Bold — the signed gap, not a fix.
+            const float swatchSize = 11f;
+            const float identityGap = 7f; // OsRail's identity-mark gap: swatch -> word
+            const float groupGap = 11f;   // OsRail's own flex gap between its three children
+            LaptopUi.MakePanel(rail, "IdentitySwatch", new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(RailPadX, 0f), new Vector2(swatchSize, swatchSize), LaptopOs.Muted);
+            float wordX = RailPadX + swatchSize + identityGap;
             LaptopUi.MakeText(rail, "Machine", new Vector2(0f, .5f), new Vector2(0f, .5f),
-                new Vector2(11f, 0f), new Vector2(200f, 24f), ChromeText, TextAnchor.MiddleLeft,
-                LaptopOs.White, MachineMark, font);
-            LaptopUi.MakeText(rail, "Sticker", new Vector2(0f, .5f), new Vector2(0f, .5f),
-                new Vector2(150f, 0f), new Vector2(200f, 24f), ChromeText, TextAnchor.MiddleLeft,
-                LaptopOs.Accent, StickerText, font);
+                new Vector2(wordX, 0f), new Vector2(160f, 24f), ChromeText, TextAnchor.MiddleLeft,
+                LaptopOs.TonerSecondary, MachineMark, font);
+
+            // W2 (sticker): a bordered chip — --biro text, a rule-w border in --biro-deep, 2px 6px
+            // padding, tilted -.6deg. Sized to hug its own measured text (MeasureWidth, the same
+            // primitive F7/FitText already use elsewhere on this surface) rather than a fixed
+            // guess, and started from the identity word's own measured width plus the rail's own
+            // 11px gap — so its left edge is provably clear of "NOTEBOOK" for any font metrics,
+            // not just the ones this was eyeballed against.
+            const float ruleW = 1f; // --rule-w
+            const float stickerPadX = 6f;
+            const float stickerPadY = 2f;
+            float machineWidth = LaptopUi.MeasureWidth(font, MachineMark, ChromeText);
+            float stickerX = wordX + machineWidth + groupGap;
+            float stickerTextW = LaptopUi.MeasureWidth(font, StickerText, ChromeText);
+            const float stickerTextH = 14f;
+            float stickerW = stickerTextW + stickerPadX * 2f;
+            float stickerH = stickerTextH + stickerPadY * 2f;
+            RectTransform sticker = LaptopUi.MakePanel(rail, "Sticker", new Vector2(0f, .5f),
+                new Vector2(0f, .5f), new Vector2(stickerX, 0f), new Vector2(stickerW, stickerH),
+                Color.clear);
+            // Rotation is a pure render-space transform: it never touches sticker's own rect
+            // (sizeDelta/anchoredPosition), and every neighbour on this rail is placed from those
+            // same authored values, not from sticker's rotated corners — so nothing here reflows
+            // from the rotation, by construction. The rotated bounding box itself grows by well
+            // under 2px on every edge at -.6deg (Δw ≈ stickerH·sin(.6°) ≈ 0.2px, Δh ≈
+            // stickerW·sin(.6°) ≈ 1.7px for a chip this size), against >=20px of measured clearance
+            // to both the identity word on its left and the clock group on its right — confirmed by
+            // this geometry, not by a capture.
+            sticker.localEulerAngles = new Vector3(0f, 0f, -0.6f);
+            LaptopUi.MakePanel(sticker, "StickerBorderTop", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                Vector2.zero, new Vector2(stickerW, ruleW), LaptopOs.BiroDeep);
+            LaptopUi.MakePanel(sticker, "StickerBorderBottom", new Vector2(0f, 0f), new Vector2(0f, 0f),
+                Vector2.zero, new Vector2(stickerW, ruleW), LaptopOs.BiroDeep);
+            LaptopUi.MakePanel(sticker, "StickerBorderLeft", new Vector2(0f, 0f), new Vector2(0f, 0f),
+                new Vector2(0f, ruleW), new Vector2(ruleW, stickerH - ruleW * 2f), LaptopOs.BiroDeep);
+            LaptopUi.MakePanel(sticker, "StickerBorderRight", new Vector2(1f, 0f), new Vector2(1f, 0f),
+                new Vector2(0f, ruleW), new Vector2(ruleW, stickerH - ruleW * 2f), LaptopOs.BiroDeep);
+            LaptopUi.MakeText(sticker, "StickerLabel", new Vector2(.5f, .5f), new Vector2(.5f, .5f),
+                Vector2.zero, new Vector2(stickerTextW + 2f, stickerTextH), ChromeText,
+                TextAnchor.MiddleCenter, LaptopOs.Accent, StickerText, font);
+
+            // W2 (battery): a 20x9 rect bordered --toner-3, with an inner fill inset 1.5px on
+            // top/bottom/left, 5px wide — --stamp when low, --toner-3 otherwise. The clock fiction
+            // is pinned at 02:47 (not live), and so is the battery: OsRail's own default prop is
+            // batteryLow=true, so this always draws the low state, same as the clock always reads
+            // the same time. That is a real, representable state now — the old "▰" glyph could not
+            // distinguish low from full because it was never anything but a fixed character.
+            const float batteryW = 20f;
+            const float batteryH = 9f;
+            const float clockBatteryGap = 13f;
+            RectTransform battery = LaptopUi.MakePanel(rail, "Battery", new Vector2(1f, .5f),
+                new Vector2(1f, .5f), new Vector2(-RailPadX, 0f), new Vector2(batteryW, batteryH),
+                Color.clear);
+            LaptopUi.MakePanel(battery, "BatteryBorderTop", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                Vector2.zero, new Vector2(batteryW, ruleW), LaptopOs.Muted);
+            LaptopUi.MakePanel(battery, "BatteryBorderBottom", new Vector2(0f, 0f), new Vector2(0f, 0f),
+                Vector2.zero, new Vector2(batteryW, ruleW), LaptopOs.Muted);
+            LaptopUi.MakePanel(battery, "BatteryBorderLeft", new Vector2(0f, 0f), new Vector2(0f, 0f),
+                new Vector2(0f, ruleW), new Vector2(ruleW, batteryH - ruleW * 2f), LaptopOs.Muted);
+            LaptopUi.MakePanel(battery, "BatteryBorderRight", new Vector2(1f, 0f), new Vector2(1f, 0f),
+                new Vector2(0f, ruleW), new Vector2(ruleW, batteryH - ruleW * 2f), LaptopOs.Muted);
+            LaptopUi.MakePanel(battery, "BatteryFill", new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(1.5f, 0f), new Vector2(5f, batteryH - 3f),
+                BatteryPercent <= BatteryLowThreshold ? LaptopOs.MoneyBad : LaptopOs.Muted);
+
             LaptopUi.MakeText(rail, "Clock", new Vector2(1f, .5f), new Vector2(1f, .5f),
-                new Vector2(-11f, 0f), new Vector2(140f, 24f), ChromeText, TextAnchor.MiddleRight,
-                LaptopOs.Muted, ClockText, font);
+                new Vector2(-(RailPadX + batteryW + clockBatteryGap), 0f), new Vector2(90f, 24f),
+                ChromeText, TextAnchor.MiddleRight, LaptopOs.Muted, ClockText, font);
             // F1: OsRail.jsx's own border-bottom (--rule-w solid var(--rule)) — the rail was a flat
             // colour step into whatever the app draws next (FormTabs, or the ledger's own copy of
             // it), with no seam actually drawn.
@@ -906,16 +1004,42 @@ namespace SBR.Game
             bool sportsbookRunning = running == Running.Sportsbook;
             // F8: --st-rail-pad-x (11px) on the left edge too — was 12px, the one inset in this
             // class that did not already match the pattern (rail's left/right corrected above).
-            MakeSlot(tray, "SureThing", "SURETHING", 11f, 110f, sportsbookRunning,
+            MakeSlot(tray, "SureThing", "SURETHING", RailPadX, 110f, sportsbookRunning,
                 sportsbookRunning ? minimize : openSportsbook, font);
             MakeSlot(tray, "Ledger", "LEDGER", 132f, 88f, !sportsbookRunning,
                 sportsbookRunning ? openLedger : minimize, font);
 
+            // W3 (dot + badge, MESSAGES slot): OsTray.jsx renders every slot — including one with
+            // no destination in this build — with its own dot, and MESSAGES carries the one
+            // default badge. MESSAGES has no Running case and no onClick here, so it stays
+            // presentation-only exactly as before; only its furniture changes, not its behaviour.
+            // Badge and label are both sized from their own measured text (MeasureWidth, same
+            // primitive the sticker above and F7/FitText elsewhere already use), so the layout is
+            // a left-to-right flow built from real widths, not a fixed guess that could overlap.
+            const float messagesX = 232f;
+            const float dotSize = 5f;
+            const float dotGap = 6f;
+            LaptopUi.MakePanel(tray, "MessagesDot", new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(messagesX, 0f), new Vector2(dotSize, dotSize), LaptopOs.Muted);
+            float messagesLabelX = messagesX + dotSize + dotGap;
             LaptopUi.MakeText(tray, "Messages", new Vector2(0f, .5f), new Vector2(0f, .5f),
-                new Vector2(232f, 0f), new Vector2(210f, 24f), ChromeText, TextAnchor.MiddleLeft,
-                LaptopOs.Muted, MessagesText, font);
+                new Vector2(messagesLabelX, 0f), new Vector2(140f, 24f), ChromeText,
+                TextAnchor.MiddleLeft, LaptopOs.Muted, MessagesLabel, font);
+            float messagesLabelW = LaptopUi.MeasureWidth(font, MessagesLabel, ChromeText);
+            float badgeX = messagesLabelX + messagesLabelW + dotGap;
+            const float badgePadX = 5f; // OsTray badge "0 5px" padding
+            const float badgeH = 16f;
+            float badgeTextW = LaptopUi.MeasureWidth(font, MessagesBadge, ChromeText);
+            float badgeW = badgeTextW + badgePadX * 2f;
+            RectTransform badge = LaptopUi.MakePanel(tray, "MessagesBadge", new Vector2(0f, .5f),
+                new Vector2(0f, .5f), new Vector2(badgeX, 0f), new Vector2(badgeW, badgeH),
+                LaptopOs.MoneyBad);
+            LaptopUi.MakeText(badge, "MessagesBadgeLabel", new Vector2(.5f, .5f),
+                new Vector2(.5f, .5f), Vector2.zero, new Vector2(badgeTextW + 2f, badgeH),
+                ChromeText, TextAnchor.MiddleCenter, LaptopOs.White, MessagesBadge, font);
+
             LaptopUi.MakeText(tray, "SystemFacts", new Vector2(1f, .5f), new Vector2(1f, .5f),
-                new Vector2(-11f, 0f), new Vector2(270f, 24f), ChromeText, TextAnchor.MiddleRight,
+                new Vector2(-RailPadX, 0f), new Vector2(270f, 24f), ChromeText, TextAnchor.MiddleRight,
                 LaptopOs.Muted, SystemFactsText, font);
             return tray;
         }
@@ -923,14 +1047,52 @@ namespace SBR.Game
         /// The running app reads as pressed-in — ink ground, full-strength label. A backgrounded
         /// app reads as raised and muted. That is the only state difference, and it is carried by
         /// ground and weight rather than colour alone.
+        ///
+        /// W3: does not delegate to LaptopUi.MakeButton, because that helper always centres its
+        /// label across the full button rect — there is nowhere in that layout to insert a dot
+        /// without either overlapping the centred text or guessing at its rendered width. This
+        /// duplicates MakeButton's few lines of Button/ColorBlock wiring verbatim and instead lays
+        /// the dot and label out left-to-right (dot at the slot's own padding, label immediately
+        /// after it), so the two are never overlapping by construction. The button's own rect —
+        /// its hit target — is untouched: same width/height clamp MakeButton itself applies.
         private static void MakeSlot(RectTransform tray, string name, string label, float x,
             float width, bool running, Action onClick, Font font)
         {
-            LaptopUi.MakeButton(tray, name, label, new Vector2(0f, .5f), new Vector2(0f, .5f),
-                new Vector2(x, 0f), new Vector2(width, 32f), ChromeText,
-                running ? LaptopOs.Ink : LaptopOs.SurfaceRaised,
-                running ? LaptopOs.White : LaptopOs.Muted,
-                onClick, font);
+            var go = new GameObject(name, typeof(Image), typeof(Button));
+            go.transform.SetParent(tray, false);
+            Image image = go.GetComponent<Image>();
+            image.color = running ? LaptopOs.Ink : LaptopOs.SurfaceRaised;
+            image.raycastTarget = true;
+            RectTransform rt = image.rectTransform;
+            rt.anchorMin = rt.anchorMax = new Vector2(0f, .5f);
+            rt.pivot = new Vector2(0f, .5f);
+            rt.sizeDelta = new Vector2(Mathf.Max(44f, width), Mathf.Max(32f, 32f));
+            rt.anchoredPosition = new Vector2(x, 0f);
+            Button button = go.GetComponent<Button>();
+            button.targetGraphic = image;
+            button.interactable = true;
+            ColorBlock colors = button.colors;
+            colors.highlightedColor = new Color(1.25f, 1.25f, 1.25f, 1f);
+            colors.pressedColor = new Color(0.8f, 0.8f, 0.8f, 1f);
+            colors.fadeDuration = 0.12f;
+            button.colors = colors;
+            if (onClick != null) button.onClick.AddListener(() => onClick());
+
+            // W3 (dot): OsTray.jsx's per-slot dot — 5x5, --wax when this slot is the running app,
+            // --toner-3 otherwise.
+            const float slotPadX = 10f; // OsTray's own slot padding, "0 10px"
+            const float dotSize = 5f;
+            const float dotLabelGap = 6f;
+            LaptopUi.MakePanel(rt, "Dot", new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(slotPadX, 0f), new Vector2(dotSize, dotSize),
+                running ? LaptopOs.MoneyGold : LaptopOs.Muted);
+
+            float labelX = slotPadX + dotSize + dotLabelGap;
+            float labelW = Mathf.Max(0f, rt.sizeDelta.x - labelX - slotPadX);
+            Text text = LaptopUi.MakeText(rt, "Label", new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(labelX, 0f), new Vector2(labelW, 24f), ChromeText, TextAnchor.MiddleLeft,
+                running ? LaptopOs.White : LaptopOs.Muted, label, font);
+            text.horizontalOverflow = HorizontalWrapMode.Overflow;
         }
     }
 }
