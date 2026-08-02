@@ -393,6 +393,16 @@ public sealed class Ticket
     public double VigPaid { get; }
     public TicketState State { get; internal set; } = TicketState.Open;
 
+    /// <summary>What this ticket actually returned when it was cashed out, retained so the run's
+    /// settled record can print it (S36). Null in every other state.
+    ///
+    /// A cash-out is the ONE terminal state whose return cannot be re-derived after the fact:
+    /// a win pays <see cref="PotentialPayout"/> and a loss pays nothing, but the cash-out figure
+    /// is a live quote off the remaining legs' probabilities at one instant of one sweat, and that
+    /// instant is gone the moment the session ends. Not retaining it meant the LEDGER could only
+    /// print an honest absence for money the player had actually banked.</summary>
+    public double? CashedOutFor { get; internal set; }
+
     /// <summary>Stable per-run identity: "round.placementIndex" — the DeriveRng key component
     /// (charm expansion, PLAN.md rev 5).</summary>
     public string Id { get; internal set; } = "";
