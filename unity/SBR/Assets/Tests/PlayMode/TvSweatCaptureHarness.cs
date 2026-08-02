@@ -94,6 +94,57 @@ namespace SBR.Tests.PlayMode
         /// index is readable as "the Nth captured moment of THIS sweat".</summary>
         private static int s_sceneIndex;
 
+        /// <summary>Whether the most recent <see cref="WaitUntilOrAbsent"/> actually saw its
+        /// condition. False means the moment did not occur in this sweat.</summary>
+        private static bool s_conditionMet;
+
+        /// <summary>Waits for <paramref name="until"/>, for the session to END, or for the deadline —
+        /// and treats the middle case as a legitimate ABSENT moment rather than a failure.
+        ///
+        /// <para>This is the fix for a harness defect that cost two capture runs. The scorer-leg and
+        /// cash-out waits assumed every seed plays all three legs. A ticket that dies on an earlier
+        /// leg never plays leg 3 at all, so "the scorer leg reached a terminal state" can never
+        /// become true — the wait was UNSATISFIABLE, not slow, and raising the deadline from 240s to
+        /// 420s changed only how long it took to fail. Seed 01 completes in 60s; seeds 02–05 burned
+        /// the full budget waiting for something that was never going to happen.</para>
+        ///
+        /// <para>The harness's own contract already says so for the scorer case — "no scorer identity
+        /// on a losing pick is a real, legitimate outcome this harness must still capture". A moment
+        /// that did not occur is evidence about the sweat, not a broken run. The deadline still fails
+        /// loudly while the session is LIVE, because that is a genuine hang.</para></summary>
+        private static IEnumerator WaitUntilOrAbsent(System.Func<bool> until, RunDirector director,
+            float deadline, string what)
+        {
+            s_conditionMet = false;
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                if (until()) { s_conditionMet = true; yield break; }
+                if (director != null && director.CurrentSession != null && director.CurrentSession.IsComplete)
+                {
+                    // GRACE PERIOD, and it is load-bearing. The session reports complete BEFORE the
+                    // revealed leg states settle, so bailing on IsComplete alone skipped
+                    // scorer-leg-resolved on a seed where it demonstrably does occur — the same
+                    // moment the previous run captured. A wait that silently drops a real moment is
+                    // worse than the deadline failure it replaced, because the evidence goes missing
+                    // instead of the run going red.
+                    //
+                    // So completion means "stop waiting indefinitely", not "the answer is no". Keep
+                    // polling the condition for a bounded settle window and only then call it absent.
+                    for (int i = 0; i < 120; i++) // ~2s at 60fps
+                    {
+                        if (until()) { s_conditionMet = true; yield break; }
+                        yield return null;
+                    }
+                    Debug.Log($"[TvSweatCaptureHarness] seed={_seed}: {what} — ABSENT, the session " +
+                        "ended and the condition did not settle within the grace window. Recorded " +
+                        "as an outcome of this sweat, not a failed run.");
+                    yield break;
+                }
+                yield return null;
+            }
+            Assert.Fail($"{what} — deadline reached with the session still LIVE, which is a genuine hang");
+        }
+
         // Leg 2 (0-based) of the fixed ticket built below is always the AnytimeScorer leg.
         private const int ScorerLegIndex = 2;
 
@@ -204,13 +255,13 @@ namespace SBR.Tests.PlayMode
             // per-moment timeouts stacking worst-case. Ship pacing across three matches plus a
             // final sequence is comfortably under this in the ordinary case; if it is not, that is
             // itself useful evidence, not a harness bug.
-            // Raised 240 -> 420. Measured: seeds 02-05 all hit the old budget mid-sweat at 242-246s
-            // with the harness's OWN messages ("the scorer leg never reached a terminal state",
-            // "cash-out never became actionable"), while TVCAPTURE01 finishes inside it. A full
-            // ship-paced three-leg sweat simply costs more than 240s on most seeds — seed 01 is the
-            // one that happens to fit, which is exactly the sampling error five seeds exist to end.
-            // Ship pacing is kept: the point of this harness is real pacing, so the budget moves,
-            // not the clock. [Timeout(300000)] on the test moves with it — see the attribute.
+            // 420s, raised from 240. NOT because a sweat costs that much — that was the first
+            // diagnosis and it was WRONG. Seed 01 completes in 60s, and at 420s seeds 02-05 still
+            // failed with the same messages: the waits were UNSATISFIABLE, not slow (see
+            // WaitUntilOrAbsent, which is the actual fix). The larger budget is kept only because
+            // the old one was independently too tight for a genuine hang to be distinguishable from
+            // a slow sweat. Ship pacing is untouched: the point of this harness is real pacing, so
+            // the budget moves, never the clock.
             float deadline = Time.realtimeSinceStartup + 420f;
 
             // Reference frame: the ticket card, before any event has fired. Not a named "moment" in
@@ -225,9 +276,11 @@ namespace SBR.Tests.PlayMode
             // the scorer's surname in the same frame, so this one trigger doubles as the "scorer
             // reveal" evidence question for every non-AnytimeScorer leg - the burst below shows both.
             string baselineScore = screen.RevealedView.ScoreText;
-            yield return WaitUntilOrFail(() => screen.RevealedView.ScoreText != baselineScore,
-                deadline, "no goal landed on any of the 3 legs before the deadline");
-            yield return CaptureBurst(screen, cam, "goal", 8, 0.15f);
+            // Same treatment: a sweat can legitimately end without a goal on any leg. The old form
+            // failed the whole capture for an outcome the surface is supposed to be able to show.
+            yield return WaitUntilOrAbsent(() => screen.RevealedView.ScoreText != baselineScore,
+                director, deadline, "no goal landed on any of the 3 legs");
+            if (s_conditionMet) yield return CaptureBurst(screen, cam, "goal", 8, 0.15f);
 
             // ---- Moment: cash-out becomes actionable. SitSpot.InteractStandSuppressed is the
             // exact predicate TvSweatScreen wires to CanAcceptCashOutNow (CashOutLive) - the same
@@ -236,10 +289,10 @@ namespace SBR.Tests.PlayMode
             // observed after the goal capture above, not necessarily the chronological first (the
             // window opens and closes repeatedly across a sweat) - still a legitimate, deterministic
             // "cash-out is live right now" capture.
-            yield return WaitUntilOrFail(
+            yield return WaitUntilOrAbsent(
                 () => SitSpot.InteractStandSuppressed != null && SitSpot.InteractStandSuppressed(),
-                deadline, "cash-out never became actionable before the deadline");
-            yield return CaptureBurst(screen, cam, "cashout-actionable", 8, 0.15f);
+                director, deadline, "cash-out never became actionable");
+            if (s_conditionMet) yield return CaptureBurst(screen, cam, "cashout-actionable", 8, 0.15f);
 
             // ---- Moment(s): the AnytimeScorer leg's own live window turns dangerous. Fires once
             // per dangerous beat (RevealedView.MarketSuspended false -> true) while THAT leg's row
@@ -279,15 +332,15 @@ namespace SBR.Tests.PlayMode
             // dot ("which dot takes the final touch" - the locator evidence question), or the row
             // resolving straight to L with no identity ever shown. This harness does not know or
             // predict which in advance; it only reaches the moment and captures it.
-            yield return WaitUntilOrFail(() =>
+            yield return WaitUntilOrAbsent(() =>
             {
                 RevealedTicket ticket = FirstTicketOrNull(screen);
                 RevealedLegState? legState = ticket != null && ScorerLegIndex < ticket.Legs.Count
                     ? ticket.Legs[ScorerLegIndex].State : (RevealedLegState?)null;
                 return legState.HasValue && legState != RevealedLegState.Live
                     && legState != RevealedLegState.Pending;
-            }, deadline, "the scorer leg never reached a terminal state before the deadline");
-            yield return CaptureBurst(screen, cam, "scorer-leg-resolved", 8, 0.15f);
+            }, director, deadline, "the scorer leg never reached a terminal state");
+            if (s_conditionMet) yield return CaptureBurst(screen, cam, "scorer-leg-resolved", 8, 0.15f);
 
             Debug.Log($"[TvSweatCaptureHarness] seed={_seed} capture complete -> {OutputDir}");
         }
