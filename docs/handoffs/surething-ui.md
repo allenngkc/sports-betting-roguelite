@@ -87,6 +87,46 @@ ever showed an affordable offer, and every reviewer including me looked at a scr
 control was greyed out. The fix for that was capture state `09-rewards-affordable`, which asserts a
 BUY is interactable *before* shooting. A populated-ledger state should do the same.
 
+## 4b. Cross-seat dependency — engine ticket retention
+
+**Approved by Allen, 2026-08-01. Lands via the markets seat; settlement is theirs. This seat
+consumes the result and builds none of it.**
+
+The defect that produced it: `Run.ExitShop()` does `Round++; _tickets.Clear();`, and `_tickets` is
+the only ticket list on `Run` — there is no archive. So `run.Tickets` holds **the current round
+only**, while the LEDGER captions itself `CURRENT RUN` in four separate places. A player who bets in
+rounds 1–3 and opens the LEDGER in round 4 sees an empty screen reading *"NO SETTLED TICKETS IN THE
+CURRENT RUN"*, which is false.
+
+Two consequences once retention lands, both of which this seat must then act on:
+
+1. **The scope copy becomes true on its own.** `CURRENT RUN`, `THIS RUN` and `CURRENT-RUN RECORD` are
+   correct the moment tickets persist across rounds. **Do not relabel them to `THIS ROUND` in the
+   meantime** — Allen chose retention precisely so the honest wording survives, and relabelling would
+   write the wrong scope into canon and the kit.
+2. **The overflow arithmetic changes and gets worse.** Today the list is bounded at 3 tickets because
+   the engine clears them. With retention it becomes 8 rounds × 3 tickets, so the worst case moves
+   from 3 rows to 24. The current measured overflow is already 142px unclipped against a 458px board
+   with no `RectMask2D`. **Re-measure before assuming any layout still holds**, and note this makes
+   the scroll question below load-bearing rather than theoretical.
+
+Also waiting on the same landing: S36's cash-out figure. The engine retains no cash-out amount, so
+that money column prints an em dash in `--toner-3`. **Keep printing the honest absence** — never
+`$0`, never `AMOUNT NOT RETAINED` — until the retained figure exists, then consume it.
+
+## 4c. Open decisions this seat must not assume
+
+- **Scroll input** — deferred to the next DD batch. There is no `ScrollRect` and no scroll input
+  handler anywhere in this project; the kit gets `overflowY: auto` free from a browser and Unity does
+  not. Building a scroll without an input path yields content the player cannot reach while S27's
+  position rail advertises that they can. Blocks W1, S25 and S27.
+- **Legs as one condensed string vs per-leg sub-rows** — deferred to the next DD batch. Canon's
+  `LedgerEntry` renders a single string; this build renders a sub-row per leg carrying per-leg odds
+  and state. Collapsing them discards information the player currently has. The canon legs cell is
+  currently reserved and left empty pending the call.
+- **C15 — TextMeshPro migration** — with Allen. Until it lands, S28 and S29 hold, and tracking,
+  tabular figures and weight 600 stay unreachable on this surface.
+
 ## 5. How this seat works
 
 - **Unity is one editor, studio-wide.** Do not launch it without a slot granted by the orchestrator.
