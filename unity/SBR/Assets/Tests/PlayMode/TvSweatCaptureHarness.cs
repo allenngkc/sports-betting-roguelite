@@ -80,10 +80,17 @@ namespace SBR.Tests.PlayMode
         // FIVE seeds, not one. A single seed produces one match, and the containment claim T25.1
         // has to prove is "no layer leaves the glass in ANY sweat" — which one match cannot show.
         // Five different matches vary scoreline, market state and scene grammar, so a layer that
-        // only escapes under some conditions has somewhere to show itself. TVCAPTURE01 stays first
+        // only escapes under some conditions has somewhere to show itself. The first seed stays first
         // so the new frames are directly comparable to the 49 already in the DD's hands.
+        // T31: NUMERIC seeds. The DD withdrew the finding that the footer seed was a debug string —
+        // it is `Rng.RunSeed`, which PRD §8.1 specifies as chrome content ("round, bank, payment,
+        // seed"). What made it READ as debug was this harness handing the run a seed shaped like
+        // TVCAPTURE01. A real player's seed is a number, so the capture's seed is a number, and the
+        // chrome row in every frame now shows what it will actually show in the product.
+        //
+        // Kept distinct and stable so a frame's provenance is still greppable out of its filename.
         private static readonly string[] CaptureSeeds =
-            { "TVCAPTURE01", "TVCAPTURE02", "TVCAPTURE03", "TVCAPTURE04", "TVCAPTURE05" };
+            { "48151623", "42108675", "30941771", "16180339", "27182818" };
 
         // The seed of the run currently being captured; drives both StartNewRun and the filename.
         // Static because CaptureBurst is static and the test cases run one at a time.
@@ -170,7 +177,7 @@ namespace SBR.Tests.PlayMode
         // NUnit's default UnityTest timeout is 180s, but this harness runs at SHIP pacing behind its
         // own 240s deadline — so NUnit was killing the run before the harness's own guard could ever
         // fire. Latent since the harness was written and invisible while only one seed was used:
-        // TVCAPTURE01 happens to finish inside 180s, and seeds 02-05 do not. 300s clears the
+        // the first seed happens to finish inside 180s, and the rest do not. 300s clears the
         // internal deadline with headroom, so a genuine hang still fails on the harness's own
         // message ("...never reached a terminal state") rather than on an opaque framework timeout.
         [Timeout(480000)]

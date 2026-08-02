@@ -510,7 +510,7 @@ namespace SBR.Game
         // The single L4 magnitude (C3 rule 5: "a single value" — no second, per-element scale).
         // C8·a: the floor is now settled on FRAMES, not on this number — "measured on rendered
         // frames at the seated distance, not asserted from a boost value. The 1.8 boost stays only
-        // if the scoreline holds there." Both arms of that pair are captured (seed TVCAPTURE01,
+        // if the scoreline holds there." Both arms of that pair are captured (one seed,
         // same moments); this value stays 1.8 until the DD rules on the images.
         private const float HdrBoostL4 = 1.8f;
         private static readonly int HdrBoostId = Shader.PropertyToID("_HdrBoost");
