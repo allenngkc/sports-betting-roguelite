@@ -92,6 +92,19 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-02 cycle 56 · **Markets B1: still blocked — new defect** — MaxLegs=4
+  landed (`28b63a0`, balance-neutral, G1–G6 byte-identical) and closes the
+  overflow, but a separate margin collision at 4 legs blocks B1 (Place flows into
+  the bottom-anchored Lock/Skip band; 14/2/36px overlaps). Lead left the suite
+  intentionally red (PlayMode 45/46) as the merge guard; also found+fixed vacuous
+  containment epsilons (Phase-A check had never been able to fail). Call routed to
+  Allen/DD: `dd-followup-markets-margin.md` + INBOX #4. Markets holds. Lease
+  released clean. Reversal: none — no merge occurred; ruling pending.
+- 2026-08-02 cycle 55 · **Three staged drafts fired** — markets: Allen ruled
+  **MaxLegs = 4** (6-leg overflow closed by construction; B1 unblocked — ruling
+  recorded in markets-2 contract `773f44b`, superseding the three costed options);
+  TV + room: hold-acks delivered. Markets resumes B1 compile/verify; editor free
+  and offered. Reversal: raise MaxLegs back and reopen the overflow options.
 - 2026-07-31 cycle 2 · **S11 verified closed** — spot-checked `ed07ee3` (fonts +
   OFL licences), `a3d8876` (rulings + document layer), `b820624` (markup guard),
   `7169c95` (policy in handoff); evidence matches report. SureThing's font-wiring

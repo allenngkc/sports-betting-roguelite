@@ -30,3 +30,19 @@ and attached. This batch is dispositions, not new direction.
 5. Standing: studio constitution; laptop/TV owning docs.
 
 Reply with register-ready lines; the orchestrator transcribes.
+
+## Update 2026-08-02 (since export)
+
+- **Allen ruled MaxLegs=4** — the 6-leg overflow is closed by construction. But a
+  **new blocker**: at 4 legs the flowing PLACE content collides with the
+  bottom-anchored LOCK/SKIP band — pixel table in `dd-followup-markets-margin.md`.
+  That call now heads the markets queue (replaces the overflow item).
+- **TV holds, slice evidence-complete:** T39 landed; the tape has its MOMENTUM
+  label. Two adds to your TV queue: **TV-02** (tape shape confirm vs T28) and
+  **TV-15** (stacked label misses by 0.3px) — both in `dd-followup-tv-evidence.md`,
+  which also carries the joint §1.1 grade question (room + TV, C20 class).
+- The `REGISTER/INBOX/STATUS` copies in this bundle are refreshed to 2026-08-02;
+  `register-batch5.md` (your batch 5 + Addendum II, verbatim) is included.
+- Evidence in this drag: `tv-setB-postC14-part1..8.zip` (the Set B + bloom A/B
+  frames promised as follow-up) and `room-r23-conformance.zip` (the graded/ungraded
+  §1.1 pair behind the grade question).
