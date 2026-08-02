@@ -26,8 +26,34 @@ namespace SBR.Tests.EditMode
         // Calibrated against the OLD retired literals so a reintroduction of either hue at a similar
         // magnitude is caught, without false-flagging the approved gold (r-dominant but g moderate)
         // or the approved white/grey (no channel dominates by this margin).
-        private static bool LooksLikeRetiredRed(Color c) => c.r > 0.7f && c.g < 0.25f && c.b < 0.25f;
-        private static bool LooksLikeRetiredGreen(Color c) => c.g > 0.7f && c.r < 0.35f && c.b < 0.6f;
+        // T30: THE THRESHOLD PREDICATES ARE RETIRED. They approximated the retired constants and an
+        // approximation is always wrong at some boundary — LooksLikeRetiredRed required g < 0.25f
+        // while #FF4038's green channel is 0x40/255 = 0.25098, so it missed, by 0.00098, the exact
+        // colour its own comment said it was "calibrated against". Three shipped guards asserted
+        // less than they read as asserting, and nobody could see it from the code.
+        //
+        // The named constants are the law, so match them VERBATIM. A colour either is one of the
+        // retired values or it is not; there is no boundary to be wrong at.
+        private static Color FromHex(string hex) => new Color(
+            System.Convert.ToInt32(hex.Substring(0, 2), 16) / 255f,
+            System.Convert.ToInt32(hex.Substring(2, 2), 16) / 255f,
+            System.Convert.ToInt32(hex.Substring(4, 2), 16) / 255f, 1f);
+
+        /// <summary>True when <paramref name="c"/> IS one of the retired money constants. Epsilon is
+        /// a float-representation tolerance only — not a similarity band.</summary>
+        private static bool IsRetiredMoneyConstant(Color c)
+        {
+            foreach (string hex in new[] { RetiredGreenHex, RetiredRedHex })
+            {
+                Color r = FromHex(hex);
+                if (Mathf.Abs(c.r - r.r) < 0.002f && Mathf.Abs(c.g - r.g) < 0.002f
+                    && Mathf.Abs(c.b - r.b) < 0.002f) return true;
+            }
+            return false;
+        }
+
+        private static bool LooksLikeRetiredRed(Color c) => IsRetiredMoneyConstant(c);
+        private static bool LooksLikeRetiredGreen(Color c) => IsRetiredMoneyConstant(c);
         // T9 (Phase 3B): calibrated against chromeCyan's literal (0.62, 0.86, 0.96) — blue and green
         // both bright, red held back. This is the previous palette's general-chrome cyan; it has no
         // role in DESIGN.md §4 (context is grey). §8's VOID leg state is the ONE place cyan survives,

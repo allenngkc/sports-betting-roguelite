@@ -422,6 +422,58 @@ namespace SBR.Tests.EditMode
             }
         }
 
+        /// <summary>T24's re-measure, done in the production face rather than estimated.
+        ///
+        /// <para>T24 authored the slot at 76px "measured from the live row in the production face" —
+        /// but that figure came from a THREE-line row (eyebrow 15 + NEED 28 + progress 19), and the
+        /// same ruling removes the meta line: "the live row carries no market/price/state meta line,
+        /// and that is now specified rather than tolerated." So the measured row and the specified
+        /// row are not the same row.</para>
+        ///
+        /// <para>This measures what the ruling actually specifies — NEED above progress, in Encode
+        /// Sans — using Unity's own <c>preferredHeight</c> rather than the LineBox estimate the
+        /// build sizes with. If the real stack fits the current slot, the 40px deficit does not
+        /// survive and risk/pays does not need to move.</para></summary>
+        [Test]
+        public void T24_the_specified_live_row_measured_in_the_production_face_fits_its_slot()
+        {
+            var go = new GameObject("T24Remeasure");
+            try
+            {
+                var screen = BuildScreen(go);
+                Text need = FindChild<Text>(screen, "LegRowNeed0");
+                Text progress = FindChild<Text>(screen, "LegRowProgress0");
+                Text need1 = FindChild<Text>(screen, "LegRowNeed1");
+                Assert.IsNotNull(need); Assert.IsNotNull(progress); Assert.IsNotNull(need1);
+
+                Assert.IsNotNull(need.font, "no font resolved — a measurement in the fallback face is void");
+                Assert.IsTrue(need.font.name.Contains("Encode"),
+                    $"measured in '{need.font.name}', not Encode Sans. T24 asks for the PRODUCTION " +
+                    "face; a measurement in any other face is the mistake T20 already made once.");
+
+                // Real rendered heights, with the longest authored strings §6 permits.
+                need.text = "MARCUS VALE TO SCORE";
+                progress.text = "LIVE • 0 GOALS • 3 MORE";
+                float measured = need.preferredHeight + progress.preferredHeight;
+
+                float slot = Mathf.Abs(need1.rectTransform.anchoredPosition.y
+                                     - need.rectTransform.anchoredPosition.y);
+
+                Debug.Log($"[T24] measured live row = {measured:0.0}px " +
+                          $"(NEED {need.preferredHeight:0.0} + progress {progress.preferredHeight:0.0}) " +
+                          $"in '{need.font.name}'; slot = {slot:0.0}px");
+
+                Assert.LessOrEqual(measured + 8f, slot,
+                    $"the specified live row measures {measured:0.0}px in the production face and the " +
+                    $"slot is {slot:0.0}px. If this fails the T24 deficit is real and risk/pays moves " +
+                    "to the ticket card, which returns exactly 40px (416 + 40 = 456 = 6 x 76).");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
         [Test]
         public void Nothing_in_the_sweat_surface_outgrows_the_score()
         {
