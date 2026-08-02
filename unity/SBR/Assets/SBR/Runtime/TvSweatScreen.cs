@@ -711,7 +711,15 @@ namespace SBR.Game
         /// the Design Director rather than absorbed silently.</para></summary>
         private struct LegRowUi
         {
-            public Text Line;      // compact: resolved / pending
+            // TV-14: the compact form is THREE spans, not one string. Canon
+            // (TvLegRow.jsx:56-63) sets statement · price · state chip, and the build concatenated
+            // them into `"NEXT   {statement} {price}"` — one colour, state word leading. That is
+            // wrong twice over: the price must carry --tv-context rather than inherit the row's
+            // state hue, and the state belongs in a right-aligned chip, not in front of the fact.
+            // The statement is what the row is FOR; it should start at the row's left edge.
+            public Text Line;      // compact: the authored statement
+            public Text Price;     // compact: the price, --tv-context, never the state hue
+            public Text State;     // compact: the right-aligned state chip
             public Text Need;      // live: the authored §6 statement, printed verbatim
             public Text Progress;  // live: the revealed causal progress line
             public Image Strike;      // §8 VOID only: the struck-through rule
@@ -1840,7 +1848,11 @@ namespace SBR.Game
                 if (i >= _ticket.Legs.Count) { ClearLegRow(i); continue; }
 
                 Leg leg = _ticket.Legs[i];
-                string label = $"{leg.DisplayLabel} {OddsFormat.American(leg.OfferedOdds)}";
+                // TV-14: statement and price are separate facts and render as separate spans. They
+                // were concatenated into one string, which forced the price to wear whatever hue
+                // the row's state carried — a lost leg's price rendered as part of the loss.
+                string statement = leg.DisplayLabel;
+                string price = OddsFormat.American(leg.OfferedOdds);
                 bool isLive = i == liveLegIndex && i >= _resolvedThrough;
                 _legRow[i].IsLive = isLive;
 
@@ -1853,12 +1865,14 @@ namespace SBR.Game
                     if (leg.IsVoided)
                     {
                         _legRow[i].Line.color = AtTier(tvVoid, TierL2);   // §8 VOID: L2, --tv-void
-                        _legRow[i].Line.text = $"VOID   {label}";
+                        _legRow[i].Line.text = statement;
+                        SetRowChip(i, "VOID", AtTier(tvVoid, TierL2), price);
                     }
                     else if (leg.GradesWon)
                     {
                         _legRow[i].Line.color = AtTier(gold, TierL3);     // §8 W: L3 gold
-                        _legRow[i].Line.text = $"W   {label}";
+                        _legRow[i].Line.text = statement;
+                        SetRowChip(i, "W", AtTier(gold, TierL3), price);
                     }
                     else
                     {
@@ -1866,7 +1880,8 @@ namespace SBR.Game
                         // would erase the "unlit pixel structure" the law asks to keep. The
                         // extinguishment is the row's background, below.
                         _legRow[i].Line.color = AtTier(flavorColor, TierL1);
-                        _legRow[i].Line.text = $"L   {label}";
+                        _legRow[i].Line.text = statement;
+                        SetRowChip(i, "L", AtTier(flavorColor, TierL1), price);
                     }
                     if (_legRow[i].Extinguish != null) _legRow[i].Extinguish.enabled = dead;
                     // §8: the strike belongs to VOID and to nothing else. A struck W or L would
@@ -1885,7 +1900,12 @@ namespace SBR.Game
                     // which IS the authored statement, so leaving it would print the statement twice
                     // at two different sizes. NEED is the one place it appears on a live row.
                     SweatActiveLegModel.ActiveLegCopy copy = DescribeActiveLeg(leg);
+                    // The live form replaces the compact one entirely — statement, price and chip
+                    // all clear. §7 bans duplicating a fact already on the surface, and the live
+                    // row's NEED carries the statement (T24: "state survives in the word, price in
+                    // the compact form").
                     _legRow[i].Line.text = string.Empty;
+                    SetRowChip(i, string.Empty, flavorColor, string.Empty);
                     // §8.10: while previewing, a remaining leg is struck (cashing out ends it) and
                     // drops ONE level — L3 to L2. It uses the VOID strike, never the LOST
                     // extinguish: a leg being CANCELLED must not read as a leg LOST at the exact
@@ -1905,7 +1925,8 @@ namespace SBR.Game
                     // L0 means the thing is dead. A NEXT leg is not dead — it is the next thing that
                     // can take his money." This overrides canon's own LEVEL.NEXT = L1.
                     _legRow[i].Line.color = AtTier(flavorColor, TierL2);
-                    _legRow[i].Line.text = $"NEXT   {label}";
+                    _legRow[i].Line.text = statement;
+                    SetRowChip(i, "NEXT", AtTier(flavorColor, TierL2), price);
                     if (_legRow[i].Extinguish != null) _legRow[i].Extinguish.enabled = false;
                     // A pending leg is equally ended by cashing out, so it is struck too. It does
                     // NOT step down: NEXT already sits at L1 and the next level is L0, which is the
@@ -1920,10 +1941,33 @@ namespace SBR.Game
             _tRiskPays.text = $"RISK ${Money(_ticket.Stake)}     PAYS ${Money(_ticket.PotentialPayout)}";
         }
 
+        /// <summary>TV-14: sets a compact row's price and state chip together.
+        ///
+        /// <para>The chip takes the row's state hue; the price does NOT — canon gives it
+        /// <c>--tv-context</c> at L2 (`TvLegRow.jsx:62` + `:25`), because a price is a market fact
+        /// and not part of the outcome. Concatenated into the statement as it was before, a lost
+        /// leg's price rendered at L1 in the loss's own colour, which reads as the price having
+        /// lost too.</para></summary>
+        private void SetRowChip(int i, string state, Color stateInk, string price)
+        {
+            if (_legRow[i].State != null)
+            {
+                _legRow[i].State.text = state;
+                _legRow[i].State.color = stateInk;
+            }
+            if (_legRow[i].Price != null)
+            {
+                _legRow[i].Price.text = price;
+                _legRow[i].Price.color = AtTier(contextGrey, TierL2);
+            }
+        }
+
         private void ClearLegRow(int i)
         {
             _legRow[i].IsLive = false;
             if (_legRow[i].Line != null) _legRow[i].Line.text = string.Empty;
+            if (_legRow[i].Price != null) _legRow[i].Price.text = string.Empty;
+            if (_legRow[i].State != null) _legRow[i].State.text = string.Empty;
             if (_legRow[i].Need != null) _legRow[i].Need.text = string.Empty;
             if (_legRow[i].Progress != null) _legRow[i].Progress.text = string.Empty;
             if (_legRow[i].Strike != null) _legRow[i].Strike.enabled = false;
@@ -3033,12 +3077,31 @@ namespace SBR.Game
                     new Vector2(0f, 1f), AnchorTopLeft(row), new Vector2(row.width, row.height),
                     extinguished);
                 extinguish.enabled = false;
-                // Compact form (resolved / pending): ONE line, at the eyebrow scale, carrying state,
-                // statement and price. Canon drops the market eyebrow here rather than shrinking it —
-                // every authored statement already names its own market.
+                // Compact form (resolved / pending), TV-14: THREE spans across one line at the
+                // eyebrow scale. Canon drops the market eyebrow here rather than shrinking it —
+                // every authored statement already names its own market — and orders the row
+                // statement · price · state, with the state right-aligned in its own chip.
+                //
+                // Widths are fixed, never derived from content (§6): the chip reserves canon's 38px
+                // at the right edge, the price reserves a column left of it, and the statement takes
+                // the remainder and ellipsises. A price that moved with the statement's length would
+                // make the column's right edge ragged across six rows.
+                const float chipW = 38f, priceW = 52f, gap = 8f;
+                float stmtW = lineW - chipW - priceW - gap * 2f;
+
                 Text line = MakeText(root, $"LegRowLine{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    AnchorTopLeft(row, 8f, 4f), new Vector2(lineW, compactH), TypeEyebrow,
-                    TextAnchor.UpperLeft, structureGrey, FontStyle.Normal, Face.Condensed); // TvLegRow.jsx:35 shell
+                    AnchorTopLeft(row, 8f, 4f), new Vector2(stmtW, compactH), TypeEyebrow,
+                    TextAnchor.UpperLeft, structureGrey, FontStyle.Bold, Face.Condensed); // TvLegRow.jsx:57-61
+                line.horizontalOverflow = HorizontalWrapMode.Wrap; // so the statement clips, not sprawls
+
+                Text price = MakeText(root, $"LegRowPrice{i}", new Vector2(0f, 1f), new Vector2(1f, 1f),
+                    AnchorTopLeft(row, 8f + stmtW + gap + priceW, 4f), new Vector2(priceW, compactH),
+                    TypeEyebrow, TextAnchor.UpperRight, AtTier(contextGrey, TierL2),
+                    FontStyle.Normal, Face.Condensed); // TvLegRow.jsx:62 — --tv-context, its own tier
+
+                Text state = MakeText(root, $"LegRowState{i}", new Vector2(0f, 1f), new Vector2(1f, 1f),
+                    AnchorTopLeft(row, 8f + lineW, 4f), new Vector2(chipW, compactH), TypeEyebrow,
+                    TextAnchor.UpperRight, structureGrey); // TvLegRow.jsx:27-31 — regular face, min 38px
                 // Live form: the authored NEED statement, then the revealed progress beneath it.
                 Text need = MakeText(root, $"LegRowNeed{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     AnchorTopLeft(row, 8f, 4f), new Vector2(lineW, needH), TypeNeed,
@@ -3059,7 +3122,8 @@ namespace SBR.Game
                 strike.enabled = false;
                 _legRow[i] = new LegRowUi
                 {
-                    Line = line, Need = need, Progress = progress, Strike = strike,
+                    Line = line, Price = price, State = state,
+                    Need = need, Progress = progress, Strike = strike,
                     Extinguish = extinguish, IsLive = false
                 };
             }

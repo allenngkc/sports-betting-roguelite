@@ -1171,8 +1171,16 @@ namespace SBR.Tests.EditMode
                 Assert.IsNotNull(line, "LegRowLine0 not found");
 
                 Assert.IsFalse(strike.enabled, "a freshly built row is not struck — VOID is a state, not a default");
-                Assert.AreEqual(line.rectTransform.sizeDelta.x, strike.rectTransform.sizeDelta.x, 0.01f,
-                    "the strike spans the compact line's fixed width, not its glyphs");
+                // TV-14 changed what `Line` IS: it was the whole compact row, and is now just the
+                // statement span, with price and state chip beside it. The strike still spans the
+                // whole ROW, which is the correct referent — DESIGN.md §8 strikes the LEG ("struck
+                // through on the matrix"), not the words. So it must be WIDER than the statement,
+                // and it must still be fixed rather than measured from glyphs, which is what the
+                // invariance checks below actually prove.
+                Assert.Greater(strike.rectTransform.sizeDelta.x, line.rectTransform.sizeDelta.x,
+                    "the strike must span the whole row, not just the statement span — a rule that " +
+                    "stopped at the end of the words would strike the fact and leave the price and " +
+                    "the state chip unstruck, which says the leg is only partly void");
 
                 Vector2 sizeBefore = strike.rectTransform.sizeDelta;
                 line.text = "V";
