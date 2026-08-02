@@ -4,6 +4,7 @@ using SBR.Game;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Rendering;   // Volume - the R23 diagnostic disables the grade for one frame
 
 namespace SBR
 {
@@ -49,6 +50,114 @@ namespace SBR
             Directory.CreateDirectory(outDir);
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
             Capture(outDir);
+        }
+
+        /// <summary>
+        /// R23 - the screens-dark conformance set, the instrument for law §1.1.
+        ///
+        /// §1.1 says a blue-tinted room is the explicit failure mode, and it has been reporting
+        /// ITSELF as failing because it was being judged on gameplay captures - frames in which
+        /// three emissive screens and a green TV light are pouring colour into the room. That
+        /// cannot separate "the room is cool" from "the screens are cool", so the law was
+        /// unfalsifiable on its own evidence.
+        ///
+        /// This set removes the screens from the measurement entirely: emission forced black on
+        /// all three panels, and the two screen-driven lights disabled. What remains is the
+        /// room's own cast under its own rig at its own grade - the grade included deliberately,
+        /// because the grade IS the room and not a layer over it.
+        ///
+        /// EDIT MODE ON PURPOSE. The Play Mode harness exists to show live screen content, which
+        /// is precisely what this set must not contain, so the domain-reload dance buys nothing
+        /// here and costs reliability in batch.
+        ///
+        /// TWO frames, and the second is not padding. The ruling names the seated rig AND
+        /// requires wall, floor and bunk regions to be reported; a 17-degree close-up on a dark
+        /// panel cannot contain three surfaces. Both requirements are only satisfiable together.
+        ///
+        ///   Unity.exe -batchmode -quit -projectPath (project)
+        ///             -executeMethod SBR.RoomViewCapture.CaptureConformance -outDir (path)
+        /// </summary>
+        public static void CaptureConformance()
+        {
+            string outDir = OutDirFromArgs();
+            Directory.CreateDirectory(outDir);
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+
+            int darkened = DarkenScreens();
+            Debug.Log($"[RoomViewCapture] R23 conformance: {darkened} screen emitters silenced");
+
+            Camera cam = FindPlayerCamera();
+            var controller = UnityEngine.Object.FindAnyObjectByType<FirstPersonController>();
+            if (controller != null)
+                controller.enabled = false;
+
+            // The seated rig the ruling names, unchanged from the gate pose.
+            var seatedEye = new Vector3(-0.950f, 1.150f, 0.300f);
+            var tvCenter = new Vector3(1.232f, 1.100f, 0.300f);
+            Shoot(cam, outDir, "conformance-seated-screens-dark.png",
+                  seatedEye, Quaternion.LookRotation(tvCenter - seatedEye, Vector3.up), 17f);
+
+            // The wide frame that actually carries wall, floor and bunk in one shot.
+            var widePos = new Vector3(0.300f, 1.640f, -1.400f);
+            var wideRot = Quaternion.LookRotation(Vector3.forward, Vector3.up);
+            Shoot(cam, outDir, "conformance-room-screens-dark.png", widePos, wideRot, 68f);
+
+            // DIAGNOSTIC, not canonical. R23 is explicit that the grade IS the room, so the
+            // graded frame above is the one the law is judged on. But if that frame ever reads
+            // cool, the very next question is whether the cast comes from the room's LIGHT or
+            // from the grade's own blue shadow lift, and answering it later costs a whole
+            // editor lease. One extra ungraded frame answers it for free, and R18 requires this
+            // measurement to be repeated whenever MoonDirectional's colour or intensity moves.
+            var volGo = GameObject.Find("RoomPostFx");
+            var vol = volGo != null ? volGo.GetComponent<Volume>() : null;
+            if (vol != null)
+            {
+                vol.enabled = false;
+                Shoot(cam, outDir, "diagnostic-room-screens-dark-UNGRADED.png", widePos, wideRot, 68f);
+                vol.enabled = true;
+            }
+        }
+
+        /// <summary>
+        /// Forces every screen emitter to contribute nothing, without touching a single asset.
+        ///
+        /// A MaterialPropertyBlock overrides the emission colour per RENDERER, so the shared
+        /// material assets on disk are untouched and the next ordinary build is unaffected. The
+        /// alternative - editing the materials - would silently corrupt the room for every other
+        /// capture, and the emission flag it would disturb is the one that already broke this
+        /// project once (see Mat() in GrayboxRoomBuilder).
+        ///
+        /// The two screen-driven lights go too. TvLight is green and PhoneBuzzLight is a flash;
+        /// both are screen colour arriving by another route, and R23's whole point is that no
+        /// screen's colour enters the room's measured cast.
+        /// </summary>
+        private static int DarkenScreens()
+        {
+            int n = 0;
+            var block = new MaterialPropertyBlock();
+
+            foreach (MeshRenderer mr in UnityEngine.Object
+                         .FindObjectsByType<MeshRenderer>(FindObjectsInactive.Include))
+            {
+                if (mr.name != "TVScreen" && mr.name != "LaptopScreen" && mr.name != "PhoneScreen")
+                    continue;
+                mr.GetPropertyBlock(block);
+                block.SetColor("_EmissionColor", Color.black);
+                block.SetColor("_BaseColor", new Color(0.010f, 0.010f, 0.012f, 1f));
+                mr.SetPropertyBlock(block);
+                n++;
+            }
+
+            foreach (Light l in UnityEngine.Object
+                         .FindObjectsByType<Light>(FindObjectsInactive.Include))
+            {
+                if (l.name == "TvLight" || l.name == "PhoneBuzzLight")
+                {
+                    l.enabled = false;
+                    n++;
+                }
+            }
+            return n;
         }
 
         public static void CaptureAll()
