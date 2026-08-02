@@ -19,13 +19,14 @@ namespace SBR.Tests.PlayMode
     /// controls and presentation seams as the behavioral PlayMode suite, then renders both a
     /// canvas-aligned reference and the real Main Camera at the laptop's authored focus pose.
     ///
-    /// Ten states are captured across three UnityTests. The first continues the single-run,
+    /// Eleven states are captured across three UnityTests. The first continues the single-run,
     /// ticket-carrying flow through six states (the original five plus the shared Ledger/Old
     /// Slips screen reached from the tray). The second boots a fresh run to reach REWARDS —
     /// which requires the deterministic zero-ticket lock seam SureThingRewardsTests.EnterShop
     /// uses, and so cannot share the first run's already-placed ticket — and from there also
     /// reaches the same Ledger/Old Slips screen via its other entry point, the desktop icon, and
-    /// the shop again with comps to spend so an enabled BUY is actually photographed. The third
+    /// the shop again with comps to spend so an enabled BUY is actually photographed. It also stops
+    /// on the desktop on the way past, which is the only state that shows the machine's wallpaper. The third
     /// runs a real place-lock-sweat cycle purely so the LEDGER can be photographed with a settled
     /// ticket in it — every other capture of that screen shows it empty, which left its entire
     /// settled-record treatment unphotographed and readable only from source.
@@ -151,7 +152,7 @@ namespace SBR.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Capture_three_more_truthful_surething_states_as_flat_and_angled_pngs()
+        public IEnumerator Capture_four_more_truthful_surething_states_as_flat_and_angled_pngs()
         {
             yield return Boot();
             LaptopScreen laptop = Laptop();
@@ -204,6 +205,28 @@ namespace SBR.Tests.PlayMode
             laptop.Os.OpenDesktop();
             yield return WaitForRebuild();
             Assert.IsTrue(laptop.Os.OnDesktop, "OpenDesktop did not leave the sportsbook");
+
+            // The desktop itself, which no capture has ever shown. It carries the machine's
+            // wallpaper, and that wallpaper spent this entire project inert: LaptopWallpaperGraphic
+            // was constructed without a CanvasRenderer, so UGUI never asked it for geometry and it
+            // drew nothing while every test stayed green. It draws now, and nobody has seen it.
+            //
+            // The assertions below are the point of the state, not ceremony. A capture that cannot
+            // fail proves nothing — this is the same lesson as the rewards board, where every frame
+            // was taken at zero comps so a BUY-in-biro violation stayed invisible for weeks because
+            // the control was always greyed out. So: confirm the wallpaper object exists, that it
+            // carries the CanvasRenderer whose absence made it invisible, and that it is actually
+            // enabled — then shoot.
+            Transform wallpaper = Required(laptop.transform, "Wallpaper");
+            var wallpaperGraphic = wallpaper.GetComponent<Graphic>();
+            Assert.IsNotNull(wallpaperGraphic, "the wallpaper carries no Graphic to render");
+            Assert.IsNotNull(wallpaper.GetComponent<CanvasRenderer>(),
+                "the wallpaper has no CanvasRenderer, so it cannot draw and this capture proves nothing");
+            Assert.IsTrue(wallpaperGraphic.enabled && wallpaper.gameObject.activeInHierarchy,
+                "the wallpaper is disabled or inactive, so this capture proves nothing");
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "11-desktop", capturedPaths);
+
             Invoke(Required(laptop.transform, "OldSlips"));
             yield return WaitForRebuild();
             Assert.IsFalse(laptop.Os.OnDesktop,
@@ -213,7 +236,7 @@ namespace SBR.Tests.PlayMode
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "08-old-slips", capturedPaths);
 
-            Assert.AreEqual(6, capturedPaths.Count, "three states must emit paired captures");
+            Assert.AreEqual(8, capturedPaths.Count, "four states must emit paired captures");
             foreach (string path in capturedPaths)
             {
                 Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
