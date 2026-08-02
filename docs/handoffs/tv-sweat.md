@@ -269,7 +269,39 @@ Two failure modes share this test name and mean opposite things:
 Baselines before this stack: engine **160**, EditMode **194**, PlayMode **44** (+1 `[Explicit]`
 capture harness, filtered out of routine runs).
 
-## 4C. RESUME HERE — Phase 3 is DD-GATED. Do not start a fragment; wait for items 10–12
+## 4C. RESUME HERE — the slice is EVIDENCE-COMPLETE and on HOLD (2026-08-02)
+
+**Do not start anything. Every remaining item is a DD verdict, not work.** Items 10–12 referenced
+below were answered in Batch 4 (as T21/T22/T23) and the section after them is kept as the record of
+how they were reasoned, not as a live queue.
+
+**Landed since:** the C14 audit (42 gaps, 4 falsified) and its fix-now block — the brightness ladder
+applied where it was declared but dead, both canon faces wired, the tape colourless under T16, the
+cash-out field inverted with money and status split; T24 re-measured in Encode Sans (**the deficit
+does not survive** — 59px against a 69.3px slot, so risk/pays stays in the footer and the ruling's
+fallback never fires); T30's threshold predicates retired for verbatim constant matching; T25.1
+containment; T38/T40/T32.1 from Addendum II; TV-14's three-span compact row; T39 as one scan; and the
+tape's MOMENTUM label, which **did not exist** when its tier was corrected.
+
+**Evidence delivered and awaiting verdicts:**
+
+| Bundle | What |
+|---|---|
+| `tv-sweat-setB-and-bloomAB.zip` | Set B, five seeds, **nine grammars**, first set rendered in Encode Sans |
+| `tv-sweat-bloom-AB.zip` | C8·a pair, 17+17, frame-for-frame parallel, **every frame carries its own boost token** |
+
+**Awaiting DD, nothing else:** TV-02 (tape shape — canon's single 28px strip vs this build's per-leg
+rows), TV-15 (**measured**: stacked needs a 56px footer and lands the slot at 66.7 against a measured
+need of 67; side-by-side fits at 214w of a 265px column with the footer untouched — a 0.3px verdict
+is the DD's), plus the frame verdicts on both bundles.
+
+**Two rules this slice paid for, both now in §4 above:** never end a turn against a running capture,
+and fix by RULE not by SITE — `WonLegBeat` kept a violation already fixed in its two sibling beats,
+and T39's first pass left six strings for the same reason.
+
+---
+
+## 4D. Superseded — the Phase 3 gating record (kept for reasoning, not as a queue)
 
 **T17 is CLOSED** (`ea28c9b`): the ledger reserves the backed side's last baked goal at configure
 time, enforced in `CompleteGoal` and released by `PlanFinal`; `BindAnytimeScorer` is unchanged and
