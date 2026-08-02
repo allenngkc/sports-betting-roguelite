@@ -28,7 +28,20 @@ accident of the grade — I checked that first, because that was the likelier fa
 have changed who owns the fix.
 
 `TvLight.cs` contains no colour of its own beyond `idleColor`; it emits whatever a caller passes.
-The navy enters here and nowhere else.
+The navy enters here and nowhere else — verified by an exhaustive repo scan, not just a targeted one.
+
+**Two things that scan settles, both worth having on the record.**
+
+`#0e121d` is authored **nowhere in the codebase**. It exists only in the ruling text, as a
+measurement of a rendered frame. Do not go looking for that hex to change — the frame value is the
+compound of the drain light and the grade, and neither is that colour literally.
+
+**And it answers the DD's open question, "if this is C5 landing".** There is no re-tint system in
+code — no named mechanism, no separate subsystem, nothing to endorse or replace. What exists is the
+TV light's rest colour changing per screen state and reaching the room because the light is
+physically in it. So C5 has effectively already landed, in its most minimal possible form, as a
+side effect of the light being state-driven. That is why the ruling's instruction is genuinely a
+one-line change and not a feature: the mechanism the DD endorses is already the mechanism.
 
 ## 2. Measured, so nobody has to eyeball it
 
