@@ -35,7 +35,9 @@ namespace SBR.Game
 
             // Tag overrides win over the base table.
             if (e.Tag == TensionTag.NearMiss)
-                return up ? "off the bar - a miracle brewing?!" : "...cleared off the line. it's slipping away";
+                // T39: "a miracle brewing?!" was the hype half of this pair; the other half was
+                // already the correct voice. Both are observed now.
+                return up ? "off the bar and away." : "...cleared off the line. it's slipping away";
 
             string line = Base(e.Type, up, picked, other, e.Step);
             if (e.Tag == TensionTag.LeadChange) line += " - LEAD CHANGE";
@@ -81,14 +83,14 @@ namespace SBR.Game
         {
             "{picked} slot it home.",
             "{picked} score - far post says yes.",
-            "Goal for {picked} - the number ticks your way.",
+            "Goal for {picked} — the number ticks with it.",
         };
 
         private static readonly string[] ScoreDown =
         {
             "{other} answer right back.",
             "{other} poke one in at the near post. Ugly.",
-            "{other} on the board; your slip flinches.",
+            "{other} on the board; the slip flinches.",
         };
 
         private static readonly string[] BigUp =
@@ -120,7 +122,7 @@ namespace SBR.Game
         {
             "{other} keeping the ball.",
             "{other} pass it around, slow and mean.",
-            "{other} settle in; the drift is against you.",
+            "{other} settle in; the drift runs the other way.",
         };
 
         /// <summary>The goal call for a reconciliation-upgraded beat (playtest #14 — the board
@@ -159,7 +161,7 @@ namespace SBR.Game
 
         private static readonly string[] CornerFor =
         {
-            "whipped into the corner — the count moves your way.",
+            "whipped into the corner — the count moves again.",
             "corner kick won. another little number for the ledger.",
             "the flag goes up; pressure becomes a corner.",
         };
@@ -181,7 +183,7 @@ namespace SBR.Game
         private static readonly string[] BookingAgainst =
         {
             "yellow card against the pick. the count bites.",
-            "whistle, card, paperwork — that is not what you wanted.",
+            "whistle, card, paperwork.",
             "another booking. the number turns sour.",
         };
 

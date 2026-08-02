@@ -2966,8 +2966,10 @@ namespace SBR.Game
                 grid.ScoreBug.width, MomentumTapeHeight);
             Image tapeAnchor = MakePanel(root, "MomentumTapeAnchor", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 AnchorTopLeft(tapeFoot), new Vector2(tapeFoot.width, tapeFoot.height), Color.clear);
+            // The regular face for the tape's MOMENTUM label — canon marks the tape's own chrome
+            // --font-tv, and only the dense numeric slots condensed.
             _tape = MomentumTape.Build(tapeAnchor.transform, Vector2.zero,
-                new Vector2(tapeFoot.width - 20f, tapeFoot.height));
+                new Vector2(tapeFoot.width - 20f, tapeFoot.height), _font);
 
             // --- the match theater stage (F_0.2.0 M-T2), built INTO the fixed Stage zone ---
             if (theaterEnabled)

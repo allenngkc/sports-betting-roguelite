@@ -25,6 +25,15 @@ namespace SBR.Game
         private const float RowHeight = 14f;
         private const float RowGap = 3f;
 
+        // The MOMENTUM label: canon's eyebrow scale (--tv-size-eyebrow 15, tokens/typography.css),
+        // mirrored here as a named constant with its source cited because a C# const cannot import
+        // a CSS custom property (handoff §4A).
+        private const int LabelSize = 15;
+        private const float LabelWidth = 96f;
+        private const float LabelGap = 10f;
+
+        private Text _label;
+
         private readonly List<Row> _rows = new List<Row>();
         private RectTransform _rect;
         private float _rowWidth;
@@ -85,7 +94,11 @@ namespace SBR.Game
         }
 
         /// <summary>Builds a code-only UGUI tape in the supplied canvas hierarchy.</summary>
-        public static MomentumTape Build(Transform parent, Vector2 position, Vector2 size)
+        /// <summary>Builds the tape. <paramref name="labelFont"/> is canon's regular face
+        /// (`--font-tv`) for the MOMENTUM label; the tape holds no font policy of its own, so the
+        /// caller that already resolves the surface's two faces passes the right one in.</summary>
+        public static MomentumTape Build(Transform parent, Vector2 position, Vector2 size,
+            Font labelFont = null)
         {
             var go = new GameObject("MomentumTape", typeof(RectTransform), typeof(MomentumTape));
             go.transform.SetParent(parent, false);
@@ -96,6 +109,36 @@ namespace SBR.Game
             tape._rect.sizeDelta = size;
             tape._rect.anchoredPosition = position;
             tape._rowWidth = Mathf.Max(1f, size.x);
+
+            // The MOMENTUM label (TvMomentumTape.jsx:25-28). It did not exist — this component had
+            // no Text at all — so the DD's tier correction landed on an element that was not built.
+            //
+            // L2, per that correction: labels live at L2, and L1 is the dormant/structure tier. The
+            // bars keep their own tiers (current sample L2, history L1 as structure), so the label
+            // reads at the same weight as the live sample rather than sinking to history.
+            //
+            // Regular face and --tv-context, not condensed: canon marks the tape's own chrome
+            // regular (TvMomentumTape.jsx:23) and only the dense numeric slots condensed.
+            if (labelFont != null)
+            {
+                var labelGo = new GameObject("MomentumLabel", typeof(RectTransform), typeof(Text));
+                labelGo.transform.SetParent(tape.transform, false);
+                var label = labelGo.GetComponent<Text>();
+                label.font = labelFont;
+                label.fontSize = LabelSize;
+                label.text = "MOMENTUM";
+                label.color = Neutral(NeutralContext, TierL2);
+                label.alignment = TextAnchor.MiddleLeft;
+                label.raycastTarget = false;
+                label.horizontalOverflow = HorizontalWrapMode.Overflow;
+                var lrt = label.rectTransform;
+                lrt.anchorMin = lrt.anchorMax = new Vector2(0f, 0.5f);
+                lrt.pivot = new Vector2(1f, 0.5f);           // sits to the LEFT of the bars
+                lrt.sizeDelta = new Vector2(LabelWidth, RowHeight + RowGap);
+                lrt.anchoredPosition = new Vector2(-LabelGap, 0f);
+                tape._label = label;
+            }
+
             tape.Show(false);
             return tape;
         }
