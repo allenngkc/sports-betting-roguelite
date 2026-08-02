@@ -13,6 +13,11 @@
 3. **S36 — engine retention:** the engine discards cash-out amounts, so the
    LEDGER prints an honest absence. DD's position: the right fix is the engine
    retaining the figure — "a fact the player earned." Approve as an engine ask?
+4. **Markets margin collision (2026-08-02, `28b63a0`) — Allen or DD:** MaxLegs=4
+   landed but at 4 legs the flowing PLACE content collides with the bottom-anchored
+   LOCK/SKIP band (14/2/36px overlaps, pixel table in
+   `dd-import/dd-followup-markets-margin.md`). Rule: bound the flow region, or
+   un-anchor the action stack. B1's suite is intentionally red until ruled.
 
 Items routed to this seat. Clear a line when it's registered or resolved.
 
