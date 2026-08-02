@@ -117,3 +117,9 @@ G1–G6 PASS, **G7 FAIL by design**, verdict NOT DONE, **exit code 1**.
 - Unity asmdef code is **invisible** to `dotnet build`. A green engine suite says
   nothing about whether the Unity project compiles.
 - `--nologo` is not a valid `sim` flag.
+
+## Allen ruling (2026-08-02, fired via orchestrator)
+
+- **MaxLegs = 4.** The 6-leg overflow question is closed by construction: slips are
+  capped at 4 legs, so the overflow state never renders. Supersedes the three costed
+  overflow options in the lead's report. B1 proceeds under this cap.
