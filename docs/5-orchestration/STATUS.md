@@ -92,6 +92,11 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-02 cycle 58 · **DD relay authored + SureThing unblock dispatched** —
+  relay note for Allen to paste into the DD chat (`dd-relay-2026-08-02.md`):
+  state-sync, renumber map, seven-item priority queue. SureThing dispatched to
+  shoot the populated-ledger capture set now (the DD's stated precondition for
+  its headline record-row verdict). Reversal: none — informational + capture task.
 - 2026-08-02 cycle 57 · **DD frame verdicts transcribed + dispatched** — T6
   Design-verified CLOSED (variation reads on postC14 Set B; T19 risk retired;
   canon-T26's expected inversion delivered). Six new rulings arrived issued as
