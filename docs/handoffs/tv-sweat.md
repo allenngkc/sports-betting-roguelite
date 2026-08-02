@@ -135,6 +135,23 @@ harmless that time. The procedure below closes it.
    ~153s wall for ~31s of test time. Ten runs is ~26 min per arm — size batches against that, and
    prefer a foreground batch you can read over a background driver you must trust.
 
+4. **NEVER END A TURN AGAINST A RUNNING CAPTURE.** Chartered 2026-08-01 after **three** silent
+   capture-run deaths in one slice — not bad luck, a pattern:
+   - A foreground `Start-Process` + `Wait-Process` inside a tool call dies when the call hits its
+     10-minute cap, and **takes Unity with it**. Cost a run mid-seed-02.
+   - A background waiter armed and then turn-ended was reaped twice, leaving the run unobserved.
+   - A "no new frames" read on a healthy run was a false stall: seeds overwrite their own filenames,
+     so **frame count is not a progress signal — mtime is.**
+
+   The rule: **hold the wait IN-TURN** (a bounded polling loop inside one tool call — captures are
+   ~60s per seed, well inside the cap), **or** self-re-arm a completion check each turn. Never both
+   launch and hand the turn back. A capture nobody is watching is a capture that did not happen, and
+   you will not learn that until the window is spent.
+
+   Corollary, learned the same day: **launch detached** (`Start-Process` with no `-Wait`) whenever a
+   run may outlive one tool call, so a harness timeout cannot kill the editor. Foreground reads more
+   simply and is the wrong shape.
+
 1. Warm compile: `Unity.exe -batchmode -nographics -projectPath unity/SBR -quit -logFile <log>`.
    `-runTests` and `-executeMethod` are **silently dropped** if scripts compile on the same run.
 2. Suites, one at a time, waiting for the process and `Temp/UnityLockfile` to clear between:
