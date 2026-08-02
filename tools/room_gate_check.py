@@ -26,6 +26,7 @@ run), 1 otherwise.
 
 import argparse
 import json
+import math
 import re
 import sys
 from collections import Counter
@@ -110,6 +111,47 @@ R9B_REGIONS = {
     "whole frame":        (0,       0, 2560, 1440),
 }
 R9B_TOLERANCE_PCT = 10.0
+
+# ---------------------------------------------------------------------------
+# R23 -- the screens-dark conformance instrument for law §1.1.
+#
+# §1.1 says a blue-tinted room is the explicit failure mode. It spent months
+# reporting ITSELF as failing because it was being judged on gameplay frames --
+# frames containing three emissive screens and a green TV light. Those cannot
+# separate "the room is cool" from "the screens are cool", so the law was
+# unfalsifiable on its own evidence.
+#
+# R23 fixed that by ruling a purpose-built set: screens dark, the room's own rig,
+# its own grade, and wall/floor/bunk reported as MEASURED mean chroma and hue
+# angle rather than eyeballed. This is that measurement.
+#
+# Luminance cannot answer this question at all -- a warm room and a cool room can
+# share a mean. Chroma and hue are the only instruments that can, which is why
+# R23 named them specifically.
+R23_IMAGE = "conformance-room-screens-dark.png"
+R23_UNGRADED_IMAGE = "diagnostic-room-screens-dark-UNGRADED.png"
+
+# The ruling names wall, floor and bunk. Boxes are the surface-pure ones already
+# validated for R9-B, so the two measurements are directly comparable.
+R23_REGIONS = {
+    "wall (right plaster)":  (2150,  200, 2450,  560),
+    "wall (far plaster)":    (640,   850,  800, 1000),
+    "floor (aisle)":         (1090, 1300, 1470, 1420),
+    "bunk (1 / couch side)": (150,   800,  760, 1140),
+    "bunk (2 mattress)":     (1480,  670, 1790,  740),
+    "ceiling plaster":       (700,    60, 1150,  300),
+}
+
+# CIELAB hue angle bands. Warm runs red through yellow; the failure mode §1.1
+# names is the blue quadrant. Anything between is reported as neutral rather
+# than forced into a verdict it does not support.
+R23_WARM_HUE = (20.0, 110.0)
+R23_COOL_HUE = (200.0, 300.0)
+
+# Below this chroma a hue angle is not meaningful -- it is the direction of a
+# vector too short to trust, and calling a near-grey surface "cool" on the
+# strength of a 0.4 chroma reading would be measuring noise.
+R23_CHROMA_FLOOR = 1.5
 
 # Gate 4's reference is a fixed file next to this script, not a CLI arg --
 # the CLI's --reference flag is for the R9-B capture-image comparison.
@@ -517,6 +559,69 @@ class GateResult:
         self.detail = detail or []
 
 
+def region_cast(img, box, step=2):
+    """Mean cast of a region as CIELAB (L*, chroma, hue angle in degrees).
+
+    Averages in LINEAR light and converts the mean once, rather than converting
+    per pixel and averaging afterwards. That ordering matters: hue is an angle,
+    and averaging angles across a region is meaningless -- two surfaces at 10 deg
+    and 350 deg average to 180, the opposite of both. Averaging the linear
+    tristimulus first and taking the hue of the result is the only form of this
+    measurement that means what it appears to mean.
+    """
+    crop = img.crop(box)
+    w, h = crop.size
+    px = crop.load()
+    r = g = b = 0.0
+    n = 0
+    for y in range(0, h, step):
+        for x in range(0, w, step):
+            p = px[x, y]
+            r += srgb_to_linear(p[0])
+            g += srgb_to_linear(p[1])
+            b += srgb_to_linear(p[2])
+            n += 1
+    if n == 0:
+        raise ValueError(f"region {box} sampled no pixels")
+    r, g, b = r / n, g / n, b / n
+
+    # linear sRGB -> CIEXYZ (D65) -> CIELAB
+    x = 0.4124564 * r + 0.3575761 * g + 0.1804375 * b
+    y = 0.2126729 * r + 0.7151522 * g + 0.0721750 * b
+    z = 0.0193339 * r + 0.1191920 * g + 0.9503041 * b
+    xn, yn, zn = 0.95047, 1.00000, 1.08883
+
+    def f(t):
+        return t ** (1.0 / 3.0) if t > 216.0 / 24389.0 else (841.0 / 108.0) * t + 4.0 / 29.0
+
+    fx, fy, fz = f(x / xn), f(y / yn), f(z / zn)
+    lstar = 116.0 * fy - 16.0
+    a_star = 500.0 * (fx - fy)
+    b_star = 200.0 * (fy - fz)
+    chroma = math.hypot(a_star, b_star)
+    hue = math.degrees(math.atan2(b_star, a_star)) % 360.0
+    return lstar, chroma, hue
+
+
+def cast_verdict(chroma, hue):
+    """WARM / COOL / neutral, refusing to call a hue it cannot support."""
+    if chroma < R23_CHROMA_FLOOR:
+        return "neutral"
+    if R23_WARM_HUE[0] <= hue <= R23_WARM_HUE[1]:
+        return "WARM"
+    if R23_COOL_HUE[0] <= hue <= R23_COOL_HUE[1]:
+        return "COOL"
+    return "neutral"
+
+
+def srgb_to_linear(c):
+    """8-bit sRGB channel to linear. The room authors in linear and the design
+    doc quotes sRGB hex, so every colour comparison in this project has to cross
+    this boundary explicitly rather than by eye."""
+    c = c / 255.0
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
 def skip(gate, check, reason):
     return GateResult(gate, check, "SKIP", "-", reason)
 
@@ -593,6 +698,11 @@ def main():
     parser.add_argument("--scene", required=True, help="Path to Room.unity")
     parser.add_argument("--captures", required=True, help="Directory containing the three capture PNGs")
     parser.add_argument("--reference", help="Directory of 'before' captures, for the R9-B before/after check")
+    parser.add_argument(
+        "--conformance",
+        help="Directory holding the R23 screens-dark set. Supplying it runs the §1.1 "
+             "conformance measurement, which CAN fail the run -- that is the point of it.",
+    )
     parser.add_argument(
         "--write-reference",
         action="store_true",
@@ -760,6 +870,45 @@ def main():
                 "INFO",
                 "n/a -- informational, never fails",
                 "see detail below",
+                detail,
+            ))
+
+        # --- R23: §1.1 conformance, screens dark --------------------------------
+        if not args.conformance:
+            results.append(skip("R23", "law 1.1 cast (screens dark)", "no --conformance given"))
+        else:
+            cdir = Path(args.conformance)
+            graded = load_capture(cdir, R23_IMAGE)
+            ungraded_path = cdir / R23_UNGRADED_IMAGE
+            ungraded = load_capture(cdir, R23_UNGRADED_IMAGE) if ungraded_path.is_file() else None
+
+            detail = []
+            cool_surfaces = []
+            for name, box in R23_REGIONS.items():
+                lstar, chroma, hue = region_cast(graded, box)
+                verdict = cast_verdict(chroma, hue)
+                if verdict == "COOL":
+                    cool_surfaces.append(name)
+                line = (f"{name:22s} L*={lstar:5.2f} chroma={chroma:5.2f} "
+                        f"hue={hue:6.1f}deg  {verdict}")
+                if ungraded is not None:
+                    _, uc, uh = region_cast(ungraded, box)
+                    line += f"   | ungraded chroma={uc:5.2f} hue={uh:6.1f}deg {cast_verdict(uc, uh)}"
+                detail.append(line)
+
+            if ungraded is not None:
+                detail.append("")
+                detail.append("the ungraded column is the diagnostic R18 requires: it separates "
+                              "the room's LIGHT from its GRADE, and answering that question "
+                              "later would otherwise cost a whole editor lease.")
+
+            passed = not cool_surfaces
+            results.append(GateResult(
+                "R23", "law 1.1 cast (screens dark)",
+                "PASS" if passed else "FAIL",
+                "no surface reads COOL",
+                "all surfaces warm/neutral" if passed
+                else f"{len(cool_surfaces)} COOL: {', '.join(cool_surfaces)}",
                 detail,
             ))
 
