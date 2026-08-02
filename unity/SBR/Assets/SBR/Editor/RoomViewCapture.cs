@@ -91,31 +91,49 @@ namespace SBR
             if (controller != null)
                 controller.enabled = false;
 
-            // The seated rig the ruling names, unchanged from the gate pose.
-            var seatedEye = new Vector3(-0.950f, 1.150f, 0.300f);
-            var tvCenter = new Vector3(1.232f, 1.100f, 0.300f);
-            Shoot(cam, outDir, "conformance-seated-screens-dark.png",
-                  seatedEye, Quaternion.LookRotation(tvCenter - seatedEye, Vector3.up), 17f);
-
-            // The wide frame that actually carries wall, floor and bunk in one shot.
-            var widePos = new Vector3(0.300f, 1.640f, -1.400f);
-            var wideRot = Quaternion.LookRotation(Vector3.forward, Vector3.up);
-            Shoot(cam, outDir, "conformance-room-screens-dark.png", widePos, wideRot, 68f);
-
-            // DIAGNOSTIC, not canonical. R23 is explicit that the grade IS the room, so the
-            // graded frame above is the one the law is judged on. But if that frame ever reads
-            // cool, the very next question is whether the cast comes from the room's LIGHT or
-            // from the grade's own blue shadow lift, and answering it later costs a whole
-            // editor lease. One extra ungraded frame answers it for free, and R18 requires this
-            // measurement to be repeated whenever MoonDirectional's colour or intensity moves.
+            // R26 - the set is captured TWICE, graded then grade-bypassed, same rig, same
+            // framing, same regions, same instrument. Only the grade differs between the two
+            // passes, which is what makes the pair an isolation rather than two pictures: any
+            // difference between them is attributable to the grade and to nothing else.
+            //
+            // The graded pass stays canonical - R23 is explicit that the grade IS the room and
+            // not a layer over it, so law 1.1 is judged on the graded frames. The bypassed pass
+            // exists to answer the question the graded frames cannot: if the room reads cool,
+            // is that the room's LIGHT or the room's GRADE?
             var volGo = GameObject.Find("RoomPostFx");
             var vol = volGo != null ? volGo.GetComponent<Volume>() : null;
-            if (vol != null)
-            {
-                vol.enabled = false;
-                Shoot(cam, outDir, "diagnostic-room-screens-dark-UNGRADED.png", widePos, wideRot, 68f);
-                vol.enabled = true;
-            }
+            if (vol == null)
+                throw new InvalidOperationException(
+                    "RoomPostFx volume not found - the grade-bypassed pass cannot be isolated, " +
+                    "and a set missing half its pair would silently look complete");
+
+            ShootConformanceSet(cam, outDir, "");
+            vol.enabled = false;
+            ShootConformanceSet(cam, outDir, "-UNGRADED");
+            vol.enabled = true;
+        }
+
+        /// <summary>
+        /// Both poses of the conformance set, suffixed so the graded and grade-bypassed passes
+        /// land side by side under identical names. Identical framing between passes is the
+        /// whole point - if the poses drifted, the pair would no longer isolate anything.
+        ///
+        /// The seated rig is the one the ruling names. The wide frame is the one that can
+        /// actually carry wall, floor and bunk in a single shot, which the ruling also requires;
+        /// a 17-degree close-up on a dark panel cannot hold three surfaces, so both are needed
+        /// to satisfy both halves of the same sentence. The region instrument measures the wide
+        /// frame, because that is where the ruled regions live.
+        /// </summary>
+        private static void ShootConformanceSet(Camera cam, string outDir, string suffix)
+        {
+            var seatedEye = new Vector3(-0.950f, 1.150f, 0.300f);
+            var tvCenter = new Vector3(1.232f, 1.100f, 0.300f);
+            Shoot(cam, outDir, $"conformance-seated-screens-dark{suffix}.png",
+                  seatedEye, Quaternion.LookRotation(tvCenter - seatedEye, Vector3.up), 17f);
+
+            Shoot(cam, outDir, $"conformance-room-screens-dark{suffix}.png",
+                  new Vector3(0.300f, 1.640f, -1.400f),
+                  Quaternion.LookRotation(Vector3.forward, Vector3.up), 68f);
         }
 
         /// <summary>

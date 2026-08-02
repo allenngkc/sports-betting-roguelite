@@ -129,7 +129,9 @@ R9B_TOLERANCE_PCT = 10.0
 # share a mean. Chroma and hue are the only instruments that can, which is why
 # R23 named them specifically.
 R23_IMAGE = "conformance-room-screens-dark.png"
-R23_UNGRADED_IMAGE = "diagnostic-room-screens-dark-UNGRADED.png"
+# R26: the grade-bypassed pass is a ruled half of the set, not a diagnostic extra, and is
+# named as its twin so the pair reads as one isolation rather than two pictures.
+R23_UNGRADED_IMAGE = "conformance-room-screens-dark-UNGRADED.png"
 
 # The ruling names wall, floor and bunk. Boxes are the surface-pure ones already
 # validated for R9-B, so the two measurements are directly comparable.
