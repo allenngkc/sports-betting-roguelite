@@ -92,6 +92,16 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-02 cycle 57 · **DD frame verdicts transcribed + dispatched** — T6
+  Design-verified CLOSED (variation reads on postC14 Set B; T19 risk retired;
+  canon-T26's expected inversion delivered). Six new rulings arrived issued as
+  "T22–T27" from a stale-numbered DD session (knew only batches 1–3) — measured
+  on TODAY'S frames, so content is current; renumbered **T41–T46** at
+  transcription (`register-frame-review-2026-08-02.md`, verbatim + map). T41
+  (multiple L4 occupants — cap the stage) BLOCKS TV Phase 3+; TV's hold ended,
+  dispatched in DD order T41→T43→T46→T42→T44; T45 (navy death re-tint → olive)
+  dispatched to room. Gold hex recorded, token stays. Reversal: renumbering is
+  additive; strike T41–T46 rows and re-key if DD objects.
 - 2026-08-02 cycle 56 · **Markets B1: still blocked — new defect** — MaxLegs=4
   landed (`28b63a0`, balance-neutral, G1–G6 byte-identical) and closes the
   overflow, but a separate margin collision at 4 legs blocks B1 (Place flows into
