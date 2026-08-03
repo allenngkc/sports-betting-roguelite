@@ -159,6 +159,27 @@ R23_CHROMA_FLOOR = 1.5
 # the CLI's --reference flag is for the R9-B capture-image comparison.
 REFERENCE_JSON_PATH = Path(__file__).resolve().parent / "room_gate_reference.json"
 
+# Gate 4 keys its reference by BoxCollider OWNER NAME, not shape alone. A bare
+# (size, center) multiset cannot tell a real dimension change from two
+# colliders swapping owners: sort both snapshots and the swap is byte-identical
+# before and after, so the gate PASSes while blind to a live defect -- the same
+# disease Gate 3 had when it only counted colliders instead of naming them.
+# NOTE THE REMAINING GAP: this only catches a swap between colliders whose
+# local size/center differ. If two colliders already share identical local
+# size AND center (this scene has several such groups -- WallLeft/WallRight,
+# Floor/Ceiling, the four DeskLeg* posts), a swap between just THOSE two is
+# still invisible, because Gate 4 never reads the owning GameObject's
+# Transform (world position), only the collider's own local fields. Closing
+# that fully would mean comparing world-space bounds, not just local ones --
+# out of scope for this fix; see gate4's blind_spot text in main() for the
+# declaration a reader actually sees.
+#
+# A reference file written before the owner field existed has no owner data
+# and must never be silently compared as if it did; bump this whenever the
+# reference's shape changes again, so an old file is always detected rather
+# than misread.
+REFERENCE_SCHEMA_VERSION = 2
+
 # Tolerance for comparing collider float dimensions read back out of text.
 # Same scene file re-parsed twice will match exactly; this just guards
 # against harmless text formatting differences (e.g. trailing zeros).
@@ -317,9 +338,11 @@ def gate3_collider_inventory(docs):
     EXPECTED_COLLIDER_INVENTORY -- naming exactly what is unexpected and
     exactly what expected member is missing, never just "N vs M".
 
-    Returns (GateResult, box_collider_bodies) -- the BoxCollider body list is
-    handed back so Gate 4 (dimension comparison) can reuse it without a
-    second parse of the scene.
+    Returns (GateResult, box_collider_records) -- the full (anchor, owner_name,
+    owner_fileID, body) records for every BoxCollider, handed back so Gate 4
+    (dimension comparison) can key its comparison on owner identity, not just
+    reuse the text. Handing back bare bodies here once cost Gate 4 its owner
+    identity entirely -- do not go back to that.
     """
     by_class_id, controller_docs = collect_collider_docs(docs)
 
@@ -404,23 +427,51 @@ def gate3_collider_inventory(docs):
         3, "collider inventory (named, C18)",
         "PASS" if not problems else "FAIL",
         expected_summary, observed_summary, detail,
+        blind_spot="inventories collider type, owning GameObject, and the solid/trigger split "
+                   "only -- does not verify collider position, size, layer, m_Enabled state, "
+                   "physics material, or any trigger behaviour beyond that split.",
     )
-    box_bodies = [body for _a, _n, _f, body in box]
-    return result, box_bodies
+    return result, box
 
 
-def gate4_collider_dimensions(collider_bodies):
-    """Extract each BoxCollider's (size, center) as a canonical, sortable tuple."""
-    dims = []
-    for body in collider_bodies:
+def gate4_collider_dimensions(box_collider_records):
+    """Extract each BoxCollider's (size, center), keyed by its OWNER NAME.
+
+    This is keyed on owner, not just shape, on purpose: a bare (size, center)
+    multiset cannot tell a real dimension change from two colliders swapping
+    owners -- sort both snapshots and the swap is byte-identical before and
+    after, so a shape-only Gate 4 PASSes while blind to a live defect. Keying
+    on the owner name Gate 3 already resolved closes that hole for any swap
+    between colliders whose local size/center differ, and lets a FAIL name
+    the collider, not just an index.
+
+    NOT closed by this: two colliders that already share identical local
+    size AND center (several exist in this room -- e.g. WallLeft/WallRight,
+    Floor/Ceiling, the four DeskLeg* posts). A swap between just those two is
+    still invisible, because this only ever sees the collider's own local
+    fields, never the owning GameObject's world-space Transform.
+
+    Raises ValueError if two BoxColliders resolve to the same owner name --
+    silently keeping only one via a dict overwrite would just relocate the
+    same blind spot one level down, which defeats the point of this fix.
+    """
+    by_owner = {}
+    for anchor, name, fileid, body in box_collider_records:
+        owner_label = _owner_label(name, fileid)
         size_m = SIZE_RE.search(body)
         center_m = CENTER_RE.search(body)
         if not size_m or not center_m:
-            raise ValueError("a BoxCollider document is missing m_Size or m_Center")
+            raise ValueError(f"BoxCollider on '{owner_label}' (anchor {anchor}) is missing m_Size or m_Center")
         size = tuple(round(float(v), 6) for v in size_m.groups())
         center = tuple(round(float(v), 6) for v in center_m.groups())
-        dims.append(size + center)
-    return sorted(dims)
+        if owner_label in by_owner:
+            raise ValueError(
+                f"more than one BoxCollider resolves to owner '{owner_label}' -- Gate 4 keys "
+                "on owner name and cannot disambiguate them without reintroducing an anonymous "
+                "fallback; give the GameObjects distinct names or extend Gate 4 to also key on anchor"
+            )
+        by_owner[owner_label] = {"size": size, "center": center}
+    return by_owner
 
 
 def gate5_dangling_mesh_refs(text):
@@ -552,13 +603,18 @@ def region_relief_pct(img, box):
 # ---------------------------------------------------------------------------
 
 class GateResult:
-    def __init__(self, gate, check, status, expected, observed, detail=None):
+    def __init__(self, gate, check, status, expected, observed, detail=None, blind_spot=""):
         self.gate = gate
         self.check = check
         self.status = status  # "PASS" | "FAIL" | "SKIP" | "VOID" | "INFO"
         self.expected = expected
         self.observed = observed
         self.detail = detail or []
+        # What this gate does NOT verify, stated even (especially) when it PASSes --
+        # "every gate states what it cannot see" (Design Director standing instruction,
+        # issued after three green gates were found to be measuring nothing). Must be
+        # true of the code as written, not reassuring prose -- see per-callsite comments.
+        self.blind_spot = blind_spot
 
 
 def region_cast(img, box, step=2):
@@ -624,16 +680,16 @@ def srgb_to_linear(c):
     return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
 
 
-def skip(gate, check, reason):
-    return GateResult(gate, check, "SKIP", "-", reason)
+def skip(gate, check, reason, blind_spot=""):
+    return GateResult(gate, check, "SKIP", "-", reason, blind_spot=blind_spot)
 
 
-def void(gate, check, reason):
+def void(gate, check, reason, blind_spot=""):
     """A gate that has been explicitly ruled out by a design decision (R22),
     as distinct from SKIP (un-runnable by this tool). VOID must not count as
     a pass and must not silently disappear into SKIP's bucket -- it needs a
     human to re-verify it before it can be trusted again."""
-    return GateResult(gate, check, "VOID", "-", reason)
+    return GateResult(gate, check, "VOID", "-", reason, blind_spot=blind_spot)
 
 
 def print_table(results):
@@ -648,6 +704,10 @@ def print_table(results):
     print("  ".join("-" * w for w in widths))
     for r, row in zip(results, rows):
         print(fmt_row(row))
+        # Printed for every gate, PASS included: a verdict alone does not say what
+        # was checked to reach it. Falls back to a loud marker rather than silently
+        # omitting the line if a gate was added without writing one.
+        print("       blind spot: " + (r.blind_spot or "(none declared -- this is a bug, file one)"))
         for line in r.detail:
             print("       " + line)
 
@@ -657,13 +717,18 @@ def format_mtime(path):
     return dt.strftime("%Y-%m-%d %H:%M:%S %Z")
 
 
-def print_header(scene_path, captures_dir):
+def print_header(scene_path, captures_dir, results):
     """C18: the report must say what build it certifies -- a PASS must never
     be misreadable as covering geometry other than what this run actually
     parsed and captured. Prints the scene and capture paths plus their
     last-modified timestamps, and warns if the captures predate the scene
     (meaning the frames do not show the geometry just parsed, and every
-    capture-derived result below -- R9-A, R9-B, R10 -- is stale)."""
+    capture-derived result below -- R9-A, R9-B, R10 -- is stale).
+
+    Also prints the run's total blind area up front (Task C): how many of
+    this run's checks are VOID or SKIP, i.e. produced no verdict at all --
+    computed from the actual results this run collected, not a guess, so it
+    can never drift from what print_table/print_summary go on to show."""
     scene_mtime = scene_path.stat().st_mtime
     capture_path = captures_dir / CAPTURE_NAMES[0]
 
@@ -678,15 +743,54 @@ def print_header(scene_path, captures_dir):
             )
     else:
         print(f"Captures: {captures_dir}  ({CAPTURE_NAMES[0]} not found)")
+
+    total = len(results)
+    void_count = sum(1 for r in results if r.status == "VOID")
+    skip_count = sum(1 for r in results if r.status == "SKIP")
+    blind = void_count + skip_count
+    print(
+        f"Blind area: {blind}/{total} checks this run produce NO verdict at all "
+        f"({skip_count} SKIP -- not run by this tool/invocation; {void_count} VOID -- "
+        "ruled off the board pending human re-verification). See 'blind spot' under "
+        "every gate below, PASS included, for what even a verdict does not cover."
+    )
     print()
 
 
 def print_summary(results, exit_code):
+    """Task B / Ruling T54: a past report claimed '8/8' when three gates were VOID.
+    This must be structurally impossible to misread that way again -- so no bare
+    "N/8"-style ratio is printed anywhere here, and every check that did not
+    produce a PASS/FAIL verdict this run is named individually, with why, right
+    next to the totals. If a reader could still walk away thinking every check
+    passed, this function is wrong.
+    """
     counts = Counter(r.status for r in results)
     order = ["PASS", "FAIL", "SKIP", "VOID", "INFO"]
     parts = ", ".join(f"{counts[s]} {s}" for s in order if counts.get(s))
+    total = len(results)
+    verdicts = counts.get("PASS", 0) + counts.get("FAIL", 0)
+    unassessed = [r for r in results if r.status not in ("PASS", "FAIL")]
+
     print()
-    print(f"Summary: {parts} -- exit code {exit_code}")
+    print(f"Summary: {parts} ({total} checks total) -- exit code {exit_code}")
+    print(
+        f"Verdict coverage: {verdicts}/{total} checks produced a PASS or FAIL verdict this run. "
+        f"The other {total - verdicts} did not: SKIP means this tool/invocation did not run that "
+        "check at all; VOID means a ruling took a prior result off the board pending human "
+        "re-verification; INFO means it was measured but is never judged. None of those three "
+        "are passes, and none should be read as one -- 'no FAIL' is not 'all passed'."
+    )
+    if unassessed:
+        print(f"Unassessed this run ({len(unassessed)}/{total}) -- gate, status, why:")
+        for r in unassessed:
+            if r.status == "INFO":
+                why = "no ratified tolerance yet; informational only by design, never produces a verdict"
+            else:
+                why = r.observed
+            print(f"  Gate {r.gate} [{r.status}] {r.check}: {why}")
+    else:
+        print(f"All {total} checks produced a PASS or FAIL verdict.")
 
 
 # ---------------------------------------------------------------------------
@@ -723,11 +827,13 @@ def main():
         scene_text = load_scene_text(scene_path)
         docs = split_documents(scene_text)
 
-        # --- Header (C18): state the build this run certifies --------------
-        print_header(scene_path, captures_dir)
-
         # --- Gate 1: pre/post capture diff -- needs two Unity runs ---------
-        results.append(skip(1, "pre/post capture diff", "requires two separate Unity editor captures (before and after the change); nothing to compare from a single scene/capture set"))
+        results.append(skip(
+            1, "pre/post capture diff",
+            "requires two separate Unity editor captures (before and after the change); nothing to compare from a single scene/capture set",
+            blind_spot="did not run: no before/after Unity capture pair exists for this invocation, "
+                        "so nothing about a pre/post visual diff is checked anywhere in this run.",
+        ))
 
         # --- Gate 2: object counts -----------------------------------------
         name_counts, light_count, dressing_count = gate2_object_counts(docs)
@@ -749,25 +855,39 @@ def main():
             "1 each singleton, 8 Light, 6 Dressing_*",
             f"{sum(1 for n in EXPECTED_SINGLETONS if name_counts.get(n,0)==1)}/4 singletons, {light_count} Light, {dressing_count} Dressing_*",
             detail,
+            blind_spot="counts objects by name only -- does not verify parenting, transform "
+                       "values, or that the correctly-named object is the one intended rather "
+                       "than a same-named duplicate elsewhere in the hierarchy.",
         ))
 
         # --- Gate 3: named collider inventory (C18 / R16) --------------------
-        gate3_result, collider_bodies = gate3_collider_inventory(docs)
+        gate3_result, box_collider_records = gate3_collider_inventory(docs)
         results.append(gate3_result)
 
-        # --- Gate 4: collision dimensions unchanged -------------------------
-        current_dims = gate4_collider_dimensions(collider_bodies)
+        # --- Gate 4: collision dimensions unchanged, keyed by owner ---------
+        # Keyed on owner name (reusing Gate 3's resolution), not shape alone -- a
+        # bare (size, center) multiset let two identically-shaped colliders swap
+        # owners invisibly (sorted, the swap is byte-identical before/after). See
+        # gate4_collider_dimensions' docstring for the full story.
+        current_dims = gate4_collider_dimensions(box_collider_records)
         if args.write_reference:
             REFERENCE_JSON_PATH.parent.mkdir(parents=True, exist_ok=True)
             payload = {
+                "schema_version": REFERENCE_SCHEMA_VERSION,
                 "generated_from": str(scene_path),
                 "collider_count": len(current_dims),
                 "colliders": [
-                    {"size": list(d[0:3]), "center": list(d[3:6])} for d in current_dims
+                    {"owner": owner, "size": list(d["size"]), "center": list(d["center"])}
+                    for owner, d in sorted(current_dims.items())
                 ],
             }
             REFERENCE_JSON_PATH.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-            results.append(skip(4, "collision dims unchanged", f"--write-reference given; wrote {REFERENCE_JSON_PATH}"))
+            results.append(skip(
+                4, "collision dims unchanged", f"--write-reference given; wrote {REFERENCE_JSON_PATH}",
+                blind_spot="did not run: this invocation OVERWROTE the reference file from the "
+                            "current scene instead of checking against it, so no comparison "
+                            "happened, and whatever the previous reference recorded is now gone.",
+            ))
         else:
             if not REFERENCE_JSON_PATH.is_file():
                 raise FileNotFoundError(
@@ -775,25 +895,65 @@ def main():
                     "(run once with --write-reference to create it)"
                 )
             ref_payload = json.loads(REFERENCE_JSON_PATH.read_text(encoding="utf-8"))
-            ref_dims = sorted(
-                tuple(round(v, 6) for v in (c["size"] + c["center"]))
-                for c in ref_payload["colliders"]
-            )
-            mismatches = []
-            if len(ref_dims) != len(current_dims):
-                mismatches.append(f"count differs: reference {len(ref_dims)} vs current {len(current_dims)}")
+
+            if ref_payload.get("schema_version") != REFERENCE_SCHEMA_VERSION:
+                # Old-format reference: no owner field, so a real comparison would be
+                # exactly the shape-only multiset that let owner swaps go undetected.
+                # Refuse to compare against it -- SKIP and say so, never a silent PASS.
+                results.append(skip(
+                    4, "collision dims unchanged",
+                    f"{REFERENCE_JSON_PATH.name} predates owner-tracking "
+                    f"(schema_version={ref_payload.get('schema_version')!r}, need "
+                    f"{REFERENCE_SCHEMA_VERSION!r}) -- run --write-reference to re-baseline",
+                    blind_spot="did not run: the stored reference predates owner tracking and "
+                                "records only a bare size/center multiset -- comparing against "
+                                "it could not detect two identically-shaped colliders swapping "
+                                "owners, which is the exact defect this schema exists to close. "
+                                "Re-baseline with --write-reference before this gate can compare "
+                                "again.",
+                ))
             else:
-                for i, (ref, cur) in enumerate(zip(ref_dims, current_dims)):
+                ref_by_owner = {
+                    c["owner"]: {
+                        "size": tuple(round(float(v), 6) for v in c["size"]),
+                        "center": tuple(round(float(v), 6) for v in c["center"]),
+                    }
+                    for c in ref_payload["colliders"]
+                }
+                ref_owners = set(ref_by_owner)
+                cur_owners = set(current_dims)
+
+                mismatches = []
+                for name in sorted(ref_owners - cur_owners):
+                    mismatches.append(f"'{name}': in reference, missing from current scene")
+                for name in sorted(cur_owners - ref_owners):
+                    mismatches.append(f"'{name}': in current scene, not in reference (new BoxCollider or renamed/re-parented owner)")
+                for name in sorted(ref_owners & cur_owners):
+                    ref = ref_by_owner[name]["size"] + ref_by_owner[name]["center"]
+                    cur = current_dims[name]["size"] + current_dims[name]["center"]
                     if any(abs(a - b) > DIMENSION_TOLERANCE for a, b in zip(ref, cur)):
-                        mismatches.append(f"#{i}: reference size/center {ref} vs current {cur}")
-            gate4_ok = not mismatches
-            results.append(GateResult(
-                4, "collision dims unchanged",
-                "PASS" if gate4_ok else "FAIL",
-                f"matches {REFERENCE_JSON_PATH.name} ({len(ref_dims)} colliders)",
-                f"{len(current_dims)} colliders, {len(mismatches)} mismatch(es)",
-                mismatches[:10],
-            ))
+                        mismatches.append(f"'{name}': reference size/center {ref} vs current {cur}")
+
+                gate4_ok = not mismatches
+                results.append(GateResult(
+                    4, "collision dims unchanged",
+                    "PASS" if gate4_ok else "FAIL",
+                    f"matches {REFERENCE_JSON_PATH.name} ({len(ref_by_owner)} colliders, keyed by owner)",
+                    f"{len(current_dims)} colliders, {len(mismatches)} mismatch(es)",
+                    mismatches[:10],
+                    blind_spot="compares BoxCollider size/center BY OWNER NAME against the stored "
+                               "reference -- says nothing about MeshCollider, SphereCollider, or "
+                               "CapsuleCollider dimensions, and cannot detect a real change that "
+                               "was also written into the reference (e.g. by a stale or mistaken "
+                               "--write-reference run). It CAN now name a changed collider by owner "
+                               "and CAN detect an owner-swap between colliders whose local size/center "
+                               "differ. It remains BLIND to a swap between two colliders that already "
+                               "share identical local size AND center (e.g. WallLeft/WallRight, "
+                               "Floor/Ceiling, or the four DeskLeg* colliders in this scene all do) -- "
+                               "Gate 4 never reads the owning GameObject's Transform (world position), "
+                               "only the collider's own local fields, so a same-shaped pair swapping "
+                               "which named object owns them is still invisible.",
+                ))
 
         # --- Gate 5: no dangling mesh references ----------------------------
         dangling = gate5_dangling_mesh_refs(scene_text)
@@ -801,15 +961,23 @@ def main():
             5, "dangling mesh refs",
             "PASS" if dangling == 0 else "FAIL",
             "0", str(dangling),
+            blind_spot="counts null (fileID: 0) mesh references anywhere in the scene text -- "
+                       "detects a MISSING mesh, never a WRONG one; a component pointing at a "
+                       "valid but incorrect mesh asset reads as a full pass.",
         ))
 
         # --- Gates 6, 7, 8: VOIDed by R22, pending human re-verification -----
         # Not SKIP: SKIP means "this tool cannot run it". VOID means a design
         # ruling took the prior result off the board entirely -- it must not
         # read as a pass, and must not silently blend into SKIP's bucket.
-        results.append(void(6, "UI/HUD readability", "voided by R22 pending human re-verification"))
-        results.append(void(7, "UI/HUD contrast", "voided by R22 pending human re-verification"))
-        results.append(void(8, "structural-only check", "voided by R22 pending human re-verification"))
+        void_blind_spot = (
+            "VOIDed by R22: this run performs NO check for this gate, automated or human. "
+            "A pass recorded before the ruling must not be trusted, and none is issued here -- "
+            "treat this line as fully unknown, not as a historical pass carried forward."
+        )
+        results.append(void(6, "UI/HUD readability", "voided by R22 pending human re-verification", blind_spot=void_blind_spot))
+        results.append(void(7, "UI/HUD contrast", "voided by R22 pending human re-verification", blind_spot=void_blind_spot))
+        results.append(void(8, "structural-only check", "voided by R22 pending human re-verification", blind_spot=void_blind_spot))
 
         # --- R9-A: bunk 2 mattress luminance ---------------------------------
         current_img = load_capture(captures_dir, R9A_IMAGE)
@@ -820,11 +988,19 @@ def main():
             "PASS" if r9a_ok else "FAIL",
             f"{R9A_EXPECTED_MEAN} +/- {R9A_TOLERANCE}",
             f"{r9a_mean:.2f}",
+            blind_spot="samples one fixed pixel box and reports mean luminance only -- sees "
+                       "nothing outside that box, says nothing about colour/hue, and a box that "
+                       "no longer frames the intended surface (e.g. after a geometry move) would "
+                       "still report a plausible-looking number.",
         ))
 
         # --- R9-B: region means within 10% of reference ----------------------
         if reference_captures_dir is None:
-            results.append(skip("R9-B", "region means vs reference", "no --reference given"))
+            results.append(skip(
+                "R9-B", "region means vs reference", "no --reference given",
+                blind_spot="did not run: with no --reference, this run checks nothing about "
+                            "whether any sampled surface's brightness changed from a baseline.",
+            ))
         else:
             ref_img = load_capture(reference_captures_dir, R9B_IMAGE)
             cur_img = load_capture(captures_dir, R9B_IMAGE)
@@ -846,6 +1022,9 @@ def main():
                 f"within +/-{R9B_TOLERANCE_PCT:.0f}% of reference",
                 "see detail below",
                 detail,
+                blind_spot="compares mean luminance only, in fixed boxes -- sees nothing outside "
+                           "those boxes, cannot detect a colour/hue shift at equal luminance, and "
+                           "a box that has drifted off its intended surface still reports a number.",
             ))
 
         # --- R10: relief% -- fine surface detail, INFORMATIONAL ONLY ---------
@@ -854,7 +1033,11 @@ def main():
         # never affects the exit code -- there is no ratified tolerance for it yet,
         # only the hand-measured sanity values this was built to reproduce.
         if reference_captures_dir is None:
-            results.append(skip("R10", "relief% (informational)", "no --reference given"))
+            results.append(skip(
+                "R10", "relief% (informational)", "no --reference given",
+                blind_spot="did not run: with no --reference, no relief/surface-detail ratio is "
+                            "measured this run at all.",
+            ))
         else:
             ref_img = load_capture(reference_captures_dir, R9B_IMAGE)
             cur_img = load_capture(captures_dir, R9B_IMAGE)
@@ -873,11 +1056,20 @@ def main():
                 "n/a -- informational, never fails",
                 "see detail below",
                 detail,
+                blind_spot="never fails the run regardless of value -- measures local luminance "
+                           "contrast in the same fixed boxes as R9-A/R9-B, which does not "
+                           "distinguish INTENDED surface detail from any other kind of contrast, "
+                           "and inherits the same fixed-box blind spot as those two.",
             ))
 
         # --- R23: §1.1 conformance, screens dark --------------------------------
         if not args.conformance:
-            results.append(skip("R23", "law 1.1 cast (screens dark)", "no --conformance given"))
+            results.append(skip(
+                "R23", "law 1.1 cast (screens dark)", "no --conformance given",
+                blind_spot="did not run: with no --conformance, the law 1.1 cool-cast measurement "
+                            "does not happen this run, so nothing about the room's actual colour "
+                            "cast -- with or without screens -- is checked.",
+            ))
         else:
             cdir = Path(args.conformance)
             graded = load_capture(cdir, R23_IMAGE)
@@ -912,12 +1104,21 @@ def main():
                 "all surfaces warm/neutral" if passed
                 else f"{len(cool_surfaces)} COOL: {', '.join(cool_surfaces)}",
                 detail,
+                blind_spot="measures chroma/hue in fixed boxes on the screens-DARK render only -- "
+                           "sees nothing outside those boxes, says nothing about the room WITH "
+                           "screens on (deliberately excluded to isolate the room from the "
+                           "emissive screens), and a box that no longer frames its intended "
+                           "surface would still report a number.",
             ))
 
     except (FileNotFoundError, ValueError, AssertionError, KeyError, json.JSONDecodeError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         sys.exit(1)
 
+    # --- Header (C18 + Task C): state the build this run certifies, and the run's
+    # total blind area, up front -- printed from the final `results` list (rather
+    # than from args) so it can never drift from what the table/summary below show.
+    print_header(scene_path, captures_dir, results)
     print_table(results)
 
     # "INFO" (R10) is deliberately excluded from ever failing the run -- it has no
