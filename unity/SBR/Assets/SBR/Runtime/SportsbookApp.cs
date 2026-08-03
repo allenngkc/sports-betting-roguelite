@@ -1363,24 +1363,20 @@ namespace SBR.Game
             // restate the header's own fact (S37).
             BuildLedgerBoardHeader(board, settled.Count);
 
-            // The column-head row is gone, and deliberately not realigned. Three reasons, in order
-            // of weight:
+            // A separate padded-string column-head row (a pre-S31 leftover, one string between the
+            // board header and the first entry) stays deleted. It never worked — one string padded
+            // with spaces in a proportional face, so it could not line up with the columns it
+            // claimed to head; measured on the populated capture, its STAKE head sat at x=122
+            // against its value at x=351. That mechanism is gone for good, not replaced.
             //
-            // LedgerScreen() has no such row — it renders the 44px board header and then entries.
-            // The head was a build invention, so under C14 the 1:1 move is to delete it rather than
-            // to perfect it.
-            //
-            // Since S32 rebuilt the row into LedgerEntry's stacked key/value cells, every row now
-            // prints its own STAKE and RETURNED keys. A head above them restates each row's labels
-            // once per screen, which is what S37 exists to stop.
-            //
-            // And it never worked: it was one string padded with spaces, so in a proportional face
-            // it could not line up with the columns it claimed to head. Measured on the populated
-            // capture, the STAKE head sat at x=122 against its value at x=351 — the head pointed at
-            // nothing. Its own comment conceded the spacing was "a by-eye hint, not pixel-locked".
-            //
-            // The board header carries its own 1px --rule bottom border (S31), so the separator
-            // rule that sat under the head goes with it rather than leaving a second line.
+            // S38 ruled violation, the kit is wrong · DD 2026-08-02 batch 7: STAKE/RETURNED belong
+            // to the list, not the row — LedgerEntry.jsx:20,24 prints both once per record, so they
+            // repeated three times on a three-record frame, invisible at N=1 (a component preview
+            // is an N=1 surface). The build was 1:1 with that defect. The fix is not the deleted
+            // padded-string row above; it is real column heads inside the 44px --ground-2 board
+            // header S31 already built (BuildLedgerBoardHeader below), positioned at the exact same
+            // x/width as the figures beneath them (LedgerStakeX/LedgerReturnedX — S40 re-derives
+            // both against this same header band), not a hand-padded guess.
             int cashedCount = 0;
             double settledStake = 0.0;
             double knownWinPayout = 0.0;
@@ -1466,26 +1462,52 @@ namespace SBR.Game
             // below now occupies this masthead too, starting at local x=398, and 520 would have
             // overlapped it by up to 139px — an invisible box collision the fact-floor/target
             // rules forbid even when neither string is long enough to visibly touch.
+            //
+            // S37's live instance (DD 2026-08-02 batch 7): this subline used to carry its own
+            // " · SETTLED TICKETS ONLY" clause, restating the screen's scope in the masthead's
+            // slot — the exact duplication S37 exists to forbid, just missed on the first pass
+            // because the board header's own "SETTLED TICKETS · THIS RUN" (BuildLedgerBoardHeader)
+            // wasn't read side by side with this string. Deleted; the masthead states only the
+            // run's scope (the live round number), the board header states the screen's.
             LaptopUi.MakeText(masthead, "Scope", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(17f, -38f), new Vector2(370f, 20f), 13, TextAnchor.UpperLeft,
-                LaptopOs.Muted, $"ROUND {run.Round} OF {run.Config.Rounds}  ·  SETTLED TICKETS ONLY", _font);
+                LaptopOs.Muted, $"ROUND {run.Round} OF {run.Config.Rounds}", _font);
             // S31: the masthead's run figures — unchanged from the rest of the surface. Reuses
             // SportsbookApp's own mechanism (BANK/TARGET/TICKETS) instead of the single condensed
             // "ROUND R · BANK $X" string this slot used to carry.
             SportsbookApp.BuildRunFigures(masthead, run, _font);
         }
 
-        // S32 canon column geometry, from LedgerEntry.jsx: a 16px gap between five flex cells —
-        // number(112, flex:none) / legs(flex:1) / STAKE(96) / RETURNED(104) / terminal(104,
-        // flex:none, textAlign right) — inside --st-pad-x (14px) padding on both row edges. The
-        // terminal word is the LAST cell and nothing follows it — that is the entire point of the
-        // S32 ruling (DD 2026-08-01): "the state is the row's subject and the money is its
-        // object," so the terminal word, not the payout, is the row's last scan point.
+        // S38+S39+S40 column geometry (DD 2026-08-02 batch 7 — one change, one commit). Canon
+        // (LedgerEntry.jsx) still names five flex cells — number(112) / legs(flex:1) / STAKE(96) /
+        // RETURNED(104) / terminal(104) — but this build now departs from it on the DD's own
+        // ruling, not by drift: S38 moves the STAKE/RETURNED keys out of the row into the board
+        // header (once, not per-record); S40 deletes the legs cell outright (canon's flex slot,
+        // reserved and rendered empty — "a blank gap mid-row," never populated in this build either
+        // — is a defect, not a layout) and re-derives the remaining four column origins once, at
+        // design time, against the header band (T51: a fixed grid constant may be re-derived once;
+        // a zone may never resize to content at runtime).
         //
-        // Row content width is 672 (700 - 14 - 14). The four fixed cells plus their four 16px gaps
-        // consume 480 (112 + 96 + 104 + 104 + 4*16), leaving the legs flex cell 192px in canon.
-        // This build does not put text in that 192px slot — see the discrepancy comment in
-        // BuildLedgerTicket below — so it is reserved space, not a rendered cell.
+        // "Against the header band" is literal: BuildLedgerBoardHeader already carries
+        // "SETTLED TICKETS · THIS RUN" (ending x=294, 14 + 280) on the left and "N RECORDS"
+        // (starting x=526, 700 − 14 − 160) on the right. The STAKE/RETURNED heads S38 adds have to
+        // fit the 232px gap between those two without touching either — no two live boxes may
+        // overlap, even invisibly. STAKE(96) + 16 gap + RETURNED(104) = 216px fits that 232px gap
+        // with 8px clear on both sides, which is where LedgerStakeX/LedgerReturnedX below come
+        // from — not from the old five-cell flex formula (350/462), which packed STAKE/RETURNED
+        // against the row's right edge behind the now-deleted legs cell and would sit under the
+        // header's own "N RECORDS" text, not under new heads. The row below uses these exact same
+        // two x/width pairs so the figures land beneath their heads (S38's own wording).
+        //
+        // Identity keeps its own x (14, the row's left pad) and width (112, canon's number cell —
+        // untouched by the legs cell's deletion, still just "TICKET n.n"). Terminal keeps its own
+        // mechanism too: pivot (1,1) at -14 from the row's right edge, independent of every other
+        // column and unaffected by any of this (S32's ruling on it is closed on rendered evidence,
+        // out of scope here). What's deliberately gone is the LedgerLegsFlexWidth constant that
+        // used to sit between identity and the money columns, reserving 192px this build never
+        // rendered into — S40's "blank gap mid-row," deleted rather than closed with more of the
+        // same by packing STAKE/RETURNED flush against terminal, which is what removing only the
+        // constant (and not re-deriving against the header) would otherwise have produced.
         private const float LedgerPadX = 14f;
         private const float LedgerColGap = 16f;
         private const float LedgerNumberWidth = 112f;
@@ -1493,17 +1515,30 @@ namespace SBR.Game
         private const float LedgerReturnedWidth = 104f;
         private const float LedgerTerminalWidth = 104f;
         private const float LedgerNumberX = LedgerPadX; // 14
-        private const float LedgerLegsFlexWidth = 192f; // 672 - 480, unused: see discrepancy note
-        private const float LedgerStakeX =
-            LedgerNumberX + LedgerNumberWidth + LedgerColGap + LedgerLegsFlexWidth + LedgerColGap; // 350
-        private const float LedgerReturnedX = LedgerStakeX + LedgerStakeWidth + LedgerColGap; // 462
+        private const float LedgerStakeX = 302f; // re-derived against the header band, see above
+        private const float LedgerReturnedX = LedgerStakeX + LedgerStakeWidth + LedgerColGap; // 414
 
-        // Summary-band vertical budget: canon stacks a 13px key ("STAKE"/"RETURNED") over a
-        // 16px value inside one flex row, vertically centered by alignItems. This build gives that
-        // stack 56px total (room for an 11px-ish pad, the 13px key, a small gap, the 16-18px value
-        // and a matching pad below). Sure-by-reading on structure/order/colour; the exact 56 is a
-        // by-eye pick like every other row height in this file and needs a capture to confirm.
-        private const float LedgerSummaryHeight = 56f;
+        // S39: one baseline per record row. Canon stacks a 13px key over a 16px value inside each
+        // of the STAKE/RETURNED cells (two lines) with identity/legs/terminal on their own lines
+        // again by virtue of the row's flex alignItems:center only aligning cells that ARE single
+        // lines — four baselines in total on the build this replaces. With the keys gone to the
+        // header band (S38), every remaining cell — identity, the two condensed tabular figures,
+        // the terminal word — is one line, so canon's own alignItems:center is now reachable:
+        // BuildLedgerTicket keeps each cell's own snug, top-anchored box (unchanged sizes — 24px
+        // for the 16px identity/terminal lines, 20px for the 16px value lines, matching this
+        // file's pre-existing convention exactly, and required so InkRingGeometry's strike-sprite
+        // math — which reads a text box's own anchored corner, not its rendered glyph — still
+        // lines up) but re-picks each box's y offset so every box's own vertical centre lands on
+        // the same midpoint of this (shorter) band. That is alignItems:center by construction, not
+        // a stretched Middle-anchored box, and it is what "one baseline" means for a row that mixes
+        // a 13px terminal word with 16px figures — canon centres them, it does not baseline-lock
+        // them either. 42px (11px top pad + a 20px single line + 11px bottom pad, matching canon's
+        // own "11px var(--st-pad-x)" padding) is this build's own honest arithmetic for the band;
+        // the register estimates ~19px returned per record against the kit's real metrics
+        // (56 → ~37), this gives 56 → 42 (14px) — sure by reading on structure (one line, heads
+        // gone, every cell centred on one midpoint), a by-eye pick on the exact figure like the 56
+        // it replaces, needs a capture to pin.
+        private const float LedgerSummaryHeight = 42f;
         private const float LedgerLegRowHeight = 24f;
 
         private static float LedgerEntryHeight(Ticket ticket)
@@ -1513,7 +1548,14 @@ namespace SBR.Game
         /// with a --rule bottom border, "SETTLED TICKETS · THIS RUN" left and a right-flushed
         /// "N RECORDS". This is the one statement on the screen of what the list below is scoped
         /// to; the passive margin's note (S33, BuildRecordSummary) says something else entirely
-        /// (that the ledger derives nothing) precisely so the two never restate each other.</summary>
+        /// (that the ledger derives nothing) precisely so the two never restate each other.
+        ///
+        /// S38 adds the STAKE and RETURNED column heads here — once, not once per record
+        /// (LedgerEntry.jsx:20,24's defect) — at the exact x/width the record row's own STAKE and
+        /// RETURNED figures use (LedgerStakeX/LedgerReturnedX), so the figures sit aligned beneath
+        /// them. Positioned in the 232px gap between the scope caption (ends x=294) and the record
+        /// count (starts x=526) with 8px clear on both sides — see the geometry comment above
+        /// LedgerPadX for the full derivation.</summary>
         private void BuildLedgerBoardHeader(RectTransform board, int settledCount)
         {
             RectTransform header = LaptopUi.MakePanel(board, "LedgerBoardHeader", new Vector2(0f, 1f),
@@ -1523,10 +1565,28 @@ namespace SBR.Game
             LaptopUi.MakeText(header, "LedgerBoardHeaderScope", new Vector2(0f, .5f), new Vector2(0f, .5f),
                 new Vector2(14f, 0f), new Vector2(280f, 24f), 13, TextAnchor.MiddleLeft,
                 LaptopOs.Muted, "SETTLED TICKETS · THIS RUN", _font);
+            LaptopUi.MakeText(header, "LedgerBoardHeaderStake", new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(LedgerStakeX, 0f), new Vector2(LedgerStakeWidth, 24f), 13, TextAnchor.MiddleLeft,
+                LaptopOs.Muted, "STAKE", _font);
+            LaptopUi.MakeText(header, "LedgerBoardHeaderReturned", new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(LedgerReturnedX, 0f), new Vector2(LedgerReturnedWidth, 24f), 13, TextAnchor.MiddleLeft,
+                LaptopOs.Muted, "RETURNED", _font);
             LaptopUi.MakeText(header, "LedgerBoardHeaderCount", new Vector2(1f, .5f), new Vector2(1f, .5f),
                 new Vector2(-14f, 0f), new Vector2(160f, 24f), 13, TextAnchor.MiddleRight,
                 LaptopOs.Muted, $"{settledCount} {SportsbookApp.Pluralize(settledCount, "RECORD")}", _font);
         }
+
+        /// <summary>S43: the leg sub-row's terminal word — VOID beats everything (a voided leg is
+        /// never anything else, regardless of State), then WON (grading or a whistle rescue), then
+        /// LOST, and PENDING only as the fallback for a leg whose State is still LegState.Pending.
+        /// Factored out of BuildLedgerTicket so SureThingLedgerTests can exercise the PENDING
+        /// branch directly against a hand-built Leg (S43: "the render path must handle it rather
+        /// than treat it as dead code") without needing a live ticket to reach that state, which —
+        /// per W4's audit, unchanged by this ruling — nothing currently does for WON/LOST/CashedOut
+        /// alike in this engine.</summary>
+        internal static string LegStateWord(Leg leg) => leg.IsVoided ? "VOID"
+            : leg.RescuedWon || leg.State == LegState.Won ? "WON"
+            : leg.State == LegState.Lost ? "LOST" : "PENDING";
 
         private void BuildLedgerTicket(RectTransform board, Ticket ticket, int index, int round, float y)
         {
@@ -1557,42 +1617,37 @@ namespace SBR.Game
             bool lost = ticket.State == TicketState.Lost;
             Color returnedColor = lost || ticket.State == TicketState.CashedOut ? LaptopOs.Muted : stateColor;
 
-            // --- number (112px, flex:none). LedgerEntry.jsx colours this --toner-2 unconditionally
-            // — no won/lost branch — so, unlike the previous build, it no longer dims on a LOST
-            // ticket. The terminal word and RETURNED value already carry that signal; canon does
-            // not repeat it here.
+            // S39: one baseline. Every cell below keeps its own snug, top-anchored box (unchanged
+            // sizes from before this ruling) but is re-centred on y=-21, this band's own midpoint
+            // (LedgerSummaryHeight/2 = 21) — canon's alignItems:center, reached now that the keys
+            // that used to force identity/value/terminal onto separate lines are gone (S38).
+
+            // --- identity (112px). LedgerEntry.jsx colours this --toner-2 unconditionally — no
+            // won/lost branch — so it does not dim on a LOST ticket; the terminal word and
+            // RETURNED value already carry that signal.
             Text identityText = LaptopUi.MakeText(row, "TicketIdentity", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(LedgerNumberX, -16f), new Vector2(LedgerNumberWidth, 24f), 16, TextAnchor.UpperLeft,
+                new Vector2(LedgerNumberX, -9f), new Vector2(LedgerNumberWidth, 24f), 16, TextAnchor.UpperLeft,
                 LaptopOs.TonerSecondary, "TICKET " + identity, _fontCond);
             identityText.horizontalOverflow = HorizontalWrapMode.Overflow; // canon: whiteSpace nowrap
 
-            // --- legs (flex:1, ~192px in canon): deliberately blank. LedgerEntry.jsx renders one
-            // condensed leg string in this cell; this build instead carries full per-leg sub-rows
-            // below (odds, per-leg state) that the canon string does not. Collapsing them into the
-            // canon string would discard information the player currently has, which is a product
-            // call outside this rebuild's authority — flagged, not resolved. Implementing the
-            // canon column order does not require populating this slot, so it is left reserved
-            // rather than duplicating the sub-rows' content or inventing a summary canon never
-            // specified.
+            // S40: the legs flex cell (canon's ~192px slot between identity and STAKE) is deleted,
+            // not left reserved. It never carried the per-leg summary LedgerEntry.jsx puts there —
+            // this build carries full per-leg sub-rows below instead (odds, per-leg state) that the
+            // canon string can't — but a cell reserved and rendered empty is a blank gap mid-row,
+            // not a layout, so nothing stands in its place any more; STAKE/RETURNED are re-derived
+            // against the header band above rather than kept where the deleted cell used to end.
 
-            // --- STAKE (96px): key line + value line. LedgerEntry.jsx colours the value --toner
-            // unconditionally (no won/lost branch), unlike the previous build's lost-dims-to-Muted
-            // treatment.
-            Text stakeKeyText = LaptopUi.MakeText(row, "TicketStakeKey", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(LedgerStakeX, -10f), new Vector2(LedgerStakeWidth, 16f), 13, TextAnchor.UpperLeft,
-                LaptopOs.Muted, "STAKE", _font);
-            stakeKeyText.horizontalOverflow = HorizontalWrapMode.Overflow; // canon "key" style: nowrap
+            // --- STAKE (96px): one condensed tabular figure now, under the board header's STAKE
+            // head (S38) instead of a key line repeated inside every row. LedgerEntry.jsx colours
+            // the value --toner unconditionally (no won/lost branch).
             LaptopUi.MakeText(row, "TicketStakeValue", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(LedgerStakeX, -28f), new Vector2(LedgerStakeWidth, 20f), 16, TextAnchor.UpperLeft,
+                new Vector2(LedgerStakeX, -11f), new Vector2(LedgerStakeWidth, 20f), 16, TextAnchor.UpperLeft,
                 LaptopOs.White, LaptopUi.Money(ticket.Stake), _fontCond);
 
-            // --- RETURNED (104px): key line + value line; value colour carries won/lost/cashed. ---
-            Text returnedKeyText = LaptopUi.MakeText(row, "TicketReturnedKey", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(LedgerReturnedX, -10f), new Vector2(LedgerReturnedWidth, 16f), 13, TextAnchor.UpperLeft,
-                LaptopOs.Muted, "RETURNED", _font);
-            returnedKeyText.horizontalOverflow = HorizontalWrapMode.Overflow; // canon "key" style: nowrap
+            // --- RETURNED (104px): one condensed tabular figure under the board header's RETURNED
+            // head; colour carries won/lost/cashed exactly as before.
             LaptopUi.MakeText(row, "TicketReturnedValue", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(LedgerReturnedX, -28f), new Vector2(LedgerReturnedWidth, 20f), 16, TextAnchor.UpperLeft,
+                new Vector2(LedgerReturnedX, -11f), new Vector2(LedgerReturnedWidth, 20f), 16, TextAnchor.UpperLeft,
                 returnedColor, returnedValue, _fontCond);
 
             // --- terminal word (104px, flex:none, textAlign right) — S32: the row's rightmost
@@ -1607,8 +1662,17 @@ namespace SBR.Game
             // 6-of-14px clearance is the requirement the old fix protected; it still holds here,
             // satisfied by geometry instead of a moved column. If a future change ever puts a
             // control right of this word, it must clear that same 8px overshoot.
+            // −13, not −9, and the 4px is measured rather than eyeballed. S39 asks for one baseline
+            // across the record, and top-anchored text aligns TOPS, not baselines — so a 13px
+            // terminal word beside a 16px identity rides high by the difference in cap height. On
+            // the populated frame the identity's ink bottomed at y=218 and the terminal's at y=214.
+            //
+            // The box moves rather than the text's alignment inside it. InkRingGeometry places the
+            // strike from this rect's own anchoredPosition, so centring the glyphs would slide the
+            // word off its strike; moving the box takes the strike with it, which is what a struck
+            // word wants.
             Text ticketStateText = LaptopUi.MakeText(row, "TicketState", new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-LedgerPadX, -16f), new Vector2(LedgerTerminalWidth, 24f), 13, TextAnchor.UpperRight,
+                new Vector2(-LedgerPadX, -13f), new Vector2(LedgerTerminalWidth, 24f), 13, TextAnchor.UpperRight,
                 stateColor, state, _fontCond);
             ticketStateText.horizontalOverflow = HorizontalWrapMode.Overflow; // canon: whiteSpace nowrap
             if (lost)
@@ -1636,18 +1700,21 @@ namespace SBR.Game
                     new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(0f, -LedgerSummaryHeight - legIndex * LedgerLegRowHeight),
                     new Vector2(700f, 23f), LaptopOs.Ink);
-                // W4 (audit question — resolved not-reachable, see the report): leg.State can only
-                // read Pending here if Matchup.StatLine is still null. Run.LockRound (engine/Run.cs)
-                // samples StatLine for every matchup on the slate — bet or not — before it
-                // constructs a single SweatSession, and no Ticket leaves TicketState.Open before a
-                // SweatSession exists (engine/Run.cs FinishSweat; engine/SweatSession.cs's Lost/
-                // CashedOut assignments). So by the time a ticket is settled enough to reach this
-                // loop, every one of its legs' matchups already has a StatLine, and leg.State
-                // (engine/Domain.cs) can only be Won or Lost. This PENDING fallback is kept for
-                // defensive completeness, not because engine data can reach it.
-                string legState = leg.IsVoided ? "VOID"
-                    : leg.RescuedWon || leg.State == LegState.Won ? "WON"
-                    : leg.State == LegState.Lost ? "LOST" : "PENDING";
+                // S43 ruled · DD 2026-08-02 batch 7: PENDING is legal in exactly one place — a
+                // CASHED OUT ticket, where he left before the match ended. W4's earlier audit
+                // (Run.LockRound samples every matchup's StatLine, bet or not, before a single
+                // SweatSession exists, so leg.State reads Pending only while Matchup.StatLine is
+                // still null) is accurate for THIS engine: no ticket currently reaches this loop
+                // with a Pending leg, WON/LOST/CashedOut alike — SureThingLedgerTests locks that
+                // invariant down for WON/LOST. But the DD overruled treating that as licence to
+                // drop the branch: leg.State's own definition (engine/Domain.cs) makes Pending a
+                // real, constructible data state, not dead code, and only a CASHED OUT ticket may
+                // legally carry one — the render path must resolve it correctly (the literal word
+                // "PENDING", never a fabricated terminal word, in --toner-3/Muted below — already
+                // true, unconditionally, for every non-lost leg) rather than assume it can't
+                // arrive. LegStateWord is exercised directly by SureThingLedgerTests against a
+                // hand-built Pending leg for exactly this reason.
+                string legState = LegStateWord(leg);
                 // S35(c): RevealedLeg.jsx is the spec of record for a leg row's state — the ✓,
                 // the word, the strike and opacity .55 carry it, never a per-outcome hue. Both
                 // colours below were already flat regardless of outcome, so there was no hue to
