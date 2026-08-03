@@ -19,7 +19,7 @@ namespace SBR.Tests.PlayMode
     /// controls and presentation seams as the behavioral PlayMode suite, then renders both a
     /// canvas-aligned reference and the real Main Camera at the laptop's authored focus pose.
     ///
-    /// Eleven states are captured across three UnityTests. The first continues the single-run,
+    /// Twelve states are captured across four UnityTests. The first continues the single-run,
     /// ticket-carrying flow through six states (the original five plus the shared Ledger/Old
     /// Slips screen reached from the tray). The second boots a fresh run to reach REWARDS —
     /// which requires the deterministic zero-ticket lock seam SureThingRewardsTests.EnterShop
@@ -29,7 +29,11 @@ namespace SBR.Tests.PlayMode
     /// on the desktop on the way past, which is the only state that shows the machine's wallpaper. The third
     /// runs a real place-lock-sweat cycle purely so the LEDGER can be photographed with a settled
     /// ticket in it — every other capture of that screen shows it empty, which left its entire
-    /// settled-record treatment unphotographed and readable only from source.
+    /// settled-record treatment unphotographed and readable only from source. The fourth pushes
+    /// three 2-leg tickets through a real place-lock-sweat cycle, cashing one out the instant the
+    /// round locks, so the LEDGER can be photographed with several settled rows in as many
+    /// different terminal states as the engine will honestly produce — the third fixture's single
+    /// row cannot show the record's rhythm across neighbours or the CASHED OUT treatment at all.
     /// </summary>
     public class SureThingVisualCaptureTests
     {
@@ -314,6 +318,128 @@ namespace SBR.Tests.PlayMode
 
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "10-ledger-populated", capturedPaths);
+
+            Assert.AreEqual(2, capturedPaths.Count, "one state must emit paired captures");
+            foreach (string path in capturedPaths)
+            {
+                Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
+                Assert.Greater(new FileInfo(path).Length, 0L, $"capture is empty: {path}");
+            }
+        }
+
+        /// <summary>
+        /// The ledger with three settled tickets in as many different terminal states as a single
+        /// honest run will produce.
+        ///
+        /// 10-ledger-populated above proves the settled-record treatment exists, but with exactly
+        /// one row in whichever terminal state the engine happened to land on that run. It cannot
+        /// show the row's rhythm against a neighbour, and it cannot show CASHED OUT at all — nothing
+        /// in that fixture ever reaches the cash-out window. A Design Director cannot rule on the
+        /// record row's layout from a single, arbitrary row.
+        ///
+        /// Three 2-leg tickets are placed on disjoint matchups — (0,1), (2,3), (4,5) — the widest
+        /// spread Config.MaxTicketsPerRound (3) allows across the six-matchup slate without doubling
+        /// up. CASHED OUT is the one terminal state this fixture can GUARANTEE: the first ticket's
+        /// session is cashed out the instant LockRound() returns, before anything yields and before
+        /// any leg has resolved — the only moment SweatSession's CashOutAvailable guard (not
+        /// DoubleOrNothing, >=2 legs, not complete, no pending dead leg, ticket still Open, no
+        /// already-lost leg) is certain to hold, since a single further frame could resolve a leg
+        /// Lost and close the window for good. The other two tickets run the real sweat and settle
+        /// however the slate decides — WON and LOST are engine truth, never forced here, and if both
+        /// land the same way that is the honest result, logged rather than hidden.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Capture_the_ledger_with_three_settled_tickets_in_distinct_terminal_states()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            string outputDirectory = Path.GetFullPath(Path.Combine(
+                Application.dataPath, "..", "..", "..", "artifacts", "surething-ui"));
+            Directory.CreateDirectory(outputDirectory);
+            string runPrefix = DateTime.UtcNow.ToString(
+                "yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture);
+            var capturedPaths = new List<string>();
+
+            Run run = laptop.director.Run;
+            Assert.GreaterOrEqual(run.CurrentSlate.Matchups.Count, 6,
+                "three disjoint 2-leg tickets need six matchups on the slate");
+
+            // Three 2-leg tickets on disjoint matchups: every matchup on the six-slot slate is used
+            // exactly once, so no ticket can share a matchup with another.
+            Ticket ticketA = run.PlaceTicket(
+                new[] { new Pick(0, Side.Home), new Pick(1, Side.Home) }, run.Config.MinStake);
+            Ticket ticketB = run.PlaceTicket(
+                new[] { new Pick(2, Side.Home), new Pick(3, Side.Home) }, run.Config.MinStake);
+            Ticket ticketC = run.PlaceTicket(
+                new[] { new Pick(4, Side.Home), new Pick(5, Side.Home) }, run.Config.MinStake);
+            Assert.AreEqual(3, run.Tickets.Count, "three tickets must be on the board before locking");
+            Assert.AreEqual(2, ticketA.Legs.Count, "ticket A must carry two legs to be cash-out eligible");
+            Assert.AreEqual(2, ticketB.Legs.Count);
+            Assert.AreEqual(2, ticketC.Legs.Count);
+
+            // Collapse the sweat rather than skip it, exactly as the single-ticket fixture above
+            // does: the ledger reads engine state, so every ticket has to travel the real path to a
+            // terminal state.
+            TvSweatScreen screen = laptop.tv;
+            screen.TimeScaleOverride = 0.0001f;
+            screen.ForceSeated(true);
+            laptop.director.LockRound();
+            Assert.AreEqual(Phase.Sweat, run.Phase);
+
+            // Cash out ticket A's session in this same instant, before a single yield — before the
+            // TV's own coroutine has even picked up director.CurrentSession, and before any drama
+            // event has been emitted. Nothing has resolved yet, so CashOutAvailable's guard holds:
+            // not Double or Nothing, two legs, session not complete, no pending dead leg, ticket
+            // still Open, no already-lost leg. One frame later would not be good enough — a revealed
+            // Lost leg on this very ticket would close the window permanently.
+            Assert.AreEqual(3, run.Sweats.Count, "one sweat session per ticket, in placement order");
+            run.Sweats[0].AcceptCashOut();
+            Assert.AreEqual(TicketState.CashedOut, ticketA.State,
+                "the cash-out must land the instant the round locks, or this guard can't be trusted");
+
+            float start = Time.realtimeSinceStartup;
+            while (run.Phase == Phase.Sweat)
+            {
+                if (Time.realtimeSinceStartup - start > 60f)
+                {
+                    Assert.Fail("the round never finished settling, so there is no multi-state ledger to shoot");
+                    yield break;
+                }
+                yield return null;
+            }
+            yield return WaitForRebuild();
+
+            // Assert before capturing: a capture that cannot fail proves nothing. This fixture has
+            // already learned that lesson twice — once on the rewards board, where every frame was
+            // taken at zero comps so a Law Two violation on BUY stayed invisible for weeks.
+            Assert.AreEqual(3, run.Tickets.Count, "placing three tickets must not have silently dropped one");
+            bool anyOpen = false;
+            bool anyCashedOut = false;
+            foreach (Ticket t in run.Tickets)
+            {
+                if (t.State == TicketState.Open) anyOpen = true;
+                if (t.State == TicketState.CashedOut) anyCashedOut = true;
+            }
+            Assert.IsFalse(anyOpen, "every ticket must be settled before this capture means anything");
+            Assert.IsTrue(anyCashedOut, "the guaranteed cash-out must have survived to settlement");
+
+            // Which terminal states B and C actually landed on decides what this capture can prove
+            // about WON and LOST — that is engine truth, read here rather than guessed from pixels.
+            Debug.Log($"[LedgerCapture] ticket A (index 0) settled as {ticketA.State} — guaranteed cash-out");
+            Debug.Log($"[LedgerCapture] ticket B (index 1) settled as {ticketB.State} — engine truth");
+            Debug.Log($"[LedgerCapture] ticket C (index 2) settled as {ticketC.State} — engine truth");
+
+            Invoke(Required(Required(App(laptop), "NotebookTray"), "Ledger"));
+            yield return WaitForRebuild();
+            Transform board = Required(App(laptop), "LedgerBoard");
+            Assert.IsNull(Find(board, "LedgerEmpty"),
+                "ledger still rendered its empty state after three tickets settled");
+            Assert.IsNotNull(Required(board, "LedgerTicket0"), "ledger did not render a first settled row");
+            Assert.IsNotNull(Required(board, "LedgerTicket1"), "ledger did not render a second settled row");
+            Assert.IsNotNull(Required(board, "LedgerTicket2"), "ledger did not render a third settled row");
+
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "12-ledger-populated-multi", capturedPaths);
 
             Assert.AreEqual(2, capturedPaths.Count, "one state must emit paired captures");
             foreach (string path in capturedPaths)
