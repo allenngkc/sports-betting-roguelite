@@ -1136,16 +1136,36 @@ namespace SBR
             // LiftGammaGain.lift. Using SMH here would have looked like the fix was applied
             // while the panel's #000000 stayed exactly #000000.
             //
-            // Tinted slightly cool to land near the spec's #0a0c10 target rather than a grey.
-            // CALIBRATION NOTE: URP scales lift far harder than its raw value implies. A w of
-            // 0.055 - which reads like "raise black to ~5%" - came back as a flat mid-grey panel
-            // around 38%, milky and washed out, and it failed the spec's own §5 checks: the
-            // brightness ladder compressed and L0 stopped reading as darker than L1. Measured
-            // ratio is roughly 7x, so the value that actually lands near the spec's #0a0c10
-            // target is an order of magnitude smaller than it looks.
+            // T48 - NEUTRAL BLACK POINT AT THE SAME VALUE. Was (0.99, 1.00, 1.03, 0.0075),
+            // tinted cool to land on the spec's #0a0c10 target. That target was one number doing
+            // two jobs: naming a luminance floor, and accidentally naming a hue inherited from
+            // the TV substrate. A panel may be cool; plaster may not (law 1.1).
+            //
+            // Measured consequence of the old value: the room's own surfaces read hue 268-273deg
+            // at chroma 6.6-9.5 with every screen dark and TvLight disabled, while the same
+            // frames grade-bypassed read chroma 0.55-1.66 and neutral. The grade was multiplying
+            // chroma 4x to 14x. Evidence is the R23/R26 conformance pair.
+            //
+            // WHY THE FIX IS EXACTLY THIS AND COSTS NO BRIGHTNESS. URP's PrepareLiftGammaGain
+            // takes GammaToLinear(xyz) * 0.15, SUBTRACTS that triplet's own luminance, then adds
+            // w to every channel. So w is the VALUE and xyz is purely the HUE - the xyz triplet
+            // contributes nothing achromatic by construction. Neutralising it is therefore free:
+            //
+            //   applied lift, before:  R 0.004103  G 0.007493  B 0.017572   blue 4.28x red
+            //   applied lift, after:   R 0.007500  G 0.007500  B 0.007500   blue 1.00x red
+            //   lift luminance:        0.007500 -> 0.007500, delta 0.00000000
+            //
+            // The black floor - the thing the spec's "single highest-leverage change" is for -
+            // is bit-identical. Only the cast is gone.
+            //
+            // CALIBRATION NOTE, still true and still the trap: URP scales lift far harder than
+            // its raw value implies. A w of 0.055 - which reads like "raise black to ~5%" - came
+            // back as a flat mid-grey panel around 38%, milky and washed out, and failed the
+            // spec's own §5 ladder checks. Measured ratio is roughly 7x, so w is an order of
+            // magnitude smaller than it looks. Do not "correct" it upward.
             var lift = GetOrAddVolumeComponent<LiftGammaGain>(profile);
             lift.lift.overrideState = true;
-            lift.lift.value = new Vector4(0.99f, 1.00f, 1.03f, 0.0075f);
+            lift.lift.value = new Vector4(1.00f, 1.00f, 1.00f, 0.0075f);
 
             var bloom = GetOrAddVolumeComponent<Bloom>(profile);
             bloom.threshold.overrideState = true;
