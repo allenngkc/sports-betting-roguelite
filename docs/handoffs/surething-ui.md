@@ -114,6 +114,50 @@ Also waiting on the same landing: S36's cash-out figure. The engine retains no c
 that money column prints an em dash in `--toner-3`. **Keep printing the honest absence** — never
 `$0`, never `AMOUNT NOT RETAINED` — until the retained figure exists, then consume it.
 
+## 4-0. Batch 7 — where the LEDGER actually stands
+
+**Do not work from batch 7's closing list as written.** Two of its items were already satisfied when
+it was ruled, and one it lists as pending has since landed. Corrected:
+
+| Item | State |
+|---|---|
+| S38 + S39 | **Done**, `e1f0602` — one change, as ruled |
+| S40 | **Done**, `e1f0602` |
+| S37 live | **Done**, `e1f0602` |
+| S43 | **Done**, `e1f0602` — not pending |
+| S42 | **Done**, `f8138cc` |
+| S34 | **Was never absent.** See §4a.1 — present on both margins, measured |
+| S32 | **Cause recorded**, §4a — fixed between HEADs, no rebuild needed |
+| **S41** | **The only one left, and blocked** — see below |
+
+**S41 is blocked on the engine, not on this seat.** It needs `9e55d0d` (ticket retention) in this
+tree; that commit is not an ancestor of HEAD and no retention field exists in `engine/Domain.cs`.
+Until it lands the margin's RETURNED total keeps printing the em-dash absence. **Do not "fix" that
+absence** — it is S36 as ruled and it is honest; S41 replaces it only when there is a real figure
+to print.
+
+Once S41 lands, re-shoot the same twelve-state set and re-submit. The grant is made on that set —
+no new evidence list, no new window.
+
+## 4-0.1 Two things the scroll still needs, and no capture can give either
+
+S42 landed and the suites are green, but its whole reason for existing is unphotographed:
+
+1. **The rail has never been seen.** It is correctly *absent* everywhere today, because no capture
+   state populates any list past its budget — REWARDS is capped, and the ledger's three 2-leg
+   tickets fit. So S27's track and thumb have never rendered in a frame. **A capture state that
+   overflows a list is the next piece of evidence to get** — the ledger with three 6-leg tickets
+   would do it.
+2. **Nobody has scrolled it.** Wheel routing through the existing `InputSystemUIInputModule` to the
+   viewport plate is standard UGUI, but no capture can prove a human can operate it. This wants
+   thirty seconds of someone driving the laptop, and it should be asked for explicitly rather than
+   assumed on a green suite.
+
+Also recorded, because it will bite whoever writes the overflow capture: `AssertChildrenContained`
+assumes children fit their parent, which is **structurally false for a correct `ScrollRect`** —
+content is supposed to be taller than its viewport. No current test points it at a scrolled list.
+Do not "fix" the ScrollRect to satisfy that helper; fix or scope the helper.
+
 ## 4a. S32 — which happened: fixed between HEADs
 
 S32 closed on rendered evidence and asks this handoff to record the cause, because the register
@@ -223,14 +267,17 @@ Archivo Narrow's digits are already uniform, so this is insurance rather than a 
 
 ## 4c. Open decisions this seat must not assume
 
-- **Scroll input** — deferred to the next DD batch. There is no `ScrollRect` and no scroll input
-  handler anywhere in this project; the kit gets `overflowY: auto` free from a browser and Unity does
-  not. Building a scroll without an input path yields content the player cannot reach while S27's
-  position rail advertises that they can. Blocks W1, S25 and S27.
-- **Legs as one condensed string vs per-leg sub-rows** — deferred to the next DD batch. Canon's
-  `LedgerEntry` renders a single string; this build renders a sub-row per leg carrying per-leg odds
-  and state. Collapsing them discards information the player currently has. The canon legs cell is
-  currently reserved and left empty pending the call.
+- ~~Scroll input~~ — **ruled S42 and built** (`f8138cc`). See §4-0.1 for what it still needs.
+- ~~Legs as one string vs sub-rows~~ — **ruled S40: the sub-rows stand**, and the reserved-and-blank
+  legs cell is deleted. Built in `e1f0602`.
+- **The desktop block is the next queue**, in this order and no other: **S46** (one name, SURETHING,
+  everywhere the player sees it — `Sportsbook` and the taskbar's `SURETHING.` both go, and FORM is
+  not part of the name) → **S44 + S45** (the wallpaper stops wearing the house's brand; biro on it
+  breaks the two-ink rule outright, and "the number never lies" is deleted rather than softened) →
+  **S47** (installed vs not-installed is a two-state vocabulary; `(soon)` is deleted) → **S49**
+  (**DD-authored — the desktop enters `ui_kits/surething/`; this seat does not write to `main-2`**)
+  → **S48 last**, because folding the desktop into `NotebookChrome` re-opens S8 and returns it to
+  review.
 - **C15 — TextMeshPro migration** — with Allen. Until it lands, S28 and S29 hold, and tracking,
   tabular figures and weight 600 stay unreachable on this surface.
 
