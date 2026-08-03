@@ -114,6 +114,43 @@ Also waiting on the same landing: S36's cash-out figure. The engine retains no c
 that money column prints an em dash in `--toner-3`. **Keep printing the honest absence** — never
 `$0`, never `AMOUNT NOT RETAINED` — until the retained figure exists, then consume it.
 
+## 4a. S32 — which happened: fixed between HEADs
+
+S32 closed on rendered evidence and asks this handoff to record the cause, because the register
+records causes. **It was fixed between HEADs. It was not misread at source.**
+
+The C14 audit read the inversion at `11fabaa` and was **correct at that HEAD** — the payout was the
+row's last scan point and `WON`/`LOST` sat mid-row. `be15621` then rebuilt the record row to
+`LedgerEntry`'s column order, 181 lines of `SportsbookApp.cs`, moving the terminal word rightmost.
+The frames submitted at `89aeac9` show that rebuild. So the DD withheld a rebuild that had already
+been built, and the capture that unblocked the ruling was shot from the corrected build.
+
+The sequence worth keeping, because it is the cheap lesson: the audit found it from source, the fix
+landed under the ruling that the audit produced, and the capture then arrived showing no violation.
+Nothing was misread and nothing was built twice — but a source-read finding and a frame taken two
+commits apart described different builds, and neither was wrong.
+
+**C17 has now paid twice on this surface, and both times the capture dissolved the finding rather
+than confirming it** (T26 was the first). That is not an argument against C17 — an unphotographed
+state is still unruled — but it is an argument for reading the HEAD a finding was taken at before
+scheduling work against it.
+
+## 4a.1 S34 — present, contrary to the register
+
+Batch 7 records "**S34 is absent** on both margins". It is present on both, and measured on the very
+frames the batch was ruled against:
+
+- passive margin, `12-ledger-populated-multi`: rule lines at y 451, 477, 503, 529, 555, 581, 607
+- working margin, `01-form-lobby`: 477, 503, 529 before content begins
+
+Exact **26px pitch** in both, which is `margin.jsx`'s `repeating-linear-gradient` period.
+
+Why it reads as absent is worth recording rather than just correcting: `--rule-soft` (44,44,32)
+against `--ground` (22,22,15) is a small delta, and the pass is one pixel every twenty-six. It is
+findable by sampling and genuinely hard to see at review scale. **If the intent is that it should
+read at review scale, that is a strength question and a new ruling — not a build gap.** Do not "add"
+it; it is there.
+
 ## 4bb. C15 — the TextMeshPro migration, scoped
 
 **Ruled by Allen 2026-08-02: Option 1, TMP, both surfaces. SCHEDULED, not now** — the conformance
