@@ -301,6 +301,61 @@ and T39's first pass left six strings for the same reason.
 
 ---
 
+## 4E. C15 — TextMeshPro migration scope (SCHEDULED, no build work yet)
+
+Ruled by Allen, Option 1, both surfaces; sequenced by the orchestrator after the conformance wave.
+Scoped here while the detail is fresh. **This is a scope, not a plan to execute.**
+
+**What it buys.** The three deviations this surface carries as signed-and-impossible become simply
+buildable, and then **expire**: tabular figures (which `fonts.css` calls *"mandatory and
+non-negotiable"*), letter-spacing (`--tv-track-label .16em`, score `.02em`), and weight 600. All three
+are unreachable in legacy `UI.Text` — no OpenType feature control, no tracking property, `FontStyle`
+offers Normal/Bold only. They are the reason C15 exists.
+
+### The four risks, in the order they will bite
+
+**1. Every measured constant is a `UI.Text` number and must be re-measured.** This is the big one.
+T24's live row (59px), T15's risk/pays cell (57×48), the `LineBox` 1.18 estimate, the slot arithmetic
+— all taken with `UI.Text.preferredHeight` in Encode Sans. TMP measures differently (its own metrics,
+margins, and extra-padding behaviour). **Treat every px in this slice as invalid on migration day**
+and re-run the two measurement tests first — `T24_the_specified_live_row_measured_in_the_production_face_fits_its_slot`
+and `T15_measure_the_risk_pays_cell_in_the_production_face` are already written for exactly this and
+both refuse to measure outside Encode Sans.
+
+**2. The HDR path is custom and does not come across.** Five graphics carry an instance of
+`TvSweatHdrUI.shader` with an unclamped `_HdrBoost` — the mechanism that lets §3's L4 exceed 1.0.
+TMP ships its own shader family, so the boost must be re-implemented against a TMP shader. The same
+shader also carries `#pragma multi_compile_local _ UNITY_UI_CLIP_RECT` + `UnityGet2DClipping`, which
+is what makes T25.1's `RectMask2D` containment bind the brightest layer. **Both properties must
+survive together** — a TMP material with the boost but without clip-rect support re-opens T25.1 on
+exactly the elements that most need clipping.
+
+**3. C3's one-token invariant rides on material instances.** `RequestL4`/`ReleaseL4`/`_l4Holder` are
+renderer-agnostic and should survive, and the tests that pin arbitration use focus keys rather than
+renderers. But `L4_canvas_elements_get_the_hdr_material_and_L3_elements_stay_default` inspects
+materials directly and **will need rework**, and TMP's material-preset model shares materials by
+default — a naive port can give two elements one material and silently break "at most one element at
+L4", which is the surface's most load-bearing rule.
+
+**4. TMP font assets are new binaries.** TMP needs SDF Font Assets generated from the TTFs. Those are
+binary, and `[attr]lfs` is still inert repo-wide (macros only bind in a top-level `.gitattributes`,
+and there is none at root). Same open question as the captures — worth settling before the migration
+rather than during it.
+
+### Slot inventory
+
+~18 standalone `Text` elements plus 3 per leg row × 6 rows. Two faces to carry across
+(`EncodeSans` / `EncodeSansCondensed`), assigned per slot via the `Face` enum — that mapping is
+already read off the component references and cited at each call site, so it ports directly.
+
+### Sequencing note
+
+Migrate **after** the conformance wave, as ruled. Doing it during would invalidate the measured
+numbers the current rulings are being settled against — T51's grid re-derivation and T49's bloom A/B
+both depend on `UI.Text` metrics holding still.
+
+---
+
 ## 4D. Superseded — the Phase 3 gating record (kept for reasoning, not as a queue)
 
 **T17 is CLOSED** (`ea28c9b`): the ledger reserves the backed side's last baked goal at configure
