@@ -738,6 +738,103 @@ namespace SBR.Game
 
         }
 
+        /// S27: the printed position rail's own width — reserved on the right edge of every
+        /// scrolling body (<see cref="MakeScrollBody"/>) whether or not the rail ends up drawn
+        /// (<see cref="FinishScrollBody"/>), so a list's content column never shifts width
+        /// between a state that scrolls and one that doesn't.
+        public const float RailReserve = 4f;
+
+        /// <summary>S25(amended)/S42/S27: the one place an interior list becomes scrollable.
+        /// Builds a fixed-footprint host at (anchor/pivot/position/size) carrying a standard
+        /// UGUI <see cref="ScrollRect"/> — the room's own InputSystemUIInputModule already
+        /// routes wheel/drag input to it; nothing here re-plumbs input — over a
+        /// <see cref="RectMask2D"/>-clipped viewport, and returns the Content rect callers fill
+        /// top-down. Content's own height is the caller's to set once every row is built
+        /// (<see cref="FinishScrollBody"/>), matching this file's existing convention of a
+        /// build-time y-cursor returning its own total (BuildStagedReceipt, BuildRewardOffer).
+        ///
+        /// The viewport is built via <see cref="MakePanel"/> — not a hand-rolled Graphic
+        /// construction — specifically because a custom Graphic missing
+        /// <c>typeof(CanvasRenderer)</c> in its GameObject constructor is this stack's own
+        /// four-times-repeated defect (see MakeMarginRuledPaper above, S49). MakePanel's Image
+        /// is left fully transparent but RAYCASTABLE: without some raycastable Graphic under the
+        /// pointer, Unity's GraphicRaycaster never finds a hit inside this body at all, so wheel/
+        /// drag events never reach the ScrollRect it climbs up to find — fatal for a body like
+        /// the ledger's, whose rows carry zero buttons (S32/S43, read-only) and would otherwise
+        /// offer nothing raycastable to hit anywhere in the list.</summary>
+        public static RectTransform MakeScrollBody(RectTransform parent, string name, Vector2 anchor,
+            Vector2 pivot, Vector2 position, Vector2 size, out RectTransform host, out ScrollRect scrollRect)
+        {
+            host = MakePanel(parent, name, anchor, pivot, position, size, new Color(0f, 0f, 0f, 0f));
+            scrollRect = host.gameObject.AddComponent<ScrollRect>();
+
+            RectTransform viewport = MakePanel(host, "Viewport", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                Vector2.zero, Vector2.zero, new Color(0f, 0f, 0f, 0f));
+            viewport.anchorMin = Vector2.zero;
+            viewport.anchorMax = Vector2.one;
+            viewport.pivot = new Vector2(0f, 1f);
+            viewport.offsetMin = Vector2.zero;
+            // Reserves the rail's own width on the right, whether or not FinishScrollBody ends
+            // up drawing it — see RailReserve.
+            viewport.offsetMax = new Vector2(-RailReserve, 0f);
+            viewport.GetComponent<Image>().raycastTarget = true;
+            viewport.gameObject.AddComponent<RectMask2D>();
+
+            // Content: top-anchored, growing downward as rows are added. Width tracks the
+            // viewport via stretch anchors (anchorMin/Max.x = 0/1, sizeDelta.x = 0 = "exactly
+            // parent width"); height is 0 until FinishScrollBody sets it from the caller's own
+            // measured total.
+            var contentGo = new GameObject("Content", typeof(RectTransform));
+            contentGo.transform.SetParent(viewport, false);
+            RectTransform content = contentGo.GetComponent<RectTransform>();
+            content.anchorMin = new Vector2(0f, 1f);
+            content.anchorMax = new Vector2(1f, 1f);
+            content.pivot = new Vector2(0f, 1f);
+            content.anchoredPosition = Vector2.zero;
+            content.sizeDelta = Vector2.zero;
+
+            scrollRect.horizontal = false;
+            scrollRect.vertical = true;
+            scrollRect.viewport = viewport;
+            scrollRect.content = content;
+            // Clamped, not the default Elastic: this surface is a printed document, not a
+            // bouncy app, and Clamped keeps the rail's thumb position (FinishScrollBody,
+            // ScrollRailThumb) a direct, non-overshooting read of ScrollRect's own normalized
+            // position at every moment, including mid-drag.
+            scrollRect.movementType = ScrollRect.MovementType.Clamped;
+            return content;
+        }
+
+        /// <summary>Closes out a body opened by <see cref="MakeScrollBody"/> once the caller
+        /// knows its content's real total height: sets Content's final size, then S27's rail —
+        /// present iff <paramref name="contentHeight"/> actually exceeds
+        /// <paramref name="viewportHeight"/>, absent otherwise — as two plain panels (never a
+        /// Unity Scrollbar+handle sprite), 4px at the body's right edge, full body height,
+        /// <see cref="LaptopOs.RuleSoft"/> track (--rule-soft), <see cref="LaptopOs.Muted"/>
+        /// thumb (--toner-3) sized to the visible fraction and floored at 24px. The thumb's own
+        /// position then tracks live scrolling via <see cref="ScrollRailThumb"/>, because this
+        /// canvas only rebuilds when LaptopOs's own state signature changes (Tick()) — scrolling
+        /// the wheel is not part of that signature, so nothing would otherwise move the thumb
+        /// again after this one build.</summary>
+        public static void FinishScrollBody(RectTransform host, ScrollRect scrollRect, RectTransform content,
+            float contentHeight, float viewportHeight)
+        {
+            content.sizeDelta = new Vector2(0f, contentHeight);
+            bool scrolls = contentHeight > viewportHeight + 0.5f;
+            scrollRect.vertical = scrolls;
+            if (!scrolls) return;
+
+            RectTransform track = MakePanel(host, "RailTrack", new Vector2(1f, 1f), new Vector2(1f, 1f),
+                Vector2.zero, new Vector2(RailReserve, viewportHeight), LaptopOs.RuleSoft);
+            float thumbHeight = Mathf.Max(24f, viewportHeight * viewportHeight / contentHeight);
+            RectTransform thumb = MakePanel(track, "RailThumb", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                Vector2.zero, new Vector2(RailReserve, thumbHeight), LaptopOs.Muted);
+
+            var binderGo = new GameObject("ScrollRailBinder", typeof(ScrollRailThumb));
+            binderGo.transform.SetParent(host, false);
+            binderGo.GetComponent<ScrollRailThumb>().Bind(scrollRect, thumb, viewportHeight, thumbHeight);
+        }
+
         /// <summary>Builds the document's own toner grain (palette-surething.css
         /// --toner-grain-opacity) exactly once and stretches it to fill <paramref name="root"/>.
         /// Cost: one 128x128 runtime texture, one material and one Image, built a single time per
@@ -830,6 +927,42 @@ namespace SBR.Game
         {
             return new Color(((rgb >> 16) & 0xff) / 255f, ((rgb >> 8) & 0xff) / 255f,
                 (rgb & 0xff) / 255f, 1f);
+        }
+    }
+
+    /// <summary>S27: keeps a scroll body's rail thumb tracking the ScrollRect's live scroll
+    /// offset between full-tree rebuilds. LaptopOs only rebuilds a screen's canvas when its own
+    /// state signature changes (LaptopOs.Tick) — dragging the rail or spinning the mouse wheel
+    /// is not part of that signature — so nothing would otherwise move the thumb again after the
+    /// one build LaptopUi.FinishScrollBody performs it in. Not a Graphic; carries no
+    /// CanvasRenderer requirement.</summary>
+    internal sealed class ScrollRailThumb : MonoBehaviour
+    {
+        private RectTransform _thumb;
+        private float _travel;
+
+        public void Bind(ScrollRect scrollRect, RectTransform thumb, float trackHeight, float thumbHeight)
+        {
+            _thumb = thumb;
+            _travel = Mathf.Max(0f, trackHeight - thumbHeight);
+            scrollRect.onValueChanged.AddListener(OnScroll);
+            // No initial OnScroll(scrollRect.normalizedPosition) call: that property reads
+            // ScrollRect's own content bounds, which are only current after UGUI's layout pass
+            // has run at least once and are not reliable to query synchronously in the same frame
+            // the ScrollRect was just configured. Unnecessary anyway — thumb is already built at
+            // the top (MakePanel's own (0,0) anchoredPosition), matching a freshly-built
+            // ScrollRect's own top-scrolled Content exactly; only future scroll events need this
+            // listener at all.
+        }
+
+        private void OnScroll(Vector2 normalized)
+        {
+            // The bound thumb is destroyed (with the rest of the canvas) on the next full
+            // rebuild; Unity's lifetime-aware == keeps this call a no-op afterward rather than
+            // throwing on a listener the destroyed ScrollRect never had a chance to clear.
+            if (_thumb == null) return;
+            float y = -Mathf.Clamp01(1f - normalized.y) * _travel;
+            _thumb.anchoredPosition = new Vector2(_thumb.anchoredPosition.x, y);
         }
     }
 

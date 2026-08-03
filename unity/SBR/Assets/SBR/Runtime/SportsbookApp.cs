@@ -313,19 +313,33 @@ namespace SBR.Game
                     new Vector2(-14f, -8f), new Vector2(280f, 32f), 13, TextAnchor.UpperRight,
                     LaptopOs.MoneyBad, "ROUND LOCKED — WATCH MY BETS", _font);
 
+            // S25(amended): every interior market list scrolls, with S27's rail — the
+            // fixed-body/truncation branch is withdrawn, and N NOT SHOWN stays REWARDS' alone
+            // under S17 (see BuildRewards). MarketBody's own footprint is unchanged; only its
+            // interior becomes a scroll viewport, so nothing above this point (destination tabs,
+            // the frozen-market notice) moves or resizes.
+            const float marketViewportHeight = 412f;
+            RectTransform marketContent = LaptopUi.MakeScrollBody(body, "MarketScroll",
+                new Vector2(0f, 1f), new Vector2(0f, 1f), Vector2.zero,
+                new Vector2(700f, marketViewportHeight), out RectTransform marketScrollHost,
+                out ScrollRect marketScrollRect);
+
+            float marketContentHeight;
             if (_detailTab == DetailTab.Goals)
-                BuildMarketLines(body, slip, matchup, run.Config.GoalLines, MarketKind.TotalGoals,
-                    "GOALS TOTAL", boardFrozen);
+                marketContentHeight = BuildMarketLines(marketContent, slip, matchup, run.Config.GoalLines,
+                    MarketKind.TotalGoals, "GOALS TOTAL", boardFrozen);
             else if (_detailTab == DetailTab.Btts)
-                BuildBothTeamsScore(body, slip, matchup, boardFrozen);
+                marketContentHeight = BuildBothTeamsScore(marketContent, slip, matchup, boardFrozen);
             else if (_detailTab == DetailTab.Corners)
-                BuildMarketLines(body, slip, matchup, run.Config.CornerLines, MarketKind.TotalCorners,
-                    "CORNERS TOTAL", boardFrozen);
+                marketContentHeight = BuildMarketLines(marketContent, slip, matchup, run.Config.CornerLines,
+                    MarketKind.TotalCorners, "CORNERS TOTAL", boardFrozen);
             else if (_detailTab == DetailTab.Cards)
-                BuildMarketLines(body, slip, matchup, run.Config.CardLines, MarketKind.TotalCards,
-                    "CARDS TOTAL", boardFrozen);
+                marketContentHeight = BuildMarketLines(marketContent, slip, matchup, run.Config.CardLines,
+                    MarketKind.TotalCards, "CARDS TOTAL", boardFrozen);
             else
-                BuildPlayerLines(body, slip, matchup, boardFrozen);
+                marketContentHeight = BuildPlayerLines(marketContent, slip, matchup, boardFrozen);
+            LaptopUi.FinishScrollBody(marketScrollHost, marketScrollRect, marketContent,
+                marketContentHeight, marketViewportHeight);
 
             BuildSlip(run, slip, boardFrozen);
         }
@@ -339,7 +353,15 @@ namespace SBR.Game
                 () => { _detailTab = tab; _invalidate(); }, _font);
         }
 
-        private void BuildMarketLines(RectTransform parent, BetslipModel slip, Matchup matchup,
+        /// <summary>Rows sit at a fixed 42px pitch from a 48px start under the title (see the
+        /// Build* methods below); this is that same geometry read backwards, into a total
+        /// content height, so MakeScrollBody's caller knows how tall Content needs to be without
+        /// duplicating the pitch/start constants a second time. 14px of trailing pad matches this
+        /// file's own convention elsewhere (e.g. LedgerPadX).</summary>
+        private static float MarketRowsContentHeight(int rowCount)
+            => rowCount <= 0 ? 48f : 48f + (rowCount - 1) * 42f + 32f + 14f;
+
+        private float BuildMarketLines(RectTransform parent, BetslipModel slip, Matchup matchup,
             double[] lines, MarketKind kind, string title, bool frozen)
         {
             LaptopUi.MakeText(parent, "MarketTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
@@ -356,9 +378,10 @@ namespace SBR.Game
                 MakeMarketOffer(parent, slip, matchup, under, $"UNDER {line:0.0}",
                     i * 2 + 1, 354f, rowY, frozen);
             }
+            return MarketRowsContentHeight(lines.Length);
         }
 
-        private void BuildBothTeamsScore(RectTransform parent, BetslipModel slip, Matchup matchup,
+        private float BuildBothTeamsScore(RectTransform parent, BetslipModel slip, Matchup matchup,
             bool frozen)
         {
             LaptopUi.MakeText(parent, "BttsTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
@@ -368,9 +391,10 @@ namespace SBR.Game
                 0, 14f, -48f, frozen);
             MakeMarketOffer(parent, slip, matchup, MarketSelection.BothTeamsToScore(false), "NO",
                 1, 354f, -48f, frozen);
+            return MarketRowsContentHeight(1);
         }
 
-        private void BuildPlayerLines(RectTransform parent, BetslipModel slip, Matchup matchup, bool frozen)
+        private float BuildPlayerLines(RectTransform parent, BetslipModel slip, Matchup matchup, bool frozen)
         {
             LaptopUi.MakeText(parent, "PlayersTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -8f), new Vector2(670f, 32f), 16, TextAnchor.UpperLeft, LaptopOs.White,
@@ -386,6 +410,7 @@ namespace SBR.Game
                     $"{player.Name.ToUpperInvariant()} [{player.Role}]", row, x, rowY, frozen);
                 row++;
             }
+            return MarketRowsContentHeight(Mathf.CeilToInt(row / 2f));
         }
 
         private void MakeMarketOffer(RectTransform parent, BetslipModel slip, Matchup matchup,
@@ -1010,24 +1035,48 @@ namespace SBR.Game
                 // may be silently dropped, so the count that did not fit is stated in place.
                 //
                 // BoardBottomPadding leaves the last rule clear of the tray rather than flush to it.
+                //
+                // S25(amended)/S27: the offer list itself now scrolls, same as LEDGER/ENTRY — but
+                // S17's own cap survives it under S25(amended)'s express exception ("N NOT SHOWN
+                // ... binds only a deliberately capped list — REWARDS under S17"). The two are
+                // different questions, answered by different mechanisms below: S17 decides which
+                // offers get INSTANTIATED at all (an offer's own rule text — cost, downside — is
+                // never truncated to make room; show fewer offers instead, exactly as before,
+                // same 446px budget, same pessimistic EstimateOfferHeight, same shown/total
+                // accounting, unchanged by this edit). S27 decides how the resulting — possibly
+                // shorter-than-viewport — content is PRESENTED: reachable by scroll rather than
+                // hard-clipped, with a rail iff it actually runs long. Because EstimateOfferHeight
+                // is deliberately pessimistic (see its own comment: "an over-estimate costs at
+                // most one offer that would just have fitted"), real rendered content is typically
+                // a little SHORTER than the 446px budget it was built against, so in the ordinary
+                // case the rail never appears at all — the scroll body is the honest backstop for
+                // the estimate's own slack, not a second, looser cap replacing S17's.
                 const float boardBottomPadding = 10f;
-                float y = -74f;
-                float floorY = -(530f - boardBottomPadding);
+                const float offersTop = -74f;
+                float viewportHeight = 530f - boardBottomPadding - (-offersTop);
+                RectTransform content = LaptopUi.MakeScrollBody(board, "RewardsScroll",
+                    new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, offersTop),
+                    new Vector2(700f, viewportHeight), out RectTransform scrollHost,
+                    out ScrollRect scrollRect);
+
+                float y = 0f;
+                float floorY = -viewportHeight;
                 int shown = 0;
                 int total = run.ShopOffers.Count + run.ConsumableOffers.Count;
 
                 for (int i = 0; i < run.ShopOffers.Count; i++)
                 {
                     if (y - EstimateOfferHeight(run.ShopOffers[i].Description) < floorY) break;
-                    y -= BuildRewardOffer(board, run, run.ShopOffers[i], i, y);
+                    y -= BuildRewardOffer(content, run, run.ShopOffers[i], i, y);
                     shown++;
                 }
                 for (int i = 0; i < run.ConsumableOffers.Count; i++)
                 {
                     if (y - EstimateOfferHeight(run.ConsumableOffers[i].Description) < floorY) break;
-                    y -= BuildConsumableOffer(board, run, run.ConsumableOffers[i], i, y);
+                    y -= BuildConsumableOffer(content, run, run.ConsumableOffers[i], i, y);
                     shown++;
                 }
+                LaptopUi.FinishScrollBody(scrollHost, scrollRect, content, -y, viewportHeight);
 
                 if (shown < total)
                 {
@@ -1038,6 +1087,8 @@ namespace SBR.Game
                     // C19 / S25 amended: REWARDS is the one list a ruling deliberately caps (S17),
                     // so its count line prints in --toner (LaptopOs.White) — was TonerSecondary
                     // (--toner-2), one step dimmer than the comment above already said it should be.
+                    // Kept OUTSIDE the scroll body (fixed to the board, not the content): it is
+                    // the sheet's own statement about the list, not a row inside it.
                     LaptopUi.MakeText(board, "OffersNotShown", new Vector2(0f, 0f), new Vector2(0f, 0f),
                         new Vector2(14f, 8f), new Vector2(672f, 20f), 13, TextAnchor.LowerLeft,
                         LaptopOs.White,
@@ -1067,10 +1118,19 @@ namespace SBR.Game
             return 29f + lines * lineHeight + 9f;
         }
 
-        private float BuildRewardOffer(RectTransform board, Run run, RelicDefinition offer, int index, float y)
+        // S27: every scrolling body reserves the rail's own 4px on the right, whether or not the
+        // rail ends up drawn (LaptopUi.RailReserve) — REWARDS' offer rows now live inside one
+        // (BuildRewards), so their own full-width elements (the row panel, OfferRule) are sized
+        // to the same narrower content column rather than the board's full 700px, matching the
+        // ledger's LedgerRowWidth. Elements anchored from an edge (Affordability/BuyReason/Buy,
+        // all pivoted right) already reflow with it via Unity's own anchor math and need no
+        // separate constant.
+        private const float RewardsRowWidth = 700f - LaptopUi.RailReserve;
+
+        private float BuildRewardOffer(RectTransform parent, Run run, RelicDefinition offer, int index, float y)
         {
-            RectTransform row = LaptopUi.MakePanel(board, "RewardOffer" + index, new Vector2(0f, 1f),
-                new Vector2(0f, 1f), new Vector2(0f, y), new Vector2(700f, 56f), LaptopOs.Ink);
+            RectTransform row = LaptopUi.MakePanel(parent, "RewardOffer" + index, new Vector2(0f, 1f),
+                new Vector2(0f, 1f), new Vector2(0f, y), new Vector2(RewardsRowWidth, 56f), LaptopOs.Ink);
             bool enoughComps = offer.Price <= run.Comps;
             bool hasSlot = run.OwnedRelics.Count < run.Config.RelicSlots;
             bool canBuy = enoughComps && hasSlot && run.Phase == Phase.Shop;
@@ -1094,7 +1154,7 @@ namespace SBR.Game
             float descriptionHeight = Mathf.Max(18f, description.preferredHeight);
             description.rectTransform.sizeDelta = new Vector2(430f, descriptionHeight);
             float rowHeight = 29f + descriptionHeight + 9f;
-            row.sizeDelta = new Vector2(700f, rowHeight);
+            row.sizeDelta = new Vector2(RewardsRowWidth, rowHeight);
             // S9 defect 1: a price is a printed figure, not the house's mark — wax regardless of
             // affordability. The BLOCKED reason beside it stays oxide; that IS the house acting.
             LaptopUi.MakeText(row, "Affordability", new Vector2(1f, 1f), new Vector2(1f, 1f),
@@ -1121,15 +1181,15 @@ namespace SBR.Game
                     _invalidate();
                 } : null, _font, canBuy);
             LaptopUi.MakeRule(row, "OfferRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
-                Vector2.zero, new Vector2(700f, 2f));
+                Vector2.zero, new Vector2(RewardsRowWidth, 2f));
             return rowHeight;
         }
 
-        private float BuildConsumableOffer(RectTransform board, Run run, ConsumableDefinition offer,
+        private float BuildConsumableOffer(RectTransform parent, Run run, ConsumableDefinition offer,
             int index, float y)
         {
-            RectTransform row = LaptopUi.MakePanel(board, "ConsumableOffer" + index, new Vector2(0f, 1f),
-                new Vector2(0f, 1f), new Vector2(0f, y), new Vector2(700f, 56f), LaptopOs.Ink);
+            RectTransform row = LaptopUi.MakePanel(parent, "ConsumableOffer" + index, new Vector2(0f, 1f),
+                new Vector2(0f, 1f), new Vector2(0f, y), new Vector2(RewardsRowWidth, 56f), LaptopOs.Ink);
             bool enoughComps = offer.Price <= run.Comps;
             bool hasSlot = run.OwnedConsumables.Count < run.Config.ConsumableSlots;
             bool canBuy = enoughComps && hasSlot && run.Phase == Phase.Shop;
@@ -1154,7 +1214,7 @@ namespace SBR.Game
             float descriptionHeight = Mathf.Max(18f, description.preferredHeight);
             description.rectTransform.sizeDelta = new Vector2(430f, descriptionHeight);
             float rowHeight = 29f + descriptionHeight + 9f;
-            row.sizeDelta = new Vector2(700f, rowHeight);
+            row.sizeDelta = new Vector2(RewardsRowWidth, rowHeight);
             // S9 defect 1: price is wax regardless of affordability; see BuildRewardOffer above.
             LaptopUi.MakeText(row, "Affordability", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-124f, -5f), new Vector2(118f, 22f), 13, TextAnchor.UpperRight,
@@ -1180,7 +1240,7 @@ namespace SBR.Game
                     _invalidate();
                 } : null, _font, canBuy);
             LaptopUi.MakeRule(row, "OfferRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
-                Vector2.zero, new Vector2(700f, 2f));
+                Vector2.zero, new Vector2(RewardsRowWidth, 2f));
             return rowHeight;
         }
 
@@ -1377,14 +1437,28 @@ namespace SBR.Game
             // header S31 already built (BuildLedgerBoardHeader below), positioned at the exact same
             // x/width as the figures beneath them (LedgerStakeX/LedgerReturnedX — S40 re-derives
             // both against this same header band), not a hand-padded guess.
+            //
+            // S42/S27: the settled list itself scrolls, under the fixed header above — no cap, no
+            // truncation, no sub-row clipped by the tray. S40's leg sub-rows made row cost a
+            // function of leg count (up to 3 tickets x 6 legs against this board), which is the
+            // overflow S42 names as its reason to rule now rather than wait for it to be
+            // hypothetical. Every settled record stays reachable per C19: hiding a kept record is
+            // indistinguishable from never having kept it.
+            const float ledgerScrollTop = -44f; // just below the 44px board header
+            const float ledgerViewportHeight = 530f + ledgerScrollTop; // 486 — the rest of the board
+            RectTransform content = LaptopUi.MakeScrollBody(board, "LedgerScroll",
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, ledgerScrollTop),
+                new Vector2(700f, ledgerViewportHeight), out RectTransform scrollHost,
+                out ScrollRect scrollRect);
+
             int cashedCount = 0;
             double settledStake = 0.0;
             double knownWinPayout = 0.0;
-            float y = -52f;
+            float y = -8f; // top pad inside the scroll content (was -52 = -44 header - 8 pad)
             for (int i = 0; i < settled.Count; i++)
             {
                 Ticket ticket = settled[i];
-                BuildLedgerTicket(board, ticket, i, run.Round, y);
+                BuildLedgerTicket(content, ticket, i, run.Round, y);
                 // S32: LedgerEntry.jsx's own borderBottom (--rule-w solid --rule-soft) is the
                 // separator now, drawn as this entry's own bottom edge inside BuildLedgerTicket —
                 // so entries sit flush and the next one starts exactly one entry height down, not
@@ -1396,6 +1470,7 @@ namespace SBR.Game
                 else if (ticket.State == TicketState.CashedOut)
                     cashedCount++;
             }
+            LaptopUi.FinishScrollBody(scrollHost, scrollRect, content, -y, ledgerViewportHeight);
             if (settled.Count == 0)
             {
                 LaptopUi.MakeText(board, "LedgerEmpty", new Vector2(0f, 1f), new Vector2(0f, 1f),
@@ -1588,11 +1663,20 @@ namespace SBR.Game
             : leg.RescuedWon || leg.State == LegState.Won ? "WON"
             : leg.State == LegState.Lost ? "LOST" : "PENDING";
 
-        private void BuildLedgerTicket(RectTransform board, Ticket ticket, int index, int round, float y)
+        // S27: every scrolling body reserves the rail's own 4px on the right, whether or not the
+        // rail ends up drawn (LaptopUi.RailReserve) — settled-ticket rows now live inside one
+        // (OldSlipsApp.Render), so their own full-width elements (the row panel, and every
+        // divider/rule inside it) are sized to this narrower content column rather than the
+        // board's full 700px. Elements anchored from the row's right edge (TicketState/
+        // LedgerDeadStrike, LegState) already reflow with it via Unity's own anchor math and need
+        // no separate constant.
+        private const float LedgerRowWidth = 700f - LaptopUi.RailReserve;
+
+        private void BuildLedgerTicket(RectTransform parent, Ticket ticket, int index, int round, float y)
         {
             float height = LedgerEntryHeight(ticket);
-            RectTransform row = LaptopUi.MakePanel(board, "LedgerTicket" + index, new Vector2(0f, 1f),
-                new Vector2(0f, 1f), new Vector2(0f, y), new Vector2(700f, height), LaptopOs.Ink);
+            RectTransform row = LaptopUi.MakePanel(parent, "LedgerTicket" + index, new Vector2(0f, 1f),
+                new Vector2(0f, 1f), new Vector2(0f, y), new Vector2(LedgerRowWidth, height), LaptopOs.Ink);
             string identity = string.IsNullOrEmpty(ticket.Id) ? $"{round}.{index + 1}" : ticket.Id;
             string state = ticket.State == TicketState.Won ? "WON"
                 : ticket.State == TicketState.Lost ? "LOST"
@@ -1691,7 +1775,7 @@ namespace SBR.Game
             // Summary-band / leg-sub-row divider — internal to this entry, separate from the canon
             // borderBottom (LedgerEntryRule, at the very bottom of the whole entry, below).
             LaptopUi.MakeRule(row, "TicketRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(0f, -LedgerSummaryHeight), new Vector2(700f, 1f));
+                new Vector2(0f, -LedgerSummaryHeight), new Vector2(LedgerRowWidth, 1f));
 
             for (int legIndex = 0; legIndex < ticket.Legs.Count; legIndex++)
             {
@@ -1699,7 +1783,7 @@ namespace SBR.Game
                 RectTransform legRow = LaptopUi.MakePanel(row, "LedgerLeg" + legIndex,
                     new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(0f, -LedgerSummaryHeight - legIndex * LedgerLegRowHeight),
-                    new Vector2(700f, 23f), LaptopOs.Ink);
+                    new Vector2(LedgerRowWidth, 23f), LaptopOs.Ink);
                 // S43 ruled · DD 2026-08-02 batch 7: PENDING is legal in exactly one place — a
                 // CASHED OUT ticket, where he left before the match ended. W4's earlier audit
                 // (Run.LockRound samples every matchup's StatLine, bet or not, before a single
@@ -1740,7 +1824,7 @@ namespace SBR.Game
                     new Vector2(-14f, 0f), new Vector2(140f, 22f), 13, TextAnchor.MiddleRight,
                     legLost ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.Muted, legState, _fontCond);
                 LaptopUi.MakeRule(legRow, "LegRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
-                    Vector2.zero, new Vector2(700f, 1f));
+                    Vector2.zero, new Vector2(LedgerRowWidth, 1f));
             }
 
             // S32 canon: "every entry carries a borderBottom in --rule-soft" (LedgerEntry.jsx:
@@ -1748,7 +1832,7 @@ namespace SBR.Game
             // file used to leave between entries — entries now sit flush and this hairline is the
             // only separator, drawn at the entry's own bottom edge so it costs no extra height.
             LaptopUi.MakeRule(row, "LedgerEntryRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(0f, -height), new Vector2(700f, 1f));
+                new Vector2(0f, -height), new Vector2(LedgerRowWidth, 1f));
         }
 
         // MarginHeader.jsx: 12px top / 9px bottom padding around the biro title before its own
