@@ -92,6 +92,15 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-02 cycle 60 · **C15 RULED (Allen): TMP migration, Option 1** —
+  registered as C15, scheduled after the conformance wave; dispatched to all
+  four leads (no build work yet; deviations stay signed until each surface
+  migrates). Desktop branding delegated to DD. S36 struck (was resolved at
+  `9e55d0d`). Drag 2 prepared: `dd-docs-2026-08-02b.zip` (95KB, canon through
+  batch 6 + C15 + desktop note + stale-export/renumber admin) +
+  `surething-captures-2026-08-03.zip` (12 states incl. populated ledger ×2 and
+  first desktop render — DD's record-row precondition satisfied). Reversal:
+  C15 is Allen's call; drag is informational.
 - 2026-08-02 cycle 59 · **DD Batch 6 transcribed + all lanes dispatched** —
   T47–T57 landed via Allen's paste (export zip was stale — verbatim preserved in
   `register-batch6.md`; DD re-export requested). Headlines: T47 margin ruled

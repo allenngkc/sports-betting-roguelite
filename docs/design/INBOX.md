@@ -2,17 +2,18 @@
 
 ## NEED ALLEN (from Batch 5, 2026-08-01)
 
-1. **C15 — the stack decision:** tracking, tabular figures, and weight 600 are
-   unreachable in UnityEngine.UI.Text on both surfaces. Either canon relaxes the
-   three requirements, or both surfaces migrate to TextMeshPro (touches every
-   slot, the HDR material path, and C3's one-token invariant — a scheduled
-   migration, not an afternoon). All current type deviations expire at this call.
+1. ~~C15~~ **RULED — Option 1** · Allen 2026-08-02: TextMeshPro migration, both
+   surfaces, scheduled after the current conformance wave. Type deviations stay
+   signed until each surface migrates. Registered as C15.
 2. **R22 — human walkthrough:** Gates 6–8 are void (certified geometry that no
    longer exists; bunk 2 added a slab overhanging the aisle). Only instrument: a
-   human walks the two-bunk build — or you confirm you already have.
-3. **S36 — engine retention:** the engine discards cash-out amounts, so the
-   LEDGER prints an honest absence. DD's position: the right fix is the engine
-   retaining the figure — "a fact the player earned." Approve as an engine ask?
+   human walks the two-bunk build. **Scheduled:** Allen walks after room lands
+   T53/T57 (geometry changes) — orchestrator preps scene + checklist and pings.
+3. ~~S36~~ **RESOLVED** — engine retention landed in markets (`9e55d0d`); LEDGER
+   prints the retained figure.
+4. **Desktop branding question — DELEGATED TO DD** · Allen 2026-08-02: rule it
+   with the other three desktop items (`surething-desktop-four-items.md` +
+   frame 11 in the captures zip).
 4. ~~Markets margin collision~~ **RULED — T47, batch 6 (2026-08-02):** bound the
    flow region, stack stays anchored, LockReason back inside the control.
    Dispatched to markets; B1 unblocked.
