@@ -92,6 +92,16 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-02 cycle 62 · **Sweep + constitution-session prep** — fired two staged
+  drafts (SureThing: S49 kit entry is DD-authored, build S42 now; room: editor
+  lease granted for the T48 verification cycle — TV queues next for T41's
+  compile window, then markets). Context-health flags sent: SureThing at 99%,
+  room at 98% — both instructed to update handoff + /clear after current item.
+  DD context prompt authored (`dd-context-prompt-2026-08-02.md`) + docs bundle
+  `dd-docs-2026-08-02c.zip` for the constitution session. New lead questions
+  queued to DD: room's PhoneScreen ownership + Gate 2 active-state; markets'
+  44px call (details pending). Markets took an API-error hit mid-response,
+  recovered onto sanctioned handoff work. Reversal: none — grants were Allen's.
 - 2026-08-02 cycle 61 · **Batch 7 + the batch-5 backfill: register brought
   current (C22)** — root-cause finding accepted: batch 5 (41 lines) was
   dispatched and obeyed but never transcribed into the tables; the DD's batch 6
