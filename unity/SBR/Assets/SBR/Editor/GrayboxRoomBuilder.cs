@@ -1385,30 +1385,49 @@ namespace SBR
             return go;
         }
 
-        // R16: GameObject.CreatePrimitive(PrimitiveType.Quad) silently brings its own
+        // T57: the design doc requires "Meshes are built at true world size with localScale 1" -
+        // GameObject.CreatePrimitive(PrimitiveType.Quad) plus a size-shaped localScale was
+        // exactly the anti-pattern the rule names, so this now builds a real quad mesh via
+        // ChamferedBoxMesh.GetOrCreateQuad(size, uvRepeats) and leaves localScale at 1, same as
+        // Box() above. uvRepeats is Vector2.one, NOT a default to retune: it reproduces the
+        // primitive's 0..1 UVs exactly, and WindowPane's night-city texture is explicitly
+        // non-tiling and expects to map 0..1 across the pane exactly once - any other repeat
+        // value corrupts it.
+        //
+        // GetOrCreateQuad's normal sits on local -Z with Unity's own front-face winding,
+        // deliberately matching CreatePrimitive(Quad)'s convention, so the LookRotation(-facing,
+        // up) below and every call site's facing/up pair are unchanged by this swap.
+        //
+        // R16: GameObject.CreatePrimitive(PrimitiveType.Quad) used to silently bring its own
         // MeshCollider, so every screen built here was quietly adding an undocumented solid
-        // collider. TVScreen and WindowPane are redundant with the wall/body colliders already
-        // sitting directly behind them, so their primitive collider is destroyed by default (same
-        // pattern as RoomArtDressing.ArtQuad). LaptopScreen and PhoneScreen pass keepCollider:
-        // true - they sit on the Interactable layer and interaction raycasting is not re-plumbed
-        // to satisfy a collider count. True inventory: 29 = 27 BoxColliders (24 solid, 3 triggers)
-        // + 2 named interaction MeshColliders (LaptopScreen, PhoneScreen).
+        // collider. With the primitive gone nothing supplies that collider for free, so
+        // keepCollider now adds a MeshCollider explicitly, sharing the same generated mesh.
+        // TVScreen and WindowPane are redundant with the wall/body colliders already sitting
+        // directly behind them and stay collider-free (keepCollider defaults false, same
+        // collider-free contract as RoomArtDressing.ArtQuad). LaptopScreen and PhoneScreen pass
+        // keepCollider: true - they sit on the Interactable layer and interaction raycasting is
+        // not re-plumbed to satisfy a collider count. True inventory is unchanged: 29 = 27
+        // BoxColliders (24 solid, 3 triggers) + 2 named interaction MeshColliders (LaptopScreen,
+        // PhoneScreen).
         private static GameObject Quad(string name, Transform parent, Vector3 center,
                                        Vector2 size, Vector3 facing, Vector3 up, Material mat,
                                        bool keepCollider = false)
         {
-            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            go.name = name;
-            if (!keepCollider)
-                UnityEngine.Object.DestroyImmediate(go.GetComponent<Collider>());
+            var go = new GameObject(name);
             if (parent != null)
                 go.transform.SetParent(parent, true);
             go.transform.position = center;
             // Unity's Quad primitive renders on its local -Z side; aim local -Z along 'facing'.
             // Screen materials are Cull Off, so a flipped face still renders either way.
             go.transform.rotation = Quaternion.LookRotation(-facing.normalized, up);
-            go.transform.localScale = new Vector3(size.x, size.y, 1f);
-            go.GetComponent<MeshRenderer>().sharedMaterial = mat;
+            go.transform.localScale = Vector3.one; // mesh carries true world size, not the transform
+
+            Mesh mesh = ChamferedBoxMesh.GetOrCreateQuad(size, Vector2.one);
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            go.AddComponent<MeshRenderer>().sharedMaterial = mat;
+            if (keepCollider)
+                go.AddComponent<MeshCollider>().sharedMesh = mesh;
+
             return go;
         }
 

@@ -411,18 +411,27 @@ namespace SBR
             _ => null,   // space and anything unmapped render as bare plate
         };
 
-        /// <summary>Collider-free quad, for decals whose UVs must run 0..1 across the face.</summary>
+        /// <summary>
+        /// Collider-free quad, for decals whose UVs must run 0..1 across the face.
+        ///
+        /// T57: built from ChamferedBoxMesh.GetOrCreateQuad(size, Vector2.one) at localScale 1,
+        /// not a scaled primitive - see GrayboxRoomBuilder.Quad for the full ruling. Vector2.one
+        /// is required, not a default to retune: it reproduces the primitive's 0..1 UVs, which is
+        /// what StencilCode's decal expects. With no primitive there is nothing to destroy a
+        /// collider from, so this simply never adds one - "dressing adds zero colliders" stays
+        /// true by construction, not by cleanup.
+        /// </summary>
         private static GameObject ArtQuad(Transform parent, string name, Vector3 center,
                                           Vector2 size, Vector3 facing, Vector3 up, Material mat)
         {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            go.name = name;
-            Object.DestroyImmediate(go.GetComponent<Collider>());   // dressing never collides
+            var go = new GameObject(name);
             go.transform.SetParent(parent, false);
             go.transform.position = center;
             go.transform.rotation = Quaternion.LookRotation(-facing.normalized, up);
-            go.transform.localScale = new Vector3(size.x, size.y, 1f);
-            go.GetComponent<MeshRenderer>().sharedMaterial = mat;
+            go.transform.localScale = Vector3.one; // mesh carries true world size, not the transform
+            go.AddComponent<MeshFilter>().sharedMesh =
+                ChamferedBoxMesh.GetOrCreateQuad(size, Vector2.one);
+            go.AddComponent<MeshRenderer>().sharedMaterial = mat;
             return go;
         }
 
