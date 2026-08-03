@@ -1,4 +1,5 @@
 # DD Batch 6 — 2026-08-02, T47–T57 (as relayed by Allen)
+> **C22 note (2026-08-02):** superseded as canon by transcription — the REGISTER.md tables govern; this file is the preserved verbatim draft.
 
 **Orchestrator note:** relayed via Allen's paste 2026-08-02. The DD names its
 file `register-entries-2026-08-02-batch-6.md`, but the export zip Allen attached

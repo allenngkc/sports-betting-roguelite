@@ -1,9 +1,19 @@
-# Register — DD Ruling Batch 5 (2026-08-01)
-> **C22 note (2026-08-02):** superseded as canon by transcription — the REGISTER.md tables govern; this file is the preserved verbatim draft.
+# Register entries — 2026-08-01, batch 5 (+ Addendum II)
 
-Transcribed verbatim from `DD Ruling Batch 5.dc.html` (41 lines). Canonical
-alongside REGISTER.md; where a line amends an earlier ID (S15, S24, S25, T24,
-R12), this file governs.
+**Transcribe into `main-2/docs/design/REGISTER.md`.** IDs issued: **S27–S37**, **S15 amended**,
+**R16–R26**, **R12 amended**, **T24 amended**, **T28–T36**, **T38–T40**, **T32.1**, **R23.1**,
+**C15–C21**, **TV-12 / TV-13**.
+
+**This file did not exist until 2026-08-02.** Batch 5 was authored as `DD Ruling Batch 5.dc.html`
+and no register-entries file was ever written for it, so the export could not carry it and none of
+its lines reached the register's tables. It was preserved by the orchestrator as a sidecar marked
+"canonical alongside REGISTER.md", which is the one thing a register cannot have. Reconstructed here
+verbatim from that preserved copy, so the tables can be brought current. **Root cause and the law
+that closes it: C22, batch 7.**
+
+Where a line amends an earlier ID (S15, S24, S25, T24, T26, R12), this file governs.
+
+---
 
 - S25 amended · DD 2026-08-01: the fixed-body branch is withdrawn. Every interior market list scrolls, as the kit already does (screens.jsx:49), carrying the printed position rail of S27. N NOT SHOWN no longer binds a market list; it binds only a list a ruling deliberately caps — REWARDS under S17 — and prints in --toner, never --toner-3.
 

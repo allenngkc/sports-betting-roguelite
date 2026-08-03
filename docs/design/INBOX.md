@@ -63,54 +63,19 @@ rebuild is large; DD sequencing preference welcome.
 
 ## Pending (next DD batch)
 
-1. **T17 presentation confirm:** reserve-don't-spend means a scorer leg's backed
-   side reads one goal short until the final sequence — player-visible; confirm
-   intended. (Fix implemented as ruled; not blocking.)
-2. **"LEAVE — NEXT ROUND" in saturated biro** (SureThing S9 audit): primary action
-   in the player's ink — neither his mark nor optional. Detail in the S6–S8 bundle.
-3. **Baked-only-light design read** (room R10): does a baked-only bounce source sit
-   inside the direction's lighting language? Room proceeded on its interpretation.
-4. **T6 visual half:** rendered captures now exist (49, held out of git pending the
-   evidence-storage ruling) — attach via import when storage is settled.
-5. **Review backlog:** S6/S7/S8 (bundle committed at
-   `dd-import/surething-s6-s8-design-review-evidence.md`, ships after the Archivo
-   capture refresh); room re-review after R10 lands.
-6. **Studio constitution** — thin top layer per the approved two-tier authority;
-   room's owning doc is done (R13), laptop/TV owning docs eventually consolidate
-   from DESIGN.md + the design system.
-7. **R12 amendment proposal (room, from R10's measurements):** "surface detail is
-   gated by lighting" sharpens to — bounce fills shadow but does not reveal
-   surface; only direct light at a grazing angle raises relief. As written, R12
-   would have predicted the failed baked-light route works.
-8. **Room re-review** — now due (R9/R10 landed per your batch-2 sequencing);
-   package in `dd-import/`, includes the couch-headroom design question.
-9a. **T20 live-row deviation (TV):** canon's three-line live row costs ~73px
-   against a 69px slot — knife-edge glyph clipping in the real font. Built with
-   no market/price/state meta line on the live row (state survives via the word,
-   price via compact form), documented in the struct's doc comment. Needs your
-   nod alongside item 9.
-9. **TV row model: canon vs Layout B.** `TvLegRow.jsx` says live rows expand in
-   place and NEED may wrap to two lines; Layout B's no-reflow law (pinned by two
-   3C tests) fixes 70px slots, and a wrapped NEED needs ~98px. Orchestrator
-   selected the lead's recommended interim: T20's ruled px values adopted within
-   the no-reflow law, NEED capped at one line on Unity, deviation documented.
-   Rule: fixed rows with one-line NEED as the TV-surface constraint, or amend the
-   no-reflow law to canon's expanding rows.
+Everything in the old 13-item list is ruled as of batch 7 (see REGISTER.md
+transcription log). Live queue now:
 
-10. **§8.8 stats panel — two unsourceable rows (TV):** the spec names two rows the
-    sim cannot source; panel blocked. Rule: drop, re-source, or respec.
-11. **§8.10 held cash-out preview — confirm gesture (TV):** preview built and
-    tested (struck-and-dimmed, never extinguished, exact revert) but unbound
-    pending your gesture ruling.
-12. **§7.7 backed-player locator — treatment (TV):** binding half wired and
-    tested; visually nothing until you rule the treatment. Concrete finding
-    attached from the lead: the numeral's stated justification in §7.7 no longer
-    holds. **Items 10–12 together gate the rest of Phase 3** — one batch answers
-    most of what remains.
-13. **Markets D-01…D-05:** five design questions from the F_0.4.0 reconciliation
-    (label vocabulary, RIDING absent from the DS enum, a one-sided scorer market
-    in a paired-price grammar, an S17-class overflow, one more). Full text in the
-    committed gap-list in the `markets-2` worktree — Allen attaches on import.
+1. **Constitution** — C24: drafted next DD session; precondition (batches 5+7
+   in the tables) met 2026-08-02.
+2. **LEDGER Design-verified re-submit** — after S38–S43/S34/S37-live land; same
+   twelve-state set.
+3. **S8 re-review** — after S48's chrome fold, against a desktop frame.
+4. **T48 re-shoots** (screens-dark + grade-bypassed, after T41), **T49 bloom
+   re-run** (after T41), **markets' T47-fixed frames**, **R23 set after R19**
+   (for R25).
+5. Owning docs per C24 gates: laptop after S34/S37/S38–S41 + desktop items;
+   TV after T41/T46; room takes R17+R27 corrections in one pass (R27 done).
 
 ## Cleared 2026-07-31, batch 2 (transcribed to REGISTER.md by the orchestrator)
 

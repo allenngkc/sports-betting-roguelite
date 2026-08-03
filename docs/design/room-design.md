@@ -192,7 +192,9 @@ room, whatever its design language. The room owns the volume.
 
 Order to reason about, with starting points that settle on screen: neutral tonemapping (**not ACES by
 default** — it desaturates saturated primaries and will fight the panel); shadows lifted so screen
-black lands near `#0a0c10`; very low exponential fog tinted toward olive; bloom threshold ~0.9,
+black lands near `#0a0c10`; very low **ExponentialSquared** fog (density 0.085, the built and
+design-verified curve — doc corrected per R27/C23; every verified frame R5/R6/R9/R10/R15 contains
+it) tinted toward olive; bloom threshold ~0.9,
 intensity ~0.7; **film grain ~0.20 — the strongest single unifier**; chromatic aberration ~0.08;
 vignette ~0.30.
 

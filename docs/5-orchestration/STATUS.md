@@ -92,6 +92,21 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-02 cycle 61 · **Batch 7 + the batch-5 backfill: register brought
+  current (C22)** — root-cause finding accepted: batch 5 (41 lines) was
+  dispatched and obeyed but never transcribed into the tables; the DD's batch 6
+  then re-ruled four room items blind. Transcribed today: batch 5 (S15-am,
+  S24-stands, S25-am, S27–S37, R12-am, R16–R26, R23.1, T24-am, T28–T36,
+  T38–T40, T32.1, TV-12/13, C16–C21) and batch 7 (C22, C22.1, C23, C24,
+  S31-am, S32-closed, S38–S49, R27, LEDGER-DV-withheld); T53–T56 re-keyed to
+  R16/R22/R19(a)/R19(c) per C22.1; transcription log added; sidecars marked
+  superseded. S32 rebuild CANCELLED on frames; desktop ruled S44–S49 (house
+  owns the app, player owns the machine); R27 fog doc edit applied (0.085
+  ExponentialSquared). SureThing dispatched LEDGER + desktop orders; room
+  dispatched re-key + hue/value split. S41 has a cross-worktree precondition:
+  `9e55d0d` must reach surething-ui's tree (markets B1 merge or cherry-pick —
+  orchestrator coordinates). Constitution precondition now met. Reversal:
+  transcription is additive; rows strike if the DD's files differ.
 - 2026-08-02 cycle 60 · **C15 RULED (Allen): TMP migration, Option 1** —
   registered as C15, scheduled after the conformance wave; dispatched to all
   four leads (no build work yet; deviations stay signed until each surface
