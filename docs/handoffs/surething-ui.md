@@ -114,6 +114,76 @@ Also waiting on the same landing: S36's cash-out figure. The engine retains no c
 that money column prints an em dash in `--toner-3`. **Keep printing the honest absence** — never
 `$0`, never `AMOUNT NOT RETAINED` — until the retained figure exists, then consume it.
 
+## 4bb. C15 — the TextMeshPro migration, scoped
+
+**Ruled by Allen 2026-08-02: Option 1, TMP, both surfaces. SCHEDULED, not now** — the conformance
+wave lands first and the orchestrator sequences per surface. **No build work until then.** The signed
+type deviations (S28 tracking, S29 tabular figures, S20 weight) stay in force until this surface
+migrates, and expire the moment it does.
+
+Scoped here so the phase can be planned rather than discovered.
+
+### What it touches
+
+**Slots: 98 `MakeText` call sites and 23 button labels**, across `SportsbookApp.cs` and `LaptopOs.cs`.
+That count is misleading in the good direction — every one of them goes through `LaptopUi.MakeText`
+or `MakeButton`, so the migration is largely two helpers plus their signature, not 121 edits. The
+`Font` parameter becomes a `TMP_FontAsset`, and `LaptopScreen.LoadFont` — already the single seam
+resolving both voices — resolves two asset references instead.
+
+**Font assets.** Archivo and Archivo Narrow ship as variable TTFs under
+`Resources/SureThing/Fonts` with their OFL licences beside them. TMP needs generated `TMP_FontAsset`s,
+which is editor work and cannot be authored blind. **This is the step that unlocks weight 600**:
+TMP font assets can carry named instances, which is exactly what S20 said was required and legacy
+UGUI could not give.
+
+**Text-metric helpers are the real work, not the text itself.** Four things measure glyphs today and
+all four are `Font`/`Text`-based:
+
+- `LaptopUi.MeasureWidth` — `Font.GetCharacterInfo`
+- `LaptopUi.FitText` and `FitLabelKeepingSuffix` — deliberate ellipsis truncation, which S26 makes
+  load-bearing at the point of spending
+- `SportsbookApp.InkRingGeometry` — **sizes and places the biro rings and strikes off measured text**
+
+That last one matters more than it looks: the ink assets are positioned from text metrics, so a
+metric change moves every ring and every strike. TMP's `GetPreferredValues` is not a drop-in for
+`GetCharacterInfo`, and the ring/strike geometry must be re-verified against captures afterwards,
+not assumed.
+
+**The S2 box rule must be re-expressed.** `MakeText` currently protects against a box shorter than
+one line rendering *nothing* by falling back to vertical overflow. That is a UGUI `Text` truncation
+behaviour; TMP has its own overflow model (`TextOverflowModes`) and the same protection has to be
+rebuilt in it. Losing it silently reintroduces the defect that deleted the masthead and the payout
+figure with every test green.
+
+### Materials and C3
+
+The laptop canvas is world-space, inside the room's URP grade with bloom. TMP renders through its own
+SDF shader rather than the default UI material, so **text will not respond to that grade identically**
+— SDF edges under bloom are the specific risk, and the surface has a 31px wax payout figure that is
+already the brightest type on it.
+
+C3's one-token invariant is primarily a TV concern, but C15 names it because a TMP migration touches
+the HDR material path both surfaces share. **This seat should not migrate before the TV's material
+path is settled**, or the laptop becomes a second variable in someone else's measurement.
+
+### A new risk the migration introduces
+
+**TMP enables rich text by default.** `<color=#...>` markup is exactly the class of defect
+`SureThingPaletteMarkupTests` exists to catch — retired colour hiding in a string where no
+field-level palette scan can see it. That guard currently scans source, which still works, but the
+migration widens the surface: TMP makes such markup trivially available at every one of those 98
+slots.
+
+**Set `richText = false` in the `MakeText` helper as part of the migration**, unless a spec
+genuinely requires mixed runs. Do it in the helper, once, rather than trusting 98 call sites.
+
+### What it buys
+
+Tracking (`--st-track-*`, currently unreachable and signed under S28), tabular figures (S29 — though
+Archivo Narrow's digits are already uniform, so this is insurance rather than a fix), and weight 600
+(S20). Those three signatures all expire on landing, which is the point.
+
 ## 4c. Open decisions this seat must not assume
 
 - **Scroll input** — deferred to the next DD batch. There is no `ScrollRect` and no scroll input
