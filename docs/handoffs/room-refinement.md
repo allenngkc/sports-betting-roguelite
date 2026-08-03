@@ -304,6 +304,62 @@ Need Allen: nothing.
 
 ---
 
+## 11b. STATE AS OF 2026-08-02 — read this first
+
+**Branch `room-refinement`, 11+ commits ahead of `main`. Everything below is built, committed, and
+now compile-verified, built, baked and captured. The register reads `main`, so items may appear open
+there that are done here.**
+
+| item | state |
+|---|---|
+| T48 grade — neutral black point | built `ebdd0ed`, **verified: it worked** |
+| R19a body materials · R19c drab green · R16 colliders 29 | built `35cbab6` |
+| T57 true-size quads | built `a1fd6fb` |
+| R20 chipped paint + battered desk | built `c79e466` — **not** outstanding |
+| T54 gates state what they cannot see · Gate 4 owner-keyed | built `336a1a4` |
+| R23/R26 conformance instrument | built, editor-free via `--conformance` |
+| **R22 walkthrough** | **OPEN — Allen's, gates 6–8, nothing else clears it** |
+
+### T48 verified — the grade no longer tints the room
+
+Screens dark, graded, chroma per surface: ceiling **7.64 → 0.33**, bunk 1 **6.65 → 0.33**, right wall
+**6.92 → 0.97**. The grade previously multiplied chroma 4–14×; it now sits *below* the ungraded
+values. Mattress 44.64, inside 43.9 ±1. All structural gates PASS; collider inventory 29.
+
+### R23 still FAILs — but the character changed, and this is now a design question
+
+Two surfaces remain COOL: **far wall (3.56)** and **floor aisle (1.66)**. Both are cool *ungraded
+too* (5.49, 2.97), so this is **the window's own light, not the grade**.
+
+Design doc §1.2 sanctions exactly that: a cool window with **short reach that pools locally and does
+not tint the room**. Those two region boxes sit inside that sanctioned pool. So the remaining failure
+may be the instrument sampling the design working, not the room failing. **Either the regions move
+off the window pool, or law 1.1's test explicitly excludes it — a DD call, not a build fix.**
+
+### C22.1 — steel and conduit re-measured, and the answer inverts the intent
+
+| | blue black point | neutral black point |
+|---|---|---|
+| display housing (steel) | C 5.11 h 264.3° COOL | C 2.07 h **108.3° WARM** |
+| conduit drop | C 3.02 h 252.4° COOL | C 3.97 h **105.2° WARM** |
+
+R19(b) installed genuinely cool albedos and they render **warm**, because reflected colour is albedo
+× illuminant and this room's only real source is a warm tube. **The "institution's metal is colder
+than the room" contrast may be unreachable in render under a single warm source at any albedo.**
+R12-class finding; R19(b)'s own guard anticipated it. Do not answer it by lightening albedo.
+
+*Caveat: those two boxes are first-pass, not surface-pure harness regions. Add proper ones before
+treating the numbers as ratified.*
+
+### Open questions with other seats
+
+1. **R22 walkthrough** — Allen. Gates 6–8 void until then.
+2. **`PhoneScreen` ownership** — unassigned by any ruling; blocks clean C15 scoping (§12.2).
+3. **Gate 2 `m_IsActive`** — a disabled duplicate satisfies a count; needs a semantic ruling.
+4. **Law 1.1's window pool** — see above.
+
+---
+
 ## 12. C15 — TextMeshPro migration scope for this surface
 
 **Ruled by Allen 2026-08-02: Option 1, both surfaces migrate to TMP. Scheduled phase, not now** —
