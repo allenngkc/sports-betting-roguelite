@@ -301,3 +301,72 @@ Next: reproduce the emission claim, then start the deterministic PBR surface pas
 Risk: emission diagnosis is not yet proven.
 Need Allen: nothing.
 ```
+
+---
+
+## 12. C15 — TextMeshPro migration scope for this surface
+
+**Ruled by Allen 2026-08-02: Option 1, both surfaces migrate to TMP. Scheduled phase, not now** —
+sequenced after the current conformance wave, orchestrator schedules per surface. Signed type
+deviations hold until a surface migrates, then expire. Scoped here ahead of the phase, per the
+ruling. **No build work has been done.**
+
+### 12.1 The room is not one of "both surfaces" — but it owns text anyway
+
+C15's two surfaces are the **laptop** and the **TV**. Neither is this slice. The room nevertheless
+builds and owns text, so it cannot simply sit the phase out:
+
+| what | where | render mode | current type |
+|---|---|---|---|
+| Interaction prompt | `InteractionHud.cs` | ScreenSpaceOverlay | 1 × `UI.Text`, `LegacyRuntime.ttf`, size 20 |
+| Phone messages + badge | `PhoneScreen.cs` | **WorldSpace** | multiple `UI.Text` via its own `MakeText` |
+
+Both are `CanvasRenderer` today.
+
+### 12.2 The phone is unclaimed, and that needs a ruling before the phase
+
+`BuildPhone` in `GrayboxRoomBuilder` builds the prop **and** attaches `PhoneScreen`, so the room
+builds it. But §8's read-only list names SportsbookApp, LaptopOs, "other SureThing files",
+TvSweatScreen, theater/pacing and TV UI — **it does not name `PhoneScreen`**, and C15's "both
+surfaces" does not cover it either.
+
+So the phone is a third text surface that no ruling currently assigns. It should not migrate by
+accident, and it should not be missed because each seat assumed the other had it. **Ask before the
+phase, not during it.**
+
+### 12.3 The one real hazard, and it is a repeat
+
+`MarkStaticForGI` sweeps **`MeshRenderer`** and marks everything it finds `ContributeGI` for the
+Adaptive Probe Volume bake.
+
+TMP ships two components. `TextMeshProUGUI` is a `CanvasRenderer` — invisible to that sweep, exactly
+as `UI.Text` is today. The plain `TextMeshPro` component is a **`MeshRenderer`**, and it is the
+natural-looking choice for world-space text like the phone.
+
+**Pick that one and the phone's glyphs get baked into the probe volume.** That is R7.0 all over
+again — thin quads entering the GI bake, occluding at probe scale and able to invalidate the probes
+behind them — and it took a full editor lease to diagnose the first time.
+
+Mitigation, in order of preference: use `TextMeshProUGUI` and keep the world-space Canvas; or, if
+the 3D component is genuinely wanted, extend the wear-root exclusion in `MarkStaticForGI` to cover
+text before the first bake, never after.
+
+### 12.4 Other room-side constraints the phase must respect
+
+- **The collider inventory is ratified at 29** (T53): 27 BoxCollider + 2 MeshCollider, on
+  `LaptopScreen` and `PhoneScreen`. The phone screen's MeshCollider is one of the two named members.
+  Restructuring that object during migration changes a gated number — re-run `tools/room_gate_check.py`.
+- **The emission-keyword protection does not extend to TMP.** `Mat()` sets
+  `RealtimeEmissive` specifically because URP's postprocessor recomputes `_EMISSION` from that field
+  and silently stripped it once. TMP materials do not go through `Mat()`, so they inherit none of
+  that guard. Do not assume they are covered.
+- **Screens sit inside the unified grade**, so any TMP material is graded with the room and is not
+  exempt — the same rule that governs the existing panels.
+- **C3's one-token invariant and the HDR material path are TV-side concerns.** The room has no HDR
+  text and no L4 occupant. Flagged only so the room is not scoped as though it does.
+
+### 12.5 Estimate
+
+Small — 1 × `UI.Text` certain, plus the phone's handful if it is ruled ours. The risk is not volume;
+it is the GI sweep in 12.3 and the unowned surface in 12.2. Both are cheap to handle **before** the
+phase and expensive to discover during it.
