@@ -92,6 +92,20 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-02 cycle 59 · **DD Batch 6 transcribed + all lanes dispatched** —
+  T47–T57 landed via Allen's paste (export zip was stale — verbatim preserved in
+  `register-batch6.md`; DD re-export requested). Headlines: T47 margin ruled
+  (bound flow, stack anchored, LockReason back inside Lock) — **markets B1
+  unblocked**; T48 grade ruled Option A (neutral black point, keep lift; subsumes
+  T45 — room countermanded off it); T51/T52 close TV-15/TV-02 (0.3px yields;
+  one strip confirmed); T49 bloom re-run after T41; T53–T57 room chain (29
+  colliders, Gate 8 void, shared material outranks polish). Studio-wide standing
+  instruction: every gate states what it cannot see. DD global order relayed;
+  T47 second because B1 is the only wholly-blocked lane. Room 612B send stuck in
+  composer — fired with completion tail (composer rule held). SureThing accident
+  benign: Allen's mis-addressed messages produced the desktop DD note + scroll
+  build, both on-queue. Reversal: rulings are DD canon; strike rows if DD's
+  re-export differs from the paste.
 - 2026-08-02 cycle 58 · **DD relay authored + SureThing unblock dispatched** —
   relay note for Allen to paste into the DD chat (`dd-relay-2026-08-02.md`):
   state-sync, renumber map, seven-item priority queue. SureThing dispatched to
