@@ -570,6 +570,27 @@ namespace SBR.Game
                 Vector2.zero, new Vector2(rowWidth, 1f));
         }
 
+        // T47: the action stack is ANCHORED to the margin's bottom edge and its height is RESERVED,
+        // so the flow region above it and the action band below can never meet. Every offset here is
+        // measured up from the panel's bottom; nothing in this band depends on how many legs are
+        // marked, which is the point — LOCK IT IN must not move because the player bet more.
+        private const float SkipBandY = 8f;
+        private const float SkipBandH = 34f;
+        private const float LockBandY = 52f;
+        private const float LockBandH = 52f;   // label in the upper 30, reason nested in the lower 20
+        private const float PlaceBandY = 110f;
+        private const float PlaceBandH = 44f;
+
+        /// <summary>The reserved height of the anchored action band, including a 6px separation from
+        /// the flow region. MaxLegs makes the flow's worst case computable, so the reservation is a
+        /// constant rather than a hope — <see cref="MarginFlowBudget"/> is what the flow must fit in.
+        /// Guarded by the PlayMode margin invariant, which states its own blind spots.</summary>
+        internal const float ActionBandReservedHeight = PlaceBandY + PlaceBandH + 6f;
+
+        /// <summary>The vertical budget available to everything above the action band, given the
+        /// margin's fixed 530px panel.</summary>
+        internal const float MarginFlowBudget = 530f - ActionBandReservedHeight;
+
         private void BuildSlip(Run run, BetslipModel slip, bool boardFrozen)
         {
             RectTransform panel = LaptopUi.MakePanel(_root, "Slip", new Vector2(1f, 1f), new Vector2(1f, 1f),
@@ -776,26 +797,40 @@ namespace SBR.Game
             y -= 40f;
 
             string blocker = slip.PlaceBlocker;
-            // The one solid wax field on the surface (PlaceAction.jsx). Enabled, its label is
-            // --wax-ink — punched-out type on wax, not the general document Ink used everywhere else.
-            LaptopUi.MakeButton(panel, "Place", "PLACE TICKET",
-                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, y), new Vector2(296f, 44f), 17,
+            // T47: the action stack STAYS ANCHORED. PLACE used to flow from the leg list, which is
+            // how it walked down into LOCK as legs were added — and an un-anchored stack means the
+            // most consequential control in the game sits at a different height because you bet
+            // more. PLACE now joins LOCK and SKIP in the bottom-anchored band, matching the kit,
+            // where all three live in one `marginTop:auto` group (margin.jsx:44-52).
+            Button placeButton = LaptopUi.MakeButton(panel, "Place", "PLACE TICKET",
+                new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(14f, PlaceBandY), new Vector2(296f, 44f), 17,
                 blocker == null ? LaptopOs.MoneyGold : LaptopOs.Surface,
                 blocker == null ? LaptopOs.WaxInk : LaptopUi.Dim(LaptopOs.Muted),
                 blocker == null ? () => { slip.Place(); _lockArmed = false; _armedRound = -1; _invalidate(); } : null, _fontCond,
                 blocker == null && !boardFrozen);
             if (blocker != null)
-                // Same overlap class as LockReason: the Place button spans y..y-44 and this label
-                // was at y-19, i.e. inside it. Built after the button it drew over the button's own
-                // centred "PLACE TICKET", so the two strings collided on one line. Sits below now.
-                LaptopUi.MakeText(panel, "PlaceReason", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, y - 48f), new Vector2(296f, 20f), 13, TextAnchor.UpperLeft, LaptopOs.MoneyBad, blocker.ToUpperInvariant(), _font);
+            {
+                // Nested inside the control for the same reason as LockReason (T47): a blocked
+                // action states its cause on the control it blocks, and a reason with no position
+                // of its own cannot drift onto anything above it. Same split as LOCK — label in the
+                // upper band, reason in the lower — so the two blocked actions read identically.
+                var placeRect = (RectTransform)placeButton.transform;
+                var placeLabelRect = (RectTransform)placeRect.Find("Label");
+                placeLabelRect.anchorMin = placeLabelRect.anchorMax = new Vector2(.5f, 1f);
+                placeLabelRect.pivot = new Vector2(.5f, 1f);
+                placeLabelRect.sizeDelta = new Vector2(296f, 26f);
+                placeLabelRect.anchoredPosition = Vector2.zero;
+                LaptopUi.MakeText(placeRect, "PlaceReason", new Vector2(.5f, 0f), new Vector2(.5f, 0f),
+                    new Vector2(0f, 1f), new Vector2(288f, 17f), 13, TextAnchor.MiddleCenter,
+                    LaptopOs.MoneyBad, blocker.ToUpperInvariant(), _font).horizontalOverflow = HorizontalWrapMode.Overflow;
+            }
 
             bool hasWorkingMarks = slip.Picks.Count > 0;
             string lockLabel = boardFrozen ? "THE ROUND IS LOCKED" : "LOCK IT IN";
             string lockReason = hasWorkingMarks ? "PLACE OR CLEAR THIS WORKING SLIP" : run.Tickets.Count == 0 ? "PLACE AT LEAST ONE TICKET" : string.Empty;
             bool canLock = !boardFrozen && lockReason.Length == 0;
-            LaptopUi.MakeButton(panel, "Lock", lockLabel, new Vector2(0f, 0f), new Vector2(0f, 0f),
-                new Vector2(14f, 52f), new Vector2(296f, 52f), 16,
+            Button lockButton = LaptopUi.MakeButton(panel, "Lock", lockLabel, new Vector2(0f, 0f), new Vector2(0f, 0f),
+                new Vector2(14f, LockBandY), new Vector2(296f, LockBandH), 16,
                 LaptopOs.Ink, canLock ? LaptopOs.White : LaptopOs.Muted,
                 canLock ? () =>
                 {
@@ -806,20 +841,34 @@ namespace SBR.Game
                 } : null, _fontCond, canLock);
             if (!canLock)
             {
-                // The two-stray-red-"P" defect was occlusion, not text rendering. The reason label
-                // sat at y 26..48 while the Skip button below it spans y 8..42, and Skip is built
-                // last, so it draws on top and buries all but the top ~2px of the line. The reason
-                // string is 247px wide against Skip's 230px, so exactly one glyph escaped past each
-                // edge of the button — the leading and trailing "P" of "PLACE ... SLIP". That is why
-                // four passes at fonts, wrap modes and rect heights all failed: the glyphs were
-                // always correct, they were simply behind a button. The label now sits above LOCK
-                // IT IN (y 110..130), which also reads better — the cause is a caption on the
-                // control it blocks, and the two actions stay visually separate.
-                LaptopUi.MakeText(panel, "LockReason", new Vector2(.5f, 0f), new Vector2(.5f, 0f),
-                    new Vector2(0f, 110f), new Vector2(280f, 20f), 13, TextAnchor.MiddleCenter,
+                // T47: the reason belongs INSIDE the control, per LockAction.jsx:24 — label on top,
+                // reason beneath it, both within the button's own rect.
+                //
+                // The history here matters, because the previous fix solved the wrong problem. The
+                // two-stray-red-"P" defect was occlusion: the reason sat at y 26..48 while Skip
+                // spans y 8..42, and Skip is built last, so it buried all but the top ~2px — one
+                // glyph escaping past each edge of the 230px button, the leading and trailing "P"
+                // of "PLACE … SLIP". The response was to move the reason ABOVE the Lock button
+                // (y 110..130), which cured the occlusion and created a free-floating oxide band
+                // that, at 4 legs, landed on the payout figure: the house's mark on the player's
+                // money. Nesting it inside Lock cures both — a child cannot be occluded by a
+                // sibling built later, and it can never travel, because it has no position of its
+                // own any more.
+                var lockRect = (RectTransform)lockButton.transform;
+                // Split the control's interior: label in the upper band, reason in the lower.
+                // MakeButton centres its Label across the whole rect, which would sit it on top of
+                // the reason, so the label is re-anchored rather than the button made taller —
+                // growing Lock would eat the flow region T47 requires be reserved.
+                var lockLabelRect = (RectTransform)lockRect.Find("Label");
+                lockLabelRect.anchorMin = lockLabelRect.anchorMax = new Vector2(.5f, 1f);
+                lockLabelRect.pivot = new Vector2(.5f, 1f);
+                lockLabelRect.sizeDelta = new Vector2(296f, 30f);
+                lockLabelRect.anchoredPosition = Vector2.zero;
+                LaptopUi.MakeText(lockRect, "LockReason", new Vector2(.5f, 0f), new Vector2(.5f, 0f),
+                    new Vector2(0f, 2f), new Vector2(280f, 20f), 13, TextAnchor.MiddleCenter,
                     LaptopOs.MoneyBad, lockReason, _font).horizontalOverflow = HorizontalWrapMode.Overflow;
             }
-            LaptopUi.MakeButton(panel, "Skip", _lockArmed ? "PRESS AGAIN TO SKIP" : "SKIP ROUND — PRESS TWICE", new Vector2(.5f, 0f), new Vector2(.5f, 0f), new Vector2(0f, 8f), new Vector2(230f, 34f), 13, LaptopOs.Ink, _lockArmed ? LaptopOs.MoneyBad : LaptopOs.Muted,
+            LaptopUi.MakeButton(panel, "Skip", _lockArmed ? "PRESS AGAIN TO SKIP" : "SKIP ROUND — PRESS TWICE", new Vector2(.5f, 0f), new Vector2(.5f, 0f), new Vector2(0f, SkipBandY), new Vector2(230f, SkipBandH), 13, LaptopOs.Ink, _lockArmed ? LaptopOs.MoneyBad : LaptopOs.Muted,
                 boardFrozen ? null : () =>
                 {
                     if (!_lockArmed)

@@ -527,6 +527,32 @@ namespace SBR.Tests.PlayMode
                     $"{above.Name} (bottom {above.Bottom:F1}px) overlaps {below.Name} "
                     + $"(top {below.Top:F1}px) at {maxLegs} legs — the action stack collides");
             }
+
+            // T47's reservation, checked directly rather than inferred from the absence of overlap:
+            // the flow region must fit its budget, and the anchored band must actually be anchored.
+            float flowBottom = float.MaxValue;
+            foreach (Graphic graphic in margin.GetComponentsInChildren<Graphic>(true))
+            {
+                var rect = graphic.rectTransform;
+                if (rect == margin) continue;
+                // Anything parented into an action control belongs to the band, not the flow.
+                if (rect.GetComponentInParent<Button>() != null) continue;
+                flowBottom = Mathf.Min(flowBottom, LocalBottom(rect, margin));
+            }
+            Assert.GreaterOrEqual(flowBottom, -SportsbookApp.MarginFlowBudget - epsilonPx,
+                $"the flow region overruns its reserved budget at {maxLegs} legs: lowest flow element "
+                + $"at {flowBottom:F1}px against a budget of -{SportsbookApp.MarginFlowBudget:F0}px "
+                + $"(action band reserves {SportsbookApp.ActionBandReservedHeight:F0}px)");
+
+            // T53 — every gate states what it cannot see. THIS ONE CANNOT SEE:
+            //  · rendered glyphs. It measures RectTransforms, so text bleeding outside its own rect
+            //    (MakeText falls back to Overflow rather than clipping) is invisible here.
+            //  · anything without a Graphic — empty layout containers contribute no bounds.
+            //  · horizontal collisions. It is a vertical-stack check only.
+            //  · z-order. Two elements sharing a band are caught; one correctly drawn over another
+            //    on purpose is not distinguished from one accidentally buried.
+            //  · any leg count other than MaxLegs, and any state other than a working slip with no
+            //    staged receipts — a staged receipt adds flow height this test never exercises.
         }
 
         /// <summary>A RectTransform's top/bottom edge expressed in <paramref name="basis"/>'s local
