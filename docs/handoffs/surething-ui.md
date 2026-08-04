@@ -1,7 +1,7 @@
 # SureThing UI — re-seat state
 
-**Written:** 2026-08-01, at a session hygiene clear. **HEAD:** `571675c` · **Branch:** `surething-ui`
-· 3 commits ahead of `main` · working tree clean.
+**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-03, after S46.
+**HEAD:** `4957997` · **Branch:** `surething-ui` · working tree clean.
 
 This is written for a seat with **no conversation context**. Everything below is either verifiable in
 the repo or flagged as unverified.
@@ -132,6 +132,11 @@ it was ruled, and one it lists as pending has since landed. Corrected:
 
 **S41 is blocked on the engine, not on this seat.** It needs `9e55d0d` (ticket retention) in this
 tree; that commit is not an ancestor of HEAD and no retention field exists in `engine/Domain.cs`.
+**Re-checked 2026-08-03: still not an ancestor**, though the object is now present in this worktree,
+so it is fetchable rather than missing. Note the DD inbox (`main-2/docs/design/INBOX.md`) records
+S36 as *resolved* on the strength of that landing in markets — **it has not reached this surface**,
+and the register's S36/S41 entries read as though it has. Do not take the inbox's word for it;
+`git merge-base --is-ancestor` is the check.
 Until it lands the margin's RETURNED total keeps printing the em-dash absence. **Do not "fix" that
 absence** — it is S36 as ruled and it is honest; S41 replaces it only when there is a real figure
 to print.
@@ -157,6 +162,50 @@ Also recorded, because it will bite whoever writes the overflow capture: `Assert
 assumes children fit their parent, which is **structurally false for a correct `ScrollRect`** —
 content is supposed to be taller than its viewport. No current test points it at a scrolled list.
 Do not "fix" the ScrollRect to satisfy that helper; fix or scope the helper.
+
+## 4-0.2 S46 landed, and four things it turned up
+
+**S46 is done** (`4957997`). Five spellings became one; the tray slot was already right. Suites
+**EditMode 76/76, PlayMode 43/43** — up from 75 and 42, one new gate on each.
+
+Two scoping decisions to know before S44/S45 and S47, because a later reader will otherwise read
+them as things I missed:
+
+- **`Mail (soon)` and `Bank (soon)` keep their sentence case.** S46 says icon labels take the
+  machine's voice — caps, condensed — and I applied condensed to the whole class but caps only to
+  the name. S47 rules those two labels' text *and* treatment and deletes `(soon)` outright, so
+  recasing them here would only be undone there.
+- **The wallpaper wordmark and the tagline are untouched, on purpose.** They are S44 and S45. The
+  new test deliberately does not match `SURE` + `THING.` — that is two Text objects, not one
+  string, and a test that failed on them would be claiming a ruling it does not hold.
+
+Two findings:
+
+1. **Nothing on this surface renders below 13px.** `LaptopUi.MakeText` does
+   `Mathf.Max(13, fontSize)`, and so does `MeasureWidth` — so measurement and render agree, and
+   there is no defect here. But **every authored size below 13 in this file is fiction**:
+   `NotebookChrome.ChromeText = 12` renders at 13, and the desktop icon caption's authored `11`
+   renders at 13. **The fact floor's "12px only for OS chrome" clause is unreachable on this
+   surface**, and any type-size finding read from source rather than from a frame will be wrong.
+   I left the authored numbers alone rather than "correcting" them to values that change nothing.
+2. **The verdict screen has never been ruled and breaks two standing laws.** `RenderVerdict`
+   (`LaptopOs.cs`) paints its ground `rgba(.03, .02, .06, 1)` — effectively black and blue-tinted,
+   which is the *exact* pair of violations already fixed on the desktop taskbar and recorded in the
+   comment above it — and prints `THE BOOKIE COLLECTS` in `MoneyBad`, oxide as a generic "bad"
+   tint. S46 only corrected the name on it. **This screen is not in any capture state and not in
+   the register.** Worth raising with the DD rather than fixing unruled.
+
+And one lesson, in the C18 family: **`MakeButton` names its text child `Label`, so
+`MakeDesktopIcon`'s caption was a second sibling under the same name and unreachable by lookup.**
+Both Texts drew and the frame looked right, so nothing ever failed — the first draft of the S46
+test asked the icon what it called the app and was handed `"S"`, the glyph. The caption is
+`Caption` now. A duplicate sibling name is invisible to every test that does not do a lookup.
+
+**Also corrected:** `LaptopScreen`'s `_fontCond` comment claimed Archivo Narrow was not in the repo
+and that the condensed seam resolved to the same `Font` object as `_font`. Untrue since S11 — both
+faces load with no fallback warning, and the same string measures 64px condensed against 78px
+roman (ratio 0.82) on frames 11 and 01. **C15's scoping was written against the old claim** and
+should be re-read with this in mind.
 
 ## 4a. S32 — which happened: fixed between HEADs
 
@@ -270,9 +319,8 @@ Archivo Narrow's digits are already uniform, so this is insurance rather than a 
 - ~~Scroll input~~ — **ruled S42 and built** (`f8138cc`). See §4-0.1 for what it still needs.
 - ~~Legs as one string vs sub-rows~~ — **ruled S40: the sub-rows stand**, and the reserved-and-blank
   legs cell is deleted. Built in `e1f0602`.
-- **The desktop block is the next queue**, in this order and no other: **S46** (one name, SURETHING,
-  everywhere the player sees it — `Sportsbook` and the taskbar's `SURETHING.` both go, and FORM is
-  not part of the name) → **S44 + S45** (the wallpaper stops wearing the house's brand; biro on it
+- **The desktop block is the next queue**, in this order and no other: ~~**S46**~~ (**done**,
+  `4957997` — see §4-0.2) → **S44 + S45** (the wallpaper stops wearing the house's brand; biro on it
   breaks the two-ink rule outright, and "the number never lies" is deleted rather than softened) →
   **S47** (installed vs not-installed is a two-state vocabulary; `(soon)` is deleted) → **S49**
   (**DD-authored — the desktop enters `ui_kits/surething/`; this seat does not write to `main-2`**)
@@ -349,6 +397,9 @@ only deviation I am aware of on this surface.
 
 ## 7. Also worth a look, not yet raised
 
-The REWARDS screen's masthead reads `SURETHING FORM`. It is the shared masthead, and against the kit
-1:1 that is very likely wrong copy for a non-FORM screen. Noticed during S26 verification, not yet
-audited or ruled.
+~~The REWARDS screen's masthead reads `SURETHING FORM`.~~ **Ruled and fixed** — S46 deleted FORM from
+the brand for the general reason (FORM is a screen, not part of the name), which resolves the
+REWARDS instance as a side effect. The shared masthead now reads `SURETHING` on every screen that
+carries it.
+
+Still open on this list: the verdict screen, §4-0.2 finding 2.
