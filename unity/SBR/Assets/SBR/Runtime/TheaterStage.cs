@@ -327,8 +327,11 @@ namespace SBR.Game
             BuildBox(-_w / 2f, boxW, boxH, line, lw, mirrored: false);
             BuildBox(_w / 2f, boxW, boxH, line, lw, mirrored: true);
             float goalH = _h * 0.22f;
-            MakeRect("GoalL", new Vector2(-_w / 2f + 2f, 0f), new Vector2(5f, goalH), Color.white);
-            MakeRect("GoalR", new Vector2(_w / 2f - 2f, 0f), new Vector2(5f, goalH), Color.white);
+            // T41: the goal mouths were pure Color.white at alpha 1 — two permanently
+            // full-brightness objects on a surface whose law permits ONE. They are markings, so
+            // they take the marking colour at the top of the markings band (L2), not white.
+            MakeRect("GoalL", new Vector2(-_w / 2f + 2f, 0f), new Vector2(5f, goalH), AtTier(line, TierL2));
+            MakeRect("GoalR", new Vector2(_w / 2f - 2f, 0f), new Vector2(5f, goalH), AtTier(line, TierL2));
 
             // Actors: 8 outfield per team + keepers + the ball (built last = drawn on top).
             _homeDots = new Image[PitchLayout.OutfieldPerTeam];
@@ -354,7 +357,11 @@ namespace SBR.Game
             }
             _homeKeeper = MakeDot("HomeKeeper", Vector2.zero, 26f, Color.gray);
             _awayKeeper = MakeDot("AwayKeeper", Vector2.zero, 26f, Color.gray);
-            _ball = MakeDot("Ball", Vector2.zero, 12f, Color.white);
+            // T41: the ball sits at L3. §7 permits it L4 "and only at a payoff" — that punch is the
+            // separate _ballFlash overlay the screen raises through the HDR material, so the
+            // persistent ball must NOT already be there. A non-payoff ball at 1.000 is what made
+            // the pitch outrank the cash-out band in every measured frame.
+            _ball = MakeDot("Ball", Vector2.zero, 12f, AtTier(Color.white, TierL3));
 
             // The net-ripple flash (one reusable ring; positioned at whichever goal scores).
             _flashRing = MakeImage("NetRipple", Vector2.zero, new Vector2(_h * 0.5f, _h * 0.5f), Color.white);
@@ -397,8 +404,10 @@ namespace SBR.Game
             Color awayKeeperColor = Brighten(awayColor);
             for (int i = 0; i < PitchLayout.OutfieldPerTeam; i++)
             {
-                _homeDots[i].color = homeColor;
-                _awayDots[i].color = awayColor;
+                // T41: actors are L3. §7 — "actors are single lit cells ... in team hue at L3."
+                // They were shipping at the colour's own alpha, which is 1.
+                _homeDots[i].color = AtTier(homeColor, TierL3);
+                _awayDots[i].color = AtTier(awayColor, TierL3);
                 RerollNoise(ref _homeNoise[i]);
                 RerollNoise(ref _awayNoise[i]);
                 _homeReactionLag[i] = Rand(0.8f, 1.5f);
@@ -411,8 +420,11 @@ namespace SBR.Game
                 _awayPos[i] = ToLocal(PitchLayout.FormationSlot(i, !_homeAttacksRight, 0f));
                 _homeVel[i] = _awayVel[i] = Vector2.zero;
             }
-            _homeKeeper.color = homeKeeperColor;
-            _awayKeeper.color = awayKeeperColor;
+            // Keepers are actors too — Brighten() lifts their hue for legibility against the
+            // outfield, but the tier is the same L3 ceiling. Brighten clamps CHANNELS to 1 and
+            // leaves alpha at 1, so without this it re-introduced exactly what T41 caps.
+            _homeKeeper.color = AtTier(homeKeeperColor, TierL3);
+            _awayKeeper.color = AtTier(awayKeeperColor, TierL3);
             _hkPos = ToLocal(PitchLayout.Keeper(_homeAttacksRight));
             _akPos = ToLocal(PitchLayout.Keeper(!_homeAttacksRight));
             _hkVel = _akVel = Vector2.zero;
@@ -2116,7 +2128,9 @@ namespace SBR.Game
         {
             // The VOID treatment — the ONE sanctioned cyan on the stage (design/08): the match
             // stops mattering, so the teams stop having colors.
-            var voidTint = new Color(0.42f, 0.56f, 0.62f, 1f);
+            // T41: the VOID stage tint was also at alpha 1 — a voided leg is not a payoff, so it has
+            // no claim on the top of the ladder either. Actors stay at their L3 ceiling.
+            var voidTint = AtTier(new Color(0.42f, 0.56f, 0.62f, 1f), TierL3);
             for (int i = 0; i < PitchLayout.OutfieldPerTeam; i++)
             {
                 _homeDots[i].color = voidTint;
@@ -2124,7 +2138,7 @@ namespace SBR.Game
             }
             _homeKeeper.color = voidTint;
             _awayKeeper.color = voidTint;
-            _ball.color = new Color(0.62f, 0.86f, 0.96f, 0.9f);
+            _ball.color = AtTier(new Color(0.62f, 0.86f, 0.96f, 1f), TierL3); // T41: L3, not 0.9
         }
 
         // ------------------------------------------------------------------ actor lookups
@@ -2220,6 +2234,25 @@ namespace SBR.Game
         /// <summary>Normalized pitch space → local canvas pixels (with the line inset).</summary>
         private Vector2 ToLocal(Vector2 norm)
             => new Vector2((norm.x - 0.5f) * (_w - Pad * 2f), (norm.y - 0.5f) * (_h - Pad * 2f));
+
+        /// <summary>DESIGN.md §3's brightness ladder, mirrored from
+        /// `main-2/docs/design/design-system/components/tv/tiers.js` with the source cited — a C#
+        /// const cannot import a JS module (handoff §4A).
+        ///
+        /// <para>T41 (C3 violation, blocking): measured off delivered frames, the pitch ran at
+        /// **1.000** while the actionable cash-out band — "the surface's only L4 element" — measured
+        /// 0.671. The law did not fail because the band was dim; it failed because everything else
+        /// was brighter than the one thing the player can act on. Capping the stage makes cash-out
+        /// the brightest element BY CONSTRUCTION, with no change to gold.</para></summary>
+        private const float TierL4 = 1f, TierL3 = 0.7f, TierL2 = 0.4f, TierL1 = 0.15f;
+
+        /// <summary>Returns <paramref name="c"/> at a ladder tier. Multiplies alpha so a colour that
+        /// is already partly transparent by design (pitch markings) composes rather than resets.</summary>
+        private static Color AtTier(Color c, float tier)
+        {
+            c.a *= tier;
+            return c;
+        }
 
         private static Color Brighten(Color c)
             => new Color(Mathf.Min(1f, c.r * 1.25f + 0.12f), Mathf.Min(1f, c.g * 1.25f + 0.12f),

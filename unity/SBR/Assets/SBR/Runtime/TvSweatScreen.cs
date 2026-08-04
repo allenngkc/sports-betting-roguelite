@@ -291,7 +291,12 @@ namespace SBR.Game
                  "(EditMode isolation for the palette/geometry test suites — see " +
                  "TvSweatScreenPaletteTests.cs's own doc comment).")]
         public bool theaterEnabled = true;
-        public Color pitchLineColor = new Color(0.85f, 0.92f, 0.95f, 0.50f);
+        // T41: markings sit in the L1–L2 band (§7: "the pitch is a place, not an event"). Alpha was
+        // 0.50 — above the L2 ceiling of 0.40 — which put the markings between the actor tier and
+        // the marking tier and contributed to a pitch measuring 1.000 against a 0.671 cash-out band.
+        // The HUE is a separate open item: canon's `--tv-pitch` is #3E4A3C green and this is a cold
+        // white-grey. T41 ruled the TIER; the hue is not mine to change on my own reading.
+        public Color pitchLineColor = new Color(0.85f, 0.92f, 0.95f, 0.40f);
         // Canvas black floor (unified-grade-spec.md §2 / DESIGN.md §2A): opaque canvas pixels must
         // never sit darker than the room's deepest shadow. RGB matches the room team's emissive-quad
         // lift of (0.048, 0.055, 0.068) so the pitch's near-black backdrop and the quad's off-state

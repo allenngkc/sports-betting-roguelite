@@ -540,6 +540,65 @@ namespace SBR.Tests.EditMode
             return t;
         }
 
+        /// <summary>T41 (C3 violation, blocking): nothing on the STAGE may sit above L3.
+        ///
+        /// <para>Measured off delivered frames, the pitch ran at <b>1.000</b> while the actionable
+        /// cash-out band — "the surface's only L4 element" — measured <b>0.671</b>. The one-full-
+        /// brightness law did not fail because the band was dim. It failed because everything else
+        /// was brighter than the one thing the player can act on.</para>
+        ///
+        /// <para>§7 puts markings at L1–L2 and actors at L3, and permits the ball L4 "only at a
+        /// payoff" — that punch is a separate overlay the screen raises through the HDR material, so
+        /// the persistent stage must never already be there. This asserts the ceiling at build time,
+        /// because the violation shipped for weeks while every suite was green: no test looked at
+        /// the stage's brightness, only at its geometry.</para></summary>
+        [Test]
+        public void T41_nothing_on_the_stage_sits_above_L3()
+        {
+            var go = new GameObject("T41StageCeiling");
+            try
+            {
+                go.SetActive(false);
+                var screen = go.AddComponent<TvSweatScreen>();
+                screen.theaterEnabled = true;   // the stage must exist to be measured
+                screen.referencePixelsWide = 980;
+                InvokePrivate(screen, "Awake");
+
+                var stage = screen.GetComponentInChildren<TheaterStage>(true);
+                Assert.IsNotNull(stage, "no TheaterStage was built — this test cannot pass vacuously");
+
+                // MEASURE LUMINANCE, NOT ALPHA. The first version of this guard asserted alpha and
+                // flagged PitchBg at 0.95 — a near-black background at high opacity, which is dark
+                // by any reading. Alpha is not brightness: a dark colour at full opacity is dim, and
+                // a white one at half opacity is not. The DD's table is brightest-pixel luminance,
+                // so this measures the same quantity: the brightest channel, scaled by opacity.
+                const float l3 = 0.7f, eps = 0.002f;
+                var offenders = new List<string>();
+                foreach (Graphic g in stage.GetComponentsInChildren<Graphic>(true))
+                {
+                    // The momentary payoff overlays are the sanctioned L4 path and are raised
+                    // through RequestL4's one-token invariant, not by sitting bright. They are
+                    // disabled at build; anything ENABLED and above L3 is a persistent occupant.
+                    if (!g.enabled) continue;
+                    Color c = g.color;
+                    float luminance = Mathf.Max(c.r, Mathf.Max(c.g, c.b)) * c.a;
+                    if (luminance > l3 + eps)
+                        offenders.Add($"{g.name} L={luminance:0.###}");
+                }
+
+                Assert.IsEmpty(offenders,
+                    "these stage elements are built above L3, so the pitch outranks the cash-out " +
+                    "band and §3's one-full-brightness law is broken before a frame is drawn:\n  " +
+                    string.Join("\n  ", offenders) +
+                    "\nMarkings belong at L1–L2, actors at L3. The ball reaches L4 only at a payoff, " +
+                    "and that is the separate flash overlay — not the persistent ball.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
         [Test]
         public void Nothing_in_the_sweat_surface_outgrows_the_score()
         {
