@@ -10,6 +10,93 @@ discarded.
 
 ---
 
+## 0. WINDOW RESULTS — 2026-08-03, editor released
+
+**Correction to the brief this answers: no capture sets landed. Not the lighting-comparison pair,
+not the bloom A/B. There are no paths or sizes to report, because there are no files.** Code and
+suites are green; the evidence half of the window produced nothing. Both reasons are below and
+neither is a retry-and-it-works.
+
+### Merge — done, `e2143e6`
+
+`main` → `slice/tv-sweat-refinement`. Was 51 ahead / 190 behind. Three conflicts:
+
+| file | kind | resolution |
+|---|---|---|
+| `SBR/Resources.meta` | folder-GUID collision | took main's; **verified** nothing references the dropped GUID |
+| `Runtime/Shaders.meta` | folder-GUID collision | same |
+| `PRODUCT.md` | **add/add** (no merge base) | took main's |
+
+`PRODUCT.md` is mine per §1 and I dropped my version deliberately: it was a 2026-07-24 TV-only draft
+carrying facts now false (`Engine 144/144, Unity 40/40`; "Decision A, open as of 2026-07-24" — C1
+closed it 07-31), and its own header says the source documents win. Main's is the studio-wide record
+covering three surfaces. **Recoverable at tag `pre-main-merge-2026-08-03`** if that call was wrong.
+
+### Compile — CLEAN
+
+Zero `error CS`. Not inferred from exit code 0: `SBR.Game.dll` and `SBR.Tests.EditMode.dll` rebuilt
+**22:08** against sources last edited **21:54** — newer, checked. T43/T46/T42 compile as written.
+
+### Suites
+
+| suite | result | vs baseline |
+|---|---|---|
+| engine | **160 / 160** | matches |
+| EditMode | **222 / 222**, 0 failed, 0 skipped | see note |
+| PlayMode | 70 total, **62 passed, 3 failed, 5 skipped** | 3 failures are not TV's |
+
+**The 133 target was wrong and so was my 134.** Both were pre-merge arithmetic off a 129 baseline.
+The merge brought main's SureThing EditMode suites in, so the real number is **222**. Nothing is
+missing — all five new tests passed by name: `T46_right_hand_zone_content_is_owned_and_clipped_by_its_own_zone`,
+`T42_the_only_team_hues_are_canons_two_muted_ones`, `T43_suspending_dims_the_whole_slot_on_the_same_frame_as_the_label`,
+`T43_the_gold_taunt_cannot_repaint_a_suspended_slot`, `T43_a_tweening_price_never_lights_the_field_or_takes_the_L4_token`.
+
+**No TV regression.** Every `TvSweatScreenTests` case passed, including
+`Interact_DuringSuspendedMarket_StandsAndDoesNotCashOut` — the one T43's rewrite most threatened —
+and the flake-prone `Standing_Freezes_CashOutTween_NoResumeCatchUp`. The regression string
+`kept ticking while standing` occurs **0** times in the results XML. The documented mid-tween flake
+did not fire this run.
+
+**The 3 PlayMode failures are SureThing's `SureThingVisualCaptureTests`, and they are mine to
+explain:** I ran `-nographics`, and they die in `UnityEngine.Camera:Render` /
+`Rendering.Blitter.Initialize`. Environmental, not code — and it is the rig recipe's own warning
+("Never `-nographics`. Post-processing needs a graphics device"). **SureThing's captures need a
+graphics-enabled run.** Their untracked outputs are at `artifacts/surething-ui/` and
+`unity/SBR/artifacts/`.
+
+### T48 — STILL BLOCKED, and the merge did not fix it
+
+Attempted, exit 1, `-outDir` empty. Log, verbatim:
+
+> `executeMethod method 'CaptureConformance' in class 'SBR.RoomViewCapture' could not be found.`
+
+**The rig recipe documents a harness that is not on `main`.** `CaptureConformance` and
+`DarkenScreens` are on `room-refinement` (4 matches) and absent from `main` (0). The
+`RoomViewCapture.cs` the merge delivered exposes only `CaptureEditMode()` and `CaptureAll()`.
+
+So the merge did unblock the *other* two preconditions — `tools/room_gate_check.py` and `RoomPostFx`
+in `Room.unity` are both present now — but not this one. **T48 needs the room lead's
+`RoomViewCapture.cs` on main.** That is a room-side merge, not an editor window, and not mine to
+take: `room-refinement` is another worktree's in-flight branch. The recipe's own §0 says the code
+wins where the two disagree; this is that case, and the room lead asked to be told.
+
+### T49 — not attempted, deliberately
+
+`HdrBoostL4` is `private const float = 1.8f`. It is not runtime-settable, so the A/B is: edit the
+const, warm compile, shoot a ship-paced `[Explicit]` set, edit back, compile, shoot again. Two source
+edits and two recompiles around two capture sets. That does not fit a window with SureThing queued
+behind it, and starting a set I could not finish is the precise failure §4 rule 4 was chartered
+against — a half-set is not evidence (C11/C17), it is a wasted arm.
+
+### Editor released
+
+0 Unity processes. The stale `UnityLockfile` — the documented segfault-on-`-quit` fault, safe to
+clear at 0 processes — was cleared. `EditorBuildSettings.asset` reverted;
+`SBR.Engine.dll` restored to HEAD's bytes and **`cmp`-verified identical**, so its lingering
+`git status` line is the inert-`[attr]lfs` artifact (§4D), not a real change.
+
+---
+
 ## 1. File ownership
 
 ### Owned exclusively by this worktree
