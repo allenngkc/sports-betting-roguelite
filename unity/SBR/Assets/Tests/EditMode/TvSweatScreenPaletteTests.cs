@@ -780,6 +780,15 @@ namespace SBR.Tests.EditMode
             return n;
         }
 
+        /// <summary>True when the cash-out HDR material actually built. <c>MakeHdrMaterial</c>
+        /// returns null when <c>Shader.Find("SBR/TvSweatHdrUI")</c> misses, and the L4 release is
+        /// guarded on it — so a test that asserts on the token without checking this asserts
+        /// nothing (C18: a check states what it cannot see).</summary>
+        private static bool HasHdrMaterial(TvSweatScreen s)
+            => (Material)typeof(TvSweatScreen)
+                .GetField("_cashOutHdrMat", BindingFlags.NonPublic | BindingFlags.Instance)
+                .GetValue(s) != null;
+
         private static TvSweatScreen BuiltScreen(GameObject go)
         {
             var screen = go.AddComponent<TvSweatScreen>();
@@ -1412,6 +1421,166 @@ namespace SBR.Tests.EditMode
                     "the authored NEED statement changed across a preview round trip");
                 Assert.AreEqual(lineBefore, FindChild<Text>(s, "LegRowLine1").color,
                     "the pending row's treatment did not revert");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        // ---------------------------------------------------------------------------------------
+        // T42 — team hues are muted and confined to the pitch dots.
+        //
+        // DD 2026-08-02: "team names at luminance 0.87-0.92, full chroma; hues must be muted,
+        // brightness-secondary, confined to pitch dots." The scorebug half landed with T32.1
+        // (4293baa, "the scoreline goes cold"); this is the half that survived it — the dots.
+        //
+        // Canon mirrored as constants with its path cited, per the handoff's §4A rule: a C# test
+        // cannot import a CSS token, and inventing a "muted enough" threshold is exactly the T30
+        // mistake (an approximation is always wrong at some boundary). A colour either IS the canon
+        // value or it is not.
+        // ---------------------------------------------------------------------------------------
+
+        // main-2/docs/design/design-system/tokens/palette-tv.css:22-23
+        private const string CanonTeamAHex = "5C7BA8"; // --tv-team-a, muted blue
+        private const string CanonTeamBHex = "B2739E"; // --tv-team-b, muted pink
+
+        [Test]
+        public void T42_the_only_team_hues_are_canons_two_muted_ones()
+        {
+            var go = new GameObject("tv");
+            try
+            {
+                TvSweatScreen s = BuiltScreen(go);
+
+                Assert.AreEqual(FromHex(CanonTeamAHex), s.teamHueA,
+                    "teamHueA must be --tv-team-a (#5C7BA8) verbatim");
+                Assert.AreEqual(FromHex(CanonTeamBHex), s.teamHueB,
+                    "teamHueB must be --tv-team-b (#B2739E) verbatim");
+
+                // The five saturated pool entries the surface used to draw dots with. Two of them
+                // (orange, violet) are not in the TV palette at all. None may reappear as a TV
+                // colour field. TheaterPalette itself is deliberately NOT asserted on: the laptop
+                // (SportsbookApp.cs, another worktree) still draws from that pool, and this suite
+                // has no authority over its palette.
+                string[] retiredPool = { "3D7BFF", "E84DD0", "FF8A2B", "9B5CF6" };
+                foreach (FieldInfo f in typeof(TvSweatScreen)
+                    .GetFields(BindingFlags.Public | BindingFlags.Instance))
+                {
+                    if (f.FieldType != typeof(Color)) continue;
+                    var c = (Color)f.GetValue(s);
+                    foreach (string hex in retiredPool)
+                        Assert.AreNotEqual(FromHex(hex), c,
+                            $"TvSweatScreen.{f.Name} carries retired saturated team hue #{hex}; "
+                            + "T42 confines team hue to the two muted pitch-dot tokens");
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        // ---------------------------------------------------------------------------------------
+        // T43 — MARKET SUSPENDED is L1 unlit slate from its FIRST frame.
+        //
+        // DD 2026-08-02: "suspended renders on solid gold before dimming a frame later; dim state
+        // exists and works — transition ordering bug."
+        //
+        // These tests are deliberately shaped to catch ORDERING, which is why neither of them lets
+        // Update() run before asserting. The old build was correct one frame later, so any test that
+        // ticked a frame first would have passed against the defect and certified the lie. The
+        // instrument has to read the surface on the transition frame itself, because that is the
+        // frame the Design Director photographed.
+        // ---------------------------------------------------------------------------------------
+
+        [Test]
+        public void T43_suspending_dims_the_whole_slot_on_the_same_frame_as_the_label()
+        {
+            var go = new GameObject("tv");
+            try
+            {
+                TvSweatScreen s = BuiltScreen(go);
+                Text cashOut = FindChild<Text>(s, "CashOut");
+                Image field = FindChild<Image>(s, "CashOutField");
+                Text status = FindChild<Text>(s, "CashOutStatus");
+                Assert.IsNotNull(field, "CashOutField missing — TV-03's actionable field is the thing under test");
+                Assert.IsNotNull(status, "CashOutStatus missing — TV-04 split the status word out of the figure");
+
+                // The live, actionable slot: gold figure, lit field, HOLD E, holding the L4 token.
+                // Set by hand rather than by driving a session — the transition is what is under
+                // test, and it must clean up whatever state preceded it.
+                cashOut.enabled = true;
+                cashOut.color = s.gold;
+                cashOut.text = "CASH OUT $183";
+                field.enabled = true;
+                status.enabled = true;
+                status.text = "HOLD E";
+                // C25 — this instrument's scope, stated with it: the L4 leg of the assertion below
+                // is only meaningful when the HDR material actually built. MakeHdrMaterial returns
+                // null if Shader.Find misses, and ApplyCashOutSlotState's release is guarded on the
+                // material, so without it there is no token to release and the check would assert
+                // nothing. It is skipped explicitly rather than silently passing.
+                bool hdrBuilt = HasHdrMaterial(s);
+                if (hdrBuilt)
+                {
+                    RequestL4(s, "CashOut", false);
+                    Assert.AreEqual("CashOut", L4Holder(s), "test setup failed to seat the L4 token");
+                }
+
+                InvokePrivate(s, "ShowMarketSuspended"); // the transition, and NOT a frame more
+
+                Assert.AreEqual("MARKET SUSPENDED", cashOut.text, "the label did not change");
+                Assert.AreEqual(s.structureGrey, cashOut.color,
+                    "§8.5: suspended is L1 unlit slate — structureGrey, on the label's own frame");
+                Assert.IsFalse(field.enabled,
+                    "T43: the gold field survived the suspension. This is the defect the DD measured — "
+                    + "MARKET SUSPENDED rendered on solid gold because the field was only re-derived "
+                    + "in Update(), one frame later.");
+                Assert.IsFalse(status.enabled,
+                    "TV-12/13: MARKET SUSPENDED owns the slot exclusively — HOLD E must not sit beside "
+                    + "it promising input the accept gate refuses");
+                if (hdrBuilt)
+                    Assert.AreNotEqual("CashOut", L4Holder(s),
+                        "C3/§8.5: a suspended slot must not hold the surface's only L4 token — "
+                        + "brightness is a promise about input");
+                else
+                    Debug.Log("[T43] HDR material absent (Shader.Find missed) — the L4 leg is "
+                        + "unmeasurable in this run. The field and status legs above did run.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void T43_the_gold_taunt_cannot_repaint_a_suspended_slot()
+        {
+            var go = new GameObject("tv");
+            try
+            {
+                TvSweatScreen s = BuiltScreen(go);
+                Text cashOut = FindChild<Text>(s, "CashOut");
+                Image field = FindChild<Image>(s, "CashOutField");
+
+                // §8.7's pending-loss window renders the suspended slate while the MARKET is still
+                // open — ResolveBeat never calls SuspendMarket, so _marketSuspended stays false and
+                // this is a genuine reachable state, not a contrived one. The per-frame taunt was
+                // gated on _marketSuspended alone, so it repainted the words MARKET SUSPENDED in
+                // full-brightness gold for the entire window. Left unfixed, the slot's own animator
+                // undoes the slate every frame and the first test above would still pass.
+                InvokePrivate(s, "ShowMarketSuspended");
+                Assert.AreEqual(s.structureGrey, cashOut.color, "precondition: the slate was not applied");
+
+                InvokePrivate(s, "AnimateCashOutTaunt");
+
+                Assert.AreEqual(s.structureGrey, cashOut.color,
+                    "T43: the per-frame gold taunt repainted a suspended slot. The market is not "
+                    + "suspended in a pending-loss window, so a _marketSuspended-only guard does not "
+                    + "hold — the slot's own presentation state is what gates it.");
+                Assert.AreEqual("MARKET SUSPENDED", cashOut.text, "the taunt changed the label");
+                Assert.IsFalse(field.enabled, "the taunt re-lit the field under a suspended label");
             }
             finally
             {

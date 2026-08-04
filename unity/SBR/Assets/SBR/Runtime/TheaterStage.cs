@@ -303,6 +303,18 @@ namespace SBR.Game
             _w = size.x;
             _h = size.y;
 
+            // T46 (DD 2026-08-02): "the stage clips to its region." The stage's rect has always been
+            // exactly the Stage zone — the grid is correct — but nothing enforced that its CHILDREN
+            // stayed inside it, and one does not: NetRipple is positioned at 0.485 of the padded
+            // width and then scaled to 1.7, which carries its outer edge ~155px past the stage's own
+            // edge. On a left-side flash that lands well inside the ticket column, on top of the leg
+            // rows, because the stage is built after them.
+            //
+            // T25.1's canvas mask cannot see this: its bound is the glass, and this never leaves the
+            // glass — it leaves its ZONE. A clip rect here is structural in the way a corrected
+            // coordinate is not; it holds for effects nobody has written yet.
+            gameObject.AddComponent<RectMask2D>();
+
             _rng = new System.Random(unchecked(Environment.TickCount * 31 + s_seedSalt++));
 
             // The pitch: near-black surface (the palette law keeps money-green pure), thin

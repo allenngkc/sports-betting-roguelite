@@ -37,10 +37,14 @@ namespace SBR.Game
             if (e.Tag == TensionTag.NearMiss)
                 // T39: "a miracle brewing?!" was the hype half of this pair; the other half was
                 // already the correct voice. Both are observed now.
-                return up ? "off the bar and away." : "...cleared off the line. it's slipping away";
+                // T44: the ellipsis is the character, not three periods — the sibling line in the
+                // console twin already used it, so this file was the odd one out.
+                return up ? "off the bar and away." : "…cleared off the line. it's slipping away.";
 
             string line = Base(e.Type, up, picked, other, e.Step);
-            if (e.Tag == TensionTag.LeadChange) line += " - LEAD CHANGE";
+            // T44: em dash. TV-32 set this convention and T39's scan did not carry it here — it swept
+            // for second person and hype only, so every ASCII sentence dash in this file survived it.
+            if (e.Tag == TensionTag.LeadChange) line += " — LEAD CHANGE";
             return line;
         }
 
@@ -82,14 +86,16 @@ namespace SBR.Game
         private static readonly string[] ScoreUp =
         {
             "{picked} slot it home.",
-            "{picked} score - far post says yes.",
+            "{picked} score — far post says yes.", // T44: em dash
             "Goal for {picked} — the number ticks with it.",
         };
 
         private static readonly string[] ScoreDown =
         {
             "{other} answer right back.",
-            "{other} poke one in at the near post. Ugly.",
+            // T44: "Ugly." is the strip editorialising. The event strip observes; the register is
+            // "incisive, nocturnal, dry, orderly", and a verdict on the goal is none of those.
+            "{other} poke one in at the near post.",
             "{other} on the board; the slip flinches.",
         };
 
@@ -101,20 +107,24 @@ namespace SBR.Game
             // ("...cleared off the line. it's slipping away"): flat, third person, observed.
             "{picked} tear away and finish.",
             "{picked} break the line and score.",
-            "{picked} counter at full sprint. This is happening.",
+            // T44: "This is happening." predicts the outcome — CF's "Never imply a guaranteed win",
+            // and the same shape as the "a miracle brewing?!" T39 removed from the pair above.
+            "{picked} counter at full sprint.",
         };
 
         private static readonly string[] BigDown =
         {
-            "Disaster - {other} go the length of the pitch.",
+            // T44: "Disaster" is the superlative the ruling names, and it is the strip taking the
+            // player's side — the same fault as the gold wash, in words.
+            "{other} go the length of the pitch.",
             "{other} rip through on the break.", // T39: "Cover your eyes" instructs the viewer
-            "{other} walk it in. That one hurt.",
+            "{other} walk it in.", // T44: "That one hurt." editorialises; the fact is the whole line
         };
 
         private static readonly string[] MomUp =
         {
             "{picked} squeezing the half.",
-            "{picked} pin them deep - passes and patience.",
+            "{picked} pin them deep — passes and patience.", // T44: em dash
             "{picked} tighten the screws.",
         };
 

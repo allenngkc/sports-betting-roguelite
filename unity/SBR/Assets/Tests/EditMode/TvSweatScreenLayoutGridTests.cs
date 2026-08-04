@@ -34,6 +34,20 @@ namespace SBR.Tests.EditMode
             return null;
         }
 
+        /// <summary>The nearest <see cref="RectMask2D"/> at or above <paramref name="t"/>, walked by
+        /// hand. <c>GetComponentInParent&lt;T&gt;()</c> skips inactive objects and this harness keeps
+        /// the whole hierarchy inactive, so the built-in would report "no mask" on a correctly masked
+        /// tree.</summary>
+        private static RectMask2D NearestMaskAbove(Transform t)
+        {
+            for (Transform p = t; p != null; p = p.parent)
+            {
+                var m = p.GetComponent<RectMask2D>();
+                if (m != null) return m;
+            }
+            return null;
+        }
+
         private static TvSweatScreen BuildScreen(GameObject go, int referencePixelsWide = 980)
         {
             go.SetActive(false); // field defaults only — never let Awake/OnEnable fire on its own
@@ -634,6 +648,121 @@ namespace SBR.Tests.EditMode
                     "C8 put risk/pays in the protected set; it sits at the canon --tv-size-risk.");
                 Assert.AreEqual(CanonEvent, FindChild<Text>(screen, "Flavor").fontSize,
                     "the event strip is one line at the canon --tv-size-event.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        // ---------------------------------------------------------------------------------------
+        // T46 — the ticket column owns its width absolutely.
+        //
+        // DD 2026-08-02: "Stage overdraws ticket column ... scoreline/pitch painted over leg text
+        // (struck-through identities, BIFF RACKET TO SCORE cut mid-word). Ticket column owns its
+        // width absolutely; stage clips to its region; assert per-frame edges."
+        //
+        // WHAT THIS INSTRUMENT CANNOT DO, stated up front (C25): it cannot assert containment by
+        // reading corners. RectMask2D clips at RENDER time and does not move a Graphic's rect, so
+        // GetWorldCorners reports the same overflowing box masked or not. A corner-based
+        // "containment" test here would pass identically before and after the fix — a fifth vacuous
+        // green gate (C18 §4.2). So it asserts the STRUCTURE that makes containment true, and pairs
+        // it with a canary proving the structure is load-bearing rather than decorative.
+        // ---------------------------------------------------------------------------------------
+
+        [Test]
+        public void T46_right_hand_zone_content_is_owned_and_clipped_by_its_own_zone()
+        {
+            var go = new GameObject("ZoneOwnership");
+            try
+            {
+                go.SetActive(false);
+                var screen = go.AddComponent<TvSweatScreen>();
+                screen.theaterEnabled = true; // the stage is one of the three zones under test
+                screen.referencePixelsWide = 980;
+                InvokePrivate(screen, "Awake");
+
+                var column = FindChild<Image>(screen, "TicketColumnZone");
+                Assert.IsNotNull(column, "TicketColumnZone missing");
+                float boundary = column.rectTransform.sizeDelta.x; // the column's right edge
+
+                // Every element the ruling names, with the zone that must own AND clip it.
+                var owned = new (string element, string zone)[]
+                {
+                    ("Matchup", "ScoreBugZone"), ("Score", "ScoreBugZone"),
+                    ("Leg", "ScoreBugZone"), ("Clock", "ScoreBugZone"),
+                    ("Flavor", "EventStripZone"),
+                };
+
+                foreach ((string element, string zone) in owned)
+                {
+                    var g = FindChild<Graphic>(screen, element);
+                    Assert.IsNotNull(g, $"{element} not found");
+                    // Walked by hand, not via GetComponentInParent: the whole hierarchy is inactive
+                    // in this harness (go.SetActive(false) keeps Awake from firing on its own), and
+                    // the parameterless overload skips inactive objects — it would return null here
+                    // and the assertion would fail for a reason that has nothing to do with T46.
+                    RectMask2D mask = NearestMaskAbove(g.transform);
+                    Assert.IsNotNull(mask,
+                        $"{element} has no clipping ancestor — it can paint into the ticket column");
+                    Assert.AreEqual(zone, mask.name,
+                        $"{element}'s nearest clip rect is '{mask.name}', not its own zone '{zone}'. "
+                        + "The canvas-level glass mask (T25.1) does NOT satisfy T46: its bound is the "
+                        + "screen edge, and this overdraw never leaves the screen — it leaves its zone.");
+                    Assert.IsTrue(g.transform.IsChildOf(mask.transform),
+                        $"{element} is not inside {zone}; a mask only clips its descendants");
+                }
+
+                // The stage: the ruling's literal instruction, and the one element with a child that
+                // is measurably outside its own rect (NetRipple, up to ~155px past the edge at full
+                // scale — on a left-side flash that lands inside the ticket column).
+                var stage = screen.GetComponentInChildren<TheaterStage>(true);
+                Assert.IsNotNull(stage, "no TheaterStage was built with theaterEnabled = true");
+                Assert.IsNotNull(stage.GetComponent<RectMask2D>(),
+                    "T46: the stage does not clip to its region. Its own rect is correct, but nothing "
+                    + "keeps its children inside it.");
+
+                // Each masked zone must itself begin at or after the column's right edge — a clip
+                // rect that straddled the boundary would clip to a region that still overlaps.
+                foreach (string zone in new[] { "ScoreBugZone", "EventStripZone" })
+                {
+                    var z = FindChild<Image>(screen, zone);
+                    Assert.GreaterOrEqual(z.rectTransform.anchoredPosition.x, boundary - 0.5f,
+                        $"{zone} starts left of the ticket column's right edge ({boundary}px)");
+                }
+
+                // CANARY — proof this is not vacuous. An authored fixture at the score's own size
+                // overflows its 675px box far enough that its raw rect crosses the boundary. The
+                // rect crossing is EXPECTED and is exactly why the mask above must exist; if this
+                // ever stops crossing, the structural assertions have stopped being load-bearing and
+                // this test is passing for the wrong reason.
+                var matchup = FindChild<Text>(screen, "Matchup");
+                if (matchup.font == null)
+                {
+                    // Scope, stated (C25): with no face loaded there is nothing to measure, so the
+                    // canary cannot run. The structural assertions above did run and are unaffected.
+                    Debug.Log("[T46] no font on Matchup — canary skipped; structural checks ran.");
+                }
+                else
+                {
+                    matchup.text = "TIDEWATER LONGHAULERS 2 — 1 SALTMEN JUNCTION ATHLETIC";
+                    float box = matchup.rectTransform.sizeDelta.x;
+                    float overflow = matchup.preferredWidth - box;
+                    Assert.Greater(overflow, 0f,
+                        "the canary fixture no longer overflows its box — T46's mechanism is not "
+                        + "reproduced here, so the structural assertions above are no longer known to "
+                        + $"be load-bearing. (box {box}px, text {matchup.preferredWidth}px)");
+                    // UpperCenter + Overflow spills symmetrically, so half the overflow reaches left
+                    // of the rect. Rect left edge = zone origin + anchored x − pivot share of width.
+                    RectTransform mrt = matchup.rectTransform;
+                    float zoneX = FindChild<Image>(screen, "ScoreBugZone").rectTransform.anchoredPosition.x;
+                    float rectLeft = zoneX + mrt.anchoredPosition.x - mrt.sizeDelta.x * mrt.pivot.x;
+                    float inkLeft = rectLeft - overflow * 0.5f;
+                    Assert.Less(inkLeft, boundary,
+                        "the canary no longer reaches into the ticket column, so this test would pass "
+                        + "with every mask removed. T46's mechanism must stay reproduced here for the "
+                        + $"structural checks to mean anything. (ink left {inkLeft}px, boundary {boundary}px)");
+                }
             }
             finally
             {

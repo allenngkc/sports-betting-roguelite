@@ -269,7 +269,122 @@ Two failure modes share this test name and mean opposite things:
 Baselines before this stack: engine **160**, EditMode **194**, PlayMode **44** (+1 `[Explicit]`
 capture harness, filtered out of routine runs).
 
-## 4C. RESUME HERE — T41 landed; next is T43 (2026-08-02, batch 6 current)
+## 4C-0. RESUME HERE — T43/T46/T42/T44 written, **NOT COMPILED** (2026-08-03, canon through batch 8)
+
+**Open the next editor window with a warm compile BEFORE anything else.** Four rulings were
+implemented in one pass with no editor available; none of it has been through a compiler, let alone a
+suite. 555 insertions across five files. Treat a green compile as the first deliverable of that
+window, then engine → EditMode → PlayMode, then T49/T48.
+
+**Baselines to beat (at `1128a91`):** engine 160 · EditMode 129 · PlayMode 44. Four new EditMode
+tests were added, so EditMode should read **133** if all pass.
+
+| Item | State | Where |
+|---|---|---|
+| T43 | Written. Three instances found, not one | `TvSweatScreen.cs` `ShowMarketSuspended`/`ApplyCashOutSlotState` |
+| T46 | Written. Stage + score bug + event strip now clip to their own zones | `TvSweatScreen.cs` `ZoneRoot`, `TheaterStage.BuildInternal` |
+| T42 | Written. Scorebug half was already landed by T32.1; the dot pool was the live half | `TvSweatScreen.cs` `teamHueA`/`teamHueB` |
+| T44 | Written for the TV event strip. **The console twin is untouched and still holds every string T39 fixed** | `SweatFlavor.cs`, `TvSweatScreen.cs` |
+
+### T43 — the suspended slate was three defects, and only one was the one-frame kind
+
+The DD's "dims a frame later" is real and was the *smallest* of the three. All three came from the
+slot's four elements (figure, gold field, status word, L4 token) being derived in `Update` while its
+state changed in coroutines, which run after `Update`:
+
+1. **One frame of gold field** under `MARKET SUSPENDED` — the ruling's finding, exactly.
+2. **`HOLD E` for the whole suspension.** The old guard cleared the status only when the slot was
+   *invisible*, so a suspended-but-visible slot kept instructing the player to hold a key the accept
+   gate refuses. TV-12/13 violation ("suspended owns the slot exclusively"), and not time-boxed.
+3. **The word itself painted gold, for the whole pending-loss window.** `AnimateCashOutTaunt`
+   repaints the figure gold every frame and was gated on `_marketSuspended` alone — but §8.7's
+   pending window renders the suspended slate while the market is still *open* (`ResolveBeat` never
+   calls `SuspendMarket`). So the literal words `MARKET SUSPENDED` rendered in full-brightness gold
+   for as long as the player took to decide. **This is the likeliest thing the DD photographed.**
+
+Fixed by rule: `ShowMarketSuspended()` is the one slate and both authoring sites call it;
+`ApplyCashOutSlotState()` is the one derivation and every transition calls it as well as `Update`.
+Eight `_tCashOut.enabled = false` sites route through `HideCashOutSlot()` for the same reason.
+
+**`_cashOutSlotSuspended` is deliberately NOT wired into `CanAcceptCashOutNow`.** That predicate is
+TVS-H01's input contract. Which leads to the one thing needing a ruling:
+
+> **NEED DD/ALLEN — `E` still cashes out during the pending-loss window.** The slot says
+> `MARKET SUSPENDED`, §8.7's doc comment says the market is suspended for the duration, and the
+> engine happily accepts. Either the market really is suspended there (then `SuspendMarket()` should
+> be called on that path and `E` must be refused — a gameplay change) or it is not (then the slate is
+> the wrong copy). The presentation is now self-consistent either way; the input question is not
+> this lead's to decide.
+
+### T46 — the grid was never wrong
+
+`Stage` and `ScoreBug` start at exactly `TicketColumn`'s right edge (265px of 980). Three structural
+facts produced the overdraw, none of them a number: every zone's content was a direct child of the
+canvas so no zone owned anything; `MakeText` builds with `HorizontalWrapMode.Overflow`, so a long
+fixture centred in the score bug's 675px box spills ~200px per side and crosses into the column; and
+the right-hand zones are built *after* `BuildTicketColumn`, so they win the z-fight where they reach.
+
+`ZoneRoot()` makes each right-hand zone the parent of its own content and gives it a `RectMask2D`;
+children moved to zone-local anchors (identical pixels, offsets now dropping the zone origin).
+`TheaterStage` gets its own mask — its rect was always correct, but `NetRipple` sits at 0.485 of the
+padded width and scales to 1.7, carrying its outer edge ~155px past the stage edge and, on a
+left-side flash, into the ticket column.
+
+**T25.1's canvas mask could never have caught any of this**: its bound is the glass, and this
+overdraw never leaves the glass — it leaves its *zone*.
+
+**The edge test is structural, and the reason is worth keeping.** `RectMask2D` clips at render time
+and does not move a `Graphic`'s rect, so `GetWorldCorners` reports the same overflowing box masked or
+not. A corner-based "containment" assertion here would pass identically before and after the fix — a
+fifth vacuous green gate (C18 §4.2). The test asserts ownership + mask + zone bounds, and carries a
+canary that fails if the overflow ever stops reproducing, so it cannot go quietly vacuous.
+
+### T42 — the scorebug half had already landed; the dots had not
+
+`4293baa` ("the scoreline goes cold") landed T32.1 *after* the DD's frames were shot, so the
+name-hue finding is already fixed. What survived is the second clause: `TheaterPalette.TeamPool` is
+five **fully saturated** hues (`#3D7BFF` `#E84DD0` `#FF8A2B` `#9B5CF6` `#F0F3F6`) assigned by a hash
+of the team name — two of which are not in the TV palette at all — where
+`tokens/palette-tv.css:22-23` names exactly two muted ones and its own header says "Team hues are
+muted and confined to the pitch dots". `TvStage.prompt.md` types an actor's side as `team:"a"|"b"`.
+
+**The pool is left alone on purpose: `SportsbookApp.cs` (the laptop, another worktree) draws its
+matchup cards from it.** The TV took its own two constants instead, which is what canon's per-surface
+token files are for (C4's shape). Two dead hue sources were retired with it — an unused
+`homeRgb/awayRgb` fetch inside `UpdateScorebug` and a `TeamColor(Leg, bool)` with no callers.
+
+> **Consequence for the DD:** a club no longer keeps a colour across matches — canon has two hues and
+> they mean "backed side / other side". Identity is carried by the cold-white name. If the sides read
+> as inseparable at four metres, T42 already names the remedy and it is form, never louder colour.
+
+### T44 — T39 fixed by DIRECTORY, which is the same mistake one level up
+
+The event strip is clean now: em dashes for the four ASCII sentence dashes T39 left *in the file it
+edited*, the `…` character, `Disaster` and `Ugly.` and `That one hurt.` (superlative/editorial),
+`This is happening.` (a prediction — CF's "never imply a guaranteed win"), `THAT'S YOUR MAN` → `THE
+BACKED SCORER` (CF's impersonal address; `BACKED` is §7.7's own word), and `the board is set.` →
+`THE BOARD IS SET` (CF puts state words in tracked uppercase; every sibling on that element already
+is).
+
+**Not done, and it is the bigger half:** `game-console/EventText.cs` is `SweatFlavor.cs`'s
+byte-for-byte ancestor, is live in `SBR.slnx`, and **still contains every string T39 rewrote** —
+including both lines T44 quotes by name, `"off the bar — a miracle brewing?!"` and
+`"the crowd loses it"`, verbatim. T39 scoped itself to "owned runtime source", so `game-console/`
+was never opened. That directory is on none of §1's three lists.
+
+> **NEED ROUTING — who owns `game-console/`?** If it ships, it is a T44 violation with the ruling's
+> own quoted strings still in it. If it is a dead prototype, it should be said so once and stop
+> showing up in scans. Not touched pending that call.
+
+Also found and NOT actioned (outside the event strip, judgement calls that belong to the DD): the
+settlement consolation lines `"so close. they always are."` and `"the model remains extremely
+confident."`, and `"the book thanks you for your patronage."` — all arguably CF's sanctioned satire
+rather than drift, and all in fact-free flavour slots. `SportsbookApp.cs`'s raw-hex `<color=#…>`
+markup on team names is T15's class and already routed to SureThing.
+
+---
+
+## 4C. Superseded — T41 landed; next is T43 (2026-08-02, batch 6 current)
 
 **T41 is CLOSED (`3b5153e`) and Phase 3+ is unblocked.** The stage sits under the ladder: markings L2,
 actors/keepers/ball L3, L4 reserved to the payoff overlay. The markings' **hue** is untouched on

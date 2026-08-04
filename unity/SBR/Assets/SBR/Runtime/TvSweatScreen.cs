@@ -349,6 +349,30 @@ namespace SBR.Game
         // T9 (Phase 3B): §4 Structure/pending — dim grey at L1. §7 Scorebug: "Ticket/leg index at
         // L1, present but subordinate." Distinct from (and dimmer than) contextGrey's L2.
         public Color structureGrey = new Color(0.14f, 0.15f, 0.16f, 1f);
+        // T42 (§4 violation, DD 2026-08-02) — the pitch dots' ONLY two hues.
+        //
+        // Canon: main-2/docs/design/design-system/tokens/palette-tv.css:22-23
+        //   --tv-team-a:#5C7BA8  muted blue — pitch dots only
+        //   --tv-team-b:#B2739E  muted pink — pitch dots only
+        // and that file's own header, line 4: "Team hues are muted and confined to the pitch dots."
+        // The component spec agrees on the model: TvStage.prompt.md types an actor's side as
+        // team:"a" | "b" — two sides of THIS match, not a per-club identity.
+        //
+        // What was here: TheaterPalette.TeamPool, five fully-saturated hues (electric blue #3D7BFF,
+        // magenta #E84DD0, orange #FF8A2B, violet #9B5CF6, broadcast white #F0F3F6), assigned by a
+        // hash of the team NAME. Two of those hues are not in the TV palette at all, and the DD
+        // measured the result as "full chroma" against a palette that says muted. The pool is left
+        // untouched because SportsbookApp.cs — the laptop, another worktree's surface — draws its
+        // matchup cards from it; per C4 the money colour is already per-surface, and canon gives the
+        // TV its own token file for exactly this reason.
+        //
+        // Consequence worth stating: a club no longer keeps a colour across matches, because canon
+        // has only two and they mean "the side you backed / the other side". Identity is carried by
+        // the NAME in the scorebug, which is cold white per T32.1. If the two sides ever read as
+        // inseparable at four metres, T42 names the remedy and it is not this file's to take:
+        // "the fix is form (filled vs hollow dot), never louder colour."
+        public Color teamHueA = new Color(0x5C / 255f, 0x7B / 255f, 0xA8 / 255f, 1f);
+        public Color teamHueB = new Color(0xB2 / 255f, 0x73 / 255f, 0x9E / 255f, 1f);
         // Phase 3C: §5 scale table pins "Risk / pays: 0.40, L2, gold" — the one place gold sits at L2
         // rather than L3/L4. A dimmed `gold`, comfortably above the black floor on every channel
         // (unlike RunWonRest's 8% dim, which needed clamping) so no floor clamp is required here.
@@ -439,6 +463,17 @@ namespace SBR.Game
         // it) and false before each tween's final settle render (see AnimateCashOut/
         // StopCashOutAnimation), so RenderCashOut's animating/idle branch is never a frame stale.
         private bool _cashOutTweening;
+        // T43 (state lie, DD 2026-08-02): the slot's PRESENTATION state, distinct from
+        // _marketSuspended's MARKET state. Two sites paint "MARKET SUSPENDED" — SuspendMarket (the
+        // market really is suspended) and PendingWindowBeat (§8.7's intervention overlay, which
+        // renders the same slate while _marketSuspended is still false, because ResolveBeat never
+        // suspends). Keying the presentation off _marketSuspended alone would leave the pending
+        // window's gold field lit under the suspended word for the whole window. This flag is what
+        // ShowMarketSuspended sets and what ApplyCashOutSlotState reads, so BOTH sites get the same
+        // slate. It is deliberately NOT wired into CanAcceptCashOutNow: that predicate is TVS-H01's
+        // input contract, and changing what E accepts during a pending window is a design call for
+        // the DD, not a presentation fix. See ApplyCashOutSlotState.
+        private bool _cashOutSlotSuspended;
         private float _cashOutScale = 1f;
         private float _cashOutFlash;
         private int _cashOutRoundShown;
@@ -1352,8 +1387,14 @@ namespace SBR.Game
                 // §4: money/won is gold, not the retired saturated green — LaptopOs.MoneyGood is
                 // the laptop OS's own retired-green token and has no role on this surface.
                 _tFlavor.color = pickedScorer ? new Color(gold.r, gold.g, gold.b, 1f) : flavorColor;
+                // T44: "THAT'S YOUR MAN" addressed the reader. CF: "Copy is impersonal and
+                // transactional — it names the thing, not the reader"; second person is reserved for
+                // genuine instructions, and this is a fact about the goal. "BACKED" is the surface's
+                // own established word for it (§7.7's backed-player locator, T23), so the fact
+                // survives the rewrite intact — the strip states who scored and what he was to the
+                // ticket, which is strictly more information than the possessive carried.
                 _tFlavor.text = pickedScorer
-                    ? Surname(scorer.Name) + " STRIKES — THAT'S YOUR MAN"
+                    ? Surname(scorer.Name) + " STRIKES — THE BACKED SCORER"
                     : Surname(scorer.Name) + " FINDS THE NET";
                 _flavorScale = 1.12f;
                 // SweatActiveLegModel's ScorerRevealed gate: true only at this exact causal
@@ -1501,9 +1542,10 @@ namespace SBR.Game
             bool canR = director.Run.OwnsConsumable("refs_whistle");
             string verbs = (canM ? "[M] MULLIGAN   ·   " : "")
                 + (canR ? $"[R] SEND TO REVIEW ({Mathf.RoundToInt((float)(_session.PendingLossProbBefore * 100))}%)   ·   " : "");
-            _tCashOut.enabled = true;
-            _tCashOut.color = structureGrey; // §8.5 Pending window: "As suspended" — L1 unlit slate
-            _tCashOut.text = "MARKET SUSPENDED";
+            // T43: §8.5 Pending window: "As suspended" — L1 unlit slate. This site used to hand-set
+            // the word and its colour and nothing else, which is why the slate never reached the
+            // field, the status word or the L4 token here. One call, one slate, both sites.
+            ShowMarketSuspended();
             _tInterventionPrompt.enabled = true;
             _tInterventionPrompt.color = new Color(gold.r, gold.g, gold.b, 1f);
             _tInterventionPrompt.text = "SHOT FROZEN\n" + verbs + "[N] LET IT DIE";
@@ -1513,7 +1555,7 @@ namespace SBR.Game
                 if (_seated && canM && Keyboard.current.mKey.wasPressedThisFrame)
                 {
                     director.Run.PlayMulliganSlip(_session);
-                    _tCashOut.enabled = false;
+                    HideCashOutSlot(); // T43: the field and status leave with the figure, same frame
                     _tInterventionPrompt.enabled = false;
                     _tFlavor.color = chromeCyan; // §8 VOID — the mulligan voids the leg, not chrome
                     _tFlavor.text = "THE SLIP COMES OUT — LEG VOIDED, THE TICKET LIVES";
@@ -1526,7 +1568,7 @@ namespace SBR.Game
                 if (_seated && canR && Keyboard.current.rKey.wasPressedThisFrame)
                 {
                     director.Run.PlayRefsWhistle(_session);
-                    _tCashOut.enabled = false;
+                    HideCashOutSlot(); // T43
                     _tInterventionPrompt.enabled = false;
                     if (!_session.IsComplete)
                     {
@@ -1550,13 +1592,13 @@ namespace SBR.Game
                 if (_seated && Keyboard.current.nKey.wasPressedThisFrame)
                 {
                     _session.DeclinePendingLoss();
-                    _tCashOut.enabled = false;
+                    HideCashOutSlot(); // T43
                     _tInterventionPrompt.enabled = false;
                     yield break;
                 }
                 yield return null;
             }
-            _tCashOut.enabled = false;
+            HideCashOutSlot(); // T43
             _tInterventionPrompt.enabled = false;
         }
 
@@ -1620,7 +1662,7 @@ namespace SBR.Game
             SetAlpha(_dimOverlay, 0f);
             _tBigAmount.text = string.Empty;
             if (_tConsolation != null) _tConsolation.enabled = false;
-            _tCashOut.enabled = false;
+            HideCashOutSlot(); // T43
             _tCashOut.rectTransform.localScale = Vector3.one;
             _tAttract.enabled = true;
             _tFlavor.color = flavorColor;
@@ -1638,7 +1680,10 @@ namespace SBR.Game
             _tMatchup.text = MatchupLine(leg);
             _tLeg.text = $"LEG 1/{_ticket.Legs.Count}";
             _tClock.text = "PRE";
-            _tFlavor.text = "the board is set.";
+            // T44 casing: CF puts state words in tracked uppercase, and every sibling state line on
+            // this element is (VAR — NO GOAL, THE TOTEM BURNS, LEG n — WON). Lowercase sentence case
+            // is for the beat corpus's running text, which this is not.
+            _tFlavor.text = "THE BOARD IS SET";
             _probTarget = (float)leg.TrueProb; // data only — RevealedView, no visible bar
             // The ticket-card takeover copy clears the instant the live sweat begins.
             _tTakeoverTitle.text = string.Empty;
@@ -1692,9 +1737,11 @@ namespace SBR.Game
                 _stage.ClearBackedPlayer();
             }
 
-            (uint home, uint away) = TheaterPalette.TeamColors(leg.Matchup.Home.Name, leg.Matchup.Away.Name);
+            // T42: the pitch dots take canon's two muted hues, home = team-a, away = team-b. This is
+            // the ONE place on this surface where a team hue is legal at all (palette-tv.css:4,
+            // "confined to the pitch dots"), so it is also the only place that reads these fields.
             _stage.Show(true);
-            _stage.BeginLeg(TheaterStage.FromRgb(home), TheaterStage.FromRgb(away),
+            _stage.BeginLeg(teamHueA, teamHueB,
                 pickedIsHome: SweatFlavor.PickedHomeForPresentation(leg), openingProb: (float)leg.TrueProb);
             RevealedView.BeginLeg(legIndex, leg);
             UpdateScorebug(leg);
@@ -1713,7 +1760,9 @@ namespace SBR.Game
         private void UpdateScorebug(Leg leg)
         {
             if (_tMatchup == null) return;
-            (uint homeRgb, uint awayRgb) = TheaterPalette.TeamColors(leg.Matchup.Home.Name, leg.Matchup.Away.Name);
+            // T42/T32.1: the scorebug fetched both team RGBs here and, since the hue came off the
+            // names, used neither. A live handle to a hue in the one zone canon forbids it in is how
+            // the violation returns — retired with the rule, not left "harmless".
             bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
             int homeScore = pickedHome ? _ledger.Picked : _ledger.Opponent;
             int awayScore = pickedHome ? _ledger.Opponent : _ledger.Picked;
@@ -1812,14 +1861,9 @@ namespace SBR.Game
             return (i >= 0 ? name.Substring(i + 1) : name).ToUpperInvariant();
         }
 
-        private static Color TeamColor(Leg leg, bool pickedSide)
-        {
-            (uint home, uint away) = TheaterPalette.TeamColors(leg.Matchup.Home.Name, leg.Matchup.Away.Name);
-            bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
-            uint picked = pickedHome ? home : away;
-            uint opponent = pickedHome ? away : home;
-            return TheaterStage.FromRgb(pickedSide ? picked : opponent);
-        }
+        // T42: `TeamColor(Leg, bool)` lived here and had no callers — a ready-made saturated hue for
+        // whatever wanted one next. Deleted rather than kept: the surface's only legal team hue is
+        // teamHueA/teamHueB on the stage dots, and there is now exactly one call site for it.
 
         /// <summary>The ticket column (DESIGN.md §6/§7, PRD §8.1/§8.2/§8.4): header (ticket
         /// index), <see cref="TicketRowSlots"/> fixed leg-row slots in ticket order, and the
@@ -2018,7 +2062,7 @@ namespace SBR.Game
             if (s.Outcome == Phase.RunWon || s.Outcome == Phase.RunLost) yield break;
 
             SetAlpha(_dimOverlay, 0f);
-            _tCashOut.enabled = false;
+            HideCashOutSlot(); // T43
             _tAttract.enabled = false;
             _tLeg.text = string.Empty;
             _tClock.text = string.Empty;
@@ -2151,7 +2195,7 @@ namespace SBR.Game
             SetAlpha(_wonFlood, 0f);
             SetAlpha(_goldFlood, 0f);
             SetAlpha(_dimOverlay, 0f);
-            _tCashOut.enabled = false;
+            HideCashOutSlot(); // T43
             _tInterventionPrompt.enabled = false;
             _tBigAmount.text = string.Empty;
             _tLeg.text = string.Empty;
@@ -2253,24 +2297,55 @@ namespace SBR.Game
             StopCashOutAnimation();
             bool offerExists = _session != null && !_session.IsComplete
                 && _eventsEmitted >= 1 && _session.CashOutOffer().HasValue;
-            if (offerExists)
-            {
-                // §8.5 Suspended: "L1, unlit slate" — structureGrey, not contextGrey. NOT cyan
-                // either: cyan is reserved for VOID (§8), and a suspended market at peak tension
-                // must never read as a voided leg.
-                _tCashOut.enabled = true;
-                _tCashOut.color = structureGrey;
-                _tCashOut.text = "MARKET SUSPENDED";
-            }
-            else
-            {
-                _tCashOut.enabled = false;
-            }
+            if (offerExists) ShowMarketSuspended();
+            else HideCashOutSlot();
+        }
+
+        /// <summary>The suspended slate, whole, on ONE frame — T43's fix.
+        ///
+        /// The DD measured `MARKET SUSPENDED` rendered on solid gold, dimming "a frame later", and
+        /// ruled: "suspended is L1 unlit slate from its FIRST frame; dim lands on the same frame as
+        /// the label change." The cause was ordering, not colour. The label was set here, at the
+        /// transition, but the slot's other three elements — the gold field, the status word and the
+        /// L4 token — were derived only in <c>Update</c> (<c>AnimateCashOutTaunt</c>). Coroutines run
+        /// after <c>Update</c>, so a suspend on frame N painted the word grey and left the field gold
+        /// until frame N+1 repainted it. Exactly one frame of the surface promising input it would
+        /// refuse — the same class as TVS-H02, a derived visual state lagging its own transition.
+        ///
+        /// Fixed by RULE, not by site (the lesson `WonLegBeat` and T39 both paid for): the slate is
+        /// one method, it ends by re-deriving the whole slot, and both authoring sites call it. A
+        /// future path that suspends inherits the fix rather than re-opening the bug.
+        ///
+        /// The status word goes with it. `HOLD E` beside `MARKET SUSPENDED` is TV-12/13's named
+        /// violation — "MARKET SUSPENDED owns the cash-out slot exclusively, no actionable offer
+        /// beside it" — and it was not a one-frame lie: the old guard only cleared the status when
+        /// the slot was INVISIBLE, so a suspended-but-visible slot kept telling the player to hold a
+        /// key the accept gate would refuse, for the whole suspension.</summary>
+        private void ShowMarketSuspended()
+        {
+            // §8.5 Suspended: "L1, unlit slate" — structureGrey, not contextGrey. NOT cyan either:
+            // cyan is reserved for VOID (§8), and a suspended market at peak tension must never read
+            // as a voided leg.
+            _cashOutSlotSuspended = true;
+            _tCashOut.enabled = true;
+            _tCashOut.color = structureGrey;
+            _tCashOut.text = "MARKET SUSPENDED";
+            ApplyCashOutSlotState();
+        }
+
+        /// <summary>No offer to show. Goes through the same re-derivation so the field and status can
+        /// never outlive the figure they belong to.</summary>
+        private void HideCashOutSlot()
+        {
+            _cashOutSlotSuspended = false;
+            _tCashOut.enabled = false;
+            ApplyCashOutSlotState();
         }
 
         private void ReopenMarket()
         {
             _marketSuspended = false;
+            _cashOutSlotSuspended = false;
             RevealedView.SetMarketSuspended(false);
             _tCashOut.color = new Color(gold.r, gold.g, gold.b, 1f);
             UpdateCashOutLabel();
@@ -2283,6 +2358,11 @@ namespace SBR.Game
                 : null;
             if (offer.HasValue)
             {
+                // T43: the slate lifts on the same frame the figure returns. Clearing the
+                // presentation flag here (not only in ReopenMarket) means any path that paints a
+                // live offer also re-lights the field and restores the status word at once —
+                // there is no frame where a gold figure sits on an unlit field.
+                _cashOutSlotSuspended = false;
                 _tCashOut.enabled = true;
                 _tCashOut.color = new Color(gold.r, gold.g, gold.b, 1f); // suspend dims it; live gold restores
                 SetCashOutOffer(offer.Value);
@@ -2290,7 +2370,7 @@ namespace SBR.Game
             else
             {
                 StopCashOutAnimation();
-                _tCashOut.enabled = false;
+                HideCashOutSlot();
             }
         }
 
@@ -2379,11 +2459,11 @@ namespace SBR.Game
             // `CASH OUT $183` with `HOLD E` beneath. Where another product would draw a glyph, this
             // one prints the word.
             _tCashOut.text = $"CASH OUT ${Money(amount)}";
-            if (_tCashOutStatus != null)
-            {
-                _tCashOutStatus.enabled = true;
-                _tCashOutStatus.text = _cashOutTweening ? "UPDATING" : "HOLD E";
-            }
+            if (_tCashOutStatus != null) _tCashOutStatus.text = _cashOutTweening ? "UPDATING" : "HOLD E";
+            // T43: whether the status word SHOWS is not this method's call — a suspended slot carries
+            // none at all (TV-12/13). One authority derives visibility, at the transition and in
+            // Update alike, so the two can never disagree for a frame.
+            ApplyCashOutSlotState();
         }
 
         private void StopCashOutAnimation()
@@ -2612,7 +2692,7 @@ namespace SBR.Game
             // §8.5 Accepted: "gold, brief L4 punch, then CASHED OUT $x at L3 into the settle
             // transition."
             _tBigAmount.text = $"CASHED OUT ${Money(amount)}";
-            _tCashOut.enabled = false;
+            HideCashOutSlot(); // T43: nothing of the offer outlives the accept
             EmissionFlash(goldL4);
             tvLight?.Flash(new Color(1f, 0.82f, 0.25f), 3.4f);
             RequestL4(HdrFocus.Payout, momentary: true); // C3: a momentary punch preempts CashOut's hold
@@ -2754,47 +2834,72 @@ namespace SBR.Game
             }
         }
 
+        /// <summary>The cash-out slot's four elements — the money figure, the gold field behind it,
+        /// the status word beside it and the L4 token it may hold — are ONE state, derived here and
+        /// nowhere else.
+        ///
+        /// TV-03, render-aware rather than set at eight call sites. The slot is disabled from many
+        /// places; making the field and the status word FOLLOW the money element's own state means a
+        /// future path that hides the slot cannot leave a gold field or a stale status word behind it.
+        /// Same reasoning as §8.10's preview: recompute from truth.
+        ///
+        /// The inversion is gated on CanAcceptCashOutNow, not on visibility — DESIGN.md §8:
+        /// "brightness is a promise about input. L4 means the key will work right now." A gold field
+        /// over an offer that would be refused is the surface lying.
+        ///
+        /// T43 moved this OUT of Update. Deriving it only per-frame was the whole defect: every
+        /// transition rendered one frame of the previous state's field. It is idempotent, so calling
+        /// it from both the transitions and Update costs nothing and closes the window.</summary>
+        private void ApplyCashOutSlotState()
+        {
+            if (_tCashOut == null) return;
+            bool slotVisible = _tCashOut.enabled;
+            // Both terms are load-bearing and they are NOT redundant. CanAcceptCashOutNow reads
+            // _marketSuspended (the market's state); _cashOutSlotSuspended reads the slot's own
+            // (§8.7's pending window renders the suspended slate while the market is still open,
+            // because ResolveBeat never calls SuspendMarket). Without the second term the pending
+            // window kept a lit gold field and an L4 token under the word MARKET SUSPENDED — not for
+            // a frame, but for as long as the player took to decide.
+            bool live = slotVisible && !_cashOutSlotSuspended;
+            bool fieldLit = live && CanAcceptCashOutNow();
+            if (_cashOutField != null) _cashOutField.enabled = fieldLit;
+            // TV-12/13: suspended owns the slot exclusively. The status word is the offer speaking,
+            // so it is absent whenever the offer is not — never merely dimmed (C10).
+            if (_tCashOutStatus != null) _tCashOutStatus.enabled = live;
+            // §8.5: the slot's brightness is a promise about input — L4 only while a press would
+            // actually be accepted right now (same predicate as the accept gate itself, so this can
+            // never promise more than TryCashOut will honor). Suspended and mid-tween stay LDR.
+            // C3 rule 5: the boost is 1.8, a single value — no second, per-element scale on top of it
+            // (the old taunt-flash lerp up to HdrBoostL4 * 1.15 is retired). CashOut's request is
+            // SUSTAINED: it re-asks every frame while actionable, and yields the instant a momentary
+            // punch (a goal's score, a payoff's ball, a win/cash-out tally) takes the token instead.
+            if (_cashOutHdrMat != null)
+            {
+                if (fieldLit) RequestL4(HdrFocus.CashOut, momentary: false);
+                else ReleaseL4(HdrFocus.CashOut);
+            }
+        }
+
         private void AnimateCashOutTaunt()
         {
             if (_tCashOut == null) return;
 
-            // TV-03, render-aware rather than set at eight call sites. The slot is disabled from
-            // many places; making the field and the status word FOLLOW the money element's own
-            // state means a future path that hides the slot cannot leave a gold field or a stale
-            // status word behind it. Same reasoning as §8.10's preview: recompute from truth.
-            //
-            // The inversion is gated on CanAcceptCashOutNow, not on visibility — DESIGN.md §8:
-            // "brightness is a promise about input. L4 means the key will work right now." A gold
-            // field over an offer that would be refused is the surface lying.
-            // Named fieldLit, not `actionable`: the C3 taunt tail further down this method already
-            // has a local by that name computing the same predicate. Two locals with one name in
-            // nested scopes is a CS0136 today and a reader's trap tomorrow.
-            bool slotVisible = _tCashOut.enabled;
-            bool fieldLit = slotVisible && CanAcceptCashOutNow();
-            if (_cashOutField != null) _cashOutField.enabled = fieldLit;
-            if (_tCashOutStatus != null && !fieldLit && !slotVisible) _tCashOutStatus.enabled = false;
+            ApplyCashOutSlotState();
 
             float scaledDt = SeatedDeltaTime / Mathf.Max(0.0001f, TimeScaleOverride); // TVS-H02
             _cashOutScale = Mathf.MoveTowards(_cashOutScale, 1f, 3.2f * scaledDt);
             _cashOutFlash = Mathf.MoveTowards(_cashOutFlash, 0f, 4.5f * scaledDt);
             _tCashOut.rectTransform.localScale = Vector3.one * _cashOutScale;
-            if (_tCashOut.enabled && !_marketSuspended)
+            // T43, the third instance and the loudest: this taunt REPAINTS the money word gold every
+            // frame, and it was gated on _marketSuspended alone. §8.7's pending window renders the
+            // suspended slate while the market is still open (ResolveBeat never suspends), so this
+            // line overwrote structureGrey and drew the literal words MARKET SUSPENDED in full
+            // brightness gold — not for one frame, but for as long as the player took to decide. The
+            // gate is the slot's presentation state, which both suspend sites set.
+            if (_tCashOut.enabled && !_marketSuspended && !_cashOutSlotSuspended)
             {
                 Color brightGold = Color.Lerp(gold, Color.white, 0.28f);
                 _tCashOut.color = Color.Lerp(gold, brightGold, _cashOutFlash);
-            }
-            // §8.5: the slot's brightness is a promise about input — L4 only while a press would
-            // actually be accepted right now (same predicate as the accept gate itself, so this can
-            // never promise more than TryCashOut will honor). Suspended and mid-tween stay LDR.
-            // C3 rule 5: the boost is 1.8, a single value — no second, per-element scale on top of
-            // it (the old taunt-flash lerp up to HdrBoostL4 * 1.15 is retired). CashOut's request is
-            // SUSTAINED: it re-asks every frame while actionable, and yields the instant a momentary
-            // punch (a goal's score, a payoff's ball, a win/cash-out tally) takes the token instead.
-            if (_cashOutHdrMat != null)
-            {
-                bool actionable = _tCashOut.enabled && CanAcceptCashOutNow();
-                if (actionable) RequestL4(HdrFocus.CashOut, momentary: false);
-                else ReleaseL4(HdrFocus.CashOut);
             }
         }
 
@@ -3144,20 +3249,24 @@ namespace SBR.Game
 
         private void BuildScoreBug(Transform root, LayoutGrid grid)
         {
-            MakePanel(root, "ScoreBugZone", new Vector2(0f, 1f), new Vector2(0f, 1f),
+            Image zone = MakePanel(root, "ScoreBugZone", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 AnchorTopLeft(grid.ScoreBug), new Vector2(grid.ScoreBug.width, grid.ScoreBug.height), screenBg);
-
-            Rect sb = grid.ScoreBug;
+            Transform sbRoot = ZoneRoot(zone); // T46 — see ZoneRoot
+            // Zone-LOCAL geometry. The children now anchor to the zone's own top-left instead of the
+            // canvas's, so every offset drops grid.ScoreBug's origin: identical pixels on screen,
+            // expressed against the thing that owns them. §6's fixed grid is untouched — this rect
+            // is still derived once, from the grid, never from content.
+            Rect sb = new Rect(0f, 0f, grid.ScoreBug.width, grid.ScoreBug.height);
             // §7 Scorebug: "Ticket/leg index at L1, present but subordinate."
-            _tLeg = MakeText(root, "Leg", new Vector2(0f, 1f), new Vector2(0f, 1f),
+            _tLeg = MakeText(sbRoot, "Leg", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 AnchorTopLeft(sb, 10f, 8f), new Vector2(140f, Mathf.Ceil(TypeEyebrow * LineBox)),
                 TypeEyebrow, TextAnchor.UpperLeft, structureGrey);
             // §7: "Clock remains fixed at the right edge."
-            _tClock = MakeText(root, "Clock", new Vector2(0f, 1f), new Vector2(1f, 1f),
+            _tClock = MakeText(sbRoot, "Clock", new Vector2(0f, 1f), new Vector2(1f, 1f),
                 AnchorTopRight(sb, 10f, 8f), new Vector2(140f, Mathf.Ceil(TypeClock * LineBox)),
                 TypeClock, TextAnchor.UpperRight, flavorColor);
             // §4 Fact: "Score, clock, live leg names, market lines" — cold white at L3.
-            _tMatchup = MakeText(root, "Matchup", new Vector2(0f, 1f), new Vector2(0.5f, 1f),
+            _tMatchup = MakeText(sbRoot, "Matchup", new Vector2(0f, 1f), new Vector2(0.5f, 1f),
                 AnchorTopCenter(sb, 8f), new Vector2(sb.width - 40f, sb.height - MomentumTapeHeight), TypeScore,
                 TextAnchor.UpperCenter, flavorColor, FontStyle.Bold);
 
@@ -3166,7 +3275,7 @@ namespace SBR.Game
             // overlay at the SAME rect, normally hidden (§7's duplication ban is exactly why this
             // must not also read as an always-visible second score display), shown only for the
             // instant a goal commits and boosted through the shared HDR material to L4.
-            _tScoreFlash = MakeText(root, "Score", new Vector2(0f, 1f), new Vector2(0.5f, 1f),
+            _tScoreFlash = MakeText(sbRoot, "Score", new Vector2(0f, 1f), new Vector2(0.5f, 1f),
                 AnchorTopCenter(sb, 8f), new Vector2(sb.width - 40f, sb.height - MomentumTapeHeight), TypeScore,
                 TextAnchor.UpperCenter, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Bold);
             _tScoreFlash.enabled = false;
@@ -3176,15 +3285,17 @@ namespace SBR.Game
 
         private void BuildEventStrip(Transform root, LayoutGrid grid)
         {
-            MakePanel(root, "EventStripZone", new Vector2(0f, 1f), new Vector2(0f, 1f),
+            Image zone = MakePanel(root, "EventStripZone", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 AnchorTopLeft(grid.EventStrip), new Vector2(grid.EventStrip.width, grid.EventStrip.height), screenBg);
+            Transform esRoot = ZoneRoot(zone); // T46
+            Rect es = new Rect(0f, 0f, grid.EventStrip.width, grid.EventStrip.height);
 
             // §7 Event strip: "One line, white, L2 at rest, punching to L3 at its reveal
             // callback." Reuses the "Flavor" GameObject name — required by PlayMode regression
             // coverage (TVS-H02's flavor-punch freeze test) and by every live-beat message call
             // site elsewhere in this file.
-            _tFlavor = MakeText(root, "Flavor", new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
-                AnchorCenter(grid.EventStrip), new Vector2(grid.EventStrip.width - 24f, grid.EventStrip.height - 8f),
+            _tFlavor = MakeText(esRoot, "Flavor", new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
+                AnchorCenter(es), new Vector2(es.width - 24f, es.height - 8f),
                 TypeEvent, TextAnchor.MiddleCenter, flavorColor, FontStyle.Bold);
         }
 
@@ -3319,6 +3430,40 @@ namespace SBR.Game
             rt.sizeDelta = size;
             rt.anchoredPosition = pos;
             return t;
+        }
+
+        /// <summary>T46 (layout defect, DD 2026-08-02): makes a zone panel the OWNER of its content
+        /// rather than a backdrop its content happens to sit beside, and clips it to its own region.
+        ///
+        /// The finding was the scoreline and the pitch painted over the ticket column's leg text —
+        /// "struck-through identities, BIFF RACKET TO SCORE cut mid-word". The grid was never the
+        /// problem: <c>ScoreBug</c> and <c>Stage</c> start at exactly <c>TicketColumn</c>'s right
+        /// edge. Three structural facts produced the overdraw, and none of them is a number:
+        ///
+        /// <list type="number">
+        /// <item>Every zone's content was a direct child of the canvas, so no zone owned anything.</item>
+        /// <item><see cref="MakeText"/> builds with <see cref="HorizontalWrapMode.Overflow"/>, so a
+        /// long fixture centred in the score bug's 675px box spills symmetrically — and past ~357px
+        /// of spill the left edge crosses into the column.</item>
+        /// <item>The right-hand zones are built AFTER <c>BuildTicketColumn</c>, so wherever they
+        /// reach into it they win the z-fight.</item>
+        /// </list>
+        ///
+        /// The ruling is "the ticket column owns its width absolutely; the stage clips to its
+        /// region". A clip rect is the only one of the three that is structural: it does not depend
+        /// on any string staying short, on build order, or on a future element remembering a rule.
+        /// §6 is untouched — nothing here is computed from content; overflow simply stops at the
+        /// zone edge instead of continuing into a neighbour.
+        ///
+        /// The canvas-level <see cref="RectMask2D"/> (T25.1, "the glass clips") is unaffected and
+        /// still bounds everything at the screen edge; masks nest, so the two intersect. HDR
+        /// elements clip correctly through both because <c>TvSweatHdrUI.shader</c> carries
+        /// <c>UNITY_UI_CLIP_RECT</c> — which is exactly why T25.1's fix bound the brightest layer,
+        /// and why <c>Score</c>'s L4 punch overlay can live inside this mask.</summary>
+        private static Transform ZoneRoot(Image zone)
+        {
+            zone.gameObject.AddComponent<RectMask2D>();
+            return zone.transform;
         }
 
         private static Image MakePanel(Transform parent, string name, Vector2 anchor, Vector2 pivot,
