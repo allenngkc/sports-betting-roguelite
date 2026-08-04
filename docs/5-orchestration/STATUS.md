@@ -92,6 +92,13 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-03 cycle 75 · **SureThing desktop block COMPLETE** — one name,
+  de-branded wallpaper, icon states, chrome folded; HEAD `3a85f23`, both
+  suites green. S8 re-fold evidence zipped for the drag (1.9MB). Lane holds:
+  its LEDGER close-out waits on the engine-retention commit reaching its tree
+  (markets B1 merge → main → merge main), and B1 waits on the DD's 2.6px
+  ruling — the whole chain hangs on one DD micro-ruling. Room nudged onto
+  R19 measurements; TV mid-window. Reversal: none.
 - 2026-08-03 cycle 74 · **Re-walk PASS — R22 CLOSED, all room gates certified**
   — Allen: TV clear from the couch; inset post ratified as construction. Room
   proceeds to materials. TV pinged: editor window now (merge main → compile
