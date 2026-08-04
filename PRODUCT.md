@@ -2,218 +2,187 @@
 
 <!-- impeccable:product-schema 1 -->
 
-> **Source of record.** This file is an index for design tooling, not a second authority. Every fact
-> below is drawn from `design/00-vision.md`, `design/08-art-direction.md`, `DECISIONS.md`,
-> `README.md`, `PLAYTESTS.md`, and `docs/tv-sweat-refinement/PRD.md`. Where this file and those
-> disagree, **they win** and this file is wrong and must be corrected.
->
-> Facts marked `[INFERRED]` were derived from repository evidence rather than stated by Allen, and
-> are awaiting his confirmation. Drafted 2026-07-24.
-
 ## Platform
 
 web
 
-Confirmed by Allen 2026-07-24, with an important split:
-
-- **The design workflow is web.** Tokens, components, layout iteration, and mockups are produced and
-  reviewed the way a website would be. Impeccable's `web` tooling path is correct.
-- **The artifact must not feel like web.** The TV sweat is a broadcast on a television inside a
-  room, viewed from a couch. It must not read as a webpage, a dashboard, or an app screen. Any
-  layout that could be mistaken for a website has failed, regardless of how well it scores on
-  ordinary web craft heuristics.
-
-Build environment is **Unity 6 (6000.5.3f1)**, project at `unity/SBR`, scene `Room`. Distribution
-targets a web build on itch for the prototype gate (`design/00-vision.md`) with a desktop storefront
-implied by the commercial v1 target.
+Recorded as `web` because no native-mobile design language applies. The real runtime is **Unity
+UGUI on desktop** (keyboard + mouse), rendered to a world-space canvas. Treat it as a fixed-size
+screen surface, not a browser: no responsive breakpoints, no DOM, no CSS.
 
 ## Users
 
-The player is a single-player roguelite fan, playing at a desk or on a couch, in sessions built
-around one run.
-
-Two audiences must both be served by the same run, and pillar 2 makes their priority explicit:
-
-- **The player who has never placed a bet.** Must have fun in round one picking underdogs. Betting
-  literacy is not the price of entry.
-- **The player who knows betting.** Finds +EV, arbitrage, hedging, line shopping, and getting
-  limited as the mastery vocabulary — discovered through items, never taught in a tutorial wall.
-
-The prototype gate is measured on strangers, not on Allen: strangers replay the vertical slice
-unprompted.
+Allen — solo developer and the primary playtester — plays complete 30-minute runs at a desktop
+with keyboard and mouse. He is simultaneously the designer, so playtest notes are the highest
+authority on whether a surface works. The eventual audience is roguelite players who know the
+genre's run/shop/relic vocabulary but are not necessarily sports bettors; the game must teach
+betting mechanics through the interface rather than assume fluency.
 
 ## Product Purpose
 
-A roguelite about the life of a sports gambler. The player meets escalating profit targets by
-building parlays, then rigs the game with relics, gurus, and insider tips — and survives the sweat
-as each leg resolves live.
-
-The fantasy is **engineer luck, not get lucky**. A run starts with a degenerate picking favorites
-and ends with a sharp running arbitrage across crooked books, fading shill gurus, and cashing out at
-the exact right second.
-
-Success is defined at three levels:
-
-- **Design (Phase 0 gate):** the core loop is fun on paper and survives the math in
-  `design/02-betting-math.md`. Met — Phase 1 verdict CONTINUE, 2026-07-10.
-- **Prototype (Phase 2 gate, current):** strangers on itch play a web build twice without being asked.
-- **Commercial (v1):** $15K net and 500 reviews. Balatro numbers are a lottery ticket, not the plan.
+A sports-betting roguelite. Across 8 rounds the player builds parlays from a procedurally
+generated slate, stakes against a rising bank target, and then sweats each ticket leg by leg
+while a live cash-out offer taunts them. Surviving a round opens a relic shop. Success means the
+build-then-sweat loop stays tense and re-playable across many runs.
 
 ## Positioning
 
-The direct competitor is **Parlay** (Urple, unreleased as of Jul 2026), which resolves picks flatly.
-Three things a neighboring product could not truthfully copy without rebuilding:
-
-1. **The sweat and live cash-out.** Leg-by-leg resolution with a live, causally-priced cash-out
-   offer is the signature moment, not a results screen.
-2. **The information axis.** Gurus and insiders make *information quality* a mechanic — shill tips,
-   "trust me bro" sources, and the book limiting winners.
-3. **Real betting-edge concepts as mechanics.** +EV, arbitrage, and hedging are the item design
-   space, not flavor text.
-
-The stance is satire: dark comedy about degenerate gambling culture, aimed at the industry. This is
-both the honest position and the press-friendly one.
+The satire thesis, which no neighboring product copies: **the bettor watches the app, not the
+game.** The sportsbook interface is the protagonist surface — the place where hope is
+manufactured and money dies. Supporting mechanisms that are ours: debt-as-HP (a missed target
+floats the bank and books the shortfall at 1.5×, so a bad round wounds instead of killing);
+a single sharp book with no exploitable mispricing except through relics; and locked odds —
+prices freeze at slate generation and never move, so the player's read is the only variable.
 
 ## Operating Context
 
-The game is played from inside a **first-person, walkable compact room at night** (CloverPit-scale,
-Tokyo minimalist, no kitchen). The character is invisible — presence through movement, not portrayal.
+### The world all three surfaces share
 
-All gameplay UI is **diegetic**. There is no floating HUD; seed and round info live on screen chrome:
+Confirmed by the room/TV workstream 2026-07-28; room and TV directions are **approved and final**
+(Allen, 2026-07-27, after seven concept rounds).
 
-| Surface | Role |
-|---|---|
-| **TV**, across the couch | Watch the sweat — broadcast scorebug, live win-prob, ticker. Sit on the couch under the bunk bed and the camera settles on the TV. |
-| **Laptop** on the desk | The book — build tickets, browse the shop, read run info. |
-| **Phone** | Bookie notifications, debt messages, cash-out buzz. Audible anywhere in the room. |
-| **Window** | Time-of-day and mood light, state-driven. |
-| **Mini fridge** | Flavor interaction; contents track run state. |
+A cramped bunker room at night, in a wealthy high-tech city that has no use for the occupant. The
+room is rotting; the city outside the window is neon and functioning; the screens are the only
+things that work. Dark comedy about the gambling industry — **the machines are nicer than the
+life.** Rendering register: **painterly semi-realistic** — not stylised, not photoreal.
 
-**The room is the health bar.** Four states — Baseline, Heater, Sweating, Buried — triggered by
-bank, streak, and debt. Scope guard: the Phase 2 slice ships state 1 plus a lighting/prop-decal
-layer faking states 3–4. Full four-variant art lands after the slice's gate.
+Room construction: peeling paint, exposed black conduit and pipes, riveted steel, bolted
+brackets, chipped institutional paint, two heavy bunk frames, a deep-set window onto a neon
+skyline, a battered metal desk holding the laptop and an ashtray of cigarette butts. Room
+palette is olive, khaki, drab green, rust, damp concrete; wall albedo is warm dirty plaster
+(~`0.255, 0.245, 0.210`), so **the room physically cannot return saturated cool colour.**
 
-The signature viewing posture is **the couch, from a distance, potentially with audio muted**. That
-posture, not a desktop-monitor posture, sets the legibility bar for everything on the TV.
+Three light sources that must stay distinguishable: a warm dim fluorescent strip; a cool blue
+window with **short reach** that pools locally and does not tint the room; and the screens, which
+are **quiet, with faint spill.** A blue-tinted room is the explicit failure mode.
+
+### The laptop is the occupant's own machine
+
+The single most important characterisation split, and the one most likely to be got wrong. The TV
+is a hardened industrial display **installed by an institution, not bought by the occupant** —
+steel housing, rivets, stencilled equipment code, conduit continuous with the room's pipe runs.
+
+The laptop is the opposite: **his own machine.** Personal, chosen, probably cheaper, probably
+grubbier, possibly customised. SureThing must never read as institutional hardware, or it becomes
+a second TV.
+
+**Register split:** the TV is *hot* — it is the sweat, the player cannot influence it, and its
+design makes one thing at a time unmistakable. SureThing is *calm* — it is where the player
+thinks, compares, and commits. The two screens must feel like the same world and the same hand
+doing different jobs. If they feel the same, one of them is wrong.
+
+**Do not carry over from the TV:** its coarse grid and monumental type (correct at four metres,
+crude at forty centimetres); its institutional register; brightness as the sole semantic channel;
+and its quantised, un-eased motion. A tool you operate wants responsive, continuous feedback.
+
+### Surface division
+
+The player sits in the room; the **laptop on the desk** runs a fictional operating system whose
+primary app is the SureThing sportsbook, and the **TV across the room** broadcasts the match.
+This division is a hard product law, not a layout preference:
+
+- The **laptop** owns everything the player controls — slate, markets, betslip, stake, staging,
+  locking, the relic shop, and the record of placed tickets.
+- The **TV** owns unrevealed drama — score, clock, win-probability movement, and outcome reveals.
+- The laptop's MY BETS surface may only mirror what the TV has already revealed. It must never
+  read engine state directly or run ahead of the broadcast.
+
+The laptop screen is a **1024×704** canvas mapped onto a roughly 0.32×0.22m world-space surface
+viewed in perspective, so the player reads it at an angle and at reduced effective scale. Board
+controls freeze while a round is being swept.
 
 ## Capabilities and Constraints
 
-**Architecture.** Headless C# core under `engine/`, Unity presentation layer at `unity/SBR`, console
-harness at `game-console` (`dotnet run --project game-console`). Effect hooks and data-driven
-content. Engine RNG is a controlled resource; presentation determinism is derived separately and may
-not draw from engine RNG.
-
-**Shipped and validated as of 2026-07-24.** Charm expansion is holdout-validated: 22 items (15
-passives, 7 consumables), the DEALT-HAND shop (4+3 per visit, Ask for the Manager redeals), locked
-contract modifiers (Free Bet / Double-or-Nothing, one per ticket), Bookie's Marker, and Ref's
-Whistle. All six gates pass on held-out seeds. Engine 144/144, Unity 40/40.
-
-**Betting markets currently implemented:** moneyline; total goals Over/Under; both-teams-to-score
-Yes/No; total corners Over/Under; total cards Over/Under; anytime scorer.
-
-**Terminology** that future work must use consistently: run, round, ticket, leg, parlay, the sweat,
-cash-out, bank, debt, charm, relic, guru, insider, vig, the pending window, Mulligan, Ref's Whistle,
-Bookie's Marker.
-
-**Hard constraints:**
-
-- Fictional leagues, teams, and players only — IP safety and comedy both require it.
-- Presentation may elaborate an engine beat but may never contradict it.
-- Solo developer plus AI collaboration, scheduled around school/co-op terms.
-- Effectively $0 cash budget; time is the only currency.
-- First shippable slice targeted well under a year of part-time work.
-- Expect and accept a PEGI 18 / gambling-theme rating, as Balatro did.
-
-**Explicitly undecided:**
-
-- The game's name. SBR is a codename until Phase 3 (decided 2026-07-10).
-- Character visibility — hands, reflection in the TV during static. Mood garnish, decided during the slice.
-- Whether the room grows with meta-progression. Parking-lot idea, not committed.
-- TV layout for the sweat — Decision A, open as of 2026-07-24, resolved by the visual-design track.
+- `/engine` is netstandard2.1 with zero Unity references and owns all rules; UI reads from it and
+  never re-derives odds, probability, or outcomes.
+- Six markets exist and are priced today (`engine/Domain.cs`): Moneyline, TotalGoals,
+  BothTeamsToScore, TotalCorners, TotalCards, AnytimeScorer.
+- **One selection per matchup.** Choosing a second market on the same matchup replaces the first
+  (`BetslipModel.cs`). Same-game parlays are not supported and changing this is an engine project.
+- `RevealedView` already exposes ticket identity, legs, states, stake, payout, plus score, clock,
+  and win probability. Rendering the last three on the laptop is a design choice the current
+  direction declines — the contract needs no expansion either way.
+- Round flow: build a working slip → PLACE TICKET stages it → LOCK IT IN commits the round →
+  sweat → settle → shop. Up to 3 tickets per round, $10 minimum stake, stakes uncapped to bank.
+- The current UI ships a 660px-wide board with a right-hand slip; the redesign is not bound by it.
+- **Asset budget (confirmed 2026-07-25):** custom fonts and sprites are authorized —
+  TextMeshPro font assets, sprite atlases, 9-slice borders, simple shaders.
+- **Redesign scope (confirmed 2026-07-25):** the SureThing sportsbook app *and* the laptop OS
+  chrome around it. `TvSweatScreen` is out of scope.
+- **No image generation exists in this harness.** Concept imagery must be hand-authored as code,
+  or generated by Allen from written prompts. Never promise rendered comps.
 
 ## Brand Commitments
 
-**`design/08-art-direction.md` was deprecated by Allen on 2026-07-24.** Its casino-neon-on-black
-palette, its green/red/gold color-purity rule, and its CRT-treatment prescriptions are **no longer
-binding**. They are retained as evidence of what the product is, and as an explicit *anti-reference*
-for what it should no longer look like. The TV sweat refinement is a **redesign**: a new visual world
-is invented rather than the old one polished.
+- The in-world sportsbook is named **SureThing**. The laptop runs a fictional OS that must not
+  imitate a real one closely enough to read as a clone.
+- Voice: transactional copy stays literal and unambiguous — selections, prices, stake, payout,
+  states, and disabled reasons say exactly what is true. Satire is permitted in non-critical
+  labels and flavor text. Never imply a guaranteed win.
+- No real operator marks, copy, iconography, screenshots, or characteristic color systems.
+  Borrow task-level principles only: density, hierarchy, progressive disclosure, persistence.
+- **Not binding:** the violet/purple palette from the previous design package. Allen lifted the
+  palette constraint on 2026-07-25; color is fully open. Earlier docs asserting a purple ledger
+  or reserving specific colors for money events are superseded.
 
-What survives as genuinely binding:
+Binding across all three surfaces (room, TV, laptop):
 
-- **Name:** deferred. Do not invent one.
-- **Diegesis is non-negotiable.** Every interface is a screen inside the room, seen from a couch.
-  Nothing floats in a HUD. This is a product-truth constraint, not a style choice.
+- **Diegesis is non-negotiable.** Every interface is a real screen on a real object in a real
+  room, viewed at an angle, with glass, reflection and dust. Nothing floats in a HUD.
+- **Lifted blacks.** No screen in this room shows pure `#000000`. A screen whose blacks beat every
+  shadow in the room reads as composited rather than photographed — reported as the single
+  strongest belongs/does-not-belong signal found across seven concept rounds.
+- **The unified grade** covers every surface: grain, haze, lifted blacks, bloom, chromatic
+  aberration, vignette. Spec at `docs/tv-sweat-refinement/unified-grade-spec.md` in the `tv-sweat`
+  worktree; the room lead owns the volume. SureThing renders inside this pass, not exempt from it.
+- **Fictional leagues, teams, and players only.** IP safety and the comedy both require it;
+  concept renders came back with real clubs three times, so watch for it.
 - **Voice:** dark comedy, satirical toward the gambling industry, never celebratory of it.
-- **Fictional leagues, teams, and players only.**
-- **Typography carries heavy load**, because the surface is dense with numbers read at distance.
-  *How* it does so is open.
+- **The game name is deferred.** Do not invent one.
+- **Game-wide art direction** (Allen, 2026-07-26): high-tech city, dystopian. The player is not in
+  a poor world — they are in a wealthy one that has no use for them.
 
-**Game-wide art direction, stated by Allen 2026-07-26: high-tech city, dystopian.** A rich, neon,
-functioning city outside; a rotting room inside. The player is not in a poor world — they are in a
-wealthy one that has no use for them. This reading is consistent with the satire pillar and with the
-TV thesis in `DESIGN.md` (the expensive machine glowing in a condemned space).
-
-**Open gap this exposes.** Deprecating `design/08-art-direction.md` removed the game's art authority,
-and `DESIGN.md` replaced it for the **TV sweat surface only**. The room, laptop/SureThing, and phone
-currently have no owning art document. The statement above is the seed of that replacement and needs
-a home in the design bible, decided by Allen — it governs surfaces the TV sweat worktree does not own
-and must not unilaterally define.
-
-Deliberately released, 2026-07-24 — the new visual world may reinvent all of these:
-
-- the color language, including whether green/red/gold retain money meanings at all;
-- the CRT/phosphor/scanline treatment;
-- the "casino neon on black" register;
-- the marketing money-shot composition.
-
-Reference games, recorded as calibration rather than instruction: Balatro (effect economy,
-jargon-as-mastery, one-screen scope), CloverPit (debt pressure, oppressive-comic tone, juice
-density), Raccoin / Scritchy Scratchy (juice standards, price point).
+**Colour language — SureThing owns its own (Allen, 2026-07-28).** The TV brief's §5 asserts
+"green/red retired game-wide, gold is money" as binding on all three surfaces, but the TV
+worktree's own `PRODUCT.md` lists colour language — *including whether green/red/gold retain
+money meanings at all* — as deliberately released and undecided, and states that the laptop has
+no owning art document and that the TV worktree "must not unilaterally define" one. Allen ruled
+that SureThing decides its own colour language. The TV keeps gold. Cross-surface coherence is a
+goal to pursue by choice, not an inherited constraint.
+- **Energy register (confirmed 2026-07-25):** calm while building a ticket, loud during the
+  sweat. "Calm" means composed and confident, not plain or visually empty — the build surface
+  should still be distinctive. The app is explicitly *not* the slot machine; overstimulation is
+  a failure condition.
 
 ## Evidence on Hand
 
-Real, in-repository, and usable — do not fabricate around these:
-
-- `PLAYTESTS.md` — human playtest log through #16. Playtest #9 passed 2026-07-15; the strategy
-  pillar landed, quoted as "comparing which relic works nice with another relic." Ask for the
-  Manager ratified KEEP. Theater look and broad feel approved in #10–#16. Playtest #16 parked the
-  procedural-audio revisit.
-- `sim-report-4-holdout2.md` — 7.55M-run frozen holdout validation; skilled win rate 7.0%, inside
-  Allen's 5–8% band, median round 5.
-- `DECISIONS.md` — append-only decision log with dates and reasoning.
-- `PLAN-REVIEW-LOG.md` — five adversarial review rounds to APPROVED.
-- `docs/tv-sweat-refinement/` — current TV sweat PRD, visual design, bug ledger, source audit.
-- `design/00`–`design/11` — the design bible.
-
-**Absences that must not be papered over:** there are no real customers, revenue figures, press
-quotes, wishlist counts, or store reviews. There is no runtime performance benchmark for the TV
-sweat. The `TVS-H01`–`TVS-H03` items in the bug ledger are source-confirmed *candidates*, not
-reproduced bugs, and no seed, reproduction rate, screenshot, or test result exists for them yet.
+- `PRD-prototype-v0.md` — signed-off prototype scope, relic catalog, tuning defaults.
+- `DECISIONS.md`, `OPEN-QUESTIONS.md`, `PLAYTESTS.md` — ratified rulings and playtest history.
+- `sim-report*.md`, `sim-smoke-p*.md` — Monte Carlo balance evidence.
+- `docs/6-memo/2026-07-18-dopamine-direction.md` — the result-cadence diagnosis behind the
+  loud-sweat register.
+- `docs/design/surething-ui-revamp/` — the prior purple design package. Retained as evidence of
+  product structure and information hierarchy; superseded as visual authority.
+- No real users, revenue, telemetry, or external validation exists. Do not fabricate any.
 
 ## Product Principles
 
-1. **The sweat is sacred.** Leg-by-leg resolution with a live cash-out offer is the signature
-   moment. Nothing may make resolution instant or skippable by default. Juice budget flows here first.
-2. **Truth before drama.** The presentation may elaborate an engine beat but may not contradict it.
-   One revealed source of truth; no helper infers a hidden outcome earlier than its causal reveal.
-3. **Jargon is the mastery layer, not the entry fee.** Round one must be fun without betting
-   literacy; the vocabulary is discovered through items.
-4. **Every mechanic is mathematically legible.** If a mechanic's expected value cannot be written
-   down for the Monte Carlo audit, it is not designed yet.
-5. **Satire, not glorification.** The game is about the industry, not an advertisement for it.
+1. **The number never lies.** Every price, stake, payout, and disabled reason is literal and
+   present. Satire never occupies a slot where a fact belongs.
+2. **The laptop decides, the TV reveals.** Control lives on one surface, drama on the other, and
+   neither runs ahead of the other.
+3. **Locked odds make the read the game.** Prices never move after slate generation, so the
+   interface's job is comparison and judgment, not chasing.
+4. **Cadence is the dopamine.** Small resolutions nested inside the long sweat arc are what keep
+   a run alive; the interface must make resolution legible the instant it happens.
+5. **Density earns trust.** A slate is a decision surface. Promotional rails, acquisition art,
+   and manufactured urgency are anti-features.
 
 ## Accessibility & Inclusion
 
-- **Audio independence is a product requirement, not a courtesy.** Every state and payoff must read
-  with master audio muted. No acceptance result may depend on a whistle, sting, crowd swell, or
-  spoken line. Audio may never be used to rescue visual readability.
-- **Couch-distance legibility.** The TV is read from across a room, not from a monitor. The standing
-  bar: a player can state their active requirement within three seconds of looking at the TV.
-- **Color-as-sole-channel is NOT a binding constraint.** Released by Allen 2026-07-24; the visual
-  world may use color however it wants. Note that this is a released *mandate*, not a released
-  *problem*: PRD §1 still requires a player to answer six questions from across a room, and PRD §8.5
-  still requires open/suspended/unavailable/cashed-out to be unmistakable. Whatever channels the new
-  world chooses must clear that bar on their own merits.
-- **Pausing is literal.** Standing up freezes exact presentation state and sitting resumes it, which
-  also serves players who need to interrupt a session at any moment without losing the sweat.
+The laptop is read in perspective at reduced scale, so legibility is a functional requirement,
+not a preference. Critical values — bank, matchup, selected price, leg count, stake, payout,
+primary action, and any disabled reason — must survive a 50% thumbnail check. Normal text holds
+at least 4.5:1 contrast. Status is never communicated by color alone. Cursor targets are at
+least 44×32px with no two targets closer than 8px. Avoid hairline strokes and low-opacity
+essentials, which disintegrate on the angled surface.

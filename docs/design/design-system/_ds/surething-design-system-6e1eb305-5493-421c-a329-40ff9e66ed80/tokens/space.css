@@ -1,0 +1,74 @@
+/* GEOMETRY — fixed canvases, locked bands, exact control sizes. Not responsive, not a web page.
+   SureThing preserves 34 + 38 + 68 + 530 + 34 = 704. Only interior market lists may scroll. */
+:root{
+  --st-canvas-w:1024px;
+  --st-canvas-h:704px;
+  --st-band-rail:34px;
+  --st-band-tabs:38px;
+  --st-band-mast:68px;
+  --st-band-body:530px;
+  --st-band-tray:34px;
+  --st-sheet-w:700px;    /* the house's document */
+  --st-margin-w:324px;   /* his margin */
+  --st-colhead-h:26px;
+  --st-entry-h:78px;
+  --st-col-no:30px;
+  --st-col-price:112px;
+  --st-col-more:78px;
+  --st-pad-x:14px;       /* sheet + margin horizontal padding */
+  --st-mast-pad-x:16px;
+  --st-rail-pad-x:11px;
+
+  /* controls — exact, from element-kit. Square-cornered unless an irregular asset gives silhouette. */
+  --st-price-w:96px;
+  --st-price-h:30px;
+  --st-ring-w:112px;
+  --st-ring-h:46px;
+  --st-ring-wide-w:176px;
+  --st-ring-wide-h:46px;
+  --st-market-cell-w:160px;   /* event-detail market offer cell */
+  --st-market-cell-h:30px;
+  --st-ring-overshoot:8px;    /* ring = cell + 16px on both axes, offset -8/-8 */
+  --st-more-w:74px;
+  --st-more-h:44px;
+  --st-tab-h:27px;
+  --st-place-h:44px;
+  --st-place-min-w:200px;
+  --st-lock-h:52px;
+  --st-lock-min-w:280px;
+  --st-skip-h:34px;
+  --st-skip-min-w:230px;
+  --st-quick-w:68px;
+  --st-quick-h:32px;
+  --st-nudge-w:88px;
+  --st-nudge-h:32px;
+  --st-rub-w:60px;
+  --st-rub-h:32px;
+  --st-tray-app-h:22px;
+  --st-press-shift:2px; /* @kind spacing */       /* PLACE moves 2px down and drops its wax-deep edge */
+
+  /* AMENDED 2026-07-30 (ASSETS.md). The shipped moneyline price control is the AWAY/HOME button
+     itself, widened so a 3-digit American price is not crowded; its ring follows the +16px rule.
+     Ring geometry is derived from the real control, never hand-eyeballed. */
+  --st-price-w-runtime:112px;
+  --st-price-h-runtime:32px;
+  --st-ring-w-runtime:128px;
+  --st-ring-h-runtime:48px;
+
+  /* legibility floors — shared by every surface */
+  --target-min-w:44px;
+  --target-min-h:32px;
+  --target-gap:8px;
+  --rule-w:1px;
+  --rule-w-strong:2px;
+  --focus-w:2px;
+  --focus-offset:1px;
+  --radius:0; /* @kind radius */   /* the form is ruled and rectangular. There are no rounded cards in this system. */
+
+  /* TV — reference canvas and the one corrected proportion */
+  --tv-canvas-w:980px;
+  --tv-canvas-h:550px;
+  --tv-ticket-col-w:28%; /* @kind spacing */   /* corrected 2026-07-25 from ~37%. Density in the column, room on the stage. */
+  --tv-gutter:14px;
+  --tv-rule-w:1px;
+}

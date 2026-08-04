@@ -9,21 +9,41 @@ namespace SBR.Game
     /// <summary>The small, app-switching shell around the SureThing sportsbook.</summary>
     public sealed class LaptopOs
     {
-        internal static readonly Color Accent = new Color(0.6078f, 0.3608f, 0.9647f, 1f); // #9B5CF6
-        internal static readonly Color Ink = new Color(0.035f, 0.028f, 0.065f, 0.98f);
-        internal static readonly Color Surface = new Color(0.075f, 0.060f, 0.125f, 0.98f);
-        internal static readonly Color SurfaceRaised = new Color(0.12f, 0.095f, 0.19f, 1f);
-        internal static readonly Color Muted = new Color(0.63f, 0.61f, 0.70f, 1f);
-        internal static readonly Color White = new Color(0.95f, 0.94f, 0.98f, 1f);
-        internal static readonly Color MoneyGood = new Color(0.25f, 0.95f, 0.45f, 1f);
-        internal static readonly Color MoneyBad = new Color(0.95f, 0.25f, 0.22f, 1f);
-        internal static readonly Color MoneyGold = new Color(0.98f, 0.78f, 0.25f, 1f);
-        internal static readonly Color SignalCyan = new Color(0.62f, 0.86f, 0.96f, 1f);
+        // SureThing Direction tokens. Keep the font seam separate: a licensed TMP asset replaces
+        // LegacyRuntime when Allen resolves the Bell Centennial / fallback decision.
+        internal static readonly Color Ink = new Color32(0x16, 0x16, 0x0F, 255);
+        internal static readonly Color Surface = new Color32(0x1C, 0x1C, 0x13, 255);
+        internal static readonly Color SurfaceRaised = new Color32(0x23, 0x23, 0x19, 255);
+        internal static readonly Color Rule = new Color32(0x3C, 0x3C, 0x2C, 255);
+        internal static readonly Color RuleSoft = new Color32(0x2C, 0x2C, 0x20, 255);
+        internal static readonly Color Muted = new Color32(0x6E, 0x6B, 0x5E, 255);
+        internal static readonly Color White = new Color32(0xD9, 0xD4, 0xC5, 255);
+        internal static readonly Color TonerSecondary = new Color32(0x9C, 0x98, 0x88, 255);
+        internal static readonly Color Accent = new Color32(0x5E, 0x86, 0xB8, 255); // biro
+        internal static readonly Color BiroDeep = new Color32(0x3F, 0x69, 0x96, 255);
+        internal static readonly Color MoneyGold = new Color32(0xD9, 0xA4, 0x41, 255); // wax
+        internal static readonly Color WaxLit = new Color32(0xF0, 0xC0, 0x66, 255);
+        internal static readonly Color WaxDeep = new Color32(0x8A, 0x66, 0x20, 255);
+        internal static readonly Color MoneyGood = new Color32(0xD9, 0xA4, 0x41, 255);
+        internal static readonly Color MoneyBad = new Color32(0xB4, 0x48, 0x3A, 255); // house stamp
+        internal static readonly Color SignalCyan = new Color32(0x9C, 0x98, 0x88, 255);
+        // Punched-out type on a solid wax field (PLACE TICKET's label). Distinct from Ink: Ink is the
+        // general document ground, WaxInk is specifically the colour type takes when it sits ON wax.
+        internal static readonly Color WaxInk = new Color32(0x1A, 0x13, 0x05, 255);
+
+        // Document-layer tokens with no Color shape (opacity/rotation/height), kept here alongside the
+        // palette so every SureThing constant traces back to one place.
+        internal const float MarkedWashAlpha = 0.07f; // --marked-wash: rgba(94,134,184,.07) == Accent at this alpha
+        internal const float WaxHighlightOpacity = 0.26f; // --wax-highlight-opacity
+        internal const float WaxHighlightRotateDeg = -0.5f; // --wax-highlight-rotate
+        internal const float WaxHighlightHeight = 6f; // --wax-highlight-h, px
+        internal const float TonerGrainOpacity = 0.05f; // --toner-grain-opacity
 
         private enum App { Desktop, SureThing, OldSlips, Verdict }
 
         private readonly RectTransform _root;
         private readonly Font _font;
+        private readonly Font _fontCond;
         private readonly LaptopScreen _host;
         private readonly int _width;
         private readonly int _height;
@@ -39,11 +59,17 @@ namespace SBR.Game
         private int _lastDisplayRevision = -1;
         private string _toast;
         private float _toastUntil;
+        // S35(b): the destination a toast was raised for — captured at ShowToast time, so a
+        // toast only ever draws on the screen that raised it and never bleeds onto one it does
+        // not own (LEDGER, MY BETS' read-only mirror, or anywhere else the player navigates to).
+        private App _toastApp;
+        private SportsbookApp.Tab _toastTab;
 
-        public LaptopOs(RectTransform root, Font font, LaptopScreen host, int width, int height)
+        public LaptopOs(RectTransform root, Font font, Font fontCond, LaptopScreen host, int width, int height)
         {
             _root = root;
             _font = font;
+            _fontCond = fontCond;
             _host = host;
             _width = width;
             _height = height;
@@ -53,7 +79,7 @@ namespace SBR.Game
             // The wallpaper Graphic lives on its OWN child: MakePanel's GameObject already
             // carries an Image, and Unity allows one Graphic per object — AddComponent on
             // the panel returns null (the room-boot NRE this comment buries).
-            var wallGo = new GameObject("Wallpaper", typeof(LaptopWallpaperGraphic));
+            var wallGo = new GameObject("Wallpaper", typeof(CanvasRenderer), typeof(LaptopWallpaperGraphic));
             wallGo.transform.SetParent(_desktop, false);
             var wallpaper = wallGo.GetComponent<LaptopWallpaperGraphic>();
             wallpaper.raycastTarget = false;
@@ -67,9 +93,24 @@ namespace SBR.Game
                 Vector2.zero, new Vector2(width, height), Ink);
             _app.gameObject.SetActive(false);
 
-            _sportsbook = new SportsbookApp(_app, _font, _host, Invalidate, SelectTab, OpenHome);
-            _oldSlips = new OldSlipsApp(_app, _font, OpenHome);
+            _sportsbook = new SportsbookApp(_app, _font, _fontCond, _host, Invalidate, SelectTab, OpenHome, OpenLedger);
+            // S31: OldSlipsApp reuses SportsbookApp.BuildTabStrip for its four-tab strip, so it
+            // needs the same per-tab navigation the strip's own buttons drive elsewhere — SelectTab
+            // is that mechanism, unchanged from what SportsbookApp above already uses.
+            _oldSlips = new OldSlipsApp(_app, _font, _fontCond, OpenHome, OpenSportsbook, SelectTab);
             BuildDesktop();
+
+            // The document's own toner grain (palette-surething.css --toner-grain-opacity), built
+            // once here and parented directly to the top-level canvas root rather than to Desktop or
+            // App. Render()/ClearChildren only ever touch _app's children, so this survives every
+            // rebuild untouched — zero per-rebuild cost — and being the last sibling under _root, it
+            // sits above whichever of Desktop/App is currently active, matching the reference kit
+            // (app.jsx z-index:9 over the whole 1024x704 sheet).
+            // Re-enabled: the shader that makes this a grain rather than a wash now exists. It was
+            // disabled while the pass used normal alpha blending, which could only add light and so
+            // lifted the ground from (24,24,16) to (52,52,48). SBR/TonerGrain blends around a 0.5
+            // midpoint instead, so the mean effect is zero and only the texture changes.
+            LaptopUi.MakeTonerGrain(_root);
         }
 
         public void Tick(Run run, BetslipModel slip)
@@ -129,6 +170,12 @@ namespace SBR.Game
             Invalidate();
         }
 
+        private void OpenLedger()
+        {
+            _activeApp = App.OldSlips;
+            Invalidate();
+        }
+
         public void ResetForRun()
         {
             _activeApp = App.Desktop;
@@ -153,7 +200,9 @@ namespace SBR.Game
                 case Phase.Shop:
                     _activeApp = App.SureThing;
                     _tab = SportsbookApp.Tab.Rewards;
-                    ShowToast("REWARDS IS OPEN — spend your comps before the next payment.");
+                    // S26: states the fact (rewards is open, when it closes), never an imperative —
+                    // "spend your comps" told the player what to do, which this surface's toasts don't.
+                    ShowToast("REWARDS OPEN UNTIL THE NEXT PAYMENT");
                     break;
                 case Phase.RunWon:
                 case Phase.RunLost:
@@ -175,11 +224,27 @@ namespace SBR.Game
             else
                 RenderVerdict(run);
 
-            if (_toast != null)
+            // S35(b): a toast belongs to the destination that raised it and never draws over a
+            // read-only mirror — the shop's toast used to persist across navigation and had been
+            // observed rendering on top of LEDGER. Gated on both the current app AND tab matching
+            // the ones recorded in ShowToast, so it is also suppressed on MY BETS (the other
+            // read-only mirror living inside App.SureThing) and reappears only if the player
+            // returns to the exact destination that raised it before it expires.
+            if (_toast != null && _activeApp == _toastApp && _tab == _toastTab)
             {
-                LaptopUi.MakeText(_app, "Toast", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                    new Vector2(0f, 62f), new Vector2(760f, 24f), 11, TextAnchor.LowerCenter,
-                    Accent, _toast, _font);
+                // S9 defect 6: this used to float 62px above the tray, which is inside the Rewards
+                // board's own content band — it rendered across the offer rows and over the LEAVE
+                // button rather than beside them (same occlusion class already fixed for
+                // SportsbookApp's LockReason). The whole work area and masthead are packed on every
+                // destination, but the rail has a genuinely empty stretch between the sticker and the
+                // clock (NotebookChrome.BuildRail, x 350-870) on every screen, toast included, so the
+                // toast sits there now — its own space, not drawn over anyone else's. White rather
+                // than Accent: a house-generated status line is not a mark HE chose (Law Two).
+                // Overflow (not the Wrap default) for the same single-line reason as TaskbarText —
+                // this must not re-flow into a second line and spill past the rail band.
+                LaptopUi.MakeText(_app, "Toast", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(360f, -5f), new Vector2(500f, 24f), 13, TextAnchor.MiddleCenter,
+                    White, _toast, _font).horizontalOverflow = HorizontalWrapMode.Overflow;
             }
         }
 
@@ -197,18 +262,28 @@ namespace SBR.Game
 
             MakeDesktopIcon("SureThing", "S", "Sportsbook", new Vector2(34f, -120f), Accent,
                 () => { _activeApp = App.SureThing; Invalidate(); });
-            MakeDesktopIcon("OldSlips", "$", "Old Slips", new Vector2(34f, -225f), SurfaceRaised,
+            MakeDesktopIcon("OldSlips", "$", "LEDGER", new Vector2(34f, -225f), SurfaceRaised,
                 () => { _activeApp = App.OldSlips; Invalidate(); });
             MakeDesktopIcon("Mail", "@", "Mail (soon)", new Vector2(34f, -330f), Muted, null);
             MakeDesktopIcon("Bank", "¤", "Bank (soon)", new Vector2(34f, -435f), Muted, null);
 
+            // Was rgba(0.025, 0.02, 0.05, 0.94): effectively black, and blue-tinted. That broke two
+            // laws at once — nothing on this screen may be pure black, and the room physically
+            // cannot return a saturated cool colour, so a cool-cast bar reads as composited into
+            // the scene rather than photographed in it. Uses the same lifted warm ground as the
+            // in-app tray now; the desktop is the same machine.
             RectTransform taskbar = LaptopUi.MakePanel(_desktop, "Taskbar", new Vector2(0f, 0f), new Vector2(0f, 0f),
-                new Vector2(0f, 0f), new Vector2(_width, 54f), new Color(0.025f, 0.02f, 0.05f, 0.94f));
+                new Vector2(0f, 0f), new Vector2(_width, 54f), SurfaceRaised);
             LaptopUi.MakeButton(taskbar, "Home", "HOME", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
                 new Vector2(18f, 0f), new Vector2(90f, 34f), 12, SurfaceRaised, White, null, _font);
-            LaptopUi.MakeText(taskbar, "TaskbarText", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            Text taskbarText = LaptopUi.MakeText(taskbar, "TaskbarText", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 0f), new Vector2(320f, 30f), 12, TextAnchor.MiddleCenter, Muted,
-                "SURETHING.   ·   old slips", _font);
+                "SURETHING.   ·   LEDGER", _font);
+            // Overflow rather than the Wrap default because this label is a single line that must
+            // not re-flow. (An earlier comment here blamed a Unity legacy-Text bug for the
+            // "renders only a couple of glyphs" defect; that diagnosis was wrong — the real cause
+            // was one control being drawn on top of another. See SportsbookApp.BuildSlip.)
+            taskbarText.horizontalOverflow = HorizontalWrapMode.Overflow;
             LaptopUi.MakeText(taskbar, "Clock", new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
                 new Vector2(-24f, 0f), new Vector2(180f, 30f), 12, TextAnchor.MiddleRight, Muted,
                 "03:17 AM   ·   12%", _font);
@@ -234,13 +309,15 @@ namespace SBR.Game
             LaptopUi.MakeText(_app, "VerdictBrand", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
                 new Vector2(0f, -54f), new Vector2(800f, 36f), 22, TextAnchor.UpperCenter, White,
                 "SureThing.", _font);
-            LaptopUi.MakeText(_app, "Verdict", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            Text verdict = LaptopUi.MakeText(_app, "Verdict", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 70f), new Vector2(900f, 60f), 30, TextAnchor.MiddleCenter,
                 won ? MoneyGold : MoneyBad,
                 won ? "THE HOUSE BLINKS FIRST" : "THE BOOKIE COLLECTS", _font);
-            LaptopUi.MakeText(_app, "Final", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            verdict.horizontalOverflow = HorizontalWrapMode.Overflow;
+            Text final = LaptopUi.MakeText(_app, "Final", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 14f), new Vector2(900f, 36f), 18, TextAnchor.MiddleCenter, White,
                 $"FINAL BANK {LaptopUi.Money(run.Bank)}   ·   SEED {run.Rng.RunSeed}", _font);
+            final.horizontalOverflow = HorizontalWrapMode.Overflow;
             LaptopUi.MakeButton(_app, "NewRun", "NEW RUN", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
                 new Vector2(0f, 58f), new Vector2(300f, 52f), 19, Accent, White,
                 () => { _host.director.StartNewRun(); Invalidate(); }, _font);
@@ -250,6 +327,11 @@ namespace SBR.Game
         {
             _toast = toast;
             _toastUntil = Time.unscaledTime + 4f;
+            // S35(b): record the destination raising this toast. Safe to read _activeApp/_tab
+            // here — every call site sets them before calling ShowToast (ApplyPhaseDefault's
+            // Phase.Shop case sets both immediately above its own ShowToast call).
+            _toastApp = _activeApp;
+            _toastTab = _tab;
         }
 
         private void Invalidate()
@@ -294,16 +376,76 @@ namespace SBR.Game
         {
             vh.Clear();
             Rect r = rectTransform.rect;
-            Color topLeft = new Color(0.075f, 0.04f, 0.16f, 1f);
-            Color topRight = new Color(0.025f, 0.025f, 0.07f, 1f);
-            Color bottomLeft = new Color(0.02f, 0.025f, 0.06f, 1f);
-            Color bottomRight = new Color(0.08f, 0.025f, 0.13f, 1f);
+            Color topLeft = LaptopOs.SurfaceRaised;
+            Color topRight = LaptopOs.Ink;
+            Color bottomLeft = LaptopOs.Ink;
+            Color bottomRight = LaptopOs.Surface;
             vh.AddVert(new Vector3(r.xMin, r.yMin), (Color32)bottomLeft, Vector2.zero);
             vh.AddVert(new Vector3(r.xMin, r.yMax), (Color32)topLeft, Vector2.up);
             vh.AddVert(new Vector3(r.xMax, r.yMax), (Color32)topRight, Vector2.one);
             vh.AddVert(new Vector3(r.xMax, r.yMin), (Color32)bottomRight, Vector2.right);
             vh.AddTriangle(0, 1, 2);
             vh.AddTriangle(2, 3, 0);
+        }
+    }
+
+    /// <summary>Code-built wash behind a marked form entry: a left-to-right fade from a flat colour
+    /// to fully transparent by 70% of the element's width, matching the reference kit's
+    /// <c>linear-gradient(90deg, var(--marked-wash), transparent 70%)</c>. Same per-vertex-gradient
+    /// technique as <see cref="LaptopWallpaperGraphic"/> — four vertices, no texture — because the
+    /// rest of the fade (70%-100%) is already fully transparent and costs nothing left undrawn.</summary>
+    internal sealed class MarkedWashGraphic : Graphic
+    {
+        protected override void OnPopulateMesh(VertexHelper vh)
+        {
+            vh.Clear();
+            Rect r = rectTransform.rect;
+            Color32 tint = color;
+            Color32 clear = new Color32(tint.r, tint.g, tint.b, 0);
+            float stopX = r.xMin + r.width * 0.7f;
+            vh.AddVert(new Vector3(r.xMin, r.yMin), tint, Vector2.zero);
+            vh.AddVert(new Vector3(r.xMin, r.yMax), tint, Vector2.up);
+            vh.AddVert(new Vector3(stopX, r.yMax), clear, Vector2.one);
+            vh.AddVert(new Vector3(stopX, r.yMin), clear, Vector2.right);
+            vh.AddTriangle(0, 1, 2);
+            vh.AddTriangle(2, 3, 0);
+        }
+    }
+
+    /// <summary>S34: the 26px ruled-paper ground margin.jsx paints behind every margin —
+    /// <c>repeating-linear-gradient(180deg, transparent 0 25px, var(--rule-soft) 25px 26px)</c> —
+    /// as untextured geometry rather than a texture asset. One shared class, the same technique as
+    /// <see cref="LaptopWallpaperGraphic"/> and <see cref="MarkedWashGraphic"/>: it emits one flat
+    /// quad per 26px line directly in <see cref="OnPopulateMesh"/> (no texture, no per-rebuild
+    /// allocation — everything here is stack arithmetic feeding VertexHelper's own buffers), so the
+    /// same GameObject/Component this stack already recreates on every rebuild of the panel it
+    /// sits on costs one extra ~20-quad (80-vertex, 40-triangle) mesh for a 530px-tall margin —
+    /// negligible next to the panel's own text and button churn, and drawn in the same batch as
+    /// every other flat-colour Graphic here (no material or shader of its own).</summary>
+    internal sealed class MarginRuledPaperGraphic : Graphic
+    {
+        private const float Period = 26f; // margin.jsx: repeating-linear-gradient period
+        private const float LineHeight = 1f; // the "25px 26px" band — the rule itself
+
+        protected override void OnPopulateMesh(VertexHelper vh)
+        {
+            vh.Clear();
+            Rect r = rectTransform.rect;
+            Color32 rule = LaptopOs.RuleSoft;
+            int vertexIndex = 0;
+            for (float depth = Period; depth - LineHeight < r.height; depth += Period)
+            {
+                float bandTop = r.yMax - (depth - LineHeight);
+                float bandBottom = r.yMax - depth;
+                if (bandBottom < r.yMin) bandBottom = r.yMin;
+                vh.AddVert(new Vector3(r.xMin, bandBottom), rule, Vector2.zero);
+                vh.AddVert(new Vector3(r.xMin, bandTop), rule, Vector2.up);
+                vh.AddVert(new Vector3(r.xMax, bandTop), rule, Vector2.one);
+                vh.AddVert(new Vector3(r.xMax, bandBottom), rule, Vector2.right);
+                vh.AddTriangle(vertexIndex, vertexIndex + 1, vertexIndex + 2);
+                vh.AddTriangle(vertexIndex + 2, vertexIndex + 3, vertexIndex);
+                vertexIndex += 4;
+            }
         }
     }
 
@@ -322,7 +464,7 @@ namespace SBR.Game
             go.transform.SetParent(parent, false);
             Text text = go.GetComponent<Text>();
             if (font != null) text.font = font;
-            text.fontSize = fontSize;
+            text.fontSize = Mathf.Max(13, fontSize);
             text.alignment = align;
             text.color = color;
             text.text = content;
@@ -334,7 +476,72 @@ namespace SBR.Game
             rt.pivot = pivot;
             rt.sizeDelta = size;
             rt.anchoredPosition = position;
+
+            // Truncate clips whole LINES, so a box shorter than one line of its own font renders
+            // NOTHING — not a clipped glyph, nothing at all. Silent and total, with every test still
+            // green because the Text object exists and holds the right string.
+            //
+            // Wiring the production faces cost three display elements exactly this way in one go:
+            // Archivo's line metrics are taller than the built-in fallback's, so boxes authored at
+            // 1.08x and 1.16x their font size stopped fitting a single line, and the masthead and
+            // the payout figure simply vanished.
+            //
+            // A box may legitimately be shorter than its content — clipping a long wrapped paragraph
+            // is a real layout choice. It is never useful for a box to be too short for its FIRST
+            // line, so that case falls back to Overflow rather than rendering emptiness. Callers keep
+            // their authored height and position; only the failure mode changes. Evaluated after
+            // sizeDelta because preferredHeight depends on the wrap width.
+            if (text.preferredHeight > size.y)
+                text.verticalOverflow = VerticalWrapMode.Overflow;
             return text;
+        }
+
+        /// <summary>Measures a string's natural (unwrapped) width in a dynamic font at a given size,
+        /// requesting the glyphs into the font's atlas first so a cold cache never reports zero.</summary>
+        public static float MeasureWidth(Font font, string text, int fontSize)
+        {
+            if (font == null || string.IsNullOrEmpty(text)) return 0f;
+            int size = Mathf.Max(13, fontSize);
+            font.RequestCharactersInTexture(text, size, FontStyle.Normal);
+            float width = 0f;
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (font.GetCharacterInfo(text[i], out CharacterInfo info, size, FontStyle.Normal))
+                    width += info.advance;
+            }
+            return width;
+        }
+
+        /// <summary>Shortens content to fit maxWidth, trailing with an ellipsis rather than ever
+        /// silently cutting mid-word. A no-op when the string already fits.</summary>
+        public static string FitText(Font font, string content, int fontSize, float maxWidth)
+        {
+            if (font == null || string.IsNullOrEmpty(content)) return content;
+            if (MeasureWidth(font, content, fontSize) <= maxWidth) return content;
+            const string ellipsis = "…";
+            float budget = maxWidth - MeasureWidth(font, ellipsis, fontSize);
+            if (budget <= 0f) return ellipsis;
+            int lo = 0, hi = content.Length;
+            while (lo < hi)
+            {
+                int mid = (lo + hi + 1) / 2;
+                if (MeasureWidth(font, content.Substring(0, mid), fontSize) <= budget) lo = mid;
+                else hi = mid - 1;
+            }
+            string trimmed = content.Substring(0, lo).TrimEnd();
+            return trimmed.Length > 0 ? trimmed + ellipsis : ellipsis;
+        }
+
+        /// <summary>Fits a variable-length label between a fixed prefix and suffix (e.g. "1. " and
+        /// the price) so the parts that always carry meaning — the index, the price — never get
+        /// truncated; only the label in between ever loses characters, and only behind an ellipsis.</summary>
+        public static string FitLabelKeepingSuffix(Font font, string prefix, string label, string suffix,
+            int fontSize, float maxWidth)
+        {
+            if (font == null) return prefix + label + suffix;
+            float reserved = MeasureWidth(font, prefix, fontSize) + MeasureWidth(font, suffix, fontSize);
+            string fitLabel = FitText(font, label, fontSize, Mathf.Max(0f, maxWidth - reserved));
+            return prefix + fitLabel + suffix;
         }
 
         public static RectTransform MakePanel(RectTransform parent, string name, Vector2 anchor, Vector2 pivot,
@@ -379,7 +586,7 @@ namespace SBR.Game
             RectTransform rt = image.rectTransform;
             rt.anchorMin = rt.anchorMax = anchor;
             rt.pivot = pivot;
-            rt.sizeDelta = size;
+            rt.sizeDelta = new Vector2(Mathf.Max(44f, size.x), Mathf.Max(32f, size.y));
             rt.anchoredPosition = position;
             Button button = go.GetComponent<Button>();
             button.targetGraphic = image;
@@ -387,12 +594,219 @@ namespace SBR.Game
             ColorBlock colors = button.colors;
             colors.highlightedColor = new Color(1.25f, 1.25f, 1.25f, 1f);
             colors.pressedColor = new Color(0.8f, 0.8f, 0.8f, 1f);
+            colors.fadeDuration = 0.12f;
             button.colors = colors;
             if (onClick != null) button.onClick.AddListener(() => onClick());
             Text text = MakeText(rt, "Label", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                Vector2.zero, size, fontSize, TextAnchor.MiddleCenter, foreground, label, font);
+                Vector2.zero, rt.sizeDelta, fontSize, TextAnchor.MiddleCenter, foreground, label, font);
             text.horizontalOverflow = HorizontalWrapMode.Overflow;
             return button;
+        }
+
+        /// <summary>Ruling S18: a wax primary action is a wax field, wax-ink type, and a 2px
+        /// wax-deep edge — never all three by hand at each call site. PLACE TICKET and LEAVE — NEXT
+        /// ROUND are the two controls on this surface that qualify (the phase-advancing or
+        /// ticket-committing action on their screen, never a mark the player chose — that stays
+        /// biro), so this is written once and both route through it.
+        ///
+        /// The edge is four 2px panels drawn INSET inside the button's own rect, added after
+        /// MakeButton has already clamped that rect to the >=44x32 hit-target floor — so the edge
+        /// spends none of that budget. The button's sizeDelta, and therefore its hit target and
+        /// layout footprint, is identical to a plain MakeButton call.
+        ///
+        /// <paramref name="interactable"/> gates the edge, not the passed-in colours: callers already
+        /// pass their own muted background/foreground for the disabled case exactly as before, and a
+        /// disabled Button additionally gets Unity's own automatic dim tint on top of whatever colour
+        /// it was given. So "disabled" here means Unity's ColorTint-dimmed look, and the edge is
+        /// skipped for it — the greyed-out state keeps its current appearance untouched, per the
+        /// ruling, even in the edge case where a caller's colours are still nominally wax but
+        /// interactable is false.</summary>
+        public static Button MakeWaxPrimary(RectTransform parent, string name, string label, Vector2 anchor,
+            Vector2 pivot, Vector2 position, Vector2 size, int fontSize, Color background, Color foreground,
+            Action onClick, Font font, bool interactable = true)
+        {
+            Button button = MakeButton(parent, name, label, anchor, pivot, position, size, fontSize,
+                background, foreground, onClick, font, interactable);
+            if (interactable)
+            {
+                RectTransform rt = button.GetComponent<RectTransform>();
+                Vector2 rectSize = rt.sizeDelta;
+                const float t = 2f;
+                MakePanel(rt, "WaxEdgeTop", new Vector2(0f, 1f), new Vector2(0f, 1f), Vector2.zero,
+                    new Vector2(rectSize.x, t), LaptopOs.WaxDeep);
+                MakePanel(rt, "WaxEdgeBottom", new Vector2(0f, 0f), new Vector2(0f, 0f), Vector2.zero,
+                    new Vector2(rectSize.x, t), LaptopOs.WaxDeep);
+                MakePanel(rt, "WaxEdgeLeft", new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(0f, t),
+                    new Vector2(t, rectSize.y - t * 2f), LaptopOs.WaxDeep);
+                MakePanel(rt, "WaxEdgeRight", new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(0f, t),
+                    new Vector2(t, rectSize.y - t * 2f), LaptopOs.WaxDeep);
+
+                // Keep the label drawn on top of the frame: the edges are added after MakeButton's
+                // "Label" child, so without this they'd be the last (topmost) siblings. Same
+                // SetAsLastSibling convention SportsbookApp.BuildSlip uses for PayoutHighlight.
+                Text labelText = button.GetComponentInChildren<Text>();
+                if (labelText != null) labelText.transform.SetAsLastSibling();
+            }
+            return button;
+        }
+
+        public static Image MakeSprite(RectTransform parent, string name, Sprite sprite, Vector2 anchor,
+            Vector2 pivot, Vector2 position, Vector2 size, Color tint)
+        {
+            var go = new GameObject(name, typeof(Image));
+            go.transform.SetParent(parent, false);
+            Image image = go.GetComponent<Image>();
+            image.sprite = sprite;
+            image.type = Image.Type.Simple;
+            image.preserveAspect = false;
+            image.color = tint;
+            image.raycastTarget = false;
+            RectTransform rt = image.rectTransform;
+            rt.anchorMin = rt.anchorMax = anchor;
+            rt.pivot = pivot;
+            rt.anchoredPosition = position;
+            rt.sizeDelta = size;
+            return image;
+        }
+
+        /// <summary>F3: the only way to draw a rule. Defaults to <see cref="LaptopOs.RuleSoft"/>
+        /// (--rule-soft) so every pre-existing call site — all horizontal, all internal-content
+        /// rules — keeps rendering exactly the pixel it always has without passing a 7th argument.
+        /// Pass <paramref name="color"/> explicitly (typically <see cref="LaptopOs.Rule"/>,
+        /// --rule, the stronger token) for a seam between document bands rather than a rule inside
+        /// one. Before this, LaptopOs.Rule had zero references anywhere in the runtime — the
+        /// strong token existed in the palette but nothing could reach it.</summary>
+        public static RectTransform MakeRule(RectTransform parent, string name, Vector2 anchor,
+            Vector2 pivot, Vector2 position, Vector2 size, Color? color = null)
+            => MakePanel(parent, name, anchor, pivot, position, size, color ?? LaptopOs.RuleSoft);
+
+        /// <summary>The marked-form-entry wash (palette-surething.css --marked-wash), stretched to
+        /// fill <paramref name="parent"/> exactly — sized this way (rather than a hand-picked rect)
+        /// so it is trivially contained within whatever row it marks. Caller is responsible for only
+        /// adding this when the row is actually selected, and for adding it before any sibling text/
+        /// buttons so it draws underneath them.</summary>
+        public static void MakeMarkedWash(RectTransform parent, string name)
+        {
+            var go = new GameObject(name, typeof(CanvasRenderer), typeof(MarkedWashGraphic));
+            go.transform.SetParent(parent, false);
+            MarkedWashGraphic wash = go.GetComponent<MarkedWashGraphic>();
+            wash.color = new Color(LaptopOs.Accent.r, LaptopOs.Accent.g, LaptopOs.Accent.b,
+                LaptopOs.MarkedWashAlpha);
+            wash.raycastTarget = false;
+            RectTransform rt = wash.rectTransform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+        }
+
+        /// <summary>S34: the ruled-paper ground (margin.jsx, MarginRuledPaperGraphic), stretched to
+        /// fill <paramref name="parent"/> exactly. Ships on the working margin and every passive
+        /// margin alike from this one call — there is no second implementation. Caller adds this
+        /// before any sibling text/buttons so it sits behind them, same convention as
+        /// <see cref="MakeMarkedWash"/>.</summary>
+        public static void MakeMarginRuledPaper(RectTransform parent, string name)
+        {
+            // typeof(CanvasRenderer) is NOT optional and NOT decoration. Graphic declares it via
+            // [RequireComponent], but that attribute is only honoured by AddComponent — the
+            // GameObject constructor's type list ignores it. A Graphic without a CanvasRenderer is
+            // never asked for geometry at all: OnPopulateMesh simply never runs, nothing renders,
+            // nothing errors, and every test stays green. All three Graphic subclasses on this
+            // surface were built this way and none of them had ever drawn.
+            var go = new GameObject(name, typeof(CanvasRenderer), typeof(MarginRuledPaperGraphic));
+            go.transform.SetParent(parent, false);
+            MarginRuledPaperGraphic graphic = go.GetComponent<MarginRuledPaperGraphic>();
+            graphic.raycastTarget = false;
+            RectTransform rt = graphic.rectTransform;
+            // Explicit size from the parent's already-resolved rect, NOT anchor-stretch.
+            //
+            // Stretching leaves the size to a layout pass, and this canvas is built imperatively:
+            // the rect read zero at build time, UGUI culls a zero-size graphic before asking it for
+            // geometry, and OnPopulateMesh was never called once — the diagnostic added to it
+            // printed nothing at all, which is what pointed here. Every panel on this surface is
+            // built with an explicit sizeDelta for the same reason; this was the one that was not.
+            //
+            // The parent is always a MakePanel-built panel with its own explicit size, so its rect
+            // is resolved by the time this runs.
+            rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
+            rt.pivot = new Vector2(0f, 1f);
+            rt.sizeDelta = parent.rect.size;
+            rt.anchoredPosition = Vector2.zero;
+
+        }
+
+        /// <summary>Builds the document's own toner grain (palette-surething.css
+        /// --toner-grain-opacity) exactly once and stretches it to fill <paramref name="root"/>.
+        /// Cost: one 128x128 runtime texture, one material and one Image, built a single time per
+        /// laptop — never regenerated, never touched by a rebuild.
+        ///
+        /// Noise is centred on 0.5 and drawn through SBR/TonerGrain, which blends DstColor SrcColor
+        /// so that 0.5 is a no-op, above it lightens and below it darkens. That is what makes this a
+        /// grain pass rather than a wash: the mean effect on the ground is zero.
+        ///
+        /// The first version of this was an ordinary white Image at 5% alpha, and it bleached the
+        /// sheet — measured (24,24,16) to (52,52,48), double the luminance and neutral grey against
+        /// a warm olive ground — because normal alpha blending can only add light. If this ever
+        /// reverts to a plain UI material, that is the failure it will reintroduce.
+        ///
+        /// Still an approximation, not a match: the reference kit's SVG feTurbulence is a filter, and
+        /// this is a static tile.</summary>
+        public static void MakeTonerGrain(RectTransform root)
+        {
+            const int size = 128;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            {
+                name = "SureThingTonerGrain",
+                wrapMode = TextureWrapMode.Repeat,
+                filterMode = FilterMode.Bilinear
+            };
+            // Fixed seed: the grain is part of the document, not an animation. It must be identical
+            // on every boot and every rebuild, or the sheet would visibly reshuffle its own texture.
+            var rng = new System.Random(0xC0FFEE);
+            var pixels = new Color32[size * size];
+            for (int i = 0; i < pixels.Length; i++)
+            {
+                // Full-range luminance noise. 128 (= 0.5) is the shader's "leave this pixel alone"
+                // midpoint, and _Strength alone decides how far from it the pass actually pulls —
+                // which is what --toner-grain-opacity means. An earlier version also narrowed the
+                // noise to 108..148 before applying strength, so the two limits multiplied and the
+                // grain landed at about +/-0.004 of a luminance level: measurably present, visually
+                // nothing. Constrain this in one place, not two.
+                byte v = (byte)rng.Next(0, 256);
+                pixels[i] = new Color32(v, v, v, 255);
+            }
+            texture.SetPixels32(pixels);
+            texture.Apply(false, true);
+            Sprite sprite = Sprite.Create(texture, new Rect(0f, 0f, size, size),
+                new Vector2(0.5f, 0.5f), size);
+
+            var go = new GameObject("TonerGrain", typeof(Image));
+            go.transform.SetParent(root, false);
+            Image image = go.GetComponent<Image>();
+            image.sprite = sprite;
+            image.type = Image.Type.Tiled;
+
+            Shader shader = Shader.Find("SBR/TonerGrain");
+            if (shader == null)
+            {
+                // Without the signed-blend material this element does active harm, so it removes
+                // itself rather than falling back to a plain white overlay.
+                Debug.LogWarning("[LaptopOs] SBR/TonerGrain shader missing; skipping toner grain "
+                    + "rather than bleaching the sheet with an additive fallback.");
+                UnityEngine.Object.Destroy(go);
+                return;
+            }
+            var material = new Material(shader) { name = "SureThingTonerGrain" };
+            material.SetFloat("_Strength", LaptopOs.TonerGrainOpacity);
+            image.material = material;
+            // Full-bleed and on top of everything: without this it silently eats every click on the
+            // laptop screen.
+            image.raycastTarget = false;
+            RectTransform rt = image.rectTransform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
         }
 
         public static Color Dim(Color color) => new Color(color.r, color.g, color.b, 0.55f);
@@ -413,6 +827,110 @@ namespace SBR.Game
         {
             return new Color(((rgb >> 16) & 0xff) / 255f, ((rgb >> 8) & 0xff) / 255f,
                 (rgb & 0xff) / 255f, 1f);
+        }
+    }
+
+    /// <summary>
+    /// The machine's own chrome — the rail across the top and the tray across the bottom. It
+    /// belongs to the notebook, not to whichever app is running, so it is defined once here and
+    /// every screen calls into it.
+    ///
+    /// It used to be copy-pasted into each screen's builder, which let the two copies drift: the
+    /// sportsbook drew the rail at 12px and the ledger drew the same rail at 13px, so the machine's
+    /// own furniture changed size when you switched app. The same roles also carried different
+    /// object names in each copy ("AppName" vs "Messages", "Clock" vs "SystemFacts"), which made
+    /// the duplication invisible to a name-based test.
+    ///
+    /// Chrome text is 12px by deliberate exception: the type floor is 13px for anything stating a
+    /// product fact, and 12px is allowed only for OS furniture carrying no product meaning. Every
+    /// string here — machine mark, sticker, clock, unread count, disk and update state — is set
+    /// dressing. Nothing a player needs to make a decision may be added at this size.
+    /// </summary>
+    internal static class NotebookChrome
+    {
+        public const float RailHeight = 34f;
+        public const float TrayHeight = 34f;
+
+        /// OS-furniture size. See the class note before reusing it for anything else.
+        private const int ChromeText = 12;
+
+        public const string MachineMark = "■  NOTEBOOK";
+        public const string StickerText = "PROPERTY OF NOBODY";
+
+        /// Fixed fiction, not a live clock: the shared spec pins the machine at 02:47 so every
+        /// capture and every direction concept is comparable. The trailing mark is the battery.
+        public const string ClockText = "02:47   ▰";
+
+        private const string MessagesText = "MESSAGES  1";
+        private const string SystemFactsText = "DISK 61% FULL    NO UPDATES";
+
+        public enum Running { Sportsbook, Ledger }
+
+        public static RectTransform BuildRail(RectTransform parent, float width, Font font)
+        {
+            RectTransform rail = LaptopUi.MakePanel(parent, "NotebookRail", new Vector2(0f, 1f),
+                new Vector2(0f, 1f), Vector2.zero, new Vector2(width, RailHeight),
+                LaptopOs.SurfaceRaised);
+            // F8: OsRail.jsx's own padding is --st-rail-pad-x (11px) on both edges — this rail
+            // (and the tray below) used 14px. Shared here, so the correction lands on every screen
+            // that calls BuildRail/BuildTray, not just the ledger.
+            LaptopUi.MakeText(rail, "Machine", new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(11f, 0f), new Vector2(200f, 24f), ChromeText, TextAnchor.MiddleLeft,
+                LaptopOs.White, MachineMark, font);
+            LaptopUi.MakeText(rail, "Sticker", new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(150f, 0f), new Vector2(200f, 24f), ChromeText, TextAnchor.MiddleLeft,
+                LaptopOs.Accent, StickerText, font);
+            LaptopUi.MakeText(rail, "Clock", new Vector2(1f, .5f), new Vector2(1f, .5f),
+                new Vector2(-11f, 0f), new Vector2(140f, 24f), ChromeText, TextAnchor.MiddleRight,
+                LaptopOs.Muted, ClockText, font);
+            // F1: OsRail.jsx's own border-bottom (--rule-w solid var(--rule)) — the rail was a flat
+            // colour step into whatever the app draws next (FormTabs, or the ledger's own copy of
+            // it), with no seam actually drawn.
+            LaptopUi.MakeRule(rail, "RailRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
+                Vector2.zero, new Vector2(width, 1f), LaptopOs.Rule);
+            return rail;
+        }
+
+        /// <param name="minimize">
+        /// Invoked by the slot of the app that is already running. A tray slot for the running app
+        /// cannot "launch" it, so it drops to the desktop instead — the same thing a real taskbar
+        /// button does. This is why the running slot stays clickable rather than being disabled.
+        /// </param>
+        public static RectTransform BuildTray(RectTransform parent, float width, Font font,
+            Running running, Action openSportsbook, Action openLedger, Action minimize)
+        {
+            RectTransform tray = LaptopUi.MakePanel(parent, "NotebookTray", new Vector2(0f, 0f),
+                new Vector2(0f, 0f), Vector2.zero, new Vector2(width, TrayHeight),
+                LaptopOs.SurfaceRaised);
+
+            bool sportsbookRunning = running == Running.Sportsbook;
+            // F8: --st-rail-pad-x (11px) on the left edge too — was 12px, the one inset in this
+            // class that did not already match the pattern (rail's left/right corrected above).
+            MakeSlot(tray, "SureThing", "SURETHING", 11f, 110f, sportsbookRunning,
+                sportsbookRunning ? minimize : openSportsbook, font);
+            MakeSlot(tray, "Ledger", "LEDGER", 132f, 88f, !sportsbookRunning,
+                sportsbookRunning ? openLedger : minimize, font);
+
+            LaptopUi.MakeText(tray, "Messages", new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(232f, 0f), new Vector2(210f, 24f), ChromeText, TextAnchor.MiddleLeft,
+                LaptopOs.Muted, MessagesText, font);
+            LaptopUi.MakeText(tray, "SystemFacts", new Vector2(1f, .5f), new Vector2(1f, .5f),
+                new Vector2(-11f, 0f), new Vector2(270f, 24f), ChromeText, TextAnchor.MiddleRight,
+                LaptopOs.Muted, SystemFactsText, font);
+            return tray;
+        }
+
+        /// The running app reads as pressed-in — ink ground, full-strength label. A backgrounded
+        /// app reads as raised and muted. That is the only state difference, and it is carried by
+        /// ground and weight rather than colour alone.
+        private static void MakeSlot(RectTransform tray, string name, string label, float x,
+            float width, bool running, Action onClick, Font font)
+        {
+            LaptopUi.MakeButton(tray, name, label, new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(x, 0f), new Vector2(width, 32f), ChromeText,
+                running ? LaptopOs.Ink : LaptopOs.SurfaceRaised,
+                running ? LaptopOs.White : LaptopOs.Muted,
+                onClick, font);
         }
     }
 }

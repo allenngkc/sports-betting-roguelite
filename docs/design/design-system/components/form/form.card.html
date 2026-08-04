@@ -1,0 +1,44 @@
+<!-- @dsCard group="Components" viewport="700x330" name="Form — the house's document" subtitle="Price cell states, ink rings, market navigation, entries" -->
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Form components</title><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script>window.SURETHING_INK_BASE="../../assets/ink/"</script>
+<script src="../../_ds_bundle.js"></script>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{background:var(--ground);color:var(--toner);font-family:var(--font-data);padding:16px 18px}
+.row{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.sp{display:flex;flex-direction:column;gap:7px}
+.cap{font-size:12px;letter-spacing:.1em;color:var(--toner-3);text-transform:uppercase}
+.dim{font-family:var(--font-mono);font-size:11px;color:var(--wax-deep)}
+.dm{padding:10px 12px;background:var(--ground-2);border:1px solid var(--rule-soft)}
+.tv{background:var(--tv-substrate);font-family:var(--font-tv)}</style></head><body><div id="root"></div>
+<script type="text/babel">
+const { PriceCell, InkMark, MoreButton, ColumnHead, FormEntry, MarketOffer } = window.SureThingDesignSystem_6e1eb3;
+const S = ({c,d,children}) => <div className="sp"><div className="cap">{c}</div><div className="dim">{d}</div><div className="dm">{children}</div></div>;
+function Card(){return (<>
+  <div className="row" style={{marginBottom:14}}>
+    <S c="Default" d="96 × 30"><PriceCell price="-145" /></S>
+    <S c="Picked · A" d="ring-price-a"><PriceCell price="-260" state="picked" ringVariant="ring-a" /></S>
+    <S c="Picked · B" d="ring-price-b"><PriceCell price="+180" state="picked" ringVariant="ring-b" /></S>
+    <S c="Picked · C" d="ring-price-c"><PriceCell price="+125" state="picked" ringVariant="ring-c" /></S>
+    <S c="Will replace" d="selectable"><PriceCell price="+210" state="replace" /></S>
+    <S c="Won" d="wax re-ink"><PriceCell price="-260" state="won" /></S>
+    <S c="Dead" d="house strike"><PriceCell price="+180" state="dead" /></S>
+    <S c="More" d="74 × 44"><MoreButton /></S>
+  </div>
+  <ColumnHead />
+  <FormEntry index={1} number="02" selected="home"
+    away={{name:"Mallards",record:"3-6",price:"+210"}}
+    home={{name:"Bricklayers",record:"8-1",price:"-260"}} />
+  <FormEntry index={2} number="03"
+    away={{name:"Nighthawks",record:"5-4",price:"+135"}}
+    home={{name:"Foundry",record:"6-3",price:"-155"}} />
+  <div className="row" style={{marginTop:14}}>
+    <S c="Market offer" d="160 × 30"><MarketOffer line="Over 2.5 goals" price="-110" /></S>
+    <S c="Picked" d="ring-wide-a"><MarketOffer line="Over 2.5 goals" price="-110" state="picked" /></S>
+    <S c="Ink marks" d="tinted alpha"><div style={{display:"flex",gap:10}}>
+      <InkMark variant="ring-a" color="var(--biro)" /><InkMark variant="strike" color="var(--stamp)" /></div></S>
+  </div>
+</>);}
+ReactDOM.createRoot(document.getElementById("root")).render(<Card/>);
+</script></body></html>

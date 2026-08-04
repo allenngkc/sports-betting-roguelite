@@ -1,8 +1,11 @@
 # .NET
 bin/
 obj/
-artifacts/
 TestResults/
+# NOTE: `artifacts/` was ignored here for the .NET SDK's artifacts output layout, but this repo
+# does not use it (no Directory.Build.props, no UseArtifactsOutput) and the rule was instead
+# silently swallowing design evidence. Un-ignored 2026-07-28. If the SDK artifacts layout is ever
+# enabled, ignore its specific output path rather than reinstating this.
 *.user
 .vs/
 .idea/
@@ -26,3 +29,10 @@ unity/SBR/*.slnx
 Thumbs.db
 .DS_Store
 unity/SBR/[Dd]ata/
+
+# Local run evidence — Unity batch test results, editor logs, scratch capture runs.
+# Kept on disk for inspection, never committed and never sent upward (studio rule).
+# Unity writes -testResults/-logFile wherever it is pointed; keep that out of the
+# project root so a stray run cannot be mistaken for a tracked artifact.
+evidence/
+/Logs/

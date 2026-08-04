@@ -1,0 +1,788 @@
+{
+  "plugins": [
+    "react",
+    "import"
+  ],
+  "rules": {
+    "react/forbid-elements": [
+      "warn",
+      {
+        "forbid": []
+      }
+    ],
+    "no-restricted-imports": [
+      "warn",
+      {
+        "patterns": [
+          {
+            "group": [
+              "components/actions/**",
+              "components/figures/**",
+              "components/form/**",
+              "components/margin/**",
+              "components/os-chrome/**",
+              "components/records/**",
+              "components/tv/**",
+              "ui_kits/surething/**",
+              "ui_kits/tv-sweat/**"
+            ],
+            "message": "Import design-system components from 'index.js', not component internals."
+          }
+        ]
+      }
+    ],
+    "no-restricted-syntax": [
+      "warn",
+      {
+        "selector": "Literal[value=/#[0-9a-fA-F]{3,8}\\b/]",
+        "message": "Raw hex color — use a design-system color token via var()."
+      },
+      {
+        "selector": "Literal[value=/\\b\\d+px\\b/]",
+        "message": "Raw px value — use a design-system spacing token via var()."
+      },
+      {
+        "selector": "Literal[value=/font-family\\s*:\\s*(?!['\\\"]?(?:Archivo|Archivo Narrow|Encode Sans|Encode Sans Condensed))/i]",
+        "message": "Font not provided by the design system. Available: Archivo, Archivo Narrow, Encode Sans, Encode Sans Condensed."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ColumnHead'] > JSXAttribute > JSXIdentifier[name!=/^(?:no|matchup|price|more|style|key|ref|className|style|children)$/]",
+        "message": "<ColumnHead> doesn't accept that prop. Declared props: no, matchup, price, more, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='FormTeam'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|record|price|key|ref|className|style|children)$/]",
+        "message": "<FormTeam> doesn't accept that prop. Declared props: name, record, price."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='InkMark'] > JSXAttribute > JSXIdentifier[name!=/^(?:variant|color|width|height|base|style|key|ref|className|style|children)$/]",
+        "message": "<InkMark> doesn't accept that prop. Declared props: variant, color, width, height, base, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='LedgerEntry'] > JSXAttribute > JSXIdentifier[name!=/^(?:number|legs|terminal|stake|payout|style|key|ref|className|style|children)$/]",
+        "message": "<LedgerEntry> doesn't accept that prop. Declared props: number, legs, terminal, stake, payout, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='LedgerEntry'] > JSXAttribute[name.name='terminal'] > Literal[value!=/^(?:WON|LOST|CASHED OUT|VOIDED)$/]",
+        "message": "<LedgerEntry> terminal must be one of 'WON' | 'LOST' | 'CASHED OUT' | 'VOIDED'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='LockAction'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|disabled|reason|onClick|style|key|ref|className|style|children)$/]",
+        "message": "<LockAction> doesn't accept that prop. Declared props: label, disabled, reason, onClick, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='MarginHeader'] > JSXAttribute > JSXIdentifier[name!=/^(?:title|count|style|key|ref|className|style|children)$/]",
+        "message": "<MarginHeader> doesn't accept that prop. Declared props: title, count, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='MarginLeg'] > JSXAttribute > JSXIdentifier[name!=/^(?:team|price|market|entry|onRemove|style|key|ref|className|style|children)$/]",
+        "message": "<MarginLeg> doesn't accept that prop. Declared props: team, price, market, entry, onRemove, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='MarginRow'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|value|tone|style|key|ref|className|style|children)$/]",
+        "message": "<MarginRow> doesn't accept that prop. Declared props: label, value, tone, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='MarginRow'] > JSXAttribute[name.name='tone'] > Literal[value!=/^(?:toner|wax)$/]",
+        "message": "<MarginRow> tone must be one of 'toner' | 'wax'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='MarketOffer'] > JSXAttribute > JSXIdentifier[name!=/^(?:line|price|state|ringVariant|onSelect|inkBase|style|key|ref|className|style|children)$/]",
+        "message": "<MarketOffer> doesn't accept that prop. Declared props: line, price, state, ringVariant, onSelect, inkBase, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='MarketOffer'] > JSXAttribute[name.name='state'] > Literal[value!=/^(?:default|picked|replace)$/]",
+        "message": "<MarketOffer> state must be one of 'default' | 'picked' | 'replace'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='MarketOffer'] > JSXAttribute[name.name='ringVariant'] > Literal[value!=/^(?:ring-wide-a|ring-wide-b)$/]",
+        "message": "<MarketOffer> ringVariant must be one of 'ring-wide-a' | 'ring-wide-b'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='MastheadFigure'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|value|tone|key|ref|className|style|children)$/]",
+        "message": "<MastheadFigure> doesn't accept that prop. Declared props: label, value, tone."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='MastheadFigure'] > JSXAttribute[name.name='tone'] > Literal[value!=/^(?:toner|wax)$/]",
+        "message": "<MastheadFigure> tone must be one of 'toner' | 'wax'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='MoreButton'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|onClick|style|key|ref|className|style|children)$/]",
+        "message": "<MoreButton> doesn't accept that prop. Declared props: label, onClick, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='OfferEntry'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|description|price|affordable|owned|reason|onBuy|style|key|ref|className|style|children)$/]",
+        "message": "<OfferEntry> doesn't accept that prop. Declared props: name, description, price, affordable, owned, reason, onBuy, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='OsRail'] > JSXAttribute > JSXIdentifier[name!=/^(?:identity|sticker|clock|batteryLow|style|key|ref|className|style|children)$/]",
+        "message": "<OsRail> doesn't accept that prop. Declared props: identity, sticker, clock, batteryLow, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TrayApp'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|active|badge|key|ref|className|style|children)$/]",
+        "message": "<TrayApp> doesn't accept that prop. Declared props: label, active, badge."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='PayoutFigure'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|value|highlight|style|key|ref|className|style|children)$/]",
+        "message": "<PayoutFigure> doesn't accept that prop. Declared props: label, value, highlight, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='PlaceAction'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|disabled|onClick|style|key|ref|className|style|children)$/]",
+        "message": "<PlaceAction> doesn't accept that prop. Declared props: label, disabled, onClick, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='PriceCell'] > JSXAttribute > JSXIdentifier[name!=/^(?:price|state|ringVariant|size|inkBase|onSelect|title|style|key|ref|className|style|children)$/]",
+        "message": "<PriceCell> doesn't accept that prop. Declared props: price, state, ringVariant, size, inkBase, onSelect, title, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='PriceCell'] > JSXAttribute[name.name='state'] > Literal[value!=/^(?:default|picked|replace|won|dead)$/]",
+        "message": "<PriceCell> state must be one of 'default' | 'picked' | 'replace' | 'won' | 'dead'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='PriceCell'] > JSXAttribute[name.name='ringVariant'] > Literal[value!=/^(?:ring-a|ring-b|ring-c)$/]",
+        "message": "<PriceCell> ringVariant must be one of 'ring-a' | 'ring-b' | 'ring-c'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='PriceCell'] > JSXAttribute[name.name='size'] > Literal[value!=/^(?:kit|runtime)$/]",
+        "message": "<PriceCell> size must be one of 'kit' | 'runtime'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='RevealedLeg'] > JSXAttribute > JSXIdentifier[name!=/^(?:team|price|market|state|inkBase|style|key|ref|className|style|children)$/]",
+        "message": "<RevealedLeg> doesn't accept that prop. Declared props: team, price, market, state, inkBase, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='RevealedLeg'] > JSXAttribute[name.name='state'] > Literal[value!=/^(?:PENDING|LIVE|GREEN|DEAD|VOID)$/]",
+        "message": "<RevealedLeg> state must be one of 'PENDING' | 'LIVE' | 'GREEN' | 'DEAD' | 'VOID'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='RevealedState'] > JSXAttribute > JSXIdentifier[name!=/^(?:state|inkBase|style|key|ref|className|style|children)$/]",
+        "message": "<RevealedState> doesn't accept that prop. Declared props: state, inkBase, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='RevealedState'] > JSXAttribute[name.name='state'] > Literal[value!=/^(?:PENDING|LIVE|GREEN|DEAD|VOID|CASHED OUT)$/]",
+        "message": "<RevealedState> state must be one of 'PENDING' | 'LIVE' | 'GREEN' | 'DEAD' | 'VOID' | 'CASHED OUT'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='RubOutButton'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|onClick|style|key|ref|className|style|children)$/]",
+        "message": "<RubOutButton> doesn't accept that prop. Declared props: label, onClick, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='RunFigure'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|value|tone|size|style|key|ref|className|style|children)$/]",
+        "message": "<RunFigure> doesn't accept that prop. Declared props: label, value, tone, size, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='RunFigure'] > JSXAttribute[name.name='tone'] > Literal[value!=/^(?:toner|wax)$/]",
+        "message": "<RunFigure> tone must be one of 'toner' | 'wax'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='SectionTabs'] > JSXAttribute > JSXIdentifier[name!=/^(?:tabs|active|meta|onSelect|style|key|ref|className|style|children)$/]",
+        "message": "<SectionTabs> doesn't accept that prop. Declared props: tabs, active, meta, onSelect, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='SkipAction'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|armedLabel|armed|onSkip|style|key|ref|className|style|children)$/]",
+        "message": "<SkipAction> doesn't accept that prop. Declared props: label, armedLabel, armed, onSkip, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='StakeButton'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|variant|onClick|style|key|ref|className|style|children)$/]",
+        "message": "<StakeButton> doesn't accept that prop. Declared props: label, variant, onClick, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='StakeButton'] > JSXAttribute[name.name='variant'] > Literal[value!=/^(?:quick|nudge)$/]",
+        "message": "<StakeButton> variant must be one of 'quick' | 'nudge'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='StakeControls'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|stake|fractions|nudges|onFraction|onNudge|style|key|ref|className|style|children)$/]",
+        "message": "<StakeControls> doesn't accept that prop. Declared props: label, stake, fractions, nudges, onFraction, onNudge, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='StampReason'] > JSXAttribute > JSXIdentifier[name!=/^(?:reason|style|key|ref|className|style|children)$/]",
+        "message": "<StampReason> doesn't accept that prop. Declared props: reason, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ReceiptLeg'] > JSXAttribute > JSXIdentifier[name!=/^(?:team|market|price|key|ref|className|style|children)$/]",
+        "message": "<ReceiptLeg> doesn't accept that prop. Declared props: team, market, price."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TvCashOutSlot'] > JSXAttribute > JSXIdentifier[name!=/^(?:state|amount|keyHint|style|key|ref|className|style|children)$/]",
+        "message": "<TvCashOutSlot> doesn't accept that prop. Declared props: state, amount, keyHint, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TvCashOutSlot'] > JSXAttribute[name.name='state'] > Literal[value!=/^(?:actionable|updating|suspended|pending|unavailable|accepted)$/]",
+        "message": "<TvCashOutSlot> state must be one of 'actionable' | 'updating' | 'suspended' | 'pending' | 'unavailable' | 'accepted'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TvEventStrip'] > JSXAttribute > JSXIdentifier[name!=/^(?:text|punched|style|key|ref|className|style|children)$/]",
+        "message": "<TvEventStrip> doesn't accept that prop. Declared props: text, punched, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TvLegRow'] > JSXAttribute > JSXIdentifier[name!=/^(?:market|price|statement|state|progress|expanded|style|key|ref|className|style|children)$/]",
+        "message": "<TvLegRow> doesn't accept that prop. Declared props: market, price, statement, state, progress, expanded, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TvLegRow'] > JSXAttribute[name.name='state'] > Literal[value!=/^(?:NEXT|LIVE|W|L|VOID)$/]",
+        "message": "<TvLegRow> state must be one of 'NEXT' | 'LIVE' | 'W' | 'L' | 'VOID'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TvMomentumTape'] > JSXAttribute > JSXIdentifier[name!=/^(?:samples|label|style|key|ref|className|style|children)$/]",
+        "message": "<TvMomentumTape> doesn't accept that prop. Declared props: samples, label, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TvRiskPays'] > JSXAttribute > JSXIdentifier[name!=/^(?:risk|pays|style|key|ref|className|style|children)$/]",
+        "message": "<TvRiskPays> doesn't accept that prop. Declared props: risk, pays, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TvScorebug'] > JSXAttribute > JSXIdentifier[name!=/^(?:ticket|leg|away|home|score|clock|backed|marketPick|goal|style|key|ref|className|style|children)$/]",
+        "message": "<TvScorebug> doesn't accept that prop. Declared props: ticket, leg, away, home, score, clock, backed, marketPick, goal, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TvScorebug'] > JSXAttribute[name.name='backed'] > Literal[value!=/^(?:away|home)$/]",
+        "message": "<TvScorebug> backed must be one of 'away' | 'home'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TvActor'] > JSXAttribute > JSXIdentifier[name!=/^(?:x|y|team|number|key|ref|className|style|children)$/]",
+        "message": "<TvActor> doesn't accept that prop. Declared props: x, y, team, number."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TvActor'] > JSXAttribute[name.name='team'] > Literal[value!=/^(?:a|b)$/]",
+        "message": "<TvActor> team must be one of 'a' | 'b'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TvStatsRow'] > JSXAttribute > JSXIdentifier[name!=/^(?:label|away|home|key|ref|className|style|children)$/]",
+        "message": "<TvStatsRow> doesn't accept that prop. Declared props: label, away, home."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TvTicketCard'] > JSXAttribute > JSXIdentifier[name!=/^(?:heading|legs|risk|pays|style|key|ref|className|style|children)$/]",
+        "message": "<TvTicketCard> doesn't accept that prop. Declared props: heading, legs, risk, pays, style."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/index.js"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ],
+  "x-omelette": {
+    "components": {
+      "ColumnHead": {
+        "replaces": []
+      },
+      "FormTeam": {
+        "replaces": []
+      },
+      "InkMark": {
+        "replaces": []
+      },
+      "LedgerEntry": {
+        "replaces": []
+      },
+      "LockAction": {
+        "replaces": []
+      },
+      "MarginHeader": {
+        "replaces": []
+      },
+      "MarginLeg": {
+        "replaces": []
+      },
+      "MarginRow": {
+        "replaces": []
+      },
+      "MarketOffer": {
+        "replaces": []
+      },
+      "MastheadFigure": {
+        "replaces": []
+      },
+      "MoreButton": {
+        "replaces": []
+      },
+      "OfferEntry": {
+        "replaces": []
+      },
+      "OsRail": {
+        "replaces": []
+      },
+      "TrayApp": {
+        "replaces": []
+      },
+      "PayoutFigure": {
+        "replaces": []
+      },
+      "PlaceAction": {
+        "replaces": []
+      },
+      "PriceCell": {
+        "replaces": []
+      },
+      "RevealedLeg": {
+        "replaces": []
+      },
+      "RevealedState": {
+        "replaces": []
+      },
+      "RubOutButton": {
+        "replaces": []
+      },
+      "RunFigure": {
+        "replaces": []
+      },
+      "SectionTabs": {
+        "replaces": []
+      },
+      "SkipAction": {
+        "replaces": []
+      },
+      "StakeButton": {
+        "replaces": []
+      },
+      "StakeControls": {
+        "replaces": []
+      },
+      "StampReason": {
+        "replaces": []
+      },
+      "ReceiptLeg": {
+        "replaces": []
+      },
+      "TvCashOutSlot": {
+        "replaces": []
+      },
+      "TvEventStrip": {
+        "replaces": []
+      },
+      "TvLegRow": {
+        "replaces": []
+      },
+      "TvMomentumTape": {
+        "replaces": []
+      },
+      "TvRiskPays": {
+        "replaces": []
+      },
+      "TvScorebug": {
+        "replaces": []
+      },
+      "TvActor": {
+        "replaces": []
+      },
+      "TvStatsRow": {
+        "replaces": []
+      },
+      "TvTicketCard": {
+        "replaces": []
+      }
+    },
+    "tokens": [
+      "--accent-choice",
+      "--accent-choice-deep",
+      "--accent-money",
+      "--accent-money-edge",
+      "--accent-money-hover",
+      "--biro",
+      "--biro-deep",
+      "--border-soft",
+      "--border-structural",
+      "--focus-offset",
+      "--focus-ring",
+      "--focus-w",
+      "--font-body",
+      "--font-cond",
+      "--font-data",
+      "--font-display",
+      "--font-mono",
+      "--font-tv",
+      "--font-tv-cond",
+      "--ground",
+      "--ground-2",
+      "--ground-3",
+      "--mark-house",
+      "--marked-wash",
+      "--numerals-tabular",
+      "--offscreen",
+      "--radius",
+      "--room-city",
+      "--room-concrete",
+      "--room-conduit",
+      "--room-drab",
+      "--room-fluor",
+      "--room-fluor-pool",
+      "--room-khaki",
+      "--room-olive",
+      "--room-plaster",
+      "--room-rust",
+      "--room-shadow",
+      "--room-steel",
+      "--room-window",
+      "--rule",
+      "--rule-soft",
+      "--rule-w",
+      "--rule-w-strong",
+      "--shipped-room-floor",
+      "--shipped-room-wall-lit",
+      "--shipped-room-wall-shadow",
+      "--shipped-room-window-glow",
+      "--shipped-tv-light",
+      "--st-band-body",
+      "--st-band-mast",
+      "--st-band-rail",
+      "--st-band-tabs",
+      "--st-band-tray",
+      "--st-canvas-h",
+      "--st-canvas-w",
+      "--st-col-more",
+      "--st-col-no",
+      "--st-col-price",
+      "--st-colhead-h",
+      "--st-ease",
+      "--st-entry-h",
+      "--st-lh-copy",
+      "--st-lh-fig",
+      "--st-lh-tight",
+      "--st-lock-h",
+      "--st-lock-min-w",
+      "--st-margin-w",
+      "--st-market-cell-h",
+      "--st-market-cell-w",
+      "--st-mast-pad-x",
+      "--st-more-h",
+      "--st-more-w",
+      "--st-motion-note",
+      "--st-nudge-h",
+      "--st-nudge-w",
+      "--st-pad-x",
+      "--st-place-h",
+      "--st-place-min-w",
+      "--st-press-shift",
+      "--st-price-h",
+      "--st-price-h-runtime",
+      "--st-price-w",
+      "--st-price-w-runtime",
+      "--st-quick-h",
+      "--st-quick-w",
+      "--st-rail-pad-x",
+      "--st-ring-h",
+      "--st-ring-h-runtime",
+      "--st-ring-overshoot",
+      "--st-ring-w",
+      "--st-ring-w-runtime",
+      "--st-ring-wide-h",
+      "--st-ring-wide-w",
+      "--st-rub-h",
+      "--st-rub-w",
+      "--st-sheet-w",
+      "--st-size-chrome",
+      "--st-size-fact",
+      "--st-size-figure",
+      "--st-size-leg",
+      "--st-size-mast",
+      "--st-size-payout",
+      "--st-size-price",
+      "--st-size-row",
+      "--st-size-stake",
+      "--st-skip-h",
+      "--st-skip-min-w",
+      "--st-tab-h",
+      "--st-track-action",
+      "--st-track-head",
+      "--st-track-label",
+      "--st-track-name",
+      "--st-track-rec",
+      "--st-track-tab",
+      "--st-tray-app-h",
+      "--stamp",
+      "--state-dead",
+      "--state-dead-mark",
+      "--state-live",
+      "--state-won",
+      "--surface-offscreen",
+      "--surface-page",
+      "--surface-raised",
+      "--surface-recessed",
+      "--target-gap",
+      "--target-min-h",
+      "--target-min-w",
+      "--text-body",
+      "--text-label",
+      "--text-on-money",
+      "--text-secondary",
+      "--toner",
+      "--toner-2",
+      "--toner-3",
+      "--toner-grain-opacity",
+      "--tv-L0",
+      "--tv-L1",
+      "--tv-L2",
+      "--tv-L3",
+      "--tv-L4",
+      "--tv-black-floor",
+      "--tv-canvas-h",
+      "--tv-canvas-w",
+      "--tv-context",
+      "--tv-dur-action",
+      "--tv-dur-event",
+      "--tv-dur-progress",
+      "--tv-dur-punch",
+      "--tv-dur-ticket",
+      "--tv-extinguished",
+      "--tv-fact",
+      "--tv-gold",
+      "--tv-gold-ink",
+      "--tv-gutter",
+      "--tv-housing",
+      "--tv-housing-chipped",
+      "--tv-panel",
+      "--tv-pitch",
+      "--tv-pulse-dur",
+      "--tv-ratio-cashout",
+      "--tv-ratio-clock",
+      "--tv-ratio-event",
+      "--tv-ratio-label",
+      "--tv-ratio-leg",
+      "--tv-ratio-need",
+      "--tv-ratio-progress",
+      "--tv-ratio-risk",
+      "--tv-ratio-score",
+      "--tv-ratio-team",
+      "--tv-rivet",
+      "--tv-rule",
+      "--tv-rule-w",
+      "--tv-size-cashout",
+      "--tv-size-clock",
+      "--tv-size-event",
+      "--tv-size-eyebrow",
+      "--tv-size-leg",
+      "--tv-size-need",
+      "--tv-size-progress",
+      "--tv-size-risk",
+      "--tv-size-score",
+      "--tv-size-team",
+      "--tv-step",
+      "--tv-structure",
+      "--tv-substrate",
+      "--tv-team-a",
+      "--tv-team-b",
+      "--tv-ticket-col-w",
+      "--tv-track-label",
+      "--tv-track-name",
+      "--tv-void",
+      "--wax",
+      "--wax-deep",
+      "--wax-highlight-h",
+      "--wax-highlight-opacity",
+      "--wax-highlight-rotate",
+      "--wax-ink",
+      "--wax-lit"
+    ],
+    "tokenKinds": {
+      "--font-data": "font",
+      "--font-cond": "font",
+      "--font-tv": "font",
+      "--font-tv-cond": "font",
+      "--font-mono": "font",
+      "--numerals-tabular": "other",
+      "--ground": "color",
+      "--ground-2": "color",
+      "--ground-3": "color",
+      "--rule": "color",
+      "--rule-soft": "color",
+      "--toner": "color",
+      "--toner-2": "color",
+      "--toner-3": "color",
+      "--biro": "color",
+      "--biro-deep": "color",
+      "--wax": "color",
+      "--wax-lit": "color",
+      "--wax-deep": "color",
+      "--stamp": "color",
+      "--wax-ink": "color",
+      "--offscreen": "color",
+      "--marked-wash": "color",
+      "--wax-highlight-opacity": "other",
+      "--wax-highlight-rotate": "other",
+      "--wax-highlight-h": "spacing",
+      "--toner-grain-opacity": "other",
+      "--tv-substrate": "color",
+      "--tv-panel": "color",
+      "--tv-black-floor": "color",
+      "--tv-fact": "color",
+      "--tv-context": "color",
+      "--tv-structure": "color",
+      "--tv-gold": "color",
+      "--tv-gold-ink": "color",
+      "--tv-team-a": "color",
+      "--tv-team-b": "color",
+      "--tv-pitch": "color",
+      "--tv-void": "color",
+      "--tv-L4": "other",
+      "--tv-L3": "other",
+      "--tv-L2": "other",
+      "--tv-L1": "other",
+      "--tv-L0": "other",
+      "--tv-extinguished": "color",
+      "--tv-rule": "color",
+      "--tv-housing": "color",
+      "--tv-housing-chipped": "color",
+      "--tv-rivet": "color",
+      "--room-plaster": "color",
+      "--room-olive": "color",
+      "--room-khaki": "color",
+      "--room-drab": "color",
+      "--room-rust": "color",
+      "--room-concrete": "color",
+      "--room-steel": "color",
+      "--room-conduit": "color",
+      "--room-fluor": "color",
+      "--room-fluor-pool": "color",
+      "--room-window": "color",
+      "--room-city": "color",
+      "--room-shadow": "shadow",
+      "--shipped-room-wall-lit": "color",
+      "--shipped-room-wall-shadow": "shadow",
+      "--shipped-room-floor": "color",
+      "--shipped-room-window-glow": "color",
+      "--shipped-tv-light": "color",
+      "--st-size-payout": "spacing",
+      "--st-size-mast": "spacing",
+      "--st-size-stake": "spacing",
+      "--st-size-figure": "spacing",
+      "--st-size-price": "spacing",
+      "--st-size-row": "spacing",
+      "--st-size-leg": "spacing",
+      "--st-size-fact": "spacing",
+      "--st-size-chrome": "spacing",
+      "--st-lh-tight": "other",
+      "--st-lh-fig": "other",
+      "--st-lh-copy": "other",
+      "--st-track-name": "other",
+      "--st-track-rec": "other",
+      "--st-track-tab": "other",
+      "--st-track-label": "other",
+      "--st-track-action": "other",
+      "--st-track-head": "other",
+      "--tv-size-score": "spacing",
+      "--tv-size-team": "spacing",
+      "--tv-size-clock": "spacing",
+      "--tv-size-need": "spacing",
+      "--tv-size-cashout": "spacing",
+      "--tv-size-risk": "spacing",
+      "--tv-size-progress": "spacing",
+      "--tv-size-event": "spacing",
+      "--tv-size-leg": "spacing",
+      "--tv-size-eyebrow": "spacing",
+      "--tv-ratio-score": "other",
+      "--tv-ratio-cashout": "other",
+      "--tv-ratio-team": "other",
+      "--tv-ratio-clock": "other",
+      "--tv-ratio-need": "other",
+      "--tv-ratio-progress": "other",
+      "--tv-ratio-risk": "other",
+      "--tv-ratio-event": "other",
+      "--tv-ratio-leg": "other",
+      "--tv-ratio-label": "other",
+      "--tv-track-label": "other",
+      "--tv-track-name": "other",
+      "--st-canvas-w": "spacing",
+      "--st-canvas-h": "spacing",
+      "--st-band-rail": "spacing",
+      "--st-band-tabs": "spacing",
+      "--st-band-mast": "spacing",
+      "--st-band-body": "spacing",
+      "--st-band-tray": "spacing",
+      "--st-sheet-w": "spacing",
+      "--st-margin-w": "spacing",
+      "--st-colhead-h": "spacing",
+      "--st-entry-h": "spacing",
+      "--st-col-no": "spacing",
+      "--st-col-price": "spacing",
+      "--st-col-more": "spacing",
+      "--st-pad-x": "spacing",
+      "--st-mast-pad-x": "spacing",
+      "--st-rail-pad-x": "spacing",
+      "--st-price-w": "spacing",
+      "--st-price-h": "spacing",
+      "--st-ring-w": "spacing",
+      "--st-ring-h": "spacing",
+      "--st-ring-wide-w": "spacing",
+      "--st-ring-wide-h": "spacing",
+      "--st-market-cell-w": "spacing",
+      "--st-market-cell-h": "spacing",
+      "--st-ring-overshoot": "spacing",
+      "--st-more-w": "spacing",
+      "--st-more-h": "spacing",
+      "--st-tab-h": "spacing",
+      "--st-place-h": "spacing",
+      "--st-place-min-w": "spacing",
+      "--st-lock-h": "spacing",
+      "--st-lock-min-w": "spacing",
+      "--st-skip-h": "spacing",
+      "--st-skip-min-w": "spacing",
+      "--st-quick-w": "spacing",
+      "--st-quick-h": "spacing",
+      "--st-nudge-w": "spacing",
+      "--st-nudge-h": "spacing",
+      "--st-rub-w": "spacing",
+      "--st-rub-h": "spacing",
+      "--st-tray-app-h": "spacing",
+      "--st-press-shift": "spacing",
+      "--st-price-w-runtime": "spacing",
+      "--st-price-h-runtime": "spacing",
+      "--st-ring-w-runtime": "spacing",
+      "--st-ring-h-runtime": "spacing",
+      "--target-min-w": "spacing",
+      "--target-min-h": "spacing",
+      "--target-gap": "spacing",
+      "--rule-w": "spacing",
+      "--rule-w-strong": "spacing",
+      "--focus-w": "spacing",
+      "--focus-offset": "spacing",
+      "--radius": "radius",
+      "--tv-canvas-w": "spacing",
+      "--tv-canvas-h": "spacing",
+      "--tv-ticket-col-w": "spacing",
+      "--tv-gutter": "spacing",
+      "--tv-rule-w": "spacing",
+      "--st-ease": "other",
+      "--st-motion-note": "other",
+      "--tv-step": "other",
+      "--tv-dur-punch": "other",
+      "--tv-dur-event": "other",
+      "--tv-dur-progress": "other",
+      "--tv-dur-ticket": "other",
+      "--tv-dur-action": "other",
+      "--tv-pulse-dur": "other",
+      "--surface-page": "color",
+      "--surface-recessed": "color",
+      "--surface-raised": "color",
+      "--surface-offscreen": "color",
+      "--text-body": "font",
+      "--text-secondary": "font",
+      "--text-label": "font",
+      "--text-on-money": "font",
+      "--border-structural": "color",
+      "--border-soft": "color",
+      "--accent-choice": "color",
+      "--accent-choice-deep": "color",
+      "--accent-money": "color",
+      "--accent-money-hover": "color",
+      "--accent-money-edge": "color",
+      "--mark-house": "color",
+      "--focus-ring": "color",
+      "--font-display": "font",
+      "--font-body": "font",
+      "--state-live": "color",
+      "--state-won": "color",
+      "--state-dead": "color",
+      "--state-dead-mark": "color"
+    },
+    "fontFamilies": [
+      "Archivo",
+      "Archivo Narrow",
+      "Encode Sans",
+      "Encode Sans Condensed"
+    ]
+  }
+}

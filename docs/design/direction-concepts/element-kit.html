@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SureThing — UI Element Kit</title>
+<style>
+  :root{
+    --ground:#16160F; --ground-2:#1C1C13; --ground-3:#232319;
+    --rule:#3C3C2C; --rule-soft:#2C2C20;
+    --toner:#D9D4C5; --toner-2:#9C9888; --toner-3:#6E6B5E;
+    --biro:#5E86B8; --biro-deep:#3F6996;
+    --wax:#D9A441; --wax-lit:#F0C066; --wax-deep:#8A6620;
+    --stamp:#B4483A;
+    --data:"Franklin Gothic Book","Franklin Gothic Medium","Segoe UI",system-ui,sans-serif;
+    --head:"Franklin Gothic Demi Cond","Haettenschweiler","Arial Narrow",var(--data);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--ground);color:var(--toner);font-family:var(--data);
+    padding:34px 40px 90px;-webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto}
+
+  h1{font-family:var(--head);font-size:34px;letter-spacing:.03em;text-transform:uppercase}
+  .lede{color:var(--toner-2);font-size:14px;line-height:1.65;max-width:74ch;margin-top:10px}
+
+  h2{
+    font-family:var(--head);font-size:20px;letter-spacing:.1em;text-transform:uppercase;
+    margin:52px 0 6px;padding-bottom:8px;border-bottom:2px solid var(--rule);
+  }
+  h2 .n{color:var(--toner-3);margin-right:12px}
+  .note{color:var(--toner-2);font-size:13px;line-height:1.65;max-width:78ch;margin:12px 0 22px}
+  .note b{color:var(--toner)}
+  .note code{font-family:ui-monospace,Consolas,monospace;color:var(--wax);font-size:12.5px}
+
+  .law{
+    border-left:3px solid var(--stamp);padding:11px 15px;background:rgba(180,72,58,.07);
+    font-size:13px;line-height:1.6;color:var(--toner);max-width:78ch;margin:14px 0 22px;
+  }
+  .law b{color:var(--stamp);letter-spacing:.08em}
+  .ruling{
+    display:block;margin-top:9px;padding-top:8px;border-top:1px dotted var(--rule);
+    font-size:12px;color:var(--toner-3);letter-spacing:.02em;
+  }
+
+  .specrow{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start;margin-bottom:26px}
+  .spec{display:flex;flex-direction:column;gap:9px}
+  .spec .cap{font-size:13px;letter-spacing:.1em;color:var(--toner-3);text-transform:uppercase}
+  .spec .dim{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--wax-deep)}
+  .demo{padding:16px 18px;background:var(--ground-2);border:1px solid var(--rule-soft)}
+
+  table{border-collapse:collapse;width:100%;max-width:900px;margin:8px 0 22px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--rule-soft);font-size:13px}
+  th{color:var(--toner-3);letter-spacing:.1em;font-weight:400;text-transform:uppercase;font-size:13px}
+  td code{font-family:ui-monospace,Consolas,monospace;font-size:12.5px;color:var(--toner)}
+  .sw{width:44px;height:24px;display:inline-block;border:1px solid var(--rule)}
+
+  /* ── real components, at real size ─────────────────────────────── */
+  .pr{
+    position:relative;width:96px;height:30px;display:flex;align-items:center;justify-content:center;
+    background:transparent;border:0;cursor:pointer;font-family:var(--head);font-size:19px;
+    letter-spacing:.03em;color:var(--toner);
+  }
+  .pr:hover{color:var(--wax-lit)}
+  .pr:focus-visible{outline:2px solid var(--wax);outline-offset:1px}
+  .pr .ring{
+    position:absolute;left:-8px;top:-8px;width:112px;height:46px;pointer-events:none;
+    background-color:var(--biro);
+    -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+    -webkit-mask-size:112px 46px;mask-size:112px 46px;
+  }
+  .ring.v-a{-webkit-mask-image:url("assets/ring-price-a@2x.png");mask-image:url("assets/ring-price-a@2x.png")}
+  .ring.v-b{-webkit-mask-image:url("assets/ring-price-b@2x.png");mask-image:url("assets/ring-price-b@2x.png")}
+  .ring.v-c{-webkit-mask-image:url("assets/ring-price-c@2x.png");mask-image:url("assets/ring-price-c@2x.png")}
+  .ring.strike{
+    background-color:var(--stamp);
+    -webkit-mask-image:url("assets/strike-a@2x.png");mask-image:url("assets/strike-a@2x.png");
+  }
+  .pr.swaps{color:var(--toner-2)}
+  .pr.swaps .sg{font-family:var(--data);font-size:15px;margin-right:5px;color:var(--biro)}
+  .pr.swaps u{text-decoration:underline;text-decoration-style:dashed;
+    text-decoration-color:var(--biro-deep);text-underline-offset:5px}
+  .pr.swaps:hover{color:var(--toner)}
+  .pr.dead{color:var(--toner-3)}
+  .pr.won{color:var(--wax)}
+
+  .mkt{
+    width:74px;height:44px;background:transparent;border:1px solid var(--rule);
+    color:var(--toner-2);cursor:pointer;font-family:var(--data);font-size:13px;
+    letter-spacing:.05em;display:flex;align-items:center;justify-content:center;gap:4px;
+  }
+  .mkt i{font-style:normal;font-size:15px;line-height:1;color:var(--toner-2)}
+  .mkt:hover{border-color:var(--toner-3);color:var(--toner)}
+
+  .place{
+    height:44px;min-width:200px;padding:0 22px;border:0;cursor:pointer;background:var(--wax);
+    color:#1A1305;font-family:var(--head);font-size:17px;letter-spacing:.14em;
+    text-transform:uppercase;box-shadow:0 2px 0 var(--wax-deep);
+  }
+  .place:hover{background:var(--wax-lit)}
+  .place:active{transform:translateY(2px);box-shadow:none}
+
+  .lock{
+    height:52px;min-width:280px;padding:0 16px;border:1px solid var(--rule);display:flex;
+    flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:not-allowed;
+    background:transparent;
+  }
+  .lock b{font-family:var(--head);font-size:16px;letter-spacing:.14em;color:var(--toner-3);
+    font-weight:400;text-transform:uppercase}
+  .lock small{font-size:13px;letter-spacing:.05em;color:var(--stamp);
+    border:1px solid var(--stamp);padding:1px 7px}
+
+  .skip{
+    height:34px;min-width:230px;background:transparent;border:1px dashed var(--rule);
+    color:var(--toner-3);font-size:13px;letter-spacing:.08em;cursor:pointer;font-family:var(--data);
+  }
+  .skip:hover{border-color:var(--stamp);color:var(--stamp);border-style:solid}
+
+  .qb{
+    width:68px;height:32px;background:transparent;border:1px solid var(--rule);color:var(--toner-2);
+    font-size:13px;cursor:pointer;font-family:var(--data);
+  }
+  .qb:hover{border-color:var(--biro);color:var(--biro)}
+  .nb{
+    width:88px;height:32px;background:var(--ground-3);border:1px solid var(--rule);
+    color:var(--toner);font-family:var(--head);font-size:15px;cursor:pointer;
+  }
+  .nb:hover{border-color:var(--biro);color:var(--biro)}
+  .rub{
+    width:60px;height:32px;background:transparent;border:1px solid var(--rule);
+    color:var(--toner-3);font-size:13px;cursor:pointer;font-family:var(--data);
+  }
+  .rub:hover{border-color:var(--stamp);color:var(--stamp)}
+
+  .tab{
+    height:27px;padding:0 15px;display:inline-flex;align-items:center;background:transparent;
+    border:1px solid var(--rule-soft);border-bottom:0;color:var(--toner-3);
+    font-size:13px;letter-spacing:.1em;font-family:var(--data);cursor:pointer;
+  }
+  .tab.on{background:var(--ground);color:var(--toner);border-color:var(--rule)}
+
+  .fig{display:flex;flex-direction:column;gap:4px}
+  .fig .k{font-size:13px;letter-spacing:.12em;color:var(--toner-3)}
+  .fig .v{font-family:var(--head);font-size:21px;color:var(--toner);line-height:1}
+  .fig .v.wax{color:var(--wax)}
+  .payv{
+    font-family:var(--head);font-size:31px;color:var(--wax);line-height:1.1;
+    display:inline-block;position:relative;
+  }
+  .payv::after{
+    content:"";position:absolute;left:-3px;right:-5px;bottom:-2px;height:6px;
+    background:var(--wax);opacity:.26;transform:rotate(-.5deg);
+  }
+
+  .scale-row{display:flex;align-items:baseline;gap:18px;padding:9px 0;
+    border-bottom:1px solid var(--rule-soft)}
+  .scale-row .px{font-family:ui-monospace,Consolas,monospace;font-size:12.5px;
+    color:var(--wax-deep);width:56px;flex:none}
+  .scale-row .use{font-size:13px;color:var(--toner-3);width:230px;flex:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>SureThing element kit</h1>
+  <p class="lede">
+    Every component of the annotated form guide, at real pixel size, in every state, with the rules
+    that govern it. This is the implementation reference — the Unity build should not have to
+    infer anything from the mockup that is not stated here.
+  </p>
+
+  <!-- ── LAWS ───────────────────────────────────────────────────── -->
+  <h2><span class="n">01</span>The laws</h2>
+  <div class="law">
+    <b>ONE ·</b> Oxide red <code>#B4483A</code> is <b>the house's mark — including the mark it
+    makes when a leg dies.</b> The house stamps a blocked action, and the house strikes out a dead
+    leg; both are the document being written on by someone other than him, which is exactly what
+    the colour means. Red is still never decoration and never a general "bad" tint — it appears
+    only where the house has acted. A dead leg carries the strike <i>and</i> the word
+    <code>DEAD</code>, so the state survives without the colour (see law five).
+    <span class="ruling">Amended by Allen, 2026-07-30. The kit originally reserved red for blocked
+    actions only and drew loss as strike-plus-fade; red on a dead leg is now approved.</span>
+  </div>
+  <div class="law">
+    <b>TWO ·</b> Wax amber <code>#D9A441</code> is money and the primary action. Biro blue
+    <code>#5E86B8</code> is anything <i>he</i> chose. Nothing else may borrow either.
+  </div>
+  <div class="law">
+    <b>THREE ·</b> Nothing on this screen is pure black. The ground is <code>#16160F</code>, lifted
+    clear so the room's own shadows stay darker than the laptop.
+  </div>
+  <div class="law">
+    <b>FOUR ·</b> Any text stating a product fact is <b>at least 13px</b>. 12px exists only for OS
+    chrome that carries no product meaning. Disabled reasons, state labels and market navigation
+    are never below 13px.
+  </div>
+  <div class="law">
+    <b>FIVE ·</b> Status is never colour alone. Every state carries a mark, a glyph, a border
+    change or a position change as well.
+  </div>
+
+  <!-- ── INK ────────────────────────────────────────────────────── -->
+  <h2><span class="n">02</span>Ink language</h2>
+  <p class="note">
+    Three inks and a paper. The restraint is the point: when the whole surface is the house's grey
+    document, two marks in his own colour carry enormous weight.
+  </p>
+  <table>
+    <tr><th>Swatch</th><th>Token</th><th>Value</th><th>Rule</th></tr>
+    <tr><td><span class="sw" style="background:#16160F"></span></td><td><code>ground</code></td><td><code>#16160F</code></td><td>Canvas. The darkest value on screen.</td></tr>
+    <tr><td><span class="sw" style="background:#1C1C13"></span></td><td><code>ground-2</code></td><td><code>#1C1C13</code></td><td>Recessed bands — column head, tab strip.</td></tr>
+    <tr><td><span class="sw" style="background:#232319"></span></td><td><code>ground-3</code></td><td><code>#232319</code></td><td>Raised chrome — OS rail, tray, nudge keys.</td></tr>
+    <tr><td><span class="sw" style="background:#3C3C2C"></span></td><td><code>rule</code></td><td><code>#3C3C2C</code></td><td>Structural rules. Solid, 1–2px, never hairline.</td></tr>
+    <tr><td><span class="sw" style="background:#D9D4C5"></span></td><td><code>toner</code></td><td><code>#D9D4C5</code></td><td>Primary text — names, prices, figures.</td></tr>
+    <tr><td><span class="sw" style="background:#9C9888"></span></td><td><code>toner-2</code></td><td><code>#9C9888</code></td><td>Secondary text.</td></tr>
+    <tr><td><span class="sw" style="background:#6E6B5E"></span></td><td><code>toner-3</code></td><td><code>#6E6B5E</code></td><td>Labels and field keys. Floor for readable text.</td></tr>
+    <tr><td><span class="sw" style="background:#5E86B8"></span></td><td><code>biro</code></td><td><code>#5E86B8</code></td><td><b>His marks.</b> Selections, his tally, his margin.</td></tr>
+    <tr><td><span class="sw" style="background:#D9A441"></span></td><td><code>wax</code></td><td><code>#D9A441</code></td><td><b>Money and the primary action.</b> Nothing else.</td></tr>
+    <tr><td><span class="sw" style="background:#B4483A"></span></td><td><code>stamp</code></td><td><code>#B4483A</code></td><td><b>The house's mark.</b> Blocked actions, and the strike on a dead leg.</td></tr>
+  </table>
+
+  <!-- ── TYPE ───────────────────────────────────────────────────── -->
+  <h2><span class="n">03</span>Type scale</h2>
+  <p class="note">
+    Production face <b>pending</b>. Bell Centennial was the intent and is <b>dropped for good</b>
+    — no licence-encumbered typeface ships in this product (Allen, 2026-07-31). The replacement
+    must be free-licence and is being specced by the Design Director. The brief it has to meet is
+    unchanged by the swap: ink-trapped or otherwise robust at small sizes on an angled surface, a
+    condensed figure set so the price column stays narrow, and the voice of a cheap personal
+    machine rather than institutional signage.
+    <b>13px is the floor for anything a player must read to make a decision</b>, and that floor is
+    a property of the layout, not the face — it does not move when the face is chosen.
+    <span class="ruling">The build currently renders in Unity's <code>LegacyRuntime.ttf</code>
+    fallback, so no capture yet shows the intended voice. Judge captures on structure and
+    hierarchy; type character is not yet under test.</span>
+  </p>
+  <div class="scale-row"><div class="px">31px</div><div class="use">Payout figure</div><span class="payv">$718</span></div>
+  <div class="scale-row"><div class="px">26px</div><div class="use">Masthead</div><span style="font-family:var(--head);font-size:26px;text-transform:uppercase">SureThing Form</span></div>
+  <div class="scale-row"><div class="px">21px</div><div class="use">Run figures — bank, target</div><span style="font-family:var(--head);font-size:21px">$1,340</span></div>
+  <div class="scale-row"><div class="px">19px</div><div class="use">Team names, prices</div><span style="font-family:var(--head);font-size:19px;text-transform:uppercase">Bricklayers &nbsp; -260</span></div>
+  <div class="scale-row"><div class="px">16px</div><div class="use">Margin legs, button labels</div><span style="font-family:var(--head);font-size:16px;text-transform:uppercase">Lock It In</span></div>
+  <div class="scale-row"><div class="px">13px</div><div class="use"><b>Floor for product facts</b> — labels, records, reasons</div><span style="font-size:13px;letter-spacing:.1em">SEASON RECORD 8-1</span></div>
+  <div class="scale-row"><div class="px">12px</div><div class="use">OS chrome only. No product meaning.</div><span style="font-size:12px;letter-spacing:.1em;color:var(--toner-3)">DISK 61% FULL</span></div>
+
+  <!-- ── PRICE CELL ─────────────────────────────────────────────── -->
+  <h2><span class="n">04</span>The price cell</h2>
+  <p class="note">
+    The core control. A price is a printed figure; choosing it means <b>circling it</b>. The ring is
+    a real drawn asset tinted at runtime, never a border or a fill. Cell <code>96×30</code>, ring
+    box <code>112×46</code> offset <code>−8, −8</code>. Variant is keyed to matchup index, never
+    randomised per rebuild.
+  </p>
+  <div class="specrow">
+    <div class="spec"><div class="cap">Default</div><div class="dim">96 × 30</div>
+      <div class="demo"><button class="pr">-145</button></div></div>
+    <div class="spec"><div class="cap">Hover</div><div class="dim">wax text</div>
+      <div class="demo"><button class="pr" style="color:var(--wax-lit)">-145</button></div></div>
+    <div class="spec"><div class="cap">Picked · variant A</div><div class="dim">ring-price-a</div>
+      <div class="demo"><button class="pr">-260<span class="ring v-a"></span></button></div></div>
+    <div class="spec"><div class="cap">Picked · variant B</div><div class="dim">ring-price-b</div>
+      <div class="demo"><button class="pr">+180<span class="ring v-b"></span></button></div></div>
+    <div class="spec"><div class="cap">Picked · variant C</div><div class="dim">ring-price-c</div>
+      <div class="demo"><button class="pr">+125<span class="ring v-c"></span></button></div></div>
+  </div>
+  <div class="specrow">
+    <div class="spec"><div class="cap">Will replace</div><div class="dim">selectable</div>
+      <div class="demo"><button class="pr swaps"><span class="sg">⇄</span><u>+210</u></button></div></div>
+    <div class="spec"><div class="cap">Keyboard focus</div><div class="dim">2px wax</div>
+      <div class="demo"><button class="pr" style="outline:2px solid var(--wax);outline-offset:1px">-155</button></div></div>
+    <div class="spec"><div class="cap">Won · sweat only</div><div class="dim">wax figure</div>
+      <div class="demo"><button class="pr won">-260<span class="ring v-a" style="background-color:var(--wax)"></span></button></div></div>
+    <div class="spec"><div class="cap">Dead · sweat only</div><div class="dim">house strike</div>
+      <div class="demo"><button class="pr dead">+180<span class="ring strike"></span></button></div></div>
+  </div>
+  <div class="law">
+    <b>REPLACE, NEVER BLOCK ·</b> Picking the other side of a matchup that already carries a
+    selection <b>replaces</b> it. There is no padlock, no disabled odds, and no suspension —
+    v0 has no limiting. Two separate agents rendered a padlock here; both were wrong.
+  </div>
+
+  <!-- ── MARKETS ENTRY ──────────────────────────────────────────── -->
+  <h2><span class="n">05</span>Market navigation</h2>
+  <p class="note">
+    Opens event detail — Goals, BTTS, Corners, Cards, Players. Note <b>BTTS is already priced in
+    the engine</b> (<code>MarketKind.BothTeamsToScore</code>); promoting it to its own destination
+    is UI work only.
+  </p>
+  <div class="specrow">
+    <div class="spec"><div class="cap">Default</div><div class="dim">74 × 44</div>
+      <div class="demo"><button class="mkt">MORE<i>›</i></button></div></div>
+    <div class="spec"><div class="cap">Hover</div><div class="dim">—</div>
+      <div class="demo"><button class="mkt" style="border-color:var(--toner-3);color:var(--toner)">MORE<i>›</i></button></div></div>
+    <div class="spec"><div class="cap">Section tabs</div><div class="dim">h 27</div>
+      <div class="demo"><button class="tab on">FORM</button> <button class="tab">ENTRY</button> <button class="tab">MY BETS</button></div></div>
+  </div>
+
+  <!-- ── ACTIONS ────────────────────────────────────────────────── -->
+  <h2><span class="n">06</span>Actions</h2>
+  <p class="note">
+    <code>PLACE TICKET</code> stages a valid working slip. <code>LOCK IT IN</code> commits the round
+    and is dead until at least one ticket is staged — it states cause <i>and</i> remedy in place, at
+    13px, inside the house's stamp. <code>SKIP ROUND</code> is separate and takes two presses.
+  </p>
+  <div class="specrow">
+    <div class="spec"><div class="cap">Primary — enabled</div><div class="dim">h 44 · wax</div>
+      <div class="demo"><button class="place">Place Ticket</button></div></div>
+    <div class="spec"><div class="cap">Disabled + reason</div><div class="dim">h 52</div>
+      <div class="demo"><div class="lock"><b>Lock It In</b><small>PLACE OR CLEAR THESE MARKS</small></div></div></div>
+  </div>
+  <div class="specrow">
+    <div class="spec"><div class="cap">Secondary — two-press</div><div class="dim">h 34 · dashed</div>
+      <div class="demo"><button class="skip">SKIP ROUND — PRESS TWICE</button></div></div>
+    <div class="spec"><div class="cap">Armed</div><div class="dim">stamp border</div>
+      <div class="demo"><button class="skip" style="border-style:solid;border-color:var(--stamp);color:var(--stamp)">PRESS AGAIN TO SKIP</button></div></div>
+  </div>
+  <div class="specrow">
+    <div class="spec"><div class="cap">Stake — quick</div><div class="dim">68 × 32</div>
+      <div class="demo"><button class="qb">10%</button> <button class="qb">25%</button> <button class="qb">50%</button> <button class="qb">MAX</button></div></div>
+    <div class="spec"><div class="cap">Stake — nudge</div><div class="dim">88 × 32</div>
+      <div class="demo"><button class="nb">− $10</button> <button class="nb">+ $10</button></div></div>
+    <div class="spec"><div class="cap">Remove leg</div><div class="dim">60 × 32</div>
+      <div class="demo"><button class="rub">RUB OUT</button></div></div>
+  </div>
+
+  <!-- ── FIGURES ────────────────────────────────────────────────── -->
+  <h2><span class="n">07</span>Figures</h2>
+  <p class="note">
+    Money wears the wax pencil. The payout carries a hand-laid highlight; bank and target do not,
+    because only one figure at a time may be the loudest thing in the margin.
+  </p>
+  <div class="specrow">
+    <div class="spec"><div class="cap">Bank</div><div class="dim">21px toner</div>
+      <div class="demo"><div class="fig"><div class="k">BANK</div><div class="v">$1,340</div></div></div></div>
+    <div class="spec"><div class="cap">Target</div><div class="dim">21px wax</div>
+      <div class="demo"><div class="fig"><div class="k">TARGET</div><div class="v wax">$1,900</div></div></div></div>
+    <div class="spec"><div class="cap">Combined odds</div><div class="dim">18px</div>
+      <div class="demo"><div class="fig"><div class="k">COMBINED</div><div class="v">+259</div></div></div></div>
+    <div class="spec"><div class="cap">Potential payout</div><div class="dim">31px wax + highlight</div>
+      <div class="demo"><div class="fig"><div class="k">POTENTIAL PAYOUT</div><span class="payv">$718</span></div></div></div>
+  </div>
+
+  <!-- ── SWEAT ──────────────────────────────────────────────────── -->
+  <h2><span class="n">08</span>The loud register</h2>
+  <p class="note">
+    Calm to build, loud to sweat — and "loud" here is <b>the document being marked at him</b>, not
+    the app becoming a slot machine. Motion is continuous and hand-paced: ink laid down, never
+    panels flipping. That is deliberately the opposite of the TV's quantised refresh in the same
+    room, because if the two screens feel the same one of them is wrong.
+  </p>
+  <table>
+    <tr><th>Event</th><th>Mark</th><th>Colour</th></tr>
+    <tr><td>Leg goes live</td><td>Entry lifts toward <code>toner</code>; his ring holds</td><td>biro</td></tr>
+    <tr><td>Leg wins</td><td>Figure fills; ring re-inked over the top</td><td>wax</td></tr>
+    <tr><td>Leg dies</td><td><code>strike-a</code> drawn across; entry drops toward ground</td><td>stamp</td></tr>
+    <tr><td>Return changes</td><td>Margin tally crossed out and rewritten beneath</td><td>biro</td></tr>
+  </table>
+  <div class="law">
+    <b>NOT INHERITED FROM THE TV ·</b> No coarse grid, no monumental type, no brightness-as-sole-channel,
+    no quantised un-eased motion. The TV is an instrument you watch; this is a tool you operate, and
+    it owes the hand continuous feedback.
+  </div>
+
+  <!-- ── TARGETS ────────────────────────────────────────────────── -->
+  <h2><span class="n">09</span>Targets and legibility</h2>
+  <table>
+    <tr><th>Rule</th><th>Value</th><th>Why</th></tr>
+    <tr><td>Minimum cursor target</td><td><code>44 × 32</code></td><td>Read at an angle, driven by mouse</td></tr>
+    <tr><td>Minimum gap between targets</td><td><code>8px</code></td><td>Mis-clicks cost money here</td></tr>
+    <tr><td>Body contrast</td><td><code>≥ 4.5:1</code></td><td>Perspective surface, dim room</td></tr>
+    <tr><td>Product-fact type</td><td><code>≥ 13px</code></td><td>Survives the 50% thumbnail check</td></tr>
+    <tr><td>Rules and strokes</td><td><code>1–2px solid</code></td><td>Hairlines disintegrate at angle</td></tr>
+    <tr><td>Focus ring</td><td><code>2px wax, offset 1</code></td><td>Visible against every ground</td></tr>
+  </table>
+  <p class="note">
+    The whole surface renders inside the game's unified post-process grade — grain, haze, bloom,
+    chromatic aberration, vignette — so nothing here may depend on being pixel-clean. The document's
+    own toner grain sits <i>under</i> that pass, not instead of it.
+  </p>
+
+</div>
+</body>
+</html>

@@ -31,6 +31,13 @@ namespace SBR.Game
 
         private Canvas _canvas;
         private Font _font;
+        // Condensed voice seam (DESIGN.md / tokens/fonts.css --font-cond, Archivo Narrow). Archivo
+        // Narrow is not in the repo yet — a separate item, not this one — so this currently resolves
+        // to the SAME fallback Font object as _font (see LoadFont/Awake). That is deliberate, not a
+        // bug: every element routed through _fontCond today renders pixel-identical to _font, and the
+        // moment the real condensed face lands, only Awake needs to change for the whole surface to
+        // pick it up.
+        private Font _fontCond;
         private BetslipModel _slip;
         private int _slipRunGen = -1;
         private LaptopOs _os;
@@ -45,7 +52,13 @@ namespace SBR.Game
 
         private void Awake()
         {
-            _font = LoadFont();
+            // Two-voice type seam, now carrying the ruled production faces (S11, OFL 1.1):
+            // --font-data is Archivo (roman — labels, copy, OS chrome), --font-cond is Archivo
+            // Narrow (condensed — figures, prices, names, terminal-state words). One superfamily,
+            // so this is two voices of one hand rather than a pairing. Licences ship beside the
+            // fonts in Resources/SureThing/Fonts and must stay with them.
+            _font = LoadFont("SureThing/Fonts/Archivo");
+            _fontCond = LoadFont("SureThing/Fonts/ArchivoNarrow");
             _emissBlock = new MaterialPropertyBlock();
             if (tv == null) tv = FindAnyObjectByType<TvSweatScreen>();
             BuildSkeleton();
@@ -92,8 +105,8 @@ namespace SBR.Game
             canvasGo.transform.localScale = Vector3.one * (screenWorldSize.x / w);
 
             Transform root = canvasGo.transform;
-            LaptopUi.MakeStretchImage(root, "DesktopBacking", Color.black).raycastTarget = false;
-            _os = new LaptopOs((RectTransform)root, _font, this, w, h);
+            LaptopUi.MakeStretchImage(root, "DesktopBacking", LaptopOs.Ink).raycastTarget = false;
+            _os = new LaptopOs((RectTransform)root, _font, _fontCond, this, w, h);
         }
 
         private void Glow()
@@ -113,14 +126,50 @@ namespace SBR.Game
             lidRenderer.SetPropertyBlock(_emissBlock);
         }
 
-        private static Font LoadFont()
+        /// <summary>
+        /// Resolves one of the two production faces, falling back to Unity's built-in font if the
+        /// asset is missing so a bad import degrades to readable text rather than to a blank screen.
+        /// A fallback is loud in the log on purpose: silently rendering the wrong face is the kind
+        /// of defect that survives a review, because nothing looks broken.
+        /// </summary>
+        private static Font LoadFont(string resourcePath)
         {
-            try { return Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); }
+            var font = Resources.Load<Font>(resourcePath);
+            if (font != null)
+            {
+                WarmFontAtlas(font);
+                return font;
+            }
+
+            Debug.LogWarning($"[LaptopScreen] production face '{resourcePath}' did not load; "
+                + "falling back to LegacyRuntime. The surface will render in the wrong voice.");
+            try { font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); }
             catch
             {
                 Debug.LogWarning("[LaptopScreen] built-in font not found; text will not render.");
                 return null;
             }
+            WarmFontAtlas(font);
+            return font;
+        }
+
+        /// <summary>Bakes every character/size pair SureThing renders into the dynamic font's atlas
+        /// once, synchronously, before the first UI build, so no Text build is ever the "first use"
+        /// that makes the atlas repack. This is a robustness/hitch measure, not a bug fix: it was
+        /// written against a suspected atlas race behind the "reason label paints only two glyphs"
+        /// defect, and it did not fix it — that defect was pure occlusion (the Skip button was drawn
+        /// over the label; see SportsbookApp.BuildSlip). Kept because pre-warming a dynamic atlas on
+        /// a world-space canvas that rebuilds every interaction is worth the one-time cost. The
+        /// charset is best-effort; an unlisted character still rasterizes on demand as before.</summary>
+        private static void WarmFontAtlas(Font font)
+        {
+            if (font == null) return;
+            const string charset =
+                " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" +
+                ".,:;!?'\"()[]/%$+-—−·■▰›←→⇄@¤✓";
+            int[] sizes = { 9, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 26, 28, 30, 31 };
+            foreach (int size in sizes)
+                font.RequestCharactersInTexture(charset, size, FontStyle.Normal);
         }
     }
 }

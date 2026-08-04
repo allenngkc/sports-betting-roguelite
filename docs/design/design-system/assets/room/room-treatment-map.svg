@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07101d"></stop>
+      <stop offset="1" stop-color="#0d1828"></stop>
+    </linearGradient>
+    <pattern id="dressing" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="12" height="12" fill="#142439"></rect>
+      <rect width="3" height="12" fill="#2b5d82"></rect>
+    </pattern>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="5" result="blur"></feGaussianBlur>
+      <feMerge>
+        <feMergeNode in="blur"></feMergeNode>
+        <feMergeNode in="SourceGraphic"></feMergeNode>
+      </feMerge>
+    </filter>
+    
+  </defs>
+
+  <rect width="1200" height="760" fill="url(#bg)"></rect>
+  <text x="55" y="50" class="label" font-size="25">ROOM ART TREATMENT MAP — LOCKED 2.6 m × 4.0 m FLOOR PLAN</text>
+  <text x="55" y="75" class="small">Top-down review diagram · far/window wall at top · entry end at bottom</text>
+
+  
+  <rect x="280" y="90" width="520" height="600" rx="4" fill="#101a28" stroke="#b7c4d4" stroke-width="4"></rect>
+
+  
+  <path d="M292 102H788V678H292Z" fill="none" stroke="url(#dressing)" stroke-width="18" opacity="0.8"></path>
+
+  
+  <line x1="420" y1="98" x2="660" y2="98" stroke="#438dff" stroke-width="10" filter="url(#glow)"></line>
+  <text x="470" y="125" class="small">WINDOW / COOL FILL</text>
+
+  
+  <path d="M455 655 L675 655 L675 270 L455 270 Z" fill="#0e2631" stroke="#59c7d8" stroke-width="2" stroke-dasharray="9 7" opacity="0.8"></path>
+  <text x="490" y="470" class="small" transform="rotate(-90 490 470)">PROTECTED WALKABLE / RAYCAST CLEARANCE</text>
+
+  
+  <rect x="280" y="200" width="140" height="270" rx="7" class="fixed"></rect>
+  <rect x="290" y="210" width="120" height="250" rx="5" fill="url(#dressing)" opacity="0.75"></rect>
+  <text x="302" y="325" class="label" transform="rotate(-90 302 325)">COUCH + BUNK</text>
+  <text x="337" y="335" class="tiny" transform="rotate(-90 337 335)">fabric · bedding · trim · repair</text>
+
+  
+  <rect x="785" y="252" width="15" height="166" rx="3" class="hero"></rect>
+  <text x="756" y="347" class="label" text-anchor="end">TV</text>
+  <text x="756" y="369" class="tiny" text-anchor="end">hero screen</text>
+
+  
+  <rect x="700" y="90" width="100" height="165" rx="5" class="fixed"></rect>
+  <rect x="708" y="98" width="84" height="149" rx="4" fill="url(#dressing)" opacity="0.7"></rect>
+  <rect x="744" y="145" width="48" height="34" rx="3" class="hero"></rect>
+  <rect x="713" y="190" width="24" height="34" rx="4" fill="#e6f7ff" stroke="#75d9ff" stroke-width="2"></rect>
+  <text x="682" y="132" class="label" text-anchor="end">DESK</text>
+  <text x="682" y="153" class="tiny" text-anchor="end">laptop + phone</text>
+
+  
+  <rect x="615" y="136" width="70" height="53" rx="4" class="fixed"></rect>
+  <text x="650" y="168" class="small" text-anchor="middle">STOOL</text>
+
+  
+  <rect x="300" y="590" width="100" height="75" rx="7" class="fixed"></rect>
+  <rect x="309" y="599" width="82" height="57" rx="5" fill="url(#dressing)" opacity="0.65"></rect>
+  <text x="350" y="625" class="small" text-anchor="middle">MINI</text>
+  <text x="350" y="644" class="small" text-anchor="middle">FRIDGE</text>
+
+  
+  <circle cx="600" cy="600" r="18" fill="#eef5ff" stroke="#75d9ff" stroke-width="4"></circle>
+  <path d="M600 570 L590 590 H610 Z" fill="#75d9ff"></path>
+  <text x="628" y="606" class="small">standing spawn</text>
+
+  
+  <path d="M510 690H630" stroke="#07101d" stroke-width="8"></path>
+  <path d="M510 688A120 120 0 0 1 630 568" fill="none" stroke="#60748c" stroke-width="2" stroke-dasharray="5 5"></path>
+  <text x="540" y="720" class="small">ENTRY END</text>
+
+  
+  <path d="M260 90H230V690H260" class="dimension"></path>
+  <text x="205" y="410" class="small" transform="rotate(-90 205 410)">4.0 m</text>
+  <path d="M280 710V735H800V710" class="dimension"></path>
+  <text x="540" y="750" class="small" text-anchor="middle">2.6 m</text>
+
+  
+  <rect x="850" y="105" width="300" height="535" rx="12" fill="#101b2a" stroke="#31465e" stroke-width="2"></rect>
+  <text x="880" y="145" class="label" font-size="21">IMPLEMENTATION LAW</text>
+
+  <rect x="880" y="175" width="38" height="24" class="fixed"></rect>
+  <text x="935" y="193" class="small">Builder-owned functional volume</text>
+
+  <rect x="880" y="220" width="38" height="24" fill="url(#dressing)" stroke="#60748c" stroke-width="2"></rect>
+  <text x="935" y="238" class="small">RoomArtRoot surface dressing</text>
+
+  <rect x="880" y="265" width="38" height="24" class="hero"></rect>
+  <text x="935" y="283" class="small">Protected screen / hero plane</text>
+
+  <rect x="880" y="310" width="38" height="24" fill="#0e2631" stroke="#59c7d8" stroke-width="2" stroke-dasharray="6 4"></rect>
+  <text x="935" y="328" class="small">No-prop aisle / interaction zone</text>
+
+  <line x1="880" y1="365" x2="1120" y2="365" stroke="#31465e" stroke-width="2"></line>
+  <text x="880" y="402" class="label">Approved art may change</text>
+  <text x="895" y="430" class="small">• surface materials and wear</text>
+  <text x="895" y="455" class="small">• collision-free trim and clutter</text>
+  <text x="895" y="480" class="small">• window, ambient and screen spill</text>
+  <text x="895" y="505" class="small">• decals, cables, bedding and fabric</text>
+
+  <text x="880" y="548" class="label">Art may not change</text>
+  <text x="895" y="576" class="small">• furniture transforms or colliders</text>
+  <text x="895" y="601" class="small">• camera anchors, FOVs or UI</text>
+  <text x="895" y="626" class="small">• walkable and raycast clearances</text>
+
+  <text x="850" y="680" class="tiny">Geometry comes from GrayboxRoomBuilder.cs.</text>
+  <text x="850" y="701" class="tiny">Concept art sets mood and materials only.</text>
+  <text x="850" y="722" class="tiny">This map remains layout authority.</text>
+</svg>
