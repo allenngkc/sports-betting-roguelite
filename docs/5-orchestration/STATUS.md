@@ -92,6 +92,12 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-03 cycle 71 · **Walkthrough recorded** — Allen walked the two-bunk
+  room: aisle, traversal, scale, phone all PASS; one finding — from the couch,
+  bunk 2's post partially occludes the TV sweat view. Gates 6–7 clear; Gate 8
+  clears with the occlusion fix (geometry-class fix re-voids + re-runs, per
+  the lead's own flag; sweat view is the primary sightline, fix must not
+  degrade it). Register R22 row updated. Reversal: none — walk facts.
 - 2026-08-03 cycle 70 · **Two staged drafts fired; walk done, report pending** —
   markets: placed tickets draw on BOTH screens (Allen; one shared component
   consumed twice; kit deviation queued for DD signature). Room: Allen walked
