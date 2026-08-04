@@ -574,6 +574,11 @@ namespace SBR.Game
         // so the flow region above it and the action band below can never meet. Every offset here is
         // measured up from the panel's bottom; nothing in this band depends on how many legs are
         // marked, which is the point — LOCK IT IN must not move because the player bet more.
+        /// <summary>Per-leg vertical step in the working margin. S50 §2 collapsed it from 42 to 35
+        /// by closing spacing only — 7px x 4 legs = 28px, which with the 18px deleted status line
+        /// clears T47's 44px deficit. S39's one-baseline grammar, applied where it already belonged.</summary>
+        private const float LegRowPitch = 35f;
+
         private const float SkipBandY = 8f;
         private const float SkipBandH = 34f;
         private const float LockBandY = 52f;
@@ -624,16 +629,12 @@ namespace SBR.Game
             LaptopUi.MakePanel(panel, "HeaderRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -34f), new Vector2(headerRight, 2f), LaptopOs.BiroDeep);
 
-            // House status line, not part of the kit's MarginHeader — kept under its original name
-            // ("Rule") because SureThingMilestoneOneTests/Form_product_text_and_controls_meet_the_
-            // contract_floor and SureThingEntryTests' persistence snapshot both look this node up by
-            // that name; only its position moved, to clear the new header rule above it.
-            LaptopUi.MakeText(panel, "Rule", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, -39f), new Vector2(300f, 18f), 13, TextAnchor.UpperLeft,
-                boardFrozen ? LaptopOs.MoneyGold : LaptopOs.Muted,
-                boardFrozen ? "PRICES FINAL — BOARD LOCKED" : "PRICES FINAL. NOTHING YOU DO MOVES THEM.", _font);
-
-            float y = -62f;
+            // S50 §1: the house status line is DELETED — 18px. It restated the board header's own
+            // "ROUND n OF 8 · PRICES FINAL", which S37 forbids outright (the masthead carries the
+            // run's scope, the board header the screen's, and nothing restates either), and the
+            // markets C14 audit already carried it as invented (M-09). This was never an open
+            // question — an unexecuted ruling is not a pending one.
+            float y = -44f;
             if (slip.Picks.Count == 0)
             {
                 LaptopUi.MakeText(panel, "Empty", new Vector2(0f, 1f), new Vector2(0f, 1f),
@@ -694,14 +695,14 @@ namespace SBR.Game
                 // content column past the check (kit: the check sits outside the flex column that
                 // holds both lines), not the row's own left edge.
                 LaptopUi.MakeText(panel, "LegDetail" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(contentX, y - 22f), new Vector2(rowRight - contentX, 16f), 13,
+                    new Vector2(contentX, y - 20f), new Vector2(rowRight - contentX, 15f), 13,
                     TextAnchor.UpperLeft, LaptopOs.Muted, $"{fields.Market} · ENTRY {entry}", _font);
 
                 // 1px --rule bottom rule (M-02), spanning the FULL row including the RUB OUT column
                 // (kit: the border sits on the outer flex row, check+content+button together) — the
                 // shared LaptopUi.MakeRule is hardcoded to --rule-soft and cannot be reused here.
                 LaptopUi.MakePanel(panel, "LegRule" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(14f, y - 38f), new Vector2(headerRight, 1f), LaptopOs.Rule);
+                    new Vector2(14f, y - 34f), new Vector2(headerRight, 1f), LaptopOs.Rule);
 
                 int matchupIndex = pick.MatchupIndex;
                 if (run.OwnsConsumable("profit_boost"))
@@ -713,14 +714,19 @@ namespace SBR.Game
                         new Vector2(58f, 24f), 13, boosted ? LaptopOs.MoneyGold : LaptopOs.SurfaceRaised,
                         LaptopOs.White, () => { slip.ToggleBoost(legIndex); _invalidate(); }, _font);
                 }
-                // RUB OUT is an action label, set in the condensed face — RubOutButton.prompt.md.
+                // RUB OUT stays 60x32 — S50 §3 keeps it at size deliberately, because a mis-click
+                // here costs money. Vertically centred against the identity/market pair rather than
+                // pinned to the first baseline, per S50 §2.
                 LaptopUi.MakeButton(panel, "Remove" + i, "RUB OUT", new Vector2(1f, 1f), new Vector2(1f, 1f),
-                    new Vector2(-12f, y + 5f), new Vector2(60f, 32f), 13, LaptopOs.Ink, LaptopOs.Muted,
+                    new Vector2(-12f, y + 1.5f), new Vector2(60f, 32f), 13, LaptopOs.Ink, LaptopOs.Muted,
                     () => { slip.Remove(matchupIndex); _lockArmed = false; _invalidate(); }, _fontCond);
-                // B1-2's two-line row replaces the old single 16px line, so the per-leg vertical step
-                // grows from 27px to 42px — see this method's header-comment rhythm note for the
-                // panel-overflow consequence at high leg counts (BuildSlip class-level, S32-adjacent).
-                y -= 42f;
+                // S50 §2: the leg row takes S39's one-baseline discipline — a margin leg is the same
+                // kind of object as a settled record (identity, price, market, state) and has no
+                // business carrying a different vertical grammar. The yield comes from SPACING, which
+                // is first in S50's standing order (spacing, then repetition, then nothing): the two
+                // baselines close from 22px to 20px apart and the rule from 38 to 34, taking the step
+                // 42 -> 35. Nothing that states a product fact was deleted to make the layout fit.
+                y -= LegRowPitch;
             }
 
             if (run.Tickets.Count > 0)

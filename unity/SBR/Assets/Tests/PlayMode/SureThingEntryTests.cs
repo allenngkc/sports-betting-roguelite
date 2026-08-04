@@ -474,6 +474,20 @@ namespace SBR.Tests.PlayMode
                 Invoke(Required(Required(App(laptop), "Matchup" + i), "AwayOdds"));
                 yield return WaitForRebuild();
             }
+
+            // S50's named consequence: a STAGED RECEIPT adds flow the bare 4-leg figure never
+            // contained, so the worst case is a full slip standing on top of a staged ticket, not a
+            // full slip alone. Place once to stage a receipt (which clears the working slip), then
+            // refill to the cap. Measuring only the empty-receipt state is what let the original
+            // 414px figure understate the flow.
+            Invoke(Required(Required(App(laptop), "WorkingMargin"), "Place"));
+            yield return WaitForRebuild();
+            Assert.Greater(run.Tickets.Count, 0, "a receipt must actually be staged");
+            for (int i = 0; i < maxLegs; i++)
+            {
+                Invoke(Required(Required(App(laptop), "Matchup" + i), "AwayOdds"));
+                yield return WaitForRebuild();
+            }
             Assert.AreEqual(maxLegs, laptop.Slip.Picks.Count,
                 "the slip must actually reach the cap for this invariant to mean anything");
 
@@ -551,8 +565,10 @@ namespace SBR.Tests.PlayMode
             //  · horizontal collisions. It is a vertical-stack check only.
             //  · z-order. Two elements sharing a band are caught; one correctly drawn over another
             //    on purpose is not distinguished from one accidentally buried.
-            //  · any leg count other than MaxLegs, and any state other than a working slip with no
-            //    staged receipts — a staged receipt adds flow height this test never exercises.
+            //  · any leg count other than MaxLegs. It now exercises a full slip ON TOP OF a staged
+            //    receipt (S50's named consequence), but not multiple staged receipts, and not the
+            //    board-frozen state, whose copy differs.
+            //  · the REWARDS and MY BETS passive margins, which have their own content.
         }
 
         /// <summary>A RectTransform's top/bottom edge expressed in <paramref name="basis"/>'s local
@@ -618,7 +634,7 @@ namespace SBR.Tests.PlayMode
                 EventRecords = TextOf(Required(app, "EventRecords")),
                 EventForm = TextOf(Required(app, "EventForm")),
                 MarginTitle = TextOf(Required(margin, "Title")),
-                MarginRule = TextOf(Required(margin, "Rule")),
+                MarginCount = TextOf(Required(margin, "Count")),
                 WorkingLeg = TextOf(Required(margin, "Leg0")),
                 Stake = TextOf(Required(margin, "Stake")),
                 Payout = TextOf(Required(margin, "Payout")),
@@ -657,7 +673,7 @@ namespace SBR.Tests.PlayMode
 
             Assert.AreEqual(expected.MarginTitle, TextOf(Required(margin, "Title")),
                 $"{destination} working-margin title");
-            Assert.AreEqual(expected.MarginRule, TextOf(Required(margin, "Rule")),
+            Assert.AreEqual(expected.MarginCount, TextOf(Required(margin, "Count")),
                 $"{destination} working-margin rule");
             Assert.AreEqual(expected.WorkingLeg, TextOf(Required(margin, "Leg0")),
                 $"{destination} working mark");
@@ -913,7 +929,7 @@ namespace SBR.Tests.PlayMode
             public string EventRecords;
             public string EventForm;
             public string MarginTitle;
-            public string MarginRule;
+            public string MarginCount;
             public string WorkingLeg;
             public string Stake;
             public string Payout;
