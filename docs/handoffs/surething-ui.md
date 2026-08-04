@@ -1,7 +1,7 @@
 # SureThing UI — re-seat state
 
-**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-03, after S46.
-**HEAD:** `4957997` · **Branch:** `surething-ui` · working tree clean.
+**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-03, after S44+S45.
+**HEAD:** `916d4f4` · **Branch:** `surething-ui` · working tree clean.
 
 This is written for a seat with **no conversation context**. Everything below is either verifiable in
 the repo or flagged as unverified.
@@ -207,6 +207,43 @@ faces load with no fallback warning, and the same string measures 64px condensed
 roman (ratio 0.82) on frames 11 and 01. **C15's scoping was written against the old claim** and
 should be re-read with this in mind.
 
+## 4-0.3 S44 + S45 landed. S47 is next
+
+**Done** (`916d4f4`). Suites **EditMode 76/76, PlayMode 44/44**. The wallpaper is the lifted ground
+and its toner grain and nothing else: the `SURE THING.` wordmark and `the number never lies` are
+deleted rather than restyled, and the app icon's `S` left the player's ink for full `--toner` —
+**S47's own wording names that last one as S44's**, which is easy to miss if you read S44 alone.
+
+Three things to carry:
+
+- **The optional dead-manufacturer wordmark is deliberately not built.** S44 permits one in
+  `--toner-3`. S48 folds this desktop into `NotebookChrome`, whose rail already carries the
+  machine's own marks (`NOTEBOOK`, the `PROPERTY OF NOBODY` sticker), so a wallpaper mark would be
+  a second instance of exactly that. If the DD wants one anyway it is four lines.
+- **The vacated top band is not headroom.** R30 is new this morning (batch 8, promoted from S50)
+  and binds all three surfaces: a locked band is not spare space. S48's 34px rail lands in that
+  strip. It is named in the source so the emptiness is not later priced as free.
+- **S47 is next, and three of its items are visible on frame 11 rather than hidden**: the LEDGER
+  icon's `$` is drawn at `--ground-3` and is nearly invisible — the chip colour looks to have been
+  passed as the glyph colour — all four icons carry a chip where only installed ones should, and
+  `(soon)` is still on Mail and Bank. `Mail (soon)` and `Bank (soon)` also still read in sentence
+  case: **that is deliberate**, see §4-0.2.
+
+**Evidence and its scope (C25).** Frame 11 re-shot: zero blue-dominant pixels anywhere on the
+desktop, sampling every other column of all 1024×640 above the taskbar. Not covered: the
+wallpaper's own corner colours are per-vertex data inside `OnPopulateMesh`, so neither the new
+test's colour-field scan nor any `Graphic.color` read touches them.
+
+**Filed, not fixed:** the run-verdict screen (§4-0.2 finding 2) is written up at
+`main-2/docs/design/dd-import/dd-followup-surething-verdict-screen.md` in C25 form, per the
+orchestrator. **Left untracked on purpose** — main-2 is on `main`, other leads' notes sit there the
+same way, and it rides the next drag. A third violation turned up while writing it: `NEW RUN` is a
+**biro-filled field**, which is Law Two and S18 at once.
+
+**Batch 8 (2026-08-03) checked and does not touch the desktop block.** Also from it: **C26** — this
+surface's owning document does not exist and is owed after the LEDGER close-out and the S48 fold.
+Not blocking, but it is on the surface's account.
+
 ## 4a. S32 — which happened: fixed between HEADs
 
 S32 closed on rendered evidence and asks this handoff to record the cause, because the register
@@ -319,10 +356,9 @@ Archivo Narrow's digits are already uniform, so this is insurance rather than a 
 - ~~Scroll input~~ — **ruled S42 and built** (`f8138cc`). See §4-0.1 for what it still needs.
 - ~~Legs as one string vs sub-rows~~ — **ruled S40: the sub-rows stand**, and the reserved-and-blank
   legs cell is deleted. Built in `e1f0602`.
-- **The desktop block is the next queue**, in this order and no other: ~~**S46**~~ (**done**,
-  `4957997` — see §4-0.2) → **S44 + S45** (the wallpaper stops wearing the house's brand; biro on it
-  breaks the two-ink rule outright, and "the number never lies" is deleted rather than softened) →
-  **S47** (installed vs not-installed is a two-state vocabulary; `(soon)` is deleted) → **S49**
+- **The desktop block**, in this order and no other: ~~**S46**~~ (**done**, `4957997` — see §4-0.2)
+  → ~~**S44 + S45**~~ (**done**, `916d4f4` — see §4-0.3) → **S47 is next** (installed vs
+  not-installed is a two-state vocabulary; `(soon)` is deleted) → **S49**
   (**DD-authored — the desktop enters `ui_kits/surething/`; this seat does not write to `main-2`**)
   → **S48 last**, because folding the desktop into `NotebookChrome` re-opens S8 and returns it to
   review.
