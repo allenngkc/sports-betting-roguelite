@@ -205,7 +205,7 @@ REFERENCE_JSON_PATH = Path(__file__).resolve().parent / "room_gate_reference.jso
 # and must never be silently compared as if it did; bump this whenever the
 # reference's shape changes again, so an old file is always detected rather
 # than misread.
-REFERENCE_SCHEMA_VERSION = 2
+REFERENCE_SCHEMA_VERSION = 3
 
 # Tolerance for comparing collider float dimensions read back out of text.
 # Same scene file re-parsed twice will match exactly; this just guards
@@ -232,6 +232,7 @@ CENTER_RE = re.compile(r'm_Center:\s*\{x:\s*(-?[\d.eE+-]+),\s*y:\s*(-?[\d.eE+-]+
 DANGLING_MESH_RE = re.compile(r'm_Mesh:\s*\{fileID:\s*0\}')
 GAMEOBJECT_REF_RE = re.compile(r'm_GameObject:\s*\{fileID:\s*(-?\d+)\}')
 IS_TRIGGER_RE = re.compile(r'm_IsTrigger:\s*(\d+)')
+LOCAL_POSITION_RE = re.compile(r'm_LocalPosition:\s*\{x:\s*(-?[\d.eE+-]+),\s*y:\s*(-?[\d.eE+-]+),\s*z:\s*(-?[\d.eE+-]+)\}')
 # R29: a GameObject's own enabled flag. Gate 2 counted names only, so a DISABLED
 # duplicate satisfied a count -- the gate could not tell the two states apart at
 # all, which R29 rules is a bigger finding than the gate's result.
@@ -562,7 +563,7 @@ def gate3_collider_inventory(docs):
     return result, box
 
 
-def gate4_collider_dimensions(box_collider_records):
+def gate4_collider_dimensions(box_collider_records, owner_positions=None):
     """Extract each BoxCollider's (size, center), keyed by its OWNER NAME.
 
     This is keyed on owner, not just shape, on purpose: a bare (size, center)
@@ -583,6 +584,7 @@ def gate4_collider_dimensions(box_collider_records):
     silently keeping only one via a dict overwrite would just relocate the
     same blind spot one level down, which defeats the point of this fix.
     """
+    owner_positions = owner_positions or {}
     by_owner = {}
     for anchor, name, fileid, body in box_collider_records:
         owner_label = _owner_label(name, fileid)
@@ -592,14 +594,36 @@ def gate4_collider_dimensions(box_collider_records):
             raise ValueError(f"BoxCollider on '{owner_label}' (anchor {anchor}) is missing m_Size or m_Center")
         size = tuple(round(float(v), 6) for v in size_m.groups())
         center = tuple(round(float(v), 6) for v in center_m.groups())
+        position = owner_positions.get(fileid)
         if owner_label in by_owner:
             raise ValueError(
                 f"more than one BoxCollider resolves to owner '{owner_label}' -- Gate 4 keys "
                 "on owner name and cannot disambiguate them without reintroducing an anonymous "
                 "fallback; give the GameObjects distinct names or extend Gate 4 to also key on anchor"
             )
-        by_owner[owner_label] = {"size": size, "center": center}
+        by_owner[owner_label] = {"size": size, "center": center, "position": position}
     return by_owner
+
+
+def collider_owner_positions(docs):
+    """Map GameObject anchor -> its Transform's m_LocalPosition (R22, 2026-08-03).
+
+    Gate 4 read only the collider's own local m_Size/m_Center, so MOVING a
+    collider's GameObject changed nothing it looked at. Proven, not theorised:
+    Bunk2PostFront was relocated 0.13m to clear the couch sightline, the scene
+    rebuilt, and Gate 4 reported "27 colliders, 0 mismatch(es)" -- a gate named
+    "collision dims unchanged" passing a collision change. Fourth-vacuous-gate
+    class (C18 §4.2); this closes it.
+    """
+    positions = {}
+    for _cid, _anchor, cname, body in docs:
+        if cname not in ("Transform", "RectTransform"):
+            continue
+        gm = GAMEOBJECT_REF_RE.search(body)
+        pm = LOCAL_POSITION_RE.search(body)
+        if gm and pm:
+            positions[gm.group(1)] = tuple(round(float(v), 6) for v in pm.groups())
+    return positions
 
 
 def gate5_dangling_mesh_refs(text):
@@ -1065,7 +1089,7 @@ def main():
         # bare (size, center) multiset let two identically-shaped colliders swap
         # owners invisibly (sorted, the swap is byte-identical before/after). See
         # gate4_collider_dimensions' docstring for the full story.
-        current_dims = gate4_collider_dimensions(box_collider_records)
+        current_dims = gate4_collider_dimensions(box_collider_records, collider_owner_positions(docs))
         if args.write_reference:
             REFERENCE_JSON_PATH.parent.mkdir(parents=True, exist_ok=True)
             payload = {
@@ -1073,7 +1097,8 @@ def main():
                 "generated_from": str(scene_path),
                 "collider_count": len(current_dims),
                 "colliders": [
-                    {"owner": owner, "size": list(d["size"]), "center": list(d["center"])}
+                    {"owner": owner, "size": list(d["size"]), "center": list(d["center"]),
+                     "position": list(d["position"]) if d["position"] else None}
                     for owner, d in sorted(current_dims.items())
                 ],
             }
@@ -1113,6 +1138,7 @@ def main():
                     c["owner"]: {
                         "size": tuple(round(float(v), 6) for v in c["size"]),
                         "center": tuple(round(float(v), 6) for v in c["center"]),
+                        "position": tuple(round(float(v), 6) for v in c["position"]) if c.get("position") else None,
                     }
                     for c in ref_payload["colliders"]
                 }
@@ -1129,6 +1155,11 @@ def main():
                     cur = current_dims[name]["size"] + current_dims[name]["center"]
                     if any(abs(a - b) > DIMENSION_TOLERANCE for a, b in zip(ref, cur)):
                         mismatches.append(f"'{name}': reference size/center {ref} vs current {cur}")
+                    rp, cp = ref_by_owner[name]["position"], current_dims[name]["position"]
+                    if rp is None or cp is None:
+                        mismatches.append(f"'{name}': owner transform position unreadable (ref={rp}, cur={cp})")
+                    elif any(abs(a - b) > DIMENSION_TOLERANCE for a, b in zip(rp, cp)):
+                        mismatches.append(f"'{name}': MOVED - reference position {rp} vs current {cp}")
 
                 gate4_ok = not mismatches
                 results.append(GateResult(
@@ -1146,9 +1177,13 @@ def main():
                                "differ. It remains BLIND to a swap between two colliders that already "
                                "share identical local size AND center (e.g. WallLeft/WallRight, "
                                "Floor/Ceiling, or the four DeskLeg* colliders in this scene all do) -- "
-                               "Gate 4 never reads the owning GameObject's Transform (world position), "
-                               "only the collider's own local fields, so a same-shaped pair swapping "
-                               "which named object owns them is still invisible.",
+                               "Since R22 it ALSO compares each owner's Transform m_LocalPosition, so "
+                               "a collider that RELOCATED is now named and failed -- before that a "
+                               "moved collider passed this gate untouched, because nothing it read "
+                               "had changed. Remaining holes, stated: it reads the owner's OWN local "
+                               "position, so a move applied to an ANCESTOR transform is still "
+                               "invisible; it ignores rotation and scale entirely; and a same-shaped, "
+                               "same-position pair swapping owners stays undetectable.",
                 ))
 
         # --- Gate 5: no dangling mesh references ----------------------------

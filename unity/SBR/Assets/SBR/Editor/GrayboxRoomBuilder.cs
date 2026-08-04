@@ -697,7 +697,28 @@ namespace SBR
             // note. This is a known, deliberate, measured risk; do not compensate here either.
             Box("Bunk2Slab", deskRoot, new Vector3(0.9f, 1.54f, 1.25f),
                 new Vector3(0.8f, 0.08f, 1.5f), mats.BunkFrame);
-            Box("Bunk2PostFront", deskRoot, new Vector3(0.53f, 0.77f, 0.57f),
+            // R22 (Allen's walkthrough, 2026-08-03): at z 0.57 this post stood between the couch
+            // eye (-0.95, 1.15, 0.30) and the TV screen at x 1.232, occluding the left edge of the
+            // seated sweat view - the game's primary sightline.
+            //
+            // Projected to the screen plane, a post edge at z_p casts to
+            //     z_screen = 0.300 + (z_p - 0.300) * (1.232 + 0.95) / (0.50 + 0.95)
+            // The screen is 0.98 wide centred at z 0.300, so its far edge is z 0.79. At the old
+            // z_p 0.54 the shadow landed at 0.647-0.751: a ~10cm band on a 98cm screen, hard
+            // against the edge. Clearing needs the near face at z >= 0.626; at 0.70 centre the
+            // near face is 0.67 and the shadow falls at 0.857, clearing by 6.7cm - margin enough
+            // to survive a couple of cm of slop in the seated anchor.
+            //
+            // MOVED IN Z, NOT IN X, deliberately. x stays 0.50-0.56 so the aisle is still 1.00m
+            // against a 0.60m capsule - the clearance Allen already walked and passed is
+            // arithmetically unchanged, so the re-walk confirms the same number at a new spot
+            // rather than re-assessing it.
+            //
+            // Cost, accepted: this post is inset ~0.15m from its slab's near end where bunk 1's
+            // posts sit flush, so the two bunks no longer match exactly. Taken over shortening
+            // Bunk2Slab, which would put the ratified 43.9 mattress test (law 1.4) in play to fix
+            // a sightline.
+            Box("Bunk2PostFront", deskRoot, new Vector3(0.53f, 0.77f, 0.70f),
                 new Vector3(0.06f, 1.54f, 0.06f), mats.BunkFrame);
             Box("Bunk2PostBack", deskRoot, new Vector3(0.53f, 0.77f, 1.93f),
                 new Vector3(0.06f, 1.54f, 0.06f), mats.BunkFrame);
