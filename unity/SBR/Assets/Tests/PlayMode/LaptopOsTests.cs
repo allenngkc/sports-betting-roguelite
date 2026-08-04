@@ -184,8 +184,14 @@ namespace SBR.Tests.PlayMode
             Assert.IsNotNull(desktop, "desktop root missing");
             Assert.AreEqual("SURETHING", TextUnder(desktop, "SureThing", "Caption"),
                 "the desktop icon names the app SURETHING, not Sportsbook");
-            Assert.AreEqual("SURETHING   ·   LEDGER", TextOn(FindDeep(desktop, "TaskbarText")),
-                "the taskbar carries the name without its retired full stop");
+            // Until S48 this read a "SURETHING   ·   LEDGER" label on the desktop's own taskbar.
+            // The fold replaced that label with the tray's real app slots, so the name is now
+            // asserted where it actually lives — and it is the same slot, from the same builder,
+            // as the one the in-app assertions below read.
+            Transform desktopTray = FindDeep(desktop, "NotebookTray");
+            Assert.IsNotNull(desktopTray, "the desktop carries the shared tray (S48)");
+            Assert.AreEqual("SURETHING", TextUnder(desktopTray, "SureThing", "Label"),
+                "the desktop's tray slot names the app");
             AssertNoRetiredName(laptop.transform, "desktop");
 
             // Inside the app: the tray slot and the masthead brand, on every tab that carries them.
@@ -244,10 +250,20 @@ namespace SBR.Tests.PlayMode
                 Assert.IsFalse(text.text.ToLowerInvariant().Contains("never lies"),
                     $"S45: '{text.text}' promises the player a guaranteed win. Deleted, not softened.");
 
-            // S44's actual mechanism: biro is only ever what the player chose, so none of it belongs
-            // on the machine's own screen — including the app icon's glyph (S47 names this as S44's).
+            // S44's actual mechanism: the house's brand is not in the player's ink, so no biro on
+            // the wallpaper or the icons — including the app icon's glyph (S47 names that as S44's).
+            //
+            // The shared chrome is excluded, and not for convenience. Since S48 the desktop carries
+            // the rail, whose PROPERTY OF NOBODY sticker is biro on purpose: it is the one thing on
+            // this machine the player did write, which is the same law reaching the opposite
+            // answer. That sticker is S8's and Design-verified; failing it here would be this test
+            // overruling a ruling it does not hold.
+            Transform railToSkip = FindDeep(desktop, "NotebookRail");
+            Transform trayToSkip = FindDeep(desktop, "NotebookTray");
             foreach (Graphic graphic in desktop.GetComponentsInChildren<Graphic>())
             {
+                if (railToSkip != null && graphic.transform.IsChildOf(railToSkip)) continue;
+                if (trayToSkip != null && graphic.transform.IsChildOf(trayToSkip)) continue;
                 Assert.IsFalse(SameInk(graphic.color, LaptopOs.Accent),
                     $"S44: '{graphic.name}' is drawn in biro on the player's own desktop");
                 Assert.IsFalse(SameInk(graphic.color, LaptopOs.BiroDeep),
@@ -256,7 +272,9 @@ namespace SBR.Tests.PlayMode
 
             // And positively, because "not biro" alone would also pass if the glyph vanished
             // entirely. The glyph is the icon button's own "Label" child; "Caption" is the app name.
-            Transform icon = FindDeep(desktop, "SureThing");
+            // A direct child, not a deep search: since S48 the tray below carries a slot with this
+            // same name, and a recursive find would return whichever was built first.
+            Transform icon = desktop.Find("SureThing");
             Assert.IsNotNull(icon, "the SureThing icon is missing");
             Transform glyph = icon.Find("Label");
             Assert.IsNotNull(glyph, "the SureThing icon has no glyph");
@@ -299,7 +317,8 @@ namespace SBR.Tests.PlayMode
             foreach ((string node, bool installed) in new[]
                 { ("SureThing", true), ("OldSlips", true), ("Mail", false), ("Bank", false) })
             {
-                Transform icon = FindDeep(desktop, node);
+                // Direct child: the tray's slots share two of these names since S48.
+                Transform icon = desktop.Find(node);
                 Assert.IsNotNull(icon, $"'{node}' icon missing");
                 string state = installed ? "installed" : "not installed";
                 Color ink = installed ? LaptopOs.White : LaptopOs.Muted;
@@ -335,6 +354,90 @@ namespace SBR.Tests.PlayMode
                 Assert.AreEqual(caption.text.ToUpperInvariant(), caption.text,
                     $"{node}: icon captions take the machine's voice — caps");
             }
+        }
+
+        /// <summary>
+        /// S48: the desktop carries the same NotebookChrome as every other destination — the 34px
+        /// rail and the 34px tray — and the wallpaper is the remainder rather than the whole screen.
+        /// Its own 54px taskbar is gone. **This changes a Design-verified surface: S8 returns to
+        /// review**, and the frame is the evidence, not this test.
+        ///
+        /// The last two assertions are the ones that would have caught the defects that made the
+        /// fold worth ruling. The clock check pins the machine to one time — the desktop's copy
+        /// used to read 03:17 AM while the rail one click away read 02:47. The icon/slot check pins
+        /// two controls for the same app to the same destination; before the fold the icon set the
+        /// app directly and left the tab alone while the tray slot restored the phase's own tab, so
+        /// they would have landed the player in different places on the same screen.
+        ///
+        /// What this instrument reads (C25): object presence, the two chrome heights, the
+        /// wallpaper's insets, both slot buttons' authored ink and interactability, and where two
+        /// clicks actually land. What it cannot see: whether any of it is laid out correctly on
+        /// screen — nothing here would notice the rail drawing over the first icon, or the tray
+        /// clipping a caption. Only the desktop frame shows that, which is exactly why S8's
+        /// re-verification is a frame and not a suite.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Desktop_carries_the_shared_chrome()
+        {
+            yield return LoadRoom();
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+            var laptop = UnityEngine.Object.FindAnyObjectByType<LaptopScreen>();
+            Assert.IsNotNull(laptop, "LaptopScreen missing");
+            yield return WaitUntil(() => director.Run != null, 10f, "no run");
+            yield return null;
+
+            laptop.Os.OpenDesktop();
+            yield return null;
+            Transform desktop = FindDeep(laptop.transform, "Desktop");
+            Assert.IsNotNull(desktop, "desktop root missing");
+
+            Transform rail = FindDeep(desktop, "NotebookRail");
+            Transform tray = FindDeep(desktop, "NotebookTray");
+            Assert.IsNotNull(rail, "the desktop carries the shared rail");
+            Assert.IsNotNull(tray, "the desktop carries the shared tray");
+            Assert.IsNull(desktop.Find("Taskbar"),
+                "the desktop's own taskbar is gone — one chrome, built once, consumed everywhere");
+
+            Assert.AreEqual(NotebookChrome.RailHeight, rail.GetComponent<RectTransform>().sizeDelta.y,
+                0.01f, "the rail is the shared 34px on the desktop too");
+            Assert.AreEqual(NotebookChrome.TrayHeight, tray.GetComponent<RectTransform>().sizeDelta.y,
+                0.01f, "the tray is the shared 34px on the desktop too");
+
+            // The wallpaper resizes to what the chrome leaves, rather than running under it.
+            RectTransform wallpaper = FindDeep(desktop, "Wallpaper").GetComponent<RectTransform>();
+            Assert.AreEqual(NotebookChrome.TrayHeight, wallpaper.offsetMin.y, 0.01f,
+                "the wallpaper stops at the tray");
+            Assert.AreEqual(-NotebookChrome.RailHeight, wallpaper.offsetMax.y, 0.01f,
+                "the wallpaper stops at the rail");
+
+            // Nothing runs on the desktop, so neither slot reads pressed-in and both launch.
+            foreach (string slot in new[] { "SureThing", "Ledger" })
+            {
+                Transform node = tray.Find(slot);
+                Assert.IsNotNull(node, $"the tray has no '{slot}' slot");
+                Assert.IsTrue(SameInk(node.GetComponent<Image>().color, LaptopOs.SurfaceRaised),
+                    $"{slot}: nothing is running on the desktop, so no slot may read pressed-in");
+                Assert.IsTrue(node.GetComponent<Button>().interactable,
+                    $"{slot}: a backgrounded app's slot launches it");
+            }
+
+            // One machine, one time.
+            Assert.AreEqual(NotebookChrome.ClockText, TextOn(rail.Find("Clock")),
+                "the desktop's clock is the rail's clock, not a second copy of it");
+
+            // Two controls for one app must land in the same place.
+            desktop.Find("SureThing").GetComponent<Button>().onClick.Invoke();
+            yield return null;
+            Assert.IsFalse(laptop.Os.OnDesktop, "the desktop icon launches the app");
+            SportsbookApp.Tab fromIcon = laptop.Os.CurrentTab;
+
+            laptop.Os.OpenDesktop();
+            yield return null;
+            tray.Find("SureThing").GetComponent<Button>().onClick.Invoke();
+            yield return null;
+            Assert.IsFalse(laptop.Os.OnDesktop, "the desktop tray slot launches the app");
+            Assert.AreEqual(fromIcon, laptop.Os.CurrentTab,
+                "the icon and the tray slot are two controls for one app and must agree");
         }
 
         // ---- helpers ----

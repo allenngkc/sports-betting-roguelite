@@ -86,8 +86,11 @@ namespace SBR.Game
             RectTransform wallRt = wallpaper.rectTransform;
             wallRt.anchorMin = Vector2.zero;
             wallRt.anchorMax = Vector2.one;
-            wallRt.offsetMin = Vector2.zero;
-            wallRt.offsetMax = Vector2.zero;
+            // S48: the wallpaper is the remainder, not the whole screen. The shared rail takes the
+            // top 34px and the shared tray the bottom 34px, as on every other destination, and the
+            // ground fills what is left. offsetMin insets the bottom edge, offsetMax the top.
+            wallRt.offsetMin = new Vector2(0f, NotebookChrome.TrayHeight);
+            wallRt.offsetMax = new Vector2(0f, -NotebookChrome.RailHeight);
             wallGo.transform.SetAsFirstSibling();
             _app = LaptopUi.MakePanel(root, "App", Vector2.zero, Vector2.zero,
                 Vector2.zero, new Vector2(width, height), Ink);
@@ -283,44 +286,46 @@ namespace SBR.Game
             // is not something the player drew, so it cannot be in his ink; the same rule that
             // deleted the wordmark above takes the glyph. It goes to full --toner, which is also
             // where S47 lands an installed glyph anyway, so it was not a colour to revisit here.
+            // S48: the icon and the tray slot below it are two controls for one app on one screen,
+            // so they route through one action. They did not before the fold — the icon set
+            // _activeApp inline and left the tab alone, while the tray slot calls OpenSportsbook,
+            // which restores the tab the current phase expects. Clicking the icon and clicking the
+            // slot would have landed the player on different tabs. That divergence existed only
+            // because the two controls had never been on the same screen.
             MakeDesktopIcon("SureThing", "S", "SURETHING", new Vector2(34f, -120f),
-                IconState.Installed, () => { _activeApp = App.SureThing; Invalidate(); });
+                IconState.Installed, OpenSportsbook);
             // S47: LEDGER takes the installed treatment with its "$" at full toner. It was being
             // drawn in --ground-3 — the chip colour, in the glyph's argument — which is the same
             // value as the tile behind it, so the one destination on this machine that is not the
             // sportsbook announced itself with a glyph a step off invisible.
             MakeDesktopIcon("OldSlips", "$", "LEDGER", new Vector2(34f, -225f),
-                IconState.Installed, () => { _activeApp = App.OldSlips; Invalidate(); });
+                IconState.Installed, OpenOldSlips);
             // S47: "(soon)" is deleted. The product does not put its own roadmap on his desktop,
             // and the treatment already says these do not open.
             MakeDesktopIcon("Mail", "@", "MAIL", new Vector2(34f, -330f), IconState.NotInstalled, null);
             MakeDesktopIcon("Bank", "¤", "BANK", new Vector2(34f, -435f), IconState.NotInstalled, null);
 
-            // Was rgba(0.025, 0.02, 0.05, 0.94): effectively black, and blue-tinted. That broke two
-            // laws at once — nothing on this screen may be pure black, and the room physically
-            // cannot return a saturated cool colour, so a cool-cast bar reads as composited into
-            // the scene rather than photographed in it. Uses the same lifted warm ground as the
-            // in-app tray now; the desktop is the same machine.
-            RectTransform taskbar = LaptopUi.MakePanel(_desktop, "Taskbar", new Vector2(0f, 0f), new Vector2(0f, 0f),
-                new Vector2(0f, 0f), new Vector2(_width, 54f), SurfaceRaised);
-            LaptopUi.MakeButton(taskbar, "Home", "HOME", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
-                new Vector2(18f, 0f), new Vector2(90f, 34f), 12, SurfaceRaised, White, null, _font);
-            Text taskbarText = LaptopUi.MakeText(taskbar, "TaskbarText", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, 0f), new Vector2(320f, 30f), 12, TextAnchor.MiddleCenter, Muted,
-                // S46: the taskbar's full stop is gone. "SURETHING." was a fourth spelling of the
-                // one name, and a full stop the tray slot beside it never carried.
-                "SURETHING   ·   LEDGER", _font);
-            // Overflow rather than the Wrap default because this label is a single line that must
-            // not re-flow. (An earlier comment here blamed a Unity legacy-Text bug for the
-            // "renders only a couple of glyphs" defect; that diagnosis was wrong — the real cause
-            // was one control being drawn on top of another. See SportsbookApp.BuildSlip.)
-            taskbarText.horizontalOverflow = HorizontalWrapMode.Overflow;
-            LaptopUi.MakeText(taskbar, "Clock", new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                new Vector2(-24f, 0f), new Vector2(180f, 30f), 12, TextAnchor.MiddleRight, Muted,
-                // Was "03:17 AM · 12%" hardcoded here while the rail was pinned at 02:47 — one
-                // machine claiming two different times, on two surfaces a player can see within a
-                // click of each other. Both read NotebookChrome's constants now.
-                $"{NotebookChrome.ClockText}   ·   {NotebookChrome.BatteryPercent}%", _font);
+            // S48: the desktop carries the same NotebookChrome as every other destination. That was
+            // S8's whole finding — one chrome, built once, consumed everywhere — and the desktop's
+            // own 54px taskbar was the last copy of it. Everything that bar carried lands somewhere
+            // real: HOME on the rail's identity band, the centre "SURETHING · LEDGER" label on the
+            // tray's actual app slots, and "02:47 · 12%" on the rail's own clock and battery.
+            //
+            // The two drifts already fixed in this method are the argument for folding rather than
+            // against it. That bar was `rgba(.025, .02, .05, .94)` — effectively black AND
+            // blue-tinted, breaking the lifted-black rule and the no-cool-colour rule at once — and
+            // its clock read "03:17 AM · 12%" while the rail one click away read 02:47, one machine
+            // claiming two times. Both were a copy drifting from the original it was copied from,
+            // and both were found by eye rather than by anything that could have failed.
+            //
+            // Running.None because nothing is running here: both apps are backgrounded, both slots
+            // read raised and muted, and both launch. `minimize` is null for the same reason —
+            // there is no running app to drop out of, and under None no slot can reach that action.
+            //
+            // This changes a Design-verified surface: S8 returns to review against a desktop frame.
+            NotebookChrome.BuildRail(_desktop, _width, _font);
+            NotebookChrome.BuildTray(_desktop, _width, _font, NotebookChrome.Running.None,
+                OpenSportsbook, OpenOldSlips, null);
         }
 
         /// <summary>S47: installed versus not installed is a two-state vocabulary, not a value.
@@ -1100,7 +1105,14 @@ namespace SBR.Game
         private const string MessagesBadge = "1";
         private const string SystemFactsText = "DISK 61% FULL    NO UPDATES";
 
-        public enum Running { Sportsbook, Ledger }
+        /// <summary>Which app the tray draws as running. <see cref="None"/> is the desktop: both
+        /// apps are backgrounded, both slots read raised and muted, and both launch.
+        ///
+        /// The two-value version of this encoded "exactly one of them is running" — the ledger's
+        /// state was derived as `!sportsbookRunning` and its action from the other branch of the
+        /// sportsbook's own ternary. That held while only the two apps consumed this chrome, and it
+        /// made the desktop's state unrepresentable rather than merely unwritten (S48).</summary>
+        public enum Running { None, Sportsbook, Ledger }
 
         public static RectTransform BuildRail(RectTransform parent, float width, Font font)
         {
@@ -1214,12 +1226,17 @@ namespace SBR.Game
                 LaptopOs.SurfaceRaised);
 
             bool sportsbookRunning = running == Running.Sportsbook;
+            bool ledgerRunning = running == Running.Ledger;
             // F8: --st-rail-pad-x (11px) on the left edge too — was 12px, the one inset in this
             // class that did not already match the pattern (rail's left/right corrected above).
+            //
+            // S48: each slot now asks about itself — am I the running app? — rather than the ledger
+            // reading its state off the sportsbook's negation. Behaviour is identical for both
+            // states that already existed; what changes is that a third can be expressed.
             MakeSlot(tray, "SureThing", "SURETHING", RailPadX, 110f, sportsbookRunning,
                 sportsbookRunning ? minimize : openSportsbook, font);
-            MakeSlot(tray, "Ledger", "LEDGER", 132f, 88f, !sportsbookRunning,
-                sportsbookRunning ? openLedger : minimize, font);
+            MakeSlot(tray, "Ledger", "LEDGER", 132f, 88f, ledgerRunning,
+                ledgerRunning ? minimize : openLedger, font);
 
             // W3 (dot + badge, MESSAGES slot): OsTray.jsx renders every slot — including one with
             // no destination in this build — with its own dot, and MESSAGES carries the one
