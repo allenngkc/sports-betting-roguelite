@@ -95,6 +95,65 @@ clear at 0 processes — was cleared. `EditorBuildSettings.asset` reverted;
 `SBR.Engine.dll` restored to HEAD's bytes and **`cmp`-verified identical**, so its lingering
 `git status` line is the inert-`[attr]lfs` artifact (§4D), not a real change.
 
+## 0A. NEXT WINDOW — pre-flight, done outside the window on purpose
+
+### T49 is no longer confounded, and here is the arithmetic that says so
+
+Read off the merged `RoomVolume.asset` and this file's own constants. **Predicted from constants, not
+measured on a frame** (C25 — that is this instrument's scope; it says the experiment will separate,
+not what the frames look like).
+
+Bloom: `threshold 0.9`, `intensity 0.7`, `scatter 0.7`, active.
+Tiers: `L4 1.0 · L3 0.7 · L2 0.4`. Boosts: `HdrBoostL3 = 1.0`, `HdrBoostL4 = 1.8`.
+`gold = (1.15, 0.82, 0.18)` — brightest channel **1.15**, already over threshold before any boost.
+
+| what | brightest channel | vs threshold 0.9 | differs between arms? |
+|---|---|---|---|
+| stage markings (L2) / actors, ball (L3), post-T41 | ≤ 0.665 | **under** — no bloom at all | no |
+| L3 gold, not holding the token | 1.15 × 1.0 = **1.15** | over, faintly | **no** — `HdrBoostL3` is 1.0 in both arms |
+| **the one L4 token holder** | **1.8 arm: 2.07 · 1.4 arm: 1.61** | both over | **YES — the only thing that does** |
+
+That is the isolation batch 6 asked for. Last time the pitch sat at `#ffffff`/1.000 and bloomed
+maximally in both arms, drowning the comparison; **T41's cap is what put the stage under 0.9**, so
+the only element whose bloom changes between arms is now the single L4 holder that C3's one-token
+invariant guarantees is exactly one. Everything else is constant by construction, which is what makes
+a difference in the frames attributable.
+
+Caveat to carry into the read: URP blooms the HDR buffer *before* tonemapping, so colour × boost is
+the right input — but the grade still sits between that buffer and the PNG. If the two arms look
+identical, suspect the tonemap flattening the top end, not the experiment.
+
+### T49 procedure — the const-edit dance, in order
+
+`HdrBoostL4` is `private const float = 1.8f` at `TvSweatScreen.cs:565`; there is no runtime knob.
+
+1. Shoot **arm A at 1.8 first, unedited** — if the window dies, the surviving arm is the shipped value.
+2. Edit `565` to `1.4f` → warm compile → shoot arm B, **same seeds, same order**.
+3. **Edit back to `1.8f` and compile again before releasing.** If this step is skipped the surface
+   ships at 1.4. Verify with `grep -n "HdrBoostL4 = " TvSweatScreen.cs` and by `git diff` being empty.
+4. Frames are already self-evidencing — C8·a put the boost token in every filename off
+   `DebugHdrBoostL4`, so an arm cannot be mislabelled after the fact.
+
+### T48 — check the harness exists BEFORE launching
+
+The last attempt cost an invocation to discover the method was absent. One line, first:
+
+```
+grep -c "CaptureConformance" unity/SBR/Assets/SBR/Editor/RoomViewCapture.cs
+```
+
+**0 means the room's merge has not landed — stop, do not invoke.** The recipe's §1 invocation is
+otherwise correct as written.
+
+### Rules that bit this slice and apply to both shoots
+
+- **Never `-nographics` for captures.** The recipe says it, and it is what killed SureThing's three
+  capture tests in my PlayMode run.
+- **Never end a turn against a running capture** (§4 rule 4). Hold the wait in-turn, or re-arm a
+  completion check each turn — never both launch and hand the turn back.
+- **Liveness is artifact mtime, not process aliveness**, and seeds overwrite their own filenames, so
+  frame count is not progress.
+
 ---
 
 ## 1. File ownership
