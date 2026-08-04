@@ -92,6 +92,18 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-03 cycle 66 · **Everything in the works** — TV: T41 FIXED+COMMITTED
+  (stage capped under the ladder, cash-out band brightest by construction,
+  Phase 3 unblocked); T48/T49 pushed to next window (clean lease release);
+  answered its rig question (screens-dark/bypass = room's R23/R26 rig — room
+  asked to document the recipe); clears after handoff. SureThing: S46 landed
+  (one name, suites green, frame-verified); proceeding S44+S45; verdict-screen
+  question goes to a dd-import note if needed. Markets: S50 executed (PRICES
+  FINAL deleted, S39 collapse, tests read header Count); editor lease granted
+  NOW for compile + PlayMode + the staged-receipt measurement — 2px margin
+  expected tight; overrun = new item per S50, held red. Room: R19(a)
+  sub-agents cutting surface-pure regions. Editor queue: markets → TV
+  (T48/T49). Reversal: none.
 - 2026-08-03 cycle 65 · **Batch 8 transcribed + dispatched** — constitution
   DRAFTED (awaiting Allen: three new clauses §1.5/§2.5/§2.6); **S50 closes the
   last B1 blocker** (panel growth refused — the 34px is the OS tray, R30 law;
