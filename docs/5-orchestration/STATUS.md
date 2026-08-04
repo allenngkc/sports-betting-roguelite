@@ -92,6 +92,12 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-03 cycle 70 · **Two staged drafts fired; walk done, report pending** —
+  markets: placed tickets draw on BOTH screens (Allen; one shared component
+  consumed twice; kit deviation queued for DD signature). Room: Allen walked
+  the two-bunk room — report incoming, lead holding. Rig recipe committed.
+  DD reconciliation note staged (phone live-feed, both-screens tickets,
+  R19(b)-am premise question). Reversal: Allen's own rulings.
 - 2026-08-03 cycle 69 · **Walkthrough approved + staged; phone ruling fired** —
   Allen approved the room walkthrough; checklist written
   (`docs/design/r22-walkthrough-checklist.md`), room staging the scene + move
