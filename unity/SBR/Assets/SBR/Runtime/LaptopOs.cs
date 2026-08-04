@@ -260,7 +260,11 @@ namespace SBR.Game
                 new Vector2(30f, -62f), new Vector2(420f, 24f), 12, TextAnchor.UpperLeft, Muted,
                 "the number never lies", _font);
 
-            MakeDesktopIcon("SureThing", "S", "Sportsbook", new Vector2(34f, -120f), Accent,
+            // S46: one name, SURETHING, everywhere the player sees it. "Sportsbook" was a second
+            // name for the same app, in a third case — the desktop called it one thing, the tray
+            // another, the masthead a third. The GameObject name stays "SureThing" (S16 exempts
+            // code identifiers, and SureThingLedgerTests reaches the tray slot by it).
+            MakeDesktopIcon("SureThing", "S", "SURETHING", new Vector2(34f, -120f), Accent,
                 () => { _activeApp = App.SureThing; Invalidate(); });
             MakeDesktopIcon("OldSlips", "$", "LEDGER", new Vector2(34f, -225f), SurfaceRaised,
                 () => { _activeApp = App.OldSlips; Invalidate(); });
@@ -278,7 +282,9 @@ namespace SBR.Game
                 new Vector2(18f, 0f), new Vector2(90f, 34f), 12, SurfaceRaised, White, null, _font);
             Text taskbarText = LaptopUi.MakeText(taskbar, "TaskbarText", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 0f), new Vector2(320f, 30f), 12, TextAnchor.MiddleCenter, Muted,
-                "SURETHING.   ·   LEDGER", _font);
+                // S46: the taskbar's full stop is gone. "SURETHING." was a fourth spelling of the
+                // one name, and a full stop the tray slot beside it never carried.
+                "SURETHING   ·   LEDGER", _font);
             // Overflow rather than the Wrap default because this label is a single line that must
             // not re-flow. (An earlier comment here blamed a Unity legacy-Text bug for the
             // "renders only a couple of glyphs" defect; that diagnosis was wrong — the real cause
@@ -298,9 +304,23 @@ namespace SBR.Game
             Button button = LaptopUi.MakeButton(_desktop, name, glyph, new Vector2(0f, 1f), new Vector2(0f, 1f),
                 position, new Vector2(86f, 76f), 28, new Color(0f, 0f, 0f, 0.12f), color, onClick, _font,
                 onClick != null);
-            LaptopUi.MakeText(button.GetComponent<RectTransform>(), "Label", new Vector2(0.5f, 0f),
+            // S46: icon labels take the machine's voice — caps, condensed. Condensed is set here,
+            // once, for the class rather than per icon; the caps live in each caller's string. The
+            // two not-installed labels are still sentence case ("Mail (soon)", "Bank (soon)")
+            // because S47 rules their text and their treatment together and deletes "(soon)"
+            // outright — rewriting them here would only be undone there.
+            //
+            // The authored 11 renders at 13: MakeText clamps every size to 13 (as does
+            // MeasureWidth, so measurement and render still agree). Left as authored rather than
+            // "corrected" to a number that changes nothing on the frame.
+            // Named "Caption", not "Label": MakeButton already gives every button a text child
+            // called "Label" — the glyph, here — so this was a second sibling under the same name
+            // and the caption could not be reached by lookup at all. Nothing was drawn wrong, both
+            // Texts rendered; it was only unaddressable, which is why it survived. Found by the
+            // S46 test below asking the icon what it calls the app and being handed "S".
+            LaptopUi.MakeText(button.GetComponent<RectTransform>(), "Caption", new Vector2(0.5f, 0f),
                 new Vector2(0.5f, 0f), new Vector2(0f, -25f), new Vector2(150f, 22f), 11,
-                TextAnchor.UpperCenter, onClick == null ? Muted : White, label, _font);
+                TextAnchor.UpperCenter, onClick == null ? Muted : White, label, _fontCond);
         }
 
         private void RenderVerdict(Run run)
@@ -311,7 +331,10 @@ namespace SBR.Game
                 new Vector2(_width, _height), new Color(0.03f, 0.02f, 0.06f, 1f));
             LaptopUi.MakeText(_app, "VerdictBrand", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
                 new Vector2(0f, -54f), new Vector2(800f, 36f), 22, TextAnchor.UpperCenter, White,
-                "SureThing.", _font);
+                // S46: was "SureThing." — a fifth spelling, mixed case with a full stop, on the one
+                // screen a player only reaches at the end of a run. Typeface left alone: S46 rules
+                // the name and gives a voice only for icon labels, and this screen is unruled.
+                "SURETHING", _font);
             Text verdict = LaptopUi.MakeText(_app, "Verdict", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 70f), new Vector2(900f, 60f), 30, TextAnchor.MiddleCenter,
                 won ? MoneyGold : MoneyBad,

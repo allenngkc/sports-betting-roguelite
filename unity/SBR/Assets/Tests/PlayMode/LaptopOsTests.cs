@@ -7,6 +7,7 @@ using SBR.Game;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
+using UnityEngine.UI;
 
 namespace SBR.Tests.PlayMode
 {
@@ -149,7 +150,101 @@ namespace SBR.Tests.PlayMode
                     "the Shop phase defaults the book to REWARDS");
         }
 
+        /// <summary>
+        /// S46: one name, SURETHING, everywhere the player sees it. Before this ruling the same app
+        /// was called four things on one machine — `Sportsbook` under the desktop icon, `SURETHING.`
+        /// in the taskbar, `SURETHING` in the tray, `SURETHING FORM` in the masthead — and a fifth,
+        /// `SureThing.`, on the verdict screen.
+        ///
+        /// This asserts the three the player can reach without ending a run. The verdict screen is
+        /// covered by the source guard in SureThingNameTests instead: reaching it here means driving
+        /// a run to RunWon/RunLost, which is a far more expensive gate than the defect deserves.
+        ///
+        /// The retired-spelling sweep deliberately does NOT match the desktop wordmark's `SURE` +
+        /// `THING.` pair. That is two Text objects, not one string, and it is S44's to delete —
+        /// failing it here would make this test claim a ruling it does not hold.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator One_name_on_every_destination_the_player_can_reach()
+        {
+            yield return LoadRoom();
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+            var laptop = UnityEngine.Object.FindAnyObjectByType<LaptopScreen>();
+            Assert.IsNotNull(laptop, "LaptopScreen missing");
+            yield return WaitUntil(() => director.Run != null, 10f, "no run");
+            yield return null; // one OS tick
+
+            // The desktop: the icon's caption, and the taskbar's list of the machine's apps.
+            laptop.Os.OpenDesktop();
+            yield return null;
+            Transform desktop = FindDeep(laptop.transform, "Desktop");
+            Assert.IsNotNull(desktop, "desktop root missing");
+            Assert.AreEqual("SURETHING", TextUnder(desktop, "SureThing", "Caption"),
+                "the desktop icon names the app SURETHING, not Sportsbook");
+            Assert.AreEqual("SURETHING   ·   LEDGER", TextOn(FindDeep(desktop, "TaskbarText")),
+                "the taskbar carries the name without its retired full stop");
+            AssertNoRetiredName(laptop.transform, "desktop");
+
+            // Inside the app: the tray slot and the masthead brand, on every tab that carries them.
+            foreach (SportsbookApp.Tab tab in new[]
+                { SportsbookApp.Tab.Lobby, SportsbookApp.Tab.MyBets, SportsbookApp.Tab.Rewards })
+            {
+                laptop.Os.OpenSportsbook(tab);
+                yield return null;
+                Transform app = FindDeep(laptop.transform, "App");
+                Assert.IsNotNull(app, $"{tab}: app root missing");
+                Transform tray = FindDeep(app, "NotebookTray");
+                Assert.IsNotNull(tray, $"{tab}: tray missing");
+                Assert.AreEqual("SURETHING", TextUnder(tray, "SureThing", "Label"),
+                    $"{tab}: the tray slot names the app");
+                Assert.AreEqual("SURETHING", TextOn(FindDeep(app, "Brand")),
+                    $"{tab}: the masthead brand is the name and nothing else — FORM is a screen");
+                AssertNoRetiredName(laptop.transform, tab.ToString());
+            }
+        }
+
         // ---- helpers ----
+
+        /// Every spelling of the app's name S46 retired. Each is unambiguous copy: none of them can
+        /// occur in a resource path or a GameObject name, so a hit is always a rendered defect.
+        private static readonly string[] RetiredNames =
+            { "Sportsbook", "SureThing", "SURETHING.", "SURETHING FORM", "Sure Thing", "SURE THING" };
+
+        /// <summary>Reads every Text the player is actually being shown — active objects only, so a
+        /// tree that has been cleared but not yet collected cannot fail a live surface.</summary>
+        private static void AssertNoRetiredName(Transform root, string where)
+        {
+            foreach (Text text in root.GetComponentsInChildren<Text>())
+            {
+                if (string.IsNullOrEmpty(text.text)) continue;
+                foreach (string retired in RetiredNames)
+                    Assert.IsFalse(text.text.Contains(retired),
+                        $"{where}: '{text.text}' on '{text.name}' spells the app's name '{retired}'. "
+                        + "S46: one name, SURETHING, everywhere the player sees it.");
+            }
+        }
+
+        /// <summary>Reads one named text child of one named node. Both the child name and the node
+        /// name are required because a desktop icon carries two Texts — MakeButton's "Label", which
+        /// is the glyph, and MakeDesktopIcon's "Caption", which is the app's name. Asking for
+        /// whichever Text turns up first is how the first draft of this test read the icon's "S"
+        /// and reported the app was still called Sportsbook.</summary>
+        private static string TextUnder(Transform root, string node, string child)
+        {
+            Transform slot = FindDeep(root, node);
+            Assert.IsNotNull(slot, $"'{node}' missing beneath '{root.name}'");
+            Transform found = slot.Find(child);
+            Assert.IsNotNull(found, $"'{node}' has no '{child}' child");
+            return TextOn(found);
+        }
+
+        private static string TextOn(Transform node)
+        {
+            Assert.IsNotNull(node, "expected a text node, found none");
+            Text text = node.GetComponent<Text>();
+            Assert.IsNotNull(text, $"'{node.name}' carries no Text");
+            return text.text;
+        }
 
         private static Transform FindDeep(Transform root, string name)
         {

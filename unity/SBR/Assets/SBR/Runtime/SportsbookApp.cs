@@ -78,7 +78,11 @@ namespace SBR.Game
             // why this one never showed up as a flat-colour pixel step even though the kit calls
             // for it unconditionally.
             LaptopUi.MakeRule(mast, "MastheadRule", new Vector2(0f, 0f), new Vector2(0f, 0f), Vector2.zero, new Vector2(1024f, 2f), LaptopOs.Rule);
-            LaptopUi.MakeText(mast, "Brand", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(16f, -8f), new Vector2(300f, 28f), 26, TextAnchor.UpperLeft, LaptopOs.White, "SURETHING FORM", _fontCond);
+            // S46: the brand is the name and nothing else. FORM is a screen, not part of the name —
+            // the tab strip 38px above already says FORM, and "SURETHING FORM" is the same
+            // construction S16 deleted in "SURETHING LEDGER". The 300px box is unchanged: it was
+            // already sized for the longer string, and BuildRunFigures starts at x=398.
+            LaptopUi.MakeText(mast, "Brand", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(16f, -8f), new Vector2(300f, 28f), 26, TextAnchor.UpperLeft, LaptopOs.White, "SURETHING", _fontCond);
             LaptopUi.MakeText(mast, "Run", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(17f, -38f), new Vector2(340f, 20f), 13, TextAnchor.UpperLeft, LaptopOs.Muted, $"ROUND {run.Round} OF {run.Config.Rounds}  ·  PRICES FINAL", _font);
             // S31: the masthead's run figures, shared with OldSlipsApp.BuildLedgerChrome so LEDGER
             // carries the exact same BANK/TARGET/TICKETS figures rather than a parallel string.
@@ -1520,8 +1524,8 @@ namespace SBR.Game
             LaptopUi.MakeRule(masthead, "MastheadRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
                 Vector2.zero, new Vector2(1024f, 2f), LaptopOs.Rule);
             // Width trimmed from the pre-S31 420px to 300px (matching SportsbookApp.BuildChrome's
-            // own Brand box exactly — "LEDGER" needs far less room than "SURETHING FORM" already
-            // fits in 300). The old 420px had no neighbour to clear (the pre-S31 right-side text
+            // own Brand box exactly — "LEDGER" needs far less room than the sportsbook's own brand
+            // already fits in 300). The old 420px had no neighbour to clear (the pre-S31 right-side text
             // started at local x=648); BuildRunFigures below now starts at x=398, and 420 would
             // have overlapped it by up to 38px.
             LaptopUi.MakeText(masthead, "Brand", new Vector2(0f, 1f), new Vector2(0f, 1f),

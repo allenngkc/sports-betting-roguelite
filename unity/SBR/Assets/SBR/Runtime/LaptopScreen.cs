@@ -31,12 +31,16 @@ namespace SBR.Game
 
         private Canvas _canvas;
         private Font _font;
-        // Condensed voice seam (DESIGN.md / tokens/fonts.css --font-cond, Archivo Narrow). Archivo
-        // Narrow is not in the repo yet — a separate item, not this one — so this currently resolves
-        // to the SAME fallback Font object as _font (see LoadFont/Awake). That is deliberate, not a
-        // bug: every element routed through _fontCond today renders pixel-identical to _font, and the
-        // moment the real condensed face lands, only Awake needs to change for the whole surface to
-        // pick it up.
+        // Condensed voice seam (DESIGN.md / tokens/fonts.css --font-cond, Archivo Narrow).
+        //
+        // This comment used to say Archivo Narrow was not in the repo yet and that _fontCond
+        // resolved to the same fallback object as _font. That stopped being true when S11 landed
+        // both faces: ArchivoNarrow.ttf is in Resources/SureThing/Fonts, LoadFont resolves it with
+        // no fallback warning, and the two voices genuinely render differently — measured off
+        // frames 11 and 01, the same string "SURETHING" at the same rendered size spans 64px as a
+        // condensed desktop caption against 78px as a roman tray label, a ratio of 0.82. Left
+        // corrected rather than deleted because C15 plans the TMP migration off this seam and was
+        // scoped against the old claim.
         private Font _fontCond;
         private BetslipModel _slip;
         private int _slipRunGen = -1;
