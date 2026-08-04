@@ -1,5 +1,11 @@
 # SureThing UI — re-seat state
 
+**STATUS 2026-08-03 · HEAD `3a85f23` · tree clean · EditMode 76/76 · PlayMode 46/46**
+- **Done:** the desktop block, complete — one name everywhere, wallpaper de-branded, icons speak installed/not-installed, chrome folded (S46, S44+S45, S47, S48).
+- **Now:** nothing in flight. The next buildable item is the LEDGER close-out and it is blocked.
+- **Need — DD:** S8 re-verification (frame + write-up staged at `dd-import/surething-s8-refold-2026-08-03/`, untracked). S49, the desktop's kit entry, is the DD's and not this seat's.
+- **Need — cross-seat:** `9e55d0d` (ticket retention) is still not an ancestor of this HEAD, so S41 and the twelve-state LEDGER re-submit both wait on it.
+
 **Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-03, after S48.
 **HEAD:** `3a85f23` · **Branch:** `surething-ui` · working tree clean.
 
