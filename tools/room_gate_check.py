@@ -176,6 +176,20 @@ R19_REGIONS = {
     "conduit drop (body)":    (1896,  480, 1906,  680),
     "conduit drop (full w.)": (1888,  480, 1908,  680),
     "conduit ceiling run":    (1580,  322, 1720,  332),
+    # R19(a), 2026-08-03: the occupant's two machines. Until now R19(a)'s
+    # separation had only ever been albedo arithmetic -- no region sampled any
+    # body, so the ruling was verified against source and never against a frame
+    # (constitution §2.5). These are the laptop's keyboard deck and the phone's
+    # face, both projected from world geometry and then confirmed by eye.
+    "laptop body (his)":      (1524, 1020, 1584, 1040),
+    "phone body (his)":       (1564, 1085, 1592, 1097),
+    # NO BEZEL REGION, and that is a finding rather than an omission. TVBody
+    # wears BezelBlack #3C3C38 -- the material R19(a)'s premise names as the
+    # shared one -- but it is a slab BEHIND the screen whose only visible part
+    # is a ~6cm border, and RoomArtDressing's riveted housing covers exactly
+    # that border. Every candidate box straddled housing rivets. What the player
+    # reads as "the TV's body" is ArtHousingSteel, so the housing face above is
+    # R19(a)'s real comparand.
 }
 
 # Below this chroma a hue angle is not meaningful -- it is the direction of a
