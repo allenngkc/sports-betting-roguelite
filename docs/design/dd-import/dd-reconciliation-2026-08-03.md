@@ -18,3 +18,16 @@ session; all three are already in force by Allen's authority.
    physical premise may be wrong even if its conclusion (value + finish carry
    the read) stands on other grounds. Rule whether the amendment's reasoning
    is corrected on the record, T47-am style.
+
+4. **TV — input contract during suspension:** the E key still cashes out during
+   the pending-loss window while the slot reads MARKET SUSPENDED. Presentation
+   is self-consistent either way; the lead correctly held that the input
+   contract is not its to move. Rule: does suspension gate the input, or only
+   the offer display?
+5. **Markets — the 2.6px residual:** after every granted recovery (header line
+   deleted, leg rows collapsed, receipts moved to the sheet, pitch constant
+   folded) the flow still overruns by 2.6px with a staged receipt. B1 is
+   otherwise complete (HEAD `62044f2`) and this is the only thing between it
+   and the merge checklist. Per your own ruling the fix is not arithmetic and
+   not the lead's to pick: spacing and repetition are exhausted — rule what
+   yields.
