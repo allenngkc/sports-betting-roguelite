@@ -92,6 +92,11 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-03 cycle 76 · **Room materials frame-verified; BezelBlack retired
+  (Allen)** — R19(a) measured on frames, two regions cut and persisted; Allen
+  fired: retire the invisible third body material, route the painterly-read
+  ask (R25) to the DD with the fresh post-move set; room staging that zip.
+  Room lane then idles pending DD. Reversal: Allen's call.
 - 2026-08-03 cycle 75 · **SureThing desktop block COMPLETE** — one name,
   de-branded wallpaper, icon states, chrome folded; HEAD `3a85f23`, both
   suites green. S8 re-fold evidence zipped for the drag (1.9MB). Lane holds:
