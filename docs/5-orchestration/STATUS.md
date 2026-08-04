@@ -92,6 +92,12 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-03 cycle 67 · **Three staged drafts fired** — markets: Allen ruled
+  the staged-receipt overrun (receipts move to the sheet per E-07, re-measure);
+  SureThing: proceed S47 (S44+S45 done); room: geometry commit approved
+  (collider inventory + true-world-size done) — walkthrough scheduling on its
+  confirm. TV mid-chain (T44 copy-audit recon running). Reversal: Allen's own
+  calls.
 - 2026-08-03 cycle 66 · **Everything in the works** — TV: T41 FIXED+COMMITTED
   (stage capped under the ladder, cash-out band brightest by construction,
   Phase 3 unblocked); T48/T49 pushed to next window (clean lease release);
