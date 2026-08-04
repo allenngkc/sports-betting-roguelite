@@ -92,6 +92,17 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-03 cycle 73 · **All four landings processed; monitor gap closed** —
+  Room: post moved with aisle clearance arithmetically unchanged; re-walk
+  READY, lease granted with the idempotence diff folded in (Allen's call).
+  Markets: B1 COMPLETE at `62044f2` except the 2.6px residual — routed to DD
+  (spacing+repetition exhausted; not the lead's to pick). SureThing: chrome
+  fold built with asserts (own taskbar gone); owes the desktop frame.
+  TV: three fixes committed (`5d06dea`) uncompiled — window after re-walk;
+  its suspended-input contract question routed to DD. Monitor gap admitted +
+  fixed: busy→idle transition watcher armed (the draft watcher never covered
+  completions) + heartbeat re-armed (died in a restart). Editor: room/Allen
+  now → TV → SureThing capture. Reversal: none.
 - 2026-08-03 cycle 72 · **Four staged drafts fired, all lanes kicked** —
   SureThing: desktop chrome fold now (S48; re-opens S8 — desktop frame owed
   for DD re-review). TV: game-console prototype declared dead, EventText.cs
