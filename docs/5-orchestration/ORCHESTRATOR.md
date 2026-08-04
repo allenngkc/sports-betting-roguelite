@@ -25,6 +25,24 @@ integration — not routine status relay.
 - Does not force-push, rewrite history, or auto-merge; merges into `main` happen here
   with Allen's approval.
 
+## 2a. Reporting to Allen — plain language only (Allen, 2026-08-03)
+
+Register and tracking codes (T08, R22, C1, S11, …) are internal shorthand
+between the orchestrator, the leads, and the docs. They never carry the meaning
+in a message to Allen.
+
+- One line per worktree, describing the work by what it is in the product:
+  "TV — building the stats panel", not "TV — working on T7/R22".
+- A decision request is self-contained: the choice, the options, a
+  recommendation, all in plain words. "Pending on you: T-08 decision" is a
+  contract violation — Allen will not dig through docs to decode a line.
+- A code may trail once in parentheses for traceability, never replace the
+  description: "remove the scanline overlay (T8)".
+- Translate before relaying: anything a lead reports in code-speak gets
+  rewritten in plain language before it reaches Allen.
+- Test: if the line only makes sense with a register open next to it, it is
+  not ready to send.
+
 ## 3. Seating a new orchestrator session
 
 When the current session ends, any new session takes the seat like this:
