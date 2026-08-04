@@ -92,6 +92,18 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-03 cycle 77 · **TV window results in; room merge round opened** —
+  TV: T43/T46/T42 compiled clean, EditMode 222/222 (target arithmetic was
+  stale — merge brought SureThing suites in), engine 160/160, zero TV
+  regression incl. the suspended-input case; main merged (`e2143e6`,
+  PRODUCT.md call tagged recoverable). No captures: T48 blocked on room's
+  harness not being on main; T49 deferred correctly (const-edit dance needs a
+  full window). 3 PlayMode fails = SureThing captures under -nographics,
+  environmental. **Room merge round proposed** (dry-run 0 conflicts; hold
+  dissolved with the walkthrough) — room finishing BezelBlack retirement,
+  then MERGE READY → autonomous clean-checklist merge + validation. TV's next
+  window after: T48 + T49 + SureThing captures with graphics. Reversal:
+  merge logs with veto window before/after per policy.
 - 2026-08-03 cycle 76 · **Room materials frame-verified; BezelBlack retired
   (Allen)** — R19(a) measured on frames, two regions cut and persisted; Allen
   fired: retire the invisible third body material, route the painterly-read
