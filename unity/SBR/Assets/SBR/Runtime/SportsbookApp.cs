@@ -102,13 +102,16 @@ namespace SBR.Game
                 disabled ? null : () => { _selectTab(tab); }, _font, !disabled);
         }
 
-        /// <summary>Allen ruling (2026-08-03): the lobby's card pitch. Duplicated from
-        /// <see cref="BuildMatchupCard"/>'s own card size (<c>Vector2(700f, 78f)</c>) rather than
-        /// factored into a constant shared with that method, because the ruling froze
-        /// BuildMatchupCard's own geometry out of scope for this change. Feeds
-        /// <see cref="BuildScrollingBody"/>'s row-height math and the cards' scrolled Y offset in
-        /// <see cref="BuildLobby"/> — if BuildMatchupCard's own 78f ever moves, this must move
-        /// with it.</summary>
+        /// <summary>The lobby's card pitch — the single source for it. <see cref="BuildMatchupCard"/>
+        /// builds each card at this height, <see cref="BuildScrollingBody"/> measures the scroll
+        /// content from it, and <see cref="BuildLobby"/> steps the cards down by it, so the three
+        /// cannot disagree about how tall a matchup row is.
+        ///
+        /// It briefly existed twice — this constant plus a literal in BuildMatchupCard's own size —
+        /// which is the drift the one-shared-component discipline exists to prevent, arriving in the
+        /// same change that removed a duplicate elsewhere. Folded on Allen's instruction
+        /// (2026-08-03). A row height read by a mask, a rail and a layout is exactly the kind of
+        /// number that must not be written down more than once.</summary>
         private const float MatchupCardPitch = 78f;
 
         private void BuildLobby(Run run, BetslipModel slip, bool boardFrozen)
@@ -162,7 +165,7 @@ namespace SBR.Game
             Vector2 position)
         {
             RectTransform card = LaptopUi.MakePanel(parent, "Matchup" + matchup.Index, new Vector2(0f, 1f),
-                new Vector2(0f, 1f), position, new Vector2(700f, 78f), LaptopOs.Surface);
+                new Vector2(0f, 1f), position, new Vector2(700f, MatchupCardPitch), LaptopOs.Surface);
             bool awaySelected = slip.SelectionOn(matchup.Index) == MarketSelection.Moneyline(Side.Away);
             bool homeSelected = slip.SelectionOn(matchup.Index) == MarketSelection.Moneyline(Side.Home);
             // The wash behind a form entry he has marked (palette-surething.css --marked-wash).
