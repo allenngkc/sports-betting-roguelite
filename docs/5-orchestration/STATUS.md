@@ -92,6 +92,17 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-03 cycle 65 · **Batch 8 transcribed + dispatched** — constitution
+  DRAFTED (awaiting Allen: three new clauses §1.5/§2.5/§2.6); **S50 closes the
+  last B1 blocker** (panel growth refused — the 34px is the OS tray, R30 law;
+  granted: PRICES FINAL deletion 18px + S39 baseline collapse on margin legs
+  26px; re-measure with staged receipt before B1 clean); R19(b)-am strikes
+  "colder" (value+finish carry it; lighting instrument refused; R19(a)
+  proceeds); R28 phone stub/dark; R29 Gate 2 names state+blind spot; C25
+  instrument-scope law (promoted from the markets lead); C26 owning docs
+  sequenced; T47-am on record. Markets + room dispatched (>500B sends verified
+  delivered). Transcription log updated. Reversal: rows strike if Allen vetoes
+  the draft clauses — rulings themselves are DD canon.
 - 2026-08-03 cycle 64 · **Room cleared+reseated on READY signal; next DD drag
   staged** — markets' 44px call is filed (T47 fixes verified `774a1c9`; 44px
   flow deficit, three costed candidates, last B1 blocker); room's R19(b)

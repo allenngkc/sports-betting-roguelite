@@ -2,6 +2,14 @@
 
 ## NEED ALLEN (from Batch 5, 2026-08-01)
 
+0. **Constitution draft (C24, 2026-08-03)** — `constitution-2026-08-03-DRAFT.md`.
+   Approve to make it `docs/design/constitution.md`. Three clauses are NEW text
+   (not transcription) and need your explicit yes: §1.5 the seat's errors are
+   recorded as its own; §2.5 measure the rendered thing, not the source; §2.6 a
+   confounded measurement closes nothing. Nothing is blocked behind it — every
+   clause is already in force as a ruled item; approval makes it readable in
+   one place.
+
 1. ~~C15~~ **RULED — Option 1** · Allen 2026-08-02: TextMeshPro migration, both
    surfaces, scheduled after the current conformance wave. Type deviations stay
    signed until each surface migrates. Registered as C15.
