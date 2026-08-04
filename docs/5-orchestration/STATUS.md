@@ -92,6 +92,12 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-03 cycle 78 · **Idle diagnosis + evening drag staged** — markets,
+  SureThing, TV all correctly idle: every remaining item funnels through the
+  DD's next session (2.6px → markets merge → SureThing unblock; suspension
+  input; S8 refold) or room's in-flight merge (TV's harness + window). Evening
+  drag built: `dd-docs-2026-08-03b.zip` (94KB) + S8 refold zip; context
+  prompt leads with the 2.6px as the three-worktree unblock. Reversal: none.
 - 2026-08-03 cycle 77 · **TV window results in; room merge round opened** —
   TV: T43/T46/T42 compiled clean, EditMode 222/222 (target arithmetic was
   stale — merge brought SureThing suites in), engine 160/160, zero TV
