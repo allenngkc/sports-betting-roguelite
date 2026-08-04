@@ -25,6 +25,7 @@ run), 1 otherwise.
 """
 
 import argparse
+import hashlib
 import json
 import math
 import re
@@ -206,6 +207,9 @@ REFERENCE_JSON_PATH = Path(__file__).resolve().parent / "room_gate_reference.jso
 # reference's shape changes again, so an old file is always detected rather
 # than misread.
 REFERENCE_SCHEMA_VERSION = 3
+# Certification date is passed in, never read from the clock: a gate report must
+# be reproducible, and a wall-clock read makes two runs of the same scene differ.
+TODAY = "2026-08-03"
 
 # Tolerance for comparing collider float dimensions read back out of text.
 # Same scene file re-parsed twice will match exactly; this just guards
@@ -657,6 +661,15 @@ def canonical_scene_records(docs):
     return records
 
 
+def scene_content_fingerprint(docs):
+    """Stable hash of a scene's CONTENT (anchor-renumbering-immune, see
+    canonical_scene_records). Used to expire a human walkthrough certification
+    the moment the geometry it certified changes."""
+    recs = canonical_scene_records(docs)
+    blob = chr(10).join(f"{k} :: {v}" for k, v in sorted(recs.items()))
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
 def collider_owner_positions(docs):
     """Map GameObject anchor -> its Transform's m_LocalPosition (R22, 2026-08-03).
 
@@ -1020,6 +1033,13 @@ def main():
              "instead of checking Gate 4 against it",
     )
     parser.add_argument(
+        "--certify-human-gates",
+        metavar="COMMIT",
+        help="Record that a human walked THIS scene and passed gates 6-8, stamping the commit "
+             "and the scene's content fingerprint into the reference. The certification expires "
+             "automatically the moment the scene's content changes (C18).",
+    )
+    parser.add_argument(
         "--compare-scene",
         help="Path to a second Room.unity to compare CONTENT against, ignoring fileID "
              "renumbering. This is what makes §9.2 ('run the builder twice') a real check: "
@@ -1060,6 +1080,22 @@ def main():
         sys.stdout = _Tee(sys.__stdout__, report_file)
 
     results = []
+
+    if args.certify_human_gates:
+        _docs = split_documents(load_scene_text(scene_path))
+        _payload = json.loads(REFERENCE_JSON_PATH.read_text(encoding="utf-8"))
+        _payload["human_gates"] = {
+            "gates": [6, 7, 8],
+            "certified_commit": args.certify_human_gates,
+            "certified_at": TODAY,
+            "content_fingerprint": scene_content_fingerprint(_docs),
+            "note": "R22: gates 6-8 have no automated instrument; a human walks the build. "
+                    "Expires automatically when content_fingerprint stops matching.",
+        }
+        REFERENCE_JSON_PATH.write_text(json.dumps(_payload, indent=2) + chr(10), encoding="utf-8")
+        print(f"human gates 6-8 certified at {args.certify_human_gates}; "
+              f"fingerprint {_payload['human_gates']['content_fingerprint'][:16]}...")
+        sys.exit(0)
 
     try:
         scene_text = load_scene_text(scene_path)
@@ -1256,18 +1292,68 @@ def main():
                        "valid but incorrect mesh asset reads as a full pass.",
         ))
 
-        # --- Gates 6, 7, 8: VOIDed by R22, pending human re-verification -----
-        # Not SKIP: SKIP means "this tool cannot run it". VOID means a design
-        # ruling took the prior result off the board entirely -- it must not
-        # read as a pass, and must not silently blend into SKIP's bucket.
-        void_blind_spot = (
-            "VOIDed by R22: this run performs NO check for this gate, automated or human. "
-            "A pass recorded before the ruling must not be trusted, and none is issued here -- "
-            "treat this line as fully unknown, not as a historical pass carried forward."
-        )
-        results.append(void(6, "UI/HUD readability", "voided by R22 pending human re-verification", blind_spot=void_blind_spot))
-        results.append(void(7, "UI/HUD contrast", "voided by R22 pending human re-verification", blind_spot=void_blind_spot))
-        results.append(void(8, "structural-only check", "voided by R22 pending human re-verification", blind_spot=void_blind_spot))
+        # --- Gates 6, 7, 8: human-only, certified by walkthrough -------------
+        # These three cannot be run by any tool -- R22 ruled the only instrument
+        # is a human walking the build. Before 2026-08-03 they were hard-VOID.
+        # Allen walked HEAD 9e1b4e4 and passed all three, so the harness now
+        # REPORTS that verdict rather than contradicting the register.
+        #
+        # It is reported with an expiry, not as a standing pass. C18: a gate
+        # certifies the geometry it ran against and any change voids it. The
+        # certification records the scene's content fingerprint, and if the
+        # current scene's content differs by so much as one resolved record,
+        # these three snap back to VOID automatically. That is the whole point:
+        # a human verdict that cannot expire is the stale-gate defect R22 was
+        # raised about in the first place.
+        cert = {}
+        if REFERENCE_JSON_PATH.is_file():
+            try:
+                cert = json.loads(REFERENCE_JSON_PATH.read_text(encoding="utf-8")).get("human_gates") or {}
+            except (json.JSONDecodeError, OSError):
+                cert = {}
+        current_fp = scene_content_fingerprint(docs)
+        cert_fp = cert.get("content_fingerprint")
+        cert_ref = cert.get("certified_commit", "?")
+        cert_when = cert.get("certified_at", "?")
+        certified = bool(cert_fp) and cert_fp == current_fp
+
+        for num, gname in ((6, "UI/HUD readability"), (7, "UI/HUD contrast"), (8, "structural-only check")):
+            if certified:
+                results.append(GateResult(
+                    num, gname, "PASS",
+                    f"human walkthrough certification, scene content unchanged since {cert_ref}",
+                    f"certified by walkthrough {cert_when} at {cert_ref}; content fingerprint matches",
+                    blind_spot=(
+                        "THIS TOOL RAN NO CHECK. It is replaying a human verdict recorded in "
+                        f"{REFERENCE_JSON_PATH.name}, and the only thing it verified itself is that "
+                        "the scene's content fingerprint still matches the one certified -- so it "
+                        "covers the GEOMETRY walked, not the current captures, not the screens' "
+                        "content, and not anything outside the scene file (materials, textures, APV "
+                        "bake). A change to any of those leaves this line reading PASS while the "
+                        "thing the human actually judged has moved. Re-walk on any doubt."
+                    ),
+                ))
+            elif cert_fp:
+                results.append(void(
+                    num, gname,
+                    f"scene content CHANGED since the walkthrough at {cert_ref} -- certification expired",
+                    blind_spot=(
+                        "auto-VOIDed: a human certified this gate against a scene whose content "
+                        "fingerprint no longer matches, so the verdict no longer covers this build "
+                        "(C18). No tool can re-issue it -- R22's instrument is a human walking the "
+                        "room. Treat as fully unknown until re-walked."
+                    ),
+                ))
+            else:
+                results.append(void(
+                    num, gname, "voided by R22 pending human re-verification",
+                    blind_spot=(
+                        "VOIDed by R22: this run performs NO check for this gate, automated or "
+                        "human. A pass recorded before the ruling must not be trusted, and none is "
+                        "issued here -- treat this line as fully unknown, not as a historical pass "
+                        "carried forward."
+                    ),
+                ))
 
         # --- R9-A: bunk 2 mattress luminance ---------------------------------
         current_img = load_capture(captures_dir, R9A_IMAGE)

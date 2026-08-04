@@ -489,5 +489,16 @@
         0.0
       ]
     }
-  ]
+  ],
+  "human_gates": {
+    "gates": [
+      6,
+      7,
+      8
+    ],
+    "certified_commit": "9e1b4e4",
+    "certified_at": "2026-08-03",
+    "content_fingerprint": "c3716f704b27d4025611dc32f496a9d11ad8887ebacf4b35e8b3648ab901904b",
+    "note": "R22: gates 6-8 have no automated instrument; a human walks the build. Expires automatically when content_fingerprint stops matching."
+  }
 }
