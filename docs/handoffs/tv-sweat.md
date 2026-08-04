@@ -276,8 +276,21 @@ implemented in one pass with no editor available; none of it has been through a 
 suite. 555 insertions across five files. Treat a green compile as the first deliverable of that
 window, then engine → EditMode → PlayMode, then T49/T48.
 
-**Baselines to beat (at `1128a91`):** engine 160 · EditMode 129 · PlayMode 44. Four new EditMode
-tests were added, so EditMode should read **133** if all pass.
+**Baselines to beat (at `1128a91`):** engine 160 · EditMode 129 · PlayMode 44. Five new EditMode
+tests were added, so EditMode should read **134** if all pass.
+
+**One defect this fix introduced was caught in diff review, before it ran** — recorded because the
+mechanism will recur. Moving the cash-out slot's derivation out of `Update` (which is what fixes the
+transition frame) also put `RenderCashOut` on the path into it — including the `RenderCashOut` that
+runs *synchronously inside* `StartCoroutine`, before the handle is assigned to `_cashOutAnimation`.
+`CanAcceptCashOutNow` reads that handle, so mid-tween it answered "acceptable" for exactly one frame
+and lit the gold field **at L4 during a price update**. TVS-H02's quirk, one element over, re-opened
+by the fix for a state lie. `ApplyCashOutSlotState` now reads `_cashOutTweening` — the flag that
+exists for precisely this — and never the handle. Pinned by
+`T43_a_tweening_price_never_lights_the_field_or_takes_the_L4_token`.
+
+**Standing lesson: any predicate that reads `_cashOutAnimation` is wrong for one synchronous step.**
+There is a flag for it. Read the flag.
 
 | Item | State | Where |
 |---|---|---|
@@ -332,6 +345,14 @@ left-side flash, into the ticket column.
 
 **T25.1's canvas mask could never have caught any of this**: its bound is the glass, and this
 overdraw never leaves the glass — it leaves its *zone*.
+
+**Look at this on the first capture (C11):** the punch animations scale their element about its
+centre — the event strip to 1.12, the score bucket to 1.18 — and those elements now sit inside a
+clip rect. `Flavor` is 691px wide in a 715px zone, so at 1.12 it reaches 774px and **its edges now
+clip where they used to paint across x=265 into the ticket column.** That is the fix working, and on
+ordinary short lines (`LEG 2 — WON`) the ink is nowhere near the edge, so nothing should read
+differently. A long authored line under a punch is the case to look for on frames. Verified by
+reasoning, not by eye — the distinction §6.1.1 draws.
 
 **The edge test is structural, and the reason is worth keeping.** `RectMask2D` clips at render time
 and does not move a `Graphic`'s rect, so `GetWorldCorners` reports the same overflowing box masked or

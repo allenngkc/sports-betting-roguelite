@@ -2861,7 +2861,23 @@ namespace SBR.Game
             // window kept a lit gold field and an L4 token under the word MARKET SUSPENDED — not for
             // a frame, but for as long as the player took to decide.
             bool live = slotVisible && !_cashOutSlotSuspended;
-            bool fieldLit = live && CanAcceptCashOutNow();
+            // `!_cashOutTweening` is NOT redundant with CanAcceptCashOutNow's own
+            // `_cashOutAnimation == null`, and leaving it out re-opened TVS-H02 in a new place —
+            // caught in diff review of this very change, before it ever ran.
+            //
+            // T43 moved this derivation out of Update, which is what fixed the transition frame. But
+            // it also means RenderCashOut now reaches here — including the RenderCashOut that runs
+            // SYNCHRONOUSLY inside StartCoroutine, before the handle is assigned to
+            // _cashOutAnimation. At that instant the handle is still the null StopCashOutAnimation
+            // just left, so CanAcceptCashOutNow answers TRUE mid-tween and the gold field and the L4
+            // token would light for exactly one frame of a price update — §8.5's "brightness is a
+            // promise about input", broken at the brightest tier, by the fix for a state lie.
+            //
+            // _cashOutTweening exists precisely because that handle lags its own first render by one
+            // synchronous step (see its declaration, and §4B of the handoff). It is set true BEFORE
+            // StartCoroutine and false before each settle render, so it is true across exactly the
+            // window the handle is wrong about. Read the flag, never the handle.
+            bool fieldLit = live && !_cashOutTweening && CanAcceptCashOutNow();
             if (_cashOutField != null) _cashOutField.enabled = fieldLit;
             // TV-12/13: suspended owns the slot exclusively. The status word is the offer speaking,
             // so it is absent whenever the offer is not — never merely dimmed (C10).

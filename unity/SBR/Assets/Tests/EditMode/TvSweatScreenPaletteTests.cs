@@ -784,6 +784,13 @@ namespace SBR.Tests.EditMode
         /// returns null when <c>Shader.Find("SBR/TvSweatHdrUI")</c> misses, and the L4 release is
         /// guarded on it — so a test that asserts on the token without checking this asserts
         /// nothing (C18: a check states what it cannot see).</summary>
+        private static void SetPrivateBool(TvSweatScreen s, string field, bool value)
+        {
+            FieldInfo f = typeof(TvSweatScreen).GetField(field, BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(f, $"TvSweatScreen.{field} not found by reflection — was it renamed?");
+            f.SetValue(s, value);
+        }
+
         private static bool HasHdrMaterial(TvSweatScreen s)
             => (Material)typeof(TvSweatScreen)
                 .GetField("_cashOutHdrMat", BindingFlags.NonPublic | BindingFlags.Instance)
@@ -1547,6 +1554,45 @@ namespace SBR.Tests.EditMode
                 else
                     Debug.Log("[T43] HDR material absent (Shader.Find missed) — the L4 leg is "
                         + "unmeasurable in this run. The field and status legs above did run.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void T43_a_tweening_price_never_lights_the_field_or_takes_the_L4_token()
+        {
+            // Regression guard for a defect T43's own fix introduced, found in diff review before it
+            // ran. Moving the slot's derivation out of Update means RenderCashOut reaches it — and
+            // one RenderCashOut runs synchronously inside StartCoroutine, BEFORE the handle lands in
+            // _cashOutAnimation. CanAcceptCashOutNow reads that handle, so mid-tween it answered
+            // "acceptable" for exactly one frame and lit the gold field at L4 during a price update.
+            //
+            // TVS-H02 is the same quirk one element over, and _cashOutTweening is the flag written
+            // for it. This test drives the flag directly rather than a real coroutine: the coroutine
+            // is what makes the window hard to observe, and the invariant does not depend on it —
+            // while a tween is in flight the field is dark, whatever the handle currently says.
+            var go = new GameObject("tv");
+            try
+            {
+                TvSweatScreen s = BuiltScreen(go);
+                Text cashOut = FindChild<Text>(s, "CashOut");
+                Image field = FindChild<Image>(s, "CashOutField");
+
+                cashOut.enabled = true;
+                field.enabled = true;
+                SetPrivateBool(s, "_cashOutTweening", true);
+
+                InvokePrivate(s, "ApplyCashOutSlotState");
+
+                Assert.IsFalse(field.enabled,
+                    "§8.5: the gold field is a promise the key works right now, and it does not while "
+                    + "the price is settling — CanAcceptCashOutNow refuses a mid-tween accept. Reading "
+                    + "the Coroutine handle instead of _cashOutTweening reopens TVS-H02 here.");
+                Assert.AreNotEqual("CashOut", L4Holder(s),
+                    "C3: a settling price must not hold the surface's only L4 token");
             }
             finally
             {
