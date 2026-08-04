@@ -1,7 +1,7 @@
 # SureThing UI — re-seat state
 
-**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-03, after S47.
-**HEAD:** `5e33b30` · **Branch:** `surething-ui` · working tree clean.
+**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-03, after S48.
+**HEAD:** `3a85f23` · **Branch:** `surething-ui` · working tree clean.
 
 This is written for a seat with **no conversation context**. Everything below is either verifiable in
 the repo or flagged as unverified.
@@ -10,9 +10,14 @@ the repo or flagged as unverified.
 
 ## 1. Where the work stands
 
-The SureThing laptop's first slice **merged to main** at `2e97d13` (2026-07-31). S6 (lobby shell),
-S7 (ink sprites) and S8 (OS chrome) are **DESIGN-VERIFIED** by the Design Director — the laptop's
-first. Changes to those three are regressions, not iteration.
+The SureThing laptop's first slice **merged to main** at `2e97d13` (2026-07-31). S6 (lobby shell)
+and S7 (ink sprites) are **DESIGN-VERIFIED** by the Design Director — the laptop's first. Changes to
+those two are regressions, not iteration.
+
+**S8 (OS chrome) was the third, and is back in review as of 2026-08-03**: S48 folds the desktop into
+that chrome, which S48's own ruling says returns S8 to review. The frame is submitted (§4-0.5). Until
+the DD re-verifies, S8 is **not** a verified item to protect — but do not treat that as licence
+either; it is under review, not open.
 
 Since the merge, three more rulings landed and are **implemented, verified and committed**:
 
@@ -26,7 +31,7 @@ Since the merge, three more rulings landed and are **implemented, verified and c
 - **S26** — offer rule text never truncates at point of spending; the board shows however many offers
   fit and states how many it could not. The REWARDS banner states rather than exhorts.
 
-**Suites: EditMode 76/76, PlayMode 45/45** (at `5e33b30`). The 75/38 in earlier notes was the
+**Suites: EditMode 76/76, PlayMode 46/46** (at `3a85f23`). The 75/38 in earlier notes was the
 count before the desktop block; PlayMode's total also depends on whether the run passes
 `-nographics`, which fails the four capture tests on `RenderTexture.Create` — **do not pass it**,
 the command in §5 is the one that holds.
@@ -275,6 +280,51 @@ this laptop's three Design-verified items, so this is not an ordinary build. Not
 behind it. **S49 is not this seat's** — the desktop enters `ui_kits/surething/` and is DD-authored;
 do not write to `main-2` for it.
 
+## 4-0.5 S48 landed. The desktop block is complete, and S8 is awaiting re-verification
+
+**Done** (`3a85f23`). Suites **EditMode 76/76, PlayMode 46/46**. The desktop's 54px taskbar is gone;
+it carries the shared 34px rail and 34px tray, and the wallpaper is the remainder.
+
+**Submitted for S8's re-review:** `main-2/docs/design/dd-import/surething-s8-refold-2026-08-03/` —
+the desktop frame flat and through the room camera, the in-app lobby frame for comparison, and a
+README naming what I measured and the three composition questions I could not answer. **Left
+untracked, like the verdict-screen note**, to ride the drag.
+
+**The evidence worth re-using:** comparing the desktop frame against the lobby frame from the same
+run, the **rail band (y 0–33) is 100% pixel-identical** — 17408 samples, zero differing — and the
+tray band past the app slots is likewise 100% identical. That is the fold's actual claim (one chrome
+consumed twice, not two copies) stated as a comparison, which is the only kind of colour check this
+surface has never been burned by. **If the chrome is ever touched again, re-run that comparison** —
+it is the cheapest possible detector for the drift S8 exists to prevent.
+
+Two things the fold needed, both the same shape as the last three items' findings — a value with
+nothing able to tell two cases apart:
+
+- **`Running` was a two-value enum** and the tray derived the ledger's state as `!sportsbookRunning`
+  with its action from the other branch of the sportsbook's ternary. That encoded "exactly one app
+  is running", which made the desktop **unrepresentable rather than merely unwritten**. Each slot
+  asks about itself now; `Running.None` is the state that could not previously be said.
+- **The icon and the tray slot disagreed.** The icon set `_activeApp` inline and left the tab alone;
+  the slot calls `OpenSportsbook`, which restores the phase's tab. Two controls for one app landing
+  in different places — invisible until the fold put them on the same screen. Both route through one
+  action now and a test clicks each and compares.
+
+**Noticed, not fixed:** `OpenLedger()` (private, line ~173) and `OpenOldSlips()` (internal) have
+identical bodies — two methods for one navigation. Harmless today and the exact seed of the next
+drift. A three-line deletion for whoever is next in this file.
+
+### What this seat does next
+
+The desktop block is finished except **S49, which is the DD's** (the desktop enters
+`ui_kits/surething/`; do not write to `main-2` for it).
+
+**The open work is the LEDGER close-out.** Design-verified is withheld pending S38, S39, S40, S34,
+S37-live — **all landed** — and **S41, which is still blocked**: `9e55d0d` is not an ancestor of this
+HEAD (§4-0). When it lands, build S41, then **re-shoot the same twelve-state set and re-submit**; the
+grant is made on that set, no new evidence list. Also still owed and unphotographed: an
+overflow-a-list capture so S27's rail has ever been seen (§4-0.1), and thirty seconds of a human
+actually scrolling it.
+
 ## 4a. S32 — which happened: fixed between HEADs
 
 S32 closed on rendered evidence and asks this handoff to record the cause, because the register
@@ -389,7 +439,7 @@ Archivo Narrow's digits are already uniform, so this is insurance rather than a 
   legs cell is deleted. Built in `e1f0602`.
 - **The desktop block**, in this order and no other: ~~**S46**~~ (**done**, `4957997` — see §4-0.2)
   → ~~**S44 + S45**~~ (**done**, `916d4f4` — see §4-0.3) → ~~**S47**~~ (**done**, `5e33b30` — see
-  §4-0.4) → **S49**
+  §4-0.4) → ~~**S48**~~ (**done**, `3a85f23` — see §4-0.5; **the desktop block is complete**) → **S49**
   (**DD-authored — the desktop enters `ui_kits/surething/`; this seat does not write to `main-2`**)
   → **S48 last**, because folding the desktop into `NotebookChrome` re-opens S8 and returns it to
   review.
