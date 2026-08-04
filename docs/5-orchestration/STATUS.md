@@ -92,6 +92,14 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-03 cycle 72 · **Four staged drafts fired, all lanes kicked** —
+  SureThing: desktop chrome fold now (S48; re-opens S8 — desktop frame owed
+  for DD re-review). TV: game-console prototype declared dead, EventText.cs
+  added to the copy sweep. Room: GO on the bunk-post move, lease granted;
+  structural gates re-void and re-run; Allen takes the couch-sightline
+  re-walk after. Markets: 78px pitch folds into one constant, then the final
+  fit measurement (editor after room) — fits ⇒ merge checklist. Editor queue:
+  room → markets. Reversal: Allen's own calls.
 - 2026-08-03 cycle 71 · **Walkthrough recorded** — Allen walked the two-bunk
   room: aisle, traversal, scale, phone all PASS; one finding — from the couch,
   bunk 2's post partially occludes the TV sweat view. Gates 6–7 clear; Gate 8
