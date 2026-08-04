@@ -92,6 +92,16 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-03 cycle 63 · **Morning sweep, post-Orca-restart** — all four handles
+  re-resolved. TV granted its T41 editor window (compile+verify, T48 re-shoots
+  and T49 A/B in the same window if it holds); SureThing /clear executed +
+  re-seated on its handoff (was 100% context; desktop block next, S46 first);
+  room ordered to finalize handoff for clear (100% context) — its new R19(b)
+  finding (metal-colder-than-room possibly unreachable under one warm source;
+  R12-class, no albedo lightening) queued for the DD drag; markets asked to
+  file the 44px call as `dd-import/markets-44px-call.md` (its T47 report was
+  cut by an API error). Editor queue: TV → markets. Watcher v5 re-armed.
+  Reversal: none — grants follow the standing lease policy.
 - 2026-08-02 cycle 62 · **Sweep + constitution-session prep** — fired two staged
   drafts (SureThing: S49 kit entry is DD-authored, build S42 now; room: editor
   lease granted for the T48 verification cycle — TV queues next for T41's
