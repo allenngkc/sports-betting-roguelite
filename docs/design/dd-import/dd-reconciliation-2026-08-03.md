@@ -31,3 +31,9 @@ session; all three are already in force by Allen's authority.
    and the merge checklist. Per your own ruling the fix is not arithmetic and
    not the lead's to pick: spacing and repetition are exhausted — rule what
    yields.
+
+6. **BezelBlack retirement (room, Allen 2026-08-03):** the third body material
+   was retired as invisible; the pre-merge verification then corrected the
+   finding — the change IS visible on the design-verified room. Allen ruled
+   the retirement stands. The regenerated painterly-read package (new frames)
+   is your re-review evidence; reconcile against the room's verified state.
