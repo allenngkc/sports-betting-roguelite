@@ -1,10 +1,10 @@
 # SureThing UI — re-seat state
 
-**STATUS 2026-08-03 · HEAD `3a85f23` · tree clean · EditMode 76/76 · PlayMode 46/46**
+**STATUS 2026-08-03 · last code commit `3a85f23` · tree clean · EditMode 76/76 · PlayMode 46/46**
 - **Done:** the desktop block, complete — one name everywhere, wallpaper de-branded, icons speak installed/not-installed, chrome folded (S46, S44+S45, S47, S48).
-- **Now:** nothing in flight. The next buildable item is the LEDGER close-out and it is blocked.
-- **Need — DD:** S8 re-verification (frame + write-up staged at `dd-import/surething-s8-refold-2026-08-03/`, untracked). S49, the desktop's kit entry, is the DD's and not this seat's.
-- **Need — cross-seat:** `9e55d0d` (ticket retention) is still not an ancestor of this HEAD, so S41 and the twelve-state LEDGER re-submit both wait on it.
+- **Now:** nothing in flight, and nothing else is this seat's (orchestrator, 2026-08-03).
+- **Need — DD:** S8 re-verification, evidence zipped for the drag from `dd-import/surething-s8-refold-2026-08-03/`. S49, the desktop's kit entry, is the DD's.
+- **Blocked:** S41 and the twelve-state LEDGER re-submit. **Unblocks when markets B1 merges to main and this branch merges main** — B1 is one DD ruling away. **Read §4b before merging: main is 159 commits ahead of this fork point.**
 
 **Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-03, after S48.
 **HEAD:** `3a85f23` · **Branch:** `surething-ui` · working tree clean.
@@ -127,6 +127,32 @@ Two consequences once retention lands, both of which this seat must then act on:
 Also waiting on the same landing: S36's cash-out figure. The engine retains no cash-out amount, so
 that money column prints an em dash in `--toner-3`. **Keep printing the honest absence** — never
 `$0`, never `AMOUNT NOT RETAINED` — until the retained figure exists, then consume it.
+
+### How retention actually reaches this tree, and the trap in the last step
+
+**Measured 2026-08-03, not assumed.** `9e55d0d` exists as an object here but lives on **`markets-2`
+only** — `git branch -a --contains 9e55d0d` returns that one branch, and it is **not** an ancestor
+of `main`. The route the orchestrator confirmed on 2026-08-03: **markets B1 merges to main, then
+this branch merges main.** B1 is one DD ruling away. There is no shortcut worth taking — do not
+cherry-pick `9e55d0d` onto this branch to unblock S41 early; settlement is the markets seat's and
+this seat consumes the result.
+
+**The trap is the merge itself, not the wait.** `git rev-list --left-right --count main...HEAD`
+reads **159 / 19** — main is 159 commits ahead of this branch's fork point, from three other seats.
+So the merge that unblocks S41 also lands a large amount of work this surface has never been
+photographed against.
+
+Consequences, in the order they will bite:
+
+1. **Re-shoot the twelve-state set *after* the merge, never before.** The grant is made on that set
+   (§4-0) and a set shot on the pre-merge tree describes a build that no longer exists. This surface
+   has already produced two findings that a later capture dissolved (§4a); shooting against a stale
+   tree is the same error committed deliberately.
+2. **Re-run the rail comparison from §4-0.5** — the desktop-versus-in-app pixel identity — as the
+   first check after merging. It is the cheapest detector the surface has for shared chrome
+   drifting, and 159 commits is exactly the circumstance it exists for.
+3. **Expect the suite counts to move for reasons that are not this seat's**, and establish the
+   post-merge baseline before reading any failure as a regression here.
 
 ## 4-0. Batch 7 — where the LEDGER actually stands
 
