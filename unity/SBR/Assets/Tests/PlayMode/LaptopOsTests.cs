@@ -265,6 +265,78 @@ namespace SBR.Tests.PlayMode
                 "S44/S47: an installed app's glyph is full toner, not the player's biro");
         }
 
+        /// <summary>
+        /// S47: installed versus not installed is a two-state vocabulary, not a value. Installed is
+        /// a full toner glyph and caption over a --ground-3 chip; not installed is both at
+        /// --toner-3 with no chip, and no "(soon)" — the treatment already says it does not open.
+        ///
+        /// The pairing assertion is the one that matters most: an icon that looks installed and
+        /// refuses to open, or opens while dressed as not-installed, is the surface lying about
+        /// itself in the exact direction this ruling forbids.
+        ///
+        /// What this instrument reads (C25): the authored `Graphic.color` of each icon's chip,
+        /// glyph and caption, and each Button's `interactable`. What it cannot see: Unity tints a
+        /// non-interactable Button's target graphic through the CanvasRenderer rather than through
+        /// `Graphic.color`, so the disabled dim is invisible here — it is moot for a chip already
+        /// at zero alpha, but this test would not notice if it stopped being moot. It also reads
+        /// only the four icons by name; an icon added without a test row is uncovered.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Desktop_icons_speak_a_two_state_vocabulary()
+        {
+            yield return LoadRoom();
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+            var laptop = UnityEngine.Object.FindAnyObjectByType<LaptopScreen>();
+            Assert.IsNotNull(laptop, "LaptopScreen missing");
+            yield return WaitUntil(() => director.Run != null, 10f, "no run");
+            yield return null;
+
+            laptop.Os.OpenDesktop();
+            yield return null;
+            Transform desktop = FindDeep(laptop.transform, "Desktop");
+            Assert.IsNotNull(desktop, "desktop root missing");
+
+            foreach ((string node, bool installed) in new[]
+                { ("SureThing", true), ("OldSlips", true), ("Mail", false), ("Bank", false) })
+            {
+                Transform icon = FindDeep(desktop, node);
+                Assert.IsNotNull(icon, $"'{node}' icon missing");
+                string state = installed ? "installed" : "not installed";
+                Color ink = installed ? LaptopOs.White : LaptopOs.Muted;
+
+                Text glyph = icon.Find("Label").GetComponent<Text>();
+                Text caption = icon.Find("Caption").GetComponent<Text>();
+                Assert.IsTrue(SameInk(glyph.color, ink),
+                    $"{node} is {state}, so its glyph is {(installed ? "full toner" : "--toner-3")}");
+                Assert.IsTrue(SameInk(caption.color, ink),
+                    $"{node} is {state}, so its caption is the same ink as its glyph");
+
+                // The chip is the button's own Image — the tile, not a separate child.
+                Image chip = icon.GetComponent<Image>();
+                Assert.IsNotNull(chip, $"{node} has no chip graphic");
+                if (installed)
+                {
+                    Assert.IsTrue(SameInk(chip.color, LaptopOs.SurfaceRaised),
+                        $"{node} is installed, so it sits on a --ground-3 chip");
+                    Assert.AreEqual(1f, chip.color.a, 1e-3f, $"{node}: the chip is opaque");
+                }
+                else
+                {
+                    Assert.AreEqual(0f, chip.color.a, 1e-3f,
+                        $"{node} is not installed, so it has no chip at all — not a fainter one");
+                }
+
+                Assert.AreEqual(installed, icon.GetComponent<Button>().interactable,
+                    $"{node} is dressed as {state} and must behave that way — an icon that does not "
+                    + "open reads as not-installed by treatment, so the two may never disagree");
+
+                Assert.IsFalse(caption.text.ToLowerInvariant().Contains("soon"),
+                    $"{node}: '(soon)' is deleted — the product does not put its roadmap on his desktop");
+                Assert.AreEqual(caption.text.ToUpperInvariant(), caption.text,
+                    $"{node}: icon captions take the machine's voice — caps");
+            }
+        }
+
         // ---- helpers ----
 
         /// <summary>Compares two inks at 8-bit precision — the palette is authored as Color32, so a

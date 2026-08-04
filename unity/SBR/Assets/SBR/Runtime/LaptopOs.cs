@@ -282,13 +282,19 @@ namespace SBR.Game
             // S44 again, via S47's wording — "the S loses its biro under S44". The app's own icon
             // is not something the player drew, so it cannot be in his ink; the same rule that
             // deleted the wordmark above takes the glyph. It goes to full --toner, which is also
-            // where S47 lands it for an installed app, so this is not a colour to revisit there.
-            MakeDesktopIcon("SureThing", "S", "SURETHING", new Vector2(34f, -120f), White,
-                () => { _activeApp = App.SureThing; Invalidate(); });
-            MakeDesktopIcon("OldSlips", "$", "LEDGER", new Vector2(34f, -225f), SurfaceRaised,
-                () => { _activeApp = App.OldSlips; Invalidate(); });
-            MakeDesktopIcon("Mail", "@", "Mail (soon)", new Vector2(34f, -330f), Muted, null);
-            MakeDesktopIcon("Bank", "¤", "Bank (soon)", new Vector2(34f, -435f), Muted, null);
+            // where S47 lands an installed glyph anyway, so it was not a colour to revisit here.
+            MakeDesktopIcon("SureThing", "S", "SURETHING", new Vector2(34f, -120f),
+                IconState.Installed, () => { _activeApp = App.SureThing; Invalidate(); });
+            // S47: LEDGER takes the installed treatment with its "$" at full toner. It was being
+            // drawn in --ground-3 — the chip colour, in the glyph's argument — which is the same
+            // value as the tile behind it, so the one destination on this machine that is not the
+            // sportsbook announced itself with a glyph a step off invisible.
+            MakeDesktopIcon("OldSlips", "$", "LEDGER", new Vector2(34f, -225f),
+                IconState.Installed, () => { _activeApp = App.OldSlips; Invalidate(); });
+            // S47: "(soon)" is deleted. The product does not put its own roadmap on his desktop,
+            // and the treatment already says these do not open.
+            MakeDesktopIcon("Mail", "@", "MAIL", new Vector2(34f, -330f), IconState.NotInstalled, null);
+            MakeDesktopIcon("Bank", "¤", "BANK", new Vector2(34f, -435f), IconState.NotInstalled, null);
 
             // Was rgba(0.025, 0.02, 0.05, 0.94): effectively black, and blue-tinted. That broke two
             // laws at once — nothing on this screen may be pure black, and the room physically
@@ -317,17 +323,48 @@ namespace SBR.Game
                 $"{NotebookChrome.ClockText}   ·   {NotebookChrome.BatteryPercent}%", _font);
         }
 
-        private void MakeDesktopIcon(string name, string glyph, string label, Vector2 position, Color color,
-            Action onClick)
+        /// <summary>S47: installed versus not installed is a two-state vocabulary, not a value.
+        ///
+        /// Every appearance difference between the two is derived here from the state itself, so a
+        /// third combination cannot be authored at a call site. That is not tidiness: before this,
+        /// the caller passed a glyph colour by hand and the caption's strength was inferred from
+        /// whether an `onClick` happened to be null, and those two facts drifted apart exactly the
+        /// way you would expect — the LEDGER icon was drawing its `$` in `--ground-3`, the chip's
+        /// colour handed to the glyph, which put an installed app's glyph one step off the ground
+        /// it sat on. It was on every desktop capture ever taken and nobody saw it, because there
+        /// was no state to disagree with.</summary>
+        private enum IconState
         {
+            /// Full `--toner` glyph and caption, over a `--ground-3` chip.
+            Installed,
+
+            /// Glyph and caption at `--toner-3`, and no chip at all. An icon that does not open
+            /// reads as not-installed by treatment — which is the whole reason `(soon)` is not
+            /// merely unnecessary but forbidden: it is the product putting its roadmap on his
+            /// desktop to say something the treatment already said.
+            NotInstalled,
+        }
+
+        private void MakeDesktopIcon(string name, string glyph, string label, Vector2 position,
+            IconState state, Action onClick)
+        {
+            bool installed = state == IconState.Installed;
+            // One ink for glyph and caption. Splitting them across two arguments is what let them
+            // drift, and the ruling treats them as one statement.
+            Color ink = installed ? White : Muted;
+            // No chip means no chip, not a fainter one. The chip is the button's own Image, so
+            // this is also the only thing that draws the tile at all.
+            Color chip = installed ? SurfaceRaised : new Color(0f, 0f, 0f, 0f);
+            // Interactability comes from the state too, so an icon cannot look installed and
+            // refuse to open, or vice versa. A test holds that pairing across all four icons —
+            // a runtime throw on a desktop build would help nobody.
             Button button = LaptopUi.MakeButton(_desktop, name, glyph, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                position, new Vector2(86f, 76f), 28, new Color(0f, 0f, 0f, 0.12f), color, onClick, _font,
-                onClick != null);
+                position, new Vector2(86f, 76f), 28, chip, ink, onClick, _font, installed);
             // S46: icon labels take the machine's voice — caps, condensed. Condensed is set here,
-            // once, for the class rather than per icon; the caps live in each caller's string. The
-            // two not-installed labels are still sentence case ("Mail (soon)", "Bank (soon)")
-            // because S47 rules their text and their treatment together and deletes "(soon)"
-            // outright — rewriting them here would only be undone there.
+            // once, for the class rather than per icon; the caps live in each caller's string.
+            // S46 left `Mail (soon)` and `Bank (soon)` in sentence case because their text was
+            // S47's to rule; S47 has now deleted the parenthetical and they take the voice with
+            // the rest of them.
             //
             // The authored 11 renders at 13: MakeText clamps every size to 13 (as does
             // MeasureWidth, so measurement and render still agree). Left as authored rather than
@@ -339,7 +376,7 @@ namespace SBR.Game
             // S46 test below asking the icon what it calls the app and being handed "S".
             LaptopUi.MakeText(button.GetComponent<RectTransform>(), "Caption", new Vector2(0.5f, 0f),
                 new Vector2(0.5f, 0f), new Vector2(0f, -25f), new Vector2(150f, 22f), 11,
-                TextAnchor.UpperCenter, onClick == null ? Muted : White, label, _fontCond);
+                TextAnchor.UpperCenter, ink, label, _fontCond);
         }
 
         private void RenderVerdict(Run run)
