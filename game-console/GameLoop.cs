@@ -167,13 +167,14 @@ internal static class GameLoop
         Ui.Rule();
         if (run.Phase == Phase.RunWon)
         {
-            Ui.WriteLine(ConsoleColor.Green, $"YOU WON — all {run.Config.Rounds} payments made. The house blinks first.");
+            // T44: "YOU WON" is second person and a celebration; the run's state is the fact.
+            Ui.WriteLine(ConsoleColor.Green, $"RUN WON — all {run.Config.Rounds} payments made. The house blinks first.");
         }
         else
         {
             SettlementReport r = run.LastSettlement!.Value;
             Ui.WriteLine(ConsoleColor.Red,
-                $"THE BOOKIE COLLECTS — round {r.Round}: {Ui.Money(r.Payment)} due, you had {Ui.Money(r.BankBefore)} (short {Ui.Money(r.Shortfall)}).");
+                $"THE BOOKIE COLLECTS — round {r.Round}: {Ui.Money(r.Payment)} due, {Ui.Money(r.BankBefore)} in the bank (short {Ui.Money(r.Shortfall)}).");
         }
         Ui.Rule();
 

@@ -366,7 +366,26 @@ BACKED SCORER` (CF's impersonal address; `BACKED` is §7.7's own word), and `the
 `THE BOARD IS SET` (CF puts state words in tracked uppercase; every sibling on that element already
 is).
 
-**Not done, and it is the bigger half:** `game-console/EventText.cs` is `SweatFlavor.cs`'s
+**T44 CLOSED 2026-08-03.** The orchestrator ruled (Allen-fired): `game-console` is a dead
+prototype, sweep it anyway. Done — and it is the one part of this session's work that is actually
+**verified**, because `game-console` is a dotnet project: `dotnet build SBR.ConsoleGame.csproj`
+succeeds, 0 warnings, 0 errors. (The build dirtied `SBR.Engine.dll` exactly as §1's hazard note
+predicts; reverted.)
+
+`EventText.cs` took all thirteen: both lines T44 quotes by name, the six second-person strings T39
+had fixed only in the Unity copy, `IT'S IN!`, and the superlative/editorial/prediction set. Two of
+its lines are console-only (the scorer branch has no Unity twin) and were fixed by the rule rather
+than mirrored. Tables were **not** made identical to `SweatFlavor.cs` — only violations were
+touched; cosmetic drift in a dead file is churn.
+
+**Widened by one step beyond the named file, deliberately:** a scan of the whole directory found the
+same second-person violation in three sibling strings — `BettingScreen.cs:92`, `GameLoop.cs:170`
+(`YOU WON`, also a celebration), `GameLoop.cs:176`. Fixing `EventText.cs` and leaving those would
+have been fix-by-site for the third time in this ruling's history. `game-console` now scans clean for
+second person, `!`/`?!`, superlatives and ASCII sentence dashes. The `y/n:` prompts are kept — CF
+permits second person in genuine instructions.
+
+**Superseded record of the blind spot:** `game-console/EventText.cs` is `SweatFlavor.cs`'s
 byte-for-byte ancestor, is live in `SBR.slnx`, and **still contains every string T39 rewrote** —
 including both lines T44 quotes by name, `"off the bar — a miracle brewing?!"` and
 `"the crowd loses it"`, verbatim. T39 scoped itself to "owned runtime source", so `game-console/`
