@@ -250,21 +250,40 @@ namespace SBR.Game
 
         private void BuildDesktop()
         {
-            LaptopUi.MakeText(_desktop, "DesktopSure", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(28f, -28f), new Vector2(76f, 36f), 23, TextAnchor.UpperLeft, White,
-                "SURE", _font);
-            LaptopUi.MakeText(_desktop, "DesktopThing", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(105f, -28f), new Vector2(130f, 36f), 23, TextAnchor.UpperLeft, Accent,
-                "THING.", _font);
-            LaptopUi.MakeText(_desktop, "DesktopTagline", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(30f, -62f), new Vector2(420f, 24f), 12, TextAnchor.UpperLeft, Muted,
-                "the number never lies", _font);
+            // S44 + S45: the wallpaper is the lifted ground and its toner grain, and nothing else.
+            //
+            // What stood here: "SURE" in toner beside "THING." in biro at 23px — the house's
+            // wordmark, the largest element on the screen, half of it drawn in the one ink that is
+            // only ever what HE chose. The two-ink rule settles it before the story question is
+            // reached, and the story question has an answer anyway: S8 is Design-verified on the
+            // finding that this chrome reads as *his* machine, and a machine wearing the operator's
+            // logo contradicts that on the same surface. The house owns the app; the player owns
+            // the machine.
+            //
+            // And beneath it, "the number never lies" — deleted, not softened (S45). Alone on an
+            // otherwise empty screen the slot is the whole screen, so the line stops reading as the
+            // bookmaker's marketing and starts reading as the product's promise of a guaranteed
+            // win. C10's shape: there is no smaller version of that claim that is not the claim.
+            //
+            // The band this vacated is NOT headroom (R30). It is where S48's shared 34px rail
+            // lands when the desktop folds into NotebookChrome, and that rail already carries the
+            // machine's own marks — "NOTEBOOK" and the PROPERTY OF NOBODY sticker. S44 permits an
+            // optional dead-manufacturer wordmark here in --toner-3; it is deliberately not built,
+            // because it would be a second instance of exactly what the rail is about to bring.
+            //
+            // The toner grain S44 names is already on this screen: MakeTonerGrain is parented to
+            // _root in the constructor, above whichever of Desktop/App is active, so it needs
+            // nothing here.
 
             // S46: one name, SURETHING, everywhere the player sees it. "Sportsbook" was a second
             // name for the same app, in a third case — the desktop called it one thing, the tray
             // another, the masthead a third. The GameObject name stays "SureThing" (S16 exempts
             // code identifiers, and SureThingLedgerTests reaches the tray slot by it).
-            MakeDesktopIcon("SureThing", "S", "SURETHING", new Vector2(34f, -120f), Accent,
+            // S44 again, via S47's wording — "the S loses its biro under S44". The app's own icon
+            // is not something the player drew, so it cannot be in his ink; the same rule that
+            // deleted the wordmark above takes the glyph. It goes to full --toner, which is also
+            // where S47 lands it for an installed app, so this is not a colour to revisit there.
+            MakeDesktopIcon("SureThing", "S", "SURETHING", new Vector2(34f, -120f), White,
                 () => { _activeApp = App.SureThing; Invalidate(); });
             MakeDesktopIcon("OldSlips", "$", "LEDGER", new Vector2(34f, -225f), SurfaceRaised,
                 () => { _activeApp = App.OldSlips; Invalidate(); });

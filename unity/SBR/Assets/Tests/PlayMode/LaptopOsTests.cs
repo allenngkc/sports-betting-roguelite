@@ -160,9 +160,12 @@ namespace SBR.Tests.PlayMode
         /// covered by the source guard in SureThingNameTests instead: reaching it here means driving
         /// a run to RunWon/RunLost, which is a far more expensive gate than the defect deserves.
         ///
-        /// The retired-spelling sweep deliberately does NOT match the desktop wordmark's `SURE` +
-        /// `THING.` pair. That is two Text objects, not one string, and it is S44's to delete —
-        /// failing it here would make this test claim a ruling it does not hold.
+        /// The retired-spelling sweep does not match the desktop wordmark's `SURE` + `THING.` pair.
+        /// That was deliberate when it was written — the pair was two Text objects rather than one
+        /// string, and deleting it was S44's ruling, not this one's. S44 has since deleted it
+        /// (Desktop_wears_no_house_brand_and_no_biro holds that gate now), so the exclusion is
+        /// historical; it stays because a name split across two Texts is still not a spelling this
+        /// test can honestly claim to catch.
         /// </summary>
         [UnityTest]
         public IEnumerator One_name_on_every_destination_the_player_can_reach()
@@ -203,7 +206,75 @@ namespace SBR.Tests.PlayMode
             }
         }
 
+        /// <summary>
+        /// S44 + S45: the machine does not wear the house's brand, and satire never occupies a slot
+        /// where a fact belongs. The wordmark and the tagline are deleted, not restyled and not
+        /// softened, and the app's icon glyph leaves the player's ink.
+        ///
+        /// What this instrument reads (C25): every Graphic parented under Desktop, by its `color`
+        /// field, and every Text's string. What it cannot see: LaptopWallpaperGraphic emits its four
+        /// corner colours as per-vertex data inside OnPopulateMesh, so the ground's own colours are
+        /// invisible to a color-field scan — they are Ink/Surface/SurfaceRaised by construction and
+        /// carry no biro, but this test does not prove that. It also does not read the toner grain,
+        /// which is parented to the canvas root rather than to Desktop, and it says nothing about
+        /// whether the wallpaper draws at all — SureThingVisualCaptureTests holds that gate.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Desktop_wears_no_house_brand_and_no_biro()
+        {
+            yield return LoadRoom();
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+            var laptop = UnityEngine.Object.FindAnyObjectByType<LaptopScreen>();
+            Assert.IsNotNull(laptop, "LaptopScreen missing");
+            yield return WaitUntil(() => director.Run != null, 10f, "no run");
+            yield return null;
+
+            laptop.Os.OpenDesktop();
+            yield return null;
+            Transform desktop = FindDeep(laptop.transform, "Desktop");
+            Assert.IsNotNull(desktop, "desktop root missing");
+
+            // Deleted, not restyled: a wordmark drawn in a quieter ink is still the house's mark.
+            foreach (string gone in new[] { "DesktopSure", "DesktopThing", "DesktopTagline" })
+                Assert.IsNull(FindDeep(desktop, gone),
+                    $"'{gone}' is deleted under S44/S45 — a softer version of it is the same claim");
+
+            // S45 by content as well as by node, since the line could reappear anywhere.
+            foreach (Text text in desktop.GetComponentsInChildren<Text>())
+                Assert.IsFalse(text.text.ToLowerInvariant().Contains("never lies"),
+                    $"S45: '{text.text}' promises the player a guaranteed win. Deleted, not softened.");
+
+            // S44's actual mechanism: biro is only ever what the player chose, so none of it belongs
+            // on the machine's own screen — including the app icon's glyph (S47 names this as S44's).
+            foreach (Graphic graphic in desktop.GetComponentsInChildren<Graphic>())
+            {
+                Assert.IsFalse(SameInk(graphic.color, LaptopOs.Accent),
+                    $"S44: '{graphic.name}' is drawn in biro on the player's own desktop");
+                Assert.IsFalse(SameInk(graphic.color, LaptopOs.BiroDeep),
+                    $"S44: '{graphic.name}' is drawn in biro on the player's own desktop");
+            }
+
+            // And positively, because "not biro" alone would also pass if the glyph vanished
+            // entirely. The glyph is the icon button's own "Label" child; "Caption" is the app name.
+            Transform icon = FindDeep(desktop, "SureThing");
+            Assert.IsNotNull(icon, "the SureThing icon is missing");
+            Transform glyph = icon.Find("Label");
+            Assert.IsNotNull(glyph, "the SureThing icon has no glyph");
+            Assert.AreEqual("S", glyph.GetComponent<Text>().text, "the icon's glyph");
+            Assert.IsTrue(SameInk(glyph.GetComponent<Text>().color, LaptopOs.White),
+                "S44/S47: an installed app's glyph is full toner, not the player's biro");
+        }
+
         // ---- helpers ----
+
+        /// <summary>Compares two inks at 8-bit precision — the palette is authored as Color32, so a
+        /// float-exact comparison would be asserting against rounding rather than against a token.</summary>
+        private static bool SameInk(Color a, Color b)
+        {
+            Color32 x = a;
+            Color32 y = b;
+            return x.r == y.r && x.g == y.g && x.b == y.b;
+        }
 
         /// Every spelling of the app's name S46 retired. Each is unambiguous copy: none of them can
         /// occur in a resource path or a GameObject name, so a hit is always a rendered defect.
