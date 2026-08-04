@@ -92,6 +92,17 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-03 cycle 69 · **Walkthrough approved + staged; phone ruling fired** —
+  Allen approved the room walkthrough; checklist written
+  (`docs/design/r22-walkthrough-checklist.md`), room staging the scene + move
+  steps, editor free and reserved for the walk next. Allen's staged phone
+  ruling fired: live BookieFeed on the phone STAYS (Allen's authority over the
+  DD's dark-stub default; distinction: live engine content, not invented UI) —
+  queued for register reconciliation in the next DD drag. Markets chased on
+  two points: whether the 2.6px residual is over-or-under with a staged
+  receipt (over = hold red, new DD item), and to state the
+  placed-tickets-on-main-screen question in two sentences for Allen. Reversal:
+  phone ruling is Allen's; walkthrough is procedural.
 - 2026-08-03 cycle 68 · **Constitution APPROVED (Allen, all three new clauses
   explicitly)** — landed as canon at `docs/design/constitution.md`; register row
   and inbox updated; report-back queued for the next DD drag. Reversal: Allen's
