@@ -269,7 +269,32 @@ Two failure modes share this test name and mean opposite things:
 Baselines before this stack: engine **160**, EditMode **194**, PlayMode **44** (+1 `[Explicit]`
 capture harness, filtered out of routine runs).
 
-## 4C. RESUME HERE — the slice is EVIDENCE-COMPLETE and on HOLD (2026-08-02)
+## 4C. RESUME HERE — T41 landed; next is T43 (2026-08-02, batch 6 current)
+
+**T41 is CLOSED (`3b5153e`) and Phase 3+ is unblocked.** The stage sits under the ladder: markings L2,
+actors/keepers/ball L3, L4 reserved to the payoff overlay. The markings' **hue** is untouched on
+purpose — canon's `--tv-pitch` is green, the build is cold white-grey, and T41 ruled the *tier*.
+
+**Do next, in DD priority order:** T43 (MARKET SUSPENDED on a gold field — a state lie) → T46 (stage
+overdraws the ticket column) → T42 (team hues saturated + in scorebug type) → T44 (event-strip copy
+voice). T45 is room's.
+
+**Two captures owed, both cheap, both needing an editor:**
+- **T49** — re-run the 1.8/1.4 bloom A/B. It was *confounded by the uncapped pitch*; now that T41
+  caps it the comparison is finally meaningful. Boost token already rides every filename.
+- **T48** — re-shoot screens-dark + grade-bypassed. **BLOCKED, do not guess:** these are ROOM-side rig
+  settings (R23's purpose-built set, R26's bypass pair). The orchestrator is having the rig documented
+  by the room lead. Wait for that doc.
+
+**Batch 6 answers, so these are no longer open:** T51 — the 0.3px yields, **stacked stays**, re-derive
+the grid constant once at design time (that is the TV-15 answer, and it is legal). T52 — the tape is
+one 28px strip, Phase 4. T50 — Encode confirmed in situ, T11 stands; column type after T46.
+
+**Guard note for whoever picks this up:** the T41 luminance guard measures *brightest channel × alpha*,
+not alpha. The first version asserted alpha, flagged a near-black background at 0.95, and would have
+passed real violations while failing innocent ones. If you extend it, keep the axis.
+
+## 4C-i. Superseded — the evidence-complete hold record (2026-08-02)
 
 **Do not start anything. Every remaining item is a DD verdict, not work.** Items 10–12 referenced
 below were answered in Batch 4 (as T21/T22/T23) and the section after them is kept as the record of
