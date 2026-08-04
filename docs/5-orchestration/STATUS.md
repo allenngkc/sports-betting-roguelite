@@ -92,6 +92,13 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-03 cycle 64 · **Room cleared+reseated on READY signal; next DD drag
+  staged** — markets' 44px call is filed (T47 fixes verified `774a1c9`; 44px
+  flow deficit, three costed candidates, last B1 blocker); room's R19(b)
+  finding written up (`dd-followup-room-r19b.md`); context prompt
+  `dd-context-prompt-2026-08-03.md` + bundle `dd-docs-2026-08-03.zip` (80KB)
+  staged — session order: constitution (C24), 44px call, R19(b), room's two
+  small questions. Reversal: none.
 - 2026-08-03 cycle 63 · **Morning sweep, post-Orca-restart** — all four handles
   re-resolved. TV granted its T41 editor window (compile+verify, T48 re-shoots
   and T49 A/B in the same window if it holds); SureThing /clear executed +
