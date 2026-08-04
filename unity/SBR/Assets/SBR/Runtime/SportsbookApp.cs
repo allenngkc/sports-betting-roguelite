@@ -289,15 +289,15 @@ namespace SBR.Game
             // now names its own market and the tab strip already names the destination; the kit has
             // no such heading.
             if (_detailTab == DetailTab.Goals)
-                BuildMarketLines(body, slip, matchup, run.Config.GoalLines, MarketKind.TotalGoals, boardFrozen);
+                BuildMarketLines(body, slip, matchup, run.Config.GoalLines, MarketKind.TotalGoals, boardFrozen, run);
             else if (_detailTab == DetailTab.Btts)
-                BuildBothTeamsScore(body, slip, matchup, boardFrozen);
+                BuildBothTeamsScore(body, slip, matchup, boardFrozen, run);
             else if (_detailTab == DetailTab.Corners)
-                BuildMarketLines(body, slip, matchup, run.Config.CornerLines, MarketKind.TotalCorners, boardFrozen);
+                BuildMarketLines(body, slip, matchup, run.Config.CornerLines, MarketKind.TotalCorners, boardFrozen, run);
             else if (_detailTab == DetailTab.Cards)
-                BuildMarketLines(body, slip, matchup, run.Config.CardLines, MarketKind.TotalCards, boardFrozen);
+                BuildMarketLines(body, slip, matchup, run.Config.CardLines, MarketKind.TotalCards, boardFrozen, run);
             else
-                BuildPlayerLines(body, slip, matchup, boardFrozen);
+                BuildPlayerLines(body, slip, matchup, boardFrozen, run);
 
             // Drawn last (after the market body's scroll content) so it always renders on top of
             // row 0 instead of being hidden behind that row's opaque price-cell button. Under the
@@ -322,9 +322,10 @@ namespace SBR.Game
         }
 
         private void BuildMarketLines(RectTransform parent, BetslipModel slip, Matchup matchup,
-            double[] lines, MarketKind kind, bool frozen)
+            double[] lines, MarketKind kind, bool frozen, Run run)
         {
-            RectTransform content = BuildScrollingBody(parent, lines.Length * 2, out float rowWidth);
+            RectTransform content = BuildScrollingBody(parent, lines.Length * 2, run, out float rowWidth,
+                out float rowsOffsetY);
             for (int i = 0; i < lines.Length; i++)
             {
                 double line = lines[i];
@@ -335,28 +336,31 @@ namespace SBR.Game
                 // the noun ("GOALS"/"CORNERS"/"CARDS").
                 string overLabel = MatchModel.Fields(matchup, over).Line;
                 string underLabel = MatchModel.Fields(matchup, under).Line;
+                // E-07: rows are pushed down by rowsOffsetY, the height BuildScrollingBody's own
+                // "PLACED THIS ROUND" block (if any) already consumed at the top of content.
                 MakeOfferRow(content, slip, matchup, over, overLabel, null, i * 2,
-                    -(i * 2) * OfferRowHeight, rowWidth, frozen);
+                    -rowsOffsetY - (i * 2) * OfferRowHeight, rowWidth, frozen);
                 MakeOfferRow(content, slip, matchup, under, underLabel, null, i * 2 + 1,
-                    -(i * 2 + 1) * OfferRowHeight, rowWidth, frozen);
+                    -rowsOffsetY - (i * 2 + 1) * OfferRowHeight, rowWidth, frozen);
             }
         }
 
         private void BuildBothTeamsScore(RectTransform parent, BetslipModel slip, Matchup matchup,
-            bool frozen)
+            bool frozen, Run run)
         {
-            RectTransform content = BuildScrollingBody(parent, 2, out float rowWidth);
+            RectTransform content = BuildScrollingBody(parent, 2, run, out float rowWidth, out float rowsOffsetY);
             MarketSelection yes = MarketSelection.BothTeamsToScore(true);
             MarketSelection no = MarketSelection.BothTeamsToScore(false);
             // A2 ruling: BTTS's choice lives in Fields.Market ("BTTS — YES"/"BTTS — NO"); Fields.Line
             // is just "BOTH TEAMS TO SCORE" and does not carry which side this row is.
             MakeOfferRow(content, slip, matchup, yes, MatchModel.Fields(matchup, yes).Market, null,
-                0, 0f, rowWidth, frozen);
+                0, -rowsOffsetY, rowWidth, frozen);
             MakeOfferRow(content, slip, matchup, no, MatchModel.Fields(matchup, no).Market, null,
-                1, -OfferRowHeight, rowWidth, frozen);
+                1, -rowsOffsetY - OfferRowHeight, rowWidth, frozen);
         }
 
-        private void BuildPlayerLines(RectTransform parent, BetslipModel slip, Matchup matchup, bool frozen)
+        private void BuildPlayerLines(RectTransform parent, BetslipModel slip, Matchup matchup, bool frozen,
+            Run run)
         {
             // S25 amended / A5 / C19: the withdrawn fixed-body cap is gone — every priced scorer
             // offer renders, full stop. The interior list scrolls instead (A4/S27) rather than
@@ -365,7 +369,8 @@ namespace SBR.Game
             foreach (MarketOffer offer in matchup.Markets)
                 if (offer.Selection.Kind == MarketKind.AnytimeScorer) scorers.Add(offer);
 
-            RectTransform content = BuildScrollingBody(parent, scorers.Count, out float rowWidth);
+            RectTransform content = BuildScrollingBody(parent, scorers.Count, run, out float rowWidth,
+                out float rowsOffsetY);
             for (int row = 0; row < scorers.Count; row++)
             {
                 MarketSelection selection = scorers[row].Selection;
@@ -374,25 +379,36 @@ namespace SBR.Game
                 // the name's own string or colour.
                 MatchModel.MarketFields fields = MatchModel.Fields(matchup, selection);
                 MakeOfferRow(content, slip, matchup, selection, fields.Line, fields.Role, row,
-                    -row * OfferRowHeight, rowWidth, frozen);
+                    -rowsOffsetY - row * OfferRowHeight, rowWidth, frozen);
             }
         }
 
         /// <summary>A4/S27: builds the market body's scroll plumbing — a masked <see cref="ScrollRect"/>
         /// viewport sized to <paramref name="body"/>'s own rect (kept fixed per the ruling) and a
         /// content <see cref="RectTransform"/> whose height is the true content height
-        /// (<paramref name="rowCount"/> × <see cref="OfferRowHeight"/>), never a capacity clamp.
-        /// Draws the S27 position rail — present only when the content overflows the viewport,
-        /// absent when it fits — and returns the row width every row must use so content never
-        /// runs under the rail (out <paramref name="rowWidth"/>). Shared by BuildMarketLines,
-        /// BuildBothTeamsScore and BuildPlayerLines (A1 ruling) so their scroll/rail plumbing can
-        /// never independently drift.</summary>
-        private static RectTransform BuildScrollingBody(RectTransform body, int rowCount, out float rowWidth)
+        /// (<paramref name="rowCount"/> × <see cref="OfferRowHeight"/>, plus the staged-receipt
+        /// block below), never a capacity clamp. Draws the S27 position rail — present only when the
+        /// content overflows the viewport, absent when it fits — and returns the row width every row
+        /// must use so content never runs under the rail (out <paramref name="rowWidth"/>). Shared by
+        /// BuildMarketLines, BuildBothTeamsScore and BuildPlayerLines (A1 ruling) so their scroll/rail
+        /// plumbing can never independently drift.
+        ///
+        /// E-07 ruling: also renders <c>run.Tickets</c>' staged receipts under a "PLACED THIS ROUND"
+        /// header (kit: screens.jsx:49-58) at the top of the content, inside the same scroll — done
+        /// once here rather than in each of the three callers, since all three (and so all five
+        /// destinations) share this one path. <paramref name="rowsOffsetY"/> is the height that block
+        /// consumed (0 when <c>run.Tickets</c> is empty); every caller must push its own rows down by
+        /// this before they contribute to <see cref="OfferRowHeight"/> math, and it is already folded
+        /// into <paramref name="rowWidth"/>'s contentHeight/overflow decision below so the rail and
+        /// mask both size off the true total.</summary>
+        private RectTransform BuildScrollingBody(RectTransform body, int rowCount, Run run,
+            out float rowWidth, out float rowsOffsetY)
         {
             const float railReserve = 8f; // 4px RuleSoft track + 4px clearance (A4: never under the rail).
             float bodyWidth = body.rect.width;
             float bodyHeight = body.rect.height;
-            float contentHeight = rowCount * OfferRowHeight;
+            rowsOffsetY = MeasurePlacedThisRoundHeight(run);
+            float contentHeight = rowsOffsetY + rowCount * OfferRowHeight;
             bool overflows = contentHeight > bodyHeight;
             rowWidth = overflows ? bodyWidth - railReserve : bodyWidth;
 
@@ -419,6 +435,9 @@ namespace SBR.Game
                 new Vector2(0f, 1f), Vector2.zero, new Vector2(rowWidth, contentHeight),
                 new Color(0f, 0f, 0f, 0f));
 
+            if (run.Tickets.Count > 0)
+                BuildPlacedThisRound(content, run, rowWidth);
+
             scrollRect.horizontal = false;
             scrollRect.vertical = true;
             scrollRect.movementType = ScrollRect.MovementType.Clamped;
@@ -434,6 +453,49 @@ namespace SBR.Game
                 BuildPositionRail(body, scrollRect, bodyHeight, contentHeight);
 
             return content;
+        }
+
+        /// <summary>13px header height and the kit's own 7px gap before the first receipt
+        /// (screens.jsx:52, <c>marginBottom: 7</c>) — the two pieces of the "PLACED THIS ROUND"
+        /// block that sit above <see cref="BuildStagedReceipt"/>'s own per-ticket geometry.</summary>
+        private const float PlacedHeaderHeight = 18f;
+        private const float PlacedHeaderGap = 7f;
+
+        /// <summary>Total height of the staged-receipt block (header + gap + every ticket), or 0
+        /// when <c>run.Tickets</c> is empty — the number <see cref="BuildScrollingBody"/> reserves in
+        /// its content height and every row must be pushed down by. Pure measurement, no rendering,
+        /// so it can run before <see cref="BuildScrollingBody"/> decides rowWidth/overflow, which
+        /// <see cref="BuildPlacedThisRound"/>'s own rendering then depends on.</summary>
+        private static float MeasurePlacedThisRoundHeight(Run run)
+        {
+            if (run.Tickets.Count == 0) return 0f;
+            return PlacedHeaderHeight + PlacedHeaderGap + MeasureStagedTicketsHeight(run);
+        }
+
+        /// <summary>Sum of every staged ticket's own rendered height (30px header + 18px per leg),
+        /// each followed by an 8px gap (kit: TicketReceipt's <c>marginBottom: 8</c>). Factored out of
+        /// <see cref="BuildStagedReceipt"/> so this and <see cref="MeasurePlacedThisRoundHeight"/>
+        /// can never independently drift from what actually renders.</summary>
+        private static float MeasureStagedTicketsHeight(Run run)
+        {
+            float totalHeight = 0f;
+            for (int i = 0; i < run.Tickets.Count; i++)
+                totalHeight += 30f + run.Tickets[i].Legs.Count * 18f + 8f;
+            return totalHeight;
+        }
+
+        /// <summary>E-07 ruling: the "PLACED THIS ROUND" key header (kit: screens.jsx:52 — roman,
+        /// fact floor, <see cref="LaptopOs.Muted"/>) above <see cref="BuildStagedReceipt"/>'s own
+        /// receipt stack, both inside <paramref name="content"/> (A4's MarketContent) so they scroll
+        /// with the market list instead of pinning over it. Only ever called when
+        /// <c>run.Tickets.Count &gt; 0</c> (<see cref="BuildScrollingBody"/>).</summary>
+        private void BuildPlacedThisRound(RectTransform content, Run run, float width)
+        {
+            const float pad = 14f;
+            LaptopUi.MakeText(content, "PlacedThisRoundHeader", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(pad, 0f), new Vector2(width - pad * 2f, PlacedHeaderHeight), 13,
+                TextAnchor.UpperLeft, LaptopOs.Muted, "PLACED THIS ROUND", _font);
+            BuildStagedReceipt(content, run, -(PlacedHeaderHeight + PlacedHeaderGap), width);
         }
 
         /// <summary>S27 ruling: the printed position rail for a scrolling interior list — exactly
@@ -729,9 +791,10 @@ namespace SBR.Game
                 y -= LegRowPitch;
             }
 
-            if (run.Tickets.Count > 0)
-                y = BuildStagedReceipt(panel, run, y - 4f);
-
+            // E-07 ruling: staged ticket receipts no longer render here. The 324px margin has no
+            // room for up to MaxTicketsPerRound of them above the anchored action band (T47) — they
+            // now render in the ENTRY sheet's own scrolling body instead (BuildScrollingBody), which
+            // is where the kit puts them (screens.jsx:49-58, "PLACED THIS ROUND").
             y -= 4f;
             // B1-3/M-03 ruling (load-bearing under S28): MarginRow.jsx is a label/value pair with
             // its own 1px --rule bottom rule, not one joined "COMBINED {odds}" string in one face
@@ -891,13 +954,21 @@ namespace SBR.Game
                 }, _font, !boardFrozen);
         }
 
-        private float BuildStagedReceipt(RectTransform parent, Run run, float y)
+        /// <summary>Renders <c>run.Tickets</c> as a top-down receipt stack starting at
+        /// <paramref name="y"/>, sized off <paramref name="width"/> — the caller's own available
+        /// width (E-07: previously always the 324px working margin, so the 296/280 numbers below were
+        /// hardcoded to it; now <paramref name="width"/> is <see cref="BuildScrollingBody"/>'s
+        /// rowWidth, so the same 14px/8px insets are applied to whatever width the ENTRY sheet's
+        /// content actually has). Returns the new <paramref name="y"/> cursor below the last
+        /// receipt.</summary>
+        private float BuildStagedReceipt(RectTransform parent, Run run, float y, float width)
         {
-            float totalHeight = 0f;
-            for (int i = 0; i < run.Tickets.Count; i++)
-                totalHeight += 30f + run.Tickets[i].Legs.Count * 18f + 8f;
+            const float pad = 14f;
+            float receiptWidth = width - pad * 2f;
+            float receiptTextWidth = receiptWidth - 16f; // 8px inset each side, as before.
+            float totalHeight = MeasureStagedTicketsHeight(run);
             RectTransform receipts = LaptopUi.MakePanel(parent, "StagedTickets", new Vector2(0f, 1f),
-                new Vector2(0f, 1f), new Vector2(14f, y), new Vector2(296f, totalHeight),
+                new Vector2(0f, 1f), new Vector2(pad, y), new Vector2(receiptWidth, totalHeight),
                 new Color(0f, 0f, 0f, 0f));
             float receiptY = 0f;
             for (int ticketIndex = 0; ticketIndex < run.Tickets.Count; ticketIndex++)
@@ -906,13 +977,12 @@ namespace SBR.Game
                 float receiptHeight = 30f + ticket.Legs.Count * 18f;
                 RectTransform receipt = LaptopUi.MakePanel(receipts, "StagedTicket" + ticketIndex,
                     new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, receiptY),
-                    new Vector2(296f, receiptHeight), LaptopOs.Surface);
+                    new Vector2(receiptWidth, receiptHeight), LaptopOs.Surface);
                 double combined = 1.0;
                 for (int legIndex = 0; legIndex < ticket.Legs.Count; legIndex++)
                     combined *= ticket.Legs[legIndex].OfferedOdds;
                 string identity = string.IsNullOrEmpty(ticket.Id)
                     ? $"{run.Round}.{ticketIndex + 1}" : ticket.Id;
-                const float receiptTextWidth = 280f;
                 // "STAGED" is redundant (this whole block IS the staged-ticket receipt) and is the
                 // first thing dropped to make room. The payout is the figure that matters most on
                 // this line, so it is a protected suffix — FitText only ever trims the label ahead
@@ -938,7 +1008,7 @@ namespace SBR.Game
                         ticketLegText, _fontCond);
                 }
                 LaptopUi.MakeRule(receipt, "ReceiptRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
-                    Vector2.zero, new Vector2(296f, 2f));
+                    Vector2.zero, new Vector2(receiptWidth, 2f));
                 receiptY -= receiptHeight + 8f;
             }
             return y - totalHeight;

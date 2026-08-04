@@ -126,8 +126,10 @@ namespace SBR.Tests.PlayMode
             Transform margin = Required(App(laptop), "WorkingMargin");
             Assert.AreEqual(1, laptop.director.Run.Tickets.Count);
             Assert.AreEqual(0, laptop.Slip.Picks.Count);
+            // E-07 moved staged receipts out of the margin into the 700px sheet, so this looks
+            // beneath the app root rather than the margin (screens.jsx:50-57).
             Assert.IsNotNull(Required(
-                Required(margin, "StagedTickets"), "StagedTicket0"));
+                Required(App(laptop), "StagedTickets"), "StagedTicket0"));
             Assert.IsTrue(Required(margin, "Lock").GetComponent<Button>().interactable);
             Assert.IsNull(Find(margin, "LockReason"));
             yield return CaptureState(laptop, outputDirectory, runPrefix,

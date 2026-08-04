@@ -147,7 +147,7 @@ namespace SBR.Tests.PlayMode
             Assert.AreEqual(expected.Count, run.Tickets.Count,
                 "every placed model ticket must be staged by the engine");
             Assert.AreEqual(0, laptop.Slip.Picks.Count, "PLACE must clear the working marks");
-            AssertReceipts(Required(App(laptop), "WorkingMargin"), run, expected);
+            AssertReceipts(App(laptop), run, expected);
 
             Transform margin = Required(App(laptop), "WorkingMargin");
             Assert.IsTrue(Required(margin, "Lock").GetComponent<Button>().interactable,
@@ -158,7 +158,7 @@ namespace SBR.Tests.PlayMode
             yield return WaitForRebuild();
             Assert.AreEqual(1, laptop.Slip.Picks.Count);
             margin = Required(App(laptop), "WorkingMargin");
-            AssertReceipts(margin, run, expected);
+            AssertReceipts(App(laptop), run, expected);
             Assert.IsFalse(Required(margin, "Lock").GetComponent<Button>().interactable,
                 "a new unplaced mark must disable LOCK without erasing receipts");
             Assert.AreEqual("PLACE OR CLEAR THIS WORKING SLIP",
@@ -551,6 +551,15 @@ namespace SBR.Tests.PlayMode
                 if (rect == margin) continue;
                 // Anything parented into an action control belongs to the band, not the flow.
                 if (rect.GetComponentInParent<Button>() != null) continue;
+                // The ruled-paper ground (S34) is the panel's SUBSTRATE, not flow content: it is a
+                // stretch-fill Graphic spanning the full 530px by design, so counting it reports the
+                // panel's own height as the flow's depth and the budget check can never pass. Caught
+                // by this assertion firing at exactly -530.0px — the panel's bottom edge, not a
+                // coincidence. Excluded by stretch, not by name, so any future full-bleed ground is
+                // excluded too.
+                bool stretchesFullHeight = Mathf.Approximately(rect.anchorMin.y, 0f)
+                    && Mathf.Approximately(rect.anchorMax.y, 1f);
+                if (stretchesFullHeight) continue;
                 flowBottom = Mathf.Min(flowBottom, LocalBottom(rect, margin));
             }
             Assert.GreaterOrEqual(flowBottom, -SportsbookApp.MarginFlowBudget - epsilonPx,
@@ -638,7 +647,7 @@ namespace SBR.Tests.PlayMode
                 WorkingLeg = TextOf(Required(margin, "Leg0")),
                 Stake = TextOf(Required(margin, "Stake")),
                 Payout = TextOf(Required(margin, "Payout")),
-                ReceiptHeader = TextOf(Required(margin, "ReceiptHeader")),
+                ReceiptHeader = TextOf(Required(app, "ReceiptHeader")),
                 TicketCount = laptop.director.Run.Tickets.Count,
                 PickCount = laptop.Slip.Picks.Count,
                 ModelStake = laptop.Slip.Stake,
@@ -681,7 +690,7 @@ namespace SBR.Tests.PlayMode
                 $"{destination} working stake");
             Assert.AreEqual(expected.Payout, TextOf(Required(margin, "Payout")),
                 $"{destination} working payout");
-            Assert.AreEqual(expected.ReceiptHeader, TextOf(Required(margin, "ReceiptHeader")),
+            Assert.AreEqual(expected.ReceiptHeader, TextOf(Required(app, "ReceiptHeader")),
                 $"{destination} staged receipt");
             Assert.AreEqual(expected.TicketCount, laptop.director.Run.Tickets.Count,
                 $"{destination} staged-ticket model count");
@@ -693,10 +702,13 @@ namespace SBR.Tests.PlayMode
                 $"{destination} working selection model");
         }
 
-        private static void AssertReceipts(Transform margin, Run run,
+        /// <summary>Takes the app root, not the margin: E-07 moved staged receipts out of the 324px
+        /// working margin and into the 700px sheet, where the kit puts them (screens.jsx:50-57).
+        /// Required searches recursively, so the app root spans both regions.</summary>
+        private static void AssertReceipts(Transform app, Run run,
             IReadOnlyList<ReceiptExpectation> expected)
         {
-            Transform receipts = Required(margin, "StagedTickets");
+            Transform receipts = Required(app, "StagedTickets");
             int rendered = 0;
             for (int i = 0; i < receipts.childCount; i++)
                 if (receipts.GetChild(i).name.StartsWith("StagedTicket", StringComparison.Ordinal))
