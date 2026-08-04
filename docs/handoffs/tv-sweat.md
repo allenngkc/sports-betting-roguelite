@@ -299,6 +299,39 @@ There is a flag for it. Read the flag.
 | T42 | Written. Scorebug half was already landed by T32.1; the dot pool was the live half | `TvSweatScreen.cs` `teamHueA`/`teamHueB` |
 | T44 | Written for the TV event strip. **The console twin is untouched and still holds every string T39 fixed** | `SweatFlavor.cs`, `TvSweatScreen.cs` |
 
+### Window plan — compile is ready, T48 is NOT, T49 needs one frame of rig proof first
+
+Checked against the rig recipe **before** the window rather than inside it. Three findings, one of
+which would have burned the slot:
+
+**1. T48 cannot run on this branch.** The recipe's mechanism is sound and its scene preconditions
+mostly hold here — `TvLight`, `PhoneBuzzLight`, `TVScreen`, `LaptopScreen`, `PhoneScreen` are all in
+this branch's `Room.unity`. But three things it needs are on `main` and **not on
+`slice/tv-sweat-refinement`**:
+
+| needed | here? | on `main`? |
+|---|---|---|
+| `unity/SBR/Assets/SBR/Editor/RoomViewCapture.cs` | **no** | yes |
+| `tools/room_gate_check.py` | **no** | yes |
+| `RoomPostFx` in `Room.unity` — the volume the whole bypass toggles | **no** | yes |
+
+This branch is **51 ahead / 190 behind `main`**. Copying the two files across is not enough: the
+harness throws on a missing `RoomPostFx` *by design* ("a set missing half its pair would silently
+look complete" — do not soften that, and I will not). **T48 is blocked on an integration merge, not
+on an editor window.** That is an orchestrator call — a 190-commit merge into a slice with 51 commits
+concentrated in `TvSweatScreen.cs` is not a thing to start unilaterally at the head of a granted slot.
+
+**2. T49 can run here — its harness is TV-side.** `TvSweatCaptureHarness` loads `Room` and stamps
+`boost{X.X}` into every filename off `DebugHdrBoostL4`; it never touches `RoomPostFx`. Nothing blocks
+the A/B.
+
+**3. But prove the rig before spending the window on 34 frames.** T49 was withheld once already as
+*confounded* — both arms bloomed maximally over an uncapped pitch. If bloom lives in `RoomPostFx` and
+that object is absent here, the re-run measures nothing and gets withheld a second time for a second
+reason. The previous A/B did produce bloom from this branch, so it is present by some route — but
+"present by some route" is not a measurement. **First deliverable of the window: one frame at each
+boost, confirm they differ, then shoot the set.** A confounded measurement closes nothing (C24 §2.6).
+
 ### T43 — the suspended slate was three defects, and only one was the one-frame kind
 
 The DD's "dims a frame later" is real and was the *smallest* of the three. All three came from the
