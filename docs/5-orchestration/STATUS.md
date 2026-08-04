@@ -92,6 +92,11 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-03 cycle 74 · **Re-walk PASS — R22 CLOSED, all room gates certified**
+  — Allen: TV clear from the couch; inset post ratified as construction. Room
+  proceeds to materials. TV pinged: editor window now (merge main → compile
+  three fixes → re-shoots per rig recipe). SureThing's desktop capture queued
+  after TV. Register updated. Reversal: none — walk facts + Allen's ratification.
 - 2026-08-03 cycle 73 · **All four landings processed; monitor gap closed** —
   Room: post moved with aisle clearance arithmetically unchanged; re-walk
   READY, lease granted with the idempotence diff folded in (Allen's call).
