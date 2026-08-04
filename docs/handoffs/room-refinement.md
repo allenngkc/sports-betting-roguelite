@@ -336,27 +336,130 @@ not tint the room**. Those two region boxes sit inside that sanctioned pool. So 
 may be the instrument sampling the design working, not the room failing. **Either the regions move
 off the window pool, or law 1.1's test explicitly excludes it — a DD call, not a build fix.**
 
-### C22.1 — steel and conduit re-measured, and the answer inverts the intent
+### C22.1 — steel and conduit re-measured — ⚠️ **SUPERSEDED 2026-08-03, the numbers were wrong**
 
-| | blue black point | neutral black point |
+> The table that stood here reported the display housing at **C 2.07 h 108.3° WARM** and the conduit
+> drop at **C 3.97 h 105.2° WARM**, and concluded that cool metal was unreachable in render. It also
+> carried its own caveat — *"first-pass, not surface-pure harness regions; add proper ones before
+> treating the numbers as ratified."* **The caveat paid. Both boxes were bleeding the warm plaster
+> wall behind the metal, and reported the WALL's hue as the metal's.** 108° is plaster: the pipe's
+> own neighbouring wall strips measure 101–112°.
+
+Surface-pure boxes, now permanent as `R19_REGIONS` in `tools/room_gate_check.py`, purity sd/mean in
+brackets:
+
+| region | graded | ungraded |
 |---|---|---|
-| display housing (steel) | C 5.11 h 264.3° COOL | C 2.07 h **108.3° WARM** |
-| conduit drop | C 3.02 h 252.4° COOL | C 3.97 h **105.2° WARM** |
+| housing face (steel) `[0.020]` | C 0.52 h 257.6° **neutral** | C 0.74 h 260.0° neutral |
+| conduit drop, body `[0.053]` | C 2.02 h 269.2° **COOL** | C 2.65 h 269.5° COOL |
+| conduit drop, full width | C 1.35 h 258.1° neutral | C 1.45 h 253.8° neutral |
+| conduit ceiling run `[0.046]` | C 8.29 h 99.4° **WARM** | C 11.80 h 98.8° WARM |
 
-R19(b) installed genuinely cool albedos and they render **warm**, because reflected colour is albedo
-× illuminant and this room's only real source is a warm tube. **The "institution's metal is colder
-than the room" contrast may be unreachable in render under a single warm source at any albedo.**
-R12-class finding; R19(b)'s own guard anticipated it. Do not answer it by lightening albedo.
+**The steel reads neutral — chroma 0.52 is below the instrument's own 1.5 floor, so no hue verdict is
+supportable in either direction. The conduit reads COOL, graded and ungraded.**
 
-*Caveat: those two boxes are first-pass, not surface-pure harness regions. Add proper ones before
-treating the numbers as ratified.*
+**Same albedo on both conduit runs, opposite verdicts.** The ceiling run is raked by the warm tube
+and reads WARM; the wall drop sits away from it in ambient/window fill and reads COOL. So rendered
+hue tracks **which light reaches the surface**, not albedo alone — Law 1.7's mechanism (lighting
+gates the read) applied to colour instead of relief. Do not answer any of this by lightening albedo.
+
+Scope, per C25: the conduit body strip samples **one face of a cylinder** (the shaded one), because
+a pure strip on a cylinder inevitably picks a face. Its full-width twin is carried beside it, and
+that figure includes edge pixels bleeding the wall — which is precisely the failure the first-pass
+boxes made at larger scale.
+
+### Batch 8 (2026-08-03) — three of the four open questions are answered
+
+**R19(b)-am — "colder" is STRUCK.** The ≥2 channels are now **value and finish**, and hue
+temperature is no longer one of them. The reasoning is Law 1.1's own mechanism: under one warm key
+on warm plaster, requiring the metal to read colder than the room requires the room to break its top
+law in one region. The first-pass boxes affect *how much*, not *whether*, so this ruled without
+them. **No lighting instrument** — refused explicitly; R12 grazing reveals relief, not colour
+temperature, and a metal-tinting lamp is T48's rejected Option D in new clothes.
+
+The albedo hold and the unprompted first-pass caveat were **endorsed as the standard**. Keep doing
+both.
+
+Consequence, and it was a live over-claim of mine for part of a session: `GrayboxRoomBuilder`'s
+R19(a) comment justified the split on **three** channels including "warm where the steel is cool".
+That is albedo arithmetic that does not survive to frame. Corrected to value + finish, with the hue
+deltas recorded but explicitly not counted. Constitution draft §2.5: *measure the rendered thing,
+not the source.*
+
+#### ⚠️ Routed to the DD: R19(b)-am's conclusion stands, its stated premise does not
+
+**This needs a ruling and I have not acted on it.** R19(b)-am reasoned that "under one warm key
+every albedo in this room renders warm", so cool metal is unreachable, and ruled explicitly *before*
+surface-pure numbers on the grounds that the first-pass boxes "affect *how much*, not *whether*."
+
+The surface-pure boxes (table above) say they affected **whether**:
+
+- the **conduit reads COOL** (269.2°) on every pure strip, graded *and* ungraded;
+- the **steel reads neutral**, not warm — C 0.52, below the instrument's own chroma floor;
+- only the ceiling conduit run reads warm, and that is the run the tube rakes directly.
+
+So the metal is *already* colder than the room, in the build, with the spec albedos installed. And
+§1.1 is not breached by it: the law names a blue-tinted **room**, and these are small dark fixtures
+at chroma ~2.
+
+**The channel choice may well still be right** — value and finish are more robust carriers than hue,
+and they survive any relighting. That is a design call and it is the DD's. What I am flagging is only
+that the *reason given* is falsified by measurement, so the next lead does not inherit "cool metal is
+physically unreachable" as settled physics. It is not.
+
+**Nothing is blocked.** R19(a) proceeds on value + finish either way, and both are satisfied.
+
+**R28 — the room owns the phone OBJECT; the content is nobody's, and stays dark.** R19(a) already
+puts it in his material register, not the institution's. A dark phone also cannot become a C13
+instance.
+
+> **Do not execute the "screen stays dark" clause without re-asking.** R28 was ruled from principle
+> with the question text absent and invites the narrow re-ask. Its premise does not match this build:
+> a phone surface **already exists and is functional** — `PhoneScreen.cs` renders `BookieFeed`, a
+> real engine model, and carries live coverage in `Tests/PlayMode/PhoneTests.cs`,
+> `Tests/EditMode/BookieFeedModelTests.cs` and `RoomSmokeTests.cs`. Blanking it deletes a working,
+> tested feature on a ruling made without sight of it. Ask the narrow form first.
+
+**Separate live finding on the same file, now unambiguously room-owned by R28:** `PhoneScreen.cs:36`
+declares `chromeCyan` `(0.62, 0.86, 0.96)` and prints it at `:188` on the `BOOKIE` label, and the
+file cites `design/08`'s palette law as its authority at `:9` and `:32`. `design/08` is **T3, a
+deprecated anti-reference**; `chromeCyan` is **T9, a retired hue**. This is a room-side instance of
+the T9/T15/T30/T34 class that the retired-hue scan did not reach. Not fixed here — the replacement
+is a design call and the surface's content authority is exactly what is unresolved.
+
+**R29 — Gate 2 active state: RULED and BUILT.** A gate certifies the configuration it ran against.
+Gate 2 now reads `m_IsActive`, names any disabled same-named object, and where a `PrefabInstance`
+carries no override it resolves the flag from the **source prefab asset** rather than assuming.
+
+That immediately caught something: **`RoomArtRoot` had no `m_IsActive` override**, so the old
+gate's PASS covered three of four singletons and was silent about the room's own art root — the one
+object the whole slice hangs on. Resolved through the prefab (`038e2203…`, root active), so Gate 2
+re-runs against the active state and PASSes 4/4 rather than recording uncovered. Its blind spot now
+states the two things it still cannot do: it reads the object's own flag, so an object whose
+**ancestor** is disabled reads active here, and where the flag comes from the prefab the verdict
+covers the asset's default, not anything the scene states.
+
+### The evidence gap — the harness's output was never kept
+
+Every number this harness has produced reached the register by being **hand-copied out of a
+terminal**. No gate log, no JSON, nothing in `artifacts/`. The claim was the artifact and no run was
+reproducible. Fixed: `--report PATH` tees the full run to a file. First one committed at
+`artifacts/room-visual-pass/gate-runs/2026-08-03-R29-gate2-active-state.txt`. **Pass it on every
+run** — C11 wants the evidence, C17 wants it retained, C25 wants its scope attached, and the file
+carries all three.
+
+Related and still true: **all of R19 is committed, not frame-verified.** No instrument region samples
+the laptop, TV or phone body, so R19(a)'s separation has only ever been albedo arithmetic. Under
+R19(b)-am the carrying channel is **value**, which is measurable in a frame — so regions for those
+bodies would convert R19(a) from asserted to measured.
 
 ### Open questions with other seats
 
-1. **R22 walkthrough** — Allen. Gates 6–8 void until then.
-2. **`PhoneScreen` ownership** — unassigned by any ruling; blocks clean C15 scoping (§12.2).
-3. **Gate 2 `m_IsActive`** — a disabled duplicate satisfies a count; needs a semantic ruling.
-4. **Law 1.1's window pool** — see above.
+1. **R22 walkthrough** — Allen. Gates 6–8 void until then. Geometry has landed (below), so this is
+   unblocked and needs only the editor lease.
+2. ~~`PhoneScreen` ownership~~ — **answered by R28**; narrow re-ask outstanding (see above).
+3. ~~Gate 2 `m_IsActive`~~ — **answered by R29 and built.**
+4. **Law 1.1's window pool** — see above. Still the live one.
 
 ---
 

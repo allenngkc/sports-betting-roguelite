@@ -245,13 +245,66 @@ namespace SBR
                 // R19(a), the highest violation in the slice: TVBody, LaptopBase and PhoneBody
                 // all pointed at Bezel, so the institution's hardware and the occupant's own read
                 // as materially identical - the doc's whole story is the contrast between them.
-                // Split so the laptop differs from the TV housing on at least two of the three
-                // required channels (value, hue temperature, finish) and reads lighter, warmer
-                // and lower-cost: 2.17x lighter than the housing by luminance (0.1052 vs 0.0485),
-                // warm where the housing is cool (R-B +0.0270 vs -0.0122), and glossier (0.42 vs
-                // 0.28) - three channels satisfied where the ruling required two. TVBody keeps
-                // Bezel unchanged. The phone "is his too and sits near the laptop, not on it", so
-                // it gets its own close-but-distinct shell rather than sharing LaptopShell.
+                // Split so the laptop differs from the TV housing on at least two channels and
+                // reads lighter and lower-cost.
+                //
+                // R19(b)-am (DD 2026-08-03) STRUCK "colder" and named the two carrying channels:
+                // VALUE and FINISH. Hue temperature is no longer one of them and must not be
+                // counted toward the >=2. That is canon and this code follows it.
+                //
+                // Its stated reason was that under one warm key every albedo in this room renders
+                // warm, so cool metal is unreachable. SURFACE-PURE MEASUREMENT DOES NOT SUPPORT
+                // THAT, and the correction is routed to the DD rather than acted on here:
+                //
+                //   housing face        C 0.52  h 257.6deg  neutral  (below the 1.5 chroma floor,
+                //                                                     so NO hue verdict is
+                //                                                     supportable either way)
+                //   conduit drop body   C 2.02  h 269.2deg  COOL     (cool ungraded too, 269.5)
+                //   conduit ceiling run C 8.29  h  99.4deg  WARM     (raked by the tube)
+                //
+                // Same albedo on both conduit runs, opposite verdicts: rendered hue tracks WHICH
+                // LIGHT REACHES THE SURFACE, not albedo alone. That is Law 1.7's mechanism
+                // (lighting gates the read) applied to colour instead of relief. Nor is a dark
+                // fixture at chroma 2 the "blue-tinted ROOM" §1.1 forbids.
+                //
+                // The superseded first-pass figure (h 108.3deg WARM) came from a box bleeding the
+                // warm plaster behind the metal - 108deg is the WALL's hue, and the pipe's own
+                // neighbouring wall strips measure 101-112deg. See R19_REGIONS in
+                // tools/room_gate_check.py for the boxes and their sd/mean purity.
+                //
+                // "The TV housing" names TWO materials, so the claim is stated against BOTH - a
+                // compliance claim that does not say what it covers is C18, and an earlier version
+                // of this comment measured only against the steel while TVBody actually renders
+                // with Bezel. Rec.709 luminance on the linear values above:
+                //
+                //   vs Bezel #3C3C38 (the material R19(a)'s own premise names as shared, worn by
+                //   TVBody):        VALUE 2.36x lighter (0.1052 vs 0.0446)
+                //                   FINISH glossier, 0.42 vs 0.25
+                //   vs ArtHousingSteel #3A3F42 (room-design.md §2's "riveted display housing"):
+                //                   VALUE 2.17x lighter (0.1052 vs 0.0485)
+                //                   FINISH 0.42 flat vs mask-driven 0.08-0.34, and hard-edged
+                //                   chipped paint against unbroken plastic (R20 ChippedPaint)
+                //
+                // Both channels on both comparands. Both survive the warm key, which is exactly
+                // why R19(b)-am chose them: a luminance ratio and a specular character are
+                // preserved under a shared illuminant, an albedo hue difference is not.
+                //
+                // Recorded but NOT counted: the albedo hue deltas are R-B +0.0270 (laptop),
+                // +0.0050 (Bezel), -0.0122 (steel). Source-side only, and per constitution draft
+                // §2.5 an assertion about source is not a measurement of the surface - which cuts
+                // both ways, since the measurement above also falsified a claim made ABOUT the
+                // render from an impure box. Measure the rendered thing, on a pure box, or say
+                // nothing. Do not "correct" the steel by lightening it, and do not add a cool
+                // light to make metal read cold: R19(b)-am refused that instrument explicitly
+                // (R12 grazing reveals relief, not colour temperature; a metal-tinting lamp is
+                // T48's rejected Option D in new clothes and breaks the three-source rule).
+                //
+                // TVBody keeps Bezel unchanged. The phone "is his too and sits near the laptop, not
+                // on it", so it gets its own close-but-distinct shell rather than sharing
+                // LaptopShell: VALUE 1.92x the bezel and 0.82x the laptop, FINISH glossiest of the
+                // three (0.50) - in the laptop's register, separable within it. R28 (DD 2026-08-03)
+                // confirms: the room owns the phone OBJECT and it belongs to his material register,
+                // not the institution's.
                 LaptopShell = Mat("LaptopShell", new Color(0.115f, 0.104f, 0.088f),
                     smoothness: 0.42f),
                 PhoneShell = Mat("PhoneShell", new Color(0.092f, 0.085f, 0.076f),
