@@ -2,7 +2,7 @@
 
 ## NEED ALLEN (from Batch 5, 2026-08-01)
 
-0. **Constitution draft (C24, 2026-08-03)** — `constitution-2026-08-03-DRAFT.md`.
+0. ~~Constitution draft~~ **APPROVED — Allen 2026-08-03, all three clauses.** Canon at `constitution.md`. (C24, 2026-08-03) — `constitution-2026-08-03-DRAFT.md`.
    Approve to make it `docs/design/constitution.md`. Three clauses are NEW text
    (not transcription) and need your explicit yes: §1.5 the seat's errors are
    recorded as its own; §2.5 measure the rendered thing, not the source; §2.6 a

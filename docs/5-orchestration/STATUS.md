@@ -92,6 +92,10 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-03 cycle 68 · **Constitution APPROVED (Allen, all three new clauses
+  explicitly)** — landed as canon at `docs/design/constitution.md`; register row
+  and inbox updated; report-back queued for the next DD drag. Reversal: Allen's
+  own approval; strike the file and revert the row.
 - 2026-08-03 cycle 67 · **Three staged drafts fired** — markets: Allen ruled
   the staged-receipt overrun (receipts move to the sheet per E-07, re-measure);
   SureThing: proceed S47 (S44+S45 done); room: geometry commit approved
