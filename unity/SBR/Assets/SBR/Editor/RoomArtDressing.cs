@@ -71,12 +71,10 @@ namespace SBR
             // ChippedPaint. TINT UNCHANGED from R19(b) - new maps, not a re-colour.
             // smoothMin/smoothMax straddle the old flat 0.28: intact paint (0.34) is glossier
             // than the dull exposed metal (0.08) in the chips.
-            Material steel = GrayboxRoomBuilder.SurfaceMat("ArtHousingSteel",
-                new Color(0.0423f, 0.0497f, 0.0545f),
-                ProceduralSurfaceTextures.SurfaceKind.ChippedPaint, 512,
-                contrast: 1.90f, tiling: 3.0f,
-                normalStrength: 8.0f, aoStrength: 1.0f,
-                smoothMin: 0.08f, smoothMax: 0.34f);
+            // Built by GrayboxRoomBuilder.HousingSteelMat() since BezelBlack's retirement, because
+            // TVBody wears this same material now and one institutional metal must not have two
+            // definitions. The values and their reasoning live at that factory.
+            Material steel = GrayboxRoomBuilder.HousingSteelMat();
             Material stencilMat = GrayboxRoomBuilder.Mat("ArtStencil", Color.white,
                 smoothness: 0.10f, baseMap: GetOrCreateStencil("RM-4B 217-9C", 256, 64));
             Material indicator = GrayboxRoomBuilder.Mat("ArtIndicator",

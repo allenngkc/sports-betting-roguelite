@@ -151,7 +151,7 @@ namespace SBR
             // giving it a wear surface would batter them too. Own material, see below.
             public Material Desk;
             public Material Couch;
-            public Material Bezel;
+            public Material HousingSteel;
             public Material LaptopShell;
             public Material PhoneShell;
             public Material BunkFrame;
@@ -241,7 +241,14 @@ namespace SBR
                     contrast: 1.50f, tiling: 6.0f,
                     normalStrength: 10.0f, aoStrength: 1.2f,
                     smoothMin: 0.03f, smoothMax: 0.11f),
-                Bezel = Mat("BezelBlack", new Color(0.045f, 0.045f, 0.040f), smoothness: 0.25f),
+                // BezelBlack RETIRED (Allen, 2026-08-03). It was a third body material that
+                // nothing could see: TVBody wore it, but TVBody is a slab BEHIND the screen whose
+                // only exposed part is a ~6cm border, and RoomArtDressing's riveted housing covers
+                // exactly that border. Every attempt to cut a measurement region for it straddled
+                // housing rivets. "Two body materials, not three - one of them invisible is a
+                // maintenance lie." TVBody now wears the same painted steel as the enclosure
+                // around it, which is also what §6 describes: one installed institutional object.
+                HousingSteel = HousingSteelMat(),
                 // R19(a), the highest violation in the slice: TVBody, LaptopBase and PhoneBody
                 // all pointed at Bezel, so the institution's hardware and the occupant's own read
                 // as materially identical - the doc's whole story is the contrast between them.
@@ -272,39 +279,44 @@ namespace SBR
                 // neighbouring wall strips measure 101-112deg. See R19_REGIONS in
                 // tools/room_gate_check.py for the boxes and their sd/mean purity.
                 //
-                // "The TV housing" names TWO materials, so the claim is stated against BOTH - a
-                // compliance claim that does not say what it covers is C18, and an earlier version
-                // of this comment measured only against the steel while TVBody actually renders
-                // with Bezel. Rec.709 luminance on the linear values above:
+                // THE COMPARAND IS ArtHousingSteel #3A3F42, and that is now settled by a frame
+                // rather than argued. Earlier versions of this comment went back and forth over
+                // whether "the TV housing" meant Bezel or the steel; the answer is that Bezel was
+                // never visible - a slab behind the screen whose only exposed part is a ~6cm
+                // border, covered by the riveted housing - so it has been RETIRED and TVBody wears
+                // the steel. What the player reads as the TV's body always was the steel.
                 //
-                //   vs Bezel #3C3C38 (the material R19(a)'s own premise names as shared, worn by
-                //   TVBody):        VALUE 2.36x lighter (0.1052 vs 0.0446)
-                //                   FINISH glossier, 0.42 vs 0.25
-                //   vs ArtHousingSteel #3A3F42 (room-design.md §2's "riveted display housing"):
-                //                   VALUE 2.17x lighter (0.1052 vs 0.0485)
-                //                   FINISH 0.42 flat vs mask-driven 0.08-0.34, and hard-edged
-                //                   chipped paint against unbroken plastic (R20 ChippedPaint)
+                // MEASURED on the screens-dark conformance set (R19_REGIONS in
+                // tools/room_gate_check.py), CIELAB L*:
                 //
-                // Both channels on both comparands. Both survive the warm key, which is exactly
-                // why R19(b)-am chose them: a luminance ratio and a specular character are
-                // preserved under a shared illuminant, an albedo hue difference is not.
+                //   laptop body     L* 52.98   C 20.78  h  78.6  WARM
+                //   phone body      L* 16.66   C  1.61  h 251.8
+                //   housing (steel) L* 11.30   C  0.52  h 257.4  neutral
                 //
-                // Recorded but NOT counted: the albedo hue deltas are R-B +0.0270 (laptop),
-                // +0.0050 (Bezel), -0.0122 (steel). Source-side only, and per constitution draft
-                // §2.5 an assertion about source is not a measurement of the surface - which cuts
-                // both ways, since the measurement above also falsified a claim made ABOUT the
-                // render from an impure box. Measure the rendered thing, on a pure box, or say
-                // nothing. Do not "correct" the steel by lightening it, and do not add a cool
-                // light to make metal read cold: R19(b)-am refused that instrument explicitly
-                // (R12 grazing reveals relief, not colour temperature; a metal-tinting lamp is
-                // T48's rejected Option D in new clothes and breaks the three-source rule).
+                //   VALUE  laptop/housing 4.68x, phone/housing 1.47x, laptop/phone 3.18x
+                //   FINISH 0.42 and 0.50 flat against the steel's mask-driven 0.08-0.34, plus
+                //          hard-edged chipped paint against unbroken plastic (R20 ChippedPaint)
                 //
-                // TVBody keeps Bezel unchanged. The phone "is his too and sits near the laptop, not
-                // on it", so it gets its own close-but-distinct shell rather than sharing
-                // LaptopShell: VALUE 1.92x the bezel and 0.82x the laptop, FINISH glossiest of the
-                // three (0.50) - in the laptop's register, separable within it. R28 (DD 2026-08-03)
-                // confirms: the room owns the phone OBJECT and it belongs to his material register,
-                // not the institution's.
+                // Both of R19(b)-am's channels, on the object that is actually on screen.
+                //
+                // HONEST CAVEAT, because the number flatters itself: the albedo-only ratio is
+                // 2.17x, so the rig roughly DOUBLES the separation - the laptop sits in the desk
+                // lamp's pool and the housing sits in shadow. The ruling is satisfied as the room
+                // reads, but the read is lighting-assisted (§1.7 again). Move the laptop out of
+                // that pool and it falls back toward 2.17x.
+                //
+                // Recorded but NOT counted: albedo hue deltas R-B +0.0270 (laptop), -0.0122
+                // (steel). Source-side only, and per constitution draft §2.5 an assertion about
+                // source is not a measurement of the surface. Do not "correct" the steel by
+                // lightening it, and do not add a cool light to make metal read cold: R19(b)-am
+                // refused that instrument explicitly (R12 grazing reveals relief, not colour
+                // temperature; a metal-tinting lamp is T48's rejected Option D in new clothes and
+                // breaks the three-source rule).
+                //
+                // The phone "is his too and sits near the laptop, not on it", so it keeps its own
+                // close-but-distinct shell rather than sharing LaptopShell - in his register,
+                // separable within it. R28 (DD 2026-08-03) confirms the room owns the phone OBJECT
+                // and it belongs to his material register, not the institution's.
                 LaptopShell = Mat("LaptopShell", new Color(0.115f, 0.104f, 0.088f),
                     smoothness: 0.42f),
                 PhoneShell = Mat("PhoneShell", new Color(0.092f, 0.085f, 0.076f),
@@ -373,6 +385,33 @@ namespace SBR
                     kind, res, TexSeed, contrast, smoothMin, smoothMax),
                 occlusionMap: ProceduralSurfaceTextures.GetOrCreateOcclusion(
                     kind, res, TexSeed, contrast, aoStrength));
+
+        /// <summary>
+        /// The institution's painted steel — ONE definition, shared by the display enclosure
+        /// (RoomArtDressing) and by TVBody, which wore the retired BezelBlack until 2026-08-03.
+        ///
+        /// A single factory rather than two call sites because the alternative is two sources of
+        /// truth for one material: R19(b) already had to un-drift this exact colour once, and a
+        /// second copy is how that happens again silently.
+        ///
+        /// R19(b): the spec's cool #3A3F42 (B&gt;G&gt;R). The built value had drifted hue-flipped
+        /// WARM. GUARD: if it reads too dark under the approved one-tube rig, that is a lighting
+        /// finding under R12, NEVER a licence to lighten the albedo — R19(b)-am then struck
+        /// "colder" as a requirement entirely, moving the institutional read onto value and finish.
+        ///
+        /// R20: carries ChippedPaint rather than a flat tint — "the TV housing's chipped paint" is
+        /// named required work. Tint unchanged by that move: new maps, not a re-colour.
+        /// smoothMin/smoothMax straddle the old flat 0.28, so intact paint (0.34) is glossier than
+        /// the dull exposed metal in the chips (0.08). That specular split is half of what
+        /// R19(b)-am made load-bearing.
+        /// </summary>
+        internal static Material HousingSteelMat() =>
+            SurfaceMat("ArtHousingSteel",
+                new Color(0.0423f, 0.0497f, 0.0545f),
+                ProceduralSurfaceTextures.SurfaceKind.ChippedPaint, 512,
+                contrast: 1.90f, tiling: 3.0f,
+                normalStrength: 8.0f, aoStrength: 1.0f,
+                smoothMin: 0.08f, smoothMax: 0.34f);
 
         // internal so RoomArtDressing can author its own dressing materials through the same
         // deterministic path rather than duplicating the URP/Lit setup.
@@ -607,7 +646,7 @@ namespace SBR
 
             // Wall-mounted on the right long wall, center at seated eye height (~1.1m).
             Box("TVBody", root.transform,
-                new Vector3(1.265f, 1.1f, 0.3f), new Vector3(0.06f, 0.65f, 1.1f), mats.Bezel);
+                new Vector3(1.265f, 1.1f, 0.3f), new Vector3(0.06f, 0.65f, 1.1f), mats.HousingSteel);
             GameObject screen = Quad("TVScreen", root.transform,
                 new Vector3(1.232f, 1.1f, 0.3f), new Vector2(0.98f, 0.55f),
                 Vector3.left, Vector3.up, mats.TvScreen);

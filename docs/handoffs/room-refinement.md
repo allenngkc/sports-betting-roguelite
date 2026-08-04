@@ -453,6 +453,49 @@ the laptop, TV or phone body, so R19(a)'s separation has only ever been albedo a
 R19(b)-am the carrying channel is **value**, which is measurable in a frame — so regions for those
 bodies would convert R19(a) from asserted to measured.
 
+### BezelBlack retired — and my finding for it was too strong
+
+`TVBody` wore `BezelBlack #3C3C38`. I reported it as **not visible** and Allen retired it on that
+basis — *"two body materials, not three; one of them invisible is a maintenance lie."* `TVBody` now
+wears the same painted steel as the enclosure via a single shared factory
+(`GrayboxRoomBuilder.HousingSteelMat()`), so the institutional metal has **one** definition; R19(b)
+already had to un-drift that colour once and a second copy is how that recurs silently.
+
+**The retirement is not a no-op and my claim was wrong.** Measured against the pre-retirement set:
+
+| frame | max diff | pixels changed |
+|---|---|---|
+| conformance wide | 1 | 0 — unchanged |
+| conformance seated | 92 | **170,389** |
+| standing view | 153 | **28,520** |
+
+The change is a narrow strip at the far-left frame edge plus corner slivers — the bezel's exposed
+border. The housing covers it on the right and bottom, which is where I sampled and found rivets;
+**on the left it is exposed.** The correct statement is **"not measurable"** — no surface-pure region
+is obtainable where it is exposed, because there it is a thin strip against housing of near-identical
+value — *not* "not visible." Allen re-confirmed the retirement on his authority after the correction,
+and the orchestrator has it on the DD reconciliation list as a **visible change to a design-verified
+room**. The R25 package is its re-review evidence.
+
+Lesson worth keeping: *"I could not measure it"* and *"it is not there"* are different claims, and
+the harness can only ever support the first.
+
+### Gates 6–8 are VOID again, by design
+
+Allen walked and passed them at `9e1b4e4`. The certification is keyed to the scene's content
+fingerprint, and the retirement changed it, so it **expired itself**. Geometry is untouched and his
+clearance verdict is very likely still good, but no tool may re-issue a human gate — re-certify with
+`--certify-human-gates <commit>` only on a human's word.
+
+### Suites, at the merge round
+
+`EditMode 73/73`, `PlayMode 20/20`, 0 failed, 0 skipped, results XML written both times.
+
+First attempt reported exit 0 with **no results file at all**: `-runTests` had been given `-quit`,
+and the test runner closes the editor itself, so `-quit` raced it to the exit. Exit 0 proved nothing
+— §9.4's own warning, walked into while checking for it elsewhere. **Never pass `-quit` with
+`-runTests`,** and always confirm the XML exists before believing a green suite.
+
 ### Idempotence, measured at last — §1.5 holds in content, not in bytes
 
 Law §1.5 says *"a rebuild reproduces the room exactly."* Every previous run of §9.2 ("run the builder
