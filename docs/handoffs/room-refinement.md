@@ -453,6 +453,35 @@ the laptop, TV or phone body, so R19(a)'s separation has only ever been albedo a
 R19(b)-am the carrying channel is **value**, which is measurable in a frame — so regions for those
 bodies would convert R19(a) from asserted to measured.
 
+### Idempotence, measured at last — §1.5 holds in content, not in bytes
+
+Law §1.5 says *"a rebuild reproduces the room exactly."* Every previous run of §9.2 ("run the builder
+twice") **asserted** this without ever diffing the two outputs. Measured 2026-08-03:
+
+```
+committed  b16bbd38…      run1  73d29510…      run2  c4d033ee…      all three differ
+```
+
+**But normalise `fileID`s and anchors and the difference is exactly zero** — 13270 lines each way, 0
+only-in-committed, 0 only-in-current. Every byte of drift is Unity reassigning anchor fileIDs on
+rebuild. The room's *content* reproduces exactly; its *serialisation* does not.
+
+Two consequences worth carrying:
+
+1. **§9.2 can never be a byte comparison.** "Run the builder twice and compare" only means anything
+   against a fileID-normalised multiset. A byte diff will always be red and always be meaningless.
+2. **A rebuild buries a real change.** The post move committed at `9e1b4e4` carried ~9663 changed
+   lines in `Room.unity`, of which exactly one mattered. A reviewer cannot see a genuine geometry
+   change in that noise, which is worth remembering before trusting any scene diff by eye.
+
+Not a defect in the room, and not something to "fix" in the builder — it is a property of Unity's
+serialiser. But the law's wording invites the byte reading, and the byte reading is false.
+
+**A rebuild also drops the working tree out of sync with the baked scene.** After any bare builder
+run, `git checkout -- unity/SBR/Assets/Scenes/Room.unity` restores the committed, baked, gate-verified
+scene. (`md5sum` will still disagree with the committed blob afterwards — the repo converts LF→CRLF on
+checkout. `git status` is the authority, not the hash.)
+
 ### Open questions with other seats
 
 1. **R22 walkthrough** — Allen. Gates 6–8 void until then. Geometry has landed (below), so this is

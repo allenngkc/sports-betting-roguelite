@@ -94,6 +94,53 @@ Same pass, different question: not *can I read it* but *does it hold against wha
   is the window's own short-reach pool, which §1.2 explicitly sanctions. It is a question about where
   law 1.1's test samples, not a room defect.
 
+---
+
+# RE-WALK — 2026-08-03, after the post move
+
+**Your first walk: PASS** on the aisle under the slab, the full traversal loop, world scale and the
+live phone. **One finding**, now fixed.
+
+**What changed:** `Bunk2PostFront` moved **z 0.57 → 0.70**. Nothing else. The post kept its x
+(0.50–0.56) and its size.
+
+**Certified state:** HEAD `9e1b4e4`. Scene rebuilt, APV re-baked, captures re-taken. Gate 2 PASS,
+Gate 3 PASS (29, named), Gate 4 PASS (re-baselined deliberately), Gate 5 PASS, mattress 44.49 inside
+43.9 ±1.
+
+## R1 — the sightline (the whole point)
+
+Walk to the couch and press **E** ("Sit"). That drops you to eye `(-0.95, 1.15, 0.30)` at 17° FOV,
+aimed at the TV screen's centre — **the exact rig the fix was computed against**, so this is a real
+test and not a capture-only pose. Press **E** again to stand.
+
+**Question: is the left edge of the TV clear?**
+
+I measured it as clear: the columns the post occupied flipped from neutral to green-dominant, which
+recovered about **7.4% of the panel**, and every column outside that band is identical to ±0.005 —
+so the rest of the view is unchanged. But a measurement is not a judgement, and *"a little bit"* was
+your read in the first place. If any of it still catches your eye, say so.
+
+Look around while seated too — the seated view has clamped yaw/pitch, so check the edges, not just
+the centre.
+
+## R2 — the aisle, again
+
+Gates 6–8 re-voided because geometry moved, so they re-run. **This should be quick.** The post kept
+its x, so aisle clearance is *arithmetically identical* — still **1.00 m against your 0.60 m
+capsule**. You are confirming the same number about **13 cm deeper** down the lane, not re-assessing
+it. Walk it once and confirm nothing feels different.
+
+## R3 — a call I made on your behalf, which you should confirm or reject
+
+The post is now **inset ~15 cm** from bunk 2's slab near end. **Bunk 1's posts sit flush with theirs**,
+so the two bunks no longer match in construction.
+
+I took that over the alternative — shortening bunk 2's slab — because that would have put the
+ratified 43.9 mattress test (law 1.4) in play to fix a sightline, which is the wrong thing to spend.
+But it is a visible asymmetry on a built object and it is an art call, not an engineering one.
+**Does it read as construction, or as sloppy?** If sloppy, I'll cost the alternatives.
+
 ## 6. What I need back
 
 Per gate: **pass / fail / needs work**, and for anything short of a pass, *where you were standing*.
