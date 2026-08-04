@@ -1,6 +1,7 @@
-Scene:    unity\SBR\Assets\Scenes\Room.unity  (modified 2026-08-03 21:19:40 Pacific Daylight Time)
+Scene:    unity\SBR\Assets\Scenes\Room.unity  (modified 2026-08-03 21:57:38 Pacific Daylight Time)
 Captures: artifacts\room-visual-pass\batch8  (standing-overview.png modified 2026-08-03 21:21:56 Pacific Daylight Time)
-Blind area: 6/13 checks this run produce NO verdict at all (3 SKIP -- not run by this tool/invocation; 3 VOID -- ruled off the board pending human re-verification). See 'blind spot' under every gate below, PASS included, for what even a verdict does not cover.
+WARNING: standing-overview.png is OLDER than the scene -- these captures do not show the geometry this run just parsed. Every capture-derived result below (R9-A, R9-B, R10) is stale until the room is recaptured.
+Blind area: 7/14 checks this run produce NO verdict at all (4 SKIP -- not run by this tool/invocation; 3 VOID -- ruled off the board pending human re-verification). See 'blind spot' under every gate below, PASS included, for what even a verdict does not cover.
 
 GATE  CHECK                            STATUS  EXPECTED                                                                                                         OBSERVED                                                                                                                     
 ----  -------------------------------  ------  ---------------------------------------------------------------------------------------------------------------  -----------------------------------------------------------------------------------------------------------------------------
@@ -51,10 +52,12 @@ R19   metal cast (informational)       INFO    -                                
        conduit drop (full w.)   L*=11.59 chroma= 1.36 hue= 258.0deg  neutral   | ungraded chroma= 1.46 hue= 253.8deg neutral
        conduit ceiling run      L*=18.83 chroma= 8.19 hue=  99.4deg  WARM   | ungraded chroma=11.75 hue=  98.9deg WARM
        reported, never judged: cool metal is the institutional palette landing, not a law 1.1 failure -- §1.1 names a blue-tinted ROOM, and these are dark fixtures.
+IDEM  scene content vs second build    SKIP    -                                                                                                                no --compare-scene given                                                                                                     
+       blind spot: did not run: without a second build to compare, this run says nothing about whether the builder reproduces the room (§1.5). Note a byte comparison would NOT substitute -- the builder is byte-unstable and content-stable, which is exactly why this gate resolves fileIDs.
 
-Summary: 5 PASS, 1 FAIL, 3 SKIP, 3 VOID, 1 INFO (13 checks total) -- exit code 1
-Verdict coverage: 6/13 checks produced a PASS or FAIL verdict this run. The other 7 did not: SKIP means this tool/invocation did not run that check at all; VOID means a ruling took a prior result off the board pending human re-verification; INFO means it was measured but is never judged. None of those three are passes, and none should be read as one -- 'no FAIL' is not 'all passed'.
-Unassessed this run (7/13) -- gate, status, why:
+Summary: 5 PASS, 1 FAIL, 4 SKIP, 3 VOID, 1 INFO (14 checks total) -- exit code 1
+Verdict coverage: 6/14 checks produced a PASS or FAIL verdict this run. The other 8 did not: SKIP means this tool/invocation did not run that check at all; VOID means a ruling took a prior result off the board pending human re-verification; INFO means it was measured but is never judged. None of those three are passes, and none should be read as one -- 'no FAIL' is not 'all passed'.
+Unassessed this run (8/14) -- gate, status, why:
   Gate 1 [SKIP] pre/post capture diff: requires two separate Unity editor captures (before and after the change); nothing to compare from a single scene/capture set
   Gate 6 [VOID] UI/HUD readability: voided by R22 pending human re-verification
   Gate 7 [VOID] UI/HUD contrast: voided by R22 pending human re-verification
@@ -62,3 +65,4 @@ Unassessed this run (7/13) -- gate, status, why:
   Gate R9-B [SKIP] region means vs reference: no --reference given
   Gate R10 [SKIP] relief% (informational): no --reference given
   Gate R19 [INFO] metal cast (informational): no ratified tolerance yet; informational only by design, never produces a verdict
+  Gate IDEM [SKIP] scene content vs second build: no --compare-scene given

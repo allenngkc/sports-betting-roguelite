@@ -605,6 +605,58 @@ def gate4_collider_dimensions(box_collider_records, owner_positions=None):
     return by_owner
 
 
+BARE_FILEID_RE = re.compile(r'\{fileID: (-?\d+)\}')
+
+
+def canonical_scene_records(docs):
+    """Content fingerprint of a scene, immune to anchor reassignment (§1.5, §9.2).
+
+    Measured 2026-08-03: the builder is BYTE-unstable and CONTENT-stable. Two
+    consecutive rebuilds produced three different md5s (committed b16bbd38, run1
+    73d29510, run2 c4d033ee) while differing in nothing but fileIDs. So §9.2's
+    "run the builder twice and compare" could never be a byte comparison -- a byte
+    diff is always red and therefore always ignored, which is why the law went
+    years unmeasured.
+
+    The cheap fix is to erase every fileID and compare line multisets. That is
+    ALSO a vacuous gate: erasing an anchor erases parent/child identity with it,
+    so a re-parenting that shuffles no lines reads as identical. Instead each
+    fileID is RESOLVED to a stable label -- "Transform@Bunk2PostFront",
+    "GameObject:Couch" -- so a reference that changes what it points AT changes
+    the record, while a reference that merely gets renumbered does not.
+
+    Asset references ({fileID: N, guid: G, type: T}) are left untouched: the guid
+    is the real identity there and is already stable across rebuilds.
+    """
+    go_name = {}
+    for _cid, anchor, cname, body in docs:
+        if cname == "GameObject":
+            m = NAME_FIELD_RE.search(body)
+            go_name[anchor] = m.group(1) if m else "<unnamed>"
+
+    label = {}
+    for _cid, anchor, cname, body in docs:
+        if cname == "GameObject":
+            label[anchor] = f"GameObject:{go_name.get(anchor, '<unnamed>')}"
+        else:
+            gm = GAMEOBJECT_REF_RE.search(body)
+            owner = go_name.get(gm.group(1), "<external>") if gm else "<none>"
+            label[anchor] = f"{cname}@{owner}"
+
+    def resolve(m):
+        fid = m.group(1)
+        if fid == "0":
+            return "{null}"
+        return "{->" + label.get(fid, "external:" + fid) + "}"
+
+    records = Counter()
+    for _cid, anchor, cname, body in docs:
+        canon = BARE_FILEID_RE.sub(resolve, body)
+        lines = sorted(l.rstrip() for l in canon.splitlines() if l.strip())
+        records[label.get(anchor, cname) + "||" + "|".join(lines)] += 1
+    return records
+
+
 def collider_owner_positions(docs):
     """Map GameObject anchor -> its Transform's m_LocalPosition (R22, 2026-08-03).
 
@@ -966,6 +1018,13 @@ def main():
         action="store_true",
         help="Write tools/room_gate_reference.json from --scene's current collider dimensions "
              "instead of checking Gate 4 against it",
+    )
+    parser.add_argument(
+        "--compare-scene",
+        help="Path to a second Room.unity to compare CONTENT against, ignoring fileID "
+             "renumbering. This is what makes §9.2 ('run the builder twice') a real check: "
+             "the builder is byte-unstable and content-stable, so a byte diff is always red "
+             "and therefore always ignored.",
     )
     parser.add_argument(
         "--report",
@@ -1367,6 +1426,43 @@ def main():
                            "and the full-width figure includes edge pixels bleeding the warm wall "
                            "behind the pipe -- which is exactly how the superseded first-pass "
                            "boxes came to report the wall's hue as the metal's.",
+            ))
+
+        # --- IDEM: scene content vs a second build (§1.5 / §9.2) -------------
+        if args.compare_scene:
+            other_path = Path(args.compare_scene)
+            other_docs = split_documents(load_scene_text(other_path))
+            mine, theirs = canonical_scene_records(docs), canonical_scene_records(other_docs)
+            only_mine, only_theirs = mine - theirs, theirs - mine
+            n_mine, n_theirs = sum(only_mine.values()), sum(only_theirs.values())
+            detail = [f"compared against {other_path}",
+                      f"{sum(mine.values())} records here, {sum(theirs.values())} there",
+                      f"{n_mine} only here, {n_theirs} only there"]
+            for rec, c in list(only_mine.most_common(3)):
+                detail.append(f"  only HERE  x{c}: {rec.split('||')[0]}")
+            for rec, c in list(only_theirs.most_common(3)):
+                detail.append(f"  only THERE x{c}: {rec.split('||')[0]}")
+            results.append(GateResult(
+                "IDEM", "scene content vs second build",
+                "PASS" if not (n_mine or n_theirs) else "FAIL",
+                "identical content ignoring fileID renumbering",
+                "identical" if not (n_mine or n_theirs) else f"{n_mine + n_theirs} differing record(s)",
+                detail,
+                blind_spot="compares a multiset of per-document records with every bare fileID "
+                           "RESOLVED to a stable label, so anchor renumbering is ignored by design "
+                           "while a reference that changes what it points at is caught. It sorts "
+                           "lines within a document, so a pure reordering inside one document is "
+                           "invisible; it says nothing about assets outside the scene file "
+                           "(meshes, materials, textures, the APV bake data), and nothing about "
+                           "whether either scene is CORRECT -- only that the two agree.",
+            ))
+        else:
+            results.append(skip(
+                "IDEM", "scene content vs second build", "no --compare-scene given",
+                blind_spot="did not run: without a second build to compare, this run says nothing "
+                           "about whether the builder reproduces the room (§1.5). Note a byte "
+                           "comparison would NOT substitute -- the builder is byte-unstable and "
+                           "content-stable, which is exactly why this gate resolves fileIDs.",
             ))
 
     except (FileNotFoundError, ValueError, AssertionError, KeyError, json.JSONDecodeError) as exc:
