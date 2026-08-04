@@ -92,6 +92,18 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-03 cycle 79 · **ROOM SLICE ROUND 3 MERGED — `55f4a63`** — clean
+  checklist: suites green with proof files (EditMode 73/73, PlayMode 20/20
+  slice-filtered), 83 files all inside room ownership, 0 code conflicts;
+  one add/add on the stale root `orchestrator-brief.md` resolved by removal
+  (retired-root-file convention). Gates 6–8 re-certified on Allen's standing
+  walkthrough verdict (his call). Capture harness now on main — TV's re-shoot
+  blocker gone. Debt logged: 8 room textures predate the LFS root fix and sit
+  as raw blobs in history; attributes correct so future versions get LFS.
+  Validation agent running on merged main (engine → warm compile → EditMode →
+  PlayMode with GPU). **Veto window: revert 55f4a63 restores pre-merge main.**
+  Denied one dangerous rm mid-round (possibly-empty variable path) — lead
+  re-ran guarded. Reversal: revert the merge commit.
 - 2026-08-03 cycle 78 · **Idle diagnosis + evening drag staged** — markets,
   SureThing, TV all correctly idle: every remaining item funnels through the
   DD's next session (2.6px → markets merge → SureThing unblock; suspension
