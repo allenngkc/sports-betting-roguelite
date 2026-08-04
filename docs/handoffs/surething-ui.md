@@ -1,7 +1,7 @@
 # SureThing UI — re-seat state
 
-**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-03, after S44+S45.
-**HEAD:** `916d4f4` · **Branch:** `surething-ui` · working tree clean.
+**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-03, after S47.
+**HEAD:** `5e33b30` · **Branch:** `surething-ui` · working tree clean.
 
 This is written for a seat with **no conversation context**. Everything below is either verifiable in
 the repo or flagged as unverified.
@@ -26,7 +26,7 @@ Since the merge, three more rulings landed and are **implemented, verified and c
 - **S26** — offer rule text never truncates at point of spending; the board shows however many offers
   fit and states how many it could not. The REWARDS banner states rather than exhorts.
 
-**Suites: EditMode 76/76, PlayMode 44/44** (at `916d4f4`). The 75/38 in earlier notes was the
+**Suites: EditMode 76/76, PlayMode 45/45** (at `5e33b30`). The 75/38 in earlier notes was the
 count before the desktop block; PlayMode's total also depends on whether the run passes
 `-nographics`, which fails the four capture tests on `RenderTexture.Create` — **do not pass it**,
 the command in §5 is the one that holds.
@@ -247,6 +247,34 @@ same way, and it rides the next drag. A third violation turned up while writing 
 surface's owning document does not exist and is owed after the LEDGER close-out and the S48 fold.
 Not blocking, but it is on the surface's account.
 
+## 4-0.4 S47 landed. Only S48 is left on this surface, and it re-opens S8
+
+**Done** (`5e33b30`). Suites **EditMode 76/76, PlayMode 45/45**. The desktop icons now derive
+everything from an `IconState` — glyph ink, caption ink, whether a chip draws, whether the thing
+opens — instead of a hand-passed colour plus an inference from whether `onClick` was null.
+
+**What that refactor found is the reason to keep it that way.** LEDGER's `$` was drawn in
+`--ground-3`, the chip's colour sitting in the glyph's argument, so the one destination on this
+machine that is not the sportsbook announced itself with a glyph the same value as its own tile.
+Measured peak luminance is now 214 against SURETHING's 215; before, it was the chip. **It was on
+every desktop capture ever taken.** Nothing caught it because there was no state for it to
+disagree with — the same shape as the `Label`/`Caption` collision in §4-0.2, and the third
+member of that family on this surface in two days.
+
+`(soon)` is deleted, and MAIL and BANK take the machine's voice, which **closes the half of S46
+deliberately deferred** in §4-0.2. Nothing is left over from that deferral.
+
+**The pairing invariant is the one to preserve if this code is ever rewritten:** treatment and
+behaviour may never disagree. An icon that looks installed and refuses to open is the surface
+lying about itself in the exact direction the ruling exists to stop. The test holds it across all
+four icons.
+
+**Next, and last on this surface: S48.** It folds the desktop into `NotebookChrome` (34px rail +
+34px tray, wallpaper resizing to the remainder), and **it returns S8 to review** — S8 is one of
+this laptop's three Design-verified items, so this is not an ordinary build. Nothing is blocked
+behind it. **S49 is not this seat's** — the desktop enters `ui_kits/surething/` and is DD-authored;
+do not write to `main-2` for it.
+
 ## 4a. S32 — which happened: fixed between HEADs
 
 S32 closed on rendered evidence and asks this handoff to record the cause, because the register
@@ -360,8 +388,8 @@ Archivo Narrow's digits are already uniform, so this is insurance rather than a 
 - ~~Legs as one string vs sub-rows~~ — **ruled S40: the sub-rows stand**, and the reserved-and-blank
   legs cell is deleted. Built in `e1f0602`.
 - **The desktop block**, in this order and no other: ~~**S46**~~ (**done**, `4957997` — see §4-0.2)
-  → ~~**S44 + S45**~~ (**done**, `916d4f4` — see §4-0.3) → **S47 is next** (installed vs
-  not-installed is a two-state vocabulary; `(soon)` is deleted) → **S49**
+  → ~~**S44 + S45**~~ (**done**, `916d4f4` — see §4-0.3) → ~~**S47**~~ (**done**, `5e33b30` — see
+  §4-0.4) → **S49**
   (**DD-authored — the desktop enters `ui_kits/surething/`; this seat does not write to `main-2`**)
   → **S48 last**, because folding the desktop into `NotebookChrome` re-opens S8 and returns it to
   review.
