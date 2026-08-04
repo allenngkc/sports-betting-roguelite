@@ -65,9 +65,10 @@ CHARACTER_CONTROLLER_CLASS_NAME = "CharacterController"
 # "an inventory names its members, a gate names the build it certifies."
 # LaptopScreen and PhoneScreen keep MeshColliders because interaction
 # raycasting is not re-plumbed to satisfy a number. TVScreen and WindowPane's
-# MeshColliders are being removed in a parallel change and are deliberately
-# NOT in this expected set -- until that lands, Gate 3 must FAIL and name
-# them, which is the proof the gate can see them at all.
+# MeshColliders were removed at a1fd6fb (T57 rebuilt those quads at true world
+# size; Quad/ArtQuad now add a MeshCollider only under keepCollider), so they
+# are deliberately NOT in this expected set. If either reappears, Gate 3 FAILs
+# and names it -- which is the proof the gate can see them at all.
 EXPECTED_COLLIDER_INVENTORY = {
     "BoxCollider": {"total": 27, "solid": 24, "trigger": 3},
     "MeshCollider": {"total": 2, "owners": {"LaptopScreen", "PhoneScreen"}},
@@ -150,6 +151,32 @@ R23_REGIONS = {
 R23_WARM_HUE = (20.0, 110.0)
 R23_COOL_HUE = (200.0, 300.0)
 
+# ---------------------------------------------------------------------------
+# R19 -- the institution's metal, measured on surface-pure boxes.
+#
+# INFORMATIONAL, NEVER JUDGED, and deliberately NOT folded into R23. Law §1.1 is
+# about the room's own plaster, floor and bunk; a small dark metal fixture reading
+# cool is not "a blue-tinted room". Putting metal into R23's pass/fail would make
+# the institutional palette landing correctly read as a law violation, which is
+# the instrument convicting the design it exists to protect.
+#
+# These replace the first-pass boxes whose numbers the handoff flagged as
+# unratified. That caveat paid: both first-pass boxes were bleeding the warm
+# plaster wall behind the metal, and reported the WALL's hue (~100-112deg) as the
+# metal's. Purity here is sd/mean of luminance, same criterion as R9B_REGIONS:
+#   housing face  0.020   conduit drop  0.053   conduit ceiling run  0.046
+#
+# The conduit drop is a narrow strip ON THE PIPE BODY between two fittings. A
+# cylinder genuinely has a lit and a shaded face, so any pure strip picks one --
+# the full-width reading is carried alongside so the strip is never mistaken for
+# the whole pipe (C25: a measurement is reported with its scope attached).
+R19_REGIONS = {
+    "housing face (steel)":   (1900, 1100, 2020, 1190),
+    "conduit drop (body)":    (1896,  480, 1906,  680),
+    "conduit drop (full w.)": (1888,  480, 1908,  680),
+    "conduit ceiling run":    (1580,  322, 1720,  332),
+}
+
 # Below this chroma a hue angle is not meaningful -- it is the direction of a
 # vector too short to trust, and calling a near-grey surface "cool" on the
 # strength of a 0.4 chroma reading would be measuring noise.
@@ -205,6 +232,69 @@ CENTER_RE = re.compile(r'm_Center:\s*\{x:\s*(-?[\d.eE+-]+),\s*y:\s*(-?[\d.eE+-]+
 DANGLING_MESH_RE = re.compile(r'm_Mesh:\s*\{fileID:\s*0\}')
 GAMEOBJECT_REF_RE = re.compile(r'm_GameObject:\s*\{fileID:\s*(-?\d+)\}')
 IS_TRIGGER_RE = re.compile(r'm_IsTrigger:\s*(\d+)')
+# R29: a GameObject's own enabled flag. Gate 2 counted names only, so a DISABLED
+# duplicate satisfied a count -- the gate could not tell the two states apart at
+# all, which R29 rules is a bigger finding than the gate's result.
+IS_ACTIVE_RE = re.compile(r'^\s*m_IsActive:\s*(\d+)\s*$', re.M)
+# A PrefabInstance-rooted object carries its active state only if the instance
+# overrides it; otherwise the value lives in the prefab ASSET and is genuinely
+# not readable from the scene file. That case is reported "unknown", never
+# assumed active -- assuming is how a bare count became a vacuous gate.
+PREFAB_ACTIVE_OVERRIDE_RE = re.compile(r'propertyPath:\s*m_IsActive\s*\n\s*value:\s*(\d+)')
+SOURCE_PREFAB_GUID_RE = re.compile(r'm_SourcePrefab:\s*\{fileID:\s*\d+,\s*guid:\s*([0-9a-f]+)')
+META_GUID_RE = re.compile(r'^guid:\s*([0-9a-f]+)\s*$', re.M)
+M_FATHER_RE = re.compile(r'm_Father:\s*\{fileID:\s*(-?\d+)\}')
+
+
+def prefab_root_active_state(assets_root, guid, _cache={}):
+    """Active state of a prefab ASSET's root GameObject, for R29.
+
+    When a PrefabInstance does not override m_IsActive, the value lives in the
+    prefab asset, so the scene alone genuinely cannot answer -- but the asset
+    can, and it is a file like any other. Resolving it turns a permanent
+    UNCOVERED into a real verdict without an editor lease.
+
+    Returns "active" / "inactive" / "unknown". Every failure to resolve returns
+    "unknown" rather than a guess: an unresolvable prefab is exactly the case
+    R29 says must not be assumed active.
+    """
+    key = (str(assets_root), guid)
+    if key in _cache:
+        return _cache[key]
+
+    state = "unknown"
+    if assets_root is not None and guid:
+        try:
+            for meta in Path(assets_root).rglob("*.prefab.meta"):
+                m = META_GUID_RE.search(meta.read_text(encoding="utf-8", errors="replace"))
+                if not m or m.group(1) != guid:
+                    continue
+                prefab = meta.with_suffix("")           # strip ".meta"
+                docs = split_documents(prefab.read_text(encoding="utf-8", errors="replace"))
+                # The root is the Transform with no parent; follow it back to its
+                # GameObject rather than trusting document order.
+                root_anchor = None
+                for _cid, _anchor, cname, body in docs:
+                    if cname not in ("Transform", "RectTransform"):
+                        continue
+                    fm = M_FATHER_RE.search(body)
+                    if fm and fm.group(1) == "0":
+                        gm = GAMEOBJECT_REF_RE.search(body)
+                        if gm:
+                            root_anchor = gm.group(1)
+                        break
+                for _cid, anchor, cname, body in docs:
+                    if cname == "GameObject" and anchor == root_anchor:
+                        am = IS_ACTIVE_RE.search(body)
+                        if am:
+                            state = "active" if am.group(1) == "1" else "inactive"
+                        break
+                break
+        except OSError:
+            state = "unknown"
+
+    _cache[key] = state
+    return state
 
 
 def split_documents(text):
@@ -234,7 +324,7 @@ def load_scene_text(scene_path):
     return scene_path.read_text(encoding="utf-8", errors="replace")
 
 
-def gate2_object_counts(docs):
+def gate2_object_counts(docs, assets_root=None):
     """Gate 2: singleton names, Light count, Dressing_* count.
 
     GameObject names normally live as `m_Name: <name>` inside a `GameObject:`
@@ -243,25 +333,63 @@ def gate2_object_counts(docs):
     document of its own at all; its name lives only in the PrefabInstance's
     override list as a `propertyPath: m_Name` / `value: <name>` pair. Both
     sources must be counted or RoomArtRoot silently reads as absent.
-    """
-    name_counts = {}
 
-    for _class_id, _anchor, class_name, body in docs:
+    R29 (DD 2026-08-03): every count is now split by ACTIVE STATE. A gate
+    certifies the configuration it ran against, so a name is not a member of
+    this inventory merely by existing -- it must be enabled. Three buckets:
+    active / inactive / unknown, and "unknown" is a real answer, not a
+    rounding error toward "active".
+    """
+    empty = lambda: {"active": 0, "inactive": 0, "unknown": 0}
+
+    def state_of(body, regex):
+        m = regex.search(body)
+        if not m:
+            return "unknown"
+        return "active" if m.group(1) == "1" else "inactive"
+
+    name_states = {}
+    go_by_anchor = {}
+
+    for _class_id, anchor, class_name, body in docs:
         if class_name == "GameObject":
+            state = state_of(body, IS_ACTIVE_RE)
             m = NAME_FIELD_RE.search(body)
-            if m:
-                name = m.group(1)
-                name_counts[name] = name_counts.get(name, 0) + 1
+            name = m.group(1) if m else None
+            go_by_anchor[anchor] = state
+            if name:
+                name_states.setdefault(name, empty())[state] += 1
         elif class_name == "PrefabInstance":
+            # One instance carries at most one m_IsActive override, applying to
+            # the root it renames. With no override the value lives in the
+            # prefab asset -- resolve it there rather than reporting unknown.
+            state = state_of(body, PREFAB_ACTIVE_OVERRIDE_RE)
+            if state == "unknown":
+                gm = SOURCE_PREFAB_GUID_RE.search(body)
+                state = prefab_root_active_state(assets_root, gm.group(1) if gm else None)
             for pm in PREFAB_NAME_OVERRIDE_RE.finditer(body):
                 name = pm.group(1)
                 if name:
-                    name_counts[name] = name_counts.get(name, 0) + 1
+                    name_states.setdefault(name, empty())[state] += 1
 
-    light_count = sum(1 for _cid, _anchor, cname, _b in docs if cname == "Light")
-    dressing_count = sum(count for name, count in name_counts.items() if name.startswith("Dressing_"))
+    # A Light's own enable flag is not the question here -- Gate 2 counts light
+    # OBJECTS, so the owning GameObject's active state is what decides whether
+    # the light is in the scene at all. A Light living inside a prefab has no
+    # GameObject document here, so its owner resolves to unknown.
+    light_states = empty()
+    for _cid, _anchor, cname, body in docs:
+        if cname != "Light":
+            continue
+        gm = GAMEOBJECT_REF_RE.search(body)
+        light_states[go_by_anchor.get(gm.group(1), "unknown") if gm else "unknown"] += 1
 
-    return name_counts, light_count, dressing_count
+    dressing_states = empty()
+    for name, states in name_states.items():
+        if name.startswith("Dressing_"):
+            for bucket, n in states.items():
+                dressing_states[bucket] += n
+
+    return name_states, light_states, dressing_states
 
 
 def collect_collider_docs(docs):
@@ -815,11 +943,38 @@ def main():
         help="Write tools/room_gate_reference.json from --scene's current collider dimensions "
              "instead of checking Gate 4 against it",
     )
+    parser.add_argument(
+        "--report",
+        help="Also write this run's full report to PATH. Every number this harness has ever "
+             "produced reached the register by being hand-copied out of a terminal, which makes "
+             "the claim the artifact and the measurement unreproducible -- C11 wants the evidence, "
+             "C17 wants it retained, C25 wants its scope attached. The file carries all three.",
+    )
     args = parser.parse_args()
 
     scene_path = Path(args.scene)
     captures_dir = Path(args.captures)
     reference_captures_dir = Path(args.reference) if args.reference else None
+
+    # Tee rather than redirect: a run that is being recorded must still be a run
+    # you can watch, or nobody will pass --report when it matters.
+    report_file = None
+    if args.report:
+        report_path = Path(args.report)
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_file = report_path.open("w", encoding="utf-8")
+
+        class _Tee:
+            def __init__(self, *streams): self._streams = streams
+            def write(self, data):
+                for s in self._streams:
+                    s.write(data)
+                return len(data)
+            def flush(self):
+                for s in self._streams:
+                    s.flush()
+
+        sys.stdout = _Tee(sys.__stdout__, report_file)
 
     results = []
 
@@ -835,29 +990,70 @@ def main():
                         "so nothing about a pre/post visual diff is checked anywhere in this run.",
         ))
 
-        # --- Gate 2: object counts -----------------------------------------
-        name_counts, light_count, dressing_count = gate2_object_counts(docs)
+        # --- Gate 2: object counts, by active state (R29) --------------------
+        # R29: "a gate that ran against one state certifies that state only."
+        # The count is of ACTIVE objects. An inactive same-named object is named
+        # rather than silently folded in (that was the original defect: a
+        # disabled duplicate satisfied the count). Where the scene file cannot
+        # reveal a state at all -- a PrefabInstance with no m_IsActive override,
+        # whose value lives in the prefab asset -- the gate reports UNCOVERED and
+        # leaves the pass total, per R29's "re-run against the active state, or
+        # record it as uncovered", never a pass that covers one of two states.
+        # Assets root lets Gate 2 resolve a PrefabInstance's active state from the
+        # prefab asset when the scene carries no override (R29).
+        assets_root = next((p for p in scene_path.resolve().parents if p.name == "Assets"), None)
+        name_states, light_states, dressing_states = gate2_object_counts(docs, assets_root)
         detail = []
         gate2_ok = True
-        for name in EXPECTED_SINGLETONS:
-            n = name_counts.get(name, 0)
-            ok = n == 1
+        unknowns = []
+
+        def note(label, states, expected):
+            nonlocal gate2_ok
+            ok = states["active"] == expected and states["inactive"] == 0 and states["unknown"] == 0
             gate2_ok &= ok
-            detail.append(f"{name}: expected 1, observed {n} [{'ok' if ok else 'MISMATCH'}]")
-        light_ok = light_count == EXPECTED_LIGHT_COUNT
-        gate2_ok &= light_ok
-        detail.append(f"Light components: expected {EXPECTED_LIGHT_COUNT}, observed {light_count} [{'ok' if light_ok else 'MISMATCH'}]")
-        dressing_ok = dressing_count == EXPECTED_DRESSING_COUNT
-        gate2_ok &= dressing_ok
-        detail.append(f"Dressing_* objects: expected {EXPECTED_DRESSING_COUNT}, observed {dressing_count} [{'ok' if dressing_ok else 'MISMATCH'}]")
+            if states["unknown"]:
+                unknowns.append(label)
+            extra = ""
+            if states["inactive"]:
+                extra += f", {states['inactive']} INACTIVE"
+            if states["unknown"]:
+                extra += f", {states['unknown']} state-unreadable"
+            detail.append(
+                f"{label}: expected {expected} active, observed {states['active']} active"
+                f"{extra} [{'ok' if ok else 'MISMATCH'}]")
+
+        for name in EXPECTED_SINGLETONS:
+            note(name, name_states.get(name, {"active": 0, "inactive": 0, "unknown": 0}), 1)
+        note("Light components", light_states, EXPECTED_LIGHT_COUNT)
+        note("Dressing_* objects", dressing_states, EXPECTED_DRESSING_COUNT)
+
+        if unknowns:
+            detail.append(
+                "UNCOVERED (R29): active state unreadable from the scene file for "
+                + ", ".join(unknowns)
+                + " -- a PrefabInstance carries m_IsActive only when it overrides it; "
+                  "otherwise the value lives in the prefab asset. Not assumed active.")
+
+        gate2_status = "SKIP" if unknowns else ("PASS" if gate2_ok else "FAIL")
         results.append(GateResult(
-            2, "object counts", "PASS" if gate2_ok else "FAIL",
-            "1 each singleton, 8 Light, 6 Dressing_*",
-            f"{sum(1 for n in EXPECTED_SINGLETONS if name_counts.get(n,0)==1)}/4 singletons, {light_count} Light, {dressing_count} Dressing_*",
+            2, "object counts (active state)", gate2_status,
+            f"1 active each singleton, {EXPECTED_LIGHT_COUNT} active Light, "
+            f"{EXPECTED_DRESSING_COUNT} active Dressing_*",
+            (f"{sum(1 for n in EXPECTED_SINGLETONS if name_states.get(n, {}).get('active', 0) == 1)}/4 "
+             f"singletons, {light_states['active']} Light, {dressing_states['active']} Dressing_* "
+             f"(active)" + (f" -- {len(unknowns)} UNCOVERED" if unknowns else "")),
             detail,
-            blind_spot="counts objects by name only -- does not verify parenting, transform "
-                       "values, or that the correctly-named object is the one intended rather "
-                       "than a same-named duplicate elsewhere in the hierarchy.",
+            blind_spot="counts objects by name and enabled flag -- it CAN now distinguish active "
+                       "from inactive and names any disabled same-named object, which it could not "
+                       "do before R29. It still does not verify parenting, transform values, or "
+                       "that the correctly-named active object is the one intended rather than a "
+                       "same-named duplicate elsewhere in the hierarchy. It reads m_IsActive only: "
+                       "an object whose ANCESTOR is disabled is inactive in the running scene yet "
+                       "reads active here, so this gate certifies the object's own flag, not its "
+                       "effective state in Play Mode. Where a PrefabInstance does not override "
+                       "m_IsActive the flag is read from the SOURCE PREFAB asset, so the verdict "
+                       "covers the asset's default rather than anything the scene states; if that "
+                       "asset cannot be resolved the state is reported UNCOVERED, never assumed.",
         ))
 
         # --- Gate 3: named collider inventory (C18 / R16) --------------------
@@ -1111,6 +1307,33 @@ def main():
                            "surface would still report a number.",
             ))
 
+            # --- R19: the institution's metal, informational ------------------
+            detail = []
+            for name, box in R19_REGIONS.items():
+                lstar, chroma, hue = region_cast(graded, box)
+                line = (f"{name:24s} L*={lstar:5.2f} chroma={chroma:5.2f} "
+                        f"hue={hue:6.1f}deg  {cast_verdict(chroma, hue)}")
+                if ungraded is not None:
+                    uc, uh = region_cast(ungraded, box)[1:]
+                    line += f"   | ungraded chroma={uc:5.2f} hue={uh:6.1f}deg {cast_verdict(uc, uh)}"
+                detail.append(line)
+            detail.append(
+                "reported, never judged: cool metal is the institutional palette landing, not a "
+                "law 1.1 failure -- §1.1 names a blue-tinted ROOM, and these are dark fixtures.")
+            results.append(GateResult(
+                "R19", "metal cast (informational)", "INFO",
+                "-", "steel + conduit, surface-pure boxes", detail,
+                blind_spot="four fixed boxes on the screens-dark render, reported without a "
+                           "verdict. It cannot tell you whether the metal reads institutional -- "
+                           "R19(b)-am moved that read onto VALUE and FINISH, and this instrument "
+                           "measures neither. Hue here is a diagnostic, not a requirement. The "
+                           "conduit body strip samples ONE face of a cylinder (the shaded one); "
+                           "its full-width twin is carried beside it because the two disagree, "
+                           "and the full-width figure includes edge pixels bleeding the warm wall "
+                           "behind the pipe -- which is exactly how the superseded first-pass "
+                           "boxes came to report the wall's hue as the metal's.",
+            ))
+
     except (FileNotFoundError, ValueError, AssertionError, KeyError, json.JSONDecodeError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         sys.exit(1)
@@ -1129,6 +1352,13 @@ def main():
     # distinctly in the summary line below, never silently merged into PASS.
     exit_code = 0 if all(r.status in ("PASS", "SKIP", "INFO", "VOID") for r in results) else 1
     print_summary(results, exit_code)
+
+    if report_file is not None:
+        sys.stdout.flush()
+        sys.stdout = sys.__stdout__
+        report_file.close()
+        print(f"\nreport written: {args.report}")
+
     sys.exit(exit_code)
 
 
