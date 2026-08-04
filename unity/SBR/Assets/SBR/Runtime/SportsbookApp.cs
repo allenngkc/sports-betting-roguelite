@@ -102,6 +102,15 @@ namespace SBR.Game
                 disabled ? null : () => { _selectTab(tab); }, _font, !disabled);
         }
 
+        /// <summary>Allen ruling (2026-08-03): the lobby's card pitch. Duplicated from
+        /// <see cref="BuildMatchupCard"/>'s own card size (<c>Vector2(700f, 78f)</c>) rather than
+        /// factored into a constant shared with that method, because the ruling froze
+        /// BuildMatchupCard's own geometry out of scope for this change. Feeds
+        /// <see cref="BuildScrollingBody"/>'s row-height math and the cards' scrolled Y offset in
+        /// <see cref="BuildLobby"/> — if BuildMatchupCard's own 78f ever moves, this must move
+        /// with it.</summary>
+        private const float MatchupCardPitch = 78f;
+
         private void BuildLobby(Run run, BetslipModel slip, bool boardFrozen)
         {
             RectTransform board = LaptopUi.MakePanel(_root, "Board", new Vector2(0f, 1f), new Vector2(0f, 1f),
@@ -110,11 +119,40 @@ namespace SBR.Game
                 new Vector2(14f, -5f), new Vector2(670f, 26f), 13, TextAnchor.UpperLeft, LaptopOs.Muted,
                 boardFrozen ? "NO.   MATCHUP · RECORD                         MONEYLINE     BOARD CLOSED" : "NO.   MATCHUP · SEASON RECORD                         MONEYLINE     MORE", _font);
 
+            // Allen ruling (2026-08-03): placed tickets now draw on FORM too, above the six
+            // matchup cards, via the SAME BuildPlacedThisRound/BuildStagedReceipt already used on
+            // ENTRY (~line 492/964) — one shared component consumed twice, not a second
+            // implementation, so the two screens can never drift apart. One 2-leg receipt runs
+            // ~99px and up to MaxTicketsPerRound can stage; the board's old fixed layout (26px
+            // title + 6*78px cards = 494 of the panel's 530) left only 36px of slack, and no
+            // rearrangement of numbers closes that gap. So this list scrolls, reusing
+            // BuildScrollingBody exactly as ENTRY's market body already does (S25/S27) — a ruled
+            // mechanism, not an invented one. This deviates from the kit, which only ever draws a
+            // receipt stack on the event screen (screens.jsx:49-58) — flagged here for the DD to
+            // carry as a canon amendment.
+            //
+            // BoardTitle above is a column head for the list below it ("NO. MATCHUP ...
+            // MONEYLINE"), not itself a row of that list, so it stays fixed here and only the
+            // region beneath it scrolls.
+            const float titleStripHeight = 26f; // the gap the first card always sat below (old i=0 -> y=-26).
+            RectTransform boardBody = LaptopUi.MakePanel(board, "BoardBody", new Vector2(0f, 1f),
+                new Vector2(0f, 1f), new Vector2(0f, -titleStripHeight),
+                new Vector2(700f, 530f - titleStripHeight), new Color(0f, 0f, 0f, 0f));
+
+            RectTransform content = BuildScrollingBody(boardBody, run.CurrentSlate.Matchups.Count, run,
+                out float rowWidth, out float rowsOffsetY, MatchupCardPitch);
+
             for (int i = 0; i < run.CurrentSlate.Matchups.Count; i++)
             {
                 Matchup matchup = run.CurrentSlate.Matchups[i];
-                BuildMatchupCard(board, matchup, slip, boardFrozen,
-                    new Vector2(0f, -26f - i * 78f));
+                // BuildMatchupCard keeps its own fixed 700px card width (frozen out of scope by
+                // the ruling above) rather than taking rowWidth. Its live content already clears
+                // the rail's 8px reserve — the MORE button's right edge sits at x=686 (700 - 14),
+                // inside the 692px rail-safe width — so the only thing the rail can ever draw over
+                // is the card's own decorative Surface background and rule; nothing interactive is
+                // lost.
+                BuildMatchupCard(content, matchup, slip, boardFrozen,
+                    new Vector2(0f, -rowsOffsetY - i * MatchupCardPitch));
             }
 
             BuildSlip(run, slip, boardFrozen);
@@ -386,29 +424,36 @@ namespace SBR.Game
         /// <summary>A4/S27: builds the market body's scroll plumbing — a masked <see cref="ScrollRect"/>
         /// viewport sized to <paramref name="body"/>'s own rect (kept fixed per the ruling) and a
         /// content <see cref="RectTransform"/> whose height is the true content height
-        /// (<paramref name="rowCount"/> × <see cref="OfferRowHeight"/>, plus the staged-receipt
+        /// (<paramref name="rowCount"/> × <paramref name="rowHeight"/>, plus the staged-receipt
         /// block below), never a capacity clamp. Draws the S27 position rail — present only when the
         /// content overflows the viewport, absent when it fits — and returns the row width every row
         /// must use so content never runs under the rail (out <paramref name="rowWidth"/>). Shared by
         /// BuildMarketLines, BuildBothTeamsScore and BuildPlayerLines (A1 ruling) so their scroll/rail
         /// plumbing can never independently drift.
         ///
+        /// <paramref name="rowHeight"/> defaults to <see cref="OfferRowHeight"/> so those three
+        /// existing callers are unchanged in behaviour. Allen ruling (2026-08-03): BuildLobby is now
+        /// a fourth caller, passing its own 78px card pitch (<see cref="MatchupCardPitch"/>) — the
+        /// lobby's staged-receipt slack problem is solved by reusing this one scrolling-body
+        /// implementation rather than forking a second one, so its row geometry has to be a
+        /// parameter instead of the ENTRY-only constant this used to hardcode.
+        ///
         /// E-07 ruling: also renders <c>run.Tickets</c>' staged receipts under a "PLACED THIS ROUND"
         /// header (kit: screens.jsx:49-58) at the top of the content, inside the same scroll — done
-        /// once here rather than in each of the three callers, since all three (and so all five
-        /// destinations) share this one path. <paramref name="rowsOffsetY"/> is the height that block
-        /// consumed (0 when <c>run.Tickets</c> is empty); every caller must push its own rows down by
-        /// this before they contribute to <see cref="OfferRowHeight"/> math, and it is already folded
-        /// into <paramref name="rowWidth"/>'s contentHeight/overflow decision below so the rail and
-        /// mask both size off the true total.</summary>
+        /// once here rather than in each caller, since every caller (five ENTRY destinations plus,
+        /// per the ruling above, FORM) shares this one path. <paramref name="rowsOffsetY"/> is the
+        /// height that block consumed (0 when <c>run.Tickets</c> is empty); every caller must push
+        /// its own rows down by this before they contribute to their own row-height math, and it is
+        /// already folded into <paramref name="rowWidth"/>'s contentHeight/overflow decision below so
+        /// the rail and mask both size off the true total.</summary>
         private RectTransform BuildScrollingBody(RectTransform body, int rowCount, Run run,
-            out float rowWidth, out float rowsOffsetY)
+            out float rowWidth, out float rowsOffsetY, float rowHeight = OfferRowHeight)
         {
             const float railReserve = 8f; // 4px RuleSoft track + 4px clearance (A4: never under the rail).
             float bodyWidth = body.rect.width;
             float bodyHeight = body.rect.height;
             rowsOffsetY = MeasurePlacedThisRoundHeight(run);
-            float contentHeight = rowsOffsetY + rowCount * OfferRowHeight;
+            float contentHeight = rowsOffsetY + rowCount * rowHeight;
             bool overflows = contentHeight > bodyHeight;
             rowWidth = overflows ? bodyWidth - railReserve : bodyWidth;
 
