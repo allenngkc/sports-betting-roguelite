@@ -92,6 +92,14 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-05 cycle 86 · **B1 validation GREEN — merge certified** — engine
+  178/178 (+18 markets), EditMode 75/75, PlayMode 47/47 (+8) on a real GPU;
+  XMLs fresh-verified; DLL restored sha-exact; tree pristine (this pass
+  dirtied nothing). SureThing GO issued: merge main in-branch (159 commits),
+  then S41 + the twelve-state re-submit — editor lease granted. Markets
+  stood down, slice live. Studio state after SureThing's close: everything
+  behind DD verdicts + Allen's drag/gate-reconfirm. Reversal: revert
+  `bbf9241` (window remains open).
 - 2026-08-05 cycle 85 · **MARKETS B1 MERGED — `bbf9241`** — second attempt
   clean: lead re-baselined on main in-branch, resolved the three shared-file
   conflicts, suites green at `7fa5dd7`, zero conflicts on the real merge.
