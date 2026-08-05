@@ -500,6 +500,10 @@
     "certified_at": "2026-08-04",
     "content_fingerprint": "9b89ecfea1d2b017de8d376fafc41dd1a005520b64b90c0dadbe406880147f7a",
     "basis": "standing verdict from Allen's 9e1b4e4 walkthrough, re-certified on his authority after the BezelBlack retirement changed the scene; NO new walk was performed",
-    "note": "R22: gates 6-8 have no automated instrument; a human walks the build. Expires automatically when content_fingerprint stops matching."
+    "note": "R22: gates 6-8 have no automated instrument; a human walks the build. Expires automatically when content_fingerprint stops matching.",
+    "revoked": {
+      "at": "2026-08-04",
+      "reason": "batch 9 stands: gates 6-8 VOID pending Allen's separate re-confirm (orchestrator, 2026-08-04)"
+    }
   }
 }

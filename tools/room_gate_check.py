@@ -1113,6 +1113,14 @@ def main():
              "automatically the moment the scene's content changes (C18).",
     )
     parser.add_argument(
+        "--revoke-human-gates",
+        metavar="REASON",
+        help="Revoke a recorded human-gate certification, returning gates 6-8 to VOID. The record "
+             "is KEPT and marked revoked rather than deleted -- who certified what, when, on what "
+             "basis, and why it was withdrawn is the audit trail, and a hand-edit that removes the "
+             "block destroys it.",
+    )
+    parser.add_argument(
         "--certify-basis",
         metavar="TEXT",
         help="Provenance of the human verdict being recorded. A re-certification on a STANDING "
@@ -1162,6 +1170,17 @@ def main():
 
     results = []
 
+    if args.revoke_human_gates:
+        _payload = json.loads(REFERENCE_JSON_PATH.read_text(encoding="utf-8"))
+        _hg = _payload.get("human_gates")
+        if not _hg:
+            print("no human-gate certification recorded; nothing to revoke")
+            sys.exit(0)
+        _hg["revoked"] = {"at": TODAY, "reason": args.revoke_human_gates}
+        REFERENCE_JSON_PATH.write_text(json.dumps(_payload, indent=2) + chr(10), encoding="utf-8")
+        print(f"human gates 6-8 REVOKED: {args.revoke_human_gates}")
+        sys.exit(0)
+
     if args.certify_human_gates:
         _docs = split_documents(load_scene_text(scene_path))
         _payload = json.loads(REFERENCE_JSON_PATH.read_text(encoding="utf-8"))
@@ -1171,6 +1190,7 @@ def main():
             "certified_at": TODAY,
             "content_fingerprint": scene_content_fingerprint(_docs),
             "basis": args.certify_basis or "fresh walkthrough of this build",
+            "revoked": None,
             "note": "R22: gates 6-8 have no automated instrument; a human walks the build. "
                     "Expires automatically when content_fingerprint stops matching.",
         }
@@ -1397,7 +1417,8 @@ def main():
         cert_fp = cert.get("content_fingerprint")
         cert_ref = cert.get("certified_commit", "?")
         cert_when = cert.get("certified_at", "?")
-        certified = bool(cert_fp) and cert_fp == current_fp
+        revoked = cert.get("revoked") or None
+        certified = bool(cert_fp) and cert_fp == current_fp and not revoked
 
         for num, gname in ((6, "UI/HUD readability"), (7, "UI/HUD contrast"), (8, "structural-only check")):
             if certified:
@@ -1416,6 +1437,17 @@ def main():
                         "content, and not anything outside the scene file (materials, textures, APV "
                         "bake). A change to any of those leaves this line reading PASS while the "
                         "thing the human actually judged has moved. Re-walk on any doubt."
+                    ),
+                ))
+            elif revoked:
+                results.append(void(
+                    num, gname,
+                    f"certification REVOKED {revoked.get('at','?')}: {revoked.get('reason','no reason recorded')}",
+                    blind_spot=(
+                        "VOID by revocation, not by expiry: a recorded human verdict was withdrawn "
+                        "deliberately. The certification block is kept in the reference, marked "
+                        "revoked, so who certified what and why it was withdrawn stays auditable. "
+                        "Only a human may re-issue it (C18, R22)."
                     ),
                 ))
             elif cert_fp:
@@ -1461,7 +1493,27 @@ def main():
         current_img = load_capture(captures_dir, R9A_IMAGE)
         r9a_mean = region_mean_luminance(current_img, R9A_BOX)
         r9a_ok = abs(r9a_mean - R9A_EXPECTED_MEAN) <= R9A_TOLERANCE
-        r9a_detail = [f"measured on {R9A_IMAGE}, box {R9A_BOX}"]
+        # ---- THE RATIFIED BOX IS NOT SURFACE-PURE (found 2026-08-04) ----------
+        # R9A_BOX scores sd/mean 0.398 on the lit frame -- 2.6x the 0.15 bar this
+        # harness applies everywhere else. Confirmed by eye: it spans the mattress,
+        # the frame slab below it, AND a wide area of lamp-lit plaster to the right.
+        # A pure sub-box on the mattress alone (sd/mean 0.016) reads 38.29, i.e.
+        # 6.15 BELOW the ratified figure, which would fail the 43.9 +/-1 band.
+        #
+        # NOT CHANGED HERE, deliberately. 43.9 is ratified law (§1.4) and four
+        # corner-lighting attempts were reverted against it; moving the box moves a
+        # number those decisions were made on, which is a DD/Allen call and not a
+        # lead's. Both readings are reported so the gate keeps its ratified verdict
+        # while the true mattress value is visible beside it.
+        R9A_PURE_SUBBOX = (1582, 686, 1652, 710)
+        r9a_pure = region_mean_luminance(current_img, R9A_PURE_SUBBOX)
+        r9a_detail = [
+            f"measured on {R9A_IMAGE}, box {R9A_BOX}",
+            f"WARNING: the ratified box is NOT surface-pure (sd/mean 0.398 vs the 0.15 bar) -- "
+            f"it spans mattress + frame slab + lamp-lit wall",
+            f"mattress alone, pure sub-box {R9A_PURE_SUBBOX} (sd/mean 0.016) = {r9a_pure:.2f}, "
+            f"{r9a_mean - r9a_pure:+.2f} from the ratified figure; escalated, not changed",
+        ]
         if conformance_dir is not None:
             try:
                 dark_img = load_capture(conformance_dir, R23_IMAGE)
