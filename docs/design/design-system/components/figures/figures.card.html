@@ -1,0 +1,27 @@
+<!-- @dsCard group="Components" viewport="700x160" name="Figures" subtitle="Bank, target, combined, and the one loud payout" -->
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Figures</title><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script>window.SURETHING_INK_BASE="../../assets/ink/"</script>
+<script src="../../_ds_bundle.js"></script>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{background:var(--ground);color:var(--toner);font-family:var(--font-data);padding:16px 18px}
+.row{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.sp{display:flex;flex-direction:column;gap:7px}
+.cap{font-size:12px;letter-spacing:.1em;color:var(--toner-3);text-transform:uppercase}
+.dim{font-family:var(--font-mono);font-size:11px;color:var(--wax-deep)}
+.dm{padding:10px 12px;background:var(--ground-2);border:1px solid var(--rule-soft)}
+.tv{background:var(--tv-substrate);font-family:var(--font-tv)}</style></head><body><div id="root"></div>
+<script type="text/babel">
+const { RunFigure, PayoutFigure } = window.SureThingDesignSystem_6e1eb3;
+function Card(){return (
+  <div className="row" style={{gap:34,alignItems:"flex-end"}}>
+    <div className="dm"><RunFigure label="BANK" value="$1,340" /></div>
+    <div className="dm"><RunFigure label="TARGET" value="$1,900" tone="wax" /></div>
+    <div className="dm"><RunFigure label="RELICS" value="2/5" /></div>
+    <div className="dm"><RunFigure label="TICKETS" value="0/3" /></div>
+    <div className="dm"><RunFigure label="COMBINED" value="+259" size="18px" /></div>
+    <div className="dm"><PayoutFigure value="$718" /></div>
+  </div>);}
+ReactDOM.createRoot(document.getElementById("root")).render(<Card/>);
+</script></body></html>

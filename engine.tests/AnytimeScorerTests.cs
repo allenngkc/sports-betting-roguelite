@@ -50,6 +50,38 @@ public class AnytimeScorerTests
     }
 
     [Fact]
+    public void Public_grading_surface_handles_every_market_kind_without_throwing()
+    {
+        // M-02: the 2-arg static Grades overload is now private (it can't resolve AnytimeScorer
+        // on its own), so the only public grading path is this 3-arg overload. Walk every
+        // MarketKind through it against one matchup/line and assert neither a throw nor a
+        // meaningless result — if a future MarketKind is added, the switch below forces this
+        // test to be updated rather than silently skipping it.
+        var home = new[] { new Player("Home Hero", PlayerRole.FW, 3), new Player("Home Wall", PlayerRole.DF, 1) };
+        var away = new[] { new Player("Away Ace", PlayerRole.FW, 3) };
+        var matchup = new Matchup(0, new Team("Home Team", 1, 0, home), new Team("Away Team", 0, 1, away),
+            0.6, 1.5, 2.0);
+        var line = new MatchStatLine(2, 1, 5, 4, 2, 1,
+            new[] { home[0], home[0] }, new[] { away[0] });
+
+        foreach (MarketKind kind in Enum.GetValues<MarketKind>())
+        {
+            (MarketSelection selection, bool expected) = kind switch
+            {
+                MarketKind.Moneyline => (MarketSelection.Moneyline(Side.Away), false),          // home won 2-1
+                MarketKind.TotalGoals => (MarketSelection.TotalGoals(3.5, true), false),         // 3 goals, not over 3.5
+                MarketKind.BothTeamsToScore => (MarketSelection.BothTeamsToScore(true), true),   // both scored
+                MarketKind.TotalCorners => (MarketSelection.TotalCorners(8.5, true), true),      // 9 corners, over 8.5
+                MarketKind.TotalCards => (MarketSelection.TotalCards(2.5, false), false),        // 3 cards, not under 2.5
+                MarketKind.AnytimeScorer => (MarketSelection.AnytimeScorer(0), true),            // away ace scored
+                _ => throw new InvalidOperationException($"Unhandled {kind}; extend this test's fixture."),
+            };
+
+            Assert.Equal(expected, MatchModel.Grades(matchup, line, selection));
+        }
+    }
+
+    [Fact]
     public void Rosters_and_scorers_are_deterministic_and_match_streams_are_isolated()
     {
         var first = new Run("SCORER-REPLAY");

@@ -79,6 +79,14 @@ namespace SBR.Tests.PlayMode
             {
                 Leg leg = ticket.Legs[legIndex];
                 Transform ledgerLeg = Required(ledgerTicket, "LedgerLeg" + legIndex);
+                // MERGE (markets-2 × main, 2026-08-05): main's assertion supersedes mine and both
+                // sides wanted the same thing. Mine asserted the composed label but rebuilt the
+                // string by hand, so it did not include FitLabelKeepingSuffix — which is precisely
+                // the captured-string-vs-production-formula defect I filed this morning as a flake
+                // signature. Main's version routes the whole thing, fit included, through the
+                // production formula, so it cannot drift with font-atlas state. Taking main's, and
+                // the S22 intent it carries is unchanged: the ledger composes from
+                // MatchModel.Fields via CompactLegLabel, never the legacy packed DisplayLabel.
                 Text legIdentityText = Required(ledgerLeg, "LegIdentity").GetComponent<Text>();
                 Assert.IsNotNull(legIdentityText, "LegIdentity has no Text to measure against");
                 Assert.IsNotNull(legIdentityText.font,

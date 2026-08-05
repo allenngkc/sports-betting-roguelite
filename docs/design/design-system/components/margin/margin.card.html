@@ -1,0 +1,38 @@
+<!-- @dsCard group="Components" viewport="700x300" name="Margin — his marks" subtitle="Header, legs, combined row, stake controls, rub out" -->
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Margin components</title><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script>window.SURETHING_INK_BASE="../../assets/ink/"</script>
+<script src="../../_ds_bundle.js"></script>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{background:var(--ground);color:var(--toner);font-family:var(--font-data);padding:16px 18px}
+.row{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.sp{display:flex;flex-direction:column;gap:7px}
+.cap{font-size:12px;letter-spacing:.1em;color:var(--toner-3);text-transform:uppercase}
+.dim{font-family:var(--font-mono);font-size:11px;color:var(--wax-deep)}
+.dm{padding:10px 12px;background:var(--ground-2);border:1px solid var(--rule-soft)}
+.tv{background:var(--tv-substrate);font-family:var(--font-tv)}</style></head><body><div id="root"></div>
+<script type="text/babel">
+const { MarginHeader, MarginLeg, MarginRow, StakeButton, StakeControls, RubOutButton } = window.SureThingDesignSystem_6e1eb3;
+function Card(){return (
+  <div style={{display:"flex",gap:24,alignItems:"flex-start"}}>
+    <div style={{width:324,padding:"0 14px",background:"repeating-linear-gradient(180deg,transparent 0 25px,var(--rule-soft) 25px 26px)"}}>
+      <MarginHeader count="2 SELECTIONS" />
+      <MarginLeg team="Bricklayers" price="-260" market="MONEYLINE" entry="02" />
+      <MarginLeg team="Longhaulers" price="+180" market="MONEYLINE" entry="04" />
+      <MarginRow label="COMBINED" value="+259" />
+      <StakeControls stake="$200" />
+    </div>
+    <div className="row" style={{flex:1}}>
+      <div className="sp"><div className="cap">Quick</div><div className="dim">68 × 32</div>
+        <div className="dm" style={{display:"flex",gap:4}}>
+          <StakeButton label="10%" /><StakeButton label="25%" /><StakeButton label="50%" /><StakeButton label="MAX" /></div></div>
+      <div className="sp"><div className="cap">Nudge</div><div className="dim">88 × 32</div>
+        <div className="dm" style={{display:"flex",gap:4}}>
+          <StakeButton label="− $10" variant="nudge" /><StakeButton label="+ $10" variant="nudge" /></div></div>
+      <div className="sp"><div className="cap">Remove leg</div><div className="dim">60 × 32</div>
+        <div className="dm"><RubOutButton /></div></div>
+    </div>
+  </div>);}
+ReactDOM.createRoot(document.getElementById("root")).render(<Card/>);
+</script></body></html>

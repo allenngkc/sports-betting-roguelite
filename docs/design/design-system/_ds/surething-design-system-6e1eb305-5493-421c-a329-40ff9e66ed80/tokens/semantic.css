@@ -1,0 +1,35 @@
+/* SEMANTIC ALIASES — what a consumer should reach for by intent.
+   Default surface is SureThing, because it is the surface designers build on. TV aliases are
+   prefixed --tv-* and live in palette-tv.css. */
+:root{
+  --surface-page:var(--ground);
+  --surface-recessed:var(--ground-2);   /* column head, tab strip */
+  --surface-raised:var(--ground-3);     /* OS rail, tray, nudge keys */
+  --surface-offscreen:var(--offscreen);
+
+  --text-body:var(--toner);
+  --text-secondary:var(--toner-2);
+  --text-label:var(--toner-3);          /* field keys, column heads — floor for readable text */
+  --text-on-money:var(--wax-ink);
+
+  --border-structural:var(--rule);
+  --border-soft:var(--rule-soft);
+
+  --accent-choice:var(--biro);          /* the player's own mark. Selections, tally, margin. */
+  --accent-choice-deep:var(--biro-deep);
+  --accent-money:var(--wax);            /* money and the primary action. Nothing else. */
+  --accent-money-hover:var(--wax-lit);
+  --accent-money-edge:var(--wax-deep);
+  --mark-house:var(--stamp);            /* the house acting: blocked action, dead-leg strike. */
+
+  --focus-ring:var(--wax);
+  --font-display:var(--font-cond);
+  --font-body:var(--font-data);
+
+  /* state colours are never used alone — pair every one with a mark, glyph, border, label or
+     position change. See guidelines/status-never-colour-alone.card.html */
+  --state-live:var(--toner);
+  --state-won:var(--wax);
+  --state-dead:var(--toner-3);
+  --state-dead-mark:var(--stamp);
+}

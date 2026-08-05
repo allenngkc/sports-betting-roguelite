@@ -470,7 +470,9 @@ public static class Report
 
     private static string SignedPct(double v)
         => Math.Abs(v) < 0.05 ? "0.0pp" : (v > 0 ? "+" : "") + v.ToString("F1", Inv) + "pp";
-    private static string MarketName(MarketKind kind) => kind switch
+    /// <summary>Internal rather than private: G7's coverage gate names the uncovered kinds, and
+    /// one mapping that tracks MarketKind beats two that can drift apart when a market ships.</summary>
+    internal static string MarketName(MarketKind kind) => kind switch
     {
         MarketKind.Moneyline => "Moneyline",
         MarketKind.TotalGoals => "Total Goals",

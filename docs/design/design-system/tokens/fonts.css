@@ -1,0 +1,59 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400..700&family=Archivo+Narrow:wght@400..700&family=Encode+Sans:wght@300;400;500;600;700&family=Encode+Sans+Condensed:wght@300;400;500;600;700&display=swap");
+
+/* PRODUCTION FACES — RULED 2026-07-31 (Design Director, S11-A), under S11: no licence-encumbered
+   typefaces anywhere in the product. BELL CENTENNIAL IS DROPPED and is not to be revived; the
+   licensing risk that made it an open item is now a closed decision, not a pending one.
+
+   SureThing laptop: ARCHIVO (data) + ARCHIVO NARROW (condensed). SIL OFL 1.1.
+   Why this pair, against the brief Bell Centennial was chosen for:
+   · Bell Centennial's ink traps existed to hold small type together on cheap absorbent paper. The
+     equivalent problem here is small type on an angled, graded, bloomed surface. No OFL face
+     reproduces ink traps, so this picks for the FUNCTION rather than the look: Archivo is drawn
+     specifically for high performance at small sizes and in headlines.
+   · It is a real superfamily — Archivo and Archivo Narrow share proportions, metrics and one hand —
+     so the document's two voices (roman labels, condensed figures) are one type system, which is
+     exactly what a printed directory is. A Franklin-revival-plus-unrelated-condensed pairing is not.
+   · Tabular figures across both widths. Values change in place on both surfaces; non-tabular figures
+     make the whole thing twitch.
+   · Weight is a usable channel (400..700) for the tiers, so dimming is not the only lever.
+   · It is on neither exhausted-defaults list (SHARED-SPEC's, nor TV DESIGN.md §5's).
+
+   TV: ENCODE SANS + ENCODE SANS CONDENSED. SIL OFL 1.1. RULED 2026-07-31 (DD, T11).
+   §5 asks for a grotesque with strong technical character, condensed for the ticket column where
+   density matters and wider for the scoreline — that is a width-axis brief, and Encode Sans has the
+   deepest width range of any qualifying free family (Compressed through Expanded), so one face
+   covers both jobs. Nine weights make weight a real channel for the L1-L2 tiers, which §5 asks for
+   now that the panel is high-DPI. It is a legibility-engineered screen face, which is the TV's
+   actual problem: read at four metres, muted, through bloom and grain.
+
+   TABULAR FIGURES DECIDED THIS. §5 calls them mandatory and non-negotiable, and it is the one
+   typographic rule that survived every substrate change. Measured, not assumed — rendering 0-9 with
+   font-variant-numeric: tabular-nums and comparing advance widths:
+
+     Saira Condensed        spread 7.08px WITH tnum  — NO tnum feature. DISQUALIFIED.
+     Saira Semi Condensed   spread 9.37px WITH tnum  — NO tnum feature. DISQUALIFIED.
+     Fira Sans / Condensed  spread 0.00px            — passes
+     Encode Sans / Cond.    spread 0.00px            — passes
+     Barlow / Condensed     spread 0.00px            — passes
+
+   Saira was the strongest candidate on character — an industrial grotesque with a full width axis,
+   and from Archivo's own foundry, which would have made "the same hand" literal. Its condensed
+   widths ship no tabular figures, so the score, clock, money and counts would twitch on every tick
+   in the exact column where density matters. Character does not outrank the one non-negotiable rule.
+
+   Chosen over the two other passers: Fira Sans is humanist and slightly warm, and §4 spends the
+   surface's entire warmth budget on gold — a warm letterform quietly spends it again. Barlow's
+   rounded terminals soften precisely the technical read §5 asks for.
+
+   ONE HAND, DIFFERENT JOBS. Archivo is an American-gothic text face for small running copy on a
+   paper-like ground; Encode Sans is an engineered screen face with a width system for signage-like
+   hierarchy. Same discipline — legibility-first open grotesques — different instrument. Not one
+   superfamily stretched across both screens, which is what T11 rules out. */
+:root{
+  --font-data:"Archivo",system-ui,sans-serif;
+  --font-cond:"Archivo Narrow",var(--font-data);
+  --font-tv:"Encode Sans",system-ui,sans-serif;
+  --font-tv-cond:"Encode Sans Condensed",var(--font-tv);
+  --font-mono:ui-monospace,Consolas,"SF Mono",monospace;
+  --numerals-tabular:tabular-nums; /* @kind other */
+}

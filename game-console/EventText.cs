@@ -31,7 +31,8 @@ internal static class EventText
 
         // Market legs (O/U, BTTS) have no picked TEAM — anchor the narrative on the home side;
         // the market prefix carries the pick, and up/down still tracks the pick's win prob.
-        // Real market-aware vocabulary is Phase 3 (F_0.4.0 plan).
+        // The market-aware vocabulary itself is the count-narration block below: corners/cards
+        // key their mood to the selection (Over/Under), not to the home/away anchor used here.
         bool pickedHome = leg.Selection.Kind != MarketKind.Moneyline
             || leg.Selection.Choice == MarketChoice.Home;
         string picked = Short(pickedHome ? leg.Matchup.Home.Name : leg.Matchup.Away.Name);

@@ -1,0 +1,34 @@
+/* SURETHING — the annotated form guide. Approved 2026-07-28 (DESIGN.md "Colors", element-kit §02).
+   An inverted document: warm lifted olive-black paper, house toner, two player inks, one house mark.
+   THE TWO-INK RULE  wax = money + primary action. biro = anything HE chose. Nothing else borrows either.
+   THE HOUSE-MARK RULE  stamp is the house acting on the document: blocked actions and the dead-leg
+     strike. Never generic error, never decoration, never "bad".
+   THE LIFTED-BLACK RULE  no region is #000000; the laptop stays lighter than every room shadow. */
+:root{
+  --ground:#16160F;
+  --ground-2:#1C1C13;
+  --ground-3:#232319;
+  --rule:#3C3C2C;
+  --rule-soft:#2C2C20;
+  --toner:#D9D4C5;
+  --toner-2:#9C9888;
+  --toner-3:#6E6B5E;
+  --biro:#5E86B8;
+  --biro-deep:#3F6996;
+  --wax:#D9A441;
+  --wax-lit:#F0C066;
+  --wax-deep:#8A6620;
+  --stamp:#B4483A;
+  /* punched-out type on a solid wax field (PLACE TICKET) */
+  --wax-ink:#1A1305;
+  /* the page the 1024x704 screen is presented on in flat mockups — not part of the screen */
+  --offscreen:#0A0B08;
+  /* wash behind a marked form entry */
+  --marked-wash:rgba(94,134,184,.07); /* @kind color */
+  /* hand-laid wax highlight behind the payout figure */
+  --wax-highlight-opacity:.26; /* @kind other */
+  --wax-highlight-rotate:-.5deg; /* @kind other */
+  --wax-highlight-h:6px;
+  /* the document's own toner grain, beneath the room's unified grade */
+  --toner-grain-opacity:.05; /* @kind other */
+}

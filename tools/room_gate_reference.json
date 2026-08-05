@@ -1,0 +1,504 @@
+{
+  "schema_version": 3,
+  "generated_from": "unity\\SBR\\Assets\\Scenes\\Room.unity",
+  "collider_count": 27,
+  "colliders": [
+    {
+      "owner": "Bunk2PostBack",
+      "size": [
+        0.06,
+        1.54,
+        0.06
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        0.53,
+        0.77,
+        1.93
+      ]
+    },
+    {
+      "owner": "Bunk2PostFront",
+      "size": [
+        0.06,
+        1.54,
+        0.06
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        0.53,
+        0.77,
+        0.7
+      ]
+    },
+    {
+      "owner": "Bunk2Slab",
+      "size": [
+        0.8,
+        0.08,
+        1.5
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        0.9,
+        1.54,
+        1.25
+      ]
+    },
+    {
+      "owner": "BunkPostBack",
+      "size": [
+        0.06,
+        1.54,
+        0.06
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        -0.53,
+        0.77,
+        1.22
+      ]
+    },
+    {
+      "owner": "BunkPostFront",
+      "size": [
+        0.06,
+        1.54,
+        0.06
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        -0.53,
+        0.77,
+        -0.62
+      ]
+    },
+    {
+      "owner": "BunkSlab",
+      "size": [
+        0.8,
+        0.08,
+        1.9
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        -0.9,
+        1.54,
+        0.3
+      ]
+    },
+    {
+      "owner": "Ceiling",
+      "size": [
+        2.8,
+        0.1,
+        4.2
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        0.0,
+        2.35,
+        0.0
+      ]
+    },
+    {
+      "owner": "Couch",
+      "size": [
+        0.8,
+        1.2,
+        1.8
+      ],
+      "center": [
+        -0.95,
+        0.6,
+        0.3
+      ],
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "owner": "CouchBackrest",
+      "size": [
+        0.15,
+        0.4,
+        1.8
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        -1.225,
+        0.62,
+        0.3
+      ]
+    },
+    {
+      "owner": "CouchSeat",
+      "size": [
+        0.7,
+        0.42,
+        1.8
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        -0.95,
+        0.21,
+        0.3
+      ]
+    },
+    {
+      "owner": "DeskLegA",
+      "size": [
+        0.05,
+        0.71,
+        0.05
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        0.855,
+        0.355,
+        0.955
+      ]
+    },
+    {
+      "owner": "DeskLegB",
+      "size": [
+        0.05,
+        0.71,
+        0.05
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        1.245,
+        0.355,
+        0.955
+      ]
+    },
+    {
+      "owner": "DeskLegC",
+      "size": [
+        0.05,
+        0.71,
+        0.05
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        0.855,
+        0.355,
+        1.945
+      ]
+    },
+    {
+      "owner": "DeskLegD",
+      "size": [
+        0.05,
+        0.71,
+        0.05
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        1.245,
+        0.355,
+        1.945
+      ]
+    },
+    {
+      "owner": "DeskTop",
+      "size": [
+        0.5,
+        0.04,
+        1.1
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        1.05,
+        0.73,
+        1.45
+      ]
+    },
+    {
+      "owner": "Floor",
+      "size": [
+        2.8,
+        0.1,
+        4.2
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        0.0,
+        -0.05,
+        0.0
+      ]
+    },
+    {
+      "owner": "Laptop",
+      "size": [
+        0.45,
+        0.4,
+        0.5
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        1.15,
+        0.85,
+        1.62
+      ]
+    },
+    {
+      "owner": "LaptopBase",
+      "size": [
+        0.22,
+        0.02,
+        0.32
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        -0.07,
+        -0.09,
+        0.0
+      ]
+    },
+    {
+      "owner": "MiniFridge",
+      "size": [
+        0.5,
+        0.85,
+        0.5
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        -0.95,
+        0.425,
+        -1.65
+      ]
+    },
+    {
+      "owner": "Phone",
+      "size": [
+        0.22,
+        0.15,
+        0.3
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        1.0,
+        0.8,
+        1.15
+      ]
+    },
+    {
+      "owner": "PhoneBody",
+      "size": [
+        0.075,
+        0.008,
+        0.15
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        0.0,
+        -0.046,
+        0.0
+      ]
+    },
+    {
+      "owner": "Stool",
+      "size": [
+        0.35,
+        0.45,
+        0.35
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        0.55,
+        0.225,
+        1.45
+      ]
+    },
+    {
+      "owner": "TVBody",
+      "size": [
+        0.06,
+        0.65,
+        1.1
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        1.265,
+        1.1,
+        0.3
+      ]
+    },
+    {
+      "owner": "WallFar",
+      "size": [
+        2.8,
+        2.3,
+        0.1
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        0.0,
+        1.15,
+        2.05
+      ]
+    },
+    {
+      "owner": "WallLeft",
+      "size": [
+        0.1,
+        2.3,
+        4.0
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        -1.35,
+        1.15,
+        0.0
+      ]
+    },
+    {
+      "owner": "WallNearDoor",
+      "size": [
+        2.8,
+        2.3,
+        0.1
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        0.0,
+        1.15,
+        -2.05
+      ]
+    },
+    {
+      "owner": "WallRight",
+      "size": [
+        0.1,
+        2.3,
+        4.0
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position": [
+        1.35,
+        1.15,
+        0.0
+      ]
+    }
+  ],
+  "human_gates": {
+    "gates": [
+      6,
+      7,
+      8
+    ],
+    "certified_commit": "9e1b4e4",
+    "certified_at": "2026-08-03",
+    "content_fingerprint": "c3716f704b27d4025611dc32f496a9d11ad8887ebacf4b35e8b3648ab901904b",
+    "note": "R22: gates 6-8 have no automated instrument; a human walks the build. Expires automatically when content_fingerprint stops matching."
+  }
+}

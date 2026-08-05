@@ -239,6 +239,40 @@ public sealed class GateData
                 $"{guard.Name} {guard.WonPct:F1}% vs skilled {skilled.WonPct:F1}%"
                 + (martyrWorst != null && martyr != null ? $" (organic martyr {martyr.WonPct:F1}%)" : ""));
 
+        // G7 (market coverage): every shipped MarketKind must be either exercised by the
+        // skilled bot (LegsPlaced > 0) or on the named bot-excluded list below, with a reason —
+        // no silent/magic skip. Each excluded kind also gets a Notes line so the coverage hole
+        // is visible in every report rather than tolerated invisibly. Do NOT add a kind here
+        // just because it currently reads zero legs — "unexercised" and "policy-excluded" are
+        // different things, and conflating them is exactly the failure G7 exists to catch.
+        if (skilled != null)
+        {
+            var botExcluded = new Dictionary<MarketKind, string>
+            {
+                [MarketKind.AnytimeScorer] = "YES-only market, bots do not price it (declared policy)",
+            };
+
+            var uncovered = new List<MarketKind>();
+            foreach (MarketKind kind in Enum.GetValues(typeof(MarketKind)))
+            {
+                if (botExcluded.TryGetValue(kind, out string? reason))
+                {
+                    g.Notes.Add($"BOT-EXCLUDED: {Report.MarketName(kind)} — {reason}");
+                    continue;
+                }
+                bool exercised = skilled.MarketExposure.TryGetValue(kind, out MarketExposure? exposure)
+                    && exposure.LegsPlaced > 0;
+                if (!exercised) uncovered.Add(kind);
+            }
+
+            g.Add("G7", "market coverage: every shipped MarketKind is exercised by the skilled "
+                + "bot (LegsPlaced > 0) or on the named bot-excluded list",
+                uncovered.Count == 0,
+                uncovered.Count == 0
+                    ? "all shipped markets covered"
+                    : $"uncovered: {string.Join(", ", uncovered.ConvertAll(Report.MarketName))}");
+        }
+
         if (audit != null)
         {
             // Statistical control (rev 5 §15): paired-seed CIs, Bonferroni z across the whole
