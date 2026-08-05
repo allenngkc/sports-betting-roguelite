@@ -396,17 +396,34 @@ namespace SBR.Game
                 // screen a player only reaches at the end of a run. Typeface left alone: S46 rules
                 // the name and gives a voice only for icon labels, and this screen is unruled.
                 "SURETHING", _font);
+            // S52 (batch 9): the losing headline was drawn in oxide. Oxide is the house's mark —
+            // blocked actions, and the strike on a dead leg or a lost ticket — and a run's verdict
+            // is a generic "bad" tint, which is the use the law names. **A loss is carried by
+            // value, not by hue**, exactly as the ledger's record row carries it (F5/F6: the word
+            // and the figure are both --toner-3, and only the strike is oxide). The win keeps wax:
+            // it is money, and the DD ruled only the oxide half of this screen.
+            //
+            // Read narrowly on purpose: --toner-3 and no strike. The ledger pairs toner-3 WITH an
+            // oxide strike, but that strike marks a dead record row, and a rule through a 30px
+            // headline is a different device than the one that ruling describes. If the DD wants
+            // the strike here too it is one MakeRule call — I did not assume it.
             Text verdict = LaptopUi.MakeText(_app, "Verdict", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 70f), new Vector2(900f, 60f), 30, TextAnchor.MiddleCenter,
-                won ? MoneyGold : MoneyBad,
+                won ? MoneyGold : Muted,
                 won ? "THE HOUSE BLINKS FIRST" : "THE BOOKIE COLLECTS", _font);
             verdict.horizontalOverflow = HorizontalWrapMode.Overflow;
             Text final = LaptopUi.MakeText(_app, "Final", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 14f), new Vector2(900f, 36f), 18, TextAnchor.MiddleCenter, White,
                 $"FINAL BANK {LaptopUi.Money(run.Bank)}   ·   SEED {run.Rng.RunSeed}", _font);
             final.horizontalOverflow = HorizontalWrapMode.Overflow;
-            LaptopUi.MakeButton(_app, "NewRun", "NEW RUN", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                new Vector2(0f, 58f), new Vector2(300f, 52f), 19, Accent, White,
+            // S52 (batch 9): NEW RUN was a biro-FILLED field with toner type — wrong twice. Biro is
+            // only ever what the player chose (Law Two, the same rule S44 applied to the wallpaper
+            // and the app's own icon glyph), and a screen's phase-advancing action is a wax primary
+            // under S18: wax field, wax-ink type, 2px --wax-deep edge. MakeWaxPrimary builds all
+            // three, and this is the third control on the surface to qualify alongside PLACE TICKET
+            // and LEAVE — NEXT ROUND. It carries the same MoneyGold/WaxInk pair they do.
+            LaptopUi.MakeWaxPrimary(_app, "NewRun", "NEW RUN", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(0f, 58f), new Vector2(300f, 52f), 19, MoneyGold, WaxInk,
                 () => { _host.director.StartNewRun(); Invalidate(); }, _font);
         }
 

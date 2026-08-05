@@ -19,7 +19,7 @@ namespace SBR.Tests.PlayMode
     /// controls and presentation seams as the behavioral PlayMode suite, then renders both a
     /// canvas-aligned reference and the real Main Camera at the laptop's authored focus pose.
     ///
-    /// Twelve states are captured across four UnityTests. The first continues the single-run,
+    /// Fourteen states are captured across five UnityTests. The first continues the single-run,
     /// ticket-carrying flow through six states (the original five plus the shared Ledger/Old
     /// Slips screen reached from the tray). The second boots a fresh run to reach REWARDS —
     /// which requires the deterministic zero-ticket lock seam SureThingRewardsTests.EnterShop
@@ -34,6 +34,9 @@ namespace SBR.Tests.PlayMode
     /// round locks, so the LEDGER can be photographed with several settled rows in as many
     /// different terminal states as the engine will honestly produce — the third fixture's single
     /// row cannot show the record's rhythm across neighbours or the CASHED OUT treatment at all.
+    /// The fifth ends a run twice, once each way, to photograph the run-verdict screen — the last
+    /// destination on this surface that had never been captured at all, and therefore the last one
+    /// whose treatment was readable only from source.
     /// </summary>
     public class SureThingVisualCaptureTests
     {
@@ -447,6 +450,131 @@ namespace SBR.Tests.PlayMode
                 Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
                 Assert.Greater(new FileInfo(path).Length, 0L, $"capture is empty: {path}");
             }
+        }
+
+        /// <summary>
+        /// S52 (batch 9): the run-verdict screen, in both terminal states, so the DD can rule its
+        /// ground. Nobody has ever seen this screen — it is reachable only by ending a run, so no
+        /// capture in the project's life has included it, and every finding about it so far was read
+        /// from source. That is the same blindness that let a BUY-in-biro violation survive weeks of
+        /// review, and it is why the two S52 fixes it does carry (the losing headline off oxide, and
+        /// NEW RUN as a wax primary) are asserted here before either frame is shot.
+        ///
+        /// Both states are forced through the payment schedule rather than played. `RunConfig.Rounds`
+        /// is `Payments.Length`, so a ONE-element schedule makes round 1 the final round: settle it
+        /// with a payment the bank covers and the run is won, with one it cannot and the run is lost.
+        /// No RNG, no eight-round grind, and no dependence on a lucky seed. The real schedule is
+        /// {60, 70, 85, 105, 155, 375, 710, 1350} against a 350 bank, so an honestly-played win needs
+        /// about +2560 of betting profit — not something a capture fixture can produce.
+        ///
+        /// The run is swapped onto the director through its private setter. That is deliberate and it
+        /// is the lesser of two evils: the alternative is a test seam on `RunDirector`, which three
+        /// seats share and which is about to take a 159-commit merge from main. A one-line reflection
+        /// call in a test file cannot conflict; a new property on RunDirector can. `StartNewRun` is
+        /// called first so the director's own sweat bookkeeping is reset rather than left stale.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Capture_the_run_verdict_in_both_terminal_states()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            string outputDirectory = Path.GetFullPath(Path.Combine(
+                Application.dataPath, "..", "..", "..", "artifacts", "surething-ui"));
+            Directory.CreateDirectory(outputDirectory);
+            string runPrefix = DateTime.UtcNow.ToString(
+                "yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture);
+            var capturedPaths = new List<string>();
+
+            // A payment of 60 against the 350 starting bank: met, on the final round, so the run wins.
+            yield return DriveToVerdict(laptop, 60d, Phase.RunWon);
+            Assert.AreEqual("THE HOUSE BLINKS FIRST", TextOf(Required(App(laptop), "Verdict")));
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "13-verdict-run-won", capturedPaths);
+
+            // A payment of 400 against the same bank: a real near miss rather than an absurd one.
+            yield return DriveToVerdict(laptop, 400d, Phase.RunLost);
+            Assert.AreEqual("THE BOOKIE COLLECTS", TextOf(Required(App(laptop), "Verdict")));
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "14-verdict-run-lost", capturedPaths);
+
+            Assert.AreEqual(4, capturedPaths.Count, "two states must emit paired captures");
+            foreach (string path in capturedPaths)
+            {
+                Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
+                Assert.Greater(new FileInfo(path).Length, 0L, $"capture is empty: {path}");
+            }
+        }
+
+        /// <summary>Ends a run in one settle, and refuses to shoot a frame that cannot show what it
+        /// claims to — the two S52 fixes are asserted on the live tree, not assumed from the diff.</summary>
+        private static IEnumerator DriveToVerdict(LaptopScreen laptop, double payment, Phase expected)
+        {
+            laptop.director.StartNewRun($"verdict-{expected}");
+            var run = new Run($"verdict-{expected}",
+                new RunConfig { Payments = new[] { payment } });
+            Assert.AreEqual(1, run.Config.Rounds, "a one-element schedule must make round 1 the last");
+            SetDirectorRun(laptop.director, run);
+
+            laptop.director.LockRound(); // no tickets: FinishAndSettle runs on the spot
+            Assert.AreEqual(expected, run.Phase,
+                $"a payment of {payment} against a bank of {run.Config.StartingBank} must end {expected}");
+            yield return WaitForRebuild();
+
+            Transform app = App(laptop);
+            Transform verdict = Required(app, "Verdict");
+
+            // S52: the loss is carried by value, not by oxide. Oxide is the house's mark, and this
+            // is exactly the assertion whose absence let the violation live unseen on an
+            // unphotographed screen.
+            Color headline = verdict.GetComponent<Text>().color;
+            if (expected == Phase.RunLost)
+            {
+                Assert.IsTrue(SameInk(headline, LaptopOs.Muted),
+                    "the losing verdict is --toner-3; oxide is the house's mark, not a bad tint");
+                Assert.IsFalse(SameInk(headline, LaptopOs.MoneyBad), "the losing verdict is not oxide");
+            }
+            else
+            {
+                Assert.IsTrue(SameInk(headline, LaptopOs.MoneyGold), "the winning verdict is wax");
+            }
+
+            // S18/S52: NEW RUN is a wax primary — wax field, wax ink, and the 2px --wax-deep edge
+            // that MakeWaxPrimary adds and a plain MakeButton does not.
+            Transform newRun = Required(app, "NewRun");
+            Assert.IsTrue(SameInk(newRun.GetComponent<Image>().color, LaptopOs.MoneyGold),
+                "NEW RUN is a wax field — it was a biro-filled one, which is Law Two and S18 at once");
+            Assert.IsTrue(SameInk(Required(newRun, "Label").GetComponent<Text>().color, LaptopOs.WaxInk),
+                "type on wax is wax ink");
+            foreach (string edge in new[] { "WaxEdgeTop", "WaxEdgeBottom", "WaxEdgeLeft", "WaxEdgeRight" })
+                Assert.IsNotNull(Find(newRun, edge), $"NEW RUN is missing its wax edge '{edge}'");
+        }
+
+        /// <summary>Swaps the director's run. See the fixture note above for why this is reflection
+        /// against a private setter rather than a seam added to RunDirector itself.</summary>
+        private static void SetDirectorRun(RunDirector director, Run run)
+        {
+            PropertyInfo property = typeof(RunDirector).GetProperty(
+                nameof(RunDirector.Run), BindingFlags.Instance | BindingFlags.Public);
+            Assert.IsNotNull(property, "RunDirector.Run is gone — this capture drove the run through it");
+            MethodInfo setter = property.GetSetMethod(nonPublic: true);
+            Assert.IsNotNull(setter, "RunDirector.Run has no setter for this capture to drive through");
+            try
+            {
+                setter.Invoke(director, new object[] { run });
+            }
+            catch (TargetInvocationException exception)
+            {
+                throw exception.InnerException ?? exception;
+            }
+        }
+
+        /// <summary>Compares two inks at 8-bit precision — the palette is authored as Color32, so an
+        /// exact float comparison would be asserting against rounding rather than against a token.</summary>
+        private static bool SameInk(Color a, Color b)
+        {
+            Color32 x = a;
+            Color32 y = b;
+            return x.r == y.r && x.g == y.g && x.b == y.b;
         }
 
         private static IEnumerator CaptureState(LaptopScreen laptop, string outputDirectory,
