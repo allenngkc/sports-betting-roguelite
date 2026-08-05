@@ -453,6 +453,55 @@ the laptop, TV or phone body, so R19(a)'s separation has only ever been albedo a
 R19(b)-am the carrying channel is **value**, which is measurable in a frame — so regions for those
 bodies would convert R19(a) from asserted to measured.
 
+### Round 4 (2026-08-04) — three items, all answered by measurement, none by moving a colour
+
+**1. Steel/conduit VALUE, re-measured against T48's neutral black point** — the re-measure C22.1
+deferred. Every surface, screens-dark graded, sorted by L\*:
+
+| L\* | surface |
+|---|---|
+| 9.56 | conduit drop — *metal* |
+| 10.17 | ceiling plaster |
+| 10.78 | wall (right) |
+| **11.30** | **housing face — *metal*** |
+| 11.59 | conduit (full width) — *metal* |
+| 12.33 | floor (aisle) |
+| 13.08 | wall (far) |
+| 13.30 | bunk 1 |
+| 18.83 | conduit ceiling run — *metal*, brighter than every room surface but the mattress |
+
+Metal mean **10.43** vs room mean **11.93** — darker by **1.50 L\***, and the distributions
+**overlap**: the housing sits above both the ceiling and the right wall. R19(b)-am made VALUE one of
+the two channels carrying the institutional read after striking "colder". On this evidence **value
+is carrying very little and FINISH is doing the work.** Routed to the DD, not fixed — darkening the
+albedo to manufacture separation is exactly what R19(b)'s guard forbids.
+
+**2. R19(c) drab green — placed correctly, does not read as green.** The couch is clean (chroma 0.34
+and 0.06, far below the 1.5 floor), so nothing green landed where the ruling excluded it. But both
+bunk frames read **COOL** — post h 266.0 / C 1.62, slab h 267.8 / C 2.71, cool ungraded too. They sit
+in the window's pool and `#3A4230`'s chroma is too low to survive it. Mattress **44.44**, inside
+43.9 ±1, so R19(c)'s hold survives. Boxes eye-confirmed on frame members.
+
+**3. R20 chipped paint + battered desk — both read, provably.** New INFO block measures p95−p5
+luminance spread against a benchmark that is the **ceiling stain**, the surface §1.7 names as the one
+that demonstrably reads at review distance:
+
+| spread | surface |
+|---|---|
+| 4.86 | ceiling (benchmark) |
+| 2.00 | housing paint, flat — below benchmark |
+| **8.49** | housing paint, most varied — **READS** |
+| **10.72** | desk, mid — **READS** |
+| **7.72** | desk, far/dark end — **READS** |
+
+The housing's split is the design working: chips are 8–14% coverage by construction, so most patches
+are intact paint and flat, while a patch containing a chip beats the benchmark by 1.7×. The desk
+reads even away from the lamp pool — sampled twice for that reason, since a lighting gradient raises
+spread just as wear does.
+
+**Spread, not sd/mean, deliberately:** sd is dominated by the 86–92% of a surface that is intact.
+That is how R7 shipped wear changing 1.92% of pixels against a 1.69% baseline and was believed fine.
+
 ### BezelBlack retired — and my finding for it was too strong
 
 `TVBody` wore `BezelBlack #3C3C38`. I reported it as **not visible** and Allen retired it on that
