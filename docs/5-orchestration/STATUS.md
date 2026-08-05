@@ -92,6 +92,15 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-05 cycle 87 · **SureThing slice CLOSED — full studio convergence** —
+  main merged in-branch (221 commits, one conflict), S41 live (cash-out
+  figure in wax, RETURNED a sum), twelve-state re-submit shot+zipped
+  (17.5MB), suites 76/76 + 55/55, editor released. Two merge-trap flags
+  boarded (artifacts/ un-ignored on its branch; duplicate capture number 09).
+  **Every worktree's buildable queue is empty.** Next drag staged (3 files +
+  prompt): LEDGER grant, verdict ground, S49, T60 re-issue, scorer finding,
+  R32 escalation, owning-doc sequencing. Allen's remaining: the drag + the
+  gates re-confirm walk. Reversal: none.
 - 2026-08-05 cycle 86 · **B1 validation GREEN — merge certified** — engine
   178/178 (+18 markets), EditMode 75/75, PlayMode 47/47 (+8) on a real GPU;
   XMLs fresh-verified; DLL restored sha-exact; tree pristine (this pass
