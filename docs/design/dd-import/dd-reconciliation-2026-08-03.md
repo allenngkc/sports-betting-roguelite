@@ -37,3 +37,11 @@ session; all three are already in force by Allen's authority.
    finding — the change IS visible on the design-verified room. Allen ruled
    the retirement stands. The regenerated painterly-read package (new frames)
    is your re-review evidence; reconcile against the room's verified state.
+
+7. **Room round-4 findings (2026-08-04) — two colour-vs-lighting calls:**
+   (a) on the corrected lighting, VALUE is not carrying the institutional
+   read of the metal — FINISH is; rule whether the materials requirement
+   re-weights to finish-led. (b) the drab bunk green does not survive the
+   window's pool; rule whether the green moves, the pool changes, or the
+   placement amends. Both measured, neither is a build fix; details in the
+   room lead's handoff.
