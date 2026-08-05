@@ -183,13 +183,47 @@ R19_REGIONS = {
     # face, both projected from world geometry and then confirmed by eye.
     "laptop body (his)":      (1524, 1020, 1584, 1040),
     "phone body (his)":       (1564, 1085, 1592, 1097),
-    # NO BEZEL REGION, and that is a finding rather than an omission. TVBody
-    # wears BezelBlack #3C3C38 -- the material R19(a)'s premise names as the
-    # shared one -- but it is a slab BEHIND the screen whose only visible part
-    # is a ~6cm border, and RoomArtDressing's riveted housing covers exactly
-    # that border. Every candidate box straddled housing rivets. What the player
-    # reads as "the TV's body" is ArtHousingSteel, so the housing face above is
-    # R19(a)'s real comparand.
+    # R19(c), 2026-08-04: the drab green #3A4230 was placed at §2's placements and
+    # never once measured on a frame. Bunk frames should carry it; the couch must
+    # NOT (the ruling names the couch as excluded). All four boxes confirmed by eye
+    # to sit on frame members / couch fabric, not on the plaster behind them.
+    "bunk1 post (frame)":     ( 929, 1026,  953, 1186),
+    "bunk2 slab (frame)":     (1612,  757, 1732,  793),
+    "couch fabric (not grn)": ( 216,  912,  416,  992),
+    # NO BEZEL REGION, and the reason became a ruling. TVBody wore BezelBlack
+    # #3C3C38 -- the material R19(a)'s premise names as the shared one -- but it
+    # is a slab BEHIND the screen whose only exposed part is a ~6cm border, and
+    # the riveted housing covers that border on the right and bottom. Every
+    # candidate box straddled rivets, so no surface-pure region was obtainable.
+    # NOT the same as invisible: the border IS exposed on the left, and retiring
+    # the material moved 170k pixels in the seated frame. BezelBlack was retired
+    # (Allen, 2026-08-03) and TVBody now wears ArtHousingSteel, so the housing
+    # face above is R19(a)'s comparand and there is nothing else to sample.
+}
+
+# ---------------------------------------------------------------------------
+# R20 -- does a wear surface actually READ?
+#
+# INFORMATIONAL. R12's standing complaint is that surface detail gets asserted
+# rather than measured, and R7 died of exactly that: 1.92% of pixels changed
+# against a 1.69% baseline, i.e. very nearly invisible, discovered only after the
+# work was built. This makes the question numeric.
+#
+# The metric is p95-p5 luminance SPREAD inside one surface, not sd/mean: wear is
+# sparse and hard-edged by design (chips are 8-14% coverage), so sd is dominated
+# by the 86-92% that is intact paint. Spread asks "how far apart are the light
+# and dark parts of this surface", which is nearer to what "reads" means.
+#
+# BENCHMARK, and it is the honest part: the CEILING STAIN. Design doc §1.7 names
+# it as the surface that demonstrably reads at review distance -- weakest normal
+# map in the room, most visible surface, because the fluorescent rakes it at
+# theta ~87deg. So the ceiling's own spread is the bar. Below it is not reading.
+R20_REGIONS = {
+    "ceiling stain (BENCHMARK)":  ( 700,   60, 1150,  300),
+    "housing paint, flat":        (1900, 1100, 2020, 1190),
+    "housing paint, most varied": (1780, 1180, 1840, 1240),
+    "desk, mid":                  (1560, 1130, 1690, 1210),
+    "desk, far/dark end":         (1690, 1150, 1820, 1230),
 }
 
 # Below this chroma a hue angle is not meaningful -- it is the direction of a
@@ -1525,6 +1559,46 @@ def main():
             detail.append(
                 "reported, never judged: cool metal is the institutional palette landing, not a "
                 "law 1.1 failure -- §1.1 names a blue-tinted ROOM, and these are dark fixtures.")
+            # --- R20: does the wear read? ------------------------------------
+            bench = None
+            r20 = []
+            for name, box in R20_REGIONS.items():
+                vals = []
+                x0, y0, x1, y1 = box
+                pix = graded.load()
+                for yy in range(y0, y1):
+                    for xx in range(x0, x1):
+                        r, gg, b = pix[xx, yy]
+                        vals.append(0.2126 * r + 0.7152 * gg + 0.0722 * b)
+                vals.sort()
+                n = len(vals)
+                sp = vals[int(0.95 * n)] - vals[int(0.05 * n)]
+                mean = sum(vals) / n
+                if "BENCHMARK" in name:
+                    bench = sp
+                r20.append((name, mean, sp))
+            detail20 = []
+            for name, mean, sp in r20:
+                verdict = "" if bench is None or "BENCHMARK" in name else (
+                    "  READS" if sp >= bench else "  below benchmark")
+                detail20.append(f"{name:28s} mean={mean:6.2f} spread(p95-p5)={sp:6.2f}{verdict}")
+            detail20.append(
+                "benchmark is the ceiling stain, the surface §1.7 names as the one that "
+                "demonstrably reads at review distance. Sparse wear is expected to be flat in "
+                "most patches; what matters is the contrast where it lands.")
+            results.append(GateResult(
+                "R20", "wear reads? (informational)", "INFO",
+                "-", "chipped paint + battered desk vs the ceiling benchmark", detail20,
+                blind_spot="reports luminance spread inside fixed boxes on the screens-dark "
+                           "render. It cannot tell WHY a surface is varied -- a lighting gradient, "
+                           "an edge or a neighbouring object inside the box all raise spread just "
+                           "as wear does, which is why the desk is sampled twice, away from the "
+                           "lamp pool. It says nothing about whether the wear is in a camera's "
+                           "frustum in the three review poses (R7's actual failure), nothing about "
+                           "hue, and nothing about whether the wear is well PLACED -- only whether "
+                           "it is visible where it was put.",
+            ))
+
             results.append(GateResult(
                 "R19", "metal cast (informational)", "INFO",
                 "-", "steel + conduit, surface-pure boxes", detail,
