@@ -82,8 +82,33 @@ CAPTURE_NAMES = ["standing-overview.png", "seated-tv-couch.png", "focused-laptop
 CAPTURE_SIZE = (2560, 1440)
 
 R9A_IMAGE = "standing-overview.png"
-R9A_BOX = (1480, 670, 1790, 740)          # bunk 2 mattress
-R9A_EXPECTED_MEAN = 43.9
+
+# RE-BASELINED 2026-08-04 (Allen, via the orchestrator) onto a surface-pure box.
+#
+# The old box was (1480, 670, 1790, 740) and it was NOT surface-pure: sd/mean
+# 0.398, i.e. 2.6x the 0.15 bar this harness applies to every other region.
+# Confirmed by eye and by the committed evidence frame
+# (artifacts/room-visual-pass/gate-runs/2026-08-04-mattress-box-evidence.png):
+# it spanned the mattress, the frame rail below it, AND a wide area of lamp-lit
+# plaster to its right. The ratified 43.9 was therefore substantially a reading
+# of bright wall, not bedding.
+#
+# BLIND SPOT OF THE OLD BOX, recorded here because §1.4's history depends on it:
+# anything that brightened that plaster raised the number without touching the
+# mattress. Room-design §1.4 records FOUR corner-lighting attempts reverted
+# against this test. Those reversions were made on an instrument that could not
+# separate "bunk 2 is lit" from "the wall beside bunk 2 is lit" -- the mattress
+# would also have brightened, so the reversions are not thereby wrong, but the
+# number could not tell the two apart and no one knew that at the time.
+#
+# The new box is mattress only, sd/mean 0.016, eye-confirmed per C27. Baseline
+# 38.3 is its measured value and is stable across every capture of this pose:
+# batch9 38.29, batch8 38.38, batch6 38.37, batch5 37.54 -- all inside +/-1.0,
+# which is the ratified tolerance and is unchanged. The LAW is unchanged too:
+# bunk 2 stays legible-as-occupied and must not be lit. Only the instrument moved.
+R9A_BOX = (1582, 686, 1652, 710)          # bunk 2 mattress, surface-pure
+R9A_OLD_BOX = (1480, 670, 1790, 740)      # superseded, impure; reported for continuity
+R9A_EXPECTED_MEAN = 38.3
 R9A_TOLERANCE = 1.0
 
 R9B_IMAGE = "standing-overview.png"
@@ -951,6 +976,28 @@ def region_cast(img, box, step=2):
     return lstar, chroma, hue
 
 
+# R32 (2026-08-04): cast_verdict answers ONE question -- is law 1.1's blue failure
+# mode present -- so it has a WARM band, a COOL band, and calls everything between
+# them "neutral". That is correct for the law and useless for the palette: drab
+# green measured chroma 14.73 at hue 152.9deg on the lit frame and was reported
+# NEUTRAL, because 152deg is in the gap. A ratified palette colour was reading
+# strongly and the instrument could not say so, which nearly cost the room a
+# finding of "the green does not read".
+#
+# hue_name is DESCRIPTIVE ONLY and deliberately separate: cast_verdict still
+# decides R23, unchanged, because widening a pass/fail band to make a colour
+# visible would be exactly the kind of instrument edit C27 and S51 warn about.
+def hue_name(chroma, hue):
+    if chroma < R23_CHROMA_FLOOR:
+        return "achromatic"
+    for lo, hi, label in ((20, 70, "orange/amber"), (70, 110, "warm yellow"),
+                          (110, 175, "GREEN"), (175, 200, "teal"),
+                          (200, 300, "cool blue"), (300, 340, "magenta")):
+        if lo <= hue < hi:
+            return label
+    return "red"
+
+
 def cast_verdict(chroma, hue):
     """WARM / COOL / neutral, refusing to call a hue it cannot support."""
     if chroma < R23_CHROMA_FLOOR:
@@ -1505,14 +1552,16 @@ def main():
         # number those decisions were made on, which is a DD/Allen call and not a
         # lead's. Both readings are reported so the gate keeps its ratified verdict
         # while the true mattress value is visible beside it.
-        R9A_PURE_SUBBOX = (1582, 686, 1652, 710)
-        r9a_pure = region_mean_luminance(current_img, R9A_PURE_SUBBOX)
+        r9a_old = region_mean_luminance(current_img, R9A_OLD_BOX)
         r9a_detail = [
-            f"measured on {R9A_IMAGE}, box {R9A_BOX}",
-            f"WARNING: the ratified box is NOT surface-pure (sd/mean 0.398 vs the 0.15 bar) -- "
-            f"it spans mattress + frame slab + lamp-lit wall",
-            f"mattress alone, pure sub-box {R9A_PURE_SUBBOX} (sd/mean 0.016) = {r9a_pure:.2f}, "
-            f"{r9a_mean - r9a_pure:+.2f} from the ratified figure; escalated, not changed",
+            f"measured on {R9A_IMAGE}, box {R9A_BOX} (mattress only, sd/mean 0.016, eye-confirmed per C27)",
+            f"RE-BASELINED 2026-08-04: the previous box {R9A_OLD_BOX} was NOT surface-pure "
+            f"(sd/mean 0.398) -- it spanned mattress + frame rail + lamp-lit plaster, so the old "
+            f"43.9 was substantially a reading of wall. That box reads {r9a_old:.2f} here.",
+            "BLIND SPOT OF THE OLD BOX: anything brightening that plaster raised the number "
+            "without touching the mattress. §1.4 records four corner-lighting attempts reverted "
+            "against it; the instrument could not separate 'bunk 2 is lit' from 'the wall beside "
+            "it is lit'. The law is unchanged - only the instrument moved.",
         ]
         if conformance_dir is not None:
             try:
@@ -1681,7 +1730,7 @@ def main():
             for name, box in R19_REGIONS.items():
                 lstar, chroma, hue = region_cast(graded, box)
                 line = (f"{name:24s} L*={lstar:5.2f} chroma={chroma:5.2f} "
-                        f"hue={hue:6.1f}deg  {cast_verdict(chroma, hue)}")
+                        f"hue={hue:6.1f}deg  {cast_verdict(chroma, hue):7s} {hue_name(chroma, hue)}")
                 if ungraded is not None:
                     uc, uh = region_cast(ungraded, box)[1:]
                     line += f"   | ungraded chroma={uc:5.2f} hue={uh:6.1f}deg {cast_verdict(uc, uh)}"
