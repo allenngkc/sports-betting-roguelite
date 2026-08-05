@@ -92,6 +92,13 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-04 cycle 80 · **Overnight Orca restart recovered** — all four lead
+  sessions died with the restart; revived via `claude --continue` with bypass
+  (full context restored, /effort max re-applied, all four confirmed booted).
+  New handles registered. Watchers re-armed (unified v6: busy→idle + staged
+  drafts; heartbeat). Validation agent resumed mid-run and healthy: engine
+  160/160, DLL cmp-identical, warm compile importing under its own watcher;
+  EditMode → PlayMode follow. Reversal: none.
 - 2026-08-03 cycle 79 · **ROOM SLICE ROUND 3 MERGED — `55f4a63`** — clean
   checklist: suites green with proof files (EditMode 73/73, PlayMode 20/20
   slice-filtered), 83 files all inside room ownership, 0 code conflicts;
