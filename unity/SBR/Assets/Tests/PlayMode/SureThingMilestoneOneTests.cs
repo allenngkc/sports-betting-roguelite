@@ -145,7 +145,10 @@ namespace SBR.Tests.PlayMode
             var failures = new StringBuilder();
 
             AssertTextFloor(Required(app, "BoardTitle"), 13, failures);
-            AssertTextFloor(Required(margin, "Rule"), 13, failures);
+            // The margin's "Rule" status line was DELETED by S50 §1 — it restated the board header,
+            // which S37 forbids. Its fact-floor duty passes to the header count, which is the
+            // margin's other 13px product-fact line.
+            AssertTextFloor(Required(margin, "Count"), 13, failures);
             AssertTextFloor(Required(margin, "Empty"), 13, failures);
             AssertTextFloor(Required(margin, "Combined"), 13, failures);
             AssertMinTarget(Required(Required(app, "Matchup0"), "AwayOdds"), failures);

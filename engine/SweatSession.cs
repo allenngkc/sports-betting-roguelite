@@ -323,6 +323,10 @@ public sealed class SweatSession
 
         _creditBank(offer.Value);
         _ticket.State = TicketState.CashedOut;
+        // Retain the figure BEFORE the session ends (S36). The offer is a live quote off the
+        // remaining legs; once _complete is set it can never be recomputed, and the run's settled
+        // record would otherwise have no honest way to print money the player actually banked.
+        _ticket.CashedOutFor = offer.Value;
         _complete = true;
         _effects.OnTicketRealized(_ticket);
     }

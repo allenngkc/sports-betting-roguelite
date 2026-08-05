@@ -72,6 +72,19 @@ namespace SBR.Tests.PlayMode
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "02-entry-selected-wide-ring", capturedPaths);
 
+            // C17: no rebuild verdict on a state no capture shows. Every previously captured ENTRY
+            // state is GOALS, which fits its body and therefore correctly renders NO position rail
+            // — so the scrolling branch and the S27 rail had no photograph at all. PLAYERS is the
+            // one shipped destination whose list overflows (14 scorer offers against a body that
+            // shows ~7 at the 54px row), so this is the state that actually exercises S25's scroll
+            // and S27's track-and-thumb.
+            Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTabPLAYERS"));
+            yield return WaitForRebuild();
+            Assert.IsNotNull(Required(App(laptop), "PositionRailTrack"),
+                "PLAYERS overflows its body, so S27's rail must be present");
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "02b-entry-players-scrolling-rail", capturedPaths);
+
             Invoke(Required(App(laptop), "BackToForm"));
             yield return WaitForRebuild();
             Assert.AreEqual(SportsbookApp.Tab.Lobby, laptop.Os.CurrentTab);
@@ -84,8 +97,10 @@ namespace SBR.Tests.PlayMode
             Transform margin = Required(App(laptop), "WorkingMargin");
             Assert.AreEqual(1, laptop.director.Run.Tickets.Count);
             Assert.AreEqual(0, laptop.Slip.Picks.Count);
+            // E-07 moved staged receipts out of the margin into the 700px sheet, so this looks
+            // beneath the app root rather than the margin (screens.jsx:50-57).
             Assert.IsNotNull(Required(
-                Required(margin, "StagedTickets"), "StagedTicket0"));
+                Required(App(laptop), "StagedTickets"), "StagedTicket0"));
             Assert.IsTrue(Required(margin, "Lock").GetComponent<Button>().interactable);
             Assert.IsNull(Find(margin, "LockReason"));
             yield return CaptureState(laptop, outputDirectory, runPrefix,
@@ -142,7 +157,62 @@ namespace SBR.Tests.PlayMode
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "06-ledger", capturedPaths);
 
-            Assert.AreEqual(12, capturedPaths.Count, "six states must emit paired captures");
+            Assert.AreEqual(14, capturedPaths.Count, "seven states must emit paired captures");
+            foreach (string path in capturedPaths)
+            {
+                Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
+                Assert.Greater(new FileInfo(path).Length, 0L, $"capture is empty: {path}");
+            }
+        }
+
+        /// <summary>C17: no rebuild verdict on a state no capture shows. B1 rebuilt the margin's
+        /// leg row to the kit's two-line MarginLeg, and the state that decides whether that rebuild
+        /// is correct is a FULL slip — which no capture showed. Allen capped MaxLegs at 4
+        /// (2026-08-02) to close the overflow; this photographs the cap actually holding. Fills to
+        /// run.Config.MaxLegs rather than a literal 4, so raising the dial changes what is captured
+        /// instead of quietly capturing a state that is no longer the maximum. Its own Boot(),
+        /// because the other two capture flows each depend on their starting ticket count.</summary>
+        [UnityTest]
+        public IEnumerator Capture_the_working_margin_at_the_legal_maximum_leg_count()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            string outputDirectory = Path.GetFullPath(Path.Combine(
+                Application.dataPath, "..", "..", "..", "artifacts", "surething-ui"));
+            Directory.CreateDirectory(outputDirectory);
+            string runPrefix = DateTime.UtcNow.ToString(
+                "yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture);
+            var capturedPaths = new List<string>();
+
+            int maxLegs = laptop.director.Run.Config.MaxLegs;
+            for (int i = 0; i < maxLegs; i++)
+            {
+                Invoke(Required(Required(App(laptop), "Matchup" + i), "AwayOdds"));
+                yield return WaitForRebuild();
+            }
+
+            // S51 owes a frame of THIS state specifically: a full slip standing on top of a staged
+            // receipt is where the margin's 2.6px reservation overrun occurs, and no capture showed
+            // it — 09-margin-max-legs staged no ticket. The frame is not here to illustrate the
+            // number; it is here because the next person hunting the 2.6px owner needs to see the
+            // state, and because C17 says the capture settles what a source read only suggests.
+            // Placing clears the working slip, so refill to the cap afterwards.
+            Invoke(Required(Required(App(laptop), "WorkingMargin"), "Place"));
+            yield return WaitForRebuild();
+            Assert.Greater(laptop.director.Run.Tickets.Count, 0,
+                "a receipt must actually be staged for this to be the overrun state");
+            for (int i = 0; i < maxLegs; i++)
+            {
+                Invoke(Required(Required(App(laptop), "Matchup" + i), "AwayOdds"));
+                yield return WaitForRebuild();
+            }
+            Assert.AreEqual(maxLegs, laptop.Slip.Picks.Count,
+                "the captured state must actually be a full slip");
+
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "09-margin-max-legs-staged-receipt", capturedPaths);
+
+            Assert.AreEqual(2, capturedPaths.Count, "one state must emit paired captures");
             foreach (string path in capturedPaths)
             {
                 Assert.IsTrue(File.Exists(path), $"capture missing: {path}");

@@ -29,7 +29,15 @@ public sealed class RunConfig
 
     public int MaxTicketsPerRound { get; set; } = 3;
     public int MatchupsPerSlate { get; set; } = 6;
-    public int MaxLegs { get; set; } = 6;
+    /// <summary>Max legs on one ticket. Allen, 2026-08-02: lowered 6 → 4. The working margin
+    /// renders a leg as the kit's two-line MarginLeg, and at 6 legs that overflowed the fixed
+    /// 324×530 panel — capping the slip closes the overflow at the source rather than shrinking
+    /// type below the fact floor or adding a scroll the reference margin does not have.
+    /// Bot-neutral by construction: skilled already caps at 3 (4 with Comp'd Suite) and random at
+    /// min(4, MaxLegs), so no strategy loses a shape it was using.
+    /// The container's correctness must NOT depend on this dial's value (S25's general clause) —
+    /// the margin-fits invariant is guarded by a test that reads MaxLegs rather than assuming 4.</summary>
+    public int MaxLegs { get; set; } = 4;
     public int PriorGames { get; set; } = 9;
     public double MinTrueProb { get; set; } = 0.25;
     public double MaxTrueProb { get; set; } = 0.75;
