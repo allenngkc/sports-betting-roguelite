@@ -250,11 +250,14 @@ namespace SBR.Tests.PlayMode
                 : ticket.State == TicketState.CashedOut ? "CASHED OUT" : "OPEN";
 
         private static string PayoutText(Ticket ticket)
-            // S36: the engine retains no cash-out amount; the money column prints an honest
-            // absence (an em dash), never a fabricated $0 and never "AMOUNT NOT RETAINED".
+            // S41: S36's designed absence expired when engine retention landed. A cashed-out
+            // ticket's retained figure PRINTS; the em dash is left only for a record whose amount
+            // is genuinely unknowable, which is an absence rather than a missing feature.
             => ticket.State == TicketState.Won ? Money(ticket.PotentialPayout)
                 : ticket.State == TicketState.Lost ? Money(0)
-                : "—";
+                : ticket.State == TicketState.CashedOut && ticket.CashedOutFor.HasValue
+                    ? Money(ticket.CashedOutFor.Value)
+                    : "—";
 
         // S43: was a hand-kept copy of the render mapping (VOID/WON/LOST/PENDING) that could drift
         // out of sync with production the same way F7's comment above worries about for leg

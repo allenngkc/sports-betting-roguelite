@@ -1844,9 +1844,25 @@ namespace SBR.Game
             RectTransform margin = LaptopUi.MakePanel(_root, "LedgerMargin", new Vector2(1f, 1f),
                 new Vector2(1f, 1f), new Vector2(0f, -140f), new Vector2(324f, 530f), LaptopOs.Ink);
 
+            // Retention consumed. This read `run.Tickets`, which `ExitShop` clears every round, so a
+            // player who bet in rounds 1-3 and opened the LEDGER in round 4 met an empty screen
+            // captioned SETTLED TICKETS · THIS RUN — the screen contradicting itself, and the defect
+            // the engine work was approved to fix. `run.SettledTickets` is the retained history.
+            //
+            // Both lists, not just the retained one. The engine folds a round's tickets into
+            // SettledTickets at Settle(), so a ticket that goes terminal mid-round — a cash-out, or
+            // a dead-leg loss (S43) — is in `Tickets` and not yet in `SettledTickets`. Reading only
+            // the retained list would make those vanish from the ledger until the round settled,
+            // which is a new defect traded for the old one. De-duplicated by reference because
+            // after Settle() and before ExitShop() the same tickets are legitimately in both.
             var settled = new List<Ticket>();
+            for (int i = 0; i < run.SettledTickets.Count; i++)
+                if (run.SettledTickets[i].State != TicketState.Open) settled.Add(run.SettledTickets[i]);
             for (int i = 0; i < run.Tickets.Count; i++)
-                if (run.Tickets[i].State != TicketState.Open) settled.Add(run.Tickets[i]);
+            {
+                Ticket live = run.Tickets[i];
+                if (live.State != TicketState.Open && !settled.Contains(live)) settled.Add(live);
+            }
 
             // S31: LedgerScreen()'s own 44px --ground-2 board header — SETTLED TICKETS · THIS RUN
             // left, N RECORDS right-flushed, a --rule bottom border. This is now the one place on
@@ -1884,9 +1900,10 @@ namespace SBR.Game
                 new Vector2(700f, ledgerViewportHeight), out RectTransform scrollHost,
                 out ScrollRect scrollRect);
 
-            int cashedCount = 0;
+            // S41: renamed from knownWinPayout — it is no longer wins-only. A retained cash-out is
+            // money the player got back and belongs in RETURNED with the payouts.
             double settledStake = 0.0;
-            double knownWinPayout = 0.0;
+            double knownReturned = 0.0;
             float y = -8f; // top pad inside the scroll content (was -52 = -44 header - 8 pad)
             for (int i = 0; i < settled.Count; i++)
             {
@@ -1899,9 +1916,12 @@ namespace SBR.Game
                 y -= LedgerEntryHeight(ticket);
                 settledStake += ticket.Stake;
                 if (ticket.State == TicketState.Won)
-                    knownWinPayout += ticket.PotentialPayout;
-                else if (ticket.State == TicketState.CashedOut)
-                    cashedCount++;
+                    knownReturned += ticket.PotentialPayout;
+                // S41: a retained cash-out is a known return and joins the sum. A record whose
+                // amount is genuinely unknowable simply contributes nothing — it does not suppress
+                // the total, and its own cell carries the absence (BuildLedgerTicket).
+                else if (ticket.State == TicketState.CashedOut && ticket.CashedOutFor.HasValue)
+                    knownReturned += ticket.CashedOutFor.Value;
             }
             LaptopUi.FinishScrollBody(scrollHost, scrollRect, content, -y, ledgerViewportHeight);
             if (settled.Count == 0)
@@ -1916,7 +1936,7 @@ namespace SBR.Game
                     _font);
             }
 
-            BuildRecordSummary(margin, settled.Count, cashedCount, settledStake, knownWinPayout);
+            BuildRecordSummary(margin, settled.Count, settledStake, knownReturned);
 
             // F2: the same sheet/margin seam every screen carries — see BuildSlip's SheetDivider.
             // Built LAST here, and only here, for a reason worth keeping: BuildRecordSummary above
@@ -2114,25 +2134,37 @@ namespace SBR.Game
             string state = ticket.State == TicketState.Won ? "WON"
                 : ticket.State == TicketState.Lost ? "LOST"
                 : ticket.State == TicketState.CashedOut ? "CASHED OUT" : "OPEN";
-            // S36: the engine retains no cash-out amount. The absence is honest — never a
-            // fabricated $0 and never "AMOUNT NOT RETAINED" — so the RETURNED value prints a plain
-            // em dash, coloured toner-3 below, until engine retention lands.
+            // S41: S36's designed absence expires here. Engine retention landed (`9e55d0d`, on this
+            // tree since the merge), so `Ticket.CashedOutFor` carries the figure and it PRINTS —
+            // never the em dash that stood in for it, and never the fabricated $0 that S36 refused.
+            //
+            // The em dash survives for exactly one case: a record whose amount is genuinely
+            // unknowable (`CashedOutFor` null). That is still an absence and still prints honest.
+            // S41 puts it in the record's own cell and nowhere else — see the RETURNED total.
             string returnedValue = ticket.State == TicketState.Won ? LaptopUi.Money(ticket.PotentialPayout)
                 : ticket.State == TicketState.Lost ? LaptopUi.Money(0)
-                : "—";
+                : ticket.State == TicketState.CashedOut && ticket.CashedOutFor.HasValue
+                    ? LaptopUi.Money(ticket.CashedOutFor.Value)
+                    : "—";
             // F5/F6 / LedgerEntry.jsx: `color: won ? var(--wax) : var(--toner-3)` applies to BOTH
             // the terminal word and the RETURNED value. S15 resolved LOST more precisely: oxide
             // belongs only to the strike drawn ACROSS the word (LedgerDeadStrike, below,
             // unchanged), never to a glyph fill — the word and the RETURNED value both recede to
             // toner-3 (LaptopOs.Muted) instead.
-            // S36: CASHED OUT is wax, paired with WON exactly as the kit pairs them, on the
-            // terminal word only. That pairing stops at RETURNED — an em dash is an absence, not a
-            // fact to celebrate, so it stays toner-3 even beside a wax word.
+            // S36 paired CASHED OUT with WON in wax on the terminal word only, and held RETURNED at
+            // toner-3 because "an em dash is an absence, not a fact to celebrate".
+            //
+            // S41: now that the figure prints, that reasoning applies to the em dash rather than to
+            // every cashed-out row. A retained cash-out amount is money the player actually got
+            // back, so it takes wax with its word, exactly as WON's payout does. Only the
+            // unknowable case still recedes to toner-3 — the absence dims, the fact does not.
             Color stateColor = ticket.State == TicketState.Won || ticket.State == TicketState.CashedOut
                 ? LaptopOs.MoneyGold
                 : ticket.State == TicketState.Lost ? LaptopOs.Muted : LaptopOs.TonerSecondary;
             bool lost = ticket.State == TicketState.Lost;
-            Color returnedColor = lost || ticket.State == TicketState.CashedOut ? LaptopOs.Muted : stateColor;
+            bool unknowableReturn =
+                ticket.State == TicketState.CashedOut && !ticket.CashedOutFor.HasValue;
+            Color returnedColor = lost || unknowableReturn ? LaptopOs.Muted : stateColor;
 
             // S39: one baseline. Every cell below keeps its own snug, top-anchored box (unchanged
             // sizes from before this ruling) but is re-centred on y=-21, this band's own midpoint
@@ -2281,8 +2313,8 @@ namespace SBR.Game
         /// MarginRows and one note, in the kit's own order (app.jsx:94-97): TICKETS SETTLED,
         /// STAKED, RETURNED, then the note. Replaces the previous seven-block panel (a toner
         /// header, a soft rule, and five more text blocks) that carried no biro anywhere.</summary>
-        private void BuildRecordSummary(RectTransform margin, int settled, int cashed, double stake,
-            double knownPayout)
+        private void BuildRecordSummary(RectTransform margin, int settled, double stake,
+            double returned)
         {
             RectTransform summary = LaptopUi.MakePanel(margin, "RecordSummary", new Vector2(0f, 1f),
                 new Vector2(0f, 1f), Vector2.zero, new Vector2(324f, 530f), LaptopOs.Ink);
@@ -2303,14 +2335,19 @@ namespace SBR.Game
                 settled.ToString(CultureInfo.InvariantCulture), LaptopOs.White, -RecordHeaderHeight);
             BuildRecordRow(summary, "RecordRowStaked", "STAKED", LaptopUi.Money(stake), LaptopOs.White,
                 -(RecordHeaderHeight + RecordRowHeight));
-            // S36: the engine retains no cash-out amount, so once a settled run includes even one
-            // cashed-out ticket, the true RETURNED total is missing an unknown figure and cannot be
-            // honestly summed. The absence prints as a plain em dash in --toner-3 — never a
-            // fabricated total and never $0 — until engine retention lands (approved, landing via
-            // another seat).
-            string returnedValue = cashed > 0 ? "—" : LaptopUi.Money(knownPayout);
-            Color returnedColor = cashed > 0 ? LaptopOs.Muted : LaptopOs.MoneyGold;
-            BuildRecordRow(summary, "RecordRowReturned", "RETURNED", returnedValue, returnedColor,
+            // S41: **this total never prints an em dash.** Under S36 a single cashed-out ticket
+            // blanked the whole row, because the run then held an unknown figure and the sum could
+            // not be honest. Retention removed the unknown — cash-out amounts are retained now — so
+            // the sum is the sum, and it prints in wax like the money it is.
+            //
+            // The ruling also settled the case retention does not cover. If a record whose amount is
+            // genuinely unknowable ever exists, **the total still prints the known sum** and the
+            // absence stays in that record's own cell (BuildLedgerTicket). An absence in one row is
+            // a fact about that row; blanking the total makes it a fact about the whole run, which
+            // it is not. That is why this no longer takes a `cashed` count — nothing is left for it
+            // to decide.
+            BuildRecordRow(summary, "RecordRowReturned", "RETURNED", LaptopUi.Money(returned),
+                LaptopOs.MoneyGold,
                 -(RecordHeaderHeight + RecordRowHeight * 2f));
 
             // PassiveMargin's one note (app.jsx:97) — bottom-anchored per marginShell's fixed
