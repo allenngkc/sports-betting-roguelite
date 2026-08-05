@@ -92,6 +92,18 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-04 cycle 84 · **Markets merge attempt ABORTED — checklist miss,
+  mine** — real content conflicts in three shared app files (LaptopOs.cs,
+  SportsbookApp.cs, SureThingLedgerTests.cs): markets-2 forked before
+  SureThing round 2 landed, and my drift scan + merge-tree pre-check both
+  missed it (the same too-narrow path grep also let those files through
+  unflagged in room's merge — process defect logged; future pre-checks use a
+  real merge dry-run, not merge-tree grep). Main restored cleanly to
+  `a31a032`; the aborted merge changed nothing. Re-baseline routed to the
+  markets lead (merge main in-branch, resolve keeping both intents, suites
+  green, MERGE READY again — editor retained). Known inert DLL stat-cache
+  line persists post-abort, bytes cmp-identical to HEAD. Reversal: nothing to
+  reverse — no merge landed.
 - 2026-08-04 cycle 83 · **Batch 9 transcribed + all lanes dispatched** — the
   decisive session: T41/T48/T49/R25/S8 all closed or granted (bloom 1.4
   SEALED); S51 signs an expiring deviation and **unblocks the markets merge
