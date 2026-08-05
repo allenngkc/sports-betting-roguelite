@@ -74,16 +74,16 @@ rebuild is large; DD sequencing preference welcome.
 Everything in the old 13-item list is ruled as of batch 7 (see REGISTER.md
 transcription log). Live queue now:
 
-1. **Constitution** — C24: drafted next DD session; precondition (batches 5+7
-   in the tables) met 2026-08-02.
-2. **LEDGER Design-verified re-submit** — after S38–S43/S34/S37-live land; same
-   twelve-state set.
-3. **S8 re-review** — after S48's chrome fold, against a desktop frame.
-4. **T48 re-shoots** (screens-dark + grade-bypassed, after T41), **T49 bloom
-   re-run** (after T41), **markets' T47-fixed frames**, **R23 set after R19**
-   (for R25).
-5. Owning docs per C24 gates: laptop after S34/S37/S38–S41 + desktop items;
-   TV after T41/T46; room takes R17+R27 corrections in one pass (R27 done).
+Batch 9 (2026-08-04) cleared the queue: constitution approved+canon, S8
+re-verified, grade/bloom/painterly all closed. Live queue now:
+
+1. **Owed captures:** markets' staged-receipt overrun; SureThing's
+   RunWon/RunLost; LEDGER twelve-state re-submit (post-markets-merge).
+2. **S53's ground** ruling — waits on the RunWon/RunLost frames.
+3. **T60** — named in batch 9's header with no body section; re-issue or strike.
+4. **Owning docs (C26):** TV's after T58; SureThing's after S53 settles.
+5. **Room gates 6–8** — VOID by fingerprint expiry (mechanism correct);
+   awaiting Allen's re-confirmation walk or standing-verdict ruling.
 
 ## Cleared 2026-07-31, batch 2 (transcribed to REGISTER.md by the orchestrator)
 

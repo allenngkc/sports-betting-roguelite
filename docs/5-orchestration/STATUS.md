@@ -92,6 +92,17 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-04 cycle 83 · **Batch 9 transcribed + all lanes dispatched** — the
+  decisive session: T41/T48/T49/R25/S8 all closed or granted (bloom 1.4
+  SEALED); S51 signs an expiring deviation and **unblocks the markets merge
+  today** (diagnosis falsified — the lead's principled refusal vindicated on
+  fact, fifth-vacuous-gate averted); T58 new (gold on the score at the goal
+  flash, ranks above T42); T59 suspension gates the input; R31 finish-led;
+  R32/R33 sequenced behind the mattress 37.36-vs-44.44 box discrepancy; R34
+  "not measurable ≠ not visible" on the record; C27/C28 laws; kit amendment
+  signed; gates 6–8 VOID by fingerprint expiry (Allen re-confirm queued).
+  Header/body drift flagged: T60 named, no body. Markets records deviation +
+  capture → MERGE READY expected. Reversal: rulings are DD canon.
 - 2026-08-04 cycle 82 · **TV window closed; ONE-SESSION DRAG READY** — TV shot
   everything: the screens-dark/bypassed pair, bloom A/B (101 frames/arm, five
   seeds, arms in filenames; harness assert defect disclosed C25-form, frames
