@@ -92,6 +92,15 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-04 cycle 82 · **TV window closed; ONE-SESSION DRAG READY** — TV shot
+  everything: the screens-dark/bypassed pair, bloom A/B (101 frames/arm, five
+  seeds, arms in filenames; harness assert defect disclosed C25-form, frames
+  unaffected), SureThing captures 3/3 green with graphics (confirms
+  -nographics was the whole prior cause). Four zips staged, all <20MB. Final
+  bundle `dd-docs-2026-08-04.zip` (100KB) + prompt cover the complete docket:
+  2.6px unblock, grade+bloom verdicts, suspension input, S8 refold, painterly
+  read + room's two new findings, verdict screen, seven reconciliations.
+  Drag = 7 files, one turn. Reversal: none.
 - 2026-08-04 cycle 81 · **Room merge VALIDATED — fully green** — engine
   160/160, compile 0 errors, EditMode 75/75, PlayMode 39/39 WITH graphics
   (TV's 3 environmental -nographics failures did not recur), results XMLs
