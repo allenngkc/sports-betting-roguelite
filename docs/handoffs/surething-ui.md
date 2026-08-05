@@ -1,13 +1,13 @@
 # SureThing UI — re-seat state
 
-**STATUS 2026-08-03 · last code commit `3a85f23` · tree clean · EditMode 76/76 · PlayMode 46/46**
-- **Done:** the desktop block, complete — one name everywhere, wallpaper de-branded, icons speak installed/not-installed, chrome folded (S46, S44+S45, S47, S48).
-- **Now:** nothing in flight, and nothing else is this seat's (orchestrator, 2026-08-03).
-- **Need — DD:** S8 re-verification, evidence zipped for the drag from `dd-import/surething-s8-refold-2026-08-03/`. S49, the desktop's kit entry, is the DD's.
-- **Blocked:** S41 and the twelve-state LEDGER re-submit. **Unblocks when markets B1 merges to main and this branch merges main** — B1 is one DD ruling away. **Read §4b before merging: main is 159 commits ahead of this fork point.**
+**STATUS 2026-08-04 · last code commit `d1a8382` · tree clean · EditMode 76/76 · PlayMode 47/47**
+- **Done:** the desktop block (S46, S44+S45, S47, S48) and all of batch 9's S52 — **S8 is re-verified**; icon column moved to the standard margin; the verdict screen is off oxide, off biro, and photographed in both terminal states for the first time.
+- **Now:** nothing in flight.
+- **Need — DD:** the verdict screen's **ground** (deferred pending frames, which now exist at `dd-import/surething-verdict-ground-2026-08-04/`; measured G=0 on 2449 samples and it does not match its own source value — see §4-0.6). S49, the desktop's kit entry, is the DD's.
+- **Blocked:** S41 and the twelve-state LEDGER re-submit. **Unblocks when markets B1 merges to main and this branch merges main** — B1 imminent, deviation signed. **Read §4b before merging: main is 159 commits ahead of this fork point.**
 
-**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-03, after S48.
-**HEAD:** `3a85f23` · **Branch:** `surething-ui` · working tree clean.
+**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-04, after batch 9 (S52).
+**HEAD:** `d1a8382` · **Branch:** `surething-ui` · working tree clean.
 
 This is written for a seat with **no conversation context**. Everything below is either verifiable in
 the repo or flagged as unverified.
@@ -16,14 +16,15 @@ the repo or flagged as unverified.
 
 ## 1. Where the work stands
 
-The SureThing laptop's first slice **merged to main** at `2e97d13` (2026-07-31). S6 (lobby shell)
-and S7 (ink sprites) are **DESIGN-VERIFIED** by the Design Director — the laptop's first. Changes to
-those two are regressions, not iteration.
+The SureThing laptop's first slice **merged to main** at `2e97d13` (2026-07-31). S6 (lobby shell),
+S7 (ink sprites) and S8 (OS chrome) are **DESIGN-VERIFIED** by the Design Director — the laptop's
+first. Changes to those three are regressions, not iteration.
 
-**S8 (OS chrome) was the third, and is back in review as of 2026-08-03**: S48 folds the desktop into
-that chrome, which S48's own ruling says returns S8 to review. The frame is submitted (§4-0.5). Until
-the DD re-verifies, S8 is **not** a verified item to protect — but do not treat that as licence
-either; it is under review, not open.
+**S8 went out and came back.** S48 folded the desktop into that chrome, which by S48's own terms
+returned S8 to review; **S52 (batch 9, 2026-08-04) re-verified it** on the pixel-identity evidence,
+with one required change (the icon margin, §4-0.6). So the sentence above is true again — but the
+round trip is the point: a Design-verified item is verified against a *configuration*, and folding a
+new surface into it re-opens it. Expect the same if the chrome is consumed anywhere else.
 
 Since the merge, three more rulings landed and are **implemented, verified and committed**:
 
@@ -37,7 +38,7 @@ Since the merge, three more rulings landed and are **implemented, verified and c
 - **S26** — offer rule text never truncates at point of spending; the board shows however many offers
   fit and states how many it could not. The REWARDS banner states rather than exhorts.
 
-**Suites: EditMode 76/76, PlayMode 46/46** (at `3a85f23`). The 75/38 in earlier notes was the
+**Suites: EditMode 76/76, PlayMode 47/47** (at `d1a8382`). The 75/38 in earlier notes was the
 count before the desktop block; PlayMode's total also depends on whether the run passes
 `-nographics`, which fails the four capture tests on `RenderTexture.Create` — **do not pass it**,
 the command in §5 is the one that holds.
@@ -357,6 +358,49 @@ grant is made on that set, no new evidence list. Also still owed and unphotograp
 overflow-a-list capture so S27's rail has ever been seen (§4-0.1), and thirty seconds of a human
 actually scrolling it.
 
+## 4-0.6 Batch 9 (S52) — landed. One thing is still with the DD
+
+**Done** (`eca7f36`, `d1a8382`). Suites **EditMode 76/76, PlayMode 47/47**. S8 re-verified on the
+pixel-identity evidence from §4-0.5.
+
+- **Icon column moved to `--st-pad-x` (14px) below the rail**, from 86px. That space was the
+  wordmark's and S44 deleted the wordmark out from under it. **"The standard margin" is not a
+  token** — the phrase appears twice in the corpus, both inside S52, and nothing defines it; I swept
+  both repos before asking, and Allen chose `--st-pad-x` over the column's own 34px on 2026-08-04.
+  It is a decision recorded in source, not a lookup, and the constant is `LaptopOs.DesktopIconMarginY`.
+- **The verdict screen is off oxide and off biro.** `THE BOOKIE COLLECTS` is `--toner-3` (a loss is
+  carried by value, as the ledger's record row carries it); `NEW RUN` is a wax primary through
+  `MakeWaxPrimary`. Read narrowly: **no oxide strike on the headline** — the ledger pairs toner-3
+  with a strike, but that strike marks a dead *record row*. One `MakeRule` call if the DD wants it.
+
+**Still open, with the DD: the verdict ground.** Deferred pending frames; the frames now exist
+(states 13 and 14, staged at `dd-import/surething-verdict-ground-2026-08-04/`).
+
+### Two things from this batch worth carrying, both about measurement
+
+1. **The verdict ground is not what its source says.** Authored `new Color(.03f, .02f, .06f, 1f)`;
+   measured on frame 13, the ground is **R≈13, G=0, B≈13 — green at exactly zero on 2449 of 2449
+   samples**, and darker than `--ink` (22,22,15). That is magenta at near-black, and it corresponds
+   to the authored token under neither a linear nor a gamma reading (linear would give ~51,42,69),
+   while `Color32`-authored grounds elsewhere render ~1:1. **Do not fix this by editing the token
+   until someone has traced why.** I reported it and changed nothing. Note also I first described
+   this ground as "blue-tinted" from source — the measurement corrected me, which is the whole
+   argument for capturing before characterising.
+2. **28px of any rail-to-icon measurement on the desktop is the chip's dead space.** S52 recorded a
+   114px gap where I had reported 86. Both were right: 86 is rail-to-tile, 114 is rail-to-ink. They
+   diverge because the `--ground-3` chip is a **3/255 step** against the wallpaper there (34,34,22 on
+   31,31,19), so the tile edge is invisible and the eye lands on the glyph. The DD ruled
+   "chip/ground-3 fine" and that stands — but at the top of the wallpaper gradient the chip does not
+   read as a chip, and I have flagged that in the drop rather than acted on it.
+
+**A capture-fixture technique this surface did not have before:** terminal run states are forced
+through the payment schedule, not played. `RunConfig.Rounds` is `Payments.Length`, so a one-element
+schedule makes round 1 the final round, and a payment the 350 bank can or cannot meet decides the
+ending — no RNG, no eight-round grind, no lucky seed. The run is swapped onto the director by
+reflection against its private setter, deliberately, because the alternative is a seam on
+`RunDirector`, which three seats share and which is about to take that 159-commit merge. Reuse this
+for any other state the engine makes expensive to reach.
+
 ## 4a. S32 — which happened: fixed between HEADs
 
 S32 closed on rendered evidence and asks this handoff to record the cause, because the register
@@ -471,7 +515,7 @@ Archivo Narrow's digits are already uniform, so this is insurance rather than a 
   legs cell is deleted. Built in `e1f0602`.
 - **The desktop block**, in this order and no other: ~~**S46**~~ (**done**, `4957997` — see §4-0.2)
   → ~~**S44 + S45**~~ (**done**, `916d4f4` — see §4-0.3) → ~~**S47**~~ (**done**, `5e33b30` — see
-  §4-0.4) → ~~**S48**~~ (**done**, `3a85f23` — see §4-0.5; **the desktop block is complete**) → **S49**
+  §4-0.4) → ~~**S48**~~ (**done**, `3a85f23` — see §4-0.5; **the desktop block is complete**, and batch 9's S52 is in §4-0.6) → **S49**
   (**DD-authored — the desktop enters `ui_kits/surething/`; this seat does not write to `main-2`**)
   → **S48 last**, because folding the desktop into `NotebookChrome` re-opens S8 and returns it to
   review.
