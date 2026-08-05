@@ -219,11 +219,27 @@ namespace SBR.Tests.PlayMode
                 Invoke(Required(Required(App(laptop), "Matchup" + i), "AwayOdds"));
                 yield return WaitForRebuild();
             }
+
+            // S51 owes a frame of THIS state specifically: a full slip standing on top of a staged
+            // receipt is where the margin's 2.6px reservation overrun occurs, and no capture showed
+            // it — 09-margin-max-legs staged no ticket. The frame is not here to illustrate the
+            // number; it is here because the next person hunting the 2.6px owner needs to see the
+            // state, and because C17 says the capture settles what a source read only suggests.
+            // Placing clears the working slip, so refill to the cap afterwards.
+            Invoke(Required(Required(App(laptop), "WorkingMargin"), "Place"));
+            yield return WaitForRebuild();
+            Assert.Greater(laptop.director.Run.Tickets.Count, 0,
+                "a receipt must actually be staged for this to be the overrun state");
+            for (int i = 0; i < maxLegs; i++)
+            {
+                Invoke(Required(Required(App(laptop), "Matchup" + i), "AwayOdds"));
+                yield return WaitForRebuild();
+            }
             Assert.AreEqual(maxLegs, laptop.Slip.Picks.Count,
                 "the captured state must actually be a full slip");
 
             yield return CaptureState(laptop, outputDirectory, runPrefix,
-                "09-margin-max-legs", capturedPaths);
+                "09-margin-max-legs-staged-receipt", capturedPaths);
 
             Assert.AreEqual(2, capturedPaths.Count, "one state must emit paired captures");
             foreach (string path in capturedPaths)

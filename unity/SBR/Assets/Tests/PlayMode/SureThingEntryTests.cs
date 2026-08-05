@@ -562,10 +562,33 @@ namespace SBR.Tests.PlayMode
                 if (stretchesFullHeight) continue;
                 flowBottom = Mathf.Min(flowBottom, LocalBottom(rect, margin));
             }
-            Assert.GreaterOrEqual(flowBottom, -SportsbookApp.MarginFlowBudget - epsilonPx,
-                $"the flow region overruns its reserved budget at {maxLegs} legs: lowest flow element "
-                + $"at {flowBottom:F1}px against a budget of -{SportsbookApp.MarginFlowBudget:F0}px "
-                + $"(action band reserves {SportsbookApp.ActionBandReservedHeight:F0}px)");
+            // S51 — SIGNED, EXPIRING DEVIATION (DD 2026-08-04). The flow's lowest element sits 2.6px
+            // outside its reservation with a staged receipt at MaxLegs. Named cost: one UN-OWNED
+            // 2.6px excursion in the margin's reserved region. Expiry: when the owner of the 2.6px
+            // is identified — at which point it is FIXED, not re-signed.
+            //
+            // This is RECORDED here, deliberately, rather than made to disappear. The reservation is
+            // not slackened and no element is excluded from the measurement: the ruling forbids both,
+            // because either would have gone green while the real overrun continued. The wax
+            // highlight was the lead's candidate and the frames falsified it — it measures 23–24px,
+            // and at 0.5° a 24px band grows 0.21px, twelve times too small. Excluding it would have
+            // been the fortnight's fifth vacuous gate.
+            //
+            // Asserted as an EQUALITY so the pin is two-sided: this fails if the overrun grows, and
+            // it also fails if it shrinks. A silent improvement is not a win here — it means someone
+            // changed the thing nobody has identified, and the register entry must be closed by
+            // whoever did it rather than quietly going green.
+            const float signedOverrunPx = 2.6f;
+            const float signedOverrunTolerancePx = 0.15f;
+            float overrunPx = -SportsbookApp.MarginFlowBudget - flowBottom;
+            Assert.AreEqual(signedOverrunPx, overrunPx, signedOverrunTolerancePx,
+                $"the margin flow's overrun moved: measured {overrunPx:F2}px against the signed "
+                + $"{signedOverrunPx:F1}px (S51). Lowest flow element {flowBottom:F1}px, budget "
+                + $"-{SportsbookApp.MarginFlowBudget:F0}px, action band reserves "
+                + $"{SportsbookApp.ActionBandReservedHeight:F0}px. If this SHRANK, the 2.6px owner "
+                + "has been found — fix it and close S51 rather than re-signing. If it GREW, "
+                + "something entered the margin flow: staged receipts live in the 700px sheet and "
+                + "must never re-enter it (both-screens kit amendment, DD 2026-08-04).");
 
             // T53 — every gate states what it cannot see. THIS ONE CANNOT SEE:
             //  · rendered glyphs. It measures RectTransforms, so text bleeding outside its own rect
