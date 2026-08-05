@@ -153,6 +153,32 @@ namespace SBR.Tests.PlayMode
             Assert.Fail($"{what} — deadline reached with the session still LIVE, which is a genuine hang");
         }
 
+        /// <summary>Undoes the frame-lock. Load-bearing, not tidiness: <c>Time.captureDeltaTime</c> is
+        /// global and persists for the whole editor session, so leaving it set would silently put
+        /// every later PlayMode test on a synthetic clock — the kind of cross-suite contamination
+        /// that is very hard to attribute once it bites. Runs after every case, pass or fail.</summary>
+        [TearDown]
+        public void ReleaseFrameLock()
+        {
+            Time.captureDeltaTime = 0f;
+            TheaterStage.PresentationSeedOverride = null;
+        }
+
+        /// <summary>A seed derived from the capture seed string that is stable ACROSS PROCESSES.
+        /// Deliberately not <c>string.GetHashCode</c>: .NET randomises that per process, so two arms
+        /// shot in separate editor runs would seed differently and the frame-lock would silently do
+        /// nothing — the exact failure this fix exists to remove. FNV-1a, same shape as
+        /// TheaterPalette's.</summary>
+        private static int StableSeed(string s)
+        {
+            unchecked
+            {
+                uint h = 2166136261;
+                foreach (char c in s) { h ^= c; h *= 16777619; }
+                return (int)(h & 0x7FFFFFFF);
+            }
+        }
+
         // Leg 2 (0-based) of the fixed ticket built below is always the AnytimeScorer leg.
         private const int ScorerLegIndex = 2;
 
@@ -189,6 +215,34 @@ namespace SBR.Tests.PlayMode
             _seed = seed;
             s_sceneIndex = 0; // per seed, so an index reads as "the Nth moment of THIS sweat"
             Directory.CreateDirectory(OutputDir);
+
+            // FRAME-LOCK (2026-08-04), so two arms of an A/B can be diffed per-pixel.
+            //
+            // The T49 bloom pair could not answer the question it was shot for. Its arms did not
+            // share sim state — actors sat in different places at the same seed, scene, grammar and
+            // frame index — so the whole-frame diff measured actors that had moved, not bloom. The DD
+            // fell back to fixed-box region statistics and recorded the limitation: "an A/B whose
+            // arms are not frame-locked cannot support a per-pixel comparison," noting that the
+            // larger, more impressive-looking number was the invalid one.
+            //
+            // Three things had to be pinned, and all three are presentation-local — the ENGINE was
+            // always deterministic from the run seed, which is why the sweat's events already
+            // matched across arms while its pixels did not:
+            //   1. TheaterStage's presentation RNG, previously salted from Environment.TickCount.
+            //   2. The idle emission flicker's phase (TvSweatScreen reads the same override).
+            //   3. Time.deltaTime itself. Pinning the RNG makes both arms take the same DECISIONS;
+            //      it does not make them integrate the same MOTION, because a real frame time varies
+            //      run to run. captureDeltaTime replaces the wall clock with a fixed step, so the
+            //      sim advances identically per rendered frame.
+            //
+            // Ship pacing is preserved in the sense that matters: the sweat still plays out over the
+            // same number of SIMULATED seconds at the same per-frame step. What changes is that
+            // those seconds are no longer tied to how long the machine took to render them — which is
+            // the property that makes a capture reproducible. Named consequence, stated because it
+            // works against the budget above: wall-clock cost per simulated second now depends on
+            // render speed, and these are 2560x1440 frames.
+            TheaterStage.PresentationSeedOverride = StableSeed(seed);
+            Time.captureDeltaTime = 1f / 50f;
 
             yield return LoadRoom();
 
@@ -311,7 +365,23 @@ namespace SBR.Tests.PlayMode
             const int MaxDangerousBeats = 3;
             int dangerousBeatsCaptured = 0;
             bool prevSuspended = screen.RevealedView.MarketSuspended;
-            while (Time.realtimeSinceStartup < deadline && dangerousBeatsCaptured < MaxDangerousBeats)
+
+            // BUDGET PARTITION (2026-08-04). This loop is OPPORTUNISTIC — it gathers as many
+            // dangerous beats as the sweat happens to offer — while the scorer-leg wait below is a
+            // NAMED moment the set is expected to contain. Sharing one wall-clock deadline let the
+            // opportunistic collector starve the named one completely: measured on the T49 A/B, the
+            // four failing seeds captured ZERO dangerous beats, so this loop ran from entry to the
+            // 420s wall doing nothing, and the wait below then began with its deadline already gone
+            // and failed instantly with "the session is still LIVE".
+            //
+            // An opportunistic collector must never be able to consume a named moment's budget.
+            // The total stays 420s — it must, or the NUnit [Timeout] fires first and the harness's
+            // own diagnostic message is replaced by an opaque framework kill (see the note above
+            // the attribute). So the slice is reserved, not added.
+            const float ScorerWaitFloorSeconds = 150f;
+            float dangerousDeadline = deadline - ScorerWaitFloorSeconds;
+            string dangerousExit = "budget";
+            while (Time.realtimeSinceStartup < dangerousDeadline && dangerousBeatsCaptured < MaxDangerousBeats)
             {
                 RevealedTicket ticket = FirstTicketOrNull(screen);
                 RevealedLegState? legState = ticket != null && ScorerLegIndex < ticket.Legs.Count
@@ -319,7 +389,7 @@ namespace SBR.Tests.PlayMode
                 bool legLive = legState == RevealedLegState.Live;
                 bool legDone = legState.HasValue && legState != RevealedLegState.Live
                     && legState != RevealedLegState.Pending;
-                if (legDone) break; // the leg resolved without another dangerous beat to catch
+                if (legDone) { dangerousExit = "leg resolved"; break; }
 
                 bool suspendedNow = screen.RevealedView.MarketSuspended;
                 if (legLive && suspendedNow && !prevSuspended)
@@ -331,6 +401,14 @@ namespace SBR.Tests.PlayMode
                 prevSuspended = suspendedNow;
                 yield return null;
             }
+            if (dangerousBeatsCaptured >= MaxDangerousBeats) dangerousExit = "cap reached";
+            // C18 — the collector states what it did and what it therefore cannot show. "budget"
+            // means it was cut short with time reserved for the named moment below, so a scorer-leg
+            // failure after this line is about the SWEAT, not about this loop having eaten the clock.
+            Debug.Log($"[TvSweatCaptureHarness] seed={_seed}: dangerous-beat collector exited on "
+                + $"{dangerousExit} with {dangerousBeatsCaptured}/{MaxDangerousBeats} captured; "
+                + $"{Mathf.Max(0f, deadline - Time.realtimeSinceStartup):0.#}s left for the scorer wait "
+                + $"(floor {ScorerWaitFloorSeconds:0}s).");
 
             // ---- Moment: the AnytimeScorer leg's own final whistle has landed - guaranteed to
             // occur exactly once, independent of whether the picked player actually scored (PRD

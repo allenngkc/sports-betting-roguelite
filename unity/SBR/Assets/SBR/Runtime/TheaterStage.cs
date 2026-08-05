@@ -94,6 +94,13 @@ namespace SBR.Game
         private static Sprite _ringSprite;
         private static int s_seedSalt; // per-instance RNG salt (presentation-local, never engine)
 
+        /// <summary>Capture-only determinism hook. When set, the presentation RNG is seeded from this
+        /// instead of the wall clock, so two runs of the same sweat place their actors identically —
+        /// the precondition for a per-pixel A/B. Presentation-local: this never touches engine RNG,
+        /// which was already deterministic from the run seed. Leave null everywhere but a capture
+        /// harness. Set it BEFORE the scene loads; it is read once, at stage construction.</summary>
+        public static int? PresentationSeedOverride;
+
         // ---- scene playback (M-T3) ----
         private const byte MkNone = 0, MkGoal = 1, MkSuspend = 2, MkSave = 3, MkVoid = 4,
             MkCorner = 5, MkBooking = 6;
@@ -315,7 +322,28 @@ namespace SBR.Game
             // coordinate is not; it holds for effects nobody has written yet.
             gameObject.AddComponent<RectMask2D>();
 
-            _rng = new System.Random(unchecked(Environment.TickCount * 31 + s_seedSalt++));
+            // Presentation RNG. Normally salted from the wall clock, so two runs of the same sweat
+            // differ in the small ways a broadcast should.
+            //
+            // PresentationSeedOverride makes it reproducible for A/B capture, and it exists because
+            // the T49 bloom pair could not answer the question it was shot for: the two arms did not
+            // share sim state, so actors sat in different places at the same seed/scene/frame index
+            // and the whole-frame per-pixel diff measured actor motion, not bloom. The DD had to fall
+            // back to fixed-box region statistics and said so — "an A/B whose arms are not
+            // frame-locked cannot support a per-pixel comparison."
+            //
+            // Opt-in and capture-only: unset, behaviour is exactly as before, including the salt that
+            // keeps two stages in one session from marching in lockstep.
+            // The override path deliberately does NOT consume s_seedSalt. The salt is a static
+            // counter, so mixing it in would make the seed depend on how many stages this session
+            // had already built — i.e. on seed ORDER — and two arms that ran their seeds in a
+            // different order, or skipped one, would silently stop being frame-locked while still
+            // looking correct. The override is already unique per capture seed; that is the whole
+            // identity it needs. The unseeded path keeps the salt, which is what stops two stages in
+            // one ordinary session from marching in lockstep.
+            _rng = PresentationSeedOverride.HasValue
+                ? new System.Random(PresentationSeedOverride.Value)
+                : new System.Random(unchecked(Environment.TickCount * 31 + s_seedSalt++));
 
             // The pitch: near-black surface (the palette law keeps money-green pure), thin
             // neutral neon lines. All code-built Images — no assets.

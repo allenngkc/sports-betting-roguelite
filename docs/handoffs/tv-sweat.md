@@ -95,6 +95,69 @@ clear at 0 processes — was cleared. `EditorBuildSettings.asset` reverted;
 `SBR.Engine.dll` restored to HEAD's bytes and **`cmp`-verified identical**, so its lingering
 `git status` line is the inert-`[attr]lfs` artifact (§4D), not a real change.
 
+## 0-HD. HARNESS DEBT — both items written, UNCOMPILED (2026-08-04, markets held the editor)
+
+Both of the DD's C25 disclosures are addressed. **No editor was available, so none of this is
+compiled.** It needs a warm compile plus one filtered `TvSweatCaptureHarness` run to prove out.
+
+### 1. Frame-locked A/B arms
+
+The T49 pair could not answer the question it was shot for: its arms did not share sim state, so the
+whole-frame diff measured **actors that had moved**, not bloom, and the DD fell back to fixed-box
+region statistics. Three things had to be pinned, **all presentation-local** — the engine was always
+deterministic from the run seed, which is exactly why the arms' *events* matched while their *pixels*
+did not:
+
+| source | was | now |
+|---|---|---|
+| `TheaterStage` presentation RNG | `Environment.TickCount * 31 + salt` | `PresentationSeedOverride` when set |
+| idle emission flicker phase | `UnityEngine.Random.value` | derived from the same override |
+| `Time.deltaTime` | real frame time | `Time.captureDeltaTime = 1/50` |
+
+**The third is the one that is easy to miss.** Pinning the RNG makes both arms take the same
+*decisions*; it does not make them integrate the same *motion*, because a real frame time varies run
+to run. Without the fixed step the actors still drift apart and the per-pixel diff stays invalid.
+
+Two traps closed while writing it, both of which would have produced a frame-lock that silently did
+nothing while looking correct:
+
+- **`StableSeed` is FNV-1a, not `string.GetHashCode`.** .NET randomises string hashing per process,
+  so two arms shot in separate editor runs would have seeded differently.
+- **The override path does not consume `s_seedSalt`.** The salt is a static counter, so mixing it in
+  would make the seed depend on how many stages the session had already built — i.e. on seed *order*.
+  Two arms that reordered or skipped a seed would quietly stop being locked.
+
+`[TearDown]` releases both. `Time.captureDeltaTime` is global and session-lived; leaving it set would
+put every later PlayMode test on a synthetic clock, which is the kind of cross-suite contamination
+that is very hard to attribute once it bites.
+
+**Named cost, because it works against item 2:** wall-clock per simulated second now depends on
+render speed, and these are 2560×1440 frames. Ship pacing is preserved in the sense that matters —
+same simulated seconds, same per-frame step — but the 420 s wall budget may cover fewer of them.
+
+### 2. The 420 s shared budget
+
+**Proven, not assumed:** in the T49 run the four failing seeds captured **zero** dangerous beats — all
+24 `scorer-leg-dangerous-*` frames belonged to the single passing seed. So in every failing seed that
+loop ran from entry to the wall doing nothing, and the named moment after it began with its deadline
+already gone.
+
+The loop is **opportunistic** (gather what the sweat offers); the scorer wait is a **named moment** the
+set is expected to contain. An opportunistic collector must never starve a named one. So the budget is
+now *partitioned*, not enlarged — `ScorerWaitFloorSeconds = 150f` is reserved and the total stays
+420 s, because raising it past the NUnit `[Timeout]` would replace the harness's own diagnostic
+message with an opaque framework kill.
+
+The loop also now logs **why** it exited — `cap reached` / `leg resolved` / `budget` — with the time
+left for the wait. C18: a scorer-leg failure after this line is now about the sweat, not about this
+loop having eaten the clock.
+
+**What this does not claim:** it does not prove the four seeds will now resolve. Their legs were
+genuinely still LIVE. It makes the failure *trustworthy* — if it still fires with a reserved floor,
+that is a real finding about the sweat and worth escalating rather than a budget artefact.
+
+---
+
 ## 0-B9V. BATCH 9 VERIFIED — EditMode 224/224, input contract re-pinned, editor released
 
 **T58 / T59 / T49-lock compile clean and pass.** EditMode **224 / 224**, zero failed, zero skipped

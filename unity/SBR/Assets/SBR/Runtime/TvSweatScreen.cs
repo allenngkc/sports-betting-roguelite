@@ -847,7 +847,14 @@ namespace SBR.Game
             _fontCond = LoadFontCondensed();
             _choreo = new TheaterChoreographer(pacer);
             _emissBlock = new MaterialPropertyBlock();
-            _emissSeed = UnityEngine.Random.value * 100f;
+            // The idle emission flicker's phase. PRD §4.3 bans UnityEngine.Random for a discrete
+            // SCENE CHOICE; a flicker phase is not one, so this use was left alone when T8 removed
+            // the other (§6.4). But it does move pixels, so it has to be pinned for a frame-locked
+            // A/B — otherwise the panel breathes out of phase between arms and every frame differs
+            // slightly everywhere, which is the confound T49's pair actually hit.
+            _emissSeed = TheaterStage.PresentationSeedOverride.HasValue
+                ? (TheaterStage.PresentationSeedOverride.Value % 1000) / 10f
+                : UnityEngine.Random.value * 100f;
 
             _emissIdle = emissiveScreen != null && emissiveScreen.sharedMaterial != null
                 ? emissiveScreen.sharedMaterial.GetColor(EmissionColorId)
