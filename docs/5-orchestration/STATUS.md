@@ -92,6 +92,16 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-05 cycle 85 · **MARKETS B1 MERGED — `bbf9241`** — second attempt
+  clean: lead re-baselined on main in-branch, resolved the three shared-file
+  conflicts, suites green at `7fa5dd7`, zero conflicts on the real merge.
+  Engine retention now on main. Validation agent running (in-turn waits
+  chartered). **Veto window: revert `bbf9241`.** On validation-green:
+  SureThing merges main (159 commits, advised careful) → S41 + LEDGER
+  re-submit — the last SureThing items unblock. TV holds on DD verdicts; its
+  scorer non-resolution finding filed (`6388a6c`, engine-domain → markets
+  backlog). SureThing's verdict-ground anomaly zipped for the drag. Reversal:
+  revert the merge commit.
 - 2026-08-04 cycle 84 · **Markets merge attempt ABORTED — checklist miss,
   mine** — real content conflicts in three shared app files (LaptopOs.cs,
   SportsbookApp.cs, SureThingLedgerTests.cs): markets-2 forked before
