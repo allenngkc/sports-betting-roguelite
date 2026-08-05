@@ -557,9 +557,17 @@ namespace SBR.Tests.PlayMode
                 // by this assertion firing at exactly -530.0px — the panel's bottom edge, not a
                 // coincidence. Excluded by stretch, not by name, so any future full-bleed ground is
                 // excluded too.
-                bool stretchesFullHeight = Mathf.Approximately(rect.anchorMin.y, 0f)
-                    && Mathf.Approximately(rect.anchorMax.y, 1f);
-                if (stretchesFullHeight) continue;
+                // Excluded by MEASURED COVERAGE, not by anchoring and not by name. The first
+                // version of this test excluded "anchor-stretched" graphics — and the very next
+                // change to the ground (main's CanvasRenderer/explicit-size fix, which had to stop
+                // anchor-stretching because a stretched rect reads zero on this imperatively-built
+                // canvas) made the predicate stop matching the one thing it existed to skip. The
+                // assertion then reported the panel's own height, -530.0px, as the flow's depth.
+                // A ground is a thing that covers the whole panel; that is what is tested here, so
+                // it holds however the ground happens to be anchored.
+                bool coversWholePanel = LocalTop(rect, margin) >= marginTop - epsilonPx
+                    && LocalBottom(rect, margin) <= marginBottom + epsilonPx;
+                if (coversWholePanel) continue;
                 flowBottom = Mathf.Min(flowBottom, LocalBottom(rect, margin));
             }
             // S51 — SIGNED, EXPIRING DEVIATION (DD 2026-08-04). The flow's lowest element sits 2.6px
