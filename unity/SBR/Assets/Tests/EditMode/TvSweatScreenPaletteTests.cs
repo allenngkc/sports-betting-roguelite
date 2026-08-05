@@ -766,16 +766,27 @@ namespace SBR.Tests.EditMode
         /// This reads the MATERIALS, not the holder field — the holder saying "one" while two
         /// materials are lit would be exactly the bug the invariant exists to prevent, and a test
         /// that only read the holder could never see it.</summary>
+        /// <summary>The production constant, read rather than guessed. T49 moved the L4 boost from
+        /// 1.8 to 1.4 and this helper's old <c>&gt; 1.5f</c> threshold — calibrated to 1.8 — silently
+        /// stopped detecting L4 at all, failing both one-token tests while the production code was
+        /// correct. That is T30's lesson exactly: an approximation is always wrong at some boundary,
+        /// and a ruling eventually walks the value past it. Comparing to the real constant cannot
+        /// go stale, whatever the DD rules next.</summary>
+        private static float ConstBoost(string name) => (float)typeof(TvSweatScreen)
+            .GetField(name, BindingFlags.NonPublic | BindingFlags.Static).GetRawConstantValue();
+
         private static int MaterialsAtL4(TvSweatScreen s)
         {
             string[] mats = { "_cashOutHdrMat", "_bigAmountHdrMat", "_goldFloodHdrMat", "_scoreHdrMat", "_ballHdrMat" };
             int boostId = Shader.PropertyToID("_HdrBoost");
+            float l4 = ConstBoost("HdrBoostL4");
             int n = 0;
             foreach (string f in mats)
             {
                 var m = (Material)typeof(TvSweatScreen)
                     .GetField(f, BindingFlags.NonPublic | BindingFlags.Instance).GetValue(s);
-                if (m != null && m.GetFloat(boostId) > 1.5f) n++;
+                // Verbatim match on the constant, not a band. Epsilon is float representation only.
+                if (m != null && Mathf.Abs(m.GetFloat(boostId) - l4) < 0.0005f) n++;
             }
             return n;
         }

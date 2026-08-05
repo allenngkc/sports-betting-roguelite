@@ -95,6 +95,33 @@ clear at 0 processes — was cleared. `EditorBuildSettings.asset` reverted;
 `SBR.Engine.dll` restored to HEAD's bytes and **`cmp`-verified identical**, so its lingering
 `git status` line is the inert-`[attr]lfs` artifact (§4D), not a real change.
 
+## 0-B9V. BATCH 9 VERIFIED — EditMode 224/224, input contract re-pinned, editor released
+
+**T58 / T59 / T49-lock compile clean and pass.** EditMode **224 / 224**, zero failed, zero skipped
+(222 → 224 is the two new tests). Assemblies verified fresh, 23:01 against sources at 22:55.
+
+**T49's ruling broke a TEST INSTRUMENT, not the code — and it is worth keeping the reason.** The
+first EditMode run came back 222/224 with both C3 one-token tests failing `Expected: 1, But was: 0`.
+`MaterialsAtL4` counted materials with `_HdrBoost > 1.5f` — a threshold hand-calibrated to the old
+1.8 — so a correct L4 element at the newly-ruled **1.4** was invisible to it and the helper reported
+*zero elements lit* on a surface that was behaving perfectly.
+
+That is **T30's lesson landing a second time**: an approximated threshold is always wrong at some
+boundary, and a ruling eventually walks the value past it. The fix is not a looser number — that
+would just relocate the boundary. `ConstBoost()` now reads `HdrBoostL4` off the production constant
+by reflection and matches it verbatim (epsilon is float representation only), so the instrument
+cannot go stale whatever the DD rules next. Swept the suites for other boost thresholds: none.
+
+**T59 was verified where EditMode cannot see it.** An input-contract change is invisible to a test
+that never presses a key, so a filtered PlayMode run on `TvSweatScreenTests` followed: **10/10**,
+with all three `Interact_*` contract tests green — including
+`Interact_DuringLegalOpenOffer_CashesOutAndDoesNotStand`, the one the new refusal term most
+threatened. `kept ticking while standing` occurs **0** times, so TVS-H02 holds.
+
+Editor released: 0 processes, lockfile clear, side-effects reverted.
+
+---
+
 ## 0-B9. BATCH 9 — T58 + T59 + T49's ruling WRITTEN, unverified (2026-08-04)
 
 **Ladder is LAW-CLEAN and Phase 3 is open.** T41 Design-verified CLOSED (zero saturated pixels),
