@@ -95,6 +95,79 @@ clear at 0 processes — was cleared. `EditorBuildSettings.asset` reverted;
 `SBR.Engine.dll` restored to HEAD's bytes and **`cmp`-verified identical**, so its lingering
 `git status` line is the inert-`[attr]lfs` artifact (§4D), not a real change.
 
+## 0-FULL. FULL WINDOW — 2026-08-04. T48 SHOT, T49 SHOT, editor released
+
+**Everything the window was granted for landed.** Four zips staged in `main-2/docs/design/dd-import`,
+all under 20 MB. Boost const verified back at **1.8**, `git diff` on that file empty.
+
+| zip | contents | size |
+|---|---|---|
+| `t48-conformance-screens-dark.zip` | 4 frames (graded + `-UNGRADED`, seated + room) **+ the measured gate report** | 10.6 MB |
+| `t49-bloom-ab-goal.zip` | 3 matched pairs at the score's L4 punch | 16.8 MB |
+| `t49-bloom-ab-cashout.zip` | 3 matched pairs at the cash-out L4 token | 16.3 MB |
+| `surething-captures-graphics-enabled.zip` | 26 frames, all 3 tests green | 11.0 MB |
+
+### T48 — the grade is EXONERATED, and the numbers reproduce the room's own reference
+
+Screens-dark, graded | ungraded:
+
+| region | graded | ungraded |
+|---|---|---|
+| wall (right plaster) | chroma 0.92, hue 112.0° neutral | 1.55, 112.1° neutral |
+| **wall (far plaster)** | **3.56, 275.5° COOL** | **5.53, 275.7° COOL** |
+| **floor (aisle)** | **1.64, 272.1° COOL** | **2.94, 272.8° COOL** |
+| bunk (1 / couch side) | 0.34, 203.7° neutral | 0.58, 182.4° neutral |
+| bunk (2 mattress) | 6.21, 99.4° WARM | 7.73, 100.1° WARM |
+| ceiling plaster | 0.29, 118.1° neutral | 0.48, 117.1° neutral |
+
+R23 verdict: **FAIL — 2 COOL regions.** But read the pair, which is the whole point of the set:
+**both COOL regions are cool UNGRADED TOO, and more chromatic without the grade** (5.53→3.56,
+2.94→1.64). The grade *reduces* chroma. **The coolness is in the light, not the grade** — R26's
+"ungraded-cool exonerates it" branch, on evidence. The numbers sit within noise of the recipe's
+known-good reference (far plaster 3.56/275.6 graded, 5.49/275.8 ungraded), so the rig reproduced.
+
+**Room-side finding, not mine to fix, flagged: `R9-A bunk 2 mattress luminance FAIL — 37.36 against
+43.9 ± 1.0.`** R19(c) was explicitly told to hold 43.9. R19(a) has since landed albedo work. The room
+lead should know a freshly-shot set reads 6.5 low.
+
+### T49 — shot both arms, 101 frames each, pairing EXACT
+
+Arm A at the shipped 1.8 **first and unedited**, per §0A — so a dead window would have left the
+shipped value as the surviving arm. Then the const edit to 1.4, warm compile, arm B on the same seeds
+in the same order. **Every 1.8 frame has a 1.4 twin at identical seed/scene/grammar/moment/frame**,
+verified by comparing the two filename sets with the boost token masked. Const restored and verified.
+
+Staged the two L4 moments — `goal` and `cashout-actionable` — because those are the *only* frames
+where the arms can differ: §0A's arithmetic says the stage is under the bloom threshold and L3 gold is
+identical in both arms, so the single L4 token holder is the entire experiment. 555 MB of frames
+exist; the 20 MB cap buys ~7, so they were spent where the difference lives rather than sampled flat.
+
+### The harness fails 4 of 5 seeds, and it is NOT this window's doing
+
+`Assert.Fail("the scorer leg never reached a terminal state — deadline reached with the session still
+LIVE, which is a genuine hang")` on 4 seeds, both arms. **Frames are unaffected — 101 landed per arm
+across all five seeds.** Mechanism, read off the harness:
+
+- Line 273 sets **one shared 420 s budget** for every wait in a seed.
+- Line 314's dangerous-beats loop runs `while (realtime < deadline && captured < MaxDangerousBeats)`
+  with `MaxDangerousBeats = 3` — so a seed that never produces three dangerous beats **spins out the
+  entire shared budget**.
+- The scorer-leg wait at line 350 then starts with the deadline already gone, and
+  `WaitUntilOrAbsent`'s absent-branch only fires when the session has COMPLETED. Still LIVE → fail.
+- The one passing seed (`27182818`) hit dangerous-0/1/2 and exited the loop early, leaving budget.
+
+Not caused by this window: the merge changed **nothing** in `engine/` or `SweatPresentationModel.cs`
+(empty diffstat), and T43/T46/T42/T44 touch presentation only — no ledger, no session, no beat
+spending. **This is a defect in my own file** (`TvSweatCaptureHarness.cs`) and a follow-up: the
+dangerous-beats loop needs its own sub-budget, or the scorer wait needs a reserved floor. Filed here
+rather than fixed mid-window.
+
+### SureThing — 3/3 green with graphics enabled
+
+Confirms last window's diagnosis: `-nographics` was the whole cause. 26 frames written.
+
+---
+
 ## 0A. NEXT WINDOW — pre-flight, done outside the window on purpose
 
 ### T49 is no longer confounded, and here is the arithmetic that says so
