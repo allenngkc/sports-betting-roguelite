@@ -51,14 +51,30 @@ namespace SBR
             Material grime = GrayboxRoomBuilder.Mat("ArtGrime",
                 new Color(0.085f, 0.080f, 0.068f), smoothness: 0.12f);
 
+            // R19(b): restored to the spec's cool #22252A (B>G>R). The built value had drifted
+            // hue-flipped WARM (R>G>B), which undercuts the reason this palette exists: the
+            // institution's metal being colder than the room is the contrast the whole story
+            // runs on. GUARD: if this reads too dark under the approved one-tube rig, that is a
+            // lighting finding under R12, NOT a licence to lighten the albedo back up.
             Material conduit = GrayboxRoomBuilder.Mat("ArtConduit",
-                new Color(0.038f, 0.036f, 0.032f), smoothness: 0.34f);
+                new Color(0.0160f, 0.0185f, 0.0232f), smoothness: 0.34f);
 
             // Painted steel for the display enclosure - same wear language as the bunk frames,
             // a touch lighter than the conduit so the housing reads as a separate installed
             // object rather than dissolving into the pipe runs behind it.
-            Material steel = GrayboxRoomBuilder.Mat("ArtHousingSteel",
-                new Color(0.098f, 0.095f, 0.084f), smoothness: 0.28f);
+            // R19(b): restored to the spec's cool #3A3F42 (B>G>R), same hue-flip fix and same
+            // R12 guard as ArtConduit above - do not lighten this to compensate for how it reads
+            // under the rig; that is a lighting finding, not an albedo problem.
+            //
+            // R20 (Design Director, 2026-08-01): "the TV housing's chipped paint" is unbuilt
+            // required work, so this moves from a flat Mat to a SurfaceMat carrying
+            // ChippedPaint. TINT UNCHANGED from R19(b) - new maps, not a re-colour.
+            // smoothMin/smoothMax straddle the old flat 0.28: intact paint (0.34) is glossier
+            // than the dull exposed metal (0.08) in the chips.
+            // Built by GrayboxRoomBuilder.HousingSteelMat() since BezelBlack's retirement, because
+            // TVBody wears this same material now and one institutional metal must not have two
+            // definitions. The values and their reasoning live at that factory.
+            Material steel = GrayboxRoomBuilder.HousingSteelMat();
             Material stencilMat = GrayboxRoomBuilder.Mat("ArtStencil", Color.white,
                 smoothness: 0.10f, baseMap: GetOrCreateStencil("RM-4B 217-9C", 256, 64));
             Material indicator = GrayboxRoomBuilder.Mat("ArtIndicator",
@@ -393,18 +409,27 @@ namespace SBR
             _ => null,   // space and anything unmapped render as bare plate
         };
 
-        /// <summary>Collider-free quad, for decals whose UVs must run 0..1 across the face.</summary>
+        /// <summary>
+        /// Collider-free quad, for decals whose UVs must run 0..1 across the face.
+        ///
+        /// T57: built from ChamferedBoxMesh.GetOrCreateQuad(size, Vector2.one) at localScale 1,
+        /// not a scaled primitive - see GrayboxRoomBuilder.Quad for the full ruling. Vector2.one
+        /// is required, not a default to retune: it reproduces the primitive's 0..1 UVs, which is
+        /// what StencilCode's decal expects. With no primitive there is nothing to destroy a
+        /// collider from, so this simply never adds one - "dressing adds zero colliders" stays
+        /// true by construction, not by cleanup.
+        /// </summary>
         private static GameObject ArtQuad(Transform parent, string name, Vector3 center,
                                           Vector2 size, Vector3 facing, Vector3 up, Material mat)
         {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            go.name = name;
-            Object.DestroyImmediate(go.GetComponent<Collider>());   // dressing never collides
+            var go = new GameObject(name);
             go.transform.SetParent(parent, false);
             go.transform.position = center;
             go.transform.rotation = Quaternion.LookRotation(-facing.normalized, up);
-            go.transform.localScale = new Vector3(size.x, size.y, 1f);
-            go.GetComponent<MeshRenderer>().sharedMaterial = mat;
+            go.transform.localScale = Vector3.one; // mesh carries true world size, not the transform
+            go.AddComponent<MeshFilter>().sharedMesh =
+                ChamferedBoxMesh.GetOrCreateQuad(size, Vector2.one);
+            go.AddComponent<MeshRenderer>().sharedMaterial = mat;
             return go;
         }
 
@@ -516,8 +541,19 @@ namespace SBR
             // bedding, a pillow - but it sits outside every light cone in the room and stays
             // in shadow. Allen's note on concept C: it should be legible as OCCUPIED, never
             // legible as EMPTY. That ambiguity is the point, so nothing here is lit to confirm.
+            // R19(c): mattress fabric colour is the palette's Drab green #3A4230, matching the
+            // bunk frames (GrayboxRoomBuilder.BunkFrame) rather than its own bespoke near-black.
+            // The couch is a separate "couch fabric" in the design doc and is untouched by this
+            // ruling - it carries a design-verified relief result that must not be disturbed.
+            //
+            // FLAGGED, NOT FIXED: drab green's luminance (0.0501) is brighter than the material
+            // it replaces here (0.058/0.055/0.047) and brighter than the Bunk2Dark frame colour
+            // it also replaces elsewhere (0.0389). Bunk 2's mattress is a ratified test at
+            // 43.9 +/-1 measured luminance, and this change may lift it. That is a known,
+            // deliberate, measured risk - the lead will measure and escalate if it breaks. Do
+            // NOT compensate, darken, or "fix" it here.
             Material bunkShadow = GrayboxRoomBuilder.Mat("ArtBunk2Shadow",
-                new Color(0.058f, 0.055f, 0.047f), smoothness: 0.03f);
+                new Color(0.0423f, 0.0545f, 0.0296f), smoothness: 0.03f);
 
             ArtBox(g, "Bunk2Mattress", new Vector3(0.92f, 1.615f, 1.28f),
                 new Vector3(0.70f, 0.07f, 1.34f), bunkShadow);

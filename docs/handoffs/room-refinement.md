@@ -301,3 +301,303 @@ Next: reproduce the emission claim, then start the deterministic PBR surface pas
 Risk: emission diagnosis is not yet proven.
 Need Allen: nothing.
 ```
+
+---
+
+## 11b. STATE AS OF 2026-08-02 — read this first
+
+**Branch `room-refinement`, 11+ commits ahead of `main`. Everything below is built, committed, and
+now compile-verified, built, baked and captured. The register reads `main`, so items may appear open
+there that are done here.**
+
+| item | state |
+|---|---|
+| T48 grade — neutral black point | built `ebdd0ed`, **verified: it worked** |
+| R19a body materials · R19c drab green · R16 colliders 29 | built `35cbab6` |
+| T57 true-size quads | built `a1fd6fb` |
+| R20 chipped paint + battered desk | built `c79e466` — **not** outstanding |
+| T54 gates state what they cannot see · Gate 4 owner-keyed | built `336a1a4` |
+| R23/R26 conformance instrument | built, editor-free via `--conformance` |
+| **R22 walkthrough** | **OPEN — Allen's, gates 6–8, nothing else clears it** |
+
+### T48 verified — the grade no longer tints the room
+
+Screens dark, graded, chroma per surface: ceiling **7.64 → 0.33**, bunk 1 **6.65 → 0.33**, right wall
+**6.92 → 0.97**. The grade previously multiplied chroma 4–14×; it now sits *below* the ungraded
+values. Mattress 44.64, inside 43.9 ±1. All structural gates PASS; collider inventory 29.
+
+### R23 still FAILs — but the character changed, and this is now a design question
+
+Two surfaces remain COOL: **far wall (3.56)** and **floor aisle (1.66)**. Both are cool *ungraded
+too* (5.49, 2.97), so this is **the window's own light, not the grade**.
+
+Design doc §1.2 sanctions exactly that: a cool window with **short reach that pools locally and does
+not tint the room**. Those two region boxes sit inside that sanctioned pool. So the remaining failure
+may be the instrument sampling the design working, not the room failing. **Either the regions move
+off the window pool, or law 1.1's test explicitly excludes it — a DD call, not a build fix.**
+
+### C22.1 — steel and conduit re-measured — ⚠️ **SUPERSEDED 2026-08-03, the numbers were wrong**
+
+> The table that stood here reported the display housing at **C 2.07 h 108.3° WARM** and the conduit
+> drop at **C 3.97 h 105.2° WARM**, and concluded that cool metal was unreachable in render. It also
+> carried its own caveat — *"first-pass, not surface-pure harness regions; add proper ones before
+> treating the numbers as ratified."* **The caveat paid. Both boxes were bleeding the warm plaster
+> wall behind the metal, and reported the WALL's hue as the metal's.** 108° is plaster: the pipe's
+> own neighbouring wall strips measure 101–112°.
+
+Surface-pure boxes, now permanent as `R19_REGIONS` in `tools/room_gate_check.py`, purity sd/mean in
+brackets:
+
+| region | graded | ungraded |
+|---|---|---|
+| housing face (steel) `[0.020]` | C 0.52 h 257.6° **neutral** | C 0.74 h 260.0° neutral |
+| conduit drop, body `[0.053]` | C 2.02 h 269.2° **COOL** | C 2.65 h 269.5° COOL |
+| conduit drop, full width | C 1.35 h 258.1° neutral | C 1.45 h 253.8° neutral |
+| conduit ceiling run `[0.046]` | C 8.29 h 99.4° **WARM** | C 11.80 h 98.8° WARM |
+
+**The steel reads neutral — chroma 0.52 is below the instrument's own 1.5 floor, so no hue verdict is
+supportable in either direction. The conduit reads COOL, graded and ungraded.**
+
+**Same albedo on both conduit runs, opposite verdicts.** The ceiling run is raked by the warm tube
+and reads WARM; the wall drop sits away from it in ambient/window fill and reads COOL. So rendered
+hue tracks **which light reaches the surface**, not albedo alone — Law 1.7's mechanism (lighting
+gates the read) applied to colour instead of relief. Do not answer any of this by lightening albedo.
+
+Scope, per C25: the conduit body strip samples **one face of a cylinder** (the shaded one), because
+a pure strip on a cylinder inevitably picks a face. Its full-width twin is carried beside it, and
+that figure includes edge pixels bleeding the wall — which is precisely the failure the first-pass
+boxes made at larger scale.
+
+### Batch 8 (2026-08-03) — three of the four open questions are answered
+
+**R19(b)-am — "colder" is STRUCK.** The ≥2 channels are now **value and finish**, and hue
+temperature is no longer one of them. The reasoning is Law 1.1's own mechanism: under one warm key
+on warm plaster, requiring the metal to read colder than the room requires the room to break its top
+law in one region. The first-pass boxes affect *how much*, not *whether*, so this ruled without
+them. **No lighting instrument** — refused explicitly; R12 grazing reveals relief, not colour
+temperature, and a metal-tinting lamp is T48's rejected Option D in new clothes.
+
+The albedo hold and the unprompted first-pass caveat were **endorsed as the standard**. Keep doing
+both.
+
+Consequence, and it was a live over-claim of mine for part of a session: `GrayboxRoomBuilder`'s
+R19(a) comment justified the split on **three** channels including "warm where the steel is cool".
+That is albedo arithmetic that does not survive to frame. Corrected to value + finish, with the hue
+deltas recorded but explicitly not counted. Constitution draft §2.5: *measure the rendered thing,
+not the source.*
+
+#### ⚠️ Routed to the DD: R19(b)-am's conclusion stands, its stated premise does not
+
+**This needs a ruling and I have not acted on it.** R19(b)-am reasoned that "under one warm key
+every albedo in this room renders warm", so cool metal is unreachable, and ruled explicitly *before*
+surface-pure numbers on the grounds that the first-pass boxes "affect *how much*, not *whether*."
+
+The surface-pure boxes (table above) say they affected **whether**:
+
+- the **conduit reads COOL** (269.2°) on every pure strip, graded *and* ungraded;
+- the **steel reads neutral**, not warm — C 0.52, below the instrument's own chroma floor;
+- only the ceiling conduit run reads warm, and that is the run the tube rakes directly.
+
+So the metal is *already* colder than the room, in the build, with the spec albedos installed. And
+§1.1 is not breached by it: the law names a blue-tinted **room**, and these are small dark fixtures
+at chroma ~2.
+
+**The channel choice may well still be right** — value and finish are more robust carriers than hue,
+and they survive any relighting. That is a design call and it is the DD's. What I am flagging is only
+that the *reason given* is falsified by measurement, so the next lead does not inherit "cool metal is
+physically unreachable" as settled physics. It is not.
+
+**Nothing is blocked.** R19(a) proceeds on value + finish either way, and both are satisfied.
+
+**R28 — the room owns the phone OBJECT; the content is nobody's, and stays dark.** R19(a) already
+puts it in his material register, not the institution's. A dark phone also cannot become a C13
+instance.
+
+> **Do not execute the "screen stays dark" clause without re-asking.** R28 was ruled from principle
+> with the question text absent and invites the narrow re-ask. Its premise does not match this build:
+> a phone surface **already exists and is functional** — `PhoneScreen.cs` renders `BookieFeed`, a
+> real engine model, and carries live coverage in `Tests/PlayMode/PhoneTests.cs`,
+> `Tests/EditMode/BookieFeedModelTests.cs` and `RoomSmokeTests.cs`. Blanking it deletes a working,
+> tested feature on a ruling made without sight of it. Ask the narrow form first.
+
+**Separate live finding on the same file, now unambiguously room-owned by R28:** `PhoneScreen.cs:36`
+declares `chromeCyan` `(0.62, 0.86, 0.96)` and prints it at `:188` on the `BOOKIE` label, and the
+file cites `design/08`'s palette law as its authority at `:9` and `:32`. `design/08` is **T3, a
+deprecated anti-reference**; `chromeCyan` is **T9, a retired hue**. This is a room-side instance of
+the T9/T15/T30/T34 class that the retired-hue scan did not reach. Not fixed here — the replacement
+is a design call and the surface's content authority is exactly what is unresolved.
+
+**R29 — Gate 2 active state: RULED and BUILT.** A gate certifies the configuration it ran against.
+Gate 2 now reads `m_IsActive`, names any disabled same-named object, and where a `PrefabInstance`
+carries no override it resolves the flag from the **source prefab asset** rather than assuming.
+
+That immediately caught something: **`RoomArtRoot` had no `m_IsActive` override**, so the old
+gate's PASS covered three of four singletons and was silent about the room's own art root — the one
+object the whole slice hangs on. Resolved through the prefab (`038e2203…`, root active), so Gate 2
+re-runs against the active state and PASSes 4/4 rather than recording uncovered. Its blind spot now
+states the two things it still cannot do: it reads the object's own flag, so an object whose
+**ancestor** is disabled reads active here, and where the flag comes from the prefab the verdict
+covers the asset's default, not anything the scene states.
+
+### The evidence gap — the harness's output was never kept
+
+Every number this harness has produced reached the register by being **hand-copied out of a
+terminal**. No gate log, no JSON, nothing in `artifacts/`. The claim was the artifact and no run was
+reproducible. Fixed: `--report PATH` tees the full run to a file. First one committed at
+`artifacts/room-visual-pass/gate-runs/2026-08-03-R29-gate2-active-state.txt`. **Pass it on every
+run** — C11 wants the evidence, C17 wants it retained, C25 wants its scope attached, and the file
+carries all three.
+
+Related and still true: **all of R19 is committed, not frame-verified.** No instrument region samples
+the laptop, TV or phone body, so R19(a)'s separation has only ever been albedo arithmetic. Under
+R19(b)-am the carrying channel is **value**, which is measurable in a frame — so regions for those
+bodies would convert R19(a) from asserted to measured.
+
+### BezelBlack retired — and my finding for it was too strong
+
+`TVBody` wore `BezelBlack #3C3C38`. I reported it as **not visible** and Allen retired it on that
+basis — *"two body materials, not three; one of them invisible is a maintenance lie."* `TVBody` now
+wears the same painted steel as the enclosure via a single shared factory
+(`GrayboxRoomBuilder.HousingSteelMat()`), so the institutional metal has **one** definition; R19(b)
+already had to un-drift that colour once and a second copy is how that recurs silently.
+
+**The retirement is not a no-op and my claim was wrong.** Measured against the pre-retirement set:
+
+| frame | max diff | pixels changed |
+|---|---|---|
+| conformance wide | 1 | 0 — unchanged |
+| conformance seated | 92 | **170,389** |
+| standing view | 153 | **28,520** |
+
+The change is a narrow strip at the far-left frame edge plus corner slivers — the bezel's exposed
+border. The housing covers it on the right and bottom, which is where I sampled and found rivets;
+**on the left it is exposed.** The correct statement is **"not measurable"** — no surface-pure region
+is obtainable where it is exposed, because there it is a thin strip against housing of near-identical
+value — *not* "not visible." Allen re-confirmed the retirement on his authority after the correction,
+and the orchestrator has it on the DD reconciliation list as a **visible change to a design-verified
+room**. The R25 package is its re-review evidence.
+
+Lesson worth keeping: *"I could not measure it"* and *"it is not there"* are different claims, and
+the harness can only ever support the first.
+
+### Gates 6–8 are VOID again, by design
+
+Allen walked and passed them at `9e1b4e4`. The certification is keyed to the scene's content
+fingerprint, and the retirement changed it, so it **expired itself**. Geometry is untouched and his
+clearance verdict is very likely still good, but no tool may re-issue a human gate — re-certify with
+`--certify-human-gates <commit>` only on a human's word.
+
+### Suites, at the merge round
+
+`EditMode 73/73`, `PlayMode 20/20`, 0 failed, 0 skipped, results XML written both times.
+
+First attempt reported exit 0 with **no results file at all**: `-runTests` had been given `-quit`,
+and the test runner closes the editor itself, so `-quit` raced it to the exit. Exit 0 proved nothing
+— §9.4's own warning, walked into while checking for it elsewhere. **Never pass `-quit` with
+`-runTests`,** and always confirm the XML exists before believing a green suite.
+
+### Idempotence, measured at last — §1.5 holds in content, not in bytes
+
+Law §1.5 says *"a rebuild reproduces the room exactly."* Every previous run of §9.2 ("run the builder
+twice") **asserted** this without ever diffing the two outputs. Measured 2026-08-03:
+
+```
+committed  b16bbd38…      run1  73d29510…      run2  c4d033ee…      all three differ
+```
+
+**But normalise `fileID`s and anchors and the difference is exactly zero** — 13270 lines each way, 0
+only-in-committed, 0 only-in-current. Every byte of drift is Unity reassigning anchor fileIDs on
+rebuild. The room's *content* reproduces exactly; its *serialisation* does not.
+
+Two consequences worth carrying:
+
+1. **§9.2 can never be a byte comparison.** "Run the builder twice and compare" only means anything
+   against a fileID-normalised multiset. A byte diff will always be red and always be meaningless.
+2. **A rebuild buries a real change.** The post move committed at `9e1b4e4` carried ~9663 changed
+   lines in `Room.unity`, of which exactly one mattered. A reviewer cannot see a genuine geometry
+   change in that noise, which is worth remembering before trusting any scene diff by eye.
+
+Not a defect in the room, and not something to "fix" in the builder — it is a property of Unity's
+serialiser. But the law's wording invites the byte reading, and the byte reading is false.
+
+**A rebuild also drops the working tree out of sync with the baked scene.** After any bare builder
+run, `git checkout -- unity/SBR/Assets/Scenes/Room.unity` restores the committed, baked, gate-verified
+scene. (`md5sum` will still disagree with the committed blob afterwards — the repo converts LF→CRLF on
+checkout. `git status` is the authority, not the hash.)
+
+### Open questions with other seats
+
+1. **R22 walkthrough** — Allen. Gates 6–8 void until then. Geometry has landed (below), so this is
+   unblocked and needs only the editor lease.
+2. ~~`PhoneScreen` ownership~~ — **answered by R28**; narrow re-ask outstanding (see above).
+3. ~~Gate 2 `m_IsActive`~~ — **answered by R29 and built.**
+4. **Law 1.1's window pool** — see above. Still the live one.
+
+---
+
+## 12. C15 — TextMeshPro migration scope for this surface
+
+**Ruled by Allen 2026-08-02: Option 1, both surfaces migrate to TMP. Scheduled phase, not now** —
+sequenced after the current conformance wave, orchestrator schedules per surface. Signed type
+deviations hold until a surface migrates, then expire. Scoped here ahead of the phase, per the
+ruling. **No build work has been done.**
+
+### 12.1 The room is not one of "both surfaces" — but it owns text anyway
+
+C15's two surfaces are the **laptop** and the **TV**. Neither is this slice. The room nevertheless
+builds and owns text, so it cannot simply sit the phase out:
+
+| what | where | render mode | current type |
+|---|---|---|---|
+| Interaction prompt | `InteractionHud.cs` | ScreenSpaceOverlay | 1 × `UI.Text`, `LegacyRuntime.ttf`, size 20 |
+| Phone messages + badge | `PhoneScreen.cs` | **WorldSpace** | multiple `UI.Text` via its own `MakeText` |
+
+Both are `CanvasRenderer` today.
+
+### 12.2 The phone is unclaimed, and that needs a ruling before the phase
+
+`BuildPhone` in `GrayboxRoomBuilder` builds the prop **and** attaches `PhoneScreen`, so the room
+builds it. But §8's read-only list names SportsbookApp, LaptopOs, "other SureThing files",
+TvSweatScreen, theater/pacing and TV UI — **it does not name `PhoneScreen`**, and C15's "both
+surfaces" does not cover it either.
+
+So the phone is a third text surface that no ruling currently assigns. It should not migrate by
+accident, and it should not be missed because each seat assumed the other had it. **Ask before the
+phase, not during it.**
+
+### 12.3 The one real hazard, and it is a repeat
+
+`MarkStaticForGI` sweeps **`MeshRenderer`** and marks everything it finds `ContributeGI` for the
+Adaptive Probe Volume bake.
+
+TMP ships two components. `TextMeshProUGUI` is a `CanvasRenderer` — invisible to that sweep, exactly
+as `UI.Text` is today. The plain `TextMeshPro` component is a **`MeshRenderer`**, and it is the
+natural-looking choice for world-space text like the phone.
+
+**Pick that one and the phone's glyphs get baked into the probe volume.** That is R7.0 all over
+again — thin quads entering the GI bake, occluding at probe scale and able to invalidate the probes
+behind them — and it took a full editor lease to diagnose the first time.
+
+Mitigation, in order of preference: use `TextMeshProUGUI` and keep the world-space Canvas; or, if
+the 3D component is genuinely wanted, extend the wear-root exclusion in `MarkStaticForGI` to cover
+text before the first bake, never after.
+
+### 12.4 Other room-side constraints the phase must respect
+
+- **The collider inventory is ratified at 29** (T53): 27 BoxCollider + 2 MeshCollider, on
+  `LaptopScreen` and `PhoneScreen`. The phone screen's MeshCollider is one of the two named members.
+  Restructuring that object during migration changes a gated number — re-run `tools/room_gate_check.py`.
+- **The emission-keyword protection does not extend to TMP.** `Mat()` sets
+  `RealtimeEmissive` specifically because URP's postprocessor recomputes `_EMISSION` from that field
+  and silently stripped it once. TMP materials do not go through `Mat()`, so they inherit none of
+  that guard. Do not assume they are covered.
+- **Screens sit inside the unified grade**, so any TMP material is graded with the room and is not
+  exempt — the same rule that governs the existing panels.
+- **C3's one-token invariant and the HDR material path are TV-side concerns.** The room has no HDR
+  text and no L4 occupant. Flagged only so the room is not scoped as though it does.
+
+### 12.5 Estimate
+
+Small — 1 × `UI.Text` certain, plus the phone's handful if it is ruled ours. The risk is not volume;
+it is the GI sweep in 12.3 and the unowned surface in 12.2. Both are cheap to handle **before** the
+phase and expensive to discover during it.

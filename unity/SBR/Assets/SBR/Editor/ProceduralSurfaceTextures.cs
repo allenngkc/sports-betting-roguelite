@@ -22,7 +22,10 @@ namespace SBR
     /// </summary>
     public static class ProceduralSurfaceTextures
     {
-        public enum SurfaceKind { Plaster, WornFloor, CeilingStain, FabricWeave }
+        // R20 (Design Director, 2026-08-01): ChippedPaint (TV housing) and BatteredMetal
+        // (desk) added - "two objects the direction names by hand are not deviations but
+        // unbuilt required work". See GenerateChippedPaint / GenerateBatteredMetal below.
+        public enum SurfaceKind { Plaster, WornFloor, CeilingStain, FabricWeave, ChippedPaint, BatteredMetal }
 
         private const string ParentFolder = "Assets/SBR/Environment";
         private const string FolderPath = ParentFolder + "/Textures";
@@ -67,6 +70,8 @@ namespace SBR
                 SurfaceKind.WornFloor => GenerateWornFloor(resolution, rng, perm),
                 SurfaceKind.CeilingStain => GenerateCeilingStain(resolution, rng, perm),
                 SurfaceKind.FabricWeave => GenerateFabricWeave(resolution, rng, perm),
+                SurfaceKind.ChippedPaint => GenerateChippedPaint(resolution, rng, perm),
+                SurfaceKind.BatteredMetal => GenerateBatteredMetal(resolution, rng, perm),
                 _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
             };
 
@@ -526,6 +531,142 @@ namespace SBR
                     float fibre = FractalNoise(perm, u, v, Mathf.Max(4, res / 8), 2, 0.5f);
                     value += (fibre - 0.5f) * 0.06f;
 
+                    pixels[y * res + x] = Gray(value);
+                }
+            }
+            return pixels;
+        }
+
+        // R20 (Design Director, 2026-08-01): "the TV housing's chipped paint... [is]
+        // unbuilt required work and resume now". Institutional paint on riveted steel:
+        // mostly intact, interrupted by SPARSE, HARD-EDGED chips where the paint has come
+        // away and exposed the metal beneath.
+        //
+        // A chip is paint LOSS, not a dip: its floor is reached by a hard step (no
+        // SmoothStep), which is what makes the edge read as a cliff rather than as dirt or
+        // shading - see the "if (d < c.r)" branch below, which assigns the plateau outright
+        // instead of blending toward it. Sizes vary deliberately - "a few large losses among
+        // many small ones" (R20) - via two independently-ranged placement passes. Coverage
+        // (the constants below) is tuned to land at 8-14% of the surface: verified in the
+        // R20 Python harness, not eyeballed - below that reads as clean, above it as a ruin.
+        //
+        // Chip boundaries are jittered by a shared low-frequency warp field (the same
+        // technique GenerateCeilingStain uses for its blotches) so an edge reads as ragged
+        // paint loss rather than a stamped circle, while staying exactly tileable - the warp
+        // is built from the same periodic FractalNoise as everything else in this file, so
+        // it wraps for free.
+        private static Color[] GenerateChippedPaint(int res, Random rng, int[] perm)
+        {
+            var pixels = new Color[res * res];
+
+            int smallCount = Mathf.Max(14, res / 5);
+            int largeCount = 3 + rng.Next(3); // 3-5: "a few large losses"
+            var chips = new (float cx, float cy, float r, float jitter)[smallCount + largeCount];
+            for (int i = 0; i < chips.Length; i++)
+            {
+                bool large = i >= smallCount;
+                // R20 Python harness measured coverage at 512^2/seed 20260725: these
+                // ranges land at 10.05% (target band 8-14%, see harness output in the
+                // task report - do not retune without re-running it).
+                float r = large
+                    ? res * (0.048f + (float)rng.NextDouble() * 0.037f)
+                    : res * (0.010f + (float)rng.NextDouble() * 0.008f);
+                chips[i] = (
+                    (float)rng.NextDouble() * res,
+                    (float)rng.NextDouble() * res,
+                    r,
+                    0.25f + (float)rng.NextDouble() * 0.35f);
+            }
+
+            const float paintPlateau = 0.94f;
+            const float chipPlateau = 0.40f;  // distinctly lower - bare metal, not shadow
+
+            for (int y = 0; y < res; y++)
+            {
+                for (int x = 0; x < res; x++)
+                {
+                    float u = x / (float)res;
+                    float v = y / (float)res;
+
+                    // Fine scratching on the intact paint - low amplitude, high frequency,
+                    // present everywhere so the paint between chips reads as handled, not
+                    // pristine (R20: "fine scratching at low amplitude across the intact
+                    // paint between chips").
+                    float scratch = FractalNoise(perm, u, v, Mathf.Max(16, res / 3), 2, 0.5f);
+                    float value = paintPlateau - (scratch - 0.5f) * 0.04f;
+
+                    float warp = FractalNoise(perm, u, v, 6, 2, 0.5f) - 0.5f;
+
+                    foreach (var c in chips)
+                    {
+                        float d = ToroidalDistance(x, y, c.cx, c.cy, res) + warp * c.jitter * c.r;
+                        if (d < c.r)
+                            value = chipPlateau; // HARD EDGE - a step, not a falloff.
+                    }
+
+                    pixels[y * res + x] = Gray(value);
+                }
+            }
+            return pixels;
+        }
+
+        // R20: cheap sheet-steel desk, "shoved, loaded and knocked for a decade". Two
+        // components only, deliberately - no chips, because this is deformation, not paint
+        // loss:
+        //
+        //   DENTS - broad, low-frequency, smooth-edged, and only ever a subtraction.
+        //   Rectifying the low-frequency field (Max(0, 0.5 - noise)) means it can dip below
+        //   the base plate height but can never rise above it - "a dent is a subtraction"
+        //   enforced as a height-field constraint, not just a description.
+        //
+        //   SCRATCHES - high frequency ACROSS the grain, low frequency ALONG it, so they
+        //   read as dragged in one direction rather than as isotropic noise. Achieved by
+        //   pre-scaling the v coordinate by an INTEGER before it reaches the existing
+        //   FractalNoise helper - the same trick GenerateFabricWeave already uses for
+        //   warpPhase/weftPhase. An integer multiplier keeps this exactly tileable: shifting
+        //   v by one full wrap shifts the scaled coordinate by an integer multiple of the
+        //   noise's own period, so it still closes on itself (see FractalNoise/ValueNoise -
+        //   periodicity only requires the SHIFT to land on a period boundary, not the scale
+        //   itself to match). Rectified the same way as the dents, so a scratch is a groove,
+        //   not a ridge - no new noise primitive needed, just different inputs to the old one.
+        //
+        // Both rectifications together mean the whole field never exceeds basePlate -
+        // checked in the R20 Python harness (min/mean/max), alongside the X-vs-Y gradient
+        // split that is the numeric meaning of "directional".
+        //
+        // basePlate sits high (0.90), matching this class's own header contract -
+        // "everything here is centred near white ... modulating a tint rather than
+        // replacing it" - and it is load-bearing, not cosmetic. GetOrCreateMask's smoothness
+        // curve is InverseLerp(0.55, 1.0, height) SHARED across every SurfaceKind; an
+        // earlier basePlate of 0.62 sat almost entirely below that window, so nearly every
+        // texel clamped to the window's floor and the mask map only used ~15% of its
+        // smoothMin..smoothMax range (measured in the R20 Python harness: 0.16-0.20 instead
+        // of the requested 0.16-0.44). At 0.90 the undented plate sits inside the window's
+        // "clean" region like every other surface here, so the mask actually varies with
+        // wear again - measured spread 0.16-0.38.
+        private static Color[] GenerateBatteredMetal(int res, Random rng, int[] perm)
+        {
+            var pixels = new Color[res * res];
+
+            const float basePlate = 0.90f;
+            const float dentDepth = 0.32f;
+            const float scratchDepth = 0.20f;
+            const int scratchStretch = 20; // integer -> exact tiling, see header above
+
+            for (int y = 0; y < res; y++)
+            {
+                for (int x = 0; x < res; x++)
+                {
+                    float u = x / (float)res;
+                    float v = y / (float)res;
+
+                    float dentField = FractalNoise(perm, u, v, 3, 3, 0.5f);
+                    float dent = Mathf.Max(0f, 0.5f - dentField) * 2f; // 0..1, 0 = flat plate
+
+                    float scratchField = FractalNoise(perm, u, v * scratchStretch, 3, 2, 0.5f);
+                    float scratch = Mathf.Max(0f, 0.5f - scratchField) * 2f;
+
+                    float value = basePlate - dent * dentDepth - scratch * scratchDepth;
                     pixels[y * res + x] = Gray(value);
                 }
             }

@@ -92,6 +92,72 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-04 cycle 81 · **Room merge VALIDATED — fully green** — engine
+  160/160, compile 0 errors, EditMode 75/75, PlayMode 39/39 WITH graphics
+  (TV's 3 environmental -nographics failures did not recur), results XMLs
+  fresh-verified, end state pristine (0 tracked changes; the 8 texture " M"
+  lines were LFS stat-cache artifacts, verified byte-identical and now
+  clean). Gate script exit 1 = the one documented design-open line. Note:
+  TV's "EditMode 222" is its own workspace's suite scoping; this workspace's
+  full-run baseline is 75/75 and matches. Veto window on `55f4a63` stands
+  but the merge is certified. Room confirmed + holds for DD; **TV granted a
+  full capture window now** (re-merge main → the two lighting shoots → bloom
+  A/B → SureThing captures with graphics). Validation agent chartered
+  in-turn waits after one stall. Reversal: revert the merge commit.
+- 2026-08-04 cycle 80 · **Overnight Orca restart recovered** — all four lead
+  sessions died with the restart; revived via `claude --continue` with bypass
+  (full context restored, /effort max re-applied, all four confirmed booted).
+  New handles registered. Watchers re-armed (unified v6: busy→idle + staged
+  drafts; heartbeat). Validation agent resumed mid-run and healthy: engine
+  160/160, DLL cmp-identical, warm compile importing under its own watcher;
+  EditMode → PlayMode follow. Reversal: none.
+- 2026-08-03 cycle 79 · **ROOM SLICE ROUND 3 MERGED — `55f4a63`** — clean
+  checklist: suites green with proof files (EditMode 73/73, PlayMode 20/20
+  slice-filtered), 83 files all inside room ownership, 0 code conflicts;
+  one add/add on the stale root `orchestrator-brief.md` resolved by removal
+  (retired-root-file convention). Gates 6–8 re-certified on Allen's standing
+  walkthrough verdict (his call). Capture harness now on main — TV's re-shoot
+  blocker gone. Debt logged: 8 room textures predate the LFS root fix and sit
+  as raw blobs in history; attributes correct so future versions get LFS.
+  Validation agent running on merged main (engine → warm compile → EditMode →
+  PlayMode with GPU). **Veto window: revert 55f4a63 restores pre-merge main.**
+  Denied one dangerous rm mid-round (possibly-empty variable path) — lead
+  re-ran guarded. Reversal: revert the merge commit.
+- 2026-08-03 cycle 78 · **Idle diagnosis + evening drag staged** — markets,
+  SureThing, TV all correctly idle: every remaining item funnels through the
+  DD's next session (2.6px → markets merge → SureThing unblock; suspension
+  input; S8 refold) or room's in-flight merge (TV's harness + window). Evening
+  drag built: `dd-docs-2026-08-03b.zip` (94KB) + S8 refold zip; context
+  prompt leads with the 2.6px as the three-worktree unblock. Reversal: none.
+- 2026-08-03 cycle 77 · **TV window results in; room merge round opened** —
+  TV: T43/T46/T42 compiled clean, EditMode 222/222 (target arithmetic was
+  stale — merge brought SureThing suites in), engine 160/160, zero TV
+  regression incl. the suspended-input case; main merged (`e2143e6`,
+  PRODUCT.md call tagged recoverable). No captures: T48 blocked on room's
+  harness not being on main; T49 deferred correctly (const-edit dance needs a
+  full window). 3 PlayMode fails = SureThing captures under -nographics,
+  environmental. **Room merge round proposed** (dry-run 0 conflicts; hold
+  dissolved with the walkthrough) — room finishing BezelBlack retirement,
+  then MERGE READY → autonomous clean-checklist merge + validation. TV's next
+  window after: T48 + T49 + SureThing captures with graphics. Reversal:
+  merge logs with veto window before/after per policy.
+- 2026-08-03 cycle 76 · **Room materials frame-verified; BezelBlack retired
+  (Allen)** — R19(a) measured on frames, two regions cut and persisted; Allen
+  fired: retire the invisible third body material, route the painterly-read
+  ask (R25) to the DD with the fresh post-move set; room staging that zip.
+  Room lane then idles pending DD. Reversal: Allen's call.
+- 2026-08-03 cycle 75 · **SureThing desktop block COMPLETE** — one name,
+  de-branded wallpaper, icon states, chrome folded; HEAD `3a85f23`, both
+  suites green. S8 re-fold evidence zipped for the drag (1.9MB). Lane holds:
+  its LEDGER close-out waits on the engine-retention commit reaching its tree
+  (markets B1 merge → main → merge main), and B1 waits on the DD's 2.6px
+  ruling — the whole chain hangs on one DD micro-ruling. Room nudged onto
+  R19 measurements; TV mid-window. Reversal: none.
+- 2026-08-03 cycle 74 · **Re-walk PASS — R22 CLOSED, all room gates certified**
+  — Allen: TV clear from the couch; inset post ratified as construction. Room
+  proceeds to materials. TV pinged: editor window now (merge main → compile
+  three fixes → re-shoots per rig recipe). SureThing's desktop capture queued
+  after TV. Register updated. Reversal: none — walk facts + Allen's ratification.
 - 2026-08-03 cycle 73 · **All four landings processed; monitor gap closed** —
   Room: post moved with aisle clearance arithmetically unchanged; re-walk
   READY, lease granted with the idempotence diff folded in (Allen's call).
