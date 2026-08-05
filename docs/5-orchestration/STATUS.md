@@ -70,7 +70,15 @@
 - **Watch:** Unity **segfaults on `-quit`** (exit path only; 0 errors, lockfile
   clears, nothing corrupted — observed on tv-sweat warm compile 2026-07-31). Every
   lease-holder must keep checking process count + lockfile at open. GPU booking
-  remains stood down.
+  remains stood down. **New trap (markets, 2026-07-31): `dotnet build/test/run`
+  silently rewrites the tracked `unity/SBR/Assets/Plugins/SBR/SBR.Engine.dll` —
+  every lead using dotnet must check for and revert that file before committing.**
+  **Second trap (markets, 2026-07-31): Unity can return exit 0 while still
+  mid-import — process + lockfile stayed live ~16 min after "exit". Exit code is
+  not a completion signal; leases close on process count + lockfile + log growth,
+  never on exit alone.** **Third lesson (markets, 2026-08-01): editor-free green
+  means little for Unity-side work — engine suites and dotnet cannot see asmdef
+  code or the DLL boundary; "uncompiled" is treated as genuinely unverified.**
 - **Need Allen:** nothing.
 
 ## Autonomous decisions (Allen veto window)
@@ -84,6 +92,272 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-04 cycle 84 · **Markets merge attempt ABORTED — checklist miss,
+  mine** — real content conflicts in three shared app files (LaptopOs.cs,
+  SportsbookApp.cs, SureThingLedgerTests.cs): markets-2 forked before
+  SureThing round 2 landed, and my drift scan + merge-tree pre-check both
+  missed it (the same too-narrow path grep also let those files through
+  unflagged in room's merge — process defect logged; future pre-checks use a
+  real merge dry-run, not merge-tree grep). Main restored cleanly to
+  `a31a032`; the aborted merge changed nothing. Re-baseline routed to the
+  markets lead (merge main in-branch, resolve keeping both intents, suites
+  green, MERGE READY again — editor retained). Known inert DLL stat-cache
+  line persists post-abort, bytes cmp-identical to HEAD. Reversal: nothing to
+  reverse — no merge landed.
+- 2026-08-04 cycle 83 · **Batch 9 transcribed + all lanes dispatched** — the
+  decisive session: T41/T48/T49/R25/S8 all closed or granted (bloom 1.4
+  SEALED); S51 signs an expiring deviation and **unblocks the markets merge
+  today** (diagnosis falsified — the lead's principled refusal vindicated on
+  fact, fifth-vacuous-gate averted); T58 new (gold on the score at the goal
+  flash, ranks above T42); T59 suspension gates the input; R31 finish-led;
+  R32/R33 sequenced behind the mattress 37.36-vs-44.44 box discrepancy; R34
+  "not measurable ≠ not visible" on the record; C27/C28 laws; kit amendment
+  signed; gates 6–8 VOID by fingerprint expiry (Allen re-confirm queued).
+  Header/body drift flagged: T60 named, no body. Markets records deviation +
+  capture → MERGE READY expected. Reversal: rulings are DD canon.
+- 2026-08-04 cycle 82 · **TV window closed; ONE-SESSION DRAG READY** — TV shot
+  everything: the screens-dark/bypassed pair, bloom A/B (101 frames/arm, five
+  seeds, arms in filenames; harness assert defect disclosed C25-form, frames
+  unaffected), SureThing captures 3/3 green with graphics (confirms
+  -nographics was the whole prior cause). Four zips staged, all <20MB. Final
+  bundle `dd-docs-2026-08-04.zip` (100KB) + prompt cover the complete docket:
+  2.6px unblock, grade+bloom verdicts, suspension input, S8 refold, painterly
+  read + room's two new findings, verdict screen, seven reconciliations.
+  Drag = 7 files, one turn. Reversal: none.
+- 2026-08-04 cycle 81 · **Room merge VALIDATED — fully green** — engine
+  160/160, compile 0 errors, EditMode 75/75, PlayMode 39/39 WITH graphics
+  (TV's 3 environmental -nographics failures did not recur), results XMLs
+  fresh-verified, end state pristine (0 tracked changes; the 8 texture " M"
+  lines were LFS stat-cache artifacts, verified byte-identical and now
+  clean). Gate script exit 1 = the one documented design-open line. Note:
+  TV's "EditMode 222" is its own workspace's suite scoping; this workspace's
+  full-run baseline is 75/75 and matches. Veto window on `55f4a63` stands
+  but the merge is certified. Room confirmed + holds for DD; **TV granted a
+  full capture window now** (re-merge main → the two lighting shoots → bloom
+  A/B → SureThing captures with graphics). Validation agent chartered
+  in-turn waits after one stall. Reversal: revert the merge commit.
+- 2026-08-04 cycle 80 · **Overnight Orca restart recovered** — all four lead
+  sessions died with the restart; revived via `claude --continue` with bypass
+  (full context restored, /effort max re-applied, all four confirmed booted).
+  New handles registered. Watchers re-armed (unified v6: busy→idle + staged
+  drafts; heartbeat). Validation agent resumed mid-run and healthy: engine
+  160/160, DLL cmp-identical, warm compile importing under its own watcher;
+  EditMode → PlayMode follow. Reversal: none.
+- 2026-08-03 cycle 79 · **ROOM SLICE ROUND 3 MERGED — `55f4a63`** — clean
+  checklist: suites green with proof files (EditMode 73/73, PlayMode 20/20
+  slice-filtered), 83 files all inside room ownership, 0 code conflicts;
+  one add/add on the stale root `orchestrator-brief.md` resolved by removal
+  (retired-root-file convention). Gates 6–8 re-certified on Allen's standing
+  walkthrough verdict (his call). Capture harness now on main — TV's re-shoot
+  blocker gone. Debt logged: 8 room textures predate the LFS root fix and sit
+  as raw blobs in history; attributes correct so future versions get LFS.
+  Validation agent running on merged main (engine → warm compile → EditMode →
+  PlayMode with GPU). **Veto window: revert 55f4a63 restores pre-merge main.**
+  Denied one dangerous rm mid-round (possibly-empty variable path) — lead
+  re-ran guarded. Reversal: revert the merge commit.
+- 2026-08-03 cycle 78 · **Idle diagnosis + evening drag staged** — markets,
+  SureThing, TV all correctly idle: every remaining item funnels through the
+  DD's next session (2.6px → markets merge → SureThing unblock; suspension
+  input; S8 refold) or room's in-flight merge (TV's harness + window). Evening
+  drag built: `dd-docs-2026-08-03b.zip` (94KB) + S8 refold zip; context
+  prompt leads with the 2.6px as the three-worktree unblock. Reversal: none.
+- 2026-08-03 cycle 77 · **TV window results in; room merge round opened** —
+  TV: T43/T46/T42 compiled clean, EditMode 222/222 (target arithmetic was
+  stale — merge brought SureThing suites in), engine 160/160, zero TV
+  regression incl. the suspended-input case; main merged (`e2143e6`,
+  PRODUCT.md call tagged recoverable). No captures: T48 blocked on room's
+  harness not being on main; T49 deferred correctly (const-edit dance needs a
+  full window). 3 PlayMode fails = SureThing captures under -nographics,
+  environmental. **Room merge round proposed** (dry-run 0 conflicts; hold
+  dissolved with the walkthrough) — room finishing BezelBlack retirement,
+  then MERGE READY → autonomous clean-checklist merge + validation. TV's next
+  window after: T48 + T49 + SureThing captures with graphics. Reversal:
+  merge logs with veto window before/after per policy.
+- 2026-08-03 cycle 76 · **Room materials frame-verified; BezelBlack retired
+  (Allen)** — R19(a) measured on frames, two regions cut and persisted; Allen
+  fired: retire the invisible third body material, route the painterly-read
+  ask (R25) to the DD with the fresh post-move set; room staging that zip.
+  Room lane then idles pending DD. Reversal: Allen's call.
+- 2026-08-03 cycle 75 · **SureThing desktop block COMPLETE** — one name,
+  de-branded wallpaper, icon states, chrome folded; HEAD `3a85f23`, both
+  suites green. S8 re-fold evidence zipped for the drag (1.9MB). Lane holds:
+  its LEDGER close-out waits on the engine-retention commit reaching its tree
+  (markets B1 merge → main → merge main), and B1 waits on the DD's 2.6px
+  ruling — the whole chain hangs on one DD micro-ruling. Room nudged onto
+  R19 measurements; TV mid-window. Reversal: none.
+- 2026-08-03 cycle 74 · **Re-walk PASS — R22 CLOSED, all room gates certified**
+  — Allen: TV clear from the couch; inset post ratified as construction. Room
+  proceeds to materials. TV pinged: editor window now (merge main → compile
+  three fixes → re-shoots per rig recipe). SureThing's desktop capture queued
+  after TV. Register updated. Reversal: none — walk facts + Allen's ratification.
+- 2026-08-03 cycle 73 · **All four landings processed; monitor gap closed** —
+  Room: post moved with aisle clearance arithmetically unchanged; re-walk
+  READY, lease granted with the idempotence diff folded in (Allen's call).
+  Markets: B1 COMPLETE at `62044f2` except the 2.6px residual — routed to DD
+  (spacing+repetition exhausted; not the lead's to pick). SureThing: chrome
+  fold built with asserts (own taskbar gone); owes the desktop frame.
+  TV: three fixes committed (`5d06dea`) uncompiled — window after re-walk;
+  its suspended-input contract question routed to DD. Monitor gap admitted +
+  fixed: busy→idle transition watcher armed (the draft watcher never covered
+  completions) + heartbeat re-armed (died in a restart). Editor: room/Allen
+  now → TV → SureThing capture. Reversal: none.
+- 2026-08-03 cycle 72 · **Four staged drafts fired, all lanes kicked** —
+  SureThing: desktop chrome fold now (S48; re-opens S8 — desktop frame owed
+  for DD re-review). TV: game-console prototype declared dead, EventText.cs
+  added to the copy sweep. Room: GO on the bunk-post move, lease granted;
+  structural gates re-void and re-run; Allen takes the couch-sightline
+  re-walk after. Markets: 78px pitch folds into one constant, then the final
+  fit measurement (editor after room) — fits ⇒ merge checklist. Editor queue:
+  room → markets. Reversal: Allen's own calls.
+- 2026-08-03 cycle 71 · **Walkthrough recorded** — Allen walked the two-bunk
+  room: aisle, traversal, scale, phone all PASS; one finding — from the couch,
+  bunk 2's post partially occludes the TV sweat view. Gates 6–7 clear; Gate 8
+  clears with the occlusion fix (geometry-class fix re-voids + re-runs, per
+  the lead's own flag; sweat view is the primary sightline, fix must not
+  degrade it). Register R22 row updated. Reversal: none — walk facts.
+- 2026-08-03 cycle 70 · **Two staged drafts fired; walk done, report pending** —
+  markets: placed tickets draw on BOTH screens (Allen; one shared component
+  consumed twice; kit deviation queued for DD signature). Room: Allen walked
+  the two-bunk room — report incoming, lead holding. Rig recipe committed.
+  DD reconciliation note staged (phone live-feed, both-screens tickets,
+  R19(b)-am premise question). Reversal: Allen's own rulings.
+- 2026-08-03 cycle 69 · **Walkthrough approved + staged; phone ruling fired** —
+  Allen approved the room walkthrough; checklist written
+  (`docs/design/r22-walkthrough-checklist.md`), room staging the scene + move
+  steps, editor free and reserved for the walk next. Allen's staged phone
+  ruling fired: live BookieFeed on the phone STAYS (Allen's authority over the
+  DD's dark-stub default; distinction: live engine content, not invented UI) —
+  queued for register reconciliation in the next DD drag. Markets chased on
+  two points: whether the 2.6px residual is over-or-under with a staged
+  receipt (over = hold red, new DD item), and to state the
+  placed-tickets-on-main-screen question in two sentences for Allen. Reversal:
+  phone ruling is Allen's; walkthrough is procedural.
+- 2026-08-03 cycle 68 · **Constitution APPROVED (Allen, all three new clauses
+  explicitly)** — landed as canon at `docs/design/constitution.md`; register row
+  and inbox updated; report-back queued for the next DD drag. Reversal: Allen's
+  own approval; strike the file and revert the row.
+- 2026-08-03 cycle 67 · **Three staged drafts fired** — markets: Allen ruled
+  the staged-receipt overrun (receipts move to the sheet per E-07, re-measure);
+  SureThing: proceed S47 (S44+S45 done); room: geometry commit approved
+  (collider inventory + true-world-size done) — walkthrough scheduling on its
+  confirm. TV mid-chain (T44 copy-audit recon running). Reversal: Allen's own
+  calls.
+- 2026-08-03 cycle 66 · **Everything in the works** — TV: T41 FIXED+COMMITTED
+  (stage capped under the ladder, cash-out band brightest by construction,
+  Phase 3 unblocked); T48/T49 pushed to next window (clean lease release);
+  answered its rig question (screens-dark/bypass = room's R23/R26 rig — room
+  asked to document the recipe); clears after handoff. SureThing: S46 landed
+  (one name, suites green, frame-verified); proceeding S44+S45; verdict-screen
+  question goes to a dd-import note if needed. Markets: S50 executed (PRICES
+  FINAL deleted, S39 collapse, tests read header Count); editor lease granted
+  NOW for compile + PlayMode + the staged-receipt measurement — 2px margin
+  expected tight; overrun = new item per S50, held red. Room: R19(a)
+  sub-agents cutting surface-pure regions. Editor queue: markets → TV
+  (T48/T49). Reversal: none.
+- 2026-08-03 cycle 65 · **Batch 8 transcribed + dispatched** — constitution
+  DRAFTED (awaiting Allen: three new clauses §1.5/§2.5/§2.6); **S50 closes the
+  last B1 blocker** (panel growth refused — the 34px is the OS tray, R30 law;
+  granted: PRICES FINAL deletion 18px + S39 baseline collapse on margin legs
+  26px; re-measure with staged receipt before B1 clean); R19(b)-am strikes
+  "colder" (value+finish carry it; lighting instrument refused; R19(a)
+  proceeds); R28 phone stub/dark; R29 Gate 2 names state+blind spot; C25
+  instrument-scope law (promoted from the markets lead); C26 owning docs
+  sequenced; T47-am on record. Markets + room dispatched (>500B sends verified
+  delivered). Transcription log updated. Reversal: rows strike if Allen vetoes
+  the draft clauses — rulings themselves are DD canon.
+- 2026-08-03 cycle 64 · **Room cleared+reseated on READY signal; next DD drag
+  staged** — markets' 44px call is filed (T47 fixes verified `774a1c9`; 44px
+  flow deficit, three costed candidates, last B1 blocker); room's R19(b)
+  finding written up (`dd-followup-room-r19b.md`); context prompt
+  `dd-context-prompt-2026-08-03.md` + bundle `dd-docs-2026-08-03.zip` (80KB)
+  staged — session order: constitution (C24), 44px call, R19(b), room's two
+  small questions. Reversal: none.
+- 2026-08-03 cycle 63 · **Morning sweep, post-Orca-restart** — all four handles
+  re-resolved. TV granted its T41 editor window (compile+verify, T48 re-shoots
+  and T49 A/B in the same window if it holds); SureThing /clear executed +
+  re-seated on its handoff (was 100% context; desktop block next, S46 first);
+  room ordered to finalize handoff for clear (100% context) — its new R19(b)
+  finding (metal-colder-than-room possibly unreachable under one warm source;
+  R12-class, no albedo lightening) queued for the DD drag; markets asked to
+  file the 44px call as `dd-import/markets-44px-call.md` (its T47 report was
+  cut by an API error). Editor queue: TV → markets. Watcher v5 re-armed.
+  Reversal: none — grants follow the standing lease policy.
+- 2026-08-02 cycle 62 · **Sweep + constitution-session prep** — fired two staged
+  drafts (SureThing: S49 kit entry is DD-authored, build S42 now; room: editor
+  lease granted for the T48 verification cycle — TV queues next for T41's
+  compile window, then markets). Context-health flags sent: SureThing at 99%,
+  room at 98% — both instructed to update handoff + /clear after current item.
+  DD context prompt authored (`dd-context-prompt-2026-08-02.md`) + docs bundle
+  `dd-docs-2026-08-02c.zip` for the constitution session. New lead questions
+  queued to DD: room's PhoneScreen ownership + Gate 2 active-state; markets'
+  44px call (details pending). Markets took an API-error hit mid-response,
+  recovered onto sanctioned handoff work. Reversal: none — grants were Allen's.
+- 2026-08-02 cycle 61 · **Batch 7 + the batch-5 backfill: register brought
+  current (C22)** — root-cause finding accepted: batch 5 (41 lines) was
+  dispatched and obeyed but never transcribed into the tables; the DD's batch 6
+  then re-ruled four room items blind. Transcribed today: batch 5 (S15-am,
+  S24-stands, S25-am, S27–S37, R12-am, R16–R26, R23.1, T24-am, T28–T36,
+  T38–T40, T32.1, TV-12/13, C16–C21) and batch 7 (C22, C22.1, C23, C24,
+  S31-am, S32-closed, S38–S49, R27, LEDGER-DV-withheld); T53–T56 re-keyed to
+  R16/R22/R19(a)/R19(c) per C22.1; transcription log added; sidecars marked
+  superseded. S32 rebuild CANCELLED on frames; desktop ruled S44–S49 (house
+  owns the app, player owns the machine); R27 fog doc edit applied (0.085
+  ExponentialSquared). SureThing dispatched LEDGER + desktop orders; room
+  dispatched re-key + hue/value split. S41 has a cross-worktree precondition:
+  `9e55d0d` must reach surething-ui's tree (markets B1 merge or cherry-pick —
+  orchestrator coordinates). Constitution precondition now met. Reversal:
+  transcription is additive; rows strike if the DD's files differ.
+- 2026-08-02 cycle 60 · **C15 RULED (Allen): TMP migration, Option 1** —
+  registered as C15, scheduled after the conformance wave; dispatched to all
+  four leads (no build work yet; deviations stay signed until each surface
+  migrates). Desktop branding delegated to DD. S36 struck (was resolved at
+  `9e55d0d`). Drag 2 prepared: `dd-docs-2026-08-02b.zip` (95KB, canon through
+  batch 6 + C15 + desktop note + stale-export/renumber admin) +
+  `surething-captures-2026-08-03.zip` (12 states incl. populated ledger ×2 and
+  first desktop render — DD's record-row precondition satisfied). Reversal:
+  C15 is Allen's call; drag is informational.
+- 2026-08-02 cycle 59 · **DD Batch 6 transcribed + all lanes dispatched** —
+  T47–T57 landed via Allen's paste (export zip was stale — verbatim preserved in
+  `register-batch6.md`; DD re-export requested). Headlines: T47 margin ruled
+  (bound flow, stack anchored, LockReason back inside Lock) — **markets B1
+  unblocked**; T48 grade ruled Option A (neutral black point, keep lift; subsumes
+  T45 — room countermanded off it); T51/T52 close TV-15/TV-02 (0.3px yields;
+  one strip confirmed); T49 bloom re-run after T41; T53–T57 room chain (29
+  colliders, Gate 8 void, shared material outranks polish). Studio-wide standing
+  instruction: every gate states what it cannot see. DD global order relayed;
+  T47 second because B1 is the only wholly-blocked lane. Room 612B send stuck in
+  composer — fired with completion tail (composer rule held). SureThing accident
+  benign: Allen's mis-addressed messages produced the desktop DD note + scroll
+  build, both on-queue. Reversal: rulings are DD canon; strike rows if DD's
+  re-export differs from the paste.
+- 2026-08-02 cycle 58 · **DD relay authored + SureThing unblock dispatched** —
+  relay note for Allen to paste into the DD chat (`dd-relay-2026-08-02.md`):
+  state-sync, renumber map, seven-item priority queue. SureThing dispatched to
+  shoot the populated-ledger capture set now (the DD's stated precondition for
+  its headline record-row verdict). Reversal: none — informational + capture task.
+- 2026-08-02 cycle 57 · **DD frame verdicts transcribed + dispatched** — T6
+  Design-verified CLOSED (variation reads on postC14 Set B; T19 risk retired;
+  canon-T26's expected inversion delivered). Six new rulings arrived issued as
+  "T22–T27" from a stale-numbered DD session (knew only batches 1–3) — measured
+  on TODAY'S frames, so content is current; renumbered **T41–T46** at
+  transcription (`register-frame-review-2026-08-02.md`, verbatim + map). T41
+  (multiple L4 occupants — cap the stage) BLOCKS TV Phase 3+; TV's hold ended,
+  dispatched in DD order T41→T43→T46→T42→T44; T45 (navy death re-tint → olive)
+  dispatched to room. Gold hex recorded, token stays. Reversal: renumbering is
+  additive; strike T41–T46 rows and re-key if DD objects.
+- 2026-08-02 cycle 56 · **Markets B1: still blocked — new defect** — MaxLegs=4
+  landed (`28b63a0`, balance-neutral, G1–G6 byte-identical) and closes the
+  overflow, but a separate margin collision at 4 legs blocks B1 (Place flows into
+  the bottom-anchored Lock/Skip band; 14/2/36px overlaps). Lead left the suite
+  intentionally red (PlayMode 45/46) as the merge guard; also found+fixed vacuous
+  containment epsilons (Phase-A check had never been able to fail). Call routed to
+  Allen/DD: `dd-followup-markets-margin.md` + INBOX #4. Markets holds. Lease
+  released clean. Reversal: none — no merge occurred; ruling pending.
+- 2026-08-02 cycle 55 · **Three staged drafts fired** — markets: Allen ruled
+  **MaxLegs = 4** (6-leg overflow closed by construction; B1 unblocked — ruling
+  recorded in markets-2 contract `773f44b`, superseding the three costed options);
+  TV + room: hold-acks delivered. Markets resumes B1 compile/verify; editor free
+  and offered. Reversal: raise MaxLegs back and reopen the overflow options.
 - 2026-07-31 cycle 2 · **S11 verified closed** — spot-checked `ed07ee3` (fonts +
   OFL licences), `a3d8876` (rulings + document layer), `b820624` (markup guard),
   `7169c95` (policy in handoff); evidence matches report. SureThing's font-wiring
@@ -106,6 +380,38 @@ decision · evidence checked · reversal path.
   note: staged composer drafts are the recurring channel blocker (TV now, room
   still) — under autonomy, decisions sent to the orchestrator instead keep lead
   channels clear.
+- 2026-08-01 cycle 34 · **Orchestrator + Orca restarted overnight** (watchers
+  re-armed on fresh handles; no work lost). Allen's morning directives executed:
+  **C14 hardened** (exceptional quality, 1:1 match, register updated), **all four
+  leads switched to Opus 5 max effort** (via /model + /effort per terminal;
+  Git-Bash slash-mangling discovered — slash commands go via PowerShell now),
+  **C14 audits dispatched to all four** (sub-agent sweeps, gap-list format).
+  SureThing's overdue verification slot granted (last night's grant was lost to a
+  send fault). Encode Sans landed on TV overnight (`ccc6f56`).
+- 2026-08-01 cycle 32 · **DD Batch 4 + addendum transcribed** (27 register lines;
+  T21–T27, S18–S26, R14–R15, C10–C14) and **dispatched to all three affected
+  leads** — TV corrected on T24 (fixed rows STAND) before it built the wrong
+  direction. Design-verified firsts: laptop (S6/S7/S8) and room (R9/R10, R15
+  slice-closed). T6 verified-refused pending T25.1. **Orchestrator-owned: C13**
+  (room scene renders superseded screen content — integration re-take after
+  T25.1/T27 land). Watch: SureThing session ~567k uncached — hygiene clear at
+  next boundary. Reversal: veto any ruling, I re-dispatch.
+- 2026-07-31 cycle 29 · markets phase 2 underway (`32b234c` type/state
+  conformance landed; more in flight). **Boundary watch:** markets now edits the
+  SureThing surface post-merge — before the DD batch reactivates the SureThing
+  lead (S10/grain), the two seats need an explicit file split on
+  `SportsbookApp.cs`/`LaptopOs.cs`; orchestrator arbitrates at that moment.
+- 2026-07-31 cycle 28 · **markets-2 phase 1 COMPLETE** — M-01, M-03A, M-02, doc
+  debt all landed (`82011e1`, `f05d20f`); scorer grading trap closed; four
+  sub-agent dispatches all lead-reviewed. Idle awaiting Allen's arm-B go/no-go
+  (economy re-baseline — gate flips come back as findings, not silent retunes).
+  Studio now gated on two Allen touchpoints only: the DD batch return, and arm B.
+- 2026-07-31 cycle 27 · Allen returned; away-mode ended. LFS root-macro fix
+  landed (Allen-approved; warnings gone repo-wide). dd-import rebuilt (night
+  brief, fresh snapshots, evidence split <20MB ×4) and sent to the DD by Allen.
+  markets-2 activated: M-01 (`cc40e8a`) and M-03 arm A (`bf8a03e`) landed;
+  M-02 + doc debt dispatched. Queued for Allen: arm B re-baseline tables +
+  scorer EV-harness finding, together.
 - 2026-07-31 cycle 25 · **Resting state reached.** TV 3F binding half committed
   (`949c041`); its contract itself records the gate (`e93dbed`: "resume at items
   10–12, not at a fragment"). All three leads idle-by-design: SureThing merged,

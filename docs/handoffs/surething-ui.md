@@ -1,266 +1,185 @@
-# SureThing UI — lead ownership handoff
+# SureThing UI — re-seat state
 
-**Handoff date:** 2026-07-28  
-**Ownership returned to Claude:** 2026-07-30 (Allen's call — Claude remains the leads)  
-**Incoming owner:** Claude (Opus 5) acting as SureThing product, UX, and implementation lead  
-**Worktree:** `C:\Users\Allen\orca\workspaces\sports-betting-roguelite\surething-ui`  
-**Branch:** `surething-ui`  
-**Starting HEAD:** `d66543898f2841e1b8e0f33c7c33a49ed9d1594b`  
-**Current gate:** visual direction chosen; production Unity implementation has not started
+**Written:** 2026-08-01, at a session hygiene clear. **HEAD:** `571675c` · **Branch:** `surething-ui`
+· 3 commits ahead of `main` · working tree clean.
 
-> **2026-07-30 update:** Leads were handed to GPT/Codex on 2026-07-28; Allen has returned
-> ownership to Claude. The body below reflects the 2026-07-28 state. Since then the design
-> package was committed (`93d695a`, `8bb8d76`, `3d69fcc`) and the annotated form-guide lobby
-> shell landed (`cb83c90`), so §2's untracked-package warning is resolved. The worktree now
-> carries substantial uncommitted Unity changes — read `git status` and the recent log before
-> continuing.
->
-> Decision routing has also changed: critical or strategy decisions escalate lead →
-> orchestrator (`main-2`) → Allen, and all design decisions (visual direction, UI,
-> interaction, art, 3D) belong to the Design Director — this lead implements approved
-> specs and makes essentially no design calls. Where this document says "ask Allen",
-> route accordingly. See `main-2/docs/5-orchestration/STUDIO.md`.
+This is written for a seat with **no conversation context**. Everything below is either verifiable in
+the repo or flagged as unverified.
 
-> **2026-07-31 studio briefing:**
-> - A dedicated Orchestrator session (Fable 5, `main-2`) is live: it sweeps worktrees,
->   owns `main-2/docs/5-orchestration/STATUS.md`, merge order, and integration. It may
->   message this terminal via Orca; treat its dispatches as coordination — Allen's word
->   is final.
-> - A Design Director seat (Claude Design) is live and inherits every existing design
->   decision; a studio design system is being built from the approved packages, and
->   future specs will cite it. Do not preempt the pending Allen rulings: C1 TV
->   "Decision A", C2 TV light-spill colour, T8 scanlines/static.
-> - Report telegraphically (Done / Next / Risk / Need Allen); keep evidence local;
->   never send raw logs upward.
-> - Sweep flags for this worktree: modified `ProjectSettings/*` and URP global settings
->   are integration-only files — justify them to the orchestrator or revert before
->   merge; clean the stray test XML/log files at `unity/SBR/` root; commit `handoff.md`.
-> - **Delegation directive (Allen, 2026-07-31):** grunt work — implementation, testing,
->   validation, bulk reading — goes to bounded sub-agents (Sonnet 5 by default, max two
->   at once); you plan, dispatch, review diffs, and integrate. Doing sustained grunt
->   work yourself is now a contract deviation. Every dispatch names allowed files,
->   forbidden files, required evidence, and an exit gate; sub-agents never commit
->   unless the dispatch says so. Use an Opus sub-agent only for genuinely hard tasks.
-> - **Autonomy update (Allen, 2026-07-31):** per-phase approval is retired. The
->   orchestrator verifies your evidence against the phase's exit criteria and advances
->   you — do not park waiting for Allen between phases. Allen still gates: new design
->   direction, scope, licensing, spend, and anything irreversible. `Need Allen` now
->   means one of those, nothing else. See STUDIO.md "Autonomy policy".
+---
 
-## 1. Ownership transfer
+## 1. Where the work stands
 
-Take full ownership of this worktree. Continue through implementation and validation without
-asking Allen to approve routine files, tests, refactors, or intermediate checkpoints.
+The SureThing laptop's first slice **merged to main** at `2e97d13` (2026-07-31). S6 (lobby shell),
+S7 (ink sprites) and S8 (OS chrome) are **DESIGN-VERIFIED** by the Design Director — the laptop's
+first. Changes to those three are regressions, not iteration.
 
-Ask Allen only when a choice materially changes the product, art direction, scope, licensing,
-or another worktree's ownership. Report progress at meaningful milestones.
+Since the merge, three more rulings landed and are **implemented, verified and committed**:
 
-Communicate in simple telegraphic language:
+- **S18** — a wax primary action is a wax field, wax-ink type and a 2px `--wax-deep` edge.
+  `LaptopUi.MakeWaxPrimary` builds all three; `PLACE TICKET` and `LEAVE — NEXT ROUND` route through
+  it. Verified by pixel measurement, not eye: 2px on all four sides inside an unchanged 44px
+  footprint. `BUY` is deliberately flat — a row-level purchase control, not a screen's primary.
+- **S19** — the toner grain is a signed-blend shader, `SBR/TonerGrain`, using `Blend DstColor
+  SrcColor` so 0.5 is a no-op and the pass has a **mean effect of zero**. Verified: median luminance
+  19.0 with grain on, identical to grain off.
+- **S26** — offer rule text never truncates at point of spending; the board shows however many offers
+  fit and states how many it could not. The REWARDS banner states rather than exhorts.
 
-- result first;
-- short sentences;
-- no giant walls of text;
-- no raw tool logs unless Allen asks;
-- finish updates with `Done`, `Next`, `Risk`, and `Need Allen`;
-- use `Need Allen: nothing` when unblocked.
+**Suites: EditMode 75/75, PlayMode 38/38.**
 
-## 2. Preserve this work before doing anything else
+## 2. The C14 audit — the main open item
 
-At handoff, `git status --short` showed:
+**`docs/design/C14-LEDGER-AUDIT.md`** (committed at `571675c`) is the full finding. Read it before
+touching the LEDGER screen.
 
-```text
-?? PRODUCT.md
-?? docs/design/
-?? tools/
+**26 gaps: 9 fix-now, 3 needs-window, 14 needs-DD.**
+
+The audit's premise was wrong and the sweep corrected it — worth knowing, because the same mistake is
+easy to repeat. There is no `components/ledger/` directory, so I concluded the kit did not spec this
+screen. It does: `ui_kits/surething/screens.jsx:132-146`, `app.jsx:94-97`, and
+`components/records/LedgerEntry.jsx`. **The screen has drifted from a specification that exists.**
+
+### The 14 needs-DD, grouped — these are the blocking dispositions
+
+1. **Structural shape (4 gaps, one decision).** The kit's persistent four-tab strip is a single fake
+   tab; the masthead's `RunFigure`s are absent; the 44px `--ground-2` board header does not exist;
+   and the record row **inverts the kit's information hierarchy** — the dollar payout is the final
+   scan point and `WON`/`LOST` is buried mid-row. Whether a read-only historical screen carries live
+   run figures is a real product call. The inverted hierarchy probably is not, and I expect that one
+   back as "fix it".
+2. **The margin (2 gaps, one decision).** Kit: biro-ruled `MarginHeader` plus exactly three
+   `MarginRow`s and one note. Build: toner header, soft rule, no biro, seven content blocks, and
+   mixed type voices.
+3. **Ruled-paper texture** absent from the margin — a 26px repeating gradient in the kit. Not
+   physically impossible; the toner-grain tile proves the technique. A cost call.
+4. **Voice and behaviour** — `SETTLED TICKETS EXPOSED BY RUN.TICKETS ONLY` reads as a leaked property
+   path (my lean: genuine defect); the cross-app toast bleeds onto a read-only screen; `CASHED OUT`
+   is toner-2 where the kit pairs it with `WON` as wax, though the payout figure legitimately cannot
+   go wax because the engine stores no cash-out amount; leg rows carry no per-outcome colour, and
+   here the two kit sources contradict each other.
+5. **Restatement** — scope restated 38px below the masthead, round number appearing three times.
+
+## 3. Next actions, in order
+
+1. **The 9 fix-now gaps.** Full detail in the audit; the sequencing constraints are:
+   - **`MakeRule()` can only ever draw `--rule-soft`** (`LaptopOs.cs:616-618`); `LaptopOs.Rule` is
+     dead code. Fix this **first** — the two missing-rule gaps cannot be done correctly until the
+     strong token is reachable.
+   - **The tabs-meta fix and the masthead's `READ ONLY` must move together.** Setting the meta to
+     `READ ONLY` per `app.jsx:121` makes the masthead's existing one a *second* instance and
+     regresses the redundancy ruling S9 closed. Neither sweep could see this; each held half.
+   - Two fix-now items (`F5`, `F6`) are corrections to **my own S15 work** — I filled the `LOST`
+     word with oxide and used the brightest toner for `$0`. `LedgerEntry.jsx` is more precise: only
+     the *strike* is oxide, and word and figure are both `--toner-3`.
+2. **Then the 3 needs-window gaps**, which need an editor slot.
+3. **S10 (loud register) remains parked** pending a DD spec. Do not guess at it.
+
+## 4. Caveat that gates item 3 of the audit
+
+**Every capture in existence shows the LEDGER empty.** The populated-state findings — the missing
+overflow guard, the possible `PENDING` leg inside a terminal ticket, and the column maths behind the
+hierarchy gap — are read from source. They are deterministic in UGUI, but **unphotographed**.
+
+**Capture a populated ledger before rebuilding the record row.** This is not caution for its own
+sake: a `BUY`-in-biro Law Two violation survived weeks of review on this surface because no capture
+ever showed an affordable offer, and every reviewer including me looked at a screenshot where the
+control was greyed out. The fix for that was capture state `09-rewards-affordable`, which asserts a
+BUY is interactable *before* shooting. A populated-ledger state should do the same.
+
+## 4b. Cross-seat dependency — engine ticket retention
+
+**Approved by Allen, 2026-08-01. Lands via the markets seat; settlement is theirs. This seat
+consumes the result and builds none of it.**
+
+The defect that produced it: `Run.ExitShop()` does `Round++; _tickets.Clear();`, and `_tickets` is
+the only ticket list on `Run` — there is no archive. So `run.Tickets` holds **the current round
+only**, while the LEDGER captions itself `CURRENT RUN` in four separate places. A player who bets in
+rounds 1–3 and opens the LEDGER in round 4 sees an empty screen reading *"NO SETTLED TICKETS IN THE
+CURRENT RUN"*, which is false.
+
+Two consequences once retention lands, both of which this seat must then act on:
+
+1. **The scope copy becomes true on its own.** `CURRENT RUN`, `THIS RUN` and `CURRENT-RUN RECORD` are
+   correct the moment tickets persist across rounds. **Do not relabel them to `THIS ROUND` in the
+   meantime** — Allen chose retention precisely so the honest wording survives, and relabelling would
+   write the wrong scope into canon and the kit.
+2. **The overflow arithmetic changes and gets worse.** Today the list is bounded at 3 tickets because
+   the engine clears them. With retention it becomes 8 rounds × 3 tickets, so the worst case moves
+   from 3 rows to 24. The current measured overflow is already 142px unclipped against a 458px board
+   with no `RectMask2D`. **Re-measure before assuming any layout still holds**, and note this makes
+   the scroll question below load-bearing rather than theoretical.
+
+Also waiting on the same landing: S36's cash-out figure. The engine retains no cash-out amount, so
+that money column prints an em dash in `--toner-3`. **Keep printing the honest absence** — never
+`$0`, never `AMOUNT NOT RETAINED` — until the retained figure exists, then consume it.
+
+## 4c. Open decisions this seat must not assume
+
+- **Scroll input** — deferred to the next DD batch. There is no `ScrollRect` and no scroll input
+  handler anywhere in this project; the kit gets `overflowY: auto` free from a browser and Unity does
+  not. Building a scroll without an input path yields content the player cannot reach while S27's
+  position rail advertises that they can. Blocks W1, S25 and S27.
+- **Legs as one condensed string vs per-leg sub-rows** — deferred to the next DD batch. Canon's
+  `LedgerEntry` renders a single string; this build renders a sub-row per leg carrying per-leg odds
+  and state. Collapsing them discards information the player currently has. The canon legs cell is
+  currently reserved and left empty pending the call.
+- **C15 — TextMeshPro migration** — with Allen. Until it lands, S28 and S29 hold, and tracking,
+  tabular figures and weight 600 stay unreachable on this surface.
+
+## 5. How this seat works
+
+- **Unity is one editor, studio-wide.** Do not launch it without a slot granted by the orchestrator.
+  Announce open and close; other worktrees queue.
+- **Run results and logs go to `evidence/`**, never the Unity project root — it is kept clean and is
+  gitignored.
+- **Grunt work is dispatched** to bounded sub-agents (Sonnet by default, max two at once). Each
+  dispatch names allowed files, forbidden files, required evidence and an exit gate; sub-agents never
+  commit. **Tell them explicitly not to use `run_in_background` for Unity runs and not to end a turn
+  with a run pending** — that pattern burned two cycles.
+- **Verify against pixels, not test output.** On this surface a fully green suite has hidden a
+  defect that was obvious in a screenshot at least three times. Tests here assert structure; they do
+  not assert appearance.
+- **Unverified work is not committed.** Hold it in the working tree until a slot proves it.
+
+### Commands
+
+```
+# tests — always absolute paths, results into evidence/
+"C:/Program Files/Unity/Hub/Editor/6000.5.3f1/Editor/Unity.exe" -batchmode -runTests \
+  -projectPath "<worktree>/unity/SBR" -testPlatform EditMode \
+  -testResults "<worktree>/evidence/test-results/x.xml" -logFile "<worktree>/evidence/logs/x.log"
 ```
 
-This is the complete product/design package created by the outgoing lead. It is untracked, not
-disposable. Do not clean, reset, regenerate, or overwrite it.
+Captures land in `artifacts/surething-ui/` (gitignored). Nine states across two `[UnityTest]`s in
+`SureThingVisualCaptureTests`.
 
-First actions:
+## 6. Standing laws
 
-1. Run `git status --short --branch`.
-2. Read the sources listed below.
-3. Inspect the untracked package.
-4. Create a named checkpoint commit for the accepted design package before production UI edits.
-5. Keep unrelated user changes intact.
+Full set in `docs/design/direction-concepts/DESIGN.md`; the ones that bite most often:
 
-No fresh Unity test run was performed at handoff because production code is still unchanged.
+- **C14 (hardened 2026-08-01):** 1:1 with the design system is the bar, not the aspiration.
+  Deviations only where physically impossible, **each DD-signed before build**.
+- **C10:** never tune a wrong-in-kind effect toward invisibility. Diagnose the kind first.
+- **S2 (amended):** a text box is at least one line tall or it overflows — never empty. Unity
+  truncation clips whole *lines*, so a short box renders nothing at all, silently.
+- **S20:** no weight tiers without TMP named instances. Both production faces are variable fonts and
+  legacy UGUI renders only the default instance.
+- **Oxide is the house's mark only** — blocked actions and the strike on a dead leg or lost ticket.
+  Never a price, a cost, or a generic "bad" tint.
+- **Wax is money and the primary action; biro is only what the player chose.**
+- **Fact floor:** product facts ≥13px; 12px only for OS chrome carrying no product meaning.
 
-## 3. Current product decision
+### One open C14 deviation awaiting signature
 
-**Approved Direction — The Annotated Form Guide.**
+The grain. The kit specifies feTurbulence at 5% opacity; UGUI cannot reproduce that — under normal
+alpha blending a white overlay can **only add light**, which bleached the ground to `(52,52,48)`.
+Shipped as a signed `DstColor SrcColor` blend at the same 5% token: same intent, mean-preserving,
+**different mechanism**. Physically forced, but it needs DD sign-off rather than my say-so. It is the
+only deviation I am aware of on this surface.
 
-The Orca worktree comment saying Allen must choose between concepts is stale. The decision is
-recorded in `docs/design/direction-concepts/INDEX.html`.
+## 7. Also worth a look, not yet raised
 
-The implementation reference is:
-
-- `docs/design/direction-concepts/element-kit.html`
-- `docs/design/direction-concepts/assets/ASSETS.md`
-
-**Rejected comparison — The Catalogue Sleeve** remains comparison evidence only. Earlier discarded
-explorations must not be revived.
-
-## 4. What is already complete
-
-- Product context and cross-surface laws: `PRODUCT.md`
-- Bet365/FanDuel task-pattern research: `docs/design/surething-ui-revamp/visual-study.md`
-- Earlier structural UI package: `docs/design/surething-ui-revamp/`
-- Approved-direction rationale: `docs/design/direction-concepts/DIRECTIONS.md`
-- Fixed content, states, and legibility contract:
-  `docs/design/direction-concepts/SHARED-SPEC.md`
-- Chosen 1024×704 lobby concept:
-  `docs/design/direction-concepts/direction-1-form-guide.html`
-- Rejected comparison:
-  `docs/design/direction-concepts/direction-2-catalogue-sleeve.html`
-- Real-size component/state kit:
-  `docs/design/direction-concepts/element-kit.html`
-- Deterministic biro/strike sprites and generator:
-  `docs/design/direction-concepts/assets/` and `tools/art/make-biro-rings.py`
-
-The previous lead's stated next step was to write a durable `DESIGN.md` before editing Unity.
-Do that first, place it beside the approved design package, and link it from `INDEX.html`.
-
-## 5. Locked product laws
-
-- Runtime is Unity UGUI on a fixed **1024×704** world-space laptop canvas.
-- This is the occupant's personal, cheap, grubby machine. It must not look like the
-  institution-installed TV.
-- Laptop owns choices: slate, markets, slip, stake, staging, lock, shop, and placed tickets.
-- TV owns unrevealed drama. MY BETS may mirror only `TvSweatScreen.RevealedView`.
-- The interface never re-derives engine truth.
-- Odds are locked.
-- One selection per matchup; a new market on the same matchup replaces the old one.
-- Build state is calm and deliberate, but not bland. Sweat state can become loud.
-- No real operator branding, copy, marks, team names, or characteristic color system.
-- No pure black. The screen renders inside the room's unified grade.
-- Critical facts survive a 50% thumbnail.
-- Product-fact text is at least 13px. OS-only chrome may be 12px. Nothing is smaller.
-- Normal text meets 4.5:1 contrast.
-- Status is never color alone.
-- Targets are at least 44×32px with 8px separation.
-
-If an old document conflicts with `PRODUCT.md` or the approved design package, the newer package wins.
-In particular, SureThing owns its own color language; the TV worktree cannot impose its palette.
-
-## 6. Chosen visual system
-
-Thesis: the player does not tap generic sportsbook pills; they mark up a late-night form guide.
-
-Core language:
-
-- lifted warm olive-black ground `#16160F`;
-- inverted toner for the house document;
-- biro blue `#5E86B8` for the player's choices;
-- wax amber `#D9A441` for money and primary action;
-- oxide red `#B4483A` only for the house's mark, which includes the strike on a dead leg
-  (amended by Allen, 2026-07-30);
-- ruled columns and a right-side working margin;
-- selection shown as a hand-drawn ring, not color alone;
-- no rounded-card sportsbook shell;
-- no retro-terminal costume;
-- no cyberpunk neon-on-black default.
-
-Five component laws from the element kit:
-
-1. Oxide red belongs to the house's mark. A dead leg's strike counts as the house's mark and may
-   be red (Allen, 2026-07-30); red is still never decoration or a general "bad" tint.
-2. Amber is money/action; blue is the player's choice.
-3. Nothing is pure black.
-4. Product facts never fall below 13px.
-5. Status is never color alone.
-
-**S11 RULED (Allen, 2026-07-31): no licence-encumbered typefaces in this product. Bell Centennial
-is dropped for good** — not deferred, not pending a purchase. The Design Director specs a
-free-licence replacement as part of the form-guide identity work. Until then the build renders in
-`LegacyRuntime.ttf`, and the runtime resolves its face through one seam (`LaptopScreen.LoadFont`)
-with every builder taking the `Font` by parameter, so the swap stays a one-function change.
-
-## 7. Implementation scope and file ownership
-
-Primary owned files:
-
-- `unity/SBR/Assets/SBR/Runtime/SportsbookApp.cs`
-- `unity/SBR/Assets/SBR/Runtime/LaptopOs.cs`
-- `unity/SBR/Assets/SBR/Runtime/LaptopScreen.cs`, only when screen integration requires it
-- `unity/SBR/Assets/Tests/EditMode/BetslipModelTests.cs`
-- `unity/SBR/Assets/Tests/EditMode/AnytimeScorerBetslipTests.cs`
-- `unity/SBR/Assets/Tests/PlayMode/LaptopOsTests.cs`
-- new SureThing-only fonts, sprites, materials, and import helpers
-- `PRODUCT.md` and `docs/design/direction-concepts/**`
-
-Read-only unless a demonstrated behavior defect requires a separately approved expansion:
-
-- `engine/**`
-- `unity/SBR/Assets/SBR/Runtime/RunDirector.cs`
-- `unity/SBR/Assets/SBR/Runtime/TvSweatScreen.cs`
-- all TV/theater code
-- `Room.unity`
-- `GrayboxRoomBuilder.cs`
-- room art and lighting
-- `ProjectSettings/**`
-
-To prevent merge conflicts, do not edit shared canonical files such as `docs/ARCHI.md`,
-`DECISIONS.md`, or root planning documents. Record any required canonical update in the final
-handoff to the principal integrator.
-
-## 8. Recommended execution sequence
-
-1. Preserve and checkpoint the design package.
-2. Write `DESIGN.md`: tokens, typography, component anatomy, state matrix, motion, OS chrome,
-   asset rules, and explicit mapping from HTML concepts to UGUI.
-3. Audit current `SportsbookApp`, `LaptopOs`, and their tests. Preserve every existing flow.
-4. Freeze a narrow file plan. Keep behavior changes separate from visual changes.
-5. Build reusable UGUI helpers/tokens instead of duplicating style values across methods.
-6. Implement the 1024×704 lobby and working slip from the element kit.
-7. Implement all functional states: default, hover, selected, disabled, staged, locked,
-   revealed GREEN/DEAD, remove, replacement, and empty/error states.
-8. Apply the same system to event detail and MY BETS; do not stop after one attractive lobby.
-9. Import the `@2x` ink sprites using `assets/ASSETS.md`. Variant selection must be deterministic
-   by matchup index, never random on rebuild.
-10. Validate in the actual angled laptop view, not only a flat browser or Game view.
-11. Run targeted EditMode and PlayMode tests; then perform the complete relevant Unity suite once.
-12. Provide matched captures for lobby, event detail, staged ticket, disabled lock reason,
-    and revealed MY BETS.
-
-Do not copy Bet365 or FanDuel. Reuse only general task principles already documented: compact
-comparison, persistent context, progressive disclosure, and clear economics.
-
-## 9. Acceptance gate
-
-Product:
-
-- all current betting, staging, locking, shop, and MY BETS flows still work;
-- every price, stake, payout, limit, and disabled reason is truthful;
-- one-selection-per-match replacement remains intact;
-- laptop never reveals ahead of the TV.
-
-Visual:
-
-- chosen form-guide identity is unmistakable without decorative explanation;
-- OS chrome and app feel personal, not institutional;
-- the 50% thumbnail test passes;
-- no factual text below 13px;
-- no status depends on color alone;
-- all required states match the element kit;
-- the canvas fits 1024×704 with no accidental clipping.
-
-Engineering:
-
-- no engine, TV, room, scene, or project-setting drift;
-- new assets are licensed, reproducible, and committed with Unity metadata;
-- targeted tests pass;
-- any architecture-doc change needed at integration is listed for the principal.
-
-## 10. First update to Allen
-
-Keep it short:
-
-```text
-SureThing handoff loaded.
-Done: preserved the Approved Direction package and confirmed the current code boundary.
-Next: checkpoint design, write DESIGN.md, then implement the first end-to-end UGUI state.
-Risk: <one real risk or none>.
-Need Allen: nothing.
-```
+The REWARDS screen's masthead reads `SURETHING FORM`. It is the shared masthead, and against the kit
+1:1 that is very likely wrong copy for a non-FORM screen. Noticed during S26 verification, not yet
+audited or ruled.

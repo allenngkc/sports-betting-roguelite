@@ -1,0 +1,7 @@
+# Top-level macro definitions — git only honours [attr] macros in the root
+# .gitattributes. unity/SBR/.gitattributes defines per-path rules that reference
+# these; without this file those rules were silently inert repo-wide
+# (diagnosed by the tv-sweat lead, 2026-07-31; fix approved by Allen).
+[attr]lfs               filter=lfs diff=lfs merge=lfs -text
+[attr]unity-json        eol=lf linguist-language=json
+[attr]unity-yaml        merge=unityyamlmerge eol=lf linguist-language=yaml

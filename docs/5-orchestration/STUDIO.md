@@ -72,6 +72,9 @@ reverted.
   orchestrator plans and assigns → lead implements → evidence → Design Director review →
   Allen final approval.
 - Leads report result-first, telegraphic, ending with `Done / Next / Risk / Need Allen`.
+- Anything that reaches Allen is plain language: describe work by what it is in
+  the product; register/tracking codes stay between the orchestrator, leads, and
+  docs (at most one trailing parenthetical tag). See ORCHESTRATOR.md §2a.
 - `docs/5-orchestration/STATUS.md` is the live board; the orchestrator updates it each
   sweep. No other status ledger exists.
 

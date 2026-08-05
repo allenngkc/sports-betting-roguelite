@@ -146,8 +146,15 @@ namespace SBR
             public Material Floor;
             public Material Ceiling;
             public Material Prop;
+            // R20 (Design Director, 2026-08-01): "the battered metal desk" is unbuilt
+            // required work - it currently shares Prop with the stool and mini-fridge, so
+            // giving it a wear surface would batter them too. Own material, see below.
+            public Material Desk;
             public Material Couch;
-            public Material Bezel;
+            public Material HousingSteel;
+            public Material LaptopShell;
+            public Material PhoneShell;
+            public Material BunkFrame;
             public Material TvScreen;
             public Material LaptopScreen;
             public Material PhoneScreen;
@@ -203,6 +210,28 @@ namespace SBR
                     normalStrength: 3.5f, aoStrength: 0.5f,
                     smoothMin: 0.05f, smoothMax: 0.15f),
                 Prop = Mat("PropGray", new Color(0.180f, 0.178f, 0.160f), smoothness: 0.35f),
+                // R20: the desk is a NAMED gap in the ruling ("a battered metal desk"), not a
+                // generic prop, so it gets its own SurfaceMat rather than staying on Prop -
+                // Prop is also the stool and the mini-fridge, and neither was named. Tint is
+                // UNCHANGED from Prop's own value: the desk's hue was not ruled, only its
+                // surface was, so this is the same colour the desk already had.
+                // res/tiling/relief per R20's spec: a desktop is a big, close, mostly-flat
+                // panel, so tiling stays low (1.4) so a dent reads as one broad event rather
+                // than a repeating stamp at 3m viewing distance.
+                Desk = SurfaceMat("DeskBattered", new Color(0.180f, 0.178f, 0.160f),
+                    ProceduralSurfaceTextures.SurfaceKind.BatteredMetal, 512,
+                    contrast: 1.60f, tiling: 1.4f,
+                    normalStrength: 5.0f, aoStrength: 0.7f,
+                    smoothMin: 0.16f, smoothMax: 0.44f),
+                // R19(c): the palette's Drab green #3A4230 was instantiated nowhere in the built
+                // room. Applied to both bunks' structural frames only - BunkSlab/BunkPostFront/
+                // BunkPostBack (was Prop) and Bunk2Slab/Bunk2PostFront/Bunk2PostBack (was the
+                // Bunk2Dark material, now retired - see BuildDeskCluster). The bedding half of
+                // this ruling (bunk 2's mattress fabric) lives in RoomArtDressing on
+                // ArtBunk2Shadow. The couch is a separate "couch fabric" in the design doc and is
+                // deliberately untouched here - it carries a design-verified relief result.
+                BunkFrame = Mat("BunkFrameGreen", new Color(0.0423f, 0.0545f, 0.0296f),
+                    smoothness: 0.30f),
                 // 4b: lifted so the weave actually reads - the couch was dark enough that its
                 // texture was invisible, which wasted the one fabric map in the room.
                 // Highest relief: the weave is the whole point, and at 17cm tiling it is the one
@@ -212,7 +241,86 @@ namespace SBR
                     contrast: 1.50f, tiling: 6.0f,
                     normalStrength: 10.0f, aoStrength: 1.2f,
                     smoothMin: 0.03f, smoothMax: 0.11f),
-                Bezel = Mat("BezelBlack", new Color(0.045f, 0.045f, 0.040f), smoothness: 0.25f),
+                // BezelBlack RETIRED (Allen, 2026-08-03). It was a third body material that
+                // nothing could see: TVBody wore it, but TVBody is a slab BEHIND the screen whose
+                // only exposed part is a ~6cm border, and RoomArtDressing's riveted housing covers
+                // exactly that border. Every attempt to cut a measurement region for it straddled
+                // housing rivets. "Two body materials, not three - one of them invisible is a
+                // maintenance lie." TVBody now wears the same painted steel as the enclosure
+                // around it, which is also what §6 describes: one installed institutional object.
+                HousingSteel = HousingSteelMat(),
+                // R19(a), the highest violation in the slice: TVBody, LaptopBase and PhoneBody
+                // all pointed at Bezel, so the institution's hardware and the occupant's own read
+                // as materially identical - the doc's whole story is the contrast between them.
+                // Split so the laptop differs from the TV housing on at least two channels and
+                // reads lighter and lower-cost.
+                //
+                // R19(b)-am (DD 2026-08-03) STRUCK "colder" and named the two carrying channels:
+                // VALUE and FINISH. Hue temperature is no longer one of them and must not be
+                // counted toward the >=2. That is canon and this code follows it.
+                //
+                // Its stated reason was that under one warm key every albedo in this room renders
+                // warm, so cool metal is unreachable. SURFACE-PURE MEASUREMENT DOES NOT SUPPORT
+                // THAT, and the correction is routed to the DD rather than acted on here:
+                //
+                //   housing face        C 0.52  h 257.6deg  neutral  (below the 1.5 chroma floor,
+                //                                                     so NO hue verdict is
+                //                                                     supportable either way)
+                //   conduit drop body   C 2.02  h 269.2deg  COOL     (cool ungraded too, 269.5)
+                //   conduit ceiling run C 8.29  h  99.4deg  WARM     (raked by the tube)
+                //
+                // Same albedo on both conduit runs, opposite verdicts: rendered hue tracks WHICH
+                // LIGHT REACHES THE SURFACE, not albedo alone. That is Law 1.7's mechanism
+                // (lighting gates the read) applied to colour instead of relief. Nor is a dark
+                // fixture at chroma 2 the "blue-tinted ROOM" §1.1 forbids.
+                //
+                // The superseded first-pass figure (h 108.3deg WARM) came from a box bleeding the
+                // warm plaster behind the metal - 108deg is the WALL's hue, and the pipe's own
+                // neighbouring wall strips measure 101-112deg. See R19_REGIONS in
+                // tools/room_gate_check.py for the boxes and their sd/mean purity.
+                //
+                // THE COMPARAND IS ArtHousingSteel #3A3F42, and that is now settled by a frame
+                // rather than argued. Earlier versions of this comment went back and forth over
+                // whether "the TV housing" meant Bezel or the steel; the answer is that Bezel was
+                // never visible - a slab behind the screen whose only exposed part is a ~6cm
+                // border, covered by the riveted housing - so it has been RETIRED and TVBody wears
+                // the steel. What the player reads as the TV's body always was the steel.
+                //
+                // MEASURED on the screens-dark conformance set (R19_REGIONS in
+                // tools/room_gate_check.py), CIELAB L*:
+                //
+                //   laptop body     L* 52.98   C 20.78  h  78.6  WARM
+                //   phone body      L* 16.66   C  1.61  h 251.8
+                //   housing (steel) L* 11.30   C  0.52  h 257.4  neutral
+                //
+                //   VALUE  laptop/housing 4.68x, phone/housing 1.47x, laptop/phone 3.18x
+                //   FINISH 0.42 and 0.50 flat against the steel's mask-driven 0.08-0.34, plus
+                //          hard-edged chipped paint against unbroken plastic (R20 ChippedPaint)
+                //
+                // Both of R19(b)-am's channels, on the object that is actually on screen.
+                //
+                // HONEST CAVEAT, because the number flatters itself: the albedo-only ratio is
+                // 2.17x, so the rig roughly DOUBLES the separation - the laptop sits in the desk
+                // lamp's pool and the housing sits in shadow. The ruling is satisfied as the room
+                // reads, but the read is lighting-assisted (§1.7 again). Move the laptop out of
+                // that pool and it falls back toward 2.17x.
+                //
+                // Recorded but NOT counted: albedo hue deltas R-B +0.0270 (laptop), -0.0122
+                // (steel). Source-side only, and per constitution draft §2.5 an assertion about
+                // source is not a measurement of the surface. Do not "correct" the steel by
+                // lightening it, and do not add a cool light to make metal read cold: R19(b)-am
+                // refused that instrument explicitly (R12 grazing reveals relief, not colour
+                // temperature; a metal-tinting lamp is T48's rejected Option D in new clothes and
+                // breaks the three-source rule).
+                //
+                // The phone "is his too and sits near the laptop, not on it", so it keeps its own
+                // close-but-distinct shell rather than sharing LaptopShell - in his register,
+                // separable within it. R28 (DD 2026-08-03) confirms the room owns the phone OBJECT
+                // and it belongs to his material register, not the institution's.
+                LaptopShell = Mat("LaptopShell", new Color(0.115f, 0.104f, 0.088f),
+                    smoothness: 0.42f),
+                PhoneShell = Mat("PhoneShell", new Color(0.092f, 0.085f, 0.076f),
+                    smoothness: 0.50f),
                 // Unified-grade spec §2: lift the panel's black floor so nothing in frame is
                 // darker than the screen's own off state. Pure black on a panel in a dim, dusty
                 // room is physically impossible and is the clearest "this was composited" tell.
@@ -259,7 +367,10 @@ namespace SBR
         /// interpolates between them off the same height field, so wear is rougher than the
         /// material around it rather than the whole plane sharing one gloss value.
         /// </summary>
-        private static Material SurfaceMat(string assetName, Color tint,
+        // internal so RoomArtDressing can build its own SurfaceMat materials (R20: the TV
+        // housing's ChippedPaint) through the same deterministic albedo+normal+mask+AO path
+        // rather than duplicating its body - see Mat() below for the same reasoning.
+        internal static Material SurfaceMat(string assetName, Color tint,
                                            ProceduralSurfaceTextures.SurfaceKind kind, int res,
                                            float contrast, float tiling,
                                            float normalStrength, float aoStrength,
@@ -274,6 +385,33 @@ namespace SBR
                     kind, res, TexSeed, contrast, smoothMin, smoothMax),
                 occlusionMap: ProceduralSurfaceTextures.GetOrCreateOcclusion(
                     kind, res, TexSeed, contrast, aoStrength));
+
+        /// <summary>
+        /// The institution's painted steel — ONE definition, shared by the display enclosure
+        /// (RoomArtDressing) and by TVBody, which wore the retired BezelBlack until 2026-08-03.
+        ///
+        /// A single factory rather than two call sites because the alternative is two sources of
+        /// truth for one material: R19(b) already had to un-drift this exact colour once, and a
+        /// second copy is how that happens again silently.
+        ///
+        /// R19(b): the spec's cool #3A3F42 (B&gt;G&gt;R). The built value had drifted hue-flipped
+        /// WARM. GUARD: if it reads too dark under the approved one-tube rig, that is a lighting
+        /// finding under R12, NEVER a licence to lighten the albedo — R19(b)-am then struck
+        /// "colder" as a requirement entirely, moving the institutional read onto value and finish.
+        ///
+        /// R20: carries ChippedPaint rather than a flat tint — "the TV housing's chipped paint" is
+        /// named required work. Tint unchanged by that move: new maps, not a re-colour.
+        /// smoothMin/smoothMax straddle the old flat 0.28, so intact paint (0.34) is glossier than
+        /// the dull exposed metal in the chips (0.08). That specular split is half of what
+        /// R19(b)-am made load-bearing.
+        /// </summary>
+        internal static Material HousingSteelMat() =>
+            SurfaceMat("ArtHousingSteel",
+                new Color(0.0423f, 0.0497f, 0.0545f),
+                ProceduralSurfaceTextures.SurfaceKind.ChippedPaint, 512,
+                contrast: 1.90f, tiling: 3.0f,
+                normalStrength: 8.0f, aoStrength: 1.0f,
+                smoothMin: 0.08f, smoothMax: 0.34f);
 
         // internal so RoomArtDressing can author its own dressing materials through the same
         // deterministic path rather than duplicating the URP/Lit setup.
@@ -461,12 +599,15 @@ namespace SBR
             GameObject back = Box("CouchBackrest", root.transform,
                 new Vector3(-1.225f, 0.62f, 0.3f), new Vector3(0.15f, 0.4f, 1.8f), mats.Couch);
             // Upper bunk slab, underside at 1.5m.
+            // R19(c): frame is BunkFrame (drab green #3A4230), not Prop - see BuildMaterials.
             Box("BunkSlab", root.transform,
-                new Vector3(-0.9f, 1.54f, 0.3f), new Vector3(0.8f, 0.08f, 1.9f), mats.Prop);
+                new Vector3(-0.9f, 1.54f, 0.3f), new Vector3(0.8f, 0.08f, 1.9f), mats.BunkFrame);
             Box("BunkPostFront", root.transform,
-                new Vector3(-0.53f, 0.77f, -0.62f), new Vector3(0.06f, 1.54f, 0.06f), mats.Prop);
+                new Vector3(-0.53f, 0.77f, -0.62f), new Vector3(0.06f, 1.54f, 0.06f),
+                mats.BunkFrame);
             Box("BunkPostBack", root.transform,
-                new Vector3(-0.53f, 0.77f, 1.22f), new Vector3(0.06f, 1.54f, 0.06f), mats.Prop);
+                new Vector3(-0.53f, 0.77f, 1.22f), new Vector3(0.06f, 1.54f, 0.06f),
+                mats.BunkFrame);
 
             // Forgiving hover volume over the whole seat (trigger: no physics blocking).
             var hoverVolume = root.AddComponent<BoxCollider>();
@@ -505,7 +646,7 @@ namespace SBR
 
             // Wall-mounted on the right long wall, center at seated eye height (~1.1m).
             Box("TVBody", root.transform,
-                new Vector3(1.265f, 1.1f, 0.3f), new Vector3(0.06f, 0.65f, 1.1f), mats.Bezel);
+                new Vector3(1.265f, 1.1f, 0.3f), new Vector3(0.06f, 0.65f, 1.1f), mats.HousingSteel);
             GameObject screen = Quad("TVScreen", root.transform,
                 new Vector3(1.232f, 1.1f, 0.3f), new Vector2(0.98f, 0.55f),
                 Vector3.left, Vector3.up, mats.TvScreen);
@@ -558,16 +699,19 @@ namespace SBR
             Transform deskRoot = new GameObject("Desk").transform;
 
             // Desk 1.1 long x 0.75 high x 0.5 deep against the far end of the right wall.
+            // R20: DeskTop and all four legs are the desk's own SurfaceMat (Desk, not
+            // Prop) - see BuildMaterials. Only these five; the stool and mini-fridge below
+            // stay on Prop deliberately, the ruling did not name them.
             Box("DeskTop", deskRoot, new Vector3(1.05f, 0.73f, 1.45f),
-                new Vector3(0.5f, 0.04f, 1.1f), mats.Prop);
+                new Vector3(0.5f, 0.04f, 1.1f), mats.Desk);
             Box("DeskLegA", deskRoot, new Vector3(0.855f, 0.355f, 0.955f),
-                new Vector3(0.05f, 0.71f, 0.05f), mats.Prop);
+                new Vector3(0.05f, 0.71f, 0.05f), mats.Desk);
             Box("DeskLegB", deskRoot, new Vector3(1.245f, 0.355f, 0.955f),
-                new Vector3(0.05f, 0.71f, 0.05f), mats.Prop);
+                new Vector3(0.05f, 0.71f, 0.05f), mats.Desk);
             Box("DeskLegC", deskRoot, new Vector3(0.855f, 0.355f, 1.945f),
-                new Vector3(0.05f, 0.71f, 0.05f), mats.Prop);
+                new Vector3(0.05f, 0.71f, 0.05f), mats.Desk);
             Box("DeskLegD", deskRoot, new Vector3(1.245f, 0.355f, 1.945f),
-                new Vector3(0.05f, 0.71f, 0.05f), mats.Prop);
+                new Vector3(0.05f, 0.71f, 0.05f), mats.Desk);
 
             // Second bunk frame over the desk (2026-07-27 layout brief). The room now reads as
             // built for two occupants; from the standing camera the window sits between this
@@ -579,20 +723,44 @@ namespace SBR
             //
             // Slab stops at the far wall (z 0.5..2.0) rather than mirroring the couch bunk's
             // length, and the posts clear the stool's footprint in z.
-            // Its own much darker material - roughly 40% of the standard prop albedo. Moving the
-            // fluorescent clear of it is not enough on its own: TvLight still reaches this
-            // corner, and with prop-grey albedo the slab came back as the BRIGHTEST object in
-            // frame, which is the exact opposite of the brief. Dark albedo keeps it reading as
-            // shadow even when light does land on it.
-            Material bunkDark = Mat("Bunk2Dark", new Color(0.072f, 0.070f, 0.060f),
-                smoothness: 0.20f);
-
+            // R19(c): frame is BunkFrame (drab green #3A4230, shared with bunk 1's frame - see
+            // BuildMaterials), not the old Bunk2Dark. Bunk2Dark's own darker-than-Prop albedo
+            // existed only to keep this slab from becoming the brightest object in frame even
+            // when TvLight reached the corner; BunkFrame is itself dark enough to hold that job,
+            // so Bunk2Dark's creation is retired rather than left as an orphan - nothing else in
+            // this file references it after this change.
+            //
+            // FLAGGED, NOT FIXED (R19(c)): drab green's luminance (0.0501) is brighter than the
+            // Bunk2Dark it replaces (0.0389). Bunk 2's mattress is a ratified test at 43.9 +/-1
+            // measured luminance - see RoomArtDressing.BuildClutter (ArtBunk2Shadow) for the full
+            // note. This is a known, deliberate, measured risk; do not compensate here either.
             Box("Bunk2Slab", deskRoot, new Vector3(0.9f, 1.54f, 1.25f),
-                new Vector3(0.8f, 0.08f, 1.5f), bunkDark);
-            Box("Bunk2PostFront", deskRoot, new Vector3(0.53f, 0.77f, 0.57f),
-                new Vector3(0.06f, 1.54f, 0.06f), bunkDark);
+                new Vector3(0.8f, 0.08f, 1.5f), mats.BunkFrame);
+            // R22 (Allen's walkthrough, 2026-08-03): at z 0.57 this post stood between the couch
+            // eye (-0.95, 1.15, 0.30) and the TV screen at x 1.232, occluding the left edge of the
+            // seated sweat view - the game's primary sightline.
+            //
+            // Projected to the screen plane, a post edge at z_p casts to
+            //     z_screen = 0.300 + (z_p - 0.300) * (1.232 + 0.95) / (0.50 + 0.95)
+            // The screen is 0.98 wide centred at z 0.300, so its far edge is z 0.79. At the old
+            // z_p 0.54 the shadow landed at 0.647-0.751: a ~10cm band on a 98cm screen, hard
+            // against the edge. Clearing needs the near face at z >= 0.626; at 0.70 centre the
+            // near face is 0.67 and the shadow falls at 0.857, clearing by 6.7cm - margin enough
+            // to survive a couple of cm of slop in the seated anchor.
+            //
+            // MOVED IN Z, NOT IN X, deliberately. x stays 0.50-0.56 so the aisle is still 1.00m
+            // against a 0.60m capsule - the clearance Allen already walked and passed is
+            // arithmetically unchanged, so the re-walk confirms the same number at a new spot
+            // rather than re-assessing it.
+            //
+            // Cost, accepted: this post is inset ~0.15m from its slab's near end where bunk 1's
+            // posts sit flush, so the two bunks no longer match exactly. Taken over shortening
+            // Bunk2Slab, which would put the ratified 43.9 mattress test (law 1.4) in play to fix
+            // a sightline.
+            Box("Bunk2PostFront", deskRoot, new Vector3(0.53f, 0.77f, 0.70f),
+                new Vector3(0.06f, 1.54f, 0.06f), mats.BunkFrame);
             Box("Bunk2PostBack", deskRoot, new Vector3(0.53f, 0.77f, 1.93f),
-                new Vector3(0.06f, 1.54f, 0.06f), bunkDark);
+                new Vector3(0.06f, 1.54f, 0.06f), mats.BunkFrame);
 
             // Stays put: at 0.45m tall it passes under the 1.50m slab with clearance, and its
             // z-span (1.275..1.625) misses both bunk posts.
@@ -612,8 +780,10 @@ namespace SBR
             var root = new GameObject("Laptop");
             root.transform.position = new Vector3(1.15f, 0.85f, 1.62f);
 
+            // R19(a): LaptopShell, not Bezel - see BuildMaterials for the channel breakdown.
             GameObject lapBase = Box("LaptopBase", root.transform,
-                new Vector3(1.08f, 0.76f, 1.62f), new Vector3(0.22f, 0.02f, 0.32f), mats.Bezel);
+                new Vector3(1.08f, 0.76f, 1.62f), new Vector3(0.22f, 0.02f, 0.32f),
+                mats.LaptopShell);
 
             // Lid: 0.32 x 0.22 quad hinged on the wall-side edge of the base, tilted 20
             // degrees back toward the wall (+X), screen facing the room (-X and up).
@@ -623,8 +793,10 @@ namespace SBR
             Vector3 lidUp = Quaternion.AngleAxis(-lidTiltDeg, Vector3.forward) * Vector3.up;
             Vector3 lidNormal = Vector3.Cross(widthDir, lidUp); // -X and slightly up
             Vector3 lidCenter = hinge + lidUp * 0.11f;
+            // R16: keeps its MeshCollider - LaptopScreen is on the Interactable layer.
             GameObject lid = Quad("LaptopScreen", root.transform, lidCenter,
-                new Vector2(0.32f, 0.22f), lidNormal, lidUp, mats.LaptopScreen);
+                new Vector2(0.32f, 0.22f), lidNormal, lidUp, mats.LaptopScreen,
+                keepCollider: true);
 
             // Generous interaction volume - the laptop itself is too small to raycast comfortably.
             var grabVolume = root.AddComponent<BoxCollider>();
@@ -664,11 +836,15 @@ namespace SBR
             var root = new GameObject("Phone");
             root.transform.position = new Vector3(1.0f, 0.80f, 1.15f);
 
+            // R19(a): PhoneShell, not Bezel - the phone "is his too" but sits near the laptop,
+            // not on it, so it gets its own close-but-distinct shell (see BuildMaterials).
             GameObject body = Box("PhoneBody", root.transform,
-                new Vector3(1.0f, 0.754f, 1.15f), new Vector3(0.075f, 0.008f, 0.15f), mats.Bezel);
+                new Vector3(1.0f, 0.754f, 1.15f), new Vector3(0.075f, 0.008f, 0.15f),
+                mats.PhoneShell);
+            // R16: keeps its MeshCollider - PhoneScreen is on the Interactable layer.
             GameObject screen = Quad("PhoneScreen", root.transform,
                 new Vector3(1.0f, 0.759f, 1.15f), new Vector2(0.065f, 0.135f),
-                Vector3.up, Vector3.forward, mats.PhoneScreen);
+                Vector3.up, Vector3.forward, mats.PhoneScreen, keepCollider: true);
 
             var grabVolume = root.AddComponent<BoxCollider>();
             grabVolume.center = Vector3.zero;
@@ -1073,16 +1249,36 @@ namespace SBR
             // LiftGammaGain.lift. Using SMH here would have looked like the fix was applied
             // while the panel's #000000 stayed exactly #000000.
             //
-            // Tinted slightly cool to land near the spec's #0a0c10 target rather than a grey.
-            // CALIBRATION NOTE: URP scales lift far harder than its raw value implies. A w of
-            // 0.055 - which reads like "raise black to ~5%" - came back as a flat mid-grey panel
-            // around 38%, milky and washed out, and it failed the spec's own §5 checks: the
-            // brightness ladder compressed and L0 stopped reading as darker than L1. Measured
-            // ratio is roughly 7x, so the value that actually lands near the spec's #0a0c10
-            // target is an order of magnitude smaller than it looks.
+            // T48 - NEUTRAL BLACK POINT AT THE SAME VALUE. Was (0.99, 1.00, 1.03, 0.0075),
+            // tinted cool to land on the spec's #0a0c10 target. That target was one number doing
+            // two jobs: naming a luminance floor, and accidentally naming a hue inherited from
+            // the TV substrate. A panel may be cool; plaster may not (law 1.1).
+            //
+            // Measured consequence of the old value: the room's own surfaces read hue 268-273deg
+            // at chroma 6.6-9.5 with every screen dark and TvLight disabled, while the same
+            // frames grade-bypassed read chroma 0.55-1.66 and neutral. The grade was multiplying
+            // chroma 4x to 14x. Evidence is the R23/R26 conformance pair.
+            //
+            // WHY THE FIX IS EXACTLY THIS AND COSTS NO BRIGHTNESS. URP's PrepareLiftGammaGain
+            // takes GammaToLinear(xyz) * 0.15, SUBTRACTS that triplet's own luminance, then adds
+            // w to every channel. So w is the VALUE and xyz is purely the HUE - the xyz triplet
+            // contributes nothing achromatic by construction. Neutralising it is therefore free:
+            //
+            //   applied lift, before:  R 0.004103  G 0.007493  B 0.017572   blue 4.28x red
+            //   applied lift, after:   R 0.007500  G 0.007500  B 0.007500   blue 1.00x red
+            //   lift luminance:        0.007500 -> 0.007500, delta 0.00000000
+            //
+            // The black floor - the thing the spec's "single highest-leverage change" is for -
+            // is bit-identical. Only the cast is gone.
+            //
+            // CALIBRATION NOTE, still true and still the trap: URP scales lift far harder than
+            // its raw value implies. A w of 0.055 - which reads like "raise black to ~5%" - came
+            // back as a flat mid-grey panel around 38%, milky and washed out, and failed the
+            // spec's own §5 ladder checks. Measured ratio is roughly 7x, so w is an order of
+            // magnitude smaller than it looks. Do not "correct" it upward.
             var lift = GetOrAddVolumeComponent<LiftGammaGain>(profile);
             lift.lift.overrideState = true;
-            lift.lift.value = new Vector4(0.99f, 1.00f, 1.03f, 0.0075f);
+            lift.lift.value = new Vector4(1.00f, 1.00f, 1.00f, 0.0075f);
 
             var bloom = GetOrAddVolumeComponent<Bloom>(profile);
             bloom.threshold.overrideState = true;
@@ -1302,19 +1498,49 @@ namespace SBR
             return go;
         }
 
+        // T57: the design doc requires "Meshes are built at true world size with localScale 1" -
+        // GameObject.CreatePrimitive(PrimitiveType.Quad) plus a size-shaped localScale was
+        // exactly the anti-pattern the rule names, so this now builds a real quad mesh via
+        // ChamferedBoxMesh.GetOrCreateQuad(size, uvRepeats) and leaves localScale at 1, same as
+        // Box() above. uvRepeats is Vector2.one, NOT a default to retune: it reproduces the
+        // primitive's 0..1 UVs exactly, and WindowPane's night-city texture is explicitly
+        // non-tiling and expects to map 0..1 across the pane exactly once - any other repeat
+        // value corrupts it.
+        //
+        // GetOrCreateQuad's normal sits on local -Z with Unity's own front-face winding,
+        // deliberately matching CreatePrimitive(Quad)'s convention, so the LookRotation(-facing,
+        // up) below and every call site's facing/up pair are unchanged by this swap.
+        //
+        // R16: GameObject.CreatePrimitive(PrimitiveType.Quad) used to silently bring its own
+        // MeshCollider, so every screen built here was quietly adding an undocumented solid
+        // collider. With the primitive gone nothing supplies that collider for free, so
+        // keepCollider now adds a MeshCollider explicitly, sharing the same generated mesh.
+        // TVScreen and WindowPane are redundant with the wall/body colliders already sitting
+        // directly behind them and stay collider-free (keepCollider defaults false, same
+        // collider-free contract as RoomArtDressing.ArtQuad). LaptopScreen and PhoneScreen pass
+        // keepCollider: true - they sit on the Interactable layer and interaction raycasting is
+        // not re-plumbed to satisfy a collider count. True inventory is unchanged: 29 = 27
+        // BoxColliders (24 solid, 3 triggers) + 2 named interaction MeshColliders (LaptopScreen,
+        // PhoneScreen).
         private static GameObject Quad(string name, Transform parent, Vector3 center,
-                                       Vector2 size, Vector3 facing, Vector3 up, Material mat)
+                                       Vector2 size, Vector3 facing, Vector3 up, Material mat,
+                                       bool keepCollider = false)
         {
-            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            go.name = name;
+            var go = new GameObject(name);
             if (parent != null)
                 go.transform.SetParent(parent, true);
             go.transform.position = center;
             // Unity's Quad primitive renders on its local -Z side; aim local -Z along 'facing'.
             // Screen materials are Cull Off, so a flipped face still renders either way.
             go.transform.rotation = Quaternion.LookRotation(-facing.normalized, up);
-            go.transform.localScale = new Vector3(size.x, size.y, 1f);
-            go.GetComponent<MeshRenderer>().sharedMaterial = mat;
+            go.transform.localScale = Vector3.one; // mesh carries true world size, not the transform
+
+            Mesh mesh = ChamferedBoxMesh.GetOrCreateQuad(size, Vector2.one);
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            go.AddComponent<MeshRenderer>().sharedMaterial = mat;
+            if (keepCollider)
+                go.AddComponent<MeshCollider>().sharedMesh = mesh;
+
             return go;
         }
 
