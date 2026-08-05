@@ -251,6 +251,27 @@ namespace SBR.Game
             }
         }
 
+        /// <summary>S52: the icon column starts one standard margin below the rail.
+        ///
+        /// `--st-pad-x` (14px) is the surface's content inset — `tokens/space.css:18`, "sheet +
+        /// margin horizontal padding", 16 of ~28 padding sites, and already mirrored here as
+        /// `SportsbookApp.LedgerPadX`. Allen picked it over the column's own 34px on 2026-08-04;
+        /// **there is no token named "standard margin"**, so this is the decision, not a lookup.
+        /// If a real spacing scale ever lands, this is the constant it replaces.
+        ///
+        /// The column used to start at y -120, an 86px gap. That gap was the wordmark's, and S44
+        /// deleted the wordmark, so the space went with it (S52). Derived from RailHeight rather
+        /// than hardcoded, so the fold and the margin cannot disagree.
+        ///
+        /// Internal so the test can assert against this exact value instead of a copy of it.
+        internal const float DesktopIconMarginY = 14f; // --st-pad-x
+        private const float DesktopIconX = 34f;
+        private const float DesktopIconPitch = 105f;
+
+        private static Vector2 DesktopIconSlot(int row) => new Vector2(
+            DesktopIconX,
+            -(NotebookChrome.RailHeight + DesktopIconMarginY + row * DesktopIconPitch));
+
         private void BuildDesktop()
         {
             // S44 + S45: the wallpaper is the lifted ground and its toner grain, and nothing else.
@@ -292,18 +313,18 @@ namespace SBR.Game
             // which restores the tab the current phase expects. Clicking the icon and clicking the
             // slot would have landed the player on different tabs. That divergence existed only
             // because the two controls had never been on the same screen.
-            MakeDesktopIcon("SureThing", "S", "SURETHING", new Vector2(34f, -120f),
+            MakeDesktopIcon("SureThing", "S", "SURETHING", DesktopIconSlot(0),
                 IconState.Installed, OpenSportsbook);
             // S47: LEDGER takes the installed treatment with its "$" at full toner. It was being
             // drawn in --ground-3 — the chip colour, in the glyph's argument — which is the same
             // value as the tile behind it, so the one destination on this machine that is not the
             // sportsbook announced itself with a glyph a step off invisible.
-            MakeDesktopIcon("OldSlips", "$", "LEDGER", new Vector2(34f, -225f),
+            MakeDesktopIcon("OldSlips", "$", "LEDGER", DesktopIconSlot(1),
                 IconState.Installed, OpenOldSlips);
             // S47: "(soon)" is deleted. The product does not put its own roadmap on his desktop,
             // and the treatment already says these do not open.
-            MakeDesktopIcon("Mail", "@", "MAIL", new Vector2(34f, -330f), IconState.NotInstalled, null);
-            MakeDesktopIcon("Bank", "¤", "BANK", new Vector2(34f, -435f), IconState.NotInstalled, null);
+            MakeDesktopIcon("Mail", "@", "MAIL", DesktopIconSlot(2), IconState.NotInstalled, null);
+            MakeDesktopIcon("Bank", "¤", "BANK", DesktopIconSlot(3), IconState.NotInstalled, null);
 
             // S48: the desktop carries the same NotebookChrome as every other destination. That was
             // S8's whole finding — one chrome, built once, consumed everywhere — and the desktop's

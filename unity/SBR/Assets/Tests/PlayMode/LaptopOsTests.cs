@@ -421,6 +421,15 @@ namespace SBR.Tests.PlayMode
                     $"{slot}: a backgrounded app's slot launches it");
             }
 
+            // S52: the icon column starts one standard margin (--st-pad-x) below the rail. It used
+            // to start 86px down — the wordmark's space, which S44 deleted the wordmark out of.
+            // Asserted against LaptopOs' own constant, not a copy of 14: a test holding its own
+            // duplicate of the value it is guarding is how the value drifts in the first place.
+            RectTransform firstIcon = desktop.Find("SureThing").GetComponent<RectTransform>();
+            Assert.AreEqual(-(NotebookChrome.RailHeight + LaptopOs.DesktopIconMarginY),
+                firstIcon.anchoredPosition.y, 0.01f,
+                "the icon column starts one standard margin below the rail, not the wordmark's old gap");
+
             // One machine, one time.
             Assert.AreEqual(NotebookChrome.ClockText, TextOn(rail.Find("Clock")),
                 "the desktop's clock is the rail's clock, not a second copy of it");
