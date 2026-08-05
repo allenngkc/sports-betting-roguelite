@@ -558,11 +558,23 @@ namespace SBR.Game
         // was explicitly ruled to stay OUT of the eligible set.
         private const float HdrBoostL3 = 1f;   // default / "price animating" — DESIGN.md §8.5: never L4
         // The single L4 magnitude (C3 rule 5: "a single value" — no second, per-element scale).
-        // C8·a: the floor is now settled on FRAMES, not on this number — "measured on rendered
-        // frames at the seated distance, not asserted from a boost value. The 1.8 boost stays only
-        // if the scoreline holds there." Both arms of that pair are captured (one seed,
-        // same moments); this value stays 1.8 until the DD rules on the images.
-        private const float HdrBoostL4 = 1.8f;
+        //
+        // T49 — RULED 1.4 and SEALED (DD 2026-08-04), on the frame-for-frame A/B this slice shot.
+        // The pair is very nearly a null result: pitch, cash-out band and the halo around it are
+        // identical to three decimal places across all six pairs. The ONLY region that measurably
+        // differs is the goal-flash scoreline — the element carrying T58's defect — where 1.8 pushed
+        // an already-offending gold ~4.7% hotter (0.755-0.757 against 1.4's 0.721-0.723).
+        //
+        // So 1.4 is chosen on the ladder, not on taste: the arms are equivalent everywhere the
+        // surface is behaving, and where they differ, 1.8 widens the gap between the designated L4
+        // element and the thing outshining it. When two settings are otherwise equal, take the one
+        // that does less damage to the law.
+        //
+        // **The bloom question is SEALED. Do not re-open it to fix anything.** The finding worth more
+        // than the pick is that bloom was never the lever this question assumed: a ±0.4 change moves
+        // nothing on this surface except one element that was the wrong colour. Fix findings
+        // elsewhere — T58 is where that colour was fixed.
+        private const float HdrBoostL4 = 1.4f;
         private static readonly int HdrBoostId = Shader.PropertyToID("_HdrBoost");
         private Shader _hdrUiShader;
         private bool _hdrShaderMissing;
@@ -973,6 +985,21 @@ namespace SBR.Game
             && _session != null && !_session.IsComplete
             && _eventsEmitted >= 1
             && !_marketSuspended
+            // T59 (RULED, DD 2026-08-04): the slot's state IS the input's state, read from the same
+            // value. T43 left these deliberately separate — the presentation was fixed but E still
+            // accepted during §8.7's pending window, where _marketSuspended is false because
+            // ResolveBeat never suspends — and routed the question up rather than guessing, because
+            // moving an input contract is not this seat's call. The ruling: "a player who presses E
+            // during suspension receives a cash-out they were just told was unavailable, at a price
+            // the display is not showing. On a money control, accepting an input you have declared
+            // refused is the worst available outcome — worse than refusing an input you appeared to
+            // offer, because the player cannot even see what they got."
+            //
+            // So the presentation flag now gates the accept. suspended and pending refuse E;
+            // actionable accepts; updating refuses (the _cashOutAnimation term below), because the
+            // offer is not yet acceptable and L3 already says so. TVS-H01 is preserved by
+            // construction: CashOutLive and TryCashOut both read THIS predicate, so they cannot drift.
+            && !_cashOutSlotSuspended
             && _cashOutAnimation == null
             && _session.CashOutOffer().HasValue;
 
@@ -2854,12 +2881,12 @@ namespace SBR.Game
         {
             if (_tCashOut == null) return;
             bool slotVisible = _tCashOut.enabled;
-            // Both terms are load-bearing and they are NOT redundant. CanAcceptCashOutNow reads
-            // _marketSuspended (the market's state); _cashOutSlotSuspended reads the slot's own
-            // (§8.7's pending window renders the suspended slate while the market is still open,
-            // because ResolveBeat never calls SuspendMarket). Without the second term the pending
-            // window kept a lit gold field and an L4 token under the word MARKET SUSPENDED — not for
-            // a frame, but for as long as the player took to decide.
+            // `live` drives the STATUS WORD, which is why it still tests the flag directly: a
+            // suspended slot carries no status word at all (TV-12/13), independently of whether the
+            // engine would accept a key. Since T59 the accept gate reads _cashOutSlotSuspended too,
+            // so for `fieldLit` the flag is now belt-and-braces rather than load-bearing — kept
+            // because the field and the key are supposed to be the same promise, and a future edit
+            // to either predicate should not be able to separate them silently.
             bool live = slotVisible && !_cashOutSlotSuspended;
             // `!_cashOutTweening` is NOT redundant with CanAcceptCashOutNow's own
             // `_cashOutAnimation == null`, and leaving it out re-opened TVS-H02 in a new place —
@@ -2885,7 +2912,7 @@ namespace SBR.Game
             // §8.5: the slot's brightness is a promise about input — L4 only while a press would
             // actually be accepted right now (same predicate as the accept gate itself, so this can
             // never promise more than TryCashOut will honor). Suspended and mid-tween stay LDR.
-            // C3 rule 5: the boost is 1.8, a single value — no second, per-element scale on top of it
+            // C3 rule 5: the boost is a single value (1.4 since T49) — no second, per-element scale on top of it
             // (the old taunt-flash lerp up to HdrBoostL4 * 1.15 is retired). CashOut's request is
             // SUSTAINED: it re-asks every frame while actionable, and yields the instant a momentary
             // punch (a goal's score, a payoff's ball, a win/cash-out tally) takes the token instead.
@@ -3291,9 +3318,25 @@ namespace SBR.Game
             // overlay at the SAME rect, normally hidden (§7's duplication ban is exactly why this
             // must not also read as an always-visible second score display), shown only for the
             // instant a goal commits and boosted through the shared HDR material to L4.
+            // T58 (§4 violation, DD 2026-08-04): this overlay was GOLD, and it is the only gold on the
+            // surface at the goal moment — measured 56-58° at up to 67% saturation on the scoreline's
+            // peak pixel, against 204-205° at ~5% at rest. Gold is rationed to money: won legs, payout
+            // figures, the cash-out band. A goal is not money; it is the event that may eventually
+            // produce money, which is the exact distinction the rationing rule exists to hold.
+            //
+            // It also re-created T41's defect in a second channel: at the flash the scoreline read
+            // 0.72 while the actionable cash-out band read 0.62, so the designated L4 element was
+            // again not the brightest thing on its own surface — at the precise moment the player is
+            // most likely to reach for the key. T41 capped the CONTINUOUS case; the flash was never
+            // measured.
+            //
+            // The fix is the ruling verbatim: the punch stays a brightness event on the cold-white
+            // channel. Same text, same rect, same face as _tMatchup, in the SAME cold white — so
+            // superimposing it and boosting to L4 can only make the existing scoreline brighter, and
+            // releasing it settles back. There is no hue to change, by construction.
             _tScoreFlash = MakeText(sbRoot, "Score", new Vector2(0f, 1f), new Vector2(0.5f, 1f),
                 AnchorTopCenter(sb, 8f), new Vector2(sb.width - 40f, sb.height - MomentumTapeHeight), TypeScore,
-                TextAnchor.UpperCenter, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Bold);
+                TextAnchor.UpperCenter, flavorColor, FontStyle.Bold);
             _tScoreFlash.enabled = false;
             _scoreHdrMat = MakeHdrMaterial();
             if (_scoreHdrMat != null) _tScoreFlash.material = _scoreHdrMat;

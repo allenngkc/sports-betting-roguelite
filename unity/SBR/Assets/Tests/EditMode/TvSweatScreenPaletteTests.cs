@@ -1436,6 +1436,94 @@ namespace SBR.Tests.EditMode
         }
 
         // ---------------------------------------------------------------------------------------
+        // T58 — the goal flash is a BRIGHTNESS event, never a hue event.
+        //
+        // DD 2026-08-04: the flash overlay was gold, measured 56-58° at up to 67% saturation on the
+        // scoreline's peak pixel against 204-205° at ~5% at rest. Gold is rationed to money and a
+        // goal is not money. It also re-created T41's defect in a second channel — the scoreline read
+        // 0.72 at the flash while the actionable cash-out band read 0.62.
+        // ---------------------------------------------------------------------------------------
+
+        [Test]
+        public void T58_the_goal_flash_carries_no_hue_of_its_own()
+        {
+            var go = new GameObject("tv");
+            try
+            {
+                TvSweatScreen s = BuiltScreen(go);
+                Text flash = FindChild<Text>(s, "Score");
+                Text matchup = FindChild<Text>(s, "Matchup");
+                Assert.IsNotNull(flash, "the Score punch overlay is missing");
+                Assert.IsNotNull(matchup, "the persistent Matchup scoreline is missing");
+
+                Assert.AreEqual(matchup.color, flash.color,
+                    "T58: the punch must be the SAME cold white as the scoreline it overlays. Any "
+                    + "other colour makes the flash a hue event; identical colour makes it a pure "
+                    + "brightness event by construction, because superimposing a value on itself and "
+                    + "boosting can only brighten.");
+
+                // And it is specifically not gold — stated separately so the failure names the defect
+                // rather than just reporting two colours that differ.
+                Assert.AreNotEqual(new Color(s.gold.r, s.gold.g, s.gold.b, 1f), flash.color,
+                    "T58: the goal flash is gold. Gold is rationed to money — won legs, payout "
+                    + "figures, the cash-out band. A goal is the event that may PRODUCE money, which "
+                    + "is exactly the distinction the rationing rule exists to hold.");
+
+                // The rest position must genuinely be cold: blue-ish channel not below red, which is
+                // what separates §4's cold white from any warm cast. Not a similarity band — a
+                // direction check on the axis the ruling measured (hue 204-205° at rest vs 56-58°).
+                Assert.GreaterOrEqual(flash.color.b, flash.color.r,
+                    "T58: the flash reads warm (red channel above blue), which is the gold direction");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        // ---------------------------------------------------------------------------------------
+        // T59 — the slot's state IS the input's state.
+        //
+        // DD 2026-08-04, answering the question T43 routed up rather than guessing: "a player who
+        // presses E during suspension receives a cash-out they were just told was unavailable, at a
+        // price the display is not showing."
+        // ---------------------------------------------------------------------------------------
+
+        [Test]
+        public void T59_a_suspended_slot_refuses_the_key()
+        {
+            var go = new GameObject("tv");
+            try
+            {
+                TvSweatScreen s = BuiltScreen(go);
+                MethodInfo gate = typeof(TvSweatScreen).GetMethod(
+                    "CanAcceptCashOutNow", BindingFlags.NonPublic | BindingFlags.Instance);
+                Assert.IsNotNull(gate, "CanAcceptCashOutNow not found — was it renamed?");
+
+                // Drive the presentation into the suspended slate, then ask the INPUT gate. Before
+                // T59 these were separate values and this returned true on the pending-loss path,
+                // where _marketSuspended is false because ResolveBeat never suspends.
+                InvokePrivate(s, "ShowMarketSuspended");
+                Assert.IsFalse((bool)gate.Invoke(s, null),
+                    "T59: the slot reads MARKET SUSPENDED while the accept gate still says yes. "
+                    + "Display state and input state must be one value.");
+
+                // TVS-H01's contract: the stand-suppression predicate reads the same gate, so the two
+                // cannot drift apart. Asserted here because T59 is exactly the kind of change that
+                // would break it silently.
+                MethodInfo live = typeof(TvSweatScreen).GetMethod(
+                    "CashOutLive", BindingFlags.NonPublic | BindingFlags.Instance);
+                Assert.IsNotNull(live, "CashOutLive not found — was it renamed?");
+                Assert.AreEqual(gate.Invoke(s, null), live.Invoke(s, null),
+                    "TVS-H01: CashOutLive and CanAcceptCashOutNow must agree exactly");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        // ---------------------------------------------------------------------------------------
         // T42 — team hues are muted and confined to the pitch dots.
         //
         // DD 2026-08-02: "team names at luminance 0.87-0.92, full chroma; hues must be muted,

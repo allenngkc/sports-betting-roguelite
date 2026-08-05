@@ -95,6 +95,61 @@ clear at 0 processes — was cleared. `EditorBuildSettings.asset` reverted;
 `SBR.Engine.dll` restored to HEAD's bytes and **`cmp`-verified identical**, so its lingering
 `git status` line is the inert-`[attr]lfs` artifact (§4D), not a real change.
 
+## 0-B9. BATCH 9 — T58 + T59 + T49's ruling WRITTEN, unverified (2026-08-04)
+
+**Ladder is LAW-CLEAN and Phase 3 is open.** T41 Design-verified CLOSED (zero saturated pixels),
+T48 CLOSED, **T49 RULED 1.4 and SEALED**. Written this session, **no editor grant held — a work
+assignment is not a lease (§4 step 0a), so none of this is compiled.**
+
+| item | change | file |
+|---|---|---|
+| **T58** | goal-flash overlay gold → **cold white** (`flavorColor`, same as `_tMatchup`) | `BuildScoreBug` |
+| **T59** | `CanAcceptCashOutNow` now reads `_cashOutSlotSuspended` — one value drives slot AND key | `CanAcceptCashOutNow` |
+| **T49** | `HdrBoostL4` 1.8 → **1.4**, sealed | `TvSweatScreen.cs:577` |
+
+Two new EditMode tests: `T58_the_goal_flash_carries_no_hue_of_its_own`,
+`T59_a_suspended_slot_refuses_the_key`.
+
+**T58 — the fix is structural, not a colour swap.** The punch overlay now carries the *same* colour
+as the scoreline it superimposes, so boosting it can only brighten what is already there and
+releasing settles back. There is no hue to change **by construction** — a future edit cannot
+reintroduce one without making the two elements visibly disagree at rest, which the test pins.
+
+**Where the gold was NOT:** `_ballFlash` is already cold white and fires only when the goal does
+*not* commit, so it is mutually exclusive with the score punch; the stage's own ball is `Color.white`
+(cyan only on VOID) and T41's closure holds. **`_tScoreFlash` was the only gold at the goal moment.**
+The ruling's "and the ball dot goes with it" is therefore either the gold scoreline's bloom halo or
+the ball read in the same region — worth confirming on the next frames, but there is no second gold
+source in the code to fix.
+
+**T59 — this is the question T43 routed up, answered.** The presentation flag now gates the accept.
+`suspended`/`pending` refuse E, `actionable` accepts, `updating` refuses via the existing
+`_cashOutAnimation` term. TVS-H01 survives by construction because `CashOutLive` and `TryCashOut`
+both read this one predicate — pinned by the new test. **The "refused press draws nothing" clause
+already held**: `TryCashOut` opens with `if (!CanAcceptCashOutNow()) return;` and has no refusal
+branch, so nothing flashes and nothing explains. Nothing added.
+
+**T49 — sealed means sealed.** The constant carries the ruling and the reason inline, including the
+finding worth more than the pick: a ±0.4 bloom change moves nothing on this surface except one
+element that was the wrong colour. **Bloom is not the lever for any future finding.**
+
+### Harness debt, both from the DD's own C25 disclosure — NOT started
+
+1. **Frame-locked A/B arms.** The two arms do not share sim state: actor positions differ at the same
+   seed/scene/grammar/frame index, so the whole-frame per-pixel diff (2.5–3.3% of pixels, mean 44–59)
+   **cannot be attributed to bloom** — most of it is actors that moved. Region statistics on fixed
+   boxes were the only valid instrument on the pair I shipped. *An A/B whose arms are not frame-locked
+   cannot support a per-pixel comparison,* and the bigger, more impressive number was the invalid one.
+2. **The 420 s shared budget** (diagnosed in §0-FULL): the dangerous-beats loop needs its own
+   sub-budget, or the scorer wait needs a reserved floor.
+
+### Next, per batch 9's order
+
+T58 → T59 → **T46** → T42 → T44 → T50 (T50's column items are blocked by T46). T46/T42/T44 are
+already *implemented* here; what batch 9 queues is their verdict pass on frames that now show them.
+
+---
+
 ## 0-FULL. FULL WINDOW — 2026-08-04. T48 SHOT, T49 SHOT, editor released
 
 **Everything the window was granted for landed.** Four zips staged in `main-2/docs/design/dd-import`,
