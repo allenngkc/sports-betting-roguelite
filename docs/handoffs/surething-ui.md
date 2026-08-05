@@ -4,7 +4,7 @@
 - **Done:** the desktop block (S46, S44+S45, S47, S48) and all of batch 9's S52 — **S8 is re-verified**; icon column moved to the standard margin; the verdict screen is off oxide, off biro, and photographed in both terminal states for the first time.
 - **Now:** nothing in flight.
 - **Need — DD:** the verdict screen's **ground** (deferred pending frames, which now exist at `dd-import/surething-verdict-ground-2026-08-04/`; measured G=0 on 2449 samples and it does not match its own source value — see §4-0.6). S49, the desktop's kit entry, is the DD's.
-- **Blocked:** S41 and the twelve-state LEDGER re-submit. **Unblocks when markets B1 merges to main and this branch merges main** — B1 imminent, deviation signed. **Read §4b before merging: main is 159 commits ahead of this fork point.**
+- **Next, on the orchestrator's go:** merge main (retention is on it — B1 merged at `bbf9241`), then S41 and the LEDGER re-submit. **Read §4b's forecast first: 221 commits behind, exactly one conflicted file (`SportsbookApp.cs`, resolve toward main), the desktop block merges clean, and main brings a duplicate capture-state `09`.**
 
 **Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-04, after batch 9 (S52).
 **HEAD:** `d1a8382` · **Branch:** `surething-ui` · working tree clean.
@@ -154,6 +154,46 @@ Consequences, in the order they will bite:
    drifting, and 159 commits is exactly the circumstance it exists for.
 3. **Expect the suite counts to move for reasons that are not this seat's**, and establish the
    post-merge baseline before reading any failure as a regression here.
+
+### The merge, forecast — measured 2026-08-05, before touching anything
+
+**Retention is on main.** `bbf9241` and `9e55d0d` are both ancestors of `main`. The distance is now
+**221 / 23** (main ahead / this branch ahead) — it was 159 when first measured, so re-measure rather
+than trusting either number.
+
+Reproduce this forecast without touching the branch:
+
+```
+git merge-tree --write-tree --name-only main HEAD    # writes nothing; exit 1 means conflicts
+TREE=$(git merge-tree --write-tree main HEAD | head -1)
+git show "$TREE:unity/SBR/Assets/SBR/Runtime/SportsbookApp.cs"   # the conflicted file, markers and all
+```
+
+**Exactly one file conflicts: `SportsbookApp.cs`, three hunks.** `LaptopOs.cs` is not touched by main
+at all, so **the entire desktop block merges clean** — S44 through S48 and S52 are not at risk.
+
+**What the conflict actually is.** Both branches implemented interior market-list scrolling
+independently. Main's side is 632/178 since the fork and is **ahead on that surface** — it cites T47,
+S28, S22, S23 and A2–A5, and carries S27 seven times. This branch's side is 272/117 and is ahead
+**on the ledger** (S40, S43) and carries S46's masthead. All three conflict hunks sit in the
+market/detail region — `BuildMarketLines`, `BuildBothTeamsScore`, `BuildPlayerLines` and their scroll
+plumbing, where main took `Run run` parameters and `MakeOfferRow` while this branch returns content
+heights and takes a `title`.
+
+**So resolve all three toward main**, then confirm this branch's side survived outside them. The dry
+run says it does: the S46 brand string is present once, and S40/S43 nine times. **Confirm, do not
+assume** — that is a prediction from a tree nobody has compiled.
+
+**Two files auto-merge that both sides changed** — `SureThingLedgerTests.cs` and
+`SureThingVisualCaptureTests.cs`. Git reconciling them textually is not the same as them being
+right; read both before trusting the green.
+
+**A numbering collision to raise before the re-submit, and it is markets', not this seat's.** Main
+added a capture state numbered `09-margin-max-legs-staged-receipt` beside the existing
+`09-rewards-affordable`. After the merge the set reads 01–08, **09, 09**, 10, 11, 12, 13, 14. No
+filenames collide, so nothing fails — but the re-submit is precisely a read-the-set-in-order
+exercise, and two states share a number. Renumbering touches the markets seat's test, so it wants
+their nod rather than a unilateral fix here.
 
 ## 4-0. Batch 7 — where the LEDGER actually stands
 
