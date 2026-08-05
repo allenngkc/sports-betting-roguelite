@@ -1,13 +1,14 @@
 # SureThing UI — re-seat state
 
-**STATUS 2026-08-04 · last code commit `d1a8382` · tree clean · EditMode 76/76 · PlayMode 47/47**
-- **Done:** the desktop block (S46, S44+S45, S47, S48) and all of batch 9's S52 — **S8 is re-verified**; icon column moved to the standard margin; the verdict screen is off oxide, off biro, and photographed in both terminal states for the first time.
-- **Now:** nothing in flight.
-- **Need — DD:** the verdict screen's **ground** (deferred pending frames, which now exist at `dd-import/surething-verdict-ground-2026-08-04/`; measured G=0 on 2449 samples and it does not match its own source value — see §4-0.6). S49, the desktop's kit entry, is the DD's.
-- **Next, on the orchestrator's go:** merge main (retention is on it — B1 merged at `bbf9241`), then S41 and the LEDGER re-submit. **Read §4b's forecast first: 221 commits behind, exactly one conflicted file (`SportsbookApp.cs`, resolve toward main), the desktop block merges clean, and main brings a duplicate capture-state `09`.**
+**STATUS 2026-08-05 · last code commit `f05332c` · tree clean · EditMode 76/76 · PlayMode 55/55**
+- **Done:** the desktop block and batch 9 (S46, S44+S45, S47, S48, S52 — **S8 re-verified**); **main merged** (221 commits, one conflicted file); **S41** — the cash-out figure prints in wax and the RETURNED total is a sum again; the LEDGER re-submit set is shot and staged.
+- **Now:** nothing in flight. **This closes the slice's last items.**
+- **Need — DD:** (1) the LEDGER Design-verified grant, on `dd-import/surething-ledger-resubmit-2026-08-05/` — all six closing conditions landed; (2) the verdict screen's **ground**, still open at `dd-import/surething-verdict-ground-2026-08-04/`; (3) S49, the desktop's kit entry, is the DD's.
+- **Worth one capture nobody has:** no state drives a run past `ExitShop`, so retention *across rounds* is proven by construction and suite, never photographed (§4-0.7).
+- **Two traps introduced by the merge:** `artifacts/` is no longer git-ignored (a bare `git add -A` sweeps ~100 PNGs), and two capture states now share the number `09`.
 
-**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-04, after batch 9 (S52).
-**HEAD:** `d1a8382` · **Branch:** `surething-ui` · working tree clean.
+**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-05, after the main merge and S41.
+**HEAD:** `f05332c` · **Branch:** `surething-ui` · working tree clean.
 
 This is written for a seat with **no conversation context**. Everything below is either verifiable in
 the repo or flagged as unverified.
@@ -38,7 +39,7 @@ Since the merge, three more rulings landed and are **implemented, verified and c
 - **S26** — offer rule text never truncates at point of spending; the board shows however many offers
   fit and states how many it could not. The REWARDS banner states rather than exhorts.
 
-**Suites: EditMode 76/76, PlayMode 47/47** (at `d1a8382`). The 75/38 in earlier notes was the
+**Suites: EditMode 76/76, PlayMode 55/55** (at `f05332c`, post-merge). The 75/38 in earlier notes was the
 count before the desktop block; PlayMode's total also depends on whether the run passes
 `-nographics`, which fails the four capture tests on `RenderTexture.Create` — **do not pass it**,
 the command in §5 is the one that holds.
@@ -440,6 +441,64 @@ ending — no RNG, no eight-round grind, no lucky seed. The run is swapped onto 
 reflection against its private setter, deliberately, because the alternative is a seam on
 `RunDirector`, which three seats share and which is about to take that 159-commit merge. Reuse this
 for any other state the engine makes expensive to reach.
+
+## 4-0.7 The merge and S41 — the slice's last items
+
+**Done** (merge `5f749a0`, S41 `f05332c`). Post-merge baseline **EditMode 76/76, PlayMode 55/55** —
+establish any later comparison against this, not against the 47 that preceded it. The union is 55
+because 8 tests were unique to each side.
+
+### The merge
+
+221 commits, one conflicted file: `SportsbookApp.cs`, three hunks, all in the market/detail region.
+**Resolved toward main**, which is keeping both intents rather than overriding one — both branches
+had independently built interior market-list scrolling, and main's side is ahead there (T47, S28,
+S22, S23, A2–A5). **A2 in particular deletes the per-destination panel titles this branch was still
+passing**, so taking this branch's side would have reinstated copy a later ruling removed. This
+branch's own contribution to that file — the ledger (S38–S43, S37, S31) and S46's masthead — is in
+regions main never touches, so nothing had to be traded. `LaptopOs.cs` is untouched by main, so the
+whole desktop block merged clean.
+
+Two things the auto-merge got textually right and semantically wrong, both fixed:
+
+1. Two `return MarketRowsContentHeight(...)` statements from this branch were grafted onto main's
+   `void` method bodies.
+2. **`SureThingEntryTests` hardcoded a 280px receipt width while the renderer derives it**, and E-07
+   has since moved staged receipts from the 324px margin into the 700px sheet. It reads the width off
+   the rendered header now — which its own comment already claimed it did.
+
+**That second one is a pre-existing latent flake on main, not a merge regression, and the shape is
+worth remembering.** The test and the renderer only disagree when a label's fitted width falls
+BETWEEN the two numbers: shorter than 280 and both return the string untouched, longer than the real
+width and both truncate identically. Only the band between them fails. It passed on every run whose
+generated team names were short enough and failed on the first one that produced "REGULATORS
+MONEYLINE — v SPREADSHEETS". **Main will hit it the same way on a long enough slate.**
+
+### S41, and the thing it was really for
+
+The figure prints in wax, the RETURNED total is a sum and never an em dash, and an unknowable record
+would leave the absence in its own cell rather than blanking the total. Checkable on frame 12: `$8`
+cashed out, `$29` won, `$0` lost, total `$37`.
+
+**The ledger also now reads retained history.** It read `run.Tickets`, which `ExitShop` clears every
+round, so a player who bet in rounds 1–3 and opened it in round 4 met an empty screen captioned
+`SETTLED TICKETS · THIS RUN`. That was the defect retention was approved to fix — it is item 1 of
+§4b's two consequences, and it is now done. It unions the retained list with the current round,
+de-duplicated by reference, so a ticket that goes terminal mid-round does not vanish until the round
+settles.
+
+**The gap in the evidence, stated plainly: every ledger frame in the set is ROUND 1.** Retention
+across rounds is proven by construction and by the suite and by nothing photographic. That capture
+is worth building and does not exist.
+
+### Two traps the merge introduced
+
+- **`artifacts/` is no longer git-ignored.** Main un-ignored it deliberately (2026-07-28, to stop
+  design evidence being silently swallowed), so a bare `git add -A` in this tree now sweeps in every
+  capture PNG. Stage explicitly.
+- **Two capture states share the number `09`** — `09-rewards-affordable` and
+  `09-margin-max-legs-staged-receipt`. Nothing collides on disk; the numbering just lies to anyone
+  reading the set in order. The second is the markets seat's test, so renumbering wants their nod.
 
 ## 4a. S32 — which happened: fixed between HEADs
 
