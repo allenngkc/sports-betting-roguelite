@@ -92,6 +92,18 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-04 cycle 81 · **Room merge VALIDATED — fully green** — engine
+  160/160, compile 0 errors, EditMode 75/75, PlayMode 39/39 WITH graphics
+  (TV's 3 environmental -nographics failures did not recur), results XMLs
+  fresh-verified, end state pristine (0 tracked changes; the 8 texture " M"
+  lines were LFS stat-cache artifacts, verified byte-identical and now
+  clean). Gate script exit 1 = the one documented design-open line. Note:
+  TV's "EditMode 222" is its own workspace's suite scoping; this workspace's
+  full-run baseline is 75/75 and matches. Veto window on `55f4a63` stands
+  but the merge is certified. Room confirmed + holds for DD; **TV granted a
+  full capture window now** (re-merge main → the two lighting shoots → bloom
+  A/B → SureThing captures with graphics). Validation agent chartered
+  in-turn waits after one stall. Reversal: revert the merge commit.
 - 2026-08-04 cycle 80 · **Overnight Orca restart recovered** — all four lead
   sessions died with the restart; revived via `claude --continue` with bypass
   (full context restored, /effort max re-applied, all four confirmed booted).
