@@ -95,6 +95,65 @@ clear at 0 processes — was cleared. `EditorBuildSettings.asset` reverted;
 `SBR.Engine.dll` restored to HEAD's bytes and **`cmp`-verified identical**, so its lingering
 `git status` line is the inert-`[attr]lfs` artifact (§4D), not a real change.
 
+## 0-VP. VERDICT-PASS PREP — T42 measured on frames; T46/T44 read on frames (no editor used)
+
+Done while markets held the lease. **T42, T46 and T44 are all already implemented and green; what
+they lack is Design-verified, which is the DD's act against rendered frames (C11).** So this is the
+evidence, measured off the 101 frames already on disk — and the measurement itself needed correcting
+twice, which is the most useful thing in this section.
+
+### T42 — the dots measure as canon
+
+Pitch interior, saturated pixels (sat > 0.30), five goal frames, one per seed:
+
+| band | count (5 seeds) | mean saturation | canon |
+|---|---|---|---|
+| blue 190–240° | 93,648 | 0.479–0.501 | `--tv-team-a` **0.452** @ 215.5° |
+| pink 300–340° | 63,497 | **0.348–0.354** | `--tv-team-b` **0.354** @ 319.0° |
+| retired orange 15–40° | 2,975 | — | not in the TV palette at all |
+| retired violet 250–290° | 824 | — | not in the TV palette at all |
+
+**Pink lands on canon almost exactly** (0.348–0.354 against 0.354). Blue reads ~0.03–0.05 high, which
+is what a bloom-and-grade lift does to the more luminous of the two. Blue and pink together are ~97%
+of the pitch's saturated pixels, and **no dot is rendered in a retired hue** — checked by marking the
+orange pixels red and looking at them.
+
+**The residual is not dots.** Two-thirds of the orange disappeared when the box was inset 3%,
+identifying it as fringe along the box's own edge; what remains is sub-pixel antialiasing between the
+dots, the white ring and the near-black pitch, at counts orders below anything dot-shaped.
+
+### The instrument was wrong twice before it was right — the useful part
+
+1. **First box framed the room, not the screen.** Derived from an inter-moment diff, on the assumption
+   that only the TV changes between moments. **The TV's own light spill changes the whole room**, so
+   the box swallowed the walls and reported a median hue of **128° — green** — on a surface whose
+   palette contains no green. Caught because green was impossible, not because the number looked odd.
+2. **Second box overran the pitch into the panel surround**, inflating the retired-orange count
+   threefold with edge fringe.
+
+Both are the exact failure `rig-r23-recipe.md` §6 names: *"a box that no longer frames the intended
+surface would still report a plausible-looking number."* The fix that actually worked was **looking at
+the rendered frame** rather than reasoning about coordinates — C11's own point, turned on the
+instrument instead of the design. **Any region box quoted from this slice should state how it was
+framed and how that was checked.**
+
+### T46 and T44 — read on the frame, not measured
+
+On `seed-16180339 … moment-goal`: the stage's left edge is a **hard vertical line at the ticket
+column boundary**, leg text (`BRICKLAYERS TO WIN`, the two leg rows, `RISK $87  PAYS $705`) is
+unobscured, and the NetRipple — the element that used to reach ~155px past the stage — is fully
+contained. **T46 reads as fixed.** The event strip prints
+`Meatballs rip through on the break. — LEAD CHANGE`: observational voice, em dash, no hype. **T44
+reads as fixed.** Both stated as *read*, not measured — no pixel criterion was applied.
+
+### And the frames confirm T58 the DD found
+
+The same frame shows the scoreline `MEATBALLS 1—0 BRICKLAYERS` in **gold**. These frames predate the
+T58 fix, so that is exactly the defect batch 9 ruled — visible, and consistent with the fix now
+written but not yet re-shot. **The next capture is what closes it.**
+
+---
+
 ## 0-HD. HARNESS DEBT — both items written, UNCOMPILED (2026-08-04, markets held the editor)
 
 Both of the DD's C25 disclosures are addressed. **No editor was available, so none of this is
