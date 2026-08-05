@@ -223,7 +223,7 @@ REFERENCE_JSON_PATH = Path(__file__).resolve().parent / "room_gate_reference.jso
 REFERENCE_SCHEMA_VERSION = 3
 # Certification date is passed in, never read from the clock: a gate report must
 # be reproducible, and a wall-clock read makes two runs of the same scene differ.
-TODAY = "2026-08-03"
+TODAY = "2026-08-04"
 
 # Tolerance for comparing collider float dimensions read back out of text.
 # Same scene file re-parsed twice will match exactly; this just guards
@@ -1054,6 +1054,13 @@ def main():
              "automatically the moment the scene's content changes (C18).",
     )
     parser.add_argument(
+        "--certify-basis",
+        metavar="TEXT",
+        help="Provenance of the human verdict being recorded. A re-certification on a STANDING "
+             "verdict is not a fresh walk, and the record must say which it was -- otherwise the "
+             "next reader sees a green gate and assumes someone walked this build.",
+    )
+    parser.add_argument(
         "--compare-scene",
         help="Path to a second Room.unity to compare CONTENT against, ignoring fileID "
              "renumbering. This is what makes §9.2 ('run the builder twice') a real check: "
@@ -1103,6 +1110,7 @@ def main():
             "certified_commit": args.certify_human_gates,
             "certified_at": TODAY,
             "content_fingerprint": scene_content_fingerprint(_docs),
+            "basis": args.certify_basis or "fresh walkthrough of this build",
             "note": "R22: gates 6-8 have no automated instrument; a human walks the build. "
                     "Expires automatically when content_fingerprint stops matching.",
         }
@@ -1336,9 +1344,12 @@ def main():
                 results.append(GateResult(
                     num, gname, "PASS",
                     f"human walkthrough certification, scene content unchanged since {cert_ref}",
-                    f"certified by walkthrough {cert_when} at {cert_ref}; content fingerprint matches",
+                    f"certified {cert_when} at {cert_ref}; content fingerprint matches; "
+                    f"basis: {cert.get('basis', 'unrecorded')}",
                     blind_spot=(
-                        "THIS TOOL RAN NO CHECK. It is replaying a human verdict recorded in "
+                        "THIS TOOL RAN NO CHECK, and the verdict it replays may not be a walk of "
+                        "THIS build -- read the 'basis' in the observed column. It is replaying a "
+                        "human verdict recorded in "
                         f"{REFERENCE_JSON_PATH.name}, and the only thing it verified itself is that "
                         "the scene's content fingerprint still matches the one certified -- so it "
                         "covers the GEOMETRY walked, not the current captures, not the screens' "
