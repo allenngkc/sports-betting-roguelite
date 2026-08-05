@@ -453,6 +453,52 @@ the laptop, TV or phone body, so R19(a)'s separation has only ever been albedo a
 R19(b)-am the carrying channel is **value**, which is measurable in a frame — so regions for those
 bodies would convert R19(a) from asserted to measured.
 
+### Batch 9 (2026-08-04) — R25 GRANTED, and two of the queue's premises are falsified
+
+**R25 painterly read: Design-verified.** The fragility flag was recorded with it — the read is
+lighting-assisted (4.68× rendered vs 2.17× albedo-only), so **any future shot that relights the desk
+re-opens R19**. That line is now the reason, and it is worth defending.
+
+**The mattress 37.36-vs-44.44 discrepancy — RESOLVED, and neither box is mis-framed.**
+
+| capture | mattress mean |
+|---|---|
+| `standing-overview.png` (screens **lit**) | 44.44 / 44.49 |
+| `conformance-room-screens-dark.png` (screens **dark**) | **38.41** |
+| conformance, ungraded dark | 25.47 |
+
+Same camera pose (both are eye `(0.300, 1.640, −1.400)`, +Z, 68°), same box, same surface. The gap is
+**screens-lit vs screens-dark** — the mattress catches laptop/phone/TV light and the conformance set
+silences all three by construction, so it *must* read ~6 lower. R32 supposed one box was not framing
+its surface; neither is.
+
+**The real defect was C25's:** a ratified number quoted without the capture it is defined on, so two
+runs saying "the mattress" meant different quantities. R9-A now names its capture and lighting in its
+own line and reports the screens-dark value beside it, labelled *not this test*.
+
+**R33 is already done — the drab green is applied, at spec.** R33 says the swatch is absent and "all
+four bunk/mattress materials remain warm neutral greys." Not so:
+
+| material | linear | sRGB | |
+|---|---|---|---|
+| `BunkFrameGreen.mat` | (0.0423, 0.0545, 0.0296) | **#3A4230** | G>R, green |
+| `ArtBunk2Shadow.mat` (bedding) | (0.0423, 0.0545, 0.0296) | **#3A4230** | G>R, green |
+| `CouchGray.mat` | (0.172, 0.158, 0.132) | #736F66 | warm — correctly excluded |
+
+`BunkFrame` is bound to six objects (both slabs, four posts). **Applying it again is a no-op.**
+
+**R32's placement amendment has no region to land in.** It rules the fabric "reads its drab green
+outside the pool's reach." Swept nine surface-pure patches across both bunks — slab ends, mids, posts,
+lower rail, bedding — and **0 of 9 read green.** Every one is COOL (h 249–271°) or below the chroma
+floor. The whole bunk assembly flanks the window and sits in its pool; there is no outside-the-pool
+bunk surface to carry the swatch. **Routed back — not actionable as placement.**
+
+**R31 recorded:** finish leads, value stays required. Reasoning is in `BuildMaterials`.
+
+**Phone joins C13 coverage.** R28-am keeps the live `BookieFeed`, which removes the phone's structural
+immunity to shipping superseded content inside a room capture. Room frames now carry **three** live
+surfaces. Nothing may be authored onto that screen — live engine data only.
+
 ### Round 4 (2026-08-04) — three items, all answered by measurement, none by moving a colour
 
 **1. Steel/conduit VALUE, re-measured against T48's neutral black point** — the re-measure C22.1

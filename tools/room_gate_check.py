@@ -226,6 +226,31 @@ R20_REGIONS = {
     "desk, far/dark end":         (1690, 1150, 1820, 1230),
 }
 
+# R23 amended, DD 2026-08-04 (batch 9) -- THE ONE AUTHORISED EXCLUSION.
+#
+# Law 1.1 forbids the ROOM returning saturated cool colour. Two regions read COOL
+# and are cool GRADE-BYPASSED TOO (far plaster 5.53 at 275.7deg, floor aisle 2.94
+# at 272.8deg), so the cause is the room's own light, not the grade -- and §1.2
+# specifies exactly that light: "a cool window with SHORT REACH that pools locally
+# and does not tint the room." The gate was failing the room for having the window
+# its own lighting design requires.
+#
+# THE BOUNDARY, stated here because the ruling requires the gate to state it:
+# the exclusion is BY NAME, covering the two regions below and nothing else. It is
+# not a rule that cool readings are forgiven. Any other region reading COOL still
+# FAILS, which is what keeps "short reach" enforceable -- a pool that spreads is a
+# §1.2 breach and this gate must still catch it.
+#
+# The DD drew the contrast with S51 deliberately: there, a proposed exclusion
+# would have hidden an overrun whose cause was never identified. Here the excluded
+# thing is identified, measured, and sanctioned by name in a ratified document.
+# "An exclusion is legitimate when you can name what you are excluding and why it
+# belongs there -- never when it merely makes a number go green."
+WINDOW_POOL_REGIONS = {
+    "wall (far plaster)",
+    "floor (aisle)",
+}
+
 # Below this chroma a hue angle is not meaningful -- it is the direction of a
 # vector too short to trust, and calling a near-grey surface "cool" on the
 # strength of a 0.4 chroma reading would be measuring noise.
@@ -1113,6 +1138,7 @@ def main():
     scene_path = Path(args.scene)
     captures_dir = Path(args.captures)
     reference_captures_dir = Path(args.reference) if args.reference else None
+    conformance_dir = Path(args.conformance) if args.conformance else None
 
     # Tee rather than redirect: a run that is being recorded must still be a run
     # you can watch, or nobody will pass --report when it matters.
@@ -1415,18 +1441,50 @@ def main():
                 ))
 
         # --- R9-A: bunk 2 mattress luminance ---------------------------------
+        # R32 (DD 2026-08-04) asked which of two boxes was mis-framed after the
+        # same nominal check reported 37.36 and 44.44. NEITHER IS. Both use this
+        # box at the same camera pose; the two numbers are the same surface under
+        # different LIGHT. The 43.9 test is defined on the screens-LIT gameplay
+        # capture, and the R23 conformance set kills all three screens by
+        # construction, so the mattress necessarily reads ~6 lower there:
+        #
+        #   standing-overview  (screens lit)   44.44 / 44.49   <- THE 43.9 TEST
+        #   conformance wide   (screens dark)  38.41
+        #   conformance wide   ungraded dark   25.47
+        #
+        # The defect was never a box. It was a ratified number quoted without the
+        # capture it is defined on, so two runs saying "the mattress" meant two
+        # different quantities - C25 exactly. The gate now names its capture and
+        # its lighting condition in its own expected/observed line, and the
+        # screens-dark value is reported beside it, labelled as NOT this test, so
+        # the two can never be conflated again.
         current_img = load_capture(captures_dir, R9A_IMAGE)
         r9a_mean = region_mean_luminance(current_img, R9A_BOX)
         r9a_ok = abs(r9a_mean - R9A_EXPECTED_MEAN) <= R9A_TOLERANCE
+        r9a_detail = [f"measured on {R9A_IMAGE}, box {R9A_BOX}"]
+        if conformance_dir is not None:
+            try:
+                dark_img = load_capture(conformance_dir, R23_IMAGE)
+                dark_mean = region_mean_luminance(dark_img, R9A_BOX)
+                r9a_detail.append(
+                    f"same box on {R23_IMAGE} (screens DARK) = {dark_mean:.2f} -- "
+                    f"NOT this test; the conformance set silences all three screens by "
+                    f"construction, so it reads ~{r9a_mean - dark_mean:.1f} lower and is a "
+                    f"different quantity, not a disagreement")
+            except (FileNotFoundError, ValueError):
+                pass
         results.append(GateResult(
-            "R9-A", "bunk 2 mattress luminance",
+            "R9-A", "bunk 2 mattress luminance (screens LIT)",
             "PASS" if r9a_ok else "FAIL",
-            f"{R9A_EXPECTED_MEAN} +/- {R9A_TOLERANCE}",
+            f"{R9A_EXPECTED_MEAN} +/- {R9A_TOLERANCE} on {R9A_IMAGE}",
             f"{r9a_mean:.2f}",
-            blind_spot="samples one fixed pixel box and reports mean luminance only -- sees "
-                       "nothing outside that box, says nothing about colour/hue, and a box that "
-                       "no longer frames the intended surface (e.g. after a geometry move) would "
-                       "still report a plausible-looking number.",
+            r9a_detail,
+            blind_spot="samples one fixed pixel box on the SCREENS-LIT gameplay capture and "
+                       "reports mean luminance only. It is defined on that capture and nowhere "
+                       "else -- the same box on a screens-dark frame is a different quantity and "
+                       "is reported separately above for exactly that reason. It sees nothing "
+                       "outside the box, says nothing about colour/hue, and a box that no longer "
+                       "frames the intended surface would still report a plausible-looking number.",
         ))
 
         # --- R9-B: region means within 10% of reference ----------------------
@@ -1513,11 +1571,14 @@ def main():
 
             detail = []
             cool_surfaces = []
+            pooled_cool = []
             for name, box in R23_REGIONS.items():
                 lstar, chroma, hue = region_cast(graded, box)
                 verdict = cast_verdict(chroma, hue)
-                if verdict == "COOL":
+                if verdict == "COOL" and name not in WINDOW_POOL_REGIONS:
                     cool_surfaces.append(name)
+                elif verdict == "COOL":
+                    pooled_cool.append(name)
                 line = (f"{name:22s} L*={lstar:5.2f} chroma={chroma:5.2f} "
                         f"hue={hue:6.1f}deg  {verdict}")
                 if ungraded is not None:
@@ -1532,18 +1593,35 @@ def main():
                               "later would otherwise cost a whole editor lease.")
 
             passed = not cool_surfaces
+            detail.append(
+                "EXCLUSION (R23-am, DD 2026-08-04), stated in the gate line as the ruling "
+                "requires: the window's sanctioned short-reach pool is excluded from the verdict "
+                "BY NAME -- " + ", ".join(sorted(WINDOW_POOL_REGIONS)) + " -- because §1.2 "
+                "specifies a cool window that pools locally, and both read cool GRADE-BYPASSED "
+                "too, so the cause is the room's light and not the grade. This is not a rule that "
+                "cool readings are forgiven: any region outside that named set still FAILS, which "
+                "is what keeps §1.2's 'short reach' enforceable.")
+            if pooled_cool:
+                detail.append(
+                    f"in-pool and excluded this run: {', '.join(sorted(pooled_cool))} "
+                    f"({len(pooled_cool)}/{len(WINDOW_POOL_REGIONS)} of the named pool)")
             results.append(GateResult(
-                "R23", "law 1.1 cast (screens dark)",
+                "R23", "law 1.1 cast (screens dark, window pool excluded by name)",
                 "PASS" if passed else "FAIL",
-                "no surface reads COOL",
-                "all surfaces warm/neutral" if passed
-                else f"{len(cool_surfaces)} COOL: {', '.join(cool_surfaces)}",
+                f"no surface reads COOL outside the {len(WINDOW_POOL_REGIONS)} named window-pool regions",
+                ("all surfaces warm/neutral outside the pool"
+                 + (f"; {len(pooled_cool)} in-pool cool as specified" if pooled_cool else ""))
+                if passed else f"{len(cool_surfaces)} COOL outside the pool: {', '.join(cool_surfaces)}",
                 detail,
                 blind_spot="measures chroma/hue in fixed boxes on the screens-DARK render only -- "
                            "sees nothing outside those boxes, says nothing about the room WITH "
                            "screens on (deliberately excluded to isolate the room from the "
                            "emissive screens), and a box that no longer frames its intended "
-                           "surface would still report a number.",
+                           "surface would still report a number. Since R23-am it also cannot fail "
+                           "on the two named window-pool regions AT ALL -- if the window's reach "
+                           "grew so that those regions went cool for a NEW reason, this gate would "
+                           "stay green on them. It catches a spreading pool only where the pool "
+                           "reaches a region it does not already cover.",
             ))
 
             # --- R19: the institution's metal, informational ------------------
