@@ -291,6 +291,114 @@ WINDOW_POOL_REGIONS = {
     "floor (aisle)",
 }
 
+# ---------------------------------------------------------------------------
+# R33 / C30 -- PALETTE CONFORMANCE: is the specified material APPLIED?
+#
+# C30 (DD 2026-08-05): "A ratified palette specifies what a surface IS. It does
+# not promise what a camera returns under a specific lighting rig." Olive, khaki,
+# drab green, rust under a warm dim fluorescent is a MATERIALS LIST -- always a
+# statement about albedo, and reading it as a statement about pixels is what
+# produced R19(b), R31 and R33 in sequence. So conformance is checked HERE, on the
+# scene, and the hue readings in R19_REGIONS are descriptive only.
+#
+# This gate would have answered R33 ("drab green absent from the room") in one run
+# without a frame, a lighting argument, or three rounds of escalation.
+PALETTE_PLACEMENTS = {
+    "BunkSlab":       "BunkFrameGreen",   # §2 drab green #3A4230 -- bunk frames
+    "BunkPostFront":  "BunkFrameGreen",
+    "BunkPostBack":   "BunkFrameGreen",
+    "Bunk2Slab":      "BunkFrameGreen",
+    "Bunk2PostFront": "BunkFrameGreen",
+    "Bunk2PostBack":  "BunkFrameGreen",
+    "Bunk2Mattress":  "ArtBunk2Shadow",   # §2 drab green -- mattress fabric
+    "Bunk2Bedding":   "ArtBunk2Shadow",
+    "TVBody":         "ArtHousingSteel",  # §2 steel #3A3F42, since BezelBlack retired
+    "LaptopBase":     "LaptopShell",      # R19(a) -- his register
+    "PhoneBody":      "PhoneShell",       # R19(a)/R28 -- his register
+    "CouchSeat":      "CouchGray",        # ruled EXCLUDED from the green
+    "CouchBackrest":  "CouchGray",
+}
+
+# Named exceptions carry their reason, so "not green" can never read as "missed".
+PALETTE_EXCLUSIONS = {
+    "Bunk2Pillow": "ArtGrime -- deliberate. RoomArtDressing: 'the one thing allowed to catch a "
+                   "little light... what makes the bunk read as SLEPT IN rather than an empty "
+                   "shelf' (§1.4 legible-as-occupied). Applying #3A4230 would darken it 37.5%. "
+                   "OPEN with Allen, held.",
+}
+
+
+def material_name_by_guid(assets_root):
+    """guid -> material asset name, from the .mat.meta files."""
+    out = {}
+    if assets_root is None:
+        return out
+    for meta in Path(assets_root).rglob("*.mat.meta"):
+        m = META_GUID_RE.search(meta.read_text(encoding="utf-8", errors="replace"))
+        if m:
+            out[m.group(1)] = meta.name[:-len(".mat.meta")]
+    return out
+
+
+MAT_REF_RE = re.compile(r"guid: ([0-9a-f]+), type: 2")
+
+
+def gate_palette_conformance(docs, assets_root):
+    """C30: every ruled placement wears its ruled material. Scene-truth, no frame."""
+    guid2name = material_name_by_guid(assets_root)
+    go = {a: (NAME_FIELD_RE.search(b).group(1) if NAME_FIELD_RE.search(b) else "")
+          for _c, a, n, b in docs if n == "GameObject"}
+    found = {}
+    for _cid, _anchor, cname, body in docs:
+        if cname != "MeshRenderer":
+            continue
+        gm = GAMEOBJECT_REF_RE.search(body)
+        nm = go.get(gm.group(1), "") if gm else ""
+        if not nm:
+            continue
+        mats = [guid2name.get(x, x[:8]) for x in MAT_REF_RE.findall(body)]
+        if mats:
+            found.setdefault(nm, mats)
+
+    problems, detail = [], []
+    # C29's shape, applied to this gate: a check that examined nothing is a failure,
+    # never a pass. An empty table or an unresolvable Assets root would otherwise
+    # print a clean line and mean nothing at all.
+    if not PALETTE_PLACEMENTS:
+        problems.append("PALETTE_PLACEMENTS is empty -- this gate checked nothing (C29)")
+    if not guid2name:
+        problems.append("no material .meta files resolved -- guids cannot be named, so every "
+                        "comparison below would be vacuous (C29)")
+    checked = 0
+    for obj, want in sorted(PALETTE_PLACEMENTS.items()):
+        got = found.get(obj)
+        if got is None:
+            problems.append(f"'{obj}': ruled to wear {want}, but no MeshRenderer for it is in the scene")
+            continue
+        checked += 1
+        if want not in got:
+            problems.append(f"'{obj}': ruled {want}, wears {', '.join(got)}")
+    if checked == 0 and PALETTE_PLACEMENTS:
+        problems.append("zero placements were actually compared (C29)")
+    detail.append(f"{checked}/{len(PALETTE_PLACEMENTS)} ruled placements compared against the scene")
+    for obj, why in sorted(PALETTE_EXCLUSIONS.items()):
+        detail.append(f"excluded by name -- {obj}: {why}")
+    detail.extend(problems)
+    return GateResult(
+        "R33", "palette conformance (material applied)",
+        "PASS" if not problems else "FAIL",
+        f"{len(PALETTE_PLACEMENTS)} ruled placements wear their ruled material",
+        f"{checked} compared, {len(problems)} problem(s)",
+        detail,
+        blind_spot="checks WHICH MATERIAL ASSET each ruled object references, and nothing else. "
+                   "It does not check the material's colour values (a renamed-but-recoloured asset "
+                   "passes), does not check dressing objects outside the table, and says nothing "
+                   "whatever about how any of it RENDERS -- that is C30's point, not a gap: a "
+                   "palette names materials, not perceived hues. It also cannot see a second "
+                   "renderer on the same GameObject beyond the first it resolves.",
+    )
+
+
 # Below this chroma a hue angle is not meaningful -- it is the direction of a
 # vector too short to trust, and calling a near-grey surface "cool" on the
 # strength of a 0.4 chroma reading would be measuring noise.
@@ -1456,6 +1564,9 @@ def main():
                        "valid but incorrect mesh asset reads as a full pass.",
         ))
 
+        # --- R33 / C30: palette conformance, scene-truth ---------------------
+        results.append(gate_palette_conformance(docs, assets_root))
+
         # --- Gates 6, 7, 8: human-only, certified by walkthrough -------------
         # These three cannot be run by any tool -- R22 ruled the only instrument
         # is a human walking the build. Before 2026-08-03 they were hard-VOID.
@@ -1780,8 +1891,11 @@ def main():
                 "benchmark is the ceiling stain, the surface §1.7 names as the one that "
                 "demonstrably reads at review distance. Sparse wear is expected to be flat in "
                 "most patches; what matters is the contrast where it lands.")
+            if not R20_REGIONS or not r20:
+                detail20.append("*** C29: this block measured ZERO regions -- an INFO line that "
+                                "examined nothing is not a measurement ***")
             results.append(GateResult(
-                "R20", "wear reads? (informational)", "INFO",
+                "R20", "wear reads? (informational)", "INFO" if r20 else "FAIL",
                 "-", "chipped paint + battered desk vs the ceiling benchmark", detail20,
                 blind_spot="reports luminance spread inside fixed boxes on the screens-dark "
                            "render. It cannot tell WHY a surface is varied -- a lighting gradient, "
@@ -1793,8 +1907,11 @@ def main():
                            "it is visible where it was put.",
             ))
 
+            if not R19_REGIONS or len(detail) <= 1:
+                detail.append("*** C29: this block measured ZERO regions -- an INFO line that "
+                              "examined nothing is not a measurement ***")
             results.append(GateResult(
-                "R19", "metal cast (informational)", "INFO",
+                "R19", "metal cast (informational)", "INFO" if R19_REGIONS else "FAIL",
                 "-", "steel + conduit, surface-pure boxes", detail,
                 blind_spot="four fixed boxes on the screens-dark render, reported without a "
                            "verdict. It cannot tell you whether the metal reads institutional -- "
