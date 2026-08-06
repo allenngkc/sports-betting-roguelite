@@ -623,6 +623,19 @@ Archivo Narrow's digits are already uniform, so this is insurance rather than a 
 
 ## 5. How this seat works
 
+- **Run every suite through `tools/run-unity-tests.ps1`. Never call Unity's `-runTests` directly.**
+  C29 (LAW, batch 10): a run that executed zero cases exits non-zero, and every run reports its
+  executed case count. The wrapper does both, defaults its paths per worktree, and refuses to read a
+  stale results file left by a run that died. `./tools/run-unity-tests.ps1 -Platform PlayMode` is the
+  whole invocation.
+
+  **Why it exists, demonstrated rather than asserted:** a bogus filter through the wrapper prints
+  `executed 0 of 0 discovered · Passed` and exits 3 — because that is what **Unity itself** reports
+  for a filter matching nothing: `testcasecount=0, result=Passed`. A run that did nothing, green.
+  One typo can do that to any suite in any seat.
+
+  It deliberately does **not** pass `-nographics`; that fails the four capture tests on
+  `RenderTexture.Create` and reads as four regressions.
 - **Unity is one editor, studio-wide.** Do not launch it without a slot granted by the orchestrator.
   Announce open and close; other worktrees queue.
 - **Run results and logs go to `evidence/`**, never the Unity project root — it is kept clean and is
