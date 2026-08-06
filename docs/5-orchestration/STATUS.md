@@ -92,6 +92,13 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-05 cycle 94 · **Room round 4 validated — fully green** — engine
+  178/178, EditMode 75/75 (testcasecount=75), PlayMode 47/47
+  (testcasecount=47) with the C29 counts reported for the first time; end
+  state pristine; all waits held in-turn. Merge certified. TV's harness fix
+  landed with the contract test pinned. Active: room weathering, markets EV
+  harness → Arm B, SureThing verdict-screen queue, TV holding post-fix.
+  Reversal: revert `5cd17b5` (window stands, now certified).
 - 2026-08-05 cycle 93 · **ROOM ROUND 4 MERGED — `5cd17b5`** — clean checklist:
   suites green WITH the zero-case guard at `80d119b` (re-run fresh, not
   replayed), dry-run clean, 0 conflicts, handoff current. Carries the drab
