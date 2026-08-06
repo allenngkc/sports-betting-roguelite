@@ -92,6 +92,19 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-05 cycle 91 · **Batch 10 transcribed + dispatched — THE LEDGER IS
+  DESIGN-VERIFIED** (granted on the sixteen-state set; $0 wax/grey split
+  ratified; C31 law born from the DD almost breaking its own condition list).
+  Verdict ground = the token (investigation moot there), but S54 routes the
+  real worry: float-authored colours render re-ordered/zeroed — audit ordered,
+  colour-record risk named. Chrome returns to the verdict screen (S55); chip
+  legibility re-opened and granted (S56); figures-invert question (S57);
+  MY BETS tally (S58). T60 struck, T61 pre-committed, R35 strikes
+  reads-as-green (C30 law retires the escalation shape). C29 LAW studio-wide:
+  zero-case runs fail — retrofit before any next verdict, all four lanes
+  dispatched. Kit entry authored. SureThing owning doc unblocked (DD writes
+  next session). Constitution amendment (C29→§4.2) queued for Allen.
+  Reversal: rulings are DD canon.
 - 2026-08-05 cycle 90 · **Activated lanes both landed** — TV: all four
   verdict passes CLEAN (no build items; two observations flagged-not-called,
   incl. a four-line pending-leg label that fits its slot). Room: drab green
