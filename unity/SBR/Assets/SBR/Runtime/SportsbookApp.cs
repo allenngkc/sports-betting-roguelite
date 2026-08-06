@@ -1402,18 +1402,49 @@ namespace SBR.Game
                     LaptopOs.Muted, "THE TV HAS NOT RELEASED A RECEIPT.", _font);
                 return;
             }
+            // S58: this column printed one block per ticket — `TICKET 1 · DEAD` over
+            // `2 LEGS · $35 → $97` — while the sheet ~500px to its left printed `TICKET 1 · DEAD`
+            // over `STAKE $35 · PAYS $97`. The same four facts, twice, on one screen, with a leg
+            // count as the only addition and the sheet right there to count them on. S37 forbids
+            // exactly that.
+            //
+            // The margin's job here is **run context**: what he has on this round, what is still
+            // live, and what comes back if it all lands. None of those are on the sheet, because the
+            // sheet is per-ticket and these are sums across it.
+            //
+            // Derived only from the TV-owned mirror, never from the engine — the header two lines
+            // above promises READ ONLY and the causal-mirror rules mean this column may not know
+            // anything the TV has not released.
+            int riding = 0;
+            double atRisk = 0.0;
+            double ifAllLand = 0.0;
             for (int i = 0; i < view.Tickets.Count; i++)
             {
                 RevealedTicket ticket = view.Tickets[i];
-                string state = TicketStateWord(ticket.State);
-                LaptopUi.MakeText(margin, "TicketSummary" + ticket.Index, new Vector2(0f, 1f),
-                    new Vector2(0f, 1f), new Vector2(14f, -90f - i * 58f),
-                    new Vector2(296f, 50f), 13, TextAnchor.UpperLeft,
-                    ticket.Index == view.CurrentTicketIndex ? LaptopOs.White : LaptopOs.Muted,
-                    $"TICKET {ticket.Index + 1}  ·  {state}\n{ticket.Legs.Count} LEGS  ·  {LaptopUi.Money(ticket.Stake)} → {LaptopUi.Money(ticket.PotentialPayout)}",
-                    _font);
+                if (ticket.State != RevealedTicketState.Riding) continue;
+                riding++;
+                atRisk += ticket.Stake;
+                ifAllLand += ticket.PotentialPayout;
             }
+
+            // AT RISK counts only tickets still riding, because a dead ticket's stake is not at
+            // risk — it is gone, and the sheet already says so. A fully-resolved round therefore
+            // reads $0 here, which is the true answer to "what is still live".
+            LaptopUi.MakeMarginRow(margin, "TallyTickets", "TICKETS THIS ROUND",
+                view.Tickets.Count.ToString(CultureInfo.InvariantCulture), LaptopOs.White,
+                -MirrorTallyTop, MirrorTallyRowHeight, _font, _fontCond);
+            LaptopUi.MakeMarginRow(margin, "TallyAtRisk", $"AT RISK  ·  {riding} RIDING",
+                LaptopUi.Money(atRisk), LaptopOs.White,
+                -(MirrorTallyTop + MirrorTallyRowHeight), MirrorTallyRowHeight, _font, _fontCond);
+            LaptopUi.MakeMarginRow(margin, "TallyIfAllLand", "IF EVERYTHING LANDS",
+                LaptopUi.Money(ifAllLand), LaptopOs.MoneyGold,
+                -(MirrorTallyTop + MirrorTallyRowHeight * 2f), MirrorTallyRowHeight, _font, _fontCond);
         }
+
+        // The tally's rows start below the header rule at -68 and use the same 38px row the
+        // ledger's RECORD margin does, so the two margins on this surface scan identically.
+        private const float MirrorTallyTop = 70f;
+        private const float MirrorTallyRowHeight = 38f;
 
         private void BuildRewards(Run run)
         {
@@ -2367,18 +2398,12 @@ namespace SBR.Game
         /// divider. <paramref name="rowTop"/> is the row's own top edge, matching
         /// RecordHeaderRule/the previous row's own bottom edge exactly so rows sit flush with no
         /// gap and no overlap.</summary>
+        // S58: the body moved to LaptopUi.MakeMarginRow so MY BETS' tally renders the same
+        // MarginRow this does, from one place rather than two copies.
         private void BuildRecordRow(RectTransform summary, string name, string label, string value,
             Color valueColor, float rowTop)
-        {
-            LaptopUi.MakeText(summary, name + "Label", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, rowTop - 9f), new Vector2(150f, 20f), 13, TextAnchor.MiddleLeft,
-                LaptopOs.Muted, label, _font);
-            LaptopUi.MakeText(summary, name + "Value", new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-14f, rowTop - 8f), new Vector2(140f, 22f), 18, TextAnchor.MiddleRight,
-                valueColor, value, _fontCond);
-            LaptopUi.MakeRule(summary, name + "Rule", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, rowTop - RecordRowHeight), new Vector2(296f, 1f), LaptopOs.Rule);
-        }
+            => LaptopUi.MakeMarginRow(summary, name, label, value, valueColor, rowTop,
+                RecordRowHeight, _font, _fontCond);
 
         private void BuildLedgerTray()
         {

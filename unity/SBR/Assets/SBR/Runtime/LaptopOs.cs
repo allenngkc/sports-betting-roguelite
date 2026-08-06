@@ -1102,6 +1102,27 @@ namespace SBR.Game
             return "$" + rounded.ToString("N0", CultureInfo.InvariantCulture);
         }
 
+        /// <summary>MarginRow.jsx: one label/value line — label 13px roman `--toner-3` left, value
+        /// condensed right-flushed, closed by a 1px `--rule` divider. <paramref name="rowTop"/> is
+        /// the row's own top edge, so consecutive rows sit flush with no gap.
+        ///
+        /// Shared because S33 made MarginRow a kit component and this surface now renders it on two
+        /// margins — the ledger's RECORD and MY BETS' tally (S58). The ledger's copy was here first;
+        /// duplicating it into the second caller is precisely how the rail drifted to 12px on one
+        /// screen and 13px on another, which is the defect NotebookChrome exists to have fixed.</summary>
+        public static void MakeMarginRow(RectTransform parent, string name, string label, string value,
+            Color valueColor, float rowTop, float rowHeight, Font font, Font fontCond)
+        {
+            MakeText(parent, name + "Label", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(14f, rowTop - 9f), new Vector2(150f, 20f), 13, TextAnchor.MiddleLeft,
+                LaptopOs.Muted, label, font);
+            MakeText(parent, name + "Value", new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-14f, rowTop - 8f), new Vector2(140f, 22f), 18, TextAnchor.MiddleRight,
+                valueColor, value, fontCond);
+            MakeRule(parent, name + "Rule", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(14f, rowTop - rowHeight), new Vector2(296f, 1f), LaptopOs.Rule);
+        }
+
         public static Color FromRgb(uint rgb)
         {
             return new Color(((rgb >> 16) & 0xff) / 255f, ((rgb >> 8) & 0xff) / 255f,
