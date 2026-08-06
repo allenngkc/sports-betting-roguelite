@@ -92,6 +92,13 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-05 cycle 89 · **TMP migration plan staged** — converged idle time
+  used to sequence C15's next phase (`tmp-migration-plan.md`): laptop surface
+  first (most signed debt, functionally complete, faces settled), TV second
+  (HDR material risk, waits on the gold-flash verdict); hard preconditions
+  incl. before/after capture re-baselines and DD re-verification. Kicks off
+  after batch 10. Composers clean; all lanes stood down. Reversal: plan is
+  advisory until kickoff.
 - 2026-08-05 cycle 88 · **Orca restart recovered again** — all four leads
   revived via --continue with bypass, /effort max re-applied, all four booted;
   new handles registered; watchers re-armed (v7 + heartbeat). Studio state
