@@ -659,6 +659,18 @@ namespace SBR
             // its way down to the TV; moisture that beads on the surface-mounted pipe has nowhere
             // to go but down the wall it is stapled to, so the wall stains along the run rather
             // than the pipe itself.
+            // R8 (2026-08-05): a re-place to (1.30, 0.30) was tried and REVERTED. It raised the
+            // seated pose's frustum coverage from 30% to 67% and changed the rendered frame by
+            // exactly nothing - the seated A/B stayed bit-identical - because the TV housing sits
+            // in front of this wall: TVBody spans x 1.235..1.295 at y 0.775..1.425, z -0.25..0.85,
+            // and the stain plane is x 1.297. The move took the quad from 34% occluded to 64%.
+            // Better framed, less visible. Frustum coverage is not visibility.
+            //
+            // The measurement that matters is bigger than this decal: with the ENTIRE wear
+            // inventory disabled, the seated and laptop frames are bit-identical and the standing
+            // frame moves 0.90% of pixels. Improving the framing of a piece did not move it. So
+            // R7's parking diagnosis - "placement versus camera, not technique" - does not hold
+            // as the whole story, and re-placing is not the fix on its own.
             WearQuad(g, "ConduitDrip", new Vector3(HalfW - off, 1.55f, 0.55f),
                      new Vector2(0.70f, 0.90f), Vector3.left, Vector3.up, condensation, 1f);
         }

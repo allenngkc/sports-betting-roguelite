@@ -178,6 +178,69 @@ namespace SBR
             return n;
         }
 
+        /// <summary>
+        /// R7/R8 - the wear A/B pair. Captures the three review poses twice, once with the
+        /// generated wear root live and once with it disabled, into wear-on/ and wear-off/.
+        ///
+        /// THIS IS THE ONLY INSTRUMENT THAT CAN ANSWER "does the wear read". Box statistics on a
+        /// still frame cannot: a decal is small and sits against busy geometry, so a box drawn
+        /// round it measures the pipe fitting, the window sill or the slab edge next to it. That
+        /// was tried and it reported two of four wear pieces as reading when brightened crops
+        /// show nothing at any of them. A per-pixel diff of two otherwise identical renders has
+        /// no such ambiguity: whatever differs IS the wear, because nothing else changed.
+        ///
+        /// R7's original verdict came from exactly this measurement - 1.92% of pixels changed
+        /// against a 1.69% baseline, "very nearly invisible" - so re-running it is also the only
+        /// way to compare against the number that parked the inventory.
+        ///
+        /// EDIT MODE, and that matters here more than elsewhere: the diff is only meaningful if
+        /// everything except the wear is identical between the two passes. Play Mode would put
+        /// live screen content in both frames with no guarantee it matches, and any difference
+        /// there would be counted as wear.
+        ///
+        ///   Unity.exe -batchmode -quit -projectPath (project)
+        ///             -executeMethod SBR.RoomViewCapture.CaptureWearAB -outDir (path)
+        /// </summary>
+        public static void CaptureWearAB()
+        {
+            string outDir = OutDirFromArgs();
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+
+            var wearRoot = GameObject.Find("Dressing_Wear");
+            if (wearRoot == null)
+                throw new InvalidOperationException(
+                    "Dressing_Wear not found - the A/B cannot isolate the wear, and a pair whose " +
+                    "two halves are identical would read as 'the wear changes nothing'");
+
+            Camera cam = FindPlayerCamera();
+            var controller = UnityEngine.Object.FindAnyObjectByType<FirstPersonController>();
+            if (controller != null)
+                controller.enabled = false;
+
+            string on = Path.Combine(outDir, "wear-on");
+            string off = Path.Combine(outDir, "wear-off");
+            Directory.CreateDirectory(on);
+            Directory.CreateDirectory(off);
+
+            // WARM THE PIPELINE BEFORE THE FIRST SAVED FRAME. Without this the first Edit Mode
+            // render of a session comes back with an unresolved TV panel (magenta) and a
+            // materially different frame, so an A/B whose two halves are the first and second
+            // renders attributes the whole warm-up delta to whatever was toggled between them.
+            // Measured before the fix: 91.76% of pixels "changed", reproducible across runs -
+            // the determinism control passed precisely because the same broken ordering repeats.
+            // Caught by looking at the frames: the TV cannot change colour because a floor decal
+            // was disabled.
+            WarmRender(cam);
+
+            wearRoot.SetActive(true);
+            Capture(on);
+            wearRoot.SetActive(false);
+            Capture(off);
+            wearRoot.SetActive(true);   // leave the scene as we found it
+
+            Debug.Log($"[RoomViewCapture] wear A/B written to {on} and {off}");
+        }
+
         public static void CaptureAll()
         {
             string outDir = OutDirFromArgs();
@@ -256,6 +319,29 @@ namespace SBR
                 Quaternion.LookRotation(new Vector3(0.939693f, -0.342020f, 0f),
                                         new Vector3(0.342020f, 0.939693f, 0f)),
                 30f);
+        }
+
+        /// <summary>
+        /// Renders and discards a few frames so the first SAVED frame is not the pipeline's
+        /// first. Cheap insurance that costs a few milliseconds and, unwarmed, silently
+        /// invalidated a whole A/B measurement (see CaptureWearAB).
+        /// </summary>
+        private static void WarmRender(Camera cam)
+        {
+            var rt = new RenderTexture(Width, Height, 24, RenderTextureFormat.ARGB32) { antiAliasing = 1 };
+            RenderTexture prev = cam.targetTexture;
+            try
+            {
+                cam.targetTexture = rt;
+                for (int i = 0; i < 3; i++)
+                    cam.Render();
+            }
+            finally
+            {
+                cam.targetTexture = prev;
+                rt.Release();
+                UnityEngine.Object.DestroyImmediate(rt);
+            }
         }
 
         private static void Shoot(Camera cam, string dir, string file,

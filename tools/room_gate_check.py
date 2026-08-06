@@ -453,6 +453,35 @@ WEAR_QUADS = {
 }
 WEAR_OBJECTS = list(WEAR_QUADS)
 
+# The big solid boxes that sit in front of wear surfaces. NOT a full occlusion
+# test -- it is a handful of axis-aligned blockers checked against the quad's own
+# plane -- but it closes the specific hole that produced two wrong conclusions in
+# one session: a decal moved to raise its frustum coverage from 30% to 67% while
+# going from 34% to 64% hidden behind the TV housing, and the rendered frame did
+# not change by a single pixel. Frustum coverage is not visibility.
+WEAR_OCCLUDERS = {
+    "TVBody":    ((1.265, 1.10, 0.30), (0.06, 0.65, 1.10)),
+    "Couch":     ((-0.95, 0.21, 0.30), (0.70, 0.42, 1.80)),
+    "CouchBack": ((-1.225, 0.62, 0.30), (0.15, 0.40, 1.80)),
+    "BunkSlab":  ((-0.90, 1.54, 0.30), (0.80, 0.08, 1.90)),
+    "Bunk2Slab": ((0.90, 1.54, 1.25), (0.80, 0.08, 1.50)),
+    "DeskTop":   ((1.05, 0.73, 1.45), (0.50, 0.04, 1.10)),
+}
+
+
+def _occluded_fraction(centre, size, axA, axB, N=9):
+    """Fraction of a wear quad's sample points that fall inside a known occluder box."""
+    hidden = 0
+    pts = [tuple(centre[k] + (i / (N - 1) - 0.5) * size[0] * axA[k]
+                 + (j / (N - 1) - 0.5) * size[1] * axB[k] for k in range(3))
+           for i in range(N) for j in range(N)]
+    for P in pts:
+        for oc, osz in WEAR_OCCLUDERS.values():
+            if all(abs(P[k] - oc[k]) <= osz[k] / 2.0 + 1e-4 for k in range(3)):
+                hidden += 1
+                break
+    return 100.0 * hidden / len(pts)
+
 LOCAL_POS_RE = re.compile(
     r"m_LocalPosition:\s*\{x:\s*(-?[\d.eE+-]+),\s*y:\s*(-?[\d.eE+-]+),\s*z:\s*(-?[\d.eE+-]+)\}")
 
@@ -512,8 +541,10 @@ def gate_wear_in_frustum(docs):
                     nearest = vz if nearest is None else min(nearest, vz)
             if n_in:
                 seen.append(f"{cam} {100.0 * n_in / len(pts):.0f}% @{nearest:.1f}m")
+        occ = _occluded_fraction(centre, size, axA, axB)
+        occ_note = f"  [{occ:.0f}% inside a known occluder]" if occ > 0 else ""
         if seen:
-            detail.append(f"{name:14s} in {len(seen)}/3 poses: " + "; ".join(seen))
+            detail.append(f"{name:14s} in {len(seen)}/3 poses: " + "; ".join(seen) + occ_note)
         else:
             detail.append(f"{name:14s} *** NO PART IN ANY REVIEW FRUSTUM ***")
             problems.append(f"'{name}': no part of the quad is in any of the three review frusta "
