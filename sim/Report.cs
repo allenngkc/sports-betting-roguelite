@@ -188,6 +188,101 @@ public static class Report
         sb.AppendLine();
     }
 
+    // ---- scorer calibration (--scorer-ev; its own standalone mode — see Program.ScorerEv) ----
+
+    /// <summary>Renders the --scorer-ev report. Deliberately outside Full/Body: this mode never
+    /// runs alongside the batch report, carries no date/wall-time, and has no reason to enter the
+    /// --verify byte-diff surface those two already own — Program.ScorerEv diffs this output
+    /// directly instead.</summary>
+    public static string ScorerEv(ScorerCalibrationData data, RunConfig cfg)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("## Scorer calibration");
+        sb.AppendLine();
+        double r = cfg.Overround;
+        double expectedEvPp = 100.0 * (1.0 / (1.0 + r) - 1.0);
+        sb.AppendLine("Every bot is policy-excluded from pricing Anytime Scorer (a declared "
+            + "human-agency market), so no strategy can de-vig it and no gate can verify it that "
+            + "way. This measures the one thing that needs no strategy: does the probability the "
+            + "engine PRICES a scorer at (`Matchup.TrueProb`) match the frequency the engine's own "
+            + "sampler REALISES for that player (`SampleStatLine` + `SampleScorers`)? Each offer is "
+            + $"resampled {ScorerCalibrationData.SamplesPerMatchup} times on a stream derived from "
+            + "the run seed — never the sequential Outcomes/Slate streams — so measuring an offer "
+            + "can never perturb the slate it was priced from. Under correct pricing at overround "
+            + $"{Pct(r * 100.0)}, realised EV should sit at 1/(1+r) − 1 = **{expectedEvPp.ToString("F2", Inv)}pp** "
+            + "— the same figure every two-way market in this sim converges to.");
+        sb.AppendLine();
+
+        sb.AppendLine("| priced p band | offers | samples | mean priced p | realised freq | Δ (pp) | realised EV (pp) | SE (pp) |");
+        sb.AppendLine("|---|---|---|---|---|---|---|---|");
+        foreach (ScorerCalibrationData.Bucket b in data.ByProbabilityBand())
+            AppendCalibrationRow(sb, b);
+        sb.AppendLine();
+
+        sb.AppendLine("By role — scoring weight (and so priced probability) is assigned purely by "
+            + "role, so a role-shaped miscalibration is the fastest possible diagnosis:");
+        sb.AppendLine();
+        sb.AppendLine("| role | offers | samples | mean priced p | realised freq | Δ (pp) | realised EV (pp) | SE (pp) |");
+        sb.AppendLine("|---|---|---|---|---|---|---|---|");
+        foreach (ScorerCalibrationData.Bucket b in data.ByRole())
+            AppendCalibrationRow(sb, b);
+        sb.AppendLine();
+
+        sb.AppendLine("What this instrument cannot see:");
+        sb.AppendLine("- It measures the engine against itself (priced probability vs. that same "
+            + "engine's own sampler) — a shared upstream error in the scoring-weight model would "
+            + "be invisible to it.");
+        sb.AppendLine("- It says nothing about whether the market is FUN, or well-priced against a "
+            + "human reader of the odds — only whether the engine's two halves agree with each other.");
+        sb.AppendLine("- It does not exercise settlement or the parlay path — every number here is "
+            + "single-leg and pre-stake.");
+        sb.AppendLine("- A bucket pools many different players and matchups; its sample count is "
+            + "TOTAL resamples, not one player measured repeatedly — read the by-role table before "
+            + "blaming one player for a bucket's number.");
+        sb.AppendLine();
+
+        sb.AppendLine($"> Takeaway: {ScorerEvTakeaway(data)}");
+        sb.AppendLine();
+        return sb.ToString();
+    }
+
+    private static void AppendCalibrationRow(StringBuilder sb, ScorerCalibrationData.Bucket b)
+    {
+        if (b.OfferCount == 0)
+        {
+            sb.AppendLine($"| {b.Label} | 0 | 0 | — | — | — | — | — |");
+            return;
+        }
+        sb.AppendLine($"| {b.Label} | {b.OfferCount.ToString("N0", Inv)} | {b.SampleCount.ToString("N0", Inv)} "
+            + $"| {Pct(b.MeanPricedProb * 100.0)} | {Pct(b.RealizedFreq * 100.0)} "
+            + $"| {SignedPct(100.0 * (b.RealizedFreq - b.MeanPricedProb))} "
+            + $"| {SignedPct(b.EvFraction * 100.0)} | ±{(b.SeFraction * 100.0).ToString("F1", Inv)}pp |");
+    }
+
+    /// <summary>An honest read of the buckets above, not a hand-authored verdict: flags bands
+    /// whose |Δ| exceeds 2 SE (≈95% two-sided) rather than asserting calibration either way.</summary>
+    private static string ScorerEvTakeaway(ScorerCalibrationData data)
+    {
+        int populated = 0, outside2Se = 0;
+        double worstZ = 0;
+        string worstLabel = "";
+        foreach (ScorerCalibrationData.Bucket b in data.ByProbabilityBand())
+        {
+            if (b.OfferCount == 0 || b.SeFraction <= 0.0) continue;
+            populated++;
+            double z = Math.Abs(b.RealizedFreq - b.MeanPricedProb) / b.SeFraction;
+            if (z > 2.0) outside2Se++;
+            if (z > worstZ) { worstZ = z; worstLabel = b.Label; }
+        }
+        if (populated == 0) return "no offers sampled — widen --runs.";
+        if (outside2Se == 0)
+            return $"all {populated} probability bands sit within 2 SE of their priced probability "
+                + "— calibration holds at this sample size.";
+        return $"{outside2Se}/{populated} probability bands sit outside 2 SE of their priced "
+            + $"probability (worst: {worstLabel} at {worstZ.ToString("F1", Inv)} SE) — price and "
+            + "sampler disagree there, not just noise.";
+    }
+
     // ---- 2. item audit ----
 
     private static void ItemAudit(StringBuilder sb, AuditData? audit)
