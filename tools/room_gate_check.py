@@ -82,8 +82,33 @@ CAPTURE_NAMES = ["standing-overview.png", "seated-tv-couch.png", "focused-laptop
 CAPTURE_SIZE = (2560, 1440)
 
 R9A_IMAGE = "standing-overview.png"
-R9A_BOX = (1480, 670, 1790, 740)          # bunk 2 mattress
-R9A_EXPECTED_MEAN = 43.9
+
+# RE-BASELINED 2026-08-04 (Allen, via the orchestrator) onto a surface-pure box.
+#
+# The old box was (1480, 670, 1790, 740) and it was NOT surface-pure: sd/mean
+# 0.398, i.e. 2.6x the 0.15 bar this harness applies to every other region.
+# Confirmed by eye and by the committed evidence frame
+# (artifacts/room-visual-pass/gate-runs/2026-08-04-mattress-box-evidence.png):
+# it spanned the mattress, the frame rail below it, AND a wide area of lamp-lit
+# plaster to its right. The ratified 43.9 was therefore substantially a reading
+# of bright wall, not bedding.
+#
+# BLIND SPOT OF THE OLD BOX, recorded here because §1.4's history depends on it:
+# anything that brightened that plaster raised the number without touching the
+# mattress. Room-design §1.4 records FOUR corner-lighting attempts reverted
+# against this test. Those reversions were made on an instrument that could not
+# separate "bunk 2 is lit" from "the wall beside bunk 2 is lit" -- the mattress
+# would also have brightened, so the reversions are not thereby wrong, but the
+# number could not tell the two apart and no one knew that at the time.
+#
+# The new box is mattress only, sd/mean 0.016, eye-confirmed per C27. Baseline
+# 38.3 is its measured value and is stable across every capture of this pose:
+# batch9 38.29, batch8 38.38, batch6 38.37, batch5 37.54 -- all inside +/-1.0,
+# which is the ratified tolerance and is unchanged. The LAW is unchanged too:
+# bunk 2 stays legible-as-occupied and must not be lit. Only the instrument moved.
+R9A_BOX = (1582, 686, 1652, 710)          # bunk 2 mattress, surface-pure
+R9A_OLD_BOX = (1480, 670, 1790, 740)      # superseded, impure; reported for continuity
+R9A_EXPECTED_MEAN = 38.3
 R9A_TOLERANCE = 1.0
 
 R9B_IMAGE = "standing-overview.png"
@@ -183,14 +208,205 @@ R19_REGIONS = {
     # face, both projected from world geometry and then confirmed by eye.
     "laptop body (his)":      (1524, 1020, 1584, 1040),
     "phone body (his)":       (1564, 1085, 1592, 1097),
-    # NO BEZEL REGION, and that is a finding rather than an omission. TVBody
-    # wears BezelBlack #3C3C38 -- the material R19(a)'s premise names as the
-    # shared one -- but it is a slab BEHIND the screen whose only visible part
-    # is a ~6cm border, and RoomArtDressing's riveted housing covers exactly
-    # that border. Every candidate box straddled housing rivets. What the player
-    # reads as "the TV's body" is ArtHousingSteel, so the housing face above is
-    # R19(a)'s real comparand.
+    # R19(c), 2026-08-04: the drab green #3A4230 was placed at §2's placements and
+    # never once measured on a frame. Bunk frames should carry it; the couch must
+    # NOT (the ruling names the couch as excluded). All boxes confirmed by eye to
+    # sit on frame members / couch fabric, not on the plaster behind them.
+    #
+    # READ THESE TWO ON THE LIT FRAME FOR THE PALETTE QUESTION, NOT HERE. This set
+    # measures the screens-DARK conformance frame, where the window's pool dominates
+    # the bunks and both read COOL. That is correct for law 1.1 and WRONG for "does
+    # the green read" -- measuring it here produced a reported finding that the drab
+    # green does not read anywhere, which was false. On standing-overview.png:
+    #
+    #   Bunk2Slab      C 14.73  h 152.9  GREEN     (lamp side, outside the pool)
+    #   Bunk2Slab R    C 12.72  h 151.4  GREEN
+    #   Bunk2 bedding  C  8.65  h 154.6  GREEN
+    #   BunkSlab  (b1) C  2.09  h 202.5  cool      (inside the pool -> pool-lit)
+    #   BunkPost  (b1) C  1.44  h 226.8  achromatic
+    #
+    # which is R32's ruled placement exactly: full green outside the window pool,
+    # pool-lit where the pool falls.
+    "bunk1 post (frame)":     ( 929, 1026,  953, 1186),
+    "bunk2 slab (frame)":     (1612,  757, 1732,  793),
+    "couch fabric (not grn)": ( 216,  912,  416,  992),
+    # NO BEZEL REGION, and the reason became a ruling. TVBody wore BezelBlack
+    # #3C3C38 -- the material R19(a)'s premise names as the shared one -- but it
+    # is a slab BEHIND the screen whose only exposed part is a ~6cm border, and
+    # the riveted housing covers that border on the right and bottom. Every
+    # candidate box straddled rivets, so no surface-pure region was obtainable.
+    # NOT the same as invisible: the border IS exposed on the left, and retiring
+    # the material moved 170k pixels in the seated frame. BezelBlack was retired
+    # (Allen, 2026-08-03) and TVBody now wears ArtHousingSteel, so the housing
+    # face above is R19(a)'s comparand and there is nothing else to sample.
 }
+
+# ---------------------------------------------------------------------------
+# R20 -- does a wear surface actually READ?
+#
+# INFORMATIONAL. R12's standing complaint is that surface detail gets asserted
+# rather than measured, and R7 died of exactly that: 1.92% of pixels changed
+# against a 1.69% baseline, i.e. very nearly invisible, discovered only after the
+# work was built. This makes the question numeric.
+#
+# The metric is p95-p5 luminance SPREAD inside one surface, not sd/mean: wear is
+# sparse and hard-edged by design (chips are 8-14% coverage), so sd is dominated
+# by the 86-92% that is intact paint. Spread asks "how far apart are the light
+# and dark parts of this surface", which is nearer to what "reads" means.
+#
+# BENCHMARK, and it is the honest part: the CEILING STAIN. Design doc §1.7 names
+# it as the surface that demonstrably reads at review distance -- weakest normal
+# map in the room, most visible surface, because the fluorescent rakes it at
+# theta ~87deg. So the ceiling's own spread is the bar. Below it is not reading.
+R20_REGIONS = {
+    "ceiling stain (BENCHMARK)":  ( 700,   60, 1150,  300),
+    "housing paint, flat":        (1900, 1100, 2020, 1190),
+    "housing paint, most varied": (1780, 1180, 1840, 1240),
+    "desk, mid":                  (1560, 1130, 1690, 1210),
+    "desk, far/dark end":         (1690, 1150, 1820, 1230),
+}
+
+# R23 amended, DD 2026-08-04 (batch 9) -- THE ONE AUTHORISED EXCLUSION.
+#
+# Law 1.1 forbids the ROOM returning saturated cool colour. Two regions read COOL
+# and are cool GRADE-BYPASSED TOO (far plaster 5.53 at 275.7deg, floor aisle 2.94
+# at 272.8deg), so the cause is the room's own light, not the grade -- and §1.2
+# specifies exactly that light: "a cool window with SHORT REACH that pools locally
+# and does not tint the room." The gate was failing the room for having the window
+# its own lighting design requires.
+#
+# THE BOUNDARY, stated here because the ruling requires the gate to state it:
+# the exclusion is BY NAME, covering the two regions below and nothing else. It is
+# not a rule that cool readings are forgiven. Any other region reading COOL still
+# FAILS, which is what keeps "short reach" enforceable -- a pool that spreads is a
+# §1.2 breach and this gate must still catch it.
+#
+# The DD drew the contrast with S51 deliberately: there, a proposed exclusion
+# would have hidden an overrun whose cause was never identified. Here the excluded
+# thing is identified, measured, and sanctioned by name in a ratified document.
+# "An exclusion is legitimate when you can name what you are excluding and why it
+# belongs there -- never when it merely makes a number go green."
+WINDOW_POOL_REGIONS = {
+    "wall (far plaster)",
+    "floor (aisle)",
+}
+
+# ---------------------------------------------------------------------------
+# R33 / C30 -- PALETTE CONFORMANCE: is the specified material APPLIED?
+#
+# C30 (DD 2026-08-05): "A ratified palette specifies what a surface IS. It does
+# not promise what a camera returns under a specific lighting rig." Olive, khaki,
+# drab green, rust under a warm dim fluorescent is a MATERIALS LIST -- always a
+# statement about albedo, and reading it as a statement about pixels is what
+# produced R19(b), R31 and R33 in sequence. So conformance is checked HERE, on the
+# scene, and the hue readings in R19_REGIONS are descriptive only.
+#
+# This gate would have answered R33 ("drab green absent from the room") in one run
+# without a frame, a lighting argument, or three rounds of escalation.
+PALETTE_PLACEMENTS = {
+    "BunkSlab":       "BunkFrameGreen",   # §2 drab green #3A4230 -- bunk frames
+    "BunkPostFront":  "BunkFrameGreen",
+    "BunkPostBack":   "BunkFrameGreen",
+    "Bunk2Slab":      "BunkFrameGreen",
+    "Bunk2PostFront": "BunkFrameGreen",
+    "Bunk2PostBack":  "BunkFrameGreen",
+    "Bunk2Mattress":  "ArtBunk2Shadow",   # §2 drab green -- mattress fabric
+    "Bunk2Bedding":   "ArtBunk2Shadow",
+    "TVBody":         "ArtHousingSteel",  # §2 steel #3A3F42, since BezelBlack retired
+    "LaptopBase":     "LaptopShell",      # R19(a) -- his register
+    "PhoneBody":      "PhoneShell",       # R19(a)/R28 -- his register
+    "CouchSeat":      "CouchGray",        # ruled EXCLUDED from the green
+    "CouchBackrest":  "CouchGray",
+    "Bunk2Pillow":    "ArtGrime",         # ruled NAMED EXCEPTION -- see below
+}
+
+# Named exceptions carry their reason, so "not green" can never read as "missed".
+#
+# AND THEY ARE ENFORCED, not merely annotated. A ruled exception is a requirement
+# with a different value, so Bunk2Pillow sits in PALETTE_PLACEMENTS above like
+# every other placement: if someone later "fixes" it to the drab green, this gate
+# FAILS and names it. An exception recorded only as prose is one refactor away
+# from being tidied into conformance by a lead who never saw the ruling.
+PALETTE_EXCLUSIONS = {
+    "Bunk2Pillow": "RULED NAMED EXCEPTION to the mattress-fabric swatch (Allen, 2026-08-05): the "
+                   "pillow stays pale -- ArtGrime, not #3A4230 -- because the occupied-read "
+                   "outranks rule purity. RoomArtDressing: 'the one thing allowed to catch a "
+                   "little light... what makes the bunk read as SLEPT IN rather than an empty "
+                   "shelf' (§1.4 legible-as-occupied). Applying the green would darken it 37.5% "
+                   "(linear 0.0802 -> 0.0501). Enforced above; do not tidy it into conformance.",
+}
+
+
+def material_name_by_guid(assets_root):
+    """guid -> material asset name, from the .mat.meta files."""
+    out = {}
+    if assets_root is None:
+        return out
+    for meta in Path(assets_root).rglob("*.mat.meta"):
+        m = META_GUID_RE.search(meta.read_text(encoding="utf-8", errors="replace"))
+        if m:
+            out[m.group(1)] = meta.name[:-len(".mat.meta")]
+    return out
+
+
+MAT_REF_RE = re.compile(r"guid: ([0-9a-f]+), type: 2")
+
+
+def gate_palette_conformance(docs, assets_root):
+    """C30: every ruled placement wears its ruled material. Scene-truth, no frame."""
+    guid2name = material_name_by_guid(assets_root)
+    go = {a: (NAME_FIELD_RE.search(b).group(1) if NAME_FIELD_RE.search(b) else "")
+          for _c, a, n, b in docs if n == "GameObject"}
+    found = {}
+    for _cid, _anchor, cname, body in docs:
+        if cname != "MeshRenderer":
+            continue
+        gm = GAMEOBJECT_REF_RE.search(body)
+        nm = go.get(gm.group(1), "") if gm else ""
+        if not nm:
+            continue
+        mats = [guid2name.get(x, x[:8]) for x in MAT_REF_RE.findall(body)]
+        if mats:
+            found.setdefault(nm, mats)
+
+    problems, detail = [], []
+    # C29's shape, applied to this gate: a check that examined nothing is a failure,
+    # never a pass. An empty table or an unresolvable Assets root would otherwise
+    # print a clean line and mean nothing at all.
+    if not PALETTE_PLACEMENTS:
+        problems.append("PALETTE_PLACEMENTS is empty -- this gate checked nothing (C29)")
+    if not guid2name:
+        problems.append("no material .meta files resolved -- guids cannot be named, so every "
+                        "comparison below would be vacuous (C29)")
+    checked = 0
+    for obj, want in sorted(PALETTE_PLACEMENTS.items()):
+        got = found.get(obj)
+        if got is None:
+            problems.append(f"'{obj}': ruled to wear {want}, but no MeshRenderer for it is in the scene")
+            continue
+        checked += 1
+        if want not in got:
+            problems.append(f"'{obj}': ruled {want}, wears {', '.join(got)}")
+    if checked == 0 and PALETTE_PLACEMENTS:
+        problems.append("zero placements were actually compared (C29)")
+    detail.append(f"{checked}/{len(PALETTE_PLACEMENTS)} ruled placements compared against the scene")
+    for obj, why in sorted(PALETTE_EXCLUSIONS.items()):
+        detail.append(f"excluded by name -- {obj}: {why}")
+    detail.extend(problems)
+    return GateResult(
+        "R33", "palette conformance (material applied)",
+        "PASS" if not problems else "FAIL",
+        f"{len(PALETTE_PLACEMENTS)} ruled placements wear their ruled material",
+        f"{checked} compared, {len(problems)} problem(s)",
+        detail,
+        blind_spot="checks WHICH MATERIAL ASSET each ruled object references, and nothing else. "
+                   "It does not check the material's colour values (a renamed-but-recoloured asset "
+                   "passes), does not check dressing objects outside the table, and says nothing "
+                   "whatever about how any of it RENDERS -- that is C30's point, not a gap: a "
+                   "palette names materials, not perceived hues. It also cannot see a second "
+                   "renderer on the same GameObject beyond the first it resolves.",
+    )
+
 
 # Below this chroma a hue angle is not meaningful -- it is the direction of a
 # vector too short to trust, and calling a near-grey surface "cool" on the
@@ -223,7 +439,7 @@ REFERENCE_JSON_PATH = Path(__file__).resolve().parent / "room_gate_reference.jso
 REFERENCE_SCHEMA_VERSION = 3
 # Certification date is passed in, never read from the clock: a gate report must
 # be reproducible, and a wall-clock read makes two runs of the same scene differ.
-TODAY = "2026-08-03"
+TODAY = "2026-08-05"
 
 # Tolerance for comparing collider float dimensions read back out of text.
 # Same scene file re-parsed twice will match exactly; this just guards
@@ -892,6 +1108,28 @@ def region_cast(img, box, step=2):
     return lstar, chroma, hue
 
 
+# R32 (2026-08-04): cast_verdict answers ONE question -- is law 1.1's blue failure
+# mode present -- so it has a WARM band, a COOL band, and calls everything between
+# them "neutral". That is correct for the law and useless for the palette: drab
+# green measured chroma 14.73 at hue 152.9deg on the lit frame and was reported
+# NEUTRAL, because 152deg is in the gap. A ratified palette colour was reading
+# strongly and the instrument could not say so, which nearly cost the room a
+# finding of "the green does not read".
+#
+# hue_name is DESCRIPTIVE ONLY and deliberately separate: cast_verdict still
+# decides R23, unchanged, because widening a pass/fail band to make a colour
+# visible would be exactly the kind of instrument edit C27 and S51 warn about.
+def hue_name(chroma, hue):
+    if chroma < R23_CHROMA_FLOOR:
+        return "achromatic"
+    for lo, hi, label in ((20, 70, "orange/amber"), (70, 110, "warm yellow"),
+                          (110, 175, "GREEN"), (175, 200, "teal"),
+                          (200, 300, "cool blue"), (300, 340, "magenta")):
+        if lo <= hue < hi:
+            return label
+    return "red"
+
+
 def cast_verdict(chroma, hue):
     """WARM / COOL / neutral, refusing to call a hue it cannot support."""
     if chroma < R23_CHROMA_FLOOR:
@@ -1054,6 +1292,21 @@ def main():
              "automatically the moment the scene's content changes (C18).",
     )
     parser.add_argument(
+        "--revoke-human-gates",
+        metavar="REASON",
+        help="Revoke a recorded human-gate certification, returning gates 6-8 to VOID. The record "
+             "is KEPT and marked revoked rather than deleted -- who certified what, when, on what "
+             "basis, and why it was withdrawn is the audit trail, and a hand-edit that removes the "
+             "block destroys it.",
+    )
+    parser.add_argument(
+        "--certify-basis",
+        metavar="TEXT",
+        help="Provenance of the human verdict being recorded. A re-certification on a STANDING "
+             "verdict is not a fresh walk, and the record must say which it was -- otherwise the "
+             "next reader sees a green gate and assumes someone walked this build.",
+    )
+    parser.add_argument(
         "--compare-scene",
         help="Path to a second Room.unity to compare CONTENT against, ignoring fileID "
              "renumbering. This is what makes §9.2 ('run the builder twice') a real check: "
@@ -1072,6 +1325,7 @@ def main():
     scene_path = Path(args.scene)
     captures_dir = Path(args.captures)
     reference_captures_dir = Path(args.reference) if args.reference else None
+    conformance_dir = Path(args.conformance) if args.conformance else None
 
     # Tee rather than redirect: a run that is being recorded must still be a run
     # you can watch, or nobody will pass --report when it matters.
@@ -1095,6 +1349,17 @@ def main():
 
     results = []
 
+    if args.revoke_human_gates:
+        _payload = json.loads(REFERENCE_JSON_PATH.read_text(encoding="utf-8"))
+        _hg = _payload.get("human_gates")
+        if not _hg:
+            print("no human-gate certification recorded; nothing to revoke")
+            sys.exit(0)
+        _hg["revoked"] = {"at": TODAY, "reason": args.revoke_human_gates}
+        REFERENCE_JSON_PATH.write_text(json.dumps(_payload, indent=2) + chr(10), encoding="utf-8")
+        print(f"human gates 6-8 REVOKED: {args.revoke_human_gates}")
+        sys.exit(0)
+
     if args.certify_human_gates:
         _docs = split_documents(load_scene_text(scene_path))
         _payload = json.loads(REFERENCE_JSON_PATH.read_text(encoding="utf-8"))
@@ -1103,6 +1368,8 @@ def main():
             "certified_commit": args.certify_human_gates,
             "certified_at": TODAY,
             "content_fingerprint": scene_content_fingerprint(_docs),
+            "basis": args.certify_basis or "fresh walkthrough of this build",
+            "revoked": None,
             "note": "R22: gates 6-8 have no automated instrument; a human walks the build. "
                     "Expires automatically when content_fingerprint stops matching.",
         }
@@ -1306,6 +1573,9 @@ def main():
                        "valid but incorrect mesh asset reads as a full pass.",
         ))
 
+        # --- R33 / C30: palette conformance, scene-truth ---------------------
+        results.append(gate_palette_conformance(docs, assets_root))
+
         # --- Gates 6, 7, 8: human-only, certified by walkthrough -------------
         # These three cannot be run by any tool -- R22 ruled the only instrument
         # is a human walking the build. Before 2026-08-03 they were hard-VOID.
@@ -1329,22 +1599,37 @@ def main():
         cert_fp = cert.get("content_fingerprint")
         cert_ref = cert.get("certified_commit", "?")
         cert_when = cert.get("certified_at", "?")
-        certified = bool(cert_fp) and cert_fp == current_fp
+        revoked = cert.get("revoked") or None
+        certified = bool(cert_fp) and cert_fp == current_fp and not revoked
 
         for num, gname in ((6, "UI/HUD readability"), (7, "UI/HUD contrast"), (8, "structural-only check")):
             if certified:
                 results.append(GateResult(
                     num, gname, "PASS",
                     f"human walkthrough certification, scene content unchanged since {cert_ref}",
-                    f"certified by walkthrough {cert_when} at {cert_ref}; content fingerprint matches",
+                    f"certified {cert_when} at {cert_ref}; content fingerprint matches; "
+                    f"basis: {cert.get('basis', 'unrecorded')}",
                     blind_spot=(
-                        "THIS TOOL RAN NO CHECK. It is replaying a human verdict recorded in "
+                        "THIS TOOL RAN NO CHECK, and the verdict it replays may not be a walk of "
+                        "THIS build -- read the 'basis' in the observed column. It is replaying a "
+                        "human verdict recorded in "
                         f"{REFERENCE_JSON_PATH.name}, and the only thing it verified itself is that "
                         "the scene's content fingerprint still matches the one certified -- so it "
                         "covers the GEOMETRY walked, not the current captures, not the screens' "
                         "content, and not anything outside the scene file (materials, textures, APV "
                         "bake). A change to any of those leaves this line reading PASS while the "
                         "thing the human actually judged has moved. Re-walk on any doubt."
+                    ),
+                ))
+            elif revoked:
+                results.append(void(
+                    num, gname,
+                    f"certification REVOKED {revoked.get('at','?')}: {revoked.get('reason','no reason recorded')}",
+                    blind_spot=(
+                        "VOID by revocation, not by expiry: a recorded human verdict was withdrawn "
+                        "deliberately. The certification block is kept in the reference, marked "
+                        "revoked, so who certified what and why it was withdrawn stays auditable. "
+                        "Only a human may re-issue it (C18, R22)."
                     ),
                 ))
             elif cert_fp:
@@ -1370,18 +1655,72 @@ def main():
                 ))
 
         # --- R9-A: bunk 2 mattress luminance ---------------------------------
+        # R32 (DD 2026-08-04) asked which of two boxes was mis-framed after the
+        # same nominal check reported 37.36 and 44.44. NEITHER IS. Both use this
+        # box at the same camera pose; the two numbers are the same surface under
+        # different LIGHT. The 43.9 test is defined on the screens-LIT gameplay
+        # capture, and the R23 conformance set kills all three screens by
+        # construction, so the mattress necessarily reads ~6 lower there:
+        #
+        #   standing-overview  (screens lit)   44.44 / 44.49   <- THE 43.9 TEST
+        #   conformance wide   (screens dark)  38.41
+        #   conformance wide   ungraded dark   25.47
+        #
+        # The defect was never a box. It was a ratified number quoted without the
+        # capture it is defined on, so two runs saying "the mattress" meant two
+        # different quantities - C25 exactly. The gate now names its capture and
+        # its lighting condition in its own expected/observed line, and the
+        # screens-dark value is reported beside it, labelled as NOT this test, so
+        # the two can never be conflated again.
         current_img = load_capture(captures_dir, R9A_IMAGE)
         r9a_mean = region_mean_luminance(current_img, R9A_BOX)
         r9a_ok = abs(r9a_mean - R9A_EXPECTED_MEAN) <= R9A_TOLERANCE
+        # ---- THE RATIFIED BOX IS NOT SURFACE-PURE (found 2026-08-04) ----------
+        # R9A_BOX scores sd/mean 0.398 on the lit frame -- 2.6x the 0.15 bar this
+        # harness applies everywhere else. Confirmed by eye: it spans the mattress,
+        # the frame slab below it, AND a wide area of lamp-lit plaster to the right.
+        # A pure sub-box on the mattress alone (sd/mean 0.016) reads 38.29, i.e.
+        # 6.15 BELOW the ratified figure, which would fail the 43.9 +/-1 band.
+        #
+        # NOT CHANGED HERE, deliberately. 43.9 is ratified law (§1.4) and four
+        # corner-lighting attempts were reverted against it; moving the box moves a
+        # number those decisions were made on, which is a DD/Allen call and not a
+        # lead's. Both readings are reported so the gate keeps its ratified verdict
+        # while the true mattress value is visible beside it.
+        r9a_old = region_mean_luminance(current_img, R9A_OLD_BOX)
+        r9a_detail = [
+            f"measured on {R9A_IMAGE}, box {R9A_BOX} (mattress only, sd/mean 0.016, eye-confirmed per C27)",
+            f"RE-BASELINED 2026-08-04: the previous box {R9A_OLD_BOX} was NOT surface-pure "
+            f"(sd/mean 0.398) -- it spanned mattress + frame rail + lamp-lit plaster, so the old "
+            f"43.9 was substantially a reading of wall. That box reads {r9a_old:.2f} here.",
+            "BLIND SPOT OF THE OLD BOX: anything brightening that plaster raised the number "
+            "without touching the mattress. §1.4 records four corner-lighting attempts reverted "
+            "against it; the instrument could not separate 'bunk 2 is lit' from 'the wall beside "
+            "it is lit'. The law is unchanged - only the instrument moved.",
+        ]
+        if conformance_dir is not None:
+            try:
+                dark_img = load_capture(conformance_dir, R23_IMAGE)
+                dark_mean = region_mean_luminance(dark_img, R9A_BOX)
+                r9a_detail.append(
+                    f"same box on {R23_IMAGE} (screens DARK) = {dark_mean:.2f} -- "
+                    f"NOT this test; the conformance set silences all three screens by "
+                    f"construction, so it reads ~{r9a_mean - dark_mean:.1f} lower and is a "
+                    f"different quantity, not a disagreement")
+            except (FileNotFoundError, ValueError):
+                pass
         results.append(GateResult(
-            "R9-A", "bunk 2 mattress luminance",
+            "R9-A", "bunk 2 mattress luminance (screens LIT)",
             "PASS" if r9a_ok else "FAIL",
-            f"{R9A_EXPECTED_MEAN} +/- {R9A_TOLERANCE}",
+            f"{R9A_EXPECTED_MEAN} +/- {R9A_TOLERANCE} on {R9A_IMAGE}",
             f"{r9a_mean:.2f}",
-            blind_spot="samples one fixed pixel box and reports mean luminance only -- sees "
-                       "nothing outside that box, says nothing about colour/hue, and a box that "
-                       "no longer frames the intended surface (e.g. after a geometry move) would "
-                       "still report a plausible-looking number.",
+            r9a_detail,
+            blind_spot="samples one fixed pixel box on the SCREENS-LIT gameplay capture and "
+                       "reports mean luminance only. It is defined on that capture and nowhere "
+                       "else -- the same box on a screens-dark frame is a different quantity and "
+                       "is reported separately above for exactly that reason. It sees nothing "
+                       "outside the box, says nothing about colour/hue, and a box that no longer "
+                       "frames the intended surface would still report a plausible-looking number.",
         ))
 
         # --- R9-B: region means within 10% of reference ----------------------
@@ -1468,11 +1807,14 @@ def main():
 
             detail = []
             cool_surfaces = []
+            pooled_cool = []
             for name, box in R23_REGIONS.items():
                 lstar, chroma, hue = region_cast(graded, box)
                 verdict = cast_verdict(chroma, hue)
-                if verdict == "COOL":
+                if verdict == "COOL" and name not in WINDOW_POOL_REGIONS:
                     cool_surfaces.append(name)
+                elif verdict == "COOL":
+                    pooled_cool.append(name)
                 line = (f"{name:22s} L*={lstar:5.2f} chroma={chroma:5.2f} "
                         f"hue={hue:6.1f}deg  {verdict}")
                 if ungraded is not None:
@@ -1487,18 +1829,35 @@ def main():
                               "later would otherwise cost a whole editor lease.")
 
             passed = not cool_surfaces
+            detail.append(
+                "EXCLUSION (R23-am, DD 2026-08-04), stated in the gate line as the ruling "
+                "requires: the window's sanctioned short-reach pool is excluded from the verdict "
+                "BY NAME -- " + ", ".join(sorted(WINDOW_POOL_REGIONS)) + " -- because §1.2 "
+                "specifies a cool window that pools locally, and both read cool GRADE-BYPASSED "
+                "too, so the cause is the room's light and not the grade. This is not a rule that "
+                "cool readings are forgiven: any region outside that named set still FAILS, which "
+                "is what keeps §1.2's 'short reach' enforceable.")
+            if pooled_cool:
+                detail.append(
+                    f"in-pool and excluded this run: {', '.join(sorted(pooled_cool))} "
+                    f"({len(pooled_cool)}/{len(WINDOW_POOL_REGIONS)} of the named pool)")
             results.append(GateResult(
-                "R23", "law 1.1 cast (screens dark)",
+                "R23", "law 1.1 cast (screens dark, window pool excluded by name)",
                 "PASS" if passed else "FAIL",
-                "no surface reads COOL",
-                "all surfaces warm/neutral" if passed
-                else f"{len(cool_surfaces)} COOL: {', '.join(cool_surfaces)}",
+                f"no surface reads COOL outside the {len(WINDOW_POOL_REGIONS)} named window-pool regions",
+                ("all surfaces warm/neutral outside the pool"
+                 + (f"; {len(pooled_cool)} in-pool cool as specified" if pooled_cool else ""))
+                if passed else f"{len(cool_surfaces)} COOL outside the pool: {', '.join(cool_surfaces)}",
                 detail,
                 blind_spot="measures chroma/hue in fixed boxes on the screens-DARK render only -- "
                            "sees nothing outside those boxes, says nothing about the room WITH "
                            "screens on (deliberately excluded to isolate the room from the "
                            "emissive screens), and a box that no longer frames its intended "
-                           "surface would still report a number.",
+                           "surface would still report a number. Since R23-am it also cannot fail "
+                           "on the two named window-pool regions AT ALL -- if the window's reach "
+                           "grew so that those regions went cool for a NEW reason, this gate would "
+                           "stay green on them. It catches a spreading pool only where the pool "
+                           "reaches a region it does not already cover.",
             ))
 
             # --- R19: the institution's metal, informational ------------------
@@ -1506,7 +1865,7 @@ def main():
             for name, box in R19_REGIONS.items():
                 lstar, chroma, hue = region_cast(graded, box)
                 line = (f"{name:24s} L*={lstar:5.2f} chroma={chroma:5.2f} "
-                        f"hue={hue:6.1f}deg  {cast_verdict(chroma, hue)}")
+                        f"hue={hue:6.1f}deg  {cast_verdict(chroma, hue):7s} {hue_name(chroma, hue)}")
                 if ungraded is not None:
                     uc, uh = region_cast(ungraded, box)[1:]
                     line += f"   | ungraded chroma={uc:5.2f} hue={uh:6.1f}deg {cast_verdict(uc, uh)}"
@@ -1514,8 +1873,54 @@ def main():
             detail.append(
                 "reported, never judged: cool metal is the institutional palette landing, not a "
                 "law 1.1 failure -- §1.1 names a blue-tinted ROOM, and these are dark fixtures.")
+            # --- R20: does the wear read? ------------------------------------
+            bench = None
+            r20 = []
+            for name, box in R20_REGIONS.items():
+                vals = []
+                x0, y0, x1, y1 = box
+                pix = graded.load()
+                for yy in range(y0, y1):
+                    for xx in range(x0, x1):
+                        r, gg, b = pix[xx, yy]
+                        vals.append(0.2126 * r + 0.7152 * gg + 0.0722 * b)
+                vals.sort()
+                n = len(vals)
+                sp = vals[int(0.95 * n)] - vals[int(0.05 * n)]
+                mean = sum(vals) / n
+                if "BENCHMARK" in name:
+                    bench = sp
+                r20.append((name, mean, sp))
+            detail20 = []
+            for name, mean, sp in r20:
+                verdict = "" if bench is None or "BENCHMARK" in name else (
+                    "  READS" if sp >= bench else "  below benchmark")
+                detail20.append(f"{name:28s} mean={mean:6.2f} spread(p95-p5)={sp:6.2f}{verdict}")
+            detail20.append(
+                "benchmark is the ceiling stain, the surface §1.7 names as the one that "
+                "demonstrably reads at review distance. Sparse wear is expected to be flat in "
+                "most patches; what matters is the contrast where it lands.")
+            if not R20_REGIONS or not r20:
+                detail20.append("*** C29: this block measured ZERO regions -- an INFO line that "
+                                "examined nothing is not a measurement ***")
             results.append(GateResult(
-                "R19", "metal cast (informational)", "INFO",
+                "R20", "wear reads? (informational)", "INFO" if r20 else "FAIL",
+                "-", "chipped paint + battered desk vs the ceiling benchmark", detail20,
+                blind_spot="reports luminance spread inside fixed boxes on the screens-dark "
+                           "render. It cannot tell WHY a surface is varied -- a lighting gradient, "
+                           "an edge or a neighbouring object inside the box all raise spread just "
+                           "as wear does, which is why the desk is sampled twice, away from the "
+                           "lamp pool. It says nothing about whether the wear is in a camera's "
+                           "frustum in the three review poses (R7's actual failure), nothing about "
+                           "hue, and nothing about whether the wear is well PLACED -- only whether "
+                           "it is visible where it was put.",
+            ))
+
+            if not R19_REGIONS or len(detail) <= 1:
+                detail.append("*** C29: this block measured ZERO regions -- an INFO line that "
+                              "examined nothing is not a measurement ***")
+            results.append(GateResult(
+                "R19", "metal cast (informational)", "INFO" if R19_REGIONS else "FAIL",
                 "-", "steel + conduit, surface-pure boxes", detail,
                 blind_spot="four fixed boxes on the screens-dark render, reported without a "
                            "verdict. It cannot tell you whether the metal reads institutional -- "
