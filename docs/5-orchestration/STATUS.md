@@ -92,6 +92,11 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-05 cycle 88 · **Orca restart recovered again** — all four leads
+  revived via --continue with bypass, /effort max re-applied, all four booted;
+  new handles registered; watchers re-armed (v7 + heartbeat). Studio state
+  unchanged: full convergence, everything behind the DD drag (3 files staged)
+  and Allen's gate re-confirm walk. Reversal: none.
 - 2026-08-05 cycle 87 · **SureThing slice CLOSED — full studio convergence** —
   main merged in-branch (221 commits, one conflict), S41 live (cash-out
   figure in wax, RETURNED a sum), twelve-state re-submit shot+zipped
