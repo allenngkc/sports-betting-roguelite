@@ -209,8 +209,13 @@ namespace SBR.Tests.PlayMode
             Assert.AreEqual(maxLegs, laptop.Slip.Picks.Count,
                 "the captured state must actually be a full slip");
 
+            // Renumbered 09 → 11: main's rewards sequence already owns 07/08/09
+            // ("09-rewards-affordable") and 10 is the populated ledger, so this appends rather than
+            // colliding. NOTE FOR ANYONE FOLLOWING A REFERENCE: the S51 filing
+            // (dd-import/markets-26px-residual.md) and the frames already in evidence/ name this
+            // state "09-margin-max-legs-staged-receipt" — same state, earlier number.
             yield return CaptureState(laptop, outputDirectory, runPrefix,
-                "09-margin-max-legs-staged-receipt", capturedPaths);
+                "11-margin-max-legs-staged-receipt", capturedPaths);
 
             Assert.AreEqual(2, capturedPaths.Count, "one state must emit paired captures");
             foreach (string path in capturedPaths)
