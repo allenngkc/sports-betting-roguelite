@@ -408,6 +408,105 @@ def gate_palette_conformance(docs, assets_root):
     )
 
 
+# ---------------------------------------------------------------------------
+# R7/R8 -- IS THIS WEAR IN ANY CAMERA?
+#
+# R7 shipped an entire weathering inventory that changed 1.92% of pixels against a
+# 1.69% baseline. The diagnosis was not technique: "wear was placed against
+# physical causes without checking those causes against what the cameras see"
+# (room-design §4). §5 states the specific error -- the standing camera sees floor
+# only from z=+1.03, so anything below or behind that is invisible at any quality.
+#
+# The ruling that parked R7 requires "re-place existing wear against the three
+# camera frusta FIRST -- cheap, no shared-renderer change". This is that check,
+# made permanent so the error cannot recur silently: every wear placement is
+# projected into the three ratified review poses and told whether any of them can
+# see it. Pure arithmetic on committed camera poses and committed object
+# positions; no frame, no lighting argument, no eyeball.
+#
+# A piece visible in ZERO review cameras FAILS. That is not harshness -- it is the
+# exact defect the ruling names, and R8's opening expired the Tier 1b signature
+# that was holding this inventory closed.
+REVIEW_CAMERAS = {
+    # name: (eye, forward, up, vertical fov) -- must track RoomViewCapture.
+    "standing 68": ((0.300, 1.640, -1.400), (0.0, 0.0, 1.0), (0.0, 1.0, 0.0), 68.0),
+    "seated 17":   ((-0.950, 1.150, 0.300), (2.182, -0.05, 0.0), (0.0, 1.0, 0.0), 17.0),
+    "laptop 30":   ((0.738982, 1.051217, 1.620), (0.939693, -0.342020, 0.0),
+                    (0.342020, 0.939693, 0.0), 30.0),
+}
+
+# Objects whose whole purpose is to be SEEN. Named explicitly rather than pattern
+# matched, so adding wear without adding it here is itself visible in review.
+WEAR_OBJECTS = ["ConduitDrip", "RadiatorDamp", "RadiatorRust", "StoolScuff", "TrafficPath"]
+
+LOCAL_POS_RE = re.compile(
+    r"m_LocalPosition:\s*\{x:\s*(-?[\d.eE+-]+),\s*y:\s*(-?[\d.eE+-]+),\s*z:\s*(-?[\d.eE+-]+)\}")
+
+
+def _cam_basis(fwd, up0):
+    import math as _m
+    L = _m.sqrt(sum(c * c for c in fwd)); f = [c / L for c in fwd]
+    r = [up0[1] * f[2] - up0[2] * f[1], up0[2] * f[0] - up0[0] * f[2], up0[0] * f[1] - up0[1] * f[0]]
+    Lr = _m.sqrt(sum(c * c for c in r)); r = [c / Lr for c in r]
+    u = [f[1] * r[2] - f[2] * r[1], f[2] * r[0] - f[0] * r[2], f[0] * r[1] - f[1] * r[0]]
+    return f, r, u
+
+
+def gate_wear_in_frustum(docs):
+    """R7/R8: every wear placement is seen by at least one ratified review pose."""
+    go = {a: (NAME_FIELD_RE.search(b).group(1) if NAME_FIELD_RE.search(b) else "")
+          for _c, a, n, b in docs if n == "GameObject"}
+    pos = {}
+    for _cid, _a, cname, body in docs:
+        if cname != "Transform":
+            continue
+        gm = GAMEOBJECT_REF_RE.search(body); pm = LOCAL_POS_RE.search(body)
+        if gm and pm:
+            pos[go.get(gm.group(1), "")] = tuple(float(v) for v in pm.groups())
+
+    aspect = CAPTURE_SIZE[0] / CAPTURE_SIZE[1]
+    detail, problems = [], []
+    if not WEAR_OBJECTS:
+        problems.append("WEAR_OBJECTS is empty -- this gate checked nothing (C29)")
+    for name in WEAR_OBJECTS:
+        P = pos.get(name)
+        if P is None:
+            problems.append(f"'{name}': not in the scene")
+            continue
+        seen = []
+        for cam, (eye, fwd, up0, fov) in REVIEW_CAMERAS.items():
+            f, r, u = _cam_basis(fwd, up0)
+            d = [P[i] - eye[i] for i in range(3)]
+            vz = sum(d[i] * f[i] for i in range(3))
+            if vz <= 0:
+                continue
+            vx = sum(d[i] * r[i] for i in range(3)); vy = sum(d[i] * u[i] for i in range(3))
+            t = math.tan(math.radians(fov / 2))
+            sx = (vx / vz / (t * aspect) + 1) / 2 * CAPTURE_SIZE[0]
+            sy = (1 - vy / vz / t) / 2 * CAPTURE_SIZE[1]
+            if 0 <= sx < CAPTURE_SIZE[0] and 0 <= sy < CAPTURE_SIZE[1]:
+                seen.append(f"{cam} @{int(sx)},{int(sy)} {vz:.1f}m")
+        if seen:
+            detail.append(f"{name:14s} seen by {len(seen)}/3: " + "; ".join(seen))
+        else:
+            detail.append(f"{name:14s} *** SEEN BY NO REVIEW CAMERA ***")
+            problems.append(f"'{name}': in none of the three review frusta -- invisible at any "
+                            f"quality (room-design §4/§5)")
+    return GateResult(
+        "R7-F", "wear is in at least one review frustum",
+        "PASS" if not problems else "FAIL",
+        f"all {len(WEAR_OBJECTS)} wear placements seen by >=1 of 3 review poses",
+        f"{len(problems)} placement(s) no camera can see" if problems else "all placements visible",
+        detail + problems,
+        blind_spot="projects the object's ORIGIN POINT only, against the three ratified poses. It "
+                   "does not test occlusion -- a piece inside the frustum but behind the couch or "
+                   "the bunk assembly reads as visible here and is not (§5 names that exact case) "
+                   "-- does not consider the object's extent, so a large decal whose centre is off "
+                   "-frame may still be partly seen, and says NOTHING about whether visible wear "
+                   "actually READS. In-frame is necessary, not sufficient.",
+    )
+
+
 # Below this chroma a hue angle is not meaningful -- it is the direction of a
 # vector too short to trust, and calling a near-grey surface "cool" on the
 # strength of a 0.4 chroma reading would be measuring noise.
@@ -1572,6 +1671,9 @@ def main():
                        "detects a MISSING mesh, never a WRONG one; a component pointing at a "
                        "valid but incorrect mesh asset reads as a full pass.",
         ))
+
+        # --- R7-F: wear placement vs the review frusta -----------------------
+        results.append(gate_wear_in_frustum(docs))
 
         # --- R33 / C30: palette conformance, scene-truth ---------------------
         results.append(gate_palette_conformance(docs, assets_root))
