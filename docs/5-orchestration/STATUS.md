@@ -92,6 +92,18 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-06 cycle 95 · **SureThing batch-10 queue COMPLETE + the colour risk
+  RETIRED** — the audit's verdict: 27 float-Color instances, none able to
+  silently change a rendered colour (transparent containers, tint multipliers,
+  token-derived alpha work) — the colour record stands; the one bad case was
+  the verdict ground, already tokenised. Also landed: the C29 test wrapper
+  (studio pattern), verdict screen fully fixed (ground/chrome/figures), the
+  printed NOT-INSTALLED word, tally-as-run-context, cross-round retention
+  capture. Evidence zipped (5MB). FromRgb deletion approved; violet
+  attentionEmission routed to room. Room: hour-long weathering lease closed
+  clean; three-way wear-placement fork = DD territory for the drag;
+  merge-ready-when-clean fired (Allen's draft). Pending Allen: arm B accept.
+  Reversal: none.
 - 2026-08-05 cycle 94 · **Room round 4 validated — fully green** — engine
   178/178, EditMode 75/75 (testcasecount=75), PlayMode 47/47
   (testcasecount=47) with the C29 counts reported for the first time; end
