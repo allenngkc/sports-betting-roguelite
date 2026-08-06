@@ -1,14 +1,14 @@
 # SureThing UI — re-seat state
 
-**STATUS 2026-08-05 · last code commit `f05332c` · tree clean · EditMode 76/76 · PlayMode 55/55**
-- **Done:** the desktop block and batch 9 (S46, S44+S45, S47, S48, S52 — **S8 re-verified**); **main merged** (221 commits, one conflicted file); **S41** — the cash-out figure prints in wax and the RETURNED total is a sum again; the LEDGER re-submit set is shot and staged.
-- **Now:** nothing in flight. **This closes the slice's last items.**
-- **Need — DD:** (1) the LEDGER Design-verified grant, on `dd-import/surething-ledger-resubmit-2026-08-05/` — all six closing conditions landed; (2) the verdict screen's **ground**, still open at `dd-import/surething-verdict-ground-2026-08-04/`; (3) S49, the desktop's kit entry, is the DD's.
-- **Worth one capture nobody has:** no state drives a run past `ExitShop`, so retention *across rounds* is proven by construction and suite, never photographed (§4-0.7).
-- **Two traps introduced by the merge:** `artifacts/` is no longer git-ignored (a bare `git add -A` sweeps ~100 PNGs), and two capture states now share the number `09`.
+**STATUS 2026-08-06 · last code commit `bdbd82b` · tree clean · EditMode 76/76 · PlayMode 56/56**
+- **THE LEDGER IS DESIGN-VERIFIED** (batch 10, on the sixteen-state set). The zero-dollar wax/grey split is **ratified as considered — never "fix" it.**
+- **Done:** all of batch 10 — **C29** studio-wide first (`tools/run-unity-tests.ps1`; run every suite through it, never `-runTests` directly); verdict ground to `--ground` + chrome restored + figures made legible (S53-am/S55/S57); the invisible chip replaced by a printed `NOT INSTALLED` (S56); the float-`Color` audit (S54, `docs/design/S54-COLOR-AUDIT.md`); the MY BETS tally is run context (S58); and the cross-round retention capture that was missing.
+- **Now:** nothing in flight. Staged for the drag: `dd-import/surething-batch10-2026-08-06/`.
+- **Need — DD:** S49's authored kit entry is the DD's to transcribe. Two flags from the audit: **`LaptopUi.FromRgb` is dead** and recommended for deletion, and **`attentionEmission` is a saturated violet** on the laptop lid in a project that retired purple — flagged, untouched, room lighting rather than the document.
+- **Two traps still live in this tree:** `artifacts/` is no longer git-ignored (a bare `git add -A` sweeps ~100 PNGs), and two capture states share the number `09` (markets' test, needs their nod).
 
-**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-05, after the main merge and S41.
-**HEAD:** `f05332c` · **Branch:** `surething-ui` · working tree clean.
+**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-06, after batch 10.
+**HEAD:** `bdbd82b` · **Branch:** `surething-ui` · working tree clean.
 
 This is written for a seat with **no conversation context**. Everything below is either verifiable in
 the repo or flagged as unverified.
@@ -39,7 +39,7 @@ Since the merge, three more rulings landed and are **implemented, verified and c
 - **S26** — offer rule text never truncates at point of spending; the board shows however many offers
   fit and states how many it could not. The REWARDS banner states rather than exhorts.
 
-**Suites: EditMode 76/76, PlayMode 55/55** (at `f05332c`, post-merge). The 75/38 in earlier notes was the
+**Suites: EditMode 76/76, PlayMode 56/56** (at `bdbd82b`), and every run goes through `tools/run-unity-tests.ps1` (C29). The 75/38 in earlier notes was the
 count before the desktop block; PlayMode's total also depends on whether the run passes
 `-nographics`, which fails the four capture tests on `RenderTexture.Create` — **do not pass it**,
 the command in §5 is the one that holds.
@@ -499,6 +499,61 @@ is worth building and does not exist.
 - **Two capture states share the number `09`** — `09-rewards-affordable` and
   `09-margin-max-legs-staged-receipt`. Nothing collides on disk; the numbering just lies to anyone
   reading the set in order. The second is the markets seat's test, so renumbering wants their nod.
+
+## 4-0.8 Batch 10 — the LEDGER is granted, and everything else in it is built
+
+**Done.** Suites **EditMode 76/76, PlayMode 56/56**, every run through the C29 wrapper.
+
+**The LEDGER is Design-verified** on the sixteen-state set. **The zero-dollar wax/grey split is
+ratified as considered — never "fix" it.** C31 also landed as law: a named closing-condition set is
+exhaustive, so findings on the same frames open new items and do not retroactively withhold a grant.
+
+### C29 — do this before anything, and it is not this surface's alone
+
+`tools/run-unity-tests.ps1`. **Never call Unity's `-runTests` directly again.** A filter matching
+nothing makes Unity exit green with `testcasecount=0` — a run that did nothing, reported as a pass,
+and unlike the four vacuous gates before it this is the *runner*, so one typo can green any suite in
+any seat. The wrapper reports the executed count on every path and exits non-zero on zero cases.
+
+It paid for itself three times in one batch: the proof run, a Unity boot crash that wrote no results,
+and a filtered diagnostic. **The boot crash is worth knowing on its own** — Unity died four seconds
+in, wrote nothing, and without the wrapper that is indistinguishable from a pass.
+
+### What changed on the surface
+
+- **The verdict screen** is `--ground` (measured 21.5, 21.5, 12.7 against the token's 22, 22, 15)
+  and renders inside the rail and tray like every other destination. It was a full-screen takeover
+  with the OS deleted, which is a game-over card, and the chrome is the argument rather than
+  decoration.
+- **S57 answered: capture data.** The verdict derives from bank-versus-payment, and **the engine
+  does not deduct a payment the bank cannot meet** — so a forced loss kept its whole bank. Figures
+  are now chosen to read: win $290, bust $40 against a $155 payment.
+- **The desktop chip is gone** and dead apps print `NOT INSTALLED`. The chip was a 3/255 step;
+  the word is 85. Pitch 105 → 126 to fit it.
+- **The MY BETS tally is run context**, not a second copy of the sheet. `MarginRow` was promoted to
+  `LaptopUi.MakeMarginRow` so both margins draw it from one place.
+
+### Two findings the DD should see, neither fixed here
+
+1. **`LaptopUi.FromRgb` is dead** — no call sites; the live `FromRgb` calls resolve to
+   `TheaterStage`'s. Recommended for deletion; left because the ruling asked for a report.
+2. **`attentionEmission` = (0.28, 0.10, 0.55)** — a saturated violet on the laptop lid, in a project
+   that retired purple. It is a **serialized** field, so the scene ships and source is only a
+   fallback; the scene agrees for the laptop. Room lighting rather than the document, so not mine.
+
+### The retention capture, and what it cost
+
+`15-ledger-across-rounds` shows **ROUND 2 OF 8** with `TICKET 1.0` beside `TICKET 2.0`. The gate is
+that the board renders **more rows than `run.Tickets` holds**, which is only possible if it reads
+retention. Two traps met building it, both now guarded in `SettleOneRound`:
+
+- **The run kept ending.** The shipped schedule against a 350 bank busts inside two rounds of real
+  betting. Only the bank is rigged now (5000), never the schedule — an earlier cut used `{1,1,1,…}`
+  and printed `TARGET $1`, which is exactly the arbitrariness S57 rules against.
+- **Navigation was silently undone.** The sweat loop exits the instant the *engine* leaves Sweat,
+  frames before `LaptopOs` runs `ApplyPhaseDefault` — and that default sets `_activeApp` itself. Any
+  navigation in that window looks like it worked and is overwritten on the next tick. **If a fixture
+  navigates right after a settle and lands somewhere unexpected, this is why.**
 
 ## 4a. S32 — which happened: fixed between HEADs
 
