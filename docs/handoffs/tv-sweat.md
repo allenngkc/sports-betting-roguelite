@@ -95,6 +95,68 @@ clear at 0 processes — was cleared. `EditorBuildSettings.asset` reverted;
 `SBR.Engine.dll` restored to HEAD's bytes and **`cmp`-verified identical**, so its lingering
 `git status` line is the inert-`[attr]lfs` artifact (§4D), not a real change.
 
+## 0-B10. BATCH 10 — C29 guard retrofitted, and T58's evidence needs NO window
+
+### T58 is already demonstrated on frames in hand
+
+**The next editor window is not required for T58.** Staged
+`main-2/docs/design/dd-import/t58-goldflash-fix.zip` (10.9 MB — quiet reference, the flash frame, two
+more goal frames, and `MEASUREMENTS.txt`).
+
+Same statistic the DD used — scoreline peak pixel, canvas x285–960 y8–56:
+
+| | hue | saturation | luminance |
+|---|---|---|---|
+| DD pre-fix, **gold flash** | **56–58°** | **48.7–66.8%** | 0.72 |
+| DD pre-fix, quiet | 205° | 5.2% | 0.737 |
+| **post-fix, all 8 goal frames** | **198–207°** | **4.4–5.2%** | 0.875–0.877 |
+
+The goal moment is now **indistinguishable from the quiet reference**. The gold is gone.
+
+`frame000`, first of the goal burst, reads **`#e8e8e8` at 0.0% saturation, luminance 0.910** against a
+0.875 rest: perfectly neutral and the brightest frame in the set. That is the punch carried entirely
+by brightness with no hue — T58's instruction, executed.
+
+**Scope (C25):** a PNG cannot confirm the `_tScoreFlash` overlay was enabled on that frame. It is
+identified as the flash by position in the burst, by being brightest, and by being exactly neutral.
+**One burst = one sample of the flash instant.** If the DD wants n>1 the window is still worth taking;
+if the measurement suffices, it is not.
+
+### C29 — zero-case guard retrofitted
+
+`tools/assert_test_run.py`. **Run it on every results XML before any verdict, gate or Design-verified
+claim rests on the run.**
+
+```
+python tools/assert_test_run.py <results.xml> [--min N] [--expect-passed N]
+```
+
+Verified against real artifacts, all four branches:
+
+| case | source | result |
+|---|---|---|
+| the run that caused C29 | `hz.xml`, 0 cases | **exit 1** |
+| a good run | `em3.xml`, 224/224 | exit 0 |
+| missing report | absent path | **exit 2** |
+| expectation unmet | `--expect-passed 999` | **exit 1** |
+
+`total` (executed) is what decides, not `testcasecount` (discovered) — they differ exactly when a
+filter matches names that never run, which is the case C29 exists for. Both are printed so the gap is
+never invisible. A **missing** report fails too: a run whose report never appeared demonstrated
+nothing, and treating that as neutral is the same mistake one level up.
+
+The failure message names the cause that actually bit here — a parameterised `-testFilter` needs its
+quotes, or use the regex form `".*<seed>.*"`.
+
+### Also from batch 10
+
+- **T60 struck** — no body, so never a ruling (C22). Nothing was built against it.
+- **T61** (my scorer finding, ruled): diagnosis routes to markets, **round-advance hypothesis first** —
+  the harness-scope explanation I named first and asked to have excluded. The design answer is
+  pre-committed for every outcome. **Blocks nothing here.**
+
+---
+
 ## 0-VP2. VERDICT PASSES — all four PASS, on the post-T58/T59 frames (no editor used)
 
 Run against the 17-frame set from the post-batch-9 build (seed `48151623`, `boost1.4`), which is the
