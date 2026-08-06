@@ -409,9 +409,29 @@ namespace SBR.Game
         {
             LaptopUi.ClearChildren(_app);
             bool won = run.Phase == Phase.RunWon;
+            // S53-am: `--ground`, the same ground as every other destination. What stood here was a
+            // bespoke `new Color(.03f, .02f, .06f, 1f)` that rendered aubergine — measured (13, 0,
+            // 13), magenta at near-black and DARKER than --ink, so under the lifted-black floor too.
+            // Nothing in this system licenses a bespoke ground on a SureThing surface: the run ends
+            // on the document, because the whole product is a man reading a form.
             LaptopUi.MakePanel(_app, "VerdictBg", Vector2.zero, Vector2.zero, Vector2.zero,
-                new Vector2(_width, _height), new Color(0.03f, 0.02f, 0.06f, 1f));
-            LaptopUi.MakeText(_app, "VerdictBrand", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(_width, _height), Ink);
+
+            // S55: the machine stays. This screen had no rail and no tray while every other
+            // destination carries both — and the chrome is the argument, not decoration. It is what
+            // makes this an app running on HIS laptop rather than the game's own UI, and a
+            // full-screen takeover with the OS deleted is a game-over card. The rail's sticker,
+            // its stopped 02:47 clock and its dying battery are also at their most useful exactly
+            // when the run ends.
+            //
+            // The work area is the remainder between them, so the content below keeps its own
+            // anchors and simply lives inside the machine now instead of over it.
+            RectTransform work = LaptopUi.MakePanel(_app, "VerdictWork", new Vector2(0f, 1f),
+                new Vector2(0f, 1f), new Vector2(0f, -NotebookChrome.RailHeight),
+                new Vector2(_width, _height - NotebookChrome.RailHeight - NotebookChrome.TrayHeight),
+                new Color(0f, 0f, 0f, 0f));
+
+            LaptopUi.MakeText(work, "VerdictBrand", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
                 new Vector2(0f, -54f), new Vector2(800f, 36f), 22, TextAnchor.UpperCenter, White,
                 // S46: was "SureThing." — a fifth spelling, mixed case with a full stop, on the one
                 // screen a player only reaches at the end of a run. Typeface left alone: S46 rules
@@ -428,12 +448,12 @@ namespace SBR.Game
             // oxide strike, but that strike marks a dead record row, and a rule through a 30px
             // headline is a different device than the one that ruling describes. If the DD wants
             // the strike here too it is one MakeRule call — I did not assume it.
-            Text verdict = LaptopUi.MakeText(_app, "Verdict", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            Text verdict = LaptopUi.MakeText(work, "Verdict", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 70f), new Vector2(900f, 60f), 30, TextAnchor.MiddleCenter,
                 won ? MoneyGold : Muted,
                 won ? "THE HOUSE BLINKS FIRST" : "THE BOOKIE COLLECTS", _font);
             verdict.horizontalOverflow = HorizontalWrapMode.Overflow;
-            Text final = LaptopUi.MakeText(_app, "Final", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            Text final = LaptopUi.MakeText(work, "Final", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 14f), new Vector2(900f, 36f), 18, TextAnchor.MiddleCenter, White,
                 $"FINAL BANK {LaptopUi.Money(run.Bank)}   ·   SEED {run.Rng.RunSeed}", _font);
             final.horizontalOverflow = HorizontalWrapMode.Overflow;
@@ -443,9 +463,19 @@ namespace SBR.Game
             // under S18: wax field, wax-ink type, 2px --wax-deep edge. MakeWaxPrimary builds all
             // three, and this is the third control on the surface to qualify alongside PLACE TICKET
             // and LEAVE — NEXT ROUND. It carries the same MoneyGold/WaxInk pair they do.
-            LaptopUi.MakeWaxPrimary(_app, "NewRun", "NEW RUN", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+            LaptopUi.MakeWaxPrimary(work, "NewRun", "NEW RUN", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
                 new Vector2(0f, 58f), new Vector2(300f, 52f), 19, MoneyGold, WaxInk,
                 () => { _host.director.StartNewRun(); Invalidate(); }, _font);
+
+            // S55: rail and tray last, so the machine is drawn over anything the work area might
+            // overflow rather than under it. Running.Sportsbook because the run ended inside the
+            // book and the book is still what is open — the same state the tray carries on every
+            // other SureThing destination, and the same call SportsbookApp.BuildTaskbar makes.
+            // The player can still reach the ledger or drop to the desktop from here; a run being
+            // over is not a reason to take his machine away.
+            NotebookChrome.BuildRail(_app, _width, _font);
+            NotebookChrome.BuildTray(_app, _width, _font, NotebookChrome.Running.Sportsbook,
+                null, OpenLedger, OpenHome);
         }
 
         private void ShowToast(string toast)

@@ -555,17 +555,36 @@ namespace SBR.Tests.PlayMode
                 "yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture);
             var capturedPaths = new List<string>();
 
-            // A payment of 60 against the 350 starting bank: met, on the final round, so the run wins.
-            yield return DriveToVerdict(laptop, 60d, Phase.RunWon);
+            // S57 — answered: **capture data.** The first cut of these two frames ended the LOSS
+            // holding $350 and the WIN holding $290, so the losing run was richer than the winning
+            // one. Nothing is wrong with the verdict: it derives from bank-versus-payment, and the
+            // engine does not deduct a payment the bank cannot meet, so a forced loss keeps its
+            // whole bank. The banks were arbitrary because both states are forced through a
+            // schedule rather than played.
+            //
+            // Arbitrary is still not acceptable in a capture set, whose entire job is to be
+            // readable as evidence by someone who was not told how it was made. So the figures are
+            // now chosen to read: a win that paid its way, and a bust that could not.
+            yield return DriveToVerdict(laptop, bank: 350d, payment: 60d, expected: Phase.RunWon);
             Assert.AreEqual("THE HOUSE BLINKS FIRST", TextOf(Required(App(laptop), "Verdict")));
+            string wonFigures = TextOf(Required(App(laptop), "Final"));
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "13-verdict-run-won", capturedPaths);
 
-            // A payment of 400 against the same bank: a real near miss rather than an absurd one.
-            yield return DriveToVerdict(laptop, 400d, Phase.RunLost);
+            // $40 against a $155 payment — a real figure from the shipped schedule
+            // {60, 70, 85, 105, 155, 375, 710, 1350}, and a bank that plainly cannot meet it.
+            yield return DriveToVerdict(laptop, bank: 40d, payment: 155d, expected: Phase.RunLost);
             Assert.AreEqual("THE BOOKIE COLLECTS", TextOf(Required(App(laptop), "Verdict")));
+            string lostFigures = TextOf(Required(App(laptop), "Final"));
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "14-verdict-run-lost", capturedPaths);
+
+            // The gate S57 actually wants: the two frames must be legible as themselves without a
+            // caption. A set where the loser ends richer than the winner teaches the reader the
+            // opposite of what it is evidence for.
+            Assert.AreNotEqual(wonFigures, lostFigures, "the two verdicts must not print the same figures");
+            StringAssert.Contains("$290", wonFigures, "the won frame should end holding more");
+            StringAssert.Contains("$40", lostFigures, "the lost frame should end holding less");
 
             Assert.AreEqual(4, capturedPaths.Count, "two states must emit paired captures");
             foreach (string path in capturedPaths)
@@ -577,11 +596,12 @@ namespace SBR.Tests.PlayMode
 
         /// <summary>Ends a run in one settle, and refuses to shoot a frame that cannot show what it
         /// claims to — the two S52 fixes are asserted on the live tree, not assumed from the diff.</summary>
-        private static IEnumerator DriveToVerdict(LaptopScreen laptop, double payment, Phase expected)
+        private static IEnumerator DriveToVerdict(LaptopScreen laptop, double bank, double payment,
+            Phase expected)
         {
             laptop.director.StartNewRun($"verdict-{expected}");
             var run = new Run($"verdict-{expected}",
-                new RunConfig { Payments = new[] { payment } });
+                new RunConfig { Payments = new[] { payment }, StartingBank = bank });
             Assert.AreEqual(1, run.Config.Rounds, "a one-element schedule must make round 1 the last");
             SetDirectorRun(laptop.director, run);
 
@@ -591,6 +611,19 @@ namespace SBR.Tests.PlayMode
             yield return WaitForRebuild();
 
             Transform app = App(laptop);
+
+            // S55: the machine stays. These frames had no rail and no tray while every other
+            // destination carried both, which made the last screen of the run a game-over card
+            // instead of an app on his laptop. Asserted before the shot, because "the chrome is
+            // missing" is exactly the kind of absence a frame proves and a suite normally cannot.
+            Assert.IsNotNull(Find(app, "NotebookRail"), "S55: the verdict renders inside the chrome — rail missing");
+            Assert.IsNotNull(Find(app, "NotebookTray"), "S55: the verdict renders inside the chrome — tray missing");
+
+            // S53-am: the ground is --ground, like every other destination. The bespoke value that
+            // stood here rendered aubergine and darker than --ink.
+            Assert.IsTrue(SameInk(Required(app, "VerdictBg").GetComponent<Image>().color, LaptopOs.Ink),
+                "S53-am: the verdict ground is --ground, not a bespoke value");
+
             Transform verdict = Required(app, "Verdict");
 
             // S52: the loss is carried by value, not by oxide. Oxide is the house's mark, and this
