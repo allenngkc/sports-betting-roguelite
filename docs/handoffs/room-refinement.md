@@ -453,6 +453,64 @@ the laptop, TV or phone body, so R19(a)'s separation has only ever been albedo a
 R19(b)-am the carrying channel is **value**, which is measurable in a frame — so regions for those
 bodies would convert R19(a) from asserted to measured.
 
+### R8 / weathering — measured, and the parking diagnosis does not survive it
+
+**With the entire wear inventory disabled, two of the three review poses are bit-identical.**
+
+| pose | changed | >JND |
+|---|---|---|
+| standing | 1.49% | **0.90%** |
+| seated | 0.00% | **identical** |
+| laptop | 0.00% | **identical** |
+
+Run it with `SBR.RoomViewCapture.CaptureWearAB -outDir <dir>` then
+`python tools/wear_ab_diff.py <dir>`. **This is the only instrument that answers "does the wear
+read".** Box statistics on a still frame do not: a decal is small against busy geometry, so a box
+around it measures the pipe fitting beside it — that method scored two of four sites as reading
+where brightened crops show nothing at all.
+
+**R7 was parked on "placement versus camera, not technique". That is falsified as the whole story.**
+`ConduitDrip` was re-placed to raise its seated frustum coverage 30% → 67%; the rendered frame
+changed by *exactly nothing*, because the TV housing stands in front of that wall and the move took
+the quad from 34% to 64% occluded. Reverted. **Frustum coverage is not visibility.**
+
+**Two instrument traps, both mine, both now closed:**
+
+- **First-render artefact.** The first A/B reported 91.76% changed and its determinism control
+  *passed twice* — the same fault repeats every run. The frames showed a magenta TV panel: the first
+  Edit Mode render lands before the pipeline settles, and the method had captured render #1 and #2
+  as the two halves. `WarmRender` discards three frames first. **Only the picture caught it.**
+- **Occlusion.** R7-F now reports occluded fraction beside frustum coverage, against a table of the
+  solid boxes that sit in front of wear surfaces.
+
+**Open for the DD, three-way and all of it ruled territory:** scale/contrast on the existing decals,
+the URP Decal Renderer (whose "not yet — re-place against the frusta first" precondition is now met
+*and answered*), or accepting that wear lives only in the standing shot.
+
+### ⚠️ `attentionEmission` — a saturated violet the room throws, and it is ours
+
+Raised by SureThing's colour audit; **their read that this is room lighting is correct.**
+
+`LaptopScreen.cs:29` — `attentionEmission = (0.28, 0.10, 0.55)`, B > R > G, **10× `idleEmission` on
+blue**. `Glow()` drives the **lid renderer**, and the room builds that object and attaches the
+component (`GrayboxRoomBuilder` 810, 836). A lid emitting into the room is light, not app content —
+R28's split exactly, one surface over.
+
+**Measured on committed frames, not asserted:** the laptop panel reads **hue 303.6° / chroma 9.17**
+in `batch10` and **305.0° / 9.12** in `batch9`. Magenta-violet, in every laptop capture we hold.
+
+It fires when `wantsYou && !engaged` — Betting/Shop/RunWon/RunLost with the player **away from the
+desk**, i.e. precisely while seated at the TV, and it *breathes*.
+
+Against: purple is retired project-wide; §2's palette carries no violet (its only cool is the window
+`#5679C2`); §1.2 requires screens "quiet, with faint spill"; §1.1's named failure mode is a
+saturated cool cast.
+
+**Not fixed — the replacement colour is a design call, not a lead's.** Constraint space if it helps:
+the laptop is *his* machine (§6), so its register is personal, and SureThing's own wax amber
+`#D9A441` would be coherent with the surface it sits on. Whatever replaces it must satisfy §1.2's
+"quiet".
+
 ### Batch 10 (2026-08-05) — the slice closes: 10 PASS, 0 FAIL, no VOIDs
 
 **Gates 6–8 re-certified on a FRESH walk.** Allen walked the post-retirement build and passed. The
