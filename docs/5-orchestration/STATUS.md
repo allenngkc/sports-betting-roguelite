@@ -92,6 +92,14 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-05 cycle 92 · **Allen's four calls landed + markets reactivated** —
+  constitution amended (zero-case rule into §4.2, Allen-approved); pillow a
+  named exception; gates 6–8 re-certified on Allen's re-check walk; markets
+  STARTED on the scorer EV harness then Arm B (lead's own before/after-tables
+  condition binding; flatness fix parked pending Arm B's baseline). T61
+  resolved as harness outcome-dependence — design question struck per the
+  pre-commitment; contract test routed to TV's harness debt. Room heading to
+  MERGE READY with no gate hold. Reversal: Allen's own calls.
 - 2026-08-05 cycle 91 · **Batch 10 transcribed + dispatched — THE LEDGER IS
   DESIGN-VERIFIED** (granted on the sixteen-state set; $0 wax/grey split
   ratified; C31 law born from the DD almost breaking its own condition list).
