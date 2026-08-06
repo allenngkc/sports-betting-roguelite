@@ -127,31 +127,70 @@ namespace SBR.Tests.PlayMode
             while (Time.realtimeSinceStartup < deadline)
             {
                 if (until()) { s_conditionMet = true; yield break; }
-                if (director != null && director.CurrentSession != null && director.CurrentSession.IsComplete)
+                if (SweatEnded(director))
                 {
-                    // GRACE PERIOD, and it is load-bearing. The session reports complete BEFORE the
-                    // revealed leg states settle, so bailing on IsComplete alone skipped
-                    // scorer-leg-resolved on a seed where it demonstrably does occur — the same
-                    // moment the previous run captured. A wait that silently drops a real moment is
-                    // worse than the deadline failure it replaced, because the evidence goes missing
-                    // instead of the run going red.
+                    // GRACE PERIOD, and it is load-bearing. The phase leaves Sweat BEFORE the revealed
+                    // leg states settle, so bailing the instant it flips skipped scorer-leg-resolved
+                    // on a seed where it demonstrably does occur. A wait that silently drops a real
+                    // moment is worse than the deadline failure it replaced, because the evidence goes
+                    // missing instead of the run going red.
                     //
-                    // So completion means "stop waiting indefinitely", not "the answer is no". Keep
-                    // polling the condition for a bounded settle window and only then call it absent.
+                    // So the phase change means "stop waiting indefinitely", not "the answer is no".
+                    // Keep polling the condition for a bounded settle window and only then call it
+                    // absent. This matters MORE under T61's contract than it did before: a surviving
+                    // ticket settles at FinishSweat, i.e. at the very edge of the phase change, so the
+                    // legitimate resolution and the stop signal now arrive within a frame of each
+                    // other. Without this window the harness would miss exactly the moment it exists
+                    // to photograph, on precisely the seeds that win.
                     for (int i = 0; i < 120; i++) // ~2s at 60fps
                     {
                         if (until()) { s_conditionMet = true; yield break; }
                         yield return null;
                     }
-                    Debug.Log($"[TvSweatCaptureHarness] seed={_seed}: {what} — ABSENT, the session " +
-                        "ended and the condition did not settle within the grace window. Recorded " +
-                        "as an outcome of this sweat, not a failed run.");
+                    Debug.Log($"[TvSweatCaptureHarness] seed={_seed}: {what} — ABSENT, the run left "
+                        + "Sweat and the condition did not settle within the grace window. Recorded "
+                        + "as an outcome of this sweat, not a failed run.");
                     yield break;
                 }
                 yield return null;
             }
-            Assert.Fail($"{what} — deadline reached with the session still LIVE, which is a genuine hang");
+            Assert.Fail($"{what} — deadline reached with the run STILL IN Phase.Sweat, which is a "
+                + "genuine hang. Under T61's contract this no longer confuses a settled ticket for a "
+                + "stall: the phase is the completion signal, so if it has not moved, the sweat "
+                + "really has not ended.");
         }
+
+        /// <summary>T61's contract, at the one place this harness depends on it: **completion is a
+        /// property of the RUN's phase, never of any one ticket or session.** Phase leaves
+        /// <see cref="Phase.Sweat"/> exactly once, after every session is drained.
+        ///
+        /// <para>This replaces <c>CurrentSession.IsComplete</c>, and the reason is worth keeping,
+        /// because the naive fix is wrong in a way that hides itself. The markets lead tested the
+        /// hypothesis this harness's own finding proposed and found it HALF right — the wrong half
+        /// being the useful one:</para>
+        ///
+        /// <list type="bullet">
+        /// <item>A ticket that <b>dies</b> is marked Lost the moment its leg dies → a poller keyed on
+        /// the ticket gets an early false "done".</item>
+        /// <item>A ticket that <b>survives</b> stays Open until FinishSweat → the same poller gets
+        /// <b>no signal at all</b>.</item>
+        /// </list>
+        ///
+        /// <para>So whether ticket 0 is terminal mid-sweat depends on the OUTCOME, not the position —
+        /// which is exactly why this harness failed on four seeds and passed on one, from the same
+        /// code. <b>A green re-run would therefore have proved nothing</b>: a seed that happens to
+        /// lose looks fixed while the defect is untouched. That is why this is a contract taken from
+        /// a test rather than a re-run taken as evidence.</para>
+        ///
+        /// <para>Also confirmed there, and the reason this must never key on a captured reference:
+        /// <c>Run.Tickets</c> is the current round's working set and is <b>cleared at ExitShop</b>, so
+        /// a held <c>Tickets[0]</c> becomes a permanently terminal object while <c>Tickets[0]</c>
+        /// itself names a different, open ticket.</para>
+        ///
+        /// <para>Pinned by <c>T61_sweat_completion_is_a_phase_property_not_a_ticket_property</c> in
+        /// the EditMode suite; proven engine-side by markets' <c>SweatPollingContractTests</c>.</para></summary>
+        internal static bool SweatEnded(RunDirector director)
+            => director == null || director.Run == null || director.Run.Phase != Phase.Sweat;
 
         /// <summary>Undoes the frame-lock. Load-bearing, not tidiness: <c>Time.captureDeltaTime</c> is
         /// global and persists for the whole editor session, so leaving it set would silently put

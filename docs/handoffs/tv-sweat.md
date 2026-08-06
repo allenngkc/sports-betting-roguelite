@@ -95,6 +95,59 @@ clear at 0 processes — was cleared. `EditorBuildSettings.asset` reverted;
 `SBR.Engine.dll` restored to HEAD's bytes and **`cmp`-verified identical**, so its lingering
 `git status` line is the inert-`[attr]lfs` artifact (§4D), not a real change.
 
+## 0-T61. T61 FOLDED IN — contract taken from markets' test, not from a green re-run (UNCOMPILED)
+
+Markets diagnosed T61 and the answer is sharper than the hypothesis I filed. **My harness is fixed
+against their contract, and a contract test now sits in my own suite** — deliberately instead of
+re-running and taking green as proof.
+
+### Why a green re-run would have proved nothing
+
+Markets tested my round-advance hypothesis and found it **half right — the wrong half being the
+useful one**:
+
+| ticket outcome | what ticket 0 does mid-sweat | what a ticket-keyed poller sees |
+|---|---|---|
+| **dies** (dead-leg Lost) | settles immediately | early **false "done"** |
+| **survives** | stays `Open` until `FinishSweat` | **no signal at all** |
+
+So whether ticket 0 is terminal mid-sweat depends on the **OUTCOME, not the position** — which is
+exactly why this harness failed four seeds and passed one **from identical code**. A seed that happens
+to lose would have made a re-run look fixed while the defect sat untouched. **The defect is
+seed-decided, so only a contract can settle it.** That is the whole reason this section exists.
+
+Confirmed separately: `Run.Tickets` is the round's working set and is **cleared at ExitShop**, so a
+held `Tickets[0]` becomes permanently terminal while `Tickets[0]` names a different, open ticket.
+
+### The contract, and where it now lives
+
+> **Completion is a property of the RUN's phase, never of any one ticket or session. Phase leaves
+> `Sweat` exactly once, after every session is drained.**
+
+- `TvSweatCaptureHarness.SweatEnded(director)` → `director.Run.Phase != Phase.Sweat`. Replaces
+  `CurrentSession.IsComplete`, which stopped **too early** (sessions drain while the phase is still
+  `Sweat`).
+- Two EditMode tests pin it TV-side: `T61_sweat_completion_is_a_phase_property_not_a_ticket_property`
+  and `T61_a_captured_ticket_reference_goes_stale_across_a_round`. Engine-side proof is markets'
+  `SweatPollingContractTests`.
+- The drain helper **asserts it actually drained** — an unfinished drain would make both tests pass
+  while proving nothing about the state they claim to reach. Same failure mode C29 names, one level in.
+
+### The grace window matters MORE now, not less
+
+A surviving ticket settles at `FinishSweat` — i.e. at the very edge of the phase change. So the
+legitimate resolution and the stop signal now arrive **within a frame of each other**. Without the
+existing 2 s settle window the harness would miss exactly the moment it exists to photograph, on
+precisely the seeds that win. Kept and re-commented, not removed.
+
+### Status
+
+**UNCOMPILED — no editor grant held.** Needs a warm compile and EditMode (expect **226**: 224 + 2).
+The capture harness itself needs no re-run to prove this: the contract is pinned by tests, which is
+the point.
+
+---
+
 ## 0-B10. BATCH 10 — C29 guard retrofitted, and T58's evidence needs NO window
 
 ### T58 is already demonstrated on frames in hand
