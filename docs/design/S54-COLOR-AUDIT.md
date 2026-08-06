@@ -1,11 +1,12 @@
 # S54 — every `new Color(float…)` on the laptop surface
 
-**SureThing UI lead · 2026-08-06 · HEAD `35292d9`**
+**SureThing UI lead · 2026-08-06 · HEAD `14b9407`**
 **Scope:** the three surface files the palette guard already scans —
 `SBR/Runtime/SportsbookApp.cs`, `LaptopOs.cs`, `LaptopScreen.cs`.
 
-**26 live instances (a 27th was deleted — see §4). None can silently change a rendered colour on this surface, and two of them**
-cannot be answered from source at all.** Class by class, with the reason rather than the verdict.
+**26 live instances**, after the dead 27th was deleted (§4). **None can silently change a rendered
+colour on this surface, and two of them cannot be answered from source at all.** Class by class,
+with the reason rather than the verdict.
 
 ## 1 — Transparent layout containers · 17 instances · not at risk by construction
 
