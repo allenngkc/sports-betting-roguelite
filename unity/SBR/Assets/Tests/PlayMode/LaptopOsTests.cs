@@ -330,19 +330,27 @@ namespace SBR.Tests.PlayMode
                 Assert.IsTrue(SameInk(caption.color, ink),
                     $"{node} is {state}, so its caption is the same ink as its glyph");
 
-                // The chip is the button's own Image — the tile, not a separate child.
+                // S56: the chip is gone for BOTH states. S47 gave installed apps a --ground-3 chip
+                // and it measured a 3/255 step against the wallpaper — an element that drew and
+                // could not be seen, which is not a channel.
                 Image chip = icon.GetComponent<Image>();
-                Assert.IsNotNull(chip, $"{node} has no chip graphic");
+                Assert.IsNotNull(chip, $"{node} has no graphic");
+                Assert.AreEqual(0f, chip.color.a, 1e-3f,
+                    $"{node}: S56 removed the chip — a firmer invisible thing is still invisible");
+
+                // S56: the second channel is a printed word, present on exactly one state. Without
+                // it the only thing separating launchable from dead is glyph brightness, and status
+                // carried by tone alone — no mark, border, label or position — is banned outright.
+                Transform stateLine = icon.Find("State");
                 if (installed)
                 {
-                    Assert.IsTrue(SameInk(chip.color, LaptopOs.SurfaceRaised),
-                        $"{node} is installed, so it sits on a --ground-3 chip");
-                    Assert.AreEqual(1f, chip.color.a, 1e-3f, $"{node}: the chip is opaque");
+                    Assert.IsNull(stateLine, $"{node} launches, so it states nothing");
                 }
                 else
                 {
-                    Assert.AreEqual(0f, chip.color.a, 1e-3f,
-                        $"{node} is not installed, so it has no chip at all — not a fainter one");
+                    Assert.IsNotNull(stateLine, $"{node} does not launch and must say so in a word");
+                    Assert.AreEqual("NOT INSTALLED", TextOn(stateLine),
+                        $"{node}: the machine states what is true, not what is planned");
                 }
 
                 Assert.AreEqual(installed, icon.GetComponent<Button>().interactable,

@@ -266,7 +266,15 @@ namespace SBR.Game
         /// Internal so the test can assert against this exact value instead of a copy of it.
         internal const float DesktopIconMarginY = 14f; // --st-pad-x
         private const float DesktopIconX = 34f;
-        private const float DesktopIconPitch = 105f;
+
+        /// <summary>S56: 105 → 126. The 86x76 tile plus a 105 pitch left 29px between one icon and
+        /// the next, and the caption already used 22 of it — no room for the NOT INSTALLED line the
+        /// ruling's preferred channel needs. 126 leaves 50px: caption at 3–25 below the tile, state
+        /// at 27–47, and 3px clear of the next icon.
+        ///
+        /// The column start (S52) is untouched, and the column still ends far short of the tray:
+        /// the last icon's state line closes at y 549 against the tray's 670.</summary>
+        private const float DesktopIconPitch = 126f;
 
         private static Vector2 DesktopIconSlot(int row) => new Vector2(
             DesktopIconX,
@@ -378,9 +386,19 @@ namespace SBR.Game
             // One ink for glyph and caption. Splitting them across two arguments is what let them
             // drift, and the ruling treats them as one statement.
             Color ink = installed ? White : Muted;
-            // No chip means no chip, not a fainter one. The chip is the button's own Image, so
-            // this is also the only thing that draws the tile at all.
-            Color chip = installed ? SurfaceRaised : new Color(0f, 0f, 0f, 0f);
+            // S56: **the chip is gone, for both states.** S47 gave an installed app a --ground-3
+            // chip; measured on frame 11 that chip was a 3/255 step against the wallpaper
+            // (34,34,22 on 31,31,19), which is not a visible edge at any distance, let alone on a
+            // panel read at an angle through the grade's grain. It drew and could not be seen,
+            // which is C18 in miniature: an element that cannot be seen is an element that is not
+            // there. Keeping a fainter or firmer version of it was legal; the surface's own grammar
+            // prefers a word, and so does this seat — a chip is a shape, and every other state on
+            // this surface is carried by a word.
+            //
+            // What replaces it is below: not-installed apps print NOT INSTALLED. That leaves two
+            // channels between the two states — ink AND a printed label — where before there was
+            // only glyph brightness, and status carried by tone alone is banned outright.
+            Color chip = new Color(0f, 0f, 0f, 0f);
             // Interactability comes from the state too, so an icon cannot look installed and
             // refuse to open, or vice versa. A test holds that pairing across all four icons —
             // a runtime throw on a desktop build would help nobody.
@@ -403,6 +421,15 @@ namespace SBR.Game
             LaptopUi.MakeText(button.GetComponent<RectTransform>(), "Caption", new Vector2(0.5f, 0f),
                 new Vector2(0.5f, 0f), new Vector2(0f, -25f), new Vector2(150f, 22f), 11,
                 TextAnchor.UpperCenter, ink, label, _fontCond);
+
+            // S56: the second channel. NOT INSTALLED is the machine's own register — the same terse
+            // system fact as the tray's DISK 61% FULL and NO UPDATES — and it says what is true
+            // rather than what is planned, which is why it is not the "(soon)" S47 deleted. A
+            // roadmap is a promise; this is a state.
+            if (!installed)
+                LaptopUi.MakeText(button.GetComponent<RectTransform>(), "State", new Vector2(0.5f, 0f),
+                    new Vector2(0.5f, 0f), new Vector2(0f, -47f), new Vector2(150f, 20f), 11,
+                    TextAnchor.UpperCenter, Muted, "NOT INSTALLED", _fontCond);
         }
 
         private void RenderVerdict(Run run)
