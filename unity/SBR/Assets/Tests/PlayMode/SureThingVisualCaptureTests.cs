@@ -594,6 +594,139 @@ namespace SBR.Tests.PlayMode
             }
         }
 
+        /// <summary>
+        /// The LEDGER carrying a ticket from a round that is over — the one claim in the re-submit
+        /// set that was proven by construction and by nothing photographic.
+        ///
+        /// Engine retention is the whole reason this screen was blocked for a fortnight. `ExitShop`
+        /// does `Round++; _tickets.Clear()`, so before retention a player who bet in rounds 1-3 and
+        /// opened the LEDGER in round 4 met an empty screen captioned SETTLED TICKETS · THIS RUN.
+        /// Every ledger frame ever shot is a ROUND 1 frame, which cannot tell that story: a
+        /// single-round ledger looks identical whether the screen reads the retained history or the
+        /// current round.
+        ///
+        /// So this drives a real round boundary. Round 1 settles a ticket, ExitShop clears it, round
+        /// 2 settles another, and the assertion is the point: **the board renders more rows than the
+        /// current round holds.** That is only possible if the screen is reading retention, and it
+        /// is exactly what no previous frame could show.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Capture_the_ledger_carrying_a_finished_round()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            string outputDirectory = Path.GetFullPath(Path.Combine(
+                Application.dataPath, "..", "..", "..", "artifacts", "surething-ui"));
+            Directory.CreateDirectory(outputDirectory);
+            string runPrefix = DateTime.UtcNow.ToString(
+                "yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture);
+            var capturedPaths = new List<string>();
+
+            // A run that cannot bust before round 2. The shipped schedule against a 350 bank means
+            // two rounds of real betting can end the run — the first cut of this fixture did exactly
+            // that and went to RunLost with no ledger to open. Whether the player survives is not
+            // what this state is about; the round BOUNDARY is.
+            //
+            // **The schedule is the real one and only the bank is deepened.** An earlier cut used
+            // {1, 1, 1, …}, which worked and printed TARGET $1 in the masthead — visibly a test
+            // rig, and S57 is the ruling that a capture whose figures are arbitrary cannot be read
+            // as evidence by anyone who was not told how it was made. With the shipped payments the
+            // masthead reads $60 then $70, which is what a player would actually see.
+            laptop.director.StartNewRun("ledger-across-rounds");
+            var run = new Run("ledger-across-rounds", new RunConfig { StartingBank = 5000d });
+            SetDirectorRun(laptop.director, run);
+
+            TvSweatScreen screen = laptop.tv;
+            screen.TimeScaleOverride = 0.0001f;
+            screen.ForceSeated(true);
+
+            yield return SettleOneRound(laptop, run, "round 1");
+            Assert.AreEqual(1, run.SettledTickets.Count, "round 1 must have retained its ticket");
+            string firstRoundTicketId = run.SettledTickets[0].Id;
+
+            // The round boundary this whole state exists to cross.
+            Assert.AreEqual(Phase.Shop, run.Phase, "a settled non-final round lands in the shop");
+            laptop.director.ExitShop();
+            yield return WaitForRebuild();
+            Assert.AreEqual(2, run.Round, "ExitShop advances the round");
+            Assert.AreEqual(0, run.Tickets.Count,
+                "ExitShop clears the round's tickets — this is the clearing retention exists to survive");
+            Assert.AreEqual(1, run.SettledTickets.Count,
+                "and the retained history keeps round 1's ticket after that clearing");
+
+            yield return SettleOneRound(laptop, run, "round 2");
+
+            // Navigated through the OS rather than by clicking the tray slot. The tray's wiring is
+            // already covered by two other fixtures and by LaptopOsTests; what this state is
+            // evidence for is what the ledger CONTAINS, and routing through the control adds a
+            // failure mode that has nothing to do with the claim.
+            // Navigated through the OS rather than by clicking the tray slot: the tray's wiring is
+            // covered by two other fixtures, and what this state is evidence for is what the ledger
+            // CONTAINS. SettleOneRound has already let the OS absorb the phase change — navigating
+            // before it does gets silently undone (see the note there).
+            laptop.Os.OpenOldSlips();
+            yield return WaitForRebuild();
+            Transform board = Required(App(laptop), "LedgerBoard");
+
+            int rendered = 0;
+            while (Find(board, "LedgerTicket" + rendered) != null) rendered++;
+
+            // The assertion the set was missing. run.Tickets holds round 2 alone; the board shows
+            // both rounds, so it is reading SettledTickets and not the current round.
+            Assert.AreEqual(1, run.Tickets.Count, "round 2 holds exactly its own ticket");
+            Assert.Greater(rendered, run.Tickets.Count,
+                "the ledger renders more rows than the current round holds — that is retention, "
+                + "and a round-1-only frame can never demonstrate it");
+            Assert.AreEqual(2, rendered, "one settled ticket from each round");
+            Assert.IsNotEmpty(firstRoundTicketId, "round 1's ticket must carry an identity to be found by");
+
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "15-ledger-across-rounds", capturedPaths);
+
+            Assert.AreEqual(2, capturedPaths.Count, "one state must emit paired captures");
+            foreach (string path in capturedPaths)
+            {
+                Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
+                Assert.Greater(new FileInfo(path).Length, 0L, $"capture is empty: {path}");
+            }
+        }
+
+        /// <summary>Places one ticket and travels the real place-lock-sweat path to a terminal
+        /// state. The ledger reads engine state, so a ticket has to be settled rather than written
+        /// into a settled-looking shape.</summary>
+        private static IEnumerator SettleOneRound(LaptopScreen laptop, Run run, string which)
+        {
+            Assert.AreEqual(Phase.Betting, run.Phase, $"{which}: must start in betting");
+            (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run);
+            Ticket ticket = run.PlaceTicket(picks, stake);
+            laptop.director.LockRound();
+            Assert.AreEqual(Phase.Sweat, run.Phase, $"{which}: locking must enter the sweat");
+
+            float start = Time.realtimeSinceStartup;
+            while (run.Phase == Phase.Sweat)
+            {
+                if (Time.realtimeSinceStartup - start > 60f)
+                {
+                    Assert.Fail($"{which}: the ticket never settled");
+                    yield break;
+                }
+                yield return null;
+            }
+            Assert.AreNotEqual(TicketState.Open, ticket.State, $"{which}: the ticket must be terminal");
+            // Named loudly because the first cut of this fixture failed here silently and surfaced
+            // 40 lines later as a missing LedgerBoard: the run had simply ended.
+            Assert.AreEqual(Phase.Shop, run.Phase,
+                $"{which}: settled into {run.Phase}, not Shop — the run ended and there is no next round");
+
+            // Let the OS absorb the phase change before the caller does anything else. The loop
+            // above exits the instant the ENGINE leaves Sweat, which is one or more frames before
+            // LaptopOs notices and runs ApplyPhaseDefault — and that default sets _activeApp itself.
+            // Navigating in that window looks like it worked and is then silently overwritten on the
+            // next tick, which is exactly how this fixture first failed: OpenOldSlips ran, the phase
+            // default fired afterwards, and the screen sat on REWARDS with no ledger to shoot.
+            yield return WaitForRebuild();
+        }
+
         /// <summary>Ends a run in one settle, and refuses to shoot a frame that cannot show what it
         /// claims to — the two S52 fixes are asserted on the live tree, not assumed from the diff.</summary>
         private static IEnumerator DriveToVerdict(LaptopScreen laptop, double bank, double payment,
