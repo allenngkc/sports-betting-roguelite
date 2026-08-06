@@ -317,14 +317,23 @@ PALETTE_PLACEMENTS = {
     "PhoneBody":      "PhoneShell",       # R19(a)/R28 -- his register
     "CouchSeat":      "CouchGray",        # ruled EXCLUDED from the green
     "CouchBackrest":  "CouchGray",
+    "Bunk2Pillow":    "ArtGrime",         # ruled NAMED EXCEPTION -- see below
 }
 
 # Named exceptions carry their reason, so "not green" can never read as "missed".
+#
+# AND THEY ARE ENFORCED, not merely annotated. A ruled exception is a requirement
+# with a different value, so Bunk2Pillow sits in PALETTE_PLACEMENTS above like
+# every other placement: if someone later "fixes" it to the drab green, this gate
+# FAILS and names it. An exception recorded only as prose is one refactor away
+# from being tidied into conformance by a lead who never saw the ruling.
 PALETTE_EXCLUSIONS = {
-    "Bunk2Pillow": "ArtGrime -- deliberate. RoomArtDressing: 'the one thing allowed to catch a "
+    "Bunk2Pillow": "RULED NAMED EXCEPTION to the mattress-fabric swatch (Allen, 2026-08-05): the "
+                   "pillow stays pale -- ArtGrime, not #3A4230 -- because the occupied-read "
+                   "outranks rule purity. RoomArtDressing: 'the one thing allowed to catch a "
                    "little light... what makes the bunk read as SLEPT IN rather than an empty "
-                   "shelf' (§1.4 legible-as-occupied). Applying #3A4230 would darken it 37.5%. "
-                   "OPEN with Allen, held.",
+                   "shelf' (§1.4 legible-as-occupied). Applying the green would darken it 37.5% "
+                   "(linear 0.0802 -> 0.0501). Enforced above; do not tidy it into conformance.",
 }
 
 
