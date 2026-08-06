@@ -95,6 +95,71 @@ clear at 0 processes — was cleared. `EditorBuildSettings.asset` reverted;
 `SBR.Engine.dll` restored to HEAD's bytes and **`cmp`-verified identical**, so its lingering
 `git status` line is the inert-`[attr]lfs` artifact (§4D), not a real change.
 
+## 0-VP2. VERDICT PASSES — all four PASS, on the post-T58/T59 frames (no editor used)
+
+Run against the 17-frame set from the post-batch-9 build (seed `48151623`, `boost1.4`), which is the
+current shipped state. **All four pass.** Two new items surfaced and are below as candidate build
+items — neither is a failure of the four.
+
+| pass | verdict | basis |
+|---|---|---|
+| T46 right-zone clipping | **PASS** | boundary read at magnification + EditMode structural test |
+| T42 team hues | **PASS** | measured, 8 goal frames |
+| T44 event-strip copy | **PASS** | strip read at magnification |
+| T50 column type in situ | **PASS** | column read at magnification |
+
+**T46.** The pitch's left edge sits at canvas ~268 and every stage element stays right of it — penalty
+area, dots, goal, momentum tape. Leg text is unobscured. **NetRipple, which used to reach ~155px past
+the stage edge, is contained.** The gold cash-out field stops at the column edge (a few px of bloom
+halo, not geometry). *Limit:* no worst-case long-fixture frame exists in this set — the seeds did not
+produce one. That case is covered by the EditMode canary, not by these frames.
+
+**T42.** Pitch interior, 8 goal frames: **blue mean saturation 0.483** against canon `--tv-team-a`
+0.452, **pink 0.353** against `--tv-team-b` **0.354 — exact**. 97.8% of saturated pitch pixels fall in
+the two canon bands, and **no dot is rendered in a retired hue.**
+
+**T44.** `Zambonis settle in; the drift runs the other way.` — the T39-corrected line. No second
+person, no hype, no superlative, no promise; one line, cold white per TV-05's neutral strip. Other
+frames in the set show `THE BOARD IS SET` (this slice's casing fix) and
+`Meatballs rip through on the break. — LEAD CHANGE`.
+
+**T50.** Encode Sans and Encode Sans Condensed render in situ with the hierarchy intact — header,
+then identity, then price/state. `−228` uses U+2212 MINUS and `+380` its sign, per S30. RISK/PAYS
+gold at the footer. No team hue anywhere in the column. T11 stands on rendered evidence.
+
+### The instrument was wrong THREE times — and the pattern is the point
+
+T42's residual 2.17% took three attributions, two of which were wrong:
+
+1. **"Edge fringe of my crop box."** Partly true for the loose box, false for the tight one.
+2. **"Dark pixels where hue is meaningless."** Testable and **tested: false.** Raising the luminance
+   floor from 0.06 → 0.25 moved the residual 2.18% → 2.15%. The theory predicted it would collapse.
+3. **Marking the pixels and looking at them.** Correct: violet is antialiasing on pink dot rims
+   (violet 250–290° lies *between* blue 215° and pink 319°, so a blend lands there by construction),
+   and orange is a thin **pitch marking line** at the right penalty area.
+
+Every time, the thing that settled it was rendering the question as an image. **Three numeric
+theories, one look.** C11 says rendered evidence or no claim; this is that law aimed at the
+instrument rather than the design, and it is now the third distinct framing/threshold error this
+slice has caught in its own measurements (see §0-VP for the first two).
+
+### Two candidate build items, surfaced by the passes — DD calls, not taken
+
+**(a) Two dashes for one fact, both visible in a single frame.** The ticket column prints
+`LEADING 1–0` using **U+2013 EN DASH** (`SweatActiveLegModel.cs:160`, `const char Dash = '–'`), while
+the scorebug prints `0 — 0` using **U+2014 EM DASH** (`TvSweatScreen.cs:1448` and `:1817`). Same fact,
+same surface, same frame. Defensible on typographic role — an en dash is the range dash — but S30
+ruled signed numbers with "no per-region exception", and TV-32 called the em dash "the system's own
+dash". **Not fixed unilaterally: which dash a score takes is a typography ruling.**
+
+**(b) A pending leg's market label wraps to four lines.** `TROY MUFFIN ANYTIME — Tuscaloosa
+Spreadsheets v Tulsa Muskrats` sets as four wrapped lines. It fits inside its fixed 69.3px slot, so
+§6 is not breached and nothing reflows — but T20 rules that "live rows are display, resolved rows are
+index", and a four-line wrapped label reads as display. **Flagged for the DD's eye, not called a
+violation.**
+
+---
+
 ## 0-VP. VERDICT-PASS PREP — T42 measured on frames; T46/T44 read on frames (no editor used)
 
 Done while markets held the lease. **T42, T46 and T44 are all already implemented and green; what
