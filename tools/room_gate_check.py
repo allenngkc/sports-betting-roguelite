@@ -439,7 +439,7 @@ REFERENCE_JSON_PATH = Path(__file__).resolve().parent / "room_gate_reference.jso
 REFERENCE_SCHEMA_VERSION = 3
 # Certification date is passed in, never read from the clock: a gate report must
 # be reproducible, and a wall-clock read makes two runs of the same scene differ.
-TODAY = "2026-08-04"
+TODAY = "2026-08-05"
 
 # Tolerance for comparing collider float dimensions read back out of text.
 # Same scene file re-parsed twice will match exactly; this just guards

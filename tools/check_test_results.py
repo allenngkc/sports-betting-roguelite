@@ -15,6 +15,12 @@ three things, in this order, and every one of them has actually gone wrong:
   1. the results file EXISTS            (the -quit race writes nothing)
   2. testcasecount > 0                  (C29: a filter matching nothing)
   3. failed == 0 and no unexpected skips
+  4. the run is RECENT (--max-age-minutes), because a guard that reads a stale
+     results file passes on evidence from a build that no longer exists -- the
+     same class of nothing-happened-but-green C29 names. Found the hard way:
+     mtime cannot answer this (Unity writes the XML, THEN keeps appending to the
+     log during shutdown, so log-newer-than-XML is normal), so the check reads
+     the run's own start-time out of the file.
 
 Usage:
     python tools/check_test_results.py <results.xml> [<results.xml> ...]
@@ -42,12 +48,15 @@ def summarise(path):
         v = node.get(name)
         return int(v) if v is not None and v.isdigit() else default
     total = g("testcasecount") or g("total")
-    return total, g("passed"), g("failed"), g("skipped"), g("inconclusive")
+    return total, g("passed"), g("failed"), g("skipped"), g("inconclusive"), node.get("start-time")
 
 
 def main():
     ap = argparse.ArgumentParser(description="C29 zero-case guard for NUnit results")
     ap.add_argument("results", nargs="+", help="NUnit XML result files")
+    ap.add_argument("--max-age-minutes", type=float, default=None,
+                    help="Fail if a results file's own start-time is older than this. Guards "
+                         "against reading a previous run's XML and calling it today's evidence.")
     ap.add_argument("--min-cases", default="",
                     help="Comma-separated NAME=N floors, matched against the file stem. A suite "
                          "that silently shrinks is a filter typo that C29's count alone would "
@@ -70,7 +79,7 @@ def main():
                             f"proves only that the process ended")
             continue
         try:
-            total, passed, failed, skipped, inconclusive = summarise(p)
+            total, passed, failed, skipped, inconclusive, started = summarise(p)
         except ET.ParseError as exc:
             print(f"{p.name:28s} unparseable: {exc}")
             problems.append(f"{p.name}: results file is not valid XML")
@@ -86,13 +95,29 @@ def main():
             problems.append(f"{p.name}: {failed} failed")
         if inconclusive:
             problems.append(f"{p.name}: {inconclusive} inconclusive")
+        if args.max_age_minutes is not None:
+            if not started:
+                problems.append(f"{p.name}: no start-time recorded, so age cannot be checked")
+            else:
+                try:
+                    from datetime import datetime, timezone
+                    t = datetime.strptime(started.replace("Z", ""), "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+                    age = (datetime.now(timezone.utc) - t).total_seconds() / 60.0
+                    if age > args.max_age_minutes:
+                        verdict = f"*** STALE ({age:.0f} min old) ***"
+                        problems.append(f"{p.name}: results are {age:.0f} minutes old, older than "
+                                        f"the {args.max_age_minutes:.0f}-minute limit -- this is a "
+                                        f"previous run's file, not this one's")
+                except ValueError:
+                    problems.append(f"{p.name}: unparseable start-time {started!r}")
         stem = p.stem.lower()
         for name, floor in floors.items():
             if name in stem and total < floor:
                 verdict = f"*** BELOW FLOOR {floor} ***"
                 problems.append(f"{p.name}: {total} cases is below the declared floor of {floor} "
                                 f"-- the suite shrank, which a zero-check alone would not catch")
-        print(f"{p.name:28s} {total:6d} {passed:7d} {failed:7d} {skipped:8d}  {verdict}")
+        print(f"{p.name:28s} {total:6d} {passed:7d} {failed:7d} {skipped:8d}  {verdict}"
+              f"   started {started or '(unrecorded)'}")
 
     print()
     if problems:

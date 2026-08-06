@@ -453,6 +453,52 @@ the laptop, TV or phone body, so R19(a)'s separation has only ever been albedo a
 R19(b)-am the carrying channel is **value**, which is measurable in a frame — so regions for those
 bodies would convert R19(a) from asserted to measured.
 
+### Batch 10 (2026-08-05) — the slice closes: 10 PASS, 0 FAIL, no VOIDs
+
+**Gates 6–8 re-certified on a FRESH walk.** Allen walked the post-retirement build and passed. The
+record says *fresh walkthrough*, not standing verdict — `--certify-basis` exists precisely so a
+replayed verdict can never be mistaken for a walk of the build in front of you.
+
+**C29 retrofitted — `tools/check_test_results.py`.** Run it on every NUnit result before believing a
+green suite. It enforces three things, each of which has actually gone wrong here:
+
+1. **the results file exists** — `-runTests` given `-quit` exits 0 having written nothing;
+2. **`testcasecount > 0`** — C29's own case, a filter matching zero tests reported as a pass;
+3. **`failed == 0` plus a declared per-suite floor** — 20 cases is not zero, but it is not 39 either.
+
+```
+python tools/check_test_results.py <results.xml> --min-cases "editmode=70,playmode=18"
+```
+
+**NEVER pass `-quit` with `-runTests`.** The runner closes the editor itself and `-quit` races it.
+The same shape is retrofitted inside the harness: R19/R20 FAIL rather than print an empty line if
+they measure zero regions.
+
+**C30 got its instrument — R33 palette conformance.** A palette names materials, not perceived hues,
+so conformance is checked on the **scene**: 14 ruled placements, each asserted to wear its ruled
+material, no frame and no lighting argument. **This gate would have answered R33 in one run** — "drab
+green absent from the room" cost three escalation rounds, a false finding of mine and a lighting
+debate, and the question was only ever *is the material applied*.
+
+**`Bunk2Pillow` is a RULED NAMED EXCEPTION (Allen, 2026-08-05) — and it is enforced, not annotated.**
+The pillow stays pale (`ArtGrime`, not `#3A4230`) because the occupied-read outranks rule purity;
+the green would darken §1.4's one deliberate pale shape by 37.5%. It sits in `PALETTE_PLACEMENTS`
+like any other placement, so **greening it FAILS the gate**. An exception living only in prose is one
+refactor from being tidied into conformance by someone who never saw the ruling.
+
+**The swatch did not become a value change:**
+
+| | value | delta |
+|---|---|---|
+| ratified, pre-swatch | 43.90 | — |
+| old box (where 43.9 was defined), post-swatch | 44.44 | **+0.54**, inside ±1.0 |
+| re-baselined pure box, post-swatch | 38.29 | −0.01, inside ±1.0 |
+
+The old box is the honest comparand because 43.9 was ratified on it; comparing across instruments
+would be the error this whole sequence was about. **Limit, on the record:** every capture in the repo
+is post-swatch, so this compares a post-swatch measurement to a pre-swatch ratified figure. No
+before/after pair exists and none can be made without reverting the swatch.
+
 ### Batch 9 (2026-08-04) — R25 GRANTED, and two of the queue's premises are falsified
 
 **R25 painterly read: Design-verified.** The fragility flag was recorded with it — the read is
