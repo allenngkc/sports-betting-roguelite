@@ -210,8 +210,23 @@ R19_REGIONS = {
     "phone body (his)":       (1564, 1085, 1592, 1097),
     # R19(c), 2026-08-04: the drab green #3A4230 was placed at §2's placements and
     # never once measured on a frame. Bunk frames should carry it; the couch must
-    # NOT (the ruling names the couch as excluded). All four boxes confirmed by eye
-    # to sit on frame members / couch fabric, not on the plaster behind them.
+    # NOT (the ruling names the couch as excluded). All boxes confirmed by eye to
+    # sit on frame members / couch fabric, not on the plaster behind them.
+    #
+    # READ THESE TWO ON THE LIT FRAME FOR THE PALETTE QUESTION, NOT HERE. This set
+    # measures the screens-DARK conformance frame, where the window's pool dominates
+    # the bunks and both read COOL. That is correct for law 1.1 and WRONG for "does
+    # the green read" -- measuring it here produced a reported finding that the drab
+    # green does not read anywhere, which was false. On standing-overview.png:
+    #
+    #   Bunk2Slab      C 14.73  h 152.9  GREEN     (lamp side, outside the pool)
+    #   Bunk2Slab R    C 12.72  h 151.4  GREEN
+    #   Bunk2 bedding  C  8.65  h 154.6  GREEN
+    #   BunkSlab  (b1) C  2.09  h 202.5  cool      (inside the pool -> pool-lit)
+    #   BunkPost  (b1) C  1.44  h 226.8  achromatic
+    #
+    # which is R32's ruled placement exactly: full green outside the window pool,
+    # pool-lit where the pool falls.
     "bunk1 post (frame)":     ( 929, 1026,  953, 1186),
     "bunk2 slab (frame)":     (1612,  757, 1732,  793),
     "couch fabric (not grn)": ( 216,  912,  416,  992),
