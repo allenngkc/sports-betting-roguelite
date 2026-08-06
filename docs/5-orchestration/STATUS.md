@@ -92,6 +92,14 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-05 cycle 93 · **ROOM ROUND 4 MERGED — `5cd17b5`** — clean checklist:
+  suites green WITH the zero-case guard at `80d119b` (re-run fresh, not
+  replayed), dry-run clean, 0 conflicts, handoff current. Carries the drab
+  green (pillow exception), the purity-law re-baseline, the re-certified
+  gates with provenance. Validation agent running (testcasecount reporting
+  now required per C29). Allen's staged R8 opening fired — the weathering
+  detail pass resumes, Tier 1b signature expires per its own ruling.
+  **Veto: revert `5cd17b5`.** Reversal: revert the merge commit.
 - 2026-08-05 cycle 92 · **Allen's four calls landed + markets reactivated** —
   constitution amended (zero-case rule into §4.2, Allen-approved); pillow a
   named exception; gates 6–8 re-certified on Allen's re-check walk; markets
