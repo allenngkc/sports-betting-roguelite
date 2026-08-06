@@ -437,7 +437,21 @@ REVIEW_CAMERAS = {
 
 # Objects whose whole purpose is to be SEEN. Named explicitly rather than pattern
 # matched, so adding wear without adding it here is itself visible in review.
-WEAR_OBJECTS = ["ConduitDrip", "RadiatorDamp", "RadiatorRust", "StoolScuff", "TrafficPath"]
+# Each entry is (centre, size, axisA, axisB) -- the quad's own plane, mirroring the
+# WearQuad calls in RoomArtDressing. EXTENT MATTERS: TrafficPath is 3.70m long and
+# centred at z=0, so its centre is off-frame while a fifth of it is plainly in
+# shot. An origin-only check called that "seen by NO review camera" and I reported
+# it as the documented R7 error still in the build. It was my instrument's
+# documented limitation, quoted in its own blind spot, believed anyway.
+WEAR_QUADS = {
+    # name:            centre                    size          axisA        axisB
+    "ConduitDrip":  ((1.297, 1.55, 0.55),  (0.70, 0.90), (0, 0, 1), (0, 1, 0)),
+    "RadiatorDamp": ((0.0, 0.66, 1.995),   (1.05, 0.72), (1, 0, 0), (0, 1, 0)),
+    "RadiatorRust": ((0.06, 0.30, 1.822),  (0.56, 0.44), (1, 0, 0), (0, 1, 0)),
+    "StoolScuff":   ((0.55, 0.004, 1.30),  (0.58, 0.52), (1, 0, 0), (0, 0, 1)),
+    "TrafficPath":  ((0.13, 0.003, 0.0),   (1.15, 3.70), (1, 0, 0), (0, 0, 1)),
+}
+WEAR_OBJECTS = list(WEAR_QUADS)
 
 LOCAL_POS_RE = re.compile(
     r"m_LocalPosition:\s*\{x:\s*(-?[\d.eE+-]+),\s*y:\s*(-?[\d.eE+-]+),\s*z:\s*(-?[\d.eE+-]+)\}")
@@ -468,42 +482,57 @@ def gate_wear_in_frustum(docs):
     detail, problems = [], []
     if not WEAR_OBJECTS:
         problems.append("WEAR_OBJECTS is empty -- this gate checked nothing (C29)")
+    N = 9  # sample grid across the quad's own plane
     for name in WEAR_OBJECTS:
-        P = pos.get(name)
-        if P is None:
+        if name not in pos:
             problems.append(f"'{name}': not in the scene")
             continue
+        centre, size, axA, axB = WEAR_QUADS[name]
+        pts = []
+        for i in range(N):
+            for j in range(N):
+                a = (i / (N - 1) - 0.5) * size[0]
+                b = (j / (N - 1) - 0.5) * size[1]
+                pts.append(tuple(centre[k] + a * axA[k] + b * axB[k] for k in range(3)))
         seen = []
         for cam, (eye, fwd, up0, fov) in REVIEW_CAMERAS.items():
             f, r, u = _cam_basis(fwd, up0)
-            d = [P[i] - eye[i] for i in range(3)]
-            vz = sum(d[i] * f[i] for i in range(3))
-            if vz <= 0:
-                continue
-            vx = sum(d[i] * r[i] for i in range(3)); vy = sum(d[i] * u[i] for i in range(3))
             t = math.tan(math.radians(fov / 2))
-            sx = (vx / vz / (t * aspect) + 1) / 2 * CAPTURE_SIZE[0]
-            sy = (1 - vy / vz / t) / 2 * CAPTURE_SIZE[1]
-            if 0 <= sx < CAPTURE_SIZE[0] and 0 <= sy < CAPTURE_SIZE[1]:
-                seen.append(f"{cam} @{int(sx)},{int(sy)} {vz:.1f}m")
+            n_in, nearest = 0, None
+            for P in pts:
+                d = [P[i] - eye[i] for i in range(3)]
+                vz = sum(d[i] * f[i] for i in range(3))
+                if vz <= 0:
+                    continue
+                vx = sum(d[i] * r[i] for i in range(3)); vy = sum(d[i] * u[i] for i in range(3))
+                sx = (vx / vz / (t * aspect) + 1) / 2 * CAPTURE_SIZE[0]
+                sy = (1 - vy / vz / t) / 2 * CAPTURE_SIZE[1]
+                if 0 <= sx < CAPTURE_SIZE[0] and 0 <= sy < CAPTURE_SIZE[1]:
+                    n_in += 1
+                    nearest = vz if nearest is None else min(nearest, vz)
+            if n_in:
+                seen.append(f"{cam} {100.0 * n_in / len(pts):.0f}% @{nearest:.1f}m")
         if seen:
-            detail.append(f"{name:14s} seen by {len(seen)}/3: " + "; ".join(seen))
+            detail.append(f"{name:14s} in {len(seen)}/3 poses: " + "; ".join(seen))
         else:
-            detail.append(f"{name:14s} *** SEEN BY NO REVIEW CAMERA ***")
-            problems.append(f"'{name}': in none of the three review frusta -- invisible at any "
-                            f"quality (room-design §4/§5)")
+            detail.append(f"{name:14s} *** NO PART IN ANY REVIEW FRUSTUM ***")
+            problems.append(f"'{name}': no part of the quad is in any of the three review frusta "
+                            f"-- invisible at any quality (room-design §4/§5)")
     return GateResult(
         "R7-F", "wear is in at least one review frustum",
         "PASS" if not problems else "FAIL",
         f"all {len(WEAR_OBJECTS)} wear placements seen by >=1 of 3 review poses",
         f"{len(problems)} placement(s) no camera can see" if problems else "all placements visible",
         detail + problems,
-        blind_spot="projects the object's ORIGIN POINT only, against the three ratified poses. It "
-                   "does not test occlusion -- a piece inside the frustum but behind the couch or "
-                   "the bunk assembly reads as visible here and is not (§5 names that exact case) "
-                   "-- does not consider the object's extent, so a large decal whose centre is off "
-                   "-frame may still be partly seen, and says NOTHING about whether visible wear "
-                   "actually READS. In-frame is necessary, not sufficient.",
+        blind_spot="samples a 9x9 grid across each quad's own plane, so it reports what FRACTION "
+                   "is in frame rather than whether a centre point is -- an origin-only version of "
+                   "this check called TrafficPath invisible when a fifth of it is in shot. It "
+                   "still does not test OCCLUSION: a piece inside the frustum but behind the couch "
+                   "or bunk assembly counts as visible here and is not, which is the exact case "
+                   "§5 names. It reads quad geometry from a table in this file, so a WearQuad "
+                   "call edited in RoomArtDressing without updating WEAR_QUADS is measured at its "
+                   "old size. And it says NOTHING about whether visible wear READS -- in-frame is "
+                   "necessary, not sufficient.",
     )
 
 
