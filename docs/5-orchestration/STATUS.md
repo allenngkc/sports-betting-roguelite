@@ -92,6 +92,13 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-05 cycle 90 · **Activated lanes both landed** — TV: all four
+  verdict passes CLEAN (no build items; two observations flagged-not-called,
+  incl. a four-line pending-leg label that fits its slot). Room: drab green
+  applied under the ruled placement; one narrow Allen call surfaced (the
+  pillow — bedding by the ruling's letter, but its paleness carries the
+  bunk-occupied read; lead + orchestrator recommend leave-pale as a named
+  exception). Full convergence returns on that answer. Reversal: none.
 - 2026-08-05 cycle 89 · **TMP migration plan staged** — converged idle time
   used to sequence C15's next phase (`tmp-migration-plan.md`): laptop surface
   first (most signed debt, functionally complete, faces settled), TV second
