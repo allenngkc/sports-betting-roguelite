@@ -4,7 +4,7 @@
 - **THE LEDGER IS DESIGN-VERIFIED** (batch 10, on the sixteen-state set). The zero-dollar wax/grey split is **ratified as considered — never "fix" it.**
 - **Done:** all of batch 10 — **C29** studio-wide first (`tools/run-unity-tests.ps1`; run every suite through it, never `-runTests` directly); verdict ground to `--ground` + chrome restored + figures made legible (S53-am/S55/S57); the invisible chip replaced by a printed `NOT INSTALLED` (S56); the float-`Color` audit (S54, `docs/design/S54-COLOR-AUDIT.md`); the MY BETS tally is run context (S58); and the cross-round retention capture that was missing.
 - **Now:** nothing in flight. Staged for the drag: `dd-import/surething-batch10-2026-08-06/`.
-- **Need — DD:** S49's authored kit entry is the DD's to transcribe. Two flags from the audit: **`LaptopUi.FromRgb` is dead** and recommended for deletion, and **`attentionEmission` is a saturated violet** on the laptop lid in a project that retired purple — flagged, untouched, room lighting rather than the document.
+- **Need — DD:** S49's authored kit entry is the DD's to transcribe. The two audit flags are closed: `LaptopUi.FromRgb` **deleted** (approved as dead code), and the violet lid emission **routed to the room seat**.
 - **Two traps still live in this tree:** `artifacts/` is no longer git-ignored (a bare `git add -A` sweeps ~100 PNGs), and two capture states share the number `09` (markets' test, needs their nod).
 
 **Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-06, after batch 10.

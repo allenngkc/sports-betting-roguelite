@@ -4,7 +4,7 @@
 **Scope:** the three surface files the palette guard already scans —
 `SBR/Runtime/SportsbookApp.cs`, `LaptopOs.cs`, `LaptopScreen.cs`.
 
-**27 instances. None of them can silently change a rendered colour on this surface, and two of them
+**26 live instances (a 27th was deleted — see §4). None can silently change a rendered colour on this surface, and two of them**
 cannot be answered from source at all.** Class by class, with the reason rather than the verdict.
 
 ## 1 — Transparent layout containers · 17 instances · not at risk by construction
@@ -31,16 +31,18 @@ highlight (`SportsbookApp.cs:964`). Each takes `r`, `g`, `b` from an existing `C
 and authors only the alpha. The channels are the token's own, and alpha is not colour-space
 converted. Nothing here is a new colour.
 
-## 4 — Dead · 1 instance · renders nothing because nothing calls it
+## 4 — Dead · 1 instance · **DELETED 2026-08-06**
 
-`LaptopUi.FromRgb(uint)` (`LaptopOs.cs:1105`) builds a `Color` from a packed 8-bit RGB by dividing
-each channel by 255.
+`LaptopUi.FromRgb(uint)` built a `Color` from a packed 8-bit RGB by dividing each channel by 255.
 
-**It has no call sites.** `grep` for `LaptopUi.FromRgb` across `Assets/` returns nothing; the live
+**It had no call sites.** `grep` for `LaptopUi.FromRgb` across `Assets/` returned nothing; the live
 `FromRgb` calls in `TvSweatScreen` resolve to `TheaterStage.FromRgb`, a separate helper on the TV
-surface. **Recommend deleting it** — an unused helper that constructs colours by a different route
-than the palette is exactly what gets picked up and misused later, and leaving it guarantees the next
-audit re-flags it. Not deleted here: the ruling asked for a report.
+surface. An unused helper that constructs colours by a different route than the palette is exactly
+what gets picked up and used instead of a token.
+
+Reported first and deleted after — **deletion approved by the orchestrator, 2026-08-06.** Suites
+green either side of it (EditMode 76/76, PlayMode 56/56), which is the whole evidence that it was
+dead. **The audit is 26 live instances now, not 27.**
 
 ## 5 — Live, float-authored, and **not answerable from source** · 2 instances
 

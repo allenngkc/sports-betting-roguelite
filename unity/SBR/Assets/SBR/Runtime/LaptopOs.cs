@@ -1123,11 +1123,10 @@ namespace SBR.Game
                 new Vector2(14f, rowTop - rowHeight), new Vector2(296f, 1f), LaptopOs.Rule);
         }
 
-        public static Color FromRgb(uint rgb)
-        {
-            return new Color(((rgb >> 16) & 0xff) / 255f, ((rgb >> 8) & 0xff) / 255f,
-                (rgb & 0xff) / 255f, 1f);
-        }
+        // S54: LaptopUi.FromRgb was deleted here — dead code, no call sites on this surface, and the
+        // live FromRgb calls resolve to TheaterStage's own copy on the TV surface. It built a Color
+        // by a different route than the palette does, which is exactly the kind of helper that gets
+        // picked up later and used instead of a token.
     }
 
     /// <summary>S27: keeps a scroll body's rail thumb tracking the ScrollRect's live scroll
