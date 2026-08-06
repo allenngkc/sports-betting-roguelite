@@ -92,6 +92,13 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-06 cycle 96 · **Fourth full convergence; drag staged (4 files)** —
+  room's weathering evidence zipped (7.6MB, extraction-verified, `add0408`);
+  docs bundle built with the colour-audit report + arm-B tables inside;
+  context prompt covers T58's verdict, SureThing's batch-10 verification,
+  the wear three-way + violet replacement, BTTS structural unreachability,
+  and both owning docs. Pending Allen: the drag + the arm-B accept.
+  Reversal: none.
 - 2026-08-06 cycle 95 · **SureThing batch-10 queue COMPLETE + the colour risk
   RETIRED** — the audit's verdict: 27 float-Color instances, none able to
   silently change a rendered colour (transparent containers, tint multipliers,
