@@ -763,16 +763,37 @@ namespace SBR.Tests.PlayMode
             // is exactly the assertion whose absence let the violation live unseen on an
             // unphotographed screen.
             Color headline = verdict.GetComponent<Text>().color;
+            Color subline = Required(app, "Final").GetComponent<Text>().color;
             if (expected == Phase.RunLost)
             {
-                Assert.IsTrue(SameInk(headline, LaptopOs.Muted),
-                    "the losing verdict is --toner-3; oxide is the house's mark, not a bad tint");
-                Assert.IsFalse(SameInk(headline, LaptopOs.MoneyBad), "the losing verdict is not oxide");
+                Assert.IsFalse(SameInk(headline, LaptopOs.MoneyBad),
+                    "S52: the losing verdict is never oxide — that is the house's mark");
+                Assert.IsTrue(SameInk(headline, LaptopOs.TonerSecondary),
+                    "S59: the losing headline is --toner-2");
+                Assert.IsTrue(SameInk(subline, LaptopOs.Muted),
+                    "S59: its subline steps down with it, to --toner-3");
             }
             else
             {
-                Assert.IsTrue(SameInk(headline, LaptopOs.MoneyGold), "the winning verdict is wax");
+                Assert.IsTrue(SameInk(headline, LaptopOs.MoneyGold), "the winning headline is wax");
+                Assert.IsTrue(SameInk(subline, LaptopOs.White), "its subline is --toner");
             }
+
+            // The invariant S59 is really about, and the one a per-element value check missed: the
+            // statement must outrank the facts that qualify it. --toner-3 on the headline was 1:1
+            // with S53 as written and still produced a composition whose dimmest element was the
+            // sentence, with its own context line twice as bright.
+            //
+            // **Losing screen only, and the first cut of this assertion got that wrong.** Applied to
+            // the winning screen it fails: wax (D9A441) has LOWER Rec.709 luminance than toner
+            // (D9D4C5) — 0.66 against 0.83 — because on this surface emphasis is not one scalar.
+            // Wax outranks toner by chroma; toner-2 outranks toner-3 by value. The losing screen is
+            // where both elements are neutral and value alone does the ranking, which is exactly
+            // why that is the screen the inversion happened on. The DD measured and ratified the
+            // winning screen as correct, so its ranking is asserted by token above, not by weight.
+            if (expected == Phase.RunLost)
+                Assert.Greater(Luminance(headline), Luminance(subline),
+                    "S59: on the drained screen the headline must still outrank its own subline");
 
             // S18/S52: NEW RUN is a wax primary — wax field, wax ink, and the 2px --wax-deep edge
             // that MakeWaxPrimary adds and a plain MakeButton does not.
@@ -806,6 +827,11 @@ namespace SBR.Tests.PlayMode
 
         /// <summary>Compares two inks at 8-bit precision — the palette is authored as Color32, so an
         /// exact float comparison would be asserting against rounding rather than against a token.</summary>
+        /// <summary>Rec.709 relative luminance. Used to compare two authored inks by weight rather
+        /// than by token identity — S59 is a ranking, and a ranking cannot be asserted one colour
+        /// at a time, which is exactly how it came to be inverted.</summary>
+        private static float Luminance(Color c) => 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
+
         private static bool SameInk(Color a, Color b)
         {
             Color32 x = a;

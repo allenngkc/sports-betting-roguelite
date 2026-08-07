@@ -464,24 +464,33 @@ namespace SBR.Game
                 // screen a player only reaches at the end of a run. Typeface left alone: S46 rules
                 // the name and gives a voice only for icon labels, and this screen is unruled.
                 "SURETHING", _font);
-            // S52 (batch 9): the losing headline was drawn in oxide. Oxide is the house's mark —
-            // blocked actions, and the strike on a dead leg or a lost ticket — and a run's verdict
-            // is a generic "bad" tint, which is the use the law names. **A loss is carried by
-            // value, not by hue**, exactly as the ledger's record row carries it (F5/F6: the word
-            // and the figure are both --toner-3, and only the strike is oxide). The win keeps wax:
-            // it is money, and the DD ruled only the oxide half of this screen.
+            // S52 (batch 9) took the losing headline off oxide: oxide is the house's mark — blocked
+            // actions, and the strike on a dead leg — and a run's verdict is a generic "bad" tint,
+            // which is the use the law names. A loss is carried by VALUE, not by hue.
             //
-            // Read narrowly on purpose: --toner-3 and no strike. The ledger pairs toner-3 WITH an
-            // oxide strike, but that strike marks a dead record row, and a rule through a 30px
-            // headline is a different device than the one that ruling describes. If the DD wants
-            // the strike here too it is one MakeRule call — I did not assume it.
+            // S59 (batch 11) fixes where that value landed. --toner-3 made the headline the DIMMEST
+            // element on its own screen, with its own context line measured twice as bright: the
+            // statement outranked by the facts that qualify it. **The drain belongs to the group,
+            // not the line** — every element on the losing screen steps down one, so it still reads
+            // drained against the winning screen while the headline still outranks its own subline.
+            //
+            //            headline          subline
+            //   won      --wax             --toner
+            //   lost     --toner-2         --toner-3
+            //
+            // Still no strike, and still deliberately: the ledger pairs toner-3 with an oxide
+            // strike, but that strike marks a dead record ROW, and a rule through a 30px headline
+            // is a different device than that ruling describes.
             Text verdict = LaptopUi.MakeText(work, "Verdict", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 70f), new Vector2(900f, 60f), 30, TextAnchor.MiddleCenter,
-                won ? MoneyGold : Muted,
+                won ? MoneyGold : TonerSecondary,
                 won ? "THE HOUSE BLINKS FIRST" : "THE BOOKIE COLLECTS", _font);
             verdict.horizontalOverflow = HorizontalWrapMode.Overflow;
+            // S59: the subline steps down with its headline. It was --toner on both screens, which
+            // is what left the losing headline outranked by its own context line.
             Text final = LaptopUi.MakeText(work, "Final", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, 14f), new Vector2(900f, 36f), 18, TextAnchor.MiddleCenter, White,
+                new Vector2(0f, 14f), new Vector2(900f, 36f), 18, TextAnchor.MiddleCenter,
+                won ? White : Muted,
                 $"FINAL BANK {LaptopUi.Money(run.Bank)}   ·   SEED {run.Rng.RunSeed}", _font);
             final.horizontalOverflow = HorizontalWrapMode.Overflow;
             // S52 (batch 9): NEW RUN was a biro-FILLED field with toner type — wrong twice. Biro is
