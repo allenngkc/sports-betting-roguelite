@@ -92,6 +92,17 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-06 cycle 101 · **Batch 12 transcribed + all four lanes re-activated**
+  — T58 GRANTED-closed (DD measured personally; gold back to money; TV owning
+  doc next session); T62 new (progress-line lag, whole-beat, TV fix); T63
+  flagged against the seat (band-region measurement owed by TV); R36 wear
+  fork ruled option 3 (standing-shot reality; re-placement precondition
+  closed as tested-null; R7-F informational — sixth vacuous green,
+  lead-diagnosed); R37 no-pulse; S63-am glow rule (warm near-neutral R≥G>B,
+  amplitude ≤~3×, idleEmission same defect). Batch-12 export file OWED from
+  the DD per C22. Allen's goes: SureThing photo slot (editor now), markets
+  pricing-variety (re-baseline first). Editor queue: SureThing → room glow
+  re-shoot → TV burst measurement. Reversal: DD canon + Allen's goes.
 - 2026-08-06 cycle 100 · **Arm B validated — fully green; merge certified** —
   engine 181/181 (+3), EditMode 75/75, PlayMode 47/47, testcasecounts
   reported, end state clean. Validation note: its own log poller initially
