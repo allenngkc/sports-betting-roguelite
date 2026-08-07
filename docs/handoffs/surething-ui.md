@@ -3,7 +3,7 @@
 **STATUS 2026-08-06 · last code commit `a235bfc` · tree clean · EditMode 76/76 · PlayMode 56/56**
 - **THIS SURFACE HAS AN OWNING DOCUMENT.** Approved by Allen, canon at `main-2/docs/design/surething-design.md`. **Read it before this file.** The LEDGER is Design-verified (batch 10); the zero-dollar wax/grey split is **ratified as considered — never "fix" it.**
 - **Done:** batch 10 (C29 wrapper, verdict ground + chrome + figures, `NOT INSTALLED`, the colour audit, the run-context tally, the cross-round capture) and **all of batch 11** — margin header in biro (S60), scope stated once (S61), `R2 · TICKET 02` identity (S62), losing-verdict drain (S59).
-- **Now:** nothing in flight. Staged for the drag: `dd-import/surething-batch11-2026-08-06/`.
+- **Now:** nothing in flight, editor slot released. Staged and zipped for the drag: `dd-import/surething-batch11-2026-08-06.zip` — all 12 frames re-shot in one clean paired run at `a235bfc` under a granted slot, machine confirmed clear.
 - **Request the editor slot through the orchestrator, every time** — corrected 2026-08-06; the standing grant in `STATUS.md` is stale and this seat's runs collided with a validation pass because of it. **Room holds the lease next** (glow captures).
 - **Run every suite through `tools/run-unity-tests.ps1`, never `-runTests` directly** (C29). It exited non-zero on both collided runs rather than reporting them as passes, which is the whole reason the collision cost two re-runs and nothing else.
 - **One capture still worth having:** the only MY BETS state is a fully-dead ticket, so the tally is photographed reading `1 / $0 / $0` — correct, but never shown doing its job.
