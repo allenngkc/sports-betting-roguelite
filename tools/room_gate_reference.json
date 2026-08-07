@@ -496,10 +496,10 @@
       7,
       8
     ],
-    "certified_commit": "44d8df3",
+    "certified_commit": "8729ffd",
     "certified_at": "2026-08-05",
-    "content_fingerprint": "9b89ecfea1d2b017de8d376fafc41dd1a005520b64b90c0dadbe406880147f7a",
-    "basis": "FRESH WALKTHROUGH: Allen walked the re-check on the post-retirement build and passed gates 6-8. Not a standing verdict - this build was walked.",
+    "content_fingerprint": "c33934740463e4831b82633c038da09a5ff2d5c38088f94e6cc210be289601c7",
+    "basis": "STANDING VERDICT, not a fresh walk. Allen walked 9e1b4e4/44d8df3 and passed; the fingerprint expired on the R35 glow rebuild, which changes EMISSION only - no geometry, no collider, no transform moved. Allen ruled his verdict carries across it (2026-08-05).",
     "revoked": null,
     "note": "R22: gates 6-8 have no automated instrument; a human walks the build. Expires automatically when content_fingerprint stops matching."
   }
