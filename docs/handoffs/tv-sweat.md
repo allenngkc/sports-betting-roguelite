@@ -95,6 +95,43 @@ clear at 0 processes — was cleared. `EditorBuildSettings.asset` reverted;
 `SBR.Engine.dll` restored to HEAD's bytes and **`cmp`-verified identical**, so its lingering
 `git status` line is the inert-`[attr]lfs` artifact (§4D), not a real change.
 
+## 0-T63i. T63 ISOLATION — the invert-before-label defect is NOT real (no editor used)
+
+**Answer: the cash-out FIELD never coexists with a `MARKET SUSPENDED` label.** Isolated code-side
+first, as instructed; frames were needed only to confirm what the gold actually was. Bundle restaged
+with the correction.
+
+**Three independent checks, any one sufficient:**
+
+1. **Code.** T43's fix sets the flag, the label and the field in **one call** — `live = slotVisible
+   && !_cashOutSlotSuspended`, so `fieldLit` is false whenever the label reads SUSPENDED. Pinned by
+   `T43_suspending_dims_the_whole_slot_on_the_same_frame_as_the_label`, green in 228/228.
+2. **Geometry.** The suspect gold spans canvas y **428–555**. `_cashOutField` is sized exactly to
+   `grid.CashOut` (**480–532**) and cannot paint outside its own rect.
+3. **Luminance.** Gold pixels inside the zone, by floor:
+
+| frame | floor 0.10 | 0.25 | **0.40** | |
+|---|---|---|---|---|
+| 000 (real invert) | 64,131 | 60,950 | **60,950** | the field — mean 0.569, peak 0.663 |
+| 006 (suspect) | 24,112 | 5,093 | **0** | vanishes entirely |
+
+The real field peaks 0.66 and clears 0.40 trivially. Frame 006 has **zero** gold above it. What it
+has is the won-leg row's L3 gold, the goldL2 RISK/PAYS footer, and the column's warm-tinted dark
+ground — all sub-0.40, none of it the field.
+
+**Instrument error, disclosed (C25).** My first reading used a saturation test with a luminance floor
+of **0.10**. A near-black warm pixel like `(0.12, 0.09, 0.05)` scores saturation 0.58 at hue 34° and
+registers as "gold". **This is the second time in this slice a low-luminance hue test produced a false
+positive** — and the instructive part is that in T42's case raising the floor did *not* explain the
+residual (§0-VP2 records that theory being tested and failing), while here it explains it completely.
+Same trap, opposite outcome. It has to be tested each time and assumed in neither direction.
+
+**What this does not touch:** the §0-W finding stands unchanged — fully inverted, the band peaks
+0.660–0.663 against a same-frame scoreline of 0.875–0.877, so the designated L4 element is still
+~0.21 off being the brightest thing on its surface.
+
+---
+
 ## 0-W. WINDOW — T61+T62 verified, EditMode 228/228, T63 MEASURED, editor released
 
 **EditMode 228 / 228, zero failed** (C29 guard clean: 228 executed, 228 discovered). T61's two and
