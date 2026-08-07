@@ -95,6 +95,56 @@ clear at 0 processes — was cleared. `EditorBuildSettings.asset` reverted;
 `SBR.Engine.dll` restored to HEAD's bytes and **`cmp`-verified identical**, so its lingering
 `git status` line is the inert-`[attr]lfs` artifact (§4D), not a real change.
 
+## 0-W. WINDOW — T61+T62 verified, EditMode 228/228, T63 MEASURED, editor released
+
+**EditMode 228 / 228, zero failed** (C29 guard clean: 228 executed, 228 discovered). T61's two and
+T62's two all pass. Staged `t63-cashout-band-invert.zip` (8.2 MB).
+
+### T63 — the finding, and it is not closed by T41 or T58
+
+Cash-out band, its own region, across the invert burst:
+
+| state | band mean | band peak | hue | sat | **scoreline peak, same frame** |
+|---|---|---|---|---|---|
+| **fully inverted** (frames 000/001) | 0.569 | **0.660–0.663** | 47–58° | 65–75% | **0.875–0.877** |
+| partial invert (006) | 0.143 | 0.271 | 40.8° | 73.5% | 0.890 |
+| suspended slate (002–005/007, sat-down) | 0.104 | 0.166–0.169 | 205–216° | 11–15% | 0.875–0.890 |
+
+**The designated L4 element is still not the brightest thing on its own surface — by ~0.21.** T41
+capped the stage; T58 took the hue off the flash; **this gap is neither of those and survives both.**
+
+**Scope (C25) — read the ORDERING, not the absolute scale.** My quiet-scoreline peak reads **0.875**
+where the DD's earlier figure for the same thing was **0.737**. There is a systematic offset between
+the two instruments (different box derivations) which I can name but not resolve from here, so
+absolute values must **not** be cross-compared between the two measurements. The within-frame
+comparison is unaffected — both numbers come from one frame, one method, one run.
+
+**The box derivation ships with the numbers**, because the previous attempt's boxes framed the wall:
+canvas→frame scale solved on both axes (2.2204 / 2.2236 — agreeing to three decimals is the check
+that the panel was framed, not the room), CashOut zone taken from `LayoutGrid` rather than eyeballed,
+and **validated by rendering the box and looking at it** (`t63-box-validation.png` is in the bundle).
+
+**What the burst actually shows:** the market suspends and reopens *inside* the 1.05 s burst — full
+invert at 000/001, slate through 002–005/007, partial invert at 006. The band is not in one state
+"across the invert"; **the trajectory is the measurement.**
+
+### A latent flake found and removed — `TvLightTests`
+
+The first run came back 227/228. `Flash_and_SetRest_still_drive_the_wired_light` failed with
+intensity 0.844 against `> 1.0`. **Not a regression** — nothing in this session touches TV lighting,
+and it fails in isolation too. `Update()` decays the flash *before* reading it
+(`_flash01 = MoveTowards(_flash01, 0, flashDecay * Time.deltaTime)`), so with `flashDecay = 2.6` the
+assertion needs **`Time.deltaTime < 0.308 s`** — an input no EditMode batch run controls. The measured
+0.844 back-solves to `_flash01 = 0.137`, `dt = 0.332 s`.
+
+It passed for months on fast frames and failed the first time four unrelated tests pushed the frame
+past ~308 ms. Fixed by pinning `flashDecay = 0` for the assertion: **the assertion is unchanged, only
+the uncontrolled input is removed.** Flash still has to reach the wired Light *through* `Update()` to
+pass. Decay-rate coverage is not lost, because this test never asserted it — it calls `Update()` once
+and checks a lower bound.
+
+---
+
 ## 0-B12. BATCH 12 — T58 CLOSED · T62 fixed (UNCOMPILED) · T63 owed an editor slot
 
 **T58: GRANTED, Design-verified, CLOSED** — measured by the DD personally, perfectly neutral flash,

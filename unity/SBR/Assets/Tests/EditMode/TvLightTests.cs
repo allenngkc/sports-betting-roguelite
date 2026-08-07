@@ -69,6 +69,24 @@ namespace SBR.Tests.EditMode
                         System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
                     .Invoke(light, null);
 
+                // TIMING FLAKE, removed 2026-08-06 — the assertion below is unchanged, only the
+                // uncontrolled input is. Update() decays the flash BEFORE reading it:
+                //     _flash01 = MoveTowards(_flash01, 0f, flashDecay * Time.deltaTime)
+                // so with flashDecay 2.6 the single Update() below leaves
+                // _flash01 = 1 - 2.6*dt, and intensity = Lerp(0.5, 3, _flash01) * flicker. Passing
+                // needs intensity > 1, i.e. _flash01 > 0.2, i.e. **dt < 0.308s**.
+                //
+                // Time.deltaTime is not controlled in an EditMode batch run — it is whatever the
+                // editor's last frame took. This test therefore passed on fast frames and failed on
+                // slow ones, and it failed for the first time when four unrelated tests were added
+                // and pushed the frame past ~308ms. Measured at failure: intensity 0.8436, which
+                // back-solves to _flash01 = 0.137 and dt = 0.332s. Nothing about the light changed.
+                //
+                // Pinning the decay to zero removes the clock from the assertion while leaving the
+                // mechanism under test intact: Flash() still has to reach the wired Light THROUGH
+                // Update() for this to pass. What is lost is decay-rate coverage, which this test
+                // never asserted — it calls Update() once and checks a lower bound.
+                light.flashDecay = 0f;
                 light.Flash(new Color(1.15f, 0.82f, 0.18f), 3f); // gold, matching TvSweatScreen's money flash
 
                 typeof(TvLight).GetMethod("Update",
