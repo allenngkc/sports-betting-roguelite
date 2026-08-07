@@ -1,14 +1,15 @@
 # SureThing UI — re-seat state
 
-**STATUS 2026-08-06 · last code commit `bdbd82b` · tree clean · EditMode 76/76 · PlayMode 56/56**
-- **THE LEDGER IS DESIGN-VERIFIED** (batch 10, on the sixteen-state set). The zero-dollar wax/grey split is **ratified as considered — never "fix" it.**
-- **Done:** all of batch 10 — **C29** studio-wide first (`tools/run-unity-tests.ps1`; run every suite through it, never `-runTests` directly); verdict ground to `--ground` + chrome restored + figures made legible (S53-am/S55/S57); the invisible chip replaced by a printed `NOT INSTALLED` (S56); the float-`Color` audit (S54, `docs/design/S54-COLOR-AUDIT.md`); the MY BETS tally is run context (S58); and the cross-round retention capture that was missing.
-- **Now:** nothing in flight. Staged for the drag: `dd-import/surething-batch10-2026-08-06/`.
-- **Need — DD:** S49's authored kit entry is the DD's to transcribe. The two audit flags are closed: `LaptopUi.FromRgb` **deleted** (approved as dead code), and the violet lid emission **routed to the room seat**.
+**STATUS 2026-08-06 · last code commit `a235bfc` · tree clean · EditMode 76/76 · PlayMode 56/56**
+- **THIS SURFACE HAS AN OWNING DOCUMENT.** Approved by Allen, canon at `main-2/docs/design/surething-design.md`. **Read it before this file.** The LEDGER is Design-verified (batch 10); the zero-dollar wax/grey split is **ratified as considered — never "fix" it.**
+- **Done:** batch 10 (C29 wrapper, verdict ground + chrome + figures, `NOT INSTALLED`, the colour audit, the run-context tally, the cross-round capture) and **all of batch 11** — margin header in biro (S60), scope stated once (S61), `R2 · TICKET 02` identity (S62), losing-verdict drain (S59).
+- **Now:** nothing in flight. Staged for the drag: `dd-import/surething-batch11-2026-08-06/`.
+- **Run every suite through `tools/run-unity-tests.ps1`, never `-runTests` directly** (C29). It caught two mid-suite Unity deaths in batch 11 alone that would otherwise have read as passes.
+- **One capture still worth having:** the only MY BETS state is a fully-dead ticket, so the tally is photographed reading `1 / $0 / $0` — correct, but never shown doing its job.
 - **Two traps still live in this tree:** `artifacts/` is no longer git-ignored (a bare `git add -A` sweeps ~100 PNGs), and two capture states share the number `09` (markets' test, needs their nod).
 
-**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-06, after batch 10.
-**HEAD:** `bdbd82b` · **Branch:** `surething-ui` · working tree clean.
+**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-06, after batch 11.
+**HEAD:** `a235bfc` · **Branch:** `surething-ui` · working tree clean.
 
 This is written for a seat with **no conversation context**. Everything below is either verifiable in
 the repo or flagged as unverified.
@@ -554,6 +555,43 @@ retention. Two traps met building it, both now guarded in `SettleOneRound`:
   frames before `LaptopOs` runs `ApplyPhaseDefault` — and that default sets `_activeApp` itself. Any
   navigation in that window looks like it worked and is overwritten on the next tick. **If a fixture
   navigates right after a settle and lands somewhere unexpected, this is why.**
+
+## 4-0.9 Batch 11 — four items, and one lesson worth more than the four
+
+**Done** (`6439059`, `5894f53`, `89f4963`, `a235bfc`). **EditMode 76/76, PlayMode 56/56.**
+
+Also this batch: **the surface's owning document was approved** and is canon at
+`main-2/docs/design/surething-design.md`. This surface now has what only the room had. Read that
+before this file — this one is re-seat state, that one is the surface.
+
+- **S60** — the MY BETS margin header renders biro over a 2px `--biro-deep` rule, measured
+  96,136,186 against the ledger's identical 96,136,186. Both margins now draw one shared
+  `LaptopUi.MakeMarginHeader`; S60 caught them as two renderings of one component in a single
+  submission, and leaving two copies would have been the third drift of this kind on this surface.
+- **S61** — the screen stated its scope four times; it states it once. `TV-OWNED TALLY` → `TALLY`,
+  margin subline deleted. **The shape is the lesson:** S58 asked this column to stop restating the
+  *sheet* and it did — then restated the *scope* instead. A restatement removed from one register
+  reappears in another.
+- **S62** — `R2 · TICKET 02`. **The engine is deliberately untouched:** `Ticket.Id` is the DeriveRng
+  key component, so reformatting it would change what the game rolls. The key is read and
+  translated, never printed. The round qualifier prints on the LEDGER (its list spans rounds, and it
+  comes from the *ticket's* round) and not on a staged receipt (always the current round, whose
+  masthead already says so — printing it there would be S37 restatement).
+- **S59** — the losing verdict drains as a group: headline `--toner-2`, subline `--toner-3`, both
+  measured. `NEW RUN` stays full wax.
+
+### The lesson, and it generalises past this surface
+
+Building S59's gate, the obvious assertion — *the headline outranks its subline* — **fails on the
+winning screen.** Wax (`D9A441`) measures 0.66 Rec.709 luminance against toner (`D9D4C5`) at 0.83.
+
+**Emphasis on this surface is not one scalar.** Wax outranks toner by *chroma*; toner-2 outranks
+toner-3 by *value*. The losing screen is the one where both elements are neutral and value alone
+does the ranking — which is exactly why the inversion happened there and nowhere else.
+
+So: rankings are asserted by weight only among neutrals, and by token otherwise. And the general
+form, which is why S59 existed at all — **a per-element value check cannot see a ranking.** S53 was
+correct element-by-element and produced an inverted composition.
 
 ## 4a. S32 — which happened: fixed between HEADs
 
