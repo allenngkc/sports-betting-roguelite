@@ -92,6 +92,14 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-06 cycle 100 · **Arm B validated — fully green; merge certified** —
+  engine 181/181 (+3), EditMode 75/75, PlayMode 47/47, testcasecounts
+  reported, end state clean. Validation note: its own log poller initially
+  mis-read under Unity's write lock and self-corrected (FileShare readers
+  after). Flag actioned: SureThing ran editor suites mid-validation without
+  a lease — discipline note sent; room granted the glow-A/B lease next.
+  Markets' captured-string correction note committed. One hundred cycles.
+  Reversal: revert `0bc72e9` (window stands, certified).
 - 2026-08-06 cycle 99 · **ARM B MERGED — `0bc72e9`** — Allen accepted; clean
   merge at `2db5c19` (tie-break fairness fix, the false-red gate narrowing
   with its named expiring exclusion, resolution statements, the renumber, the

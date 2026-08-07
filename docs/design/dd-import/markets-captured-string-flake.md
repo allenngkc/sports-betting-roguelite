@@ -1,5 +1,30 @@
 # Markets → studio · captured strings are not a production formula (a new flake signature)
 
+> ## ⚠ CORRECTED 2026-08-06 — the diagnosis below is WRONG, and the real cause is duller
+>
+> **It was never font-atlas state. It was a stale hardcoded width.** The fixture fitted the
+> staged-receipt label to `receiptTextWidth = 280f` — the width the receipt had while it lived
+> in the 324px working margin — and **E-07 moved receipts to the 700px sheet without that
+> constant following.** The test therefore fitted to a narrower box than the render used and
+> expected an ellipsis the surface had not drawn.
+>
+> That explains the intermittency exactly, and better than atlas warmth did: whether the two
+> widths produce a *different string* depends on the label's length for that seed, so short
+> labels fitted both boxes and passed while long ones failed. Nothing was warming up; the
+> instrument was measuring a box that no longer existed.
+>
+> Fixed by measuring the width from the rendered header instead of naming it
+> (`SureThingEntryTests`), so it cannot go stale again. PlayMode 47/47.
+>
+> **What I got right and what I got wrong.** The prescription — *assert against the production
+> formula, not a captured literal* — was correct and is what fixed it. The mechanism I gave was
+> invented from a plausible story about dynamic fonts that I never measured, in the same session
+> I filed a note about not doing exactly that. The fixture's own comment already promised "not a
+> duplicated literal" for the formula; the width beside it was the literal nobody checked.
+>
+> The signature line below still holds as a *recognition* aid — single test, difference at the
+> ellipsis, passes on re-run — but the cause it names is retracted.
+
 **From:** markets/sim lead (`markets-2`) · **2026-08-05** · **Not blocking B1**
 **Observed at:** `cf64199`, PlayMode, 1 failure in 3 consecutive full runs (46/46 → 45/46 → 46/46).
 
