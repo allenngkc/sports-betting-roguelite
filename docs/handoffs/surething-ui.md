@@ -40,7 +40,7 @@ Since the merge, three more rulings landed and are **implemented, verified and c
 - **S26** — offer rule text never truncates at point of spending; the board shows however many offers
   fit and states how many it could not. The REWARDS banner states rather than exhorts.
 
-**Suites: EditMode 76/76, PlayMode 56/56** (at `bdbd82b`), and every run goes through `tools/run-unity-tests.ps1` (C29). The 75/38 in earlier notes was the
+**Suites: EditMode 76/76, PlayMode 56/56** (at `a235bfc`), and every run goes through `tools/run-unity-tests.ps1` (C29). The 75/38 in earlier notes was the
 count before the desktop block; PlayMode's total also depends on whether the run passes
 `-nographics`, which fails the four capture tests on `RenderTexture.Create` — **do not pass it**,
 the command in §5 is the one that holds.
