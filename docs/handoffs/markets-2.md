@@ -141,6 +141,73 @@ calibrated, all bands within 2 SE.
 - Unity asmdef code is **invisible** to `dotnet build`. A green engine suite says
   nothing about whether the Unity project compiles.
 - `--nologo` is not a valid `sim` flag.
+- `--scorer-ev` does **not** honour `--report`; it writes to stdout. Pipe it.
+
+---
+
+## 7. State at 2026-08-07 — read this first on re-seat
+
+**Merged and certified live on main:** B1 (`bbf9241`) and arm B. Both validated green.
+
+**On this branch, committed, awaiting Allen — not merge requests:**
+
+| Commit | What |
+|---|---|
+| `7885f8e` | per-player scoring weight — six prices on a scorer board became fourteen |
+| `166a4b0` | the EV column needed its own error; "longshot cheap" retracted |
+
+Tables and reads are staged in `main-2/docs/design/dd-import/`:
+`markets-armB-gate-tables.md`, `markets-pricing-variety-tables.md`,
+`markets-captured-string-flake.md` (carries its own correction).
+
+**Verified baselines:** `dotnet test engine.tests` **181/181** · Unity EditMode **75/75** ·
+PlayMode **47/47** · compile 0 errors · `--gates --runs 1000 --seed-prefix TUNE` →
+**ALL GATES PASS, exit 0** · `--scorer-ev --runs 400 --seed-prefix SCORER` → calibration **and**
+EV fairness both hold.
+
+### OPEN — G6 cannot fail. The live defect.
+
+The martyr guard — the check that loss-farming never becomes a winning strategy — has a band of
+**2pp and a resolution of ±2.15pp**. Its tolerance is narrower than its own noise, so it would
+report PASS straight through a real breach. It has passed all session and could not have caught
+anything. It is worse than G3 (±1.43pp against 3pp), the gate C32 was promoted from, because its
+error is the **combined** error of two measured rates rather than one.
+
+It states this itself in every report, so it cannot go unnoticed again. **The fix is a dial —
+widen the band or raise the campaign's default `--runs` — and both are Allen's, not a lead's.**
+
+Read it as a standing caution on everything else in this file: *"the gates did not move"* is weaker
+evidence than it looks while G6 is in this state, and any balance change landed before it is fixed
+is landing past a blind guard.
+
+### CLOSED this wave, do not reopen
+
+- **Longshot scorers "a point cheap" — RETRACTED.** It was 1.06 SE. The harness printed the
+  *frequency's* error beside the *EV* number; at p≈4% the odds are ~24 and the EV column's error is
+  ~24× larger. Every band is within 2 SE of −4.76pp. Pricing returns the intended vig.
+- **BTTS coverage** — a false red (M1). A sharp declining an edgeless near-even market is the bot
+  being correct. Excluded with a *measured* justification, expiring at v2 pricing.
+- **The receipt "flake"** — never font-atlas state; a stale hardcoded 280px width left behind when
+  E-07 moved receipts to the 700px sheet.
+
+### Still open, lower priority
+
+- The signed **2.6px** margin deviation (S51) — expires when its owner is identified.
+- **Eight room-owned textures** show modified in every worktree since main activated the root
+  `.gitattributes` LFS macro; they were committed as raw bytes where git now expects pointers. Not
+  markets-owned, but it recurs on every sync.
+- **LEDGER rebuild** — was blocked on a populated-ledger capture (S32/C17); main now carries
+  `10-ledger-populated`, so **verify that before assuming it is still blocked**.
+- **TMP migration** — sequenced laptop-first; no build work started.
+
+### The pattern worth inheriting
+
+Six times this fortnight a green check was measuring nothing, and **not one was caught by a test** —
+captures and arithmetic caught all of them, twice in instruments this seat had just built. Three
+were mine: the world-space epsilon, the ruled-paper ground counted as content, and the EV column
+quoting the wrong error. State what an instrument cannot see, in the same breath as the number
+(C25), and give every gate its resolution (C32). A number without its scope invites exactly the
+conclusion it cannot support.
 
 ## Allen ruling (2026-08-02, fired via orchestrator)
 
