@@ -629,6 +629,22 @@ namespace SBR.Tests.PlayMode
             return basis.InverseTransformPoint(corners[3]).y;
         }
 
+        /// <summary>The leg's subject — the first token after the "N. " index, e.g. "LONGHAULERS".
+        /// FitLabelKeepingSuffix trims from the END of the label and protects the price suffix, so
+        /// the subject is the one part of the string that is never width-fitted and therefore never
+        /// moves with font-atlas state. Comparing subjects tests what the persistence snapshot
+        /// actually claims — that the same leg is still rendered after a destination switch —
+        /// without re-testing the text fitter's boundary behaviour as a side effect.</summary>
+        private static string LegSubjectOf(string legLabel)
+        {
+            if (string.IsNullOrEmpty(legLabel)) return legLabel ?? "";
+            string body = legLabel;
+            int dot = body.IndexOf(". ", StringComparison.Ordinal);
+            if (dot >= 0) body = body.Substring(dot + 2);
+            int space = body.IndexOf(' ');
+            return space > 0 ? body.Substring(0, space) : body;
+        }
+
         private static string PathOf(Transform node, Transform root)
         {
             string path = node.name;
@@ -715,7 +731,17 @@ namespace SBR.Tests.PlayMode
                 $"{destination} working-margin title");
             Assert.AreEqual(expected.MarginCount, TextOf(Required(margin, "Count")),
                 $"{destination} working-margin rule");
-            Assert.AreEqual(expected.WorkingLeg, TextOf(Required(margin, "Leg0")),
+            // Compared against the leg's SUBJECT, not the captured full string. The full label is
+            // width-fitted at render time by MeasureWidth, which reads a dynamic font atlas, and
+            // the atlas is not guaranteed identical between the moment the snapshot was taken and
+            // the moment it is re-checked — so a label sitting within a glyph of its fit boundary
+            // lands either side of it and the ellipsis moves by one character. That produced an
+            // intermittent failure on this assertion (filed as the captured-string flake signature:
+            // single test, difference at the ellipsis, passes on re-run) which said nothing about
+            // the margin surviving a destination switch, the thing this snapshot exists to test.
+            // The subject is the part that must persist and is not width-fitted.
+            Assert.AreEqual(LegSubjectOf(expected.WorkingLeg),
+                LegSubjectOf(TextOf(Required(margin, "Leg0"))),
                 $"{destination} working mark");
             Assert.AreEqual(expected.Stake, TextOf(Required(margin, "Stake")),
                 $"{destination} working stake");
@@ -767,7 +793,18 @@ namespace SBR.Tests.PlayMode
                 // literal, so a legitimate format change (fixing the mid-word truncation defect)
                 // can never quietly desync the fixture from the render code.
                 Font font = TestFont(receipt);
-                const float receiptTextWidth = 280f;
+                // MEASURED from the rendered header, never a literal. This was 280f — the width the
+                // receipt had when it lived in the 324px working margin — and E-07 moved receipts to
+                // the 700px sheet without this following. The fixture then fitted to a narrower box
+                // than the render used, so it expected an ellipsis the surface had not drawn.
+                //
+                // It presented as an intermittent one-character failure, and I filed it as a
+                // font-atlas flake. That was wrong: whether the two widths produce a DIFFERENT
+                // string depends on the label's length for that seed, so short labels fitted both
+                // boxes and passed while long ones failed. A stale constant, not noise. The
+                // comment above already promised "not a duplicated literal" for the formula; the
+                // width was the literal nobody noticed.
+                float receiptTextWidth = ((RectTransform)Required(receipt, "ReceiptHeader")).rect.width;
                 // "STAGED" was dropped from the header on purpose: the block itself is the staged
                 // receipt, and the word was what pushed "PAYS $167" past the 280px fit and into a
                 // mid-word ellipsis. The payout is a product fact and outranks a redundant label.

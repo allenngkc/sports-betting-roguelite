@@ -42,29 +42,53 @@ Deliverable #1, the reconciliation gap-list, is committed and is the living docu
 for this seat: **`docs/1-plans/F_0.4.0_reconciliation-gap-list.md`**. Read it before
 anything else; it carries every finding, correction and open question with evidence.
 
+**B1 (the working margin on the redesigned surface) is MERGED to main** at `bbf9241` and
+validated green. What follows it on this branch is the second wave.
+
 | Commit | What |
 |---|---|
 | `ebeac09` | gap-list (deliverable #1) |
 | `cc40e8a` | M-01 — unique player names across the whole scorer board |
 | `bf8a03e` | M-03 arm A — G7 market-coverage gate |
 | `82011e1` | M-02 — scorer grading trap closed; F_0.4.0 doc debt cleared |
-| `32b234c` | §4 first pass — market type/state conformance to spec-of-record |
-| `25ef360` | editor-lease verification of that pass |
+| `9e55d0d` | engine retention — cash-out figure + the run-long settled record (S36) |
+| `bbf9241` | **B1 merged to main** (margin, MaxLegs=4, T47 band, S50 layout, S51 deviation) |
+| `bf2a4da` | merge main → markets-2, three conflicts resolved keeping both intents |
+| `aa68ec6` | T61 — the poll-vs-session divergence is outcome-dependent; capture renumber 09→11 |
+| `d1dd2c3` | scorer EV harness (`--scorer-ev`) — calibration, the instrument no gate can be |
+| `71ac4aa` | **arm B** — market ties broken by sampling, not array position |
+| `e215b13` | M1 measured BTTS exclusion; C32 gate resolutions |
 
 **Verified baselines** (re-establish these before trusting any change):
-`dotnet test engine.tests` → **165/165** · Unity EditMode **75/75** · PlayMode
-**39/39** · Unity compile 0 errors.
+`dotnet test engine.tests` → **181/181** · Unity EditMode **75/75** · PlayMode **47/47** ·
+Unity compile 0 errors.
 `dotnet run --project sim -c Release -- --gates --runs 1000 --seed-prefix TUNE` →
-G1–G6 PASS, **G7 FAIL by design**, verdict NOT DONE, **exit code 1**.
+**ALL GATES PASS, exit 0** — G7 went green when M1 narrowed its population to what it can
+honestly assert. It was red by design for the whole of the first wave; if you find it red
+again, something regressed, it is not the old known state.
+`dotnet run --project sim -c Release -- --scorer-ev --runs 400 --seed-prefix SCORER` →
+calibrated, all bands within 2 SE.
 
 ## 4. Open, parked, and routed — do not restart these blind
 
-- **Arm B — PARKED for Allen.** Broadening the skilled bot's market selection. It
-  moves G2–G6; a gate flipping there is a balance finding about the economy, not a
-  regression to tune back to green. Bring before/after gate tables side by side.
-- **Scorer EV harness — milestone-level, queued with arm B.** Bots are policy-excluded
-  from pricing AnytimeScorer, so no gate — G7 included — will ever cover it. G7 makes
-  the hole visible; it does not close it.
+- **Arm B — ACCEPTED by Allen 2026-08-06 and DONE.** It was never a policy exclusion:
+  `IncludesMarketOffers` was already true, and the zero coverage was an EV tie broken by
+  **array position** — `BuildOffers` emits moneyline → goals → BTTS → corners → cards, so
+  goals won every tie and corners/cards could never be chosen at any seed. Ties between
+  non-moneyline candidates now resolve by reservoir sampling on the bot's own rng; the
+  moneyline persona is untouched. EV-neutral, confirmed not assumed: 5.5% → 5.4% at
+  n=10,000 (0.44 SE). Tables at `main-2/docs/design/dd-import/markets-armB-gate-tables.md`.
+- **Scorer EV harness — DONE** (`--scorer-ev`). Calibration is the one instrument a gate
+  cannot be, because bots are policy-excluded from pricing the market. Verdict: calibrated.
+  One finding it surfaced: the 0–5% band is calibrated to +0.1pp but that is ~2.3%
+  *relative*, landing realised EV at −3.6pp against −4.76pp — **longshot scorers are about
+  a point cheap.** Open, unfixed, Allen's call.
+- **G6 cannot fail — the live one.** C32 made every gate state its resolution, and the
+  martyr guard reads **±2.15pp against a 2pp band (0.9×)**: its tolerance is narrower than
+  its own noise, it has passed all session, and it could not have caught anything. Worse
+  than G3, the gate C32 was promoted from, because its error is the combined error of two
+  measured rates. Fixing it means widening a balance band or raising the campaign's default
+  `n` — both Allen's calls, and neither taken.
 - **D-01…D-08 are with the Design Director.** Market label vocabulary, the `RIDING`
   state word, the one-sided scorer market, the PLAYERS-tab overflow treatment, the
   `STAKE` label/figure split, ledger legs excluded from the lost treatment, blocker
