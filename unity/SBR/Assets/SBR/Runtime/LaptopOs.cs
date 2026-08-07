@@ -1102,6 +1102,46 @@ namespace SBR.Game
             return "$" + rounded.ToString("N0", CultureInfo.InvariantCulture);
         }
 
+        /// <summary>S62: the printed identity of a ticket — `LedgerEntry`'s spec form,
+        /// `R2 · TICKET 02`. Round named, ticket named, both one-indexed, both zero-padded to match
+        /// the form's own `01 02 03` entries.
+        ///
+        /// **The engine's `Ticket.Id` is not this and must never be printed.** It is
+        /// `"{round}.{placementIndex}"`, zero-indexed, and it is documented as the DeriveRng key
+        /// component — changing its format would change what the game rolls. So it is read here and
+        /// translated, never shown: `1.0` on the page was round 1, ticket 0, the array index having
+        /// reached a player-facing printed form. Same class as S35(a)'s leaked property path.
+        ///
+        /// The decimal was the second defect and the worse one on this surface specifically: every
+        /// other number here is a price, a stake or a payout in tabular figures, so `1.0` reads as
+        /// the quantity one.
+        ///
+        /// <paramref name="withRound"/> is false where the round would restate the masthead (S37) —
+        /// a staged receipt is always the current round and the masthead above it already says so.
+        /// The LEDGER's list spans rounds, so there the round qualifier is what makes two rows
+        /// distinguishable rather than a restatement.</summary>
+        public static string TicketIdentity(string engineId, int fallbackRound, int fallbackIndex,
+            bool withRound)
+        {
+            int round = fallbackRound;
+            int placement = fallbackIndex;
+            if (!string.IsNullOrEmpty(engineId))
+            {
+                string[] parts = engineId.Split('.');
+                if (parts.Length == 2
+                    && int.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int r)
+                    && int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int p))
+                {
+                    round = r;
+                    placement = p;
+                }
+            }
+            string ticket = "TICKET " + (placement + 1).ToString("00", CultureInfo.InvariantCulture);
+            return withRound
+                ? "R" + round.ToString(CultureInfo.InvariantCulture) + "  ·  " + ticket
+                : ticket;
+        }
+
         /// <summary>MarginHeader.jsx (S33): a biro title in condensed caps, closed by a 2px
         /// `--biro-deep` rule. Returns the header's own height so callers lay the first row flush
         /// beneath it rather than each guessing an offset.

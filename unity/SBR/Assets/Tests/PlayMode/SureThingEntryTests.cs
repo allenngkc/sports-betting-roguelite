@@ -761,8 +761,11 @@ namespace SBR.Tests.PlayMode
                     $"ticket {ticketIndex} potential payout");
 
                 Transform receipt = Required(receipts, "StagedTicket" + ticketIndex);
-                string identity = string.IsNullOrEmpty(ticket.Id)
-                    ? $"{run.Round}.{ticketIndex + 1}" : ticket.Id;
+                // S62: asserts against the production formatter rather than a second copy of it.
+                // The old line restated the render's own expression, which is how a fixture ends up
+                // agreeing with a defect — it would have happily asserted "1.0" forever.
+                string identity = LaptopUi.TicketIdentity(ticket.Id, run.Round, ticketIndex,
+                    withRound: false);
                 // Matches BuildStagedReceipt's own width-fitting formula rather than a duplicated
                 // literal, so a legitimate format change (fixing the mid-word truncation defect)
                 // can never quietly desync the fixture from the render code.
@@ -786,7 +789,9 @@ namespace SBR.Tests.PlayMode
                 // mid-word ellipsis. The payout is a product fact and outranks a redundant label.
                 Assert.AreEqual(
                     LaptopUi.FitText(font,
-                        $"TICKET {identity} · {Money(model.Stake)} · " +
+                        // S62: the identity now carries its own "TICKET" word, so the prefix that
+                        // used to sit here would double it.
+                        $"{identity} · {Money(model.Stake)} · " +
                         $"{OddsFormat.American(model.Combined)} · PAYS {Money(model.Payout)}",
                         13, receiptTextWidth),
                     TextOf(Required(receipt, "ReceiptHeader")));

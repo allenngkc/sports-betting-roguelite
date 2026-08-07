@@ -1091,8 +1091,11 @@ namespace SBR.Game
                 double combined = 1.0;
                 for (int legIndex = 0; legIndex < ticket.Legs.Count; legIndex++)
                     combined *= ticket.Legs[legIndex].OfferedOdds;
-                string identity = string.IsNullOrEmpty(ticket.Id)
-                    ? $"{run.Round}.{ticketIndex + 1}" : ticket.Id;
+                // S62: TICKET 02, without the round. A staged receipt is always the current round
+                // and the masthead above it already states which — printing R1 here would restate
+                // the run's scope, which is the thing S37 forbids. The LEDGER prints the round
+                // because its list spans them.
+                string identity = LaptopUi.TicketIdentity(ticket.Id, run.Round, ticketIndex, withRound: false);
                 // "STAGED" is redundant (this whole block IS the staged-ticket receipt) and is the
                 // first thing dropped to make room. The payout is the figure that matters most on
                 // this line, so it is a protected suffix — FitText only ever trims the label ahead
@@ -1101,7 +1104,7 @@ namespace SBR.Game
                 // "TICKET"/"PAYS" words are structural, not field labels, so the whole header string
                 // routes through _fontCond rather than being split across two Text components.
                 string receiptHeaderText = LaptopUi.FitLabelKeepingSuffix(_fontCond, string.Empty,
-                    $"TICKET {identity} · {LaptopUi.Money(ticket.Stake)} · {OddsFormat.American(combined)}",
+                    $"{identity} · {LaptopUi.Money(ticket.Stake)} · {OddsFormat.American(combined)}",
                     $" · PAYS {LaptopUi.Money(ticket.PotentialPayout)}", 13, receiptTextWidth);
                 LaptopUi.MakeText(receipt, "ReceiptHeader", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(8f, -4f), new Vector2(receiptTextWidth, 22f), 13, TextAnchor.UpperLeft,
@@ -2177,7 +2180,10 @@ namespace SBR.Game
             float height = LedgerEntryHeight(ticket);
             RectTransform row = LaptopUi.MakePanel(parent, "LedgerTicket" + index, new Vector2(0f, 1f),
                 new Vector2(0f, 1f), new Vector2(0f, y), new Vector2(LedgerRowWidth, height), LaptopOs.Ink);
-            string identity = string.IsNullOrEmpty(ticket.Id) ? $"{round}.{index + 1}" : ticket.Id;
+            // S62: R2 · TICKET 02 — never the engine's own key. The round qualifier belongs here
+            // specifically: this list spans rounds, so it is what makes two rows tell themselves
+            // apart, and it is read from the TICKET's round rather than the screen's current one.
+            string identity = LaptopUi.TicketIdentity(ticket.Id, round, index, withRound: true);
             string state = ticket.State == TicketState.Won ? "WON"
                 : ticket.State == TicketState.Lost ? "LOST"
                 : ticket.State == TicketState.CashedOut ? "CASHED OUT" : "OPEN";
@@ -2223,7 +2229,7 @@ namespace SBR.Game
             // RETURNED value already carry that signal.
             Text identityText = LaptopUi.MakeText(row, "TicketIdentity", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(LedgerNumberX, -9f), new Vector2(LedgerNumberWidth, 24f), 16, TextAnchor.UpperLeft,
-                LaptopOs.TonerSecondary, "TICKET " + identity, _fontCond);
+                LaptopOs.TonerSecondary, identity, _fontCond);
             identityText.horizontalOverflow = HorizontalWrapMode.Overflow; // canon: whiteSpace nowrap
 
             // S40: the legs flex cell (canon's ~192px slot between identity and STAKE) is deleted,

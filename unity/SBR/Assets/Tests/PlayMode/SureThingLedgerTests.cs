@@ -55,9 +55,13 @@ namespace SBR.Tests.PlayMode
             margin = Required(app, "LedgerMargin");
             Assert.IsNull(Find(board, "LedgerEmpty"));
             Transform ledgerTicket = Required(board, "LedgerTicket0");
-            string identity = string.IsNullOrEmpty(ticket.Id) ? $"{run.Round}.1" : ticket.Id;
-            Assert.AreEqual("TICKET " + identity,
-                TextOf(Required(ledgerTicket, "TicketIdentity")));
+            // S62: the ledger prints R{round} · TICKET {nn}, one-indexed and zero-padded, never the
+            // engine's zero-indexed RNG key. Asserted through the production formatter, and pinned
+            // below against the literal so this cannot silently agree with a regression.
+            string identity = LaptopUi.TicketIdentity(ticket.Id, run.Round, 0, withRound: true);
+            Assert.AreEqual($"R{run.Round}  ·  TICKET 01", identity,
+                "the first ticket of a round is TICKET 01, not 1.0");
+            Assert.AreEqual(identity, TextOf(Required(ledgerTicket, "TicketIdentity")));
             Assert.AreEqual(TicketStateText(ticket),
                 TextOf(Required(ledgerTicket, "TicketState")));
             // S38+S39 (DD 2026-08-02 batch 7, one change): STAKE/RETURNED are no longer a key line
