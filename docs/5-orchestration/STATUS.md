@@ -92,6 +92,11 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-06 cycle 97 · **Another Orca restart recovered** — all four leads
+  revived via --continue with bypass, effort re-applied dialog-aware, all
+  booted; watchers re-armed (v8 + heartbeat). Studio state unchanged: fourth
+  convergence, drag staged (4 files), arm-B accept pending Allen.
+  Reversal: none.
 - 2026-08-06 cycle 96 · **Fourth full convergence; drag staged (4 files)** —
   room's weathering evidence zipped (7.6MB, extraction-verified, `add0408`);
   docs bundle built with the colour-audit report + arm-B tables inside;
