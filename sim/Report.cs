@@ -217,8 +217,8 @@ public static class Report
             + "— the same figure every two-way market in this sim converges to.");
         sb.AppendLine();
 
-        sb.AppendLine("| priced p band | offers | samples | mean priced p | realised freq | Δ (pp) | realised EV (pp) | SE (pp) |");
-        sb.AppendLine("|---|---|---|---|---|---|---|---|");
+        sb.AppendLine("| priced p band | offers | samples | mean priced p | realised freq | Δ (pp) | realised EV (pp) | freq SE | EV SE |");
+        sb.AppendLine("|---|---|---|---|---|---|---|---|---|");
         foreach (ScorerCalibrationData.Bucket b in data.ByProbabilityBand())
             AppendCalibrationRow(sb, b);
         sb.AppendLine();
@@ -226,8 +226,8 @@ public static class Report
         sb.AppendLine("By role — scoring weight (and so priced probability) is assigned purely by "
             + "role, so a role-shaped miscalibration is the fastest possible diagnosis:");
         sb.AppendLine();
-        sb.AppendLine("| role | offers | samples | mean priced p | realised freq | Δ (pp) | realised EV (pp) | SE (pp) |");
-        sb.AppendLine("|---|---|---|---|---|---|---|---|");
+        sb.AppendLine("| role | offers | samples | mean priced p | realised freq | Δ (pp) | realised EV (pp) | freq SE | EV SE |");
+        sb.AppendLine("|---|---|---|---|---|---|---|---|---|");
         foreach (ScorerCalibrationData.Bucket b in data.ByRole())
             AppendCalibrationRow(sb, b);
         sb.AppendLine();
@@ -245,7 +245,7 @@ public static class Report
             + "blaming one player for a bucket's number.");
         sb.AppendLine();
 
-        sb.AppendLine($"> Takeaway: {ScorerEvTakeaway(data)}");
+        sb.AppendLine($"> Takeaway: {ScorerEvTakeaway(data, 1.0 / (1.0 + r) - 1.0)}");
         sb.AppendLine();
         return sb.ToString();
     }
@@ -260,12 +260,12 @@ public static class Report
         sb.AppendLine($"| {b.Label} | {b.OfferCount.ToString("N0", Inv)} | {b.SampleCount.ToString("N0", Inv)} "
             + $"| {Pct(b.MeanPricedProb * 100.0)} | {Pct(b.RealizedFreq * 100.0)} "
             + $"| {SignedPct(100.0 * (b.RealizedFreq - b.MeanPricedProb))} "
-            + $"| {SignedPct(b.EvFraction * 100.0)} | ±{(b.SeFraction * 100.0).ToString("F1", Inv)}pp |");
+            + $"| {SignedPct(b.EvFraction * 100.0)} | ±{(b.SeFraction * 100.0).ToString("F1", Inv)}pp | ±{(b.EvSeFraction * 100.0).ToString("F1", Inv)}pp |");
     }
 
     /// <summary>An honest read of the buckets above, not a hand-authored verdict: flags bands
     /// whose |Δ| exceeds 2 SE (≈95% two-sided) rather than asserting calibration either way.</summary>
-    private static string ScorerEvTakeaway(ScorerCalibrationData data)
+    private static string ScorerEvTakeaway(ScorerCalibrationData data, double expectedEv)
     {
         int populated = 0, outside2Se = 0;
         double worstZ = 0;
@@ -278,10 +278,32 @@ public static class Report
             if (z > 2.0) outside2Se++;
             if (z > worstZ) { worstZ = z; worstLabel = b.Label; }
         }
+        // The EV column needs its OWN verdict, judged against its OWN error. Calibration and EV
+        // fairness are not the same claim: at long odds a frequency error far too small to show in
+        // the Δ column is multiplied by the odds into a visible EV gap, and — the trap this seat
+        // fell into — an EV gap far smaller than the EV's own error looks exactly like a finding
+        // if the only SE printed beside it belongs to the frequency.
+        int evOutside2Se = 0;
+        double worstEvZ = 0;
+        string worstEvLabel = "";
+        foreach (ScorerCalibrationData.Bucket b in data.ByProbabilityBand())
+        {
+            if (b.OfferCount == 0 || b.EvSeFraction <= 0.0) continue;
+            double evZ = Math.Abs(b.EvFraction - expectedEv) / b.EvSeFraction;
+            if (evZ > 2.0) evOutside2Se++;
+            if (evZ > worstEvZ) { worstEvZ = evZ; worstEvLabel = b.Label; }
+        }
+
         if (populated == 0) return "no offers sampled — widen --runs.";
+        if (outside2Se == 0 && evOutside2Se == 0)
+            return $"all {populated} probability bands sit within 2 SE of their priced probability, "
+                + $"and every band's realised EV is within 2 SE of {(expectedEv * 100.0).ToString("F2", Inv)}pp "
+                + $"(worst {worstEvLabel} at {worstEvZ.ToString("F1", Inv)} SE) — calibration and EV "
+                + "fairness both hold at this sample size.";
         if (outside2Se == 0)
-            return $"all {populated} probability bands sit within 2 SE of their priced probability "
-                + "— calibration holds at this sample size.";
+            return $"all {populated} bands are calibrated, but {evOutside2Se} band(s) sit outside 2 SE "
+                + $"on realised EV (worst: {worstEvLabel} at {worstEvZ.ToString("F1", Inv)} SE) — the "
+                + "price is honest about frequency and still not returning the intended vig there.";
         return $"{outside2Se}/{populated} probability bands sit outside 2 SE of their priced "
             + $"probability (worst: {worstLabel} at {worstZ.ToString("F1", Inv)} SE) — price and "
             + "sampler disagree there, not just noise.";
@@ -307,7 +329,7 @@ public static class Report
             + "Sorted by Δ mean rounds survived.");
         sb.AppendLine();
         sb.AppendLine("| Item | kind | mean rounds | Δ mean | median death | won % | Δ won % (±SE) | exposure | totem fires |");
-        sb.AppendLine("|---|---|---|---|---|---|---|---|---|");
+        sb.AppendLine("|---|---|---|---|---|---|---|---|---|---|");
         foreach (AuditData.Entry e in audit.Entries)
         {
             string totem = e.Id == RelicCatalog.TotemId ? Pct(e.TotemFireRate) : "—";
@@ -333,7 +355,7 @@ public static class Report
         sb.AppendLine("Biggest single-ticket swing per run (won payout / cash-out taken / stake lost), and final bank of winning runs.");
         sb.AppendLine();
         sb.AppendLine("| Strategy | swing p10 | p50 | p90 | p99 | win-bank p10 | p50 | p90 | p99 |");
-        sb.AppendLine("|---|---|---|---|---|---|---|---|---|");
+        sb.AppendLine("|---|---|---|---|---|---|---|---|---|---|");
         foreach (BatchSummary b in batches)
         {
             string wb10, wb50, wb90, wb99;
