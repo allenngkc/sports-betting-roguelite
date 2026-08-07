@@ -95,6 +95,58 @@ clear at 0 processes — was cleared. `EditorBuildSettings.asset` reverted;
 `SBR.Engine.dll` restored to HEAD's bytes and **`cmp`-verified identical**, so its lingering
 `git status` line is the inert-`[attr]lfs` artifact (§4D), not a real change.
 
+## 0-B12. BATCH 12 — T58 CLOSED · T62 fixed (UNCOMPILED) · T63 owed an editor slot
+
+**T58: GRANTED, Design-verified, CLOSED** — measured by the DD personally, perfectly neutral flash,
+gold back to money. The owning doc (C26) is the next DD session.
+
+### T62 — FIXED. One ledger, two mirrors, one repaint
+
+The DD found it **on this slice's own T58 proof frames**: the live leg's progress line printed the
+pre-goal score for a whole beat while the scoreline above printed the goal — same revealed value,
+same frame, correcting 51 match-minutes later.
+
+**Mechanism.** `OnGoalPlayed` advances the revealed score at `_ledger.CompleteGoal(goal)`, then
+repainted the **scorebug only**. The live leg row reads *the same* `_ledger.Picked/Opponent` (via
+`DescribeActiveLeg`) but was repainted only by `UpdateTicketColumn`, which next runs at the following
+beat's `RenderEvent`. Not two sources — **one source, two repaint schedules.**
+
+**Fixed at the ledger-advance site**, not by adding another call to another path:
+`RepaintRevealedScore(leg)` does scorebug + column together, and that is what `OnGoalPlayed` calls.
+Same rule as T43's slate and T59's gate — one value, one repaint, no window where mirrors disagree.
+
+**I had this frame and did not call it.** §0-VP2 records the column reading `LEADING 1–0` against a
+scoreline of `0 — 0` and I treated it as two matchups rather than one contradiction. The verdict pass
+looked at *type* and *hue* and never asked whether the two score readings agreed. Worth carrying: a
+pass scoped to one property will not see a defect in another, however plainly it is in frame.
+
+**Full audit of every ledger-advance site**, since fix-by-rule means checking the siblings:
+
+| site | status |
+|---|---|
+| `_ledger.CompleteGoal` (goal) | **the defect — fixed** |
+| `ResetForLeg`/`ConfigureEndpoint` (kickoff) | **reasoned benign** — the column's live row is still the previous, resolved leg, so there is nothing to contradict. Changing it would alter *when* a row reads LIVE, which is a design call and not taken unruled |
+| `PlanFinal` (T17's reserve release) | **covered by construction** — it mutates no score, it emits a plan; those staged goals advance the ledger through `CompleteGoal` and so through the fix |
+
+Two EditMode guards: `T62_advancing_the_ledger_repaints_every_mirror_of_it` (scans every
+`CompleteGoal` site) and `T62_the_repaint_helper_drives_both_mirrors` (the helper cannot quietly lose
+its column call). **Both are SOURCE scans and that is weaker than it looks** — they pin the call, not
+the pixels. The rendered pin needs a PlayMode goal and is owed with T63.
+
+### T63 — owed, needs the editor slot (after SureThing and room)
+
+Measure the **cash-out band's own region** across the invert burst. The DD's boxes hit the wall behind
+the panel — the same framing failure this slice hit twice in §0-VP and once more in §0-VP2, now from
+the other seat. **Deliver the box derivation with the numbers, not just the numbers**, and validate
+the framing by rendering it before trusting it; that is the only method that has actually worked here.
+
+### Status
+
+**UNCOMPILED — no editor grant.** Pending compile: T61's contract fold-in *and* T62. Expect EditMode
+**228** (224 + T61's 2 + T62's 2).
+
+---
+
 ## 0-T61. T61 FOLDED IN — contract taken from markets' test, not from a green re-run (UNCOMPILED)
 
 Markets diagnosed T61 and the answer is sharper than the hypothesis I filed. **My harness is fixed

@@ -1447,6 +1447,71 @@ namespace SBR.Tests.EditMode
         }
 
         // ---------------------------------------------------------------------------------------
+        // T62 — the ledger moves, and EVERY surface mirroring it repaints on that frame.
+        //
+        // DD 2026-08-05, found on this slice's own T58 proof frames: the live leg's progress line
+        // printed the pre-goal score for a whole beat while the scoreline above printed the goal.
+        // Same revealed value, same frame, two readings — correcting 51 match-minutes later.
+        //
+        // INSTRUMENT SCOPE, stated because it is weaker than it looks (C25): this is a SOURCE scan,
+        // not a rendered assertion. It pins that the ledger-advance site repaints both mirrors; it
+        // cannot prove what the two elements actually displayed. The rendered pin needs a PlayMode
+        // goal and is owed at the next editor slot, alongside T63's measurement. A source scan is the
+        // established idiom here (T30's retired-hue scan works the same way) and it catches exactly
+        // the regression that occurred: half a repaint at a ledger advance.
+        // ---------------------------------------------------------------------------------------
+
+        [Test]
+        public void T62_advancing_the_ledger_repaints_every_mirror_of_it()
+        {
+            string path = Path.Combine(Application.dataPath, "SBR", "Runtime", "TvSweatScreen.cs");
+            Assert.IsTrue(File.Exists(path), $"TvSweatScreen.cs not found at {path}");
+            string[] lines = File.ReadAllLines(path);
+
+            var advances = new List<int>();
+            for (int i = 0; i < lines.Length; i++)
+                if (lines[i].Contains("_ledger.CompleteGoal(")) advances.Add(i);
+
+            Assert.IsNotEmpty(advances,
+                "no _ledger.CompleteGoal call found — this scan just stopped covering anything. "
+                + "If the ledger advance was renamed, re-point this test at the new name rather than "
+                + "deleting it (C29's shape: a check that inspects nothing is not a pass).");
+
+            foreach (int i in advances)
+            {
+                // The repaint must follow within the same short block. Deliberately narrow: the whole
+                // defect was that the column's repaint lived a beat away, in another method.
+                bool repainted = false;
+                for (int j = i; j < System.Math.Min(i + 12, lines.Length); j++)
+                    if (lines[j].Contains("RepaintRevealedScore(")) { repainted = true; break; }
+
+                Assert.IsTrue(repainted,
+                    $"T62: TvSweatScreen.cs:{i + 1} advances the revealed score with "
+                    + "_ledger.CompleteGoal but does not call RepaintRevealedScore within the same "
+                    + "block. Repainting only the scorebug there is the original defect: the live "
+                    + "leg row reads the SAME _ledger.Picked/Opponent and would print the pre-goal "
+                    + "score until the next beat's RenderEvent.");
+            }
+        }
+
+        [Test]
+        public void T62_the_repaint_helper_drives_both_mirrors()
+        {
+            // Guards the other half: the helper must actually touch BOTH surfaces. A helper that
+            // quietly lost its column call would satisfy the scan above and restore the defect.
+            string path = Path.Combine(Application.dataPath, "SBR", "Runtime", "TvSweatScreen.cs");
+            string[] lines = File.ReadAllLines(path);
+            int start = System.Array.FindIndex(lines, l => l.Contains("private void RepaintRevealedScore("));
+            Assert.Greater(start, -1, "RepaintRevealedScore not found — was it renamed?");
+
+            string body = string.Join("\n", lines.Skip(start).Take(8));
+            Assert.IsTrue(body.Contains("UpdateScorebug("),
+                "RepaintRevealedScore must repaint the scorebug");
+            Assert.IsTrue(body.Contains("UpdateTicketColumn("),
+                "RepaintRevealedScore must repaint the ticket column — that omission IS T62");
+        }
+
+        // ---------------------------------------------------------------------------------------
         // T58 — the goal flash is a BRIGHTNESS event, never a hue event.
         //
         // DD 2026-08-04: the flash overlay was gold, measured 56-58° at up to 67% saturation on the

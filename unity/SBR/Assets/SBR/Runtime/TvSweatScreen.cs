@@ -1393,7 +1393,7 @@ namespace SBR.Game
                 RevealedView.SetClock(_tClock.text);
             }
             if (_ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count)
-                UpdateScorebug(_ticket.Legs[_stageLeg]);
+                RepaintRevealedScore(_ticket.Legs[_stageLeg]);
 
             // C3 (Design Director ruling): every staged goal attempt reaches its payoff HERE,
             // whether or not it commits. A commit means the score itself is the story — DESIGN.md
@@ -1791,6 +1791,32 @@ namespace SBR.Game
         /// playback." No RecordsLine/market-chip suffix here — the market chip's information now
         /// lives in the ticket column's active-leg row (SweatActiveLegModel), which is the
         /// PRD-sanctioned channel for "what does this leg need".</summary>
+        /// <summary>T62 (DD 2026-08-05, found on this slice's own T58 proof frames): **every surface
+        /// that mirrors <c>_ledger</c> repaints together, on the frame the ledger moves.**
+        ///
+        /// <para>The defect: <c>_ledger.CompleteGoal</c> advances the revealed score, and
+        /// <c>OnGoalPlayed</c> then repainted the SCOREBUG only. The live leg row's progress line
+        /// reads the same <c>_ledger.Picked/Opponent</c> (see DescribeActiveLeg) but was only
+        /// repainted by <c>UpdateTicketColumn</c> at the next beat's RenderEvent — so for a whole beat
+        /// the column printed the pre-goal score while the scoreline above it printed the goal.
+        /// **Same revealed value, same frame, two readings.** The DD measured it correcting a full
+        /// 51 match-minutes later, which is the shape of a state lie rather than a lag.</para>
+        ///
+        /// <para>Fixed at the LEDGER-ADVANCE site rather than by adding one more call to one more
+        /// path: this method is what <c>OnGoalPlayed</c> calls, so a future path that moves the score
+        /// and repaints only half of it has to go out of its way to do so. Same rule as T43's slate
+        /// and T59's gate — one value, one repaint, no window where two mirrors disagree.</para>
+        ///
+        /// <para>The column is refreshed at its CURRENT live index, not re-pointed: this states the
+        /// score, it does not decide which row is live. Nothing here is revealed early — the ledger
+        /// has already advanced and the scorebug is already showing it, so this only stops the column
+        /// lagging behind a fact the surface has published.</para></summary>
+        private void RepaintRevealedScore(Leg leg)
+        {
+            UpdateScorebug(leg);
+            UpdateTicketColumn(_liveLegIndexShown);
+        }
+
         private void UpdateScorebug(Leg leg)
         {
             if (_tMatchup == null) return;
