@@ -286,6 +286,10 @@ namespace SBR
             var states = new (string label, Color value)[]
             {
                 ("emission-struck",    new Color(0.28f,  0.10f,  0.55f)),
+                // The superseded 4.07x warm build, carried so the ruled ~3x ceiling can be judged
+                // against the thing it replaced rather than in the abstract. Like the struck
+                // violet, it is quoted HERE only and is not a live option.
+                ("emission-prev-4x",   new Color(0.155f, 0.130f, 0.098f)),
                 ("emission-attention", book.attentionEmission),
                 ("emission-idle",      book.idleEmission),
             };
