@@ -453,6 +453,40 @@ the laptop, TV or phone body, so R19(a)'s separation has only ever been albedo a
 R19(b)-am the carrying channel is **value**, which is measurable in a frame — so regions for those
 bodies would convert R19(a) from asserted to measured.
 
+### Batch 12 (2026-08-05) — the wear fork closes, and the glow gets a rule
+
+**R8 wear: RULED option 3 — wear lives in the standing shot.** Both technique escapes refused
+(scale/contrast *and* the URP Decal Renderer). **The re-placement precondition closes as
+tested-and-null** — it was tried, measured, and changed nothing. Nothing further is owed here.
+
+**`R7-F` is now INFORMATIONAL**, ruled the sixth vacuous green. The finding is that it was never a
+gate: it can prove a piece is *in frame*; it cannot prove it is *visible*, and this lane showed the
+gap twice in one session — `TrafficPath` "failed" on an origin-point test with a fifth of it in shot,
+and `ConduitDrip` "improved" 30% → 67% coverage while going 34% → 64% hidden, changing the frame by
+nothing. **A check that can go green on invisible wear is not a gate on whether wear reads.**
+`CaptureWearAB` is the instrument that answers that, and option 3 was ruled on its numbers.
+
+**R35/R37 — the glow rule, built:**
+
+| rule | built |
+|---|---|
+| warm near-neutral, **R ≥ G > B** | `0.038 ≥ 0.032 > 0.024`, preserved under ×3 |
+| attention differs by **amplitude only** | attention **is** idle × 3, exactly |
+| **~3× maximum** | **3.00×** by construction (previous build was 4.07×) |
+| `idleEmission` carries the same defect | both ends are now one colour |
+| **NO PULSE** (R37) | `emission = (wantsYou && !engaged) ? attention : idle` |
+
+Writing attention as `idle × 3` rather than a second hand-picked triple is deliberate: *amplitude
+only* then holds **by construction** instead of by my matching two chromaticities and asserting they
+agree. Any future edit to idle carries attention with it, so the two cannot drift apart the way idle
+(cool) and attention (violet) had.
+
+`attentionBreathHz` is **removed**, not left at zero — a dead serialized dial invites someone to
+reinstate the breathing it used to drive. There is also no easing on the step: a lerp with a duration
+would be R37's finding wearing a shorter clock.
+
+**Owed:** one capture to rule the exact values on. Editor is after SureThing.
+
 ### R8 / weathering — measured, and the parking diagnosis does not survive it
 
 **With the entire wear inventory disabled, two of the three review poses are bit-identical.**

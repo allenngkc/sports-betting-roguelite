@@ -48,9 +48,22 @@ namespace SBR.Game
         // 8.6, which is what stops it being a fourth light. Kept slightly quieter than before
         // (4.07x vs 4.98x) because §1.2 requires screens "quiet, with faint spill" -- but the cue
         // must still carry from the couch, which is the trade the DD is being asked to judge.
+        // R35/R37 (DD 2026-08-05, batch 12) — built to the RULE, values still to be ruled on the
+        // frame this produces:
+        //
+        //   warm near-neutral, R >= G > B   ..... 0.038 >= 0.032 > 0.024, and x3 preserves it
+        //   attention differs by AMPLITUDE ONLY .. attention IS idle * 3, exactly
+        //   ~3x maximum ......................... 3.00x by construction (the last build was 4.07x)
+        //   idleEmission carries the same defect . both ends are one colour now
+        //
+        // Writing attention as idle x 3 rather than as a second hand-picked triple is the point:
+        // "amplitude only" then holds BY CONSTRUCTION instead of by my matching two chromaticities
+        // and asserting they agree. Any future edit to idle carries attention with it, so the two
+        // cannot drift apart the way idle (cool) and attention (violet) had.
         [ColorUsage(false, true)] public Color idleEmission = new Color(0.038f, 0.032f, 0.024f);
-        [ColorUsage(false, true)] public Color attentionEmission = new Color(0.155f, 0.130f, 0.098f);
-        public float attentionBreathHz = 0.6f;
+        [ColorUsage(false, true)] public Color attentionEmission = new Color(0.114f, 0.096f, 0.072f);
+        // attentionBreathHz REMOVED with the pulse (R37). Left in place it would be a dead
+        // serialized dial inviting someone to reinstate the breathing it used to drive.
 
         private Canvas _canvas;
         private Font _font;
@@ -126,12 +139,14 @@ namespace SBR.Game
             bool wantsYou = phase == Phase.Betting || phase == Phase.Shop
                 || phase == Phase.RunWon || phase == Phase.RunLost;
             bool engaged = DeskFocus.Active != null;
-            Color emission = idleEmission;
-            if (wantsYou && !engaged)
-            {
-                float breathe = 0.5f + 0.5f * Mathf.Sin(Time.time * attentionBreathHz * 2f * Mathf.PI);
-                emission = Color.Lerp(idleEmission, attentionEmission, breathe);
-            }
+            // R37 (DD 2026-08-05): NO PULSE. One step up, held for as long as the laptop wants him,
+            // one step back. The breathing was ruled a violation in its own right and separately
+            // from the colour: a continuously animated light is a fourth source that also MOVES,
+            // and it read as the room breathing rather than as a machine waiting.
+            //
+            // There is deliberately no easing here. A lerp with a duration would be the same
+            // finding wearing a shorter clock -- the ruling says step, and a step is an assignment.
+            Color emission = (wantsYou && !engaged) ? attentionEmission : idleEmission;
             _emissBlock.SetColor(EmissionColorId, emission);
             lidRenderer.SetPropertyBlock(_emissBlock);
         }

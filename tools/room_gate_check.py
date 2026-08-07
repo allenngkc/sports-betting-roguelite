@@ -549,13 +549,26 @@ def gate_wear_in_frustum(docs):
             detail.append(f"{name:14s} *** NO PART IN ANY REVIEW FRUSTUM ***")
             problems.append(f"'{name}': no part of the quad is in any of the three review frusta "
                             f"-- invisible at any quality (room-design §4/§5)")
+    # R7-F IS INFORMATIONAL (DD 2026-08-05, batch 12) -- the sixth vacuous green, and
+    # the finding is that it was never a gate at all. It can prove a wear piece is in
+    # frame; it cannot prove the piece is VISIBLE, and the two are not the same thing.
+    # This lane demonstrated the gap twice in one session: TrafficPath "failed" on an
+    # origin-point test while a fifth of it was in shot, and ConduitDrip "improved"
+    # from 30% to 67% coverage while going from 34% to 64% hidden behind the TV
+    # housing, changing the rendered frame by nothing at all.
+    #
+    # A check that can go green on invisible wear is not a gate on whether wear reads.
+    # The instrument that answers that is CaptureWearAB, which is why option 3 was
+    # ruled on its numbers and not on these. Coverage stays REPORTED, never judged.
     return GateResult(
-        "R7-F", "wear is in at least one review frustum",
-        "PASS" if not problems else "FAIL",
-        f"all {len(WEAR_OBJECTS)} wear placements seen by >=1 of 3 review poses",
-        f"{len(problems)} placement(s) no camera can see" if problems else "all placements visible",
+        "R7-F", "wear frustum coverage (informational)",
+        "INFO",
+        "-",
+        f"{len(WEAR_OBJECTS)} placements, coverage and occlusion reported, never judged",
         detail + problems,
-        blind_spot="samples a 9x9 grid across each quad's own plane, so it reports what FRACTION "
+        blind_spot="INFORMATIONAL since batch 12 -- it reports, it does not judge, because being "
+                   "in frame does not mean being visible and this check cannot tell the two apart. "
+                   "It samples a 9x9 grid across each quad's own plane, so it reports what FRACTION "
                    "is in frame rather than whether a centre point is -- an origin-only version of "
                    "this check called TrafficPath invisible when a fifth of it is in shot. It "
                    "still does not test OCCLUSION: a piece inside the frustum but behind the couch "
