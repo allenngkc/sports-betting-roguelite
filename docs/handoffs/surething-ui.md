@@ -4,7 +4,8 @@
 - **THIS SURFACE HAS AN OWNING DOCUMENT.** Approved by Allen, canon at `main-2/docs/design/surething-design.md`. **Read it before this file.** The LEDGER is Design-verified (batch 10); the zero-dollar wax/grey split is **ratified as considered — never "fix" it.**
 - **Done:** batch 10 (C29 wrapper, verdict ground + chrome + figures, `NOT INSTALLED`, the colour audit, the run-context tally, the cross-round capture) and **all of batch 11** — margin header in biro (S60), scope stated once (S61), `R2 · TICKET 02` identity (S62), losing-verdict drain (S59).
 - **Now:** nothing in flight. Staged for the drag: `dd-import/surething-batch11-2026-08-06/`.
-- **Run every suite through `tools/run-unity-tests.ps1`, never `-runTests` directly** (C29). It caught two mid-suite Unity deaths in batch 11 alone that would otherwise have read as passes.
+- **Request the editor slot through the orchestrator, every time** — corrected 2026-08-06; the standing grant in `STATUS.md` is stale and this seat's runs collided with a validation pass because of it. **Room holds the lease next** (glow captures).
+- **Run every suite through `tools/run-unity-tests.ps1`, never `-runTests` directly** (C29). It exited non-zero on both collided runs rather than reporting them as passes, which is the whole reason the collision cost two re-runs and nothing else.
 - **One capture still worth having:** the only MY BETS state is a fully-dead ticket, so the tally is photographed reading `1 / $0 / $0` — correct, but never shown doing its job.
 - **Two traps still live in this tree:** `artifacts/` is no longer git-ignored (a bare `git add -A` sweeps ~100 PNGs), and two capture states share the number `09` (markets' test, needs their nod).
 
@@ -729,8 +730,21 @@ Archivo Narrow's digits are already uniform, so this is insurance rather than a 
 
   It deliberately does **not** pass `-nographics`; that fails the four capture tests on
   `RenderTexture.Create` and reads as four regressions.
-- **Unity is one editor, studio-wide.** Do not launch it without a slot granted by the orchestrator.
-  Announce open and close; other worktrees queue.
+- **Unity is one editor, studio-wide. Request a slot through the orchestrator, every time.**
+  Corrected 2026-08-06 after this seat ran on a standing grant in `STATUS.md` instead of asking. That
+  grant is stale and must not be relied on again: this seat's suites collided with a post-merge
+  validation pass and put two editors on the machine at once.
+  **Announce open and close; other lanes queue.**
+
+  **Contention does not look like contention — it looks like a flaky test run.** Two PlayMode runs
+  died mid-suite writing no results, at `22:00:08` and `22:07:18`, and this seat reported both as
+  transient Unity failures. They were the collision, and the timestamps say so plainly once you look
+  (`evidence/logs/` filename stamps against `evidence/test-results/`). **Before diagnosing a Unity
+  run that produced no results, check whether anyone else held the editor.** A genuine transient
+  looks the same from inside the log.
+
+  This is also the strongest argument for the C29 wrapper: both collided runs exited non-zero rather
+  than being read as passes, so the only cost was two re-runs.
 - **Run results and logs go to `evidence/`**, never the Unity project root — it is kept clean and is
   gitignored.
 - **Grunt work is dispatched** to bounded sub-agents (Sonnet by default, max two at once). Each
