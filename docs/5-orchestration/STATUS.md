@@ -92,6 +92,17 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-06 cycle 98 · **Batch 11 transcribed + dispatched** — batch-10 fully
+  verified on frames (S34 finally closes; the colour audit RETIRED and named
+  the standard; the harder chip answer vindicated). New: the DD's own
+  composition defect on the losing verdict (ruled with fix, §1.5), three
+  small SureThing violations (header ink, scope-once, ticket identity), the
+  violet struck to direction-only, BTTS's false red removed by narrowing the
+  gate's population (expiring exclusion), C32 completes the instrument
+  trilogy (scope/coverage/resolution). **DELIVERY FAILURE flagged: the T58
+  and wear-fork zips never reached the DD — re-drag owed (2 files); the DD
+  commits to T58 + TV's owning doc in one session.** SureThing owning doc
+  DRAFTED, awaiting Allen. Arm B accept still pending. Reversal: DD canon.
 - 2026-08-06 cycle 97 · **Another Orca restart recovered** — all four leads
   revived via --continue with bypass, effort re-applied dialog-aware, all
   booted; watchers re-armed (v8 + heartbeat). Studio state unchanged: fourth
