@@ -92,6 +92,10 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-07 cycle 103 · **Orca restart recovered (again)** — four leads
+  revived via --continue, effort re-applied, watchers re-armed (v9).
+  Studio unchanged: converged on Allen's two moves (pricing-variety accept;
+  the 5-file batch-13 drag). Reversal: none.
 - 2026-08-06 cycle 102 · **TV's double window closed; batch-13 drag staged
   (5 files)** — T62 built+suite-verified (plus a months-old hidden
   frame-time flake pinned by its own new tests); T63 measured with box
