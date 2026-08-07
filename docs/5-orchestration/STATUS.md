@@ -92,6 +92,11 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-06 cycle 99 · **ARM B MERGED — `0bc72e9`** — Allen accepted; clean
+  merge at `2db5c19` (tie-break fairness fix, the false-red gate narrowing
+  with its named expiring exclusion, resolution statements, the renumber, the
+  receipt-flake fix). Validation running. **Veto: revert `0bc72e9`.** Room's
+  glow A/B lease queues after validation. Reversal: revert the merge commit.
 - 2026-08-06 cycle 98 · **Batch 11 transcribed + dispatched** — batch-10 fully
   verified on frames (S34 finally closes; the colour audit RETIRED and named
   the standard; the harder chip answer vindicated). New: the DD's own
