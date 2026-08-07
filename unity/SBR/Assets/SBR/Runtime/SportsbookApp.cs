@@ -1387,14 +1387,22 @@ namespace SBR.Game
 
         private void BuildMirrorMargin(RectTransform margin, RevealedView view)
         {
+            // S60: biro title over a 2px --biro-deep rule, which is what S33's MarginHeader is on
+            // every destination. This one rendered --toner over the default soft rule while the
+            // ledger's RECORD rendered biro correctly — one component, two renderings, both in the
+            // same submission. Typeface comes across too: condensed, as RECORD is.
+            //
+            // The obvious objection, ruled rather than left to resurface: the tally is the TV's, so
+            // why is its header in HIS ink? Because the biro marks the COLUMN as his, not the
+            // content as his choice. The margin is his column on every screen; what fills it varies.
             LaptopUi.MakeText(margin, "MirrorMarginTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -10f), new Vector2(296f, 24f), 16, TextAnchor.UpperLeft,
-                LaptopOs.White, "TV-OWNED TALLY", _font);
+                LaptopOs.Accent, "TV-OWNED TALLY", _fontCond);
             LaptopUi.MakeText(margin, "MirrorMarginRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -38f), new Vector2(296f, 24f), 13, TextAnchor.UpperLeft,
                 LaptopOs.Muted, "READ ONLY  ·  NO SCORE  ·  NO PROBABILITY", _font);
             LaptopUi.MakeRule(margin, "MirrorMarginHeaderRule", new Vector2(0f, 1f),
-                new Vector2(0f, 1f), new Vector2(0f, -68f), new Vector2(324f, 2f));
+                new Vector2(0f, 1f), new Vector2(14f, -68f), new Vector2(296f, 2f), LaptopOs.BiroDeep);
             if (view == null || !view.HasTicket)
             {
                 LaptopUi.MakeText(margin, "MirrorMarginEmpty", new Vector2(0f, 1f), new Vector2(0f, 1f),
