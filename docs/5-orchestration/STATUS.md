@@ -92,6 +92,17 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-06 cycle 102 · **TV's double window closed; batch-13 drag staged
+  (5 files)** — T62 built+suite-verified (plus a months-old hidden
+  frame-time flake pinned by its own new tests); T63 measured with box
+  derivation + scale scope note (C25-form; committed `22622e0`); the
+  isolation answered Allen's gold question; remaining T63 finding: the
+  fully-inverted band (0.66) still sits ~0.21 under the same-frame scoreline
+  (0.875) — DD rules on the delivered numbers. Docket also carries: TV's
+  owning doc (owed), the glow value (both zips + the warmth-vs-3× tension),
+  SureThing's four-fix photos, batch-12's export file (owed). All lanes
+  evidence-complete again; markets alone still building (pricing variety).
+  Reversal: none.
 - 2026-08-06 cycle 101 · **Batch 12 transcribed + all four lanes re-activated**
   — T58 GRANTED-closed (DD measured personally; gold back to money; TV owning
   doc next session); T62 new (progress-line lag, whole-beat, TV fix); T63
