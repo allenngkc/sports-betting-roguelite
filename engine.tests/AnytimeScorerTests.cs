@@ -28,7 +28,15 @@ public class AnytimeScorerTests
         double forward = matchup.TrueProb(MarketSelection.AnytimeScorer(0));
         double defender = matchup.TrueProb(MarketSelection.AnytimeScorer(5));
 
-        Assert.Equal(0.21463302392628314, forward, 10);
+        // Re-pinned 2026-08-06: scoring weight is no longer purely role-derived. Per-player jitter
+        // (RunConfig.ScoringWeightJitter) separates players within a role, so this seed's forward
+        // moved 0.2146→0.2397. The pin is a DETERMINISM guard and the number is expected to move
+        // when the model does; an UNINTENTIONAL change here is still a regression to investigate.
+        Assert.Equal(0.23968857550621281, forward, 10);
+        // The semantic assertion, and the one that must survive any weighting change: role order
+        // holds. The jitter is symmetric and bounded, so at the shipped weights a jittered forward
+        // (3.0 × 0.65 = 1.95) still outranks a jittered defender (0.5 × 1.35 = 0.675) by
+        // construction rather than by luck of the seed.
         Assert.True(forward > defender);
     }
 
