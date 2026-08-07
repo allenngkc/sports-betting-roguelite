@@ -1102,6 +1102,25 @@ namespace SBR.Game
             return "$" + rounded.ToString("N0", CultureInfo.InvariantCulture);
         }
 
+        /// <summary>MarginHeader.jsx (S33): a biro title in condensed caps, closed by a 2px
+        /// `--biro-deep` rule. Returns the header's own height so callers lay the first row flush
+        /// beneath it rather than each guessing an offset.
+        ///
+        /// Shared after S60 found this component rendering two different ways in one submission —
+        /// the ledger's RECORD in biro over a biro-deep rule, MY BETS' in toner over the default
+        /// soft rule. S61 removed the subline that was the last structural difference between them,
+        /// so there is no longer any reason for two copies to exist and drift a third time.</summary>
+        public static float MakeMarginHeader(RectTransform parent, string title, Font fontCond)
+        {
+            const float headerHeight = 41f;
+            MakeText(parent, "MarginHeaderTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(14f, -12f), new Vector2(296f, 22f), 16, TextAnchor.UpperLeft,
+                LaptopOs.Accent, title, fontCond);
+            MakeRule(parent, "MarginHeaderRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(14f, -headerHeight), new Vector2(296f, 2f), LaptopOs.BiroDeep);
+            return headerHeight;
+        }
+
         /// <summary>MarginRow.jsx: one label/value line — label 13px roman `--toner-3` left, value
         /// condensed right-flushed, closed by a 1px `--rule` divider. <paramref name="rowTop"/> is
         /// the row's own top edge, so consecutive rows sit flush with no gap.

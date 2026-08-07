@@ -1387,27 +1387,34 @@ namespace SBR.Game
 
         private void BuildMirrorMargin(RectTransform margin, RevealedView view)
         {
-            // S60: biro title over a 2px --biro-deep rule, which is what S33's MarginHeader is on
-            // every destination. This one rendered --toner over the default soft rule while the
-            // ledger's RECORD rendered biro correctly — one component, two renderings, both in the
-            // same submission. Typeface comes across too: condensed, as RECORD is.
+            // S60 + S61, and the two rulings finish each other.
             //
-            // The obvious objection, ruled rather than left to resurface: the tally is the TV's, so
+            // S60 put this header in biro over a 2px --biro-deep rule, as S33 specifies on every
+            // destination. The objection is worth keeping in the source: the tally is the TV's, so
             // why is its header in HIS ink? Because the biro marks the COLUMN as his, not the
             // content as his choice. The margin is his column on every screen; what fills it varies.
-            LaptopUi.MakeText(margin, "MirrorMarginTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, -10f), new Vector2(296f, 24f), 16, TextAnchor.UpperLeft,
-                LaptopOs.Accent, "TV-OWNED TALLY", _fontCond);
-            LaptopUi.MakeText(margin, "MirrorMarginRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, -38f), new Vector2(296f, 24f), 13, TextAnchor.UpperLeft,
-                LaptopOs.Muted, "READ ONLY  ·  NO SCORE  ·  NO PROBABILITY", _font);
-            LaptopUi.MakeRule(margin, "MirrorMarginHeaderRule", new Vector2(0f, 1f),
-                new Vector2(0f, 1f), new Vector2(14f, -68f), new Vector2(296f, 2f), LaptopOs.BiroDeep);
+            //
+            // S61: this screen stated its scope FOUR times on one 1024px canvas — board header,
+            // board subline, margin header, margin subline. The board header owns "read-only TV
+            // mirror" and owns it well; three restatements followed it. The margin's subline
+            // (READ ONLY · NO SCORE · NO PROBABILITY) is deleted, and the header no longer
+            // re-asserts ownership either — "TV-OWNED" was the third statement of a fact the two
+            // lines above it already make, and the biro now marks the column anyway. What is left
+            // names what the column CONTAINS, which is the one thing nothing else on the screen says.
+            //
+            // Shape worth remembering: S58 asked this column to stop restating the SHEET and it did
+            // — then restated the SCOPE instead. A restatement removed from one register can
+            // reappear in another.
+            //
+            // With the subline gone this is structurally identical to the ledger's RECORD header, so
+            // it is now literally the same component (LaptopUi.MakeMarginHeader) rather than a
+            // second copy holding the same values.
+            float headerHeight = LaptopUi.MakeMarginHeader(margin, "TALLY", _fontCond);
             if (view == null || !view.HasTicket)
             {
                 LaptopUi.MakeText(margin, "MirrorMarginEmpty", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(14f, -90f), new Vector2(296f, 44f), 13, TextAnchor.UpperLeft,
-                    LaptopOs.Muted, "THE TV HAS NOT RELEASED A RECEIPT.", _font);
+                    new Vector2(14f, -(headerHeight + 12f)), new Vector2(296f, 44f), 13,
+                    TextAnchor.UpperLeft, LaptopOs.Muted, "THE TV HAS NOT RELEASED A RECEIPT.", _font);
                 return;
             }
             // S58: this column printed one block per ticket — `TICKET 1 · DEAD` over
@@ -1440,18 +1447,19 @@ namespace SBR.Game
             // reads $0 here, which is the true answer to "what is still live".
             LaptopUi.MakeMarginRow(margin, "TallyTickets", "TICKETS THIS ROUND",
                 view.Tickets.Count.ToString(CultureInfo.InvariantCulture), LaptopOs.White,
-                -MirrorTallyTop, MirrorTallyRowHeight, _font, _fontCond);
+                -headerHeight, MirrorTallyRowHeight, _font, _fontCond);
             LaptopUi.MakeMarginRow(margin, "TallyAtRisk", $"AT RISK  ·  {riding} RIDING",
                 LaptopUi.Money(atRisk), LaptopOs.White,
-                -(MirrorTallyTop + MirrorTallyRowHeight), MirrorTallyRowHeight, _font, _fontCond);
+                -(headerHeight + MirrorTallyRowHeight), MirrorTallyRowHeight, _font, _fontCond);
             LaptopUi.MakeMarginRow(margin, "TallyIfAllLand", "IF EVERYTHING LANDS",
                 LaptopUi.Money(ifAllLand), LaptopOs.MoneyGold,
-                -(MirrorTallyTop + MirrorTallyRowHeight * 2f), MirrorTallyRowHeight, _font, _fontCond);
+                -(headerHeight + MirrorTallyRowHeight * 2f), MirrorTallyRowHeight, _font, _fontCond);
         }
 
-        // The tally's rows start below the header rule at -68 and use the same 38px row the
-        // ledger's RECORD margin does, so the two margins on this surface scan identically.
-        private const float MirrorTallyTop = 70f;
+        // The same 38px row the ledger's RECORD margin uses, so the two margins scan identically.
+        // The rows' own top now comes from MakeMarginHeader's returned height rather than a second
+        // hand-kept offset — S61 shortened that header and a duplicated constant would have been
+        // the next thing to drift out of step with it.
         private const float MirrorTallyRowHeight = 38f;
 
         private void BuildRewards(Run run)
@@ -2363,11 +2371,9 @@ namespace SBR.Game
             LaptopUi.MakeMarginRuledPaper(summary, "RuledPaper");
 
             // MarginHeader.jsx: biro title, uppercase, closed by the 2px --biro-deep rule.
-            LaptopUi.MakeText(summary, "RecordTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, -12f), new Vector2(296f, 22f), 16, TextAnchor.UpperLeft,
-                LaptopOs.Accent, "RECORD", _fontCond);
-            LaptopUi.MakeRule(summary, "RecordHeaderRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, -RecordHeaderHeight), new Vector2(296f, 2f), LaptopOs.BiroDeep);
+            // S60/S61: this rendering was the correct one, and it is now the shared component both
+            // margins draw rather than the copy the other one was compared against.
+            LaptopUi.MakeMarginHeader(summary, "RECORD", _fontCond);
 
             // MarginRow.jsx x3, in the kit's order (app.jsx:94-96).
             BuildRecordRow(summary, "RecordRowSettled", "TICKETS SETTLED",
