@@ -25,8 +25,31 @@ namespace SBR.Game
         public int referencePixelsWide = 1024;
 
         [Header("Attention glow")]
-        [ColorUsage(false, true)] public Color idleEmission = new Color(0.025f, 0.035f, 0.055f);
-        [ColorUsage(false, true)] public Color attentionEmission = new Color(0.28f, 0.10f, 0.55f);
+        // R35 (DD 2026-08-05, batch 11): the violet attention glow is STRUCK -- a fourth light in
+        // a three-source room, in a retired hue, on his machine. Built to the ruled DIRECTION:
+        // the screen's own emitted family, warm, low chroma. THE EXACT VALUES ARE NOT RULED --
+        // they are ruled on the frame this build produces, which is the first colour in the room
+        // no capture can see yet. Treat these as the proposal, not the decision.
+        //
+        // Was: idle (0.025, 0.035, 0.055) hue 271deg, attention (0.28, 0.10, 0.55) hue 312deg
+        //      chroma 64.1, measured on frame at hue 303.6 / chroma 9.17.
+        //
+        // BOTH ends move, and that is the direction's consequence rather than a widened scope.
+        // Glow() LERPS between them, so warming only the attention end would have made the pulse
+        // travel 271deg -> 312deg: a colour cycle, which is a worse artefact than the one being
+        // removed. One family means one hue at two brightnesses.
+        //
+        //   idle       hue 83.3deg  chroma 5.4  luminance 0.0327  (was 0.0343 -- rest spill held)
+        //   attention  hue 82.4deg  chroma 8.6  luminance 0.1330  = 4.07x idle (was 4.98x)
+        //   hue travel across the breathe: 0.9deg -- brightness only
+        //
+        // Warm family placement: the room's key is #D8C48A at hue 92deg, so this sits just red of
+        // the fluorescent rather than announcing itself as a separate source. Chroma drops 64.1 ->
+        // 8.6, which is what stops it being a fourth light. Kept slightly quieter than before
+        // (4.07x vs 4.98x) because §1.2 requires screens "quiet, with faint spill" -- but the cue
+        // must still carry from the couch, which is the trade the DD is being asked to judge.
+        [ColorUsage(false, true)] public Color idleEmission = new Color(0.038f, 0.032f, 0.024f);
+        [ColorUsage(false, true)] public Color attentionEmission = new Color(0.155f, 0.130f, 0.098f);
         public float attentionBreathHz = 0.6f;
 
         private Canvas _canvas;

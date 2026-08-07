@@ -496,8 +496,22 @@ blue**. `Glow()` drives the **lid renderer**, and the room builds that object an
 component (`GrayboxRoomBuilder` 810, 836). A lid emitting into the room is light, not app content —
 R28's split exactly, one surface over.
 
-**Measured on committed frames, not asserted:** the laptop panel reads **hue 303.6° / chroma 9.17**
-in `batch10` and **305.0° / 9.12** in `batch9`. Magenta-violet, in every laptop capture we hold.
+> **⚠️ CORRECTION (2026-08-05).** I reported the laptop panel measuring **hue 303.6° / chroma 9.17**
+> as rendered evidence of `attentionEmission`. **That attribution was wrong.** The panel region is
+> the SureThing canvas drawn *over* the lid, and what it is showing is the **superseded violet
+> laptop package** — purple tabs, magenta team names, violet DETAILS buttons, a magenta LOCK IT IN.
+> That is **C13**, already ruled an *integration item, not a room defect*. I measured their stale
+> content through our camera and called it our light.
+>
+> Proof: the strike landed in the build and the panel still reads **308.7°** in `batch11`. If the
+> violet had been ours, that number would have moved.
+>
+> **The finding against `attentionEmission` still stands** — on the source value (`0.28, 0.10, 0.55`,
+> hue 312°, chroma 64.1), on ownership (lid renderer, room-built object), and on the direction. The
+> DD struck it *without needing a frame*, which was the right call and is now visibly why.
+>
+> **Standing consequence: room captures near the laptop are contaminated.** Any colour claim in that
+> region is reading C13's stale package until the surfaces' content is re-integrated.
 
 It fires when `wantsYou && !engaged` — Betting/Shop/RunWon/RunLost with the player **away from the
 desk**, i.e. precisely while seated at the TV, and it *breathes*.
