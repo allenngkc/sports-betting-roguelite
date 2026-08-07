@@ -241,6 +241,76 @@ namespace SBR
             Debug.Log($"[RoomViewCapture] wear A/B written to {on} and {off}");
         }
 
+        /// <summary>
+        /// R35 - the lid-glow A/B, so the ruled colour can be judged on a frame.
+        ///
+        /// The strike landed without a frame because none could show it: in Play Mode the lid's
+        /// emission sits BEHIND the SureThing canvas, and what reaches the room is dominated by the
+        /// desk lamp's warm pool. Both problems disappear in Edit Mode - the canvas is built in
+        /// Awake, so it does not exist here, and the lid quad renders its own emission unobstructed.
+        /// That is why this is Edit Mode and not merely convenient: it is the only state in which
+        /// the thing being ruled is visible at all.
+        ///
+        /// Three states, because "rule the exact value" needs more than a before/after:
+        ///   emission-struck  the retired violet, for comparison only
+        ///   emission-attention  the proposal's bright end - the cue the player must catch
+        ///   emission-idle       the proposal's rest end - what the room lives with
+        ///
+        /// The struck value is hard-coded HERE and nowhere else. It is the A/B's comparand, not a
+        /// live option, and it must not be copied back into LaptopScreen.
+        ///
+        /// Diff with:  python tools/wear_ab_diff.py &lt;dir&gt;/emission-struck &lt;dir&gt;/emission-attention
+        ///
+        ///   Unity.exe -batchmode -quit -projectPath (project)
+        ///             -executeMethod SBR.RoomViewCapture.CaptureEmissionAB -outDir (path)
+        /// </summary>
+        public static void CaptureEmissionAB()
+        {
+            string outDir = OutDirFromArgs();
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+
+            var book = UnityEngine.Object.FindAnyObjectByType<SBR.Game.LaptopScreen>();
+            if (book == null || book.lidRenderer == null)
+                throw new InvalidOperationException(
+                    "LaptopScreen or its lidRenderer is missing - the A/B would capture three " +
+                    "identical sets and read as 'the colour makes no difference'");
+
+            Camera cam = FindPlayerCamera();
+            var controller = UnityEngine.Object.FindAnyObjectByType<FirstPersonController>();
+            if (controller != null)
+                controller.enabled = false;
+
+            WarmRender(cam);   // never let the first saved frame be the pipeline's first
+
+            // (label, emission) - struck value quoted from batch 11's ruling, for comparison only.
+            var states = new (string label, Color value)[]
+            {
+                ("emission-struck",    new Color(0.28f,  0.10f,  0.55f)),
+                ("emission-attention", book.attentionEmission),
+                ("emission-idle",      book.idleEmission),
+            };
+
+            var block = new MaterialPropertyBlock();
+            int emissionId = Shader.PropertyToID("_EmissionColor");
+
+            foreach (var (label, value) in states)
+            {
+                book.lidRenderer.GetPropertyBlock(block);
+                block.SetColor(emissionId, value);
+                book.lidRenderer.SetPropertyBlock(block);
+
+                string dir = Path.Combine(outDir, label);
+                Directory.CreateDirectory(dir);
+                Capture(dir);
+                Debug.Log($"[RoomViewCapture] {label} = {value.r:F3},{value.g:F3},{value.b:F3} -> {dir}");
+            }
+
+            // Leave the lid at its shipped rest value rather than whichever state ran last.
+            book.lidRenderer.GetPropertyBlock(block);
+            block.SetColor(emissionId, book.idleEmission);
+            book.lidRenderer.SetPropertyBlock(block);
+        }
+
         public static void CaptureAll()
         {
             string outDir = OutDirFromArgs();

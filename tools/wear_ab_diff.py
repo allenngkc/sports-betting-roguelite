@@ -66,8 +66,16 @@ def main():
         print(f"FAILED: missing capture directory: {', '.join(missing)}")
         sys.exit(1)
 
-    print(f"R7's parked verdict for comparison: {R7_CHANGED_PCT}% changed against a "
-          f"{R7_BASELINE_PCT}% baseline -- 'very nearly invisible'\n")
+    # The R7 figures are the WEAR baseline. Printing them beside an emission A/B
+    # would invite a comparison between two unrelated quantities -- the shape of
+    # mistake this file exists to prevent -- so they appear only for the wear pair,
+    # which is the single-root invocation.
+    if len(args) == 1:
+        print(f"R7's parked verdict for comparison: {R7_CHANGED_PCT}% changed against a "
+              f"{R7_BASELINE_PCT}% baseline -- 'very nearly invisible'\n")
+    else:
+        print(f"Comparing {on.name} vs {off.name}. No baseline is quoted: R7's wear figures are a "
+              f"different quantity and would be a false comparison here.\n")
     print(f"{'pose':26s} {'any change':>11s} {'>JND':>8s} {'mean mag':>9s}  changed region")
     seen_any = False
     for pose in POSES:
@@ -84,10 +92,11 @@ def main():
     if not seen_any:
         print("\nFAILED: no pose was present in both halves -- this run compared nothing.")
         sys.exit(1)
-    print("\nThe '>JND' column is the honest one; 'any change' counts single-level dithering.\n"
-          "A figure at or under R7's 1.92% means the re-place has not moved the needle and the\n"
-          "inventory still does not read -- which is a placement or a scale finding, not a\n"
-          "technique one, until a frame shows otherwise.")
+    print("\nThe '>JND' column is the honest one; 'any change' counts single-level dithering.")
+    if len(args) == 1:
+        print("A figure at or under R7's 1.92% means the re-place has not moved the needle and the\n"
+              "inventory still does not read -- a placement or scale finding, not a technique one,\n"
+              "until a frame shows otherwise.")
 
 
 if __name__ == "__main__":
