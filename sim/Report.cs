@@ -51,10 +51,14 @@ public static class Report
         if (gates == null) return;
         sb.AppendLine("## 0. Gate campaign (PLAN.md acceptance criteria)");
         sb.AppendLine();
-        sb.AppendLine("| Gate | Criterion | Verdict | Actual |");
-        sb.AppendLine("|---|---|---|---|");
+        // C32: the resolution travels WITH the verdict, in the same table. A PASS whose resolution
+        // is coarser than the drift it exists to catch is not a clean result, and putting the
+        // number in a footnote is how that goes unread.
+        sb.AppendLine("| Gate | Criterion | Verdict | Actual | Resolution |");
+        sb.AppendLine("|---|---|---|---|---|");
         foreach (GateData.Gate g in gates.Gates)
-            sb.AppendLine($"| {g.Id} | {g.Description} | {(g.Pass ? "**PASS**" : "**FAIL**")} | {g.Actual} |");
+            sb.AppendLine($"| {g.Id} | {g.Description} | {(g.Pass ? "**PASS**" : "**FAIL**")} | {g.Actual} "
+                + $"| {(g.Resolution.Length == 0 ? "—" : g.Resolution)} |");
         sb.AppendLine();
         if (gates.ItemFlags.Count == 0)
             sb.AppendLine("Item flags: none — no DEAD items, no DOMINANT item, Totem in the healthy band.");

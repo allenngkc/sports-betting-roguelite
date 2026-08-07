@@ -97,7 +97,7 @@ internal static class Program
             gates = GateData.Evaluate(
                 byName.GetValueOrDefault("naive"), byName.GetValueOrDefault("skilled"),
                 byName.GetValueOrDefault("noshop"), byName.GetValueOrDefault("martyr"),
-                martyrWorst, audit, combos);
+                martyrWorst, audit, combos, byName.GetValueOrDefault("random"));
         }
 
         sw.Stop();
