@@ -114,7 +114,7 @@ public sealed class AuditData
 }
 
 /// <summary>Pairwise passive combo scan: synergy excess over the sum of solo win-rate deltas.
-/// With 3 passives this is 3 pairs — and the Multiplier+Scar pair is gate G5's superadditivity
+/// With 3 passives this is 3 pairs — and the exemplar pair is gate G5's superadditivity
 /// evidence (composition through the shared PayoutMultiplier product).</summary>
 public sealed class ComboData
 {
@@ -412,19 +412,48 @@ public sealed class GateData
 
         if (combos != null && audit != null)
         {
-            ComboData.Pair? pair = combos.Find(RelicCatalog.MultiplierId, RelicCatalog.ScarTissueId);
-            if (pair != null)
+            // EXEMPLAR MOVED — Allen 2026-08-08. G5 certified the composition pillar on
+            // Multiplier + Scar Tissue, whose synergy measured **+0.1pp against ±0.06pp**: real,
+            // but the weakest loop in the table and ~30× smaller than the strongest. The pillar
+            // now certifies on real magnitude. The exemplar and its threshold were both set AFTER
+            // the error was measured, which is the order Allen imposed on this gate and the first
+            // time in this family it was followed — G6 and G3 were each set where their instrument
+            // could not read them, and each cost campaigns to discover it.
+            const string exemplarA = RelicCatalog.MultiplierId, exemplarB = "house_key";
+
+            // Threshold 1.0pp, and deliberately NOT a fresh invention: it is the line the report's
+            // own taxonomy already draws between "marginal" and "superadditive". Against the new
+            // exemplar's ±0.34pp it sits ~3× the error, so the gate can actually fail for the thing
+            // it exists to catch. `> 0` would now be trivially satisfied by a +2.96pp reading and
+            // would certify the pillar on any positive noise the day the exemplar drifts.
+            const double minExcessPp = 1.0;
+
+            ComboData.Pair? pair = combos.Find(exemplarA, exemplarB);
+            if (pair == null)
             {
-                // C32 for a gate that has NO BAND. G5's criterion is a threshold at exactly zero,
-                // so there is no width to divide the error by and BandVerdict must not be called —
-                // quoting a ratio would invent a band this gate does not have, which is the same
-                // class of error as quoting a stale one. What can honestly be stated is the
-                // instrument's own error and whether this reading clears it.
-                // Allen 2026-08-08, on the lead's escalation: measure the error FIRST, then pick
-                // the minimum worth requiring with the resolution known — the two gates before
-                // this one (G6, G3) were both set where their instruments could not read them.
+                // A missing exemplar must never be a missing GATE. Find() returns null on a typo or
+                // a catalog rename, and the old shape simply skipped G5 — the campaign would report
+                // six gates where seven were intended and pass, which is the vacuous-green failure
+                // this lane has now found eleven times. It fails loudly instead.
+                g.Add("G5", "composition superadditive: exemplar pair Δwin ≥ threshold",
+                    false,
+                    $"EXEMPLAR PAIR NOT FOUND in the combo scan ('{exemplarA}' + '{exemplarB}') — "
+                    + "renamed or mis-keyed relic id; the gate cannot run and is failing rather "
+                    + "than silently absenting itself",
+                    "not applicable — the gate did not run");
+            }
+            else
+            {
+                // C32 for a gate with no BAND. The criterion is a ONE-SIDED floor — a minimum with
+                // no ceiling — so there is still no width to divide the error by and BandVerdict
+                // must not be called; quoting a ratio would invent a band this gate does not have,
+                // the same class of error as quoting a stale one. What is honest here is the error,
+                // the clearance over the floor, and what that clearance is worth in error units.
+                // Allen 2026-08-08, on the lead's escalation: measure the error FIRST, then set the
+                // minimum with the resolution known — the two gates before this one (G6, G3) were
+                // both set where their instruments could not read them, and each cost campaigns.
                 double se = pair.SynergyExcessTwoSePp;
-                double reading = Math.Abs(pair.SynergyExcess);
+                double clearance = Math.Abs(pair.SynergyExcess - minExcessPp);
                 // A zero variance here is DEGENERACY, not precision, and printing "±0.00pp" would
                 // read as the most precise instrument in the campaign while carrying no signal at
                 // all. It means the four arms never disagreed on a single run — the items changed
@@ -437,21 +466,26 @@ public sealed class GateData
                           + "identical combination, so the four arms never once disagreed on a "
                           + "single run. That is an absence of signal; raise --runs until the arms "
                           + "separate, and read nothing off this gate until they do."
-                        : $"±{se:0.00}pp (2 SE, paired seeds) — **threshold at 0: no band, so no "
-                          + "ratio to state**; this reading is "
-                          + (reading > se
-                              ? $"{reading / se:0.0}× its own error"
-                              : "INSIDE its own error, indistinguishable from zero")
-                          + ". The minimum worth requiring is Allen's to set, and is now set with "
-                          + "this number in hand rather than before it.";
+                        : $"±{se:0.00}pp (2 SE, paired seeds) — one-sided floor at "
+                          + $"{minExcessPp:0.#}pp, so no band width to state; this reading clears it "
+                          + $"by {pair.SynergyExcess - minExcessPp:+0.00;-0.00}pp, "
+                          + (clearance > se
+                              ? $"{clearance / se:0.0}× resolution"
+                              : "**INSIDE its own resolution — NOT ADJUDICATED**");
 
-                g.Add("G5", "composition superadditive: Multiplier+Scar pair Δwin > sum of solo Δwins",
-                    pair.SynergyExcess > 0.0,
+                g.Add("G5", "composition superadditive: the exemplar pair's synergy excess ≥ "
+                    + $"{minExcessPp:0.#}pp (exemplar moved by Allen 2026-08-08 to The Multiplier + "
+                    + "House Key, +2.96pp at 8.7× its own error; it was Multiplier + Scar Tissue, "
+                    + "measured +0.1pp against ±0.06pp — real, but the weakest loop in the table and "
+                    + "~30× smaller than the strongest. Threshold set AFTER the error was measured, "
+                    + "and adopts the report's own marginal/superadditive line rather than inventing "
+                    + "a number)",
+                    pair.SynergyExcess >= minExcessPp,
                     $"synergy excess {pair.SynergyExcess:+0.0;-0.0}pp",
                     resolution,
-                    // A threshold at zero makes the distance-to-edge simply |reading|. A zero or
+                    // A one-sided floor makes the distance-to-edge |reading − floor|. A zero or
                     // absent error adjudicates nothing, whichever side the reading fell.
-                    se > 0.0 && Adjudicates(se, reading));
+                    se > 0.0 && Adjudicates(se, clearance));
             }
         }
 

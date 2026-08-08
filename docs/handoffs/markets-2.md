@@ -453,6 +453,44 @@ checks.** Four pairs sit above +2pp at 7–8.7× their error; G5's exemplar is ~
 strongest and is the weakest real loop in the table. Whether the pillar should be certified on the
 weakest measured loop is the question, and it arrives with its numbers rather than ahead of them.
 
+### RULED and BUILT — exemplar moved, threshold set, family closed
+
+**Allen, 2026-08-08: the exemplar moves to The Multiplier + House Key** — +2.96pp at 8.7× its own
+error. The pillar certifies on real magnitude.
+
+**Threshold `≥ 1.0pp`, set by this seat after the error was known** — and deliberately not invented:
+1.0pp is the line the report's own taxonomy already draws between *marginal* and *superadditive*.
+Against ±0.34pp it sits ~3× the error, so the gate can genuinely fail. Leaving `> 0` would have been
+worse than before the move: a +2.96pp reading satisfies it trivially, and the day the exemplar
+drifts it would certify the pillar on any positive noise. The criterion is **one-sided** — a floor
+with no ceiling — so `BandVerdict` is still not called; a band ratio would invent a band this gate
+does not have.
+
+**Vacuous-gate guard, added unasked.** `combos.Find()` returns null on a typo or a catalog rename
+and the old shape simply *skipped* G5 — the campaign would have reported six gates where seven were
+intended, and passed. Twelfth instance of that shape in this lane. A missing exemplar now fails
+loudly instead of absenting the gate.
+
+**Verified — `--gates --seed-prefix TUNE` at the ruled floor, exit 0:** `1,520,000 runs · 1635.56 s ·
+Gates evaluated: 7 · passed: 7 · produced a verdict: 7 · item flags none` — **ALL 7 GATES PASS**.
+G5 reads **+3.0pp, ±0.34pp, clearing the 1pp floor by +1.96pp at 5.8× resolution.** Predicted
+±0.34pp and ~5.8× before the run; both hit.
+
+### The family, closed — all three now read what they claim
+
+| Gate | Criterion | Resolution | Standing |
+|---|---|---|---|
+| **G3** | win 4.5–8% | ±0.45pp | band is **7.7×** — resolves its whole band |
+| **G5** | synergy ≥ 1.0pp | ±0.34pp | clears by **5.8×** its resolution |
+| **G6** | martyr ≤ skilled +2pp | ±0.65pp | band **3.1×** — fails on a breach ≥0.65pp past the line |
+
+Every one of the three began this wave unable to fail for what it existed to catch: G6 at 0.9× its
+own noise, G3 adjudicating nothing on a routine run, G5 with no resolution cell at all and a
+threshold at zero. **None was fixed by the same move** — G6 took sample size, G3 took a band, G5
+took an exemplar and a floor. The one thing common to all three was that **each was set before
+anyone measured what its instrument could see**, and the order Allen imposed on the third is the
+lesson the first two paid for.
+
 **Also visible only now the error column exists:** rank by excess is not rank by reliability.
 Multiplier + Longshot Photo (+0.76pp, ±0.45, **1.7×**) outranks Longshot + The System (+0.74pp,
 ±0.18, **4.1×**) on excess while being less than half as certain. The table ranked pairs on excess

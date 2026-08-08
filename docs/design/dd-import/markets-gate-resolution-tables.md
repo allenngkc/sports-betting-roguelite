@@ -312,3 +312,39 @@ less than half as certain. This table ranked pairs on excess alone for a fortnig
 Whether **+0.1pp certifies the composition pillar**, and if not, whether the exemplar moves to a pair
 with real magnitude. Both arrive with their numbers rather than ahead of them, which is the whole
 point of the order he imposed.
+
+## 11. Exemplar moved, threshold set, the gate family closes
+
+**Allen, 2026-08-08: G5's exemplar moves to The Multiplier + House Key** (+2.96pp at 8.7× its own
+error). The pillar certifies on real magnitude rather than on the weakest real loop in the table.
+
+**Threshold `≥ 1.0pp`**, set by the lead *after* the error was measured and not invented: it is the
+line the report's own taxonomy already draws between marginal and superadditive. Against ±0.34pp it
+sits ~3× the error, so the gate can genuinely fail — where `> 0` would now be satisfied trivially by
+a +2.96pp reading and would certify the pillar on any positive noise the day the exemplar drifts.
+The criterion is one-sided (a floor, no ceiling), so no band ratio is quoted: this gate has no band
+and inventing one would be the §5.1 error in a new place.
+
+**Verified at the ruled floor, exit 0:** 1,520,000 runs · 1635.56 s · **7 gates / 7 passed /
+7 verdicts** · item flags none · *ALL 7 GATES PASS*. G5 reads **+3.0pp, ±0.34pp, clearing its floor
+by +1.96pp at 5.8× resolution** — predicted ±0.34pp and ~5.8× before the run, both hit.
+
+### The three gates, closed
+
+| Gate | Criterion | Resolution | Standing |
+|---|---|---|---|
+| **G3** | win 4.5–8% | ±0.45pp | band **7.7×** — resolves its whole band |
+| **G5** | synergy ≥ 1.0pp | ±0.34pp | clears by **5.8×** its resolution |
+| **G6** | martyr ≤ skilled +2pp | ±0.65pp | band **3.1×** — fails on a breach ≥0.65pp past the line |
+
+**For the DD seat, since C32 was promoted from G3 and this closes its origin case:** all three began
+the wave unable to fail for what they existed to catch — G6 at 0.9× its own noise, G3 adjudicating
+nothing on a routine run, G5 with no resolution cell at all and a threshold at zero. **No two were
+fixed by the same move.** G6 took sample size, G3 took a band, G5 took an exemplar and a floor. The
+single thing common to all three is that **each was set before anyone measured what its instrument
+could see** — which is C32's own claim, arriving with three worked cases and the order that prevents
+a fourth.
+
+**Guard added unasked:** `combos.Find()` returns null on a typo or catalog rename, and the old shape
+skipped G5 silently — six gates reported where seven were intended, passing. Twelfth instance of the
+vacuous-green shape in this lane; a missing exemplar now fails loudly.
