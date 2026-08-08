@@ -228,11 +228,11 @@ result re-runs at ~18,500.**
   `GateData.CampaignRuns = 10000` (Allen's second call, after the escalation — see correction 1);
   an explicit `--runs` still wins, which is how the escalation is invoked, and `--gates` *below* the
   floor now warns on stderr naming the ruling. The documented invocation is therefore
-  `--gates --seed-prefix TUNE` with **no `--runs`**. G6 resolves ±0.68pp at the floor.
+  `--gates --seed-prefix TUNE` with **no `--runs`**. G6 resolves **±0.65pp measured** at the floor.
 - **G6's C32 cell became three tiers**, and the two thresholds land exactly on Allen's two rungs —
   which is why the rungs are worth keeping in that order rather than rounding them:
   **≥4×** resolves the whole band · **≥2×** can fail, but not for a reading nearer the line than its
-  own resolution · **<2×** cannot reliably fail (what G6 was). The 10,000 floor buys tier 2 (2.9×)
+  own resolution · **<2×** cannot reliably fail (what G6 was). The 10,000 floor buys tier 2 (3.1×)
   and 18,500 buys tier 1 (4.1×) — so the two-rung structure survives the floor change intact: the
   floor makes G6 able to FAIL, the escalation makes it able to ADJUDICATE a reading near its line.
 - **Near-line detection added, and it is the load-bearing half.** A reading whose criterion edge
@@ -272,7 +272,7 @@ adjudicated.** Allen's predicted ±1.0pp came in at ±0.97pp measured.
 ### Three things the old write-up in this file got wrong
 
 1. **"Raise the campaign's *default* `n`" mis-named the defect.** The tool's default was never
-   1,000 — a bare `--gates` at `36122d6` ran **10,000**, which would have resolved G6 to ±0.68pp.
+   1,000 — a bare `--gates` at `36122d6` ran **10,000**, which resolves G6 to ±0.65pp (measured).
    The ±2.15pp came from this seat invoking `--runs 1000` **by hand, all session**, and no code path
    objected. **CLOSED — Allen ruled the floor at 10,000 the same day**, once the escalation had
    settled. That is not a bigger guess than 4,600; it is the number a bare `--gates` always had.
@@ -336,6 +336,35 @@ than that is not available from the report either wrote. Loss-farming is not clo
   binary from before the header fix below. The run *was* pinned (`TUNE`, passed explicitly and
   recorded here), but the artifact does not assert it. It is the last campaign artifact with that
   gap.
+
+### The floor, measured — and it trips its own escalation on a routine run
+
+Allen ruled the floor at 10,000 (2026-08-07). Verified at the floor, 2026-08-08, bare `--gates
+--seed-prefix TUNE`: **1,520,000 total runs, 1534.89 s (25.6 min), exit 0, 7/7 PASS.** First campaign
+artifact to carry its own seed line — C34 satisfied in the file rather than in the prose beside it.
+
+| Gate | Reading | Resolution | Band ÷ res | Verdict |
+|---|---|---|---|---|
+| **G6** | martyr-worst 5.8% vs skilled 5.4%, margin **+0.4pp**, 1.6pp clearance | **±0.65pp** | **3.1×** | **PASS — adjudicated** |
+| **G3** | won 5.4%, **0.43pp** above the 5.0 floor | **±0.45pp** | 6.6× | PASS — **NOT ADJUDICATED** |
+
+**`7/7 GATES PASS, but G3 DID NOT ADJUDICATE`.** This is the floor's real operating characteristic
+and it needs stating plainly: **a routine campaign at the ruled floor demands a 58.6-minute
+escalation.** G3's clearance (0.43pp) falls just inside its resolution there (0.45pp) — short by
+0.02pp. The floor is roughly 1,000–3,000 runs below what G3 needs; resolution ≤0.43pp wants
+n ≳ 11,000, and the clearance itself wanders 0.4–0.5pp between campaigns, so the requirement is not
+a fixed number either.
+
+**Do not read this as an argument for a higher floor.** Two campaigns now agree that G3's reading
+sits 0.4–0.5pp above a band edge, and raising `n` to chase a gap that small is a treadmill — each
+step costs more wall time to adjudicate a gate whose *band* has been fine throughout (6.6×, 9.0×).
+The question this keeps returning is **G3's band, or where the economy sits inside it**, and that is
+Allen's, not a dial this seat should turn. Recorded, not acted on.
+
+Also worth noting against my own prediction: I told Allen G6 would resolve **±0.68pp / 2.9×** at the
+floor, arithmetic from 2.15/√10. **Measured ±0.65pp / 3.1×** — the scaled figure was stale because
+the martyr-worst rate itself fell (6.9% → 5.8%) and a combined error tracks its inputs. Corrected
+everywhere it was quoted, including in code. Tenth instance.
 
 ### OPEN — G5 is the same defect in a sharper form. Reported, not fixed.
 

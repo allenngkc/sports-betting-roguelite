@@ -212,10 +212,12 @@ public sealed class GateData
     /// not a bigger guess than 4,600; it is the value a bare `--gates` had all along. The defect was
     /// never the default: it was this seat typing `--runs 1000` by hand, all session, with no code
     /// path objecting. Restoring 10,000 as a RULED floor rather than an unremarked default is what
-    /// stops that recurring, and it buys resolution rather than spending it — G6 lands ±0.68pp,
-    /// a 2.9× band, comfortably past the ±1.00pp the ruling asked for.
+    /// stops that recurring, and it buys resolution rather than spending it — G6 lands **±0.65pp,
+    /// a 3.1× band** (measured 2026-08-08, not scaled: an arithmetic 2.15/√10 predicts ±0.68pp and
+    /// 2.9×, which this comment carried until the floor was actually run), comfortably past the
+    /// ±1.00pp the ruling asked for.
     ///
-    /// Note what 2.9× still does not buy: it is under 4×, so a reading that lands near its line is
+    /// Note what 3.1× still does not buy: it is under 4×, so a reading that lands near its line is
     /// still not adjudicated here and still escalates. The two-rung structure survives the floor
     /// change — 10,000 makes the gate able to FAIL, <see cref="EscalationRuns"/> makes it able to
     /// ADJUDICATE. Cost at 10,000 is UNMEASURED at the time of writing; measured neighbours are

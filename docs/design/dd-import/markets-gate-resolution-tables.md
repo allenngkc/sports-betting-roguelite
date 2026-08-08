@@ -82,8 +82,8 @@ further from being a winning strategy than this seat could previously demonstrat
   Allen's second call the same day, after the escalation settled. It is the number a bare `--gates`
   always had; what changed is its status, from an unremarked default anyone could undercut in
   silence to a floor that says so when undercut. An explicit `--runs` still wins (that is how the
-  escalation is invoked) and going below the floor warns on stderr. G6 resolves ±0.68pp there —
-  a 2.9× band, past the ±1.00pp the ruling asked for, and still under the 4× that would let a
+  escalation is invoked) and going below the floor warns on stderr. G6 resolves **±0.65pp** there —
+  a **3.1×** band, past the ±1.00pp the ruling asked for, and still under the 4× that would let a
   near-line reading adjudicate without escalating.
 - **Three tiers on the resolution line**, whose thresholds are Allen's two rungs: **≥4×** resolves
   the whole band · **≥2×** can fail, but not for a reading nearer the line than its own resolution ·
@@ -101,7 +101,7 @@ further from being a winning strategy than this seat could previously demonstrat
 ## 5. Three corrections this seat owes
 
 1. **"Raise the campaign's *default* `n`" mis-named the defect.** The tool's default was never
-   1,000 — a bare `--gates` ran **10,000**, which would have resolved G6 to ±0.68pp. The ±2.15pp
+   1,000 — a bare `--gates` ran **10,000**, which resolves G6 to ±0.65pp (measured). The ±2.15pp
    came from this seat typing `--runs 1000` by hand, all session, with no code path objecting. The
    ruled 4,600 was a 4.6× raise on what was *run* and a ~2× cut on the untouched *default*.
    **Allen closed it the same day: the floor is 10,000** — the value a bare `--gates` always had,
@@ -177,3 +177,44 @@ predicted, **±0.33pp measured**; G6 → ~4.1× predicted, **4.1× measured**.
    from before that fix landed. The run *was* pinned — `TUNE`, passed explicitly, recorded here —
    but the artifact does not assert it, and under C34 that is the point. It is the last campaign
    artifact with the gap; the header now states the prefix, and `--grid` with it.
+
+## 8. The floor, measured — and what it costs on a routine run
+
+Allen ruled the floor at **10,000** on 2026-08-07, closing the choice §5.1 handed him. Verified at
+the floor on 2026-08-08, bare `--gates --seed-prefix TUNE`: **1,520,000 total runs, 1534.89 s
+(25.6 min), exit 0, 7/7 PASS.** First campaign artifact to carry its own seed line — C34 satisfied
+inside the file rather than in the prose beside it.
+
+| Gate | Reading | Resolution | Band ÷ res | Verdict |
+|---|---|---|---|---|
+| **G6** | martyr-worst 5.8% vs skilled 5.4%, margin **+0.4pp**, 1.6pp clearance | **±0.65pp** | **3.1×** | **PASS — adjudicated** |
+| **G3** | won 5.4%, **0.43pp** above the 5.0 floor | **±0.45pp** | 6.6× | PASS — **NOT ADJUDICATED** |
+
+**The floor trips its own escalation on a routine run.** G3's clearance (0.43pp) falls just inside
+its resolution there (0.45pp) — short by 0.02pp — so the standard campaign banner reads *7/7 GATES
+PASS, but G3 DID NOT ADJUDICATE* and asks for the 58.6-minute re-run. That is the ruled floor's real
+operating characteristic and the DD seat should have it, because C32 was promoted from G3.
+
+**This is not an argument for a higher floor.** Three campaigns now agree G3's reading sits
+0.4–0.5pp above a band edge. Raising `n` to chase a gap that small is a treadmill: each rung costs
+more wall time to adjudicate a gate whose *band* has been ample throughout (4.5×, 6.6×, 9.0×). The
+recurring question is **G3's band, or where the economy sits inside it** — a design/balance call,
+not a sample-size one. Recorded, not acted on.
+
+### Measured campaign costs — the only ones on offer
+
+| n | Total runs | Wall time |
+|---|---|---|
+| 4,600 | 699,200 | 10.4 min · 13.3 min (same work, twice) |
+| **10,000 (floor)** | 1,520,000 | **25.6 min** |
+| 18,500 (escalation) | 2,812,000 | 58.6 min |
+
+No interpolation is offered between them. Three attempts to predict this machine's wall clock from a
+formula produced three misses, and the 28% spread on identical work at 4,600 is why.
+
+### One more prediction scored against itself
+
+This seat told Allen G6 would resolve **±0.68pp / 2.9×** at the floor — arithmetic from 2.15/√10.
+**Measured ±0.65pp / 3.1×.** The scaled figure was stale because the martyr-worst rate itself fell
+(6.9% → 5.8%), and a combined error tracks its inputs rather than staying put while `n` moves.
+Corrected everywhere it was quoted, code included.

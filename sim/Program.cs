@@ -30,8 +30,8 @@ internal static class Program
             return error == "help" ? 0 : 2;
         }
 
-        // The G6 defect was never the tool's default — a bare --gates already ran 10,000 and would
-        // have resolved ±0.68pp. It was the campaign being invoked at --runs 1000 by hand, all
+        // The G6 defect was never the tool's default — a bare --gates already ran 10,000, which
+        // measures ±0.65pp. It was the campaign being invoked at --runs 1000 by hand, all
         // session, which is a thing no code path objected to. Allen's floor keeps that same 10,000
         // and changes its STATUS: it was an unremarked default that anyone could undercut in
         // silence, and it is now a ruled floor that says so out loud when undercut. The value did
@@ -270,7 +270,7 @@ internal static class Program
         "  --combos N            pairwise passive combo scan, N runs per pair\n" +
         "  --gates               the FULL gate campaign: G1-G7 + item flags (implies audit+combos);\n" +
         "                        runs at n=10000 (Allen 2026-08-07 — the ruled floor; G6 resolves\n" +
-        "                        +/-0.68pp there, and a near-line reading escalates to 18500)\n" +
+        "                        +/-0.65pp there, and a near-line reading escalates to 18500)\n" +
         "  --grid                the payment-curve grid (growth x P1), gates-lite per cell\n" +
         "  --scorer-ev           bot-independent AnytimeScorer calibration report (own mode; ignores --strategy)\n" +
         "  --report PATH         also write the markdown report to PATH\n" +
