@@ -38,6 +38,21 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-07 cycle 117 · **TMP MIGRATION PHASE L STARTED (Allen)** — SureThing
+  leads; the pinned re-shoot set is the before-baseline (the reproducibility
+  law made the migration's evidence design possible the same day it was
+  written). Scope confirm → C3-for-TMP restatement → migrate → after-captures
+  on the same seeds → deviations expire named. In parallel: room's bake
+  closing, TV's verify window next in the editor, markets' sharp gate re-run.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | working | MIGRATION Phase L | lead |
+  | tv-sweat | queued | verify window (editor next) | lead |
+  | room | closing | bake report → gates → re-confirm ask | lead |
+  | markets-2 | working | 18,500 gate re-run verdict | lead |
+  | DD bridge | fed | push pinned set + bake/verify evidence on land | orchestrator |
+  | Editor | free | TV verify → migration slots | orchestrator |
 - 2026-08-07 cycle 116 · **Batch 14 pulled, transcribed, dispatched** — the
   reproducibility reckoning: capture flows were never seed-pinned (C34 law,
   fifth axis; no grants withdrawn — treatment is seed-stable); the glow cue
