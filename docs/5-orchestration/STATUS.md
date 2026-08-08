@@ -38,6 +38,20 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-08 cycle 118 · **§6a audit (heartbeat)** — migration foundation
+  complete (bootstrap, helpers, tests, suites green); tracking tokens
+  applying slot by slot. Markets: sharp-run committed `95d7799` (183/183);
+  G3 re-banded to 4.5% on Allen's in-place ruling; G5's threshold-at-zero
+  flagged as the next gate defect. TV + room evidence-complete, holding.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | working | tracking slots → tnum → weight-600 | lead |
+  | tv-sweat | complete-holding | DD batch-15 verdicts | DD |
+  | room | complete-holding | DD batch-15 verdicts | DD |
+  | markets-2 | working | G3 re-band build + counted verify | lead |
+  | DD bridge | fed | batch-14 complete in inbox; Allen's "new inbox" line when ready | Allen |
+  | Editor | shared | SureThing slots ↔ markets verify, coordinated | orchestrator |
 - 2026-08-07 cycle 117 · **TMP MIGRATION PHASE L STARTED (Allen)** — SureThing
   leads; the pinned re-shoot set is the before-baseline (the reproducibility
   law made the migration's evidence design possible the same day it was
