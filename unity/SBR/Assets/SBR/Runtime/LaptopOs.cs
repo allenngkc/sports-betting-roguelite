@@ -1283,9 +1283,16 @@ namespace SBR.Game
         public static void MakeMarginRow(RectTransform parent, string name, string label, string value,
             Color valueColor, float rowTop, float rowHeight, TMP_FontAsset font, TMP_FontAsset fontCond)
         {
+            // C15/S28: `.12` field keys (owning doc §4.3). The LABEL takes it and the value below
+            // deliberately does not — a field key is structure naming what the row holds, and §4.3
+            // scales tracking to that job. The value is a figure and belongs with the `.03`
+            // names/prices group, which is measurement-coupled and lands separately.
+            //
+            // This is also the 13px fact floor, so it is the slot where tracking is most visible
+            // against the smallest type the surface is allowed to state a fact in.
             MakeText(parent, name + "Label", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, rowTop - 9f), new Vector2(150f, 20f), 13, TextAnchor.MiddleLeft,
-                LaptopOs.Muted, label, font);
+                LaptopOs.Muted, label, font, LaptopTrack.FieldKeys);
             MakeText(parent, name + "Value", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-14f, rowTop - 8f), new Vector2(140f, 22f), 18, TextAnchor.MiddleRight,
                 valueColor, value, fontCond);
