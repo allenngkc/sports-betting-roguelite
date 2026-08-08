@@ -46,6 +46,29 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-08 cycle 130 · **Batch 16 wave executing; editor relay ran four
+  windows clean** — SureThing: S68/S69/S70 landed in two commits (the receipt
+  layout change caught a would-be stale-width fixture defect; footer-size
+  divergence parked for the DD, S59 cited); receipt set re-shot on pinned
+  seeds and pushed (39 files). Room: R41-am lamp saga closed — Allen's
+  luma-parity ruling superseded batch-16's L*-parity value, the lead's
+  parity model MISSED (+43% vs predicted +49 target… measured +56.00 at the
+  applied value), Allen accepted +56 per the lead's own recommendation
+  (a once-failed model doesn't get a second slot); pair pushed with the
+  failed prediction filed in the README as evidence honesty. TV: batch-16
+  blocker chain (T68 label-inverts + T69 re-author + T67 40px inset) built;
+  verify window granted now (compile, suites, T68's rendered pin). DD inbox
+  this cycle: receipts (39) + lamp pair (7). Markets clean.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | clean-holding | DD verdicts (receipts in) | DD |
+  | tv-sweat | working (editor) | verify window → T68 pin → stage | lead |
+  | room | clean-holding | DD verdicts (lamp pair in) | DD |
+  | markets-2 | clean-holding | none | — |
+  | DD bridge | fed: receipts + lamp pair + T67/R41/R39-am evidence | "new inbox" line | Allen |
+  | Editor | tv | free on release | orchestrator |
+  | **Need Allen** | **C13** · **LFS attributes fix** (unchanged) | rulings | Allen |
 - 2026-08-08 cycle 129 · **Room's batch-15 work complete and delivered; two
   Need-Allen items standing** — R41 done (lamp: chroma 43–49 → 5.7–6.5,
   hue into the warm family; albedo = the ratified rust swatch, emission =
