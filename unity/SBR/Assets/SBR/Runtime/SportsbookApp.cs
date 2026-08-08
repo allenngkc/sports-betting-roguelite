@@ -98,7 +98,7 @@ namespace SBR.Game
             LaptopUi.MakeText(mast, "Run", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(17f, -38f), new Vector2(340f, 20f), 13, TextAnchor.UpperLeft, LaptopOs.Muted, $"ROUND {run.Round} OF {run.Config.Rounds}  ·  PRICES FINAL", _font);
             // S31: the masthead's run figures, shared with OldSlipsApp.BuildLedgerChrome so LEDGER
             // carries the exact same BANK/TARGET/TICKETS figures rather than a parallel string.
-            BuildRunFigures(mast, run, _font);
+            BuildRunFigures(mast, run, _fontCond);
         }
 
         /// <summary>S31: SectionTabs.jsx's own strip — the border-bottom, the four tabs and the
@@ -142,11 +142,25 @@ namespace SBR.Game
 
         /// <summary>S31: the masthead's run figures (BANK/TARGET/TICKETS) — the register calls
         /// these "unchanged" across every destination that carries the masthead, so this is
-        /// written once and OldSlipsApp.BuildLedgerChrome calls it too, instead of substituting a
-        /// parallel condensed string.</summary>
-        internal static void BuildRunFigures(RectTransform mast, Run run, TMP_FontAsset font)
+        /// written once and OldSlipsApp.BuildLedgerChrome calls it too.
+        ///
+        /// **S29 CLOSES here, and the face is why.** These rendered in the ROMAN face, and at the
+        /// ruled Regular 400 Archivo's digits are proportional — spread 4.7656 units, 1.112px at this
+        /// 21px — so BANK and TARGET changed width as the bank changed. That is the horizontal jitter
+        /// tabular figures exist to stop, on the most-watched facts on the screen, and TMP cannot fix
+        /// it: OTL_FeatureTag declares only kern, liga, mark and mkmk, so there is no tnum to enable.
+        ///
+        /// It was getting tabular digits by accident before, because the surface was at the wrong
+        /// weight: Archivo's DEFAULT face is SemiBold, which is near-tabular at spread 0.1875.
+        /// Correcting the roman voice to Regular 400 removed the accident and exposed this.
+        ///
+        /// Archivo Narrow measures spread 0 — every digit 41.05, tabular by construction — and owning
+        /// doc §4.1 already assigns BOTH "figures" and "masthead" to the condensed face. So this is a
+        /// conformance gap closing rather than a redesign, which is the only way a Design-verified
+        /// masthead changes (ruled by Allen, 2026-08-08).</summary>
+        internal static void BuildRunFigures(RectTransform mast, Run run, TMP_FontAsset fontCond)
         {
-            LaptopUi.MakeText(mast, "Figures", new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-16f, -10f), new Vector2(610f, 48f), 21, TextAnchor.UpperRight, LaptopOs.White, $"BANK {LaptopUi.Money(run.Bank)}    TARGET {LaptopUi.Money(run.CurrentPayment)}    TICKETS {run.Tickets.Count}/{run.Config.MaxTicketsPerRound}", font);
+            LaptopUi.MakeText(mast, "Figures", new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-16f, -10f), new Vector2(610f, 48f), 21, TextAnchor.UpperRight, LaptopOs.White, $"BANK {LaptopUi.Money(run.Bank)}    TARGET {LaptopUi.Money(run.CurrentPayment)}    TICKETS {run.Tickets.Count}/{run.Config.MaxTicketsPerRound}", fontCond);
         }
 
         /// <summary>The lobby's card pitch — the single source for it. <see cref="BuildMatchupCard"/>
@@ -2132,7 +2146,7 @@ namespace SBR.Game
             // S31: the masthead's run figures — unchanged from the rest of the surface. Reuses
             // SportsbookApp's own mechanism (BANK/TARGET/TICKETS) instead of the single condensed
             // "ROUND R · BANK $X" string this slot used to carry.
-            SportsbookApp.BuildRunFigures(masthead, run, _font);
+            SportsbookApp.BuildRunFigures(masthead, run, _fontCond);
         }
 
         // S38+S39+S40 column geometry (DD 2026-08-02 batch 7 — one change, one commit). Canon

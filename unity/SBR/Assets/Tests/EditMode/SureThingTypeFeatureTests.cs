@@ -48,16 +48,23 @@ namespace SBR.Tests.EditMode
             Assert.IsNotNull(font, $"missing font asset: {RomanPath}");
             (float spread, _, _) = DigitSpread(RomanPath);
 
-            // **21, not 31 — my first cut of this test had the premise wrong.** The 31px payout is
-            // the largest figure on the surface but it renders in the CONDENSED face. The largest
-            // figure the ROMAN face carries is the masthead's run figures at 21px —
-            // `BANK $350  TARGET $60  TICKETS 0/3`, built by BuildRunFigures with _font on both the
-            // sportsbook and the LEDGER. Correcting the premise does not rescue the assertion; it
-            // fails at 21px too, and it should.
+            // **This constant tracks the surface, and the surface moved twice.**
+            //
+            // It began at 31 — wrong, because the 31px payout is the largest figure overall but is
+            // CONDENSED. Corrected to 21, the masthead's run figures, which were roman: it failed
+            // there at 1.112px, and that failure is what got S29 ruled.
+            //
+            // 13 now, because the ruling moved those figures to the condensed face (S29 closed,
+            // Allen 2026-08-08). The largest figure the ROMAN face still carries is 13px — the
+            // masthead subline's round numbers, `SHEET 1 OF 1`, the team records, the margin row
+            // labels. **Not a retune to make a red test green:** the assertion is unchanged and the
+            // face is unchanged; what changed is which slots use it, and this constant exists to say
+            // so. If a roman figure above ~19px is ever added back, this fails again — which is the
+            // whole point of leaving it expressed as a size rather than as a pass.
             //
             // Advances are stored against the atlas sampling size, so scale to rendered pixels the
             // same way LaptopUi.MeasureWidth does.
-            const int largestRomanFigure = 21;
+            const int largestRomanFigure = 13;
             float renderedSpread = spread / font.faceInfo.pointSize * largestRomanFigure;
             Assert.Less(renderedSpread, 1f,
                 $"S29: roman digit spread must stay sub-pixel at {largestRomanFigure}px " +
