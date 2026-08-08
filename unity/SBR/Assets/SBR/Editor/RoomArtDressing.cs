@@ -77,9 +77,36 @@ namespace SBR
             Material steel = GrayboxRoomBuilder.HousingSteelMat();
             Material stencilMat = GrayboxRoomBuilder.Mat("ArtStencil", Color.white,
                 smoothness: 0.10f, baseMap: GetOrCreateStencil("RM-4B 217-9C", 256, 64));
+            // R41 (DD 2026-08-08, batch 15). The standby lamp was the ONLY saturated emitter in
+            // the room: emission (0.85, 0.14, 0.08), chroma 63.1 authored, 43.0-48.6 rendered,
+            // against every other emitter in this room driven to 5.0-5.5. Ten times more
+            // saturated than anything else, which made it the loudest colour event in frame
+            // however few pixels it took -- and red is retired game-wide (C4, T34).
+            //
+            // It LOST ON SCARCITY, NOT ON AREA, and it stays an object: struck as a colour, kept
+            // as a lamp.
+            //
+            // Both values come from ratified law, nothing picked by eye:
+            //
+            //   albedo   = --room-rust #6B3A24, the ratified swatch. R35's shape -- strike the
+            //              requirement that needs an escape, apply the swatch that already exists.
+            //   emission = rust's own hue (49.7deg) at the room's EMITTER chroma (5.4, which is
+            //              the screens' authored figure), L* 30 to match rust's own lightness.
+            //              Chroma 63.1 -> 5.4: from ten times the room to parity.
+            //
+            // WHY THE EMISSION IS NOT LITERALLY RUST, because the ruling offered "the rust end"
+            // and this is one step off it: rust's chromaticity CANNOT meet a chroma-5 bound at
+            // any amplitude. Dimming a saturated chromaticity drops L* faster than chroma -- at
+            // scale 0.08 rust still measures chroma 8.1 at L* 4.54, which is black. So the bound
+            // and the swatch are not simultaneously satisfiable, and the bound is the ruled
+            // constraint while the hue was a choice between two sanctioned ends. Rust's HUE at
+            // the room's chroma keeps the lamp warm and distinguishable from the screens' 83-85
+            // deg; the alternative sanctioned end was the screens' family itself.
+            //
+            // EXACT VALUE NOT RULED -- direction was, and the value lands on the instrument.
             Material indicator = GrayboxRoomBuilder.Mat("ArtIndicator",
-                new Color(0.35f, 0.06f, 0.04f),
-                emission: new Color(0.85f, 0.14f, 0.08f), smoothness: 0.45f);
+                new Color(0.1470f, 0.0423f, 0.0176f),
+                emission: new Color(0.0777f, 0.0589f, 0.0519f), smoothness: 0.45f);
 
             // R7 Tier 1 wear. Colour lives here, never in the textures - see
             // ProceduralWearTextures. Cutoffs are the shape control: the alpha channel stores a

@@ -467,15 +467,29 @@ namespace SBR
                     "nothing was written.");
             }
 
+            // R39-am (DD 2026-08-08, batch 15): the phone gets the same treatment, and for the
+            // same reason the lid did. Its emitter sits behind a world-space canvas 1.5mm out
+            // with an opaque backing, so a Play-Mode region reads the canvas -- my own filed
+            // reading was that mistake, and R39's "unlike the lid, these are observable" line
+            // was struck on it. Edit Mode already gave the authored-value conformance; what is
+            // unknown is whether ANY of it reaches the player.
+            //
+            // Disposition pre-committed: if the phone is as unobservable at runtime as the lid,
+            // the granted colours stand -- they govern Edit-Mode captures, the material and every
+            // bake-adjacent path -- and no cue, state or gameplay signal is ever built on the
+            // phone's glow.
             var phone = UnityEngine.Object.FindAnyObjectByType<SBR.Game.PhoneScreen>();
+            Renderer phoneRenderer = null;
+            Color phoneLive = Color.black;
             if (phone != null)
             {
                 if (phone.screenRenderer != null)
                 {
+                    phoneRenderer = phone.screenRenderer;
                     var phoneBlock = new MaterialPropertyBlock();
-                    phone.screenRenderer.GetPropertyBlock(phoneBlock);
-                    Debug.Log($"[GlowCue] phone emission at capture = " +
-                              $"{Fmt(phoneBlock.GetColor(emissionId))} (frozen identically for both arms)");
+                    phoneRenderer.GetPropertyBlock(phoneBlock);
+                    phoneLive = phoneBlock.GetColor(emissionId);
+                    Debug.Log($"[GlowCue] phone emission live on the renderer = {Fmt(phoneLive)}");
                 }
                 phone.enabled = false;
             }
@@ -490,8 +504,39 @@ namespace SBR
 
             WarmRender(cam);
 
+            // Controls, on the model the Edit-Mode set had to learn the hard way: control-a
+            // opens, control-z closes after every arm has been written and restored. a == b
+            // shows the pipeline settled; a == z shows the room ended as it began. Two sets
+            // were thrown away before this discipline existed, each failing in a way the other
+            // control could not have seen.
+            foreach (string ctl in new[] { "control-a", "control-b" })
+            {
+                WarmRender(cam);
+                string cd = Path.Combine(outDir, ctl);
+                Directory.CreateDirectory(cd);
+                Capture(cd);
+            }
+
             ShootArm(cam, book.lidRenderer, outDir, "cue-on", probe, emissionId);
             ShootArm(cam, book.lidRenderer, outDir, "cue-off", book.idleEmission, emissionId);
+
+            // R39-am's pair. Same shape, one object over.
+            if (phoneRenderer != null)
+            {
+                ShootArm(cam, phoneRenderer, outDir, "phone-on", phoneLive, emissionId);
+                ShootArm(cam, phoneRenderer, outDir, "phone-off", Color.black, emissionId);
+                ShootArm(cam, phoneRenderer, outDir, "phone-restored", phoneLive, emissionId);
+            }
+            else
+            {
+                Debug.LogWarning("[GlowCue] no phone renderer -- R39-am's pair was NOT shot, and " +
+                                 "an absent pair must not read as an unobservable one");
+            }
+
+            WarmRender(cam);
+            string closeDir = Path.Combine(outDir, "control-z");
+            Directory.CreateDirectory(closeDir);
+            Capture(closeDir);
 
             // AFTER the arms, deliberately. This walks the camera through all three poses, and
             // anything the pipeline settles over time would then be settling BETWEEN the halves
