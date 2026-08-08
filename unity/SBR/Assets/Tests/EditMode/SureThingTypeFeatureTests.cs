@@ -48,13 +48,25 @@ namespace SBR.Tests.EditMode
             Assert.IsNotNull(font, $"missing font asset: {RomanPath}");
             (float spread, _, _) = DigitSpread(RomanPath);
 
+            // **21, not 31 — my first cut of this test had the premise wrong.** The 31px payout is
+            // the largest figure on the surface but it renders in the CONDENSED face. The largest
+            // figure the ROMAN face carries is the masthead's run figures at 21px —
+            // `BANK $350  TARGET $60  TICKETS 0/3`, built by BuildRunFigures with _font on both the
+            // sportsbook and the LEDGER. Correcting the premise does not rescue the assertion; it
+            // fails at 21px too, and it should.
+            //
             // Advances are stored against the atlas sampling size, so scale to rendered pixels the
             // same way LaptopUi.MeasureWidth does.
-            const int largestFigure = 31;
-            float renderedSpread = spread / font.faceInfo.pointSize * largestFigure;
+            const int largestRomanFigure = 21;
+            float renderedSpread = spread / font.faceInfo.pointSize * largestRomanFigure;
             Assert.Less(renderedSpread, 1f,
-                $"S29: roman digit spread must stay sub-pixel at {largestFigure}px " +
-                $"(spread {spread} units = {renderedSpread:0.####}px). Above 64px the signature lapses.");
+                $"S29: roman digit spread must stay sub-pixel at {largestRomanFigure}px " +
+                $"(spread {spread} units = {renderedSpread:0.####}px). S29's roman clause was measured " +
+                "against Archivo's DEFAULT face, which is SemiBold and near-tabular (spread 0.1875). " +
+                "At the ruled Regular 400 the digits are proportional, so the masthead's money " +
+                "figures vary in width as the bank changes — which is what tabular figures exist to " +
+                "stop and what TMP cannot enable (no tnum in OTL_FeatureTag). Owning doc §4.1 already " +
+                "assigns figures AND the masthead to the condensed face, which measures spread 0.");
         }
 
         private static (float spread, float min, float max) DigitSpread(string resourcePath)
