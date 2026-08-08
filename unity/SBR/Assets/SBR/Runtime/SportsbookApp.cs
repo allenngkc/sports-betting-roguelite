@@ -94,7 +94,7 @@ namespace SBR.Game
             // the tab strip 38px above already says FORM, and "SURETHING FORM" is the same
             // construction S16 deleted in "SURETHING LEDGER". The 300px box is unchanged: it was
             // already sized for the longer string, and BuildRunFigures starts at x=398.
-            LaptopUi.MakeText(mast, "Brand", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(16f, -8f), new Vector2(300f, 28f), 26, TextAnchor.UpperLeft, LaptopOs.White, "SURETHING", _fontCond);
+            LaptopUi.MakeText(mast, "Brand", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(16f, -8f), new Vector2(300f, 28f), 26, TextAnchor.UpperLeft, LaptopOs.White, "SURETHING", _fontCond, LaptopTrack.Names);
             LaptopUi.MakeText(mast, "Run", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(17f, -38f), new Vector2(340f, 20f), 13, TextAnchor.UpperLeft, LaptopOs.Muted, $"ROUND {run.Round} OF {run.Config.Rounds}  ·  PRICES FINAL", _font);
             // S31: the masthead's run figures, shared with OldSlipsApp.BuildLedgerChrome so LEDGER
             // carries the exact same BANK/TARGET/TICKETS figures rather than a parallel string.
@@ -236,11 +236,16 @@ namespace SBR.Game
             LaptopUi.MakeButton(card, "AwayOdds", $"AWAY  {OddsFormat.American(matchup.AwayOdds)}",
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, -8f), new Vector2(112f, 32f), 19,
                 LaptopOs.Ink, frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
-                frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Away)); _invalidate(); }, _fontCond, !frozen);
+                // C15/S28: `.03`, NOT MakeButton's `.14` action default. A price control is a price
+                // first — `PriceCell.jsx` and `MarketOffer.jsx` both set `--st-track-name` on it, and
+                // the token's own comment reads "team names, prices, masthead". The previous commit's
+                // premise (a button label is an action label) is wrong for exactly this class, and
+                // the kit is what says so.
+                frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Away)); _invalidate(); }, _fontCond, !frozen, LaptopTrack.Names);
             LaptopUi.MakeButton(card, "HomeOdds", $"HOME  {OddsFormat.American(matchup.HomeOdds)}",
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, -43f), new Vector2(112f, 32f), 19,
                 LaptopOs.Ink, frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
-                frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Home)); _invalidate(); }, _fontCond, !frozen);
+                frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Home)); _invalidate(); }, _fontCond, !frozen, LaptopTrack.Names);
             if (awaySelected || homeSelected)
             {
                 Sprite ring = ResolvePriceRing(matchup.Index);
@@ -290,7 +295,7 @@ namespace SBR.Game
 
             TMP_Text nameText = LaptopUi.MakeText(card, "Team" + side, new Vector2(0f, 1f),
                 new Vector2(0f, 1f), new Vector2(nameX, y), new Vector2(250f, lineHeight), 19,
-                TextAnchor.MiddleLeft, LaptopOs.White, name, _fontCond);
+                TextAnchor.MiddleLeft, LaptopOs.White, name, _fontCond, LaptopTrack.Names);
             // A long name must push its record along, never wrap onto a second line inside a 30px box.
             nameText.enableWordWrapping = false;
 
@@ -712,7 +717,10 @@ namespace SBR.Game
                 replacement ? "⇄  " + price : price, new Vector2(0f, 1f), new Vector2(0f, 1f),
                 Vector2.zero, new Vector2(priceCellWidth, priceCellHeight), 19, new Color(0f, 0f, 0f, 0f),
                 frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
-                frozen ? null : () => { slip.Toggle(matchup.Index, selection); _invalidate(); }, _fontCond, !frozen);
+                // `.03` for the same reason as the moneyline buttons: MarketOffer.jsx sets
+                // --st-track-name on the price cell. This is the interior-list price and the two
+                // must match — one is the same object one screen deeper.
+                frozen ? null : () => { slip.Toggle(matchup.Index, selection); _invalidate(); }, _fontCond, !frozen, LaptopTrack.Names);
             if (replacement)
             {
                 RectTransform hint = LaptopUi.MakePanel(offer, "ReplacementHint",
@@ -861,7 +869,7 @@ namespace SBR.Game
                     .enableWordWrapping = false;
                 LaptopUi.MakeText(panel, "LegPrice" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(priceX, y), new Vector2(priceWidth, 20f), 16, TextAnchor.UpperRight,
-                    LaptopOs.White, price, _fontCond);
+                    LaptopOs.White, price, _fontCond, LaptopTrack.Names);
 
                 // Line 2: "{market} · ENTRY {entry}" — roman, fact floor, --toner-3. Indented to the
                 // content column past the check (kit: the check sits outside the flex column that
@@ -2082,7 +2090,7 @@ namespace SBR.Game
             // have overlapped it by up to 38px.
             LaptopUi.MakeText(masthead, "Brand", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(16f, -8f), new Vector2(300f, 28f), 26, TextAnchor.UpperLeft,
-                LaptopOs.White, "LEDGER", _fontCond);
+                LaptopOs.White, "LEDGER", _fontCond, LaptopTrack.Names);
             // F4: "READ ONLY" is said once, by the tabs meta above, not here. S37: the live round
             // number appears exactly once on the surface — every other destination states it in
             // this exact slot (SportsbookApp.BuildChrome's "Run" text, ROUND R OF N · ...), and it
