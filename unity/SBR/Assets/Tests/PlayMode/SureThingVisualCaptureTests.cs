@@ -46,6 +46,24 @@ namespace SBR.Tests.PlayMode
         private const int AngledHeight = 720;
         private const int CaptureLayer = 30;
 
+        // Every capture flow's pinned run seed, named once and referenced everywhere. The scene ships
+        // `RunDirector.seed = ""`, which the director reads as "roll a fresh random 8-char A-Z0-9
+        // seed" — so until these existed, no two runs of this fixture ever shot the same slate and no
+        // two submissions of "the same states" were ever the same frames.
+        //
+        // **One constant per flow, and nothing restates one.** A seed literal typed at both the
+        // StartNewRun and the assertion is two renderings of one value, which is the exact drift S62
+        // was ruled against and which this surface is still carrying one unfixed instance of (the MY
+        // BETS mirror hand-builds the ticket identity a shared formatter already produces). The rule
+        // costs nothing to keep here and the alternative has now cost four items.
+        private const string SeedLobby = "52830174";
+        private const string SeedMaxLegs = "31468052";
+        private const string SeedShop = "70925314";
+        private const string SeedLedgerOne = "48137690";
+        private const string SeedLedgerMulti = "26580943";
+        private const string SeedVerdictWon = "40719355";
+        private const string SeedVerdictLost = "68204137";
+
         [UnityTest]
         public IEnumerator Capture_six_truthful_surething_states_as_flat_and_angled_pngs()
         {
@@ -70,8 +88,7 @@ namespace SBR.Tests.PlayMode
             //
             // Pinned numeric per R38's own rule: 8 digits, an ordinary member of NewSeed's A-Z0-9
             // space. Nothing is lost by pinning, because nothing was stable to lose.
-            laptop.director.StartNewRun("52830174");
-            yield return WaitForRebuild();
+            yield return PinRun(laptop, SeedLobby);
 
             string outputDirectory = Path.GetFullPath(Path.Combine(
                 Application.dataPath, "..", "..", "..", "artifacts", "surething-ui"));
@@ -80,8 +97,6 @@ namespace SBR.Tests.PlayMode
                 "yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture);
             var capturedPaths = new List<string>();
 
-            Assert.AreEqual("52830174", laptop.director.Run.Rng.RunSeed,
-                "R38: this flow's frames are shot on a pinned numeric seed, not a rolled one");
             Assert.AreEqual(SportsbookApp.Tab.Lobby, laptop.Os.CurrentTab);
             Assert.IsNotNull(Required(App(laptop), "Board"));
             yield return CaptureState(laptop, outputDirectory, runPrefix,
@@ -294,6 +309,11 @@ namespace SBR.Tests.PlayMode
         {
             yield return Boot();
             LaptopScreen laptop = Laptop();
+            // This flow's frame is the one S51 is still owed — the margin's reservation overrun with
+            // a full slip standing on a staged receipt. An overrun measured in pixels against a slate
+            // that was different on every run is the least reproducible measurement on the surface,
+            // so this is the flow where pinning is worth the most.
+            yield return PinRun(laptop, SeedMaxLegs);
             string outputDirectory = Path.GetFullPath(Path.Combine(
                 Application.dataPath, "..", "..", "..", "artifacts", "surething-ui"));
             Directory.CreateDirectory(outputDirectory);
@@ -847,16 +867,16 @@ namespace SBR.Tests.PlayMode
             // for the state in the one slot on the screen where a product fact belongs: the capture
             // apparatus visible inside the capture, on evidence the DD then rules against.
             //
-            // A forced state's seed is a legal production seed and nothing else. RunDirector.NewSeed
-            // draws 8 characters from A-Z0-9, so an all-digit seed is an ordinary member of that
-            // space — it reads as a run the player could have been dealt, and it carries no rig
-            // vocabulary at all. Numeric rather than merely seed-shaped is the point: T31 is the
-            // precedent one surface over, where a harness seed shaped like a label (`TVCAPTURE01`)
-            // was read as a debug token and cost the DD a withdrawn finding.
-            string runSeed = expected == Phase.RunWon ? "40719355" : "68204137";
-            foreach (char c in runSeed)
-                Assert.IsTrue(char.IsDigit(c),
-                    $"R38: a forced capture state's run seed is numeric (got '{runSeed}')");
+            // A forced state's seed is a legal production seed and nothing else — what that means is
+            // stated once, in AssertPinnedSeed, rather than restated here. This selects between two
+            // named constants; it does not rebuild a seed inline.
+            //
+            // The run is swapped in below rather than played, so StartNewRun's own run is discarded —
+            // but it is seeded identically anyway. A director left holding a different seed from the
+            // run being shot is precisely the two-values-for-one-thing drift this file keeps paying
+            // for elsewhere.
+            string runSeed = expected == Phase.RunWon ? SeedVerdictWon : SeedVerdictLost;
+            AssertPinnedSeed(runSeed);
 
             laptop.director.StartNewRun(runSeed);
             var run = new Run(runSeed,
@@ -1155,6 +1175,38 @@ namespace SBR.Tests.PlayMode
             {
                 throw exception.InnerException ?? exception;
             }
+        }
+
+        /// <summary>R38: what makes a string a legal pinned capture seed, defined once. Both the
+        /// flow-level pin and the forced verdict runs check against this rather than each restating
+        /// the rule — a guard stated twice is a guard that can disagree with itself.</summary>
+        private static void AssertPinnedSeed(string seed)
+        {
+            // 8 characters from A-Z0-9 is what RunDirector.NewSeed emits, so an all-digit seed of
+            // that length is an ordinary member of the space a player is dealt from — it reads as a
+            // real run rather than as anything belonging to the rig. Numeric specifically, because
+            // T31 is the precedent one surface over: a harness seed shaped like a label was read as
+            // a debug token and cost a withdrawn finding.
+            Assert.AreEqual(8, seed.Length,
+                $"R38: a pinned capture seed is 8 characters (got '{seed}')");
+            foreach (char c in seed)
+                Assert.IsTrue(char.IsDigit(c),
+                    $"R38: a pinned capture seed is numeric (got '{seed}')");
+        }
+
+        /// <summary>Pins a capture flow to a fixed run seed and proves the run is actually carrying
+        /// it before a single frame is shot.
+        ///
+        /// The proof is the point. Pinning that silently failed would leave the flow rolling exactly
+        /// as before while every comment in the file claimed otherwise — the same shape as a filter
+        /// that matches nothing and exits green (C29).</summary>
+        private static IEnumerator PinRun(LaptopScreen laptop, string seed)
+        {
+            AssertPinnedSeed(seed);
+            laptop.director.StartNewRun(seed);
+            yield return WaitForRebuild();
+            Assert.AreEqual(seed, laptop.director.Run.Rng.RunSeed,
+                "the flow must be shooting the seed it pinned, not one the director rolled");
         }
 
         private static IEnumerator Boot()
