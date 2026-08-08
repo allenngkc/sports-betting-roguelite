@@ -185,6 +185,25 @@ Wake discipline: watchers die with every Orca restart — treat the fallback
 heartbeat (≤30 min) as the guarantee and watchers as an optimization. First
 action on every wake: verify watcher liveness and re-arm before anything else.
 
+### 6b. Plans are work, not reports (Allen, 2026-08-08)
+
+The banned failure mode, verbatim from this seat: a cycle report ended "Next: I
+read its close report, push the after-set to the director…" then "On you:
+nothing immediate" — and stopped. Allen had to type those same actions back as
+commands. That is handholding wearing a status report.
+
+- Every "Next:" that belongs to the orchestrator is executed in the same turn
+  it is written. A report describes what already happened and what is now in
+  flight — never what would happen if someone asked again.
+- A turn may end in exactly three states: (1) the orchestrator-owned queue is
+  empty — everything dispatched, pushed, pulled, transcribed; (2) an armed
+  monitor whose firing will execute the pending item; (3) a scheduled wake-up
+  ≤30 min away that will. "Waiting for Allen's next message" is not a state.
+- Allen being away changes nothing: his gated items accumulate in Need Allen
+  while every other lane keeps moving. Never block the loop on a question
+  dialog — take the charter/board default where one exists, otherwise park the
+  question in Need Allen and continue.
+
 Stop the loop and ping Allen (push notification or a waiting message) instead of
 continuing when:
 
