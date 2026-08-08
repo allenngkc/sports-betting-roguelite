@@ -403,8 +403,12 @@ measured 1534.89 s and 1212.81 s — a **27% spread**, replicating the 28% seen 
 contradicting it. Measured costs now: 10.4 / 13.3 min at 4,600 · **20.2 / 25.6 min at 10,000** ·
 58.6 min at 18,500.
 
-**Not this seat's to fix:** `docs/1-plans/F_0.2.0_match-theater-sweat.plan.md:376` still asserts the
-5–8% band as a re-hold criterion. That is tv-sweat's plan; it is now stale and wants routing.
+**Routed and fixed, not this seat's:** `docs/1-plans/F_0.2.0_match-theater-sweat.plan.md:376` carried
+the old 5–8% band as a re-hold criterion. The orchestrator routed it and tv-sweat committed the fix —
+it now reads `Skilled band 4.5–8% (floor re-banded 5% → 4.5%, Allen 2026-08-08)`. **Verified present
+on `slice/tv-sweat-refinement` and `origin/tv-sweat`; NOT yet on `main`, `main-2` or local
+`tv-sweat`, which still read 5–8%.** Closed in tv-sweat's lane, one merge short of closed everywhere.
+Recorded because main is where a future seat would read it, not because it is owed here.
 
 ## 7c. G5 — MEASURED FIRST, and the measurement inverted the case against it
 
