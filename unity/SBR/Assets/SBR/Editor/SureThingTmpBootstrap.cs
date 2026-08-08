@@ -32,12 +32,25 @@ namespace SBR.EditorTools
         /// the gate: it is what TMP_Settings.instance resolves and what every TMP component needs.</summary>
         private const string SettingsAsset = "Assets/TextMesh Pro/Resources/TMP Settings.asset";
 
+        private static double _deadline;
+
+        /// <summary>Imports the essentials and **stays alive until the import actually completes.**
+        ///
+        /// The first cut of this ran under `-quit` and called ImportPackage, which is asynchronous:
+        /// the editor exited before the import ran, the step reported ok, and nothing landed. The
+        /// next step then died inside TMP itself on a null TMP_Settings. **The step that did nothing
+        /// reported success — C29's exact shape, in the script written to prevent it.**
+        ///
+        /// So: no `-quit` for this invocation (the launcher omits it), and the process exits from the
+        /// import callbacks instead. The watchdog covers the case where no callback ever fires, which
+        /// would otherwise hang the editor for the whole window with another seat queued behind.</summary>
         [MenuItem("SBR/SureThing/Import TMP essential resources")]
         public static void ImportEssentials()
         {
             if (AssetDatabase.LoadAssetAtPath<Object>(SettingsAsset) != null)
             {
                 Debug.Log($"[SureThingTmpBootstrap] already present: {SettingsAsset} — nothing to do");
+                EditorApplication.Exit(0);
                 return;
             }
 
@@ -50,13 +63,59 @@ namespace SBR.EditorTools
                 return;
             }
 
+            AssetDatabase.importPackageCompleted += OnCompleted;
+            AssetDatabase.importPackageFailed += OnFailed;
+            AssetDatabase.importPackageCancelled += OnCancelled;
+
             Debug.Log($"[SureThingTmpBootstrap] importing {full}");
             AssetDatabase.ImportPackage(full, interactive: false);
+
+            _deadline = EditorApplication.timeSinceStartup + 300.0;
+            EditorApplication.update += Watchdog;
+        }
+
+        private static void OnCompleted(string packageName)
+        {
+            Debug.Log($"[SureThingTmpBootstrap] import completed: {packageName}");
             AssetDatabase.Refresh();
-            // Deliberately NOT asserting the settings asset in this same invocation. ImportPackage
-            // completes across a domain reload, so a check here would read the pre-import state and
-            // report a false failure. Verify() runs as its own Unity invocation — which is also why
-            // the launcher sequences two runs rather than one.
+            EditorApplication.Exit(0);
+        }
+
+        private static void OnFailed(string packageName, string error)
+        {
+            Debug.LogError($"[SureThingTmpBootstrap] import FAILED: {packageName} — {error}");
+            EditorApplication.Exit(2);
+        }
+
+        private static void OnCancelled(string packageName)
+        {
+            Debug.LogError($"[SureThingTmpBootstrap] import CANCELLED: {packageName}");
+            EditorApplication.Exit(2);
+        }
+
+        private static void Watchdog()
+        {
+            if (EditorApplication.timeSinceStartup < _deadline) return;
+            Debug.LogError("[SureThingTmpBootstrap] import produced no callback within 300s — " +
+                           "exiting rather than holding the editor with another seat queued.");
+            EditorApplication.Exit(2);
+        }
+
+        /// <summary>Gates generation on the thing generation needs. Split out from
+        /// <see cref="Verify"/> because the whole failure above was a step running before its
+        /// precondition was checked: TMP_FontAsset.CreateFontAsset dereferences TMP_Settings, so
+        /// without the essentials it throws inside TMP rather than failing in our code.</summary>
+        [MenuItem("SBR/SureThing/Verify TMP essential resources only")]
+        public static void VerifyEssentials()
+        {
+            bool settings = AssetDatabase.LoadAssetAtPath<Object>(SettingsAsset) != null;
+            Debug.Log($"[SureThingTmpBootstrap] TMP settings: {(settings ? "PRESENT" : "MISSING")}");
+            if (!settings)
+            {
+                Debug.LogError($"[SureThingTmpBootstrap] {SettingsAsset} absent — the import did not " +
+                               "land. Generation would die inside TMP on a null TMP_Settings.");
+                EditorApplication.Exit(3);
+            }
         }
 
         /// <summary>Second invocation: the essentials are either there or the window is wasted, and
@@ -80,6 +139,32 @@ namespace SBR.EditorTools
                 Debug.LogError("[SureThingTmpBootstrap] Phase L cannot proceed — see the line above.");
                 EditorApplication.Exit(3);
                 return;
+            }
+
+            // **Presence is not usability, and this check was originally missing.** The first
+            // generated pair existed, was distinct, and reported PRESENT — while throwing
+            // "m_AtlasTextures of TMP_FontAsset has not been assigned", because the atlas texture and
+            // material are sub-assets the script had not persisted. A font asset in that state passes
+            // every null check and renders nothing.
+            //
+            // That is a gate whose name described a stronger proposition than the one it tested —
+            // C18 §4.2's newest row (T66), reproduced here within a day of it being written down.
+            foreach (var pair in new[] { ("Archivo", roman), ("ArchivoNarrow", cond) })
+            {
+                var (label, fa) = pair;
+                bool hasAtlas = fa.atlasTextures != null && fa.atlasTextures.Length > 0
+                                && fa.atlasTextures[0] != null;
+                bool hasMaterial = fa.material != null;
+                Debug.Log($"[SureThingTmpBootstrap] {label}: atlas {(hasAtlas ? "OK" : "UNASSIGNED")} · " +
+                          $"material {(hasMaterial ? "OK" : "UNASSIGNED")} · " +
+                          $"pointSize {fa.faceInfo.pointSize} · scale {fa.faceInfo.scale}");
+                if (!hasAtlas || !hasMaterial)
+                {
+                    Debug.LogError($"[SureThingTmpBootstrap] {label} would render NOTHING — refusing " +
+                                   "to report this bootstrap as usable.");
+                    EditorApplication.Exit(3);
+                    return;
+                }
             }
 
             // S11's ruling is "one LoadFont + two TMP assets". Two faces that resolved to the same

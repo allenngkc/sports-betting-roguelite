@@ -98,16 +98,50 @@ namespace SBR.EditorTools
 
             asset.name = face + " SDF";
 
-            // Regenerating replaces the asset in place so the GUID survives. A fresh GUID would break
-            // every serialized reference to it, which on this surface means the scene's LaptopScreen
-            // — and a scene that loses its font reference renders nothing while compiling clean.
             string outPath = $"{FontDir}/{face} SDF.asset";
-            var existing = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(outPath);
-            if (existing != null) EditorUtility.CopySerialized(asset, existing);
-            else AssetDatabase.CreateAsset(asset, outPath);
+            if (AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(outPath) != null)
+                AssetDatabase.DeleteAsset(outPath);
+            AssetDatabase.CreateAsset(asset, outPath);
 
-            EditorUtility.SetDirty(AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(outPath));
-            Debug.Log($"[SureThingTmpFontAssets] {face} -> {outPath}");
+            // **The atlas texture and the material are SUB-ASSETS and must be added explicitly.**
+            // CreateFontAsset builds them in memory; only the Font Asset Creator window persists them,
+            // so a scripted asset saved without this step reloads with m_AtlasTextures unassigned —
+            // a font asset that exists, passes every null check, and renders nothing. That is the
+            // whole S2/C18 family again, one layer below the text.
+            if (asset.atlasTextures != null && asset.atlasTextures.Length > 0 && asset.atlasTextures[0] != null)
+            {
+                Texture2D atlas = asset.atlasTextures[0];
+                atlas.name = face + " Atlas";
+                AssetDatabase.AddObjectToAsset(atlas, asset);
+
+                Shader shader = Shader.Find("TextMeshPro/Distance Field");
+                if (shader == null)
+                {
+                    Debug.LogError("[SureThingTmpFontAssets] TextMeshPro/Distance Field shader not " +
+                                   "found — essential resources are missing or incomplete.");
+                    return;
+                }
+                var material = new Material(shader) { name = face + " Atlas Material" };
+                material.SetTexture(ShaderUtilities.ID_MainTex, atlas);
+                material.SetFloat(ShaderUtilities.ID_TextureWidth, atlas.width);
+                material.SetFloat(ShaderUtilities.ID_TextureHeight, atlas.height);
+                material.SetFloat(ShaderUtilities.ID_GradientScale, AtlasPadding + 1);
+                material.SetFloat(ShaderUtilities.ID_WeightNormal, asset.normalStyle);
+                material.SetFloat(ShaderUtilities.ID_WeightBold, asset.boldStyle);
+                asset.material = material;
+                AssetDatabase.AddObjectToAsset(material, asset);
+            }
+            else
+            {
+                Debug.LogError($"[SureThingTmpFontAssets] {face} produced no atlas texture — the " +
+                               "asset would render nothing. Not shipping it silently.");
+                return;
+            }
+
+            EditorUtility.SetDirty(asset);
+            Debug.Log($"[SureThingTmpFontAssets] {face} -> {outPath} " +
+                      $"(atlas {asset.atlasTextures[0].width}x{asset.atlasTextures[0].height}, " +
+                      $"material {(asset.material != null ? "assigned" : "MISSING")})");
         }
     }
 }

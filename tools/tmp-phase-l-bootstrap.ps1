@@ -50,17 +50,26 @@ if (-not (Test-Path $UnityPath)) {
     Write-Host "FAIL: Unity not found at $UnityPath" -ForegroundColor Red; exit 2
 }
 
+# Four steps, and the verify-essentials one is here because its absence cost a window. ImportPackage
+# is asynchronous: the first cut ran the import under -quit, the editor exited before the import ran,
+# the step reported ok, and generation then died inside TMP on a null TMP_Settings. A step that did
+# nothing, reported as done — C29's shape, inside the script written against it.
+#
+# Quit=$false on the import: it exits from its own import callbacks instead, so the process lives
+# long enough for the import to actually happen. Every other step is synchronous and keeps -quit.
 $steps = @(
-    @{ Name = 'import-essentials'; Method = 'SBR.EditorTools.SureThingTmpBootstrap.ImportEssentials' },
-    @{ Name = 'generate-assets';   Method = 'SBR.EditorTools.SureThingTmpFontAssets.Generate' },
-    @{ Name = 'verify';            Method = 'SBR.EditorTools.SureThingTmpBootstrap.Verify' }
+    @{ Name = 'import-essentials';  Method = 'SBR.EditorTools.SureThingTmpBootstrap.ImportEssentials'; Quit = $false },
+    @{ Name = 'verify-essentials';  Method = 'SBR.EditorTools.SureThingTmpBootstrap.VerifyEssentials'; Quit = $true },
+    @{ Name = 'generate-assets';    Method = 'SBR.EditorTools.SureThingTmpFontAssets.Generate';        Quit = $true },
+    @{ Name = 'verify';             Method = 'SBR.EditorTools.SureThingTmpBootstrap.Verify';           Quit = $true }
 )
 
 foreach ($step in $steps) {
     $log = Join-Path $logDir "tmp-$($step.Name)-$stamp.log"
     Write-Host "[$($step.Name)] running..."
-    $unityArgs = @(
-        '-batchmode', '-quit',
+    $unityArgs = @('-batchmode')
+    if ($step.Quit) { $unityArgs += '-quit' }
+    $unityArgs += @(
         '-projectPath', $ProjectPath,
         '-executeMethod', $step.Method,
         '-logFile', $log
