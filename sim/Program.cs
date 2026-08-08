@@ -144,7 +144,9 @@ internal static class Program
         double[] lates = { 1.75, 1.90 };
         int rounds = new RunConfig().Payments.Length;
 
-        Console.WriteLine($"# payment-curve grid — {opt.Runs:N0} runs/bot/cell, bots: naive, skilled, noshop");
+        // Same C34 line as the campaign header: the grid is seed-pinned and now says so.
+        Console.WriteLine($"# payment-curve grid — {opt.Runs:N0} runs/bot/cell, bots: naive, "
+            + $"skilled, noshop, seed \"{opt.SeedPrefix}-{{i}}\" (pinned)");
         Console.WriteLine();
         Console.WriteLine("| bank | P1 | early | late | P8 | G1 naive | G2 noshop | G3 skilled | G4 EV cross | verdict |");
         Console.WriteLine("|---|---|---|---|---|---|---|---|---|---|");

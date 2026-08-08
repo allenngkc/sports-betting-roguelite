@@ -134,14 +134,37 @@ noise, and a threshold at zero cannot be cleared by noise in any principled way.
 asserted here because none has been measured; that measurement is the next step, and it is not this
 seat's to take unasked.
 
-## 7. Open
+## 7. The escalation ran — every gate now adjudicates
 
-**The escalation is OWED, not done.** It was launched at 18,500 under Allen's pre-authorisation and
-was **stopped ~1 min in, before writing anything** — no report, empty stderr, cause unknown at this
-seat. **There is no 18,500 evidence anywhere in this document and nothing in it rests on any.**
+Allen fired it 2026-08-07. `--gates --runs 18500 --seed-prefix TUNE`, **2,812,000 total runs,
+3514.63 s, exit 0.**
 
-```
-dotnet run --project sim -c Release -- --gates --runs 18500 --seed-prefix TUNE --report <path>
-```
+| Gate | Reading | Resolution | Band ÷ resolution | Verdict |
+|---|---|---|---|---|
+| **G3** | won **5.5%**, 0.5pp above the 5.0 floor | **±0.33pp** | **9.0×** | **PASS — adjudicated** |
+| **G6** | martyr-worst **6.0%** vs skilled 5.5%, margin **+0.5pp** | **±0.48pp** | **4.1×** | **PASS — adjudicated** |
 
-~42–54 min. Prediction recorded above so it can be scored rather than quietly re-fitted.
+`Gates evaluated: 7 · passed: 7 · produced a verdict: 7` — **ALL 7 GATES PASS, the economy holds.**
+
+**G6's full arc, which is what the ruling bought:**
+
+| n | Resolution | Band ÷ res | Martyr margin | What the verdict was worth |
+|---|---|---|---|---|
+| 1,000 | ±2.15pp | 0.9× | +1.5pp | nothing — could not fail |
+| 4,600 | ±0.97pp | 2.1× | +0.7pp | can fail; adjudicated with 1.3pp clearance |
+| 18,500 | ±0.48pp | 4.1× | **+0.5pp** | **resolves its whole band** |
+
+**The martyr margin converged +1.5 → +0.7 → +0.5pp.** The n=1,000 reading was more than three times
+the truth. Loss-farming is nowhere near winning, and this seat could not previously demonstrate it.
+
+**Predictions scored, not re-fitted** — both were written down before the run: G3 → ±0.33pp
+predicted, **±0.33pp measured**; G6 → ~4.1× predicted, **4.1× measured**.
+
+**Two caveats, both this seat's:**
+
+1. **Cost missed a third time.** Predicted ~42–54 min, **actual 58.6 min**. The fix is not a better
+   formula — quote measured wall times and stop deriving ranges from two samples.
+2. **The escalation report does not carry its own seed line (C34).** It was produced by the binary
+   from before that fix landed. The run *was* pinned — `TUNE`, passed explicitly, recorded here —
+   but the artifact does not assert it, and under C34 that is the point. It is the last campaign
+   artifact with the gap; the header now states the prefix, and `--grid` with it.

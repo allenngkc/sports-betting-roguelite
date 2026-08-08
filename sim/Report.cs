@@ -122,6 +122,14 @@ public static class Report
             + $"{cfg.MatchupsPerSlate} matchups/round, {cfg.MaxTicketsPerRound} tickets/round, "
             + $"{cfg.RelicSlots} relic + {cfg.ConsumableSlots} consumable slots");
         sb.AppendLine($"- Strategies: {string.Join(", ", Names(batches))}");
+        // C34 (batch 14): evidence that cannot be reproduced is not a set — a flow pins its seed
+        // AND asserts it. This campaign was always pinned by construction, but until this line the
+        // report never recorded WHICH prefix, so every gate table's pinning lived in the prose
+        // wrapped around the artifact instead of in the artifact. --scorer-ev printed its prefix;
+        // the campaign the gates are actually read off did not.
+        sb.AppendLine($"- Seed: **pinned** — run i uses engine seed \"{opt.SeedPrefix}-{{i}}\". Same "
+            + "arguments reproduce this report's body byte-for-byte; the header's date and wall time "
+            + "are the exceptions and carry no verdict. `--verify` is the standing self-check.");
         sb.AppendLine($"- Runs per batch: {opt.Runs.ToString("N0", Inv)}");
         sb.AppendLine($"- Total runs (incl. audit/combos): {total.ToString("N0", Inv)}");
         sb.AppendLine($"- Wall time: {wallSeconds.ToString("F2", Inv)} s");

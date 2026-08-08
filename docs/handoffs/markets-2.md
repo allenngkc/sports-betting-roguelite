@@ -239,6 +239,13 @@ result re-runs at ~18,500.**
   "ALL GATES PASS" banner**. The **exit code is deliberately unchanged** — Allen ruled a re-run, not
   a failure — so a green 0 keeps meaning "no gate failed" and never stands in for a verdict nobody
   reached. Flip it if you want the campaign to hard-stop; it is one condition in `Program.Run`.
+- **The report asserts its seed (C34, batch 14).** The campaign was always pinned by construction —
+  run i takes engine seed `"{prefix}-{i}"` — but the report never recorded *which* prefix, so every
+  gate table's pinning lived in the prose wrapped around the artifact rather than in it. `--scorer-ev`
+  printed its prefix; the campaign the gates are read off did not. Header and `--grid` now both
+  state it. **Note for the next seat: batch 14 landed on 2026-08-07 and this seat was briefed
+  "canon through batch 13" — check the register's transcription log before citing it, the canon
+  moved mid-session.**
 
 ### Verified — bare `--gates`, TUNE seeds, exit 0, 7/7 PASS, run TWICE
 
@@ -280,36 +287,60 @@ adjudicated.** Allen's predicted ±1.0pp came in at ±0.97pp measured.
    turnaround yet between stating a number and it being wrong — the single-measurement habit is the
    defect, not any one of the numbers it produces.
 
-### OPEN — G3 did not adjudicate. Escalation OWED.
+### G3 — near-line at 4,600, settled at 18,500. CLOSED.
 
 The ruling fixed G6 and **surfaced the same defect one gate over**. G3 reads skilled **5.4% against
 a 5.0% floor — 0.43pp of clearance on a ±0.67pp instrument.** Its *band* is fine (3pp = 4.5×
 resolution, it resolves its whole band); it is this *reading* that sits on the line, which is
-precisely the distinction the near-line half was built to catch. The campaign banner therefore says
-**7/7 PASS but G3 DID NOT ADJUDICATE**.
+precisely the distinction the near-line half was built to catch. The campaign banner said
+**7/7 PASS but G3 DID NOT ADJUDICATE** — the near-line half earning its place on the day it landed,
+on a gate nobody had asked about.
 
-**The escalation is OWED, not done.** It was launched at 18,500 under Allen's pre-authorisation for
-"any near-line result" and was **stopped ~1 min in, before writing anything** — no report, empty
-stderr, no surviving process, cause unknown at this seat. **There is no 18,500 evidence in this
-file and nothing here rests on any.** Re-run it (~42–54 min) and record what it says:
+### RESOLVED — the escalation ran. Every gate adjudicates.
 
-```
-dotnet run --project sim -c Release -- --gates --runs 18500 --seed-prefix TUNE --report <path>
-```
+Allen fired the escalation 2026-08-07. `--gates --runs 18500 --seed-prefix TUNE`, **2,812,000 total
+runs, 3514.63 s, exit 0**:
 
-Predicted, so the prediction can be scored rather than quietly re-fitted: G3 resolves to ±0.33pp
-against 0.43pp of clearance — enough, but only just — and G6 lifts from 2.1× to ~4.1×, fully clean.
-**If G3 still does not adjudicate at 18,500, do not raise `n` again**: at that point the honest
-reading is that the economy is tuned to sit on its own gate line, and the band is the thing to take
-to Allen, not the sample size.
+| Gate | Reading | Resolution | Verdict |
+|---|---|---|---|
+| **G3** | won **5.5%**, 0.5pp above the 5.0 floor | **±0.33pp**, band 3pp = **9.0×** | **PASS — adjudicated**, resolves its whole band |
+| **G6** | martyr-worst **6.0%** vs skilled 5.5%, margin **+0.5pp**, 1.5pp clearance | **±0.48pp**, band 2pp = **4.1×** | **PASS — adjudicated**, resolves its whole band |
+
+`Gates evaluated: 7 · passed: 7 · produced a verdict: 7` — **ALL 7 GATES PASS, the economy holds.**
+No unadjudicated gate remains. **G6 has gone from an instrument that could not fail to one that
+resolves its entire band**, which is what the ruling was for.
+
+**Predictions scored rather than quietly re-fitted** (they were written down before the run):
+G3 → ±0.33pp predicted, **±0.33pp measured**; G6 → ~4.1× predicted, **4.1× measured**. Both hit.
+G3's clearance came in at 0.5pp against the 0.43pp seen at 4,600, so it adjudicates with more room
+than predicted, not less.
+
+**The martyr margin converged as n rose: +1.5pp → +0.7pp → +0.5pp** (n = 1,000 → 4,600 → 18,500).
+The n=1,000 figure was **roughly three times** the settled one — and "roughly" is load-bearing:
+both figures are printed to 1dp, so the ratio is only pinned to about 2.6–3.4×, and a sharper number
+than that is not available from the report either wrote. Loss-farming is not close to winning.
+
+**Two caveats, both on this seat:**
+
+- **Cost missed again, third time.** Predicted ~42–54 min, **actual 58.6 min** — 4.39–5.62× the two
+  4,600 runs for a 4.02× increase in work. Wall-clock scaling here is not predictable from the
+  handful of points this seat has, and the fix is not a better formula: **quote measured wall times
+  only, and stop deriving ranges from two samples.**
+- **The escalation report itself does not carry its seed line** (C34) — it was produced by the
+  binary from before the header fix below. The run *was* pinned (`TUNE`, passed explicitly and
+  recorded here), but the artifact does not assert it. It is the last campaign artifact with that
+  gap.
 
 ### OPEN — G5 is the same defect in a sharper form. Reported, not fixed.
 
 G5 passes on `SynergyExcess > 0.0`: a **threshold at zero**, no stated resolution, read off a
-combination of **four** measured rates. Its reading went **+0.2pp at n=1,000 → +0.1pp at n=4,600** —
-**it moved by as much as its own value.** A reading that halves when you quadruple the sample is
-noise, and a threshold at zero cannot be cleared by noise in any principled way: unlike G6 there is
-no band to widen, because the criterion *is* the line.
+combination of **four** measured rates. Its reading went **+0.2pp at n=1,000 → +0.1pp at n=4,600 →
++0.1pp at n=18,500** — it halved once, then held. The third point is recorded because it *weakens*
+the sharpest version of the case: "it moved by as much as its own value" was true of the first step
+only, and quoting it without the second step would be the same over-reach this section exists to
+catch. The case that survives is simpler and does not need the movement: **a threshold at exactly
+zero, read off four measured rates whose combined error at 18,500 is on the order of ±0.6pp, cleared
+by +0.1pp.** Unlike G6 there is no band to widen, because the criterion *is* the line.
 
 **No number is asserted here** — G5's combined error has not been measured, only reasoned about, and
 this seat has spent the fortnight learning what that distinction costs. Measuring it is one commit;
