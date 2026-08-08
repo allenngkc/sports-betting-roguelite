@@ -91,8 +91,22 @@ namespace SBR
             //   albedo   = --room-rust #6B3A24, the ratified swatch. R35's shape -- strike the
             //              requirement that needs an escape, apply the swatch that already exists.
             //   emission = rust's own hue (49.7deg) at the room's EMITTER chroma (5.4, which is
-            //              the screens' authored figure), at the lamp's OWN original luminance
-            //              L* 60.49. Chroma 63.1 -> 5.4: from ten times the room to parity.
+            //              the screens' authored figure), at RENDERED-BRIGHTNESS parity with the
+            //              original lamp. Chroma 63.1 -> 5.4: from ten times the room to parity.
+            //
+            // L* 51.84, NOT the original's L* 60.49 -- ALLEN 2026-08-08, superseding batch-16's
+            // value. "Restore the original luminance" turned out to be ambiguous between two
+            // ladders, and they disagree by 43%:
+            //
+            //   authored L* 60.49 (L*-parity)     -> rendered dY' seated +70.26, chroma 8.0
+            //   authored L* 51.84 (luma-parity)   -> targets the original's measured +49.02
+            //
+            // The original saturated lamp rendered +49.02 seated. A near-neutral at the SAME L*
+            // carries more Rec.709 luma than a saturated red does, because its energy spreads
+            // across all three channels instead of sitting in the one the luma weights discount
+            // (R is 0.2126). So matching L* made the lamp 43% brighter than it had ever been.
+            // Ruled on rendered brightness, which is the ladder that governs how bright it looks.
+            // C33's unit distinction deciding a real value rather than a report's wording.
             //
             // THE LUMINANCE IS THE LAMP'S OWN, and the first build got that wrong. I took L* 30
             // from the direction's phrase "warm, DARK, low-chroma" and halved the lamp's output
@@ -122,7 +136,7 @@ namespace SBR
             // EXACT VALUE NOT RULED -- direction was, and the value lands on the instrument.
             Material indicator = GrayboxRoomBuilder.Mat("ArtIndicator",
                 new Color(0.1470f, 0.0423f, 0.0176f),
-                emission: new Color(0.3292f, 0.2770f, 0.2572f), smoothness: 0.45f);
+                emission: new Color(0.2334f, 0.1924f, 0.1769f), smoothness: 0.45f);
 
             // R7 Tier 1 wear. Colour lives here, never in the textures - see
             // ProceduralWearTextures. Cutoffs are the shape control: the alpha channel stores a
