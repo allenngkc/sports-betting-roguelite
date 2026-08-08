@@ -137,3 +137,83 @@ parlay path, or any presentation surface — the scorer board's *rendering* is u
 was last photographed as `11-margin-max-legs-staged-receipt`'s sibling states. The distinct-price
 count rounds to printed American odds deliberately; at full float precision every price differs and
 the number would be meaninglessly flattering.
+
+---
+
+# AMENDMENT — 2026-08-07, found during the merge run
+
+**From:** markets/sim lead (`markets-2`) · **Status of the change itself: unaffected.** Allen accepted
+pricing variety on 08-07 and it is merge-ready. This amends one claim in the document above and one
+sentence the harness was printing. Neither changes behaviour; the gates and the calibration re-ran
+figure-for-figure identical afterwards.
+
+## 1. "Role order survives by construction" was wider than its arithmetic
+
+**What §"The change" claims above:** *"Role order survives by construction, not by luck. The spread is
+symmetric and bounded, so at the shipped weights a jittered forward (3.0 × 0.65 = 1.95) still
+outranks a jittered defender (0.5 × 1.35 = 0.675) for every seed. A striker is still a striker."*
+
+**What is actually true.** That demonstration covers the forward-versus-defender pair and the
+document generalised it to the whole role order without checking the pair next to it. **Forward and
+midfielder overlap at the shipped dial:**
+
+| pair | lower role's ceiling | upper role's floor | separated? |
+|---|---|---|---|
+| forward vs defender | 0.5 × 1.35 = **0.675** | 3.0 × 0.65 = **1.95** | yes, at every seed |
+| midfielder vs defender | 0.5 × 1.35 = **0.675** | 1.5 × 0.65 = **0.975** | yes, at every seed |
+| **forward vs midfielder** | 1.5 × 1.35 = **2.025** | 3.0 × 0.65 = **1.95** | **no — the bands cross** |
+
+So a jittered midfielder can out-price a jittered forward. **Measured: 19 of 3,600 teams — 0.53%** —
+across 300 seeds of generated rosters, counting a team as inverted if any midfielder on it carries a
+higher scoring weight than any forward on it.
+
+**The behaviour is not obviously wrong; the claim was.** An attacking midfielder pricing above a
+fourth-choice forward is a normal thing for a board to say, and it is arguably the variety this
+change exists to create. What was wrong was asserting "by construction, not by luck" over a range the
+construction does not cover. **Whether the overlap is desirable is a design question and stays open —
+it is not a defect this seat is fixing unasked.** If it should be closed, the lever is a narrower
+jitter: the bands stop crossing below **j = 0.714**, and the shipped value is 0.35.
+
+**Now guarded, so it cannot be re-asserted by accident.** Two tests in `engine.tests`:
+`Role_weight_bands_are_disjoint_for_forward_over_defender_only` pins which pairs the construction
+separates and which it does not; `Every_generated_roster_keeps_forwards_and_midfielders_above_defenders`
+checks the two real invariants on generated rosters rather than inferring them from the arithmetic
+that produced those rosters, and **reports the inversion rate while asserting nothing about it** — a
+threshold there would turn red on a future narrower jitter, which would be an improvement, and an
+unreported count is the vacuous-green shape this studio has spent a fortnight on.
+
+## 2. The calibration harness described a model it no longer had
+
+Its by-role section printed *"scoring weight (and so priced probability) is assigned purely by role"* —
+the exact property this change deleted — and would have printed it under every future run, including
+the runs quoted in the tables above. It now states what role sets, what the jitter spreads, and what
+the split **cannot** see: a miss confined to one player inside a role pools away there and needs the
+band table (C25).
+
+## Why both are the same defect
+
+They are the shape this branch already retracted once, in the EV column: **a description that outlived
+the model it described.** The EV retraction, the "purely by role" sentence and the "by construction"
+claim are three instances in one change. None was caught by a test — the first by arithmetic, the
+second and third by reading the diff against the model it had just altered.
+
+## Scope of the amendment's own numbers (C25)
+
+The 0.53% is 300 seeds × 6 matchups × 2 teams = 3,600 teams, one seed family, counting per-team not
+per-pair — a team with two inversions counts once, so this is a floor on pairs and an exact figure on
+teams. It measures generated **rosters**, not boards a player sees: it says nothing about how often an
+inversion is visible on a 14-row scorer tab, or whether it reads as wrong when it is. That would need
+a rendered board, and no capture in this wave exercises one.
+
+## Verification after both corrections
+
+`dotnet test engine.tests` **183 executed / 183 passed / 0 failed / 0 skipped**, exit 0 (181 before
+the two tests above) · Unity **EditMode 75/75**, **PlayMode 47/47**, 0 compile errors, C29 guard exit 0
+with floors and a freshness limit · `--gates --runs 1000 --seed-prefix TUNE` **ALL GATES PASS**, every
+verdict and figure identical to the tables above · `--scorer-ev --runs 400 --seed-prefix SCORER` all
+five bands within 2 SE, FW/MF/DF within 0.1pp, worst band 1.2 SE.
+
+**G6's caveat in §"The read" stands unchanged and is not affected by any of this:** the martyr guard's
+tolerance (±2.15pp) is still wider than its band (2pp), so it would report PASS through a real breach.
+That is a dial for Allen and it does not block this merge — the jitter mechanism cannot reach the
+martyr path.
