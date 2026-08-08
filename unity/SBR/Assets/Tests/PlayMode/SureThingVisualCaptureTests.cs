@@ -51,6 +51,28 @@ namespace SBR.Tests.PlayMode
         {
             yield return Boot();
             LaptopScreen laptop = Laptop();
+
+            // R38 applied to the flow rather than to one state, and it turns out to matter more here
+            // than it did on the verdict. The scene ships `RunDirector.seed = ""`, which the director
+            // reads as "roll a fresh random 8-char A-Z0-9 seed" — so **this set has never been
+            // reproducible.** Every re-shoot deals a different slate, and two submissions of "the same
+            // twelve states" have never once been the same frames.
+            //
+            // Measured, not assumed: batch 11's `05-my-bets-green-dead` reads
+            // `Tulsa Plumbers v Pawtucket Ferrets  −516 · PAYS $71`; the very next run of the same
+            // state reads `Sheboygan Bricklayers v Waterloo Zambonis  −410 · PAYS $85`.
+            //
+            // This has not been producing wrong verdicts — treatment is what gets ruled and treatment
+            // is stable across seeds. What it produces is a set where a CONTENT-dependent finding can
+            // appear and vanish between runs with nothing changed. The recorded instance is the latent
+            // width flake in SureThingEntryTests, which passed on every run whose generated team names
+            // happened to be short enough and failed on the first long one.
+            //
+            // Pinned numeric per R38's own rule: 8 digits, an ordinary member of NewSeed's A-Z0-9
+            // space. Nothing is lost by pinning, because nothing was stable to lose.
+            laptop.director.StartNewRun("52830174");
+            yield return WaitForRebuild();
+
             string outputDirectory = Path.GetFullPath(Path.Combine(
                 Application.dataPath, "..", "..", "..", "artifacts", "surething-ui"));
             Directory.CreateDirectory(outputDirectory);
@@ -58,6 +80,8 @@ namespace SBR.Tests.PlayMode
                 "yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture);
             var capturedPaths = new List<string>();
 
+            Assert.AreEqual("52830174", laptop.director.Run.Rng.RunSeed,
+                "R38: this flow's frames are shot on a pinned numeric seed, not a rolled one");
             Assert.AreEqual(SportsbookApp.Tab.Lobby, laptop.Os.CurrentTab);
             Assert.IsNotNull(Required(App(laptop), "Board"));
             yield return CaptureState(laptop, outputDirectory, runPrefix,
@@ -133,6 +157,43 @@ namespace SBR.Tests.PlayMode
             RevealedView view = laptop.tv.RevealedView;
             InvokeView(view, "Reset", laptop.director.Run, ticket, 0);
             yield return WaitForRebuild();
+
+            // PENDING is the leg-level word for "released by the TV, not yet started", and it is the
+            // last ruled treatment on this surface with no frame behind it. This is the mirror at the
+            // instant the broadcast hands the ticket over: ticket RIDING, both legs PENDING, and the
+            // tally already carrying the whole stake because nothing has resolved yet.
+            //
+            // **Reading order for the three MY BETS states is 04b -> 04a -> 05, which the letters do
+            // NOT encode.** They are insertion order: 04a was shot and filed before this state was
+            // asked for, and renaming delivered evidence is worse than a suffix that needs one
+            // sentence of explanation.
+            laptop.Os.OpenSportsbook(SportsbookApp.Tab.MyBets);
+            yield return WaitForRebuild();
+            Transform pendingTicket = Required(
+                Required(App(laptop), "MyBetsBoard"), "MirrorTicket0");
+            StringAssert.Contains("RIDING", TextOf(Required(pendingTicket, "TicketTitle")),
+                "S23: RIDING is ticket-level and holds from the moment the TV releases the ticket");
+            Assert.AreEqual("PENDING",
+                TextOf(Required(Required(pendingTicket, "MirrorLeg0"), "LegState")));
+            Assert.AreEqual("PENDING",
+                TextOf(Required(Required(pendingTicket, "MirrorLeg1"), "LegState")));
+
+            // The tally reads the same $35/$85 it reads on 04a — nothing has resolved, so nothing has
+            // left the at-risk column. Asserted so the two frames cannot silently disagree.
+            Transform pendingMargin = Required(App(laptop), "MyBetsMargin");
+            StringAssert.Contains("1 RIDING", TextOf(Required(pendingMargin, "TallyAtRiskLabel")),
+                "both legs pending still means exactly one ticket riding");
+
+            // **Deliberately NOT asserting PENDING's tone, and this frame is why.** The build renders
+            // it `--toner-2` (SportsbookApp.cs:1342 — PENDING falls into the same else branch as
+            // VOID). S43 rules PENDING prints `--toner-3`, and the kit's RevealedState.jsx maps
+            // `PENDING: var(--toner-3)` — the very file BuildMirrorLeg's own comment cites as its
+            // source. Pinning the build's value here would bless the gap; pinning the kit's would fail
+            // a suite over a violation nobody has ruled on THIS screen. Shot as built so the DD gets a
+            // photograph of the actual surface, with the finding travelling beside it.
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "04b-my-bets-pending", capturedPaths);
+
             InvokeView(view, "BeginLeg", 0, ticket.Legs[0]);
             InvokeView(view, "ResolveLeg", 0, LegGrade.Won);
             yield return WaitForRebuild();
@@ -213,7 +274,7 @@ namespace SBR.Tests.PlayMode
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "06-ledger", capturedPaths);
 
-            Assert.AreEqual(16, capturedPaths.Count, "eight states must emit paired captures");
+            Assert.AreEqual(18, capturedPaths.Count, "nine states must emit paired captures");
             foreach (string path in capturedPaths)
             {
                 Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
