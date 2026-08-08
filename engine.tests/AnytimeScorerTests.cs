@@ -5,6 +5,10 @@ namespace SBR.Engine.Tests;
 
 public class AnytimeScorerTests
 {
+    private readonly Xunit.Abstractions.ITestOutputHelper _output;
+
+    public AnytimeScorerTests(Xunit.Abstractions.ITestOutputHelper output) => _output = output;
+
     [Fact]
     public void Locked_scorer_lists_match_goal_totals_and_scoring_rosters()
     {
@@ -33,11 +37,68 @@ public class AnytimeScorerTests
         // moved 0.2146→0.2397. The pin is a DETERMINISM guard and the number is expected to move
         // when the model does; an UNINTENTIONAL change here is still a regression to investigate.
         Assert.Equal(0.23968857550621281, forward, 10);
-        // The semantic assertion, and the one that must survive any weighting change: role order
-        // holds. The jitter is symmetric and bounded, so at the shipped weights a jittered forward
-        // (3.0 × 0.65 = 1.95) still outranks a jittered defender (0.5 × 1.35 = 0.675) by
-        // construction rather than by luck of the seed.
+        // The semantic assertion, and the one that must survive any weighting change: a forward
+        // outranks a DEFENDER. The jitter is symmetric and bounded, so at the shipped weights a
+        // jittered forward (3.0 × 0.65 = 1.95) still clears a jittered defender (0.5 × 1.35 =
+        // 0.675) by construction rather than by luck of the seed. That is the pair this asserts,
+        // and it is the only adjacent pair the construction actually separates — see
+        // Role_weight_bands_are_disjoint_for_forward_over_defender_only.
         Assert.True(forward > defender);
+    }
+
+    [Fact]
+    public void Role_weight_bands_are_disjoint_for_forward_over_defender_only()
+    {
+        var config = new RunConfig();
+        double Lo(double w) => w * (1.0 - config.ScoringWeightJitter);
+        double Hi(double w) => w * (1.0 + config.ScoringWeightJitter);
+
+        // Disjoint bands — no seed can invert these, which is what "by construction" means and
+        // what lets the pin above assert forward > defender unconditionally.
+        Assert.True(Lo(config.ForwardScoringWeight) > Hi(config.DefenderScoringWeight));
+        Assert.True(Lo(config.MidfielderScoringWeight) > Hi(config.DefenderScoringWeight));
+
+        // NOT disjoint, and the correction this test exists to carry: forward and midfielder
+        // OVERLAP at the shipped dials — forward floor 3.0 × 0.65 = 1.95 sits BELOW midfielder
+        // ceiling 1.5 × 1.35 = 2.025 — so a jittered midfielder can outrank a jittered forward.
+        // The change's own write-up claimed role order survived "by construction, not by luck"
+        // and demonstrated it on the forward-vs-defender gap alone, never checking the adjacent
+        // pair. The claim was wider than its arithmetic. Whether the overlap is desirable is a
+        // design question (an attacking midfielder pricing above a fourth-choice forward is not
+        // obviously wrong); that it exists is arithmetic.
+        Assert.True(Hi(config.MidfielderScoringWeight) > Lo(config.ForwardScoringWeight));
+    }
+
+    [Fact]
+    public void Every_generated_roster_keeps_forwards_and_midfielders_above_defenders()
+    {
+        int teams = 0, forwardMidfielderInversions = 0;
+
+        for (int seed = 0; seed < 300; seed++)
+            foreach (Matchup matchup in new Run($"ROLE-ORDER-{seed}").CurrentSlate.Matchups)
+                foreach (Team team in new[] { matchup.Home, matchup.Away })
+                {
+                    teams++;
+                    double[] fw = team.Players.Where(p => p.Role == PlayerRole.FW).Select(p => p.ScoringWeight).ToArray();
+                    double[] mf = team.Players.Where(p => p.Role == PlayerRole.MF).Select(p => p.ScoringWeight).ToArray();
+                    double[] df = team.Players.Where(p => p.Role == PlayerRole.DF).Select(p => p.ScoringWeight).ToArray();
+                    if (df.Length == 0) continue;
+
+                    // The invariant the disjoint bands guarantee, checked on real rosters rather
+                    // than asserted from the arithmetic that produced them.
+                    if (fw.Length > 0) Assert.True(fw.Min() > df.Max());
+                    if (mf.Length > 0) Assert.True(mf.Min() > df.Max());
+
+                    if (fw.Length > 0 && mf.Length > 0 && mf.Max() > fw.Min()) forwardMidfielderInversions++;
+                }
+
+        // Reported, not asserted — and reported rather than dropped, because a count nobody can
+        // see is the vacuous-green shape this studio has spent a fortnight on. A threshold here
+        // would be worse than nothing: a future narrower jitter that closed the overlap is an
+        // improvement and must not turn this suite red. What this cannot see: whether an inversion
+        // matters to a player, which is a question for a board, not a roster.
+        _output.WriteLine($"forward/midfielder inversions: {forwardMidfielderInversions} of {teams} teams "
+            + $"({100.0 * forwardMidfielderInversions / teams:0.00}%) — measured, asserted on nothing");
     }
 
     [Fact]

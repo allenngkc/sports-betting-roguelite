@@ -153,9 +153,12 @@ public sealed class ScorerCalibrationData
         return rows;
     }
 
-    /// <summary>Same aggregation, grouped by role instead of priced probability — scoring weight
-    /// (and so priced probability) is assigned purely by role, so this is the fastest possible
-    /// check for whether a miscalibration is role-shaped rather than a general drift.</summary>
+    /// <summary>Same aggregation, grouped by role instead of priced probability. Role sets the base
+    /// scoring weight and <see cref="RunConfig.ScoringWeightJitter"/> spreads players within it, so
+    /// this is the fastest check for whether a miscalibration is role-shaped rather than a general
+    /// drift. It cannot see a miss confined to one player inside a role — that pools away here.
+    /// (Before the per-player jitter, weight WAS purely role-derived and this text said so; the
+    /// wording outlived the model by one commit.)</summary>
     public IReadOnlyList<Bucket> ByRole()
     {
         var fw = new Accumulator();

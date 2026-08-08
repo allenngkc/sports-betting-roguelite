@@ -223,8 +223,10 @@ public static class Report
             AppendCalibrationRow(sb, b);
         sb.AppendLine();
 
-        sb.AppendLine("By role — scoring weight (and so priced probability) is assigned purely by "
-            + "role, so a role-shaped miscalibration is the fastest possible diagnosis:");
+        sb.AppendLine("By role — role sets the base scoring weight and per-player jitter spreads "
+            + "players within it, so this split is the fastest check for whether a miscalibration "
+            + "is role-shaped rather than a general drift. What it cannot see: a miss confined to "
+            + "one player inside a role, which pools away here and needs the band table:");
         sb.AppendLine();
         sb.AppendLine("| role | offers | samples | mean priced p | realised freq | Δ (pp) | realised EV (pp) | freq SE | EV SE |");
         sb.AppendLine("|---|---|---|---|---|---|---|---|---|");
