@@ -46,6 +46,25 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-08 cycle 131 · **BATCH 16 WAVE COMPLETE — the blocker is dead on
+  frames** — TV's verify window: compile clean, EditMode 241/241, T68's pin
+  shot: the label reads 6.99:1 against its own field where it measured
+  1.02:1 (both halves of the inversion now happen; field 0.821, ink 0.222).
+  T69 word-boundary proven on frames; T67's inset clear of the strip. Chain
+  committing to the PR branch on my word. Pin pushed to DD inbox (4 files).
+  Every batch-16 item is now built, verified, and evidenced. The DD inbox
+  holds: receipts (39), lamp pair (7), T68 pin (4), plus all batch-15
+  carry-over evidence. Board fully clean pending DD + Allen's two decisions.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | clean-holding | DD verdicts | DD |
+  | tv-sweat | committing chain → clean | PR push, then hold | lead |
+  | room | clean-holding | DD verdicts | DD |
+  | markets-2 | clean-holding | none | — |
+  | DD bridge | fed — batch-17 case complete in inbox | "new inbox" line | Allen |
+  | Editor | free | none queued | orchestrator |
+  | **Need Allen** | **C13** · **LFS attributes fix** (both unchanged) | rulings | Allen |
 - 2026-08-08 cycle 130 · **Batch 16 wave executing; editor relay ran four
   windows clean** — SureThing: S68/S69/S70 landed in two commits (the receipt
   layout change caught a would-be stale-width fixture defect; footer-size
