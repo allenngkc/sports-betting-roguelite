@@ -11,9 +11,12 @@ Design-verified; constitution + both owning docs approved except TV's).
 - **tv-sweat:** ladder closed (T41/T48/T49/T58 all Design-verified); T62
   progress-line fix landed; T63 measured and with the DD. Owning doc arrives
   with batch 13. Fresh lead seated. Holding.
-- **room-refinement:** rounds 3+4 live; wear ruled standing-shot; corrected
-  glow built + photographed (exact value = batch 13); gates certified on
-  Allen's walks. Fresh lead seated. Holding.
+- **room-refinement:** batch 13 LANDED (`638e592`, `10de3a0`). Glow colour ships
+  both ends; **the cue frame is SHOT and the cue is STRUCK** — not owed, and no
+  longer shootable (the branch and field are gone from code and scene). Gates
+  **9 PASS / 0 FAIL / 0 VOID**, 6–8 re-certified 08-07 on Allen's standing
+  verdict. Phone emission finding filed to `dd-import`. Branch is **12 ahead,
+  267 behind main** — unmerged. Lead holding; nothing needs the editor.
 - **markets-2:** arm B + pricing variety both merged and CERTIFIED
   (183/183). Fresh Allen-attached lead seated; old session stood down.
   Open on Allen's timing: the G6 sample-size dial (raise-n, costed).
@@ -35,6 +38,19 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-07 cycle 114 · **§6a audit (heartbeat)** — room reports gates
+  9 PASS / 0 FAIL / 0 VOID, both trees clean; Allen's queue-hygiene draft
+  fired (stale entry cleared, open-items statement owed incl. cue-frame
+  status). Pending-legs frames pushed to batch-14.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | working | pin four flows, one commit each | lead |
+  | tv-sweat | working | band fix → verify window (editor queued) | lead |
+  | room | answering | open-items statement + cue-frame status | lead |
+  | markets-2 | idle-BLOCKED | G6 dial | **Allen** (his timing) |
+  | DD bridge | fed | batch-14: 4 items in; cue frame + TV numbers to come | orchestrator |
+  | Editor | free | TV verify next unless room's frame still owed | orchestrator |
 - 2026-08-07 cycle 113 · **§6a chartered — first pending-work audit run** —
   three staged drafts fired (SureThing: PENDING-legs capture, slot granted;
   TV: event-strip tier question filed to DD; room: phone emission finding
@@ -46,10 +62,10 @@ decision · evidence checked · reversal path.
   |---|---|---|---|
   | surething-ui | working (capture slot) | PENDING-legs shoot → stage | lead |
   | tv-sweat | working | ladder re-read → band fix; tier Q filed | lead |
-  | room | working | emission finding file → cue frame (queued) | lead |
+  | room | **idle — nothing owed** | none; cue frame SHOT `638e592`, finding FILED. Open: merge (12 ahead/267 behind), R8 geometry unstarted, 2 findings await DD | orchestrator / DD |
   | markets-2 | idle-BLOCKED | G6 dial | **Allen** (his timing) |
   | DD bridge | fed | batch-14 accumulating; push-on-land | orchestrator |
-  | Editor | leased | SureThing → room → TV verify | orchestrator |
+  | Editor | leased | SureThing → TV verify (**room dropped — needs none**) | orchestrator |
 - 2026-08-07 cycle 112 · **All four leads REBOOTED (Allen: API errors)** —
   clean close + --continue relaunch, effort re-applied, resume prompts sent
   (each re-states its task and continues). Watcher v13 on the new handles.
