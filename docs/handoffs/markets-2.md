@@ -61,8 +61,10 @@ validated green. What follows it on this branch is the second wave.
 
 **Verified baselines** (re-establish these before trusting any change):
 `dotnet test engine.tests` → **183/183** (181 before the two role-order tests added 08-07) ·
-Unity EditMode **75/75** · PlayMode **47/47** · Unity compile 0 errors — **the Unity figures on
-this line carry §7's correction: they are pre-`7885f8e` and are not evidence for HEAD.**
+Unity **EditMode 78/78 · PlayMode 57/57**, 0 failed, 0 skipped, compile 0 errors — measured
+2026-08-08 against the merged tree `4d095fa`, the first Unity evidence this seat has against a
+committed tree. (The old 75/75 and 47/47 on this line were pre-`7885f8e` and were never HEAD
+evidence; the counts rose because the migration brought its own tests — §7.)
 `dotnet run --project sim -c Release -- --gates --seed-prefix TUNE` → **ALL GATES PASS, exit 0**.
 **The `--runs 1000` that used to be on this line is gone deliberately**: the campaign now carries its
 own ruled floor (10,000 — Allen 2026-08-07, §7a), so a bare `--gates` is the campaign and an
@@ -130,10 +132,17 @@ calibrated, all bands within 2 SE.
   commit". That was wrong and cost a full lease window: reverting it made Unity compile
   against a stale engine, so `MatchModel.Fields` did not exist and batch 4 failed to
   build. It also means any Unity run done after such a revert verified the OLD engine.*
+- **A file can read `M` with byte-identical content.** Unity touches ProjectSettings mtimes on
+  open — `ShaderGraphSettings.asset` came back modified with an EMPTY `git diff` and `cmp` clean
+  against HEAD. It is a stale stat entry, not a change: prove it with `cmp`, clear it with
+  `git checkout --`, and do not commit it (ProjectSettings is not this seat's anyway).
 - **Unity's exit code is not a completion signal.** A `-batchmode -quit` launch
   reported exit 0 while the editor kept importing for another ~16 minutes. Judge
   liveness by CPU time, log mtime/size and `Library` file count — not the exit code,
-  and not the absence of output.
+  and not the absence of output. **Refinement, 2026-08-08: the parent's CPU understates it.** During
+  script compilation Unity's own CPU sat at 11 s and flat while `bee_backend.exe` and a fleet of
+  `dotnet` Csc workers did the work — read the child processes too, and treat the **results XML** as
+  the completion signal, since the wrapper reported exit 0 with the run barely started and no XML.
 - **Serialize anything that builds.** Two agents running `dotnet` in one worktree race
   on `engine/obj` and the shared plugin DLL.
 - **Look inside a directory before deleting it.** `artifacts/` holds 55 *tracked*
@@ -206,7 +215,27 @@ EditMode 75/75 and PlayMode 47/47 were measured 21:11–21:28 on 08-06. The engi
 **23:03**. Those runs predate not only the change but the *before* arm of its own measurement
 (22:53) — they exercised a build with no jitter dial in it. Unity does not compile `engine/**`; it
 binds the prebuilt DLL, and that DLL changed in `7885f8e`. **A green engine suite is not Unity
-evidence.** A lease run is owed before any Unity number here is called verified.
+evidence.**
+
+> ### CLOSED 2026-08-08 — the lease ran, and this is the first Unity evidence against a committed tree
+>
+> Lease granted after the migration merged to main. `main` merged into `markets-2` at **`4d095fa`**
+> (clean, one overlapping file, resolved correctly — see §7e), then both suites run against that tree:
+>
+> - **EditMode: 78 executed, 78 passed, 0 failed, 0 skipped** — `result=Passed`, 2.26 s.
+> - **PlayMode: 57 executed, 57 passed, 0 failed, 0 skipped** — `result=Passed`, 69.8 s.
+> - `dotnet test engine.tests` on the same tree → **183 executed, 183 passed, 0 failed, 0 skipped**.
+>
+> Counts stated because a suite that does not state its count states nothing (C29), and **the counts
+> moved**: 75 → 78 EditMode and 47 → 57 PlayMode. Those ten and three are the migration's tests
+> arriving with it, not this seat's. Do not compare the new totals to the old ones as if they covered
+> the same set.
+>
+> **The `16-` capture renumber is verified on rendered output, not just compiled** — the run emitted
+> `…-16-margin-max-legs-staged-receipt-flat-1024x704.png` and its main-camera pair. That was the one
+> claim in `56be727` labelled as argument rather than evidence; it is now evidence.
+>
+> Frames and both result XMLs are in `evidence/unity-2026-08-08/` (gitignored).
 
 That PlayMode "47/47" was also the **third attempt**, and must not be laundered into a clean number:
 
@@ -525,6 +554,24 @@ lesson the first two paid for.
 Multiplier + Longshot Photo (+0.76pp, ±0.45, **1.7×**) outranks Longshot + The System (+0.74pp,
 ±0.18, **4.1×**) on excess while being less than half as certain. The table ranked pairs on excess
 alone for a fortnight, and G5 certifies a design pillar off one of its rows.
+
+## 7e. main merged in at `4d095fa` — what it brought, and why the gate evidence survived it
+
+Merged on the orchestrator's instruction before the Unity lease. main was **119 ahead**; this branch
+11. It brought the **TMP migration** (C15 — the TextMesh Pro package and its shaders are now in the
+tree) and capture states **11-desktop, 12–15**.
+
+**Exactly one file overlapped**, and it was the one I had just edited: `SureThingVisualCaptureTests.cs`.
+Git auto-merged it with no conflict — **which is not the same as merging it correctly**, so it was
+checked rather than assumed: the merged set is **01–16 with no duplicate ordinal**, main's
+`11-desktop` and 12–15 present, this seat's `16-margin-max-legs-staged-receipt` present, the
+three-numbers comment intact. A clean auto-merge on a file where both sides added entries is exactly
+where a silent wrong answer would live.
+
+**`engine/`, `sim/` and `engine.tests/` are byte-unchanged by the merge** (`git diff HEAD~1 HEAD --`
+empty on all three). That is why the whole gate campaign's evidence — G3, G5, G6, the ruled floor,
+the escalation — still describes this tree and did not need re-running. Verified, not assumed:
+`engine.tests` re-run post-merge reads **183 executed, 183 passed, 0 failed, 0 skipped**.
 
 ### CLOSED this wave, do not reopen
 
