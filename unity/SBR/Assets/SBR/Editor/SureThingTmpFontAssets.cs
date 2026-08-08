@@ -74,9 +74,13 @@ namespace SBR.EditorTools
                 // resolve. Without this the property sets cleanly, falls back to the base face, and
                 // renders Regular — a weight tier that silently does nothing, which is the exact
                 // shape of defect this surface keeps paying for.
-                var table = roman.fontWeightTable;
-                table[SemiBoldWeightIndex].regularTypeface = romanSemiBold;
-                roman.fontWeightTable = table;
+                // Mutated through the getter's array rather than assigned back: fontWeightTable's
+                // SETTER is `internal`, so `roman.fontWeightTable = table` does not compile outside
+                // the TMP assembly. The getter hands back the serialized backing array itself and
+                // TMP_FontWeightPair is a struct, so indexing it gives direct write access to the
+                // stored element. Caught from the package source rather than in the editor window,
+                // which was queued behind another seat at the time.
+                roman.fontWeightTable[SemiBoldWeightIndex].regularTypeface = romanSemiBold;
                 EditorUtility.SetDirty(roman);
                 Debug.Log($"[SureThingTmpFontAssets] wired '{romanSemiBold.name}' into " +
                           $"'{roman.name}' weight table at index {SemiBoldWeightIndex} (600)");
@@ -99,9 +103,11 @@ namespace SBR.EditorTools
                 TMP_FontAsset probe = null;
                 try
                 {
-                    // Deliberately tiny: this asset is read for its style name and destroyed.
-                    probe = TMP_FontAsset.CreateFontAsset(path, faceIndex, 16, 1,
-                        GlyphRenderMode.SDFAA, 64, 64);
+                    // The same parameters the type probe already ran successfully against these two
+                    // faces. The asset is read for its style name and destroyed, so smaller values
+                    // would be cheaper — but "cheaper and untested" is not worth a queued window.
+                    probe = TMP_FontAsset.CreateFontAsset(path, faceIndex, SamplingPointSize,
+                        AtlasPadding, GlyphRenderMode.SDFAA, 256, 256);
                 }
                 catch { continue; }
                 if (probe == null) continue;
