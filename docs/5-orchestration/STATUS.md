@@ -92,6 +92,14 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-07 cycle 104 · **DesignSync transport live — batch 13 PUSHED** —
+  §3b chartered and executed: all 38 files (context prompt, docs set, both
+  glow evidence sets, TV's T63 measurements, SureThing's batch-11 photos)
+  written to `dd-inbox/2026-08-07-batch-13/` in the DD project, extracted
+  form (the DD reads files, not zips), incremental writes only. No dd-outbox
+  exists yet — pull added to every heartbeat cycle. Allen's remaining human
+  step per §3b: one line to the DD ("new inbox"). Hand-drag era ends.
+  Reversal: delete the inbox folder via a delete plan.
 - 2026-08-07 cycle 103 · **Orca restart recovered (again)** — four leads
   revived via --continue, effort re-applied, watchers re-armed (v9).
   Studio unchanged: converged on Allen's two moves (pricing-variety accept;
