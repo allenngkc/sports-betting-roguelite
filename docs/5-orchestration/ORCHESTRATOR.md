@@ -160,6 +160,31 @@ One cycle:
 5. Heartbeat-stamp the cycle in `STATUS.md`. Between cycles block on
    `orca terminal wait` or a scheduled wake-up — do not poll hot.
 
+### 6a. No-idle-lane invariant (Allen, 2026-08-07)
+
+Allen reminding the orchestrator that a lane is waiting on a dispatch is a loop
+defect. Every cycle therefore ends with a **pending-work audit** built from
+observable state — board, register, git, terminal status, DesignSync listing —
+never from what this session happens to remember:
+
+For each active worktree, the DD bridge, and the Unity queue, answer three
+questions:
+
+1. State: working / idle / blocked — and if blocked, on what, exactly.
+2. Does dispatchable work exist for it? (queued board items; ruled-but-
+   undispatched register entries; staged inbox batches not yet pushed;
+   dd-outbox files not yet pulled; a merge-ready branch; a free editor with a
+   nonempty lease queue.)
+3. If idle + work exists + nothing in flight → dispatch it **this cycle**.
+
+An idle lane with available work at cycle end is a missed stop condition, not a
+scheduling choice. The audit table (lane / state / next action / who acts) goes
+in `STATUS.md` every cycle — it is also what Allen reads instead of chasing.
+
+Wake discipline: watchers die with every Orca restart — treat the fallback
+heartbeat (≤30 min) as the guarantee and watchers as an optimization. First
+action on every wake: verify watcher liveness and re-arm before anything else.
+
 Stop the loop and ping Allen (push notification or a waiting message) instead of
 continuing when:
 
