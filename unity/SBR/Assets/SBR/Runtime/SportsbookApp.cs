@@ -118,7 +118,10 @@ namespace SBR.Game
             MakeTab(tabs, "ENTRY", Tab.Detail, active, phase == Phase.Shop, font, selectTab);
             MakeTab(tabs, "MY BETS", Tab.MyBets, active, phase == Phase.Shop, font, selectTab);
             MakeTab(tabs, "REWARDS", Tab.Rewards, active, phase != Phase.Shop, font, selectTab);
-            LaptopUi.MakeText(tabs, "Sheet", new Vector2(1f, .5f), new Vector2(1f, .5f), new Vector2(-14f, 0f), new Vector2(170f, 24f), 13, TextAnchor.MiddleRight, LaptopOs.Muted, meta, font);
+            // The strip's meta (`SHEET 1 OF 1`, and `READ ONLY` on the LEDGER) takes the tab
+            // tracking too: it sits in the tabs band and reads as part of the strip rather than as
+            // a fact of the screen below it.
+            LaptopUi.MakeText(tabs, "Sheet", new Vector2(1f, .5f), new Vector2(1f, .5f), new Vector2(-14f, 0f), new Vector2(170f, 24f), 13, TextAnchor.MiddleRight, LaptopOs.Muted, meta, font, LaptopTrack.Tabs);
         }
 
         private static void MakeTab(RectTransform top, string label, Tab tab, Tab? selected, bool disabled,
@@ -130,7 +133,11 @@ namespace SBR.Game
                 new Vector2(x, 3f), new Vector2(tab == Tab.MyBets ? 116f : 100f, 32f), 13,
                 active ? LaptopOs.Ink : LaptopOs.Surface,
                 disabled ? LaptopUi.Dim(LaptopOs.Muted) : active ? LaptopOs.White : LaptopOs.Muted,
-                disabled ? null : () => { selectTab(tab); }, font, !disabled);
+                // C15/S28: `.11` (owning doc §4.3), overriding MakeButton's `.14` action default.
+                // A tab is a place, not an act — the strip persists across every destination and is
+                // non-interactive on the LEDGER entirely (S31-am), which is precisely why it does not
+                // wear the action tracking.
+                disabled ? null : () => { selectTab(tab); }, font, !disabled, LaptopTrack.Tabs);
         }
 
         /// <summary>S31: the masthead's run figures (BANK/TARGET/TICKETS) — the register calls
