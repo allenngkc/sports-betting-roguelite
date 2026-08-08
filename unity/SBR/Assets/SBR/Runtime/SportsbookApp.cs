@@ -1215,7 +1215,7 @@ namespace SBR.Game
                 () => { onClick(); _invalidate(); }, font != null ? font : _font);
         }
 
-        private Text _mirrorMarket;
+        private TMP_Text _mirrorMarket;
 
         /// <summary>Refresh only the TV-owned market-availability line. Score, clock and
         /// probability deliberately remain exclusive to the broadcast surface.</summary>

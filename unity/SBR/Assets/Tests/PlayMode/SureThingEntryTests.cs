@@ -798,7 +798,7 @@ namespace SBR.Tests.PlayMode
                 // Matches BuildStagedReceipt's own width-fitting formula rather than a duplicated
                 // literal, so a legitimate format change (fixing the mid-word truncation defect)
                 // can never quietly desync the fixture from the render code.
-                Font font = TestFont(receipt);
+                TMP_FontAsset font = TestFont(receipt);
                 // Read the fitting width off the rendered header instead of restating it. This
                 // constant was 280f — the value when staged receipts lived in the 324px margin —
                 // and E-07 moved them into the 700px sheet without it following. The comment above
@@ -966,7 +966,7 @@ namespace SBR.Tests.PlayMode
         /// and more characters now fit before the ellipsis. That was the fixture being wrong about
         /// the font, not the UI being wrong about the text.
         /// </summary>
-        private static Font TestFont(Transform receipt)
+        private static TMP_FontAsset TestFont(Transform receipt)
         {
             var sample = Required(receipt, "ReceiptHeader").GetComponent<TMP_Text>();
             Assert.IsNotNull(sample, "ReceiptHeader must carry a Text to measure against");
