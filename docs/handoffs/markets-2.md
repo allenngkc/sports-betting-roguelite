@@ -4,7 +4,7 @@
 **Owner:** Claude (Opus 5) acting as markets/sim content lead
 **Worktree:** `C:\Users\Allen\orca\workspaces\sports-betting-roguelite\markets-2`
 **Branch:** `markets-2`
-**Last updated:** 2026-07-31 (end of phase 1 + §4 first pass) by the lead
+**Last updated:** 2026-08-07 (pricing variety accepted; merge-run verification) by the lead
 **Mission:** carry the F_0.4.0 soccer-market expansion to near-final against the
 redesigned product.
 
@@ -60,8 +60,9 @@ validated green. What follows it on this branch is the second wave.
 | `e215b13` | M1 measured BTTS exclusion; C32 gate resolutions |
 
 **Verified baselines** (re-establish these before trusting any change):
-`dotnet test engine.tests` → **181/181** · Unity EditMode **75/75** · PlayMode **47/47** ·
-Unity compile 0 errors.
+`dotnet test engine.tests` → **183/183** (181 before the two role-order tests added 08-07) ·
+Unity EditMode **75/75** · PlayMode **47/47** · Unity compile 0 errors — **the Unity figures on
+this line carry §7's correction: they are pre-`7885f8e` and are not evidence for HEAD.**
 `dotnet run --project sim -c Release -- --gates --runs 1000 --seed-prefix TUNE` →
 **ALL GATES PASS, exit 0** — G7 went green when M1 narrowed its population to what it can
 honestly assert. It was red by design for the whole of the first wave; if you find it red
@@ -80,9 +81,10 @@ calibrated, all bands within 2 SE.
   n=10,000 (0.44 SE). Tables at `main-2/docs/design/dd-import/markets-armB-gate-tables.md`.
 - **Scorer EV harness — DONE** (`--scorer-ev`). Calibration is the one instrument a gate
   cannot be, because bots are policy-excluded from pricing the market. Verdict: calibrated.
-  One finding it surfaced: the 0–5% band is calibrated to +0.1pp but that is ~2.3%
-  *relative*, landing realised EV at −3.6pp against −4.76pp — **longshot scorers are about
-  a point cheap.** Open, unfixed, Allen's call.
+  It surfaced one apparent finding — the 0–5% band landing realised EV at −3.6pp against −4.76pp,
+  read as **longshot scorers being about a point cheap**. **RETRACTED, see §7:** that gap is
+  1.06 SE once the EV column is judged against its own error instead of the frequency's. Closed,
+  not deferred, and not Allen's call after all.
 - **G6 cannot fail — the live one.** C32 made every gate state its resolution, and the
   martyr guard reads **±2.15pp against a 2pp band (0.9×)**: its tolerance is narrower than
   its own noise, it has passed all session, and it could not have caught anything. Worse
@@ -149,7 +151,7 @@ calibrated, all bands within 2 SE.
 
 **Merged and certified live on main:** B1 (`bbf9241`) and arm B. Both validated green.
 
-**On this branch, committed, awaiting Allen — not merge requests:**
+**On this branch — ACCEPTED by Allen 2026-08-07, cleared for merge:**
 
 | Commit | What |
 |---|---|
@@ -160,10 +162,57 @@ Tables and reads are staged in `main-2/docs/design/dd-import/`:
 `markets-armB-gate-tables.md`, `markets-pricing-variety-tables.md`,
 `markets-captured-string-flake.md` (carries its own correction).
 
-**Verified baselines:** `dotnet test engine.tests` **181/181** · Unity EditMode **75/75** ·
-PlayMode **47/47** · compile 0 errors · `--gates --runs 1000 --seed-prefix TUNE` →
-**ALL GATES PASS, exit 0** · `--scorer-ev --runs 400 --seed-prefix SCORER` → calibration **and**
-EV fairness both hold.
+### Verified baselines — and which half of them is not HEAD evidence
+
+**Re-verified on 2026-08-07 against the tree being merged:**
+`dotnet test engine.tests` → **183 executed, 183 passed, 0 failed, 0 skipped**, exit 0. The count is
+stated because a suite that does not state its count states nothing (C29); it reads 183 and not 181
+because this run added two tests, below ·
+`--gates --runs 1000 --seed-prefix TUNE` → **ALL GATES PASS, exit 0**, all seven verdicts and every
+figure identical to the accepted tables ·
+`--scorer-ev --runs 400 --seed-prefix SCORER` → all five bands within 2 SE, FW/MF/DF within 0.1pp,
+worst band 20–35% at 1.2 SE. Calibration **and** EV fairness both hold.
+
+**The Unity numbers previously on this line were never HEAD evidence. This is the correction.**
+EditMode 75/75 and PlayMode 47/47 were measured 21:11–21:28 on 08-06. The engine change committed at
+**23:03**. Those runs predate not only the change but the *before* arm of its own measurement
+(22:53) — they exercised a build with no jitter dial in it. Unity does not compile `engine/**`; it
+binds the prebuilt DLL, and that DLL changed in `7885f8e`. **A green engine suite is not Unity
+evidence.** A lease run is owed before any Unity number here is called verified.
+
+That PlayMode "47/47" was also the **third attempt**, and must not be laundered into a clean number:
+
+- `mr` and `mr2` failed the same assertion — **not a flake.** It was the stale hardcoded 280px
+  receipt width, already diagnosed and fixed at `2db5c19` (21:29:39), which **is** an ancestor of
+  HEAD. Both failures carry one signature: expected exactly two characters shorter, diverging at
+  index 36 where the ellipsis sits. One deterministic bug meeting two different random strings.
+- `mr3` went green at ~21:28, **before that fix was committed at 21:29:39** — so it ran on
+  uncommitted working-tree source. All three logs record compilation activity, which is *consistent*
+  with the source changing between runs but does not on its own establish it; the timestamps do, and
+  they are enough. (Softened deliberately — the original wording here claimed the logs proved the
+  three runs were different builds, which a bare count of compile lines does not show.)
+- Both things are true at once: the defect is genuinely closed at HEAD, **and** no PlayMode run
+  against any committed tree exists. The second is why the lease is owed, not the first.
+
+### Corrected during the merge run (2026-08-07)
+
+- **"Role order survives by construction" was wider than its arithmetic.** The claim went to Allen
+  in the tables demonstrated on the forward-vs-defender gap alone (forward floors at 3.0 × 0.65 =
+  1.95, defender ceilings at 0.5 × 1.35 = 0.675). The adjacent pair was never checked, and it
+  overlaps: the **midfielder ceiling is 1.5 × 1.35 = 2.025, above the forward floor of 1.95**, so a
+  jittered midfielder can out-price a jittered forward. **Measured: 19 of 3600 teams, 0.53%.**
+  Forward-over-defender and midfielder-over-defender do hold at every seed, and those are now
+  asserted on real rosters rather than inferred from the arithmetic that generated them
+  (`Role_weight_bands_are_disjoint_for_forward_over_defender_only`,
+  `Every_generated_roster_keeps_forwards_and_midfielders_above_defenders`). The inversion rate is
+  **reported and asserted on nothing** — a threshold there would turn a future narrower jitter, which
+  would be an improvement, into a red suite. The behaviour looks defensible; an attacking midfielder
+  pricing above a fourth-choice forward is not obviously wrong. The *claim* was the defect, and it is
+  the seventh instance this fortnight of a number quoted past what produced it.
+- **The calibration harness described a model it no longer had.** Its by-role section printed
+  "scoring weight … is assigned purely by role" — true before the jitter, false the moment it landed,
+  and it would have printed that sentence under every future run. Now states what the split reads and
+  what it cannot see: a miss confined to one player inside a role pools away there (C25).
 
 ### OPEN — G6 cannot fail. The live defect.
 
