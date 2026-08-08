@@ -223,7 +223,7 @@ an information hierarchy for three tenths of a pixel** (T51) — the stacked lab
 
 | State | Treatment |
 |---|---|
-| actionable | gold at **L4**, inverted field, dark type punched out — the surface's only L4 |
+| actionable | gold at **L4**, inverted field, dark type punched out — the surface's only L4. **The inversion is a two-part operation: field AND type** (T68) — `HOLD E` and the amount take `goldInk` on `actionable` and `accepted`; unlit states keep light ink |
 | updating | gold at **L3** — never L4: brightness must not promise what input refuses |
 | suspended | **L1 unlit slate from its first frame** (T43), `MARKET SUSPENDED`, no amount |
 | pending | as suspended; intervention controls live in their own overlay, never in this row |
@@ -350,7 +350,7 @@ Real gates, per C9. Each states its instrument and, per C18 §4.2, **what it can
 
 | # | Gate | Instrument | Blind to |
 |---|---|---|---|
-| V1 | **One L4 token at a time** | one-token invariant + per-frame ladder scan in Rec.709 luma, **zone mean AND peak** (C33-am) | anything the capture states do not force |
+| V1 | **One L4 token at a time** | one-token invariant + per-frame ladder scan in Rec.709 luma, **zone mean AND peak** (C33-am); **companion: every element that inverts reports the contrast between its field and its own ink** (C33-am2 — a dominance gate cannot see legibility) | anything the capture states do not force |
 | V2 | Gold appears only on won legs, payout figures, cash-out | palette scan incl. markup, light colours, colour arrays | gold reaching the player as **room light** (V6) |
 | V3 | No retired hue anywhere — verbatim constant match | `LooksLikeRetiredRed`-class scan over four surfaces | near-misses; the guard missed `#FF4038` by 0.00098 |
 | V4 | No zone resizes to content; stage clips to its region | per-frame edge assertion | z-order and overdraw between correctly-sized zones |
@@ -385,7 +385,8 @@ measurement is reported **with its scope and its resolution** attached (C25, C32
 
 | Item | State |
 |---|---|
-| **T67** lit band blooms into the event strip | Ruled batch 15; owed one seated-camera frame pair |
+| **T68** HOLD E invisible on the lit band — label inverts with the field | **BLOCKER**, ruled batch 16; in TV's queue |
+| **T69** leg statement restates its team, wraps its fixed slot | Ruled batch 16; re-author against measured column |
 | **T65** settlement re-tint value (hue 88.0°, intensity 0.9) | Upper bound — owed a settlement capture |
 | **T9** `chromeCyan` retired-hue debt | Phase 3 |
 | **T10** two hardcoded emission rest values, one below the black floor | Phase 3 |
@@ -398,4 +399,7 @@ measurement is reported **with its scope and its resolution** attached (C25, C32
 sealed), T58 (goal flash neutral), T6 (scene grammar), T50 (face in situ), **T63** (band's HDR material
 structural — the field was unboosted, not third-brightest), **T64** (idle flicker deleted), **T65**
 (room quiet on a leg win — eight frames indistinguishable from rest), **T66** (event strip at L2, one
-painting point). **The ladder is verified from substrate to L4.**
+painting point), **T67** (batch 16: the strip does not warm at the seated view — mean +0.006, under
+the instrument's resolution; structural guard adopted: the strip's text zone begins 40px past the
+boundary, x 305–980, so any line at any length starts outside measured bloom reach). **The ladder is
+verified from substrate to L4.**

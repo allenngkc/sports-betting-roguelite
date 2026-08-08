@@ -281,3 +281,29 @@ authored-chromaticity cross-check, footprint coherence (the lid predicts 0px
 seated / 51.18% focused), sub-2-code-value regions reported UNCOVERED, and
 ON | OFF | DIFF×6 crops as delivered evidence. The first instrument in the
 studio that reads light rather than pixels or constants.
+
+---
+
+## Amendment — 2026-08-08 (batch 16, transcribed by the orchestrator)
+
+**R41 closed at the restored luminance.** Chroma granted (43–49 → 5.7–6.5, in
+the room's emitter band, every value from ratified law); the luminance halving
+reversed — the lamp carries `(0.3292, 0.2770, 0.2572)`, L\* 60.49, chroma 5.4,
+hue 49.7°. A standby lamp that does not read as lit is the broken register.
+
+**R41-am, standing law:** when a direction names a swatch, **the swatch
+supplies hue and chroma; luminance is the element's own and never travels
+with it.** (And the DD's two-ends direction is recorded as a false choice —
+rust's chromaticity cannot meet a chroma-5 bound at any amplitude; treating
+the bound as the constraint was the correct resolution.)
+
+**R39-am closed — the pre-committed disposition fired.** The phone's emission
+is invisible at runtime even mid-buzz at `Amp(15)`: granted colours stand
+(they govern Edit-Mode captures, the material, and every bake-adjacent path),
+and **no cue, state or gameplay signal is ever built on the phone's glow.**
+
+**Adopted:** a small-object albedo change needs no bake (measured ΔL\* ±0.00
+on every ratified region) — it still voids gates 6–8 through the builder, and
+no tool re-issues a human gate (C28). And the control rule, alongside C32:
+*a control that fails for a known harmless reason is a control everyone
+learns to ignore* — fix it at the cause.
