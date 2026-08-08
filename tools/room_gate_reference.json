@@ -496,10 +496,10 @@
       7,
       8
     ],
-    "certified_commit": "638e592",
+    "certified_commit": "801ccb9",
     "certified_at": "2026-08-07",
-    "content_fingerprint": "8b0088222ea55bf591296a5ea28767964c9685530d3cd8d4ed1ce7d26c6b9cbb",
-    "basis": "STANDING VERDICT, not a fresh walk. Allen's word via the orchestrator 2026-08-07: gates 6-8 carry forward from his 2026-08-03 re-walk (PASS) because everything since 8729ffd is emission values and capture instrumentation, not geometry. Corroborated by the structural gates on this same run: 29 colliders, 27 dims 0 mismatch, 4/4 singletons, 8 Lights, 6 Dressing_*, 0 dangling refs. Expires automatically on the next content change.",
+    "content_fingerprint": "9b7b531aed828cfeb6d2fe1990b25aca844bfa2794956356da78a9317e468098",
+    "basis": "STANDING VERDICT, not a fresh walk. FOURTH issuance. Allen's word via the orchestrator 2026-08-07 on the batch-14 emission bake: light-only change, geometry untouched and instrument-confirmed. Corroborated on this run - 29 colliders, 27 dims 0 mismatch, 4/4 singletons, 8 Lights, 6 Dressing_*, 0 dangling refs, R33 14/14. Measured: every ratified room region held within 0.13 L* across the bake. Expires automatically on the next content change.",
     "revoked": null,
     "note": "R22: gates 6-8 have no automated instrument; a human walks the build. Expires automatically when content_fingerprint stops matching."
   }
