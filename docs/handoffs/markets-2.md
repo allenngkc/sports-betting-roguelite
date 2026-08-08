@@ -4,7 +4,7 @@
 **Owner:** Claude (Opus 5) acting as markets/sim content lead
 **Worktree:** `C:\Users\Allen\orca\workspaces\sports-betting-roguelite\markets-2`
 **Branch:** `markets-2`
-**Last updated:** 2026-08-07 (G6 sample-size dial ruled by Allen, built and verified — see §7a) by the lead
+**Last updated:** 2026-08-08 (the gate family — G6 dial, G3 re-band, G5 measure-first — all ruled, built and verified; see §7) by the lead
 **Mission:** carry the F_0.4.0 soccer-market expansion to near-final against the
 redesigned product.
 
@@ -87,11 +87,13 @@ calibrated, all bands within 2 SE.
   read as **longshot scorers being about a point cheap**. **RETRACTED, see §7:** that gap is
   1.06 SE once the EV column is judged against its own error instead of the frequency's. Closed,
   not deferred, and not Allen's call after all.
-- **G6 cannot fail — RULED, BUILT, CLOSED 2026-08-07.** It read **±2.15pp against a 2pp band
-  (0.9×)**: tolerance narrower than its own noise, passed all session, could not have caught
-  anything. Allen took option 1 — raise `n` — and the gate now measures **±0.97pp with 1.3pp of
-  clearance**, adjudicated. Full account in §7a, including the part of the old diagnosis that was
-  wrong.
+- **The gate family — ALL THREE RULED, BUILT, CLOSED (2026-08-07/08).** G6 read **±2.15pp against a
+  2pp band (0.9×)**: tolerance narrower than its own noise, passed all session, could not have caught
+  anything. Fixing it exposed the same defect in G3, then in G5. **At the ruled floor they now read
+  G6 ±0.65pp (band 3.1×) · G3 ±0.45pp (band 7.7×) · G5 ±0.34pp (clears its floor by 5.8×)** — 7/7
+  gates, 7 verdicts. **No two were fixed by the same move**: G6 took sample size, G3 took a band, G5
+  took an exemplar and a floor. §7a/§7b/§7c carry each account including the parts of the old
+  diagnoses that were wrong; the ledger and the standing order close §7.
 - **D-01…D-08 are with the Design Director.** Market label vocabulary, the `RIDING`
   state word, the one-sided scorer market, the PLAYERS-tab overflow treatment, the
   `STAKE` label/figure split, ledger legs excluded from the lost treatment, blocker
@@ -148,7 +150,31 @@ calibrated, all bands within 2 SE.
 
 ---
 
-## 7. State at 2026-08-07 — read this first on re-seat
+## 7. State — read this first on re-seat
+
+### The 2026-08-08 wave in one screen
+
+Allen ruled the whole gate family in a single session. **It is closed: G3, G5 and G6 all now read
+what they claim, and the campaign passes 7/7 with 7 verdicts at the ruled floor.**
+
+| Gate | Criterion | Resolution | Standing |
+|---|---|---|---|
+| **G3** | win **4.5–8%** (floor re-banded from 5%) | ±0.45pp | band **7.7×** — resolves its whole band |
+| **G5** | synergy **≥ 1.0pp**, exemplar Multiplier + House Key | ±0.34pp | clears by **5.8×** its resolution |
+| **G6** | martyr ≤ skilled **+2pp** | ±0.65pp | band **3.1×** — fails on a breach ≥0.65pp past the line |
+
+**The campaign invocation changed.** It is `--gates --seed-prefix TUNE` with **no `--runs`** — the
+campaign carries a **ruled floor of 10,000** and warns on stderr if undercut. `--runs` is now how you
+*escalate* (18,500), not how you run it. Measured wall times, the only ones on offer: **20.2 / 25.6 /
+27.3 / 30.0 min at 10,000**, 58.6 min at 18,500. Do not interpolate — three attempts, three misses.
+
+**Where the detail lives:** §7a G6's dial · §7b G3's re-band · §7c G5's measure-first order and the
+retagged combo table · **the ledger and the standing order at the end of this section — read those
+two even if you skip the rest.** Ruling record in `DECISIONS.md`; DD copy staged at
+`docs/design/dd-import/markets-gate-resolution-tables.md`.
+
+**Still owed, and not this seat's to unblock:** the Unity evidence gap below — no PlayMode run exists
+against any committed tree. Lease queued behind the migration validation suites.
 
 **Merged and certified live on main:** B1 (`bbf9241`) and arm B. Both validated green.
 
@@ -520,23 +546,62 @@ alone for a fortnight, and G5 certifies a design pillar off one of its rows.
   `10-ledger-populated`, so **verify that before assuming it is still blocked**.
 - **TMP migration** — sequenced laptop-first; no build work started.
 
-### The pattern worth inheriting
+### The pattern worth inheriting — the ledger, with its members named
 
-Six times this fortnight a green check was measuring nothing, and **not one was caught by a test** —
-captures and arithmetic caught all of them, twice in instruments this seat had just built. Three
-were mine: the world-space epsilon, the ruled-paper ground counted as content, and the EV column
-quoting the wrong error. State what an instrument cannot see, in the same breath as the number
-(C25), and give every gate its resolution (C32). A number without its scope invites exactly the
-conclusion it cannot support.
+**First, this section's own defect.** It used to open *"Six times this fortnight a green check was
+measuring nothing"* and then name three. **A bare count, in the section that teaches C18 — an
+inventory names its members.** The three it named were the world-space epsilon, the ruled-paper
+ground counted as content, and the EV column quoting the frequency's error where the EV's was ~24×
+larger. The other three were never written down here and are **not reconstructed** — inventing a
+mapping now would be the same error wearing a fix. The studio-wide set is tabulated in
+`constitution.md` §4.2 (T19, T47, R16, S49, C29) with R36's R7-F as the sixth; that table and this
+seat's "six" overlap but were never reconciled, and nobody should assume they are the same six.
 
-**Seventh and eighth, both from the G6 dial (2026-08-07), both mine.** The first: the new count line
-said "1 NOT ADJUDICATED" while the Resolution column it pointed at named nothing — the tier check
-returned early, so the weakest tier, the one where a reading is *most* likely to be sitting on its
-own line, was the one place the near-line flag could not print. Caught by the first smoke run at
-n=200, not by any test. The second is the older kind: this file called the defect "the campaign's
-default `n`" when the default was 10,000 and the 1,000 was a hand-typed flag — **a diagnosis
-inherited and repeated four times without once being checked against `CliOptions`.** Both say the
-same thing: run the instrument before you describe it, and read the code before you name the cause.
+**Do not carry a running tally.** Across this wave I numbered findings "seventh" through "twelfth"
+in flight and **used "twelfth" for two different things** — the `ComboTag` price clause and the
+`Find()`-null guard. The guard is not an instance at all: no gate ever silently vanished, it was
+added to prevent one. The count was never the point and a tally invites exactly that slip. **The
+list is the point.** Two distinct families, which the old single count blurred:
+
+**A — instruments that measured nothing.** The vacuous-green shape.
+- The near-line tier check **returned early**, so the weakest tier — where a reading is *most* likely
+  to be sitting on its own line — was the one place the flag could not print. The count line
+  announced "1 NOT ADJUDICATED" while the column it pointed at named nothing. Smoke, n=200.
+- **`±0.00pp` printed as a resolution.** Zero variance is degeneracy, not precision: the four arms
+  never disagreed on a single run. It would have read as the campaign's finest instrument while
+  carrying no signal. Smoke, n=400, **before it was asserted anywhere**.
+- **`ComboTag`'s price clause.** Split on combined price ≤ 450 while every relic costs **2–7 comps**,
+  so "degenerate: cheap pair, trivially assembled" printed on every pair above 1pp and "delicious:
+  costly pair" was unreachable. A cash-scale threshold left behind when prices moved to comps.
+  Allen's rule from it: **a taxonomy label is an instrument too.**
+
+**B — numbers quoted past their evidence.** All this seat's, all corrected on measurement.
+- *"The campaign's default `n`"* — inherited and repeated **four times** without once opening
+  `CliOptions`. The default was 10,000; the 1,000 was a hand-typed flag.
+- *"Cost scales superlinearly, 6.6×"* — one unreplicated pair. The second run put it at 5.2×.
+- *"~42–54 min"* for the escalation — **actual 58.6 min**, and that estimate was itself the
+  replacement for the falsified 6.6× claim.
+- *"±0.68pp / 2.9×"* predicted for G6 at the floor — **measured ±0.65pp / 3.1×**. Scaled arithmetic
+  went stale because a combined error tracks its inputs, and the martyr rate had moved.
+- *"±0.6pp"* estimated for G5's error — **measured ±0.06pp**, wrong by more than 10× in the direction
+  that mattered. On the estimate G5 looked hopeless; measured, it passes cleanly.
+- *"3 sigma"* for a figure that was 2 SE — a unit slip, C33's shape, in a lane about resolution.
+
+**Not one of the twelve was caught by a test.** Smoke runs, arithmetic, captures and reading the
+code caught all of them; four arrived inside instruments this seat had just built.
+
+### The standing order, earned three times
+
+**Measure the instrument before you set what it must clear.** G6, G3 and G5 each began this wave
+unable to fail for what it existed to catch, and **no two were fixed by the same move** — G6 took
+sample size, G3 took a band, G5 took an exemplar and a floor. The single thing common to all three:
+each criterion was set *before* anyone measured what its instrument could see. G5 is the first in
+the family to get the order right, on Allen's ruling, and it is the case that proves the order —
+every threshold anyone would plausibly have picked in advance (0.5pp, 1pp) would have failed a gate
+whose reading is genuinely and measurably positive.
+
+State what an instrument cannot see in the same breath as the number (C25); give every gate its
+resolution (C32); and if a gate has no band, **do not invent one to have a ratio to quote**.
 
 ## Allen ruling (2026-08-02, fired via orchestrator)
 
