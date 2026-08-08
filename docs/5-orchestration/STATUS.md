@@ -46,6 +46,29 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-08 cycle 129 · **Room's batch-15 work complete and delivered; two
+  Need-Allen items standing** — R41 done (lamp: chroma 43–49 → 5.7–6.5,
+  hue into the warm family; albedo = the ratified rust swatch, emission =
+  rust's hue at the screens' authored chroma — nothing by eye) and R39-am's
+  in-Play phone pair shot with controls; both pushed to the DD inbox (13
+  files). The renormalize item ROUTED BACK by room with the real finding:
+  the repo's [attr]lfs macro lives in a nested .gitattributes where git
+  ignores macros — *.png lfs expands to nothing, renormalize is a no-op;
+  proper fix is repo-wide with LFS-quota consequences → Allen decision
+  (narrow inline fix for 8 paths recommended). Process fix owned after
+  room's third stale-queue flag: post-restart, a lane's DISK is the
+  authority — dispatches verify from disk before assigning. Markets found
+  its texture M lines locally irreproducible; lane clean.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | working | S68/S69/S70 commit (S70(3) is layout, measuring) | lead |
+  | tv-sweat | clean-holding | DD verdicts | DD |
+  | room | clean-holding | DD verdicts (R41 evidence + phone pair in) | DD |
+  | markets-2 | clean-holding | none | — |
+  | DD bridge | fed: T67 pair + R41/R39-am bundle + all batch-15 evidence | "new inbox" line | Allen |
+  | Editor | free | none queued | orchestrator |
+  | **Need Allen** | **C13** (violet package re-integration: schedule now vs park — recommend now) · **LFS attributes** (narrow 8-path fix vs repo-wide vs live-with-it — recommend narrow) | rulings | Allen |
 - 2026-08-08 cycle 128 · **ORCA RESTART — board re-seated, no work lost** —
   the restart took three lead terminals mid-wave (room mid-editor-sequence).
   Recovery per protocol: worktree git state read first (SureThing's lead
