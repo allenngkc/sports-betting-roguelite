@@ -860,9 +860,16 @@ namespace SBR.Game
             return image;
         }
 
+        /// <summary>C15/S28: <paramref name="tracking"/> defaults to `.14` because **a button label
+        /// on this surface IS an action label** — §4.3's category and this helper's population are
+        /// the same set. Making it structural rather than repeated at 21 call sites is deliberate:
+        /// a token that must be retyped everywhere is one missed call away from the silent
+        /// inconsistency S67 exists to inventory, and a button added later gets it for free.
+        ///
+        /// The tab strip is the one caller that is not an action and overrides to `.11`.</summary>
         public static Button MakeButton(RectTransform parent, string name, string label, Vector2 anchor, Vector2 pivot,
             Vector2 position, Vector2 size, int fontSize, Color background, Color foreground, Action onClick,
-            TMP_FontAsset font, bool interactable = true)
+            TMP_FontAsset font, bool interactable = true, float tracking = LaptopTrack.Actions)
         {
             var go = new GameObject(name, typeof(Image), typeof(Button));
             go.transform.SetParent(parent, false);
@@ -884,7 +891,7 @@ namespace SBR.Game
             button.colors = colors;
             if (onClick != null) button.onClick.AddListener(() => onClick());
             TMP_Text text = MakeText(rt, "Label", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                Vector2.zero, rt.sizeDelta, fontSize, TextAnchor.MiddleCenter, foreground, label, font);
+                Vector2.zero, rt.sizeDelta, fontSize, TextAnchor.MiddleCenter, foreground, label, font, tracking);
             text.enableWordWrapping = false;
             return button;
         }
