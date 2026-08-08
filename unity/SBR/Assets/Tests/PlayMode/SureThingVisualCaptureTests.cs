@@ -479,6 +479,12 @@ namespace SBR.Tests.PlayMode
         {
             yield return Boot();
             LaptopScreen laptop = Laptop();
+            // A settled record's whole subject is its figures, and this flow settles a real ticket
+            // through a real sweat — so the stake, the returned figure and the terminal word were all
+            // re-rolled on every run. The LEDGER's grant was checked on figures (`$8` cashed out,
+            // `$29` won, `$0` lost, total `$37`); pinning is what makes a sentence like that mean the
+            // same thing the next time anyone looks.
+            yield return PinRun(laptop, SeedLedgerOne);
             string outputDirectory = Path.GetFullPath(Path.Combine(
                 Application.dataPath, "..", "..", "..", "artifacts", "surething-ui"));
             Directory.CreateDirectory(outputDirectory);
