@@ -1269,8 +1269,24 @@ def region_cast(img, box, step=2):
     if n == 0:
         raise ValueError(f"region {box} sampled no pixels")
     r, g, b = r / n, g / n, b / n
+    return linear_to_lab(r, g, b)
 
-    # linear sRGB -> CIEXYZ (D65) -> CIELAB
+
+def linear_to_lab(r, g, b):
+    """LINEAR sRGB -> CIEXYZ (D65) -> CIELAB (L*, chroma, hue angle in degrees).
+
+    Factored out of region_cast so the AUTHORED side of the emission instrument and
+    the RENDERED side share one definition. They are compared to each other, and two
+    copies of a colour conversion is how the comparison quietly stops meaning
+    anything -- the same reason R19(b)'s institutional metal ended up with one
+    shared factory after it had to be un-drifted once.
+
+    UNIT DISCIPLINE (C33). This is CIELAB and its L* is a perceptual lightness on a
+    0-100 scale. It is NOT the Rec.709 luma reported beside it, which is a weighted
+    sum of DISPLAY-ENCODED code values. The two are different ladders and must never
+    be compared to each other or quoted as if interchangeable -- three brightness
+    units in play on one surface is what C33 exists to stop.
+    """
     x = 0.4124564 * r + 0.3575761 * g + 0.1804375 * b
     y = 0.2126729 * r + 0.7151522 * g + 0.0721750 * b
     z = 0.0193339 * r + 0.1191920 * g + 0.9503041 * b
@@ -1286,6 +1302,29 @@ def region_cast(img, box, step=2):
     chroma = math.hypot(a_star, b_star)
     hue = math.degrees(math.atan2(b_star, a_star)) % 360.0
     return lstar, chroma, hue
+
+
+def rec709_luma_display(img, box, step=2):
+    """Rec.709 luma on DISPLAY-ENCODED values, 0-255 (C33's unit for this instrument).
+
+    Deliberately NOT linearised. C33 fixed the studio's brightness unit after three
+    were found in play on one surface, and the ladder it fixed is the one you read
+    off the encoded frame. Linearising here would produce a fourth. The name says
+    which ladder this is so no later reader has to guess.
+    """
+    crop = img.crop(box)
+    w, h = crop.size
+    px = crop.load()
+    total = 0.0
+    n = 0
+    for y in range(0, h, step):
+        for x in range(0, w, step):
+            p = px[x, y]
+            total += 0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2]
+            n += 1
+    if n == 0:
+        raise ValueError(f"region {box} sampled no pixels")
+    return total / n
 
 
 # R32 (2026-08-04): cast_verdict answers ONE question -- is law 1.1's blue failure
@@ -1327,6 +1366,208 @@ def srgb_to_linear(c):
     this boundary explicitly rather than by eye."""
     c = c / 255.0
     return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+# ---------------------------------------------------------------------------
+# EMIT -- the emission instrument.
+#
+# WHY IT EXISTS. Three emission defects landed in eight days on three surfaces --
+# the laptop lid (S63), the TV's idle flicker (T64), the phone (R39) -- and NOT ONE
+# was found by a gate. Every instrument the studio owns scans pixels or source
+# constants, and emission is neither: it is an authored value that reaches the
+# player as light. Four gates look like they would have caught it and each is
+# silent for its own correct reason:
+#
+#   R23  forces every panel emission to black BY CONSTRUCTION -- it exists to
+#        separate the room's own cast from the screens', so it must.
+#   R33  checks WHICH MATERIAL ASSET is referenced, and says so itself: a
+#        renamed-but-recoloured asset passes.
+#   T30  matches named retired constants VERBATIM. PhoneBuzzLight was
+#        (0.55,0.82,1.0) and chromeCyan is (0.62,0.86,0.96) -- same family, typed
+#        differently, invisible.
+#   R19  samples the phone on the screens-DARK set, the one state in which the
+#        thing under test is switched off.
+#
+# So the sole region that sampled an emitter read it with its emission silenced.
+# This gate closes that hole, and its first run found a fifth emitter nobody had
+# ever looked at (ArtIndicator, below).
+#
+# SCOPE, STATED UP FRONT (C25). Part A compares the AUTHORED value in the material
+# asset against the value that was ruled. It needs no frame and cannot be blocked.
+# Part B measures the RENDERED contribution and needs an A/B capture pair; until
+# that exists it reports SKIP and is counted as a non-verdict, never as a pass.
+#
+# WHAT PART A CANNOT SEE, and it is a lot: whether the surface is visible at all,
+# how large it is in frame, whether anything is drawn over it, and what the grade
+# does to it. An emitter can be correct here and still wrong on screen; it can also
+# be correct here and entirely invisible, which is what happened to the lid.
+EMISSIVE_SURFACES = {
+    "ScreenLaptop": dict(
+        material="ScreenLaptop.mat",
+        granted=(0.038, 0.032, 0.024),
+        owner="room",
+        ruling="S63-am2 granted the colour; R40 put it on the material as one shared "
+               "constant with LaptopScreen.GrantedLidEmission",
+    ),
+    "ScreenPhone": dict(
+        material="ScreenPhone.mat",
+        granted=(0.038, 0.032, 0.024),
+        owner="room",
+        provisional=True,
+        ruling="R39 ruled the DIRECTION (warm near-neutral, R>=G>B, low chroma) and held "
+               "the exact value for this instrument. The value below is the lead's "
+               "proposal, so a PASS here means 'matches the proposal', NOT 'matches a "
+               "ruling'. It must not be read as ratified until the DD rules it",
+    ),
+    "WindowGlow": dict(
+        material="WindowGlow.mat",
+        granted=None,
+        owner="room",
+        sanctioned="§1.2 sanctions a cool window with a short local pool -- the room's one "
+                   "approved cool source. No VALUE was ever ruled for it, so there is "
+                   "nothing here to compare against; recorded, not judged",
+    ),
+    "ArtIndicator": dict(
+        material="ArtIndicator.mat",
+        granted=None,
+        owner="room",
+        ruling="NEVER RULED, and never measured until this gate existed. T34's own words: "
+               "'no red exception is granted anywhere ... Red lives in light, which no "
+               "scan covered' -- folded into T30's scope, which matches verbatim constants "
+               "and so could not see it",
+    ),
+    "ScreenTV": dict(
+        material="ScreenTV.mat",
+        granted=None,
+        owner="tv",
+        ruling="T10 (two hardcoded emission rest values) is TV's open debt, Phase 3. The "
+               "room BUILDS this material but does not own the TV's colour -- reported "
+               "here so the inventory is complete, explicitly not judged",
+    ),
+}
+
+# The authored comparison is float-vs-float out of a text asset, so its only error
+# source is serialisation rounding (Unity writes ~7 significant figures). C32 wants
+# an instrument's resolution stated next to the band it judges: this tolerance is
+# ~4 orders of magnitude below the smallest authored channel in the registry, so
+# Part A cannot pass a wrong value by being imprecise. Part B's resolution is a
+# different and much coarser story -- 8-bit quantisation -- and is stated there.
+EMISSION_AUTHORED_TOL = 1e-6
+
+
+def read_material_emission(assets_root, material_file):
+    """(r, g, b) linear emission out of a .mat, or None if the asset has no field."""
+    matches = list(Path(assets_root).rglob(material_file))
+    if not matches:
+        return None, f"material asset not found: {material_file}"
+    text = matches[0].read_text(encoding="utf-8", errors="replace")
+    m = re.search(r"- _EmissionColor:\s*\{r:\s*([-\d.eE+]+), g:\s*([-\d.eE+]+), "
+                  r"b:\s*([-\d.eE+]+)", text)
+    if not m:
+        return None, f"{material_file} has no _EmissionColor field"
+    return tuple(float(v) for v in m.groups()), None
+
+
+def gate_emission(assets_root, captures_dir=None):
+    """EMIT: every emissive surface, its authored value, and its ruling."""
+    detail = []
+    judged = passed = failed = 0
+    unruled = []
+    foreign = []
+
+    detail.append(f"{'surface':16s} {'authored (linear)':26s} {'L*':>6s} {'chroma':>7s} "
+                  f"{'hue':>7s}  order   verdict")
+
+    for name, spec in EMISSIVE_SURFACES.items():
+        value, err = read_material_emission(assets_root, spec["material"])
+        if value is None:
+            failed += 1
+            detail.append(f"{name:16s} *** {err} ***")
+            continue
+
+        lstar, chroma, hue = linear_to_lab(*value)
+        order = "".join(c for _, c in sorted(zip(value, "RGB"), reverse=True))
+        order = f"{order[0]}>{order[1]}>{order[2]}"
+        shown = f"({value[0]:.4f}, {value[1]:.4f}, {value[2]:.4f})"
+
+        if spec.get("owner") != "room":
+            foreign.append(name)
+            verdict = f"NOT JUDGED - {spec['owner']}'s"
+        elif spec.get("granted") is None:
+            unruled.append(name)
+            verdict = "UNRULED - no value to compare"
+        else:
+            judged += 1
+            granted = spec["granted"]
+            if all(abs(a - b) <= EMISSION_AUTHORED_TOL for a, b in zip(value, granted)):
+                passed += 1
+                verdict = "matches proposal" if spec.get("provisional") else "PASS"
+            else:
+                failed += 1
+                gl, gc, gh = linear_to_lab(*granted)
+                verdict = (f"*** FAIL: ruled ({granted[0]:.4f}, {granted[1]:.4f}, "
+                           f"{granted[2]:.4f}) = hue {gh:.1f}deg chroma {gc:.1f} ***")
+
+        detail.append(f"{name:16s} {shown:26s} {lstar:6.2f} {chroma:7.1f} {hue:7.1f}  "
+                      f"{order:7s} {verdict}")
+
+    examined = len(EMISSIVE_SURFACES)
+
+    detail.append("")
+    detail.append(f"coverage: {examined} emissive surfaces registered; {judged} carry a ruled "
+                  f"value and were judged ({passed} pass, {failed} fail); "
+                  f"{len(unruled)} UNRULED; {len(foreign)} owned by another surface.")
+    if unruled:
+        detail.append(f"  UNRULED (recorded, never a pass -- C28): {', '.join(unruled)}")
+    if foreign:
+        detail.append(f"  NOT JUDGED HERE: {', '.join(foreign)}")
+    detail.append(f"resolution (C32): authored comparison tolerance {EMISSION_AUTHORED_TOL:g}, "
+                  f"~4 orders below the smallest authored channel -- this check cannot pass a "
+                  f"wrong value by being imprecise.")
+    detail.append("unit (C33): CIELAB L*/chroma/hue from the LINEAR authored value. Part B's "
+                  "Rec.709 luma is display-encoded and is a DIFFERENT ladder; the two are "
+                  "never compared.")
+
+    # Part B -- the rendered half.
+    if captures_dir is None:
+        detail.append("")
+        detail.append("PART B (rendered contribution): SKIPPED -- needs the per-emitter A/B "
+                      "capture pair (emitter at value vs forced black, same pose). Not run, "
+                      "so it is a non-verdict and not a pass.")
+
+    # C29: a run that examined nothing is a failure, not a green.
+    if examined == 0:
+        return GateResult(
+            "EMIT", "emissive surfaces vs ruled values", "FAIL", "at least one surface",
+            "the registry is EMPTY -- this gate measured nothing", detail,
+            blind_spot="an empty registry cannot fail for content, so it fails for being empty.")
+
+    if judged == 0:
+        status = "FAIL"
+        observed = (f"{examined} surfaces registered but ZERO carry a ruled value -- "
+                    f"nothing could be judged")
+    elif failed:
+        status = "FAIL"
+        observed = f"{failed} of {judged} judged surfaces disagree with their ruling"
+    else:
+        status = "PASS"
+        observed = (f"{passed}/{judged} judged surfaces match; {len(unruled)} unruled, "
+                    f"{len(foreign)} foreign")
+
+    return GateResult(
+        "EMIT", "emissive surfaces vs ruled values", status,
+        f"{judged} judged surfaces carry their ruled emission", observed, detail,
+        blind_spot="Part A reads the AUTHORED value in the material asset and compares it to "
+                   "the value that was ruled. That is all it does. It cannot see whether the "
+                   "surface is visible, how large it is in frame, whether a canvas is drawn "
+                   "over it (both screens have one, 4mm and 1.5mm out, which is what made the "
+                   "lid's cue unphotographable), what the grade does to it, or whether a "
+                   "runtime property block overrides it -- R40's whole defect was a runtime "
+                   "override hiding a wrong authored value, and this gate would have caught "
+                   "that one only because the override and the asset now share a constant. It "
+                   "also judges nothing it has no ruling for: two room emitters are UNRULED "
+                   "and are reported, never passed. Part B, which measures the rendered "
+                   "contribution and its footprint, is not implemented against frames yet.")
 
 
 def skip(gate, check, reason, blind_spot=""):
@@ -1787,6 +2028,12 @@ def main():
 
         # --- R33 / C30: palette conformance, scene-truth ---------------------
         results.append(gate_palette_conformance(docs, assets_root))
+
+        # --- EMIT: emissive surfaces vs their ruled values -------------------
+        # Deliberately in the same table as everything else. The whole finding was
+        # that emission sat outside every table the studio drew, so a separate
+        # emission report would reproduce the defect in a new file.
+        results.append(gate_emission(assets_root))
 
         # --- Gates 6, 7, 8: human-only, certified by walkthrough -------------
         # These three cannot be run by any tool -- R22 ruled the only instrument

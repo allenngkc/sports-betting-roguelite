@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using SBR.Game;
 using UnityEditor;
@@ -551,6 +552,107 @@ namespace SBR
             => Mathf.Abs(a.r - b.r) < 1e-4f
             && Mathf.Abs(a.g - b.g) < 1e-4f
             && Mathf.Abs(a.b - b.b) < 1e-4f;
+
+        /// <summary>
+        /// EMIT Part B — the per-emitter A/B set the emission instrument measures.
+        ///
+        /// EDIT MODE ON PURPOSE, and it is the whole reason this works. At runtime both
+        /// screens carry a world-space canvas over the emissive quad (4mm on the lid, 1.5mm on
+        /// the phone) with an opaque backing, which is what made the lid's cue unphotographable
+        /// and what made my own dark-vs-lit phone reading wrong. In Edit Mode no canvas exists,
+        /// so the emitter is the surface you are looking at.
+        ///
+        /// TWO FRAMES PER EMITTER: the shipped value, and the same frame with THAT emitter alone
+        /// forced black. The pair does two jobs at once — it isolates one emitter's contribution
+        /// from every other light in the room, and it PROVES the measured region is reading that
+        /// emitter at all. If the two frames are identical in a region, the region does not see
+        /// the emitter and no verdict about it is supportable there. That is the check I did not
+        /// have when I reported a canvas as an emission reading.
+        ///
+        /// EMITTERS ARE DISCOVERED, NOT LISTED. Scanning for a non-black _EmissionColor means a
+        /// new emissive surface added later turns up here on its own; the analyser cross-checks
+        /// what was captured against its registry and fails if they disagree, so neither side can
+        /// quietly fall behind the room. A hardcoded list on both sides would just be two lists.
+        ///
+        ///   Unity.exe -batchmode -quit -projectPath (project)
+        ///             -executeMethod SBR.RoomViewCapture.CaptureEmissionSet -outDir (path)
+        /// </summary>
+        public static void CaptureEmissionSet()
+        {
+            string outDir = OutDirFromArgs();
+            Directory.CreateDirectory(outDir);
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+
+            int emissionId = Shader.PropertyToID("_EmissionColor");
+            var found = new List<(string mat, Color value, List<Renderer> rends)>();
+
+            foreach (Renderer r in UnityEngine.Object.FindObjectsByType<Renderer>(
+                         FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                Material m = r.sharedMaterial;
+                if (m == null || !m.HasProperty(emissionId)) continue;
+                Color e = m.GetColor(emissionId);
+                if (Mathf.Max(e.r, Mathf.Max(e.g, e.b)) <= 0.0001f) continue;
+
+                var hit = found.Find(f => f.mat == m.name);
+                if (hit.rends != null) hit.rends.Add(r);
+                else found.Add((m.name, e, new List<Renderer> { r }));
+            }
+
+            if (found.Count == 0)
+                throw new InvalidOperationException(
+                    "no emissive surfaces found — the room has at least five, so this is the " +
+                    "harness failing, not the room being clean (C29: a run that measured " +
+                    "nothing is not a pass)");
+
+            Camera cam = FindPlayerCamera();
+            var controller = UnityEngine.Object.FindAnyObjectByType<FirstPersonController>();
+            if (controller != null) controller.enabled = false;
+            WarmRender(cam);
+
+            var manifest = new List<string>();
+            manifest.Add("# EMIT Part B capture manifest");
+            manifest.Add($"scene={ScenePath}");
+            manifest.Add($"width={Width} height={Height}");
+            manifest.Add($"poses={string.Join(",", Array.ConvertAll(RatifiedPoses(), p => p.File))}");
+            manifest.Add("mode=EditMode (no world-space canvas exists; emitters are unoccluded)");
+            manifest.Add($"emitters={found.Count}");
+
+            // The full-value reference frame, every emitter as shipped.
+            string allDir = Path.Combine(outDir, "all-emitters-on");
+            Directory.CreateDirectory(allDir);
+            Capture(allDir);
+
+            var block = new MaterialPropertyBlock();
+            foreach (var (mat, value, rends) in found)
+            {
+                foreach (Renderer r in rends)
+                {
+                    r.GetPropertyBlock(block);
+                    block.SetColor(emissionId, Color.black);
+                    r.SetPropertyBlock(block);
+                }
+
+                string dir = Path.Combine(outDir, $"off-{mat}");
+                Directory.CreateDirectory(dir);
+                Capture(dir);
+
+                foreach (Renderer r in rends)
+                {
+                    r.GetPropertyBlock(block);
+                    block.SetColor(emissionId, value);
+                    r.SetPropertyBlock(block);
+                }
+
+                manifest.Add($"emitter={mat} value={value.r:F4},{value.g:F4},{value.b:F4} " +
+                             $"renderers={rends.Count} off_dir=off-{mat}");
+                Debug.Log($"[EMIT] {mat} = {value.r:F4},{value.g:F4},{value.b:F4} " +
+                          $"on {rends.Count} renderer(s) -> {dir}");
+            }
+
+            File.WriteAllLines(Path.Combine(outDir, "manifest.txt"), manifest);
+            Debug.Log($"[EMIT] {found.Count} emitters captured -> {outDir}");
+        }
 
         public static void CaptureAll()
         {
