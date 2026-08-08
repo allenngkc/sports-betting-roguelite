@@ -190,7 +190,39 @@ public sealed class GateData
         /// structural rather than statistical (a coverage list either names a market or it does
         /// not; there is no sampling error in that).</summary>
         public string Resolution = "";
+
+        /// <summary>C28's shape applied to one gate. A reading whose criterion edge falls INSIDE
+        /// its own 95% interval cannot reject "the true value sits exactly on the line", so its
+        /// verdict — whichever way it fell — is not a verdict. It is not a pass and not a fail; it
+        /// is a re-run at <see cref="EscalationRuns"/>, the path Allen recorded on 2026-08-07.
+        /// Reported, never inferred: the report drops "ALL GATES PASS" while one of these is live.
+        /// It does NOT change the campaign's exit contract — Allen ruled a re-run, not a failure —
+        /// so the banner is what carries it, and the banner is what a human reads.</summary>
+        public bool Adjudicated = true;
     }
+
+    /// <summary>The gate campaign's ruled sample size — Allen, 2026-08-07, on the G6 defect.
+    /// G6 compares TWO measured rates, so its resolution is their combined 2 SE: **±2.15pp at
+    /// n=1,000 against a 2pp band**. Its tolerance was narrower than its own noise, which is why it
+    /// passed all session while being unable to fail for the thing it exists to catch. Resolution
+    /// scales as 1/√n, so ±1.00pp costs 1,000 × (2.15/1.00)² ≈ 4,600 runs — the band is then 2×
+    /// resolution and a real breach reads as a breach. Predicted ±1.00pp, MEASURED ±0.97pp.
+    /// Cost: 699,200 total runs incl. audit + combos, **~10–13 min**. That is a range because it is
+    /// honestly a range — two runs of identical work measured 800.62 s and 625.78 s, a 28% spread,
+    /// so the wall clock on this machine cannot resolve a scaling claim finer than that. An earlier
+    /// version of this comment read "4.6× the runs cost 6.6× the wall time"; that was one pair of
+    /// measurements quoted without the instrument's own variance, and the second 4,600 run put it
+    /// at 5.2×. Quote a range or quote nothing.</summary>
+    public const int CampaignRuns = 4600;
+
+    /// <summary>Allen's recorded escalation, same ruling: any near-line result re-runs here.
+    /// 1,000 × (2.15/0.50)² ≈ 18,500 gives ±0.50pp, which puts the 2pp band at exactly 4×
+    /// resolution — the threshold at which <see cref="BandVerdict"/> stops qualifying a reading.
+    /// The two rungs are not arbitrary and are worth keeping in that order: 4,600 makes the gate
+    /// able to FAIL, 18,500 makes it able to ADJUDICATE its own band. Cost: **~42–54 min**, being
+    /// 4.02× each of the two measured 4,600 runs — the spread is the measurement's, not a
+    /// prediction hedge.</summary>
+    public const int EscalationRuns = 18500;
 
     /// <summary>Two standard errors on a percentage, the smallest move a proportion measured over
     /// <paramref name="n"/> runs can be trusted to show. Reported, never used to widen a verdict:
@@ -204,13 +236,53 @@ public sealed class GateData
     }
 
     /// <summary>C32's second half — a gate whose acceptance band is not comfortably wider than its
-    /// own resolution cannot adjudicate, and must say so rather than reporting a clean PASS.</summary>
-    private static string BandVerdict(double bandWidthPp, double twoSePp)
-        => double.IsNaN(twoSePp) || twoSePp <= 0.0 ? ""
-            : bandWidthPp >= 4.0 * twoSePp
-                ? $"±{twoSePp:0.00}pp (2 SE) — band {bandWidthPp:0.#}pp is {bandWidthPp / twoSePp:0.#}× resolution"
-                : $"±{twoSePp:0.00}pp (2 SE) — **band {bandWidthPp:0.#}pp is only {bandWidthPp / twoSePp:0.#}× resolution; "
-                  + "this gate cannot reliably fail for a drift smaller than its own noise — widen the band or raise --runs**";
+    /// own resolution cannot adjudicate, and must say so rather than reporting a clean PASS.
+    ///
+    /// Three tiers, and the two thresholds are exactly the two rungs of Allen's 2026-08-07 ruling:
+    ///   ≥4× — the reading resolves the whole band; a verdict anywhere inside it is trustworthy.
+    ///   ≥2× — the gate CAN fail: a true breach one resolution past the edge reads as a breach.
+    ///          It still cannot separate a reading that sits closer to the edge than that.
+    ///   &lt;2× — what G6 was at n=1,000: unable to fail for the drift it exists to catch.
+    ///
+    /// <paramref name="distanceToEdgePp"/> is THIS reading's distance from the nearest criterion
+    /// edge — the second half of the honest answer, because a band wide enough in general says
+    /// nothing about a reading that happens to land on the line. NaN where a gate has no banded
+    /// edge to be near.</summary>
+    private static string BandVerdict(double bandWidthPp, double twoSePp,
+        double distanceToEdgePp = double.NaN)
+    {
+        if (double.IsNaN(twoSePp) || twoSePp <= 0.0) return "";
+        double ratio = bandWidthPp / twoSePp;
+        string head = $"±{twoSePp:0.00}pp (2 SE) — band {bandWidthPp:0.#}pp is {ratio:0.0}× resolution";
+
+        // The band tier and this reading's position are two different facts and both are reported.
+        // They are not alternatives: the weakest tier is exactly where a reading is most likely to
+        // be sitting on its own line, so returning early on the tier — as this did until the first
+        // smoke run showed the count claiming an unadjudicated gate the column never named — hides
+        // the near-line case precisely where it matters most.
+        string reach =
+            ratio < 2.0
+                ? "; **this gate cannot reliably fail for a drift smaller than its own noise — "
+                  + "widen the band or raise --runs**"
+                : ratio >= 4.0
+                    ? "; resolves its whole band"
+                    : $"; fails reliably on a breach ≥{twoSePp:0.00}pp past the edge, no closer";
+
+        string nearLine = Adjudicates(twoSePp, distanceToEdgePp)
+            ? ""
+            : $"; **NOT ADJUDICATED — this reading sits {distanceToEdgePp:0.00}pp from the edge, "
+              + $"inside its own resolution; re-run at `--runs {EscalationRuns}`**";
+
+        return head + reach + nearLine;
+    }
+
+    /// <summary>Whether a reading is far enough from its criterion edge to have produced a verdict.
+    /// A reading whose edge falls inside its own 95% interval cannot reject "the true value is
+    /// exactly on the line" — so it decided nothing, whichever side it fell. The remedy is not a
+    /// wider band or a softer claim: it is Allen's <see cref="EscalationRuns"/> re-run, named in
+    /// the gate's own cell so the escalation cannot be skipped by not noticing it.</summary>
+    private static bool Adjudicates(double twoSePp, double distanceToEdgePp)
+        => double.IsNaN(distanceToEdgePp) || double.IsNaN(twoSePp) || distanceToEdgePp > twoSePp;
 
     public readonly List<Gate> Gates = new();
     public readonly List<string> ItemFlags = new();
@@ -240,16 +312,21 @@ public sealed class GateData
                 $"median {noshop.MedianDeath:0.#}, won {noshop.WonPct:F1}%");
 
         if (skilled != null)
+        {
+            // C32 was promoted from THIS gate: a 3pp band (5–8%) adjudicated by an instrument
+            // whose own 2 SE at the OLD default --runs was ~1.5pp. Arm B is the worked example —
+            // a 0.8pp "movement" at n=1000 vanished at n=10,000, having been noise on both sides,
+            // including in the before-arm. State the resolution beside the verdict so nobody reads
+            // a one-point drift as a finding, or misses a real one.
+            double se = TwoSePp(skilled.WonPct, skilled.N);
+            double edge = Math.Abs(Math.Min(skilled.WonPct - 5.0, 8.0 - skilled.WonPct));
             g.Add("G3", "skilled + items wins: median death ≥5, win 5–8% (re-banded by Allen "
                 + "2026-07-15 — the dealt hand's build variance is the roguelite shape)",
                 skilled.MedianDeath >= 5.0 && skilled.WonPct >= 5.0 && skilled.WonPct <= 8.0,
-                $"median {skilled.MedianDeath:0.#}, won {skilled.WonPct:F1}%",
-                // C32 was promoted from THIS gate: a 3pp band (5–8%) adjudicated by an instrument
-                // whose own 2 SE at the campaign's default --runs is ~1.5pp. Arm B is the worked
-                // example — a 0.8pp "movement" at n=1000 vanished at n=10,000, having been noise on
-                // both sides, including in the before-arm. State the resolution beside the verdict
-                // so nobody reads a one-point drift as a finding, or misses a real one.
-                BandVerdict(3.0, TwoSePp(skilled.WonPct, skilled.N)));
+                $"median {skilled.MedianDeath:0.#}, won {skilled.WonPct:F1}% ({edge:0.0}pp from the "
+                + "nearest band edge)",
+                BandVerdict(3.0, se, edge), Adjudicates(se, edge));
+        }
 
         if (skilled != null)
         {
@@ -272,15 +349,25 @@ public sealed class GateData
         // refilled every round); the organic martyr is telemetry beside it.
         BatchSummary? guard = martyrWorst ?? martyr;
         if (guard != null && skilled != null)
+        {
+            // C32: this gate compares TWO measured rates, so its resolution is the combined error
+            // of both, not either alone — a margin inside that is not a margin. This is why G6 is
+            // WORSE than G3, the gate C32 was promoted from, and why it is the gate whose n Allen
+            // ruled: the same run count buys it roughly √2 less resolution than a single-rate gate
+            // (exactly √2 only where the two rates are equal — measured 1.34× vs the guard's own
+            // error and 1.50× vs skilled's at n=1,000, which is the range, not the constant).
+            double se = Math.Sqrt(
+                Math.Pow(TwoSePp(guard.WonPct, guard.N), 2)
+                + Math.Pow(TwoSePp(skilled.WonPct, skilled.N), 2));
+            double margin = guard.WonPct - skilled.WonPct;
+            double edge = Math.Abs(margin - 2.0);
             g.Add("G6", "martyr guard (worst case granted): loss-farming win ≤ skilled +2pp",
                 guard.WonPct <= skilled.WonPct + 2.0,
                 $"{guard.Name} {guard.WonPct:F1}% vs skilled {skilled.WonPct:F1}%"
-                + (martyrWorst != null && martyr != null ? $" (organic martyr {martyr.WonPct:F1}%)" : ""),
-                // C32: this gate compares TWO measured rates, so its resolution is the combined
-                // error of both, not either alone — a margin inside that is not a margin.
-                BandVerdict(2.0, Math.Sqrt(
-                    Math.Pow(TwoSePp(guard.WonPct, guard.N), 2)
-                    + Math.Pow(TwoSePp(skilled.WonPct, skilled.N), 2))));
+                + (martyrWorst != null && martyr != null ? $" (organic martyr {martyr.WonPct:F1}%)" : "")
+                + $" — margin {margin:+0.0;-0.0}pp, {edge:0.0}pp from the +2pp line",
+                BandVerdict(2.0, se, edge), Adjudicates(se, edge));
+        }
 
         // G7 (market coverage): every shipped MarketKind must be either exercised by the
         // skilled bot (LegsPlaced > 0) or on the named bot-excluded list below, with a reason —
@@ -458,9 +545,13 @@ public sealed class GateData
         return t - (2.30753 + 0.27061 * t) / (1.0 + 0.99229 * t + 0.04481 * t * t);
     }
 
-    private void Add(string id, string desc, bool pass, string actual, string resolution = "")
+    private void Add(string id, string desc, bool pass, string actual, string resolution = "",
+        bool adjudicated = true)
         => Gates.Add(new Gate
-        { Id = id, Description = desc, Pass = pass, Actual = actual, Resolution = resolution });
+        {
+            Id = id, Description = desc, Pass = pass, Actual = actual, Resolution = resolution,
+            Adjudicated = adjudicated,
+        });
 
     public bool AllPass
     {
@@ -468,6 +559,20 @@ public sealed class GateData
         {
             foreach (Gate gate in Gates) if (!gate.Pass) return false;
             return Gates.Count > 0;
+        }
+    }
+
+    /// <summary>How many gates actually produced a verdict (C28: coverage is reported, never
+    /// inferred — "no FAIL" is not "all passed"). Differs from <see cref="AllPass"/> on purpose:
+    /// a gate can pass and still have decided nothing, which is the state Allen's escalation
+    /// re-run exists to resolve.</summary>
+    public int AdjudicatedCount
+    {
+        get
+        {
+            int n = 0;
+            foreach (Gate gate in Gates) if (gate.Adjudicated) n++;
+            return n;
         }
     }
 }

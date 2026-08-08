@@ -60,6 +60,25 @@ public static class Report
             sb.AppendLine($"| {g.Id} | {g.Description} | {(g.Pass ? "**PASS**" : "**FAIL**")} | {g.Actual} "
                 + $"| {(g.Resolution.Length == 0 ? "—" : g.Resolution)} |");
         sb.AppendLine();
+        // C28/C29: the campaign states how many gates ran, how many passed and how many actually
+        // produced a verdict. A table nobody counted is a count nobody stated, and a gate that
+        // could not separate its reading from its own criterion line is not one of the passes.
+        int total = gates.Gates.Count, passed = 0, adjudicated = gates.AdjudicatedCount;
+        var unadjudicated = new List<string>();
+        foreach (GateData.Gate g in gates.Gates)
+        {
+            if (g.Pass) passed++;
+            if (!g.Adjudicated) unadjudicated.Add(g.Id);
+        }
+        // C28 names every non-verdict rather than leaving a reader to find it — a count that says
+        // "one of these decided nothing" without saying which is a count you cannot act on.
+        sb.AppendLine($"Gates evaluated: **{total}** · passed: **{passed}** · produced a verdict: "
+            + $"**{adjudicated}**"
+            + (unadjudicated.Count == 0
+                ? "."
+                : $" — **{unadjudicated.Count} NOT ADJUDICATED: {string.Join(", ", unadjudicated)}** "
+                  + "(reading within its own resolution of the criterion line; see Resolution)."));
+        sb.AppendLine();
         if (gates.ItemFlags.Count == 0)
             sb.AppendLine("Item flags: none — no DEAD items, no DOMINANT item, Totem in the healthy band.");
         else
@@ -68,7 +87,18 @@ public static class Report
         foreach (string note in gates.Notes)
             sb.AppendLine($"- ℹ {note}");
         sb.AppendLine();
-        sb.AppendLine($"> **{(gates.AllPass && gates.ItemFlags.Count == 0 ? "ALL GATES PASS — the economy holds." : "NOT DONE — iterate the knobs (item numbers / prices / curve) and rerun.")}**");
+        // The banner is what a human reads, so it is the one line that must not overstate. A
+        // campaign carrying an unadjudicated gate has not passed everything it ran — it has a
+        // re-run owed at Allen's escalation size (2026-08-07). Exit code is deliberately unchanged:
+        // he ruled a re-run, not a failure.
+        string banner = !gates.AllPass || gates.ItemFlags.Count > 0
+            ? "NOT DONE — iterate the knobs (item numbers / prices / curve) and rerun."
+            : adjudicated == total
+                ? $"ALL {total} GATES PASS — the economy holds."
+                : $"{passed}/{total} GATES PASS, but {string.Join(", ", unadjudicated)} DID NOT "
+                  + $"ADJUDICATE — re-run at `--runs {GateData.EscalationRuns}` (Allen's recorded "
+                  + "escalation, 2026-08-07) before reading this campaign as clean.";
+        sb.AppendLine($"> **{banner}**");
         sb.AppendLine();
     }
 

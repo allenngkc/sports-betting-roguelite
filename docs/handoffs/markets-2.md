@@ -4,7 +4,7 @@
 **Owner:** Claude (Opus 5) acting as markets/sim content lead
 **Worktree:** `C:\Users\Allen\orca\workspaces\sports-betting-roguelite\markets-2`
 **Branch:** `markets-2`
-**Last updated:** 2026-08-07 (pricing variety accepted; merge-run verification) by the lead
+**Last updated:** 2026-08-07 (G6 sample-size dial ruled by Allen, built and verified — see §7a) by the lead
 **Mission:** carry the F_0.4.0 soccer-market expansion to near-final against the
 redesigned product.
 
@@ -63,8 +63,10 @@ validated green. What follows it on this branch is the second wave.
 `dotnet test engine.tests` → **183/183** (181 before the two role-order tests added 08-07) ·
 Unity EditMode **75/75** · PlayMode **47/47** · Unity compile 0 errors — **the Unity figures on
 this line carry §7's correction: they are pre-`7885f8e` and are not evidence for HEAD.**
-`dotnet run --project sim -c Release -- --gates --runs 1000 --seed-prefix TUNE` →
-**ALL GATES PASS, exit 0** — G7 went green when M1 narrowed its population to what it can
+`dotnet run --project sim -c Release -- --gates --seed-prefix TUNE` → **ALL GATES PASS, exit 0**.
+**The `--runs 1000` that used to be on this line is gone deliberately**: the campaign now carries its
+own ruled sample size (4,600 — Allen 2026-08-07, §7a), so a bare `--gates` is the campaign and an
+explicit `--runs` is how you escalate. G7 went green when M1 narrowed its population to what it can
 honestly assert. It was red by design for the whole of the first wave; if you find it red
 again, something regressed, it is not the old known state.
 `dotnet run --project sim -c Release -- --scorer-ev --runs 400 --seed-prefix SCORER` →
@@ -85,12 +87,11 @@ calibrated, all bands within 2 SE.
   read as **longshot scorers being about a point cheap**. **RETRACTED, see §7:** that gap is
   1.06 SE once the EV column is judged against its own error instead of the frequency's. Closed,
   not deferred, and not Allen's call after all.
-- **G6 cannot fail — the live one.** C32 made every gate state its resolution, and the
-  martyr guard reads **±2.15pp against a 2pp band (0.9×)**: its tolerance is narrower than
-  its own noise, it has passed all session, and it could not have caught anything. Worse
-  than G3, the gate C32 was promoted from, because its error is the combined error of two
-  measured rates. Fixing it means widening a balance band or raising the campaign's default
-  `n` — both Allen's calls, and neither taken.
+- **G6 cannot fail — RULED, BUILT, CLOSED 2026-08-07.** It read **±2.15pp against a 2pp band
+  (0.9×)**: tolerance narrower than its own noise, passed all session, could not have caught
+  anything. Allen took option 1 — raise `n` — and the gate now measures **±0.97pp with 1.3pp of
+  clearance**, adjudicated. Full account in §7a, including the part of the old diagnosis that was
+  wrong.
 - **D-01…D-08 are with the Design Director.** Market label vocabulary, the `RIDING`
   state word, the one-sided scorer market, the PLAYERS-tab overflow treatment, the
   `STAKE` label/figure split, ledger legs excluded from the lost treatment, blocker
@@ -169,7 +170,8 @@ Tables and reads are staged in `main-2/docs/design/dd-import/`:
 stated because a suite that does not state its count states nothing (C29); it reads 183 and not 181
 because this run added two tests, below ·
 `--gates --runs 1000 --seed-prefix TUNE` → **ALL GATES PASS, exit 0**, all seven verdicts and every
-figure identical to the accepted tables ·
+figure identical to the accepted tables — *this is the n=1,000 invocation and it is a record of what
+was run, not the current command; §7a supersedes it and explains what its resolution could not see* ·
 `--scorer-ev --runs 400 --seed-prefix SCORER` → all five bands within 2 SE, FW/MF/DF within 0.1pp,
 worst band 20–35% at 1.2 SE. Calibration **and** EV fairness both hold.
 
@@ -214,20 +216,106 @@ That PlayMode "47/47" was also the **third attempt**, and must not be laundered 
   and it would have printed that sentence under every future run. Now states what the split reads and
   what it cannot see: a miss confined to one player inside a role pools away there (C25).
 
-### OPEN — G6 cannot fail. The live defect.
+## 7a. G6 — RULED by Allen, built and verified 2026-08-07
 
-The martyr guard — the check that loss-farming never becomes a winning strategy — has a band of
-**2pp and a resolution of ±2.15pp**. Its tolerance is narrower than its own noise, so it would
-report PASS straight through a real breach. It has passed all session and could not have caught
-anything. It is worse than G3 (±1.43pp against 3pp), the gate C32 was promoted from, because its
-error is the **combined** error of two measured rates rather than one.
+**Allen's ruling (option 1, via the orchestrator):** raise `n` to ~4,600 for ±1.0pp resolution,
+inside the 2pp band, so the gate becomes able to fail. **Escalation path recorded: any near-line
+result re-runs at ~18,500.**
 
-It states this itself in every report, so it cannot go unnoticed again. **The fix is a dial —
-widen the band or raise the campaign's default `--runs` — and both are Allen's, not a lead's.**
+### Built
 
-Read it as a standing caution on everything else in this file: *"the gates did not move"* is weaker
-evidence than it looks while G6 is in this state, and any balance change landed before it is fixed
-is landing past a blind guard.
+- **The campaign's `n` is now ruled, not chosen.** `--gates` carries its own default of
+  `GateData.CampaignRuns = 4600`; an explicit `--runs` still wins (that is how the escalation is
+  invoked), and `--gates` *below* the ruled size now warns on stderr naming the ruling. The
+  documented invocation is therefore `--gates --seed-prefix TUNE` with **no `--runs`**.
+- **G6's C32 cell became three tiers**, and the two thresholds land exactly on Allen's two rungs —
+  which is why the rungs are worth keeping in that order rather than rounding them:
+  **≥4×** resolves the whole band · **≥2×** can fail, but not for a reading nearer the line than its
+  own resolution · **<2×** cannot reliably fail (what G6 was). 4,600 buys tier 2, 18,500 buys tier 1.
+- **Near-line detection added, and it is the load-bearing half.** A reading whose criterion edge
+  falls *inside its own 95% interval* cannot reject "the true value is exactly on the line", so it
+  decided nothing whichever way it fell. Those gates print **NOT ADJUDICATED** with the escalation
+  command in their own cell, are named in the campaign's count line, and **drop the report's
+  "ALL GATES PASS" banner**. The **exit code is deliberately unchanged** — Allen ruled a re-run, not
+  a failure — so a green 0 keeps meaning "no gate failed" and never stands in for a verdict nobody
+  reached. Flip it if you want the campaign to hard-stop; it is one condition in `Program.Run`.
+
+### Verified — bare `--gates`, TUNE seeds, exit 0, 7/7 PASS, run TWICE
+
+`Runs per batch 4,600 · total 699,200` · `dotnet test engine.tests` → **183 executed, 183 passed,
+0 failed, 0 skipped** · `--verify` determinism OK.
+
+Run twice deliberately: the first campaign predated two later edits (a guarded stderr warning and
+two comments), and this seat's own §7 correction is about exactly that — a green run claimed as
+evidence for a tree it never executed. **The second run reproduces every gate figure identically.**
+Only wall time differs, and that difference is the finding below.
+
+Stated precisely rather than rounded up, because rounding it up is the habit being corrected: the
+committed tree differs from the second run's tree **only in XML doc comments** — the corrections in
+this section, which the compiler discards. Behaviour is identical by language guarantee, not by
+judgement. What did re-run against the exact committed bytes: `dotnet build` (0 errors, 0 warnings),
+`--verify`, and `engine.tests` 183/183.
+
+**G6 is fixed and clean: ±0.97pp against the 2pp band (2.1×), margin +0.7pp — 1.3pp of clearance,
+adjudicated.** Allen's predicted ±1.0pp came in at ±0.97pp measured.
+
+### Three things the old write-up in this file got wrong
+
+1. **"Raise the campaign's *default* `n`" mis-named the defect.** The tool's default was never
+   1,000 — a bare `--gates` at `36122d6` ran **10,000**, which would have resolved G6 to ±0.68pp.
+   The ±2.15pp came from this seat invoking `--runs 1000` **by hand, all session**, and no code path
+   objected. So the ruled 4,600 is a 4.6× raise on what was actually run and a ~2× *cut* on the
+   untouched default. **Allen has the choice and it is still open**: floor at 10,000 instead costs
+   ~20 min per campaign against ~13 min.
+2. **The G6 margin itself was mostly noise.** +1.5pp at n=1,000 became **+0.7pp at n=4,600** — a
+   0.8pp move, inside the old ±2.15pp, exactly as the resolution warned. Anything read off that
+   n=1,000 campaign inherits that error; the "0.5pp of clearance" this seat would have reported
+   yesterday was never a measurement.
+3. **A scaling claim I made and then falsified within the hour.** I wrote "cost does not scale
+   linearly — 4.6× the runs cost 6.6× the wall time (121 s → 801 s)". The second 4,600 run, on
+   **identical work**, came in at **625.78 s** — a 28% spread, putting the same ratio at 5.2×. The
+   wall clock on this machine cannot resolve a 1.4× effect, so there was never a scaling finding
+   there, only an unreplicated measurement. **Campaign cost is ~10–13 min; the 18,500 escalation is
+   ~42–54 min.** Quote the range. This is the ninth instance this fortnight and the fastest
+   turnaround yet between stating a number and it being wrong — the single-measurement habit is the
+   defect, not any one of the numbers it produces.
+
+### OPEN — G3 did not adjudicate. Escalation OWED.
+
+The ruling fixed G6 and **surfaced the same defect one gate over**. G3 reads skilled **5.4% against
+a 5.0% floor — 0.43pp of clearance on a ±0.67pp instrument.** Its *band* is fine (3pp = 4.5×
+resolution, it resolves its whole band); it is this *reading* that sits on the line, which is
+precisely the distinction the near-line half was built to catch. The campaign banner therefore says
+**7/7 PASS but G3 DID NOT ADJUDICATE**.
+
+**The escalation is OWED, not done.** It was launched at 18,500 under Allen's pre-authorisation for
+"any near-line result" and was **stopped ~1 min in, before writing anything** — no report, empty
+stderr, no surviving process, cause unknown at this seat. **There is no 18,500 evidence in this
+file and nothing here rests on any.** Re-run it (~42–54 min) and record what it says:
+
+```
+dotnet run --project sim -c Release -- --gates --runs 18500 --seed-prefix TUNE --report <path>
+```
+
+Predicted, so the prediction can be scored rather than quietly re-fitted: G3 resolves to ±0.33pp
+against 0.43pp of clearance — enough, but only just — and G6 lifts from 2.1× to ~4.1×, fully clean.
+**If G3 still does not adjudicate at 18,500, do not raise `n` again**: at that point the honest
+reading is that the economy is tuned to sit on its own gate line, and the band is the thing to take
+to Allen, not the sample size.
+
+### OPEN — G5 is the same defect in a sharper form. Reported, not fixed.
+
+G5 passes on `SynergyExcess > 0.0`: a **threshold at zero**, no stated resolution, read off a
+combination of **four** measured rates. Its reading went **+0.2pp at n=1,000 → +0.1pp at n=4,600** —
+**it moved by as much as its own value.** A reading that halves when you quadruple the sample is
+noise, and a threshold at zero cannot be cleared by noise in any principled way: unlike G6 there is
+no band to widen, because the criterion *is* the line.
+
+**No number is asserted here** — G5's combined error has not been measured, only reasoned about, and
+this seat has spent the fortnight learning what that distinction costs. Measuring it is one commit;
+deciding what a zero-threshold gate should assert instead is Allen's. What is already certain is
+that it prints no Resolution cell at all under C32, because `BandVerdict` takes a band width and G5
+has none to give it.
 
 ### CLOSED this wave, do not reopen
 
@@ -257,6 +345,15 @@ were mine: the world-space epsilon, the ruled-paper ground counted as content, a
 quoting the wrong error. State what an instrument cannot see, in the same breath as the number
 (C25), and give every gate its resolution (C32). A number without its scope invites exactly the
 conclusion it cannot support.
+
+**Seventh and eighth, both from the G6 dial (2026-08-07), both mine.** The first: the new count line
+said "1 NOT ADJUDICATED" while the Resolution column it pointed at named nothing — the tier check
+returned early, so the weakest tier, the one where a reading is *most* likely to be sitting on its
+own line, was the one place the near-line flag could not print. Caught by the first smoke run at
+n=200, not by any test. The second is the older kind: this file called the defect "the campaign's
+default `n`" when the default was 10,000 and the 1,000 was a hand-typed flag — **a diagnosis
+inherited and repeated four times without once being checked against `CliOptions`.** Both say the
+same thing: run the instrument before you describe it, and read the code before you name the cause.
 
 ## Allen ruling (2026-08-02, fired via orchestrator)
 
