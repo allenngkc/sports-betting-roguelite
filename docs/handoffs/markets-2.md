@@ -406,22 +406,57 @@ contradicting it. Measured costs now: 10.4 / 13.3 min at 4,600 · **20.2 / 25.6 
 **Not this seat's to fix:** `docs/1-plans/F_0.2.0_match-theater-sweat.plan.md:376` still asserts the
 5–8% band as a re-hold criterion. That is tv-sweat's plan; it is now stale and wants routing.
 
-### OPEN — G5 is the same defect in a sharper form. Reported, not fixed.
+## 7c. G5 — MEASURED FIRST, and the measurement inverted the case against it
 
-G5 passes on `SynergyExcess > 0.0`: a **threshold at zero**, no stated resolution, read off a
-combination of **four** measured rates. Its reading went **+0.2pp at n=1,000 → +0.1pp at n=4,600 →
-+0.1pp at n=18,500** — it halved once, then held. The third point is recorded because it *weakens*
-the sharpest version of the case: "it moved by as much as its own value" was true of the first step
-only, and quoting it without the second step would be the same over-reach this section exists to
-catch. The case that survives is simpler and does not need the movement: **a threshold at exactly
-zero, read off four measured rates whose combined error at 18,500 is on the order of ±0.6pp, cleared
-by +0.1pp.** Unlike G6 there is no band to widen, because the criterion *is* the line.
+**Allen, 2026-08-08: measure G5's error before setting any threshold.** The first of the three gates
+in this family to get that order right; G6 and G3 were both set where their instruments could not
+read them, and both cost campaigns to discover it.
 
-**No number is asserted here** — G5's combined error has not been measured, only reasoned about, and
-this seat has spent the fortnight learning what that distinction costs. Measuring it is one commit;
-deciding what a zero-threshold gate should assert instead is Allen's. What is already certain is
-that it prints no Resolution cell at all under C32, because `BandVerdict` takes a band width and G5
-has none to give it.
+**The number: ±0.06pp (2 SE, paired seeds). The reading is +0.1pp — 1.5× its own error, PASS,
+adjudicated.** G5 is not the blind gate in the campaign. **At ±0.06pp it is the sharpest instrument
+we have** — about 7× finer than G3's ±0.45pp and 11× finer than G6's ±0.65pp.
+
+**Why it is that sharp, and why this seat guessed wrong.** The four arms (pair, soloA, soloB,
+baseline) run on the SAME seed prefix, so run *i* is the same dealt hand in each and nearly all the
+run-to-run noise cancels *inside* the combination. Differencing per seed is the honest instrument;
+treating the four rates as independent gives roughly **±0.9pp**, at which +0.1pp would be invisible.
+
+**The correction this section owes.** It previously said G5's "combined error at 18,500 is on the
+order of ±0.6pp" — reasoned, never measured, and **wrong by more than a factor of ten in the
+direction that mattered**. On that estimate G5 looked hopeless; measured, it passes cleanly. Every
+threshold anyone would plausibly have picked in advance (0.5pp, 1pp) would have failed a gate whose
+reading is genuinely and measurably positive. **This is the clearest case this fortnight for the
+order Allen imposed**, and it is the mirror of the EV-column retraction: there the error quoted was
+too small, here it was too large, and both came from reasoning about an instrument instead of
+running it.
+
+### What is left is a design question, not a measurement one
+
+The statistical question is closed: the synergy is real and positive. What remains is **whether
++0.1pp is a large enough synergy to certify the composition pillar** — magnitude, not confidence,
+and Allen's alone.
+
+The retagged table gives that question its evidence. Every top-10 pair clears its own error; none is
+noise:
+
+| Pair | excess | ±2 SE | vs its own error |
+|---|---|---|---|
+| The Multiplier + House Key | **+2.96pp** | ±0.34 | 8.7× |
+| Longshot Larry's Photo + House Key | +2.67pp | ±0.33 | 8.1× |
+| The Multiplier + Whale Card | +2.17pp | ±0.29 | 7.4× |
+| Longshot Larry's Photo + Whale Card | +2.04pp | ±0.29 | 7.0× |
+| … | | | |
+| **G5's pair — Multiplier + Scar Tissue** | **+0.1pp** | **±0.06** | **1.5×** |
+
+**The composition pillar is real and strongly evidenced in this catalog — just not by the pair G5
+checks.** Four pairs sit above +2pp at 7–8.7× their error; G5's exemplar is ~30× smaller than the
+strongest and is the weakest real loop in the table. Whether the pillar should be certified on the
+weakest measured loop is the question, and it arrives with its numbers rather than ahead of them.
+
+**Also visible only now the error column exists:** rank by excess is not rank by reliability.
+Multiplier + Longshot Photo (+0.76pp, ±0.45, **1.7×**) outranks Longshot + The System (+0.74pp,
+±0.18, **4.1×**) on excess while being less than half as certain. The table ranked pairs on excess
+alone for a fortnight, and G5 certifies a design pillar off one of its rows.
 
 ### CLOSED this wave, do not reopen
 

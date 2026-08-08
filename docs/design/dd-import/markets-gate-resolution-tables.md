@@ -259,3 +259,56 @@ adjudicates without escalating, banner returns to ALL 7 GATES PASS. All four hit
 **Wall-clock variance, replicated:** identical work at n=10,000 measured 1534.89 s and 1212.81 s —
 27%, against the 28% seen at 4,600. Measured costs: 10.4 / 13.3 min at 4,600 · 20.2 / 25.6 min at
 10,000 · 58.6 min at 18,500. Still no interpolation on offer.
+
+## 10. G5 — the error measured before the threshold, and it inverted the case
+
+**Allen, 2026-08-08: measure G5's error first.** The third gate in this family and the first to get
+that order right — G6 and G3 were both set where their instruments could not read them.
+
+**±0.06pp (2 SE, paired seeds); reading +0.1pp = 1.5× its own error; PASS, adjudicated.** G5 is not
+the blind gate in the campaign — at ±0.06pp it is **the sharpest instrument in it**, ~7× finer than
+G3 and ~11× finer than G6. The four arms share a seed prefix, so run *i* is the same dealt hand in
+each and the noise cancels inside the combination; treating them as independent gives ~±0.9pp, at
+which +0.1pp would be invisible.
+
+**This seat's estimate was ±0.6pp — wrong by more than 10×, in the direction that mattered.** On
+that number G5 looked hopeless. Any threshold plausibly picked in advance (0.5pp, 1pp) would have
+failed a gate whose reading is genuinely positive. The mirror of the EV-column retraction: there the
+quoted error was too small, here too large, both from reasoning about an instrument instead of
+running it.
+
+### The retagged table (C34 note: `ComboTag`'s price clause dropped, Allen 2026-08-08)
+
+The old tag split on combined price ≤ 450 while every relic is priced **2–7 comps** — so "degenerate:
+cheap pair, trivially assembled" printed on every pair above 1pp and "delicious: costly pair" was
+unreachable. A cash-scale threshold left behind when prices moved to comps. **A taxonomy label is an
+instrument too** (Allen's rule, recorded). Dropped, not re-scaled; "no real loop" went with it as the
+same class of unmeasured claim, and the table gained the error column it never had.
+
+| Pair | pair won % | excess | ±2 SE | vs its own error |
+|---|---|---|---|---|
+| The Multiplier + House Key | 4.0% | **+2.96** | ±0.34 | superadditive — 8.7× |
+| Longshot Larry's Photo + House Key | 4.2% | +2.67 | ±0.33 | superadditive — 8.1× |
+| The Multiplier + Whale Card | 3.2% | +2.17 | ±0.29 | superadditive — 7.4× |
+| Longshot Larry's Photo + Whale Card | 3.5% | +2.04 | ±0.29 | superadditive — 7.0× |
+| The Multiplier + Longshot Larry's Photo | 3.2% | +0.76 | ±0.45 | marginal — 1.7× |
+| Longshot Larry's Photo + The System | 2.2% | +0.74 | ±0.18 | marginal — 4.1× |
+| The Multiplier + The System | 1.7% | +0.70 | ±0.17 | marginal — 4.2× |
+| The Multiplier + Chalk Eater | 1.6% | +0.65 | ±0.16 | marginal — 4.0× |
+| Longshot Larry's Photo + Bad Beat Jar | 2.1% | +0.57 | ±0.16 | marginal — 3.7× |
+| The Multiplier + Iron Hands | 1.4% | +0.45 | ±0.13 | marginal — 3.4× |
+| **G5's exemplar — Multiplier + Scar Tissue** | — | **+0.10** | **±0.06** | **1.5×** |
+
+Every top-10 pair clears its own error; none is noise. **The composition pillar is real and strongly
+evidenced in this catalog — just not by the pair G5 checks.** G5's exemplar is ~30× smaller than the
+strongest pair and is the weakest real loop shown.
+
+**Rank by excess is not rank by reliability**, and only the new column shows it: Multiplier +
+Longshot Photo (+0.76, ±0.45, 1.7×) outranks Longshot + The System (+0.74, ±0.18, 4.1×) while being
+less than half as certain. This table ranked pairs on excess alone for a fortnight.
+
+### Open for Allen — magnitude, not confidence
+
+Whether **+0.1pp certifies the composition pillar**, and if not, whether the exemplar moves to a pair
+with real magnitude. Both arrive with their numbers rather than ahead of them, which is the whole
+point of the order he imposed.

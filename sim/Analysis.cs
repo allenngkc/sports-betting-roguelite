@@ -123,12 +123,52 @@ public sealed class ComboData
     public readonly Dictionary<string, double> SoloWonPct = new();
     public readonly List<Pair> Pairs = new();
 
+    /// <summary>Per-run win flags for the four arms the synergy excess is built from. Kept because
+    /// the excess's ERROR cannot be computed from the four percentages alone — the arms share a
+    /// seed prefix, so run i is the same dealt hand in all four, and the noise that cancels is only
+    /// visible per run (Allen 2026-08-08: measure the error before setting the threshold).</summary>
+    public bool[] BaselineWonFlags = Array.Empty<bool>();
+    public readonly Dictionary<string, bool[]> SoloWonFlags = new();
+
     public sealed class Pair
     {
         public string IdA = "";
         public string IdB = "";
         public double PairWonPct;
         public double SynergyExcess;
+
+        /// <summary>Two standard errors on <see cref="SynergyExcess"/>, in pp, paired by seed.
+        /// NaN when fewer than two runs make a variance meaningless.</summary>
+        public double SynergyExcessTwoSePp = double.NaN;
+    }
+
+    /// <summary>Paired-seed 2 SE of the synergy excess, in percentage points.
+    ///
+    /// The excess is <c>pair − soloA − soloB + baseline</c> and all four arms run on the SAME seed
+    /// prefix, so run i is the same dealt hand in each and most of the run-to-run noise cancels
+    /// INSIDE the combination. Differencing per seed and taking the variance of the difference is
+    /// therefore the honest instrument; treating the four rates as independent would inflate the
+    /// error and make G5 look blinder than it is. This is what rev 5 §15 already does for the
+    /// two-arm audit (<see cref="AuditData.PairedSePp"/>) — the same idea over four arms.
+    ///
+    /// What it cannot see (C25): this is the error of the MEASUREMENT, not of the design claim. A
+    /// synergy that is real, tiny and reliably positive would show a small excess with a small
+    /// error and pass — which is exactly why the size worth requiring is a separate question, and
+    /// Allen's.</summary>
+    public static double PairedSynergyTwoSePp(bool[] pair, bool[] soloA, bool[] soloB, bool[] baseline)
+    {
+        int n = Math.Min(Math.Min(pair.Length, soloA.Length), Math.Min(soloB.Length, baseline.Length));
+        if (n < 2) return double.NaN;
+
+        double D(int i) => (pair[i] ? 1 : 0) - (soloA[i] ? 1 : 0) - (soloB[i] ? 1 : 0)
+            + (baseline[i] ? 1 : 0);
+
+        double mean = 0.0;
+        for (int i = 0; i < n; i++) mean += D(i);
+        mean /= n;
+        double ss = 0.0;
+        for (int i = 0; i < n; i++) { double d = D(i) - mean; ss += d * d; }
+        return 2.0 * 100.0 * Math.Sqrt(ss / (n - 1) / n);
     }
 
     public Pair? Find(string a, string b)
@@ -144,15 +184,22 @@ public sealed class ComboData
         // ownership-changes-behavior confound, so pair-vs-solo deltas read pure composition.
         // The baseline is recomputed with the same bot for a like-for-like comparison.
         var strat = new FixedDisciplineStrategy();
-        double fixedBaseline = BatchSummary.From("f",
-            Harness.RunBatch(strat, runs, seedPrefix, cfg)).WonPct;
-        var data = new ComboData { RunsPerConfig = runs, BaselineWonPct = fixedBaseline };
+        BatchSummary baseSummary = BatchSummary.From("f", Harness.RunBatch(strat, runs, seedPrefix, cfg));
+        double fixedBaseline = baseSummary.WonPct;
+        var data = new ComboData
+        {
+            RunsPerConfig = runs,
+            BaselineWonPct = fixedBaseline,
+            BaselineWonFlags = baseSummary.WonFlags,
+        };
         IReadOnlyList<RelicDefinition> all = RelicCatalog.All;
 
         foreach (RelicDefinition def in all)
         {
             RunResult[] r = Harness.RunBatch(strat, runs, seedPrefix, cfg, new[] { def.Id });
-            data.SoloWonPct[def.Id] = BatchSummary.From("s", r).WonPct;
+            BatchSummary s = BatchSummary.From("s", r);
+            data.SoloWonPct[def.Id] = s.WonPct;
+            data.SoloWonFlags[def.Id] = s.WonFlags;
         }
 
         for (int i = 0; i < all.Count; i++)
@@ -160,11 +207,17 @@ public sealed class ComboData
         {
             string a = all[i].Id, b = all[j].Id;
             RunResult[] r = Harness.RunBatch(strat, runs, seedPrefix, cfg, new[] { a, b });
-            double pairWon = BatchSummary.From("s", r).WonPct;
+            BatchSummary ps = BatchSummary.From("s", r);
+            double pairWon = ps.WonPct;
             double soloDeltaA = data.SoloWonPct[a] - fixedBaseline;
             double soloDeltaB = data.SoloWonPct[b] - fixedBaseline;
             double excess = (pairWon - fixedBaseline) - (soloDeltaA + soloDeltaB);
-            data.Pairs.Add(new Pair { IdA = a, IdB = b, PairWonPct = pairWon, SynergyExcess = excess });
+            data.Pairs.Add(new Pair
+            {
+                IdA = a, IdB = b, PairWonPct = pairWon, SynergyExcess = excess,
+                SynergyExcessTwoSePp = PairedSynergyTwoSePp(
+                    ps.WonFlags, data.SoloWonFlags[a], data.SoloWonFlags[b], data.BaselineWonFlags),
+            });
         }
 
         data.Pairs.Sort((x, y) => y.SynergyExcess.CompareTo(x.SynergyExcess));
@@ -361,9 +414,45 @@ public sealed class GateData
         {
             ComboData.Pair? pair = combos.Find(RelicCatalog.MultiplierId, RelicCatalog.ScarTissueId);
             if (pair != null)
+            {
+                // C32 for a gate that has NO BAND. G5's criterion is a threshold at exactly zero,
+                // so there is no width to divide the error by and BandVerdict must not be called —
+                // quoting a ratio would invent a band this gate does not have, which is the same
+                // class of error as quoting a stale one. What can honestly be stated is the
+                // instrument's own error and whether this reading clears it.
+                // Allen 2026-08-08, on the lead's escalation: measure the error FIRST, then pick
+                // the minimum worth requiring with the resolution known — the two gates before
+                // this one (G6, G3) were both set where their instruments could not read them.
+                double se = pair.SynergyExcessTwoSePp;
+                double reading = Math.Abs(pair.SynergyExcess);
+                // A zero variance here is DEGENERACY, not precision, and printing "±0.00pp" would
+                // read as the most precise instrument in the campaign while carrying no signal at
+                // all. It means the four arms never disagreed on a single run — the items changed
+                // no outcome anywhere in the batch. Found by the first smoke at n=400; the failure
+                // mode is the one this whole lane exists to catch, arriving inside the fix for it.
+                string resolution = double.IsNaN(se)
+                    ? "unmeasured — needs ≥2 paired runs"
+                    : se <= 0.0
+                        ? "**±0.00pp is degeneracy, not precision** — every paired run produced an "
+                          + "identical combination, so the four arms never once disagreed on a "
+                          + "single run. That is an absence of signal; raise --runs until the arms "
+                          + "separate, and read nothing off this gate until they do."
+                        : $"±{se:0.00}pp (2 SE, paired seeds) — **threshold at 0: no band, so no "
+                          + "ratio to state**; this reading is "
+                          + (reading > se
+                              ? $"{reading / se:0.0}× its own error"
+                              : "INSIDE its own error, indistinguishable from zero")
+                          + ". The minimum worth requiring is Allen's to set, and is now set with "
+                          + "this number in hand rather than before it.";
+
                 g.Add("G5", "composition superadditive: Multiplier+Scar pair Δwin > sum of solo Δwins",
                     pair.SynergyExcess > 0.0,
-                    $"synergy excess {pair.SynergyExcess:+0.0;-0.0}pp");
+                    $"synergy excess {pair.SynergyExcess:+0.0;-0.0}pp",
+                    resolution,
+                    // A threshold at zero makes the distance-to-edge simply |reading|. A zero or
+                    // absent error adjudicates nothing, whichever side the reading fell.
+                    se > 0.0 && Adjudicates(se, reading));
+            }
         }
 
         // G6 (rev 5 §17): the WORST-CASE granted batch gates (Scar + Jar granted, Free Bet
