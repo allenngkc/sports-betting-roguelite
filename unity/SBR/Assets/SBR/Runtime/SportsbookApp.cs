@@ -301,7 +301,11 @@ namespace SBR.Game
 
             LaptopUi.MakeText(card, "Record" + side, new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(nameX + nameText.preferredWidth + gap, y), new Vector2(90f, lineHeight),
-                13, TextAnchor.MiddleLeft, LaptopOs.Muted, record, _font)
+                // C15/S28: `.08` — FormEntry.jsx:27 sets --st-track-rec on the record beside the name.
+                // Its x origin reads nameText.preferredWidth, which TMP now computes WITH the name's
+                // own `.03`, so the record follows a wider name automatically rather than needing the
+                // gap re-derived.
+                13, TextAnchor.MiddleLeft, LaptopOs.Muted, record, _font, LaptopTrack.Records)
                 .enableWordWrapping = false;
         }
 
@@ -667,7 +671,10 @@ namespace SBR.Game
             // did not write, which is what the two-ink law forbids (audit E-13).
             TMP_Text labelText = LaptopUi.MakeText(row, "MarketLabel" + key, new Vector2(0f, 1f),
                 new Vector2(0f, 1f), new Vector2(leftPad, 0f), new Vector2(labelWidth, OfferRowHeight),
-                19, TextAnchor.MiddleLeft, LaptopOs.White, label, _fontCond);
+                // C15/S28: `.08` — MarketOffer.jsx's `line` span carries --st-track-rec. (The kit puts
+                // that span at --st-size-fact where this renders at --st-size-price; that size
+                // difference predates the migration and is not touched here, only the tracking.)
+                19, TextAnchor.MiddleLeft, LaptopOs.White, label, _fontCond, LaptopTrack.Records);
 
             if (!string.IsNullOrEmpty(role))
             {
@@ -1128,13 +1135,24 @@ namespace SBR.Game
                 for (int legIndex = 0; legIndex < ticket.Legs.Count; legIndex++)
                 {
                     Leg leg = ticket.Legs[legIndex];
+                    // C15/S28: `.08` — TicketReceipt.jsx:33 sets --st-track-rec on a receipt leg's
+                    // market.
+                    //
+                    // **The same value goes to the measurement and to the render, and that is the
+                    // whole reason MeasureWidth took a tracking parameter.** This is the one slot in
+                    // the six groups where tracking changes what FITS: a wider string against an
+                    // unchanged receiptTextWidth trims earlier. Measuring without the tracking it
+                    // renders with would under-report by length x .08 x 13 and put the ellipsis in
+                    // the wrong place — silently, on the screen S26 makes load-bearing at the point
+                    // of spending. The odds suffix stays protected either way.
                     string ticketLegText = LaptopUi.FitLabelKeepingSuffix(_fontCond, $"{legIndex + 1}. ",
                         CompactLegLabel(leg.Matchup, leg.Selection),
-                        $"  {OddsFormat.American(leg.OfferedOdds)}", 13, receiptTextWidth);
+                        $"  {OddsFormat.American(leg.OfferedOdds)}", 13, receiptTextWidth,
+                        LaptopTrack.Records);
                     LaptopUi.MakeText(receipt, "TicketLeg" + legIndex, new Vector2(0f, 1f),
                         new Vector2(0f, 1f), new Vector2(8f, -26f - legIndex * 18f),
                         new Vector2(receiptTextWidth, 18f), 13, TextAnchor.UpperLeft, LaptopOs.TonerSecondary,
-                        ticketLegText, _fontCond);
+                        ticketLegText, _fontCond, LaptopTrack.Records);
                 }
                 LaptopUi.MakeRule(receipt, "ReceiptRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
                     Vector2.zero, new Vector2(receiptWidth, 2f));

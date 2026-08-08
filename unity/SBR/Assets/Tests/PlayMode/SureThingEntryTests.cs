@@ -828,10 +828,17 @@ namespace SBR.Tests.PlayMode
                 for (int legIndex = 0; legIndex < ticket.Legs.Count; legIndex++)
                 {
                     Leg leg = ticket.Legs[legIndex];
+                    // C15/S28: the expectation carries LaptopTrack.Records because the render does.
+                    // This assertion is computed through the same helper the surface uses, so it
+                    // would follow a tracking change silently if the value were omitted here — it
+                    // would simply assert a narrower string and pass against a build that trims
+                    // somewhere else. Threading it is what keeps this a real check of S26's
+                    // no-silent-truncation rule rather than a tautology.
                     Assert.AreEqual(
                         LaptopUi.FitLabelKeepingSuffix(font, $"{legIndex + 1}. ",
                             SportsbookApp.CompactLegLabel(leg.Matchup, leg.Selection),
-                            $"  {OddsFormat.American(leg.OfferedOdds)}", 13, receiptTextWidth),
+                            $"  {OddsFormat.American(leg.OfferedOdds)}", 13, receiptTextWidth,
+                            LaptopTrack.Records),
                         TextOf(Required(receipt, "TicketLeg" + legIndex)));
                 }
             }
