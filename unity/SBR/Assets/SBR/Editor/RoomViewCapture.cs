@@ -648,14 +648,32 @@ namespace SBR
             Directory.CreateDirectory(allDir);
             Capture(allDir);
 
-            var block = new MaterialPropertyBlock();
             foreach (var (mat, value, rends) in found)
             {
+                // SAVE THE ACTUAL STATE, then put it back byte for byte.
+                //
+                // The previous version "restored" by writing the SHARED MATERIAL's emission into
+                // a property block, which is not a restore -- it is a reset to a value the
+                // renderer may never have had. Any renderer carrying its own block came back
+                // different, so each capture left the room altered for every capture after it,
+                // and off-ScreenLaptop ended up 20 luma dark across 72% of a pose the laptop is
+                // not even in frustum for.
+                //
+                // A FRESH block per renderer, too. GetPropertyBlock does NOT clear its
+                // destination, so a reused block silently carries the previous renderer's
+                // properties into the next one.
+                var originals = new List<(Renderer r, bool had, MaterialPropertyBlock blk)>();
                 foreach (Renderer r in rends)
                 {
-                    r.GetPropertyBlock(block);
-                    block.SetColor(emissionId, Color.black);
-                    r.SetPropertyBlock(block);
+                    bool had = r.HasPropertyBlock();
+                    var orig = new MaterialPropertyBlock();
+                    if (had) r.GetPropertyBlock(orig);
+                    originals.Add((r, had, orig));
+
+                    var blackout = new MaterialPropertyBlock();
+                    if (had) r.GetPropertyBlock(blackout);
+                    blackout.SetColor(emissionId, Color.black);
+                    r.SetPropertyBlock(blackout);
                 }
 
                 // Warm before every capture, so each frame is taken at the same settled
@@ -665,11 +683,10 @@ namespace SBR
                 Directory.CreateDirectory(dir);
                 Capture(dir);
 
-                foreach (Renderer r in rends)
+                foreach (var (r, had, orig) in originals)
                 {
-                    r.GetPropertyBlock(block);
-                    block.SetColor(emissionId, value);
-                    r.SetPropertyBlock(block);
+                    if (had) r.SetPropertyBlock(orig);
+                    else r.SetPropertyBlock(null);   // no block originally: clear, do not invent one
                 }
 
                 manifest.Add($"emitter={mat} value={value.r:F4},{value.g:F4},{value.b:F4} " +
@@ -677,6 +694,18 @@ namespace SBR
                 Debug.Log($"[EMIT] {mat} = {value.r:F4},{value.g:F4},{value.b:F4} " +
                           $"on {rends.Count} renderer(s) -> {dir}");
             }
+
+            // CLOSING CONTROL, and it is the one that matters. control-a/b sit before the
+            // measurements and only ever proved the warm-up had settled -- they bracket the
+            // wrong interval. This one is shot AFTER every emitter has been blacked out and
+            // put back, so control-a == control-z means the room ended exactly as it began
+            // and no capture mutated the scene for the captures after it. That is the failure
+            // the first two runs had, and neither control could see it.
+            WarmRender(cam);
+            string closeDir = Path.Combine(outDir, "control-z");
+            Directory.CreateDirectory(closeDir);
+            Capture(closeDir);
+            manifest.Add("control_close=control-z (after all restores; must equal control-a)");
 
             File.WriteAllLines(Path.Combine(outDir, "manifest.txt"), manifest);
             Debug.Log($"[EMIT] {found.Count} emitters captured -> {outDir}");

@@ -1538,25 +1538,39 @@ def emission_part_b(root):
     # happened on this instrument's first run, where a still-settling reference frame
     # made all five emitters report ~70% of frame at +25 dY'. Refusing to measure is
     # the only honest response; reporting drift as light is how a false finding ships.
-    ctl_a, ctl_b = root / "control-a", root / "control-b"
+    ctl_a, ctl_b, ctl_z = root / "control-a", root / "control-b", root / "control-z"
     if not (ctl_a.is_dir() and ctl_b.is_dir()):
         lines.append("  *** no determinism control in this set -- cannot show the pipeline was "
                      "settled, so no difference here is trustworthy. Re-shoot with a control ***")
         return lines, failed + 1, 0
+    if not ctl_z.is_dir():
+        # The opening pair alone brackets only the warm-up. It cannot see a capture that
+        # mutated the scene for the captures after it, which is exactly what the second
+        # run did -- and it passed the opening control while doing so.
+        lines.append("  *** no CLOSING control (control-z) -- the opening pair brackets only the "
+                     "warm-up and cannot show the room ended as it began. A capture that alters "
+                     "the scene for later captures would pass control-a/b unnoticed. Re-shoot ***")
+        return lines, failed + 1, 0
 
-    for pose in ("standing-overview.png", "seated-tv-couch.png", "focused-laptop-desk.png"):
-        pa, pb = ctl_a / pose, ctl_b / pose
-        if not (pa.is_file() and pb.is_file()):
-            continue
-        d = ImageChops.difference(Image.open(pa).convert("RGB"), Image.open(pb).convert("RGB"))
-        worst = max(d.getextrema()[c][1] for c in range(3))
-        if worst > 0:
-            lines.append(f"  *** CONTROL FAILED on {pose}: two captures of an UNCHANGED state "
-                         f"differ by up to {worst} code values. The pipeline is still settling, "
-                         f"so nothing in this set is a measurement. Not measured. ***")
-            return lines, failed + 1, 0
-    lines.append("  control: control-a and control-b bit-identical on every pose -- the pipeline "
-                 "was settled, so differences below are the emitters and not the warm-up.")
+    for label, first, second, why in (
+            ("warm-up (control-a vs control-b)", ctl_a, ctl_b,
+             "the pipeline is still settling"),
+            ("sequence (control-a vs control-z)", ctl_a, ctl_z,
+             "a capture MUTATED the scene and later frames were shot against a changed room")):
+        for pose in ("standing-overview.png", "seated-tv-couch.png", "focused-laptop-desk.png"):
+            pa, pb = first / pose, second / pose
+            if not (pa.is_file() and pb.is_file()):
+                continue
+            d = ImageChops.difference(Image.open(pa).convert("RGB"),
+                                      Image.open(pb).convert("RGB"))
+            worst = max(d.getextrema()[c][1] for c in range(3))
+            if worst > 0:
+                lines.append(f"  *** CONTROL FAILED, {label}, on {pose}: differ by up to {worst} "
+                             f"code values -- {why}. Nothing in this set is a measurement. ***")
+                return lines, failed + 1, 0
+    lines.append("  control: control-a == control-b == control-z, bit-identical on every pose. "
+                 "The pipeline was settled AND the room ended as it began, so differences below "
+                 "are the emitters and nothing else.")
 
     on_dir = root / "all-emitters-on"
     measured = 0
