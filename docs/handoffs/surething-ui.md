@@ -1,12 +1,14 @@
 # SureThing UI — re-seat state
 
-**STATUS 2026-08-07 · last code commit `6ece398` · tree clean · EditMode 76/76 · PlayMode 56/56**
+**STATUS 2026-08-07 · last code commit `102a571` · tree clean · EditMode 76/76 · PlayMode 56/56**
 - **THIS SURFACE HAS AN OWNING DOCUMENT.** Approved by Allen, canon at `main-2/docs/design/surething-design.md`. **Read it before this file.** The LEDGER is Design-verified (batch 10); the zero-dollar wax/grey split is **ratified as considered — never "fix" it.**
-- **Done:** batch 10, **all of batch 11 — and batch 13 GRANTED all four of them on measured frames** (S59 drain, S60 biro header, S61 scope once, S62 identity). Since: **R38** (forced capture states take a numeric run seed) and **`04a-my-bets-riding`**, the last unphotographed state on the surface.
-- **Now:** nothing in flight, editor slot released to Room. Staged for the drag: `dd-import/surething-r38-riding-2026-08-07.zip` — four states, eight frames, one clean paired run at `6ece398`, machine confirmed clear.
+- **Done:** batch 10, **all of batch 11 — and batch 13 GRANTED all four of them on measured frames** (S59 drain, S60 biro header, S61 scope once, S62 identity). Since: **R38** (forced capture states take a numeric run seed), **`04a-my-bets-riding`** and **`04b-my-bets-pending`**. **The surface is now at zero unphotographed states** — every ruled treatment on it has a frame.
+- **Now:** nothing in flight, editor slot released to Room. Two zips staged for the drag: `dd-import/surething-r38-riding-2026-08-07.zip` (R38's verdict pair) and `dd-import/surething-mybets-pending-2026-08-07.zip` (the MY BETS trio at `102a571`, which **supersedes the 04a/05 frames in the first zip** — same build, different slate, see the next bullet).
+- **THE SET WAS NEVER REPRODUCIBLE, AND IS NOW ONLY HALF FIXED.** `RunDirector.seed` ships **blank** in the scene; the director reads that as "roll a fresh random 8-char seed", so every `Boot()` flow dealt a **different slate every run**. Measured: batch 11's `05` reads `Tulsa Plumbers v Pawtucket Ferrets −516 · PAYS $71`, the next run reads `Sheboygan Bricklayers v Waterloo Zambonis −410 · PAYS $85`. **Flow 1 now pins `52830174` and asserts it. The other four flows still roll.** Pin them one commit at a time; it moves ten frames' content. **Never compare a frame across runs from an unpinned flow** — that is not a regression, that is a new slate.
 - **Emphasis on this surface is not one scalar** — now **law C33b**, promoted from S59's build. Wax outranks toner by *chroma*; toner-2 outranks toner-3 by *value*. **Assert a ranking by weight only among neutrals, and by token otherwise.**
 - **Request the editor slot through the orchestrator, every time** — corrected 2026-08-06; the standing grant in `STATUS.md` is stale and this seat's runs collided with a validation pass because of it.
 - **Run every suite through `tools/run-unity-tests.ps1`, never `-runTests` directly** (C29). It exited non-zero on both collided runs rather than reporting them as passes, which is the whole reason the collision cost two re-runs and nothing else.
+- **Second conformance gap, photographed not fixed:** **PENDING renders `--toner-2`** (`SportsbookApp.cs:1342` drops it into the same `else` branch as VOID) where **S43** and the kit's `RevealedState.jsx` both say `--toner-3`. Shot as built on `04b` so the violation has a frame; fixing first would have left none. One token, one line, one paired re-shoot.
 - **One item open, and it needs a slot rather than a ruling:** the MY BETS mirror **never got S62** — it hand-builds `TICKET 1` at `SportsbookApp.cs:1316` instead of calling `LaptopUi.TicketIdentity`, which the LEDGER and the staged receipt both use and which already produces the kit's padded `TICKET 01`. Filed for the DD; see §4-0.10, **including the reading lesson attached to it.**
 - **The kit is at `docs/design/design-system/`, not `ui_kits/`** — those paths are relative to that root. **Read it before calling anything unspecified**; this surface has now twice concluded a screen was unspecced when it was not.
 - **Two traps still live in this tree:** `artifacts/` is no longer git-ignored (a bare `git add -A` sweeps ~100 PNGs), and two capture states share the number `09` (markets' test, needs their nod).
@@ -689,9 +691,64 @@ Also stale and trivial: the comment at `SportsbookApp.cs:2081` still calls ident
 
 ### Still unphotographed after this
 
-- **PENDING legs** — visible at `Reset`, before any leg begins. One more frame in the same flow.
-- **Nobody has scrolled the surface.** S27's rail renders on `02b` now, but no capture can prove a
-  human can operate it. Still wants thirty seconds of someone driving the laptop.
+~~PENDING legs~~ — **done**, `04b-my-bets-pending` (§4-0.11). **Nobody has scrolled the surface**:
+S27's rail renders on `02b`, but no capture can prove a human can operate it. Still wants thirty
+seconds of someone driving the laptop — that is an interaction, not a state.
+
+## 4-0.11 PENDING captured, and the set was never reproducible
+
+**Done** (`102a571`). **EditMode 76/76, PlayMode 56/56** through the C29 wrapper. **The surface is at
+zero unphotographed states** — every ruled treatment on it now has a frame.
+
+`04b-my-bets-pending` is the mirror at the instant the broadcast releases the ticket: RIDING, both
+legs PENDING, the tally carrying the whole stake because nothing has resolved. With `04a` and `05` it
+is **one ticket's entire life on one slate** — `1 RIDING · $35 · $102` twice, then `0 · $0 · $0`.
+
+**Reading order is `04b` → `04a` → `05`, and the letters do not encode it.** Insertion order, because
+`04a` was filed before this state was asked for. Renaming delivered evidence is worse than a suffix
+that needs a sentence.
+
+### The finding that outranks the capture
+
+**`RunDirector.seed` ships blank in the scene**, which the director reads as *roll a fresh random
+8-char A-Z0-9 seed*. Every `Boot()` capture flow has therefore dealt a **different slate on every
+run**, and no two submissions of "the same twelve states" have ever been the same frames.
+
+| Run | `05-my-bets-green-dead` |
+|---|---|
+| batch 11, `a235bfc` | `Tulsa Plumbers v Pawtucket Ferrets` · −516 · **PAYS $71** |
+| next run, `6ece398` | `Sheboygan Bricklayers v Waterloo Zambonis` · −410 · **PAYS $85** |
+
+**This has not produced wrong verdicts** — treatment is what gets ruled and treatment is stable
+across seeds. It produces a set where a **content-dependent** finding can appear and vanish between
+runs with nothing changed. The recorded instance is the `SureThingEntryTests` width flake, which
+passed on every run whose team names were short enough (§4-0.7).
+
+**Flow 1 now pins `52830174`** and asserts the run carries it before shooting. **The other four flows
+still roll.** Pinning them moves ten more frames' content at once — one flow per commit, and it is
+worth doing. The verdict pair is already pinned under R38.
+
+**I got this wrong first.** I told the orchestrator `05`'s content was "identical to the granted
+frame" when inserting `04a` before it — asserted from the shape of the change, never checked. The
+table above is what checking looks like. **On this surface, claim reproducibility only from two
+frames side by side.**
+
+### Second conformance gap — photographed, not fixed
+
+`SportsbookApp.cs:1342` derives leg colour as `Won → MoneyGold · Lost → Muted · Live → White · else →
+TonerSecondary`, so **PENDING renders `--toner-2`** in the same branch as VOID. **S43** rules PENDING
+prints `--toner-3`, and the kit's `RevealedState.jsx` maps `PENDING: var(--toner-3)` with VOID
+separately at `--toner-2` — and that file is the one `BuildMirrorLeg`'s own comment names as its
+source.
+
+**Shot as built, deliberately: fixing first would have left no photograph of the violation**, which
+is the evidence needed to confirm it. Consequence to state before it is ruled — at `--toner-3`,
+PENDING and DEAD share a tone, separated by the strike and the drained ground. The kit and owning doc
+§3.3 specify exactly that (DEAD carries three channels to PENDING's one), so it is consistent, but it
+is a composition change and the seat's call.
+
+**Found the same way as the last two: by building a frame for a state nobody had photographed.** C17
+paying a fifth time here.
 
 ## 4a. S32 — which happened: fixed between HEADs
 
