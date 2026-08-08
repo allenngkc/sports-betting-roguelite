@@ -38,6 +38,13 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-07 cycle 106 · **Allen's fresh seats adopted; header current** —
+  three new Allen-attached lead sessions seated with context briefs (effort
+  applied); markets' handover deferred until its in-flight merge verification
+  lands (my session finishes the task it holds). STATUS.md header rewritten
+  current and now refreshes every cycle (was week-stale — process gap owned).
+  Batch-13 DesignSync push: already done at cycle 104, confirmed present in
+  the project. Watcher v11 on the new seats. Reversal: none.
 - 2026-08-07 cycle 105 · **Pricing variety ACCEPTED (Allen) — merge flow
   started** — acceptance delivered to the verified-live markets session after
   an Orca handle-shuffle left duplicate TUIs (the resurrected 99%-context
