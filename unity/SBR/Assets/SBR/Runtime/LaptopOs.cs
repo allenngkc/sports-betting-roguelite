@@ -1257,9 +1257,16 @@ namespace SBR.Game
         public static float MakeMarginHeader(RectTransform parent, string title, TMP_FontAsset fontCond)
         {
             const float headerHeight = 41f;
+            // C15/S28: `.15` is the widest tracking on the surface (owning doc §4.3) and this is the
+            // slot it was written for — a short word in condensed caps, doing a header's job of
+            // labelling a column rather than stating a fact. It was unreachable in UI.Text and signed
+            // as a deviation until now.
+            //
+            // Both margins draw through here since S60, so one call site tracks LEDGER's RECORD and
+            // MY BETS' TALLY identically. Two copies would have been the fourth drift of that shape.
             MakeText(parent, "MarginHeaderTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -12f), new Vector2(296f, 22f), 16, TextAnchor.UpperLeft,
-                LaptopOs.Accent, title, fontCond);
+                LaptopOs.Accent, title, fontCond, LaptopTrack.MarginHeader);
             MakeRule(parent, "MarginHeaderRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -headerHeight), new Vector2(296f, 2f), LaptopOs.BiroDeep);
             return headerHeight;
