@@ -35,6 +35,21 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-07 cycle 113 · **§6a chartered — first pending-work audit run** —
+  three staged drafts fired (SureThing: PENDING-legs capture, slot granted;
+  TV: event-strip tier question filed to DD; room: phone emission finding
+  filed — the emission blind spot named again); batch-14 inbox OPENED and
+  first evidence pushed (mirror-identity finding + riding set, extracted).
+  Audit table below; it closes every cycle from now on per §6a.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | working (capture slot) | PENDING-legs shoot → stage | lead |
+  | tv-sweat | working | ladder re-read → band fix; tier Q filed | lead |
+  | room | working | emission finding file → cue frame (queued) | lead |
+  | markets-2 | idle-BLOCKED | G6 dial | **Allen** (his timing) |
+  | DD bridge | fed | batch-14 accumulating; push-on-land | orchestrator |
+  | Editor | leased | SureThing → room → TV verify | orchestrator |
 - 2026-08-07 cycle 112 · **All four leads REBOOTED (Allen: API errors)** —
   clean close + --continue relaunch, effort re-applied, resume prompts sent
   (each re-states its task and continues). Watcher v13 on the new handles.
