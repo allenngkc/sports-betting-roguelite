@@ -1020,7 +1020,11 @@ namespace SBR.Game
             // (margin.jsx:44-52), which is what the anchored band is.
             Button placeButton = LaptopUi.MakeWaxPrimary(panel, "Place", "PLACE TICKET",
                 new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(14f, PlaceBandY), new Vector2(296f, 44f), 17,
-                blocker == null ? LaptopOs.MoneyGold : LaptopOs.Surface,
+                // S69: a blocked PLACE fills --ground-3 (SurfaceRaised), per PlaceAction.jsx — it was
+                // --ground-2. The ruled distinction does real work: **PLACE is a field that has gone
+                // inert, LOCK is a rule that has not yet been earned**, so PLACE keeps a fill and
+                // LOCK keeps only its rule.
+                blocker == null ? LaptopOs.MoneyGold : LaptopOs.SurfaceRaised,
                 blocker == null ? LaptopOs.WaxInk : LaptopUi.Dim(LaptopOs.Muted),
                 blocker == null ? () => { slip.Place(); _lockArmed = false; _armedRound = -1; _invalidate(); } : null, _fontCond,
                 blocker == null && !boardFrozen);
@@ -1038,7 +1042,11 @@ namespace SBR.Game
                 placeLabelRect.anchoredPosition = Vector2.zero;
                 LaptopUi.MakeText(placeRect, "PlaceReason", new Vector2(.5f, 0f), new Vector2(.5f, 0f),
                     new Vector2(0f, 1f), new Vector2(288f, 17f), 13, TextAnchor.MiddleCenter,
-                    LaptopOs.MoneyBad, blocker.ToUpperInvariant(), _font).enableWordWrapping = false;
+                    // S68: `.04em`, StampReason.jsx's own value. A blocked reason states a cause and
+                    // a remedy (T47, owning doc §6) and is read as a sentence, not scanned as a
+                    // label — which is why it takes the smallest tracking on the surface.
+                    LaptopOs.MoneyBad, blocker.ToUpperInvariant(), _font,
+                    LaptopTrack.StampReason).enableWordWrapping = false;
             }
 
             bool hasWorkingMarks = slip.Picks.Count > 0;
@@ -1047,7 +1055,12 @@ namespace SBR.Game
             bool canLock = !boardFrozen && lockReason.Length == 0;
             Button lockButton = LaptopUi.MakeButton(panel, "Lock", lockLabel, new Vector2(0f, 0f), new Vector2(0f, 0f),
                 new Vector2(14f, LockBandY), new Vector2(296f, LockBandH), 16,
-                LaptopOs.Ink, canLock ? LaptopOs.White : LaptopOs.Muted,
+                // S69: a disabled LOCK is TRANSPARENT, per LockAction.jsx — it carried a fill and no
+                // border, which is the inversion of the kit. Its rule is added below in both states,
+                // because owning doc §2.2 calls LOCK "a 52px ruled control in both states"; only the
+                // FILL is state-dependent.
+                canLock ? LaptopOs.Ink : new Color(0f, 0f, 0f, 0f),
+                canLock ? LaptopOs.White : LaptopOs.Muted,
                 canLock ? () =>
                 {
                     _lockArmed = false;
@@ -1055,6 +1068,27 @@ namespace SBR.Game
                     _host.director.LockRound();
                     _invalidate();
                 } : null, _fontCond, canLock);
+
+            // S69: the rule that makes LOCK "a 52px ruled control in both states" (owning doc §2.2).
+            // Four 1px --rule edges rather than a border image, the same way MakeWaxPrimary builds
+            // its 2px wax-deep edge — this surface has no rounded corners and no cards (§2.2), so an
+            // edge is four rects and nothing more. Built as children of the button so they cannot be
+            // occluded by a sibling drawn later, which is the defect the LockReason history below
+            // records.
+            {
+                var lockEdge = (RectTransform)lockButton.transform;
+                Vector2 lockSize = lockEdge.sizeDelta;
+                const float ruleW = 1f;
+                LaptopUi.MakePanel(lockEdge, "LockRuleTop", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    Vector2.zero, new Vector2(lockSize.x, ruleW), LaptopOs.Rule);
+                LaptopUi.MakePanel(lockEdge, "LockRuleBottom", new Vector2(0f, 0f), new Vector2(0f, 0f),
+                    Vector2.zero, new Vector2(lockSize.x, ruleW), LaptopOs.Rule);
+                LaptopUi.MakePanel(lockEdge, "LockRuleLeft", new Vector2(0f, 0f), new Vector2(0f, 0f),
+                    new Vector2(0f, ruleW), new Vector2(ruleW, lockSize.y - ruleW * 2f), LaptopOs.Rule);
+                LaptopUi.MakePanel(lockEdge, "LockRuleRight", new Vector2(1f, 0f), new Vector2(1f, 0f),
+                    new Vector2(0f, ruleW), new Vector2(ruleW, lockSize.y - ruleW * 2f), LaptopOs.Rule);
+            }
+
             if (!canLock)
             {
                 // T47: the reason belongs INSIDE the control, per LockAction.jsx:24 — label on top,
@@ -1082,8 +1116,20 @@ namespace SBR.Game
                 lockLabelRect.anchoredPosition = Vector2.zero;
                 LaptopUi.MakeText(lockRect, "LockReason", new Vector2(.5f, 0f), new Vector2(.5f, 0f),
                     new Vector2(0f, 2f), new Vector2(280f, 20f), 13, TextAnchor.MiddleCenter,
-                    LaptopOs.MoneyBad, lockReason, _font).enableWordWrapping = false;
+                    // S68: `.04em` — the same StampReason treatment as PLACE's blocker above.
+                    LaptopOs.MoneyBad, lockReason, _font,
+                    LaptopTrack.StampReason).enableWordWrapping = false;
             }
+            // S68: this takes `.08em` via --st-track-rec, which is what SkipAction.jsx sets — NOT the
+            // `.14em` action value the whole stack inherited when tracking became reachable. The
+            // string is a label PLUS an instruction, and §4.3's principle is that short labels are
+            // tracked uppercase while factual copy stays literal.
+            //
+            // **The headroom recovers by construction.** At `.14em` this ran ~228px inside its 230px
+            // control; no authored string is shortened and no geometry moves to get the room back.
+            // S50's yield order is spacing, then repetition, then nothing — the deficit existed
+            // because spacing was spent where the kit did not authorise it, and it was about to be
+            // paid for out of a string (T24: authored strings do not bend to measurements).
             LaptopUi.MakeButton(panel, "Skip", _lockArmed ? "PRESS AGAIN TO SKIP" : "SKIP ROUND — PRESS TWICE", new Vector2(.5f, 0f), new Vector2(.5f, 0f), new Vector2(0f, SkipBandY), new Vector2(230f, SkipBandH), 13, LaptopOs.Ink, _lockArmed ? LaptopOs.MoneyBad : LaptopOs.Muted,
                 boardFrozen ? null : () =>
                 {
@@ -1098,7 +1144,7 @@ namespace SBR.Game
                     _armedRound = -1;
                     _host.director.LockRound();
                     _invalidate();
-                }, _font, !boardFrozen);
+                }, _font, !boardFrozen, LaptopTrack.Records);
         }
 
         /// <summary>Renders <c>run.Tickets</c> as a top-down receipt stack starting at
@@ -1738,7 +1784,10 @@ namespace SBR.Game
                 LaptopOs.MoneyGold, FormatComps(offer.Price), _fontCond);
             LaptopUi.MakeText(row, "BuyReason", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-124f, -29f), new Vector2(160f, 20f), 13, TextAnchor.UpperRight,
-                canBuy ? LaptopOs.TonerSecondary : LaptopOs.MoneyBad, reason, _font);
+                // S68: `.04em`. Same StampReason component — this one carries toner when the offer is
+                // affordable and the house's stamp when it is not, but it is factual copy either way.
+                canBuy ? LaptopOs.TonerSecondary : LaptopOs.MoneyBad, reason, _font,
+                LaptopTrack.StampReason);
             // Top-anchored, not centred: the row's height now follows its description, and a
             // vertically centred button would slide down the taller rows and sit on the copy.
             LaptopUi.MakeButton(row, "Buy", "BUY", new Vector2(1f, 1f), new Vector2(1f, 1f),
@@ -1797,7 +1846,10 @@ namespace SBR.Game
                 LaptopOs.MoneyGold, FormatComps(offer.Price), _fontCond);
             LaptopUi.MakeText(row, "BuyReason", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-124f, -29f), new Vector2(160f, 20f), 13, TextAnchor.UpperRight,
-                canBuy ? LaptopOs.TonerSecondary : LaptopOs.MoneyBad, reason, _font);
+                // S68: `.04em`. Same StampReason component — this one carries toner when the offer is
+                // affordable and the house's stamp when it is not, but it is factual copy either way.
+                canBuy ? LaptopOs.TonerSecondary : LaptopOs.MoneyBad, reason, _font,
+                LaptopTrack.StampReason);
             // Top-anchored, not centred: the row's height now follows its description, and a
             // vertically centred button would slide down the taller rows and sit on the copy.
             LaptopUi.MakeButton(row, "Buy", "BUY", new Vector2(1f, 1f), new Vector2(1f, 1f),
@@ -2425,13 +2477,22 @@ namespace SBR.Game
                 // — DULUTH PLUMBERS V TULSA LOOPHOLES"). The odds suffix is protected from the trim
                 // the same way theirs is.
                 const float legIdentityWidth = 470f;
+                // S70: `--st-track-name` (.03em). LedgerEntry.jsx:17 hard-coded `.02em` here, which
+                // matched no token — and this line is a run of names and prices, which is exactly
+                // what that token is for. The 0.01em difference is below anything this surface can
+                // resolve; the point is that the value now has a name.
+                //
+                // **Measured with the tracking it renders with**, like every other fitted slot —
+                // fifth instance of that coupling, and the reason FitLabelKeepingSuffix takes the
+                // parameter at all. The odds suffix stays protected either way.
                 string legIdentityText = LaptopUi.FitLabelKeepingSuffix(_fontCond, $"{legIndex + 1}. ",
                     SportsbookApp.CompactLegLabel(leg.Matchup, leg.Selection),
-                    $"  {OddsFormat.American(leg.OfferedOdds)}", 13, legIdentityWidth);
+                    $"  {OddsFormat.American(leg.OfferedOdds)}", 13, legIdentityWidth,
+                    LaptopTrack.Names);
                 LaptopUi.MakeText(legRow, "LegIdentity", new Vector2(0f, .5f), new Vector2(0f, .5f),
                     new Vector2(28f, 0f), new Vector2(legIdentityWidth, 22f), 13, TextAnchor.MiddleLeft,
                     legLost ? LaptopUi.Dim(LaptopOs.TonerSecondary) : LaptopOs.TonerSecondary,
-                    legIdentityText, _fontCond);
+                    legIdentityText, _fontCond, LaptopTrack.Names);
                 LaptopUi.MakeText(legRow, "LegState", new Vector2(1f, .5f), new Vector2(1f, .5f),
                     new Vector2(-14f, 0f), new Vector2(140f, 22f), 13, TextAnchor.MiddleRight,
                     legLost ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.Muted, legState, _fontCond);
