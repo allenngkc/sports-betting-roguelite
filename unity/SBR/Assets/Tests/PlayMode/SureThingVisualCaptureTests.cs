@@ -137,6 +137,54 @@ namespace SBR.Tests.PlayMode
             InvokeView(view, "ResolveLeg", 0, LegGrade.Won);
             yield return WaitForRebuild();
             InvokeView(view, "BeginLeg", 1, ticket.Legs[1]);
+            yield return WaitForRebuild();
+
+            // RIDING is the last unphotographed state on this surface. It is the ticket-level word,
+            // and S23 makes that split contractual — RIDING never appears on a leg, LIVE never on a
+            // ticket — but the only MY BETS capture in the set shot a ticket whose legs had BOTH
+            // already resolved. So the word a ticket wears for its entire life until it settles had
+            // never been in a frame, on the one screen whose whole subject is tickets in flight.
+            //
+            // The same frame settles what the tally has been owed since batch 10. AT RISK and IF
+            // EVERYTHING LANDS sum over RIDING tickets only (BuildMirrorMargin) — so on a fully
+            // resolved round they correctly print `0 RIDING · $0 · $0`, which is the true answer to
+            // "what is still live" and also a photograph of the column doing nothing. Both figures
+            // carry real money here, which makes this the first frame to show the ratified
+            // AT-RISK-toner / IF-EVERYTHING-LANDS-wax split (owning doc §3.1) on non-zero figures.
+            //
+            // Shot one reveal BEFORE 05, on the same ticket and the same run: 05 is a granted frame
+            // and nothing about it moves. This state is 05 one step earlier, which is also why it
+            // takes a letter rather than a number — 02b's precedent — instead of renumbering a set
+            // the register, the owning doc and the handoff all cite by name.
+            laptop.Os.OpenSportsbook(SportsbookApp.Tab.MyBets);
+            yield return WaitForRebuild();
+            Transform ridingTicket = Required(
+                Required(App(laptop), "MyBetsBoard"), "MirrorTicket0");
+            StringAssert.Contains("RIDING", TextOf(Required(ridingTicket, "TicketTitle")),
+                "S23: a ticket with an unresolved leg is RIDING");
+            Assert.AreEqual("GREEN",
+                TextOf(Required(Required(ridingTicket, "MirrorLeg0"), "LegState")));
+            Assert.AreEqual("LIVE",
+                TextOf(Required(Required(ridingTicket, "MirrorLeg1"), "LegState")));
+
+            // Asserted before the shot, because a tally reading $0 would make this frame a second
+            // photograph of the nothing 05 already shows.
+            Transform ridingMargin = Required(App(laptop), "MyBetsMargin");
+            StringAssert.Contains("1 RIDING", TextOf(Required(ridingMargin, "TallyAtRiskLabel")),
+                "the tally counts the riding ticket");
+            Assert.AreNotEqual(LaptopUi.Money(0d),
+                TextOf(Required(ridingMargin, "TallyAtRiskValue")),
+                "this state exists to show AT RISK carrying real money");
+            Assert.AreNotEqual(LaptopUi.Money(0d),
+                TextOf(Required(ridingMargin, "TallyIfAllLandValue")),
+                "this state exists to show IF EVERYTHING LANDS carrying real money");
+            Assert.IsTrue(SameInk(
+                    Required(ridingMargin, "TallyIfAllLandValue").GetComponent<Text>().color,
+                    LaptopOs.MoneyGold),
+                "§3.1: stake reads toner and payout reads wax — the payout side is wax");
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "04a-my-bets-riding", capturedPaths);
+
             InvokeView(view, "ResolveLeg", 1, LegGrade.Lost);
             yield return WaitForRebuild();
 
@@ -165,7 +213,7 @@ namespace SBR.Tests.PlayMode
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "06-ledger", capturedPaths);
 
-            Assert.AreEqual(14, capturedPaths.Count, "seven states must emit paired captures");
+            Assert.AreEqual(16, capturedPaths.Count, "eight states must emit paired captures");
             foreach (string path in capturedPaths)
             {
                 Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
@@ -732,8 +780,25 @@ namespace SBR.Tests.PlayMode
         private static IEnumerator DriveToVerdict(LaptopScreen laptop, double bank, double payment,
             Phase expected)
         {
-            laptop.director.StartNewRun($"verdict-{expected}");
-            var run = new Run($"verdict-{expected}",
+            // R38: this screen PRINTS the seed — `FINAL BANK $x   ·   SEED {run.Rng.RunSeed}`, the
+            // subline built in LaptopOs.RenderVerdict. These forced states were seeded
+            // `verdict-RunWon` and `verdict-RunLost`, so both frames photographed the rig's own name
+            // for the state in the one slot on the screen where a product fact belongs: the capture
+            // apparatus visible inside the capture, on evidence the DD then rules against.
+            //
+            // A forced state's seed is a legal production seed and nothing else. RunDirector.NewSeed
+            // draws 8 characters from A-Z0-9, so an all-digit seed is an ordinary member of that
+            // space — it reads as a run the player could have been dealt, and it carries no rig
+            // vocabulary at all. Numeric rather than merely seed-shaped is the point: T31 is the
+            // precedent one surface over, where a harness seed shaped like a label (`TVCAPTURE01`)
+            // was read as a debug token and cost the DD a withdrawn finding.
+            string runSeed = expected == Phase.RunWon ? "40719355" : "68204137";
+            foreach (char c in runSeed)
+                Assert.IsTrue(char.IsDigit(c),
+                    $"R38: a forced capture state's run seed is numeric (got '{runSeed}')");
+
+            laptop.director.StartNewRun(runSeed);
+            var run = new Run(runSeed,
                 new RunConfig { Payments = new[] { payment }, StartingBank = bank });
             Assert.AreEqual(1, run.Config.Rounds, "a one-element schedule must make round 1 the last");
             SetDirectorRun(laptop.director, run);
@@ -756,6 +821,13 @@ namespace SBR.Tests.PlayMode
             // stood here rendered aubergine and darker than --ink.
             Assert.IsTrue(SameInk(Required(app, "VerdictBg").GetComponent<Image>().color, LaptopOs.Ink),
                 "S53-am: the verdict ground is --ground, not a bespoke value");
+
+            // R38: and the frame must actually print that seed, not merely hold it. This is the
+            // assertion whose absence let the rig's own label sit in a photographed subline through
+            // two rounds of review — the suite read the headline's colour and never read the line
+            // underneath it.
+            StringAssert.Contains(runSeed, TextOf(Required(app, "Final")),
+                "R38: the verdict subline prints the run's own seed");
 
             Transform verdict = Required(app, "Verdict");
 
