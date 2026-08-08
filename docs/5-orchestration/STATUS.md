@@ -46,6 +46,28 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-08 cycle 128 · **ORCA RESTART — board re-seated, no work lost** —
+  the restart took three lead terminals mid-wave (room mid-editor-sequence).
+  Recovery per protocol: worktree git state read first (SureThing's lead
+  survived, mid-S68/S69/S70 with suites running; TV had committed its PR
+  record 88c99e4 clean; room had committed the R41+R39-am BUILD 73487e2
+  before the cut; markets closed its evidence gap 4b56dba). Three seats
+  revived via claude --continue + /effort max (dialog-aware, two dialogs
+  confirmed); watchers re-armed v14; heartbeat re-armed. Room's editor lease
+  RE-GRANTED for the remainder of its capture sequence (Unity was zero — the
+  cut killed the window cleanly). The unknown main-2 session turned out to be
+  this orchestrator seat itself as listed by Orca — no duplicate writer.
+  T67 pair had already been pushed to the DD inbox pre-restart.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | working (survived) | S68/S69/S70 commit; S70(3) note: receipt header is a LAYOUT change, lead measuring | lead |
+  | tv-sweat | clean-holding (revived) | DD verdicts | DD |
+  | room | working (revived, editor) | resume capture sequence → release | lead |
+  | markets-2 | clean-holding (revived) | texture-artifact cmp check only | lead |
+  | DD bridge | fed | T67 pair + next evidence on land | orchestrator |
+  | Editor | room | → free on release | orchestrator |
+  | **Need Allen** | **C13** decision still open (options + recommendation in cycle 127) | ruling | Allen |
 - 2026-08-08 cycle 127 · **BATCH 15 LANDED — Phase L GRANTED, type deviations
   expired; next wave dispatched** — pulled batch-15 rulings + revised TV
   owning doc from dd-outbox, landed verbatim, transcribed (S68–S70/T67/R41/
