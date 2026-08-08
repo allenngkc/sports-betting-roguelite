@@ -43,6 +43,28 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-08 cycle 121 · **The emission instrument READS — third set valid,
+  R39's numbers exist** — controls held (a-b-z), independent cross-check green
+  on every emitter; run 2's defect was the rig mutating the room (blackout
+  restore + shared MaterialPropertyBlock), fixed at cause; WindowGlow's 213°
+  gap annotated as colour×texture, not defect. The two DD-waited results are
+  on record: phone 85.4°/5.0 vs laptop 84.3°/5.3 (one chromaticity family in
+  render — R39's "joins the granted family" shown for the first time);
+  ArtIndicator 38-42°/chroma 43-49 at 0.005-0.040% of frame (only saturated
+  emitter, unruled, red where red is retired → DD). 84MB set committed. TV
+  lane CLOSED to verdicts: PR #3 open (lead minted the call via credential
+  fill), record + link pushed, stand-by fired. Editor: room released →
+  SureThing long window granted (regenerate → suites → re-shoot at 400).
+  Room dispatched: stage DD bundle (table + isolated frames, not 84MB).
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | working (editor) | regenerate → S29 first run → re-shoot at 400 | lead |
+  | tv-sweat | clean-holding | DD batch-15 verdicts | DD |
+  | room | working | stage emission DD bundle → I push | lead |
+  | markets-2 | working | retagged table → whole G5 package | lead |
+  | DD bridge | fed | pair+addendum+bake in inbox; emission bundle next | orchestrator |
+  | Editor | surething | long window; next claimant none | orchestrator |
 - 2026-08-08 cycle 120 · **G5 answered at 3 sigma; instrument era compounding**
   — markets: synergy real and positive at 3σ, error ~7× finer than G3's; the
   question to Allen is now purely "does +0.1pp certify the pillar" (retagged
