@@ -38,6 +38,26 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-07 cycle 116 · **Batch 14 pulled, transcribed, dispatched** — the
+  reproducibility reckoning: capture flows were never seed-pinned (C34 law,
+  fifth axis; no grants withdrawn — treatment is seed-stable); the glow cue
+  struck on frames (S63 closes entire); two new emission strikes (phone R39 +
+  laptop material R40, one bake bundle with a re-walk after); mirror-identity
+  and PENDING-tone violations ruled; the helper-bypass sweep its own item;
+  the event strip ruled L2 (T63 ungated, its causal account delivered);
+  **C13 named as a standing integration item** (room renders the retired
+  violet laptop — scheduling the content re-integration). Report back to DD
+  next push: the TV owning doc is ALREADY Allen-approved (its "awaiting
+  Allen" line is stale). Markets closed its gate build (read pending).
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | working | pin flows → PENDING tone → mirror → sweep | lead |
+  | tv-sweat | working | strip L2 ×7 → band fix → verify window | lead |
+  | room | working | one-bake bundle (phone + material) → re-walk | lead |
+  | markets-2 | read pending | gate-build close report | orchestrator |
+  | DD bridge | round-tripping | next push: report TV-doc approval + new evidence | orchestrator |
+  | Editor | free | room bake first, then TV verify | orchestrator |
 - 2026-08-07 cycle 115 · **G6 dial RULED (Allen: option 1, n≈4,600, ±1.0pp;
   escalation to 18,500 on near-line results) — markets dispatched, last
   blocked lane un-blocks.** Four stale register rows corrected on room's
