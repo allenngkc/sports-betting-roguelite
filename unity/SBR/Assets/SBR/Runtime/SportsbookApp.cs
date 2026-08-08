@@ -598,7 +598,10 @@ namespace SBR.Game
         {
             float totalHeight = 0f;
             for (int i = 0; i < run.Tickets.Count; i++)
-                totalHeight += 30f + run.Tickets[i].Legs.Count * 18f + 8f;
+                // S70(3): reads the same source the receipt builds from. This line restated the
+                // formula, so the footer would have grown the receipts and left the scroll content
+                // short by 36px per ticket — clipping the last one with every test green.
+                totalHeight += StagedReceiptHeight(run.Tickets[i]) + 8f;
             return totalHeight;
         }
 
@@ -1154,6 +1157,45 @@ namespace SBR.Game
         /// rowWidth, so the same 14px/8px insets are applied to whatever width the ENTRY sheet's
         /// content actually has). Returns the new <paramref name="y"/> cursor below the last
         /// receipt.</summary>
+        // S70(3): the staged receipt's bands, named once. The height was computed by the same
+        // expression in TWO places — here and BuildScrollingBody's content math — which is the
+        // duplication S67 exists to inventory, and it became load-bearing the moment the footer
+        // changed the formula. One source now; the fixed-grid rule (§6, T51) is that a band's height
+        // is derived at design time and read everywhere, never restated.
+        private const float ReceiptHeaderH = 30f;   // identity + leg count, one band
+        private const float ReceiptLegH = 18f;      // one leg row
+        private const float ReceiptFooterH = 36f;   // STAKE / COMBINED / PAYS, key above value
+
+        /// <summary>The staged receipt's own height. Read by the receipt and by the scroll body's
+        /// content math, so the two cannot disagree about how tall a ticket is.</summary>
+        private static float StagedReceiptHeight(Ticket ticket)
+            => ReceiptHeaderH + ticket.Legs.Count * ReceiptLegH + ReceiptFooterH;
+
+        /// <summary>TicketReceipt.jsx's footer row: three key-above-value cells, keys at
+        /// `--st-track-label` in `--toner-3`, values condensed. **PAYS is the only wax on the
+        /// receipt** — S3's law is that wax is money, and this is the money.</summary>
+        private void BuildReceiptFooter(RectTransform receipt, Ticket ticket, double combined, float receiptWidth)
+        {
+            RectTransform footer = LaptopUi.MakePanel(receipt, "ReceiptFooter",
+                new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(0f, 2f),
+                new Vector2(receiptWidth, ReceiptFooterH), new Color(0f, 0f, 0f, 0f));
+            LaptopUi.MakeRule(footer, "ReceiptFooterRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(8f, 0f), new Vector2(receiptWidth - 16f, 1f), LaptopOs.Rule);
+
+            Cell("Stake", "STAKE", LaptopUi.Money(ticket.Stake), LaptopOs.White, 8f, TextAnchor.UpperLeft, 0f);
+            Cell("Combined", "COMBINED", OddsFormat.American(combined), LaptopOs.White, 110f, TextAnchor.UpperLeft, 0f);
+            Cell("Pays", "PAYS", LaptopUi.Money(ticket.PotentialPayout), LaptopOs.MoneyGold, -8f, TextAnchor.UpperRight, 1f);
+
+            void Cell(string name, string key, string value, Color valueInk, float x, TextAnchor align, float anchorX)
+            {
+                var a = new Vector2(anchorX, 1f);
+                LaptopUi.MakeText(footer, "Receipt" + name + "Key", a, a, new Vector2(x, -4f),
+                    new Vector2(120f, 14f), 13, align, LaptopOs.Muted, key, _font, LaptopTrack.FieldKeys);
+                LaptopUi.MakeText(footer, "Receipt" + name + "Value", a, a, new Vector2(x, -17f),
+                    new Vector2(120f, 18f), 13, align, valueInk, value, _fontCond, LaptopTrack.Names);
+            }
+        }
+
         private float BuildStagedReceipt(RectTransform parent, Run run, float y, float width)
         {
             const float pad = 14f;
@@ -1167,7 +1209,7 @@ namespace SBR.Game
             for (int ticketIndex = 0; ticketIndex < run.Tickets.Count; ticketIndex++)
             {
                 Ticket ticket = run.Tickets[ticketIndex];
-                float receiptHeight = 30f + ticket.Legs.Count * 18f;
+                float receiptHeight = StagedReceiptHeight(ticket);
                 RectTransform receipt = LaptopUi.MakePanel(receipts, "StagedTicket" + ticketIndex,
                     new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, receiptY),
                     new Vector2(receiptWidth, receiptHeight), LaptopOs.Surface);
@@ -1179,19 +1221,32 @@ namespace SBR.Game
                 // the run's scope, which is the thing S37 forbids. The LEDGER prints the round
                 // because its list spans them.
                 string identity = LaptopUi.TicketIdentity(ticket.Id, run.Round, ticketIndex, withRound: false);
-                // "STAGED" is redundant (this whole block IS the staged-ticket receipt) and is the
-                // first thing dropped to make room. The payout is the figure that matters most on
-                // this line, so it is a protected suffix — FitText only ever trims the label ahead
-                // of it, and only ever behind an ellipsis, never a silent cut.
-                // Ticket identity/stake/combined/payout are all condensed per TicketReceipt.jsx; the
-                // "TICKET"/"PAYS" words are structural, not field labels, so the whole header string
-                // routes through _fontCond rather than being split across two Text components.
-                string receiptHeaderText = LaptopUi.FitLabelKeepingSuffix(_fontCond, string.Empty,
-                    $"{identity} · {LaptopUi.Money(ticket.Stake)} · {OddsFormat.American(combined)}",
-                    $" · PAYS {LaptopUi.Money(ticket.PotentialPayout)}", 13, receiptTextWidth);
+                // S70(3): the header is the kit's grammar — identity, then count — each at its own
+                // tracking, not one string carrying four facts. `TicketReceipt.jsx` puts the number
+                // at `--st-track-action` and the leg count in its `key` style at `--st-track-label`,
+                // and the money facts in a footer row. Collapsing all of it into one line lost the
+                // distinction between what the house printed and what the sweat added.
+                //
+                // **Two consequences worth naming, because neither was the point of the ruling.**
+                //
+                // Wax returns to money. This line was drawn entirely in `--wax` because it carried
+                // the payout, so the ticket's IDENTITY was rendered in the money ink — S3 says wax is
+                // money, and an identity is not. With PAYS in the footer the header takes `--toner`
+                // and only the payout stays wax.
+                //
+                // And the protected-suffix fit disappears with it. `FitLabelKeepingSuffix` existed
+                // here to trim the label while never cutting the payout; identity and count are both
+                // short, bounded strings that cannot overflow this width, so there is nothing left to
+                // fit. The mechanism is not lost — the leg rows below still use it, which is where
+                // S26's no-silent-truncation rule actually bites.
                 LaptopUi.MakeText(receipt, "ReceiptHeader", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(8f, -4f), new Vector2(receiptTextWidth, 22f), 13, TextAnchor.UpperLeft,
-                    LaptopOs.MoneyGold, receiptHeaderText, _fontCond);
+                    new Vector2(8f, -4f), new Vector2(receiptTextWidth * .6f, 22f), 13,
+                    TextAnchor.UpperLeft, LaptopOs.White, identity, _fontCond, LaptopTrack.Actions);
+                LaptopUi.MakeText(receipt, "ReceiptLegCount", new Vector2(1f, 1f), new Vector2(1f, 1f),
+                    new Vector2(-8f, -4f), new Vector2(receiptTextWidth * .35f, 22f), 13,
+                    TextAnchor.UpperRight, LaptopOs.Muted,
+                    $"{ticket.Legs.Count} {Pluralize(ticket.Legs.Count, "LEG")}", _font,
+                    LaptopTrack.FieldKeys);
                 for (int legIndex = 0; legIndex < ticket.Legs.Count; legIndex++)
                 {
                     Leg leg = ticket.Legs[legIndex];
@@ -1214,6 +1269,7 @@ namespace SBR.Game
                         new Vector2(receiptTextWidth, 18f), 13, TextAnchor.UpperLeft, LaptopOs.TonerSecondary,
                         ticketLegText, _fontCond, LaptopTrack.Records);
                 }
+                BuildReceiptFooter(receipt, ticket, combined, receiptWidth);
                 LaptopUi.MakeRule(receipt, "ReceiptRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
                     Vector2.zero, new Vector2(receiptWidth, 2f));
                 receiptY -= receiptHeight + 8f;
