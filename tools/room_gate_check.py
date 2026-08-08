@@ -1468,10 +1468,170 @@ def read_material_emission(assets_root, material_file):
     return tuple(float(v) for v in m.groups()), None
 
 
+# Part B's resolution (C32), and it is much coarser than Part A's. The frames are
+# 8-bit sRGB, so one code value is the quantum and anything below the studio's
+# standing JND of 2 levels is dithering. That threshold is the instrument's floor:
+# an emitter whose contribution never exceeds it is reported UNCOVERED, never
+# "clean". A gate whose band is narrower than its own noise cannot fail for the
+# thing it exists to catch -- C32's exact case.
+EMISSION_JND = 2
+
+
+def emission_part_b(root):
+    """Measure each emitter's RENDERED contribution from its own A/B pair.
+
+    NO HAND-PLACED REGIONS, and that is the design. Every previous attempt in this
+    lane to measure a small bright thing drew a box around it and measured its
+    neighbours instead -- the first-pass metal boxes reported the plaster's hue as
+    the steel's, and my own phone reading turned out to be a canvas. Here the region
+    IS the set of pixels that changed when the emitter alone went black, so it
+    cannot include anything the emitter does not touch, and it cannot miss anything
+    it does.
+
+    The pair also validates itself: an empty mask means the emitter does not reach
+    that frame, which is reported as UNCOVERED rather than as a colour. That is the
+    check that was missing when the lid's cue was measured in a pose where the lid
+    sits behind an opaque canvas.
+    """
+    try:
+        from PIL import Image, ImageChops
+    except ImportError:
+        return ["PART B: Pillow not installed -- cannot measure"], 0, 0
+
+    lines = ["PART B (rendered contribution, per-emitter A/B):"]
+    manifest_path = root / "manifest.txt"
+    if not manifest_path.is_file():
+        # C34: a set without its manifest is not a set -- nothing pins what was shot.
+        lines.append("*** no manifest.txt -- the capture set does not state what it contains, "
+                     "which scene, or at what values. Unreproducible, so not evidence (C34) ***")
+        return lines, 1, 0
+
+    manifest = manifest_path.read_text(encoding="utf-8", errors="replace").splitlines()
+    captured = {}
+    for ln in manifest:
+        m = re.match(r"emitter=(\S+) value=([\d.,-]+) renderers=(\d+) off_dir=(\S+)", ln)
+        if m:
+            captured[m.group(1)] = dict(value=m.group(2), rends=int(m.group(3)), off=m.group(4))
+    for ln in manifest:
+        if ln.startswith(("scene=", "mode=", "poses=")):
+            lines.append(f"  manifest: {ln}")
+
+    # Cross-check: the capture DISCOVERS emitters, the registry LISTS them. If they
+    # disagree, one of the two has fallen behind the room and neither may be trusted
+    # to be complete -- that is a failure, not a note.
+    registered = set(EMISSIVE_SURFACES)
+    shot = set(captured)
+    failed = 0
+    missing = registered - shot
+    extra = shot - registered
+    if missing:
+        failed += 1
+        lines.append(f"  *** registered but NOT captured: {', '.join(sorted(missing))} ***")
+    if extra:
+        failed += 1
+        lines.append(f"  *** captured but NOT REGISTERED -- the room has an emitter this gate "
+                     f"does not know about: {', '.join(sorted(extra))} ***")
+
+    # DETERMINISM CONTROL. Two captures of an unchanged state must be bit-identical.
+    # If they are not, the render pipeline is still moving between frames and EVERY
+    # difference in this set is contaminated by that motion -- which is exactly what
+    # happened on this instrument's first run, where a still-settling reference frame
+    # made all five emitters report ~70% of frame at +25 dY'. Refusing to measure is
+    # the only honest response; reporting drift as light is how a false finding ships.
+    ctl_a, ctl_b = root / "control-a", root / "control-b"
+    if not (ctl_a.is_dir() and ctl_b.is_dir()):
+        lines.append("  *** no determinism control in this set -- cannot show the pipeline was "
+                     "settled, so no difference here is trustworthy. Re-shoot with a control ***")
+        return lines, failed + 1, 0
+
+    for pose in ("standing-overview.png", "seated-tv-couch.png", "focused-laptop-desk.png"):
+        pa, pb = ctl_a / pose, ctl_b / pose
+        if not (pa.is_file() and pb.is_file()):
+            continue
+        d = ImageChops.difference(Image.open(pa).convert("RGB"), Image.open(pb).convert("RGB"))
+        worst = max(d.getextrema()[c][1] for c in range(3))
+        if worst > 0:
+            lines.append(f"  *** CONTROL FAILED on {pose}: two captures of an UNCHANGED state "
+                         f"differ by up to {worst} code values. The pipeline is still settling, "
+                         f"so nothing in this set is a measurement. Not measured. ***")
+            return lines, failed + 1, 0
+    lines.append("  control: control-a and control-b bit-identical on every pose -- the pipeline "
+                 "was settled, so differences below are the emitters and not the warm-up.")
+
+    on_dir = root / "all-emitters-on"
+    measured = 0
+    lines.append(f"  {'emitter':16s} {'pose':22s} {'footprint':>12s} {'contribution'}")
+
+    for name in sorted(captured):
+        spec = captured[name]
+        for pose in ("standing-overview.png", "seated-tv-couch.png", "focused-laptop-desk.png"):
+            on_p, off_p = on_dir / pose, root / spec["off"] / pose
+            if not (on_p.is_file() and off_p.is_file()):
+                lines.append(f"  {name:16s} {pose:22s} {'-':>12s} frames missing")
+                continue
+
+            on_img = Image.open(on_p).convert("RGB")
+            off_img = Image.open(off_p).convert("RGB")
+            diff = ImageChops.difference(on_img, off_img)
+            mask = diff.convert("L").point(lambda v: 255 if v > EMISSION_JND else 0)
+            box = mask.getbbox()
+            total_px = on_img.size[0] * on_img.size[1]
+            hits = sum(1 for v in mask.getdata() if v)
+
+            if not box or hits == 0:
+                lines.append(f"  {name:16s} {pose:22s} {'0 px':>12s} UNCOVERED -- this emitter "
+                             f"does not reach this frame; no verdict is supportable")
+                continue
+
+            # The emitter's OWN light: difference of the two frames in LINEAR light,
+            # averaged over its own mask. Light adds linearly, so the difference is
+            # exactly this emitter's contribution with every other source removed.
+            mpx, onpx, offpx = mask.load(), on_img.load(), off_img.load()
+            x0, y0, x1, y1 = box
+            sr = sg = sb = 0.0
+            slum = 0.0
+            n = 0
+            step = 2
+            for y in range(y0, y1, step):
+                for x in range(x0, x1, step):
+                    if not mpx[x, y]:
+                        continue
+                    o, f = onpx[x, y], offpx[x, y]
+                    sr += srgb_to_linear(o[0]) - srgb_to_linear(f[0])
+                    sg += srgb_to_linear(o[1]) - srgb_to_linear(f[1])
+                    sb += srgb_to_linear(o[2]) - srgb_to_linear(f[2])
+                    slum += (0.2126 * (o[0] - f[0]) + 0.7152 * (o[1] - f[1])
+                             + 0.0722 * (o[2] - f[2]))
+                    n += 1
+            if n == 0:
+                lines.append(f"  {name:16s} {pose:22s} {hits:>9d} px  mask sampled no pixels at "
+                             f"step {step} -- too small to measure at this resolution")
+                continue
+
+            sr, sg, sb = max(sr / n, 0.0), max(sg / n, 0.0), max(sb / n, 0.0)
+            lstar, chroma, hue = linear_to_lab(sr, sg, sb)
+            measured += 1
+            pct = 100.0 * hits / total_px
+            lines.append(f"  {name:16s} {pose:22s} {hits:>9d} px  "
+                         f"({pct:.3f}% of frame)  hue {hue:6.1f}deg  chroma {chroma:5.1f}  "
+                         f"Rec.709 dY' {slum / n:+6.2f}")
+
+    lines.append(f"  resolution (C32): mask threshold {EMISSION_JND} code values (the studio's "
+                 f"JND); anything quieter is dithering and is reported UNCOVERED, not clean.")
+    lines.append("  unit (C33): dY' is Rec.709 luma on DISPLAY-ENCODED values. hue/chroma are "
+                 "CIELAB of the linear difference. Different ladders, never compared.")
+    lines.append("  scope (C25): reads what each emitter ADDS to each ratified pose in Edit "
+                 "Mode. It cannot see runtime canvases drawn over an emitter (both screens have "
+                 "one), what the player's eye does with a bright 0.01% footprint, or whether an "
+                 "emitter that IS covered is correctly coloured for its role.")
+    return lines, failed, measured
+
+
 def gate_emission(assets_root, captures_dir=None):
     """EMIT: every emissive surface, its authored value, and its ruling."""
     detail = []
     judged = passed = failed = 0
+    part_b_failed = 0
     unruled = []
     foreign = []
 
@@ -1529,11 +1689,18 @@ def gate_emission(assets_root, captures_dir=None):
                   "never compared.")
 
     # Part B -- the rendered half.
+    detail.append("")
     if captures_dir is None:
-        detail.append("")
         detail.append("PART B (rendered contribution): SKIPPED -- needs the per-emitter A/B "
                       "capture pair (emitter at value vs forced black, same pose). Not run, "
                       "so it is a non-verdict and not a pass.")
+    else:
+        b_lines, part_b_failed, b_measured = emission_part_b(Path(captures_dir))
+        detail.extend(b_lines)
+        if b_measured == 0:
+            part_b_failed += 1
+            detail.append("*** C29: Part B produced ZERO measurements -- a rendered half that "
+                          "measured nothing is a failure, not a silent pass ***")
 
     # C29: a run that examined nothing is a failure, not a green.
     if examined == 0:
@@ -1542,13 +1709,24 @@ def gate_emission(assets_root, captures_dir=None):
             "the registry is EMPTY -- this gate measured nothing", detail,
             blind_spot="an empty registry cannot fail for content, so it fails for being empty.")
 
+    # Part A and Part B fail for entirely different reasons and the line must say
+    # which. Sharing one counter reported "2 of 2 judged surfaces disagree with their
+    # ruling" when both matched and the real fault was a missing capture manifest --
+    # a gate naming the wrong cause sends the next reader to the wrong file.
     if judged == 0:
         status = "FAIL"
         observed = (f"{examined} surfaces registered but ZERO carry a ruled value -- "
                     f"nothing could be judged")
-    elif failed:
+    elif failed or part_b_failed:
         status = "FAIL"
-        observed = f"{failed} of {judged} judged surfaces disagree with their ruling"
+        parts = []
+        if failed:
+            parts.append(f"{failed} of {judged} judged surfaces disagree with their ruling "
+                         f"(Part A, authored)")
+        if part_b_failed:
+            parts.append(f"{part_b_failed} problem(s) in the rendered half (Part B, capture "
+                         f"set) -- the authored values are NOT implicated")
+        observed = "; ".join(parts)
     else:
         status = "PASS"
         observed = (f"{passed}/{judged} judged surfaces match; {len(unruled)} unruled, "
@@ -1746,6 +1924,13 @@ def main():
         help="Provenance of the human verdict being recorded. A re-certification on a STANDING "
              "verdict is not a fresh walk, and the record must say which it was -- otherwise the "
              "next reader sees a green gate and assumes someone walked this build.",
+    )
+    parser.add_argument(
+        "--emission-set",
+        help="Directory holding EMIT Part B's per-emitter A/B capture set (produced by "
+             "SBR.RoomViewCapture.CaptureEmissionSet). Supplying it runs the RENDERED half of "
+             "the emission instrument; without it that half reports SKIP and is counted as a "
+             "non-verdict, never as a pass.",
     )
     parser.add_argument(
         "--certified-at",
@@ -2033,7 +2218,7 @@ def main():
         # Deliberately in the same table as everything else. The whole finding was
         # that emission sat outside every table the studio drew, so a separate
         # emission report would reproduce the defect in a new file.
-        results.append(gate_emission(assets_root))
+        results.append(gate_emission(assets_root, args.emission_set))
 
         # --- Gates 6, 7, 8: human-only, certified by walkthrough -------------
         # These three cannot be run by any tool -- R22 ruled the only instrument

@@ -618,7 +618,32 @@ namespace SBR
             manifest.Add("mode=EditMode (no world-space canvas exists; emitters are unoccluded)");
             manifest.Add($"emitters={found.Count}");
 
+            // DETERMINISM CONTROL, and the first run of this harness is why it exists.
+            //
+            // The shared reference frame was shot straight after the warm-up while every
+            // off-frame came later in the sequence, and something in the pipeline was still
+            // settling: the reference landed at mean luma 71.385 against ~51.27 for every
+            // off-frame. A 20-luma global gap that no small emitter can produce, and it made
+            // all five emitters report ~70% footprint at +25 dY'. Nothing about the room was
+            // wrong; the instrument was measuring its own warm-up.
+            //
+            // Two captures of an UNCHANGED state settle it. If they are not bit-identical the
+            // pipeline is still moving and no difference in this set means anything, so the
+            // analyser refuses to measure rather than reporting drift as light. This is R8's
+            // first-render artefact in a new costume, and that one also passed a determinism
+            // control twice before the picture caught it -- so the control is compared by the
+            // analyser, not asserted here.
+            foreach (string ctl in new[] { "control-a", "control-b" })
+            {
+                WarmRender(cam);
+                string ctlDir = Path.Combine(outDir, ctl);
+                Directory.CreateDirectory(ctlDir);
+                Capture(ctlDir);
+            }
+            manifest.Add("control=control-a,control-b (identical state; must be bit-identical)");
+
             // The full-value reference frame, every emitter as shipped.
+            WarmRender(cam);
             string allDir = Path.Combine(outDir, "all-emitters-on");
             Directory.CreateDirectory(allDir);
             Capture(allDir);
@@ -633,6 +658,9 @@ namespace SBR
                     r.SetPropertyBlock(block);
                 }
 
+                // Warm before every capture, so each frame is taken at the same settled
+                // state as the reference rather than somewhere along the warm-up curve.
+                WarmRender(cam);
                 string dir = Path.Combine(outDir, $"off-{mat}");
                 Directory.CreateDirectory(dir);
                 Capture(dir);
