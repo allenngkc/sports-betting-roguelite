@@ -6,6 +6,7 @@ using System.Reflection;
 using NUnit.Framework;
 using SBR.Engine;
 using SBR.Game;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -68,7 +69,7 @@ namespace SBR.Tests.PlayMode
             // The ring is sized off the actual "GREEN" text bounds (not a fixed box) so its pen
             // stroke overshoots the word instead of crossing it — assert against that same formula
             // rather than a magic number that would silently drift from the render code.
-            Text greenState = Required(mirrorLeg0, "LegState").GetComponent<Text>();
+            TMP_Text greenState = Required(mirrorLeg0, "LegState").GetComponent<TMP_Text>();
             (Vector2 expectedPosition, Vector2 expectedSize) = SportsbookApp.InkRingGeometry(greenState);
             AssertRect(green.rectTransform, expectedSize.x, expectedSize.y, "GREEN price ring");
             Assert.AreEqual(expectedPosition, green.rectTransform.anchoredPosition,
@@ -282,8 +283,8 @@ namespace SBR.Tests.PlayMode
 
         private static string TextOf(Transform node)
         {
-            Text text = node.GetComponent<Text>();
-            if (text == null) text = node.GetComponentInChildren<Text>();
+            TMP_Text text = node.GetComponent<TMP_Text>();
+            if (text == null) text = node.GetComponentInChildren<TMP_Text>();
             Assert.IsNotNull(text, $"{node.name} has no readable text");
             return text.text;
         }
@@ -292,7 +293,7 @@ namespace SBR.Tests.PlayMode
         {
             var content = new List<string>();
             foreach (Transform root in roots)
-                foreach (Text text in root.GetComponentsInChildren<Text>(true))
+                foreach (TMP_Text text in root.GetComponentsInChildren<TMP_Text>(true))
                     content.Add(text.text);
             return string.Join("\n", content);
         }

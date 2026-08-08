@@ -4,6 +4,7 @@ using System.Globalization;
 using NUnit.Framework;
 using SBR.Engine;
 using SBR.Game;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -160,7 +161,7 @@ namespace SBR.Tests.PlayMode
         {
             foreach (Transform root in roots)
             {
-                foreach (Text text in root.GetComponentsInChildren<Text>(true))
+                foreach (TMP_Text text in root.GetComponentsInChildren<TMP_Text>(true))
                     Assert.GreaterOrEqual(text.fontSize, 13,
                         $"{root.name}/{text.name}: product text must be at least 13px");
                 foreach (Button button in root.GetComponentsInChildren<Button>(true))
@@ -238,8 +239,8 @@ namespace SBR.Tests.PlayMode
 
         private static string TextOf(Transform node)
         {
-            Text text = node.GetComponent<Text>();
-            if (text == null) text = node.GetComponentInChildren<Text>();
+            TMP_Text text = node.GetComponent<TMP_Text>();
+            if (text == null) text = node.GetComponentInChildren<TMP_Text>();
             Assert.IsNotNull(text, $"{node.name} has no readable text");
             return text.text;
         }

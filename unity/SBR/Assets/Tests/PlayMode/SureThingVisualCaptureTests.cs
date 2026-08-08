@@ -7,6 +7,7 @@ using System.Reflection;
 using NUnit.Framework;
 using SBR.Engine;
 using SBR.Game;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -215,7 +216,7 @@ namespace SBR.Tests.PlayMode
             // the token's 110,107,94 on this exact state and ruled it a violation, so the assertion
             // that was deliberately withheld here now belongs here.
             Assert.IsTrue(SameInk(
-                    Required(Required(pendingTicket, "MirrorLeg0"), "LegState").GetComponent<Text>().color,
+                    Required(Required(pendingTicket, "MirrorLeg0"), "LegState").GetComponent<TMP_Text>().color,
                     LaptopOs.Muted),
                 "S65: a PENDING leg prints --toner-3, not the --toner-2 it shared with VOID");
             yield return CaptureState(laptop, outputDirectory, runPrefix,
@@ -267,7 +268,7 @@ namespace SBR.Tests.PlayMode
                 TextOf(Required(ridingMargin, "TallyIfAllLandValue")),
                 "this state exists to show IF EVERYTHING LANDS carrying real money");
             Assert.IsTrue(SameInk(
-                    Required(ridingMargin, "TallyIfAllLandValue").GetComponent<Text>().color,
+                    Required(ridingMargin, "TallyIfAllLandValue").GetComponent<TMP_Text>().color,
                     LaptopOs.MoneyGold),
                 "§3.1: stake reads toner and payout reads wax — the payout side is wax");
             yield return CaptureState(laptop, outputDirectory, runPrefix,
@@ -951,8 +952,8 @@ namespace SBR.Tests.PlayMode
             // S52: the loss is carried by value, not by oxide. Oxide is the house's mark, and this
             // is exactly the assertion whose absence let the violation live unseen on an
             // unphotographed screen.
-            Color headline = verdict.GetComponent<Text>().color;
-            Color subline = Required(app, "Final").GetComponent<Text>().color;
+            Color headline = verdict.GetComponent<TMP_Text>().color;
+            Color subline = Required(app, "Final").GetComponent<TMP_Text>().color;
             if (expected == Phase.RunLost)
             {
                 Assert.IsFalse(SameInk(headline, LaptopOs.MoneyBad),
@@ -989,7 +990,7 @@ namespace SBR.Tests.PlayMode
             Transform newRun = Required(app, "NewRun");
             Assert.IsTrue(SameInk(newRun.GetComponent<Image>().color, LaptopOs.MoneyGold),
                 "NEW RUN is a wax field — it was a biro-filled one, which is Law Two and S18 at once");
-            Assert.IsTrue(SameInk(Required(newRun, "Label").GetComponent<Text>().color, LaptopOs.WaxInk),
+            Assert.IsTrue(SameInk(Required(newRun, "Label").GetComponent<TMP_Text>().color, LaptopOs.WaxInk),
                 "type on wax is wax ink");
             foreach (string edge in new[] { "WaxEdgeTop", "WaxEdgeBottom", "WaxEdgeLeft", "WaxEdgeRight" })
                 Assert.IsNotNull(Find(newRun, edge), $"NEW RUN is missing its wax edge '{edge}'");
@@ -1340,8 +1341,8 @@ namespace SBR.Tests.PlayMode
 
         private static string TextOf(Transform node)
         {
-            Text text = node.GetComponent<Text>();
-            if (text == null) text = node.GetComponentInChildren<Text>();
+            TMP_Text text = node.GetComponent<TMP_Text>();
+            if (text == null) text = node.GetComponentInChildren<TMP_Text>();
             Assert.IsNotNull(text, $"{node.name} has no readable text");
             return text.text;
         }

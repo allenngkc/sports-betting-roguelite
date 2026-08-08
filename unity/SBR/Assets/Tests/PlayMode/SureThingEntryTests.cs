@@ -5,6 +5,7 @@ using System.Globalization;
 using NUnit.Framework;
 using SBR.Engine;
 using SBR.Game;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -949,8 +950,8 @@ namespace SBR.Tests.PlayMode
 
         private static string TextOf(Transform node)
         {
-            Text text = node.GetComponent<Text>();
-            if (text == null) text = node.GetComponentInChildren<Text>();
+            TMP_Text text = node.GetComponent<TMP_Text>();
+            if (text == null) text = node.GetComponentInChildren<TMP_Text>();
             Assert.IsNotNull(text, $"{node.name} has no readable text");
             return text.text;
         }
@@ -967,7 +968,7 @@ namespace SBR.Tests.PlayMode
         /// </summary>
         private static Font TestFont(Transform receipt)
         {
-            var sample = Required(receipt, "ReceiptHeader").GetComponent<Text>();
+            var sample = Required(receipt, "ReceiptHeader").GetComponent<TMP_Text>();
             Assert.IsNotNull(sample, "ReceiptHeader must carry a Text to measure against");
             Assert.IsNotNull(sample.font, "ReceiptHeader has no font; the production face failed to load");
             return sample.font;
@@ -976,7 +977,7 @@ namespace SBR.Tests.PlayMode
         private static string AllText(Transform root)
         {
             var content = new List<string>();
-            foreach (Text text in root.GetComponentsInChildren<Text>(true))
+            foreach (TMP_Text text in root.GetComponentsInChildren<TMP_Text>(true))
                 content.Add(text.name + "=" + text.text);
             content.Sort(StringComparer.Ordinal);
             return string.Join("\n", content);

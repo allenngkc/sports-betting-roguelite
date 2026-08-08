@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using SBR.Engine;
 using SBR.Game;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -246,7 +247,7 @@ namespace SBR.Tests.PlayMode
                     $"'{gone}' is deleted under S44/S45 — a softer version of it is the same claim");
 
             // S45 by content as well as by node, since the line could reappear anywhere.
-            foreach (Text text in desktop.GetComponentsInChildren<Text>())
+            foreach (TMP_Text text in desktop.GetComponentsInChildren<TMP_Text>())
                 Assert.IsFalse(text.text.ToLowerInvariant().Contains("never lies"),
                     $"S45: '{text.text}' promises the player a guaranteed win. Deleted, not softened.");
 
@@ -278,8 +279,8 @@ namespace SBR.Tests.PlayMode
             Assert.IsNotNull(icon, "the SureThing icon is missing");
             Transform glyph = icon.Find("Label");
             Assert.IsNotNull(glyph, "the SureThing icon has no glyph");
-            Assert.AreEqual("S", glyph.GetComponent<Text>().text, "the icon's glyph");
-            Assert.IsTrue(SameInk(glyph.GetComponent<Text>().color, LaptopOs.White),
+            Assert.AreEqual("S", glyph.GetComponent<TMP_Text>().text, "the icon's glyph");
+            Assert.IsTrue(SameInk(glyph.GetComponent<TMP_Text>().color, LaptopOs.White),
                 "S44/S47: an installed app's glyph is full toner, not the player's biro");
         }
 
@@ -323,8 +324,8 @@ namespace SBR.Tests.PlayMode
                 string state = installed ? "installed" : "not installed";
                 Color ink = installed ? LaptopOs.White : LaptopOs.Muted;
 
-                Text glyph = icon.Find("Label").GetComponent<Text>();
-                Text caption = icon.Find("Caption").GetComponent<Text>();
+                TMP_Text glyph = icon.Find("Label").GetComponent<TMP_Text>();
+                TMP_Text caption = icon.Find("Caption").GetComponent<TMP_Text>();
                 Assert.IsTrue(SameInk(glyph.color, ink),
                     $"{node} is {state}, so its glyph is {(installed ? "full toner" : "--toner-3")}");
                 Assert.IsTrue(SameInk(caption.color, ink),
@@ -477,7 +478,7 @@ namespace SBR.Tests.PlayMode
         /// tree that has been cleared but not yet collected cannot fail a live surface.</summary>
         private static void AssertNoRetiredName(Transform root, string where)
         {
-            foreach (Text text in root.GetComponentsInChildren<Text>())
+            foreach (TMP_Text text in root.GetComponentsInChildren<TMP_Text>())
             {
                 if (string.IsNullOrEmpty(text.text)) continue;
                 foreach (string retired in RetiredNames)
@@ -504,7 +505,7 @@ namespace SBR.Tests.PlayMode
         private static string TextOn(Transform node)
         {
             Assert.IsNotNull(node, "expected a text node, found none");
-            Text text = node.GetComponent<Text>();
+            TMP_Text text = node.GetComponent<TMP_Text>();
             Assert.IsNotNull(text, $"'{node.name}' carries no Text");
             return text.text;
         }
