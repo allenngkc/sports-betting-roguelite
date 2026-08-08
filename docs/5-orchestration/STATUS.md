@@ -17,10 +17,9 @@ Design-verified; constitution + both owning docs approved except TV's).
 - **markets-2:** arm B + pricing variety both merged and CERTIFIED
   (183/183). Fresh Allen-attached lead seated; old session stood down.
   Open on Allen's timing: the G6 sample-size dial (raise-n, costed).
-- **Design Director:** batch 13 RULED and pulled via dd-outbox (first
-  transport round-trip complete). TV owning doc DRAFTED — awaiting Allen.
-- **Allen:** approve TV's owning document (`tv-design-2026-08-07-DRAFT.md`) —
-  the studio's last unwritten canon; nothing blocked behind it.
+- **Design Director:** batch 13 round-tripped; **ALL FOUR SURFACES NOW HAVE
+  APPROVED CANON** — constitution + room + SureThing + TV docs all live.
+- **Allen:** nothing pending. (G6 gate-strength dial open on his timing.)
 - **Editor:** free.
 - **Next scheduled phase:** C15 TMP migration (plan staged,
   `tmp-migration-plan.md`) once batch-13 verdicts land.
@@ -36,6 +35,14 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-07 cycle 110 · **TV OWNING DOC APPROVED — every surface has canon**
+  — Allen approved; landed at `tv-design.md` with the quarantine preserved;
+  C26 CLOSES (phone stub by design). The design-governance buildout that
+  started 2026-07-30 is structurally complete: constitution + three owning
+  docs + 33 cross-surface laws + a register at batch 13. Lanes: TV on the
+  room-flood fix; SureThing shooting the last unphotographed state; room
+  ships glow + owes the cue frame; markets holding. Reversal: Allen's own
+  approval.
 - 2026-08-07 cycle 109 · **BATCH 13 PULLED VIA DESIGNSYNC — first outbox
   round-trip** — four files landed verbatim (batch-12 reconstruction,
   batch-13 rulings, TV owning-doc DRAFT, outbox README) and transcribed.
