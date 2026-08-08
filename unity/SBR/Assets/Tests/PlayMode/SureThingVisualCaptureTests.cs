@@ -362,6 +362,13 @@ namespace SBR.Tests.PlayMode
         {
             yield return Boot();
             LaptopScreen laptop = Laptop();
+            // The flow with the most to lose from a rolling slate: `09-rewards-affordable` exists
+            // because a BUY-in-biro Law Two violation survived weeks of review while every capture
+            // happened to show the control greyed out. That state asserts an affordable BUY before
+            // shooting, so it cannot regress the same way again — but on a rolled seed, WHICH offers
+            // were affordable changed every run, and an offer's rule text is what S17 and S26 are
+            // about. Pinning makes the shop a fixed slate that a finding can actually be made against.
+            yield return PinRun(laptop, SeedShop);
             string outputDirectory = Path.GetFullPath(Path.Combine(
                 Application.dataPath, "..", "..", "..", "artifacts", "surething-ui"));
             Directory.CreateDirectory(outputDirectory);
