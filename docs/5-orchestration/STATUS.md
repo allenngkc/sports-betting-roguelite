@@ -17,11 +17,10 @@ Design-verified; constitution + both owning docs approved except TV's).
 - **markets-2:** arm B + pricing variety both merged and CERTIFIED
   (183/183). Fresh Allen-attached lead seated; old session stood down.
   Open on Allen's timing: the G6 sample-size dial (raise-n, costed).
-- **Design Director:** transport is now **DesignSync** (§3b) — batch 13 pushed
-  to `dd-inbox/2026-08-07-batch-13/` (38 files); dd-outbox pulled every
-  cycle. Awaiting the batch-13 session (TV owning doc, T63 ruling, glow
-  value, batch-11 verification, batch-12 export file owed).
-- **Allen:** nothing pending except saying "new inbox" to the DD.
+- **Design Director:** batch 13 RULED and pulled via dd-outbox (first
+  transport round-trip complete). TV owning doc DRAFTED — awaiting Allen.
+- **Allen:** approve TV's owning document (`tv-design-2026-08-07-DRAFT.md`) —
+  the studio's last unwritten canon; nothing blocked behind it.
 - **Editor:** free.
 - **Next scheduled phase:** C15 TMP migration (plan staged,
   `tmp-migration-plan.md`) once batch-13 verdicts land.
@@ -37,6 +36,19 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-07 cycle 109 · **BATCH 13 PULLED VIA DESIGNSYNC — first outbox
+  round-trip** — four files landed verbatim (batch-12 reconstruction,
+  batch-13 rulings, TV owning-doc DRAFT, outbox README) and transcribed.
+  Headlines: S59–S62 all granted-closed; T63 ruled (invert disproof accepted;
+  THREE brightness units were in play — C33 law fixes the unit studio-wide;
+  the real defect is the band never reaching L4, gap 0.047 not 0.21); T64
+  struck (9Hz idle flicker); **T65 loudest — the room floods gold on leg
+  wins, an event re-tint proven inverse to the panel's own gold; mechanism
+  stays, fires on settlement, palette-bound on V6**; S63-am2 glow colour
+  ships both ends, 3× ceiling struck, cue suspended on one Play-Mode frame;
+  R38 rig-string leak; emission named as the instruments' largest hole.
+  SureThing doc amended per C26-am2. All lanes dispatched. **Awaiting Allen:
+  the TV owning document.** Reversal: DD canon.
 - 2026-08-07 cycle 108 · **Pricing variety VALIDATED (p8 green) — markets
   handover complete** — engine 183/183 (+2), EditMode 75/75, PlayMode 47/47,
   counts reported, end state clean; tables amendment committed. Old markets
