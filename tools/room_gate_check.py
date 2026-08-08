@@ -1419,22 +1419,41 @@ EMISSIVE_SURFACES = {
                "proposal, so a PASS here means 'matches the proposal', NOT 'matches a "
                "ruling'. It must not be read as ratified until the DD rules it",
     ),
+    # R42 (DD 2026-08-08): the window is the room's one TEXTURED emitter, so the map
+    # governs its colour and no exact value can be ruled -- authored 290.5deg renders
+    # 77.0deg because it emits through a night-city map full of sodium.
+    #
+    # BUT IT IS NOT UNJUDGED, and that distinction is the whole point of this entry.
+    # R42's clause: "on a textured emitter the authored value is A MULTIPLIER, NOT A
+    # COLOUR, and it stays near-neutral. A saturated multiplier there would tint the
+    # whole skyline and no palette audit would see it, because the audit reads the
+    # authored value and the frame reads the product."
+    #
+    # Left merely annotated as TEXTURED -- which is how this gate shipped -- a saturated
+    # multiplier would pass. max_chroma makes it FAIL instead. The ceiling is 5.4, the
+    # room's emitter chroma: the same figure every other emitter here is authored at and
+    # the bound R41 was granted against, so the table has ONE number rather than a
+    # per-surface opinion. R42's own ratified example (chroma 3.9) sits inside it.
     "WindowGlow": dict(
         material="WindowGlow.mat",
         granted=None,
+        max_chroma=5.4,
         owner="room",
-        sanctioned="§1.2 sanctions a cool window with a short local pool -- the room's one "
-                   "approved cool source. No VALUE was ever ruled for it, so there is "
-                   "nothing here to compare against; recorded, not judged",
+        ruling="R42 -- ratified as textured; the authored value is a MULTIPLIER and must stay "
+               "near-neutral. Judged on that bound, not on an exact value, because the map "
+               "governs the rendered colour",
     ),
+    # R41-am, ALLEN 2026-08-08, superseding batch-16's L*-parity value: rendered-brightness
+    # parity was chosen over L*-parity. L* 51.84, chroma 5.4, hue 49.7deg -- rust's hue at
+    # the room's emitter chroma. Was (0.85, 0.14, 0.08), chroma 63.1, the only saturated
+    # emitter in the room.
     "ArtIndicator": dict(
         material="ArtIndicator.mat",
-        granted=None,
+        granted=(0.2334, 0.1924, 0.1769),
         owner="room",
-        ruling="NEVER RULED, and never measured until this gate existed. T34's own words: "
-               "'no red exception is granted anywhere ... Red lives in light, which no "
-               "scan covered' -- folded into T30's scope, which matches verbatim constants "
-               "and so could not see it",
+        ruling="R41 struck the saturated red as a colour and kept the lamp as an object; "
+               "R41-am (Allen) set this exact value at rendered-brightness parity with the "
+               "original lamp",
     ),
     "ScreenTV": dict(
         material="ScreenTV.mat",
@@ -1688,6 +1707,21 @@ def gate_emission(assets_root, captures_dir=None):
         if spec.get("owner") != "room":
             foreign.append(name)
             verdict = f"NOT JUDGED - {spec['owner']}'s"
+        elif spec.get("granted") is None and spec.get("max_chroma") is not None:
+            # A textured emitter, judged on its MULTIPLIER's neutrality rather than on an
+            # exact value (R42). Annotating it as "textured" and moving on is what would
+            # let a saturated multiplier through -- the audit reads the authored value and
+            # the frame reads the product, so this bound is the only place it can be caught.
+            judged += 1
+            ceiling = spec["max_chroma"]
+            if chroma <= ceiling:
+                passed += 1
+                verdict = f"PASS - multiplier near-neutral (chroma {chroma:.1f} <= {ceiling})"
+            else:
+                failed += 1
+                verdict = (f"*** FAIL: multiplier chroma {chroma:.1f} EXCEEDS {ceiling} -- a "
+                           f"saturated multiplier tints the whole map and no frame audit "
+                           f"would attribute it here (R42) ***")
         elif spec.get("granted") is None:
             unruled.append(name)
             verdict = "UNRULED - no value to compare"
@@ -1704,7 +1738,8 @@ def gate_emission(assets_root, captures_dir=None):
                            f"{granted[2]:.4f}) = hue {gh:.1f}deg chroma {gc:.1f} ***")
 
         if material_has_emission_map(assets_root, spec["material"]):
-            verdict += "  [TEXTURED: emits colour x map, so rendered hue may differ legitimately]"
+            verdict += ("  [TEXTURED: emits colour x map -- rendered hue may differ legitimately, "
+                        "which is why this one is judged on its multiplier, not on a value]")
         detail.append(f"{name:16s} {shown:26s} {lstar:6.2f} {chroma:7.1f} {hue:7.1f}  "
                       f"{order:7s} {verdict}")
 
@@ -1780,9 +1815,13 @@ def gate_emission(assets_root, captures_dir=None):
                    "runtime property block overrides it -- R40's whole defect was a runtime "
                    "override hiding a wrong authored value, and this gate would have caught "
                    "that one only because the override and the asset now share a constant. It "
-                   "also judges nothing it has no ruling for: two room emitters are UNRULED "
-                   "and are reported, never passed. Part B, which measures the rendered "
-                   "contribution and its footprint, is not implemented against frames yet.")
+                   "judges nothing it has no ruling for -- anything UNRULED is reported and "
+                   "never passed -- and the counts in the coverage line above are the "
+                   "authority on how many that currently is, not this sentence. The one "
+                   "TEXTURED emitter is judged on its multiplier's neutrality and NOT on its "
+                   "rendered colour, which the map governs: this gate cannot see the product, "
+                   "only the factor the room authored. Part B measures rendered contribution "
+                   "and footprint, and runs only when --emission-set is supplied.")
 
 
 def skip(gate, check, reason, blind_spot=""):
