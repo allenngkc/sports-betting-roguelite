@@ -795,26 +795,75 @@ it; it is there.
 
 ## 4bb. C15 — the TextMeshPro migration, scoped
 
-**Ruled by Allen 2026-08-02: Option 1, TMP, both surfaces. SCHEDULED, not now** — the conformance
-wave lands first and the orchestrator sequences per surface. **No build work until then.** The signed
-type deviations (S28 tracking, S29 tabular figures, S20 weight) stay in force until this surface
-migrates, and expire the moment it does.
+**PHASE L IS ACTIVE — Allen started it 2026-08-07 and this surface leads it.** Plan at
+`main-2/docs/5-orchestration/tmp-migration-plan.md`. The before-baseline is the pinned re-shoot set
+(`surething-batch14-pinned-set-2026-08-07.zip`) — C34-compliant, which is why it was shot first, and
+**the after-captures run on the same pinned seeds** so before/after is a comparison of one subject.
 
-Scoped here so the phase can be planned rather than discovered.
+The signed type deviations (**S28** tracking, **S29** tabular figures, **S20** weight 600, and
+**markets' ladder letter-spacing**) stay in force until this surface migrates and **expire the moment
+it does** — named in the close, per C15.
+
+**Scope re-confirmed against the tree 2026-08-07** (plan precondition 4). Two things below are new
+since this section was first written; the second is the one that changes the shape of the phase.
 
 ### What it touches
 
-**Slots: 98 `MakeText` call sites and 23 button labels**, across `SportsbookApp.cs` and `LaptopOs.cs`.
-That count is misleading in the good direction — every one of them goes through `LaptopUi.MakeText`
-or `MakeButton`, so the migration is largely two helpers plus their signature, not 121 edits. The
-`Font` parameter becomes a `TMP_FontAsset`, and `LaptopScreen.LoadFont` — already the single seam
-resolving both voices — resolves two asset references instead.
+**Slots: 97 `MakeText` call sites and 21 `MakeButton`**, across `SportsbookApp.cs` (79 + 18) and
+`LaptopOs.cs` (18 + 3). **Recounted — this section said 98 and 23**, which was true before S46–S66
+moved things; the drift is small but the number is quoted in planning, so it is corrected rather than
+left. The count is misleading in the good direction: every one goes through `LaptopUi.MakeText` or
+`MakeButton`, so the migration is largely two helpers plus their signature, not 118 edits. The `Font`
+parameter becomes a `TMP_FontAsset`, and `LaptopScreen.LoadFont` — already the single seam resolving
+both voices — resolves two asset references instead.
 
 **Font assets.** Archivo and Archivo Narrow ship as variable TTFs under
 `Resources/SureThing/Fonts` with their OFL licences beside them. TMP needs generated `TMP_FontAsset`s,
 which is editor work and cannot be authored blind. **This is the step that unlocks weight 600**:
 TMP font assets can carry named instances, which is exactly what S20 said was required and legacy
 UGUI could not give.
+
+### The editor-gated prerequisites, and neither is a code change
+
+Both were missing from this section and both block the first build step:
+
+1. **TMP essential resources are not in this project.** There is no `Assets/TextMesh Pro` folder and
+   no `TMP_Settings`. `com.unity.ugui 2.5.0` carries TextMeshPro in Unity 6, so the *package* is
+   present — the *project resources* (settings asset, default material, shaders) are not, and
+   importing them is an editor operation.
+2. **`SBR.Game.asmdef` does not reference TMP.** It lists `Unity.InputSystem` and `UnityEngine.UI`
+   with `overrideReferences: true`, so `Unity.TextMeshPro` must be added there and in the test
+   asmdefs. That one *is* a text edit.
+
+**Generate the two font assets from a committed Editor script, not from the Font Asset Creator
+window.** `TMP_FontAsset.CreateFontAsset` plus `AssetDatabase.CreateAsset` makes the atlas parameters
+— sampling point size, padding, render mode, atlas dimensions — **source rather than click history**.
+A hand-clicked asset is exactly the unreproducible artifact C34 exists to stop, one layer below the
+frames.
+
+### The finding that re-opens a Design-verified item
+
+**`MeasureWidth` does not only truncate — it sizes the shared chrome**, and this section previously
+named only `InkRingGeometry` as metric-dependent.
+
+- **The rail's sticker** (`LaptopOs.cs:1334-1339`): its x origin is `wordX + MeasureWidth(NOTEBOOK)`
+  and its width is `MeasureWidth(PROPERTY OF NOBODY) + 12`.
+- **The tray's MESSAGES badge** (`:1440-1445`): its x origin is
+  `messagesLabelX + MeasureWidth(MESSAGES)` and its width is `MeasureWidth(badge text) + 10`.
+
+**So TMP metrics move the rail and the tray geometrically, and S8 returns to review.** S8 is one of
+this laptop's three Design-verified items; S48's fold already returned it once and S52 re-verified it.
+The mechanism is identical — a Design-verified item is verified against a *configuration*, and the
+type stack is part of that configuration.
+
+**Re-run S52's pixel-identity comparison as the first check after the migration builds** — the
+desktop frame against the in-app lobby frame from the same run, rail band y 0–33 and the tray band
+past the app slots. It was 100% identical across 17,408 and 10,268 samples. It is the cheapest drift
+detector this surface owns and this is precisely the circumstance it exists for.
+
+**The layout survives by construction even though the pixels move:** the sticker's own comment records
+that its left edge is provably clear of `NOTEBOOK` *for any font metrics*, because it is derived
+rather than eyeballed. So this is a re-verification, not an expected defect — but it is not optional.
 
 **Text-metric helpers are the real work, not the text itself.** Four things measure glyphs today and
 all four are `Font`/`Text`-based:
@@ -835,16 +884,41 @@ behaviour; TMP has its own overflow model (`TextOverflowModes`) and the same pro
 rebuilt in it. Losing it silently reintroduces the defect that deleted the masthead and the payout
 figure with every test green.
 
-### Materials and C3
+### Materials and C3 — the restatement owed before the first commit
 
 The laptop canvas is world-space, inside the room's URP grade with bloom. TMP renders through its own
 SDF shader rather than the default UI material, so **text will not respond to that grade identically**
 — SDF edges under bloom are the specific risk, and the surface has a 31px wax payout figure that is
 already the brightest type on it.
 
-C3's one-token invariant is primarily a TV concern, but C15 names it because a TMP migration touches
-the HDR material path both surfaces share. **This seat should not migrate before the TV's material
-path is settled**, or the laptop becomes a second variable in someone else's measurement.
+**C3 as ruled** (DD 2026-07-31, TV): eligibility is not simultaneity. The L4 occupants are *eligible*
+for the HDR material; **an explicit one-token invariant holds that at most one is lit at a time**,
+arbitrated so a momentary punch preempts a sustained state, at one boost value (1.8).
+
+**Restated for TMP materials on this surface, and this is the form the migration is bound by:**
+
+> **No migrated text slot on the laptop acquires an HDR or emissive material.** Every TMP slot renders
+> on the default SDF material at the same tokens it renders today, so **the laptop contributes zero L4
+> tokens before and after the migration**, and C3's count and arbitration are untouched by Phase L.
+
+Three things follow, and they are checkable rather than declarative:
+
+1. **The invariant is about tokens lit, not about which shader draws them.** Swapping `UI/Default` for
+   TMP's SDF shader does not create an L4 occupant — but a TMP material with emission or a boost
+   above 1.0 would, silently, on a surface that has never had one. **Do not enable one to fix a
+   legibility complaint**; that is C10's shape and the lever is the token, not the material.
+2. **The laptop's brightest type must not get brighter.** The 31px wax payout is the ceiling on this
+   surface. Before/after on the same pinned seed makes this a measurement rather than an assurance:
+   **it measures no higher after than before, or the material path changed and Phase L owns it.**
+3. **A laptop that gained an HDR token would corrupt the TV's ladder measurements, not just its own.**
+   C3 is a cross-surface law and both surfaces are composited through one grade; that is exactly why
+   C15 named it as a precondition rather than leaving it to Phase T.
+
+**The precondition this section used to state is met.** It said this seat should not migrate before
+the TV's material path is settled. T41 (cap the stage), T48 (grade black point), T49 (bloom, sealed)
+and T58 (gold at the goal flash) are all closed as of batch 14. **Phase T's own TMP work is still
+ahead**, which is the remaining exposure and the reason clause 1 above is written as a prohibition
+rather than an observation.
 
 ### A new risk the migration introduces
 
