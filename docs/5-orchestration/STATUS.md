@@ -14,15 +14,15 @@ Design-verified; constitution + both owning docs approved except TV's).
 - **room-refinement:** rounds 3+4 live; wear ruled standing-shot; corrected
   glow built + photographed (exact value = batch 13); gates certified on
   Allen's walks. Fresh lead seated. Holding.
-- **markets-2:** arm B certified; **pricing variety MERGED (`aaaae9d`) —
-  validation running**; lead handover to Allen's fresh seat on the confirm.
-  Open on Allen's timing: the G6 sample-size dial (raise-n recommended).
+- **markets-2:** arm B + pricing variety both merged and CERTIFIED
+  (183/183). Fresh Allen-attached lead seated; old session stood down.
+  Open on Allen's timing: the G6 sample-size dial (raise-n, costed).
 - **Design Director:** transport is now **DesignSync** (§3b) — batch 13 pushed
   to `dd-inbox/2026-08-07-batch-13/` (38 files); dd-outbox pulled every
   cycle. Awaiting the batch-13 session (TV owning doc, T63 ruling, glow
   value, batch-11 verification, batch-12 export file owed).
 - **Allen:** nothing pending except saying "new inbox" to the DD.
-- **Editor:** held by the validation agent; free after.
+- **Editor:** free.
 - **Next scheduled phase:** C15 TMP migration (plan staged,
   `tmp-migration-plan.md`) once batch-13 verdicts land.
 
@@ -37,6 +37,13 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-07 cycle 108 · **Pricing variety VALIDATED (p8 green) — markets
+  handover complete** — engine 183/183 (+2), EditMode 75/75, PlayMode 47/47,
+  counts reported, end state clean; tables amendment committed. Old markets
+  session stood down with honors; Allen's fresh seat briefed and seated.
+  Seven merges landed+certified this week. Studio holds on: the DD's
+  batch-13 session (Allen's "new inbox" line) and Allen's G6 dial pick.
+  Reversal: revert `aaaae9d` (window stands, certified).
 - 2026-08-07 cycle 107 · **PRICING VARIETY MERGED — `aaaae9d`** — Allen's
   "merge it" fired; clean merge at `36122d6` (jitter dial, re-pinned test,
   amendment scope-note in the tables doc, handoff with the evidence gap
