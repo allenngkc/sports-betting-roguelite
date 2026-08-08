@@ -46,6 +46,25 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-08 cycle 126 · **BOARD CLEAN — all four lanes closed-holding on the
+  DD** — markets' Unity evidence gap filled on merged main: both suites clean,
+  verified on results XML rather than process state (its bee_backend/Csc
+  worker note and the ShaderGraphSettings stale-stat entry both added to its
+  traps section); stray capture PNGs moved out of the un-ignored artifacts
+  dir; engine/sim byte-unchanged by the merge so the whole gate campaign's
+  evidence still describes this tree. Editor free, zero claimants. Process
+  note owned (mine): SureThing's three unleased Unity runs trace partly to my
+  "editor is free today" dispatch wording — future grants state explicitly
+  that NO Unity launch of any kind happens without a granted lease.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | MERGED · holding | DD re-verifies final set → deviations expire | DD |
+  | tv-sweat | clean-holding | DD batch-15 verdicts (PR #3) | DD |
+  | room | clean-holding | DD rules R39 values + ArtIndicator | DD |
+  | markets-2 | clean-holding | none — evidence complete | — |
+  | DD bridge | fed | "new inbox" line — sole human step on the board | Allen |
+  | Editor | free | none queued | orchestrator |
 - 2026-08-08 cycle 125 · **PHASE L MERGED TO MAIN** — re-validation of the
   resolution merge all-green (engine 183/183 exact expected count; EditMode
   78/78; PlayMode 57/57 real graphics; DLL BYTES_IDENTICAL; parents = branch
