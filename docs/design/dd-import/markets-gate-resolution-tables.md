@@ -78,10 +78,13 @@ further from being a winning strategy than this seat could previously demonstrat
 
 ## 4. What was built into the instrument
 
-- **The campaign's `n` is ruled, not chosen.** `--gates` carries its own default (4,600). An
-  explicit `--runs` still wins — that is how the escalation is invoked — and `--gates` *below* the
-  ruled size now warns on stderr naming the ruling. The documented invocation drops `--runs`
-  entirely.
+- **The campaign's `n` is ruled, not chosen.** `--gates` carries a **ruled floor of 10,000** —
+  Allen's second call the same day, after the escalation settled. It is the number a bare `--gates`
+  always had; what changed is its status, from an unremarked default anyone could undercut in
+  silence to a floor that says so when undercut. An explicit `--runs` still wins (that is how the
+  escalation is invoked) and going below the floor warns on stderr. G6 resolves ±0.68pp there —
+  a 2.9× band, past the ±1.00pp the ruling asked for, and still under the 4× that would let a
+  near-line reading adjudicate without escalating.
 - **Three tiers on the resolution line**, whose thresholds are Allen's two rungs: **≥4×** resolves
   the whole band · **≥2×** can fail, but not for a reading nearer the line than its own resolution ·
   **<2×** cannot reliably fail.
@@ -100,10 +103,10 @@ further from being a winning strategy than this seat could previously demonstrat
 1. **"Raise the campaign's *default* `n`" mis-named the defect.** The tool's default was never
    1,000 — a bare `--gates` ran **10,000**, which would have resolved G6 to ±0.68pp. The ±2.15pp
    came from this seat typing `--runs 1000` by hand, all session, with no code path objecting. The
-   ruled 4,600 is a 4.6× raise on what was *run* and a ~2× cut on the untouched *default*. **The
-   choice between them is still Allen's** — 10,000 costs ~20 min per campaign against ~13 min.
-   The diagnosis had been inherited and repeated four times without once being checked against
-   `CliOptions`.
+   ruled 4,600 was a 4.6× raise on what was *run* and a ~2× cut on the untouched *default*.
+   **Allen closed it the same day: the floor is 10,000** — the value a bare `--gates` always had,
+   promoted from unremarked default to ruled floor. The diagnosis had been inherited and repeated
+   four times without once being checked against `CliOptions`.
 2. **A scaling claim made and falsified within the hour.** This document briefly said "cost does
    not scale linearly — 4.6× the runs cost 6.6× the wall time (121 s → 801 s)". The campaign was
    then run a second time on **identical work** and came in at **625.78 s** — a 28% spread, putting

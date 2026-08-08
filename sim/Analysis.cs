@@ -205,15 +205,24 @@ public sealed class GateData
     /// G6 compares TWO measured rates, so its resolution is their combined 2 SE: **±2.15pp at
     /// n=1,000 against a 2pp band**. Its tolerance was narrower than its own noise, which is why it
     /// passed all session while being unable to fail for the thing it exists to catch. Resolution
-    /// scales as 1/√n, so ±1.00pp costs 1,000 × (2.15/1.00)² ≈ 4,600 runs — the band is then 2×
-    /// resolution and a real breach reads as a breach. Predicted ±1.00pp, MEASURED ±0.97pp.
-    /// Cost: 699,200 total runs incl. audit + combos, **~10–13 min**. That is a range because it is
-    /// honestly a range — two runs of identical work measured 800.62 s and 625.78 s, a 28% spread,
-    /// so the wall clock on this machine cannot resolve a scaling claim finer than that. An earlier
-    /// version of this comment read "4.6× the runs cost 6.6× the wall time"; that was one pair of
-    /// measurements quoted without the instrument's own variance, and the second 4,600 run put it
-    /// at 5.2×. Quote a range or quote nothing.</summary>
-    public const int CampaignRuns = 4600;
+    /// scales as 1/√n, so ±1.00pp costs 1,000 × (2.15/1.00)² ≈ 4,600 runs. That was the first half
+    /// of the ruling and it was verified at 4,600: predicted ±1.00pp, MEASURED ±0.97pp.
+    ///
+    /// **The floor is 10,000 — Allen's second call, same day, after the escalation settled.** It is
+    /// not a bigger guess than 4,600; it is the value a bare `--gates` had all along. The defect was
+    /// never the default: it was this seat typing `--runs 1000` by hand, all session, with no code
+    /// path objecting. Restoring 10,000 as a RULED floor rather than an unremarked default is what
+    /// stops that recurring, and it buys resolution rather than spending it — G6 lands ±0.68pp,
+    /// a 2.9× band, comfortably past the ±1.00pp the ruling asked for.
+    ///
+    /// Note what 2.9× still does not buy: it is under 4×, so a reading that lands near its line is
+    /// still not adjudicated here and still escalates. The two-rung structure survives the floor
+    /// change — 10,000 makes the gate able to FAIL, <see cref="EscalationRuns"/> makes it able to
+    /// ADJUDICATE. Cost at 10,000 is UNMEASURED at the time of writing; measured neighbours are
+    /// 10.4 and 13.3 min at 4,600 and 58.6 min at 18,500, and after three failed attempts to
+    /// predict this machine's wall clock from a formula, the honest entry is the two measurements
+    /// either side and no interpolation between them.</summary>
+    public const int CampaignRuns = 10000;
 
     /// <summary>Allen's recorded escalation, same ruling: any near-line result re-runs here.
     /// 1,000 × (2.15/0.50)² ≈ 18,500 gives ±0.50pp, which puts the 2pp band at exactly 4×

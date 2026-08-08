@@ -65,7 +65,7 @@ Unity EditMode **75/75** · PlayMode **47/47** · Unity compile 0 errors — **t
 this line carry §7's correction: they are pre-`7885f8e` and are not evidence for HEAD.**
 `dotnet run --project sim -c Release -- --gates --seed-prefix TUNE` → **ALL GATES PASS, exit 0**.
 **The `--runs 1000` that used to be on this line is gone deliberately**: the campaign now carries its
-own ruled sample size (4,600 — Allen 2026-08-07, §7a), so a bare `--gates` is the campaign and an
+own ruled floor (10,000 — Allen 2026-08-07, §7a), so a bare `--gates` is the campaign and an
 explicit `--runs` is how you escalate. G7 went green when M1 narrowed its population to what it can
 honestly assert. It was red by design for the whole of the first wave; if you find it red
 again, something regressed, it is not the old known state.
@@ -224,14 +224,17 @@ result re-runs at ~18,500.**
 
 ### Built
 
-- **The campaign's `n` is now ruled, not chosen.** `--gates` carries its own default of
-  `GateData.CampaignRuns = 4600`; an explicit `--runs` still wins (that is how the escalation is
-  invoked), and `--gates` *below* the ruled size now warns on stderr naming the ruling. The
-  documented invocation is therefore `--gates --seed-prefix TUNE` with **no `--runs`**.
+- **The campaign's `n` is now ruled, not chosen.** `--gates` carries a ruled floor of
+  `GateData.CampaignRuns = 10000` (Allen's second call, after the escalation — see correction 1);
+  an explicit `--runs` still wins, which is how the escalation is invoked, and `--gates` *below* the
+  floor now warns on stderr naming the ruling. The documented invocation is therefore
+  `--gates --seed-prefix TUNE` with **no `--runs`**. G6 resolves ±0.68pp at the floor.
 - **G6's C32 cell became three tiers**, and the two thresholds land exactly on Allen's two rungs —
   which is why the rungs are worth keeping in that order rather than rounding them:
   **≥4×** resolves the whole band · **≥2×** can fail, but not for a reading nearer the line than its
-  own resolution · **<2×** cannot reliably fail (what G6 was). 4,600 buys tier 2, 18,500 buys tier 1.
+  own resolution · **<2×** cannot reliably fail (what G6 was). The 10,000 floor buys tier 2 (2.9×)
+  and 18,500 buys tier 1 (4.1×) — so the two-rung structure survives the floor change intact: the
+  floor makes G6 able to FAIL, the escalation makes it able to ADJUDICATE a reading near its line.
 - **Near-line detection added, and it is the load-bearing half.** A reading whose criterion edge
   falls *inside its own 95% interval* cannot reject "the true value is exactly on the line", so it
   decided nothing whichever way it fell. Those gates print **NOT ADJUDICATED** with the escalation
@@ -271,9 +274,10 @@ adjudicated.** Allen's predicted ±1.0pp came in at ±0.97pp measured.
 1. **"Raise the campaign's *default* `n`" mis-named the defect.** The tool's default was never
    1,000 — a bare `--gates` at `36122d6` ran **10,000**, which would have resolved G6 to ±0.68pp.
    The ±2.15pp came from this seat invoking `--runs 1000` **by hand, all session**, and no code path
-   objected. So the ruled 4,600 is a 4.6× raise on what was actually run and a ~2× *cut* on the
-   untouched default. **Allen has the choice and it is still open**: floor at 10,000 instead costs
-   ~20 min per campaign against ~13 min.
+   objected. **CLOSED — Allen ruled the floor at 10,000 the same day**, once the escalation had
+   settled. That is not a bigger guess than 4,600; it is the number a bare `--gates` always had.
+   What changed is its status: an unremarked default anyone could undercut in silence became a
+   ruled floor that says so when undercut. The value never needed fixing — the silence did.
 2. **The G6 margin itself was mostly noise.** +1.5pp at n=1,000 became **+0.7pp at n=4,600** — a
    0.8pp move, inside the old ±2.15pp, exactly as the resolution warned. Anything read off that
    n=1,000 campaign inherits that error; the "0.5pp of clearance" this seat would have reported
