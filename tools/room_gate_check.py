@@ -1641,6 +1641,27 @@ def emission_part_b(root):
     return lines, failed, measured
 
 
+def material_has_emission_map(assets_root, material_file):
+    """True if the material multiplies its emission colour by a texture.
+
+    This decides how the authored value may be compared to the rendered one. For an
+    untextured emitter the isolated contribution carries the authored chromaticity,
+    which is a genuine cross-check -- it is what exposed a bad capture set whose
+    ScreenLaptop came back 165 degrees from its own authored hue. For a TEXTURED
+    emitter the emitted colour is texture x colour, so the two legitimately differ
+    and the comparison means nothing: WindowGlow authors a near-neutral (290.5deg)
+    and renders at 77deg because the night-city map it emits through is full of
+    sodium. Reporting that as a 213-degree defect would be the instrument not
+    knowing its own limits.
+    """
+    matches = list(Path(assets_root).rglob(material_file))
+    if not matches:
+        return False
+    text = matches[0].read_text(encoding="utf-8", errors="replace")
+    m = re.search(r"- _EmissionMap:\s*\n\s*m_Texture: \{fileID: (\d+)", text)
+    return bool(m and m.group(1) != "0")
+
+
 def gate_emission(assets_root, captures_dir=None):
     """EMIT: every emissive surface, its authored value, and its ruling."""
     detail = []
@@ -1682,6 +1703,8 @@ def gate_emission(assets_root, captures_dir=None):
                 verdict = (f"*** FAIL: ruled ({granted[0]:.4f}, {granted[1]:.4f}, "
                            f"{granted[2]:.4f}) = hue {gh:.1f}deg chroma {gc:.1f} ***")
 
+        if material_has_emission_map(assets_root, spec["material"]):
+            verdict += "  [TEXTURED: emits colour x map, so rendered hue may differ legitimately]"
         detail.append(f"{name:16s} {shown:26s} {lstar:6.2f} {chroma:7.1f} {hue:7.1f}  "
                       f"{order:7s} {verdict}")
 
