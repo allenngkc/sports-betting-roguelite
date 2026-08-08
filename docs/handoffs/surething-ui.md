@@ -7,7 +7,8 @@
 - **Emphasis on this surface is not one scalar** — now **law C33b**, promoted from S59's build. Wax outranks toner by *chroma*; toner-2 outranks toner-3 by *value*. **Assert a ranking by weight only among neutrals, and by token otherwise.**
 - **Request the editor slot through the orchestrator, every time** — corrected 2026-08-06; the standing grant in `STATUS.md` is stale and this seat's runs collided with a validation pass because of it.
 - **Run every suite through `tools/run-unity-tests.ps1`, never `-runTests` directly** (C29). It exited non-zero on both collided runs rather than reporting them as passes, which is the whole reason the collision cost two re-runs and nothing else.
-- **Open finding, raised not fixed:** the MY BETS mirror **never got S62** — it hand-builds `TICKET 1` at `SportsbookApp.cs:1316` instead of calling `LaptopUi.TicketIdentity`, which the LEDGER and the staged receipt both use. See §4-0.10.
+- **One item open, and it needs a slot rather than a ruling:** the MY BETS mirror **never got S62** — it hand-builds `TICKET 1` at `SportsbookApp.cs:1316` instead of calling `LaptopUi.TicketIdentity`, which the LEDGER and the staged receipt both use and which already produces the kit's padded `TICKET 01`. Filed for the DD; see §4-0.10, **including the reading lesson attached to it.**
+- **The kit is at `docs/design/design-system/`, not `ui_kits/`** — those paths are relative to that root. **Read it before calling anything unspecified**; this surface has now twice concluded a screen was unspecced when it was not.
 - **Two traps still live in this tree:** `artifacts/` is no longer git-ignored (a bare `git add -A` sweeps ~100 PNGs), and two capture states share the number `09` (markets' test, needs their nod).
 
 **Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-07, after R38 + the riding capture.
@@ -654,15 +655,35 @@ set the register, the owning doc and this file all cite by name.
 | Staged receipt | `SportsbookApp.cs:1098` — `LaptopUi.TicketIdentity(…, withRound: false)` | `TICKET 02` |
 | **MY BETS mirror** | `SportsbookApp.cs:1316` — **hand-built string** | **`TICKET 1`** |
 
-**The build fact is independent of which form is correct:** the mirror composes its own identity
-instead of calling the helper, so **whichever way this is ruled, one of the three call sites cannot
-hear it.** That is the S60 shape verbatim — one component, two renderings — and the fourth time this
-surface has produced it.
+**The kit settles it, and it needs no ruling — only a slot.** `ui_kits/surething/app.jsx:43` builds
+`"TICKET " + String(t.length + 1).padStart(2, "0")`; `TicketReceipt.d.ts:12` gives the form as
+`"TICKET 01"`; and `TicketReceipt.prompt.md` names the screens that component serves — ENTRY, **MY
+BETS during the sweat**, and the Ledger. `LaptopUi.TicketIdentity` already ends
+`(placement + 1).ToString("00")`. **The mirror is the one site that does not call it.** The fix is
+line 1316 through `TicketIdentity(…, withRound: false)` — the staged receipt's exact call, for the
+staged receipt's exact reason (MY BETS is the current round, whose masthead already says so; printing
+`R1` there would be S37 restatement).
 
-**Whether `TICKET 1` is itself wrong is genuinely unresolvable from the ruling, and was not guessed.**
-S62 pads "to match the form's own `01 02 03` entries" — a column that aligns. The mirror shows one
-ticket, in no column, under a masthead already reading `TICKETS 1/3`. **Raised, not fixed.** Under
-C31 it is a new item on new frames, not anything against the batch-11 grant.
+**I first wrote this up as an open question with "two defensible readings", and the kit corrected me
+— I had not read it before filing.** Recorded rather than quietly fixed, because **the C14 audit made
+this same mistake on this same surface**: it concluded the kit did not spec the LEDGER because there
+was no `components/ledger/` directory, and the screen had drifted from a spec that existed. Six days
+apart, same error, caught only because filing the question forced me to go and look. **Read the kit
+before calling anything unspecified.** It is at `docs/design/design-system/` — the audit's
+`ui_kits/...` paths are relative to that root, which is itself part of why it is easy to miss.
+
+**Why it survived, and this is the reusable part:** the S60 shape verbatim — one component, two
+renderings — and the **fourth** on this surface (S33, S34, S60, now this). Every time, a second call
+site hand-builds what a shared helper already builds correctly, so **a ruling only reaches the call
+sites that route through the thing it was ruled on.** Probably worth more than the fix: nobody has
+swept this surface for other strings that bypass a `LaptopUi` helper. Named as its own candidate in
+the filing rather than buried inside this one.
+
+**Raised, not fixed** — filed in C25 form at
+`main-2/docs/design/dd-import/dd-followup-surething-mirror-ticket-identity.md`, untracked, riding the
+next drag. Under C31 it is a new item on new frames, not anything against the batch-11 grant.
+**Cost when built: `04a` and `05` both re-shoot** (one paired run); no other state carries a mirror
+title.
 
 Also stale and trivial: the comment at `SportsbookApp.cs:2081` still calls identity `"TICKET n.n"`.
 
