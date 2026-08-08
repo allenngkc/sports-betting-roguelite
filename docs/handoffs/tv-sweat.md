@@ -10,6 +10,131 @@ discarded.
 
 ---
 
+## 0-VW. VERIFY WINDOW — 2026-08-07/08. BATCHES 13+14 GREEN, T65 CLOSED ON FRAMES, editor released
+
+**Compile CLEAN · engine 160/160 · EditMode 237/237 · PlayMode 64 passed / 1 documented flake / 5
+`[Explicit]` skips.** Every count C29-guarded; both Unity runs reported executed == discovered.
+Staged `tv-verify-window-2026-08-07.zip` (11.7 MB). The conformance era closes here.
+
+### T65 — the room flood is GONE, proven on frames
+
+| state | hue | sat | Rec.709 luma |
+|---|---|---|---|
+| pre-fix, leg win | **40.7°** | **71.1%** | **0.347** |
+| post-fix, leg win (8 frames, 2 scenes) | **130.4°** | **40.4%** | **0.175** |
+| post-fix, resting | 130.4° | 40.4% | 0.175 |
+
+The room does not move on a leg win. **Mechanism was identified causally, not inferred:**
+`WonLegBeat` fired `tvLight.Flash(gold, 3.0f)`, and `gold`'s hue computes to **39.6°** against a
+measured room of 37.5–40.7°. Fixed by rule — one painting point, `RoomSettlementGlow()`, settlement
+only, carrying a room-palette warm. No call site names a colour.
+
+**Still owed: the new re-tint has never been photographed FIRING.** The capture harness has no
+settlement moment in its named-moment list, so `roomSettlementWarm` (hue 88.0°) and intensity 0.9
+remain an **upper bound**. The in-band amplitude window is roughly [0.78, 1.06] — ±15% — and the
+cast runs monotonically from ~130° at zero to ~45.5° as amplitude rises, crossing 85–92° exactly
+once. **That needs a harness addition, not an editor window.**
+
+### T64 — struck on BOTH channels
+
+`TvSweatScreen.idleEmissionFlicker` (9 Hz) and, by rule, `TvLight.flickerAmp/flickerHz` (11 Hz —
+the channel that lights the *room*). **Removed, not zeroed**: deleting the field is what actually
+kills the value serialized in `Room.unity`, which is the trap batch 13 recorded from the room lane
+in the same breath. Side effect: this surface now calls `UnityEngine.Random` **nowhere**, so §6.4's
+owed-to-integration item is discharged and the idle spill is identical run to run.
+
+### Event strip → L2 (batch 14), landed
+
+0.858 → **0.626** at hue 199°, now well clear of the scoreline's 0.873. Built as ONE painting point
+(`SetEventStrip`) that applies the tier itself; **all 14 assignments** route through it, not the
+ruled seven — the other four were resolution states also sitting at raw alpha, and leaving them loud
+would have preserved exactly the split the ruling struck. Hue stays the caller's; the tier does not.
+
+### T63 — structural half FIXED and proven; the value is NOT met and cannot be met from this seat
+
+The HDR material sat on `_tCashOut`, the money **figure**, and never on `_cashOutField`. The field
+could not be boosted at all, so granting the token moved a number and left the band at rest.
+Splitting the zone: **field 0.696, figure 0.827** — the 0.827 the ruling measured was the figure,
+and the field was the *dimmest* of the four competitors, not the third-brightest.
+
+Fixed: the field carries its own HDR instance and `ApplyBoost`'s `CashOut` case drives both, the
+shape `Payout` has always used. Band 0.827 → **0.844**; scoreline 0.873. **Still 0.029 short.**
+
+**`goldL4` was tried and REVERTED — measured, not assumed.** A canvas vertex colour packs to
+Color32, so (1.84, 1.31, 0.29) clamps to **hue 60° lemon**, and at 1.4 boost a full-width field that
+bright **bloomed the whole panel**: band, event strip *and* risk/pays all reading 60.0° at ~61% sat.
+Worse than the defect. **The general result:** in the ruled unit `gold` is 0.844 and cold white
+0.942, and within the 0–1 range a canvas colour is clamped to, **no gold out-ranks cold white** —
+reaching 0.942 needs G≈1.0, which is lemon. The brightness must come from the boost, and the boost
+is sealed (T49-cl). **Every lever is sealed or above this seat.** Filed C25-form as
+`dd-followup-tv-t63-lever.md`.
+
+**New consequence, ruled either way:** with the field lit, bloom enters its neighbours' boxes — event
+strip peak 0.626 → 0.833, risk/pays 0.430 → 0.840, both taking the field's hue. The elements are
+**not repainted**, but it is what a viewer sees, and it is new: before the fix the field was
+unboosted and sat under the bloom threshold.
+
+### FOUR ERRORS, all caught inside the window — the useful part
+
+1. **Read a STALE frame and concluded the flood survived.** Exit code 0, file present, numbers
+   plausible — and a day old. The artifact-mtime check caught it. That run had resolved the leg
+   **lost**, so no won-leg frame existed yet. *§4 step 3 earns its keep on the day it fires.*
+2. **Concluded the fix had broken the field**, from `HOLD E` showing with no gold. Wrong: the status
+   word is `_cashOutTweening ? "UPDATING" : "HOLD E"`, so `HOLD E` never implied an actionable
+   field. The frame was consistent and T43's tests were green throughout. **A contradiction between
+   two things I believed was resolved by reading the line that sets one of them.**
+3. **On that false diagnosis I split the slot's shared material into two instances.** The sharing was
+   **never proven harmful**; the change is kept because it matches `Payout`'s precedent, but it
+   fixed nothing and is not claimed to have. *Recorded because a change that survives for a bad
+   reason is how a codebase accumulates folklore.*
+4. A source-scan test window of 500 chars was too short for my own added comment and threw
+   `ArgumentOutOfRange`. Fixed in the test, not the code.
+
+### Two corrections owed upward
+
+- **The batch-13 ruling's four room regions are named "wall". They are the panel's own riveted
+  HOUSING.** My boxes reproduce the ruling's numbers to the digit and rendering them shows rivets.
+  **The conclusion is unaffected** — red gain falls off with distance across the right margin
+  (+44.5 → +20.0 → +9.5) and the one surface facing away does not respond (+1.8), so it is a point
+  light's profile and a room event. The seated capture pose is correct; it is the FOV that crops the
+  room to near-field.
+- **§0-W's claim about `SBR.Engine.dll` was wrong today.** It says the lingering status line is
+  merely the inert-`[attr]lfs` artifact. Today `dotnet test` produced a **real rebuild**, and
+  `git checkout` could **not** restore it — the LFS smudge filter cannot run while the macro is
+  inert, and each attempt wrote different bytes. Restored binary-safely via `git cat-file`; the DLL
+  is byte-identical to HEAD (blob sha matches) and loads as `SBR.Engine`, 74 types. **A .NET rebuild
+  can never hash-match: the MVID is fresh every build.** Check the blob sha, never the status line.
+
+### Two new instruments, both permanent
+
+- **`tools/v6_room_region.py`** — gate V6. Room-region hue/sat/Rec.709 across an event burst. Boxes
+  derived from the canvas→frame mapping, **validated by rendering them and looking**, and calibrated
+  against the ruling's own numbers. Regions are named for what they sit on, not what one wishes they
+  framed.
+- **`tools/ladder_read.py`** — the ladder in C33's unit, zones from `LayoutGrid`'s own constants.
+  Reports all three conventions side by side so the studio's existing numbers stay translatable.
+  Reproduces all four of batch 13's T63 figures exactly.
+
+Full re-read: `docs/tv-sweat-refinement/c33-ladder-reread.md`. **Its most reusable finding: the
+ladder's `L4 1 / L3 0.7 / L2 0.4 / L1 0.15` are ALPHA COEFFICIENTS, not luminances** — `AtTier` does
+`c.a *= tier`, so equal tiers land at unequal brightness whenever inks differ (`structureGrey` at L1
+reads 0.123; `goldL2` at L2 reads 0.779). After C33 ruled the unit, "put this at L2" and "this reads
+0.40" will look like the same instruction. They are not.
+
+### State
+
+**UNCOMMITTED.** Four source files (`TvSweatScreen.cs`, `TvLight.cs`, `TvSweatScreenPaletteTests.cs`,
+`TvLightTests.cs`), the two new tools, the C33 write-up, and a one-line plan-doc fix
+(`F_0.2.0_...plan.md:376`, G3's floor 5% → 4.5% per Allen 2026-08-08). Editor released: 0 processes,
+lockfile clear, `SBR.Engine.dll` verified byte-identical to HEAD.
+
+**`docs/ARCHI.md:267` still asserts the old 5–8% band as current law.** Integration-only per §1, so
+it is recorded here rather than edited — it needs the same one-line fix from whoever owns it. The
+`sim-report-*` / `PLAYTESTS.md` / `DECISIONS.md` instances are **historical records and must keep
+5–8%**; rewriting them would falsify the record, not update it.
+
+---
+
 ## 0. WINDOW RESULTS — 2026-08-03, editor released
 
 **Correction to the brief this answers: no capture sets landed. Not the lighting-comparison pair,
@@ -903,7 +1028,13 @@ harmless that time. The procedure below closes it.
 4. `git checkout --` the three build side-effect files; confirm `git status` shows only intended
    changes before committing.
 
-**Current baselines at `220c5ec`:** engine **160/160** · EditMode **129/129** · PlayMode **44/44**.
+**Current baselines — measured 2026-08-07/08, batches 13+14 (§0-VW):** engine **160/160** ·
+EditMode **237/237** · PlayMode **70 executed: 64 passed, 1 documented flake, 5 `[Explicit]` skips**.
+
+*(Superseded: `220c5ec`'s 160 / 129 / 44. EditMode grew 129 → 222 on the main merge, → 224 (batch 9),
+→ 228 (T61/T62), → 237 (batches 13+14). PlayMode reads 70 rather than 44 because the suite now
+includes SureThing's and the `[Explicit]` capture seeds — **run it WITH graphics or SureThing's
+three capture tests fail environmentally and look like regressions**.)*
 
 **Known flake — do not mistake it for a regression.** `TvSweatScreenTests` fails
 `never observed the cash-out amount mid-tween (waited 20s)` on load-heavy runs; logged in

@@ -273,8 +273,13 @@ namespace SBR.Game
         public float hdrPunchDuration = 0.4f;
 
         [Header("Feel dials")]
-        [Tooltip("Idle phosphor emission flicker, fraction of the emissive quad's idle emission.")]
-        public float idleEmissionFlicker = 0.05f;
+        // T64 (DD 2026-08-07): `idleEmissionFlicker = 0.05` drove a 9 Hz Perlin flicker on the idle
+        // emission and is STRUCK. It failed three laws, any one sufficient: (1) the display is a
+        // decade old and WORKS — a flickering panel is the broken register, T8's exact ground one
+        // channel over; (2) one pulse kind on the whole surface and it is LIVE — a second animated
+        // channel running permanently underneath the first is R37 on the TV; (3) it had no fire
+        // condition, so it was continuous involuntary motion in peripheral vision for the whole sweat.
+        // REMOVED, not zeroed — per R37's own reasoning, a dead dial invites the effect back.
         public float emissionDecay = 3.2f;
         [Tooltip("DESIGN.md §8/§9: the LIVE leg row's slow pulse, in Hz — the surface's one " +
                  "permitted pulse kind. Off the shared _seatedClock, so every LIVE row pulses in " +
@@ -381,6 +386,44 @@ namespace SBR.Game
         // lost beat drops the quad/room-light toward this near-neutral, near-zero value instead of
         // flashing red. Never used above ~0.1 magnitude — it must stay below `gold` unconditionally.
         [ColorUsage(false, true)] public Color deadDark = new Color(0.045f, 0.05f, 0.065f, 1f);
+
+        // ---- T65: the room re-tint. Gate V6 on the owning document. -------------------------
+        //
+        // The defect: a LEG win fired `tvLight.Flash(gold, 3.0f)`, and gold's hue is 39.6 deg. The
+        // room went with it — measured across the invert burst, the housing rotated from 130 deg to
+        // 40.7 deg, saturation 40.5% -> 71.1%, Rec.709 luma 0.176 -> 0.347. That is T40's deleted
+        // full-field gold wash relocated to a larger surface, and T40's words apply unamended: a
+        // full-field wash spends the whole gold ration in one frame and is a celebration.
+        //
+        // THE RULE THIS ENFORCES: the panel glows what it SHOWS (the emissive quad follows the
+        // canvas, which is honest — a lit object in a room); the room light is a SEPARATE
+        // instrument bound to the ROOM's palette, never to the TV's money colour. Gold does not
+        // leave the panel. Every room re-tint goes through RoomSettlementGlow() so no future site
+        // can invent its own — fixed by RULE, which is the lesson `WonLegBeat` itself already paid
+        // for once (see the beat below) and T39 paid for twice.
+        //
+        // THE VALUE, derived from the measurement rather than picked:
+        //   Measured response of the room to this light, per unit (intensity x light-channel), off
+        //   the frame000/frame006 pair on the `housing above panel` box:
+        //       dR +82.6, dG +36.5, dB -0.9  from gold (1.0, 0.713, 0.157) at 3.0
+        //   The room returns essentially NO blue from this light, so a warm re-tint necessarily
+        //   raises saturation; the lever is how far. Solving for a cast at hue 88 deg (mid-band)
+        //   with a 1.35x luma lift gives a red gain of 21.0 and a green gain of 15.9, i.e. a light
+        //   whose channels sit at (0.818, 1.000, 0.610) — hue 88.0 deg, saturation 39%, which is no
+        //   more saturated than the room already is at rest (40.5%).
+        //
+        // WHY THE INTENSITY IS AN UPPER BOUND (C25): the capture caught the flash mid-decay at an
+        // unknown fraction, so the true response is at least what was measured and the intensity
+        // needed is at most this. Expect to lower it, never raise it.
+        //
+        // WHY THE GATE MATTERS: the cast is monotonic in amplitude — 130 deg at zero, falling
+        // through the band to ~45.5 deg as amplitude rises. It crosses 85-92 deg exactly once, over
+        // an amplitude window of roughly [0.78, 1.06]. That is a +/-15% window, which is why clause
+        // 4 says bounded by MEASUREMENT and not by eye. Too hot reads amber, too cold reads green;
+        // V6 catches both edges because it prints the hue.
+        [ColorUsage(false, false)] public Color roomSettlementWarm = new Color(0.818f, 1.000f, 0.610f);
+        [Tooltip("T65: upper bound pending the V6 re-shoot. In-band window is about [0.78, 1.06].")]
+        public float roomSettlementIntensity = 0.9f;
         // Canvas black floor (unified-grade-spec.md §2 / DESIGN.md §2A): where the canvas draws
         // OPAQUE pixels (this backing panel, the bar trough) the visible black is the canvas's own,
         // not the room's emissive-quad lift, which only shows through transparent regions. RGB
@@ -531,6 +574,30 @@ namespace SBR.Game
             return c;
         }
 
+        /// <summary>The event strip's ONE painting point. Takes the raw ink and applies the tier
+        /// itself, so no call site can choose a tier and none can forget one.
+        ///
+        /// <para>Batch 14 ruled the strip to <b>L2</b> across every site: "the loud-while-running
+        /// split is NOT intended." Before this there were fourteen assignments — three at L2 (the
+        /// leg-resolution beats) and eleven at raw alpha 1.0, which is the L4 tier value. Measured
+        /// in C33's unit, the raw ones put the strip at <b>0.858 Rec.709</b> against a quiet
+        /// scoreline of 0.866: not separated at all, on a surface whose first law is that
+        /// brightness is the semantic channel.</para>
+        ///
+        /// <para>The history is in <see cref="AtTier"/>'s own comment, which names "score, clock,
+        /// NEED, progress <i>and the event strip</i>" as the elements TV-S1 found at identical
+        /// maximum brightness. TV-S1's sweep reached the first four; the strip is the one element
+        /// in its own fix's list that the fix did not finish. Routing every site through here is
+        /// what stops that happening a third time — the tier is now structural, not a convention
+        /// each new beat has to remember.</para>
+        ///
+        /// <para>Hue is still the caller's: cold white for a fact, grey for a confirmed loss, cyan
+        /// for VOID, gold for money. Only the TIER is taken away from the call site.</para></summary>
+        private void SetEventStrip(Color ink)
+        {
+            if (_tFlavor != null) _tFlavor.color = AtTier(ink, TierL2);
+        }
+
         // ---- emission (the quad's own glow) ----
         private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
         private MaterialPropertyBlock _emissBlock;
@@ -538,7 +605,6 @@ namespace SBR.Game
         private Color _emissRest;
         private Color _emissFlash;
         private float _emissFlash01;
-        private float _emissSeed;
 
         // ---- canvas HDR path (DESIGN.md §3 / unified-grade-spec.md §4) ----
         // UGUI bakes Graphic.color into a Color32 vertex attribute, which clamps at 1.0 regardless of
@@ -578,7 +644,14 @@ namespace SBR.Game
         private static readonly int HdrBoostId = Shader.PropertyToID("_HdrBoost");
         private Shader _hdrUiShader;
         private bool _hdrShaderMissing;
-        private Material _cashOutHdrMat, _bigAmountHdrMat, _goldFloodHdrMat, _scoreHdrMat, _ballHdrMat;
+        // T63: the band is TWO graphics — the money figure and the field behind it — and they need
+        // SEPARATE material instances even though they move as one. Sharing a single instance
+        // between a Text and an Image does not survive uGUI: the canvas batches by material, the
+        // font atlas ends up bound for both, and the Image samples a transparent region of it and
+        // renders NOTHING. That was measured, not guessed — the field vanished from all 8 frames of
+        // a capture that had shown it solid before the change (see the same-token note in ApplyBoost).
+        // `Payout` already drove two materials off one focus; this follows that precedent exactly.
+        private Material _cashOutHdrMat, _cashOutFieldHdrMat, _bigAmountHdrMat, _goldFloodHdrMat, _scoreHdrMat, _ballHdrMat;
 
         /// <summary>C3: the five HDR-eligible focuses. <see cref="Payout"/> drives BOTH the
         /// BigAmount and GoldFlood materials together — a ticket's payout tally and its gold wash
@@ -847,15 +920,10 @@ namespace SBR.Game
             _fontCond = LoadFontCondensed();
             _choreo = new TheaterChoreographer(pacer);
             _emissBlock = new MaterialPropertyBlock();
-            // The idle emission flicker's phase. PRD §4.3 bans UnityEngine.Random for a discrete
-            // SCENE CHOICE; a flicker phase is not one, so this use was left alone when T8 removed
-            // the other (§6.4). But it does move pixels, so it has to be pinned for a frame-locked
-            // A/B — otherwise the panel breathes out of phase between arms and every frame differs
-            // slightly everywhere, which is the confound T49's pair actually hit.
-            _emissSeed = TheaterStage.PresentationSeedOverride.HasValue
-                ? (TheaterStage.PresentationSeedOverride.Value % 1000) / 10f
-                : UnityEngine.Random.value * 100f;
-
+            // T64: `_emissSeed` (the idle flicker's phase) went with the flicker. It was this file's
+            // last UnityEngine.Random use and the reason the idle emission differed run to run —
+            // §6.4's owed-to-integration note is discharged, and the frame-locked A/B has one fewer
+            // presentation-local source to pin.
             _emissIdle = emissiveScreen != null && emissiveScreen.sharedMaterial != null
                 ? emissiveScreen.sharedMaterial.GetColor(EmissionColorId)
                 // Defensive fallback only (no emissiveScreen wired) — neutral cold-dim, not the old
@@ -1409,7 +1477,7 @@ namespace SBR.Game
 
             if (!goal.Commits)
             {
-                _tFlavor.color = flavorColor;
+                SetEventStrip(flavorColor);
                 _tFlavor.text = "VAR — NO GOAL";
                 _flavorScale = 1.12f;
             }
@@ -1420,7 +1488,11 @@ namespace SBR.Game
                     && object.ReferenceEquals(scorer, leg.Matchup.PlayerAt(leg.Selection.PlayerIndex));
                 // §4: money/won is gold, not the retired saturated green — LaptopOs.MoneyGood is
                 // the laptop OS's own retired-green token and has no role on this surface.
-                _tFlavor.color = pickedScorer ? new Color(gold.r, gold.g, gold.b, 1f) : flavorColor;
+                // FLAGGED, tier applied but hue untouched: TV-05 as quoted in ResolveBeat below says
+                // the strip "never uses money hues ... money semantics live on the leg rows and the
+                // cash-out slot". This branch puts gold on the strip, which contradicts that. Batch
+                // 14 ruled the TIER, not the hue, so the gold stays and the question is filed.
+                SetEventStrip(pickedScorer ? new Color(gold.r, gold.g, gold.b, 1f) : flavorColor);
                 // T44: "THAT'S YOUR MAN" addressed the reader. CF: "Copy is impersonal and
                 // transactional — it names the thing, not the reader"; second person is reserved for
                 // genuine instructions, and this is a fact about the goal. "BACKED" is the surface's
@@ -1591,7 +1663,7 @@ namespace SBR.Game
                     director.Run.PlayMulliganSlip(_session);
                     HideCashOutSlot(); // T43: the field and status leave with the figure, same frame
                     _tInterventionPrompt.enabled = false;
-                    _tFlavor.color = chromeCyan; // §8 VOID — the mulligan voids the leg, not chrome
+                    SetEventStrip(chromeCyan); // §8 VOID — the mulligan voids the leg, not chrome
                     _tFlavor.text = "THE SLIP COMES OUT — LEG VOIDED, THE TICKET LIVES";
                     _emissRest = _emissIdle; // the DEAD dim lifts: the ticket breathes again
                     tvLight?.ResetToIdle();
@@ -1607,7 +1679,7 @@ namespace SBR.Game
                     if (!_session.IsComplete)
                     {
                         // The leg is reinstated live — a fact, not a payout yet. §4 Fact: cold white.
-                        _tFlavor.color = flavorColor;
+                        SetEventStrip(flavorColor);
                         _tFlavor.text = "REVIEWED — OVERTURNED. THE LEG STANDS.";
                         _emissRest = _emissIdle;
                         tvLight?.ResetToIdle();
@@ -1617,7 +1689,7 @@ namespace SBR.Game
                     {
                         // A loss confirmed — context, not a hue. §4/§8: loss is darkness, never red;
                         // the text itself still has to stay legible, so it reads in grey, not black.
-                        _tFlavor.color = contextGrey;
+                        SetEventStrip(contextGrey);
                         _tFlavor.text = "REVIEWED — THE CALL IS CONFIRMED.";
                     }
                     yield return ScaledWait(deadLineDuration);
@@ -1699,7 +1771,7 @@ namespace SBR.Game
             HideCashOutSlot(); // T43
             _tCashOut.rectTransform.localScale = Vector3.one;
             _tAttract.enabled = true;
-            _tFlavor.color = flavorColor;
+            SetEventStrip(flavorColor);
             // A new session starts with no L4 element live — see AnimateCashOutTaunt/WinBeat/
             // CashOutFloodBeat/OnGoalPlayed for where these get pushed back above HdrBoostL3.
             ResetL4();
@@ -2106,7 +2178,7 @@ namespace SBR.Game
             }
             _tTakeoverSub.text = legs;
 
-            _tFlavor.color = flavorColor;
+            SetEventStrip(flavorColor);
             _tFlavor.text = $"${Money(_ticket.Stake)} TO WIN ${Money(_ticket.PotentialPayout)}";
 
             _probTarget = (float)_ticket.Legs[0].TrueProb; // data only
@@ -2133,7 +2205,7 @@ namespace SBR.Game
                 _tTakeoverTitle.text = $"SHORT — ${Money(s.BankBefore)} AGAINST ${Money(s.Payment)}";
                 // A deferred payment is bad news but not a payout — no gold. §4/§8: the bad-outcome
                 // treatment is darkness, never the retired money-bad red; text stays legible in grey.
-                _tFlavor.color = contextGrey;
+                SetEventStrip(contextGrey);
                 _tFlavor.text = "THE TOTEM BURNS";
                 double juiced = s.Payment * (1.0 + (director?.Run?.Config.TotemJuiceRate ?? 0.5));
                 _tTakeoverSub.text = $"PAYMENT DEFERRED — YOUR BANK STANDS. THE NEXT ONE GROWS BY ${Money(juiced)}";
@@ -2145,11 +2217,19 @@ namespace SBR.Game
             {
                 _tTakeoverTitle.text = "PAYMENT MADE";
                 // A payment landing is money — gold, per §4.
-                _tFlavor.color = new Color(gold.r, gold.g, gold.b, 1f);
+                SetEventStrip(new Color(gold.r, gold.g, gold.b, 1f));
                 _tFlavor.text = $"−${Money(s.Payment)}   ·   BANK ${Money(s.BankAfter)}";
                 _tTakeoverSub.text = string.Empty;
                 EmissionFlash(gold);
-                tvLight?.Flash(gold, 3.0f);
+                // T65: a round settling is a settlement, so it keeps a re-tint — but through the
+                // one palette-bound entry point, never `gold` at 3.0.
+                //
+                // FLAGGED FOR THE DD, not decided here: this branch is money going OUT (the bookie
+                // paid). The room warming for it is arguable — the register of a payment is not the
+                // register of a payoff. Left firing because T65 ruled the re-tint's TRIGGER class
+                // (settlement, not leg) and its palette, not which settlements deserve one; killing
+                // it here would be a design call this seat does not hold.
+                RoomSettlementGlow();
             }
 
             yield return ScaledWait(settleCardDuration);
@@ -2204,8 +2284,12 @@ namespace SBR.Game
                 // The run's final payout — §3's L4, "the payoff at its callback".
                 _emissRest = RunWonRest();
                 EmissionFlash(goldL4);
-                tvLight?.Flash(new Color(1f, 0.82f, 0.25f), 3.4f);
-                tvLight?.SetRest(new Color(1f, 0.82f, 0.35f), 0.45f);
+                // T65: the run's payout is the largest settlement there is. The transient goes
+                // through the one re-tint; the SUSTAINED rest is this card's alone (it is a
+                // persistent verdict screen, not a beat) and takes the same room warm at a dim
+                // hold rather than the 39.6 deg gold it used to sit in for the whole card.
+                RoomSettlementGlow();
+                tvLight?.SetRest(roomSettlementWarm, 0.45f);
             }
             else
             {
@@ -2304,7 +2388,7 @@ namespace SBR.Game
             else
             {
                 _tClock.text = SweatFlavor.Clock(evt);
-                _tFlavor.color = flavorColor;
+                SetEventStrip(flavorColor);
                 _tFlavor.text = flavor;
                 _flavorScale = 1.12f; // punch
                 _probTarget = (float)evt.WinProbAfter;
@@ -2335,7 +2419,7 @@ namespace SBR.Game
             _probTarget = _pendingProb; // data only — RevealedView
             RevealedView.SetProbability(_probTarget);
             RevealedView.SetClock(_tClock.text);
-            _tFlavor.color = flavorColor;
+            SetEventStrip(flavorColor);
             _tFlavor.text = _pendingFlavor;
             _flavorScale = 1.12f;
             ReopenMarket();
@@ -2562,7 +2646,7 @@ namespace SBR.Game
                 // even when the event helps or hurts; money semantics live on the leg rows and the
                 // cash-out slot" (TvEventStrip.jsx:5, prompt.md:7). The VOID hue belongs to the leg
                 // row, which already carries it. TV-32: em dash, not a hyphen.
-                _tFlavor.color = AtTier(flavorColor, TierL2);
+                SetEventStrip(flavorColor); // raw ink — the helper applies L2, so this is not double-tiered
                 _tFlavor.text = $"LEG {k} — VOIDED, THE TICKET LIVES";
                 yield return ScaledWait(deadLineDuration);
             }
@@ -2592,12 +2676,21 @@ namespace SBR.Game
             // violation, three beats apart.
             //
             // TV-32: em dash, the system's own dash.
-            _tFlavor.color = AtTier(flavorColor, TierL2);
+            SetEventStrip(flavorColor); // raw ink — the helper applies L2, so this is not double-tiered
             _tFlavor.text = $"LEG {k} — WON";
-            // The panel's own glow and the room light still warm: those are the TV being a lit
-            // object in a room, not the canvas painting itself gold.
-            EmissionFlash(gold);
-            tvLight?.Flash(gold, 3.0f);
+            // T65: the two lines that used to sit here — `EmissionFlash(gold)` and
+            // `tvLight.Flash(gold, 3.0f)` — are GONE, and the comment that licensed them
+            // ("those are the TV being a lit object in a room, not the canvas painting itself
+            // gold") was the last surviving instruction to do the banned thing. It was wrong twice
+            // over: gold's 39.6 deg is not the room's palette at any amplitude, and a LEG is not a
+            // settlement. Measured, that pair took the room to hue 40.7 deg at 71.1% saturation and
+            // roughly double the luma — T40's deleted wash, relocated.
+            //
+            // This is the SECOND time this exact method has kept a violation its siblings had
+            // already had fixed (the first is recorded against the suspended-slate work). The
+            // remedy both times is the same: fix by rule, not by site. There is now exactly one
+            // room re-tint and it is RoomSettlementGlow(), which this beat deliberately does not
+            // call. The leg's win is carried where §3.1 already carries it — the row goes L3 gold.
             yield return ScaledWait(wonFloodDuration);
         }
 
@@ -2619,7 +2712,7 @@ namespace SBR.Game
 
             // 2) the DEAD line + the screen dropping darker — darkness, not the retired red (§4/§8:
             // "Loss is still darkness ... the old green/red money language stays retired").
-            _tFlavor.color = AtTier(contextGrey, TierL2);
+            SetEventStrip(contextGrey); // raw ink — the helper applies L2, so this is not double-tiered
             _tFlavor.text = $"LEG {k} — DEAD"; // TV-32: em dash, the system's own dash
             _emissRest = deadDark;
             EmissionFlash(deadDark);
@@ -2669,7 +2762,7 @@ namespace SBR.Game
             // routine won-leg flash so the ordering idle < flash < L4 stays visible. C3: a momentary
             // punch, so it takes the token from anything else currently holding it.
             EmissionFlash(goldL4);
-            tvLight?.Flash(new Color(1f, 0.82f, 0.25f), 3.4f);
+            RoomSettlementGlow(); // T65: the ticket paying out IS the settlement this is reserved for
             RequestL4(HdrFocus.Payout, momentary: true);
             StartCoroutine(FloodPulse(_goldFlood, gold, 0.5f, winFloodDuration));
             StartCoroutine(WinConfetti());
@@ -2754,7 +2847,7 @@ namespace SBR.Game
             _tBigAmount.text = $"CASHED OUT ${Money(amount)}";
             HideCashOutSlot(); // T43: nothing of the offer outlives the accept
             EmissionFlash(goldL4);
-            tvLight?.Flash(new Color(1f, 0.82f, 0.25f), 3.4f);
+            RoomSettlementGlow(); // T65: taking the money is a settlement
             RequestL4(HdrFocus.Payout, momentary: true); // C3: a momentary punch preempts CashOut's hold
             yield return FloodPulse(_goldFlood, gold, 0.55f, cashOutFloodDuration);
             _tBigAmount.text = string.Empty;
@@ -2860,8 +2953,9 @@ namespace SBR.Game
             // (not just slower) while standing, with no phase jump on resume.
             _emissFlash01 = Mathf.MoveTowards(_emissFlash01, 0f, emissionDecay * SeatedDeltaTime);
             Color e = Color.Lerp(_emissRest, _emissFlash, _emissFlash01);
-            float flick = 1f + (Mathf.PerlinNoise(_emissSeed, _seatedClock * 9f) - 0.5f) * 2f * idleEmissionFlicker;
-            _emissBlock.SetColor(EmissionColorId, e * Mathf.Max(0f, flick));
+            // T64: the 9 Hz Perlin flicker that used to multiply `e` here is struck and removed. The
+            // quad's emission is now exactly the state it is in — a decade-old panel that works.
+            _emissBlock.SetColor(EmissionColorId, e);
             emissiveScreen.SetPropertyBlock(_emissBlock);
         }
 
@@ -2869,6 +2963,22 @@ namespace SBR.Game
         {
             _emissFlash = color;
             _emissFlash01 = 1f;
+        }
+
+        /// <summary>T65: the ONE room re-tint. Every site that warms the room calls this and no
+        /// site passes a colour, so the room's palette is enforced by construction rather than by
+        /// five sites agreeing.
+        ///
+        /// <para>Fires on SETTLEMENT only — the ticket paying out, the money being taken, the run's
+        /// verdict. Never on a leg. A leg win is not a payoff: there are three or four per ticket,
+        /// and a room that floods on each of them has no register left for the one that pays.</para>
+        ///
+        /// <para>Transient by design. It eases back to whatever rest mood the room is in, so the
+        /// re-tint is a reaction shot and never a new resting state — the one exception is the
+        /// RunWon verdict card, which is a persistent screen and holds its own dim rest.</para></summary>
+        private void RoomSettlementGlow()
+        {
+            tvLight?.Flash(roomSettlementWarm, roomSettlementIntensity);
         }
 
         /// <summary>DESIGN.md §8/§9: the LIVE leg row's slow pulse — "the surface's only slow
@@ -3400,6 +3510,31 @@ namespace SBR.Game
             // sized to the zone exactly — canon's inversion is a solid field, not a tinted panel.
             // Disabled by default: the field IS the actionable state, so it exists only while the
             // key will actually work.
+            // T63 — THE FIELD TAKES THE L4 VALUE, because it is the element the tier is about.
+            //
+            // It used to be painted `gold`, which is the L3 money colour, and it carried NO HDR
+            // material at all — the boost was wired to `_tCashOut`, the money figure, one element
+            // over (see below). So the surface's only *sustained* L4 element could not be boosted
+            // even in principle, and it was wearing L3's colour while it failed to be boosted.
+            // Two levels short, by construction, which is why no amount of re-measuring the band
+            // ever found it at L4: it had never been there.
+            //
+            // Measured on the current set, Rec.709 luma (C33's unit), frame000 cash-out actionable:
+            //     field (zone mean)            0.696
+            //     money figure (boosted text)  0.827   <- the 0.827 the ruling measured is THIS
+            //     quiet scoreline              0.866
+            //     ball at the payoff punch     0.902
+            // The field — the thing that reads as "the band" at four metres — was the dimmest of
+            // the four, and the figure sitting on it was what the instrument had been catching.
+            //
+            // THE COLOUR STAYS `gold`, AND THE REASON IS MEASURED. `goldL4` was tried here and
+            // reverted: a canvas vertex colour is packed to Color32, so (1.84, 1.31, 0.29) clamps
+            // to (255, 255, 74) — hue 60 deg LEMON, not gold — and at the 1.4 boost a full-width
+            // field that bright blooms across the whole panel. Measured on frames: with goldL4 the
+            // band, the event strip AND the risk/pays footer all read hue 60.0 at ~61% saturation,
+            // because every zone's peak had become this field's bloom rather than its own content.
+            // That is a worse defect than the one T63 names, and it is why the value is not the
+            // lever here. `gold` clamps to (255, 209, 46), which is still gold.
             _cashOutField = MakePanel(root, "CashOutField", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 AnchorTopLeft(grid.CashOut), new Vector2(grid.CashOut.width, grid.CashOut.height),
                 new Color(gold.r, gold.g, gold.b, 1f));
@@ -3422,8 +3557,18 @@ namespace SBR.Game
                 new Vector2(grid.CashOut.width - 24f, Mathf.Ceil(TypeEyebrow * LineBox)), TypeEyebrow,
                 TextAnchor.MiddleRight, AtTier(contextGrey, TierL2));
             _tCashOutStatus.enabled = false;
+            // T63: ONE material, both elements of the slot. The boost used to reach only the money
+            // figure, so `RequestL4(HdrFocus.CashOut)` moved a number and left the field it sits on
+            // at rest — the token was granted and the surface did not change where the eye reads it.
+            //
+            // Sharing the instance is correct HERE and is not the C15 hazard: that warning is about
+            // two INDEPENDENT elements accidentally sharing one material and both going to L4. These
+            // two are one slot with one token, so one material is what makes them move together and
+            // makes it impossible for the field to be lit while the figure is not.
             _cashOutHdrMat = MakeHdrMaterial();
             if (_cashOutHdrMat != null) _tCashOut.material = _cashOutHdrMat;
+            _cashOutFieldHdrMat = MakeHdrMaterial();
+            if (_cashOutFieldHdrMat != null) _cashOutField.material = _cashOutFieldHdrMat;
 
             // §8.7 / §8.5 Pending window: "intervention controls live in their own overlay, never
             // in [the cash-out] row." Centered over the stage's safe area, where the frozen shot
@@ -3598,11 +3743,10 @@ namespace SBR.Game
         // overlays they fed, along with MakeStretchRaw/SetRawAlpha, which had no other callers once
         // both RawImage overlays were gone.
         //
-        // RegenNoise was one of two UnityEngine.Random uses in this file; the other survives at
-        // _emissSeed's initialisation. PRD §4.3 bans that API for any *discrete scene choice* — a
-        // flicker phase seed is not one, so it is out of T8's scope and is left alone. It is
-        // recorded in docs/handoffs/tv-sweat.md §6 rather than changed here, because it means the idle
-        // emission flicker differs run to run.
+        // RegenNoise was one of two UnityEngine.Random uses in this file. The other lived at
+        // _emissSeed's initialisation and outlived T8 because a flicker phase is not the *discrete
+        // scene choice* PRD §4.3 bans. T64 struck the flicker itself, so both are now gone and this
+        // file calls UnityEngine.Random nowhere.
 
         // ---------------------------------------------------------------- small helpers
 
@@ -3663,6 +3807,7 @@ namespace SBR.Game
         {
             _l4Holder = null;
             _cashOutHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
+            _cashOutFieldHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
             _bigAmountHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
             _goldFloodHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
             _scoreHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
@@ -3674,7 +3819,12 @@ namespace SBR.Game
             switch (focus)
             {
                 case HdrFocus.CashOut:
+                    // T63: ONE token, BOTH graphics of the band. The figure alone used to be
+                    // boosted, so granting the token moved a number and left the gold field it
+                    // sits on at rest — the band could not reach L4 however the token arbitrated.
+                    // Same shape as Payout below, which has always driven two materials.
                     _cashOutHdrMat?.SetFloat(HdrBoostId, boost);
+                    _cashOutFieldHdrMat?.SetFloat(HdrBoostId, boost);
                     break;
                 case HdrFocus.Payout:
                     _bigAmountHdrMat?.SetFloat(HdrBoostId, boost);

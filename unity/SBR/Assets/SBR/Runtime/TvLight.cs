@@ -9,8 +9,18 @@ namespace SBR.Game
     /// rationed to money) — never the saturated green of the retired `design/08-art-direction.md`
     /// world. Money/won beats pulse gold; loss beats drop the light toward darkness rather than
     /// flashing a money-bad red, which DESIGN.md §4 retires along with green. It eases a transient
-    /// Flash back to whatever the current rest mood is, and adds a faint intensity flicker so the
-    /// idle spill never sits perfectly still. TvSweatScreen drives it; all code, no assets.
+    /// Flash back to whatever the current rest mood is. TvSweatScreen drives it; all code, no assets.
+    ///
+    /// <para>T64, extended by rule: this component used to "add a faint intensity flicker so the
+    /// idle spill never sits perfectly still" at 11 Hz, always on. T64 struck the panel's 9 Hz
+    /// emission flicker for three reasons that apply here verbatim — a display that works is not a
+    /// display that flickers, the surface has exactly one pulse kind and it is LIVE, and an effect
+    /// with no fire condition is continuous involuntary motion in the player's peripheral vision
+    /// for the entire sweat. This one was the worse of the two: the panel's flicker moved the
+    /// panel, this one moved the whole room. The ruling calls emission "C18 §4.2's largest
+    /// remaining hole ... it reaches the player as light, and every instrument the studio has scans
+    /// pixels" — this is that hole's other half, and fixing only the named site would have been the
+    /// fix-by-site error this slice has now paid for three times. REMOVED, not zeroed.</para>
     /// </summary>
     public sealed class TvLight : MonoBehaviour
     {
@@ -26,19 +36,21 @@ namespace SBR.Game
         [ColorUsage(false)] public Color idleColor = new Color(0.72f, 0.75f, 0.80f);
         public float idleIntensity = 0.5f;
 
-        [Header("Flash + flicker dials")]
+        [Header("Flash dial")]
         [Tooltip("How fast a flash eases back to the rest mood, per second.")]
         public float flashDecay = 2.6f;
-        [Tooltip("Idle intensity flicker amplitude (phosphor hum), as a fraction of intensity.")]
-        public float flickerAmp = 0.05f;
-        public float flickerHz = 11f;
+        // T64: `flickerAmp` and `flickerHz` are struck and removed, not zeroed. Their serialized
+        // values survive in Room.unity until that scene is next written — which is exactly why the
+        // field is deleted rather than defaulted to 0. Batch 13 recorded this trap from the room
+        // lane in the same breath: changing a public field's default does not touch an
+        // already-serialized component, so the scene kept the old value and the A/B captured the
+        // very thing it was meant to replace. A deleted field cannot be overridden by a stale scene.
 
         private Color _restColor;
         private float _restIntensity;
         private Color _flashColor;
         private float _flashIntensity;
         private float _flash01;
-        private float _flickerSeed;
 
         private void Awake()
         {
@@ -47,7 +59,9 @@ namespace SBR.Game
             _restIntensity = idleIntensity;
             _flashColor = idleColor;
             _flashIntensity = idleIntensity;
-            _flickerSeed = Random.value * 100f;
+            // T64: `_flickerSeed = Random.value * 100f` went with the flicker. This component now
+            // calls UnityEngine.Random nowhere, so the room's spill is identical run to run — one
+            // fewer presentation-local source for a frame-locked A/B to pin.
         }
 
         /// <summary>Sets the steady mood the flash eases back toward (e.g. dimmer after a bust).
@@ -81,10 +95,11 @@ namespace SBR.Game
             _flash01 = Mathf.MoveTowards(_flash01, 0f, flashDecay * Time.deltaTime);
             Color c = Color.Lerp(_restColor, _flashColor, _flash01);
             float baseI = Mathf.Lerp(_restIntensity, _flashIntensity, _flash01);
-            float flick = 1f + (Mathf.PerlinNoise(_flickerSeed, Time.time * flickerHz) - 0.5f) * 2f * flickerAmp;
 
+            // T64: the flicker multiplier that used to scale this is gone. The room's spill is now
+            // exactly the mood it is in.
             pointLight.color = c;
-            pointLight.intensity = Mathf.Max(0f, baseI * flick);
+            pointLight.intensity = Mathf.Max(0f, baseI);
         }
     }
 }

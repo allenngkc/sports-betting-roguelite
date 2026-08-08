@@ -76,6 +76,10 @@ namespace SBR.Tests.EditMode
                 // _flash01 = 1 - 2.6*dt, and intensity = Lerp(0.5, 3, _flash01) * flicker. Passing
                 // needs intensity > 1, i.e. _flash01 > 0.2, i.e. **dt < 0.308s**.
                 //
+                // (The `* flicker` term is historical: T64 struck the idle flicker, so intensity is
+                // now Lerp(0.5, 3, _flash01) exactly. The arithmetic above is left as the record of
+                // why the flake fired; the flake's second uncontrolled input is now gone too.)
+                //
                 // Time.deltaTime is not controlled in an EditMode batch run — it is whatever the
                 // editor's last frame took. This test therefore passed on fast frames and failed on
                 // slow ones, and it failed for the first time when four unrelated tests were added

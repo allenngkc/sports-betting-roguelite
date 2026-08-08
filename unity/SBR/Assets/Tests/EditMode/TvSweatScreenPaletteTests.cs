@@ -729,8 +729,31 @@ namespace SBR.Tests.EditMode
         /// by the named <c>_l4Holder</c> / <c>RequestL4</c> / <c>ReleaseL4</c> invariant in
         /// <c>TvSweatScreen.cs</c> — see <see cref="Only_one_eligible_focus_holds_the_L4_token_at_once"/>
         /// and <see cref="Momentary_punch_preempts_sustained_hold_and_the_loser_yields"/> below.</para></summary>
+        /// <para><b>Widened to six for T63 (DD batch 13, "ungated and proceeds as built" batch 14).</b>
+        /// `CashOutField` joins. This gate caught the change and said "route it before editing" — so
+        /// here is the routing, at the edit, rather than in a note somewhere else.
+        ///
+        /// <para><b>Why the ruling cannot be met without it.</b> T63 requires the actionable band to
+        /// render above the quiet scoreline. In C33's ruled unit the scoreline's cold white is 0.942
+        /// Rec.709. Rec.709 weights green at 0.7152, and gold is a low-blue, sub-maximal-green
+        /// colour — so within the 0..1 range that the clamped default material allows, <b>no gold
+        /// can out-rank cold white at all</b>: reaching 0.942 requires G ~ 1.0, which is lemon, not
+        /// gold. The requirement is unsatisfiable on the default material. The field must have the
+        /// HDR path or T63 cannot be built.</para>
+        ///
+        /// <para><b>Why this is not the widening this gate exists to stop.</b> The band is a
+        /// compound element — the slot is "three things, not one: an actionable FIELD, the money
+        /// figure, and a status word." `CashOut` and `CashOutField` are two graphics of ONE
+        /// sanctioned occupant, and they share a single material INSTANCE, so they cannot be
+        /// independently boosted: one token moves both or neither. That is asserted directly below,
+        /// which is what keeps the sixth name from being a real sixth occupant. The occupant count
+        /// is unchanged at five.</para>
+        ///
+        /// <para>This is also the reason the previous wiring was wrong: the material sat on the
+        /// figure alone, so `RequestL4(HdrFocus.CashOut)` boosted a number and left the field it
+        /// sits on at rest — measured, field 0.696 against figure 0.827 in the same zone.</para></summary>
         private static readonly string[] SanctionedL4Elements =
-            { "CashOut", "BigAmount", "GoldFlood", "Score", "Ball" };
+            { "CashOut", "CashOutField", "BigAmount", "GoldFlood", "Score", "Ball" };
 
         // ------------------------------------------------------------------ C3: the one-token
         // invariant. Reflection, because RequestL4/ReleaseL4/_l4Holder are private and should stay
@@ -1036,6 +1059,27 @@ namespace SBR.Tests.EditMode
                     "default material. Either way this is a design decision, not an implementation one: " +
                     "route it before editing SanctionedL4Elements.\n" +
                     $"expected: [{string.Join(", ", expected)}]\nactual:   [{string.Join(", ", hdr)}]");
+
+                // T63: the list went from five names to six, and this is what stops that being a
+                // sixth OCCUPANT. CashOut and CashOutField are two graphics of one compound element
+                // and must share a single material INSTANCE, so one token moves both or neither and
+                // they can never be independently at L4. Without this, the widening above would be
+                // exactly the thing the gate exists to catch.
+                Graphic figure = null, fieldG = null;
+                foreach (Graphic g in go.GetComponentsInChildren<Graphic>(true))
+                {
+                    if (g.gameObject.name == "CashOut") figure = g;
+                    else if (g.gameObject.name == "CashOutField") fieldG = g;
+                }
+                Assert.IsNotNull(figure, "CashOut figure not found — canvas layout changed?");
+                Assert.IsNotNull(fieldG, "CashOutField not found — canvas layout changed?");
+                // They must be SEPARATE instances. Sharing one between a Text and an Image does not
+                // survive uGUI batching — measured: the field rendered nothing across all 8 frames
+                // of a capture that had shown it solid. What makes them one occupant is not one
+                // material, it is one TOKEN: ApplyBoost's CashOut case drives both, asserted below.
+                Assert.AreNotSame(figure.material, fieldG.material,
+                    "T63: the band's figure and field must have SEPARATE material instances. One "
+                    + "shared instance makes the Image sample the font atlas and render nothing.");
             }
             finally
             {
@@ -1043,8 +1087,20 @@ namespace SBR.Tests.EditMode
             }
         }
 
+        // RENAMED batch 14, and the rename IS the fix. The old name —
+        // `L4_canvas_elements_get_the_hdr_material_and_L3_elements_stay_default` — claimed the L4/L3
+        // assignment was correct. It never checked that. It checks which elements carry the HDR
+        // MATERIAL, i.e. which are eligible to exceed 1.0, and it was green throughout the period
+        // when the event strip sat at the L4 tier VALUE (alpha 1.0, measured 0.858 Rec.709 against a
+        // 0.866 scoreline) without the material — a state this test asserts as proof of the opposite.
+        //
+        // Recorded studio-wide as a blind-spot class: A NAME CLAIMING MORE THAN ITS TEST. The gate
+        // read green, the name read like a guarantee, and nobody had to lie for the two to diverge.
+        //
+        // Gate V1 on the owning document — one L4 token, verified by a per-frame ladder scan in
+        // Rec.709 composited luma — SUPERSEDES this check. This is now a wiring test and says so.
         [Test]
-        public void L4_canvas_elements_get_the_hdr_material_and_L3_elements_stay_default()
+        public void Hdr_material_is_wired_only_to_elements_eligible_to_exceed_1_0()
         {
             var go = new GameObject("CanvasWiring");
             go.SetActive(false); // defer Awake so BuildCanvas runs once, under our control
@@ -1074,11 +1130,16 @@ namespace SBR.Tests.EditMode
                 Assert.AreEqual("SBR/TvSweatHdrUI", goldFlood.material.shader.name,
                     "the gold flood must be able to reach L4 for the cash-out/payout beats");
 
-                // Flavor text carries routine (non-L4) beat copy — it must NOT have opted into the
-                // HDR material, or every beat would silently compete for the one L4 slot DESIGN.md §3
-                // reserves for a single element.
+                // Flavor text must not have opted into the HDR material, so it can never EXCEED 1.0.
+                //
+                // What this assertion does NOT establish, corrected batch 14: that the strip is
+                // below L4. Lacking the material caps it at 1.0; it does not put it under 1.0, and
+                // for the whole life of this test the strip sat AT alpha 1.0 — the L4 tier value —
+                // while this line passed. "Only one L4 element at a time" was never in evidence
+                // here. The tier is now enforced at TvSweatScreen.SetEventStrip and measured by V1.
                 Assert.AreNotEqual("SBR/TvSweatHdrUI", flavor.material.shader.name,
-                    "routine beat text must stay on the default (LDR) UI material — only one L4 element at a time");
+                    "routine beat text must stay on the default (LDR) UI material, so it can never "
+                    + "exceed 1.0. This does not by itself place it below L4 — V1 does that.");
 
                 // No trace of the old GameObject name survives the WonLegBeat rename.
                 Assert.IsNull(FindChild<Image>(screen, "GreenFlood"), "GreenFlood must be renamed to WonFlood");
@@ -1791,6 +1852,330 @@ namespace SBR.Tests.EditMode
                     + "hold — the slot's own presentation state is what gates it.");
                 Assert.AreEqual("MARKET SUSPENDED", cashOut.text, "the taunt changed the label");
                 Assert.IsFalse(field.enabled, "the taunt re-lit the field under a suspended label");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        // ------------------------------------------------------------------ T64 / T65
+
+        [Test]
+        public void The_event_strip_has_exactly_one_painting_point()
+        {
+            // Batch 14: "the event strip goes L2 ... one rule." Enforcing that as one rule rather
+            // than as fourteen correct call sites is the whole point — TV-S1 already tiered this
+            // element once and missed eleven sites, and a convention each new beat has to remember
+            // is what let that happen. `_tFlavor.color` may be assigned in SetEventStrip and nowhere
+            // else; a new beat physically cannot choose its own tier.
+            string path = Path.Combine(Application.dataPath, "SBR", "Runtime", "TvSweatScreen.cs");
+            string[] lines = File.ReadAllLines(path);
+            int helper = System.Array.FindIndex(lines, l => l.Contains("private void SetEventStrip("));
+            Assert.Greater(helper, -1,
+                "SetEventStrip not found — re-point this scan rather than deleting it (C29's shape).");
+
+            int assignments = 0;
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (lines[i].TrimStart().StartsWith("//")) continue;
+                if (!lines[i].Contains("_tFlavor.color")) continue;
+                assignments++;
+                Assert.IsTrue(i > helper && i < helper + 6,
+                    $"TvSweatScreen.cs:{i + 1} paints the event strip outside SetEventStrip. The "
+                    + "strip has one tier (L2) and one painting point; hue stays the caller's, the "
+                    + "tier does not.");
+            }
+            Assert.AreEqual(1, assignments,
+                "expected exactly one _tFlavor.color assignment (inside SetEventStrip) — if the "
+                + "helper was restructured, re-point this scan rather than loosening it.");
+
+            // The double-tier trap: the helper applies L2 itself, so a call site that hands it
+            // already-tiered ink lands at 0.4 x 0.4 = 0.16. Three sites carried AtTier(..., TierL2)
+            // before batch 14 and had to be unwound to raw ink; this is what stops one coming back.
+            int calls = 0;
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (lines[i].TrimStart().StartsWith("//")) continue;
+                if (!lines[i].Contains("SetEventStrip(")) continue;
+                if (i == helper) continue;              // the declaration itself
+                calls++;
+                Assert.IsFalse(lines[i].Contains("AtTier("),
+                    $"TvSweatScreen.cs:{i + 1} passes pre-tiered ink to SetEventStrip, which "
+                    + "applies L2 again — the strip lands at 0.16, not 0.40. Pass the raw ink.");
+            }
+            Assert.Greater(calls, 0, "no SetEventStrip call sites found — this scan stopped covering anything.");
+        }
+
+        [Test]
+        public void The_event_strip_is_painted_at_L2()
+        {
+            // The other half: the single painting point must actually apply L2. A helper that
+            // routed every site and then painted at full alpha would satisfy the scan above and
+            // restore the exact defect — which is the shape C29 names, one level in.
+            var go = new GameObject("EventStripTier");
+            go.SetActive(false);
+            try
+            {
+                var screen = go.AddComponent<TvSweatScreen>();
+                screen.theaterEnabled = false;
+                InvokePrivate(screen, "Awake");
+
+                Text flavor = FindChild<Text>(screen, "Flavor");
+                Assert.IsNotNull(flavor, "Flavor text not found — canvas layout changed?");
+
+                MethodInfo set = typeof(TvSweatScreen).GetMethod("SetEventStrip",
+                    BindingFlags.NonPublic | BindingFlags.Instance);
+                Assert.IsNotNull(set, "SetEventStrip not found by reflection — was it renamed?");
+
+                set.Invoke(screen, new object[] { screen.flavorColor });
+                Assert.AreEqual(screen.flavorColor.a * 0.4f, flavor.color.a, 1e-4f,
+                    "the event strip must paint at L2 (alpha x 0.40). At raw alpha it measured "
+                    + "0.858 Rec.709 against a 0.866 scoreline — not separated from the score at "
+                    + "all, on a surface whose first law is that brightness is the semantic channel.");
+
+                // Hue is the caller's and must survive the tier untouched.
+                Assert.AreEqual(screen.flavorColor.r, flavor.color.r, 1e-4f, "the tier changed the ink");
+                Assert.AreEqual(screen.flavorColor.g, flavor.color.g, 1e-4f, "the tier changed the ink");
+                Assert.AreEqual(screen.flavorColor.b, flavor.color.b, 1e-4f, "the tier changed the ink");
+
+                // The double-tier trap is a CALL-SITE defect and this test cannot see it — calling
+                // the helper directly bypasses the call sites entirely. It is checked by the source
+                // scan above instead. Saying so here rather than adding an assertion that looks
+                // like coverage and is not: that is the blind-spot class batch 14 recorded off this
+                // very file, and repeating it one test down would be a poor way to honour it.
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void T63_the_actionable_field_is_the_element_that_carries_L4()
+        {
+            // The defect this pins is structural and would have failed before the fix: the HDR
+            // material was on the money FIGURE only, so RequestL4(HdrFocus.CashOut) boosted a
+            // number and left the gold field it sits on at rest — a granted token that changed
+            // nothing where the eye actually reads the band. Measured in Rec.709 (C33's unit) on
+            // the current set: field 0.696, figure 0.827, quiet scoreline 0.866, ball 0.902.
+            var go = new GameObject("T63Field");
+            go.SetActive(false); // defer Awake so BuildCanvas runs once, under our control
+            try
+            {
+                var screen = go.AddComponent<TvSweatScreen>();
+                screen.theaterEnabled = false;
+                InvokePrivate(screen, "Awake");
+
+                Image field = FindChild<Image>(screen, "CashOutField");
+                Text figure = FindChild<Text>(screen, "CashOut");
+                Assert.IsNotNull(field, "CashOutField not found — canvas layout changed?");
+                Assert.IsNotNull(figure, "CashOut figure not found — canvas layout changed?");
+
+                Assert.AreEqual("SBR/TvSweatHdrUI", field.material.shader.name,
+                    "T63: the actionable field carries no HDR material, so it cannot be boosted to "
+                    + "L4 at all. The field IS the actionable state — boosting only the figure "
+                    + "moves the number and leaves the band at rest.");
+                Assert.AreNotSame(figure.material, field.material,
+                    "T63: separate instances, not one shared — a Text and an Image sharing one "
+                    + "material instance makes the Image render nothing under uGUI batching.");
+
+                // What makes them ONE occupant is one token driving both. Pinned at the source,
+                // because an EditMode test cannot see a material's boost reach a rendered pixel.
+                string src = File.ReadAllText(Path.Combine(Application.dataPath, "SBR", "Runtime", "TvSweatScreen.cs"));
+                int caseAt = src.IndexOf("case HdrFocus.CashOut:", System.StringComparison.Ordinal);
+                Assert.Greater(caseAt, -1, "ApplyBoost's CashOut case not found — was it renamed?");
+                int breakAt = src.IndexOf("break;", caseAt, System.StringComparison.Ordinal);
+                Assert.Greater(breakAt, caseAt, "ApplyBoost's CashOut case has no break; — parse failed.");
+                string body = src.Substring(caseAt, breakAt - caseAt);
+                Assert.IsTrue(body.Contains("_cashOutHdrMat") && body.Contains("_cashOutFieldHdrMat"),
+                    "T63: ApplyBoost's CashOut case must drive BOTH the figure's and the field's "
+                    + "material. Driving one is the original defect: the token is granted and the "
+                    + "band does not change where the eye reads it.");
+
+                // The field and the figure carry the SAME ink. `goldL4` was tried and reverted: a
+                // vertex colour is packed to Color32, so goldL4 clamps to (255,255,74) — hue 60 deg
+                // lemon — and a full-width field that bright blooms the whole panel (measured: band,
+                // event strip and risk/pays all read hue 60.0 at ~61% sat). The band's brightness
+                // must come from the boost, not from a hotter authored colour.
+                Assert.AreEqual(figure.color.r, field.color.r, 1e-4f, "T63: field and figure differ in ink");
+                Assert.AreEqual(figure.color.g, field.color.g, 1e-4f, "T63: field and figure differ in ink");
+                Assert.AreEqual(figure.color.b, field.color.b, 1e-4f, "T63: field and figure differ in ink");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void C33_the_L4_gold_outranks_the_L3_gold_in_the_ruled_unit()
+        {
+            // The canary under T63's fix. Calling a colour "the L4 gold" is worth nothing unless it
+            // is actually brighter, and brightness is now a ruled unit: Rec.709 luma on
+            // display-encoded values (C33). RGB-average — the superseded unit — under-reports
+            // saturated warm colour against neutral, which is exactly where this surface keeps its
+            // money, and that mis-ranking is what produced a reported 0.21 gap where the real one
+            // was 0.047. A future palette edit that dims goldL4 must fail here, in this unit.
+            var go = new GameObject("C33Unit");
+            go.SetActive(false); // only the authored defaults are under test — no canvas needed
+            try
+            {
+                var screen = go.AddComponent<TvSweatScreen>();
+                float l3 = Rec709(screen.gold);
+                float l4 = Rec709(screen.goldL4);
+                Assert.Greater(l4, l3,
+                    $"C33/T63: goldL4 Rec.709 luma {l4:F3} does not outrank gold's {l3:F3}. The "
+                    + "surface's only sustained L4 element is painted in goldL4, so if it is not "
+                    + "the brighter value the ladder is inverted at its top tier.");
+                Assert.Greater(l4 - l3, 0.01f,
+                    $"C33/T63: goldL4 and gold differ by {l4 - l3:F3} Rec.709, which is under this "
+                    + "instrument's ~0.01 resolution (8-bit display-encoded, one code value is "
+                    + "~0.004). A tier separation that cannot be resolved is not a tier.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        /// <summary>C33's ruled unit: Rec.709 luma on display-encoded values. Quoted with every
+        /// ladder number, studio-wide. Mirrors tools/ladder_read.py's `rec709`.</summary>
+        private static float Rec709(Color c) => 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
+
+        [Test]
+        public void T64_no_surface_of_this_TV_carries_an_idle_flicker()
+        {
+            // Behavioural, not a source scan: two Updates with no Flash in between must leave the
+            // wired Light at EXACTLY the same intensity. A flicker of any amplitude fails this, and
+            // it fails without needing to know how the flicker was spelled.
+            var go = new GameObject("tvlight-flickertest");
+            try
+            {
+                Light point = go.AddComponent<Light>();
+                TvLight light = go.AddComponent<TvLight>();
+                light.pointLight = point;
+
+                typeof(TvLight).GetMethod("Awake",
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                    .Invoke(light, null);
+                var update = typeof(TvLight).GetMethod("Update",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+                update.Invoke(light, null);
+                float first = point.intensity;
+                for (int i = 0; i < 8; i++)
+                {
+                    update.Invoke(light, null);
+                    Assert.AreEqual(first, point.intensity,
+                        "T64: the idle room spill moved between frames with nothing driving it. "
+                        + "A display that works does not flicker, this surface has exactly one "
+                        + "pulse kind and it is LIVE, and an effect with no fire condition is "
+                        + "continuous involuntary motion. Removed, not zeroed — if a flicker dial "
+                        + "came back, delete it rather than setting it to 0.");
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void T64_the_flicker_dials_are_gone_not_zeroed()
+        {
+            // The companion to the behavioural test, and it guards the thing that test cannot see:
+            // a dial at 0.0 passes the behavioural check while a stale scene can still carry a
+            // non-zero serialized override (batch 13 recorded exactly that trap from the room lane).
+            // A field that does not exist cannot be overridden.
+            foreach (string field in new[] { "idleEmissionFlicker" })
+                Assert.IsNull(typeof(TvSweatScreen).GetField(field),
+                    $"T64: TvSweatScreen.{field} is back. It must be REMOVED, not zeroed — a "
+                    + "serialized scene value survives a changed default.");
+            foreach (string field in new[] { "flickerAmp", "flickerHz" })
+                Assert.IsNull(typeof(TvLight).GetField(field),
+                    $"T64: TvLight.{field} is back. Same rule, and this is the channel that "
+                    + "reaches the player as ROOM light rather than as panel pixels.");
+        }
+
+        [Test]
+        public void T65_a_leg_win_never_re_tints_the_room()
+        {
+            // The named defect: WonLegBeat fired tvLight.Flash(gold, 3.0f), taking the room to
+            // hue 40.7deg at 71.1% saturation and roughly double the luma. A leg win is not a
+            // payoff — there are three or four per ticket.
+            string path = Path.Combine(Application.dataPath, "SBR", "Runtime", "TvSweatScreen.cs");
+            string[] lines = File.ReadAllLines(path);
+            int start = System.Array.FindIndex(lines, l => l.Contains("IEnumerator WonLegBeat("));
+            Assert.Greater(start, -1,
+                "WonLegBeat not found — re-point this scan rather than deleting it (C29's shape: "
+                + "a check that inspects nothing is not a pass).");
+
+            for (int i = start; i < lines.Length; i++)
+            {
+                string l = lines[i];
+                if (i > start && l.Contains("IEnumerator ")) break;   // next beat, stop
+                if (l.TrimStart().StartsWith("//")) continue;          // the record of the fix is prose
+                Assert.IsFalse(l.Contains("tvLight") || l.Contains("EmissionFlash("),
+                    $"T65: TvSweatScreen.cs:{i + 1} re-tints a room-facing channel from inside "
+                    + "WonLegBeat. The room re-tint fires on SETTLEMENT, never on a leg, and it "
+                    + "goes through RoomSettlementGlow() so no site chooses its own colour. The "
+                    + "leg's win is carried where the ration already carries it: the row goes gold.");
+            }
+        }
+
+        [Test]
+        public void T65_the_room_light_is_never_handed_the_surfaces_money_gold()
+        {
+            // The rule, not the site. Gold is rationed to the PANEL; the room light is a separate
+            // instrument bound to the room's palette. Any tvLight call that names a colour inline
+            // is how the ration leaks back out, whichever beat it sits in.
+            string path = Path.Combine(Application.dataPath, "SBR", "Runtime", "TvSweatScreen.cs");
+            string[] lines = File.ReadAllLines(path);
+            int seen = 0;
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string l = lines[i];
+                if (l.TrimStart().StartsWith("//")) continue;
+                if (!l.Contains("tvLight?.Flash(") && !l.Contains("tvLight.Flash(")) continue;
+                seen++;
+                Assert.IsFalse(l.Contains("gold") || l.Contains("new Color("),
+                    $"T65: TvSweatScreen.cs:{i + 1} flashes the ROOM light with a colour named at "
+                    + "the call site. Route it through RoomSettlementGlow(), which carries the one "
+                    + "palette-bound value. Gold does not leave the panel.");
+            }
+            Assert.Greater(seen, 0, "no tvLight Flash call found — this scan stopped covering anything.");
+        }
+
+        [Test]
+        public void T65_the_room_re_tint_sits_inside_the_rooms_own_warm_band()
+        {
+            // The value, pinned where it is decided. The room's warm key is ~92deg and the laptop
+            // lid's sanctioned contribution 85.1-85.3deg; a saturated 40deg amber is a new hue, not
+            // a warming. This asserts the LIGHT's hue, which is the thing this file controls.
+            //
+            // SCOPE (C25): the ruling bounds the room's measured CAST, not the light's own hue, and
+            // the cast also depends on amplitude — it runs monotonically from ~130deg at zero to
+            // ~45.5deg as amplitude rises, crossing the band once over roughly [0.78, 1.06]. This
+            // test cannot see that. Gate V6 on rendered frames is what settles it
+            // (tools/v6_room_region.py); this only stops the value drifting back toward gold.
+            var go = new GameObject("tv-retint-value");
+            go.SetActive(false); // only the authored defaults are under test — no canvas needed
+            try
+            {
+                TvSweatScreen s = go.AddComponent<TvSweatScreen>();
+                Color.RGBToHSV(s.roomSettlementWarm, out float h, out float sat, out _);
+                float deg = h * 360f;
+                Assert.GreaterOrEqual(deg, 85f, $"T65: room re-tint hue {deg:F1}deg is below the room's band.");
+                Assert.LessOrEqual(deg, 92f, $"T65: room re-tint hue {deg:F1}deg is above the room's band.");
+
+                Color.RGBToHSV(s.gold, out float gh, out _, out _);
+                Assert.AreNotEqual(Mathf.Round(gh * 360f), Mathf.Round(deg),
+                    "T65: the room re-tint is back on the money hue. Gold stays on the panel.");
+                Assert.Less(sat, 0.45f,
+                    $"T65: room re-tint saturation {sat * 100f:F0}% — the defect measured 71% and "
+                    + "the room's own resting saturation is ~40%. A re-tint is a warming, not a "
+                    + "colour event.");
             }
             finally
             {
