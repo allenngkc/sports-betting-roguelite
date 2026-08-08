@@ -5209,7 +5209,6 @@ MonoBehaviour:
   canvasOffset: 0.004
   referencePixelsWide: 1024
   idleEmission: {r: 0.038, g: 0.032, b: 0.024, a: 1}
-  attentionEmission: {r: 0.114, g: 0.096, b: 0.072, a: 1}
 --- !u!114 &872341053
 MonoBehaviour:
   m_ObjectHideFlags: 0

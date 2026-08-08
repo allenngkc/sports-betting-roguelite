@@ -26,12 +26,14 @@ namespace SBR
     {
         private const string ScenePath = "Assets/Scenes/Room.unity";
         private const string ArmedKey = "SBR.RoomViewCapture.Armed";
+        private const string GlowCueArmedKey = "SBR.RoomViewCapture.GlowCueArmed";
         private const string OutDirKey = "SBR.RoomViewCapture.OutDir";
         private const int Width = 2560;
         private const int Height = 1440;
         private const int WarmupFrames = 8;
 
         private static int _frames;
+        private static int _glowFrames;
 
         /// <summary>
         /// Edit-mode capture. No Play Mode, so no domain reload - this runs to completion in a
@@ -290,7 +292,10 @@ namespace SBR
                 // against the thing it replaced rather than in the abstract. Like the struck
                 // violet, it is quoted HERE only and is not a live option.
                 ("emission-prev-4x",   new Color(0.155f, 0.130f, 0.098f)),
-                ("emission-attention", book.attentionEmission),
+                // The 3.00x attention end, quoted here since S63-am2 struck the cue and removed
+                // the field. Retained so the four-arm A/B the colour grant rests on stays
+                // reproducible; like the two values above it, a comparand and not a live option.
+                ("emission-attention", new Color(0.114f, 0.096f, 0.072f)),
                 ("emission-idle",      book.idleEmission),
             };
 
@@ -314,6 +319,238 @@ namespace SBR
             block.SetColor(emissionId, book.idleEmission);
             book.lidRenderer.SetPropertyBlock(block);
         }
+
+        /// <summary>
+        /// Does a change to the lid's emission reach a frame the player actually occupies?
+        ///
+        /// Built for S63-am2 (DD 2026-08-07, batch 13), which suspended the laptop's attention
+        /// cue pending exactly one Play Mode frame with wantsYou &amp;&amp; !engaged true from a pose
+        /// containing the laptop, disposition pre-committed both ways. IT ANSWERED THAT AND THE
+        /// CUE WAS STRUCK - seated OUT OF FRUSTUM, focused IDENTICAL at 0.00%, standing 233 px
+        /// above JND out of 3.69M (a one-pixel rim line), room cast 0.000. Evidence retained at
+        /// artifacts/room-visual-pass/s63am2-glow-cue.
+        ///
+        /// KEPT, GENERALISED, because the fact it established outlives the cue: at runtime the
+        /// lid is behind an opaque canvas and is absent from the seated frame altogether, so ANY
+        /// future proposal to treat that surface has to clear the same bar. The two arms are now
+        /// quoted constants rather than live fields - there is no longer a cue state to read.
+        ///
+        /// PLAY MODE IS THE POINT, not a formality. The lid's emission is the whole subject, and
+        /// in Edit Mode nothing covers it. At runtime BuildSkeleton() puts the SureThing
+        /// world-space canvas canvasOffset (4mm) in front of the lid at exactly the lid's own
+        /// world size, so the surface being ruled sits behind an opaque quad. Every emission A/B
+        /// this lane has shot was Edit Mode, and therefore measured the lid uncovered - a state
+        /// the player is never in.
+        ///
+        /// A PAIR, NOT A SINGLE FRAME. "Does it read" is a difference question and one frame
+        /// cannot answer it. Arm A is the cue firing; arm B is the same frame at idle.
+        ///
+        /// THE STATE IS REACHED, NOT FORCED. Run.Phase defaults to Betting and DeskFocus.Active
+        /// is null until the player zooms the desk, so on the batch-13 run wantsYou &amp;&amp; !engaged
+        /// was already true and Glow() wrote the attention value unaided - logged as proof rather
+        /// than asserted. That branch is gone now, but the pose and the occlusion it measured are
+        /// properties of the room, not of the cue.
+        ///
+        /// BOTH EMITTERS ARE FROZEN. LaptopScreen is disabled so nothing overwrites arm B, which
+        /// also freezes the canvas content so the arms cannot differ by an OS tick. PhoneScreen
+        /// is disabled for a second reason: it drives its own emission up to (0.30,0.50,0.90) on
+        /// a 0.55s buzz with a real Light, from the desk beside the laptop. Left running it could
+        /// manufacture a difference between the arms or mask one. Its emission at capture is
+        /// logged rather than assumed - on the batch-13 run it sat at its blue unread value.
+        ///
+        ///   Unity.exe -batchmode -projectPath (project)
+        ///             -executeMethod SBR.RoomViewCapture.CaptureLidEmissionInPlay -outDir (path)
+        ///
+        /// SCOPE, AND IT MATTERS (C25). What this produces is an internally-valid PAIR and
+        /// nothing more. The two arms are shot back to back with everything but the lid frozen,
+        /// so a difference between them IS the lid. They are NOT comparable to the ratified
+        /// CaptureAll sets: measured on the batch-13 run, cue-off differs from the batch-13
+        /// CaptureAll frame across 95.4% of pixels because this method warms and poses the camera
+        /// differently. R9-A's mattress reads 44.10 on that set and 38.08 on this one -- and
+        /// 38.08 on BOTH arms, which is how the pair stays trustworthy while the cross-set
+        /// comparison does not. DO NOT judge a ratified figure on frames from this method; that
+        /// is the batch-9 mattress defect (a ratified number quoted without its capture) exactly.
+        ///
+        /// NO -quit: the harness exits the editor itself, as CaptureAll does.
+        /// Diff with:  python tools/wear_ab_diff.py (dir)/cue-on (dir)/cue-off
+        /// </summary>
+        public static void CaptureLidEmissionInPlay()
+        {
+            string outDir = OutDirFromArgs();
+            Directory.CreateDirectory(outDir);
+
+            // SessionState survives the domain reload that entering Play Mode triggers.
+            SessionState.SetString(OutDirKey, outDir);
+            SessionState.SetBool(GlowCueArmedKey, true);
+
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            EditorApplication.EnterPlaymode();
+        }
+
+        [InitializeOnLoadMethod]
+        private static void RehookGlowCue()
+        {
+            if (SessionState.GetBool(GlowCueArmedKey, false))
+                EditorApplication.update += OnGlowCueUpdate;
+        }
+
+        private static void OnGlowCueUpdate()
+        {
+            if (!EditorApplication.isPlaying)
+                return;
+
+            _glowFrames++;
+            if (_glowFrames < WarmupFrames)
+                return;
+
+            EditorApplication.update -= OnGlowCueUpdate;
+            SessionState.SetBool(GlowCueArmedKey, false);
+
+            int code = 0;
+            try
+            {
+                GlowCueRun(SessionState.GetString(OutDirKey, string.Empty));
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[GlowCue] capture failed: {e}");
+                code = 1;
+            }
+
+            EditorApplication.Exit(code);
+        }
+
+        private static void GlowCueRun(string outDir)
+        {
+            if (string.IsNullOrEmpty(outDir))
+                throw new InvalidOperationException("output directory lost across domain reload");
+
+            var book = UnityEngine.Object.FindAnyObjectByType<SBR.Game.LaptopScreen>();
+            if (book == null || book.lidRenderer == null)
+                throw new InvalidOperationException(
+                    "LaptopScreen or its lidRenderer is missing - both arms would be identical " +
+                    "and the pair would read as 'the cue makes no difference'");
+
+            // The probe. Quoted, not read from a field: this is the struck 3.00x attention end,
+            // kept so the run that struck it stays reproducible bit for bit.
+            var probe = new Color(0.114f, 0.096f, 0.072f);
+
+            int emissionId = Shader.PropertyToID("_EmissionColor");
+            var block = new MaterialPropertyBlock();
+            book.lidRenderer.GetPropertyBlock(block);
+            Color live = block.GetColor(emissionId);
+
+            string phase = book.director != null && book.director.Run != null
+                ? book.director.Run.Phase.ToString()
+                : "<no run>";
+            string focus = SBR.Game.DeskFocus.Active == null
+                ? "null (NOT engaged)"
+                : SBR.Game.DeskFocus.Active.name;
+
+            Debug.Log($"[GlowCue] phase={phase}  DeskFocus.Active={focus}");
+            Debug.Log($"[GlowCue] lid emission live on the renderer = {Fmt(live)}");
+            Debug.Log($"[GlowCue]   idleEmission (granted) = {Fmt(book.idleEmission)}");
+            Debug.Log($"[GlowCue]   probe (struck 3.00x)   = {Fmt(probe)}");
+
+            // Proves the shipped path actually put the granted colour on the renderer, rather
+            // than the field merely holding it. That distinction is not academic here: a public
+            // field's default does not touch an already-serialized component, and the first
+            // strike was never built for exactly that reason - the A/B then captured the value
+            // it was supposed to be replacing, and only the picture caught it.
+            if (!Same(live, book.idleEmission))
+            {
+                throw new InvalidOperationException(
+                    $"the lid is NOT carrying the granted colour at runtime: renderer has " +
+                    $"{Fmt(live)}, idleEmission is {Fmt(book.idleEmission)}. Either " +
+                    "ApplyLidEmission did not run or something else owns this property block; " +
+                    "nothing was written.");
+            }
+
+            var phone = UnityEngine.Object.FindAnyObjectByType<SBR.Game.PhoneScreen>();
+            if (phone != null)
+            {
+                if (phone.screenRenderer != null)
+                {
+                    var phoneBlock = new MaterialPropertyBlock();
+                    phone.screenRenderer.GetPropertyBlock(phoneBlock);
+                    Debug.Log($"[GlowCue] phone emission at capture = " +
+                              $"{Fmt(phoneBlock.GetColor(emissionId))} (frozen identically for both arms)");
+                }
+                phone.enabled = false;
+            }
+
+            // Glow() must not overwrite arm B, and the canvas must not tick between the arms.
+            book.enabled = false;
+
+            Camera cam = FindPlayerCamera();
+            var controller = UnityEngine.Object.FindAnyObjectByType<FirstPersonController>();
+            if (controller != null)
+                controller.enabled = false;
+
+            WarmRender(cam);
+
+            ShootArm(cam, book.lidRenderer, outDir, "cue-on", probe, emissionId);
+            ShootArm(cam, book.lidRenderer, outDir, "cue-off", book.idleEmission, emissionId);
+
+            // AFTER the arms, deliberately. This walks the camera through all three poses, and
+            // anything the pipeline settles over time would then be settling BETWEEN the halves
+            // of the A/B rather than only before it. Ran before the arms on the batch-13 shot;
+            // the pair stayed internally valid (mattress 38.08 in both, identical) but the set
+            // came out 95% different from the ratified CaptureAll set - see the scope note above.
+            LogLidFraming(cam, book.lidRenderer);
+        }
+
+        private static void ShootArm(Camera cam, Renderer lid, string outDir,
+                                     string label, Color emission, int emissionId)
+        {
+            var block = new MaterialPropertyBlock();
+            lid.GetPropertyBlock(block);
+            block.SetColor(emissionId, emission);
+            lid.SetPropertyBlock(block);
+
+            string dir = Path.Combine(outDir, label);
+            Directory.CreateDirectory(dir);
+            Capture(dir);
+            Debug.Log($"[GlowCue] {label} = {Fmt(emission)} -> {dir}");
+        }
+
+        /// <summary>
+        /// Where the lid actually lands in each ratified pose, reported rather than asserted.
+        /// "A pose that contains the laptop" is a claim about the frustum, and this lane has
+        /// already shipped one finding built on frustum coverage that turned out to say nothing
+        /// about visibility (R7-F, ruled informational) - so this reports position only, and the
+        /// image pair is what answers whether the cue reads.
+        /// </summary>
+        private static void LogLidFraming(Camera cam, Renderer lid)
+        {
+            float prevAspect = cam.aspect;
+            cam.aspect = (float)Width / Height;
+            try
+            {
+                Vector3 centre = lid.bounds.center;
+                foreach (Pose p in RatifiedPoses())
+                {
+                    cam.transform.SetPositionAndRotation(p.Eye, p.Rot);
+                    cam.fieldOfView = p.Fov;
+                    Vector3 v = cam.WorldToViewportPoint(centre);
+                    bool inFrame = v.z > 0f && v.x >= 0f && v.x <= 1f && v.y >= 0f && v.y <= 1f;
+                    Debug.Log($"[GlowCue] lid centre in {p.File}: " +
+                              $"viewport ({v.x:F3}, {v.y:F3}) depth {v.z:F3}m -> " +
+                              $"{(inFrame ? "IN FRUSTUM" : "OUT OF FRUSTUM")}");
+                }
+            }
+            finally
+            {
+                cam.aspect = prevAspect;
+            }
+        }
+
+        private static string Fmt(Color c) => $"{c.r:F4},{c.g:F4},{c.b:F4}";
+
+        private static bool Same(Color a, Color b)
+            => Mathf.Abs(a.r - b.r) < 1e-4f
+            && Mathf.Abs(a.g - b.g) < 1e-4f
+            && Mathf.Abs(a.b - b.b) < 1e-4f;
 
         public static void CaptureAll()
         {
@@ -365,6 +602,53 @@ namespace SBR
             EditorApplication.Exit(code);
         }
 
+        /// <summary>One ratified review pose: the eye, the look, the field of view.</summary>
+        private readonly struct Pose
+        {
+            public readonly string File;
+            public readonly Vector3 Eye;
+            public readonly Quaternion Rot;
+            public readonly float Fov;
+
+            public Pose(string file, Vector3 eye, Quaternion rot, float fov)
+            {
+                File = file; Eye = eye; Rot = rot; Fov = fov;
+            }
+        }
+
+        /// <summary>
+        /// The three ratified review poses, in one place. They were duplicated between Capture()
+        /// and every diagnostic that wanted to report where something lands in frame, which is a
+        /// standing invitation for a measurement to be quoted against a pose that has since moved
+        /// (C25's failure mode - a number without the rig it was taken on).
+        /// </summary>
+        private static Pose[] RatifiedPoses()
+        {
+            // Matches the builder: LookRotation(tvScreenCenter - seatedEye, up).
+            var seatedEye = new Vector3(-0.950f, 1.150f, 0.300f);
+            var tvCenter = new Vector3(1.232f, 1.100f, 0.300f);
+
+            return new[]
+            {
+                new Pose("standing-overview.png",
+                    new Vector3(0.300f, 1.640f, -1.400f),
+                    Quaternion.LookRotation(Vector3.forward, Vector3.up),
+                    68f),
+
+                new Pose("seated-tv-couch.png",
+                    seatedEye,
+                    Quaternion.LookRotation(tvCenter - seatedEye, Vector3.up),
+                    17f),
+
+                // Normal to the tilted laptop lid, 0.52m out along its outward normal.
+                new Pose("focused-laptop-desk.png",
+                    new Vector3(0.738982f, 1.051217f, 1.620000f),
+                    Quaternion.LookRotation(new Vector3(0.939693f, -0.342020f, 0f),
+                                            new Vector3(0.342020f, 0.939693f, 0f)),
+                    30f),
+            };
+        }
+
         private static void Capture(string outDir)
         {
             Camera cam = FindPlayerCamera();
@@ -374,25 +658,8 @@ namespace SBR
             if (controller != null)
                 controller.enabled = false;
 
-            Shoot(cam, outDir, "standing-overview.png",
-                new Vector3(0.300f, 1.640f, -1.400f),
-                Quaternion.LookRotation(Vector3.forward, Vector3.up),
-                68f);
-
-            // Matches the builder: LookRotation(tvScreenCenter - seatedEye, up).
-            var seatedEye = new Vector3(-0.950f, 1.150f, 0.300f);
-            var tvCenter = new Vector3(1.232f, 1.100f, 0.300f);
-            Shoot(cam, outDir, "seated-tv-couch.png",
-                seatedEye,
-                Quaternion.LookRotation(tvCenter - seatedEye, Vector3.up),
-                17f);
-
-            // Normal to the tilted laptop lid, 0.52m out along its outward normal.
-            Shoot(cam, outDir, "focused-laptop-desk.png",
-                new Vector3(0.738982f, 1.051217f, 1.620000f),
-                Quaternion.LookRotation(new Vector3(0.939693f, -0.342020f, 0f),
-                                        new Vector3(0.342020f, 0.939693f, 0f)),
-                30f);
+            foreach (Pose p in RatifiedPoses())
+                Shoot(cam, outDir, p.File, p.Eye, p.Rot, p.Fov);
         }
 
         /// <summary>

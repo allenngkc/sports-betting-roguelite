@@ -24,46 +24,45 @@ namespace SBR.Game
         public float canvasOffset = 0.004f;
         public int referencePixelsWide = 1024;
 
-        [Header("Attention glow")]
-        // R35 (DD 2026-08-05, batch 11): the violet attention glow is STRUCK -- a fourth light in
-        // a three-source room, in a retired hue, on his machine. Built to the ruled DIRECTION:
-        // the screen's own emitted family, warm, low chroma. THE EXACT VALUES ARE NOT RULED --
-        // they are ruled on the frame this build produces, which is the first colour in the room
-        // no capture can see yet. Treat these as the proposal, not the decision.
+        [Header("Lid emission")]
+        // S63-am2 (DD 2026-08-07, batch 13). TWO rulings landed on this field, and they point
+        // opposite ways:
         //
-        // Was: idle (0.025, 0.035, 0.055) hue 271deg, attention (0.28, 0.10, 0.55) hue 312deg
-        //      chroma 64.1, measured on frame at hue 303.6 / chroma 9.17.
+        //   1. THE COLOUR IS GRANTED AND SHIPS, BOTH ENDS. Chroma 68.97 -> 0.24; the room cast
+        //      moved 355.7deg red -> 85.1deg against the room's key at 92deg. idleEmission is
+        //      always on and must not be cool for 99% of the running time, so that half was
+        //      ruled unconditional.
         //
-        // BOTH ends move, and that is the direction's consequence rather than a widened scope.
-        // Glow() LERPS between them, so warming only the attention end would have made the pulse
-        // travel 271deg -> 312deg: a colour cycle, which is a worse artefact than the one being
-        // removed. One family means one hue at two brightnesses.
+        //   2. THE ATTENTION CUE IS STRUCK. It was suspended pending one Play Mode frame with
+        //      wantsYou && !engaged true from a pose containing the laptop; the disposition was
+        //      pre-committed both ways. The frame was shot (artifacts/room-visual-pass/
+        //      s63am2-glow-cue, RoomViewCapture.CaptureLidEmissionInPlay) and the cue cannot be
+        //      framed:
         //
-        //   idle       hue 83.3deg  chroma 5.4  luminance 0.0327  (was 0.0343 -- rest spill held)
-        //   attention  hue 82.4deg  chroma 8.6  luminance 0.1330  = 4.07x idle (was 4.98x)
-        //   hue travel across the breathe: 0.9deg -- brightness only
+        //        seated pose ... the lid is OUT OF FRUSTUM (viewport x -0.638). When the cue
+        //                        fires the player is at the TV, and the laptop is not in shot.
+        //        focused pose .. IDENTICAL, 0.00%. At 0.52m, dead centre, the lid filling ~80%
+        //                        of the frame, a 3x step changes NOTHING - BuildSkeleton() puts
+        //                        the SureThing canvas 4mm in front at the lid's own world size,
+        //                        so the surface is behind an opaque quad.
+        //        standing pose . 233 px above JND out of 3.69M (0.0063%), max 9 levels, and the
+        //                        picture shows what they are: a one-pixel rim line on the lid's
+        //                        exposed edge.
+        //        room cast ..... 0.000 on right wall, floor aisle and ceiling plaster.
         //
-        // Warm family placement: the room's key is #D8C48A at hue 92deg, so this sits just red of
-        // the fluorescent rather than announcing itself as a separate source. Chroma drops 64.1 ->
-        // 8.6, which is what stops it being a fourth light. Kept slightly quieter than before
-        // (4.07x vs 4.98x) because §1.2 requires screens "quiet, with faint spill" -- but the cue
-        // must still carry from the couch, which is the trade the DD is being asked to judge.
-        // R35/R37 (DD 2026-08-05, batch 12) — built to the RULE, values still to be ruled on the
-        // frame this produces:
+        //      The ~3x ceiling had already been struck as a bound that did not bind. Note that
+        //      raising the amplitude could not have rescued this either: occlusion and framing
+        //      are both amplitude-invariant. That is why the ceiling was never what stopped it.
         //
-        //   warm near-neutral, R >= G > B   ..... 0.038 >= 0.032 > 0.024, and x3 preserves it
-        //   attention differs by AMPLITUDE ONLY .. attention IS idle * 3, exactly
-        //   ~3x maximum ......................... 3.00x by construction (the last build was 4.07x)
-        //   idleEmission carries the same defect . both ends are one colour now
+        // attentionEmission is REMOVED, not zeroed, for the same reason attentionBreathHz was
+        // (R37): a dead serialized field is an invitation to reinstate the behaviour it drove.
+        // The struck value survives only as a quoted comparand inside the capture harness.
         //
-        // Writing attention as idle x 3 rather than as a second hand-picked triple is the point:
-        // "amplitude only" then holds BY CONSTRUCTION instead of by my matching two chromaticities
-        // and asserting they agree. Any future edit to idle carries attention with it, so the two
-        // cannot drift apart the way idle (cool) and attention (violet) had.
+        // What remains is one colour on one surface. The lid does not signal; it is lit.
+        // Granted value. Warm near-neutral, R >= G > B, sitting just red of the room's #D8C48A
+        // key so it reads as the screen's own light rather than as a separate source. It replaced
+        // a violet (0.28, 0.10, 0.55) at chroma 64.1 and a cool idle (0.025, 0.035, 0.055).
         [ColorUsage(false, true)] public Color idleEmission = new Color(0.038f, 0.032f, 0.024f);
-        [ColorUsage(false, true)] public Color attentionEmission = new Color(0.114f, 0.096f, 0.072f);
-        // attentionBreathHz REMOVED with the pulse (R37). Left in place it would be a dead
-        // serialized dial inviting someone to reinstate the breathing it used to drive.
 
         private Canvas _canvas;
         private Font _font;
@@ -85,6 +84,7 @@ namespace SBR.Game
             _emissBlock = new MaterialPropertyBlock();
             if (tv == null) tv = FindAnyObjectByType<TvSweatScreen>();
             BuildSkeleton();
+            ApplyLidEmission();
         }
 
         private void Update()
@@ -94,7 +94,6 @@ namespace SBR.Game
 
             EnsureSlip();
             _os.Tick(director.Run, _slip);
-            Glow();
         }
 
         private void EnsureSlip()
@@ -132,22 +131,20 @@ namespace SBR.Game
             _os = new LaptopOs((RectTransform)root, _font, this, w, h);
         }
 
-        private void Glow()
+        /// <summary>
+        /// Writes the granted lid colour once. Not per-frame: with the cue struck there is no
+        /// state left to track, and re-asserting a constant every Update would imply one.
+        ///
+        /// This still has to run, because the property block is what makes the lid the ruled
+        /// colour -- the ScreenLaptop MATERIAL carries a different, older emission and disagrees
+        /// with the ruling. That disagreement is routed, not fixed here: the material's value is
+        /// what the APV bake and every Edit Mode capture see, so changing it re-opens the bake
+        /// and the structural gates.
+        /// </summary>
+        private void ApplyLidEmission()
         {
             if (lidRenderer == null) return;
-            Phase phase = director.Run.Phase;
-            bool wantsYou = phase == Phase.Betting || phase == Phase.Shop
-                || phase == Phase.RunWon || phase == Phase.RunLost;
-            bool engaged = DeskFocus.Active != null;
-            // R37 (DD 2026-08-05): NO PULSE. One step up, held for as long as the laptop wants him,
-            // one step back. The breathing was ruled a violation in its own right and separately
-            // from the colour: a continuously animated light is a fourth source that also MOVES,
-            // and it read as the room breathing rather than as a machine waiting.
-            //
-            // There is deliberately no easing here. A lerp with a duration would be the same
-            // finding wearing a shorter clock -- the ruling says step, and a step is an assignment.
-            Color emission = (wantsYou && !engaged) ? attentionEmission : idleEmission;
-            _emissBlock.SetColor(EmissionColorId, emission);
+            _emissBlock.SetColor(EmissionColorId, idleEmission);
             lidRenderer.SetPropertyBlock(_emissBlock);
         }
 
