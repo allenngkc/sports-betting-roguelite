@@ -517,6 +517,11 @@ namespace SBR.Game
         // input contract, and changing what E accepts during a pending window is a design call for
         // the DD, not a presentation fix. See ApplyCashOutSlotState.
         private bool _cashOutSlotSuspended;
+        // T68: the last value ApplyCashOutSlotState derived for the field. Read by the per-frame
+        // taunt so it cannot repaint the amount gold on a lit (inverted) field. Kept as a flag for
+        // the same reason `_cashOutTweening` is one — the state must be readable from outside the
+        // one method that computes it, without that method's predicate being duplicated.
+        private bool _cashOutFieldLit;
         private float _cashOutScale = 1f;
         private float _cashOutFlash;
         private int _cashOutRoundShown;
@@ -1749,7 +1754,6 @@ namespace SBR.Game
             _scorerRevealedForActiveLeg = false;
             RevealedView.Reset(director != null ? director.Run : null, _ticket,
                 director != null ? director.SweatIndex : 0);
-            _tCashOut.color = new Color(gold.r, gold.g, gold.b, 1f);
             _tInterventionPrompt.enabled = false;
             _stage?.Show(false);
             // T16: fresh ticket, fresh tape — a stale strip from the last ticket must not survive.
@@ -2032,7 +2036,10 @@ namespace SBR.Game
                 // TV-14: statement and price are separate facts and render as separate spans. They
                 // were concatenated into one string, which forced the price to wear whatever hue
                 // the row's state carried — a lost leg's price rendered as part of the loss.
-                string statement = leg.DisplayLabel;
+                // T69: re-authored for this column and fitted to it. One assignment feeds every row
+                // state below, so the de-duplication and the no-wrap rule cannot apply to some
+                // states and not others.
+                string statement = FitToColumn(_legRow[i].Line, LegStatement(leg));
                 string price = OddsFormat.American(leg.OfferedOdds);
                 bool isLive = i == liveLegIndex && i >= _resolvedThrough;
                 _legRow[i].IsLive = isLive;
@@ -2096,7 +2103,19 @@ namespace SBR.Game
                     if (_legRow[i].Strike != null) _legRow[i].Strike.enabled = _cashOutPreview;
                     if (_legRow[i].Extinguish != null) _legRow[i].Extinguish.enabled = false;
                     _legRow[i].Need.color = liveInk;
-                    _legRow[i].Need.text = copy.Need;         // §6 verbatim — never paraphrased
+                    // T69, second half: the live statement used to terminate at the column rule
+                    // MID-WORD (`RICO LANYARD TO SCO`). TV-12/13 wants truncation on a word
+                    // boundary regardless, so it now ends at one. Still verbatim — truncating is
+                    // not paraphrasing, and no word is ever split.
+                    //
+                    // FLAGGED, because it reads against §5.1: that section says NEED is "never
+                    // wrapped, never truncated — an over-long NEED is re-authored against a
+                    // call-site-recorded measurement." T69 postdates it and invokes TV-12/13's
+                    // word-boundary rule for this exact string, so a word boundary is strictly
+                    // better than the mid-word cut it replaces. But the DURABLE fix is shorter
+                    // AUTHORED copy, and what a leg statement should say is a copy decision this
+                    // seat does not hold. This removes the defect; it does not settle the string.
+                    _legRow[i].Need.text = FitToColumn(_legRow[i].Need, copy.Need);
                     _legRow[i].Progress.color = liveInk;
                     _legRow[i].Progress.text = copy.Live;
                 }
@@ -2472,8 +2491,10 @@ namespace SBR.Game
             // as a voided leg.
             _cashOutSlotSuspended = true;
             _tCashOut.enabled = true;
-            _tCashOut.color = structureGrey;
             _tCashOut.text = "MARKET SUSPENDED";
+            // T68: the ink is no longer set here. ApplyCashOutSlotState derives all three states
+            // from the flag set on the line above, so the slate's grey and the lit field's punched
+            // ink cannot drift apart at separate sites.
             ApplyCashOutSlotState();
         }
 
@@ -2491,8 +2512,7 @@ namespace SBR.Game
             _marketSuspended = false;
             _cashOutSlotSuspended = false;
             RevealedView.SetMarketSuspended(false);
-            _tCashOut.color = new Color(gold.r, gold.g, gold.b, 1f);
-            UpdateCashOutLabel();
+            UpdateCashOutLabel(); // T68: ink derived in ApplyCashOutSlotState, not chosen here
         }
 
         private void UpdateCashOutLabel()
@@ -2508,7 +2528,9 @@ namespace SBR.Game
                 // there is no frame where a gold figure sits on an unlit field.
                 _cashOutSlotSuspended = false;
                 _tCashOut.enabled = true;
-                _tCashOut.color = new Color(gold.r, gold.g, gold.b, 1f); // suspend dims it; live gold restores
+                // T68: no ink here either — clearing the flag above is what restores it, through
+                // the one derivation, which also decides whether it restores LIGHT gold or the
+                // punched-out dark of a lit field.
                 SetCashOutOffer(offer.Value);
             }
             else
@@ -2618,6 +2640,79 @@ namespace SBR.Game
                 _cashOutAnimation = null;
             }
             _cashOutTweening = false; // unconditional: always leaves "not tweening", idempotently
+        }
+
+        /// <summary>T69: the ticket row's statement, authored for THIS column.
+        ///
+        /// <para>The engine's <c>DisplayLabel</c> concatenates a pick and a fixture without noticing
+        /// they can share a term: <c>"{Picked} ML — {Away} v {Home}"</c> prints the backed team
+        /// TWICE — "Atlanta Middlemen ML — Atlanta Middlemen v Tulsa Startups". Only Moneyline has
+        /// that shape; every other market names no team in its own half, so there is nothing to
+        /// de-duplicate there and this method leaves their structure alone.</para>
+        ///
+        /// <para>The engine is deliberately untouched. <c>DisplayLabel</c> is shared with the
+        /// console and the laptop, and it is read and re-authored here rather than changed at the
+        /// source — the same shape as T42's two team constants: a per-surface presentation choice
+        /// belongs on the surface. (SureThing independently landed the same "X ML — v Y" form in
+        /// its own file, which is the corroboration, not the dependency.)</para>
+        ///
+        /// <para>Names come through <see cref="SweatFlavor.Short"/>, which is what the scorebug
+        /// already uses — the row and the scorebug should not disagree about what a club is
+        /// called.</para></summary>
+        private string LegStatement(Leg leg)
+        {
+            string away = SweatFlavor.Short(leg.Matchup.Away.Name).ToUpperInvariant();
+            string home = SweatFlavor.Short(leg.Matchup.Home.Name).ToUpperInvariant();
+
+            if (leg.Selection.Kind == MarketKind.Moneyline)
+            {
+                // The ruling's own form: the backed side once, then the opponent. Both facts, no
+                // restatement. The separator is the surface's existing middle dot (the chrome row
+                // already uses it) — TV-32 governs which DASH to use, and this form has none.
+                bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
+                return $"{(pickedHome ? home : away)} ML · v {(pickedHome ? away : home)}";
+            }
+
+            // Non-Moneyline: keep the engine's market half verbatim (it is authored copy) and
+            // shorten only the fixture, which is what makes these rows overrun.
+            string label = leg.DisplayLabel;
+            int cut = label.IndexOf(" — ", System.StringComparison.Ordinal);
+            return cut < 0 ? label : $"{label.Substring(0, cut)} — {away} v {home}";
+        }
+
+        /// <summary>T69/TV-12/13: fit a statement to its measured column by dropping whole words.
+        ///
+        /// <para>§5.1 reserves every leg slot at a fixed height and T24 forbids a string bending to
+        /// a stale measurement — so the string is re-authored against the column's ACTUAL width, at
+        /// the call site, measured on the element that will render it. Three-line wrapping is the
+        /// string exceeding a fixed slot, which is the one thing that section forbids.</para>
+        ///
+        /// <para>Truncation is on a WORD boundary, never mid-word (TV-12/13). A single word wider
+        /// than the column is returned whole and left to the element's existing Wrap mode to clip —
+        /// that is T46's containment backstop, and it is preferred to emitting a half-word.</para></summary>
+        private static string FitToColumn(Text target, string s)
+        {
+            if (target == null || string.IsNullOrEmpty(s)) return s;
+            float max = target.rectTransform.rect.width;
+            if (max <= 0f) return s; // no layout yet — never truncate against a width of zero
+
+            TextGenerationSettings settings = target.GetGenerationSettings(Vector2.zero);
+            TextGenerator gen = target.cachedTextGeneratorForLayout;
+            string cur = s;
+            while (gen.GetPreferredWidth(cur, settings) / target.pixelsPerUnit > max)
+            {
+                int cut = cur.LastIndexOf(' ');
+                if (cut <= 0) return cur; // one long word: clip it, do not split it
+                cur = cur.Substring(0, cut).TrimEnd();
+                // Drop a connector left dangling at the end. Matched as a whole trailing TOKEN, not
+                // by trimming characters — trimming 'v' would eat the last letter of a club whose
+                // short name ends in one.
+                while (cur.EndsWith(" v", System.StringComparison.Ordinal)
+                       || cur.EndsWith(" ·", System.StringComparison.Ordinal)
+                       || cur.EndsWith(" —", System.StringComparison.Ordinal))
+                    cur = cur.Substring(0, cur.Length - 2).TrimEnd();
+            }
+            return cur;
         }
 
         private string MatchupLine(Leg leg)
@@ -3049,6 +3144,38 @@ namespace SBR.Game
             // window the handle is wrong about. Read the flag, never the handle.
             bool fieldLit = live && !_cashOutTweening && CanAcceptCashOutNow();
             if (_cashOutField != null) _cashOutField.enabled = fieldLit;
+            _cashOutFieldLit = fieldLit;
+
+            // ---- T68: THE INVERSION IS TWO PARTS, AND ONLY ONE WAS BUILT --------------------
+            //
+            // §6.1 specifies actionable as "gold at L4, inverted field, dark type punched out".
+            // The field inverted; the type kept its light ink and the field rose to meet it.
+            // Measured at the acceptance view: field 0.807, `HOLD E` 0.793 — a contrast ratio of
+            // **1.02:1**. The money control had no readable label. Against `goldInk` it is 15.3:1.
+            //
+            // It predates T63 (pre-fix 0.696 vs 0.827 is 1.17:1, already failing) and no ladder
+            // work could have caught it: every T63 measurement compared this band to OTHER
+            // elements — scoreline, ball, column, strip. Nothing measured it against its own ink.
+            // A dominance gate and a legibility gate are different instruments (C33-am2).
+            //
+            // The ink is derived HERE, with the field, from the same predicate — because the two
+            // halves of one inversion must not be separable by a future edit. That is the same
+            // rule T43 applied to the slate and T66 to the event strip: one authority, and no
+            // call site gets to choose. Three states, and the call sites now set none of them.
+            if (_tCashOut != null)
+            {
+                _tCashOut.color = _cashOutSlotSuspended
+                    ? structureGrey                                   // §8.5 suspended: L1 unlit slate
+                    : fieldLit
+                        ? goldInk                                     // punched out of the lit field
+                        : new Color(gold.r, gold.g, gold.b, 1f);      // unlit states keep the light ink
+            }
+            if (_tCashOutStatus != null)
+            {
+                // `HOLD E` is the confirm-gesture copy T22/T36 ruled. On the lit field it inverts
+                // with the amount; unlit it keeps the L2 label grey it already had correctly.
+                _tCashOutStatus.color = fieldLit ? goldInk : AtTier(contextGrey, TierL2);
+            }
             // TV-12/13: suspended owns the slot exclusively. The status word is the offer speaking,
             // so it is absent whenever the offer is not — never merely dimmed (C10).
             if (_tCashOutStatus != null) _tCashOutStatus.enabled = live;
@@ -3082,7 +3209,15 @@ namespace SBR.Game
             // line overwrote structureGrey and drew the literal words MARKET SUSPENDED in full
             // brightness gold — not for one frame, but for as long as the player took to decide. The
             // gate is the slot's presentation state, which both suspend sites set.
-            if (_tCashOut.enabled && !_marketSuspended && !_cashOutSlotSuspended)
+            // T68: `!_cashOutFieldLit` is the fourth term and it is load-bearing. This taunt is the
+            // per-frame gold repaint T43 already caught once; on an INVERTED field it would paint
+            // the amount gold on gold every frame and undo the punch-out on the very next Update.
+            //
+            // Not repainting is also correct rather than merely safe: `goldInk`'s own declaration
+            // says "brightness is a promise about input" is carried by the FIELD, not the letters.
+            // While the field is lit the field is the state; the letters are static and dark, and
+            // the flash rides the scale it already animates above.
+            if (_tCashOut.enabled && !_marketSuspended && !_cashOutSlotSuspended && !_cashOutFieldLit)
             {
                 Color brightGold = Color.Lerp(gold, Color.white, 0.28f);
                 _tCashOut.color = Color.Lerp(gold, brightGold, _cashOutFlash);
@@ -3490,7 +3625,23 @@ namespace SBR.Game
             Image zone = MakePanel(root, "EventStripZone", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 AnchorTopLeft(grid.EventStrip), new Vector2(grid.EventStrip.width, grid.EventStrip.height), screenBg);
             Transform esRoot = ZoneRoot(zone); // T46
-            Rect es = new Rect(0f, 0f, grid.EventStrip.width, grid.EventStrip.height);
+            // T67: the TEXT zone starts 40px past the band boundary — canvas x 305-980, not
+            // 265-980. The zone's ground is unchanged; only the type is inset.
+            //
+            // Measured on the seated acceptance view: with the cash-out field lit, bloom crosses the
+            // boundary and is +0.181 mean over the first 20 canvas px, +0.015 over the next 20, and
+            // exactly 0.000 from x=365. The strip's COPY never warmed — its ink begins ~174px in on
+            // the captured line — but the line is CENTRED, so it only clears the halo while it is
+            // short. A near-full-width authored line would put its first glyph inside the halo, and
+            // no such line existed in the capture to prove it. This is the structural answer to that
+            // uncovered case: every line, at any length, now begins outside the measured reach.
+            //
+            // Separation is the remedy the ruling pre-committed to. The bloom is sealed and is not
+            // touched, and the band T63 just granted is not dimmed. A short line moves 20px (the
+            // centre of a narrower box); nothing else moves.
+            const float StripBloomInset = 40f;
+            Rect es = new Rect(StripBloomInset, 0f,
+                grid.EventStrip.width - StripBloomInset, grid.EventStrip.height);
 
             // §7 Event strip: "One line, white, L2 at rest, punching to L3 at its reveal
             // callback." Reuses the "Flavor" GameObject name — required by PlayMode regression

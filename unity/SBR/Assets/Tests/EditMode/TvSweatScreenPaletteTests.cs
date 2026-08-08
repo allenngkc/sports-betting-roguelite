@@ -1861,6 +1861,130 @@ namespace SBR.Tests.EditMode
 
         // ------------------------------------------------------------------ T64 / T65
 
+        // ------------------------------------------------------------------ batch 16
+        //
+        // SCOPE, stated once for the four below (C25): three are SOURCE scans and one is colour
+        // arithmetic. They pin the wiring and the values, not the pixels. The rendered pin for T68
+        // is a seated capture of the actionable band, and it is owed at the next capture — the
+        // defect T68 names was invisible to every suite this surface has precisely because no
+        // instrument compared an element to its own ink.
+
+        [Test]
+        public void T68_the_slot_ink_has_one_authority_and_the_taunt_yields_to_it()
+        {
+            // The defect was not the value, it was that the value had five authors. The field
+            // inverted and the type did not, because they were set in different places.
+            string path = Path.Combine(Application.dataPath, "SBR", "Runtime", "TvSweatScreen.cs");
+            string[] lines = File.ReadAllLines(path);
+
+            var sites = new List<int>();
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (lines[i].TrimStart().StartsWith("//")) continue;
+                if (lines[i].Contains("_tCashOut.color") && lines[i].Contains("=")) sites.Add(i);
+            }
+            Assert.AreEqual(2, sites.Count,
+                "T68: the cash-out amount's ink must be written in exactly two places — the one "
+                + "derivation in ApplyCashOutSlotState, and the per-frame taunt that yields to it. "
+                + $"Found {sites.Count}. A third author is how the field and the type came apart.");
+
+            bool taunt = false;
+            foreach (int i in sites)
+            {
+                // the taunt's assignment must sit under a guard naming the lit field
+                for (int j = i; j > System.Math.Max(0, i - 10); j--)
+                    if (lines[j].Contains("!_cashOutFieldLit")) { taunt = true; break; }
+            }
+            Assert.IsTrue(taunt,
+                "T68: the per-frame taunt repaints the amount gold. On a lit (inverted) field that "
+                + "undoes the punch-out on the next Update — the same repaint T43 caught once "
+                + "already. It must be gated on !_cashOutFieldLit.");
+        }
+
+        [Test]
+        public void T68_the_punched_ink_clears_a_legibility_threshold_against_its_own_field()
+        {
+            // C33-am2's companion gate: a dominance instrument is silent on whether the dominant
+            // element can be READ. This is the check that would have caught T68 two batches ago.
+            //
+            // SCOPE: this is a WCAG-style ratio on linear relative luminance of the AUTHORED
+            // colours. It deliberately does not try to reproduce the ruling's 15.3:1, which was
+            // measured on a rendered frame through the grade — the convention behind that exact
+            // figure is not derivable from the batch text, and inventing one to match it would be
+            // the instrument laundering a number it cannot compute.
+            var go = new GameObject("T68Contrast");
+            go.SetActive(false);
+            try
+            {
+                var s = go.AddComponent<TvSweatScreen>();
+                float field = Contrast(s.gold, s.goldInk);
+                Assert.Greater(field, 4.5f,
+                    $"T68: the actionable field against its punched ink is {field:F2}:1. The label "
+                    + "is the confirm-gesture copy T22/T36 ruled — if it does not clear the field, "
+                    + "the money control has no readable instruction on it.");
+
+                // and the defect itself, as a regression pin: light ink on the lit field
+                float broken = Contrast(s.gold, new Color(s.gold.r, s.gold.g, s.gold.b, 1f));
+                Assert.Less(broken, 1.1f,
+                    "sanity: gold ink on a gold field is the ~1:1 case T68 measured. If this "
+                    + "assertion starts failing, this test's colour model has drifted, not the build.");
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        /// <summary>WCAG contrast ratio on linear relative luminance. Clamped because this
+        /// surface's palette is HDR and authored values legitimately exceed 1.0.</summary>
+        private static float Contrast(Color a, Color b)
+        {
+            float la = RelLum(a), lb = RelLum(b);
+            float hi = Mathf.Max(la, lb), lo = Mathf.Min(la, lb);
+            return (hi + 0.05f) / (lo + 0.05f);
+        }
+
+        private static float RelLum(Color c)
+        {
+            float L(float v)
+            {
+                v = Mathf.Clamp01(v);
+                return v <= 0.04045f ? v / 12.92f : Mathf.Pow((v + 0.055f) / 1.055f, 2.4f);
+            }
+            return 0.2126f * L(c.r) + 0.7152f * L(c.g) + 0.0722f * L(c.b);
+        }
+
+        [Test]
+        public void T69_the_row_statement_is_re_authored_against_its_column()
+        {
+            // The engine's DisplayLabel prints the backed team twice on a Moneyline and overruns
+            // the column. It is read and re-authored on this surface, never changed at the source.
+            string path = Path.Combine(Application.dataPath, "SBR", "Runtime", "TvSweatScreen.cs");
+            string src = File.ReadAllText(path);
+
+            Assert.IsTrue(src.Contains("FitToColumn(_legRow[i].Line, LegStatement(leg))"),
+                "T69: the ticket row must take its statement through LegStatement (which names the "
+                + "backed side once) and FitToColumn (which truncates on a word boundary against "
+                + "the measured column). Assigning leg.DisplayLabel raw is the defect.");
+
+            int at = src.IndexOf("private string LegStatement(", System.StringComparison.Ordinal);
+            Assert.Greater(at, -1, "LegStatement not found — re-point this scan rather than deleting it.");
+            string body = src.Substring(at, System.Math.Min(2200, src.Length - at));
+            Assert.IsTrue(body.Contains("ML · v"),
+                "T69: the Moneyline form is `{BACKED} ML · v {OTHER}` — both facts, stated once.");
+        }
+
+        [Test]
+        public void T67_the_strip_text_starts_past_the_measured_bloom_reach()
+        {
+            string path = Path.Combine(Application.dataPath, "SBR", "Runtime", "TvSweatScreen.cs");
+            string src = File.ReadAllText(path);
+            Assert.IsTrue(src.Contains("const float StripBloomInset = 40f;"),
+                "T67: the strip's text zone begins 40px past the band boundary (canvas x 305-980). "
+                + "Measured reach was +0.181 mean over the first 20px and 0.000 from x=365. This is "
+                + "the structural answer to a CENTRED line, which only clears the halo while short.");
+            Assert.IsTrue(src.Contains("new Rect(StripBloomInset, 0f,"),
+                "T67: the inset must move the TEXT rect. Insetting the zone ground instead would "
+                + "shrink the strip's panel, which is not what was ruled.");
+        }
+
         [Test]
         public void The_event_strip_has_exactly_one_painting_point()
         {
