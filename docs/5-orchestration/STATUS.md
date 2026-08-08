@@ -35,6 +35,11 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-07 cycle 112 · **All four leads REBOOTED (Allen: API errors)** —
+  clean close + --continue relaunch, effort re-applied, resume prompts sent
+  (each re-states its task and continues). Watcher v13 on the new handles.
+  In-flight work resumes: room's cue frame, TV's ladder re-read → band fix,
+  markets' fresh seat confirm, SureThing stood down. Reversal: none.
 - 2026-08-07 cycle 111 · **Markets seat corrected + duplicates purged** —
   Allen's newest fresh markets session found and seated as THE canonical
   lead (the earlier brief had gone to a duplicate; three stale markets
