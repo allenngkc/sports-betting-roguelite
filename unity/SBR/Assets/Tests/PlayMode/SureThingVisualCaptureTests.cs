@@ -568,6 +568,12 @@ namespace SBR.Tests.PlayMode
         {
             yield return Boot();
             LaptopScreen laptop = Laptop();
+            // Last of the four. This flow's frame is the one the record row's rhythm across
+            // neighbours is read from — three rows in as many terminal states as the engine will
+            // honestly produce — and "as many as it will produce" was a function of the rolled seed.
+            // A row-to-row composition judged on a set of neighbours that never recurs is the exact
+            // thing C11 asks to be made against a frame someone else can look at again.
+            yield return PinRun(laptop, SeedLedgerMulti);
             string outputDirectory = Path.GetFullPath(Path.Combine(
                 Application.dataPath, "..", "..", "..", "artifacts", "surething-ui"));
             Directory.CreateDirectory(outputDirectory);
