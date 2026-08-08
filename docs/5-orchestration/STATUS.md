@@ -43,6 +43,25 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-08 cycle 122 · **G5 re-exemplared on Allen's ruling; emission bundle
+  delivered** — exemplar moved to Multiplier+House Key (+2.96pp, 8.7×); floor
+  set at ≥1.0pp from the report's own taxonomy line (~3× the new exemplar's
+  error — the gate can genuinely fail; >0 would have certified noise the day
+  the exemplar drifts). Twelfth zero-case instance guarded unasked: a missing
+  exemplar now fails loudly instead of silently absenting the gate. Smoke
+  PASS at n=600 (+2.8pp, 1.4×); floor run in flight (~±0.34pp, ~5.8×
+  expected). Room's emission bundle (18 files, 38MB: per-emitter table,
+  isolated crops, controls, WindowGlow annotation) pushed to DD inbox — two
+  transient net errors, both retried clean. SureThing in its long window.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | working (editor) | regenerate → suites → re-shoot at 400 | lead |
+  | tv-sweat | clean-holding | DD batch-15 verdicts (PR #3 open) | DD |
+  | room | clean-holding | DD rules R39 values + ArtIndicator | DD |
+  | markets-2 | working | exemplar floor run → verdict headline | lead |
+  | DD bridge | fed | emission bundle landed; "new inbox" line | Allen |
+  | Editor | surething | release on window close | orchestrator |
 - 2026-08-08 cycle 121 · **The emission instrument READS — third set valid,
   R39's numbers exist** — controls held (a-b-z), independent cross-check green
   on every emitter; run 2's defect was the rig mutating the room (blackout
