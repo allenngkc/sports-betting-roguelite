@@ -240,3 +240,44 @@ the graded captures for colour.
 | C2 | TV light spill colour | Interim — green tolerated, cold white-grey at TV Phase 3 |
 | C5 | Room re-tint from TV light in-engine | Open deliberately; if the rig supports it, big payoffs drive it |
 | C7 | Four documents still assert the revoked palette laws | Documentation debt |
+
+---
+
+## Amendment — 2026-08-08 (batch 15, transcribed by the orchestrator)
+
+**R39 closed — exact values granted on the adopted emission instrument.** The
+phone's isolated contribution reads 85.4°/chroma 5.0 against the laptop's
+84.3°/5.3: one chromaticity family in render, held **by construction** — all
+three phone states are `Amp(1/3/15)` off `LaptopScreen.GrantedLidEmission`.
+**R39-am:** the "these are observable" line is struck (the phone's canvas sits
+1.5mm over the emissive quad, the lid's arrangement); owed an in-Play A/B with
+the disposition **pre-committed** — if unobservable at runtime, the granted
+colours stand and no cue is ever built on the phone's glow.
+
+**R40 closed** — the material carries the granted value from the shared
+constant. **R40-am:** the DD's bake premise is falsified (every ratified
+region within ΔL* 0.13; `Mat()` sets `RealtimeEmissive`, which bakes nothing);
+the Edit-Mode half was load-bearing and stands. Emission-only changes need no
+bake but still void gates 6–8 through the builder; no tool re-issues a human
+gate (C28).
+
+**New ruled items:**
+
+- **R41** — the art indicator is struck **as a colour, kept as an object**: at
+  chroma 43–49 rendered it is ten times more saturated than any other emitter
+  and loses on scarcity, not area; C4/T34 admit no red-in-light exception. It
+  moves into the room's warm family (the rust end or the screens' 83–85°,
+  never signal-red), chroma bounded against the room's other emitters on the
+  instrument.
+- **R42** — WindowGlow is **ratified as textured**: the emission map governs
+  the window's colour (the night-city sodium is R24's contract). Standing
+  clause: on a textured emitter the authored value is **a multiplier, not a
+  colour**, and stays near-neutral. The gate detects emission maps and
+  annotates those surfaces.
+
+**The emission instrument is adopted as the room's standing emission gate** —
+controls `a == b == z` bit-identical per pose, an independent
+authored-chromaticity cross-check, footprint coherence (the lid predicts 0px
+seated / 51.18% focused), sub-2-code-value regions reported UNCOVERED, and
+ON | OFF | DIFF×6 crops as delivered evidence. The first instrument in the
+studio that reads light rather than pixels or constants.

@@ -46,6 +46,27 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-08 cycle 127 · **BATCH 15 LANDED — Phase L GRANTED, type deviations
+  expired; next wave dispatched** — pulled batch-15 rulings + revised TV
+  owning doc from dd-outbox, landed verbatim, transcribed (S68–S70/T67/R41/
+  R42 new; C15+S20/S28/S29+markets'-ladder expired; T63-66 closed; R39 values
+  granted + R39-am; R40 closed + R40-am; C33-am; SureThing L2 gate re-
+  instrumented; emission instrument ADOPTED studio-first "reads light").
+  Owning-doc amendments written orchestrator-side per DD (surething + room).
+  DD corrected my routing: the SKIP headroom was never a design call — the
+  kit had the answer (S68). Dispatched: SureThing S68+S69+S70 one commit; TV
+  one seated frame pair (T67, editor lease granted); room R41 then the
+  in-Play phone A/B (queued behind TV). C13 escalated to Allen's list per DD.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | working | S68/S69/S70 one commit | lead |
+  | tv-sweat | working (editor) | T67 seated frame pair → release | lead |
+  | room | working | R41 on instrument; A/B on lease | lead |
+  | markets-2 | clean-holding | none | — |
+  | DD bridge | outbox drained; next: T67 pair + S68 commit + R41 evidence | push on land | orchestrator |
+  | Editor | tv | → room on release | orchestrator |
+  | **Need Allen** | **C13**: room renders the retired violet laptop package — oldest open item, two surfaces, has contaminated three rulings' evidence; DD says it belongs on your list. Decision: schedule the content re-integration (room+SureThing joint window) or park it named | ruling | Allen |
 - 2026-08-08 cycle 126 · **BOARD CLEAN — all four lanes closed-holding on the
   DD** — markets' Unity evidence gap filled on merged main: both suites clean,
   verified on results XML rather than process state (its bee_backend/Csc
