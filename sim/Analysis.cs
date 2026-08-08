@@ -219,9 +219,10 @@ public sealed class GateData
     /// 1,000 × (2.15/0.50)² ≈ 18,500 gives ±0.50pp, which puts the 2pp band at exactly 4×
     /// resolution — the threshold at which <see cref="BandVerdict"/> stops qualifying a reading.
     /// The two rungs are not arbitrary and are worth keeping in that order: 4,600 makes the gate
-    /// able to FAIL, 18,500 makes it able to ADJUDICATE its own band. Cost: **~42–54 min**, being
-    /// 4.02× each of the two measured 4,600 runs — the spread is the measurement's, not a
-    /// prediction hedge.</summary>
+    /// able to FAIL, 18,500 makes it able to ADJUDICATE its own band — both confirmed on 2026-08-07:
+    /// ±0.48pp measured, 2pp band at 4.1×, G3 and G6 both adjudicating. Cost: **58.6 min measured**
+    /// (2,812,000 total runs). That is the wall time, not a formula — a "~42–54 min" range derived
+    /// here from two 4,600 samples under-predicted it by 9–40%, so quote measurements.</summary>
     public const int EscalationRuns = 18500;
 
     /// <summary>Two standard errors on a percentage, the smallest move a proportion measured over

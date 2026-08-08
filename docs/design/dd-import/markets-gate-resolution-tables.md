@@ -5,8 +5,10 @@
 committed on `markets-2`. This document is the record of what the ruling bought, not a request.
 
 **Why the DD seat gets a copy:** C32 — *a gate states its resolution* — was promoted from **G3**.
-Applying the ruling measured G3 properly for the first time, and **G3 is now the gate that cannot
-adjudicate its own reading.** The law's origin case is the case it caught.
+Applying the ruling measured G3 properly for the first time, and **G3 turned out to be the gate that
+could not adjudicate its own reading.** The law's origin case is the case it caught. §7 records the
+escalation that settled it; §1–§6 are written in the tense of the day and §7 supersedes them where
+they differ.
 
 ---
 
@@ -33,7 +35,7 @@ Resolution scales as 1/√n, so the two rungs are 1,000 × (2.15/1.00)² ≈ **4
 |---|---|---|---|
 | n = 1,000 (was) | ±2.15pp | **0.9×** | nothing — cannot fail for the drift it exists to catch |
 | **n = 4,600 (ruled)** | **±0.97pp** measured | **2.1×** | the gate can FAIL: a breach ≥0.97pp past the line reads as a breach |
-| n = 18,500 (escalation) | ±0.50pp (predicted) | ~4.1× | the gate can ADJUDICATE its whole band |
+| **n = 18,500 (escalation)** | ±0.50pp predicted, **±0.48pp measured** | **4.1×** | the gate can ADJUDICATE its whole band — confirmed, §7 |
 
 Allen predicted ±1.0pp at 4,600. **Measured: ±0.97pp.**
 
@@ -106,9 +108,10 @@ further from being a winning strategy than this seat could previously demonstrat
    not scale linearly — 4.6× the runs cost 6.6× the wall time (121 s → 801 s)". The campaign was
    then run a second time on **identical work** and came in at **625.78 s** — a 28% spread, putting
    the same ratio at 5.2×. The wall clock here cannot resolve a 1.4× effect, so there was no
-   scaling finding, only an unreplicated measurement. **Campaign cost is ~10–13 min; the 18,500
-   escalation ~42–54 min.** The single-measurement habit is the defect, not any one number it
-   produces.
+   scaling finding, only an unreplicated measurement. **Campaign cost measured 10.4 and 13.3 min;
+   the 18,500 escalation measured 58.6 min** — above the ~42–54 min this section originally
+   predicted, which is §7's first caveat. The single-measurement habit is the defect, not any one
+   number it produces.
 3. **The first version of this fix had the defect it was fixing.** The new count line said
    "1 NOT ADJUDICATED" while the Resolution column it pointed at named nothing — the tier check
    returned early, so the *weakest* tier, the one where a reading is most likely to be sitting on
@@ -128,11 +131,12 @@ gate line, and the thing to take to Allen is the band, not the sample size.**
 
 **G5 — the same defect in a sharper form, reported not fixed.**
 G5 passes on `synergy excess > 0`: a **threshold at zero**, with no stated resolution, read off a
-combination of four measured rates. Its reading went **+0.2pp → +0.1pp** between the two campaigns —
-**it moved by as much as its own value.** A reading that halves when you quadruple the sample is
-noise, and a threshold at zero cannot be cleared by noise in any principled way. No number is
-asserted here because none has been measured; that measurement is the next step, and it is not this
-seat's to take unasked.
+combination of four measured rates. Its reading went **+0.2pp → +0.1pp → +0.1pp** across n = 1,000,
+4,600 and 18,500 — it halved once, then held. The third point is recorded because it *weakens* the
+sharpest version of the case: "it moved by as much as its own value" was true of the first step
+only. The case that survives needs no movement at all — **a threshold at exactly zero, read off four
+measured rates, cleared by +0.1pp.** No error figure is asserted because none has been measured;
+measuring it is the next step and not this seat's to take unasked.
 
 ## 7. The escalation ran — every gate now adjudicates
 
@@ -154,8 +158,10 @@ Allen fired it 2026-08-07. `--gates --runs 18500 --seed-prefix TUNE`, **2,812,00
 | 4,600 | ±0.97pp | 2.1× | +0.7pp | can fail; adjudicated with 1.3pp clearance |
 | 18,500 | ±0.48pp | 4.1× | **+0.5pp** | **resolves its whole band** |
 
-**The martyr margin converged +1.5 → +0.7 → +0.5pp.** The n=1,000 reading was more than three times
-the truth. Loss-farming is nowhere near winning, and this seat could not previously demonstrate it.
+**The martyr margin converged +1.5 → +0.7 → +0.5pp.** The n=1,000 reading was **roughly three times**
+the settled one — "roughly" doing real work, since both are printed to 1dp and the ratio is only
+pinned to about 2.6–3.4×. Loss-farming is nowhere near winning, and this seat could not previously
+demonstrate it.
 
 **Predictions scored, not re-fitted** — both were written down before the run: G3 → ±0.33pp
 predicted, **±0.33pp measured**; G6 → ~4.1× predicted, **4.1× measured**.

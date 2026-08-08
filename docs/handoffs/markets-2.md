@@ -282,10 +282,12 @@ adjudicated.** Allen's predicted ±1.0pp came in at ±0.97pp measured.
    linearly — 4.6× the runs cost 6.6× the wall time (121 s → 801 s)". The second 4,600 run, on
    **identical work**, came in at **625.78 s** — a 28% spread, putting the same ratio at 5.2×. The
    wall clock on this machine cannot resolve a 1.4× effect, so there was never a scaling finding
-   there, only an unreplicated measurement. **Campaign cost is ~10–13 min; the 18,500 escalation is
-   ~42–54 min.** Quote the range. This is the ninth instance this fortnight and the fastest
-   turnaround yet between stating a number and it being wrong — the single-measurement habit is the
-   defect, not any one of the numbers it produces.
+   there, only an unreplicated measurement. This is the ninth instance this fortnight and the
+   fastest turnaround yet between stating a number and it being wrong — the single-measurement habit
+   is the defect, not any one of the numbers it produces. **And the replacement I offered here — a
+   ~42–54 min range for the escalation — was itself wrong within the day (actual 58.6 min).** Three
+   attempts, three misses. Measured campaign wall times, and nothing else: **10.4 min and 13.3 min
+   at n=4,600; 58.6 min at n=18,500.**
 
 ### G3 — near-line at 4,600, settled at 18,500. CLOSED.
 
