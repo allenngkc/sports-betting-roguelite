@@ -1,16 +1,17 @@
 # SureThing UI — re-seat state
 
-**STATUS 2026-08-06 · last code commit `a235bfc` · tree clean · EditMode 76/76 · PlayMode 56/56**
+**STATUS 2026-08-07 · last code commit `6ece398` · tree clean · EditMode 76/76 · PlayMode 56/56**
 - **THIS SURFACE HAS AN OWNING DOCUMENT.** Approved by Allen, canon at `main-2/docs/design/surething-design.md`. **Read it before this file.** The LEDGER is Design-verified (batch 10); the zero-dollar wax/grey split is **ratified as considered — never "fix" it.**
-- **Done:** batch 10 (C29 wrapper, verdict ground + chrome + figures, `NOT INSTALLED`, the colour audit, the run-context tally, the cross-round capture) and **all of batch 11** — margin header in biro (S60), scope stated once (S61), `R2 · TICKET 02` identity (S62), losing-verdict drain (S59).
-- **Now:** nothing in flight, editor slot released. Staged and zipped for the drag: `dd-import/surething-batch11-2026-08-06.zip` — all 12 frames re-shot in one clean paired run at `a235bfc` under a granted slot, machine confirmed clear.
-- **Request the editor slot through the orchestrator, every time** — corrected 2026-08-06; the standing grant in `STATUS.md` is stale and this seat's runs collided with a validation pass because of it. **Room holds the lease next** (glow captures).
+- **Done:** batch 10, **all of batch 11 — and batch 13 GRANTED all four of them on measured frames** (S59 drain, S60 biro header, S61 scope once, S62 identity). Since: **R38** (forced capture states take a numeric run seed) and **`04a-my-bets-riding`**, the last unphotographed state on the surface.
+- **Now:** nothing in flight, editor slot released to Room. Staged for the drag: `dd-import/surething-r38-riding-2026-08-07.zip` — four states, eight frames, one clean paired run at `6ece398`, machine confirmed clear.
+- **Emphasis on this surface is not one scalar** — now **law C33b**, promoted from S59's build. Wax outranks toner by *chroma*; toner-2 outranks toner-3 by *value*. **Assert a ranking by weight only among neutrals, and by token otherwise.**
+- **Request the editor slot through the orchestrator, every time** — corrected 2026-08-06; the standing grant in `STATUS.md` is stale and this seat's runs collided with a validation pass because of it.
 - **Run every suite through `tools/run-unity-tests.ps1`, never `-runTests` directly** (C29). It exited non-zero on both collided runs rather than reporting them as passes, which is the whole reason the collision cost two re-runs and nothing else.
-- **One capture still worth having:** the only MY BETS state is a fully-dead ticket, so the tally is photographed reading `1 / $0 / $0` — correct, but never shown doing its job.
+- **Open finding, raised not fixed:** the MY BETS mirror **never got S62** — it hand-builds `TICKET 1` at `SportsbookApp.cs:1316` instead of calling `LaptopUi.TicketIdentity`, which the LEDGER and the staged receipt both use. See §4-0.10.
 - **Two traps still live in this tree:** `artifacts/` is no longer git-ignored (a bare `git add -A` sweeps ~100 PNGs), and two capture states share the number `09` (markets' test, needs their nod).
 
-**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-06, after batch 11.
-**HEAD:** `a235bfc` · **Branch:** `surething-ui` · working tree clean.
+**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-07, after R38 + the riding capture.
+**HEAD:** `6ece398` · **Branch:** `surething-ui` · working tree clean.
 
 This is written for a seat with **no conversation context**. Everything below is either verifiable in
 the repo or flagged as unverified.
@@ -593,6 +594,83 @@ does the ranking — which is exactly why the inversion happened there and nowhe
 So: rankings are asserted by weight only among neutrals, and by token otherwise. And the general
 form, which is why S59 existed at all — **a per-element value check cannot see a ranking.** S53 was
 correct element-by-element and produced an inverted composition.
+
+**This is now law C33b**, promoted from this build. It binds past this surface.
+
+## 4-0.10 Batch 13 granted. R38 and the riding capture — and the finding they turned up
+
+**Batch 13 granted all four batch-11 items on measured frames.** Nothing from them is outstanding.
+
+**Done since** (`6ece398`). **EditMode 76/76, PlayMode 56/56**, both through the C29 wrapper.
+
+### R38 — the rig was printing its own name on a photographed frame
+
+`LaptopOs.RenderVerdict` prints `FINAL BANK $x · SEED {run.Rng.RunSeed}`. The rig seeded its two
+forced runs `verdict-RunWon` / `verdict-RunLost`, so frames 13 and 14 photographed **the capture
+apparatus's own label for the state** in the one slot on that screen where a product fact belongs.
+
+**The runtime was never wrong** — it prints whatever seed the run carries. The fix is in the rig,
+which is where the defect lives. Seeds are now `40719355` / `68204137`: all-digit, 8 characters,
+ordinary members of `RunDirector.NewSeed`'s `A-Z0-9` space, so each reads as a run the player could
+have been dealt. **Numeric rather than merely seed-shaped is the point** — T31 is the precedent one
+surface over, where a harness seed shaped like a label (`TVCAPTURE01`) was read as a debug token and
+cost the DD a withdrawn finding.
+
+Two guards added, because **nothing was watching that line**: the seed must be numeric, and the
+subline must actually print it. The suite read the headline's colour through two rounds of review
+and never read the line underneath it. That is the C18 family again — a value with nothing able to
+tell two cases apart.
+
+**`15-ledger-across-rounds` is also a forced state with a label seed, and is deliberately left
+alone.** The seed renders on the verdict screen and nowhere else, and **leg count is a function of
+the seed** (`DemoTicketPolicy.cs:37`) — so re-seeding it re-rolls the content of an already-granted
+frame. Raised with the DD rather than changed; recommendation on the record is to leave it. **Do not
+"finish the job" here without asking** — it costs a re-shoot and a re-grant of 15 for nothing visible.
+
+### `04a-my-bets-riding` — and the two things one frame closed
+
+RIDING is the **ticket-level** word (S23 makes that split contractual: RIDING never on a leg, LIVE
+never on a ticket). Every MY BETS capture in the set shot a ticket whose legs had **both** already
+resolved, so the word a ticket wears for its whole life until settlement had never been in a frame.
+Frame reads `TICKET 1 · RIDING`, leg 1 `GREEN` with its ring re-inked in wax, leg 2 `LIVE`.
+
+**It also closes the tally item this file has carried since batch 10.** `AT RISK` and
+`IF EVERYTHING LANDS` sum over RIDING tickets **only**, so a resolved round correctly reads
+`0 RIDING · $0 · $0` — the true answer to "what is still live" and also a photograph of the column
+doing nothing. This frame reads `1 RIDING · $35` and `$85`, and is the first to show the ratified
+AT-RISK-toner / IF-EVERYTHING-LANDS-wax split (owning doc §3.1) on non-zero figures.
+
+**Shot one reveal BEFORE 05, on the same ticket and run — 05 does not move**, and its content is
+identical to the granted frame. It takes a **letter** (02b's precedent) rather than renumbering a
+set the register, the owning doc and this file all cite by name.
+
+### The finding: the MY BETS mirror never got S62
+
+**Three sites print a ticket identity. S62 reached two.**
+
+| Site | Source | Prints |
+|---|---|---|
+| LEDGER | `SportsbookApp.cs:2186` — `LaptopUi.TicketIdentity(…, withRound: true)` | `R2 · TICKET 02` |
+| Staged receipt | `SportsbookApp.cs:1098` — `LaptopUi.TicketIdentity(…, withRound: false)` | `TICKET 02` |
+| **MY BETS mirror** | `SportsbookApp.cs:1316` — **hand-built string** | **`TICKET 1`** |
+
+**The build fact is independent of which form is correct:** the mirror composes its own identity
+instead of calling the helper, so **whichever way this is ruled, one of the three call sites cannot
+hear it.** That is the S60 shape verbatim — one component, two renderings — and the fourth time this
+surface has produced it.
+
+**Whether `TICKET 1` is itself wrong is genuinely unresolvable from the ruling, and was not guessed.**
+S62 pads "to match the form's own `01 02 03` entries" — a column that aligns. The mirror shows one
+ticket, in no column, under a masthead already reading `TICKETS 1/3`. **Raised, not fixed.** Under
+C31 it is a new item on new frames, not anything against the batch-11 grant.
+
+Also stale and trivial: the comment at `SportsbookApp.cs:2081` still calls identity `"TICKET n.n"`.
+
+### Still unphotographed after this
+
+- **PENDING legs** — visible at `Reset`, before any leg begins. One more frame in the same flow.
+- **Nobody has scrolled the surface.** S27's rail renders on `02b` now, but no capture can prove a
+  human can operate it. Still wants thirty seconds of someone driving the laptop.
 
 ## 4a. S32 — which happened: fixed between HEADs
 
