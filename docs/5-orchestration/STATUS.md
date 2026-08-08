@@ -43,6 +43,29 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-08 cycle 123 · **Phase L type package COMPLETE; final set delivered;
+  merge validation launched** — S29 closed on Allen's masthead-to-condensed
+  ruling (the old "spread 0" was measured against the wrong face: accidental
+  SemiBold is near-tabular 0.1875, true Regular proportional 4.7656 — the TMP
+  face has no tnum, so the §4.1 face assignment was the fix). S20 confirmed by
+  falsifiable prediction (roman regions −3.6–4.6pp ink, condensed control
+  0.25pp, rail identity 0.00pp — 600 by choice now). S52 held through stack,
+  weight, and face changes. Final after-set (40 files) pushed to
+  dd-inbox/…/final/ with revised ADDENDUM; two superseded zips dropped on
+  Allen's order. SENTIS define did NOT recur. Branch at 2e5ed01 (80 ahead) —
+  canonical validation agent launched (engine → warm compile → EditMode →
+  PlayMode+graphics → DLL guard); merge on green. Known limits carried to the
+  record: digit jitter measured-not-photographed; 13px floor source-checked
+  only; three kit values match no token (with the DD).
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | validation running | merge on green (2e5ed01) | orchestrator |
+  | tv-sweat | clean-holding | DD batch-15 verdicts (PR #3) | DD |
+  | room | clean-holding | DD rules R39 values + ArtIndicator | DD |
+  | markets-2 | working | exemplar floor run → headline + commit | lead |
+  | DD bridge | fed (pair/final/bake/emission all in) | "new inbox" line | Allen |
+  | Editor | free (released by SureThing) | validation agent's suites next | orchestrator |
 - 2026-08-08 cycle 122 · **G5 re-exemplared on Allen's ruling; emission bundle
   delivered** — exemplar moved to Multiplier+House Key (+2.96pp, 8.7×); floor
   set at ≥1.0pp from the report's own taxonomy line (~3× the new exemplar's
