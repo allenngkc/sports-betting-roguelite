@@ -38,6 +38,21 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-07 cycle 115 · **G6 dial RULED (Allen: option 1, n≈4,600, ±1.0pp;
+  escalation to 18,500 on near-line results) — markets dispatched, last
+  blocked lane un-blocks.** Four stale register rows corrected on room's
+  observable-state audit; the glow-cue evidence (both arms, three poses)
+  pushed to batch-14 — the cue's cannot-be-framed strike is documented for
+  the DD.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | complete | hold for DD verdicts | — |
+  | tv-sweat | working | band fix → verify window | lead |
+  | room | complete | hold for DD verdicts | — |
+  | markets-2 | working | G6 resolution build | lead |
+  | DD bridge | fed | batch-14: 7 items in; TV's verify results last | orchestrator |
+  | Editor | free | TV verify window on request | orchestrator |
 - 2026-08-07 cycle 114 · **§6a audit (heartbeat)** — room reports gates
   9 PASS / 0 FAIL / 0 VOID, both trees clean; Allen's queue-hygiene draft
   fired (stale entry cleared, open-items statement owed incl. cue-frame
