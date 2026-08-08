@@ -355,6 +355,34 @@ namespace SBR.Tests.PlayMode
                     $"LegStateWord must never say RIDING (checked for {state})");
         }
 
+        [Test, Order(8)]
+        public void LegStateInk_matches_the_kit_for_every_state_including_the_two_that_shared_an_else()
+        {
+            // S65. The mapping used to be an inline ternary whose final `else` covered PENDING and
+            // VOID together, which is why PENDING shipped at --toner-2: the kit gives them different
+            // tones and a fallthrough cannot. This is the contract that branch had no way to state.
+            //
+            // Tokens are RevealedState.jsx's TONE map, which BuildMirrorLeg's own comment names as
+            // its source and did not match.
+            Assert.AreEqual(LaptopOs.MoneyGold, SportsbookApp.LegStateInk(RevealedLegState.Won),
+                "GREEN is --wax");
+            Assert.AreEqual(LaptopOs.White, SportsbookApp.LegStateInk(RevealedLegState.Live),
+                "LIVE is --toner");
+            Assert.AreEqual(LaptopOs.Muted, SportsbookApp.LegStateInk(RevealedLegState.Lost),
+                "DEAD is --toner-3; the oxide is the strike, never the word");
+            Assert.AreEqual(LaptopOs.Muted, SportsbookApp.LegStateInk(RevealedLegState.Pending),
+                "S65: PENDING is --toner-3");
+            Assert.AreEqual(LaptopOs.TonerSecondary, SportsbookApp.LegStateInk(RevealedLegState.Voided),
+                "VOID stays --toner-2 — the S65 fix must not drag it along with PENDING");
+
+            // PENDING and DEAD are deliberately the same tone (S65), so tone alone cannot separate
+            // them and the strike is load-bearing rather than decorative. Asserted so a later change
+            // that drops the strike has something to fail against.
+            Assert.AreEqual(SportsbookApp.LegStateInk(RevealedLegState.Pending),
+                SportsbookApp.LegStateInk(RevealedLegState.Lost),
+                "S65 puts PENDING level with DEAD on purpose — DEAD is carried by its other channels");
+        }
+
         [UnityTest, Order(9)]
         public IEnumerator CompactLegLabel_is_unique_for_every_distinct_selection_on_one_matchup()
         {

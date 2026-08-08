@@ -209,13 +209,15 @@ namespace SBR.Tests.PlayMode
             StringAssert.Contains("1 RIDING", TextOf(Required(pendingMargin, "TallyAtRiskLabel")),
                 "both legs pending still means exactly one ticket riding");
 
-            // **Deliberately NOT asserting PENDING's tone, and this frame is why.** The build renders
-            // it `--toner-2` (SportsbookApp.cs:1342 — PENDING falls into the same else branch as
-            // VOID). S43 rules PENDING prints `--toner-3`, and the kit's RevealedState.jsx maps
-            // `PENDING: var(--toner-3)` — the very file BuildMirrorLeg's own comment cites as its
-            // source. Pinning the build's value here would bless the gap; pinning the kit's would fail
-            // a suite over a violation nobody has ruled on THIS screen. Shot as built so the DD gets a
-            // photograph of the actual surface, with the finding travelling beside it.
+            // S65: PENDING is `--toner-3`. This frame is what got it ruled — shot as built while the
+            // build rendered `--toner-2`, so the violation had a photograph rather than being fixed
+            // out of existence before anyone could confirm it. The DD measured 158,154,138 against
+            // the token's 110,107,94 on this exact state and ruled it a violation, so the assertion
+            // that was deliberately withheld here now belongs here.
+            Assert.IsTrue(SameInk(
+                    Required(Required(pendingTicket, "MirrorLeg0"), "LegState").GetComponent<Text>().color,
+                    LaptopOs.Muted),
+                "S65: a PENDING leg prints --toner-3, not the --toner-2 it shared with VOID");
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "04b-my-bets-pending", capturedPaths);
 

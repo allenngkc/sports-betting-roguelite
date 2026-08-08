@@ -1298,6 +1298,22 @@ namespace SBR.Game
                 : state == RevealedLegState.Voided ? "VOID"
                 : state == RevealedLegState.Live ? "LIVE" : "PENDING";
 
+        /// <summary>The leg-level state INK, extracted for the same two reasons
+        /// <see cref="LegStateWord"/> was: every call site renders one state one way, and the mapping
+        /// becomes something a test can hold.
+        ///
+        /// S65 is why it exists. The mapping lived as an inline ternary inside BuildMirrorLeg with a
+        /// shared `else` covering PENDING and VOID, so it rendered PENDING at `--toner-2` where S43
+        /// and `RevealedState.jsx` both require `--toner-3` — and nothing could assert the contract
+        /// because there was no contract to point at. That is S67's shape one level down: a value
+        /// composed by hand where a named thing should produce it.</summary>
+        internal static Color LegStateInk(RevealedLegState state)
+            => state == RevealedLegState.Won ? LaptopOs.MoneyGold
+                : state == RevealedLegState.Lost ? LaptopOs.Muted
+                : state == RevealedLegState.Live ? LaptopOs.White
+                : state == RevealedLegState.Voided ? LaptopOs.TonerSecondary
+                : LaptopOs.Muted;
+
         private void BuildMirrorTicket(RectTransform parent, RevealedTicket ticket, Vector2 position,
             float width)
         {
@@ -1337,9 +1353,21 @@ namespace SBR.Game
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, y),
                 new Vector2(width, 54f), ground);
             string state = LegStateWord(leg.State);
-            Color stateColor = leg.State == RevealedLegState.Won ? LaptopOs.MoneyGold
-                : leg.State == RevealedLegState.Lost ? LaptopOs.Muted
-                : leg.State == RevealedLegState.Live ? LaptopOs.White : LaptopOs.TonerSecondary;
+            // S65: PENDING is `--toner-3`. It used to fall into a shared `else` with VOID at
+            // `--toner-2` — one step too bright, measured 158,154,138 on `04b-my-bets-pending`
+            // against the token's 110,107,94.
+            //
+            // The mapping now lives in LegStateInk rather than inline here, because the collapsed
+            // `else` WAS the defect: the kit distinguishes PENDING (`--toner-3`) from VOID
+            // (`--toner-2`) and a fallthrough cannot. Moving the fallthrough would have fixed PENDING
+            // by breaking VOID.
+            //
+            // PENDING now sits level with DEAD, escalated rather than shipped, and the ruling holds
+            // it: DEAD carries three channels to PENDING's one (word, oxide strike, row drained to
+            // .55 — owning doc §3.3), `--toner-3` is this system's structure tone and a leg that has
+            // not happened is structure, and the TV reaches the same answer independently with NEXT
+            // at L1 against L0.
+            Color stateColor = LegStateInk(leg.State);
             // RevealedLeg.jsx's "team" slot (occupied here by either the team name or the market
             // label, whichever the leg carries) and its price are condensed; the state word matches
             // RevealedState.jsx.
