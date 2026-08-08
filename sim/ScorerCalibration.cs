@@ -123,6 +123,9 @@ public sealed class ScorerCalibrationData
         public double RealizedFreq;
         public double EvFraction;
         public double SeFraction;
+        /// <summary>The EV column's OWN error. Separate from SeFraction because odds multiply it —
+        /// see the accumulator. Quoting one beside the other is how a 1 SE wobble reads as a finding.</summary>
+        public double EvSeFraction;
     }
 
     private static readonly (double Upper, string Label)[] ProbabilityBands =
@@ -150,9 +153,12 @@ public sealed class ScorerCalibrationData
         return rows;
     }
 
-    /// <summary>Same aggregation, grouped by role instead of priced probability — scoring weight
-    /// (and so priced probability) is assigned purely by role, so this is the fastest possible
-    /// check for whether a miscalibration is role-shaped rather than a general drift.</summary>
+    /// <summary>Same aggregation, grouped by role instead of priced probability. Role sets the base
+    /// scoring weight and <see cref="RunConfig.ScoringWeightJitter"/> spreads players within it, so
+    /// this is the fastest check for whether a miscalibration is role-shaped rather than a general
+    /// drift. It cannot see a miss confined to one player inside a role — that pools away here.
+    /// (Before the per-player jitter, weight WAS purely role-derived and this text said so; the
+    /// wording outlived the model by one commit.)</summary>
     public IReadOnlyList<Bucket> ByRole()
     {
         var fw = new Accumulator();
@@ -178,6 +184,7 @@ public sealed class ScorerCalibrationData
         private int _hitCount;
         private double _pricedProbSum;
         private double _hitOddsSum;
+        private double _evVarianceSum;
 
         public void Add(Offer o)
         {
@@ -186,6 +193,14 @@ public sealed class ScorerCalibrationData
             _hitCount += o.Hits;
             _pricedProbSum += o.PricedProb;
             _hitOddsSum += o.Hits * o.Odds;
+            // Variance of the EV estimate, accumulated per offer because each offer carries its own
+            // odds. A hit pays `odds` and a miss pays 0, so one sample's contribution has variance
+            // odds² · q(1−q) — and at long odds that multiplier is enormous: at p≈4% the odds are
+            // ~24, so the EV column's error is ~24× the frequency column's. Reporting only the
+            // frequency's SE beside an EV number is what let this instrument's own author read a
+            // ~1 SE wobble as a pricing finding.
+            double qi = o.Samples > 0 ? (double)o.Hits / o.Samples : 0.0;
+            _evVarianceSum += o.Samples * o.Odds * o.Odds * qi * (1.0 - qi);
         }
 
         public Bucket ToBucket(string label)
@@ -201,6 +216,7 @@ public sealed class ScorerCalibrationData
                 RealizedFreq = q,
                 EvFraction = _hitOddsSum / _sampleCount - 1.0,
                 SeFraction = Math.Sqrt(q * (1.0 - q) / _sampleCount),
+                EvSeFraction = Math.Sqrt(_evVarianceSum) / _sampleCount,
             };
         }
     }
