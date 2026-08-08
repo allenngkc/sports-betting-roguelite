@@ -43,6 +43,28 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-08 cycle 124 · **Validation GREEN; merge blocked on one conflict,
+  resolution in-branch** — canonical validation of 2e5ed01 all-pass (engine
+  178/178; EditMode 78/78, +3 over main; PlayMode 57/57 on real graphics
+  Direct3D12, +10 over main; DLL byte-identical to HEAD LFS oid; single
+  editor instance held throughout; HEAD untouched). Merge --no-ff --no-commit
+  hit ONE conflict: SureThingEntryTests.cs (main moved post-fork — the 183
+  vs 178 engine delta's sibling). Aborted clean, zero residue; lead resolving
+  in-branch per protocol (merge main in, keep both test intents, suites
+  green, report new tip → I re-validate delta and merge). Markets: ALL 7
+  GATES PASS committed 0cc592c (G5 +3.0pp ±0.34pp clears floor 5.8×, 1.52M
+  pinned runs); handoff carries the wave; stale band item closed (already
+  fixed in TV's doc — Allen's route-it draft held as already-done). Editor
+  reserved for migration thread; markets' evidence lease stays queued.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | resolving conflict | merge main in → suites → new tip | lead |
+  | tv-sweat | clean-holding | DD batch-15 verdicts (PR #3) | DD |
+  | room | clean-holding | DD rules R39 values + ArtIndicator | DD |
+  | markets-2 | clean-holding | Unity evidence lease (queued) | orchestrator |
+  | DD bridge | fed | "new inbox" line | Allen |
+  | Editor | reserved | lead's resolution suites → markets | orchestrator |
 - 2026-08-08 cycle 123 · **Phase L type package COMPLETE; final set delivered;
   merge validation launched** — S29 closed on Allen's masthead-to-condensed
   ruling (the old "spread 0" was measured against the wrong face: accidental
