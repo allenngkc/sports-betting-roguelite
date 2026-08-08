@@ -1,10 +1,13 @@
 # Studio Status — 2026-08-08 (header refreshed every cycle per Allen)
 
-**TMP migration Phase L is BUILT** — engine swapped, helpers re-expressed,
-suites green throughout, tracking applied in six slot groups; the before/after
-evidence pair (same pinned seeds, C34) is **in the DD inbox** for
-re-verification. Register canon through **batch 14**. All four owning docs +
-constitution are Allen-approved canon.
+**THE TMP MIGRATION IS ON MAIN** (`5903750`, fast-forward to the validated
+SHA) — full type package: TMP swap, tracking (six slot groups), Regular 400
+(S20), tnum-via-condensed (S29, Allen's masthead ruling), S52 held; engine
+183/183, EditMode 78/78, PlayMode 57/57 on the merged tree. The final capture
+set + before-set are in the DD inbox for re-verification; type deviations
+expire on its grant. **The gate family also closed this cycle** (all 7 gates
+pass, G5 re-exemplared on measured ground, `0cc592c`) and **the emission
+instrument reads** (R39's numbers on record). Register canon through batch 14.
 
 - **surething-ui:** Phase L migration complete at `92971fd` (74 ahead of
   main). After-set shot on the pinned flows; close report names its unverified
@@ -43,6 +46,26 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-08 cycle 125 · **PHASE L MERGED TO MAIN** — re-validation of the
+  resolution merge all-green (engine 183/183 exact expected count; EditMode
+  78/78; PlayMode 57/57 real graphics; DLL BYTES_IDENTICAL; parents = branch
+  tip + main's exact tip), then main fast-forwarded to 5903750 so the
+  validated SHA IS main's tip — no untested tree ever existed on main. 106
+  files, +134k lines (TMP package + font SDF assets). Markets renumbered its
+  colliding frame with the lesson recorded (capture numbers are citation,
+  not sequence). Editor released to markets' evidence lease (pull main
+  first — 183 engine tests there). SureThing holds for DD re-verification;
+  deviations expire on grant. Reversal: git revert of the merge commit;
+  evidence trail in val-surething-ui/ + val-st-p2/ scratchpad dirs.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | MERGED · holding | DD re-verifies final set → deviations expire | DD |
+  | tv-sweat | clean-holding | DD batch-15 verdicts (PR #3) | DD |
+  | room | clean-holding | DD rules R39 values + ArtIndicator | DD |
+  | markets-2 | working (editor) | PlayMode evidence run on merged main | lead |
+  | DD bridge | fed | "new inbox" line — everything is staged | Allen |
+  | Editor | markets | release on evidence run close | orchestrator |
 - 2026-08-08 cycle 124 · **Validation GREEN; merge blocked on one conflict,
   resolution in-branch** — canonical validation of 2e5ed01 all-pass (engine
   178/178; EditMode 78/78, +3 over main; PlayMode 57/57 on real graphics
