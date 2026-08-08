@@ -523,9 +523,23 @@ namespace SBR
             // R39-am's pair. Same shape, one object over.
             if (phoneRenderer != null)
             {
+                // Save the ACTUAL block and put it back, exactly as the Edit-Mode set had to
+                // learn. ShootArm writes an emission-only block, so "restoring" by writing the
+                // value back leaves the renderer subtly unlike how it started -- and on the
+                // batch-15 run that showed up as control-a != control-z, confined to this
+                // object's own 44x21 px box while the rest of the room was bit-identical. The
+                // arms were unaffected (phone-on == phone-restored), but a control that fails
+                // for a known harmless reason is a control everyone learns to ignore.
+                bool phoneHadBlock = phoneRenderer.HasPropertyBlock();
+                var phoneOriginal = new MaterialPropertyBlock();
+                if (phoneHadBlock) phoneRenderer.GetPropertyBlock(phoneOriginal);
+
                 ShootArm(cam, phoneRenderer, outDir, "phone-on", phoneLive, emissionId);
                 ShootArm(cam, phoneRenderer, outDir, "phone-off", Color.black, emissionId);
                 ShootArm(cam, phoneRenderer, outDir, "phone-restored", phoneLive, emissionId);
+
+                if (phoneHadBlock) phoneRenderer.SetPropertyBlock(phoneOriginal);
+                else phoneRenderer.SetPropertyBlock(null);
             }
             else
             {
