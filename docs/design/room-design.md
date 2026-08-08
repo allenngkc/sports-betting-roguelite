@@ -307,3 +307,26 @@ on every ratified region) — it still voids gates 6–8 through the builder, an
 no tool re-issues a human gate (C28). And the control rule, alongside C32:
 *a control that fails for a known harmless reason is a control everyone
 learns to ignore* — fix it at the cause.
+
+---
+
+## Amendment — 2026-08-08 (batch 17, transcribed by the orchestrator)
+
+**R41-am closed whole:** Allen's luma-parity-intent value shipped
+`(0.2334, 0.1924, 0.1769)`; the DD's lit-read confirms a lit standby lamp;
+the residual rendered chroma 7.8 (band 4.9–5.5) is accepted — 0.031% of
+frame, brightness is not the lever (chroma does not track luminance), and a
+band tighter than the instrument's own spread is C32.
+
+**EMIT gate bookkeeping:** WindowGlow registers R42's ruling WITH the
+multiplier clause (a future saturated multiplier FAILS rather than passing
+as textured); ArtIndicator registers Allen's R41-am value.
+
+**Gates 6/7/8 remain VOID** — a human walk (R22's instrument) is the only
+re-issue path (C28); escalated to Allen's schedule, three batches standing.
+
+**Three instruments, three spaces (C33-am3, studio-wide):** ladder = Rec.709
+luma on display-encoded; contrast = relative luminance in linear; emission
+hue/chroma = CIELAB on linear authored. Space is stated with every number;
+luma-parity values are measured, never linearly scaled (this lane's own
+14.2% miss is the founding case).

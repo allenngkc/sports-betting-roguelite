@@ -356,3 +356,32 @@ Regular face declares no `tnum`).
 **§9's L2 gate is amended in place** (see the gate table): the constant check
 is the instrument; the frame cannot resolve 12px from 13px, and the gate now
 says so in its own line. The owed frame-check is retired, not deferred.
+
+---
+
+## Amendment — 2026-08-08 (batch 17, transcribed by the orchestrator)
+
+**S68, S69, S70 GRANTED and closed** on the re-shot receipt frames. Inside
+S70's grant: the ticket's identity had rendered in the money ink — `PAYS` is
+now the only wax on the receipt (S3 enforced where S70 never looked).
+
+**Three questions RATIFIED AS BUILT — do not re-open, do not "fix":**
+
+1. **The receipt footer stays 13px throughout.** The receipt is index, not
+   display (T29's distinction); the margin's `POTENTIAL PAYOUT` is where this
+   screen shouts, and a printed form sets key and value at one size.
+2. **The `$0` payout keeps its wax highlight at zero selections.** A sum of
+   zero is money arithmetic; the highlight marks the slot, not the amount.
+3. **The disabled PLACE fill (4/255) is never deepened.** It is a supporting
+   channel; the dimmed label and the stamped reason carry the state, and a
+   deeper value would be a fourth ground in a three-ground palette.
+
+**New ruled item — S71:** the margin's empty state spoke with two voices
+(`MY MARKS` is him; `YOUR MARGIN IS CLEAR` addresses him). Ruled: name the
+state, not the owner — `NO MARKS ON THIS SHEET`. §6 unchanged: second person
+only in genuine imperatives; first person exactly once, and it is him.
+
+**Three instruments, three spaces (C33-am3, studio-wide):** the brightness
+ladder is Rec.709 luma on display-encoded values; a contrast ratio is
+relative luminance in linear space; emission hue/chroma is CIELAB on linear
+authored values. Every measurement states its space as well as its unit.

@@ -107,6 +107,12 @@ luma at all** — within the range a `Color32` canvas colour is clamped to, matc
 requires G ≈ 1.0, which is lemon. A gold field's L4 standing is therefore established by field area,
 zone mean and boost, never by out-peaking white type.
 
+**Three instruments, three spaces** (C33-am3, studio-wide): the brightness ladder is Rec.709 luma on
+**display-encoded** values; a contrast ratio is relative luminance in **linear** space (undefined
+elsewhere); emission hue/chroma is CIELAB on **linear authored** values. Every measurement states its
+space as well as its unit; luma-parity values are measured, never linearly scaled; the three ladders
+are never compared to each other.
+
 ---
 
 ## 3. Colour
@@ -340,6 +346,11 @@ hue at L4 — banned on all three counts.
 The strip stays **neutral even when the event helps or hurts**; money semantics live on the leg rows
 and the cash-out slot.
 
+**Leg statements are authored to fit their measured column at the source** (T69, batch 17).
+Truncation on a word boundary is the structural backstop and should never be reached in shipped copy —
+truncation cannot produce good copy; it can only stop producing broken glyphs. The per-market short
+forms are the DD's (G1). The backed side is named once per row.
+
 Fictional leagues, teams and players only.
 
 ---
@@ -357,6 +368,7 @@ Real gates, per C9. Each states its instrument and, per C18 §4.2, **what it can
 | V5 | Display state == input state on the cash-out slot | one-value read + T43 same-frame test | whether the rendered field agrees with the flag |
 | V6 | **Room re-tint stays inside the room's palette** | room-region hue/sat/luma across an event burst | the panel's own content |
 | V7 | Variation reads as variation at review distance | rendered frames, five seeds, named manifest | anything asserted from signature diversity (T19) |
+| V8 | **Every inverting element reads against its own ink** (C33-am2) | field-vs-own-ink contrast in **linear relative luminance** (C33-am3 — a CR is undefined outside linear space) | **the label is the thinner margin and fails first if the field brightens** — rendered ink (0.222) sits far above authored (0.046) via bloom, AA and the black lift, so authored-value arithmetic overstates the margin |
 
 Every invocation reports its **executed case count** and exits non-zero on zero cases (C29). Every
 measurement is reported **with its scope and its resolution** attached (C25, C32).
@@ -385,8 +397,7 @@ measurement is reported **with its scope and its resolution** attached (C25, C32
 
 | Item | State |
 |---|---|
-| **T68** HOLD E invisible on the lit band — label inverts with the field | **BLOCKER**, ruled batch 16; in TV's queue |
-| **T69** leg statement restates its team, wraps its fixed slot | Ruled batch 16; re-author against measured column |
+| **G1** leg-statement authored short forms per market | Owed by the DD seat (batch 17); market list + column width requested from TV's lane |
 | **T65** settlement re-tint value (hue 88.0°, intensity 0.9) | Upper bound — owed a settlement capture |
 | **T9** `chromeCyan` retired-hue debt | Phase 3 |
 | **T10** two hardcoded emission rest values, one below the black floor | Phase 3 |

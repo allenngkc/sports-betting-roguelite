@@ -46,6 +46,29 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-08 cycle 132 · **BATCH 17 LANDED — everything granted; the wave's
+  scoreboard is clean** — T67/T68/T69 closed (blocker verified independently
+  at 7.95:1 in linear space — the DD recorded its OWN space error, birthing
+  C33-am3: three instruments three spaces, sixth reporting axis SPACE);
+  S68/S69/S70 granted with three ratified-as-built answers recorded so they
+  never re-open; R41-am granted whole (Allen's value, lit-read confirmed,
+  residual chroma accepted). New work is tiny: S71 one string (SureThing,
+  dispatched), EMIT gate bookkeeping (room, dispatched), G1 market list for
+  the DD's authored forms (TV, dispatched — the DD refused to guess copy
+  from one frame). Transcribed; all three owning docs amended (V8 gate row,
+  authored-to-fit clause, three-space table in all three). NEW Need Allen:
+  the R22 room walk — gates 6/7/8 VOID three batches, only a human walk
+  re-issues them (C28).
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | working | S71 one string → commit | lead |
+  | tv-sweat | working | G1 market list + column width → stage | lead |
+  | room | working | EMIT ruled-value table registration | lead |
+  | markets-2 | clean-holding | none | — |
+  | DD bridge | drained; next: S71 + market list + gate bookkeeping | push on land | orchestrator |
+  | Editor | free | none queued | orchestrator |
+  | **Need Allen** | **R22 room walk** (gates 6/7/8, ~10 min at the couch) · **C13** · **LFS fix** | walk + rulings | Allen |
 - 2026-08-08 cycle 131 · **BATCH 16 WAVE COMPLETE — the blocker is dead on
   frames** — TV's verify window: compile clean, EditMode 241/241, T68's pin
   shot: the label reads 6.99:1 against its own field where it measured
