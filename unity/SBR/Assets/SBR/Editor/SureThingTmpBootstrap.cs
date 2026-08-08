@@ -165,6 +165,40 @@ namespace SBR.EditorTools
                     EditorApplication.Exit(3);
                     return;
                 }
+
+                // **The gate that would have caught the whole thing.** Archivo.ttf's default face is
+                // SemiBold, so a generator that took faceIndex 0 shipped the roman voice at weight
+                // 600 for an entire migration and nothing said a word — every earlier check here
+                // asked whether the asset EXISTED. Allen ruled Regular 400 on 2026-08-08; this is
+                // what makes that stick rather than depending on the generator staying correct.
+                if (fa.faceInfo.styleName != "Regular")
+                {
+                    Debug.LogError($"[SureThingTmpBootstrap] {label} is style " +
+                                   $"'{fa.faceInfo.styleName}', not 'Regular'. The base voices are " +
+                                   "Regular 400; a weight tier is a named instance in the weight " +
+                                   "table, never the default face.");
+                    EditorApplication.Exit(3);
+                    return;
+                }
+            }
+
+            // S20: the one weight tier the kit asks for on this surface (OsRail.jsx:17). Checked as
+            // WIRED, not merely present — TMP resolves fontWeightTable[600 / 100], and an unwired
+            // entry falls back to the base face and renders Regular. That is a weight tier that sets
+            // cleanly, throws nothing, and does nothing.
+            var semi = AssetDatabase.LoadAssetAtPath<TMPro.TMP_FontAsset>(
+                "Assets/SBR/Resources/SureThing/Fonts/Archivo SemiBold SDF.asset");
+            TMPro.TMP_FontWeightPair[] weights = roman.fontWeightTable;
+            bool wired = semi != null && weights != null && weights.Length > 6
+                         && weights[6].regularTypeface == semi;
+            Debug.Log($"[SureThingTmpBootstrap] weight 600: asset " +
+                      $"{(semi != null ? $"PRESENT (style '{semi.faceInfo.styleName}')" : "MISSING")} · " +
+                      $"table index 6 {(wired ? "WIRED" : "NOT WIRED")}");
+            if (!wired || semi.faceInfo.styleName != "SemiBold")
+            {
+                Debug.LogError("[SureThingTmpBootstrap] S20's weight tier is not usable — it would " +
+                               "render Regular and look like it worked.");
+                EditorApplication.Exit(3);
             }
 
             // S11's ruling is "one LoadFont + two TMP assets". Two faces that resolved to the same

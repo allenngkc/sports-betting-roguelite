@@ -1,4 +1,3 @@
-using System.IO;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
@@ -7,19 +6,23 @@ using UnityEngine.TextCore.LowLevel;
 namespace SBR.EditorTools
 {
     /// <summary>
-    /// Generates the two TMP font assets S11 named — "one LoadFont + two TMP assets" — from the
-    /// Archivo and Archivo Narrow TTFs that already ship under Resources/SureThing/Fonts with their
-    /// OFL licences.
+    /// Generates the TMP font assets S11 named — "one LoadFont + two TMP assets" — from the Archivo
+    /// and Archivo Narrow variable TTFs that ship under Resources/SureThing/Fonts with their OFL
+    /// licences, plus the one weight-600 instance S20 reserves.
     ///
     /// **This exists instead of the Font Asset Creator window on purpose.** A hand-clicked font asset
     /// carries its sampling size, padding, render mode and atlas dimensions in somebody's click
-    /// history; nobody can re-derive it, and re-generating it later is a guess. That is the
-    /// unreproducible artifact C34 rules against, one layer below the frames it rules on. Every
-    /// parameter below is a named constant, so the assets can be deleted and rebuilt identically by
-    /// anyone, and a change to any of them is a diff.
+    /// history; nobody can re-derive it. That is the unreproducible artifact C34 rules against, one
+    /// layer below the frames it rules on. Every parameter below is a named constant, so the assets
+    /// can be deleted and rebuilt identically and a change to any of them is a diff.
     ///
-    /// Run it from **SBR ▸ SureThing ▸ Generate TMP font assets**, or headlessly via
-    /// <see cref="Generate"/> with -executeMethod.
+    /// **Faces are resolved by STYLE NAME, never by face index.** These are variable fonts, and the
+    /// default face is not what anyone would assume: Archivo.ttf's faceIndex 0 reports SemiBold, and
+    /// its Regular sits at a named-instance index. The first cut of this generator took the default
+    /// and so shipped the surface's roman voice at weight 600 for the whole migration, unchosen —
+    /// which S11 had done before it, in UGUI, for the same reason. A magic index would also rot the
+    /// first time the font is updated and the instances reorder. Ruled Regular 400 by Allen,
+    /// 2026-08-08.
     /// </summary>
     public static class SureThingTmpFontAssets
     {
@@ -43,105 +46,141 @@ namespace SBR.EditorTools
         /// "read at an angle" is S2's first sentence about this surface.</summary>
         public const GlyphRenderMode RenderMode = GlyphRenderMode.SDFAA;
 
-        /// <summary>**Dynamic, and this is the one parameter I would revisit with the assets in
-        /// hand.** Static bakes a fixed character set and is the more reproducible choice, which is
-        /// the direction C34 pulls. Dynamic is chosen anyway because a glyph this surface prints and
-        /// the atlas does not carry renders as NOTHING — silently, with every test green, which is
-        /// the exact S2/C18 failure this project keeps paying for. The surface prints generated team
-        /// names, U+2212 MINUS (S30, mandated), and the middot separator, so the character set is not
-        /// something I can enumerate honestly from here.
-        ///
-        /// The trade is real and it is recorded rather than hidden: dynamic atlas *packing* varies
-        /// with the order glyphs are first requested. **Packing is not appearance** — each glyph's
-        /// SDF is rendered identically either way — so the composited frame is unaffected, and C34's
-        /// subject is the frame. If a later measurement ever shows otherwise, this is the constant to
-        /// change first.</summary>
-        public const AtlasPopulationMode PopulationMode = AtlasPopulationMode.Dynamic;
-
         private const string FontDir = "Assets/SBR/Resources/SureThing/Fonts";
 
-        /// <summary>The two faces, and the names LaptopScreen.LoadFont resolves. Roman for running
-        /// text and labels, condensed for figures, prices, names, masthead and action labels — the
-        /// two-voice split S14 specified and S11 chose the superfamily to serve.</summary>
-        public static readonly string[] Faces = { "Archivo", "ArchivoNarrow" };
+        /// <summary>TMP maps a weight to its table by `fontWeight / 100`, so SemiBold (600) is 6.
+        /// Read from TMP_Text rather than assumed.</summary>
+        private const int SemiBoldWeightIndex = 6;
 
         [MenuItem("SBR/SureThing/Generate TMP font assets")]
         public static void Generate()
         {
-            foreach (string face in Faces) GenerateOne(face);
+            // The two voices, both at Regular 400. S14's two-voice split is a WIDTH split — roman for
+            // running text and labels, condensed for figures, prices, names — and it was never
+            // supposed to be a weight split as well.
+            TMP_FontAsset roman = GenerateOne("Archivo", "Regular", "Archivo SDF");
+            GenerateOne("ArchivoNarrow", "Regular", "ArchivoNarrow SDF");
+
+            // S20's entire scope on this surface is ONE element: OsRail.jsx puts the rail's identity
+            // mark at fontWeight 600 and every other laptop component in the kit is 400 (LockAction,
+            // MarginHeader, Masthead all state it explicitly). The 700s in the kit are TV components
+            // and belong to Phase T. So exactly one extra face is generated — the roman SemiBold —
+            // rather than a symmetrical pair the surface has no ruled use for.
+            TMP_FontAsset romanSemiBold = GenerateOne("Archivo", "SemiBold", "Archivo SemiBold SDF");
+
+            if (roman != null && romanSemiBold != null)
+            {
+                // Wiring it into the weight table is what makes `fontWeight = FontWeight.SemiBold`
+                // resolve. Without this the property sets cleanly, falls back to the base face, and
+                // renders Regular — a weight tier that silently does nothing, which is the exact
+                // shape of defect this surface keeps paying for.
+                var table = roman.fontWeightTable;
+                table[SemiBoldWeightIndex].regularTypeface = romanSemiBold;
+                roman.fontWeightTable = table;
+                EditorUtility.SetDirty(roman);
+                Debug.Log($"[SureThingTmpFontAssets] wired '{romanSemiBold.name}' into " +
+                          $"'{roman.name}' weight table at index {SemiBoldWeightIndex} (600)");
+            }
+
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log($"[SureThingTmpFontAssets] generated {Faces.Length} assets at {SamplingPointSize}pt " +
-                      $"padding {AtlasPadding} {RenderMode} {AtlasWidth}x{AtlasHeight} {PopulationMode}");
+            Debug.Log($"[SureThingTmpFontAssets] done at {SamplingPointSize}pt padding {AtlasPadding} " +
+                      $"{RenderMode} {AtlasWidth}x{AtlasHeight}");
         }
 
-        private static void GenerateOne(string face)
+        /// <summary>Finds the face index whose style name matches, so nothing here depends on a
+        /// magic number. FreeType exposes a variable font's named instances as (n &lt;&lt; 16); index 0 is
+        /// the default instance, which for Archivo is NOT Regular.</summary>
+        private static int ResolveFaceIndex(string path, string styleName)
+        {
+            for (int i = 0; i <= 12; i++)
+            {
+                int faceIndex = i == 0 ? 0 : i << 16;
+                TMP_FontAsset probe = null;
+                try
+                {
+                    // Deliberately tiny: this asset is read for its style name and destroyed.
+                    probe = TMP_FontAsset.CreateFontAsset(path, faceIndex, 16, 1,
+                        GlyphRenderMode.SDFAA, 64, 64);
+                }
+                catch { continue; }
+                if (probe == null) continue;
+                string style = probe.faceInfo.styleName;
+                Object.DestroyImmediate(probe);
+                if (style == styleName) return faceIndex;
+            }
+            return -1;
+        }
+
+        private static TMP_FontAsset GenerateOne(string face, string styleName, string assetName)
         {
             string ttfPath = $"{FontDir}/{face}.ttf";
-            var source = AssetDatabase.LoadAssetAtPath<Font>(ttfPath);
-            if (source == null)
+            if (AssetDatabase.LoadAssetAtPath<Font>(ttfPath) == null)
             {
-                // Loud, not silent: a missing face here would otherwise surface as a null font asset
-                // and a screen that renders no type at all, which is the S2 defect with extra steps.
                 Debug.LogError($"[SureThingTmpFontAssets] source face not found: {ttfPath}");
-                return;
+                return null;
             }
 
-            TMP_FontAsset asset = TMP_FontAsset.CreateFontAsset(
-                source, SamplingPointSize, AtlasPadding, RenderMode,
-                AtlasWidth, AtlasHeight, PopulationMode, enableMultiAtlasSupport: true);
+            int faceIndex = ResolveFaceIndex(ttfPath, styleName);
+            if (faceIndex < 0)
+            {
+                // Loud, and it must be: falling back to the default face is precisely how the roman
+                // voice ended up at SemiBold without anyone choosing it.
+                Debug.LogError($"[SureThingTmpFontAssets] {face} has no '{styleName}' named instance — " +
+                               "refusing to fall back to the default face.");
+                return null;
+            }
+
+            TMP_FontAsset asset = TMP_FontAsset.CreateFontAsset(ttfPath, faceIndex, SamplingPointSize,
+                AtlasPadding, RenderMode, AtlasWidth, AtlasHeight);
             if (asset == null)
             {
-                Debug.LogError($"[SureThingTmpFontAssets] CreateFontAsset returned null for {face}");
-                return;
+                Debug.LogError($"[SureThingTmpFontAssets] CreateFontAsset returned null for {face} {styleName}");
+                return null;
             }
+            asset.name = assetName;
 
-            asset.name = face + " SDF";
-
-            string outPath = $"{FontDir}/{face} SDF.asset";
+            string outPath = $"{FontDir}/{assetName}.asset";
             if (AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(outPath) != null)
                 AssetDatabase.DeleteAsset(outPath);
             AssetDatabase.CreateAsset(asset, outPath);
 
             // **The atlas texture and the material are SUB-ASSETS and must be added explicitly.**
-            // CreateFontAsset builds them in memory; only the Font Asset Creator window persists them,
-            // so a scripted asset saved without this step reloads with m_AtlasTextures unassigned —
-            // a font asset that exists, passes every null check, and renders nothing. That is the
-            // whole S2/C18 family again, one layer below the text.
-            if (asset.atlasTextures != null && asset.atlasTextures.Length > 0 && asset.atlasTextures[0] != null)
+            // CreateFontAsset builds them in memory; only the Font Asset Creator window persists
+            // them, so a scripted asset saved without this step reloads with m_AtlasTextures
+            // unassigned — a font asset that exists, passes every null check, and renders nothing.
+            if (asset.atlasTextures == null || asset.atlasTextures.Length == 0 || asset.atlasTextures[0] == null)
             {
-                Texture2D atlas = asset.atlasTextures[0];
-                atlas.name = face + " Atlas";
-                AssetDatabase.AddObjectToAsset(atlas, asset);
+                Debug.LogError($"[SureThingTmpFontAssets] {assetName} produced no atlas texture — " +
+                               "the asset would render nothing. Not shipping it silently.");
+                return null;
+            }
 
-                Shader shader = Shader.Find("TextMeshPro/Distance Field");
-                if (shader == null)
-                {
-                    Debug.LogError("[SureThingTmpFontAssets] TextMeshPro/Distance Field shader not " +
-                                   "found — essential resources are missing or incomplete.");
-                    return;
-                }
-                var material = new Material(shader) { name = face + " Atlas Material" };
-                material.SetTexture(ShaderUtilities.ID_MainTex, atlas);
-                material.SetFloat(ShaderUtilities.ID_TextureWidth, atlas.width);
-                material.SetFloat(ShaderUtilities.ID_TextureHeight, atlas.height);
-                material.SetFloat(ShaderUtilities.ID_GradientScale, AtlasPadding + 1);
-                material.SetFloat(ShaderUtilities.ID_WeightNormal, asset.normalStyle);
-                material.SetFloat(ShaderUtilities.ID_WeightBold, asset.boldStyle);
-                asset.material = material;
-                AssetDatabase.AddObjectToAsset(material, asset);
-            }
-            else
+            Texture2D atlas = asset.atlasTextures[0];
+            atlas.name = assetName + " Atlas";
+            AssetDatabase.AddObjectToAsset(atlas, asset);
+
+            Shader shader = Shader.Find("TextMeshPro/Distance Field");
+            if (shader == null)
             {
-                Debug.LogError($"[SureThingTmpFontAssets] {face} produced no atlas texture — the " +
-                               "asset would render nothing. Not shipping it silently.");
-                return;
+                Debug.LogError("[SureThingTmpFontAssets] TextMeshPro/Distance Field shader not found — " +
+                               "essential resources are missing or incomplete.");
+                return null;
             }
+            var material = new Material(shader) { name = assetName + " Atlas Material" };
+            material.SetTexture(ShaderUtilities.ID_MainTex, atlas);
+            material.SetFloat(ShaderUtilities.ID_TextureWidth, atlas.width);
+            material.SetFloat(ShaderUtilities.ID_TextureHeight, atlas.height);
+            material.SetFloat(ShaderUtilities.ID_GradientScale, AtlasPadding + 1);
+            material.SetFloat(ShaderUtilities.ID_WeightNormal, asset.normalStyle);
+            material.SetFloat(ShaderUtilities.ID_WeightBold, asset.boldStyle);
+            asset.material = material;
+            AssetDatabase.AddObjectToAsset(material, asset);
 
             EditorUtility.SetDirty(asset);
-            Debug.Log($"[SureThingTmpFontAssets] {face} -> {outPath} " +
-                      $"(atlas {asset.atlasTextures[0].width}x{asset.atlasTextures[0].height}, " +
-                      $"material {(asset.material != null ? "assigned" : "MISSING")})");
+            Debug.Log($"[SureThingTmpFontAssets] {face} '{styleName}' (faceIndex {faceIndex}) -> {outPath} " +
+                      $"· reported style '{asset.faceInfo.styleName}'");
+            return asset;
         }
     }
 }

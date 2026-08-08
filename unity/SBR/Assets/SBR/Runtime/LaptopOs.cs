@@ -692,7 +692,7 @@ namespace SBR.Game
 
         public static TMP_Text MakeText(RectTransform parent, string name, Vector2 anchor, Vector2 pivot,
             Vector2 position, Vector2 size, int fontSize, TextAnchor align, Color color, string content,
-            TMP_FontAsset font, float tracking = 0f)
+            TMP_FontAsset font, float tracking = 0f, FontWeight weight = FontWeight.Regular)
         {
             var go = new GameObject(name, typeof(TextMeshProUGUI));
             go.transform.SetParent(parent, false);
@@ -710,6 +710,13 @@ namespace SBR.Game
             // one at a time — the default is 0, which is exactly what the surface renders today, so
             // this parameter changes nothing until a slot names its token.
             text.characterSpacing = tracking * 100f;
+
+            // S20 expires here, for the one element the kit gives a weight tier. Set only when it
+            // differs from Regular: every other slot keeps TMP's default path untouched, so this
+            // parameter cannot change 96 slots by existing. TMP resolves the face through
+            // fontWeightTable[weight / 100], which the generator wires — an unwired weight falls
+            // back to the base face and renders Regular, i.e. a tier that silently does nothing.
+            if (weight != FontWeight.Regular) text.fontWeight = weight;
 
             // **richText off, in the helper, once.** TMP parses `<color=#...>` by default, which is
             // precisely the class of defect SureThingPaletteMarkupTests exists to catch — a retired
@@ -755,6 +762,22 @@ namespace SBR.Game
             if (text.GetPreferredValues(content, size.x, 0f).y > size.y)
                 text.overflowMode = TextOverflowModes.Overflow;
             return text;
+        }
+
+        /// <summary>The face TMP will actually render a given weight with, or the base face when that
+        /// weight is unwired.
+        ///
+        /// **Exists so measurement and render cannot disagree about weight**, which is the same trap
+        /// tracking set one commit earlier: SemiBold glyphs are wider than Regular, so measuring the
+        /// rail's identity mark against the base face while TMP draws it at 600 would under-report
+        /// its width and walk the sticker into it. Whatever weight a slot renders, it measures.</summary>
+        public static TMP_FontAsset WeightFace(TMP_FontAsset font, FontWeight weight)
+        {
+            if (font == null || weight == FontWeight.Regular) return font;
+            TMP_FontWeightPair[] table = font.fontWeightTable;
+            int index = (int)weight / 100;
+            if (table == null || index < 0 || index >= table.Length) return font;
+            return table[index].regularTypeface != null ? table[index].regularTypeface : font;
         }
 
         /// <summary>Measures a string's natural (unwrapped) width at a given size, adding the glyphs
@@ -1424,10 +1447,17 @@ namespace SBR.Game
 
             // W2 (identity mark): OsRail.jsx pairs an 11x11 --toner-3 swatch with the identity
             // word in --toner-2, 7px apart — not the single "■  NOTEBOOK" string this used to be,
-            // which faked the swatch as a glyph rather than drawing one. Weight 600 is unreachable
-            // here (S20/C15: production faces are variable fonts, legacy UI.Text renders only the
-            // default instance) and is rendered at normal weight rather than faked with
-            // FontStyle.Bold — the signed gap, not a fix.
+            // which faked the swatch as a glyph rather than drawing one.
+            //
+            // **S20 IS SPENT HERE, and this is the only place it spends.** This comment used to
+            // record weight 600 as unreachable — variable faces, and legacy UI.Text renders only the
+            // default instance — with the gap signed rather than faked with FontStyle.Bold. TMP
+            // named instances make it reachable, and OsRail.jsx:17 is the ONE laptop component in
+            // the kit that asks for 600; LockAction, MarginHeader and Masthead all state 400
+            // explicitly, and every 700 in the kit is a TV component.
+            //
+            // Recorded because it is not the obvious reading of S20: the ruling reserved a weight
+            // channel for the whole surface, and the kit spends it on a single word.
             const float swatchSize = 11f;
             const float identityGap = 7f; // OsRail's identity-mark gap: swatch -> word
             const float groupGap = 11f;   // OsRail's own flex gap between its three children
@@ -1436,7 +1466,7 @@ namespace SBR.Game
             float wordX = RailPadX + swatchSize + identityGap;
             LaptopUi.MakeText(rail, "Machine", new Vector2(0f, .5f), new Vector2(0f, .5f),
                 new Vector2(wordX, 0f), new Vector2(160f, 24f), ChromeText, TextAnchor.MiddleLeft,
-                LaptopOs.TonerSecondary, MachineMark, font);
+                LaptopOs.TonerSecondary, MachineMark, font, 0f, FontWeight.SemiBold);
 
             // W2 (sticker): a bordered chip — --biro text, a rule-w border in --biro-deep, 2px 6px
             // padding, tilted -.6deg. Sized to hug its own measured text (MeasureWidth, the same
@@ -1447,7 +1477,13 @@ namespace SBR.Game
             const float ruleW = 1f; // --rule-w
             const float stickerPadX = 6f;
             const float stickerPadY = 2f;
-            float machineWidth = LaptopUi.MeasureWidth(font, MachineMark, ChromeText);
+            // **Measured against the face it RENDERS with, not the base face.** SemiBold glyphs are
+            // wider than Regular, so measuring "NOTEBOOK" on the base face while TMP draws it at 600
+            // would under-report and walk the sticker into the word — the same measure-versus-render
+            // trap tracking set, one weight channel over. The comment above already promises this
+            // edge is clear "for any font metrics"; WeightFace is what keeps that true.
+            float machineWidth = LaptopUi.MeasureWidth(
+                LaptopUi.WeightFace(font, FontWeight.SemiBold), MachineMark, ChromeText);
             float stickerX = wordX + machineWidth + groupGap;
             float stickerTextW = LaptopUi.MeasureWidth(font, StickerText, ChromeText);
             const float stickerTextH = 14f;
