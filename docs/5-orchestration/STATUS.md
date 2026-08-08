@@ -43,6 +43,28 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-08 cycle 120 · **G5 answered at 3 sigma; instrument era compounding**
+  — markets: synergy real and positive at 3σ, error ~7× finer than G3's; the
+  question to Allen is now purely "does +0.1pp certify the pillar" (retagged
+  table in flight completes the package). Room's emission instrument finished
+  Part A+B and REFUSED its own first capture set (no control → zero
+  measurements → C29 fail) — 55MB deleted, re-shoot slot granted. SureThing:
+  S20 applied in code (roman → Regular 400 per Allen), which stales the pushed
+  after-set — ADDENDUM pushed to DD inbox holding re-verification for the
+  corrected set; long editor window queued behind room. TV: verify-window
+  record committed `97350ae`, pushed; Allen's open-the-PR fired with
+  gh-missing fallback. Editor sequencing: room short slot → SureThing long
+  window. Rulings fired this cycle: Regular-400 (S20), commit-it, push-it,
+  open-the-PR, retagged-table, editor grants ×2.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | queued on editor | regenerate assets → suites → re-shoot at 400 | lead (on my confirm) |
+  | tv-sweat | working | PR open or handoff fallback | lead |
+  | room | working (editor) | control-bearing re-shoot → release | lead |
+  | markets-2 | working | retagged table → whole package to Allen | lead |
+  | DD bridge | fed + addendum | pair + hold-note in inbox; "new inbox" line | Allen |
+  | Editor | room | pass to SureThing on release | orchestrator |
 - 2026-08-08 cycle 119 · **Phase L evidence pair delivered; §6b adopted; three
   rulings fired** — after-set landed (38 frames, pinned seeds) and I found the
   before-set had never left the building: pushed both + room's bake evidence
