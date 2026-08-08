@@ -64,6 +64,16 @@ namespace SBR.Tests.PlayMode
         private const string SeedVerdictWon = "40719355";
         private const string SeedVerdictLost = "68204137";
 
+        // The one seed on this surface that is NOT numeric, and it is exempt by ruling rather than by
+        // oversight. Batch 14 accepted the recommendation to leave it: the seed renders on the verdict
+        // screen and nowhere else, and leg count is a function of the seed — so re-seeding this flow
+        // would re-roll the content of an already-granted frame at no visible benefit. The DD named
+        // the asymmetry rather than hiding it, and so does this constant.
+        //
+        // **It is still a pin, and C34 is about pinning, not about spelling.** This flow was always
+        // reproducible; what it lacked was the assert.
+        private const string SeedLedgerAcrossRounds = "ledger-across-rounds";
+
         [UnityTest]
         public IEnumerator Capture_six_truthful_surething_states_as_flat_and_angled_pngs()
         {
@@ -780,9 +790,13 @@ namespace SBR.Tests.PlayMode
             // rig, and S57 is the ruling that a capture whose figures are arbitrary cannot be read
             // as evidence by anyone who was not told how it was made. With the shipped payments the
             // masthead reads $60 then $70, which is what a player would actually see.
-            laptop.director.StartNewRun("ledger-across-rounds");
-            var run = new Run("ledger-across-rounds", new RunConfig { StartingBank = 5000d });
+            laptop.director.StartNewRun(SeedLedgerAcrossRounds);
+            var run = new Run(SeedLedgerAcrossRounds, new RunConfig { StartingBank = 5000d });
             SetDirectorRun(laptop.director, run);
+            // C34: this flow was already reproducible — a fixed label, not a rolled seed — but nothing
+            // checked that the run being shot was the run that was pinned. The seed is stated once
+            // above and asserted here; it used to be typed twice with nothing comparing the two.
+            AssertShootingSeed(laptop, SeedLedgerAcrossRounds);
 
             TvSweatScreen screen = laptop.tv;
             screen.TimeScaleOverride = 0.0001f;
@@ -902,6 +916,7 @@ namespace SBR.Tests.PlayMode
                 new RunConfig { Payments = new[] { payment }, StartingBank = bank });
             Assert.AreEqual(1, run.Config.Rounds, "a one-element schedule must make round 1 the last");
             SetDirectorRun(laptop.director, run);
+            AssertShootingSeed(laptop, runSeed);
 
             laptop.director.LockRound(); // no tickets: FinishAndSettle runs on the spot
             Assert.AreEqual(expected, run.Phase,
@@ -1224,9 +1239,20 @@ namespace SBR.Tests.PlayMode
             AssertPinnedSeed(seed);
             laptop.director.StartNewRun(seed);
             yield return WaitForRebuild();
-            Assert.AreEqual(seed, laptop.director.Run.Rng.RunSeed,
-                "the flow must be shooting the seed it pinned, not one the director rolled");
+            AssertShootingSeed(laptop, seed);
         }
+
+        /// <summary>C34, consequence 1: a flow proves the director is carrying the seed it pinned,
+        /// before it shoots anything. **An unasserted pin is a comment** — and a pin that silently
+        /// failed would leave the flow rolling exactly as before while the file claimed otherwise.
+        ///
+        /// Separate from <see cref="AssertPinnedSeed"/> on purpose: every flow is asserted here, but
+        /// only the numeric ones are asserted there. `15-ledger-across-rounds` is pinned and exempt
+        /// from R38's spelling by ruling, and one helper doing both jobs would have no way to say
+        /// that.</summary>
+        private static void AssertShootingSeed(LaptopScreen laptop, string seed)
+            => Assert.AreEqual(seed, laptop.director.Run.Rng.RunSeed,
+                "C34: the flow must be shooting the seed it pinned, not one the director rolled");
 
         private static IEnumerator Boot()
         {
