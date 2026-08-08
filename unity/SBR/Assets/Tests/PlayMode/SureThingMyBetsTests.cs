@@ -43,6 +43,14 @@ namespace SBR.Tests.PlayMode
             Assert.AreEqual("PENDING", TextOf(Required(mirrorLeg1, "LegState")));
             StringAssert.Contains("RIDING", TextOf(Required(mirrorTicket, "TicketTitle")));
 
+            // S64: the identity is the shared formatter's output, not a hand-built string. Asserted
+            // against LaptopUi.TicketIdentity itself rather than against the literal "TICKET 01", so
+            // the mirror and the ledger cannot drift apart again — which is exactly what happened
+            // when S62 landed on the formatter and this screen never called it.
+            StringAssert.Contains(LaptopUi.TicketIdentity(null, 0, 0, withRound: false),
+                TextOf(Required(mirrorTicket, "TicketTitle")),
+                "S64: MY BETS prints the same ticket identity every other screen prints");
+
             InvokeView(view, "BeginLeg", 0, ticket.Legs[0]);
             yield return WaitForRebuild();
             mirrorTicket = Required(Required(App(laptop), "MyBetsBoard"), "MirrorTicket0");

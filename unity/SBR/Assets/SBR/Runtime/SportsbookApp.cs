@@ -1325,11 +1325,28 @@ namespace SBR.Game
                 : ticket.State == RevealedTicketState.Lost ? LaptopOs.Muted
                 : ticket.State == RevealedTicketState.CashedOut ? LaptopOs.MoneyGold
                 : LaptopOs.White;
-            // Ticket identity ("TICKET n") and the terminal state word are both condensed per
+            // S64: this printed `TICKET 1` — the one unpadded identity on a surface whose other two
+            // print the kit's form. It was not a different rule; it was a hand-built string that
+            // never called the shared formatter, so S62 landed on TicketIdentity and this screen
+            // never heard it. `TicketReceipt.prompt.md` names MY BETS by name as one of the three
+            // screens that component serves, and `TicketReceipt.d.ts` gives the form as `TICKET 01`:
+            // one component, three screens, one identity.
+            //
+            // `withRound: false` is the staged receipt's call for the staged receipt's reason — MY
+            // BETS mirrors the current round and the masthead above already states it, so a round
+            // qualifier here is S37 restatement.
+            //
+            // The mirror carries no engine ticket id (S35c: it holds only what the TV released), so
+            // this takes the helper's fallback path. **The round argument is unread while withRound
+            // is false** — it is 0 rather than a real round because there is no honest round to pass,
+            // and anything that flips this call to `true` must supply one first.
+            //
+            // Identity and the terminal state word are both condensed per
             // TicketReceipt.jsx / RevealedState.jsx.
+            string identity = LaptopUi.TicketIdentity(null, 0, ticket.Index, withRound: false);
             LaptopUi.MakeText(card, "TicketTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(8f, -8f), new Vector2(width - 16f, 24f), 16, TextAnchor.UpperLeft,
-                stateColor, $"TICKET {ticket.Index + 1}  ·  {state}", _fontCond);
+                stateColor, $"{identity}  ·  {state}", _fontCond);
             LaptopUi.MakeText(card, "TicketFigures", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(8f, -32f), new Vector2(width - 16f, 22f), 13, TextAnchor.UpperLeft,
                 LaptopOs.TonerSecondary,
@@ -2106,7 +2123,8 @@ namespace SBR.Game
         // two x/width pairs so the figures land beneath their heads (S38's own wording).
         //
         // Identity keeps its own x (14, the row's left pad) and width (112, canon's number cell —
-        // untouched by the legs cell's deletion, still just "TICKET n.n"). Terminal keeps its own
+        // untouched by the legs cell's deletion, still just the identity cell — `R2 · TICKET 02`
+        // since S62, which retired the "TICKET n.n" this line used to name). Terminal keeps its own
         // mechanism too: pivot (1,1) at -14 from the row's right edge, independent of every other
         // column and unaffected by any of this (S32's ruling on it is closed on rendered evidence,
         // out of scope here). What's deliberately gone is the LedgerLegsFlexWidth constant that
