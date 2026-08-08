@@ -309,3 +309,16 @@ Every invocation reports its executed case count and exits non-zero on zero case
 | **S10** sweat "loud register" for the laptop | Candidate; no built spec |
 
 **Not open:** S53-am, S55, S56, S57, S58 (figures), S34, S49 — all granted on the batch-10 frames.
+
+---
+
+## Amendment — 2026-08-07 (C26-am2, orchestrator-side per the DD's instruction)
+
+S59, S60, S61 and S62 are **closed on measured frames** (batch 13) and move from
+§10's open items into body law: one biro margin header on every destination;
+scope stated once; ticket identity prints as `R2 · TICKET 02` (the engine key is
+read and translated, never printed; the round qualifier appears only where it
+disambiguates); the losing verdict drains as a group (headline `--toner-2`,
+subline `--toner-3`), NEW RUN full wax on both screens. **R38 joins the open
+items:** forced capture states take a numeric run seed — a rig string never
+prints in a player-facing slot.
