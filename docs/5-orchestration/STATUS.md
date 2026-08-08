@@ -92,6 +92,13 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-07 cycle 105 · **Pricing variety ACCEPTED (Allen) — merge flow
+  started** — acceptance delivered to the verified-live markets session after
+  an Orca handle-shuffle left duplicate TUIs (the resurrected 99%-context
+  pre-clear zombie closed for hygiene; the fresh post-clear session
+  confirmed by its boot fingerprint). All four live handles re-verified,
+  watcher v10 armed on them. Awaiting markets' MERGE READY. Reversal:
+  Allen's own accept.
 - 2026-08-07 cycle 104 · **DesignSync transport live — batch 13 PUSHED** —
   §3b chartered and executed: all 38 files (context prompt, docs set, both
   glow evidence sets, TV's T63 measurements, SureThing's batch-11 photos)
