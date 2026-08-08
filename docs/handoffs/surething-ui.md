@@ -1,14 +1,19 @@
 # SureThing UI — re-seat state
 
-**STATUS 2026-08-07 · last code commit `58ecfe1` · tree clean · EditMode 76/76 · PlayMode 57/57**
-- **PlayMode is 57, not 56** — S65's `LegStateInk` contract test. Baseline any later comparison against 57. All eight formerly-unverified commits (`0200efa`…`58ecfe1`) are **proven**; the pinned-seed risk did not bite, every flow's preconditions held including the shop dealing an affordable offer.
+**STATUS 2026-08-08 · `5903750` MERGED TO MAIN · tree clean · EditMode 78/78 · PlayMode 57/57**
+- **PHASE L IS DONE AND ON MAIN.** The whole laptop text stack is TextMeshPro. **C15 complete; S28 (tracking), S29 (tabular figures) and S20 (weight 600) are all SPENT** — they expire formally on the DD's grant of the final set. Validated on the merged tree: engine 183/183, EditMode 78/78, PlayMode 57/57.
+- **The lane holds for the DD's re-verification of `dd-import/surething-phase-l-final-set-2026-08-08.zip`.** That set is the one that travels; the two earlier after-sets were dropped as superseded. Its before-half is `surething-batch14-pinned-set-2026-08-07.zip` (UGUI, same pinned seeds).
+- **EditMode is 78, not 76** — the two S29 digit-spread assertions. PlayMode stays 57. Baseline any later comparison against **78/57**.
+- **⚠ THE ROMAN VOICE WAS AT WEIGHT 600 FOR MONTHS AND NOBODY CHOSE IT.** `Archivo.ttf`'s **default face is SemiBold**; Regular is a named instance. UGUI loaded the default under S11 and my first TMP generator did the same. Ruled Regular 400 (Allen, 2026-08-08). **Faces now resolve by STYLE NAME and the generator refuses to fall back to the default face** — falling back is exactly how this happened, twice. See §4bb.
+- **The surface had tabular digits by ACCIDENT.** SemiBold is near-tabular (spread 0.1875); the ruled Regular is proportional (**4.7656 units**). Correcting the weight removed a guarantee nobody knew was load-bearing, which is what opened S29 — see §4bb.
 - **C34 is tested, not asserted — and the residual is named.** `01-form-lobby`, pinned since `102a571`, re-shot in a separate Unity process: **alpha 0 differing; RGB 440 of 720,896 (0.061%), max delta 2/255.** Content is fully reproducible. The 440 sit on **exactly two rows, y=581 and y=607** — 26px apart, inside the margin: two of **S34's ruled-paper rule lines**, a 1px untextured line rasterising with different subpixel coverage between processes. **Not seed-dependent, not content.** It is why two runs' PNGs are never byte-identical; do not chase it as a regression.
 - **BATCH 14 GRANTED the riding and pending captures and CLOSED R38.** Built since, all unverified: **S66** (every flow pinned *and asserted*), **S65** (PENDING → `--toner-3`), **S64** (mirror routes through `TicketIdentity`). **S67** filed as an inventory at `dd-import/dd-followup-surething-s67-helper-bypass-inventory.md` — **inventory only, nothing in it is fixed.**
 - **C34 is law and it is this surface's:** evidence that cannot be reproduced is not a set. Every capture flow pins its seed and **asserts the run is carrying it before shooting — an unasserted pin is a comment.** The fifth instrument axis, beside C25 scope, C28 coverage, C32 resolution, C33 unit.
 - **R38 is a SureThing item despite its `R` prefix.** Batch 14 recorded the mis-prefix as a seat error and ruled it stays — re-keying delivered work costs more than it saves. The room's next items took R39/R40. **Do not "correct" it.**
 - **THIS SURFACE HAS AN OWNING DOCUMENT.** Approved by Allen, canon at `main-2/docs/design/surething-design.md`. **Read it before this file.** The LEDGER is Design-verified (batch 10); the zero-dollar wax/grey split is **ratified as considered — never "fix" it.**
 - **Done:** batch 10, **all of batch 11 — and batch 13 GRANTED all four of them on measured frames** (S59 drain, S60 biro header, S61 scope once, S62 identity). Since: **R38** (forced capture states take a numeric run seed), **`04a-my-bets-riding`** and **`04b-my-bets-pending`**. **The surface is now at zero unphotographed states** — every ruled treatment on it has a frame.
-- **Now:** nothing in flight, editor slot released to Room. **`dd-import/surething-batch14-pinned-set-2026-08-07.zip` is the current set — 19 states, 38 frames, 20.4 MB, every one on a pinned flow. It supersedes all three earlier SureThing zips**, and unlike them it can be re-cut identically. **Flows 2–5 changed content this session** (their seeds were pinned): that is a different slate, deliberately, for the last time — **do not diff this set against any earlier zip, diff it against the next one.**
+- **Now:** nothing in flight. Phase L merged; the lane waits on the DD's grant. **Phase T (the TV's own TMP migration) is next in the plan and is NOT this seat's.**
+- **A capture state number collides: `11-desktop` and `11-margin-max-legs-staged-receipt`.** Merge-introduced and neither side could see it — main renumbered markets' state from `09-` to `11-` to clear the old 09/09 collision, correctly, because on main `11` is free. **`11-desktop` must not move:** it is cited by name in the register (S47, S56) and owning doc §5.2 as the frame two measurements were taken on. **16 is free.** Routed to markets' seat; no filenames collide, so nothing breaks — it misleads anyone reading the set in order, exactly as 09/09 did.
 - **THE SET WAS NEVER REPRODUCIBLE, AND IS NOW ONLY HALF FIXED.** `RunDirector.seed` ships **blank** in the scene; the director reads that as "roll a fresh random 8-char seed", so every `Boot()` flow dealt a **different slate every run**. Measured: batch 11's `05` reads `Tulsa Plumbers v Pawtucket Ferrets −516 · PAYS $71`, the next run reads `Sheboygan Bricklayers v Waterloo Zambonis −410 · PAYS $85`. **All six shooting flows now pin a numeric seed** through one `PinRun` helper that proves the director is carrying it before a frame is shot; `AssertPinnedSeed` states the rule once. **Every seed literal appears exactly once, in the constant block at the top of the file** — that is S62's standard applied to seeds, and `grep '"[0-9]\{8\}"'` is the check. **One unpinned seed is left: `15-ledger-across-rounds` carries the label `"ledger-across-rounds"`** (R38's own defect class, one line, out of the four-flow scope). **Never compare a frame across runs shot before `0200efa`** — that is not a regression, that is a different slate.
 - **Emphasis on this surface is not one scalar** — now **law C33b**, promoted from S59's build. Wax outranks toner by *chroma*; toner-2 outranks toner-3 by *value*. **Assert a ranking by weight only among neutrals, and by token otherwise.**
 - **Request the editor slot through the orchestrator, every time** — corrected 2026-08-06; the standing grant in `STATUS.md` is stale and this seat's runs collided with a validation pass because of it.
@@ -795,10 +800,43 @@ it; it is there.
 
 ## 4bb. C15 — the TextMeshPro migration, scoped
 
-**PHASE L IS ACTIVE — Allen started it 2026-08-07 and this surface leads it.** Plan at
-`main-2/docs/5-orchestration/tmp-migration-plan.md`. The before-baseline is the pinned re-shoot set
-(`surething-batch14-pinned-set-2026-08-07.zip`) — C34-compliant, which is why it was shot first, and
-**the after-captures run on the same pinned seeds** so before/after is a comparison of one subject.
+**PHASE L IS COMPLETE AND MERGED TO MAIN** (`5903750`, 2026-08-08). Plan at
+`main-2/docs/5-orchestration/tmp-migration-plan.md`. Before/after ran on the **same pinned seeds**,
+which is the only reason the pair is a comparison of one subject — C34 landing first is what bought
+that, and it was sequenced deliberately.
+
+### What Phase L actually taught, in the order it will bite someone again
+
+1. **A default font face is not the face you think.** `Archivo.ttf` defaults to **SemiBold**; Regular
+   is a named instance at a FreeType index. Both UGUI (S11) and my first TMP generator took the
+   default, so the roman voice shipped at weight 600 unchosen for months. **The generator now matches
+   on style name and refuses to fall back** — the fallback is the defect, not a safety net.
+2. **A correct fix can remove an accidental guarantee.** SemiBold is near-tabular (spread 0.1875);
+   Regular is proportional (4.7656). Fixing the weight broke tabular figures nobody knew were
+   accidental, which is what opened and then closed S29 — resolved by moving the masthead run figures
+   to the condensed face, **which owning doc §4.1 had already assigned them to.**
+3. **TMP cannot enable tabular figures at all.** `OTL_FeatureTag` declares only kern, liga, mark,
+   mkmk. There is no `tnum` in this stack; tabular digits come from the face or not at all. C15
+   expected S29 to expire at the migration — it did not, it was answered by measurement instead.
+4. **Measurement must follow the render, three times over.** Tracking widened strings, weight 600
+   widened glyphs, and both feed `MeasureWidth` — which sizes truncation AND the rail sticker AND the
+   tray badge. `LaptopUi.WeightFace` and the tracking parameter exist so a slot measures with exactly
+   what it renders with. **Any fourth type channel must do the same.**
+5. **S20's whole scope was one word.** The kit gives the laptop a single weight tier — `OsRail.jsx:17`,
+   the rail identity at 600. Everything else laptop-side is 400; every 700 in the kit is TV.
+6. **A gate that checks existence is not a gate.** The bootstrap reported PRESENT while the assets had
+   no atlas, and again while the roman voice was the wrong weight. It now fails on both, and on an
+   unwired weight table — an unwired tier renders Regular and looks like it worked.
+
+**S52 survived all of it:** rail band 0 differing of 34,816, tray past the app slots 0 of 22,576,
+through a type-stack replacement, a weight change and a face change.
+
+**Still owed, and named in the final set's README:** the **13px fact floor is verified in source, not
+at review distance** — `MakeText` clamps to `Mathf.Max(13, …)`, but TMP point size and UGUI pixel size
+are not the same quantity, and L2 is the one gate this phase never touched. Also: the digit jitter S29
+fixes was never photographed (no capture state varies the bank), and three kit values still match no
+token — `LedgerEntry.jsx:17` `.02em`, `OsRail.jsx:17` `.13em`, and the staged-receipt header this
+build renders as one string where the kit splits it across three trackings.
 
 The signed type deviations (**S28** tracking, **S29** tabular figures, **S20** weight 600, and
 **markets' ladder letter-spacing**) stay in force until this surface migrates and **expire the moment
