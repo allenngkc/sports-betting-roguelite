@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using SBR.Engine;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -42,8 +43,8 @@ namespace SBR.Game
         private enum App { Desktop, SureThing, OldSlips, Verdict }
 
         private readonly RectTransform _root;
-        private readonly Font _font;
-        private readonly Font _fontCond;
+        private readonly TMP_FontAsset _font;
+        private readonly TMP_FontAsset _fontCond;
         private readonly LaptopScreen _host;
         private readonly int _width;
         private readonly int _height;
@@ -65,7 +66,7 @@ namespace SBR.Game
         private App _toastApp;
         private SportsbookApp.Tab _toastTab;
 
-        public LaptopOs(RectTransform root, Font font, Font fontCond, LaptopScreen host, int width, int height)
+        public LaptopOs(RectTransform root, TMP_FontAsset font, TMP_FontAsset fontCond, LaptopScreen host, int width, int height)
         {
             _root = root;
             _font = font;
@@ -86,8 +87,11 @@ namespace SBR.Game
             RectTransform wallRt = wallpaper.rectTransform;
             wallRt.anchorMin = Vector2.zero;
             wallRt.anchorMax = Vector2.one;
-            wallRt.offsetMin = Vector2.zero;
-            wallRt.offsetMax = Vector2.zero;
+            // S48: the wallpaper is the remainder, not the whole screen. The shared rail takes the
+            // top 34px and the shared tray the bottom 34px, as on every other destination, and the
+            // ground fills what is left. offsetMin insets the bottom edge, offsetMax the top.
+            wallRt.offsetMin = new Vector2(0f, NotebookChrome.TrayHeight);
+            wallRt.offsetMax = new Vector2(0f, -NotebookChrome.RailHeight);
             wallGo.transform.SetAsFirstSibling();
             _app = LaptopUi.MakePanel(root, "App", Vector2.zero, Vector2.zero,
                 Vector2.zero, new Vector2(width, height), Ink);
@@ -244,83 +248,271 @@ namespace SBR.Game
                 // this must not re-flow into a second line and spill past the rail band.
                 LaptopUi.MakeText(_app, "Toast", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(360f, -5f), new Vector2(500f, 24f), 13, TextAnchor.MiddleCenter,
-                    White, _toast, _font).horizontalOverflow = HorizontalWrapMode.Overflow;
+                    White, _toast, _font).enableWordWrapping = false;
             }
         }
 
+        /// <summary>S52: the icon column starts one standard margin below the rail.
+        ///
+        /// `--st-pad-x` (14px) is the surface's content inset — `tokens/space.css:18`, "sheet +
+        /// margin horizontal padding", 16 of ~28 padding sites, and already mirrored here as
+        /// `SportsbookApp.LedgerPadX`. Allen picked it over the column's own 34px on 2026-08-04;
+        /// **there is no token named "standard margin"**, so this is the decision, not a lookup.
+        /// If a real spacing scale ever lands, this is the constant it replaces.
+        ///
+        /// The column used to start at y -120, an 86px gap. That gap was the wordmark's, and S44
+        /// deleted the wordmark, so the space went with it (S52). Derived from RailHeight rather
+        /// than hardcoded, so the fold and the margin cannot disagree.
+        ///
+        /// Internal so the test can assert against this exact value instead of a copy of it.
+        internal const float DesktopIconMarginY = 14f; // --st-pad-x
+        private const float DesktopIconX = 34f;
+
+        /// <summary>S56: 105 → 126. The 86x76 tile plus a 105 pitch left 29px between one icon and
+        /// the next, and the caption already used 22 of it — no room for the NOT INSTALLED line the
+        /// ruling's preferred channel needs. 126 leaves 50px: caption at 3–25 below the tile, state
+        /// at 27–47, and 3px clear of the next icon.
+        ///
+        /// The column start (S52) is untouched, and the column still ends far short of the tray:
+        /// the last icon's state line closes at y 549 against the tray's 670.</summary>
+        private const float DesktopIconPitch = 126f;
+
+        private static Vector2 DesktopIconSlot(int row) => new Vector2(
+            DesktopIconX,
+            -(NotebookChrome.RailHeight + DesktopIconMarginY + row * DesktopIconPitch));
+
         private void BuildDesktop()
         {
-            LaptopUi.MakeText(_desktop, "DesktopSure", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(28f, -28f), new Vector2(76f, 36f), 23, TextAnchor.UpperLeft, White,
-                "SURE", _font);
-            LaptopUi.MakeText(_desktop, "DesktopThing", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(105f, -28f), new Vector2(130f, 36f), 23, TextAnchor.UpperLeft, Accent,
-                "THING.", _font);
-            LaptopUi.MakeText(_desktop, "DesktopTagline", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(30f, -62f), new Vector2(420f, 24f), 12, TextAnchor.UpperLeft, Muted,
-                "the number never lies", _font);
+            // S44 + S45: the wallpaper is the lifted ground and its toner grain, and nothing else.
+            //
+            // What stood here: "SURE" in toner beside "THING." in biro at 23px — the house's
+            // wordmark, the largest element on the screen, half of it drawn in the one ink that is
+            // only ever what HE chose. The two-ink rule settles it before the story question is
+            // reached, and the story question has an answer anyway: S8 is Design-verified on the
+            // finding that this chrome reads as *his* machine, and a machine wearing the operator's
+            // logo contradicts that on the same surface. The house owns the app; the player owns
+            // the machine.
+            //
+            // And beneath it, "the number never lies" — deleted, not softened (S45). Alone on an
+            // otherwise empty screen the slot is the whole screen, so the line stops reading as the
+            // bookmaker's marketing and starts reading as the product's promise of a guaranteed
+            // win. C10's shape: there is no smaller version of that claim that is not the claim.
+            //
+            // The band this vacated is NOT headroom (R30). It is where S48's shared 34px rail
+            // lands when the desktop folds into NotebookChrome, and that rail already carries the
+            // machine's own marks — "NOTEBOOK" and the PROPERTY OF NOBODY sticker. S44 permits an
+            // optional dead-manufacturer wordmark here in --toner-3; it is deliberately not built,
+            // because it would be a second instance of exactly what the rail is about to bring.
+            //
+            // The toner grain S44 names is already on this screen: MakeTonerGrain is parented to
+            // _root in the constructor, above whichever of Desktop/App is active, so it needs
+            // nothing here.
 
-            MakeDesktopIcon("SureThing", "S", "Sportsbook", new Vector2(34f, -120f), Accent,
-                () => { _activeApp = App.SureThing; Invalidate(); });
-            MakeDesktopIcon("OldSlips", "$", "LEDGER", new Vector2(34f, -225f), SurfaceRaised,
-                () => { _activeApp = App.OldSlips; Invalidate(); });
-            MakeDesktopIcon("Mail", "@", "Mail (soon)", new Vector2(34f, -330f), Muted, null);
-            MakeDesktopIcon("Bank", "¤", "Bank (soon)", new Vector2(34f, -435f), Muted, null);
+            // S46: one name, SURETHING, everywhere the player sees it. "Sportsbook" was a second
+            // name for the same app, in a third case — the desktop called it one thing, the tray
+            // another, the masthead a third. The GameObject name stays "SureThing" (S16 exempts
+            // code identifiers, and SureThingLedgerTests reaches the tray slot by it).
+            // S44 again, via S47's wording — "the S loses its biro under S44". The app's own icon
+            // is not something the player drew, so it cannot be in his ink; the same rule that
+            // deleted the wordmark above takes the glyph. It goes to full --toner, which is also
+            // where S47 lands an installed glyph anyway, so it was not a colour to revisit here.
+            // S48: the icon and the tray slot below it are two controls for one app on one screen,
+            // so they route through one action. They did not before the fold — the icon set
+            // _activeApp inline and left the tab alone, while the tray slot calls OpenSportsbook,
+            // which restores the tab the current phase expects. Clicking the icon and clicking the
+            // slot would have landed the player on different tabs. That divergence existed only
+            // because the two controls had never been on the same screen.
+            MakeDesktopIcon("SureThing", "S", "SURETHING", DesktopIconSlot(0),
+                IconState.Installed, OpenSportsbook);
+            // S47: LEDGER takes the installed treatment with its "$" at full toner. It was being
+            // drawn in --ground-3 — the chip colour, in the glyph's argument — which is the same
+            // value as the tile behind it, so the one destination on this machine that is not the
+            // sportsbook announced itself with a glyph a step off invisible.
+            MakeDesktopIcon("OldSlips", "$", "LEDGER", DesktopIconSlot(1),
+                IconState.Installed, OpenOldSlips);
+            // S47: "(soon)" is deleted. The product does not put its own roadmap on his desktop,
+            // and the treatment already says these do not open.
+            MakeDesktopIcon("Mail", "@", "MAIL", DesktopIconSlot(2), IconState.NotInstalled, null);
+            MakeDesktopIcon("Bank", "¤", "BANK", DesktopIconSlot(3), IconState.NotInstalled, null);
 
-            // Was rgba(0.025, 0.02, 0.05, 0.94): effectively black, and blue-tinted. That broke two
-            // laws at once — nothing on this screen may be pure black, and the room physically
-            // cannot return a saturated cool colour, so a cool-cast bar reads as composited into
-            // the scene rather than photographed in it. Uses the same lifted warm ground as the
-            // in-app tray now; the desktop is the same machine.
-            RectTransform taskbar = LaptopUi.MakePanel(_desktop, "Taskbar", new Vector2(0f, 0f), new Vector2(0f, 0f),
-                new Vector2(0f, 0f), new Vector2(_width, 54f), SurfaceRaised);
-            LaptopUi.MakeButton(taskbar, "Home", "HOME", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
-                new Vector2(18f, 0f), new Vector2(90f, 34f), 12, SurfaceRaised, White, null, _font);
-            Text taskbarText = LaptopUi.MakeText(taskbar, "TaskbarText", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, 0f), new Vector2(320f, 30f), 12, TextAnchor.MiddleCenter, Muted,
-                "SURETHING.   ·   LEDGER", _font);
-            // Overflow rather than the Wrap default because this label is a single line that must
-            // not re-flow. (An earlier comment here blamed a Unity legacy-Text bug for the
-            // "renders only a couple of glyphs" defect; that diagnosis was wrong — the real cause
-            // was one control being drawn on top of another. See SportsbookApp.BuildSlip.)
-            taskbarText.horizontalOverflow = HorizontalWrapMode.Overflow;
-            LaptopUi.MakeText(taskbar, "Clock", new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
-                new Vector2(-24f, 0f), new Vector2(180f, 30f), 12, TextAnchor.MiddleRight, Muted,
-                "03:17 AM   ·   12%", _font);
+            // S48: the desktop carries the same NotebookChrome as every other destination. That was
+            // S8's whole finding — one chrome, built once, consumed everywhere — and the desktop's
+            // own 54px taskbar was the last copy of it. Everything that bar carried lands somewhere
+            // real: HOME on the rail's identity band, the centre "SURETHING · LEDGER" label on the
+            // tray's actual app slots, and "02:47 · 12%" on the rail's own clock and battery.
+            //
+            // The two drifts already fixed in this method are the argument for folding rather than
+            // against it. That bar was `rgba(.025, .02, .05, .94)` — effectively black AND
+            // blue-tinted, breaking the lifted-black rule and the no-cool-colour rule at once — and
+            // its clock read "03:17 AM · 12%" while the rail one click away read 02:47, one machine
+            // claiming two times. Both were a copy drifting from the original it was copied from,
+            // and both were found by eye rather than by anything that could have failed.
+            //
+            // Running.None because nothing is running here: both apps are backgrounded, both slots
+            // read raised and muted, and both launch. `minimize` is null for the same reason —
+            // there is no running app to drop out of, and under None no slot can reach that action.
+            //
+            // This changes a Design-verified surface: S8 returns to review against a desktop frame.
+            NotebookChrome.BuildRail(_desktop, _width, _font);
+            NotebookChrome.BuildTray(_desktop, _width, _font, NotebookChrome.Running.None,
+                OpenSportsbook, OpenOldSlips, null);
         }
 
-        private void MakeDesktopIcon(string name, string glyph, string label, Vector2 position, Color color,
-            Action onClick)
+        /// <summary>S47: installed versus not installed is a two-state vocabulary, not a value.
+        ///
+        /// Every appearance difference between the two is derived here from the state itself, so a
+        /// third combination cannot be authored at a call site. That is not tidiness: before this,
+        /// the caller passed a glyph colour by hand and the caption's strength was inferred from
+        /// whether an `onClick` happened to be null, and those two facts drifted apart exactly the
+        /// way you would expect — the LEDGER icon was drawing its `$` in `--ground-3`, the chip's
+        /// colour handed to the glyph, which put an installed app's glyph one step off the ground
+        /// it sat on. It was on every desktop capture ever taken and nobody saw it, because there
+        /// was no state to disagree with.</summary>
+        private enum IconState
         {
+            /// Full `--toner` glyph and caption, over a `--ground-3` chip.
+            Installed,
+
+            /// Glyph and caption at `--toner-3`, and no chip at all. An icon that does not open
+            /// reads as not-installed by treatment — which is the whole reason `(soon)` is not
+            /// merely unnecessary but forbidden: it is the product putting its roadmap on his
+            /// desktop to say something the treatment already said.
+            NotInstalled,
+        }
+
+        private void MakeDesktopIcon(string name, string glyph, string label, Vector2 position,
+            IconState state, Action onClick)
+        {
+            bool installed = state == IconState.Installed;
+            // One ink for glyph and caption. Splitting them across two arguments is what let them
+            // drift, and the ruling treats them as one statement.
+            Color ink = installed ? White : Muted;
+            // S56: **the chip is gone, for both states.** S47 gave an installed app a --ground-3
+            // chip; measured on frame 11 that chip was a 3/255 step against the wallpaper
+            // (34,34,22 on 31,31,19), which is not a visible edge at any distance, let alone on a
+            // panel read at an angle through the grade's grain. It drew and could not be seen,
+            // which is C18 in miniature: an element that cannot be seen is an element that is not
+            // there. Keeping a fainter or firmer version of it was legal; the surface's own grammar
+            // prefers a word, and so does this seat — a chip is a shape, and every other state on
+            // this surface is carried by a word.
+            //
+            // What replaces it is below: not-installed apps print NOT INSTALLED. That leaves two
+            // channels between the two states — ink AND a printed label — where before there was
+            // only glyph brightness, and status carried by tone alone is banned outright.
+            Color chip = new Color(0f, 0f, 0f, 0f);
+            // Interactability comes from the state too, so an icon cannot look installed and
+            // refuse to open, or vice versa. A test holds that pairing across all four icons —
+            // a runtime throw on a desktop build would help nobody.
             Button button = LaptopUi.MakeButton(_desktop, name, glyph, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                position, new Vector2(86f, 76f), 28, new Color(0f, 0f, 0f, 0.12f), color, onClick, _font,
-                onClick != null);
-            LaptopUi.MakeText(button.GetComponent<RectTransform>(), "Label", new Vector2(0.5f, 0f),
+                position, new Vector2(86f, 76f), 28, chip, ink, onClick, _font, installed);
+            // S46: icon labels take the machine's voice — caps, condensed. Condensed is set here,
+            // once, for the class rather than per icon; the caps live in each caller's string.
+            // S46 left `Mail (soon)` and `Bank (soon)` in sentence case because their text was
+            // S47's to rule; S47 has now deleted the parenthetical and they take the voice with
+            // the rest of them.
+            //
+            // The authored 11 renders at 13: MakeText clamps every size to 13 (as does
+            // MeasureWidth, so measurement and render still agree). Left as authored rather than
+            // "corrected" to a number that changes nothing on the frame.
+            // Named "Caption", not "Label": MakeButton already gives every button a text child
+            // called "Label" — the glyph, here — so this was a second sibling under the same name
+            // and the caption could not be reached by lookup at all. Nothing was drawn wrong, both
+            // Texts rendered; it was only unaddressable, which is why it survived. Found by the
+            // S46 test below asking the icon what it calls the app and being handed "S".
+            LaptopUi.MakeText(button.GetComponent<RectTransform>(), "Caption", new Vector2(0.5f, 0f),
                 new Vector2(0.5f, 0f), new Vector2(0f, -25f), new Vector2(150f, 22f), 11,
-                TextAnchor.UpperCenter, onClick == null ? Muted : White, label, _font);
+                TextAnchor.UpperCenter, ink, label, _fontCond);
+
+            // S56: the second channel. NOT INSTALLED is the machine's own register — the same terse
+            // system fact as the tray's DISK 61% FULL and NO UPDATES — and it says what is true
+            // rather than what is planned, which is why it is not the "(soon)" S47 deleted. A
+            // roadmap is a promise; this is a state.
+            if (!installed)
+                LaptopUi.MakeText(button.GetComponent<RectTransform>(), "State", new Vector2(0.5f, 0f),
+                    new Vector2(0.5f, 0f), new Vector2(0f, -47f), new Vector2(150f, 20f), 11,
+                    TextAnchor.UpperCenter, Muted, "NOT INSTALLED", _fontCond);
         }
 
         private void RenderVerdict(Run run)
         {
             LaptopUi.ClearChildren(_app);
             bool won = run.Phase == Phase.RunWon;
+            // S53-am: `--ground`, the same ground as every other destination. What stood here was a
+            // bespoke `new Color(.03f, .02f, .06f, 1f)` that rendered aubergine — measured (13, 0,
+            // 13), magenta at near-black and DARKER than --ink, so under the lifted-black floor too.
+            // Nothing in this system licenses a bespoke ground on a SureThing surface: the run ends
+            // on the document, because the whole product is a man reading a form.
             LaptopUi.MakePanel(_app, "VerdictBg", Vector2.zero, Vector2.zero, Vector2.zero,
-                new Vector2(_width, _height), new Color(0.03f, 0.02f, 0.06f, 1f));
-            LaptopUi.MakeText(_app, "VerdictBrand", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Vector2(_width, _height), Ink);
+
+            // S55: the machine stays. This screen had no rail and no tray while every other
+            // destination carries both — and the chrome is the argument, not decoration. It is what
+            // makes this an app running on HIS laptop rather than the game's own UI, and a
+            // full-screen takeover with the OS deleted is a game-over card. The rail's sticker,
+            // its stopped 02:47 clock and its dying battery are also at their most useful exactly
+            // when the run ends.
+            //
+            // The work area is the remainder between them, so the content below keeps its own
+            // anchors and simply lives inside the machine now instead of over it.
+            RectTransform work = LaptopUi.MakePanel(_app, "VerdictWork", new Vector2(0f, 1f),
+                new Vector2(0f, 1f), new Vector2(0f, -NotebookChrome.RailHeight),
+                new Vector2(_width, _height - NotebookChrome.RailHeight - NotebookChrome.TrayHeight),
+                new Color(0f, 0f, 0f, 0f));
+
+            LaptopUi.MakeText(work, "VerdictBrand", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
                 new Vector2(0f, -54f), new Vector2(800f, 36f), 22, TextAnchor.UpperCenter, White,
-                "SureThing.", _font);
-            Text verdict = LaptopUi.MakeText(_app, "Verdict", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                // S46: was "SureThing." — a fifth spelling, mixed case with a full stop, on the one
+                // screen a player only reaches at the end of a run. Typeface left alone: S46 rules
+                // the name and gives a voice only for icon labels, and this screen is unruled.
+                "SURETHING", _font);
+            // S52 (batch 9) took the losing headline off oxide: oxide is the house's mark — blocked
+            // actions, and the strike on a dead leg — and a run's verdict is a generic "bad" tint,
+            // which is the use the law names. A loss is carried by VALUE, not by hue.
+            //
+            // S59 (batch 11) fixes where that value landed. --toner-3 made the headline the DIMMEST
+            // element on its own screen, with its own context line measured twice as bright: the
+            // statement outranked by the facts that qualify it. **The drain belongs to the group,
+            // not the line** — every element on the losing screen steps down one, so it still reads
+            // drained against the winning screen while the headline still outranks its own subline.
+            //
+            //            headline          subline
+            //   won      --wax             --toner
+            //   lost     --toner-2         --toner-3
+            //
+            // Still no strike, and still deliberately: the ledger pairs toner-3 with an oxide
+            // strike, but that strike marks a dead record ROW, and a rule through a 30px headline
+            // is a different device than that ruling describes.
+            TMP_Text verdict = LaptopUi.MakeText(work, "Verdict", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 70f), new Vector2(900f, 60f), 30, TextAnchor.MiddleCenter,
-                won ? MoneyGold : MoneyBad,
+                won ? MoneyGold : TonerSecondary,
                 won ? "THE HOUSE BLINKS FIRST" : "THE BOOKIE COLLECTS", _font);
-            verdict.horizontalOverflow = HorizontalWrapMode.Overflow;
-            Text final = LaptopUi.MakeText(_app, "Final", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, 14f), new Vector2(900f, 36f), 18, TextAnchor.MiddleCenter, White,
+            verdict.enableWordWrapping = false;
+            // S59: the subline steps down with its headline. It was --toner on both screens, which
+            // is what left the losing headline outranked by its own context line.
+            TMP_Text final = LaptopUi.MakeText(work, "Final", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, 14f), new Vector2(900f, 36f), 18, TextAnchor.MiddleCenter,
+                won ? White : Muted,
                 $"FINAL BANK {LaptopUi.Money(run.Bank)}   ·   SEED {run.Rng.RunSeed}", _font);
-            final.horizontalOverflow = HorizontalWrapMode.Overflow;
-            LaptopUi.MakeButton(_app, "NewRun", "NEW RUN", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                new Vector2(0f, 58f), new Vector2(300f, 52f), 19, Accent, White,
+            final.enableWordWrapping = false;
+            // S52 (batch 9): NEW RUN was a biro-FILLED field with toner type — wrong twice. Biro is
+            // only ever what the player chose (Law Two, the same rule S44 applied to the wallpaper
+            // and the app's own icon glyph), and a screen's phase-advancing action is a wax primary
+            // under S18: wax field, wax-ink type, 2px --wax-deep edge. MakeWaxPrimary builds all
+            // three, and this is the third control on the surface to qualify alongside PLACE TICKET
+            // and LEAVE — NEXT ROUND. It carries the same MoneyGold/WaxInk pair they do.
+            LaptopUi.MakeWaxPrimary(work, "NewRun", "NEW RUN", new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(0f, 58f), new Vector2(300f, 52f), 19, MoneyGold, WaxInk,
                 () => { _host.director.StartNewRun(); Invalidate(); }, _font);
+
+            // S55: rail and tray last, so the machine is drawn over anything the work area might
+            // overflow rather than under it. Running.Sportsbook because the run ended inside the
+            // book and the book is still what is open — the same state the tray carries on every
+            // other SureThing destination, and the same call SportsbookApp.BuildTaskbar makes.
+            // The player can still reach the ledger or drop to the desktop from here; a run being
+            // over is not a reason to take his machine away.
+            NotebookChrome.BuildRail(_app, _width, _font);
+            NotebookChrome.BuildTray(_app, _width, _font, NotebookChrome.Running.Sportsbook,
+                null, OpenLedger, OpenHome);
         }
 
         private void ShowToast(string toast)
@@ -449,6 +641,31 @@ namespace SBR.Game
         }
     }
 
+    /// <summary>The surface's tracking scale, owning doc §4.3, in **em** — the unit the design system
+    /// states it in. LaptopUi.MakeText converts to TMP's hundredths-of-an-em internally, so nothing
+    /// outside that helper has to know TMP's unit.
+    ///
+    /// **Reachable for the first time at C15.** S28 signed tracking as a C14 deviation precisely
+    /// because UI.Text could not address it, and that signature expires the moment a slot names one
+    /// of these. Named rather than inlined so the register can be pointed at a symbol, and so
+    /// MeasureWidth and the slot it measures cannot be given different numbers — the failure this
+    /// commit exists to make impossible.</summary>
+    internal static class LaptopTrack
+    {
+        /// <summary>Names, prices, masthead.</summary>
+        public const float Names = 0.03f;
+        /// <summary>Settled records.</summary>
+        public const float Records = 0.08f;
+        /// <summary>The tab strip.</summary>
+        public const float Tabs = 0.11f;
+        /// <summary>Field keys — the margin's labels, column heads.</summary>
+        public const float FieldKeys = 0.12f;
+        /// <summary>Action labels.</summary>
+        public const float Actions = 0.14f;
+        /// <summary>Margin headers (S33/S60's biro header).</summary>
+        public const float MarginHeader = 0.15f;
+    }
+
     internal static class LaptopUi
     {
         public static void ClearChildren(RectTransform root)
@@ -457,20 +674,59 @@ namespace SBR.Game
                 UnityEngine.Object.Destroy(root.GetChild(i).gameObject);
         }
 
-        public static Text MakeText(RectTransform parent, string name, Vector2 anchor, Vector2 pivot,
-            Vector2 position, Vector2 size, int fontSize, TextAnchor align, Color color, string content, Font font)
+        /// <summary>TextAnchor is kept in the signature deliberately: mapping it here rather than
+        /// changing 97 call sites keeps the migration a helper change, and keeps every slot's
+        /// authored intent readable in the same vocabulary the rest of the file uses.</summary>
+        private static TextAlignmentOptions ToTmpAlignment(TextAnchor align) => align switch
         {
-            var go = new GameObject(name, typeof(Text));
+            TextAnchor.UpperLeft => TextAlignmentOptions.TopLeft,
+            TextAnchor.UpperCenter => TextAlignmentOptions.Top,
+            TextAnchor.UpperRight => TextAlignmentOptions.TopRight,
+            TextAnchor.MiddleLeft => TextAlignmentOptions.Left,
+            TextAnchor.MiddleCenter => TextAlignmentOptions.Center,
+            TextAnchor.MiddleRight => TextAlignmentOptions.Right,
+            TextAnchor.LowerLeft => TextAlignmentOptions.BottomLeft,
+            TextAnchor.LowerCenter => TextAlignmentOptions.Bottom,
+            _ => TextAlignmentOptions.BottomRight
+        };
+
+        public static TMP_Text MakeText(RectTransform parent, string name, Vector2 anchor, Vector2 pivot,
+            Vector2 position, Vector2 size, int fontSize, TextAnchor align, Color color, string content,
+            TMP_FontAsset font, float tracking = 0f, FontWeight weight = FontWeight.Regular)
+        {
+            var go = new GameObject(name, typeof(TextMeshProUGUI));
             go.transform.SetParent(parent, false);
-            Text text = go.GetComponent<Text>();
+            TMP_Text text = go.GetComponent<TextMeshProUGUI>();
             if (font != null) text.font = font;
             text.fontSize = Mathf.Max(13, fontSize);
-            text.alignment = align;
+            text.alignment = ToTmpAlignment(align);
             text.color = color;
             text.text = content;
             text.raycastTarget = false;
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Truncate;
+
+            // S28 expires here. Tracking was unreachable in UI.Text and signed as a C14 deviation
+            // until this migration; TMP takes it as character spacing in hundredths of an em, so the
+            // owning doc's `.03`/`.08`/`.11`/`.12`/`.14`/`.15` (§4.3) multiply by 100. Slots opt in
+            // one at a time — the default is 0, which is exactly what the surface renders today, so
+            // this parameter changes nothing until a slot names its token.
+            text.characterSpacing = tracking * 100f;
+
+            // S20 expires here, for the one element the kit gives a weight tier. Set only when it
+            // differs from Regular: every other slot keeps TMP's default path untouched, so this
+            // parameter cannot change 96 slots by existing. TMP resolves the face through
+            // fontWeightTable[weight / 100], which the generator wires — an unwired weight falls
+            // back to the base face and renders Regular, i.e. a tier that silently does nothing.
+            if (weight != FontWeight.Regular) text.fontWeight = weight;
+
+            // **richText off, in the helper, once.** TMP parses `<color=#...>` by default, which is
+            // precisely the class of defect SureThingPaletteMarkupTests exists to catch — a retired
+            // colour hiding in a string where no field-level palette scan can see it. The scan reads
+            // source and still works, but TMP would have made that markup available at all 97 slots.
+            // Off here rather than trusted at each of them.
+            text.richText = false;
+
+            text.enableWordWrapping = true;
+            text.overflowMode = TextOverflowModes.Truncate;
             RectTransform rt = text.rectTransform;
             rt.anchorMin = rt.anchorMax = anchor;
             rt.pivot = pivot;
@@ -491,41 +747,93 @@ namespace SBR.Game
             // line, so that case falls back to Overflow rather than rendering emptiness. Callers keep
             // their authored height and position; only the failure mode changes. Evaluated after
             // sizeDelta because preferredHeight depends on the wrap width.
-            if (text.preferredHeight > size.y)
-                text.verticalOverflow = VerticalWrapMode.Overflow;
+            // C15: re-expressed on TMP's overflow model, and it had to be rebuilt rather than
+            // renamed. S2's amendment is a LAW about this surface — a text box is at least one line
+            // of its production face tall or it overflows, never empty — and TMP truncates by line
+            // just as UGUI did, so the defect survives the migration unchanged: a box shorter than
+            // its own first line renders NOTHING, silently, with the object present and holding the
+            // right string. Losing this guard in the port would have reintroduced the failure that
+            // deleted the masthead and the payout figure.
+            //
+            // GetPreferredValues rather than the preferredHeight property: TMP computes preferred
+            // sizes during its own layout pass, so reading the property before one has run reports
+            // zero and the guard would never fire. Passing the wrap width explicitly makes the
+            // measurement independent of when this is called.
+            if (text.GetPreferredValues(content, size.x, 0f).y > size.y)
+                text.overflowMode = TextOverflowModes.Overflow;
             return text;
         }
 
-        /// <summary>Measures a string's natural (unwrapped) width in a dynamic font at a given size,
-        /// requesting the glyphs into the font's atlas first so a cold cache never reports zero.</summary>
-        public static float MeasureWidth(Font font, string text, int fontSize)
+        /// <summary>The face TMP will actually render a given weight with, or the base face when that
+        /// weight is unwired.
+        ///
+        /// **Exists so measurement and render cannot disagree about weight**, which is the same trap
+        /// tracking set one commit earlier: SemiBold glyphs are wider than Regular, so measuring the
+        /// rail's identity mark against the base face while TMP draws it at 600 would under-report
+        /// its width and walk the sticker into it. Whatever weight a slot renders, it measures.</summary>
+        public static TMP_FontAsset WeightFace(TMP_FontAsset font, FontWeight weight)
+        {
+            if (font == null || weight == FontWeight.Regular) return font;
+            TMP_FontWeightPair[] table = font.fontWeightTable;
+            int index = (int)weight / 100;
+            if (table == null || index < 0 || index >= table.Length) return font;
+            return table[index].regularTypeface != null ? table[index].regularTypeface : font;
+        }
+
+        /// <summary>Measures a string's natural (unwrapped) width at a given size, adding the glyphs
+        /// to the dynamic atlas first so a cold asset never reports zero.
+        ///
+        /// **<paramref name="tracking"/> is not optional bookkeeping — it is the reason this and the
+        /// tracking work land in one commit.** This sums glyph advances, and TMP adds character
+        /// spacing on top of every advance it lays out. A slot that renders with tracking and
+        /// measures without it reports narrow by `length × tracking × fontSize`, and everything
+        /// derived from a measurement silently shrinks with it: FitText truncates too late, the
+        /// rail's sticker and the tray's MESSAGES badge size short of their own text. Whatever
+        /// tracking a slot renders with, it measures with.
+        ///
+        /// **What it cannot see (C25):** advances only — no kerning pairs, no ligatures, no font
+        /// features. The UGUI version had exactly the same limit, so truncation behaviour is
+        /// preserved in kind rather than improved; this is deliberately not the moment to change what
+        /// "measured width" means on this surface.</summary>
+        public static float MeasureWidth(TMP_FontAsset font, string text, int fontSize, float tracking = 0f)
         {
             if (font == null || string.IsNullOrEmpty(text)) return 0f;
             int size = Mathf.Max(13, fontSize);
-            font.RequestCharactersInTexture(text, size, FontStyle.Normal);
+            font.TryAddCharacters(text, out _);
+
+            // TMP stores glyph metrics against the atlas's own sampling point size (90 here, set in
+            // SureThingTmpFontAssets), so advances scale by the ratio of the rendered size to it.
+            // faceInfo.scale is the face's own normalisation and is 1 for both Archivo assets — read
+            // rather than assumed, because a face where it is not 1 would silently mis-measure.
+            float scale = size / (float)font.faceInfo.pointSize * font.faceInfo.scale;
             float width = 0f;
             for (int i = 0; i < text.Length; i++)
             {
-                if (font.GetCharacterInfo(text[i], out CharacterInfo info, size, FontStyle.Normal))
-                    width += info.advance;
+                if (font.characterLookupTable.TryGetValue(text[i], out TMP_Character ch) && ch.glyph != null)
+                    width += ch.glyph.metrics.horizontalAdvance * scale;
             }
-            return width;
+            // Per character rather than per gap, matching how TMP accumulates xAdvance: it adds the
+            // spacing after every character it lays out, including the last. That over-reports the
+            // visible extent by one unit, which is the safe direction for every caller here — a
+            // truncation budget and a box sized to hug text both fail toward "slightly roomy".
+            return width + text.Length * tracking * size;
         }
 
         /// <summary>Shortens content to fit maxWidth, trailing with an ellipsis rather than ever
         /// silently cutting mid-word. A no-op when the string already fits.</summary>
-        public static string FitText(Font font, string content, int fontSize, float maxWidth)
+        public static string FitText(TMP_FontAsset font, string content, int fontSize, float maxWidth,
+            float tracking = 0f)
         {
             if (font == null || string.IsNullOrEmpty(content)) return content;
-            if (MeasureWidth(font, content, fontSize) <= maxWidth) return content;
+            if (MeasureWidth(font, content, fontSize, tracking) <= maxWidth) return content;
             const string ellipsis = "…";
-            float budget = maxWidth - MeasureWidth(font, ellipsis, fontSize);
+            float budget = maxWidth - MeasureWidth(font, ellipsis, fontSize, tracking);
             if (budget <= 0f) return ellipsis;
             int lo = 0, hi = content.Length;
             while (lo < hi)
             {
                 int mid = (lo + hi + 1) / 2;
-                if (MeasureWidth(font, content.Substring(0, mid), fontSize) <= budget) lo = mid;
+                if (MeasureWidth(font, content.Substring(0, mid), fontSize, tracking) <= budget) lo = mid;
                 else hi = mid - 1;
             }
             string trimmed = content.Substring(0, lo).TrimEnd();
@@ -535,12 +843,13 @@ namespace SBR.Game
         /// <summary>Fits a variable-length label between a fixed prefix and suffix (e.g. "1. " and
         /// the price) so the parts that always carry meaning — the index, the price — never get
         /// truncated; only the label in between ever loses characters, and only behind an ellipsis.</summary>
-        public static string FitLabelKeepingSuffix(Font font, string prefix, string label, string suffix,
-            int fontSize, float maxWidth)
+        public static string FitLabelKeepingSuffix(TMP_FontAsset font, string prefix, string label,
+            string suffix, int fontSize, float maxWidth, float tracking = 0f)
         {
             if (font == null) return prefix + label + suffix;
-            float reserved = MeasureWidth(font, prefix, fontSize) + MeasureWidth(font, suffix, fontSize);
-            string fitLabel = FitText(font, label, fontSize, Mathf.Max(0f, maxWidth - reserved));
+            float reserved = MeasureWidth(font, prefix, fontSize, tracking)
+                + MeasureWidth(font, suffix, fontSize, tracking);
+            string fitLabel = FitText(font, label, fontSize, Mathf.Max(0f, maxWidth - reserved), tracking);
             return prefix + fitLabel + suffix;
         }
 
@@ -574,9 +883,16 @@ namespace SBR.Game
             return image;
         }
 
+        /// <summary>C15/S28: <paramref name="tracking"/> defaults to `.14` because **a button label
+        /// on this surface IS an action label** — §4.3's category and this helper's population are
+        /// the same set. Making it structural rather than repeated at 21 call sites is deliberate:
+        /// a token that must be retyped everywhere is one missed call away from the silent
+        /// inconsistency S67 exists to inventory, and a button added later gets it for free.
+        ///
+        /// The tab strip is the one caller that is not an action and overrides to `.11`.</summary>
         public static Button MakeButton(RectTransform parent, string name, string label, Vector2 anchor, Vector2 pivot,
             Vector2 position, Vector2 size, int fontSize, Color background, Color foreground, Action onClick,
-            Font font, bool interactable = true)
+            TMP_FontAsset font, bool interactable = true, float tracking = LaptopTrack.Actions)
         {
             var go = new GameObject(name, typeof(Image), typeof(Button));
             go.transform.SetParent(parent, false);
@@ -597,9 +913,9 @@ namespace SBR.Game
             colors.fadeDuration = 0.12f;
             button.colors = colors;
             if (onClick != null) button.onClick.AddListener(() => onClick());
-            Text text = MakeText(rt, "Label", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                Vector2.zero, rt.sizeDelta, fontSize, TextAnchor.MiddleCenter, foreground, label, font);
-            text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            TMP_Text text = MakeText(rt, "Label", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, rt.sizeDelta, fontSize, TextAnchor.MiddleCenter, foreground, label, font, tracking);
+            text.enableWordWrapping = false;
             return button;
         }
 
@@ -623,7 +939,7 @@ namespace SBR.Game
         /// interactable is false.</summary>
         public static Button MakeWaxPrimary(RectTransform parent, string name, string label, Vector2 anchor,
             Vector2 pivot, Vector2 position, Vector2 size, int fontSize, Color background, Color foreground,
-            Action onClick, Font font, bool interactable = true)
+            Action onClick, TMP_FontAsset font, bool interactable = true)
         {
             Button button = MakeButton(parent, name, label, anchor, pivot, position, size, fontSize,
                 background, foreground, onClick, font, interactable);
@@ -644,7 +960,7 @@ namespace SBR.Game
                 // Keep the label drawn on top of the frame: the edges are added after MakeButton's
                 // "Label" child, so without this they'd be the last (topmost) siblings. Same
                 // SetAsLastSibling convention SportsbookApp.BuildSlip uses for PayoutHighlight.
-                Text labelText = button.GetComponentInChildren<Text>();
+                TMP_Text labelText = button.GetComponentInChildren<TMP_Text>();
                 if (labelText != null) labelText.transform.SetAsLastSibling();
             }
             return button;
@@ -735,6 +1051,103 @@ namespace SBR.Game
 
         }
 
+        /// S27: the printed position rail's own width — reserved on the right edge of every
+        /// scrolling body (<see cref="MakeScrollBody"/>) whether or not the rail ends up drawn
+        /// (<see cref="FinishScrollBody"/>), so a list's content column never shifts width
+        /// between a state that scrolls and one that doesn't.
+        public const float RailReserve = 4f;
+
+        /// <summary>S25(amended)/S42/S27: the one place an interior list becomes scrollable.
+        /// Builds a fixed-footprint host at (anchor/pivot/position/size) carrying a standard
+        /// UGUI <see cref="ScrollRect"/> — the room's own InputSystemUIInputModule already
+        /// routes wheel/drag input to it; nothing here re-plumbs input — over a
+        /// <see cref="RectMask2D"/>-clipped viewport, and returns the Content rect callers fill
+        /// top-down. Content's own height is the caller's to set once every row is built
+        /// (<see cref="FinishScrollBody"/>), matching this file's existing convention of a
+        /// build-time y-cursor returning its own total (BuildStagedReceipt, BuildRewardOffer).
+        ///
+        /// The viewport is built via <see cref="MakePanel"/> — not a hand-rolled Graphic
+        /// construction — specifically because a custom Graphic missing
+        /// <c>typeof(CanvasRenderer)</c> in its GameObject constructor is this stack's own
+        /// four-times-repeated defect (see MakeMarginRuledPaper above, S49). MakePanel's Image
+        /// is left fully transparent but RAYCASTABLE: without some raycastable Graphic under the
+        /// pointer, Unity's GraphicRaycaster never finds a hit inside this body at all, so wheel/
+        /// drag events never reach the ScrollRect it climbs up to find — fatal for a body like
+        /// the ledger's, whose rows carry zero buttons (S32/S43, read-only) and would otherwise
+        /// offer nothing raycastable to hit anywhere in the list.</summary>
+        public static RectTransform MakeScrollBody(RectTransform parent, string name, Vector2 anchor,
+            Vector2 pivot, Vector2 position, Vector2 size, out RectTransform host, out ScrollRect scrollRect)
+        {
+            host = MakePanel(parent, name, anchor, pivot, position, size, new Color(0f, 0f, 0f, 0f));
+            scrollRect = host.gameObject.AddComponent<ScrollRect>();
+
+            RectTransform viewport = MakePanel(host, "Viewport", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                Vector2.zero, Vector2.zero, new Color(0f, 0f, 0f, 0f));
+            viewport.anchorMin = Vector2.zero;
+            viewport.anchorMax = Vector2.one;
+            viewport.pivot = new Vector2(0f, 1f);
+            viewport.offsetMin = Vector2.zero;
+            // Reserves the rail's own width on the right, whether or not FinishScrollBody ends
+            // up drawing it — see RailReserve.
+            viewport.offsetMax = new Vector2(-RailReserve, 0f);
+            viewport.GetComponent<Image>().raycastTarget = true;
+            viewport.gameObject.AddComponent<RectMask2D>();
+
+            // Content: top-anchored, growing downward as rows are added. Width tracks the
+            // viewport via stretch anchors (anchorMin/Max.x = 0/1, sizeDelta.x = 0 = "exactly
+            // parent width"); height is 0 until FinishScrollBody sets it from the caller's own
+            // measured total.
+            var contentGo = new GameObject("Content", typeof(RectTransform));
+            contentGo.transform.SetParent(viewport, false);
+            RectTransform content = contentGo.GetComponent<RectTransform>();
+            content.anchorMin = new Vector2(0f, 1f);
+            content.anchorMax = new Vector2(1f, 1f);
+            content.pivot = new Vector2(0f, 1f);
+            content.anchoredPosition = Vector2.zero;
+            content.sizeDelta = Vector2.zero;
+
+            scrollRect.horizontal = false;
+            scrollRect.vertical = true;
+            scrollRect.viewport = viewport;
+            scrollRect.content = content;
+            // Clamped, not the default Elastic: this surface is a printed document, not a
+            // bouncy app, and Clamped keeps the rail's thumb position (FinishScrollBody,
+            // ScrollRailThumb) a direct, non-overshooting read of ScrollRect's own normalized
+            // position at every moment, including mid-drag.
+            scrollRect.movementType = ScrollRect.MovementType.Clamped;
+            return content;
+        }
+
+        /// <summary>Closes out a body opened by <see cref="MakeScrollBody"/> once the caller
+        /// knows its content's real total height: sets Content's final size, then S27's rail —
+        /// present iff <paramref name="contentHeight"/> actually exceeds
+        /// <paramref name="viewportHeight"/>, absent otherwise — as two plain panels (never a
+        /// Unity Scrollbar+handle sprite), 4px at the body's right edge, full body height,
+        /// <see cref="LaptopOs.RuleSoft"/> track (--rule-soft), <see cref="LaptopOs.Muted"/>
+        /// thumb (--toner-3) sized to the visible fraction and floored at 24px. The thumb's own
+        /// position then tracks live scrolling via <see cref="ScrollRailThumb"/>, because this
+        /// canvas only rebuilds when LaptopOs's own state signature changes (Tick()) — scrolling
+        /// the wheel is not part of that signature, so nothing would otherwise move the thumb
+        /// again after this one build.</summary>
+        public static void FinishScrollBody(RectTransform host, ScrollRect scrollRect, RectTransform content,
+            float contentHeight, float viewportHeight)
+        {
+            content.sizeDelta = new Vector2(0f, contentHeight);
+            bool scrolls = contentHeight > viewportHeight + 0.5f;
+            scrollRect.vertical = scrolls;
+            if (!scrolls) return;
+
+            RectTransform track = MakePanel(host, "RailTrack", new Vector2(1f, 1f), new Vector2(1f, 1f),
+                Vector2.zero, new Vector2(RailReserve, viewportHeight), LaptopOs.RuleSoft);
+            float thumbHeight = Mathf.Max(24f, viewportHeight * viewportHeight / contentHeight);
+            RectTransform thumb = MakePanel(track, "RailThumb", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                Vector2.zero, new Vector2(RailReserve, thumbHeight), LaptopOs.Muted);
+
+            var binderGo = new GameObject("ScrollRailBinder", typeof(ScrollRailThumb));
+            binderGo.transform.SetParent(host, false);
+            binderGo.GetComponent<ScrollRailThumb>().Bind(scrollRect, thumb, viewportHeight, thumbHeight);
+        }
+
         /// <summary>Builds the document's own toner grain (palette-surething.css
         /// --toner-grain-opacity) exactly once and stretches it to fill <paramref name="root"/>.
         /// Cost: one 128x128 runtime texture, one material and one Image, built a single time per
@@ -823,10 +1236,139 @@ namespace SBR.Game
             return "$" + rounded.ToString("N0", CultureInfo.InvariantCulture);
         }
 
-        public static Color FromRgb(uint rgb)
+        /// <summary>S62: the printed identity of a ticket — `LedgerEntry`'s spec form,
+        /// `R2 · TICKET 02`. Round named, ticket named, both one-indexed, both zero-padded to match
+        /// the form's own `01 02 03` entries.
+        ///
+        /// **The engine's `Ticket.Id` is not this and must never be printed.** It is
+        /// `"{round}.{placementIndex}"`, zero-indexed, and it is documented as the DeriveRng key
+        /// component — changing its format would change what the game rolls. So it is read here and
+        /// translated, never shown: `1.0` on the page was round 1, ticket 0, the array index having
+        /// reached a player-facing printed form. Same class as S35(a)'s leaked property path.
+        ///
+        /// The decimal was the second defect and the worse one on this surface specifically: every
+        /// other number here is a price, a stake or a payout in tabular figures, so `1.0` reads as
+        /// the quantity one.
+        ///
+        /// <paramref name="withRound"/> is false where the round would restate the masthead (S37) —
+        /// a staged receipt is always the current round and the masthead above it already says so.
+        /// The LEDGER's list spans rounds, so there the round qualifier is what makes two rows
+        /// distinguishable rather than a restatement.</summary>
+        public static string TicketIdentity(string engineId, int fallbackRound, int fallbackIndex,
+            bool withRound)
         {
-            return new Color(((rgb >> 16) & 0xff) / 255f, ((rgb >> 8) & 0xff) / 255f,
-                (rgb & 0xff) / 255f, 1f);
+            int round = fallbackRound;
+            int placement = fallbackIndex;
+            if (!string.IsNullOrEmpty(engineId))
+            {
+                string[] parts = engineId.Split('.');
+                if (parts.Length == 2
+                    && int.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int r)
+                    && int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int p))
+                {
+                    round = r;
+                    placement = p;
+                }
+            }
+            string ticket = "TICKET " + (placement + 1).ToString("00", CultureInfo.InvariantCulture);
+            return withRound
+                ? "R" + round.ToString(CultureInfo.InvariantCulture) + "  ·  " + ticket
+                : ticket;
+        }
+
+        /// <summary>MarginHeader.jsx (S33): a biro title in condensed caps, closed by a 2px
+        /// `--biro-deep` rule. Returns the header's own height so callers lay the first row flush
+        /// beneath it rather than each guessing an offset.
+        ///
+        /// Shared after S60 found this component rendering two different ways in one submission —
+        /// the ledger's RECORD in biro over a biro-deep rule, MY BETS' in toner over the default
+        /// soft rule. S61 removed the subline that was the last structural difference between them,
+        /// so there is no longer any reason for two copies to exist and drift a third time.</summary>
+        public static float MakeMarginHeader(RectTransform parent, string title, TMP_FontAsset fontCond)
+        {
+            const float headerHeight = 41f;
+            // C15/S28: `.15` is the widest tracking on the surface (owning doc §4.3) and this is the
+            // slot it was written for — a short word in condensed caps, doing a header's job of
+            // labelling a column rather than stating a fact. It was unreachable in UI.Text and signed
+            // as a deviation until now.
+            //
+            // Both margins draw through here since S60, so one call site tracks LEDGER's RECORD and
+            // MY BETS' TALLY identically. Two copies would have been the fourth drift of that shape.
+            MakeText(parent, "MarginHeaderTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(14f, -12f), new Vector2(296f, 22f), 16, TextAnchor.UpperLeft,
+                LaptopOs.Accent, title, fontCond, LaptopTrack.MarginHeader);
+            MakeRule(parent, "MarginHeaderRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(14f, -headerHeight), new Vector2(296f, 2f), LaptopOs.BiroDeep);
+            return headerHeight;
+        }
+
+        /// <summary>MarginRow.jsx: one label/value line — label 13px roman `--toner-3` left, value
+        /// condensed right-flushed, closed by a 1px `--rule` divider. <paramref name="rowTop"/> is
+        /// the row's own top edge, so consecutive rows sit flush with no gap.
+        ///
+        /// Shared because S33 made MarginRow a kit component and this surface now renders it on two
+        /// margins — the ledger's RECORD and MY BETS' tally (S58). The ledger's copy was here first;
+        /// duplicating it into the second caller is precisely how the rail drifted to 12px on one
+        /// screen and 13px on another, which is the defect NotebookChrome exists to have fixed.</summary>
+        public static void MakeMarginRow(RectTransform parent, string name, string label, string value,
+            Color valueColor, float rowTop, float rowHeight, TMP_FontAsset font, TMP_FontAsset fontCond)
+        {
+            // C15/S28: `.12` field keys (owning doc §4.3). The LABEL takes it and the value below
+            // deliberately does not — a field key is structure naming what the row holds, and §4.3
+            // scales tracking to that job. The value is a figure and belongs with the `.03`
+            // names/prices group, which is measurement-coupled and lands separately.
+            //
+            // This is also the 13px fact floor, so it is the slot where tracking is most visible
+            // against the smallest type the surface is allowed to state a fact in.
+            MakeText(parent, name + "Label", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(14f, rowTop - 9f), new Vector2(150f, 20f), 13, TextAnchor.MiddleLeft,
+                LaptopOs.Muted, label, font, LaptopTrack.FieldKeys);
+            MakeText(parent, name + "Value", new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-14f, rowTop - 8f), new Vector2(140f, 22f), 18, TextAnchor.MiddleRight,
+                valueColor, value, fontCond);
+            MakeRule(parent, name + "Rule", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(14f, rowTop - rowHeight), new Vector2(296f, 1f), LaptopOs.Rule);
+        }
+
+        // S54: LaptopUi.FromRgb was deleted here — dead code, no call sites on this surface, and the
+        // live FromRgb calls resolve to TheaterStage's own copy on the TV surface. It built a Color
+        // by a different route than the palette does, which is exactly the kind of helper that gets
+        // picked up later and used instead of a token.
+    }
+
+    /// <summary>S27: keeps a scroll body's rail thumb tracking the ScrollRect's live scroll
+    /// offset between full-tree rebuilds. LaptopOs only rebuilds a screen's canvas when its own
+    /// state signature changes (LaptopOs.Tick) — dragging the rail or spinning the mouse wheel
+    /// is not part of that signature — so nothing would otherwise move the thumb again after the
+    /// one build LaptopUi.FinishScrollBody performs it in. Not a Graphic; carries no
+    /// CanvasRenderer requirement.</summary>
+    internal sealed class ScrollRailThumb : MonoBehaviour
+    {
+        private RectTransform _thumb;
+        private float _travel;
+
+        public void Bind(ScrollRect scrollRect, RectTransform thumb, float trackHeight, float thumbHeight)
+        {
+            _thumb = thumb;
+            _travel = Mathf.Max(0f, trackHeight - thumbHeight);
+            scrollRect.onValueChanged.AddListener(OnScroll);
+            // No initial OnScroll(scrollRect.normalizedPosition) call: that property reads
+            // ScrollRect's own content bounds, which are only current after UGUI's layout pass
+            // has run at least once and are not reliable to query synchronously in the same frame
+            // the ScrollRect was just configured. Unnecessary anyway — thumb is already built at
+            // the top (MakePanel's own (0,0) anchoredPosition), matching a freshly-built
+            // ScrollRect's own top-scrolled Content exactly; only future scroll events need this
+            // listener at all.
+        }
+
+        private void OnScroll(Vector2 normalized)
+        {
+            // The bound thumb is destroyed (with the rest of the canvas) on the next full
+            // rebuild; Unity's lifetime-aware == keeps this call a no-op afterward rather than
+            // throwing on a listener the destroyed ScrollRect never had a chance to clear.
+            if (_thumb == null) return;
+            float y = -Mathf.Clamp01(1f - normalized.y) * _travel;
+            _thumb.anchoredPosition = new Vector2(_thumb.anchoredPosition.x, y);
         }
     }
 
@@ -854,19 +1396,47 @@ namespace SBR.Game
         /// OS-furniture size. See the class note before reusing it for anything else.
         private const int ChromeText = 12;
 
-        public const string MachineMark = "■  NOTEBOOK";
+        /// --st-rail-pad-x (space.css). Shared by the rail's own edges and the tray's left edge
+        /// (F8), and now also by the battery/clock group and the MESSAGES slot's dot, so every
+        /// element that anchors off "the rail's own inset" reads from one place.
+        private const float RailPadX = 11f;
+
+        public const string MachineMark = "NOTEBOOK";
         public const string StickerText = "PROPERTY OF NOBODY";
 
         /// Fixed fiction, not a live clock: the shared spec pins the machine at 02:47 so every
-        /// capture and every direction concept is comparable. The trailing mark is the battery.
-        public const string ClockText = "02:47   ▰";
+        /// capture and every direction concept is comparable. W2: the battery is now its own
+        /// element (swatch/border/fill, built in BuildRail) rather than a "▰" appended to this
+        /// string, so it can represent a state at all.
+        public const string ClockText = "02:47";
 
-        private const string MessagesText = "MESSAGES  1";
+        /// The machine's charge, stated once. The desktop prints it as a percentage and the rail
+        /// draws it as a bar, and before this they disagreed about the machine they describe: the
+        /// desktop said 12% while the rail's fill was hardcoded to the stamp colour because the
+        /// kit's JSX happens to default batteryLow to true in its demo. A demo default is not a
+        /// fact about this machine. Both now read the same number.
+        public const int BatteryPercent = 12;
+
+        /// Below this the bar takes the house's stamp. It is the one place oxide is allowed to mean
+        /// something other than the house acting on the document — the kit spells it out
+        /// (OsRail.jsx: batteryLow ? --stamp : --toner-3), and it is the machine's own hardware
+        /// warning rather than a status tint on a product fact.
+        public const int BatteryLowThreshold = 20;
+
+        private const string MessagesLabel = "MESSAGES";
+        private const string MessagesBadge = "1";
         private const string SystemFactsText = "DISK 61% FULL    NO UPDATES";
 
-        public enum Running { Sportsbook, Ledger }
+        /// <summary>Which app the tray draws as running. <see cref="None"/> is the desktop: both
+        /// apps are backgrounded, both slots read raised and muted, and both launch.
+        ///
+        /// The two-value version of this encoded "exactly one of them is running" — the ledger's
+        /// state was derived as `!sportsbookRunning` and its action from the other branch of the
+        /// sportsbook's own ternary. That held while only the two apps consumed this chrome, and it
+        /// made the desktop's state unrepresentable rather than merely unwritten (S48).</summary>
+        public enum Running { None, Sportsbook, Ledger }
 
-        public static RectTransform BuildRail(RectTransform parent, float width, Font font)
+        public static RectTransform BuildRail(RectTransform parent, float width, TMP_FontAsset font)
         {
             RectTransform rail = LaptopUi.MakePanel(parent, "NotebookRail", new Vector2(0f, 1f),
                 new Vector2(0f, 1f), Vector2.zero, new Vector2(width, RailHeight),
@@ -874,15 +1444,102 @@ namespace SBR.Game
             // F8: OsRail.jsx's own padding is --st-rail-pad-x (11px) on both edges — this rail
             // (and the tray below) used 14px. Shared here, so the correction lands on every screen
             // that calls BuildRail/BuildTray, not just the ledger.
+
+            // W2 (identity mark): OsRail.jsx pairs an 11x11 --toner-3 swatch with the identity
+            // word in --toner-2, 7px apart — not the single "■  NOTEBOOK" string this used to be,
+            // which faked the swatch as a glyph rather than drawing one.
+            //
+            // **S20 IS SPENT HERE, and this is the only place it spends.** This comment used to
+            // record weight 600 as unreachable — variable faces, and legacy UI.Text renders only the
+            // default instance — with the gap signed rather than faked with FontStyle.Bold. TMP
+            // named instances make it reachable, and OsRail.jsx:17 is the ONE laptop component in
+            // the kit that asks for 600; LockAction, MarginHeader and Masthead all state 400
+            // explicitly, and every 700 in the kit is a TV component.
+            //
+            // Recorded because it is not the obvious reading of S20: the ruling reserved a weight
+            // channel for the whole surface, and the kit spends it on a single word.
+            const float swatchSize = 11f;
+            const float identityGap = 7f; // OsRail's identity-mark gap: swatch -> word
+            const float groupGap = 11f;   // OsRail's own flex gap between its three children
+            LaptopUi.MakePanel(rail, "IdentitySwatch", new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(RailPadX, 0f), new Vector2(swatchSize, swatchSize), LaptopOs.Muted);
+            float wordX = RailPadX + swatchSize + identityGap;
             LaptopUi.MakeText(rail, "Machine", new Vector2(0f, .5f), new Vector2(0f, .5f),
-                new Vector2(11f, 0f), new Vector2(200f, 24f), ChromeText, TextAnchor.MiddleLeft,
-                LaptopOs.White, MachineMark, font);
-            LaptopUi.MakeText(rail, "Sticker", new Vector2(0f, .5f), new Vector2(0f, .5f),
-                new Vector2(150f, 0f), new Vector2(200f, 24f), ChromeText, TextAnchor.MiddleLeft,
-                LaptopOs.Accent, StickerText, font);
+                new Vector2(wordX, 0f), new Vector2(160f, 24f), ChromeText, TextAnchor.MiddleLeft,
+                LaptopOs.TonerSecondary, MachineMark, font, 0f, FontWeight.SemiBold);
+
+            // W2 (sticker): a bordered chip — --biro text, a rule-w border in --biro-deep, 2px 6px
+            // padding, tilted -.6deg. Sized to hug its own measured text (MeasureWidth, the same
+            // primitive F7/FitText already use elsewhere on this surface) rather than a fixed
+            // guess, and started from the identity word's own measured width plus the rail's own
+            // 11px gap — so its left edge is provably clear of "NOTEBOOK" for any font metrics,
+            // not just the ones this was eyeballed against.
+            const float ruleW = 1f; // --rule-w
+            const float stickerPadX = 6f;
+            const float stickerPadY = 2f;
+            // **Measured against the face it RENDERS with, not the base face.** SemiBold glyphs are
+            // wider than Regular, so measuring "NOTEBOOK" on the base face while TMP draws it at 600
+            // would under-report and walk the sticker into the word — the same measure-versus-render
+            // trap tracking set, one weight channel over. The comment above already promises this
+            // edge is clear "for any font metrics"; WeightFace is what keeps that true.
+            float machineWidth = LaptopUi.MeasureWidth(
+                LaptopUi.WeightFace(font, FontWeight.SemiBold), MachineMark, ChromeText);
+            float stickerX = wordX + machineWidth + groupGap;
+            float stickerTextW = LaptopUi.MeasureWidth(font, StickerText, ChromeText);
+            const float stickerTextH = 14f;
+            float stickerW = stickerTextW + stickerPadX * 2f;
+            float stickerH = stickerTextH + stickerPadY * 2f;
+            RectTransform sticker = LaptopUi.MakePanel(rail, "Sticker", new Vector2(0f, .5f),
+                new Vector2(0f, .5f), new Vector2(stickerX, 0f), new Vector2(stickerW, stickerH),
+                Color.clear);
+            // Rotation is a pure render-space transform: it never touches sticker's own rect
+            // (sizeDelta/anchoredPosition), and every neighbour on this rail is placed from those
+            // same authored values, not from sticker's rotated corners — so nothing here reflows
+            // from the rotation, by construction. The rotated bounding box itself grows by well
+            // under 2px on every edge at -.6deg (Δw ≈ stickerH·sin(.6°) ≈ 0.2px, Δh ≈
+            // stickerW·sin(.6°) ≈ 1.7px for a chip this size), against >=20px of measured clearance
+            // to both the identity word on its left and the clock group on its right — confirmed by
+            // this geometry, not by a capture.
+            sticker.localEulerAngles = new Vector3(0f, 0f, -0.6f);
+            LaptopUi.MakePanel(sticker, "StickerBorderTop", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                Vector2.zero, new Vector2(stickerW, ruleW), LaptopOs.BiroDeep);
+            LaptopUi.MakePanel(sticker, "StickerBorderBottom", new Vector2(0f, 0f), new Vector2(0f, 0f),
+                Vector2.zero, new Vector2(stickerW, ruleW), LaptopOs.BiroDeep);
+            LaptopUi.MakePanel(sticker, "StickerBorderLeft", new Vector2(0f, 0f), new Vector2(0f, 0f),
+                new Vector2(0f, ruleW), new Vector2(ruleW, stickerH - ruleW * 2f), LaptopOs.BiroDeep);
+            LaptopUi.MakePanel(sticker, "StickerBorderRight", new Vector2(1f, 0f), new Vector2(1f, 0f),
+                new Vector2(0f, ruleW), new Vector2(ruleW, stickerH - ruleW * 2f), LaptopOs.BiroDeep);
+            LaptopUi.MakeText(sticker, "StickerLabel", new Vector2(.5f, .5f), new Vector2(.5f, .5f),
+                Vector2.zero, new Vector2(stickerTextW + 2f, stickerTextH), ChromeText,
+                TextAnchor.MiddleCenter, LaptopOs.Accent, StickerText, font);
+
+            // W2 (battery): a 20x9 rect bordered --toner-3, with an inner fill inset 1.5px on
+            // top/bottom/left, 5px wide — --stamp when low, --toner-3 otherwise. The clock fiction
+            // is pinned at 02:47 (not live), and so is the battery: OsRail's own default prop is
+            // batteryLow=true, so this always draws the low state, same as the clock always reads
+            // the same time. That is a real, representable state now — the old "▰" glyph could not
+            // distinguish low from full because it was never anything but a fixed character.
+            const float batteryW = 20f;
+            const float batteryH = 9f;
+            const float clockBatteryGap = 13f;
+            RectTransform battery = LaptopUi.MakePanel(rail, "Battery", new Vector2(1f, .5f),
+                new Vector2(1f, .5f), new Vector2(-RailPadX, 0f), new Vector2(batteryW, batteryH),
+                Color.clear);
+            LaptopUi.MakePanel(battery, "BatteryBorderTop", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                Vector2.zero, new Vector2(batteryW, ruleW), LaptopOs.Muted);
+            LaptopUi.MakePanel(battery, "BatteryBorderBottom", new Vector2(0f, 0f), new Vector2(0f, 0f),
+                Vector2.zero, new Vector2(batteryW, ruleW), LaptopOs.Muted);
+            LaptopUi.MakePanel(battery, "BatteryBorderLeft", new Vector2(0f, 0f), new Vector2(0f, 0f),
+                new Vector2(0f, ruleW), new Vector2(ruleW, batteryH - ruleW * 2f), LaptopOs.Muted);
+            LaptopUi.MakePanel(battery, "BatteryBorderRight", new Vector2(1f, 0f), new Vector2(1f, 0f),
+                new Vector2(0f, ruleW), new Vector2(ruleW, batteryH - ruleW * 2f), LaptopOs.Muted);
+            LaptopUi.MakePanel(battery, "BatteryFill", new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(1.5f, 0f), new Vector2(5f, batteryH - 3f),
+                BatteryPercent <= BatteryLowThreshold ? LaptopOs.MoneyBad : LaptopOs.Muted);
+
             LaptopUi.MakeText(rail, "Clock", new Vector2(1f, .5f), new Vector2(1f, .5f),
-                new Vector2(-11f, 0f), new Vector2(140f, 24f), ChromeText, TextAnchor.MiddleRight,
-                LaptopOs.Muted, ClockText, font);
+                new Vector2(-(RailPadX + batteryW + clockBatteryGap), 0f), new Vector2(90f, 24f),
+                ChromeText, TextAnchor.MiddleRight, LaptopOs.Muted, ClockText, font);
             // F1: OsRail.jsx's own border-bottom (--rule-w solid var(--rule)) — the rail was a flat
             // colour step into whatever the app draws next (FormTabs, or the ledger's own copy of
             // it), with no seam actually drawn.
@@ -896,7 +1553,7 @@ namespace SBR.Game
         /// cannot "launch" it, so it drops to the desktop instead — the same thing a real taskbar
         /// button does. This is why the running slot stays clickable rather than being disabled.
         /// </param>
-        public static RectTransform BuildTray(RectTransform parent, float width, Font font,
+        public static RectTransform BuildTray(RectTransform parent, float width, TMP_FontAsset font,
             Running running, Action openSportsbook, Action openLedger, Action minimize)
         {
             RectTransform tray = LaptopUi.MakePanel(parent, "NotebookTray", new Vector2(0f, 0f),
@@ -904,18 +1561,49 @@ namespace SBR.Game
                 LaptopOs.SurfaceRaised);
 
             bool sportsbookRunning = running == Running.Sportsbook;
+            bool ledgerRunning = running == Running.Ledger;
             // F8: --st-rail-pad-x (11px) on the left edge too — was 12px, the one inset in this
             // class that did not already match the pattern (rail's left/right corrected above).
-            MakeSlot(tray, "SureThing", "SURETHING", 11f, 110f, sportsbookRunning,
+            //
+            // S48: each slot now asks about itself — am I the running app? — rather than the ledger
+            // reading its state off the sportsbook's negation. Behaviour is identical for both
+            // states that already existed; what changes is that a third can be expressed.
+            MakeSlot(tray, "SureThing", "SURETHING", RailPadX, 110f, sportsbookRunning,
                 sportsbookRunning ? minimize : openSportsbook, font);
-            MakeSlot(tray, "Ledger", "LEDGER", 132f, 88f, !sportsbookRunning,
-                sportsbookRunning ? openLedger : minimize, font);
+            MakeSlot(tray, "Ledger", "LEDGER", 132f, 88f, ledgerRunning,
+                ledgerRunning ? minimize : openLedger, font);
 
+            // W3 (dot + badge, MESSAGES slot): OsTray.jsx renders every slot — including one with
+            // no destination in this build — with its own dot, and MESSAGES carries the one
+            // default badge. MESSAGES has no Running case and no onClick here, so it stays
+            // presentation-only exactly as before; only its furniture changes, not its behaviour.
+            // Badge and label are both sized from their own measured text (MeasureWidth, same
+            // primitive the sticker above and F7/FitText elsewhere already use), so the layout is
+            // a left-to-right flow built from real widths, not a fixed guess that could overlap.
+            const float messagesX = 232f;
+            const float dotSize = 5f;
+            const float dotGap = 6f;
+            LaptopUi.MakePanel(tray, "MessagesDot", new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(messagesX, 0f), new Vector2(dotSize, dotSize), LaptopOs.Muted);
+            float messagesLabelX = messagesX + dotSize + dotGap;
             LaptopUi.MakeText(tray, "Messages", new Vector2(0f, .5f), new Vector2(0f, .5f),
-                new Vector2(232f, 0f), new Vector2(210f, 24f), ChromeText, TextAnchor.MiddleLeft,
-                LaptopOs.Muted, MessagesText, font);
+                new Vector2(messagesLabelX, 0f), new Vector2(140f, 24f), ChromeText,
+                TextAnchor.MiddleLeft, LaptopOs.Muted, MessagesLabel, font);
+            float messagesLabelW = LaptopUi.MeasureWidth(font, MessagesLabel, ChromeText);
+            float badgeX = messagesLabelX + messagesLabelW + dotGap;
+            const float badgePadX = 5f; // OsTray badge "0 5px" padding
+            const float badgeH = 16f;
+            float badgeTextW = LaptopUi.MeasureWidth(font, MessagesBadge, ChromeText);
+            float badgeW = badgeTextW + badgePadX * 2f;
+            RectTransform badge = LaptopUi.MakePanel(tray, "MessagesBadge", new Vector2(0f, .5f),
+                new Vector2(0f, .5f), new Vector2(badgeX, 0f), new Vector2(badgeW, badgeH),
+                LaptopOs.MoneyBad);
+            LaptopUi.MakeText(badge, "MessagesBadgeLabel", new Vector2(.5f, .5f),
+                new Vector2(.5f, .5f), Vector2.zero, new Vector2(badgeTextW + 2f, badgeH),
+                ChromeText, TextAnchor.MiddleCenter, LaptopOs.White, MessagesBadge, font);
+
             LaptopUi.MakeText(tray, "SystemFacts", new Vector2(1f, .5f), new Vector2(1f, .5f),
-                new Vector2(-11f, 0f), new Vector2(270f, 24f), ChromeText, TextAnchor.MiddleRight,
+                new Vector2(-RailPadX, 0f), new Vector2(270f, 24f), ChromeText, TextAnchor.MiddleRight,
                 LaptopOs.Muted, SystemFactsText, font);
             return tray;
         }
@@ -923,14 +1611,52 @@ namespace SBR.Game
         /// The running app reads as pressed-in — ink ground, full-strength label. A backgrounded
         /// app reads as raised and muted. That is the only state difference, and it is carried by
         /// ground and weight rather than colour alone.
+        ///
+        /// W3: does not delegate to LaptopUi.MakeButton, because that helper always centres its
+        /// label across the full button rect — there is nowhere in that layout to insert a dot
+        /// without either overlapping the centred text or guessing at its rendered width. This
+        /// duplicates MakeButton's few lines of Button/ColorBlock wiring verbatim and instead lays
+        /// the dot and label out left-to-right (dot at the slot's own padding, label immediately
+        /// after it), so the two are never overlapping by construction. The button's own rect —
+        /// its hit target — is untouched: same width/height clamp MakeButton itself applies.
         private static void MakeSlot(RectTransform tray, string name, string label, float x,
-            float width, bool running, Action onClick, Font font)
+            float width, bool running, Action onClick, TMP_FontAsset font)
         {
-            LaptopUi.MakeButton(tray, name, label, new Vector2(0f, .5f), new Vector2(0f, .5f),
-                new Vector2(x, 0f), new Vector2(width, 32f), ChromeText,
-                running ? LaptopOs.Ink : LaptopOs.SurfaceRaised,
-                running ? LaptopOs.White : LaptopOs.Muted,
-                onClick, font);
+            var go = new GameObject(name, typeof(Image), typeof(Button));
+            go.transform.SetParent(tray, false);
+            Image image = go.GetComponent<Image>();
+            image.color = running ? LaptopOs.Ink : LaptopOs.SurfaceRaised;
+            image.raycastTarget = true;
+            RectTransform rt = image.rectTransform;
+            rt.anchorMin = rt.anchorMax = new Vector2(0f, .5f);
+            rt.pivot = new Vector2(0f, .5f);
+            rt.sizeDelta = new Vector2(Mathf.Max(44f, width), Mathf.Max(32f, 32f));
+            rt.anchoredPosition = new Vector2(x, 0f);
+            Button button = go.GetComponent<Button>();
+            button.targetGraphic = image;
+            button.interactable = true;
+            ColorBlock colors = button.colors;
+            colors.highlightedColor = new Color(1.25f, 1.25f, 1.25f, 1f);
+            colors.pressedColor = new Color(0.8f, 0.8f, 0.8f, 1f);
+            colors.fadeDuration = 0.12f;
+            button.colors = colors;
+            if (onClick != null) button.onClick.AddListener(() => onClick());
+
+            // W3 (dot): OsTray.jsx's per-slot dot — 5x5, --wax when this slot is the running app,
+            // --toner-3 otherwise.
+            const float slotPadX = 10f; // OsTray's own slot padding, "0 10px"
+            const float dotSize = 5f;
+            const float dotLabelGap = 6f;
+            LaptopUi.MakePanel(rt, "Dot", new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(slotPadX, 0f), new Vector2(dotSize, dotSize),
+                running ? LaptopOs.MoneyGold : LaptopOs.Muted);
+
+            float labelX = slotPadX + dotSize + dotLabelGap;
+            float labelW = Mathf.Max(0f, rt.sizeDelta.x - labelX - slotPadX);
+            TMP_Text text = LaptopUi.MakeText(rt, "Label", new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(labelX, 0f), new Vector2(labelW, 24f), ChromeText, TextAnchor.MiddleLeft,
+                running ? LaptopOs.White : LaptopOs.Muted, label, font);
+            text.enableWordWrapping = false;
         }
     }
 }

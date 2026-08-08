@@ -5,6 +5,7 @@ using System.Globalization;
 using NUnit.Framework;
 using SBR.Engine;
 using SBR.Game;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -55,18 +56,26 @@ namespace SBR.Tests.PlayMode
             margin = Required(app, "LedgerMargin");
             Assert.IsNull(Find(board, "LedgerEmpty"));
             Transform ledgerTicket = Required(board, "LedgerTicket0");
-            string identity = string.IsNullOrEmpty(ticket.Id) ? $"{run.Round}.1" : ticket.Id;
-            Assert.AreEqual("TICKET " + identity,
-                TextOf(Required(ledgerTicket, "TicketIdentity")));
+            // S62: the ledger prints R{round} · TICKET {nn}, one-indexed and zero-padded, never the
+            // engine's zero-indexed RNG key. Asserted through the production formatter, and pinned
+            // below against the literal so this cannot silently agree with a regression.
+            string identity = LaptopUi.TicketIdentity(ticket.Id, run.Round, 0, withRound: true);
+            Assert.AreEqual($"R{run.Round}  ·  TICKET 01", identity,
+                "the first ticket of a round is TICKET 01, not 1.0");
+            Assert.AreEqual(identity, TextOf(Required(ledgerTicket, "TicketIdentity")));
             Assert.AreEqual(TicketStateText(ticket),
                 TextOf(Required(ledgerTicket, "TicketState")));
-            // S32: LedgerEntry.jsx's STAKE/RETURNED cells are a key line over a value line, not
-            // one "LABEL $n" string — updated from the pre-S32 single-line "STAKE $n"/"PAYOUT $n"
-            // pins to match. "RETURNED" also retires "PAYOUT" as the label word, per the ruling's
-            // own wording ("the returned figure").
-            Assert.AreEqual("STAKE", TextOf(Required(ledgerTicket, "TicketStakeKey")));
+            // S38+S39 (DD 2026-08-02 batch 7, one change): STAKE/RETURNED are no longer a key line
+            // over a value line inside every row — the keys moved out to the board header once
+            // (asserted below, board/"LedgerBoardHeaderStake"+"LedgerBoardHeaderReturned"), so each
+            // row now carries only the condensed tabular figure, on the same baseline as identity
+            // and the terminal word. Updated from the pre-S38 "TicketStakeKey"/"TicketReturnedKey"
+            // pins, which this build no longer creates at all (asserted gone, just below).
+            Assert.IsNull(Find(ledgerTicket, "TicketStakeKey"),
+                "S38: the per-row STAKE key is gone — it lives once in the board header now");
+            Assert.IsNull(Find(ledgerTicket, "TicketReturnedKey"),
+                "S38: the per-row RETURNED key is gone — it lives once in the board header now");
             Assert.AreEqual(Money(ticket.Stake), TextOf(Required(ledgerTicket, "TicketStakeValue")));
-            Assert.AreEqual("RETURNED", TextOf(Required(ledgerTicket, "TicketReturnedKey")));
             Assert.AreEqual(PayoutText(ticket), TextOf(Required(ledgerTicket, "TicketReturnedValue")));
             Assert.Zero(ledgerTicket.GetComponentsInChildren<Button>(true).Length,
                 "settled ledger ticket must expose no action");
@@ -83,7 +92,7 @@ namespace SBR.Tests.PlayMode
                 // production formula, so it cannot drift with font-atlas state. Taking main's, and
                 // the S22 intent it carries is unchanged: the ledger composes from
                 // MatchModel.Fields via CompactLegLabel, never the legacy packed DisplayLabel.
-                Text legIdentityText = Required(ledgerLeg, "LegIdentity").GetComponent<Text>();
+                TMP_Text legIdentityText = Required(ledgerLeg, "LegIdentity").GetComponent<TMP_Text>();
                 Assert.IsNotNull(legIdentityText, "LegIdentity has no Text to measure against");
                 Assert.IsNotNull(legIdentityText.font,
                     "LegIdentity has no font; the production face failed to load");
@@ -139,7 +148,10 @@ namespace SBR.Tests.PlayMode
             Assert.AreEqual(
                 $"BANK {Money(run.Bank)}    TARGET {Money(run.CurrentPayment)}    TICKETS {run.Tickets.Count}/{run.Config.MaxTicketsPerRound}",
                 TextOf(Required(masthead, "Figures")));
-            Assert.AreEqual($"ROUND {run.Round} OF {run.Config.Rounds}  ·  SETTLED TICKETS ONLY",
+            // S37's live instance (DD 2026-08-02 batch 7): the subline used to restate the board
+            // header's own scope ("· SETTLED TICKETS ONLY") in the masthead's slot. Deleted —
+            // updated from the pre-batch-7 pin, which included that clause.
+            Assert.AreEqual($"ROUND {run.Round} OF {run.Config.Rounds}",
                 TextOf(Required(masthead, "Scope")));
 
             // S31: LedgerScreen()'s own 44px board header replaces the old "LedgerScope" caption —
@@ -147,6 +159,10 @@ namespace SBR.Tests.PlayMode
             // once, in the kit's own words, by the header this ruling mandates.
             Assert.AreEqual("SETTLED TICKETS · THIS RUN",
                 TextOf(Required(board, "LedgerBoardHeaderScope")));
+            // S38: STAKE/RETURNED print once, here, instead of once per record — added by batch 7,
+            // aligned (same x/width) with each record's own TicketStakeValue/TicketReturnedValue.
+            Assert.AreEqual("STAKE", TextOf(Required(board, "LedgerBoardHeaderStake")));
+            Assert.AreEqual("RETURNED", TextOf(Required(board, "LedgerBoardHeaderReturned")));
             Assert.AreEqual("0 RECORDS",
                 TextOf(Required(board, "LedgerBoardHeaderCount")));
             // S33: the passive margin's biro MarginHeader + exactly three MarginRows + one note
@@ -183,6 +199,47 @@ namespace SBR.Tests.PlayMode
                 "no settled current-run record means no invented history row");
         }
 
+        [Test]
+        public void Pending_leg_state_exists_by_construction_and_the_render_path_resolves_it()
+        {
+            // S43 (DD 2026-08-02 batch 7): a PENDING leg is legal only inside a CASHED OUT ticket
+            // — he left before the match ended — and must print the literal word "PENDING", never
+            // a fabricated terminal word. LegState.Pending is a real, constructible data state
+            // (Leg.State reads Matchup.StatLine directly: null means Pending) even though nothing
+            // in this engine currently lets a SETTLED ticket's leg keep it (see the guard test
+            // below and OldSlipsApp.LegStateWord's own doc comment). The DD ruled the render path
+            // must still resolve it correctly rather than treat the branch as dead code.
+            var matchup = new Matchup(0, new Team("HOME", 0, 0), new Team("AWAY", 0, 0), 0.5, 2.0, 2.0);
+            var leg = new Leg(matchup, Side.Home, 2.0);
+            Assert.AreEqual(LegState.Pending, leg.State,
+                "an unsampled matchup (no StatLine) leaves a fresh leg Pending by construction");
+            Assert.IsFalse(leg.IsVoided);
+            Assert.IsFalse(leg.RescuedWon);
+            Assert.AreEqual("PENDING", OldSlipsApp.LegStateWord(leg),
+                "S43: the render mapping must resolve a Pending leg to its literal word");
+        }
+
+        [Test]
+        public void Won_and_lost_tickets_never_carry_a_pending_leg()
+        {
+            // S43: PENDING is legal ONLY inside a CASHED OUT ticket. This is the regression guard
+            // for the illegal side — a WON or LOST ticket's legs are all terminal by construction
+            // (Run.LockRound samples every matchup's StatLine, bet or not, before a single
+            // SweatSession exists, so no ticket this engine settles straight to Won/Lost can carry
+            // a Pending leg). If this ever fails, the render path is about to show an illegal
+            // PENDING leg on a settled, non-cashed-out ticket.
+            var run = new Run("S43-GUARD", new RunConfig());
+            Ticket ticket = run.PlaceTicket(new[] { new Pick(0, Side.Home) }, 10);
+            run.LockRound();
+            run.FastForwardRound();
+
+            Assert.IsTrue(ticket.State == TicketState.Won || ticket.State == TicketState.Lost,
+                "fixture assumption: an un-cashed-out ticket settles Won or Lost");
+            foreach (Leg leg in ticket.Legs)
+                Assert.AreNotEqual("PENDING", OldSlipsApp.LegStateWord(leg),
+                    $"S43: a {ticket.State} ticket must never carry a PENDING leg");
+        }
+
         private static IEnumerator OpenLedgerThroughTray(LaptopScreen laptop)
         {
             Transform tray = Required(App(laptop), "NotebookTray");
@@ -198,16 +255,20 @@ namespace SBR.Tests.PlayMode
                 : ticket.State == TicketState.CashedOut ? "CASHED OUT" : "OPEN";
 
         private static string PayoutText(Ticket ticket)
-            // S36: the engine retains no cash-out amount; the money column prints an honest
-            // absence (an em dash), never a fabricated $0 and never "AMOUNT NOT RETAINED".
+            // S41: S36's designed absence expired when engine retention landed. A cashed-out
+            // ticket's retained figure PRINTS; the em dash is left only for a record whose amount
+            // is genuinely unknowable, which is an absence rather than a missing feature.
             => ticket.State == TicketState.Won ? Money(ticket.PotentialPayout)
                 : ticket.State == TicketState.Lost ? Money(0)
-                : "—";
+                : ticket.State == TicketState.CashedOut && ticket.CashedOutFor.HasValue
+                    ? Money(ticket.CashedOutFor.Value)
+                    : "—";
 
-        private static string LegStateText(Leg leg)
-            => leg.IsVoided ? "VOID"
-                : leg.RescuedWon || leg.State == LegState.Won ? "WON"
-                : leg.State == LegState.Lost ? "LOST" : "PENDING";
+        // S43: was a hand-kept copy of the render mapping (VOID/WON/LOST/PENDING) that could drift
+        // out of sync with production the same way F7's comment above worries about for leg
+        // labels. OldSlipsApp.LegStateWord was factored out of BuildLedgerTicket for exactly this
+        // — this now asserts against the production formula itself, not a second copy of it.
+        private static string LegStateText(Leg leg) => OldSlipsApp.LegStateWord(leg);
 
         private static void AssertLedgerShell(Transform app)
         {
@@ -225,7 +286,7 @@ namespace SBR.Tests.PlayMode
         {
             foreach (Transform root in roots)
             {
-                foreach (Text text in root.GetComponentsInChildren<Text>(true))
+                foreach (TMP_Text text in root.GetComponentsInChildren<TMP_Text>(true))
                     Assert.GreaterOrEqual(text.fontSize, 13,
                         $"{root.name}/{text.name}: product text must be at least 13px");
                 foreach (Button button in root.GetComponentsInChildren<Button>(true))
@@ -339,8 +400,8 @@ namespace SBR.Tests.PlayMode
 
         private static string TextOf(Transform node)
         {
-            Text text = node.GetComponent<Text>();
-            if (text == null) text = node.GetComponentInChildren<Text>();
+            TMP_Text text = node.GetComponent<TMP_Text>();
+            if (text == null) text = node.GetComponentInChildren<TMP_Text>();
             Assert.IsNotNull(text, $"{node.name} has no readable text");
             return text.text;
         }

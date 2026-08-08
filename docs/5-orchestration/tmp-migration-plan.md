@@ -2,7 +2,7 @@
 
 **Authority:** C15 (Allen, Option 1, 2026-08-02) — both surfaces migrate;
 orchestrator schedules per surface; every signed type deviation expires when
-its surface migrates. **Status: STAGED — kicks off after batch 10's verdicts.**
+its surface migrates. **Status: PHASE L ACTIVE — Allen started it 2026-08-07.** The before-baseline is the pinned re-shoot set (C34-compliant); SureThing leads; markets' surface elements ride along.
 
 ## Why this order
 

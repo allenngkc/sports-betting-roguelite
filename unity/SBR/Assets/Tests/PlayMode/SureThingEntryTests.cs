@@ -5,6 +5,7 @@ using System.Globalization;
 using NUnit.Framework;
 using SBR.Engine;
 using SBR.Game;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -353,6 +354,34 @@ namespace SBR.Tests.PlayMode
             foreach (RevealedLegState state in Enum.GetValues(typeof(RevealedLegState)))
                 Assert.AreNotEqual("RIDING", SportsbookApp.LegStateWord(state),
                     $"LegStateWord must never say RIDING (checked for {state})");
+        }
+
+        [Test, Order(8)]
+        public void LegStateInk_matches_the_kit_for_every_state_including_the_two_that_shared_an_else()
+        {
+            // S65. The mapping used to be an inline ternary whose final `else` covered PENDING and
+            // VOID together, which is why PENDING shipped at --toner-2: the kit gives them different
+            // tones and a fallthrough cannot. This is the contract that branch had no way to state.
+            //
+            // Tokens are RevealedState.jsx's TONE map, which BuildMirrorLeg's own comment names as
+            // its source and did not match.
+            Assert.AreEqual(LaptopOs.MoneyGold, SportsbookApp.LegStateInk(RevealedLegState.Won),
+                "GREEN is --wax");
+            Assert.AreEqual(LaptopOs.White, SportsbookApp.LegStateInk(RevealedLegState.Live),
+                "LIVE is --toner");
+            Assert.AreEqual(LaptopOs.Muted, SportsbookApp.LegStateInk(RevealedLegState.Lost),
+                "DEAD is --toner-3; the oxide is the strike, never the word");
+            Assert.AreEqual(LaptopOs.Muted, SportsbookApp.LegStateInk(RevealedLegState.Pending),
+                "S65: PENDING is --toner-3");
+            Assert.AreEqual(LaptopOs.TonerSecondary, SportsbookApp.LegStateInk(RevealedLegState.Voided),
+                "VOID stays --toner-2 — the S65 fix must not drag it along with PENDING");
+
+            // PENDING and DEAD are deliberately the same tone (S65), so tone alone cannot separate
+            // them and the strike is load-bearing rather than decorative. Asserted so a later change
+            // that drops the strike has something to fail against.
+            Assert.AreEqual(SportsbookApp.LegStateInk(RevealedLegState.Pending),
+                SportsbookApp.LegStateInk(RevealedLegState.Lost),
+                "S65 puts PENDING level with DEAD on purpose — DEAD is carried by its other channels");
         }
 
         [UnityTest, Order(9)]
@@ -787,30 +816,48 @@ namespace SBR.Tests.PlayMode
                     $"ticket {ticketIndex} potential payout");
 
                 Transform receipt = Required(receipts, "StagedTicket" + ticketIndex);
-                string identity = string.IsNullOrEmpty(ticket.Id)
-                    ? $"{run.Round}.{ticketIndex + 1}" : ticket.Id;
+                // S62: asserts against the production formatter rather than a second copy of it.
+                // The old line restated the render's own expression, which is how a fixture ends up
+                // agreeing with a defect — it would have happily asserted "1.0" forever.
+                string identity = LaptopUi.TicketIdentity(ticket.Id, run.Round, ticketIndex,
+                    withRound: false);
                 // Matches BuildStagedReceipt's own width-fitting formula rather than a duplicated
                 // literal, so a legitimate format change (fixing the mid-word truncation defect)
                 // can never quietly desync the fixture from the render code.
-                Font font = TestFont(receipt);
+                // **Merge resolution, main into surething-ui.** Both branches found this defect
+                // independently and fixed it the same way — read the fitting width off the rendered
+                // header rather than restating it — so the intent below is both sides', not a
+                // choice between them. Only the FONT TYPE differs, and that is the migration itself:
+                // main is pre-C15 and still holds a UnityEngine.Font, which cannot be handed to a
+                // TextMeshProUGUI at all.
+                TMP_FontAsset font = TestFont(receipt);
                 // MEASURED from the rendered header, never a literal. This was 280f — the width the
                 // receipt had when it lived in the 324px working margin — and E-07 moved receipts to
                 // the 700px sheet without this following. The fixture then fitted to a narrower box
-                // than the render used, so it expected an ellipsis the surface had not drawn.
-                //
-                // It presented as an intermittent one-character failure, and I filed it as a
-                // font-atlas flake. That was wrong: whether the two widths produce a DIFFERENT
-                // string depends on the label's length for that seed, so short labels fitted both
-                // boxes and passed while long ones failed. A stale constant, not noise. The
+                // than the render used, so it expected an ellipsis the surface had not drawn. The
                 // comment above already promised "not a duplicated literal" for the formula; the
                 // width was the literal nobody noticed.
+                //
+                // **It presented as an intermittent one-character failure and was filed as a
+                // font-atlas flake. That was wrong** — kept from main's side, because a misdiagnosis
+                // on the record is worth more than the fix.
+                //
+                // And the mechanism, kept from this side, because it explains why the wrong
+                // diagnosis was so easy: the test and the renderer only disagree when a label's
+                // fitted width falls BETWEEN the two numbers. Shorter than 280 and both return the
+                // string untouched; longer than the real width and both truncate identically. Only
+                // the band between them fails, so this passed on every run whose generated names
+                // happened to be short enough and failed on the first one that was not — which is
+                // exactly what noise looks like until you measure it.
                 float receiptTextWidth = ((RectTransform)Required(receipt, "ReceiptHeader")).rect.width;
                 // "STAGED" was dropped from the header on purpose: the block itself is the staged
                 // receipt, and the word was what pushed "PAYS $167" past the 280px fit and into a
                 // mid-word ellipsis. The payout is a product fact and outranks a redundant label.
                 Assert.AreEqual(
                     LaptopUi.FitText(font,
-                        $"TICKET {identity} · {Money(model.Stake)} · " +
+                        // S62: the identity now carries its own "TICKET" word, so the prefix that
+                        // used to sit here would double it.
+                        $"{identity} · {Money(model.Stake)} · " +
                         $"{OddsFormat.American(model.Combined)} · PAYS {Money(model.Payout)}",
                         13, receiptTextWidth),
                     TextOf(Required(receipt, "ReceiptHeader")));
@@ -818,10 +865,17 @@ namespace SBR.Tests.PlayMode
                 for (int legIndex = 0; legIndex < ticket.Legs.Count; legIndex++)
                 {
                     Leg leg = ticket.Legs[legIndex];
+                    // C15/S28: the expectation carries LaptopTrack.Records because the render does.
+                    // This assertion is computed through the same helper the surface uses, so it
+                    // would follow a tracking change silently if the value were omitted here — it
+                    // would simply assert a narrower string and pass against a build that trims
+                    // somewhere else. Threading it is what keeps this a real check of S26's
+                    // no-silent-truncation rule rather than a tautology.
                     Assert.AreEqual(
                         LaptopUi.FitLabelKeepingSuffix(font, $"{legIndex + 1}. ",
                             SportsbookApp.CompactLegLabel(leg.Matchup, leg.Selection),
-                            $"  {OddsFormat.American(leg.OfferedOdds)}", 13, receiptTextWidth),
+                            $"  {OddsFormat.American(leg.OfferedOdds)}", 13, receiptTextWidth,
+                            LaptopTrack.Records),
                         TextOf(Required(receipt, "TicketLeg" + legIndex)));
                 }
             }
@@ -940,8 +994,8 @@ namespace SBR.Tests.PlayMode
 
         private static string TextOf(Transform node)
         {
-            Text text = node.GetComponent<Text>();
-            if (text == null) text = node.GetComponentInChildren<Text>();
+            TMP_Text text = node.GetComponent<TMP_Text>();
+            if (text == null) text = node.GetComponentInChildren<TMP_Text>();
             Assert.IsNotNull(text, $"{node.name} has no readable text");
             return text.text;
         }
@@ -956,9 +1010,9 @@ namespace SBR.Tests.PlayMode
         /// and more characters now fit before the ellipsis. That was the fixture being wrong about
         /// the font, not the UI being wrong about the text.
         /// </summary>
-        private static Font TestFont(Transform receipt)
+        private static TMP_FontAsset TestFont(Transform receipt)
         {
-            var sample = Required(receipt, "ReceiptHeader").GetComponent<Text>();
+            var sample = Required(receipt, "ReceiptHeader").GetComponent<TMP_Text>();
             Assert.IsNotNull(sample, "ReceiptHeader must carry a Text to measure against");
             Assert.IsNotNull(sample.font, "ReceiptHeader has no font; the production face failed to load");
             return sample.font;
@@ -967,7 +1021,7 @@ namespace SBR.Tests.PlayMode
         private static string AllText(Transform root)
         {
             var content = new List<string>();
-            foreach (Text text in root.GetComponentsInChildren<Text>(true))
+            foreach (TMP_Text text in root.GetComponentsInChildren<TMP_Text>(true))
                 content.Add(text.name + "=" + text.text);
             content.Sort(StringComparer.Ordinal);
             return string.Join("\n", content);

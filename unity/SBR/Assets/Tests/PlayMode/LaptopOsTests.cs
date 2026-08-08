@@ -4,9 +4,11 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using SBR.Engine;
 using SBR.Game;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
+using UnityEngine.UI;
 
 namespace SBR.Tests.PlayMode
 {
@@ -149,7 +151,364 @@ namespace SBR.Tests.PlayMode
                     "the Shop phase defaults the book to REWARDS");
         }
 
+        /// <summary>
+        /// S46: one name, SURETHING, everywhere the player sees it. Before this ruling the same app
+        /// was called four things on one machine — `Sportsbook` under the desktop icon, `SURETHING.`
+        /// in the taskbar, `SURETHING` in the tray, `SURETHING FORM` in the masthead — and a fifth,
+        /// `SureThing.`, on the verdict screen.
+        ///
+        /// This asserts the three the player can reach without ending a run. The verdict screen is
+        /// covered by the source guard in SureThingNameTests instead: reaching it here means driving
+        /// a run to RunWon/RunLost, which is a far more expensive gate than the defect deserves.
+        ///
+        /// The retired-spelling sweep does not match the desktop wordmark's `SURE` + `THING.` pair.
+        /// That was deliberate when it was written — the pair was two Text objects rather than one
+        /// string, and deleting it was S44's ruling, not this one's. S44 has since deleted it
+        /// (Desktop_wears_no_house_brand_and_no_biro holds that gate now), so the exclusion is
+        /// historical; it stays because a name split across two Texts is still not a spelling this
+        /// test can honestly claim to catch.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator One_name_on_every_destination_the_player_can_reach()
+        {
+            yield return LoadRoom();
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+            var laptop = UnityEngine.Object.FindAnyObjectByType<LaptopScreen>();
+            Assert.IsNotNull(laptop, "LaptopScreen missing");
+            yield return WaitUntil(() => director.Run != null, 10f, "no run");
+            yield return null; // one OS tick
+
+            // The desktop: the icon's caption, and the taskbar's list of the machine's apps.
+            laptop.Os.OpenDesktop();
+            yield return null;
+            Transform desktop = FindDeep(laptop.transform, "Desktop");
+            Assert.IsNotNull(desktop, "desktop root missing");
+            Assert.AreEqual("SURETHING", TextUnder(desktop, "SureThing", "Caption"),
+                "the desktop icon names the app SURETHING, not Sportsbook");
+            // Until S48 this read a "SURETHING   ·   LEDGER" label on the desktop's own taskbar.
+            // The fold replaced that label with the tray's real app slots, so the name is now
+            // asserted where it actually lives — and it is the same slot, from the same builder,
+            // as the one the in-app assertions below read.
+            Transform desktopTray = FindDeep(desktop, "NotebookTray");
+            Assert.IsNotNull(desktopTray, "the desktop carries the shared tray (S48)");
+            Assert.AreEqual("SURETHING", TextUnder(desktopTray, "SureThing", "Label"),
+                "the desktop's tray slot names the app");
+            AssertNoRetiredName(laptop.transform, "desktop");
+
+            // Inside the app: the tray slot and the masthead brand, on every tab that carries them.
+            foreach (SportsbookApp.Tab tab in new[]
+                { SportsbookApp.Tab.Lobby, SportsbookApp.Tab.MyBets, SportsbookApp.Tab.Rewards })
+            {
+                laptop.Os.OpenSportsbook(tab);
+                yield return null;
+                Transform app = FindDeep(laptop.transform, "App");
+                Assert.IsNotNull(app, $"{tab}: app root missing");
+                Transform tray = FindDeep(app, "NotebookTray");
+                Assert.IsNotNull(tray, $"{tab}: tray missing");
+                Assert.AreEqual("SURETHING", TextUnder(tray, "SureThing", "Label"),
+                    $"{tab}: the tray slot names the app");
+                Assert.AreEqual("SURETHING", TextOn(FindDeep(app, "Brand")),
+                    $"{tab}: the masthead brand is the name and nothing else — FORM is a screen");
+                AssertNoRetiredName(laptop.transform, tab.ToString());
+            }
+        }
+
+        /// <summary>
+        /// S44 + S45: the machine does not wear the house's brand, and satire never occupies a slot
+        /// where a fact belongs. The wordmark and the tagline are deleted, not restyled and not
+        /// softened, and the app's icon glyph leaves the player's ink.
+        ///
+        /// What this instrument reads (C25): every Graphic parented under Desktop, by its `color`
+        /// field, and every Text's string. What it cannot see: LaptopWallpaperGraphic emits its four
+        /// corner colours as per-vertex data inside OnPopulateMesh, so the ground's own colours are
+        /// invisible to a color-field scan — they are Ink/Surface/SurfaceRaised by construction and
+        /// carry no biro, but this test does not prove that. It also does not read the toner grain,
+        /// which is parented to the canvas root rather than to Desktop, and it says nothing about
+        /// whether the wallpaper draws at all — SureThingVisualCaptureTests holds that gate.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Desktop_wears_no_house_brand_and_no_biro()
+        {
+            yield return LoadRoom();
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+            var laptop = UnityEngine.Object.FindAnyObjectByType<LaptopScreen>();
+            Assert.IsNotNull(laptop, "LaptopScreen missing");
+            yield return WaitUntil(() => director.Run != null, 10f, "no run");
+            yield return null;
+
+            laptop.Os.OpenDesktop();
+            yield return null;
+            Transform desktop = FindDeep(laptop.transform, "Desktop");
+            Assert.IsNotNull(desktop, "desktop root missing");
+
+            // Deleted, not restyled: a wordmark drawn in a quieter ink is still the house's mark.
+            foreach (string gone in new[] { "DesktopSure", "DesktopThing", "DesktopTagline" })
+                Assert.IsNull(FindDeep(desktop, gone),
+                    $"'{gone}' is deleted under S44/S45 — a softer version of it is the same claim");
+
+            // S45 by content as well as by node, since the line could reappear anywhere.
+            foreach (TMP_Text text in desktop.GetComponentsInChildren<TMP_Text>())
+                Assert.IsFalse(text.text.ToLowerInvariant().Contains("never lies"),
+                    $"S45: '{text.text}' promises the player a guaranteed win. Deleted, not softened.");
+
+            // S44's actual mechanism: the house's brand is not in the player's ink, so no biro on
+            // the wallpaper or the icons — including the app icon's glyph (S47 names that as S44's).
+            //
+            // The shared chrome is excluded, and not for convenience. Since S48 the desktop carries
+            // the rail, whose PROPERTY OF NOBODY sticker is biro on purpose: it is the one thing on
+            // this machine the player did write, which is the same law reaching the opposite
+            // answer. That sticker is S8's and Design-verified; failing it here would be this test
+            // overruling a ruling it does not hold.
+            Transform railToSkip = FindDeep(desktop, "NotebookRail");
+            Transform trayToSkip = FindDeep(desktop, "NotebookTray");
+            foreach (Graphic graphic in desktop.GetComponentsInChildren<Graphic>())
+            {
+                if (railToSkip != null && graphic.transform.IsChildOf(railToSkip)) continue;
+                if (trayToSkip != null && graphic.transform.IsChildOf(trayToSkip)) continue;
+                Assert.IsFalse(SameInk(graphic.color, LaptopOs.Accent),
+                    $"S44: '{graphic.name}' is drawn in biro on the player's own desktop");
+                Assert.IsFalse(SameInk(graphic.color, LaptopOs.BiroDeep),
+                    $"S44: '{graphic.name}' is drawn in biro on the player's own desktop");
+            }
+
+            // And positively, because "not biro" alone would also pass if the glyph vanished
+            // entirely. The glyph is the icon button's own "Label" child; "Caption" is the app name.
+            // A direct child, not a deep search: since S48 the tray below carries a slot with this
+            // same name, and a recursive find would return whichever was built first.
+            Transform icon = desktop.Find("SureThing");
+            Assert.IsNotNull(icon, "the SureThing icon is missing");
+            Transform glyph = icon.Find("Label");
+            Assert.IsNotNull(glyph, "the SureThing icon has no glyph");
+            Assert.AreEqual("S", glyph.GetComponent<TMP_Text>().text, "the icon's glyph");
+            Assert.IsTrue(SameInk(glyph.GetComponent<TMP_Text>().color, LaptopOs.White),
+                "S44/S47: an installed app's glyph is full toner, not the player's biro");
+        }
+
+        /// <summary>
+        /// S47: installed versus not installed is a two-state vocabulary, not a value. Installed is
+        /// a full toner glyph and caption over a --ground-3 chip; not installed is both at
+        /// --toner-3 with no chip, and no "(soon)" — the treatment already says it does not open.
+        ///
+        /// The pairing assertion is the one that matters most: an icon that looks installed and
+        /// refuses to open, or opens while dressed as not-installed, is the surface lying about
+        /// itself in the exact direction this ruling forbids.
+        ///
+        /// What this instrument reads (C25): the authored `Graphic.color` of each icon's chip,
+        /// glyph and caption, and each Button's `interactable`. What it cannot see: Unity tints a
+        /// non-interactable Button's target graphic through the CanvasRenderer rather than through
+        /// `Graphic.color`, so the disabled dim is invisible here — it is moot for a chip already
+        /// at zero alpha, but this test would not notice if it stopped being moot. It also reads
+        /// only the four icons by name; an icon added without a test row is uncovered.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Desktop_icons_speak_a_two_state_vocabulary()
+        {
+            yield return LoadRoom();
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+            var laptop = UnityEngine.Object.FindAnyObjectByType<LaptopScreen>();
+            Assert.IsNotNull(laptop, "LaptopScreen missing");
+            yield return WaitUntil(() => director.Run != null, 10f, "no run");
+            yield return null;
+
+            laptop.Os.OpenDesktop();
+            yield return null;
+            Transform desktop = FindDeep(laptop.transform, "Desktop");
+            Assert.IsNotNull(desktop, "desktop root missing");
+
+            foreach ((string node, bool installed) in new[]
+                { ("SureThing", true), ("OldSlips", true), ("Mail", false), ("Bank", false) })
+            {
+                // Direct child: the tray's slots share two of these names since S48.
+                Transform icon = desktop.Find(node);
+                Assert.IsNotNull(icon, $"'{node}' icon missing");
+                string state = installed ? "installed" : "not installed";
+                Color ink = installed ? LaptopOs.White : LaptopOs.Muted;
+
+                TMP_Text glyph = icon.Find("Label").GetComponent<TMP_Text>();
+                TMP_Text caption = icon.Find("Caption").GetComponent<TMP_Text>();
+                Assert.IsTrue(SameInk(glyph.color, ink),
+                    $"{node} is {state}, so its glyph is {(installed ? "full toner" : "--toner-3")}");
+                Assert.IsTrue(SameInk(caption.color, ink),
+                    $"{node} is {state}, so its caption is the same ink as its glyph");
+
+                // S56: the chip is gone for BOTH states. S47 gave installed apps a --ground-3 chip
+                // and it measured a 3/255 step against the wallpaper — an element that drew and
+                // could not be seen, which is not a channel.
+                Image chip = icon.GetComponent<Image>();
+                Assert.IsNotNull(chip, $"{node} has no graphic");
+                Assert.AreEqual(0f, chip.color.a, 1e-3f,
+                    $"{node}: S56 removed the chip — a firmer invisible thing is still invisible");
+
+                // S56: the second channel is a printed word, present on exactly one state. Without
+                // it the only thing separating launchable from dead is glyph brightness, and status
+                // carried by tone alone — no mark, border, label or position — is banned outright.
+                Transform stateLine = icon.Find("State");
+                if (installed)
+                {
+                    Assert.IsNull(stateLine, $"{node} launches, so it states nothing");
+                }
+                else
+                {
+                    Assert.IsNotNull(stateLine, $"{node} does not launch and must say so in a word");
+                    Assert.AreEqual("NOT INSTALLED", TextOn(stateLine),
+                        $"{node}: the machine states what is true, not what is planned");
+                }
+
+                Assert.AreEqual(installed, icon.GetComponent<Button>().interactable,
+                    $"{node} is dressed as {state} and must behave that way — an icon that does not "
+                    + "open reads as not-installed by treatment, so the two may never disagree");
+
+                Assert.IsFalse(caption.text.ToLowerInvariant().Contains("soon"),
+                    $"{node}: '(soon)' is deleted — the product does not put its roadmap on his desktop");
+                Assert.AreEqual(caption.text.ToUpperInvariant(), caption.text,
+                    $"{node}: icon captions take the machine's voice — caps");
+            }
+        }
+
+        /// <summary>
+        /// S48: the desktop carries the same NotebookChrome as every other destination — the 34px
+        /// rail and the 34px tray — and the wallpaper is the remainder rather than the whole screen.
+        /// Its own 54px taskbar is gone. **This changes a Design-verified surface: S8 returns to
+        /// review**, and the frame is the evidence, not this test.
+        ///
+        /// The last two assertions are the ones that would have caught the defects that made the
+        /// fold worth ruling. The clock check pins the machine to one time — the desktop's copy
+        /// used to read 03:17 AM while the rail one click away read 02:47. The icon/slot check pins
+        /// two controls for the same app to the same destination; before the fold the icon set the
+        /// app directly and left the tab alone while the tray slot restored the phase's own tab, so
+        /// they would have landed the player in different places on the same screen.
+        ///
+        /// What this instrument reads (C25): object presence, the two chrome heights, the
+        /// wallpaper's insets, both slot buttons' authored ink and interactability, and where two
+        /// clicks actually land. What it cannot see: whether any of it is laid out correctly on
+        /// screen — nothing here would notice the rail drawing over the first icon, or the tray
+        /// clipping a caption. Only the desktop frame shows that, which is exactly why S8's
+        /// re-verification is a frame and not a suite.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Desktop_carries_the_shared_chrome()
+        {
+            yield return LoadRoom();
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+            var laptop = UnityEngine.Object.FindAnyObjectByType<LaptopScreen>();
+            Assert.IsNotNull(laptop, "LaptopScreen missing");
+            yield return WaitUntil(() => director.Run != null, 10f, "no run");
+            yield return null;
+
+            laptop.Os.OpenDesktop();
+            yield return null;
+            Transform desktop = FindDeep(laptop.transform, "Desktop");
+            Assert.IsNotNull(desktop, "desktop root missing");
+
+            Transform rail = FindDeep(desktop, "NotebookRail");
+            Transform tray = FindDeep(desktop, "NotebookTray");
+            Assert.IsNotNull(rail, "the desktop carries the shared rail");
+            Assert.IsNotNull(tray, "the desktop carries the shared tray");
+            Assert.IsNull(desktop.Find("Taskbar"),
+                "the desktop's own taskbar is gone — one chrome, built once, consumed everywhere");
+
+            Assert.AreEqual(NotebookChrome.RailHeight, rail.GetComponent<RectTransform>().sizeDelta.y,
+                0.01f, "the rail is the shared 34px on the desktop too");
+            Assert.AreEqual(NotebookChrome.TrayHeight, tray.GetComponent<RectTransform>().sizeDelta.y,
+                0.01f, "the tray is the shared 34px on the desktop too");
+
+            // The wallpaper resizes to what the chrome leaves, rather than running under it.
+            RectTransform wallpaper = FindDeep(desktop, "Wallpaper").GetComponent<RectTransform>();
+            Assert.AreEqual(NotebookChrome.TrayHeight, wallpaper.offsetMin.y, 0.01f,
+                "the wallpaper stops at the tray");
+            Assert.AreEqual(-NotebookChrome.RailHeight, wallpaper.offsetMax.y, 0.01f,
+                "the wallpaper stops at the rail");
+
+            // Nothing runs on the desktop, so neither slot reads pressed-in and both launch.
+            foreach (string slot in new[] { "SureThing", "Ledger" })
+            {
+                Transform node = tray.Find(slot);
+                Assert.IsNotNull(node, $"the tray has no '{slot}' slot");
+                Assert.IsTrue(SameInk(node.GetComponent<Image>().color, LaptopOs.SurfaceRaised),
+                    $"{slot}: nothing is running on the desktop, so no slot may read pressed-in");
+                Assert.IsTrue(node.GetComponent<Button>().interactable,
+                    $"{slot}: a backgrounded app's slot launches it");
+            }
+
+            // S52: the icon column starts one standard margin (--st-pad-x) below the rail. It used
+            // to start 86px down — the wordmark's space, which S44 deleted the wordmark out of.
+            // Asserted against LaptopOs' own constant, not a copy of 14: a test holding its own
+            // duplicate of the value it is guarding is how the value drifts in the first place.
+            RectTransform firstIcon = desktop.Find("SureThing").GetComponent<RectTransform>();
+            Assert.AreEqual(-(NotebookChrome.RailHeight + LaptopOs.DesktopIconMarginY),
+                firstIcon.anchoredPosition.y, 0.01f,
+                "the icon column starts one standard margin below the rail, not the wordmark's old gap");
+
+            // One machine, one time.
+            Assert.AreEqual(NotebookChrome.ClockText, TextOn(rail.Find("Clock")),
+                "the desktop's clock is the rail's clock, not a second copy of it");
+
+            // Two controls for one app must land in the same place.
+            desktop.Find("SureThing").GetComponent<Button>().onClick.Invoke();
+            yield return null;
+            Assert.IsFalse(laptop.Os.OnDesktop, "the desktop icon launches the app");
+            SportsbookApp.Tab fromIcon = laptop.Os.CurrentTab;
+
+            laptop.Os.OpenDesktop();
+            yield return null;
+            tray.Find("SureThing").GetComponent<Button>().onClick.Invoke();
+            yield return null;
+            Assert.IsFalse(laptop.Os.OnDesktop, "the desktop tray slot launches the app");
+            Assert.AreEqual(fromIcon, laptop.Os.CurrentTab,
+                "the icon and the tray slot are two controls for one app and must agree");
+        }
+
         // ---- helpers ----
+
+        /// <summary>Compares two inks at 8-bit precision — the palette is authored as Color32, so a
+        /// float-exact comparison would be asserting against rounding rather than against a token.</summary>
+        private static bool SameInk(Color a, Color b)
+        {
+            Color32 x = a;
+            Color32 y = b;
+            return x.r == y.r && x.g == y.g && x.b == y.b;
+        }
+
+        /// Every spelling of the app's name S46 retired. Each is unambiguous copy: none of them can
+        /// occur in a resource path or a GameObject name, so a hit is always a rendered defect.
+        private static readonly string[] RetiredNames =
+            { "Sportsbook", "SureThing", "SURETHING.", "SURETHING FORM", "Sure Thing", "SURE THING" };
+
+        /// <summary>Reads every Text the player is actually being shown — active objects only, so a
+        /// tree that has been cleared but not yet collected cannot fail a live surface.</summary>
+        private static void AssertNoRetiredName(Transform root, string where)
+        {
+            foreach (TMP_Text text in root.GetComponentsInChildren<TMP_Text>())
+            {
+                if (string.IsNullOrEmpty(text.text)) continue;
+                foreach (string retired in RetiredNames)
+                    Assert.IsFalse(text.text.Contains(retired),
+                        $"{where}: '{text.text}' on '{text.name}' spells the app's name '{retired}'. "
+                        + "S46: one name, SURETHING, everywhere the player sees it.");
+            }
+        }
+
+        /// <summary>Reads one named text child of one named node. Both the child name and the node
+        /// name are required because a desktop icon carries two Texts — MakeButton's "Label", which
+        /// is the glyph, and MakeDesktopIcon's "Caption", which is the app's name. Asking for
+        /// whichever Text turns up first is how the first draft of this test read the icon's "S"
+        /// and reported the app was still called Sportsbook.</summary>
+        private static string TextUnder(Transform root, string node, string child)
+        {
+            Transform slot = FindDeep(root, node);
+            Assert.IsNotNull(slot, $"'{node}' missing beneath '{root.name}'");
+            Transform found = slot.Find(child);
+            Assert.IsNotNull(found, $"'{node}' has no '{child}' child");
+            return TextOn(found);
+        }
+
+        private static string TextOn(Transform node)
+        {
+            Assert.IsNotNull(node, "expected a text node, found none");
+            TMP_Text text = node.GetComponent<TMP_Text>();
+            Assert.IsNotNull(text, $"'{node.name}' carries no Text");
+            return text.text;
+        }
 
         private static Transform FindDeep(Transform root, string name)
         {

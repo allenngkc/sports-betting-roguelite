@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using SBR.Engine;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,11 +15,11 @@ namespace SBR.Game
 
         private enum DetailTab { Goals, Btts, Corners, Cards, Players }
         private readonly RectTransform _root;
-        private readonly Font _font;
+        private readonly TMP_FontAsset _font;
         // --font-cond (Archivo Narrow) seam: figures, prices, team names and the wax/lock/rub-out
         // action labels route through this instead of _font. See LaptopScreen's field comment — both
-        // currently resolve to the same fallback Font on purpose.
-        private readonly Font _fontCond;
+        // currently resolve to the same fallback face on purpose.
+        private readonly TMP_FontAsset _fontCond;
         private readonly LaptopScreen _host;
         private readonly Action _invalidate;
         private readonly Action<Tab> _selectTab;
@@ -42,7 +43,7 @@ namespace SBR.Game
         /// independently drift.</summary>
         private const float OfferRowHeight = 54f;
 
-        public SportsbookApp(RectTransform root, Font font, Font fontCond, LaptopScreen host, Action invalidate,
+        public SportsbookApp(RectTransform root, TMP_FontAsset font, TMP_FontAsset fontCond, LaptopScreen host, Action invalidate,
             Action<Tab> selectTab, Action home, Action ledger)
         {
             _root = root;
@@ -89,11 +90,15 @@ namespace SBR.Game
             // why this one never showed up as a flat-colour pixel step even though the kit calls
             // for it unconditionally.
             LaptopUi.MakeRule(mast, "MastheadRule", new Vector2(0f, 0f), new Vector2(0f, 0f), Vector2.zero, new Vector2(1024f, 2f), LaptopOs.Rule);
-            LaptopUi.MakeText(mast, "Brand", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(16f, -8f), new Vector2(300f, 28f), 26, TextAnchor.UpperLeft, LaptopOs.White, "SURETHING FORM", _fontCond);
+            // S46: the brand is the name and nothing else. FORM is a screen, not part of the name —
+            // the tab strip 38px above already says FORM, and "SURETHING FORM" is the same
+            // construction S16 deleted in "SURETHING LEDGER". The 300px box is unchanged: it was
+            // already sized for the longer string, and BuildRunFigures starts at x=398.
+            LaptopUi.MakeText(mast, "Brand", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(16f, -8f), new Vector2(300f, 28f), 26, TextAnchor.UpperLeft, LaptopOs.White, "SURETHING", _fontCond, LaptopTrack.Names);
             LaptopUi.MakeText(mast, "Run", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(17f, -38f), new Vector2(340f, 20f), 13, TextAnchor.UpperLeft, LaptopOs.Muted, $"ROUND {run.Round} OF {run.Config.Rounds}  ·  PRICES FINAL", _font);
             // S31: the masthead's run figures, shared with OldSlipsApp.BuildLedgerChrome so LEDGER
             // carries the exact same BANK/TARGET/TICKETS figures rather than a parallel string.
-            BuildRunFigures(mast, run, _font);
+            BuildRunFigures(mast, run, _fontCond);
         }
 
         /// <summary>S31: SectionTabs.jsx's own strip — the border-bottom, the four tabs and the
@@ -104,7 +109,7 @@ namespace SBR.Game
         /// unselected when `active` matches none of `tabs`, so this reproduces that by
         /// construction rather than special-casing it.</summary>
         internal static void BuildTabStrip(RectTransform tabs, Tab? active, Phase phase, string meta,
-            Font font, Action<Tab> selectTab)
+            TMP_FontAsset font, Action<Tab> selectTab)
         {
             // F1: SectionTabs.jsx's own border-bottom (--rule-w-strong solid var(--rule)) — flat
             // colour step into the masthead below, no seam drawn.
@@ -113,11 +118,14 @@ namespace SBR.Game
             MakeTab(tabs, "ENTRY", Tab.Detail, active, phase == Phase.Shop, font, selectTab);
             MakeTab(tabs, "MY BETS", Tab.MyBets, active, phase == Phase.Shop, font, selectTab);
             MakeTab(tabs, "REWARDS", Tab.Rewards, active, phase != Phase.Shop, font, selectTab);
-            LaptopUi.MakeText(tabs, "Sheet", new Vector2(1f, .5f), new Vector2(1f, .5f), new Vector2(-14f, 0f), new Vector2(170f, 24f), 13, TextAnchor.MiddleRight, LaptopOs.Muted, meta, font);
+            // The strip's meta (`SHEET 1 OF 1`, and `READ ONLY` on the LEDGER) takes the tab
+            // tracking too: it sits in the tabs band and reads as part of the strip rather than as
+            // a fact of the screen below it.
+            LaptopUi.MakeText(tabs, "Sheet", new Vector2(1f, .5f), new Vector2(1f, .5f), new Vector2(-14f, 0f), new Vector2(170f, 24f), 13, TextAnchor.MiddleRight, LaptopOs.Muted, meta, font, LaptopTrack.Tabs);
         }
 
         private static void MakeTab(RectTransform top, string label, Tab tab, Tab? selected, bool disabled,
-            Font font, Action<Tab> selectTab)
+            TMP_FontAsset font, Action<Tab> selectTab)
         {
             float x = tab == Tab.Lobby ? 14f : tab == Tab.Detail ? 122f : tab == Tab.MyBets ? 230f : 358f;
             bool active = selected.HasValue && tab == selected.Value;
@@ -125,16 +133,34 @@ namespace SBR.Game
                 new Vector2(x, 3f), new Vector2(tab == Tab.MyBets ? 116f : 100f, 32f), 13,
                 active ? LaptopOs.Ink : LaptopOs.Surface,
                 disabled ? LaptopUi.Dim(LaptopOs.Muted) : active ? LaptopOs.White : LaptopOs.Muted,
-                disabled ? null : () => { selectTab(tab); }, font, !disabled);
+                // C15/S28: `.11` (owning doc §4.3), overriding MakeButton's `.14` action default.
+                // A tab is a place, not an act — the strip persists across every destination and is
+                // non-interactive on the LEDGER entirely (S31-am), which is precisely why it does not
+                // wear the action tracking.
+                disabled ? null : () => { selectTab(tab); }, font, !disabled, LaptopTrack.Tabs);
         }
 
         /// <summary>S31: the masthead's run figures (BANK/TARGET/TICKETS) — the register calls
         /// these "unchanged" across every destination that carries the masthead, so this is
-        /// written once and OldSlipsApp.BuildLedgerChrome calls it too, instead of substituting a
-        /// parallel condensed string.</summary>
-        internal static void BuildRunFigures(RectTransform mast, Run run, Font font)
+        /// written once and OldSlipsApp.BuildLedgerChrome calls it too.
+        ///
+        /// **S29 CLOSES here, and the face is why.** These rendered in the ROMAN face, and at the
+        /// ruled Regular 400 Archivo's digits are proportional — spread 4.7656 units, 1.112px at this
+        /// 21px — so BANK and TARGET changed width as the bank changed. That is the horizontal jitter
+        /// tabular figures exist to stop, on the most-watched facts on the screen, and TMP cannot fix
+        /// it: OTL_FeatureTag declares only kern, liga, mark and mkmk, so there is no tnum to enable.
+        ///
+        /// It was getting tabular digits by accident before, because the surface was at the wrong
+        /// weight: Archivo's DEFAULT face is SemiBold, which is near-tabular at spread 0.1875.
+        /// Correcting the roman voice to Regular 400 removed the accident and exposed this.
+        ///
+        /// Archivo Narrow measures spread 0 — every digit 41.05, tabular by construction — and owning
+        /// doc §4.1 already assigns BOTH "figures" and "masthead" to the condensed face. So this is a
+        /// conformance gap closing rather than a redesign, which is the only way a Design-verified
+        /// masthead changes (ruled by Allen, 2026-08-08).</summary>
+        internal static void BuildRunFigures(RectTransform mast, Run run, TMP_FontAsset fontCond)
         {
-            LaptopUi.MakeText(mast, "Figures", new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-16f, -10f), new Vector2(610f, 48f), 21, TextAnchor.UpperRight, LaptopOs.White, $"BANK {LaptopUi.Money(run.Bank)}    TARGET {LaptopUi.Money(run.CurrentPayment)}    TICKETS {run.Tickets.Count}/{run.Config.MaxTicketsPerRound}", font);
+            LaptopUi.MakeText(mast, "Figures", new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-16f, -10f), new Vector2(610f, 48f), 21, TextAnchor.UpperRight, LaptopOs.White, $"BANK {LaptopUi.Money(run.Bank)}    TARGET {LaptopUi.Money(run.CurrentPayment)}    TICKETS {run.Tickets.Count}/{run.Config.MaxTicketsPerRound}", fontCond);
         }
 
         /// <summary>The lobby's card pitch — the single source for it. <see cref="BuildMatchupCard"/>
@@ -224,11 +250,16 @@ namespace SBR.Game
             LaptopUi.MakeButton(card, "AwayOdds", $"AWAY  {OddsFormat.American(matchup.AwayOdds)}",
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, -8f), new Vector2(112f, 32f), 19,
                 LaptopOs.Ink, frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
-                frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Away)); _invalidate(); }, _fontCond, !frozen);
+                // C15/S28: `.03`, NOT MakeButton's `.14` action default. A price control is a price
+                // first — `PriceCell.jsx` and `MarketOffer.jsx` both set `--st-track-name` on it, and
+                // the token's own comment reads "team names, prices, masthead". The previous commit's
+                // premise (a button label is an action label) is wrong for exactly this class, and
+                // the kit is what says so.
+                frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Away)); _invalidate(); }, _fontCond, !frozen, LaptopTrack.Names);
             LaptopUi.MakeButton(card, "HomeOdds", $"HOME  {OddsFormat.American(matchup.HomeOdds)}",
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, -43f), new Vector2(112f, 32f), 19,
                 LaptopOs.Ink, frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
-                frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Home)); _invalidate(); }, _fontCond, !frozen);
+                frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Home)); _invalidate(); }, _fontCond, !frozen, LaptopTrack.Names);
             if (awaySelected || homeSelected)
             {
                 Sprite ring = ResolvePriceRing(matchup.Index);
@@ -276,16 +307,20 @@ namespace SBR.Game
             const float gap = 9f;
             const float lineHeight = 30f;
 
-            Text nameText = LaptopUi.MakeText(card, "Team" + side, new Vector2(0f, 1f),
+            TMP_Text nameText = LaptopUi.MakeText(card, "Team" + side, new Vector2(0f, 1f),
                 new Vector2(0f, 1f), new Vector2(nameX, y), new Vector2(250f, lineHeight), 19,
-                TextAnchor.MiddleLeft, LaptopOs.White, name, _fontCond);
+                TextAnchor.MiddleLeft, LaptopOs.White, name, _fontCond, LaptopTrack.Names);
             // A long name must push its record along, never wrap onto a second line inside a 30px box.
-            nameText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            nameText.enableWordWrapping = false;
 
             LaptopUi.MakeText(card, "Record" + side, new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(nameX + nameText.preferredWidth + gap, y), new Vector2(90f, lineHeight),
-                13, TextAnchor.MiddleLeft, LaptopOs.Muted, record, _font)
-                .horizontalOverflow = HorizontalWrapMode.Overflow;
+                // C15/S28: `.08` — FormEntry.jsx:27 sets --st-track-rec on the record beside the name.
+                // Its x origin reads nameText.preferredWidth, which TMP now computes WITH the name's
+                // own `.03`, so the record follows a wider name automatically rather than needing the
+                // gap re-derived.
+                13, TextAnchor.MiddleLeft, LaptopOs.Muted, record, _font, LaptopTrack.Records)
+                .enableWordWrapping = false;
         }
 
         private void OpenDetail(int matchupIndex)
@@ -648,9 +683,12 @@ namespace SBR.Game
             // when picked — MarketOffer.jsx:11 sets the picked figure to var(--toner) and gives the
             // ring alone the biro. Tinting the type as well spends the player's ink on something he
             // did not write, which is what the two-ink law forbids (audit E-13).
-            Text labelText = LaptopUi.MakeText(row, "MarketLabel" + key, new Vector2(0f, 1f),
+            TMP_Text labelText = LaptopUi.MakeText(row, "MarketLabel" + key, new Vector2(0f, 1f),
                 new Vector2(0f, 1f), new Vector2(leftPad, 0f), new Vector2(labelWidth, OfferRowHeight),
-                19, TextAnchor.MiddleLeft, LaptopOs.White, label, _fontCond);
+                // C15/S28: `.08` — MarketOffer.jsx's `line` span carries --st-track-rec. (The kit puts
+                // that span at --st-size-fact where this renders at --st-size-price; that size
+                // difference predates the migration and is not touched here, only the tracking.)
+                19, TextAnchor.MiddleLeft, LaptopOs.White, label, _fontCond, LaptopTrack.Records);
 
             if (!string.IsNullOrEmpty(role))
             {
@@ -664,7 +702,7 @@ namespace SBR.Game
                 LaptopUi.MakeText(row, "MarketRole" + key, new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(roleX, 0f), new Vector2(roleWidth, OfferRowHeight), 13,
                     TextAnchor.MiddleLeft, LaptopOs.Muted, role, _font)
-                    .horizontalOverflow = HorizontalWrapMode.Overflow;
+                    .enableWordWrapping = false;
             }
 
             RectTransform offer = LaptopUi.MakePanel(row, "PriceCell" + key, new Vector2(0f, 1f),
@@ -700,7 +738,10 @@ namespace SBR.Game
                 replacement ? "⇄  " + price : price, new Vector2(0f, 1f), new Vector2(0f, 1f),
                 Vector2.zero, new Vector2(priceCellWidth, priceCellHeight), 19, new Color(0f, 0f, 0f, 0f),
                 frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
-                frozen ? null : () => { slip.Toggle(matchup.Index, selection); _invalidate(); }, _fontCond, !frozen);
+                // `.03` for the same reason as the moneyline buttons: MarketOffer.jsx sets
+                // --st-track-name on the price cell. This is the interior-list price and the two
+                // must match — one is the same object one screen deeper.
+                frozen ? null : () => { slip.Toggle(matchup.Index, selection); _invalidate(); }, _fontCond, !frozen, LaptopTrack.Names);
             if (replacement)
             {
                 RectTransform hint = LaptopUi.MakePanel(offer, "ReplacementHint",
@@ -777,7 +818,7 @@ namespace SBR.Game
             // survives here in the count slot, since the kit's own count prop only defines the
             // selections half of it (margin.jsx:20) and nowhere else on this panel prints it.
             const float headerRight = 296f; // 324 - 14 - 14, the content width every row below uses.
-            Text headerTitle = LaptopUi.MakeText(panel, "Title", new Vector2(0f, 1f), new Vector2(0f, 1f),
+            TMP_Text headerTitle = LaptopUi.MakeText(panel, "Title", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -10f), new Vector2(150f, 24f), 16, TextAnchor.UpperLeft, LaptopOs.Accent,
                 "MY MARKS", _fontCond);
             string countText = $"{slip.Picks.Count} {Pluralize(slip.Picks.Count, "SELECTION")} · {run.Tickets.Count} STAGED";
@@ -846,10 +887,10 @@ namespace SBR.Game
                 LaptopUi.MakeText(panel, "Leg" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(contentX, y), new Vector2(teamWidth, 20f), 16, TextAnchor.UpperLeft,
                     LaptopOs.White, subject, _fontCond)
-                    .horizontalOverflow = HorizontalWrapMode.Overflow;
+                    .enableWordWrapping = false;
                 LaptopUi.MakeText(panel, "LegPrice" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(priceX, y), new Vector2(priceWidth, 20f), 16, TextAnchor.UpperRight,
-                    LaptopOs.White, price, _fontCond);
+                    LaptopOs.White, price, _fontCond, LaptopTrack.Names);
 
                 // Line 2: "{market} · ENTRY {entry}" — roman, fact floor, --toner-3. Indented to the
                 // content column past the check (kit: the check sits outside the flex column that
@@ -947,7 +988,7 @@ namespace SBR.Game
                 new Vector2(14f, y), new Vector2(300f, 16f), 13, TextAnchor.UpperLeft, LaptopOs.Muted,
                 "POTENTIAL PAYOUT", _font);
             y -= 18f;
-            Text payout = LaptopUi.MakeText(panel, "Payout", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, y), new Vector2(300f, 36f), 31, TextAnchor.UpperLeft, LaptopOs.MoneyGold, $"{LaptopUi.Money(slip.ToWin)}", _fontCond);
+            TMP_Text payout = LaptopUi.MakeText(panel, "Payout", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, y), new Vector2(300f, 36f), 31, TextAnchor.UpperLeft, LaptopOs.MoneyGold, $"{LaptopUi.Money(slip.ToWin)}", _fontCond);
             // Hand-laid wax highlight behind the one loud figure (palette-surething.css
             // --wax-highlight-*): a thin amber band, tilted, sized from the figure's own measured
             // width the same way InkRingGeometry sizes a ring — plus the highlight's own -3/+5 left/
@@ -997,7 +1038,7 @@ namespace SBR.Game
                 placeLabelRect.anchoredPosition = Vector2.zero;
                 LaptopUi.MakeText(placeRect, "PlaceReason", new Vector2(.5f, 0f), new Vector2(.5f, 0f),
                     new Vector2(0f, 1f), new Vector2(288f, 17f), 13, TextAnchor.MiddleCenter,
-                    LaptopOs.MoneyBad, blocker.ToUpperInvariant(), _font).horizontalOverflow = HorizontalWrapMode.Overflow;
+                    LaptopOs.MoneyBad, blocker.ToUpperInvariant(), _font).enableWordWrapping = false;
             }
 
             bool hasWorkingMarks = slip.Picks.Count > 0;
@@ -1041,7 +1082,7 @@ namespace SBR.Game
                 lockLabelRect.anchoredPosition = Vector2.zero;
                 LaptopUi.MakeText(lockRect, "LockReason", new Vector2(.5f, 0f), new Vector2(.5f, 0f),
                     new Vector2(0f, 2f), new Vector2(280f, 20f), 13, TextAnchor.MiddleCenter,
-                    LaptopOs.MoneyBad, lockReason, _font).horizontalOverflow = HorizontalWrapMode.Overflow;
+                    LaptopOs.MoneyBad, lockReason, _font).enableWordWrapping = false;
             }
             LaptopUi.MakeButton(panel, "Skip", _lockArmed ? "PRESS AGAIN TO SKIP" : "SKIP ROUND — PRESS TWICE", new Vector2(.5f, 0f), new Vector2(.5f, 0f), new Vector2(0f, SkipBandY), new Vector2(230f, SkipBandH), 13, LaptopOs.Ink, _lockArmed ? LaptopOs.MoneyBad : LaptopOs.Muted,
                 boardFrozen ? null : () =>
@@ -1087,8 +1128,11 @@ namespace SBR.Game
                 double combined = 1.0;
                 for (int legIndex = 0; legIndex < ticket.Legs.Count; legIndex++)
                     combined *= ticket.Legs[legIndex].OfferedOdds;
-                string identity = string.IsNullOrEmpty(ticket.Id)
-                    ? $"{run.Round}.{ticketIndex + 1}" : ticket.Id;
+                // S62: TICKET 02, without the round. A staged receipt is always the current round
+                // and the masthead above it already states which — printing R1 here would restate
+                // the run's scope, which is the thing S37 forbids. The LEDGER prints the round
+                // because its list spans them.
+                string identity = LaptopUi.TicketIdentity(ticket.Id, run.Round, ticketIndex, withRound: false);
                 // "STAGED" is redundant (this whole block IS the staged-ticket receipt) and is the
                 // first thing dropped to make room. The payout is the figure that matters most on
                 // this line, so it is a protected suffix — FitText only ever trims the label ahead
@@ -1097,7 +1141,7 @@ namespace SBR.Game
                 // "TICKET"/"PAYS" words are structural, not field labels, so the whole header string
                 // routes through _fontCond rather than being split across two Text components.
                 string receiptHeaderText = LaptopUi.FitLabelKeepingSuffix(_fontCond, string.Empty,
-                    $"TICKET {identity} · {LaptopUi.Money(ticket.Stake)} · {OddsFormat.American(combined)}",
+                    $"{identity} · {LaptopUi.Money(ticket.Stake)} · {OddsFormat.American(combined)}",
                     $" · PAYS {LaptopUi.Money(ticket.PotentialPayout)}", 13, receiptTextWidth);
                 LaptopUi.MakeText(receipt, "ReceiptHeader", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(8f, -4f), new Vector2(receiptTextWidth, 22f), 13, TextAnchor.UpperLeft,
@@ -1105,13 +1149,24 @@ namespace SBR.Game
                 for (int legIndex = 0; legIndex < ticket.Legs.Count; legIndex++)
                 {
                     Leg leg = ticket.Legs[legIndex];
+                    // C15/S28: `.08` — TicketReceipt.jsx:33 sets --st-track-rec on a receipt leg's
+                    // market.
+                    //
+                    // **The same value goes to the measurement and to the render, and that is the
+                    // whole reason MeasureWidth took a tracking parameter.** This is the one slot in
+                    // the six groups where tracking changes what FITS: a wider string against an
+                    // unchanged receiptTextWidth trims earlier. Measuring without the tracking it
+                    // renders with would under-report by length x .08 x 13 and put the ellipsis in
+                    // the wrong place — silently, on the screen S26 makes load-bearing at the point
+                    // of spending. The odds suffix stays protected either way.
                     string ticketLegText = LaptopUi.FitLabelKeepingSuffix(_fontCond, $"{legIndex + 1}. ",
                         CompactLegLabel(leg.Matchup, leg.Selection),
-                        $"  {OddsFormat.American(leg.OfferedOdds)}", 13, receiptTextWidth);
+                        $"  {OddsFormat.American(leg.OfferedOdds)}", 13, receiptTextWidth,
+                        LaptopTrack.Records);
                     LaptopUi.MakeText(receipt, "TicketLeg" + legIndex, new Vector2(0f, 1f),
                         new Vector2(0f, 1f), new Vector2(8f, -26f - legIndex * 18f),
                         new Vector2(receiptTextWidth, 18f), 13, TextAnchor.UpperLeft, LaptopOs.TonerSecondary,
-                        ticketLegText, _fontCond);
+                        ticketLegText, _fontCond, LaptopTrack.Records);
                 }
                 LaptopUi.MakeRule(receipt, "ReceiptRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
                     Vector2.zero, new Vector2(receiptWidth, 2f));
@@ -1180,7 +1235,7 @@ namespace SBR.Game
         /// that was only ever sized for the widest word that box could hold. text's RectTransform
         /// must use anchor/pivot (1,1) (top-right), matching how "LegState" is built. Internal so
         /// the PlayMode fixture can assert the exact same geometry the render pass uses.</summary>
-        internal static (Vector2 position, Vector2 size) InkRingGeometry(Text text,
+        internal static (Vector2 position, Vector2 size) InkRingGeometry(TMP_Text text,
             float overshoot = 8f, float minWidth = 40f, float minHeight = 18f)
         {
             Vector2 size = new Vector2(Mathf.Max(minWidth, text.preferredWidth) + overshoot * 2f,
@@ -1200,14 +1255,14 @@ namespace SBR.Game
         }
 
         private void MakeChip(RectTransform parent, string label, float x, float y, Action onClick,
-            float width = 68f, Font font = null)
+            float width = 68f, TMP_FontAsset font = null)
         {
             LaptopUi.MakeButton(parent, "Chip" + label, label, new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(x, y), new Vector2(width, 32f), 13, LaptopOs.SurfaceRaised, LaptopOs.White,
                 () => { onClick(); _invalidate(); }, font != null ? font : _font);
         }
 
-        private Text _mirrorMarket;
+        private TMP_Text _mirrorMarket;
 
         /// <summary>Refresh only the TV-owned market-availability line. Score, clock and
         /// probability deliberately remain exclusive to the broadcast surface.</summary>
@@ -1291,6 +1346,22 @@ namespace SBR.Game
                 : state == RevealedLegState.Voided ? "VOID"
                 : state == RevealedLegState.Live ? "LIVE" : "PENDING";
 
+        /// <summary>The leg-level state INK, extracted for the same two reasons
+        /// <see cref="LegStateWord"/> was: every call site renders one state one way, and the mapping
+        /// becomes something a test can hold.
+        ///
+        /// S65 is why it exists. The mapping lived as an inline ternary inside BuildMirrorLeg with a
+        /// shared `else` covering PENDING and VOID, so it rendered PENDING at `--toner-2` where S43
+        /// and `RevealedState.jsx` both require `--toner-3` — and nothing could assert the contract
+        /// because there was no contract to point at. That is S67's shape one level down: a value
+        /// composed by hand where a named thing should produce it.</summary>
+        internal static Color LegStateInk(RevealedLegState state)
+            => state == RevealedLegState.Won ? LaptopOs.MoneyGold
+                : state == RevealedLegState.Lost ? LaptopOs.Muted
+                : state == RevealedLegState.Live ? LaptopOs.White
+                : state == RevealedLegState.Voided ? LaptopOs.TonerSecondary
+                : LaptopOs.Muted;
+
         private void BuildMirrorTicket(RectTransform parent, RevealedTicket ticket, Vector2 position,
             float width)
         {
@@ -1302,11 +1373,28 @@ namespace SBR.Game
                 : ticket.State == RevealedTicketState.Lost ? LaptopOs.Muted
                 : ticket.State == RevealedTicketState.CashedOut ? LaptopOs.MoneyGold
                 : LaptopOs.White;
-            // Ticket identity ("TICKET n") and the terminal state word are both condensed per
+            // S64: this printed `TICKET 1` — the one unpadded identity on a surface whose other two
+            // print the kit's form. It was not a different rule; it was a hand-built string that
+            // never called the shared formatter, so S62 landed on TicketIdentity and this screen
+            // never heard it. `TicketReceipt.prompt.md` names MY BETS by name as one of the three
+            // screens that component serves, and `TicketReceipt.d.ts` gives the form as `TICKET 01`:
+            // one component, three screens, one identity.
+            //
+            // `withRound: false` is the staged receipt's call for the staged receipt's reason — MY
+            // BETS mirrors the current round and the masthead above already states it, so a round
+            // qualifier here is S37 restatement.
+            //
+            // The mirror carries no engine ticket id (S35c: it holds only what the TV released), so
+            // this takes the helper's fallback path. **The round argument is unread while withRound
+            // is false** — it is 0 rather than a real round because there is no honest round to pass,
+            // and anything that flips this call to `true` must supply one first.
+            //
+            // Identity and the terminal state word are both condensed per
             // TicketReceipt.jsx / RevealedState.jsx.
+            string identity = LaptopUi.TicketIdentity(null, 0, ticket.Index, withRound: false);
             LaptopUi.MakeText(card, "TicketTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(8f, -8f), new Vector2(width - 16f, 24f), 16, TextAnchor.UpperLeft,
-                stateColor, $"TICKET {ticket.Index + 1}  ·  {state}", _fontCond);
+                stateColor, $"{identity}  ·  {state}", _fontCond);
             LaptopUi.MakeText(card, "TicketFigures", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(8f, -32f), new Vector2(width - 16f, 22f), 13, TextAnchor.UpperLeft,
                 LaptopOs.TonerSecondary,
@@ -1330,9 +1418,21 @@ namespace SBR.Game
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, y),
                 new Vector2(width, 54f), ground);
             string state = LegStateWord(leg.State);
-            Color stateColor = leg.State == RevealedLegState.Won ? LaptopOs.MoneyGold
-                : leg.State == RevealedLegState.Lost ? LaptopOs.Muted
-                : leg.State == RevealedLegState.Live ? LaptopOs.White : LaptopOs.TonerSecondary;
+            // S65: PENDING is `--toner-3`. It used to fall into a shared `else` with VOID at
+            // `--toner-2` — one step too bright, measured 158,154,138 on `04b-my-bets-pending`
+            // against the token's 110,107,94.
+            //
+            // The mapping now lives in LegStateInk rather than inline here, because the collapsed
+            // `else` WAS the defect: the kit distinguishes PENDING (`--toner-3`) from VOID
+            // (`--toner-2`) and a fallthrough cannot. Moving the fallthrough would have fixed PENDING
+            // by breaking VOID.
+            //
+            // PENDING now sits level with DEAD, escalated rather than shipped, and the ruling holds
+            // it: DEAD carries three channels to PENDING's one (word, oxide strike, row drained to
+            // .55 — owning doc §3.3), `--toner-3` is this system's structure tone and a leg that has
+            // not happened is structure, and the TV reaches the same answer independently with NEXT
+            // at L1 against L0.
+            Color stateColor = LegStateInk(leg.State);
             // RevealedLeg.jsx's "team" slot (occupied here by either the team name or the market
             // label, whichever the leg carries) and its price are condensed; the state word matches
             // RevealedState.jsx.
@@ -1342,7 +1442,7 @@ namespace SBR.Game
             LaptopUi.MakeText(row, "LegPrice", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(8f, -27f), new Vector2(84f, 22f), 13, TextAnchor.UpperLeft,
                 stateColor, leg.AmericanOdds, _fontCond);
-            Text stateText = LaptopUi.MakeText(row, "LegState", new Vector2(1f, 1f), new Vector2(1f, 1f),
+            TMP_Text stateText = LaptopUi.MakeText(row, "LegState", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-8f, -27f), new Vector2(112f, 22f), 13, TextAnchor.UpperRight,
                 stateColor, state, _fontCond);
             int identity = ticketIndex * 17 + leg.Index;
@@ -1383,33 +1483,80 @@ namespace SBR.Game
 
         private void BuildMirrorMargin(RectTransform margin, RevealedView view)
         {
-            LaptopUi.MakeText(margin, "MirrorMarginTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, -10f), new Vector2(296f, 24f), 16, TextAnchor.UpperLeft,
-                LaptopOs.White, "TV-OWNED TALLY", _font);
-            LaptopUi.MakeText(margin, "MirrorMarginRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, -38f), new Vector2(296f, 24f), 13, TextAnchor.UpperLeft,
-                LaptopOs.Muted, "READ ONLY  ·  NO SCORE  ·  NO PROBABILITY", _font);
-            LaptopUi.MakeRule(margin, "MirrorMarginHeaderRule", new Vector2(0f, 1f),
-                new Vector2(0f, 1f), new Vector2(0f, -68f), new Vector2(324f, 2f));
+            // S60 + S61, and the two rulings finish each other.
+            //
+            // S60 put this header in biro over a 2px --biro-deep rule, as S33 specifies on every
+            // destination. The objection is worth keeping in the source: the tally is the TV's, so
+            // why is its header in HIS ink? Because the biro marks the COLUMN as his, not the
+            // content as his choice. The margin is his column on every screen; what fills it varies.
+            //
+            // S61: this screen stated its scope FOUR times on one 1024px canvas — board header,
+            // board subline, margin header, margin subline. The board header owns "read-only TV
+            // mirror" and owns it well; three restatements followed it. The margin's subline
+            // (READ ONLY · NO SCORE · NO PROBABILITY) is deleted, and the header no longer
+            // re-asserts ownership either — "TV-OWNED" was the third statement of a fact the two
+            // lines above it already make, and the biro now marks the column anyway. What is left
+            // names what the column CONTAINS, which is the one thing nothing else on the screen says.
+            //
+            // Shape worth remembering: S58 asked this column to stop restating the SHEET and it did
+            // — then restated the SCOPE instead. A restatement removed from one register can
+            // reappear in another.
+            //
+            // With the subline gone this is structurally identical to the ledger's RECORD header, so
+            // it is now literally the same component (LaptopUi.MakeMarginHeader) rather than a
+            // second copy holding the same values.
+            float headerHeight = LaptopUi.MakeMarginHeader(margin, "TALLY", _fontCond);
             if (view == null || !view.HasTicket)
             {
                 LaptopUi.MakeText(margin, "MirrorMarginEmpty", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(14f, -90f), new Vector2(296f, 44f), 13, TextAnchor.UpperLeft,
-                    LaptopOs.Muted, "THE TV HAS NOT RELEASED A RECEIPT.", _font);
+                    new Vector2(14f, -(headerHeight + 12f)), new Vector2(296f, 44f), 13,
+                    TextAnchor.UpperLeft, LaptopOs.Muted, "THE TV HAS NOT RELEASED A RECEIPT.", _font);
                 return;
             }
+            // S58: this column printed one block per ticket — `TICKET 1 · DEAD` over
+            // `2 LEGS · $35 → $97` — while the sheet ~500px to its left printed `TICKET 1 · DEAD`
+            // over `STAKE $35 · PAYS $97`. The same four facts, twice, on one screen, with a leg
+            // count as the only addition and the sheet right there to count them on. S37 forbids
+            // exactly that.
+            //
+            // The margin's job here is **run context**: what he has on this round, what is still
+            // live, and what comes back if it all lands. None of those are on the sheet, because the
+            // sheet is per-ticket and these are sums across it.
+            //
+            // Derived only from the TV-owned mirror, never from the engine — the header two lines
+            // above promises READ ONLY and the causal-mirror rules mean this column may not know
+            // anything the TV has not released.
+            int riding = 0;
+            double atRisk = 0.0;
+            double ifAllLand = 0.0;
             for (int i = 0; i < view.Tickets.Count; i++)
             {
                 RevealedTicket ticket = view.Tickets[i];
-                string state = TicketStateWord(ticket.State);
-                LaptopUi.MakeText(margin, "TicketSummary" + ticket.Index, new Vector2(0f, 1f),
-                    new Vector2(0f, 1f), new Vector2(14f, -90f - i * 58f),
-                    new Vector2(296f, 50f), 13, TextAnchor.UpperLeft,
-                    ticket.Index == view.CurrentTicketIndex ? LaptopOs.White : LaptopOs.Muted,
-                    $"TICKET {ticket.Index + 1}  ·  {state}\n{ticket.Legs.Count} LEGS  ·  {LaptopUi.Money(ticket.Stake)} → {LaptopUi.Money(ticket.PotentialPayout)}",
-                    _font);
+                if (ticket.State != RevealedTicketState.Riding) continue;
+                riding++;
+                atRisk += ticket.Stake;
+                ifAllLand += ticket.PotentialPayout;
             }
+
+            // AT RISK counts only tickets still riding, because a dead ticket's stake is not at
+            // risk — it is gone, and the sheet already says so. A fully-resolved round therefore
+            // reads $0 here, which is the true answer to "what is still live".
+            LaptopUi.MakeMarginRow(margin, "TallyTickets", "TICKETS THIS ROUND",
+                view.Tickets.Count.ToString(CultureInfo.InvariantCulture), LaptopOs.White,
+                -headerHeight, MirrorTallyRowHeight, _font, _fontCond);
+            LaptopUi.MakeMarginRow(margin, "TallyAtRisk", $"AT RISK  ·  {riding} RIDING",
+                LaptopUi.Money(atRisk), LaptopOs.White,
+                -(headerHeight + MirrorTallyRowHeight), MirrorTallyRowHeight, _font, _fontCond);
+            LaptopUi.MakeMarginRow(margin, "TallyIfAllLand", "IF EVERYTHING LANDS",
+                LaptopUi.Money(ifAllLand), LaptopOs.MoneyGold,
+                -(headerHeight + MirrorTallyRowHeight * 2f), MirrorTallyRowHeight, _font, _fontCond);
         }
+
+        // The same 38px row the ledger's RECORD margin uses, so the two margins scan identically.
+        // The rows' own top now comes from MakeMarginHeader's returned height rather than a second
+        // hand-kept offset — S61 shortened that header and a duplicated constant would have been
+        // the next thing to drift out of step with it.
+        private const float MirrorTallyRowHeight = 38f;
 
         private void BuildRewards(Run run)
         {
@@ -1464,24 +1611,48 @@ namespace SBR.Game
                 // may be silently dropped, so the count that did not fit is stated in place.
                 //
                 // BoardBottomPadding leaves the last rule clear of the tray rather than flush to it.
+                //
+                // S25(amended)/S27: the offer list itself now scrolls, same as LEDGER/ENTRY — but
+                // S17's own cap survives it under S25(amended)'s express exception ("N NOT SHOWN
+                // ... binds only a deliberately capped list — REWARDS under S17"). The two are
+                // different questions, answered by different mechanisms below: S17 decides which
+                // offers get INSTANTIATED at all (an offer's own rule text — cost, downside — is
+                // never truncated to make room; show fewer offers instead, exactly as before,
+                // same 446px budget, same pessimistic EstimateOfferHeight, same shown/total
+                // accounting, unchanged by this edit). S27 decides how the resulting — possibly
+                // shorter-than-viewport — content is PRESENTED: reachable by scroll rather than
+                // hard-clipped, with a rail iff it actually runs long. Because EstimateOfferHeight
+                // is deliberately pessimistic (see its own comment: "an over-estimate costs at
+                // most one offer that would just have fitted"), real rendered content is typically
+                // a little SHORTER than the 446px budget it was built against, so in the ordinary
+                // case the rail never appears at all — the scroll body is the honest backstop for
+                // the estimate's own slack, not a second, looser cap replacing S17's.
                 const float boardBottomPadding = 10f;
-                float y = -74f;
-                float floorY = -(530f - boardBottomPadding);
+                const float offersTop = -74f;
+                float viewportHeight = 530f - boardBottomPadding - (-offersTop);
+                RectTransform content = LaptopUi.MakeScrollBody(board, "RewardsScroll",
+                    new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, offersTop),
+                    new Vector2(700f, viewportHeight), out RectTransform scrollHost,
+                    out ScrollRect scrollRect);
+
+                float y = 0f;
+                float floorY = -viewportHeight;
                 int shown = 0;
                 int total = run.ShopOffers.Count + run.ConsumableOffers.Count;
 
                 for (int i = 0; i < run.ShopOffers.Count; i++)
                 {
                     if (y - EstimateOfferHeight(run.ShopOffers[i].Description) < floorY) break;
-                    y -= BuildRewardOffer(board, run, run.ShopOffers[i], i, y);
+                    y -= BuildRewardOffer(content, run, run.ShopOffers[i], i, y);
                     shown++;
                 }
                 for (int i = 0; i < run.ConsumableOffers.Count; i++)
                 {
                     if (y - EstimateOfferHeight(run.ConsumableOffers[i].Description) < floorY) break;
-                    y -= BuildConsumableOffer(board, run, run.ConsumableOffers[i], i, y);
+                    y -= BuildConsumableOffer(content, run, run.ConsumableOffers[i], i, y);
                     shown++;
                 }
+                LaptopUi.FinishScrollBody(scrollHost, scrollRect, content, -y, viewportHeight);
 
                 if (shown < total)
                 {
@@ -1492,6 +1663,8 @@ namespace SBR.Game
                     // C19 / S25 amended: REWARDS is the one list a ruling deliberately caps (S17),
                     // so its count line prints in --toner (LaptopOs.White) — was TonerSecondary
                     // (--toner-2), one step dimmer than the comment above already said it should be.
+                    // Kept OUTSIDE the scroll body (fixed to the board, not the content): it is
+                    // the sheet's own statement about the list, not a row inside it.
                     LaptopUi.MakeText(board, "OffersNotShown", new Vector2(0f, 0f), new Vector2(0f, 0f),
                         new Vector2(14f, 8f), new Vector2(672f, 20f), 13, TextAnchor.LowerLeft,
                         LaptopOs.White,
@@ -1521,10 +1694,19 @@ namespace SBR.Game
             return 29f + lines * lineHeight + 9f;
         }
 
-        private float BuildRewardOffer(RectTransform board, Run run, RelicDefinition offer, int index, float y)
+        // S27: every scrolling body reserves the rail's own 4px on the right, whether or not the
+        // rail ends up drawn (LaptopUi.RailReserve) — REWARDS' offer rows now live inside one
+        // (BuildRewards), so their own full-width elements (the row panel, OfferRule) are sized
+        // to the same narrower content column rather than the board's full 700px, matching the
+        // ledger's LedgerRowWidth. Elements anchored from an edge (Affordability/BuyReason/Buy,
+        // all pivoted right) already reflow with it via Unity's own anchor math and need no
+        // separate constant.
+        private const float RewardsRowWidth = 700f - LaptopUi.RailReserve;
+
+        private float BuildRewardOffer(RectTransform parent, Run run, RelicDefinition offer, int index, float y)
         {
-            RectTransform row = LaptopUi.MakePanel(board, "RewardOffer" + index, new Vector2(0f, 1f),
-                new Vector2(0f, 1f), new Vector2(0f, y), new Vector2(700f, 56f), LaptopOs.Ink);
+            RectTransform row = LaptopUi.MakePanel(parent, "RewardOffer" + index, new Vector2(0f, 1f),
+                new Vector2(0f, 1f), new Vector2(0f, y), new Vector2(RewardsRowWidth, 56f), LaptopOs.Ink);
             bool enoughComps = offer.Price <= run.Comps;
             bool hasSlot = run.OwnedRelics.Count < run.Config.RelicSlots;
             bool canBuy = enoughComps && hasSlot && run.Phase == Phase.Shop;
@@ -1542,13 +1724,13 @@ namespace SBR.Game
             // dropped the downside, which is worse than clipping, because it reads as complete.
             // The copy is rendered whole and the row grows to hold it; the board shows however many
             // offers fit and says how many it could not (see BuildRewards).
-            Text description = LaptopUi.MakeText(row, "OfferDescription", new Vector2(0f, 1f),
+            TMP_Text description = LaptopUi.MakeText(row, "OfferDescription", new Vector2(0f, 1f),
                 new Vector2(0f, 1f), new Vector2(14f, -29f), new Vector2(430f, 22f), 13,
                 TextAnchor.UpperLeft, LaptopOs.TonerSecondary, offer.Description, _font);
             float descriptionHeight = Mathf.Max(18f, description.preferredHeight);
             description.rectTransform.sizeDelta = new Vector2(430f, descriptionHeight);
             float rowHeight = 29f + descriptionHeight + 9f;
-            row.sizeDelta = new Vector2(700f, rowHeight);
+            row.sizeDelta = new Vector2(RewardsRowWidth, rowHeight);
             // S9 defect 1: a price is a printed figure, not the house's mark — wax regardless of
             // affordability. The BLOCKED reason beside it stays oxide; that IS the house acting.
             LaptopUi.MakeText(row, "Affordability", new Vector2(1f, 1f), new Vector2(1f, 1f),
@@ -1575,15 +1757,15 @@ namespace SBR.Game
                     _invalidate();
                 } : null, _font, canBuy);
             LaptopUi.MakeRule(row, "OfferRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
-                Vector2.zero, new Vector2(700f, 2f));
+                Vector2.zero, new Vector2(RewardsRowWidth, 2f));
             return rowHeight;
         }
 
-        private float BuildConsumableOffer(RectTransform board, Run run, ConsumableDefinition offer,
+        private float BuildConsumableOffer(RectTransform parent, Run run, ConsumableDefinition offer,
             int index, float y)
         {
-            RectTransform row = LaptopUi.MakePanel(board, "ConsumableOffer" + index, new Vector2(0f, 1f),
-                new Vector2(0f, 1f), new Vector2(0f, y), new Vector2(700f, 56f), LaptopOs.Ink);
+            RectTransform row = LaptopUi.MakePanel(parent, "ConsumableOffer" + index, new Vector2(0f, 1f),
+                new Vector2(0f, 1f), new Vector2(0f, y), new Vector2(RewardsRowWidth, 56f), LaptopOs.Ink);
             bool enoughComps = offer.Price <= run.Comps;
             bool hasSlot = run.OwnedConsumables.Count < run.Config.ConsumableSlots;
             bool canBuy = enoughComps && hasSlot && run.Phase == Phase.Shop;
@@ -1602,13 +1784,13 @@ namespace SBR.Game
             // dropped the downside, which is worse than clipping, because it reads as complete.
             // The copy is rendered whole and the row grows to hold it; the board shows however many
             // offers fit and says how many it could not (see BuildRewards).
-            Text description = LaptopUi.MakeText(row, "OfferDescription", new Vector2(0f, 1f),
+            TMP_Text description = LaptopUi.MakeText(row, "OfferDescription", new Vector2(0f, 1f),
                 new Vector2(0f, 1f), new Vector2(14f, -29f), new Vector2(430f, 22f), 13,
                 TextAnchor.UpperLeft, LaptopOs.TonerSecondary, offer.Description, _font);
             float descriptionHeight = Mathf.Max(18f, description.preferredHeight);
             description.rectTransform.sizeDelta = new Vector2(430f, descriptionHeight);
             float rowHeight = 29f + descriptionHeight + 9f;
-            row.sizeDelta = new Vector2(700f, rowHeight);
+            row.sizeDelta = new Vector2(RewardsRowWidth, rowHeight);
             // S9 defect 1: price is wax regardless of affordability; see BuildRewardOffer above.
             LaptopUi.MakeText(row, "Affordability", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-124f, -5f), new Vector2(118f, 22f), 13, TextAnchor.UpperRight,
@@ -1634,7 +1816,7 @@ namespace SBR.Game
                     _invalidate();
                 } : null, _font, canBuy);
             LaptopUi.MakeRule(row, "OfferRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
-                Vector2.zero, new Vector2(700f, 2f));
+                Vector2.zero, new Vector2(RewardsRowWidth, 2f));
             return rowHeight;
         }
 
@@ -1772,8 +1954,8 @@ namespace SBR.Game
     internal sealed class OldSlipsApp
     {
         private readonly RectTransform _root;
-        private readonly Font _font;
-        private readonly Font _fontCond; // see SportsbookApp's field comment — same seam
+        private readonly TMP_FontAsset _font;
+        private readonly TMP_FontAsset _fontCond; // see SportsbookApp's field comment — same seam
         private readonly Action _home;
         private readonly Action _sportsbook;
         // S31: drives the reused four-tab strip's navigation — clicking FORM/ENTRY/MY BETS/
@@ -1782,7 +1964,7 @@ namespace SBR.Game
         // app to whichever tab it last showed (the tray's "SURETHING" slot).
         private readonly Action<SportsbookApp.Tab> _selectTab;
 
-        public OldSlipsApp(RectTransform root, Font font, Font fontCond, Action home, Action sportsbook,
+        public OldSlipsApp(RectTransform root, TMP_FontAsset font, TMP_FontAsset fontCond, Action home, Action sportsbook,
             Action<SportsbookApp.Tab> selectTab)
         {
             _root = root;
@@ -1805,9 +1987,25 @@ namespace SBR.Game
             RectTransform margin = LaptopUi.MakePanel(_root, "LedgerMargin", new Vector2(1f, 1f),
                 new Vector2(1f, 1f), new Vector2(0f, -140f), new Vector2(324f, 530f), LaptopOs.Ink);
 
+            // Retention consumed. This read `run.Tickets`, which `ExitShop` clears every round, so a
+            // player who bet in rounds 1-3 and opened the LEDGER in round 4 met an empty screen
+            // captioned SETTLED TICKETS · THIS RUN — the screen contradicting itself, and the defect
+            // the engine work was approved to fix. `run.SettledTickets` is the retained history.
+            //
+            // Both lists, not just the retained one. The engine folds a round's tickets into
+            // SettledTickets at Settle(), so a ticket that goes terminal mid-round — a cash-out, or
+            // a dead-leg loss (S43) — is in `Tickets` and not yet in `SettledTickets`. Reading only
+            // the retained list would make those vanish from the ledger until the round settled,
+            // which is a new defect traded for the old one. De-duplicated by reference because
+            // after Settle() and before ExitShop() the same tickets are legitimately in both.
             var settled = new List<Ticket>();
+            for (int i = 0; i < run.SettledTickets.Count; i++)
+                if (run.SettledTickets[i].State != TicketState.Open) settled.Add(run.SettledTickets[i]);
             for (int i = 0; i < run.Tickets.Count; i++)
-                if (run.Tickets[i].State != TicketState.Open) settled.Add(run.Tickets[i]);
+            {
+                Ticket live = run.Tickets[i];
+                if (live.State != TicketState.Open && !settled.Contains(live)) settled.Add(live);
+            }
 
             // S31: LedgerScreen()'s own 44px --ground-2 board header — SETTLED TICKETS · THIS RUN
             // left, N RECORDS right-flushed, a --rule bottom border. This is now the one place on
@@ -1817,32 +2015,43 @@ namespace SBR.Game
             // restate the header's own fact (S37).
             BuildLedgerBoardHeader(board, settled.Count);
 
-            // The column-head row is gone, and deliberately not realigned. Three reasons, in order
-            // of weight:
+            // A separate padded-string column-head row (a pre-S31 leftover, one string between the
+            // board header and the first entry) stays deleted. It never worked — one string padded
+            // with spaces in a proportional face, so it could not line up with the columns it
+            // claimed to head; measured on the populated capture, its STAKE head sat at x=122
+            // against its value at x=351. That mechanism is gone for good, not replaced.
             //
-            // LedgerScreen() has no such row — it renders the 44px board header and then entries.
-            // The head was a build invention, so under C14 the 1:1 move is to delete it rather than
-            // to perfect it.
+            // S38 ruled violation, the kit is wrong · DD 2026-08-02 batch 7: STAKE/RETURNED belong
+            // to the list, not the row — LedgerEntry.jsx:20,24 prints both once per record, so they
+            // repeated three times on a three-record frame, invisible at N=1 (a component preview
+            // is an N=1 surface). The build was 1:1 with that defect. The fix is not the deleted
+            // padded-string row above; it is real column heads inside the 44px --ground-2 board
+            // header S31 already built (BuildLedgerBoardHeader below), positioned at the exact same
+            // x/width as the figures beneath them (LedgerStakeX/LedgerReturnedX — S40 re-derives
+            // both against this same header band), not a hand-padded guess.
             //
-            // Since S32 rebuilt the row into LedgerEntry's stacked key/value cells, every row now
-            // prints its own STAKE and RETURNED keys. A head above them restates each row's labels
-            // once per screen, which is what S37 exists to stop.
-            //
-            // And it never worked: it was one string padded with spaces, so in a proportional face
-            // it could not line up with the columns it claimed to head. Measured on the populated
-            // capture, the STAKE head sat at x=122 against its value at x=351 — the head pointed at
-            // nothing. Its own comment conceded the spacing was "a by-eye hint, not pixel-locked".
-            //
-            // The board header carries its own 1px --rule bottom border (S31), so the separator
-            // rule that sat under the head goes with it rather than leaving a second line.
-            int cashedCount = 0;
+            // S42/S27: the settled list itself scrolls, under the fixed header above — no cap, no
+            // truncation, no sub-row clipped by the tray. S40's leg sub-rows made row cost a
+            // function of leg count (up to 3 tickets x 6 legs against this board), which is the
+            // overflow S42 names as its reason to rule now rather than wait for it to be
+            // hypothetical. Every settled record stays reachable per C19: hiding a kept record is
+            // indistinguishable from never having kept it.
+            const float ledgerScrollTop = -44f; // just below the 44px board header
+            const float ledgerViewportHeight = 530f + ledgerScrollTop; // 486 — the rest of the board
+            RectTransform content = LaptopUi.MakeScrollBody(board, "LedgerScroll",
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, ledgerScrollTop),
+                new Vector2(700f, ledgerViewportHeight), out RectTransform scrollHost,
+                out ScrollRect scrollRect);
+
+            // S41: renamed from knownWinPayout — it is no longer wins-only. A retained cash-out is
+            // money the player got back and belongs in RETURNED with the payouts.
             double settledStake = 0.0;
-            double knownWinPayout = 0.0;
-            float y = -52f;
+            double knownReturned = 0.0;
+            float y = -8f; // top pad inside the scroll content (was -52 = -44 header - 8 pad)
             for (int i = 0; i < settled.Count; i++)
             {
                 Ticket ticket = settled[i];
-                BuildLedgerTicket(board, ticket, i, run.Round, y);
+                BuildLedgerTicket(content, ticket, i, run.Round, y);
                 // S32: LedgerEntry.jsx's own borderBottom (--rule-w solid --rule-soft) is the
                 // separator now, drawn as this entry's own bottom edge inside BuildLedgerTicket —
                 // so entries sit flush and the next one starts exactly one entry height down, not
@@ -1850,10 +2059,14 @@ namespace SBR.Game
                 y -= LedgerEntryHeight(ticket);
                 settledStake += ticket.Stake;
                 if (ticket.State == TicketState.Won)
-                    knownWinPayout += ticket.PotentialPayout;
-                else if (ticket.State == TicketState.CashedOut)
-                    cashedCount++;
+                    knownReturned += ticket.PotentialPayout;
+                // S41: a retained cash-out is a known return and joins the sum. A record whose
+                // amount is genuinely unknowable simply contributes nothing — it does not suppress
+                // the total, and its own cell carries the absence (BuildLedgerTicket).
+                else if (ticket.State == TicketState.CashedOut && ticket.CashedOutFor.HasValue)
+                    knownReturned += ticket.CashedOutFor.Value;
             }
+            LaptopUi.FinishScrollBody(scrollHost, scrollRect, content, -y, ledgerViewportHeight);
             if (settled.Count == 0)
             {
                 LaptopUi.MakeText(board, "LedgerEmpty", new Vector2(0f, 1f), new Vector2(0f, 1f),
@@ -1866,7 +2079,7 @@ namespace SBR.Game
                     _font);
             }
 
-            BuildRecordSummary(margin, settled.Count, cashedCount, settledStake, knownWinPayout);
+            BuildRecordSummary(margin, settled.Count, settledStake, knownReturned);
 
             // F2: the same sheet/margin seam every screen carries — see BuildSlip's SheetDivider.
             // Built LAST here, and only here, for a reason worth keeping: BuildRecordSummary above
@@ -1903,13 +2116,13 @@ namespace SBR.Game
             LaptopUi.MakeRule(masthead, "MastheadRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
                 Vector2.zero, new Vector2(1024f, 2f), LaptopOs.Rule);
             // Width trimmed from the pre-S31 420px to 300px (matching SportsbookApp.BuildChrome's
-            // own Brand box exactly — "LEDGER" needs far less room than "SURETHING FORM" already
-            // fits in 300). The old 420px had no neighbour to clear (the pre-S31 right-side text
+            // own Brand box exactly — "LEDGER" needs far less room than the sportsbook's own brand
+            // already fits in 300). The old 420px had no neighbour to clear (the pre-S31 right-side text
             // started at local x=648); BuildRunFigures below now starts at x=398, and 420 would
             // have overlapped it by up to 38px.
             LaptopUi.MakeText(masthead, "Brand", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(16f, -8f), new Vector2(300f, 28f), 26, TextAnchor.UpperLeft,
-                LaptopOs.White, "LEDGER", _fontCond);
+                LaptopOs.White, "LEDGER", _fontCond, LaptopTrack.Names);
             // F4: "READ ONLY" is said once, by the tabs meta above, not here. S37: the live round
             // number appears exactly once on the surface — every other destination states it in
             // this exact slot (SportsbookApp.BuildChrome's "Run" text, ROUND R OF N · ...), and it
@@ -1920,26 +2133,53 @@ namespace SBR.Game
             // below now occupies this masthead too, starting at local x=398, and 520 would have
             // overlapped it by up to 139px — an invisible box collision the fact-floor/target
             // rules forbid even when neither string is long enough to visibly touch.
+            //
+            // S37's live instance (DD 2026-08-02 batch 7): this subline used to carry its own
+            // " · SETTLED TICKETS ONLY" clause, restating the screen's scope in the masthead's
+            // slot — the exact duplication S37 exists to forbid, just missed on the first pass
+            // because the board header's own "SETTLED TICKETS · THIS RUN" (BuildLedgerBoardHeader)
+            // wasn't read side by side with this string. Deleted; the masthead states only the
+            // run's scope (the live round number), the board header states the screen's.
             LaptopUi.MakeText(masthead, "Scope", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(17f, -38f), new Vector2(370f, 20f), 13, TextAnchor.UpperLeft,
-                LaptopOs.Muted, $"ROUND {run.Round} OF {run.Config.Rounds}  ·  SETTLED TICKETS ONLY", _font);
+                LaptopOs.Muted, $"ROUND {run.Round} OF {run.Config.Rounds}", _font);
             // S31: the masthead's run figures — unchanged from the rest of the surface. Reuses
             // SportsbookApp's own mechanism (BANK/TARGET/TICKETS) instead of the single condensed
             // "ROUND R · BANK $X" string this slot used to carry.
-            SportsbookApp.BuildRunFigures(masthead, run, _font);
+            SportsbookApp.BuildRunFigures(masthead, run, _fontCond);
         }
 
-        // S32 canon column geometry, from LedgerEntry.jsx: a 16px gap between five flex cells —
-        // number(112, flex:none) / legs(flex:1) / STAKE(96) / RETURNED(104) / terminal(104,
-        // flex:none, textAlign right) — inside --st-pad-x (14px) padding on both row edges. The
-        // terminal word is the LAST cell and nothing follows it — that is the entire point of the
-        // S32 ruling (DD 2026-08-01): "the state is the row's subject and the money is its
-        // object," so the terminal word, not the payout, is the row's last scan point.
+        // S38+S39+S40 column geometry (DD 2026-08-02 batch 7 — one change, one commit). Canon
+        // (LedgerEntry.jsx) still names five flex cells — number(112) / legs(flex:1) / STAKE(96) /
+        // RETURNED(104) / terminal(104) — but this build now departs from it on the DD's own
+        // ruling, not by drift: S38 moves the STAKE/RETURNED keys out of the row into the board
+        // header (once, not per-record); S40 deletes the legs cell outright (canon's flex slot,
+        // reserved and rendered empty — "a blank gap mid-row," never populated in this build either
+        // — is a defect, not a layout) and re-derives the remaining four column origins once, at
+        // design time, against the header band (T51: a fixed grid constant may be re-derived once;
+        // a zone may never resize to content at runtime).
         //
-        // Row content width is 672 (700 - 14 - 14). The four fixed cells plus their four 16px gaps
-        // consume 480 (112 + 96 + 104 + 104 + 4*16), leaving the legs flex cell 192px in canon.
-        // This build does not put text in that 192px slot — see the discrepancy comment in
-        // BuildLedgerTicket below — so it is reserved space, not a rendered cell.
+        // "Against the header band" is literal: BuildLedgerBoardHeader already carries
+        // "SETTLED TICKETS · THIS RUN" (ending x=294, 14 + 280) on the left and "N RECORDS"
+        // (starting x=526, 700 − 14 − 160) on the right. The STAKE/RETURNED heads S38 adds have to
+        // fit the 232px gap between those two without touching either — no two live boxes may
+        // overlap, even invisibly. STAKE(96) + 16 gap + RETURNED(104) = 216px fits that 232px gap
+        // with 8px clear on both sides, which is where LedgerStakeX/LedgerReturnedX below come
+        // from — not from the old five-cell flex formula (350/462), which packed STAKE/RETURNED
+        // against the row's right edge behind the now-deleted legs cell and would sit under the
+        // header's own "N RECORDS" text, not under new heads. The row below uses these exact same
+        // two x/width pairs so the figures land beneath their heads (S38's own wording).
+        //
+        // Identity keeps its own x (14, the row's left pad) and width (112, canon's number cell —
+        // untouched by the legs cell's deletion, still just the identity cell — `R2 · TICKET 02`
+        // since S62, which retired the "TICKET n.n" this line used to name). Terminal keeps its own
+        // mechanism too: pivot (1,1) at -14 from the row's right edge, independent of every other
+        // column and unaffected by any of this (S32's ruling on it is closed on rendered evidence,
+        // out of scope here). What's deliberately gone is the LedgerLegsFlexWidth constant that
+        // used to sit between identity and the money columns, reserving 192px this build never
+        // rendered into — S40's "blank gap mid-row," deleted rather than closed with more of the
+        // same by packing STAKE/RETURNED flush against terminal, which is what removing only the
+        // constant (and not re-deriving against the header) would otherwise have produced.
         private const float LedgerPadX = 14f;
         private const float LedgerColGap = 16f;
         private const float LedgerNumberWidth = 112f;
@@ -1947,17 +2187,30 @@ namespace SBR.Game
         private const float LedgerReturnedWidth = 104f;
         private const float LedgerTerminalWidth = 104f;
         private const float LedgerNumberX = LedgerPadX; // 14
-        private const float LedgerLegsFlexWidth = 192f; // 672 - 480, unused: see discrepancy note
-        private const float LedgerStakeX =
-            LedgerNumberX + LedgerNumberWidth + LedgerColGap + LedgerLegsFlexWidth + LedgerColGap; // 350
-        private const float LedgerReturnedX = LedgerStakeX + LedgerStakeWidth + LedgerColGap; // 462
+        private const float LedgerStakeX = 302f; // re-derived against the header band, see above
+        private const float LedgerReturnedX = LedgerStakeX + LedgerStakeWidth + LedgerColGap; // 414
 
-        // Summary-band vertical budget: canon stacks a 13px key ("STAKE"/"RETURNED") over a
-        // 16px value inside one flex row, vertically centered by alignItems. This build gives that
-        // stack 56px total (room for an 11px-ish pad, the 13px key, a small gap, the 16-18px value
-        // and a matching pad below). Sure-by-reading on structure/order/colour; the exact 56 is a
-        // by-eye pick like every other row height in this file and needs a capture to confirm.
-        private const float LedgerSummaryHeight = 56f;
+        // S39: one baseline per record row. Canon stacks a 13px key over a 16px value inside each
+        // of the STAKE/RETURNED cells (two lines) with identity/legs/terminal on their own lines
+        // again by virtue of the row's flex alignItems:center only aligning cells that ARE single
+        // lines — four baselines in total on the build this replaces. With the keys gone to the
+        // header band (S38), every remaining cell — identity, the two condensed tabular figures,
+        // the terminal word — is one line, so canon's own alignItems:center is now reachable:
+        // BuildLedgerTicket keeps each cell's own snug, top-anchored box (unchanged sizes — 24px
+        // for the 16px identity/terminal lines, 20px for the 16px value lines, matching this
+        // file's pre-existing convention exactly, and required so InkRingGeometry's strike-sprite
+        // math — which reads a text box's own anchored corner, not its rendered glyph — still
+        // lines up) but re-picks each box's y offset so every box's own vertical centre lands on
+        // the same midpoint of this (shorter) band. That is alignItems:center by construction, not
+        // a stretched Middle-anchored box, and it is what "one baseline" means for a row that mixes
+        // a 13px terminal word with 16px figures — canon centres them, it does not baseline-lock
+        // them either. 42px (11px top pad + a 20px single line + 11px bottom pad, matching canon's
+        // own "11px var(--st-pad-x)" padding) is this build's own honest arithmetic for the band;
+        // the register estimates ~19px returned per record against the kit's real metrics
+        // (56 → ~37), this gives 56 → 42 (14px) — sure by reading on structure (one line, heads
+        // gone, every cell centred on one midpoint), a by-eye pick on the exact figure like the 56
+        // it replaces, needs a capture to pin.
+        private const float LedgerSummaryHeight = 42f;
         private const float LedgerLegRowHeight = 24f;
 
         private static float LedgerEntryHeight(Ticket ticket)
@@ -1967,7 +2220,14 @@ namespace SBR.Game
         /// with a --rule bottom border, "SETTLED TICKETS · THIS RUN" left and a right-flushed
         /// "N RECORDS". This is the one statement on the screen of what the list below is scoped
         /// to; the passive margin's note (S33, BuildRecordSummary) says something else entirely
-        /// (that the ledger derives nothing) precisely so the two never restate each other.</summary>
+        /// (that the ledger derives nothing) precisely so the two never restate each other.
+        ///
+        /// S38 adds the STAKE and RETURNED column heads here — once, not once per record
+        /// (LedgerEntry.jsx:20,24's defect) — at the exact x/width the record row's own STAKE and
+        /// RETURNED figures use (LedgerStakeX/LedgerReturnedX), so the figures sit aligned beneath
+        /// them. Positioned in the 232px gap between the scope caption (ends x=294) and the record
+        /// count (starts x=526) with 8px clear on both sides — see the geometry comment above
+        /// LedgerPadX for the full derivation.</summary>
         private void BuildLedgerBoardHeader(RectTransform board, int settledCount)
         {
             RectTransform header = LaptopUi.MakePanel(board, "LedgerBoardHeader", new Vector2(0f, 1f),
@@ -1977,76 +2237,113 @@ namespace SBR.Game
             LaptopUi.MakeText(header, "LedgerBoardHeaderScope", new Vector2(0f, .5f), new Vector2(0f, .5f),
                 new Vector2(14f, 0f), new Vector2(280f, 24f), 13, TextAnchor.MiddleLeft,
                 LaptopOs.Muted, "SETTLED TICKETS · THIS RUN", _font);
+            LaptopUi.MakeText(header, "LedgerBoardHeaderStake", new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(LedgerStakeX, 0f), new Vector2(LedgerStakeWidth, 24f), 13, TextAnchor.MiddleLeft,
+                LaptopOs.Muted, "STAKE", _font);
+            LaptopUi.MakeText(header, "LedgerBoardHeaderReturned", new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(LedgerReturnedX, 0f), new Vector2(LedgerReturnedWidth, 24f), 13, TextAnchor.MiddleLeft,
+                LaptopOs.Muted, "RETURNED", _font);
             LaptopUi.MakeText(header, "LedgerBoardHeaderCount", new Vector2(1f, .5f), new Vector2(1f, .5f),
                 new Vector2(-14f, 0f), new Vector2(160f, 24f), 13, TextAnchor.MiddleRight,
                 LaptopOs.Muted, $"{settledCount} {SportsbookApp.Pluralize(settledCount, "RECORD")}", _font);
         }
 
-        private void BuildLedgerTicket(RectTransform board, Ticket ticket, int index, int round, float y)
+        /// <summary>S43: the leg sub-row's terminal word — VOID beats everything (a voided leg is
+        /// never anything else, regardless of State), then WON (grading or a whistle rescue), then
+        /// LOST, and PENDING only as the fallback for a leg whose State is still LegState.Pending.
+        /// Factored out of BuildLedgerTicket so SureThingLedgerTests can exercise the PENDING
+        /// branch directly against a hand-built Leg (S43: "the render path must handle it rather
+        /// than treat it as dead code") without needing a live ticket to reach that state, which —
+        /// per W4's audit, unchanged by this ruling — nothing currently does for WON/LOST/CashedOut
+        /// alike in this engine.</summary>
+        internal static string LegStateWord(Leg leg) => leg.IsVoided ? "VOID"
+            : leg.RescuedWon || leg.State == LegState.Won ? "WON"
+            : leg.State == LegState.Lost ? "LOST" : "PENDING";
+
+        // S27: every scrolling body reserves the rail's own 4px on the right, whether or not the
+        // rail ends up drawn (LaptopUi.RailReserve) — settled-ticket rows now live inside one
+        // (OldSlipsApp.Render), so their own full-width elements (the row panel, and every
+        // divider/rule inside it) are sized to this narrower content column rather than the
+        // board's full 700px. Elements anchored from the row's right edge (TicketState/
+        // LedgerDeadStrike, LegState) already reflow with it via Unity's own anchor math and need
+        // no separate constant.
+        private const float LedgerRowWidth = 700f - LaptopUi.RailReserve;
+
+        private void BuildLedgerTicket(RectTransform parent, Ticket ticket, int index, int round, float y)
         {
             float height = LedgerEntryHeight(ticket);
-            RectTransform row = LaptopUi.MakePanel(board, "LedgerTicket" + index, new Vector2(0f, 1f),
-                new Vector2(0f, 1f), new Vector2(0f, y), new Vector2(700f, height), LaptopOs.Ink);
-            string identity = string.IsNullOrEmpty(ticket.Id) ? $"{round}.{index + 1}" : ticket.Id;
+            RectTransform row = LaptopUi.MakePanel(parent, "LedgerTicket" + index, new Vector2(0f, 1f),
+                new Vector2(0f, 1f), new Vector2(0f, y), new Vector2(LedgerRowWidth, height), LaptopOs.Ink);
+            // S62: R2 · TICKET 02 — never the engine's own key. The round qualifier belongs here
+            // specifically: this list spans rounds, so it is what makes two rows tell themselves
+            // apart, and it is read from the TICKET's round rather than the screen's current one.
+            string identity = LaptopUi.TicketIdentity(ticket.Id, round, index, withRound: true);
             string state = ticket.State == TicketState.Won ? "WON"
                 : ticket.State == TicketState.Lost ? "LOST"
                 : ticket.State == TicketState.CashedOut ? "CASHED OUT" : "OPEN";
-            // S36: the engine retains no cash-out amount. The absence is honest — never a
-            // fabricated $0 and never "AMOUNT NOT RETAINED" — so the RETURNED value prints a plain
-            // em dash, coloured toner-3 below, until engine retention lands.
+            // S41: S36's designed absence expires here. Engine retention landed (`9e55d0d`, on this
+            // tree since the merge), so `Ticket.CashedOutFor` carries the figure and it PRINTS —
+            // never the em dash that stood in for it, and never the fabricated $0 that S36 refused.
+            //
+            // The em dash survives for exactly one case: a record whose amount is genuinely
+            // unknowable (`CashedOutFor` null). That is still an absence and still prints honest.
+            // S41 puts it in the record's own cell and nowhere else — see the RETURNED total.
             string returnedValue = ticket.State == TicketState.Won ? LaptopUi.Money(ticket.PotentialPayout)
                 : ticket.State == TicketState.Lost ? LaptopUi.Money(0)
-                : "—";
+                : ticket.State == TicketState.CashedOut && ticket.CashedOutFor.HasValue
+                    ? LaptopUi.Money(ticket.CashedOutFor.Value)
+                    : "—";
             // F5/F6 / LedgerEntry.jsx: `color: won ? var(--wax) : var(--toner-3)` applies to BOTH
             // the terminal word and the RETURNED value. S15 resolved LOST more precisely: oxide
             // belongs only to the strike drawn ACROSS the word (LedgerDeadStrike, below,
             // unchanged), never to a glyph fill — the word and the RETURNED value both recede to
             // toner-3 (LaptopOs.Muted) instead.
-            // S36: CASHED OUT is wax, paired with WON exactly as the kit pairs them, on the
-            // terminal word only. That pairing stops at RETURNED — an em dash is an absence, not a
-            // fact to celebrate, so it stays toner-3 even beside a wax word.
+            // S36 paired CASHED OUT with WON in wax on the terminal word only, and held RETURNED at
+            // toner-3 because "an em dash is an absence, not a fact to celebrate".
+            //
+            // S41: now that the figure prints, that reasoning applies to the em dash rather than to
+            // every cashed-out row. A retained cash-out amount is money the player actually got
+            // back, so it takes wax with its word, exactly as WON's payout does. Only the
+            // unknowable case still recedes to toner-3 — the absence dims, the fact does not.
             Color stateColor = ticket.State == TicketState.Won || ticket.State == TicketState.CashedOut
                 ? LaptopOs.MoneyGold
                 : ticket.State == TicketState.Lost ? LaptopOs.Muted : LaptopOs.TonerSecondary;
             bool lost = ticket.State == TicketState.Lost;
-            Color returnedColor = lost || ticket.State == TicketState.CashedOut ? LaptopOs.Muted : stateColor;
+            bool unknowableReturn =
+                ticket.State == TicketState.CashedOut && !ticket.CashedOutFor.HasValue;
+            Color returnedColor = lost || unknowableReturn ? LaptopOs.Muted : stateColor;
 
-            // --- number (112px, flex:none). LedgerEntry.jsx colours this --toner-2 unconditionally
-            // — no won/lost branch — so, unlike the previous build, it no longer dims on a LOST
-            // ticket. The terminal word and RETURNED value already carry that signal; canon does
-            // not repeat it here.
-            Text identityText = LaptopUi.MakeText(row, "TicketIdentity", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(LedgerNumberX, -16f), new Vector2(LedgerNumberWidth, 24f), 16, TextAnchor.UpperLeft,
-                LaptopOs.TonerSecondary, "TICKET " + identity, _fontCond);
-            identityText.horizontalOverflow = HorizontalWrapMode.Overflow; // canon: whiteSpace nowrap
+            // S39: one baseline. Every cell below keeps its own snug, top-anchored box (unchanged
+            // sizes from before this ruling) but is re-centred on y=-21, this band's own midpoint
+            // (LedgerSummaryHeight/2 = 21) — canon's alignItems:center, reached now that the keys
+            // that used to force identity/value/terminal onto separate lines are gone (S38).
 
-            // --- legs (flex:1, ~192px in canon): deliberately blank. LedgerEntry.jsx renders one
-            // condensed leg string in this cell; this build instead carries full per-leg sub-rows
-            // below (odds, per-leg state) that the canon string does not. Collapsing them into the
-            // canon string would discard information the player currently has, which is a product
-            // call outside this rebuild's authority — flagged, not resolved. Implementing the
-            // canon column order does not require populating this slot, so it is left reserved
-            // rather than duplicating the sub-rows' content or inventing a summary canon never
-            // specified.
+            // --- identity (112px). LedgerEntry.jsx colours this --toner-2 unconditionally — no
+            // won/lost branch — so it does not dim on a LOST ticket; the terminal word and
+            // RETURNED value already carry that signal.
+            TMP_Text identityText = LaptopUi.MakeText(row, "TicketIdentity", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(LedgerNumberX, -9f), new Vector2(LedgerNumberWidth, 24f), 16, TextAnchor.UpperLeft,
+                LaptopOs.TonerSecondary, identity, _fontCond);
+            identityText.enableWordWrapping = false; // canon: whiteSpace nowrap
 
-            // --- STAKE (96px): key line + value line. LedgerEntry.jsx colours the value --toner
-            // unconditionally (no won/lost branch), unlike the previous build's lost-dims-to-Muted
-            // treatment.
-            Text stakeKeyText = LaptopUi.MakeText(row, "TicketStakeKey", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(LedgerStakeX, -10f), new Vector2(LedgerStakeWidth, 16f), 13, TextAnchor.UpperLeft,
-                LaptopOs.Muted, "STAKE", _font);
-            stakeKeyText.horizontalOverflow = HorizontalWrapMode.Overflow; // canon "key" style: nowrap
+            // S40: the legs flex cell (canon's ~192px slot between identity and STAKE) is deleted,
+            // not left reserved. It never carried the per-leg summary LedgerEntry.jsx puts there —
+            // this build carries full per-leg sub-rows below instead (odds, per-leg state) that the
+            // canon string can't — but a cell reserved and rendered empty is a blank gap mid-row,
+            // not a layout, so nothing stands in its place any more; STAKE/RETURNED are re-derived
+            // against the header band above rather than kept where the deleted cell used to end.
+
+            // --- STAKE (96px): one condensed tabular figure now, under the board header's STAKE
+            // head (S38) instead of a key line repeated inside every row. LedgerEntry.jsx colours
+            // the value --toner unconditionally (no won/lost branch).
             LaptopUi.MakeText(row, "TicketStakeValue", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(LedgerStakeX, -28f), new Vector2(LedgerStakeWidth, 20f), 16, TextAnchor.UpperLeft,
+                new Vector2(LedgerStakeX, -11f), new Vector2(LedgerStakeWidth, 20f), 16, TextAnchor.UpperLeft,
                 LaptopOs.White, LaptopUi.Money(ticket.Stake), _fontCond);
 
-            // --- RETURNED (104px): key line + value line; value colour carries won/lost/cashed. ---
-            Text returnedKeyText = LaptopUi.MakeText(row, "TicketReturnedKey", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(LedgerReturnedX, -10f), new Vector2(LedgerReturnedWidth, 16f), 13, TextAnchor.UpperLeft,
-                LaptopOs.Muted, "RETURNED", _font);
-            returnedKeyText.horizontalOverflow = HorizontalWrapMode.Overflow; // canon "key" style: nowrap
+            // --- RETURNED (104px): one condensed tabular figure under the board header's RETURNED
+            // head; colour carries won/lost/cashed exactly as before.
             LaptopUi.MakeText(row, "TicketReturnedValue", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(LedgerReturnedX, -28f), new Vector2(LedgerReturnedWidth, 20f), 16, TextAnchor.UpperLeft,
+                new Vector2(LedgerReturnedX, -11f), new Vector2(LedgerReturnedWidth, 20f), 16, TextAnchor.UpperLeft,
                 returnedColor, returnedValue, _fontCond);
 
             // --- terminal word (104px, flex:none, textAlign right) — S32: the row's rightmost
@@ -2061,10 +2358,19 @@ namespace SBR.Game
             // 6-of-14px clearance is the requirement the old fix protected; it still holds here,
             // satisfied by geometry instead of a moved column. If a future change ever puts a
             // control right of this word, it must clear that same 8px overshoot.
-            Text ticketStateText = LaptopUi.MakeText(row, "TicketState", new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-LedgerPadX, -16f), new Vector2(LedgerTerminalWidth, 24f), 13, TextAnchor.UpperRight,
+            // −13, not −9, and the 4px is measured rather than eyeballed. S39 asks for one baseline
+            // across the record, and top-anchored text aligns TOPS, not baselines — so a 13px
+            // terminal word beside a 16px identity rides high by the difference in cap height. On
+            // the populated frame the identity's ink bottomed at y=218 and the terminal's at y=214.
+            //
+            // The box moves rather than the text's alignment inside it. InkRingGeometry places the
+            // strike from this rect's own anchoredPosition, so centring the glyphs would slide the
+            // word off its strike; moving the box takes the strike with it, which is what a struck
+            // word wants.
+            TMP_Text ticketStateText = LaptopUi.MakeText(row, "TicketState", new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-LedgerPadX, -13f), new Vector2(LedgerTerminalWidth, 24f), 13, TextAnchor.UpperRight,
                 stateColor, state, _fontCond);
-            ticketStateText.horizontalOverflow = HorizontalWrapMode.Overflow; // canon: whiteSpace nowrap
+            ticketStateText.enableWordWrapping = false; // canon: whiteSpace nowrap
             if (lost)
             {
                 Sprite strike = SportsbookApp.ResolveStrike(index);
@@ -2081,7 +2387,7 @@ namespace SBR.Game
             // Summary-band / leg-sub-row divider — internal to this entry, separate from the canon
             // borderBottom (LedgerEntryRule, at the very bottom of the whole entry, below).
             LaptopUi.MakeRule(row, "TicketRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(0f, -LedgerSummaryHeight), new Vector2(700f, 1f));
+                new Vector2(0f, -LedgerSummaryHeight), new Vector2(LedgerRowWidth, 1f));
 
             for (int legIndex = 0; legIndex < ticket.Legs.Count; legIndex++)
             {
@@ -2089,19 +2395,22 @@ namespace SBR.Game
                 RectTransform legRow = LaptopUi.MakePanel(row, "LedgerLeg" + legIndex,
                     new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(0f, -LedgerSummaryHeight - legIndex * LedgerLegRowHeight),
-                    new Vector2(700f, 23f), LaptopOs.Ink);
-                // W4 (audit question — resolved not-reachable, see the report): leg.State can only
-                // read Pending here if Matchup.StatLine is still null. Run.LockRound (engine/Run.cs)
-                // samples StatLine for every matchup on the slate — bet or not — before it
-                // constructs a single SweatSession, and no Ticket leaves TicketState.Open before a
-                // SweatSession exists (engine/Run.cs FinishSweat; engine/SweatSession.cs's Lost/
-                // CashedOut assignments). So by the time a ticket is settled enough to reach this
-                // loop, every one of its legs' matchups already has a StatLine, and leg.State
-                // (engine/Domain.cs) can only be Won or Lost. This PENDING fallback is kept for
-                // defensive completeness, not because engine data can reach it.
-                string legState = leg.IsVoided ? "VOID"
-                    : leg.RescuedWon || leg.State == LegState.Won ? "WON"
-                    : leg.State == LegState.Lost ? "LOST" : "PENDING";
+                    new Vector2(LedgerRowWidth, 23f), LaptopOs.Ink);
+                // S43 ruled · DD 2026-08-02 batch 7: PENDING is legal in exactly one place — a
+                // CASHED OUT ticket, where he left before the match ended. W4's earlier audit
+                // (Run.LockRound samples every matchup's StatLine, bet or not, before a single
+                // SweatSession exists, so leg.State reads Pending only while Matchup.StatLine is
+                // still null) is accurate for THIS engine: no ticket currently reaches this loop
+                // with a Pending leg, WON/LOST/CashedOut alike — SureThingLedgerTests locks that
+                // invariant down for WON/LOST. But the DD overruled treating that as licence to
+                // drop the branch: leg.State's own definition (engine/Domain.cs) makes Pending a
+                // real, constructible data state, not dead code, and only a CASHED OUT ticket may
+                // legally carry one — the render path must resolve it correctly (the literal word
+                // "PENDING", never a fabricated terminal word, in --toner-3/Muted below — already
+                // true, unconditionally, for every non-lost leg) rather than assume it can't
+                // arrive. LegStateWord is exercised directly by SureThingLedgerTests against a
+                // hand-built Pending leg for exactly this reason.
+                string legState = LegStateWord(leg);
                 // S35(c): RevealedLeg.jsx is the spec of record for a leg row's state — the ✓,
                 // the word, the strike and opacity .55 carry it, never a per-outcome hue. Both
                 // colours below were already flat regardless of outcome, so there was no hue to
@@ -2127,7 +2436,7 @@ namespace SBR.Game
                     new Vector2(-14f, 0f), new Vector2(140f, 22f), 13, TextAnchor.MiddleRight,
                     legLost ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.Muted, legState, _fontCond);
                 LaptopUi.MakeRule(legRow, "LegRule", new Vector2(0f, 0f), new Vector2(0f, 0f),
-                    Vector2.zero, new Vector2(700f, 1f));
+                    Vector2.zero, new Vector2(LedgerRowWidth, 1f));
             }
 
             // S32 canon: "every entry carries a borderBottom in --rule-soft" (LedgerEntry.jsx:
@@ -2135,7 +2444,7 @@ namespace SBR.Game
             // file used to leave between entries — entries now sit flush and this hairline is the
             // only separator, drawn at the entry's own bottom edge so it costs no extra height.
             LaptopUi.MakeRule(row, "LedgerEntryRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(0f, -height), new Vector2(700f, 1f));
+                new Vector2(0f, -height), new Vector2(LedgerRowWidth, 1f));
         }
 
         // MarginHeader.jsx: 12px top / 9px bottom padding around the biro title before its own
@@ -2151,8 +2460,8 @@ namespace SBR.Game
         /// MarginRows and one note, in the kit's own order (app.jsx:94-97): TICKETS SETTLED,
         /// STAKED, RETURNED, then the note. Replaces the previous seven-block panel (a toner
         /// header, a soft rule, and five more text blocks) that carried no biro anywhere.</summary>
-        private void BuildRecordSummary(RectTransform margin, int settled, int cashed, double stake,
-            double knownPayout)
+        private void BuildRecordSummary(RectTransform margin, int settled, double stake,
+            double returned)
         {
             RectTransform summary = LaptopUi.MakePanel(margin, "RecordSummary", new Vector2(0f, 1f),
                 new Vector2(0f, 1f), Vector2.zero, new Vector2(324f, 530f), LaptopOs.Ink);
@@ -2162,25 +2471,28 @@ namespace SBR.Game
             LaptopUi.MakeMarginRuledPaper(summary, "RuledPaper");
 
             // MarginHeader.jsx: biro title, uppercase, closed by the 2px --biro-deep rule.
-            LaptopUi.MakeText(summary, "RecordTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, -12f), new Vector2(296f, 22f), 16, TextAnchor.UpperLeft,
-                LaptopOs.Accent, "RECORD", _fontCond);
-            LaptopUi.MakeRule(summary, "RecordHeaderRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, -RecordHeaderHeight), new Vector2(296f, 2f), LaptopOs.BiroDeep);
+            // S60/S61: this rendering was the correct one, and it is now the shared component both
+            // margins draw rather than the copy the other one was compared against.
+            LaptopUi.MakeMarginHeader(summary, "RECORD", _fontCond);
 
             // MarginRow.jsx x3, in the kit's order (app.jsx:94-96).
             BuildRecordRow(summary, "RecordRowSettled", "TICKETS SETTLED",
                 settled.ToString(CultureInfo.InvariantCulture), LaptopOs.White, -RecordHeaderHeight);
             BuildRecordRow(summary, "RecordRowStaked", "STAKED", LaptopUi.Money(stake), LaptopOs.White,
                 -(RecordHeaderHeight + RecordRowHeight));
-            // S36: the engine retains no cash-out amount, so once a settled run includes even one
-            // cashed-out ticket, the true RETURNED total is missing an unknown figure and cannot be
-            // honestly summed. The absence prints as a plain em dash in --toner-3 — never a
-            // fabricated total and never $0 — until engine retention lands (approved, landing via
-            // another seat).
-            string returnedValue = cashed > 0 ? "—" : LaptopUi.Money(knownPayout);
-            Color returnedColor = cashed > 0 ? LaptopOs.Muted : LaptopOs.MoneyGold;
-            BuildRecordRow(summary, "RecordRowReturned", "RETURNED", returnedValue, returnedColor,
+            // S41: **this total never prints an em dash.** Under S36 a single cashed-out ticket
+            // blanked the whole row, because the run then held an unknown figure and the sum could
+            // not be honest. Retention removed the unknown — cash-out amounts are retained now — so
+            // the sum is the sum, and it prints in wax like the money it is.
+            //
+            // The ruling also settled the case retention does not cover. If a record whose amount is
+            // genuinely unknowable ever exists, **the total still prints the known sum** and the
+            // absence stays in that record's own cell (BuildLedgerTicket). An absence in one row is
+            // a fact about that row; blanking the total makes it a fact about the whole run, which
+            // it is not. That is why this no longer takes a `cashed` count — nothing is left for it
+            // to decide.
+            BuildRecordRow(summary, "RecordRowReturned", "RETURNED", LaptopUi.Money(returned),
+                LaptopOs.MoneyGold,
                 -(RecordHeaderHeight + RecordRowHeight * 2f));
 
             // PassiveMargin's one note (app.jsx:97) — bottom-anchored per marginShell's fixed
@@ -2200,18 +2512,12 @@ namespace SBR.Game
         /// divider. <paramref name="rowTop"/> is the row's own top edge, matching
         /// RecordHeaderRule/the previous row's own bottom edge exactly so rows sit flush with no
         /// gap and no overlap.</summary>
+        // S58: the body moved to LaptopUi.MakeMarginRow so MY BETS' tally renders the same
+        // MarginRow this does, from one place rather than two copies.
         private void BuildRecordRow(RectTransform summary, string name, string label, string value,
             Color valueColor, float rowTop)
-        {
-            LaptopUi.MakeText(summary, name + "Label", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, rowTop - 9f), new Vector2(150f, 20f), 13, TextAnchor.MiddleLeft,
-                LaptopOs.Muted, label, _font);
-            LaptopUi.MakeText(summary, name + "Value", new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-14f, rowTop - 8f), new Vector2(140f, 22f), 18, TextAnchor.MiddleRight,
-                valueColor, value, _fontCond);
-            LaptopUi.MakeRule(summary, name + "Rule", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, rowTop - RecordRowHeight), new Vector2(296f, 1f), LaptopOs.Rule);
-        }
+            => LaptopUi.MakeMarginRow(summary, name, label, value, valueColor, rowTop,
+                RecordRowHeight, _font, _fontCond);
 
         private void BuildLedgerTray()
         {

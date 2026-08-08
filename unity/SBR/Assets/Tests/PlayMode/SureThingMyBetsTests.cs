@@ -6,6 +6,7 @@ using System.Reflection;
 using NUnit.Framework;
 using SBR.Engine;
 using SBR.Game;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -43,6 +44,14 @@ namespace SBR.Tests.PlayMode
             Assert.AreEqual("PENDING", TextOf(Required(mirrorLeg1, "LegState")));
             StringAssert.Contains("RIDING", TextOf(Required(mirrorTicket, "TicketTitle")));
 
+            // S64: the identity is the shared formatter's output, not a hand-built string. Asserted
+            // against LaptopUi.TicketIdentity itself rather than against the literal "TICKET 01", so
+            // the mirror and the ledger cannot drift apart again — which is exactly what happened
+            // when S62 landed on the formatter and this screen never called it.
+            StringAssert.Contains(LaptopUi.TicketIdentity(null, 0, 0, withRound: false),
+                TextOf(Required(mirrorTicket, "TicketTitle")),
+                "S64: MY BETS prints the same ticket identity every other screen prints");
+
             InvokeView(view, "BeginLeg", 0, ticket.Legs[0]);
             yield return WaitForRebuild();
             mirrorTicket = Required(Required(App(laptop), "MyBetsBoard"), "MirrorTicket0");
@@ -60,7 +69,7 @@ namespace SBR.Tests.PlayMode
             // The ring is sized off the actual "GREEN" text bounds (not a fixed box) so its pen
             // stroke overshoots the word instead of crossing it — assert against that same formula
             // rather than a magic number that would silently drift from the render code.
-            Text greenState = Required(mirrorLeg0, "LegState").GetComponent<Text>();
+            TMP_Text greenState = Required(mirrorLeg0, "LegState").GetComponent<TMP_Text>();
             (Vector2 expectedPosition, Vector2 expectedSize) = SportsbookApp.InkRingGeometry(greenState);
             AssertRect(green.rectTransform, expectedSize.x, expectedSize.y, "GREEN price ring");
             Assert.AreEqual(expectedPosition, green.rectTransform.anchoredPosition,
@@ -274,8 +283,8 @@ namespace SBR.Tests.PlayMode
 
         private static string TextOf(Transform node)
         {
-            Text text = node.GetComponent<Text>();
-            if (text == null) text = node.GetComponentInChildren<Text>();
+            TMP_Text text = node.GetComponent<TMP_Text>();
+            if (text == null) text = node.GetComponentInChildren<TMP_Text>();
             Assert.IsNotNull(text, $"{node.name} has no readable text");
             return text.text;
         }
@@ -284,7 +293,7 @@ namespace SBR.Tests.PlayMode
         {
             var content = new List<string>();
             foreach (Transform root in roots)
-                foreach (Text text in root.GetComponentsInChildren<Text>(true))
+                foreach (TMP_Text text in root.GetComponentsInChildren<TMP_Text>(true))
                     content.Add(text.text);
             return string.Join("\n", content);
         }
