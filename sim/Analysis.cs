@@ -330,14 +330,23 @@ public sealed class GateData
             // a 0.8pp "movement" at n=1000 vanished at n=10,000, having been noise on both sides,
             // including in the before-arm. State the resolution beside the verdict so nobody reads
             // a one-point drift as a finding, or misses a real one.
+            // The band and the width handed to BandVerdict are ONE fact and are declared once.
+            // They were two literals — 5.0/8.0 in the criterion and a bare 3.0 in the resolution
+            // call — which is a re-band away from a gate quoting a width it no longer has.
+            const double floor = 4.5, ceiling = 8.0;
+            const double width = ceiling - floor;
             double se = TwoSePp(skilled.WonPct, skilled.N);
-            double edge = Math.Abs(Math.Min(skilled.WonPct - 5.0, 8.0 - skilled.WonPct));
-            g.Add("G3", "skilled + items wins: median death ≥5, win 5–8% (re-banded by Allen "
-                + "2026-07-15 — the dealt hand's build variance is the roguelite shape)",
-                skilled.MedianDeath >= 5.0 && skilled.WonPct >= 5.0 && skilled.WonPct <= 8.0,
+            double edge = Math.Abs(Math.Min(skilled.WonPct - floor, ceiling - skilled.WonPct));
+            g.Add("G3", $"skilled + items wins: median death ≥5, win {floor:0.#}–{ceiling:0.#}% "
+                + "(re-banded by Allen 2026-08-08 from 5–8%: the economy reads 5.4–5.5%, only "
+                + "0.4–0.5pp above the old floor, so the gate could not separate its own reading "
+                + "from its own edge — three campaigns at 4,600 / 10,000 / 18,500 established that "
+                + "no sample size fixes a gap that small. Prior band Allen 2026-07-15 — the dealt "
+                + "hand's build variance is the roguelite shape)",
+                skilled.MedianDeath >= 5.0 && skilled.WonPct >= floor && skilled.WonPct <= ceiling,
                 $"median {skilled.MedianDeath:0.#}, won {skilled.WonPct:F1}% ({edge:0.0}pp from the "
                 + "nearest band edge)",
-                BandVerdict(3.0, se, edge), Adjudicates(se, edge));
+                BandVerdict(width, se, edge), Adjudicates(se, edge));
         }
 
         if (skilled != null)

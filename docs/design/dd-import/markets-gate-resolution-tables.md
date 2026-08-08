@@ -218,3 +218,44 @@ This seat told Allen G6 would resolve **±0.68pp / 2.9×** at the floor — arit
 **Measured ±0.65pp / 3.1×.** The scaled figure was stale because the martyr-worst rate itself fell
 (6.9% → 5.8%), and a combined error tracks its inputs rather than staying put while `n` moves.
 Corrected everywhere it was quoted, code included.
+
+## 9. G3 re-banded — the question §8 raised, answered by moving the line
+
+**Allen, 2026-08-08: G3's floor moves 5% → 4.5%. Band is 4.5–8%.** He took the recommendation to
+move the line rather than the sample size. The DD seat gets this because C32 was promoted from G3,
+and this is how the origin case finally closed: **not by a sharper instrument, but by admitting the
+criterion was set where the instrument could never read it.**
+
+Verified at the ruled floor, `--gates --seed-prefix TUNE`, exit 0: 1,520,000 total runs, 1212.81 s,
+seed-pinned. **`Gates evaluated: 7 · passed: 7 · produced a verdict: 7`** — *ALL 7 GATES PASS.*
+
+| Gate | Reading | Resolution | Band ÷ res | Verdict |
+|---|---|---|---|---|
+| **G3** | won 5.4%, **0.9pp** above the 4.5% floor | ±0.45pp | **7.7×** | **PASS — adjudicated** |
+| **G6** | margin +0.4pp, 1.6pp clearance | ±0.65pp | 3.1× | **PASS — adjudicated** |
+
+G3's arc across the whole exercise, which is the case C32 was promoted from:
+
+| n | Band | Clearance | Resolution | Verdict was worth |
+|---|---|---|---|---|
+| 1,000 | 5–8% | 0.4pp | ±1.43pp | nothing — could not fail |
+| 4,600 | 5–8% | 0.43pp | ±0.67pp | NOT ADJUDICATED |
+| 10,000 | 5–8% | 0.43pp | ±0.45pp | NOT ADJUDICATED — on a *routine* run |
+| 18,500 | 5–8% | 0.5pp | ±0.33pp | adjudicated, at 58.6 min |
+| **10,000** | **4.5–8%** | **0.9pp** | **±0.45pp** | **adjudicated, at 20.2 min** |
+
+The last row is the ruling's whole point: the same instrument, the same sample size, a verdict that
+now means something — because the criterion moved to where the reading actually lives.
+
+**Engineering note worth carrying to other gates.** The band and the width fed to the resolution
+line were two separate literals (`5.0`/`8.0` in the criterion, a bare `3.0` in the C32 call). That
+is one re-band away from a gate quoting a width it no longer has — §3.5's "a bound is not a layout"
+in arithmetic rather than layout. The width is now derived from the band. Any gate that states a
+resolution should derive it from the criterion it guards, not restate it.
+
+**Prediction scored, written before the run:** clearance 0.43 → ~0.9pp, twice its ±0.45pp, G3
+adjudicates without escalating, banner returns to ALL 7 GATES PASS. All four hit.
+
+**Wall-clock variance, replicated:** identical work at n=10,000 measured 1534.89 s and 1212.81 s —
+27%, against the 28% seen at 4,600. Measured costs: 10.4 / 13.3 min at 4,600 · 20.2 / 25.6 min at
+10,000 · 58.6 min at 18,500. Still no interpolation on offer.

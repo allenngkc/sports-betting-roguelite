@@ -355,16 +355,56 @@ escalation.** G3's clearance (0.43pp) falls just inside its resolution there (0.
 n ≳ 11,000, and the clearance itself wanders 0.4–0.5pp between campaigns, so the requirement is not
 a fixed number either.
 
-**Do not read this as an argument for a higher floor.** Two campaigns now agree that G3's reading
+**Do not read this as an argument for a higher floor.** Two campaigns then agreed that G3's reading
 sits 0.4–0.5pp above a band edge, and raising `n` to chase a gap that small is a treadmill — each
 step costs more wall time to adjudicate a gate whose *band* has been fine throughout (6.6×, 9.0×).
 The question this keeps returning is **G3's band, or where the economy sits inside it**, and that is
-Allen's, not a dial this seat should turn. Recorded, not acted on.
+Allen's, not a dial this seat should turn. **He took it the next day — §7b. This section is the
+state that produced the escalation, kept because it is the argument the ruling answered.**
 
 Also worth noting against my own prediction: I told Allen G6 would resolve **±0.68pp / 2.9×** at the
 floor, arithmetic from 2.15/√10. **Measured ±0.65pp / 3.1×** — the scaled figure was stale because
 the martyr-worst rate itself fell (6.9% → 5.8%) and a combined error tracks its inputs. Corrected
 everywhere it was quoted, including in code. Tenth instance.
+
+## 7b. G3 re-banded — RULED, BUILT, VERIFIED. The lane's last instrument defect closes.
+
+**Allen, 2026-08-08: G3's floor moves 5% → 4.5%. Band is 4.5–8%.** He took the recommendation to
+move the line rather than the sample size, after three campaigns established that no `n` resolves a
+0.4pp gap whose own value wanders 0.4–0.5pp between runs.
+
+**Built — the band and its C32 line as one fact.** They were two literals: `5.0`/`8.0` in the
+criterion and a bare `3.0` handed to `BandVerdict`. That is one re-band away from a gate quoting a
+width it no longer has — the §3.5 "a bound is not a layout" shape, in arithmetic. The width is now
+derived (`ceiling - floor`), so the resolution line cannot drift from the band it describes. The
+old band and the reason live in the gate's own description per the standing form, with the
+2026-07-15 band kept beneath rather than overwritten.
+
+**Verified — counted run at the ruled floor, `--gates --seed-prefix TUNE`, exit 0:**
+
+`Runs per batch 10,000 · total 1,520,000 · wall 1212.81 s · seed-pinned TUNE` ·
+**`Gates evaluated: 7 · passed: 7 · produced a verdict: 7`** · item flags none ·
+`dotnet test engine.tests` → **183 executed, 183 passed, 0 failed, 0 skipped** · `--verify` OK.
+
+> **ALL 7 GATES PASS — the economy holds.**
+
+| Gate | Reading | Resolution | Band ÷ res | Verdict |
+|---|---|---|---|---|
+| **G3** | won 5.4%, **0.9pp** above the 4.5% floor | ±0.45pp | **7.7×** | **PASS — adjudicated**, resolves its whole band |
+| **G6** | margin +0.4pp, 1.6pp clearance | ±0.65pp | 3.1× | **PASS — adjudicated** |
+
+**Prediction scored, written down before the run:** clearance 0.43pp → ~0.9pp against ±0.45pp, twice
+its resolution, G3 adjudicates without escalating and the banner returns to ALL 7 GATES PASS.
+**All four hit.** No unadjudicated gate remains at the ruled campaign size, and a routine campaign
+no longer demands a 58.6-minute escalation to be read as clean.
+
+**One more datapoint against predicting this machine's wall clock:** identical work at n=10,000
+measured 1534.89 s and 1212.81 s — a **27% spread**, replicating the 28% seen at 4,600 rather than
+contradicting it. Measured costs now: 10.4 / 13.3 min at 4,600 · **20.2 / 25.6 min at 10,000** ·
+58.6 min at 18,500.
+
+**Not this seat's to fix:** `docs/1-plans/F_0.2.0_match-theater-sweat.plan.md:376` still asserts the
+5–8% band as a re-hold criterion. That is tv-sweat's plan; it is now stale and wants routing.
 
 ### OPEN — G5 is the same defect in a sharper form. Reported, not fixed.
 
