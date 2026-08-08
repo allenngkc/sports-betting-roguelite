@@ -59,10 +59,27 @@ namespace SBR.Game
         // The struck value survives only as a quoted comparand inside the capture harness.
         //
         // What remains is one colour on one surface. The lid does not signal; it is lit.
-        // Granted value. Warm near-neutral, R >= G > B, sitting just red of the room's #D8C48A
-        // key so it reads as the screen's own light rather than as a separate source. It replaced
-        // a violet (0.28, 0.10, 0.55) at chroma 64.1 and a cool idle (0.025, 0.035, 0.055).
-        [ColorUsage(false, true)] public Color idleEmission = new Color(0.038f, 0.032f, 0.024f);
+        /// <summary>
+        /// The granted lid colour, and the ONE definition of it. L* 21.09, chroma 5.4, hue 83.3deg,
+        /// R >= G > B — warm near-neutral, sitting just red of the room's #D8C48A key so it reads as
+        /// the screen's own light rather than as a separate source. It replaced a violet
+        /// (0.28, 0.10, 0.55) at chroma 64.1 and a cool idle (0.025, 0.035, 0.055).
+        ///
+        /// R40 (DD 2026-08-07, batch 14) is why this is a shared constant rather than a literal here
+        /// and another in the builder. The ScreenLaptop MATERIAL carried (0.025, 0.055, 0.035) —
+        /// hue 155.5deg, green-dominant, 72deg and 2.5x chroma away from this — while the runtime
+        /// property block wrote the granted value over the top. The player saw the ruling; the APV
+        /// bake and every Edit Mode capture saw the contradiction, including the captures that
+        /// settled this colour one batch earlier. Two literals is how that happens quietly, and
+        /// R19(b) already had to un-drift this project's institutional metal once for the same
+        /// reason — the fix there was one shared factory, HousingSteelMat(), and this is that.
+        ///
+        /// PhoneScreen takes its rest value from here too: the phone is HIS (§6), same personal
+        /// register as the laptop, so both of his screens rest on one authored chromaticity.
+        /// </summary>
+        public static readonly Color GrantedLidEmission = new Color(0.038f, 0.032f, 0.024f);
+
+        [ColorUsage(false, true)] public Color idleEmission = GrantedLidEmission;
 
         private Canvas _canvas;
         private Font _font;
