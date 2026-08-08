@@ -35,6 +35,13 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-07 cycle 111 · **Markets seat corrected + duplicates purged** —
+  Allen's newest fresh markets session found and seated as THE canonical
+  lead (the earlier brief had gone to a duplicate; three stale markets
+  sessions closed for one-lead-per-lane hygiene). SureThing and TV
+  confirmed alive — their live sessions are the ✳-titled ones; the
+  dead-looking windows are stale leftovers. Watcher v12 on the four
+  canonical seats. Reversal: none.
 - 2026-08-07 cycle 110 · **TV OWNING DOC APPROVED — every surface has canon**
   — Allen approved; landed at `tv-design.md` with the quarantine preserved;
   C26 CLOSES (phone stub by design). The design-governance buildout that
