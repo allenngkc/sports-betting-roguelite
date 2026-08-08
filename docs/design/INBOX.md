@@ -74,16 +74,20 @@ rebuild is large; DD sequencing preference welcome.
 Everything in the old 13-item list is ruled as of batch 7 (see REGISTER.md
 transcription log). Live queue now:
 
-Batch 9 (2026-08-04) cleared the queue: constitution approved+canon, S8
-re-verified, grade/bloom/painterly all closed. Live queue now:
+Batch 10 (2026-08-05) granted the LEDGER and cleared the queue again. Live:
 
-1. **Owed captures:** markets' staged-receipt overrun; SureThing's
-   RunWon/RunLost; LEDGER twelve-state re-submit (post-markets-merge).
-2. **S53's ground** ruling — waits on the RunWon/RunLost frames.
-3. **T60** — named in batch 9's header with no body section; re-issue or strike.
-4. **Owning docs (C26):** TV's after T58; SureThing's after S53 settles.
-5. **Room gates 6–8** — VOID by fingerprint expiry (mechanism correct);
-   awaiting Allen's re-confirmation walk or standing-verdict ruling.
+1. **DD next session:** writes SureThing's owning doc (S55/S56/S57 as open
+   items); rules S57's answer when SureThing says which; T58's verdict when
+   TV's fix frames land.
+2. **Owed captures:** TV's gold-flash-fix frames; SureThing's re-shoot
+   (ground+chrome) + cross-round retention; room's post-swatch re-measure.
+3. **NEED ALLEN:** constitution amendment — C29's row into §4.2 (the DD asks;
+   the constitution is Allen-approved canon, so the amendment needs his yes).
+   Plus standing: the pillow call, the couch re-check (gates 6–8), markets'
+   backlog go/no-go.
+4. **S54 risk watch:** if float-authored colour is confirmed silently wrong,
+   parts of the colour record may need re-verification — the audit reports
+   first.
 
 ## Cleared 2026-07-31, batch 2 (transcribed to REGISTER.md by the orchestrator)
 

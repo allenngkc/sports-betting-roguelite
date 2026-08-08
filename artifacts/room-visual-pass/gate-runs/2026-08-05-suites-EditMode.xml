@@ -1,0 +1,500 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="73" result="Passed" total="73" passed="73" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:42Z" duration="1.8684266">
+  <test-suite type="TestSuite" id="1000" name="SBR" fullname="SBR" runstate="Runnable" testcasecount="73" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:42Z" duration="1.868427" total="73" passed="73" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1086" name="SBR.Tests.EditMode.dll" fullname="C:/Users/Allen/orca/workspaces/sports-betting-roguelite/room-refinement/unity/SBR/Library/ScriptAssemblies/SBR.Tests.EditMode.dll" runstate="Runnable" testcasecount="73" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:42Z" duration="1.846401" total="73" passed="73" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="30000" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1087" name="SBR" fullname="SBR" runstate="Runnable" testcasecount="73" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:42Z" duration="1.843946" total="73" passed="73" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1088" name="Tests" fullname="SBR.Tests" runstate="Runnable" testcasecount="73" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:42Z" duration="1.841966" total="73" passed="73" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1089" name="EditMode" fullname="SBR.Tests.EditMode" runstate="Runnable" testcasecount="73" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:42Z" duration="1.839889" total="73" passed="73" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1002" name="AnytimeScorerBetslipTests" fullname="SBR.Tests.EditMode.AnytimeScorerBetslipTests" classname="SBR.Tests.EditMode.AnytimeScorerBetslipTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.140094" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1003" name="Scorer_selection_toggles_like_every_other_market_and_keeps_its_label" fullname="SBR.Tests.EditMode.AnytimeScorerBetslipTests.Scorer_selection_toggles_like_every_other_market_and_keeps_its_label" methodname="Scorer_selection_toggles_like_every_other_market_and_keeps_its_label" classname="SBR.Tests.EditMode.AnytimeScorerBetslipTests" runstate="Runnable" seed="887450662" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.096982" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1004" name="BetslipModelTests" fullname="SBR.Tests.EditMode.BetslipModelTests" classname="SBR.Tests.EditMode.BetslipModelTests" runstate="Runnable" testcasecount="10" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.060606" total="10" passed="10" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1008" name="Market_preview_and_place_preserve_selection_and_market_label" fullname="SBR.Tests.EditMode.BetslipModelTests.Market_preview_and_place_preserve_selection_and_market_label" methodname="Market_preview_and_place_preserve_selection_and_market_label" classname="SBR.Tests.EditMode.BetslipModelTests" runstate="Runnable" seed="564614904" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.007862" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1007" name="Market_toggle_replaces_a_match_leg_and_same_selection_removes_it" fullname="SBR.Tests.EditMode.BetslipModelTests.Market_toggle_replaces_a_match_leg_and_same_selection_removes_it" methodname="Market_toggle_replaces_a_match_leg_and_same_selection_removes_it" classname="SBR.Tests.EditMode.BetslipModelTests" runstate="Runnable" seed="1340831619" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.004164" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1009" name="Market_toggle_respects_max_legs_for_new_matchups" fullname="SBR.Tests.EditMode.BetslipModelTests.Market_toggle_respects_max_legs_for_new_matchups" methodname="Market_toggle_respects_max_legs_for_new_matchups" classname="SBR.Tests.EditMode.BetslipModelTests" runstate="Runnable" seed="1651721516" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.002516" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1014" name="Model_consumes_no_engine_rng" fullname="SBR.Tests.EditMode.BetslipModelTests.Model_consumes_no_engine_rng" methodname="Model_consumes_no_engine_rng" classname="SBR.Tests.EditMode.BetslipModelTests" runstate="Runnable" seed="879978279" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.014747" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1012" name="Place_clears_the_slip_and_reanchors_the_stake_to_the_new_bank" fullname="SBR.Tests.EditMode.BetslipModelTests.Place_clears_the_slip_and_reanchors_the_stake_to_the_new_bank" methodname="Place_clears_the_slip_and_reanchors_the_stake_to_the_new_bank" classname="SBR.Tests.EditMode.BetslipModelTests" runstate="Runnable" seed="1253901967" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.004040" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1013" name="PlaceBlocker_walks_the_reasons" fullname="SBR.Tests.EditMode.BetslipModelTests.PlaceBlocker_walks_the_reasons" methodname="PlaceBlocker_walks_the_reasons" classname="SBR.Tests.EditMode.BetslipModelTests" runstate="Runnable" seed="1094281851" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.003593" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1010" name="Stake_chips_and_nudges_clamp_to_min_and_bank" fullname="SBR.Tests.EditMode.BetslipModelTests.Stake_chips_and_nudges_clamp_to_min_and_bank" methodname="Stake_chips_and_nudges_clamp_to_min_and_bank" classname="SBR.Tests.EditMode.BetslipModelTests" runstate="Runnable" seed="284663915" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.002063" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1005" name="Toggle_adds_switches_and_removes" fullname="SBR.Tests.EditMode.BetslipModelTests.Toggle_adds_switches_and_removes" methodname="Toggle_adds_switches_and_removes" classname="SBR.Tests.EditMode.BetslipModelTests" runstate="Runnable" seed="558468159" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.002171" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1006" name="Toggle_caps_new_legs_at_max_but_still_switches_existing" fullname="SBR.Tests.EditMode.BetslipModelTests.Toggle_caps_new_legs_at_max_but_still_switches_existing" methodname="Toggle_caps_new_legs_at_max_but_still_switches_existing" classname="SBR.Tests.EditMode.BetslipModelTests" runstate="Runnable" seed="2061797376" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.001986" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1011" name="ToWin_preview_matches_the_engine_ticket_payout_without_relics" fullname="SBR.Tests.EditMode.BetslipModelTests.ToWin_preview_matches_the_engine_ticket_payout_without_relics" methodname="ToWin_preview_matches_the_engine_ticket_payout_without_relics" classname="SBR.Tests.EditMode.BetslipModelTests" runstate="Runnable" seed="434095658" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.005137" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1015" name="BookieFeedModelTests" fullname="SBR.Tests.EditMode.BookieFeedModelTests" classname="SBR.Tests.EditMode.BookieFeedModelTests" runstate="Runnable" testcasecount="8" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.073293" total="8" passed="8" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1017" name="Cliff_demand_fires_only_on_jump_rounds" fullname="SBR.Tests.EditMode.BookieFeedModelTests.Cliff_demand_fires_only_on_jump_rounds" methodname="Cliff_demand_fires_only_on_jump_rounds" classname="SBR.Tests.EditMode.BookieFeedModelTests" runstate="Runnable" seed="630645346" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.010454" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1020" name="Delayed_observation_stamps_the_settled_round_not_the_live_one" fullname="SBR.Tests.EditMode.BookieFeedModelTests.Delayed_observation_stamps_the_settled_round_not_the_live_one" methodname="Delayed_observation_stamps_the_settled_round_not_the_live_one" classname="SBR.Tests.EditMode.BookieFeedModelTests" runstate="Runnable" seed="1134599207" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.003102" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1018" name="Final_round_gets_the_final_demand_not_the_cliff_text" fullname="SBR.Tests.EditMode.BookieFeedModelTests.Final_round_gets_the_final_demand_not_the_cliff_text" methodname="Final_round_gets_the_final_demand_not_the_cliff_text" classname="SBR.Tests.EditMode.BookieFeedModelTests" runstate="Runnable" seed="1271552321" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.001955" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1021" name="Gift_text_rides_a_real_losing_streak" fullname="SBR.Tests.EditMode.BookieFeedModelTests.Gift_text_rides_a_real_losing_streak" methodname="Gift_text_rides_a_real_losing_streak" classname="SBR.Tests.EditMode.BookieFeedModelTests" runstate="Runnable" seed="2138667963" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.028512" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1023" name="Lines_are_deterministic_across_instances" fullname="SBR.Tests.EditMode.BookieFeedModelTests.Lines_are_deterministic_across_instances" methodname="Lines_are_deterministic_across_instances" classname="SBR.Tests.EditMode.BookieFeedModelTests" runstate="Runnable" seed="1800174020" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.003028" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1022" name="Reset_is_atomic_and_counters_stay_monotone" fullname="SBR.Tests.EditMode.BookieFeedModelTests.Reset_is_atomic_and_counters_stay_monotone" methodname="Reset_is_atomic_and_counters_stay_monotone" classname="SBR.Tests.EditMode.BookieFeedModelTests" runstate="Runnable" seed="1659603372" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.015912" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1019" name="Settle_beats_totem_close_call_collection_and_quiet_paid" fullname="SBR.Tests.EditMode.BookieFeedModelTests.Settle_beats_totem_close_call_collection_and_quiet_paid" methodname="Settle_beats_totem_close_call_collection_and_quiet_paid" classname="SBR.Tests.EditMode.BookieFeedModelTests" runstate="Runnable" seed="663219205" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.003472" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1016" name="Welcome_carries_the_first_payment_and_is_idempotent" fullname="SBR.Tests.EditMode.BookieFeedModelTests.Welcome_carries_the_first_payment_and_is_idempotent" methodname="Welcome_carries_the_first_payment_and_is_idempotent" classname="SBR.Tests.EditMode.BookieFeedModelTests" runstate="Runnable" seed="62143134" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.002077" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1024" name="DemoTicketPolicyTests" fullname="SBR.Tests.EditMode.DemoTicketPolicyTests" classname="SBR.Tests.EditMode.DemoTicketPolicyTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.027272" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1026" name="Choose_is_pure_calling_twice_on_one_run_matches_and_consumes_no_rng" fullname="SBR.Tests.EditMode.DemoTicketPolicyTests.Choose_is_pure_calling_twice_on_one_run_matches_and_consumes_no_rng" methodname="Choose_is_pure_calling_twice_on_one_run_matches_and_consumes_no_rng" classname="SBR.Tests.EditMode.DemoTicketPolicyTests" runstate="Runnable" seed="996593409" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.006833" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1027" name="Picks_are_the_shortest_priced_sides_two_or_three_distinct_legs" fullname="SBR.Tests.EditMode.DemoTicketPolicyTests.Picks_are_the_shortest_priced_sides_two_or_three_distinct_legs" methodname="Picks_are_the_shortest_priced_sides_two_or_three_distinct_legs" classname="SBR.Tests.EditMode.DemoTicketPolicyTests" runstate="Runnable" seed="1854794494" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.007667" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1025" name="Same_seed_yields_identical_picks_and_stake" fullname="SBR.Tests.EditMode.DemoTicketPolicyTests.Same_seed_yields_identical_picks_and_stake" methodname="Same_seed_yields_identical_picks_and_stake" classname="SBR.Tests.EditMode.DemoTicketPolicyTests" runstate="Runnable" seed="670661398" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.004461" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1028" name="Stake_is_quarter_bank_min_ten_and_the_ticket_is_engine_valid" fullname="SBR.Tests.EditMode.DemoTicketPolicyTests.Stake_is_quarter_bank_min_ten_and_the_ticket_is_engine_valid" methodname="Stake_is_quarter_bank_min_ten_and_the_ticket_is_engine_valid" classname="SBR.Tests.EditMode.DemoTicketPolicyTests" runstate="Runnable" seed="463945004" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.004725" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1029" name="DeterminismEditModeTests" fullname="SBR.Tests.EditMode.DeterminismEditModeTests" classname="SBR.Tests.EditMode.DeterminismEditModeTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.029839" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1030" name="Golden_seed_event_stream_is_pinned" fullname="SBR.Tests.EditMode.DeterminismEditModeTests.Golden_seed_event_stream_is_pinned" methodname="Golden_seed_event_stream_is_pinned" classname="SBR.Tests.EditMode.DeterminismEditModeTests" runstate="Runnable" seed="65751583" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.005482" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1032" name="Golden_seed_replays_identically" fullname="SBR.Tests.EditMode.DeterminismEditModeTests.Golden_seed_replays_identically" methodname="Golden_seed_replays_identically" classname="SBR.Tests.EditMode.DeterminismEditModeTests" runstate="Runnable" seed="1192589420" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.003740" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1031" name="Golden_seed_settles_to_pinned_bank_and_phase" fullname="SBR.Tests.EditMode.DeterminismEditModeTests.Golden_seed_settles_to_pinned_bank_and_phase" methodname="Golden_seed_settles_to_pinned_bank_and_phase" classname="SBR.Tests.EditMode.DeterminismEditModeTests" runstate="Runnable" seed="1395457404" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.001957" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1034" name="Payment_shortfall_with_the_totem_defers_and_surcharges_the_next_payment" fullname="SBR.Tests.EditMode.DeterminismEditModeTests.Payment_shortfall_with_the_totem_defers_and_surcharges_the_next_payment" methodname="Payment_shortfall_with_the_totem_defers_and_surcharges_the_next_payment" classname="SBR.Tests.EditMode.DeterminismEditModeTests" runstate="Runnable" seed="1413871422" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.007999" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1033" name="Probe_verify_passes_and_reports_event_stream_hash" fullname="SBR.Tests.EditMode.DeterminismEditModeTests.Probe_verify_passes_and_reports_event_stream_hash" methodname="Probe_verify_passes_and_reports_event_stream_hash" classname="SBR.Tests.EditMode.DeterminismEditModeTests" runstate="Runnable" seed="1032649822" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.007680" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[EditMode/Mono] event-stream FNV-1a hash = a61655429ff894cd
+]]></output>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1035" name="OddsFormatTests" fullname="SBR.Tests.EditMode.OddsFormatTests" classname="SBR.Tests.EditMode.OddsFormatTests" runstate="Runnable" testcasecount="8" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.007969" total="8" passed="8" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-suite type="ParameterizedMethod" id="1043" name="American_matches_book_convention" fullname="SBR.Tests.EditMode.OddsFormatTests.American_matches_book_convention" classname="SBR.Tests.EditMode.OddsFormatTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.005370" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1036" name="American_matches_book_convention(2.0d,&quot;+100&quot;)" fullname="SBR.Tests.EditMode.OddsFormatTests.American_matches_book_convention(2.0d,&quot;+100&quot;)" methodname="American_matches_book_convention" classname="SBR.Tests.EditMode.OddsFormatTests" runstate="Runnable" seed="1223229775" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.001142" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1037" name="American_matches_book_convention(3.5d,&quot;+250&quot;)" fullname="SBR.Tests.EditMode.OddsFormatTests.American_matches_book_convention(3.5d,&quot;+250&quot;)" methodname="American_matches_book_convention" classname="SBR.Tests.EditMode.OddsFormatTests" runstate="Runnable" seed="1080383045" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.000223" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1038" name="American_matches_book_convention(2.1d,&quot;+110&quot;)" fullname="SBR.Tests.EditMode.OddsFormatTests.American_matches_book_convention(2.1d,&quot;+110&quot;)" methodname="American_matches_book_convention" classname="SBR.Tests.EditMode.OddsFormatTests" runstate="Runnable" seed="901617626" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.000145" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1039" name="American_matches_book_convention(1.5d,&quot;-200&quot;)" fullname="SBR.Tests.EditMode.OddsFormatTests.American_matches_book_convention(1.5d,&quot;-200&quot;)" methodname="American_matches_book_convention" classname="SBR.Tests.EditMode.OddsFormatTests" runstate="Runnable" seed="1011491863" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.000725" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1040" name="American_matches_book_convention(1.87d,&quot;-115&quot;)" fullname="SBR.Tests.EditMode.OddsFormatTests.American_matches_book_convention(1.87d,&quot;-115&quot;)" methodname="American_matches_book_convention" classname="SBR.Tests.EditMode.OddsFormatTests" runstate="Runnable" seed="446338797" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.000147" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1041" name="American_matches_book_convention(1.05d,&quot;-2000&quot;)" fullname="SBR.Tests.EditMode.OddsFormatTests.American_matches_book_convention(1.05d,&quot;-2000&quot;)" methodname="American_matches_book_convention" classname="SBR.Tests.EditMode.OddsFormatTests" runstate="Runnable" seed="1059264557" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.000097" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1042" name="American_matches_book_convention(11.0d,&quot;+1000&quot;)" fullname="SBR.Tests.EditMode.OddsFormatTests.American_matches_book_convention(11.0d,&quot;+1000&quot;)" methodname="American_matches_book_convention" classname="SBR.Tests.EditMode.OddsFormatTests" runstate="Runnable" seed="1928533747" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.000114" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1044" name="Degenerate_price_renders_a_dash" fullname="SBR.Tests.EditMode.OddsFormatTests.Degenerate_price_renders_a_dash" methodname="Degenerate_price_renders_a_dash" classname="SBR.Tests.EditMode.OddsFormatTests" runstate="Runnable" seed="776714504" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.000345" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1045" name="PitchLayoutTests" fullname="SBR.Tests.EditMode.PitchLayoutTests" classname="SBR.Tests.EditMode.PitchLayoutTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.007575" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1047" name="Attack_bias_pushes_toward_the_attacked_goal_and_clamps" fullname="SBR.Tests.EditMode.PitchLayoutTests.Attack_bias_pushes_toward_the_attacked_goal_and_clamps" methodname="Attack_bias_pushes_toward_the_attacked_goal_and_clamps" classname="SBR.Tests.EditMode.PitchLayoutTests" runstate="Runnable" seed="1927475089" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.004125" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1046" name="Formation_mirrors_exactly_across_the_halfway_line" fullname="SBR.Tests.EditMode.PitchLayoutTests.Formation_mirrors_exactly_across_the_halfway_line" methodname="Formation_mirrors_exactly_across_the_halfway_line" classname="SBR.Tests.EditMode.PitchLayoutTests" runstate="Runnable" seed="1313165481" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.000880" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1048" name="Territory_is_monotonic_and_midfield_at_even_money" fullname="SBR.Tests.EditMode.PitchLayoutTests.Territory_is_monotonic_and_midfield_at_even_money" methodname="Territory_is_monotonic_and_midfield_at_even_money" classname="SBR.Tests.EditMode.PitchLayoutTests" runstate="Runnable" seed="1299650124" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.000721" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1049" name="ScoreLedgerTests" fullname="SBR.Tests.EditMode.ScoreLedgerTests" classname="SBR.Tests.EditMode.ScoreLedgerTests" runstate="Runnable" testcasecount="18" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.223783" total="18" passed="18" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1052" name="Commit_timing_is_playback_completion_never_staging" fullname="SBR.Tests.EditMode.ScoreLedgerTests.Commit_timing_is_playback_completion_never_staging" methodname="Commit_timing_is_playback_completion_never_staging" classname="SBR.Tests.EditMode.ScoreLedgerTests" runstate="Runnable" seed="1931669818" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.003358" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1065" name="Count_final_plan_converges_to_the_baked_endpoint" fullname="SBR.Tests.EditMode.ScoreLedgerTests.Count_final_plan_converges_to_the_baked_endpoint" methodname="Count_final_plan_converges_to_the_baked_endpoint" classname="SBR.Tests.EditMode.ScoreLedgerTests" runstate="Runnable" seed="528913953" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.004375" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1067" name="Count_scene_direction_is_the_selections_sense_never_the_beat_direction" fullname="SBR.Tests.EditMode.ScoreLedgerTests.Count_scene_direction_is_the_selections_sense_never_the_beat_direction" methodname="Count_scene_direction_is_the_selections_sense_never_the_beat_direction" classname="SBR.Tests.EditMode.ScoreLedgerTests" runstate="Runnable" seed="1926334720" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.007326" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1064" name="Count_schedule_sums_exactly_and_keeps_each_batch_bounded" fullname="SBR.Tests.EditMode.ScoreLedgerTests.Count_schedule_sums_exactly_and_keeps_each_batch_bounded" methodname="Count_schedule_sums_exactly_and_keeps_each_batch_bounded" classname="SBR.Tests.EditMode.ScoreLedgerTests" runstate="Runnable" seed="336104123" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.002626" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1062" name="Final_resolution_entry_lead_matrix" fullname="SBR.Tests.EditMode.ScoreLedgerTests.Final_resolution_entry_lead_matrix" methodname="Final_resolution_entry_lead_matrix" classname="SBR.Tests.EditMode.ScoreLedgerTests" runstate="Runnable" seed="567156805" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.004778" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1059" name="Flat_beats_support_either_bands_reconciliation" fullname="SBR.Tests.EditMode.ScoreLedgerTests.Flat_beats_support_either_bands_reconciliation" methodname="Flat_beats_support_either_bands_reconciliation" classname="SBR.Tests.EditMode.ScoreLedgerTests" runstate="Runnable" seed="954856065" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.000688" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1063" name="Generated_paths_never_break_the_clamp_and_corrections_stay_bounded" fullname="SBR.Tests.EditMode.ScoreLedgerTests.Generated_paths_never_break_the_clamp_and_corrections_stay_bounded" methodname="Generated_paths_never_break_the_clamp_and_corrections_stay_bounded" classname="SBR.Tests.EditMode.ScoreLedgerTests" runstate="Runnable" seed="967746723" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.183281" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1066" name="Goal_ledger_converges_to_the_locked_scoreline_at_the_whistle" fullname="SBR.Tests.EditMode.ScoreLedgerTests.Goal_ledger_converges_to_the_locked_scoreline_at_the_whistle" methodname="Goal_ledger_converges_to_the_locked_scoreline_at_the_whistle" classname="SBR.Tests.EditMode.ScoreLedgerTests" runstate="Runnable" seed="1906570052" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.000961" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1054" name="Goal_playback_invariant_increments_map_1_to_1" fullname="SBR.Tests.EditMode.ScoreLedgerTests.Goal_playback_invariant_increments_map_1_to_1" methodname="Goal_playback_invariant_increments_map_1_to_1" classname="SBR.Tests.EditMode.ScoreLedgerTests" runstate="Runnable" seed="946819668" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.000768" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1056" name="Leading_at_twenty_five_percent_reconciles_the_board_downward" fullname="SBR.Tests.EditMode.ScoreLedgerTests.Leading_at_twenty_five_percent_reconciles_the_board_downward" methodname="Leading_at_twenty_five_percent_reconciles_the_board_downward" classname="SBR.Tests.EditMode.ScoreLedgerTests" runstate="Runnable" seed="1000321828" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.001105" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1053" name="Live_lead_clamp_chalks_the_blowout_goal_for_score_and_big_play" fullname="SBR.Tests.EditMode.ScoreLedgerTests.Live_lead_clamp_chalks_the_blowout_goal_for_score_and_big_play" methodname="Live_lead_clamp_chalks_the_blowout_goal_for_score_and_big_play" classname="SBR.Tests.EditMode.ScoreLedgerTests" runstate="Runnable" seed="54835060" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.001339" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1057" name="Mid_band_probabilities_never_drag_a_natural_lead_back" fullname="SBR.Tests.EditMode.ScoreLedgerTests.Mid_band_probabilities_never_drag_a_natural_lead_back" methodname="Mid_band_probabilities_never_drag_a_natural_lead_back" classname="SBR.Tests.EditMode.ScoreLedgerTests" runstate="Runnable" seed="1951659624" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.000715" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1050" name="Momentum_and_near_miss_beats_stage_no_goal" fullname="SBR.Tests.EditMode.ScoreLedgerTests.Momentum_and_near_miss_beats_stage_no_goal" methodname="Momentum_and_near_miss_beats_stage_no_goal" classname="SBR.Tests.EditMode.ScoreLedgerTests" runstate="Runnable" seed="611047489" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.000505" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1055" name="Ninety_percent_at_nil_nil_reconciles_the_board_upward" fullname="SBR.Tests.EditMode.ScoreLedgerTests.Ninety_percent_at_nil_nil_reconciles_the_board_upward" methodname="Ninety_percent_at_nil_nil_reconciles_the_board_upward" classname="SBR.Tests.EditMode.ScoreLedgerTests" runstate="Runnable" seed="1026993059" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.000665" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1060" name="Plain_final_won_from_behind_stages_corrections_until_strictly_ahead" fullname="SBR.Tests.EditMode.ScoreLedgerTests.Plain_final_won_from_behind_stages_corrections_until_strictly_ahead" methodname="Plain_final_won_from_behind_stages_corrections_until_strictly_ahead" classname="SBR.Tests.EditMode.ScoreLedgerTests" runstate="Runnable" seed="2006789628" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.000805" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1058" name="Reconciliation_only_moves_with_the_beat_direction" fullname="SBR.Tests.EditMode.ScoreLedgerTests.Reconciliation_only_moves_with_the_beat_direction" methodname="Reconciliation_only_moves_with_the_beat_direction" classname="SBR.Tests.EditMode.ScoreLedgerTests" runstate="Runnable" seed="1186932488" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.000396" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1051" name="Score_and_big_play_attribute_by_direction" fullname="SBR.Tests.EditMode.ScoreLedgerTests.Score_and_big_play_attribute_by_direction" methodname="Score_and_big_play_attribute_by_direction" classname="SBR.Tests.EditMode.ScoreLedgerTests" runstate="Runnable" seed="78389786" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.000655" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1061" name="Void_final_freezes_the_ledger" fullname="SBR.Tests.EditMode.ScoreLedgerTests.Void_final_freezes_the_ledger" methodname="Void_final_freezes_the_ledger" classname="SBR.Tests.EditMode.ScoreLedgerTests" runstate="Runnable" seed="685735022" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.000703" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1068" name="SweatPresentationModelTests" fullname="SBR.Tests.EditMode.SweatPresentationModelTests" classname="SBR.Tests.EditMode.SweatPresentationModelTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.018416" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1071" name="A_team_keeps_its_color_regardless_of_opponent" fullname="SBR.Tests.EditMode.SweatPresentationModelTests.A_team_keeps_its_color_regardless_of_opponent" methodname="A_team_keeps_its_color_regardless_of_opponent" classname="SBR.Tests.EditMode.SweatPresentationModelTests" runstate="Runnable" seed="2140568333" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.001880" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1072" name="Beat_direction_uses_the_true_prob_anchor_per_leg" fullname="SBR.Tests.EditMode.SweatPresentationModelTests.Beat_direction_uses_the_true_prob_anchor_per_leg" methodname="Beat_direction_uses_the_true_prob_anchor_per_leg" classname="SBR.Tests.EditMode.SweatPresentationModelTests" runstate="Runnable" seed="774952903" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.002431" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1073" name="Magnitude_bands_partition_the_delta_space" fullname="SBR.Tests.EditMode.SweatPresentationModelTests.Magnitude_bands_partition_the_delta_space" methodname="Magnitude_bands_partition_the_delta_space" classname="SBR.Tests.EditMode.SweatPresentationModelTests" runstate="Runnable" seed="693438628" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.000766" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1074" name="Record_beat_stores_the_signed_delta_from_the_anchor" fullname="SBR.Tests.EditMode.SweatPresentationModelTests.Record_beat_stores_the_signed_delta_from_the_anchor" methodname="Record_beat_stores_the_signed_delta_from_the_anchor" classname="SBR.Tests.EditMode.SweatPresentationModelTests" runstate="Runnable" seed="1256298111" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.002133" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1075" name="Reset_clears_history_and_re_anchors" fullname="SBR.Tests.EditMode.SweatPresentationModelTests.Reset_clears_history_and_re_anchors" methodname="Reset_clears_history_and_re_anchors" classname="SBR.Tests.EditMode.SweatPresentationModelTests" runstate="Runnable" seed="229249144" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.001931" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1070" name="Team_colors_are_deterministic_and_distinct" fullname="SBR.Tests.EditMode.SweatPresentationModelTests.Team_colors_are_deterministic_and_distinct" methodname="Team_colors_are_deterministic_and_distinct" classname="SBR.Tests.EditMode.SweatPresentationModelTests" runstate="Runnable" seed="623338697" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.003574" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1069" name="Team_pool_excludes_every_reserved_signal_color" fullname="SBR.Tests.EditMode.SweatPresentationModelTests.Team_pool_excludes_every_reserved_signal_color" methodname="Team_pool_excludes_every_reserved_signal_color" classname="SBR.Tests.EditMode.SweatPresentationModelTests" runstate="Runnable" seed="410748333" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.002011" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1076" name="TheaterChoreographerTests" fullname="SBR.Tests.EditMode.TheaterChoreographerTests" classname="SBR.Tests.EditMode.TheaterChoreographerTests" runstate="Runnable" testcasecount="9" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:42Z" duration="1.243477" total="9" passed="9" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1079" name="Base_table_maps_type_and_direction" fullname="SBR.Tests.EditMode.TheaterChoreographerTests.Base_table_maps_type_and_direction" methodname="Base_table_maps_type_and_direction" classname="SBR.Tests.EditMode.TheaterChoreographerTests" runstate="Runnable" seed="645317060" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.001406" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1084" name="Correction_sub_scenes_are_separately_timed_and_the_final_caps_at_13s" fullname="SBR.Tests.EditMode.TheaterChoreographerTests.Correction_sub_scenes_are_separately_timed_and_the_final_caps_at_13s" methodname="Correction_sub_scenes_are_separately_timed_and_the_final_caps_at_13s" classname="SBR.Tests.EditMode.TheaterChoreographerTests" runstate="Runnable" seed="764424573" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:41Z" duration="0.001195" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1085" name="Duration_acceptance_median_60_to_90_over_full_density_paths" fullname="SBR.Tests.EditMode.TheaterChoreographerTests.Duration_acceptance_median_60_to_90_over_full_density_paths" methodname="Duration_acceptance_median_60_to_90_over_full_density_paths" classname="SBR.Tests.EditMode.TheaterChoreographerTests" runstate="Runnable" seed="422776393" result="Passed" start-time="2026-08-06 04:04:41Z" end-time="2026-08-06 04:04:42Z" duration="1.228729" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1083" name="Every_beat_scene_lands_in_the_3_to_8_second_band" fullname="SBR.Tests.EditMode.TheaterChoreographerTests.Every_beat_scene_lands_in_the_3_to_8_second_band" methodname="Every_beat_scene_lands_in_the_3_to_8_second_band" classname="SBR.Tests.EditMode.TheaterChoreographerTests" runstate="Runnable" seed="984968847" result="Passed" start-time="2026-08-06 04:04:42Z" end-time="2026-08-06 04:04:42Z" duration="0.001905" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1081" name="Goal_scenes_carry_the_ledger_ruling_chalked_when_clamped" fullname="SBR.Tests.EditMode.TheaterChoreographerTests.Goal_scenes_carry_the_ledger_ruling_chalked_when_clamped" methodname="Goal_scenes_carry_the_ledger_ruling_chalked_when_clamped" classname="SBR.Tests.EditMode.TheaterChoreographerTests" runstate="Runnable" seed="965177730" result="Passed" start-time="2026-08-06 04:04:42Z" end-time="2026-08-06 04:04:42Z" duration="0.000735" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1078" name="Near_miss_never_stages_a_goal_regardless_of_type" fullname="SBR.Tests.EditMode.TheaterChoreographerTests.Near_miss_never_stages_a_goal_regardless_of_type" methodname="Near_miss_never_stages_a_goal_regardless_of_type" classname="SBR.Tests.EditMode.TheaterChoreographerTests" runstate="Runnable" seed="1625740846" result="Passed" start-time="2026-08-06 04:04:42Z" end-time="2026-08-06 04:04:42Z" duration="0.001133" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1080" name="Overlays_modify_playback_but_never_choose_the_template" fullname="SBR.Tests.EditMode.TheaterChoreographerTests.Overlays_modify_playback_but_never_choose_the_template" methodname="Overlays_modify_playback_but_never_choose_the_template" classname="SBR.Tests.EditMode.TheaterChoreographerTests" runstate="Runnable" seed="1130523277" result="Passed" start-time="2026-08-06 04:04:42Z" end-time="2026-08-06 04:04:42Z" duration="0.000861" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1082" name="Reconciliation_upgrades_a_momentum_beat_to_a_goal_scene" fullname="SBR.Tests.EditMode.TheaterChoreographerTests.Reconciliation_upgrades_a_momentum_beat_to_a_goal_scene" methodname="Reconciliation_upgrades_a_momentum_beat_to_a_goal_scene" classname="SBR.Tests.EditMode.TheaterChoreographerTests" runstate="Runnable" seed="2038928331" result="Passed" start-time="2026-08-06 04:04:42Z" end-time="2026-08-06 04:04:42Z" duration="0.001076" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1077" name="Resolver_is_total_over_all_40_combos" fullname="SBR.Tests.EditMode.TheaterChoreographerTests.Resolver_is_total_over_all_40_combos" methodname="Resolver_is_total_over_all_40_combos" classname="SBR.Tests.EditMode.TheaterChoreographerTests" runstate="Runnable" seed="1866703472" result="Passed" start-time="2026-08-06 04:04:42Z" end-time="2026-08-06 04:04:42Z" duration="0.001765" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Saving results to: C:/Users/Allen/AppData/LocalLow/DefaultCompany/SBR\TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

@@ -66,6 +66,13 @@ public sealed class RunConfig
     public double MidfielderScoringWeight { get; set; } = 1.5;
     public double DefenderScoringWeight { get; set; } = 0.5;
 
+    /// <summary>Per-player spread around the role weight, as a fraction (0.35 = ±35%). Zero
+    /// restores the pre-2026-08-06 behaviour exactly, which is what makes the before/after
+    /// comparison a single dial rather than a rewrite. It exists because weight was purely
+    /// role-derived: every forward on a team priced identically, so a 14-row scorer board carried
+    /// at most six distinct prices and the tab asked the player to choose a name, not a price.</summary>
+    public double ScoringWeightJitter { get; set; } = 0.35;
+
     /// <summary>Max passive relics owned at once. The rework catalog has 3 passives; slots stay
     /// roomier for the committed item-growth direction (design/10 B2).</summary>
     public int RelicSlots { get; set; } = 5;

@@ -193,6 +193,11 @@ This clause was written after **four green gates in one fortnight were found to 
 | Offer containment (T47) | since it landed | anything — 0.5f epsilon on a canvas ~12× the panel |
 | Collider inventory (R16) | all session | `MeshCollider` — four of the objects it counted |
 | Wallpaper graphic (S49) | every run | whether a `Graphic` drew at all — no `CanvasRenderer` |
+| The test runner itself (C29) | any suite, any seat | that it ran zero tests — a bare filter matching nothing exits green with `testcasecount="0"` |
+
+**C29 (amendment, Allen-approved 2026-08-05):** every test invocation reports its executed case
+count, and a run with zero executed cases exits non-zero. No verdict, gate, grant or
+Design-verified claim rests on a run that did not state how many tests it ran.
 
 Only captures caught any of them. A suite that cannot tell whether something drew states nothing.
 

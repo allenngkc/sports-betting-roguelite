@@ -453,6 +453,147 @@ the laptop, TV or phone body, so R19(a)'s separation has only ever been albedo a
 R19(b)-am the carrying channel is **value**, which is measurable in a frame — so regions for those
 bodies would convert R19(a) from asserted to measured.
 
+### Batch 10 (2026-08-05) — the slice closes: 10 PASS, 0 FAIL, no VOIDs
+
+**Gates 6–8 re-certified on a FRESH walk.** Allen walked the post-retirement build and passed. The
+record says *fresh walkthrough*, not standing verdict — `--certify-basis` exists precisely so a
+replayed verdict can never be mistaken for a walk of the build in front of you.
+
+**C29 retrofitted — `tools/check_test_results.py`.** Run it on every NUnit result before believing a
+green suite. It enforces three things, each of which has actually gone wrong here:
+
+1. **the results file exists** — `-runTests` given `-quit` exits 0 having written nothing;
+2. **`testcasecount > 0`** — C29's own case, a filter matching zero tests reported as a pass;
+3. **`failed == 0` plus a declared per-suite floor** — 20 cases is not zero, but it is not 39 either.
+
+```
+python tools/check_test_results.py <results.xml> --min-cases "editmode=70,playmode=18"
+```
+
+**NEVER pass `-quit` with `-runTests`.** The runner closes the editor itself and `-quit` races it.
+The same shape is retrofitted inside the harness: R19/R20 FAIL rather than print an empty line if
+they measure zero regions.
+
+**C30 got its instrument — R33 palette conformance.** A palette names materials, not perceived hues,
+so conformance is checked on the **scene**: 14 ruled placements, each asserted to wear its ruled
+material, no frame and no lighting argument. **This gate would have answered R33 in one run** — "drab
+green absent from the room" cost three escalation rounds, a false finding of mine and a lighting
+debate, and the question was only ever *is the material applied*.
+
+**`Bunk2Pillow` is a RULED NAMED EXCEPTION (Allen, 2026-08-05) — and it is enforced, not annotated.**
+The pillow stays pale (`ArtGrime`, not `#3A4230`) because the occupied-read outranks rule purity;
+the green would darken §1.4's one deliberate pale shape by 37.5%. It sits in `PALETTE_PLACEMENTS`
+like any other placement, so **greening it FAILS the gate**. An exception living only in prose is one
+refactor from being tidied into conformance by someone who never saw the ruling.
+
+**The swatch did not become a value change:**
+
+| | value | delta |
+|---|---|---|
+| ratified, pre-swatch | 43.90 | — |
+| old box (where 43.9 was defined), post-swatch | 44.44 | **+0.54**, inside ±1.0 |
+| re-baselined pure box, post-swatch | 38.29 | −0.01, inside ±1.0 |
+
+The old box is the honest comparand because 43.9 was ratified on it; comparing across instruments
+would be the error this whole sequence was about. **Limit, on the record:** every capture in the repo
+is post-swatch, so this compares a post-swatch measurement to a pre-swatch ratified figure. No
+before/after pair exists and none can be made without reverting the swatch.
+
+### Batch 9 (2026-08-04) — R25 GRANTED, and two of the queue's premises are falsified
+
+**R25 painterly read: Design-verified.** The fragility flag was recorded with it — the read is
+lighting-assisted (4.68× rendered vs 2.17× albedo-only), so **any future shot that relights the desk
+re-opens R19**. That line is now the reason, and it is worth defending.
+
+**The mattress 37.36-vs-44.44 discrepancy — RESOLVED, and neither box is mis-framed.**
+
+| capture | mattress mean |
+|---|---|
+| `standing-overview.png` (screens **lit**) | 44.44 / 44.49 |
+| `conformance-room-screens-dark.png` (screens **dark**) | **38.41** |
+| conformance, ungraded dark | 25.47 |
+
+Same camera pose (both are eye `(0.300, 1.640, −1.400)`, +Z, 68°), same box, same surface. The gap is
+**screens-lit vs screens-dark** — the mattress catches laptop/phone/TV light and the conformance set
+silences all three by construction, so it *must* read ~6 lower. R32 supposed one box was not framing
+its surface; neither is.
+
+**The real defect was C25's:** a ratified number quoted without the capture it is defined on, so two
+runs saying "the mattress" meant different quantities. R9-A now names its capture and lighting in its
+own line and reports the screens-dark value beside it, labelled *not this test*.
+
+**R33 is already done — the drab green is applied, at spec.** R33 says the swatch is absent and "all
+four bunk/mattress materials remain warm neutral greys." Not so:
+
+| material | linear | sRGB | |
+|---|---|---|---|
+| `BunkFrameGreen.mat` | (0.0423, 0.0545, 0.0296) | **#3A4230** | G>R, green |
+| `ArtBunk2Shadow.mat` (bedding) | (0.0423, 0.0545, 0.0296) | **#3A4230** | G>R, green |
+| `CouchGray.mat` | (0.172, 0.158, 0.132) | #736F66 | warm — correctly excluded |
+
+`BunkFrame` is bound to six objects (both slabs, four posts). **Applying it again is a no-op.**
+
+**R32's placement amendment has no region to land in.** It rules the fabric "reads its drab green
+outside the pool's reach." Swept nine surface-pure patches across both bunks — slab ends, mids, posts,
+lower rail, bedding — and **0 of 9 read green.** Every one is COOL (h 249–271°) or below the chroma
+floor. The whole bunk assembly flanks the window and sits in its pool; there is no outside-the-pool
+bunk surface to carry the swatch. **Routed back — not actionable as placement.**
+
+**R31 recorded:** finish leads, value stays required. Reasoning is in `BuildMaterials`.
+
+**Phone joins C13 coverage.** R28-am keeps the live `BookieFeed`, which removes the phone's structural
+immunity to shipping superseded content inside a room capture. Room frames now carry **three** live
+surfaces. Nothing may be authored onto that screen — live engine data only.
+
+### Round 4 (2026-08-04) — three items, all answered by measurement, none by moving a colour
+
+**1. Steel/conduit VALUE, re-measured against T48's neutral black point** — the re-measure C22.1
+deferred. Every surface, screens-dark graded, sorted by L\*:
+
+| L\* | surface |
+|---|---|
+| 9.56 | conduit drop — *metal* |
+| 10.17 | ceiling plaster |
+| 10.78 | wall (right) |
+| **11.30** | **housing face — *metal*** |
+| 11.59 | conduit (full width) — *metal* |
+| 12.33 | floor (aisle) |
+| 13.08 | wall (far) |
+| 13.30 | bunk 1 |
+| 18.83 | conduit ceiling run — *metal*, brighter than every room surface but the mattress |
+
+Metal mean **10.43** vs room mean **11.93** — darker by **1.50 L\***, and the distributions
+**overlap**: the housing sits above both the ceiling and the right wall. R19(b)-am made VALUE one of
+the two channels carrying the institutional read after striking "colder". On this evidence **value
+is carrying very little and FINISH is doing the work.** Routed to the DD, not fixed — darkening the
+albedo to manufacture separation is exactly what R19(b)'s guard forbids.
+
+**2. R19(c) drab green — placed correctly, does not read as green.** The couch is clean (chroma 0.34
+and 0.06, far below the 1.5 floor), so nothing green landed where the ruling excluded it. But both
+bunk frames read **COOL** — post h 266.0 / C 1.62, slab h 267.8 / C 2.71, cool ungraded too. They sit
+in the window's pool and `#3A4230`'s chroma is too low to survive it. Mattress **44.44**, inside
+43.9 ±1, so R19(c)'s hold survives. Boxes eye-confirmed on frame members.
+
+**3. R20 chipped paint + battered desk — both read, provably.** New INFO block measures p95−p5
+luminance spread against a benchmark that is the **ceiling stain**, the surface §1.7 names as the one
+that demonstrably reads at review distance:
+
+| spread | surface |
+|---|---|
+| 4.86 | ceiling (benchmark) |
+| 2.00 | housing paint, flat — below benchmark |
+| **8.49** | housing paint, most varied — **READS** |
+| **10.72** | desk, mid — **READS** |
+| **7.72** | desk, far/dark end — **READS** |
+
+The housing's split is the design working: chips are 8–14% coverage by construction, so most patches
+are intact paint and flat, while a patch containing a chip beats the benchmark by 1.7×. The desk
+reads even away from the lamp pool — sampled twice for that reason, since a lighting gradient raises
+spread just as wear does.
+
+**Spread, not sd/mean, deliberately:** sd is dominated by the 86–92% of a surface that is intact.
+That is how R7 shipped wear changing 1.92% of pixels against a 1.69% baseline and was believed fine.
+
 ### BezelBlack retired — and my finding for it was too strong
 
 `TVBody` wore `BezelBlack #3C3C38`. I reported it as **not visible** and Allen retired it on that

@@ -1,85 +1,36 @@
-# Studio Status — 2026-07-31 (evening)
+# Studio Status — 2026-08-08 (header refreshed every cycle per Allen)
 
-- **main:** register + board current through the T8 ruling and C3 correction.
-- **surething-ui:** 6 commits ahead of `cb83c90` — handoff contract (`5d1de82`),
-  evidence cleanup + gitignore, ProjectSettings isolated commit (`63cf1bc`,
-  Allen-approved), S7 ink pipeline complete (`1090527`), defect fixes (`4eb2cba`),
-  red-on-dead-leg ruling (`8822971`). Tree clean. Next: S8 OS chrome, then S9.
-  **S8 + S9 ink fixes landed and pixel-verified** — ink inversion (blue marks only
-  his pick) and dead-strike sizing fixed; first-ever Ledger/Rewards/Old Slips
-  captures, all eight states navigating. Wide ring: downscale hypothesis tested and
-  **falsified** — generator untouched, diagnostic committed, fix from evidence in
-  the next capture window rather than a third guess. DD rulings S11/S14/S15/S16
-  dispatched into S9 planning. Lead: Claude (Opus 5).
-- **room-refinement:** **R9 implemented and committed** (`9dce6f7` soot dropped +
-  ambient rebalance; `13fedd1` gate-check harness for the R9/R10 acceptance
-  re-runs) — awaiting its editor lease (third in queue) for build + bake + 8/8
-  gate re-run. R10 planning next. R5/R6 Design-verified; R7 parked; owning doc
-  approved (R13). Lead: Claude (Opus 5).
-- **tv-sweat:** `842382d` — **T8 removed and verified** (engine 160/160, EditMode
-  129/129, PlayMode 44/44 on rerun; single failure matched the documented cash-out
-  flake signature in a path T8 doesn't touch). Contract/C1/T6/C3 at `4cdd98c`.
-  **3C verified green, uncommitted** (warm compile clean, EditMode 193/193,
-  PlayMode baseline-equal ex-spike; L4 guard held — the canvas rebuild widened
-  nothing). Commit gated on the DD's Layout B ruling (inbox pending item 5).
-  **Capture-harness spike succeeded both arms** — PlayMode capture survives domain
-  reload; interactive GPU booking **stood down** (Allen, 2026-07-31). T15
-  remediated; markup-aware palette scan written (and immediately caught the same
-  class in `[ST] SportsbookApp.cs` — routed to SureThing). Sweat-capture harness
-  built: `[Explicit]`-gated (protects the flake-prone suite), reuses room's exact
-  seated camera through the live URP/HDR path, no hooks into gated files. **In the
-  editor now verifying harness + scan.** 3D awaits the DD's C3 ruling.
-  Lead: Claude (Opus 5).
-- **feat/soccer-markets (Documents checkout):** Dormant — F_0.4.0 awaiting playtest.
-- **Design Director:** batch 1 + batch 2 complete — **every routed item ruled**.
-  Highlights: C3 ruled (3D unblocked, HDR set widened), T16 ruled (3C unblocked on
-  tape restore), R5/R6 **Design-verified — the studio's first**, R9/R10 approved
-  bounded, R12 standing law, two-tier art authority **approved by Allen** (C9; DD
-  drafts the room's owning doc, phone stays a stub). Remaining on DD: TV typeface
-  (not Archivo), review backlog (S6/S7/S8, T6), room owning doc. **Design system
-  exported and landed** at `docs/design/design-system/` (canonical, on main):
-  tokens, component library (incl. built `TvMomentumTape.jsx`), guideline-card
-  laws, runnable UI kits for both surfaces, regenerated ink sprites, the
-  art-authority proposal, and an adherence lint config. Leads reference it
-  cross-worktree; do not fork copies.
-- **Orchestrator:** Fable 5 session in `main-2`; lead channel chartered in
-  `ORCHESTRATOR.md` §3a. Completion watchers armed on all three lead terminals and
-  the Design Director session.
-- **Unity queue:** surething-ui holds the slot (seven-change verification in
-  dependency order + wide-ring dump read) → tv-sweat TVS-H02 regression
-  investigation (freeze-contract regression; 3C held uncommitted until understood)
-  → room R9 lease (build + bake + 8/8 gate re-run). Hold room's staged lease draft
-  until granted.
-- **Approved (Allen, 2026-07-31):** room owning doc — canonical at
-  `docs/design/room-design.md` (R13). Room session context at ~507k tokens —
-  recommend `/clear` at its next natural boundary; handoff.md + committed docs make
-  it safe.
-- **Blocked:** TV 3C merge blocked on the TVS-H02 verdict (its own hold, correct).
-- **Integration plan (draft, for Allen when slices stabilise):** merge order
-  1) `surething-ui` (most landed, all green, ProjectSettings changes approved and
-  isolated), 2) `room-refinement` (after the R9 gate re-run passes), 3)
-  `slice/tv-sweat-refinement` (after TVS-H02 is understood, 3C commits, and the
-  T17 scorer-gap fix lands). Canonical Unity validation pass in `main-2` after
-  each merge. Cross-tree conflict surface is small — each slice owns disjoint
-  files; the shared risks are ProjectSettings (surething, approved) and
-  `Room.unity` (room-owned; TV deliberately never touched it).
-- **Rulings (Allen, 2026-07-31):** C1 — latest document governs, `DESIGN.md` §6
-  stands, layout closed. C2 — interim: shipped green tolerated, cold white-grey
-  target lands with TV Phase 3. T8 — remove: done, verified `842382d`. S11 — no
-  licence-encumbered typefaces in the product; Bell Centennial dropped.
-- **Watch:** Unity **segfaults on `-quit`** (exit path only; 0 errors, lockfile
-  clears, nothing corrupted — observed on tv-sweat warm compile 2026-07-31). Every
-  lease-holder must keep checking process count + lockfile at open. GPU booking
-  remains stood down. **New trap (markets, 2026-07-31): `dotnet build/test/run`
-  silently rewrites the tracked `unity/SBR/Assets/Plugins/SBR/SBR.Engine.dll` —
-  every lead using dotnet must check for and revert that file before committing.**
-  **Second trap (markets, 2026-07-31): Unity can return exit 0 while still
-  mid-import — process + lockfile stayed live ~16 min after "exit". Exit code is
-  not a completion signal; leases close on process count + lockfile + log growth,
-  never on exit alone.** **Third lesson (markets, 2026-08-01): editor-free green
-  means little for Unity-side work — engine suites and dotnet cannot see asmdef
-  code or the DLL boundary; "uncompiled" is treated as genuinely unverified.**
-- **Need Allen:** nothing.
+**TMP migration Phase L is BUILT** — engine swapped, helpers re-expressed,
+suites green throughout, tracking applied in six slot groups; the before/after
+evidence pair (same pinned seeds, C34) is **in the DD inbox** for
+re-verification. Register canon through **batch 14**. All four owning docs +
+constitution are Allen-approved canon.
+
+- **surething-ui:** Phase L migration complete at `92971fd` (74 ahead of
+  main). After-set shot on the pinned flows; close report names its unverified
+  items honestly (13px floor source-checked not frame-checked; tracking
+  verified as applied). One real finding: SKIP ROUND headroom 45px → 7px
+  (remedies are a design call — with the DD). NOW: tnum (S29) + weight-600
+  (S20/S28) phases dispatched; merge round after the package so the type stack
+  lands whole.
+- **tv-sweat:** conformance era closed; stale 5–8% band reference fixed on
+  routing note. DD-blocked (lever + verify verdicts). Phase T queued behind
+  Phase L close.
+- **room-refinement:** bake bundle done, gates re-certified; bake evidence
+  pushed to DD inbox 08-08. NOW: building the **emission instrument** (three
+  emission defects in eight days, zero gate catches — largest uncovered
+  channel), room first, other surfaces adopt.
+- **markets-2:** G5 measure-first ruling (Allen) executing — error-measurement
+  run at the ruled floor in flight. Two catches en route: the zero-variance
+  degenerate guard (11th zero-case instance) and the price-clause tag
+  asserting an unmeasured claim (12th; clause dropped on Allen's ruling).
+  Package on land: number + exemplar-pair question + retagged table.
+- **Design Director:** batch 14 round-tripped and transcribed. Inbox now
+  holds: batch-14 evidence, TV verify set, room bake evidence, **Phase L
+  before/after pair**. Outbox checked 08-08: empty since batch-14 rulings.
+- **Allen:** owes the DD the "new inbox" line; then the G5 package when the
+  run lands (number + whether the pillar certifies on the weakest real loop).
+- **Editor:** free (SureThing captures + room instrument frames will ask).
 
 ## Autonomous decisions (Allen veto window)
 
@@ -92,6 +43,430 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-08 cycle 124 · **Validation GREEN; merge blocked on one conflict,
+  resolution in-branch** — canonical validation of 2e5ed01 all-pass (engine
+  178/178; EditMode 78/78, +3 over main; PlayMode 57/57 on real graphics
+  Direct3D12, +10 over main; DLL byte-identical to HEAD LFS oid; single
+  editor instance held throughout; HEAD untouched). Merge --no-ff --no-commit
+  hit ONE conflict: SureThingEntryTests.cs (main moved post-fork — the 183
+  vs 178 engine delta's sibling). Aborted clean, zero residue; lead resolving
+  in-branch per protocol (merge main in, keep both test intents, suites
+  green, report new tip → I re-validate delta and merge). Markets: ALL 7
+  GATES PASS committed 0cc592c (G5 +3.0pp ±0.34pp clears floor 5.8×, 1.52M
+  pinned runs); handoff carries the wave; stale band item closed (already
+  fixed in TV's doc — Allen's route-it draft held as already-done). Editor
+  reserved for migration thread; markets' evidence lease stays queued.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | resolving conflict | merge main in → suites → new tip | lead |
+  | tv-sweat | clean-holding | DD batch-15 verdicts (PR #3) | DD |
+  | room | clean-holding | DD rules R39 values + ArtIndicator | DD |
+  | markets-2 | clean-holding | Unity evidence lease (queued) | orchestrator |
+  | DD bridge | fed | "new inbox" line | Allen |
+  | Editor | reserved | lead's resolution suites → markets | orchestrator |
+- 2026-08-08 cycle 123 · **Phase L type package COMPLETE; final set delivered;
+  merge validation launched** — S29 closed on Allen's masthead-to-condensed
+  ruling (the old "spread 0" was measured against the wrong face: accidental
+  SemiBold is near-tabular 0.1875, true Regular proportional 4.7656 — the TMP
+  face has no tnum, so the §4.1 face assignment was the fix). S20 confirmed by
+  falsifiable prediction (roman regions −3.6–4.6pp ink, condensed control
+  0.25pp, rail identity 0.00pp — 600 by choice now). S52 held through stack,
+  weight, and face changes. Final after-set (40 files) pushed to
+  dd-inbox/…/final/ with revised ADDENDUM; two superseded zips dropped on
+  Allen's order. SENTIS define did NOT recur. Branch at 2e5ed01 (80 ahead) —
+  canonical validation agent launched (engine → warm compile → EditMode →
+  PlayMode+graphics → DLL guard); merge on green. Known limits carried to the
+  record: digit jitter measured-not-photographed; 13px floor source-checked
+  only; three kit values match no token (with the DD).
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | validation running | merge on green (2e5ed01) | orchestrator |
+  | tv-sweat | clean-holding | DD batch-15 verdicts (PR #3) | DD |
+  | room | clean-holding | DD rules R39 values + ArtIndicator | DD |
+  | markets-2 | working | exemplar floor run → headline + commit | lead |
+  | DD bridge | fed (pair/final/bake/emission all in) | "new inbox" line | Allen |
+  | Editor | free (released by SureThing) | validation agent's suites next | orchestrator |
+- 2026-08-08 cycle 122 · **G5 re-exemplared on Allen's ruling; emission bundle
+  delivered** — exemplar moved to Multiplier+House Key (+2.96pp, 8.7×); floor
+  set at ≥1.0pp from the report's own taxonomy line (~3× the new exemplar's
+  error — the gate can genuinely fail; >0 would have certified noise the day
+  the exemplar drifts). Twelfth zero-case instance guarded unasked: a missing
+  exemplar now fails loudly instead of silently absenting the gate. Smoke
+  PASS at n=600 (+2.8pp, 1.4×); floor run in flight (~±0.34pp, ~5.8×
+  expected). Room's emission bundle (18 files, 38MB: per-emitter table,
+  isolated crops, controls, WindowGlow annotation) pushed to DD inbox — two
+  transient net errors, both retried clean. SureThing in its long window.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | working (editor) | regenerate → suites → re-shoot at 400 | lead |
+  | tv-sweat | clean-holding | DD batch-15 verdicts (PR #3 open) | DD |
+  | room | clean-holding | DD rules R39 values + ArtIndicator | DD |
+  | markets-2 | working | exemplar floor run → verdict headline | lead |
+  | DD bridge | fed | emission bundle landed; "new inbox" line | Allen |
+  | Editor | surething | release on window close | orchestrator |
+- 2026-08-08 cycle 121 · **The emission instrument READS — third set valid,
+  R39's numbers exist** — controls held (a-b-z), independent cross-check green
+  on every emitter; run 2's defect was the rig mutating the room (blackout
+  restore + shared MaterialPropertyBlock), fixed at cause; WindowGlow's 213°
+  gap annotated as colour×texture, not defect. The two DD-waited results are
+  on record: phone 85.4°/5.0 vs laptop 84.3°/5.3 (one chromaticity family in
+  render — R39's "joins the granted family" shown for the first time);
+  ArtIndicator 38-42°/chroma 43-49 at 0.005-0.040% of frame (only saturated
+  emitter, unruled, red where red is retired → DD). 84MB set committed. TV
+  lane CLOSED to verdicts: PR #3 open (lead minted the call via credential
+  fill), record + link pushed, stand-by fired. Editor: room released →
+  SureThing long window granted (regenerate → suites → re-shoot at 400).
+  Room dispatched: stage DD bundle (table + isolated frames, not 84MB).
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | working (editor) | regenerate → S29 first run → re-shoot at 400 | lead |
+  | tv-sweat | clean-holding | DD batch-15 verdicts | DD |
+  | room | working | stage emission DD bundle → I push | lead |
+  | markets-2 | working | retagged table → whole G5 package | lead |
+  | DD bridge | fed | pair+addendum+bake in inbox; emission bundle next | orchestrator |
+  | Editor | surething | long window; next claimant none | orchestrator |
+- 2026-08-08 cycle 120 · **G5 answered at 3 sigma; instrument era compounding**
+  — markets: synergy real and positive at 3σ, error ~7× finer than G3's; the
+  question to Allen is now purely "does +0.1pp certify the pillar" (retagged
+  table in flight completes the package). Room's emission instrument finished
+  Part A+B and REFUSED its own first capture set (no control → zero
+  measurements → C29 fail) — 55MB deleted, re-shoot slot granted. SureThing:
+  S20 applied in code (roman → Regular 400 per Allen), which stales the pushed
+  after-set — ADDENDUM pushed to DD inbox holding re-verification for the
+  corrected set; long editor window queued behind room. TV: verify-window
+  record committed `97350ae`, pushed; Allen's open-the-PR fired with
+  gh-missing fallback. Editor sequencing: room short slot → SureThing long
+  window. Rulings fired this cycle: Regular-400 (S20), commit-it, push-it,
+  open-the-PR, retagged-table, editor grants ×2.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | queued on editor | regenerate assets → suites → re-shoot at 400 | lead (on my confirm) |
+  | tv-sweat | working | PR open or handoff fallback | lead |
+  | room | working (editor) | control-bearing re-shoot → release | lead |
+  | markets-2 | working | retagged table → whole package to Allen | lead |
+  | DD bridge | fed + addendum | pair + hold-note in inbox; "new inbox" line | Allen |
+  | Editor | room | pass to SureThing on release | orchestrator |
+- 2026-08-08 cycle 119 · **Phase L evidence pair delivered; §6b adopted; three
+  rulings fired** — after-set landed (38 frames, pinned seeds) and I found the
+  before-set had never left the building: pushed both + room's bake evidence
+  (87 files) to the DD inbox with S8's re-submission and the deviation-expiry
+  note. Allen's rulings executed: G5 measure-error-first (run in flight at the
+  ruled floor), price-clause tag dropped (12th zero-case instance — a taxonomy
+  label is an instrument too), report-the-number standing. SureThing
+  dispatched on tnum + weight-600 (merge after the package, one type-stack
+  landing); room dispatched on the emission instrument. Outbox pulled: empty
+  since batch-14. Reversal: Allen says stop; nothing merged this cycle.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | working | tnum + weight-600 slots → capture window | lead |
+  | tv-sweat | DD-blocked | lever + verify verdicts (batch 15) | DD |
+  | room | working | emission instrument build | lead |
+  | markets-2 | working | G5 error run → package (number + exemplar) | lead |
+  | DD bridge | fed | Phase L pair + bake evidence in inbox; "new inbox" line | Allen |
+  | Editor | free | grant on first ask (SureThing captures / room frames) | orchestrator |
+- 2026-08-08 cycle 118 · **§6a audit (heartbeat)** — migration foundation
+  complete (bootstrap, helpers, tests, suites green); tracking tokens
+  applying slot by slot. Markets: sharp-run committed `95d7799` (183/183);
+  G3 re-banded to 4.5% on Allen's in-place ruling; G5's threshold-at-zero
+  flagged as the next gate defect. TV + room evidence-complete, holding.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | working | tracking slots → tnum → weight-600 | lead |
+  | tv-sweat | complete-holding | DD batch-15 verdicts | DD |
+  | room | complete-holding | DD batch-15 verdicts | DD |
+  | markets-2 | working | G3 re-band build + counted verify | lead |
+  | DD bridge | fed | batch-14 complete in inbox; Allen's "new inbox" line when ready | Allen |
+  | Editor | shared | SureThing slots ↔ markets verify, coordinated | orchestrator |
+- 2026-08-07 cycle 117 · **TMP MIGRATION PHASE L STARTED (Allen)** — SureThing
+  leads; the pinned re-shoot set is the before-baseline (the reproducibility
+  law made the migration's evidence design possible the same day it was
+  written). Scope confirm → C3-for-TMP restatement → migrate → after-captures
+  on the same seeds → deviations expire named. In parallel: room's bake
+  closing, TV's verify window next in the editor, markets' sharp gate re-run.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | working | MIGRATION Phase L | lead |
+  | tv-sweat | queued | verify window (editor next) | lead |
+  | room | closing | bake report → gates → re-confirm ask | lead |
+  | markets-2 | working | 18,500 gate re-run verdict | lead |
+  | DD bridge | fed | push pinned set + bake/verify evidence on land | orchestrator |
+  | Editor | free | TV verify → migration slots | orchestrator |
+- 2026-08-07 cycle 116 · **Batch 14 pulled, transcribed, dispatched** — the
+  reproducibility reckoning: capture flows were never seed-pinned (C34 law,
+  fifth axis; no grants withdrawn — treatment is seed-stable); the glow cue
+  struck on frames (S63 closes entire); two new emission strikes (phone R39 +
+  laptop material R40, one bake bundle with a re-walk after); mirror-identity
+  and PENDING-tone violations ruled; the helper-bypass sweep its own item;
+  the event strip ruled L2 (T63 ungated, its causal account delivered);
+  **C13 named as a standing integration item** (room renders the retired
+  violet laptop — scheduling the content re-integration). Report back to DD
+  next push: the TV owning doc is ALREADY Allen-approved (its "awaiting
+  Allen" line is stale). Markets closed its gate build (read pending).
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | working | pin flows → PENDING tone → mirror → sweep | lead |
+  | tv-sweat | working | strip L2 ×7 → band fix → verify window | lead |
+  | room | working | one-bake bundle (phone + material) → re-walk | lead |
+  | markets-2 | read pending | gate-build close report | orchestrator |
+  | DD bridge | round-tripping | next push: report TV-doc approval + new evidence | orchestrator |
+  | Editor | free | room bake first, then TV verify | orchestrator |
+- 2026-08-07 cycle 115 · **G6 dial RULED (Allen: option 1, n≈4,600, ±1.0pp;
+  escalation to 18,500 on near-line results) — markets dispatched, last
+  blocked lane un-blocks.** Four stale register rows corrected on room's
+  observable-state audit; the glow-cue evidence (both arms, three poses)
+  pushed to batch-14 — the cue's cannot-be-framed strike is documented for
+  the DD.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | complete | hold for DD verdicts | — |
+  | tv-sweat | working | band fix → verify window | lead |
+  | room | complete | hold for DD verdicts | — |
+  | markets-2 | working | G6 resolution build | lead |
+  | DD bridge | fed | batch-14: 7 items in; TV's verify results last | orchestrator |
+  | Editor | free | TV verify window on request | orchestrator |
+- 2026-08-07 cycle 114 · **§6a audit (heartbeat)** — room reports gates
+  9 PASS / 0 FAIL / 0 VOID, both trees clean; Allen's queue-hygiene draft
+  fired (stale entry cleared, open-items statement owed incl. cue-frame
+  status). Pending-legs frames pushed to batch-14.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | working | pin four flows, one commit each | lead |
+  | tv-sweat | working | band fix → verify window (editor queued) | lead |
+  | room | answering | open-items statement + cue-frame status | lead |
+  | markets-2 | idle-BLOCKED | G6 dial | **Allen** (his timing) |
+  | DD bridge | fed | batch-14: 4 items in; cue frame + TV numbers to come | orchestrator |
+  | Editor | free | TV verify next unless room's frame still owed | orchestrator |
+- 2026-08-07 cycle 113 · **§6a chartered — first pending-work audit run** —
+  three staged drafts fired (SureThing: PENDING-legs capture, slot granted;
+  TV: event-strip tier question filed to DD; room: phone emission finding
+  filed — the emission blind spot named again); batch-14 inbox OPENED and
+  first evidence pushed (mirror-identity finding + riding set, extracted).
+  Audit table below; it closes every cycle from now on per §6a.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | working (capture slot) | PENDING-legs shoot → stage | lead |
+  | tv-sweat | working | ladder re-read → band fix; tier Q filed | lead |
+  | room | **idle — nothing owed** | none; cue frame SHOT `638e592`, finding FILED. Open: merge (12 ahead/267 behind), R8 geometry unstarted, 2 findings await DD | orchestrator / DD |
+  | markets-2 | idle-BLOCKED | G6 dial | **Allen** (his timing) |
+  | DD bridge | fed | batch-14 accumulating; push-on-land | orchestrator |
+  | Editor | leased | SureThing → TV verify (**room dropped — needs none**) | orchestrator |
+- 2026-08-07 cycle 112 · **All four leads REBOOTED (Allen: API errors)** —
+  clean close + --continue relaunch, effort re-applied, resume prompts sent
+  (each re-states its task and continues). Watcher v13 on the new handles.
+  In-flight work resumes: room's cue frame, TV's ladder re-read → band fix,
+  markets' fresh seat confirm, SureThing stood down. Reversal: none.
+- 2026-08-07 cycle 111 · **Markets seat corrected + duplicates purged** —
+  Allen's newest fresh markets session found and seated as THE canonical
+  lead (the earlier brief had gone to a duplicate; three stale markets
+  sessions closed for one-lead-per-lane hygiene). SureThing and TV
+  confirmed alive — their live sessions are the ✳-titled ones; the
+  dead-looking windows are stale leftovers. Watcher v12 on the four
+  canonical seats. Reversal: none.
+- 2026-08-07 cycle 110 · **TV OWNING DOC APPROVED — every surface has canon**
+  — Allen approved; landed at `tv-design.md` with the quarantine preserved;
+  C26 CLOSES (phone stub by design). The design-governance buildout that
+  started 2026-07-30 is structurally complete: constitution + three owning
+  docs + 33 cross-surface laws + a register at batch 13. Lanes: TV on the
+  room-flood fix; SureThing shooting the last unphotographed state; room
+  ships glow + owes the cue frame; markets holding. Reversal: Allen's own
+  approval.
+- 2026-08-07 cycle 109 · **BATCH 13 PULLED VIA DESIGNSYNC — first outbox
+  round-trip** — four files landed verbatim (batch-12 reconstruction,
+  batch-13 rulings, TV owning-doc DRAFT, outbox README) and transcribed.
+  Headlines: S59–S62 all granted-closed; T63 ruled (invert disproof accepted;
+  THREE brightness units were in play — C33 law fixes the unit studio-wide;
+  the real defect is the band never reaching L4, gap 0.047 not 0.21); T64
+  struck (9Hz idle flicker); **T65 loudest — the room floods gold on leg
+  wins, an event re-tint proven inverse to the panel's own gold; mechanism
+  stays, fires on settlement, palette-bound on V6**; S63-am2 glow colour
+  ships both ends, 3× ceiling struck, cue suspended on one Play-Mode frame;
+  R38 rig-string leak; emission named as the instruments' largest hole.
+  SureThing doc amended per C26-am2. All lanes dispatched. **Awaiting Allen:
+  the TV owning document.** Reversal: DD canon.
+- 2026-08-07 cycle 108 · **Pricing variety VALIDATED (p8 green) — markets
+  handover complete** — engine 183/183 (+2), EditMode 75/75, PlayMode 47/47,
+  counts reported, end state clean; tables amendment committed. Old markets
+  session stood down with honors; Allen's fresh seat briefed and seated.
+  Seven merges landed+certified this week. Studio holds on: the DD's
+  batch-13 session (Allen's "new inbox" line) and Allen's G6 dial pick.
+  Reversal: revert `aaaae9d` (window stands, certified).
+- 2026-08-07 cycle 107 · **PRICING VARIETY MERGED — `aaaae9d`** — Allen's
+  "merge it" fired; clean merge at `36122d6` (jitter dial, re-pinned test,
+  amendment scope-note in the tables doc, handoff with the evidence gap
+  named). Validation p8 running. G6 dial open on Allen's timing. Markets
+  handover to the fresh seat after the confirm. **Veto: revert `aaaae9d`.**
+- 2026-08-07 cycle 106 · **Allen's fresh seats adopted; header current** —
+  three new Allen-attached lead sessions seated with context briefs (effort
+  applied); markets' handover deferred until its in-flight merge verification
+  lands (my session finishes the task it holds). STATUS.md header rewritten
+  current and now refreshes every cycle (was week-stale — process gap owned).
+  Batch-13 DesignSync push: already done at cycle 104, confirmed present in
+  the project. Watcher v11 on the new seats. Reversal: none.
+- 2026-08-07 cycle 105 · **Pricing variety ACCEPTED (Allen) — merge flow
+  started** — acceptance delivered to the verified-live markets session after
+  an Orca handle-shuffle left duplicate TUIs (the resurrected 99%-context
+  pre-clear zombie closed for hygiene; the fresh post-clear session
+  confirmed by its boot fingerprint). All four live handles re-verified,
+  watcher v10 armed on them. Awaiting markets' MERGE READY. Reversal:
+  Allen's own accept.
+- 2026-08-07 cycle 104 · **DesignSync transport live — batch 13 PUSHED** —
+  §3b chartered and executed: all 38 files (context prompt, docs set, both
+  glow evidence sets, TV's T63 measurements, SureThing's batch-11 photos)
+  written to `dd-inbox/2026-08-07-batch-13/` in the DD project, extracted
+  form (the DD reads files, not zips), incremental writes only. No dd-outbox
+  exists yet — pull added to every heartbeat cycle. Allen's remaining human
+  step per §3b: one line to the DD ("new inbox"). Hand-drag era ends.
+  Reversal: delete the inbox folder via a delete plan.
+- 2026-08-07 cycle 103 · **Orca restart recovered (again)** — four leads
+  revived via --continue, effort re-applied, watchers re-armed (v9).
+  Studio unchanged: converged on Allen's two moves (pricing-variety accept;
+  the 5-file batch-13 drag). Reversal: none.
+- 2026-08-06 cycle 102 · **TV's double window closed; batch-13 drag staged
+  (5 files)** — T62 built+suite-verified (plus a months-old hidden
+  frame-time flake pinned by its own new tests); T63 measured with box
+  derivation + scale scope note (C25-form; committed `22622e0`); the
+  isolation answered Allen's gold question; remaining T63 finding: the
+  fully-inverted band (0.66) still sits ~0.21 under the same-frame scoreline
+  (0.875) — DD rules on the delivered numbers. Docket also carries: TV's
+  owning doc (owed), the glow value (both zips + the warmth-vs-3× tension),
+  SureThing's four-fix photos, batch-12's export file (owed). All lanes
+  evidence-complete again; markets alone still building (pricing variety).
+  Reversal: none.
+- 2026-08-06 cycle 101 · **Batch 12 transcribed + all four lanes re-activated**
+  — T58 GRANTED-closed (DD measured personally; gold back to money; TV owning
+  doc next session); T62 new (progress-line lag, whole-beat, TV fix); T63
+  flagged against the seat (band-region measurement owed by TV); R36 wear
+  fork ruled option 3 (standing-shot reality; re-placement precondition
+  closed as tested-null; R7-F informational — sixth vacuous green,
+  lead-diagnosed); R37 no-pulse; S63-am glow rule (warm near-neutral R≥G>B,
+  amplitude ≤~3×, idleEmission same defect). Batch-12 export file OWED from
+  the DD per C22. Allen's goes: SureThing photo slot (editor now), markets
+  pricing-variety (re-baseline first). Editor queue: SureThing → room glow
+  re-shoot → TV burst measurement. Reversal: DD canon + Allen's goes.
+- 2026-08-06 cycle 100 · **Arm B validated — fully green; merge certified** —
+  engine 181/181 (+3), EditMode 75/75, PlayMode 47/47, testcasecounts
+  reported, end state clean. Validation note: its own log poller initially
+  mis-read under Unity's write lock and self-corrected (FileShare readers
+  after). Flag actioned: SureThing ran editor suites mid-validation without
+  a lease — discipline note sent; room granted the glow-A/B lease next.
+  Markets' captured-string correction note committed. One hundred cycles.
+  Reversal: revert `0bc72e9` (window stands, certified).
+- 2026-08-06 cycle 99 · **ARM B MERGED — `0bc72e9`** — Allen accepted; clean
+  merge at `2db5c19` (tie-break fairness fix, the false-red gate narrowing
+  with its named expiring exclusion, resolution statements, the renumber, the
+  receipt-flake fix). Validation running. **Veto: revert `0bc72e9`.** Room's
+  glow A/B lease queues after validation. Reversal: revert the merge commit.
+- 2026-08-06 cycle 98 · **Batch 11 transcribed + dispatched** — batch-10 fully
+  verified on frames (S34 finally closes; the colour audit RETIRED and named
+  the standard; the harder chip answer vindicated). New: the DD's own
+  composition defect on the losing verdict (ruled with fix, §1.5), three
+  small SureThing violations (header ink, scope-once, ticket identity), the
+  violet struck to direction-only, BTTS's false red removed by narrowing the
+  gate's population (expiring exclusion), C32 completes the instrument
+  trilogy (scope/coverage/resolution). **DELIVERY FAILURE flagged: the T58
+  and wear-fork zips never reached the DD — re-drag owed (2 files); the DD
+  commits to T58 + TV's owning doc in one session.** SureThing owning doc
+  DRAFTED, awaiting Allen. Arm B accept still pending. Reversal: DD canon.
+- 2026-08-06 cycle 97 · **Another Orca restart recovered** — all four leads
+  revived via --continue with bypass, effort re-applied dialog-aware, all
+  booted; watchers re-armed (v8 + heartbeat). Studio state unchanged: fourth
+  convergence, drag staged (4 files), arm-B accept pending Allen.
+  Reversal: none.
+- 2026-08-06 cycle 96 · **Fourth full convergence; drag staged (4 files)** —
+  room's weathering evidence zipped (7.6MB, extraction-verified, `add0408`);
+  docs bundle built with the colour-audit report + arm-B tables inside;
+  context prompt covers T58's verdict, SureThing's batch-10 verification,
+  the wear three-way + violet replacement, BTTS structural unreachability,
+  and both owning docs. Pending Allen: the drag + the arm-B accept.
+  Reversal: none.
+- 2026-08-06 cycle 95 · **SureThing batch-10 queue COMPLETE + the colour risk
+  RETIRED** — the audit's verdict: 27 float-Color instances, none able to
+  silently change a rendered colour (transparent containers, tint multipliers,
+  token-derived alpha work) — the colour record stands; the one bad case was
+  the verdict ground, already tokenised. Also landed: the C29 test wrapper
+  (studio pattern), verdict screen fully fixed (ground/chrome/figures), the
+  printed NOT-INSTALLED word, tally-as-run-context, cross-round retention
+  capture. Evidence zipped (5MB). FromRgb deletion approved; violet
+  attentionEmission routed to room. Room: hour-long weathering lease closed
+  clean; three-way wear-placement fork = DD territory for the drag;
+  merge-ready-when-clean fired (Allen's draft). Pending Allen: arm B accept.
+  Reversal: none.
+- 2026-08-05 cycle 94 · **Room round 4 validated — fully green** — engine
+  178/178, EditMode 75/75 (testcasecount=75), PlayMode 47/47
+  (testcasecount=47) with the C29 counts reported for the first time; end
+  state pristine; all waits held in-turn. Merge certified. TV's harness fix
+  landed with the contract test pinned. Active: room weathering, markets EV
+  harness → Arm B, SureThing verdict-screen queue, TV holding post-fix.
+  Reversal: revert `5cd17b5` (window stands, now certified).
+- 2026-08-05 cycle 93 · **ROOM ROUND 4 MERGED — `5cd17b5`** — clean checklist:
+  suites green WITH the zero-case guard at `80d119b` (re-run fresh, not
+  replayed), dry-run clean, 0 conflicts, handoff current. Carries the drab
+  green (pillow exception), the purity-law re-baseline, the re-certified
+  gates with provenance. Validation agent running (testcasecount reporting
+  now required per C29). Allen's staged R8 opening fired — the weathering
+  detail pass resumes, Tier 1b signature expires per its own ruling.
+  **Veto: revert `5cd17b5`.** Reversal: revert the merge commit.
+- 2026-08-05 cycle 92 · **Allen's four calls landed + markets reactivated** —
+  constitution amended (zero-case rule into §4.2, Allen-approved); pillow a
+  named exception; gates 6–8 re-certified on Allen's re-check walk; markets
+  STARTED on the scorer EV harness then Arm B (lead's own before/after-tables
+  condition binding; flatness fix parked pending Arm B's baseline). T61
+  resolved as harness outcome-dependence — design question struck per the
+  pre-commitment; contract test routed to TV's harness debt. Room heading to
+  MERGE READY with no gate hold. Reversal: Allen's own calls.
+- 2026-08-05 cycle 91 · **Batch 10 transcribed + dispatched — THE LEDGER IS
+  DESIGN-VERIFIED** (granted on the sixteen-state set; $0 wax/grey split
+  ratified; C31 law born from the DD almost breaking its own condition list).
+  Verdict ground = the token (investigation moot there), but S54 routes the
+  real worry: float-authored colours render re-ordered/zeroed — audit ordered,
+  colour-record risk named. Chrome returns to the verdict screen (S55); chip
+  legibility re-opened and granted (S56); figures-invert question (S57);
+  MY BETS tally (S58). T60 struck, T61 pre-committed, R35 strikes
+  reads-as-green (C30 law retires the escalation shape). C29 LAW studio-wide:
+  zero-case runs fail — retrofit before any next verdict, all four lanes
+  dispatched. Kit entry authored. SureThing owning doc unblocked (DD writes
+  next session). Constitution amendment (C29→§4.2) queued for Allen.
+  Reversal: rulings are DD canon.
+- 2026-08-05 cycle 90 · **Activated lanes both landed** — TV: all four
+  verdict passes CLEAN (no build items; two observations flagged-not-called,
+  incl. a four-line pending-leg label that fits its slot). Room: drab green
+  applied under the ruled placement; one narrow Allen call surfaced (the
+  pillow — bedding by the ruling's letter, but its paleness carries the
+  bunk-occupied read; lead + orchestrator recommend leave-pale as a named
+  exception). Full convergence returns on that answer. Reversal: none.
+- 2026-08-05 cycle 89 · **TMP migration plan staged** — converged idle time
+  used to sequence C15's next phase (`tmp-migration-plan.md`): laptop surface
+  first (most signed debt, functionally complete, faces settled), TV second
+  (HDR material risk, waits on the gold-flash verdict); hard preconditions
+  incl. before/after capture re-baselines and DD re-verification. Kicks off
+  after batch 10. Composers clean; all lanes stood down. Reversal: plan is
+  advisory until kickoff.
+- 2026-08-05 cycle 88 · **Orca restart recovered again** — all four leads
+  revived via --continue with bypass, /effort max re-applied, all four booted;
+  new handles registered; watchers re-armed (v7 + heartbeat). Studio state
+  unchanged: full convergence, everything behind the DD drag (3 files staged)
+  and Allen's gate re-confirm walk. Reversal: none.
+- 2026-08-05 cycle 87 · **SureThing slice CLOSED — full studio convergence** —
+  main merged in-branch (221 commits, one conflict), S41 live (cash-out
+  figure in wax, RETURNED a sum), twelve-state re-submit shot+zipped
+  (17.5MB), suites 76/76 + 55/55, editor released. Two merge-trap flags
+  boarded (artifacts/ un-ignored on its branch; duplicate capture number 09).
+  **Every worktree's buildable queue is empty.** Next drag staged (3 files +
+  prompt): LEDGER grant, verdict ground, S49, T60 re-issue, scorer finding,
+  R32 escalation, owning-doc sequencing. Allen's remaining: the drag + the
+  gates re-confirm walk. Reversal: none.
 - 2026-08-05 cycle 86 · **B1 validation GREEN — merge certified** — engine
   178/178 (+18 markets), EditMode 75/75, PlayMode 47/47 (+8) on a real GPU;
   XMLs fresh-verified; DLL restored sha-exact; tree pristine (this pass

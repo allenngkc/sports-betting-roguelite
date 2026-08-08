@@ -299,6 +299,19 @@ namespace SBR
                 //
                 // Both of R19(b)-am's channels, on the object that is actually on screen.
                 //
+                // R31 (DD 2026-08-04) RE-WEIGHTS THEM: finish leads, value stays required. On the
+                // corrected lighting, finish is what carries the institutional read - the housing
+                // measures neutral, chroma 0.52, L* 11.30, sd/mean 0.020, i.e. very dark and very
+                // flat, where value has little room left to signify because everything around it
+                // is also dark. Finish still has range there: a tight specular against dull
+                // plastic, hard-edged chipped paint against unbroken plastic, rivets catching a
+                // highlight plastic cannot.
+                //
+                // Value is NOT optional. It is what survives a camera pose with no specular in
+                // frame, and R25 recorded that this room's value separation is partly
+                // lighting-assisted (4.68x rendered against 2.17x from albedo alone). Dropping
+                // value would rest the whole read on the one channel that is also rig-dependent.
+                //
                 // HONEST CAVEAT, because the number flatters itself: the albedo-only ratio is
                 // 2.17x, so the rig roughly DOUBLES the separation - the laptop sits in the desk
                 // lamp's pool and the housing sits in shadow. The ruling is satisfied as the room

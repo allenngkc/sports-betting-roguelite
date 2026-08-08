@@ -40,9 +40,13 @@ current state, spec link. No ticketing system beyond that.
 - Read-only evidence from other worktrees (paths in §5).
 - Never edit: worktree-owned code/assets, `docs/5-orchestration/**` (orchestrator's),
   shared canonical docs (`docs/ARCHI.md`, root plans).
-- Seat mechanics (2026-07-31): the Claude Design seat has no direct repo access. You
-  own the *content* of `docs/design/**`; hand finished specs and register updates to
-  the orchestrator (via Allen), who lands them verbatim in `main-2`.
+- Seat mechanics (updated 2026-08-07): the Claude Design seat still has no direct
+  repo access, but file transport is now automated. The orchestrator pushes briefs
+  and evidence into your project's `dd-inbox/<date>-<topic>/` folders and pulls
+  your finished work from `dd-outbox/` (DesignSync bridge, ORCHESTRATOR.md §3b).
+  Put anything meant for the repo in `dd-outbox/` as project files — not chat
+  text — and it lands in `docs/design/**` verbatim. Allen no longer hand-carries
+  files; his only transport step is telling you "new inbox".
 
 ## 5. Inherited design decisions (you own them now; do not relitigate without Allen)
 

@@ -151,6 +151,7 @@ public class SkilledStrategy : IStrategy
         foreach (Matchup m in slate)
         {
             Cand? best = null;
+            int tiedNonMoneyline = 1; // reservoir count for the arm-B tie-break below
             foreach (MarketOffer offer in m.Markets)
             {
                 MarketSelection selection = offer.Selection;
@@ -165,12 +166,32 @@ public class SkilledStrategy : IStrategy
                 // is the moneyline FAVORITE (the ML-era candidate). A strictly-better EV pulls it
                 // off the ML — owned item factors (Photo flips a longshot +EV) or, in v2, pricing
                 // noise. That movement toward what the build pays for is the point of the board.
-                if (best is null) best = candidate;
-                else if (candidate.Ev > best.Value.Ev + EvTieEps) best = candidate;
+                if (best is null) { best = candidate; tiedNonMoneyline = 1; }
+                else if (candidate.Ev > best.Value.Ev + EvTieEps) { best = candidate; tiedNonMoneyline = 1; }
                 else if (candidate.Ev >= best.Value.Ev - EvTieEps
                          && selection.Kind == MarketKind.Moneyline
                          && best.Value.Selection.Kind == MarketKind.Moneyline
-                         && candidate.PHat > best.Value.PHat) best = candidate;
+                         && candidate.PHat > best.Value.PHat) { best = candidate; tiedNonMoneyline = 1; }
+                else if (candidate.Ev >= best.Value.Ev - EvTieEps
+                         && selection.Kind != MarketKind.Moneyline
+                         && best.Value.Selection.Kind != MarketKind.Moneyline)
+                {
+                    // ARM B. The sharp's zero coverage of BTTS/corners/cards was never a policy
+                    // exclusion — IncludesMarketOffers is already true and every non-scorer market
+                    // is considered. It was a TIE resolved by list order: under exact de-vig every
+                    // selection ties at −vig, so "best" kept whichever came first in m.Markets, and
+                    // BuildOffers emits moneyline → goals → BTTS → corners → cards. When the Photo
+                    // lifts longshots, several offers tie again at the same ×1.6 and goals wins the
+                    // tie for the same reason. Ordering is not a reason to prefer a market.
+                    //
+                    // The moneyline persona is untouched above: a tie between ML and anything else
+                    // still goes to the ML, because that IS the sharp's home. This only decides
+                    // which longshot he takes once an item has already pulled him off the ML — and
+                    // it decides it by reservoir sampling on the bot's own rng, so it stays exactly
+                    // deterministic per seed while ceasing to be alphabetical-by-construction.
+                    tiedNonMoneyline++;
+                    if (rng.NextDouble() < 1.0 / tiedNonMoneyline) best = candidate;
+                }
             }
             if (best is { } chosen) cands.Add(chosen);
         }

@@ -182,7 +182,35 @@ public sealed class GateData
         public string Description = "";
         public bool Pass;
         public string Actual = "";
+
+        /// <summary>C32: every gate states its RESOLUTION — the smallest difference this reading can
+        /// actually distinguish from noise. A verdict without one invites the failure C32 was
+        /// promoted from: G3 adjudicating a 3pp band with a ±0.75pp instrument, unable to fail for
+        /// exactly the kind of drift it exists to catch. Empty for gates whose criterion is
+        /// structural rather than statistical (a coverage list either names a market or it does
+        /// not; there is no sampling error in that).</summary>
+        public string Resolution = "";
     }
+
+    /// <summary>Two standard errors on a percentage, the smallest move a proportion measured over
+    /// <paramref name="n"/> runs can be trusted to show. Reported, never used to widen a verdict:
+    /// the gate still passes or fails on its stated criterion, and this says how much of that
+    /// verdict is signal.</summary>
+    private static double TwoSePp(double pct, int n)
+    {
+        if (n <= 0) return double.NaN;
+        double p = pct / 100.0;
+        return 2.0 * 100.0 * Math.Sqrt(Math.Max(p * (1.0 - p), 0.0) / n);
+    }
+
+    /// <summary>C32's second half — a gate whose acceptance band is not comfortably wider than its
+    /// own resolution cannot adjudicate, and must say so rather than reporting a clean PASS.</summary>
+    private static string BandVerdict(double bandWidthPp, double twoSePp)
+        => double.IsNaN(twoSePp) || twoSePp <= 0.0 ? ""
+            : bandWidthPp >= 4.0 * twoSePp
+                ? $"±{twoSePp:0.00}pp (2 SE) — band {bandWidthPp:0.#}pp is {bandWidthPp / twoSePp:0.#}× resolution"
+                : $"±{twoSePp:0.00}pp (2 SE) — **band {bandWidthPp:0.#}pp is only {bandWidthPp / twoSePp:0.#}× resolution; "
+                  + "this gate cannot reliably fail for a drift smaller than its own noise — widen the band or raise --runs**";
 
     public readonly List<Gate> Gates = new();
     public readonly List<string> ItemFlags = new();
@@ -191,8 +219,12 @@ public sealed class GateData
     /// flags but never blocking.</summary>
     public readonly List<string> Notes = new();
 
+    /// <summary><paramref name="randomBot"/> is not judged by any gate — it is the CONTROL. G7's
+    /// M1 exclusion needs evidence that a market the sharp declines is one he could have taken, and
+    /// the blind bot is the only thing in the campaign that answers that.</summary>
     public static GateData Evaluate(BatchSummary? naive, BatchSummary? skilled, BatchSummary? noshop,
-        BatchSummary? martyr, BatchSummary? martyrWorst, AuditData? audit, ComboData? combos)
+        BatchSummary? martyr, BatchSummary? martyrWorst, AuditData? audit, ComboData? combos,
+        BatchSummary? randomBot = null)
     {
         var g = new GateData();
 
@@ -211,7 +243,13 @@ public sealed class GateData
             g.Add("G3", "skilled + items wins: median death ≥5, win 5–8% (re-banded by Allen "
                 + "2026-07-15 — the dealt hand's build variance is the roguelite shape)",
                 skilled.MedianDeath >= 5.0 && skilled.WonPct >= 5.0 && skilled.WonPct <= 8.0,
-                $"median {skilled.MedianDeath:0.#}, won {skilled.WonPct:F1}%");
+                $"median {skilled.MedianDeath:0.#}, won {skilled.WonPct:F1}%",
+                // C32 was promoted from THIS gate: a 3pp band (5–8%) adjudicated by an instrument
+                // whose own 2 SE at the campaign's default --runs is ~1.5pp. Arm B is the worked
+                // example — a 0.8pp "movement" at n=1000 vanished at n=10,000, having been noise on
+                // both sides, including in the before-arm. State the resolution beside the verdict
+                // so nobody reads a one-point drift as a finding, or misses a real one.
+                BandVerdict(3.0, TwoSePp(skilled.WonPct, skilled.N)));
 
         if (skilled != null)
         {
@@ -237,7 +275,12 @@ public sealed class GateData
             g.Add("G6", "martyr guard (worst case granted): loss-farming win ≤ skilled +2pp",
                 guard.WonPct <= skilled.WonPct + 2.0,
                 $"{guard.Name} {guard.WonPct:F1}% vs skilled {skilled.WonPct:F1}%"
-                + (martyrWorst != null && martyr != null ? $" (organic martyr {martyr.WonPct:F1}%)" : ""));
+                + (martyrWorst != null && martyr != null ? $" (organic martyr {martyr.WonPct:F1}%)" : ""),
+                // C32: this gate compares TWO measured rates, so its resolution is the combined
+                // error of both, not either alone — a margin inside that is not a margin.
+                BandVerdict(2.0, Math.Sqrt(
+                    Math.Pow(TwoSePp(guard.WonPct, guard.N), 2)
+                    + Math.Pow(TwoSePp(skilled.WonPct, skilled.N), 2))));
 
         // G7 (market coverage): every shipped MarketKind must be either exercised by the
         // skilled bot (LegsPlaced > 0) or on the named bot-excluded list below, with a reason —
@@ -247,9 +290,32 @@ public sealed class GateData
         // different things, and conflating them is exactly the failure G7 exists to catch.
         if (skilled != null)
         {
+            // M1 narrows this population. BTTS reading red was a FALSE red: a sharp declining an
+            // edgeless near-even market is the bot being CORRECT, not the gate catching a hole.
+            // The exclusion is measured rather than asserted — the number below distinguishes
+            // "declined" from "blocked", which is the only thing that makes an exclusion honest.
+            // Expiry: v2 pricing. Once the book carries noise the bot can find a real edge in, BTTS
+            // becomes reachable and this entry comes out — an exclusion that outlives its reason is
+            // the silent skip G7 was built to prevent.
+            int randomBttsLegs = 0;
+            if (randomBot != null
+                && randomBot.MarketExposure.TryGetValue(MarketKind.BothTeamsToScore, out MarketExposure? rb))
+                randomBttsLegs = rb.LegsPlaced;
+            string bttsEvidence = randomBot == null
+                ? "unmeasured this run — needs the random bot in the batch"
+                : randomBttsLegs > 0
+                    ? $"measured reachable: random places {randomBttsLegs:N0} BTTS legs where skilled places 0, "
+                      + "so the market is DECLINED, not blocked"
+                    : "NOT MEASURED REACHABLE: random placed 0 BTTS legs too — this exclusion is "
+                      + "unproven and must not be trusted";
+
             var botExcluded = new Dictionary<MarketKind, string>
             {
                 [MarketKind.AnytimeScorer] = "YES-only market, bots do not price it (declared policy)",
+                [MarketKind.BothTeamsToScore] =
+                    "near-even two-way market: under exact de-vig it never strictly wins a tie and "
+                    + "its odds never clear the longshot threshold, so a sharp correctly declines it "
+                    + $"(M1, expires at v2 pricing) — {bttsEvidence}",
             };
 
             var uncovered = new List<MarketKind>();
@@ -270,7 +336,12 @@ public sealed class GateData
                 uncovered.Count == 0,
                 uncovered.Count == 0
                     ? "all shipped markets covered"
-                    : $"uncovered: {string.Join(", ", uncovered.ConvertAll(Report.MarketName))}");
+                    : $"uncovered: {string.Join(", ", uncovered.ConvertAll(Report.MarketName))}",
+                // C32: this criterion is structural, not statistical — a market either recorded a
+                // leg or it did not, so there is no sampling error to quote and no band to widen.
+                // Its exposure is a different matter: a market covered by a handful of legs is
+                // covered, but thinly, and the exposure table is where that is read.
+                "exact — a leg count is not a sample; no resolution limit");
         }
 
         if (audit != null)
@@ -387,8 +458,9 @@ public sealed class GateData
         return t - (2.30753 + 0.27061 * t) / (1.0 + 0.99229 * t + 0.04481 * t * t);
     }
 
-    private void Add(string id, string desc, bool pass, string actual)
-        => Gates.Add(new Gate { Id = id, Description = desc, Pass = pass, Actual = actual });
+    private void Add(string id, string desc, bool pass, string actual, string resolution = "")
+        => Gates.Add(new Gate
+        { Id = id, Description = desc, Pass = pass, Actual = actual, Resolution = resolution });
 
     public bool AllPass
     {
