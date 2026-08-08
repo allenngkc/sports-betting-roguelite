@@ -3,6 +3,7 @@
 **Worktree:** `tv-sweat` · **Branch:** `slice/tv-sweat-refinement` · **Lead:** Claude (Opus 5)
 **Contract authority:** `main-2/docs/5-orchestration/STUDIO.md` · **Board:** `main-2/docs/5-orchestration/STATUS.md`
 **Written:** 2026-07-31 · **HEAD at writing:** `220c5ec`
+**Remote:** `origin/tv-sweat` · **PR:** [#3](https://github.com/allenngkc/sports-betting-roguelite/pull/3) — whole slice → `main`, opened 2026-08-08 at `97350ae` (289 commits; this window is the last commit alone, 9 files)
 
 Supersedes `handoff.draft.md`, which was a briefing rather than a contract and carried none of the
 four sections STUDIO.md requires. Its briefing content is folded into §5 below; the draft may be
