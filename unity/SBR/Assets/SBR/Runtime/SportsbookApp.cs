@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using SBR.Engine;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,11 +15,11 @@ namespace SBR.Game
 
         private enum DetailTab { Goals, Btts, Corners, Cards, Players }
         private readonly RectTransform _root;
-        private readonly Font _font;
+        private readonly TMP_FontAsset _font;
         // --font-cond (Archivo Narrow) seam: figures, prices, team names and the wax/lock/rub-out
         // action labels route through this instead of _font. See LaptopScreen's field comment — both
-        // currently resolve to the same fallback Font on purpose.
-        private readonly Font _fontCond;
+        // currently resolve to the same fallback face on purpose.
+        private readonly TMP_FontAsset _fontCond;
         private readonly LaptopScreen _host;
         private readonly Action _invalidate;
         private readonly Action<Tab> _selectTab;
@@ -42,7 +43,7 @@ namespace SBR.Game
         /// independently drift.</summary>
         private const float OfferRowHeight = 54f;
 
-        public SportsbookApp(RectTransform root, Font font, Font fontCond, LaptopScreen host, Action invalidate,
+        public SportsbookApp(RectTransform root, TMP_FontAsset font, TMP_FontAsset fontCond, LaptopScreen host, Action invalidate,
             Action<Tab> selectTab, Action home, Action ledger)
         {
             _root = root;
@@ -108,7 +109,7 @@ namespace SBR.Game
         /// unselected when `active` matches none of `tabs`, so this reproduces that by
         /// construction rather than special-casing it.</summary>
         internal static void BuildTabStrip(RectTransform tabs, Tab? active, Phase phase, string meta,
-            Font font, Action<Tab> selectTab)
+            TMP_FontAsset font, Action<Tab> selectTab)
         {
             // F1: SectionTabs.jsx's own border-bottom (--rule-w-strong solid var(--rule)) — flat
             // colour step into the masthead below, no seam drawn.
@@ -121,7 +122,7 @@ namespace SBR.Game
         }
 
         private static void MakeTab(RectTransform top, string label, Tab tab, Tab? selected, bool disabled,
-            Font font, Action<Tab> selectTab)
+            TMP_FontAsset font, Action<Tab> selectTab)
         {
             float x = tab == Tab.Lobby ? 14f : tab == Tab.Detail ? 122f : tab == Tab.MyBets ? 230f : 358f;
             bool active = selected.HasValue && tab == selected.Value;
@@ -136,7 +137,7 @@ namespace SBR.Game
         /// these "unchanged" across every destination that carries the masthead, so this is
         /// written once and OldSlipsApp.BuildLedgerChrome calls it too, instead of substituting a
         /// parallel condensed string.</summary>
-        internal static void BuildRunFigures(RectTransform mast, Run run, Font font)
+        internal static void BuildRunFigures(RectTransform mast, Run run, TMP_FontAsset font)
         {
             LaptopUi.MakeText(mast, "Figures", new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-16f, -10f), new Vector2(610f, 48f), 21, TextAnchor.UpperRight, LaptopOs.White, $"BANK {LaptopUi.Money(run.Bank)}    TARGET {LaptopUi.Money(run.CurrentPayment)}    TICKETS {run.Tickets.Count}/{run.Config.MaxTicketsPerRound}", font);
         }
@@ -280,16 +281,16 @@ namespace SBR.Game
             const float gap = 9f;
             const float lineHeight = 30f;
 
-            Text nameText = LaptopUi.MakeText(card, "Team" + side, new Vector2(0f, 1f),
+            TMP_Text nameText = LaptopUi.MakeText(card, "Team" + side, new Vector2(0f, 1f),
                 new Vector2(0f, 1f), new Vector2(nameX, y), new Vector2(250f, lineHeight), 19,
                 TextAnchor.MiddleLeft, LaptopOs.White, name, _fontCond);
             // A long name must push its record along, never wrap onto a second line inside a 30px box.
-            nameText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            nameText.enableWordWrapping = false;
 
             LaptopUi.MakeText(card, "Record" + side, new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(nameX + nameText.preferredWidth + gap, y), new Vector2(90f, lineHeight),
                 13, TextAnchor.MiddleLeft, LaptopOs.Muted, record, _font)
-                .horizontalOverflow = HorizontalWrapMode.Overflow;
+                .enableWordWrapping = false;
         }
 
         private void OpenDetail(int matchupIndex)
@@ -652,7 +653,7 @@ namespace SBR.Game
             // when picked — MarketOffer.jsx:11 sets the picked figure to var(--toner) and gives the
             // ring alone the biro. Tinting the type as well spends the player's ink on something he
             // did not write, which is what the two-ink law forbids (audit E-13).
-            Text labelText = LaptopUi.MakeText(row, "MarketLabel" + key, new Vector2(0f, 1f),
+            TMP_Text labelText = LaptopUi.MakeText(row, "MarketLabel" + key, new Vector2(0f, 1f),
                 new Vector2(0f, 1f), new Vector2(leftPad, 0f), new Vector2(labelWidth, OfferRowHeight),
                 19, TextAnchor.MiddleLeft, LaptopOs.White, label, _fontCond);
 
@@ -668,7 +669,7 @@ namespace SBR.Game
                 LaptopUi.MakeText(row, "MarketRole" + key, new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(roleX, 0f), new Vector2(roleWidth, OfferRowHeight), 13,
                     TextAnchor.MiddleLeft, LaptopOs.Muted, role, _font)
-                    .horizontalOverflow = HorizontalWrapMode.Overflow;
+                    .enableWordWrapping = false;
             }
 
             RectTransform offer = LaptopUi.MakePanel(row, "PriceCell" + key, new Vector2(0f, 1f),
@@ -781,7 +782,7 @@ namespace SBR.Game
             // survives here in the count slot, since the kit's own count prop only defines the
             // selections half of it (margin.jsx:20) and nowhere else on this panel prints it.
             const float headerRight = 296f; // 324 - 14 - 14, the content width every row below uses.
-            Text headerTitle = LaptopUi.MakeText(panel, "Title", new Vector2(0f, 1f), new Vector2(0f, 1f),
+            TMP_Text headerTitle = LaptopUi.MakeText(panel, "Title", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -10f), new Vector2(150f, 24f), 16, TextAnchor.UpperLeft, LaptopOs.Accent,
                 "MY MARKS", _fontCond);
             string countText = $"{slip.Picks.Count} {Pluralize(slip.Picks.Count, "SELECTION")} · {run.Tickets.Count} STAGED";
@@ -850,7 +851,7 @@ namespace SBR.Game
                 LaptopUi.MakeText(panel, "Leg" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(contentX, y), new Vector2(teamWidth, 20f), 16, TextAnchor.UpperLeft,
                     LaptopOs.White, subject, _fontCond)
-                    .horizontalOverflow = HorizontalWrapMode.Overflow;
+                    .enableWordWrapping = false;
                 LaptopUi.MakeText(panel, "LegPrice" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(priceX, y), new Vector2(priceWidth, 20f), 16, TextAnchor.UpperRight,
                     LaptopOs.White, price, _fontCond);
@@ -951,7 +952,7 @@ namespace SBR.Game
                 new Vector2(14f, y), new Vector2(300f, 16f), 13, TextAnchor.UpperLeft, LaptopOs.Muted,
                 "POTENTIAL PAYOUT", _font);
             y -= 18f;
-            Text payout = LaptopUi.MakeText(panel, "Payout", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, y), new Vector2(300f, 36f), 31, TextAnchor.UpperLeft, LaptopOs.MoneyGold, $"{LaptopUi.Money(slip.ToWin)}", _fontCond);
+            TMP_Text payout = LaptopUi.MakeText(panel, "Payout", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, y), new Vector2(300f, 36f), 31, TextAnchor.UpperLeft, LaptopOs.MoneyGold, $"{LaptopUi.Money(slip.ToWin)}", _fontCond);
             // Hand-laid wax highlight behind the one loud figure (palette-surething.css
             // --wax-highlight-*): a thin amber band, tilted, sized from the figure's own measured
             // width the same way InkRingGeometry sizes a ring — plus the highlight's own -3/+5 left/
@@ -1001,7 +1002,7 @@ namespace SBR.Game
                 placeLabelRect.anchoredPosition = Vector2.zero;
                 LaptopUi.MakeText(placeRect, "PlaceReason", new Vector2(.5f, 0f), new Vector2(.5f, 0f),
                     new Vector2(0f, 1f), new Vector2(288f, 17f), 13, TextAnchor.MiddleCenter,
-                    LaptopOs.MoneyBad, blocker.ToUpperInvariant(), _font).horizontalOverflow = HorizontalWrapMode.Overflow;
+                    LaptopOs.MoneyBad, blocker.ToUpperInvariant(), _font).enableWordWrapping = false;
             }
 
             bool hasWorkingMarks = slip.Picks.Count > 0;
@@ -1045,7 +1046,7 @@ namespace SBR.Game
                 lockLabelRect.anchoredPosition = Vector2.zero;
                 LaptopUi.MakeText(lockRect, "LockReason", new Vector2(.5f, 0f), new Vector2(.5f, 0f),
                     new Vector2(0f, 2f), new Vector2(280f, 20f), 13, TextAnchor.MiddleCenter,
-                    LaptopOs.MoneyBad, lockReason, _font).horizontalOverflow = HorizontalWrapMode.Overflow;
+                    LaptopOs.MoneyBad, lockReason, _font).enableWordWrapping = false;
             }
             LaptopUi.MakeButton(panel, "Skip", _lockArmed ? "PRESS AGAIN TO SKIP" : "SKIP ROUND — PRESS TWICE", new Vector2(.5f, 0f), new Vector2(.5f, 0f), new Vector2(0f, SkipBandY), new Vector2(230f, SkipBandH), 13, LaptopOs.Ink, _lockArmed ? LaptopOs.MoneyBad : LaptopOs.Muted,
                 boardFrozen ? null : () =>
@@ -1187,7 +1188,7 @@ namespace SBR.Game
         /// that was only ever sized for the widest word that box could hold. text's RectTransform
         /// must use anchor/pivot (1,1) (top-right), matching how "LegState" is built. Internal so
         /// the PlayMode fixture can assert the exact same geometry the render pass uses.</summary>
-        internal static (Vector2 position, Vector2 size) InkRingGeometry(Text text,
+        internal static (Vector2 position, Vector2 size) InkRingGeometry(TMP_Text text,
             float overshoot = 8f, float minWidth = 40f, float minHeight = 18f)
         {
             Vector2 size = new Vector2(Mathf.Max(minWidth, text.preferredWidth) + overshoot * 2f,
@@ -1207,7 +1208,7 @@ namespace SBR.Game
         }
 
         private void MakeChip(RectTransform parent, string label, float x, float y, Action onClick,
-            float width = 68f, Font font = null)
+            float width = 68f, TMP_FontAsset font = null)
         {
             LaptopUi.MakeButton(parent, "Chip" + label, label, new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(x, y), new Vector2(width, 32f), 13, LaptopOs.SurfaceRaised, LaptopOs.White,
@@ -1394,7 +1395,7 @@ namespace SBR.Game
             LaptopUi.MakeText(row, "LegPrice", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(8f, -27f), new Vector2(84f, 22f), 13, TextAnchor.UpperLeft,
                 stateColor, leg.AmericanOdds, _fontCond);
-            Text stateText = LaptopUi.MakeText(row, "LegState", new Vector2(1f, 1f), new Vector2(1f, 1f),
+            TMP_Text stateText = LaptopUi.MakeText(row, "LegState", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-8f, -27f), new Vector2(112f, 22f), 13, TextAnchor.UpperRight,
                 stateColor, state, _fontCond);
             int identity = ticketIndex * 17 + leg.Index;
@@ -1676,7 +1677,7 @@ namespace SBR.Game
             // dropped the downside, which is worse than clipping, because it reads as complete.
             // The copy is rendered whole and the row grows to hold it; the board shows however many
             // offers fit and says how many it could not (see BuildRewards).
-            Text description = LaptopUi.MakeText(row, "OfferDescription", new Vector2(0f, 1f),
+            TMP_Text description = LaptopUi.MakeText(row, "OfferDescription", new Vector2(0f, 1f),
                 new Vector2(0f, 1f), new Vector2(14f, -29f), new Vector2(430f, 22f), 13,
                 TextAnchor.UpperLeft, LaptopOs.TonerSecondary, offer.Description, _font);
             float descriptionHeight = Mathf.Max(18f, description.preferredHeight);
@@ -1736,7 +1737,7 @@ namespace SBR.Game
             // dropped the downside, which is worse than clipping, because it reads as complete.
             // The copy is rendered whole and the row grows to hold it; the board shows however many
             // offers fit and says how many it could not (see BuildRewards).
-            Text description = LaptopUi.MakeText(row, "OfferDescription", new Vector2(0f, 1f),
+            TMP_Text description = LaptopUi.MakeText(row, "OfferDescription", new Vector2(0f, 1f),
                 new Vector2(0f, 1f), new Vector2(14f, -29f), new Vector2(430f, 22f), 13,
                 TextAnchor.UpperLeft, LaptopOs.TonerSecondary, offer.Description, _font);
             float descriptionHeight = Mathf.Max(18f, description.preferredHeight);
@@ -1906,8 +1907,8 @@ namespace SBR.Game
     internal sealed class OldSlipsApp
     {
         private readonly RectTransform _root;
-        private readonly Font _font;
-        private readonly Font _fontCond; // see SportsbookApp's field comment — same seam
+        private readonly TMP_FontAsset _font;
+        private readonly TMP_FontAsset _fontCond; // see SportsbookApp's field comment — same seam
         private readonly Action _home;
         private readonly Action _sportsbook;
         // S31: drives the reused four-tab strip's navigation — clicking FORM/ENTRY/MY BETS/
@@ -1916,7 +1917,7 @@ namespace SBR.Game
         // app to whichever tab it last showed (the tray's "SURETHING" slot).
         private readonly Action<SportsbookApp.Tab> _selectTab;
 
-        public OldSlipsApp(RectTransform root, Font font, Font fontCond, Action home, Action sportsbook,
+        public OldSlipsApp(RectTransform root, TMP_FontAsset font, TMP_FontAsset fontCond, Action home, Action sportsbook,
             Action<SportsbookApp.Tab> selectTab)
         {
             _root = root;
@@ -2273,10 +2274,10 @@ namespace SBR.Game
             // --- identity (112px). LedgerEntry.jsx colours this --toner-2 unconditionally — no
             // won/lost branch — so it does not dim on a LOST ticket; the terminal word and
             // RETURNED value already carry that signal.
-            Text identityText = LaptopUi.MakeText(row, "TicketIdentity", new Vector2(0f, 1f), new Vector2(0f, 1f),
+            TMP_Text identityText = LaptopUi.MakeText(row, "TicketIdentity", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(LedgerNumberX, -9f), new Vector2(LedgerNumberWidth, 24f), 16, TextAnchor.UpperLeft,
                 LaptopOs.TonerSecondary, identity, _fontCond);
-            identityText.horizontalOverflow = HorizontalWrapMode.Overflow; // canon: whiteSpace nowrap
+            identityText.enableWordWrapping = false; // canon: whiteSpace nowrap
 
             // S40: the legs flex cell (canon's ~192px slot between identity and STAKE) is deleted,
             // not left reserved. It never carried the per-leg summary LedgerEntry.jsx puts there —
@@ -2319,10 +2320,10 @@ namespace SBR.Game
             // strike from this rect's own anchoredPosition, so centring the glyphs would slide the
             // word off its strike; moving the box takes the strike with it, which is what a struck
             // word wants.
-            Text ticketStateText = LaptopUi.MakeText(row, "TicketState", new Vector2(1f, 1f), new Vector2(1f, 1f),
+            TMP_Text ticketStateText = LaptopUi.MakeText(row, "TicketState", new Vector2(1f, 1f), new Vector2(1f, 1f),
                 new Vector2(-LedgerPadX, -13f), new Vector2(LedgerTerminalWidth, 24f), 13, TextAnchor.UpperRight,
                 stateColor, state, _fontCond);
-            ticketStateText.horizontalOverflow = HorizontalWrapMode.Overflow; // canon: whiteSpace nowrap
+            ticketStateText.enableWordWrapping = false; // canon: whiteSpace nowrap
             if (lost)
             {
                 Sprite strike = SportsbookApp.ResolveStrike(index);

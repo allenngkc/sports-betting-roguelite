@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using SBR.Engine;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -42,8 +43,8 @@ namespace SBR.Game
         private enum App { Desktop, SureThing, OldSlips, Verdict }
 
         private readonly RectTransform _root;
-        private readonly Font _font;
-        private readonly Font _fontCond;
+        private readonly TMP_FontAsset _font;
+        private readonly TMP_FontAsset _fontCond;
         private readonly LaptopScreen _host;
         private readonly int _width;
         private readonly int _height;
@@ -65,7 +66,7 @@ namespace SBR.Game
         private App _toastApp;
         private SportsbookApp.Tab _toastTab;
 
-        public LaptopOs(RectTransform root, Font font, Font fontCond, LaptopScreen host, int width, int height)
+        public LaptopOs(RectTransform root, TMP_FontAsset font, TMP_FontAsset fontCond, LaptopScreen host, int width, int height)
         {
             _root = root;
             _font = font;
@@ -247,7 +248,7 @@ namespace SBR.Game
                 // this must not re-flow into a second line and spill past the rail band.
                 LaptopUi.MakeText(_app, "Toast", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(360f, -5f), new Vector2(500f, 24f), 13, TextAnchor.MiddleCenter,
-                    White, _toast, _font).horizontalOverflow = HorizontalWrapMode.Overflow;
+                    White, _toast, _font).enableWordWrapping = false;
             }
         }
 
@@ -481,18 +482,18 @@ namespace SBR.Game
             // Still no strike, and still deliberately: the ledger pairs toner-3 with an oxide
             // strike, but that strike marks a dead record ROW, and a rule through a 30px headline
             // is a different device than that ruling describes.
-            Text verdict = LaptopUi.MakeText(work, "Verdict", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            TMP_Text verdict = LaptopUi.MakeText(work, "Verdict", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 70f), new Vector2(900f, 60f), 30, TextAnchor.MiddleCenter,
                 won ? MoneyGold : TonerSecondary,
                 won ? "THE HOUSE BLINKS FIRST" : "THE BOOKIE COLLECTS", _font);
-            verdict.horizontalOverflow = HorizontalWrapMode.Overflow;
+            verdict.enableWordWrapping = false;
             // S59: the subline steps down with its headline. It was --toner on both screens, which
             // is what left the losing headline outranked by its own context line.
-            Text final = LaptopUi.MakeText(work, "Final", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            TMP_Text final = LaptopUi.MakeText(work, "Final", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 new Vector2(0f, 14f), new Vector2(900f, 36f), 18, TextAnchor.MiddleCenter,
                 won ? White : Muted,
                 $"FINAL BANK {LaptopUi.Money(run.Bank)}   ·   SEED {run.Rng.RunSeed}", _font);
-            final.horizontalOverflow = HorizontalWrapMode.Overflow;
+            final.enableWordWrapping = false;
             // S52 (batch 9): NEW RUN was a biro-FILLED field with toner type — wrong twice. Biro is
             // only ever what the player chose (Law Two, the same rule S44 applied to the wallpaper
             // and the app's own icon glyph), and a screen's phase-advancing action is a wax primary
@@ -640,6 +641,31 @@ namespace SBR.Game
         }
     }
 
+    /// <summary>The surface's tracking scale, owning doc §4.3, in **em** — the unit the design system
+    /// states it in. LaptopUi.MakeText converts to TMP's hundredths-of-an-em internally, so nothing
+    /// outside that helper has to know TMP's unit.
+    ///
+    /// **Reachable for the first time at C15.** S28 signed tracking as a C14 deviation precisely
+    /// because UI.Text could not address it, and that signature expires the moment a slot names one
+    /// of these. Named rather than inlined so the register can be pointed at a symbol, and so
+    /// MeasureWidth and the slot it measures cannot be given different numbers — the failure this
+    /// commit exists to make impossible.</summary>
+    internal static class LaptopTrack
+    {
+        /// <summary>Names, prices, masthead.</summary>
+        public const float Names = 0.03f;
+        /// <summary>Settled records.</summary>
+        public const float Records = 0.08f;
+        /// <summary>The tab strip.</summary>
+        public const float Tabs = 0.11f;
+        /// <summary>Field keys — the margin's labels, column heads.</summary>
+        public const float FieldKeys = 0.12f;
+        /// <summary>Action labels.</summary>
+        public const float Actions = 0.14f;
+        /// <summary>Margin headers (S33/S60's biro header).</summary>
+        public const float MarginHeader = 0.15f;
+    }
+
     internal static class LaptopUi
     {
         public static void ClearChildren(RectTransform root)
@@ -648,20 +674,52 @@ namespace SBR.Game
                 UnityEngine.Object.Destroy(root.GetChild(i).gameObject);
         }
 
-        public static Text MakeText(RectTransform parent, string name, Vector2 anchor, Vector2 pivot,
-            Vector2 position, Vector2 size, int fontSize, TextAnchor align, Color color, string content, Font font)
+        /// <summary>TextAnchor is kept in the signature deliberately: mapping it here rather than
+        /// changing 97 call sites keeps the migration a helper change, and keeps every slot's
+        /// authored intent readable in the same vocabulary the rest of the file uses.</summary>
+        private static TextAlignmentOptions ToTmpAlignment(TextAnchor align) => align switch
         {
-            var go = new GameObject(name, typeof(Text));
+            TextAnchor.UpperLeft => TextAlignmentOptions.TopLeft,
+            TextAnchor.UpperCenter => TextAlignmentOptions.Top,
+            TextAnchor.UpperRight => TextAlignmentOptions.TopRight,
+            TextAnchor.MiddleLeft => TextAlignmentOptions.Left,
+            TextAnchor.MiddleCenter => TextAlignmentOptions.Center,
+            TextAnchor.MiddleRight => TextAlignmentOptions.Right,
+            TextAnchor.LowerLeft => TextAlignmentOptions.BottomLeft,
+            TextAnchor.LowerCenter => TextAlignmentOptions.Bottom,
+            _ => TextAlignmentOptions.BottomRight
+        };
+
+        public static TMP_Text MakeText(RectTransform parent, string name, Vector2 anchor, Vector2 pivot,
+            Vector2 position, Vector2 size, int fontSize, TextAnchor align, Color color, string content,
+            TMP_FontAsset font, float tracking = 0f)
+        {
+            var go = new GameObject(name, typeof(TextMeshProUGUI));
             go.transform.SetParent(parent, false);
-            Text text = go.GetComponent<Text>();
+            TMP_Text text = go.GetComponent<TextMeshProUGUI>();
             if (font != null) text.font = font;
             text.fontSize = Mathf.Max(13, fontSize);
-            text.alignment = align;
+            text.alignment = ToTmpAlignment(align);
             text.color = color;
             text.text = content;
             text.raycastTarget = false;
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Truncate;
+
+            // S28 expires here. Tracking was unreachable in UI.Text and signed as a C14 deviation
+            // until this migration; TMP takes it as character spacing in hundredths of an em, so the
+            // owning doc's `.03`/`.08`/`.11`/`.12`/`.14`/`.15` (§4.3) multiply by 100. Slots opt in
+            // one at a time — the default is 0, which is exactly what the surface renders today, so
+            // this parameter changes nothing until a slot names its token.
+            text.characterSpacing = tracking * 100f;
+
+            // **richText off, in the helper, once.** TMP parses `<color=#...>` by default, which is
+            // precisely the class of defect SureThingPaletteMarkupTests exists to catch — a retired
+            // colour hiding in a string where no field-level palette scan can see it. The scan reads
+            // source and still works, but TMP would have made that markup available at all 97 slots.
+            // Off here rather than trusted at each of them.
+            text.richText = false;
+
+            text.enableWordWrapping = true;
+            text.overflowMode = TextOverflowModes.Truncate;
             RectTransform rt = text.rectTransform;
             rt.anchorMin = rt.anchorMax = anchor;
             rt.pivot = pivot;
@@ -682,41 +740,77 @@ namespace SBR.Game
             // line, so that case falls back to Overflow rather than rendering emptiness. Callers keep
             // their authored height and position; only the failure mode changes. Evaluated after
             // sizeDelta because preferredHeight depends on the wrap width.
-            if (text.preferredHeight > size.y)
-                text.verticalOverflow = VerticalWrapMode.Overflow;
+            // C15: re-expressed on TMP's overflow model, and it had to be rebuilt rather than
+            // renamed. S2's amendment is a LAW about this surface — a text box is at least one line
+            // of its production face tall or it overflows, never empty — and TMP truncates by line
+            // just as UGUI did, so the defect survives the migration unchanged: a box shorter than
+            // its own first line renders NOTHING, silently, with the object present and holding the
+            // right string. Losing this guard in the port would have reintroduced the failure that
+            // deleted the masthead and the payout figure.
+            //
+            // GetPreferredValues rather than the preferredHeight property: TMP computes preferred
+            // sizes during its own layout pass, so reading the property before one has run reports
+            // zero and the guard would never fire. Passing the wrap width explicitly makes the
+            // measurement independent of when this is called.
+            if (text.GetPreferredValues(content, size.x, 0f).y > size.y)
+                text.overflowMode = TextOverflowModes.Overflow;
             return text;
         }
 
-        /// <summary>Measures a string's natural (unwrapped) width in a dynamic font at a given size,
-        /// requesting the glyphs into the font's atlas first so a cold cache never reports zero.</summary>
-        public static float MeasureWidth(Font font, string text, int fontSize)
+        /// <summary>Measures a string's natural (unwrapped) width at a given size, adding the glyphs
+        /// to the dynamic atlas first so a cold asset never reports zero.
+        ///
+        /// **<paramref name="tracking"/> is not optional bookkeeping — it is the reason this and the
+        /// tracking work land in one commit.** This sums glyph advances, and TMP adds character
+        /// spacing on top of every advance it lays out. A slot that renders with tracking and
+        /// measures without it reports narrow by `length × tracking × fontSize`, and everything
+        /// derived from a measurement silently shrinks with it: FitText truncates too late, the
+        /// rail's sticker and the tray's MESSAGES badge size short of their own text. Whatever
+        /// tracking a slot renders with, it measures with.
+        ///
+        /// **What it cannot see (C25):** advances only — no kerning pairs, no ligatures, no font
+        /// features. The UGUI version had exactly the same limit, so truncation behaviour is
+        /// preserved in kind rather than improved; this is deliberately not the moment to change what
+        /// "measured width" means on this surface.</summary>
+        public static float MeasureWidth(TMP_FontAsset font, string text, int fontSize, float tracking = 0f)
         {
             if (font == null || string.IsNullOrEmpty(text)) return 0f;
             int size = Mathf.Max(13, fontSize);
-            font.RequestCharactersInTexture(text, size, FontStyle.Normal);
+            font.TryAddCharacters(text, out _);
+
+            // TMP stores glyph metrics against the atlas's own sampling point size (90 here, set in
+            // SureThingTmpFontAssets), so advances scale by the ratio of the rendered size to it.
+            // faceInfo.scale is the face's own normalisation and is 1 for both Archivo assets — read
+            // rather than assumed, because a face where it is not 1 would silently mis-measure.
+            float scale = size / (float)font.faceInfo.pointSize * font.faceInfo.scale;
             float width = 0f;
             for (int i = 0; i < text.Length; i++)
             {
-                if (font.GetCharacterInfo(text[i], out CharacterInfo info, size, FontStyle.Normal))
-                    width += info.advance;
+                if (font.characterLookupTable.TryGetValue(text[i], out TMP_Character ch) && ch.glyph != null)
+                    width += ch.glyph.metrics.horizontalAdvance * scale;
             }
-            return width;
+            // Per character rather than per gap, matching how TMP accumulates xAdvance: it adds the
+            // spacing after every character it lays out, including the last. That over-reports the
+            // visible extent by one unit, which is the safe direction for every caller here — a
+            // truncation budget and a box sized to hug text both fail toward "slightly roomy".
+            return width + text.Length * tracking * size;
         }
 
         /// <summary>Shortens content to fit maxWidth, trailing with an ellipsis rather than ever
         /// silently cutting mid-word. A no-op when the string already fits.</summary>
-        public static string FitText(Font font, string content, int fontSize, float maxWidth)
+        public static string FitText(TMP_FontAsset font, string content, int fontSize, float maxWidth,
+            float tracking = 0f)
         {
             if (font == null || string.IsNullOrEmpty(content)) return content;
-            if (MeasureWidth(font, content, fontSize) <= maxWidth) return content;
+            if (MeasureWidth(font, content, fontSize, tracking) <= maxWidth) return content;
             const string ellipsis = "…";
-            float budget = maxWidth - MeasureWidth(font, ellipsis, fontSize);
+            float budget = maxWidth - MeasureWidth(font, ellipsis, fontSize, tracking);
             if (budget <= 0f) return ellipsis;
             int lo = 0, hi = content.Length;
             while (lo < hi)
             {
                 int mid = (lo + hi + 1) / 2;
-                if (MeasureWidth(font, content.Substring(0, mid), fontSize) <= budget) lo = mid;
+                if (MeasureWidth(font, content.Substring(0, mid), fontSize, tracking) <= budget) lo = mid;
                 else hi = mid - 1;
             }
             string trimmed = content.Substring(0, lo).TrimEnd();
@@ -726,12 +820,13 @@ namespace SBR.Game
         /// <summary>Fits a variable-length label between a fixed prefix and suffix (e.g. "1. " and
         /// the price) so the parts that always carry meaning — the index, the price — never get
         /// truncated; only the label in between ever loses characters, and only behind an ellipsis.</summary>
-        public static string FitLabelKeepingSuffix(Font font, string prefix, string label, string suffix,
-            int fontSize, float maxWidth)
+        public static string FitLabelKeepingSuffix(TMP_FontAsset font, string prefix, string label,
+            string suffix, int fontSize, float maxWidth, float tracking = 0f)
         {
             if (font == null) return prefix + label + suffix;
-            float reserved = MeasureWidth(font, prefix, fontSize) + MeasureWidth(font, suffix, fontSize);
-            string fitLabel = FitText(font, label, fontSize, Mathf.Max(0f, maxWidth - reserved));
+            float reserved = MeasureWidth(font, prefix, fontSize, tracking)
+                + MeasureWidth(font, suffix, fontSize, tracking);
+            string fitLabel = FitText(font, label, fontSize, Mathf.Max(0f, maxWidth - reserved), tracking);
             return prefix + fitLabel + suffix;
         }
 
@@ -767,7 +862,7 @@ namespace SBR.Game
 
         public static Button MakeButton(RectTransform parent, string name, string label, Vector2 anchor, Vector2 pivot,
             Vector2 position, Vector2 size, int fontSize, Color background, Color foreground, Action onClick,
-            Font font, bool interactable = true)
+            TMP_FontAsset font, bool interactable = true)
         {
             var go = new GameObject(name, typeof(Image), typeof(Button));
             go.transform.SetParent(parent, false);
@@ -788,9 +883,9 @@ namespace SBR.Game
             colors.fadeDuration = 0.12f;
             button.colors = colors;
             if (onClick != null) button.onClick.AddListener(() => onClick());
-            Text text = MakeText(rt, "Label", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+            TMP_Text text = MakeText(rt, "Label", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 Vector2.zero, rt.sizeDelta, fontSize, TextAnchor.MiddleCenter, foreground, label, font);
-            text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            text.enableWordWrapping = false;
             return button;
         }
 
@@ -814,7 +909,7 @@ namespace SBR.Game
         /// interactable is false.</summary>
         public static Button MakeWaxPrimary(RectTransform parent, string name, string label, Vector2 anchor,
             Vector2 pivot, Vector2 position, Vector2 size, int fontSize, Color background, Color foreground,
-            Action onClick, Font font, bool interactable = true)
+            Action onClick, TMP_FontAsset font, bool interactable = true)
         {
             Button button = MakeButton(parent, name, label, anchor, pivot, position, size, fontSize,
                 background, foreground, onClick, font, interactable);
@@ -835,7 +930,7 @@ namespace SBR.Game
                 // Keep the label drawn on top of the frame: the edges are added after MakeButton's
                 // "Label" child, so without this they'd be the last (topmost) siblings. Same
                 // SetAsLastSibling convention SportsbookApp.BuildSlip uses for PayoutHighlight.
-                Text labelText = button.GetComponentInChildren<Text>();
+                TMP_Text labelText = button.GetComponentInChildren<TMP_Text>();
                 if (labelText != null) labelText.transform.SetAsLastSibling();
             }
             return button;
@@ -1159,7 +1254,7 @@ namespace SBR.Game
         /// the ledger's RECORD in biro over a biro-deep rule, MY BETS' in toner over the default
         /// soft rule. S61 removed the subline that was the last structural difference between them,
         /// so there is no longer any reason for two copies to exist and drift a third time.</summary>
-        public static float MakeMarginHeader(RectTransform parent, string title, Font fontCond)
+        public static float MakeMarginHeader(RectTransform parent, string title, TMP_FontAsset fontCond)
         {
             const float headerHeight = 41f;
             MakeText(parent, "MarginHeaderTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
@@ -1179,7 +1274,7 @@ namespace SBR.Game
         /// duplicating it into the second caller is precisely how the rail drifted to 12px on one
         /// screen and 13px on another, which is the defect NotebookChrome exists to have fixed.</summary>
         public static void MakeMarginRow(RectTransform parent, string name, string label, string value,
-            Color valueColor, float rowTop, float rowHeight, Font font, Font fontCond)
+            Color valueColor, float rowTop, float rowHeight, TMP_FontAsset font, TMP_FontAsset fontCond)
         {
             MakeText(parent, name + "Label", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, rowTop - 9f), new Vector2(150f, 20f), 13, TextAnchor.MiddleLeft,
@@ -1297,7 +1392,7 @@ namespace SBR.Game
         /// made the desktop's state unrepresentable rather than merely unwritten (S48).</summary>
         public enum Running { None, Sportsbook, Ledger }
 
-        public static RectTransform BuildRail(RectTransform parent, float width, Font font)
+        public static RectTransform BuildRail(RectTransform parent, float width, TMP_FontAsset font)
         {
             RectTransform rail = LaptopUi.MakePanel(parent, "NotebookRail", new Vector2(0f, 1f),
                 new Vector2(0f, 1f), Vector2.zero, new Vector2(width, RailHeight),
@@ -1401,7 +1496,7 @@ namespace SBR.Game
         /// cannot "launch" it, so it drops to the desktop instead — the same thing a real taskbar
         /// button does. This is why the running slot stays clickable rather than being disabled.
         /// </param>
-        public static RectTransform BuildTray(RectTransform parent, float width, Font font,
+        public static RectTransform BuildTray(RectTransform parent, float width, TMP_FontAsset font,
             Running running, Action openSportsbook, Action openLedger, Action minimize)
         {
             RectTransform tray = LaptopUi.MakePanel(parent, "NotebookTray", new Vector2(0f, 0f),
@@ -1468,7 +1563,7 @@ namespace SBR.Game
         /// after it), so the two are never overlapping by construction. The button's own rect —
         /// its hit target — is untouched: same width/height clamp MakeButton itself applies.
         private static void MakeSlot(RectTransform tray, string name, string label, float x,
-            float width, bool running, Action onClick, Font font)
+            float width, bool running, Action onClick, TMP_FontAsset font)
         {
             var go = new GameObject(name, typeof(Image), typeof(Button));
             go.transform.SetParent(tray, false);
@@ -1501,10 +1596,10 @@ namespace SBR.Game
 
             float labelX = slotPadX + dotSize + dotLabelGap;
             float labelW = Mathf.Max(0f, rt.sizeDelta.x - labelX - slotPadX);
-            Text text = LaptopUi.MakeText(rt, "Label", new Vector2(0f, .5f), new Vector2(0f, .5f),
+            TMP_Text text = LaptopUi.MakeText(rt, "Label", new Vector2(0f, .5f), new Vector2(0f, .5f),
                 new Vector2(labelX, 0f), new Vector2(labelW, 24f), ChromeText, TextAnchor.MiddleLeft,
                 running ? LaptopOs.White : LaptopOs.Muted, label, font);
-            text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            text.enableWordWrapping = false;
         }
     }
 }
