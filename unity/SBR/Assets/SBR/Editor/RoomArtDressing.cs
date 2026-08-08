@@ -91,8 +91,24 @@ namespace SBR
             //   albedo   = --room-rust #6B3A24, the ratified swatch. R35's shape -- strike the
             //              requirement that needs an escape, apply the swatch that already exists.
             //   emission = rust's own hue (49.7deg) at the room's EMITTER chroma (5.4, which is
-            //              the screens' authored figure), L* 30 to match rust's own lightness.
-            //              Chroma 63.1 -> 5.4: from ten times the room to parity.
+            //              the screens' authored figure), at the lamp's OWN original luminance
+            //              L* 60.49. Chroma 63.1 -> 5.4: from ten times the room to parity.
+            //
+            // THE LUMINANCE IS THE LAMP'S OWN, and the first build got that wrong. I took L* 30
+            // from the direction's phrase "warm, DARK, low-chroma" and halved the lamp's output
+            // (rendered dY' +40.41/+49.02 -> +16.12/+23.61). Reversed at R41-am: the after-frame
+            // read as a dull grey-brown patch rather than a lit lamp, and a standby lamp that
+            // does not read as lit is the broken register -- T1's ground is maintained industrial
+            // equipment that WORKS. The ruling was "struck as a colour, KEPT as an object", and
+            // halving the luminance took away the half it said to keep.
+            //
+            // STANDING LAW out of that (R41-am): when a direction names a swatch, THE SWATCH
+            // SUPPLIES HUE AND CHROMA; LUMINANCE IS THE ELEMENT'S OWN AND DOES NOT TRAVEL WITH
+            // IT. "Warm, dark" described rust the swatch, not an instruction to dim the lamp.
+            //
+            // It is also R35's caution turned on me: a hue change must not become a value change.
+            // The phone's ladder was preserved to +/-1 L* for exactly that reason, and this was
+            // the same author doing the opposite one object over.
             //
             // WHY THE EMISSION IS NOT LITERALLY RUST, because the ruling offered "the rust end"
             // and this is one step off it: rust's chromaticity CANNOT meet a chroma-5 bound at
@@ -106,7 +122,7 @@ namespace SBR
             // EXACT VALUE NOT RULED -- direction was, and the value lands on the instrument.
             Material indicator = GrayboxRoomBuilder.Mat("ArtIndicator",
                 new Color(0.1470f, 0.0423f, 0.0176f),
-                emission: new Color(0.0777f, 0.0589f, 0.0519f), smoothness: 0.45f);
+                emission: new Color(0.3292f, 0.2770f, 0.2572f), smoothness: 0.45f);
 
             // R7 Tier 1 wear. Colour lives here, never in the textures - see
             // ProceduralWearTextures. Cutoffs are the shape control: the alpha channel stores a
