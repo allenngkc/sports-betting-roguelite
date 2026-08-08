@@ -609,9 +609,17 @@ REFERENCE_JSON_PATH = Path(__file__).resolve().parent / "room_gate_reference.jso
 # reference's shape changes again, so an old file is always detected rather
 # than misread.
 REFERENCE_SCHEMA_VERSION = 3
-# Certification date is passed in, never read from the clock: a gate report must
-# be reproducible, and a wall-clock read makes two runs of the same scene differ.
-TODAY = "2026-08-05"
+# Certification date is passed in via --certified-at, never read from the clock: a
+# gate report must be reproducible, and a wall-clock read makes two runs of the same
+# scene differ.
+#
+# It used to say exactly that above a hardcoded TODAY = "2026-08-05" that nothing
+# passed in and nobody bumped, so every certification made after that date stamped
+# it anyway -- the 2026-08-07 re-certification was recorded as 08-05. A wrong date
+# on the one record whose entire job is "who certified what, WHEN, on what basis"
+# is worse than no date, because it reads as provenance. The intent in the comment
+# was right and only the implementation was missing; --certified-at supplies it
+# without ever touching the clock.
 
 # Tolerance for comparing collider float dimensions read back out of text.
 # Same scene file re-parsed twice will match exactly; this just guards
@@ -1438,6 +1446,26 @@ def print_summary(results, exit_code):
 # Main
 # ---------------------------------------------------------------------------
 
+def _certified_at(args):
+    """The date to stamp on a human-gate record. Required, validated, never guessed.
+
+    Not defaulted on purpose. A default is what the old hardcoded constant effectively
+    was, and it wrote 2026-08-05 onto a certification made on the 7th -- a record that
+    looks like provenance and is not. Refusing to proceed costs one flag; a wrong date
+    costs the audit trail's credibility, and nothing downstream can detect it.
+    """
+    value = getattr(args, "certified_at", None)
+    if not value:
+        sys.exit("--certified-at YYYY-MM-DD is required when certifying or revoking human "
+                 "gates: the record states WHEN a human gave the verdict, and this tool will "
+                 "not invent that date or reuse a stale one.")
+    try:
+        datetime.strptime(value, "%Y-%m-%d")
+    except ValueError:
+        sys.exit(f"--certified-at must be YYYY-MM-DD, got {value!r}")
+    return value
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Room acceptance-gate checker -- runs every gate that doesn't need the Unity editor."
@@ -1477,6 +1505,15 @@ def main():
         help="Provenance of the human verdict being recorded. A re-certification on a STANDING "
              "verdict is not a fresh walk, and the record must say which it was -- otherwise the "
              "next reader sees a green gate and assumes someone walked this build.",
+    )
+    parser.add_argument(
+        "--certified-at",
+        metavar="YYYY-MM-DD",
+        help="Date of the human verdict being recorded or revoked. REQUIRED with "
+             "--certify-human-gates and --revoke-human-gates, and deliberately not defaulted: "
+             "the previous hardcoded constant silently stamped a stale date on every later "
+             "certification. Passed in rather than read from the clock so two runs of the same "
+             "scene still produce identical reports.",
     )
     parser.add_argument(
         "--compare-scene",
@@ -1527,7 +1564,7 @@ def main():
         if not _hg:
             print("no human-gate certification recorded; nothing to revoke")
             sys.exit(0)
-        _hg["revoked"] = {"at": TODAY, "reason": args.revoke_human_gates}
+        _hg["revoked"] = {"at": _certified_at(args), "reason": args.revoke_human_gates}
         REFERENCE_JSON_PATH.write_text(json.dumps(_payload, indent=2) + chr(10), encoding="utf-8")
         print(f"human gates 6-8 REVOKED: {args.revoke_human_gates}")
         sys.exit(0)
@@ -1538,7 +1575,7 @@ def main():
         _payload["human_gates"] = {
             "gates": [6, 7, 8],
             "certified_commit": args.certify_human_gates,
-            "certified_at": TODAY,
+            "certified_at": _certified_at(args),
             "content_fingerprint": scene_content_fingerprint(_docs),
             "basis": args.certify_basis or "fresh walkthrough of this build",
             "revoked": None,

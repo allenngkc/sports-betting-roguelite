@@ -538,9 +538,33 @@ the tool's own `scene_content_fingerprint`: stored cert `c3393474`, committed HE
 
 So the studio record is stale, not wrong-in-principle — this is C18's mechanism working exactly as
 designed and C28's *"do not report N/N"* being needed exactly as written. No tool may re-issue it.
-**Need Allen:** a word on gates 6–8. A standing verdict is enough (`--certify-human-gates <commit>
---certify-basis "..."`) — nothing here moved geometry, and gates 2/3/4/5 confirm it: 29 colliders,
-27 dims 0 mismatch, 4/4 singletons, 8 Lights, 0 dangling refs.
+**RESOLVED — Allen 2026-08-07, via the orchestrator.** Re-certified on his **standing walkthrough
+verdict**, recorded with provenance, the basis text saying in its own words that it is a standing
+verdict and not a fresh walk. His reasoning: everything since `8729ffd` is light and instrumentation,
+not geometry. Corroborated on the same run — 29 colliders, 27 dims 0 mismatch, 4/4 singletons,
+8 Lights, 6 Dressing_*, 0 dangling refs.
+
+**Final: 9 PASS, 0 FAIL, 5 SKIP, 1 INFO, 0 VOID. Coverage 9/15, stated.**
+
+#### The certification tool was stamping the wrong date, and it stamped mine
+
+Caught reading back the record I had just written: it said **`certified 2026-08-05`** on a
+certification made on the **7th**.
+
+`tools/room_gate_check.py:614` was `TODAY = "2026-08-05"` — a hardcoded literal, sitting under a
+comment that read *"Certification date is passed in, never read from the clock."* **Nothing passed it
+in and nobody bumped it**, so every certification made after that date silently stamped it. The
+comment's intent was right; only the implementation was missing.
+
+This is worse than a cosmetic date. `--revoke-human-gates`' own help text states what the record is
+for: *"who certified what, when, on what basis, and why it was withdrawn is the audit trail."* A wrong
+date **reads as provenance**, and nothing downstream can detect it.
+
+Fixed as the comment already specified — a required, validated `--certified-at YYYY-MM-DD`,
+deliberately **not defaulted**, because a default is precisely what the old constant was. Certifying
+or revoking without it now exits with the reason. Re-recorded at the correct date; both guards tested
+(missing flag, and `"7 Aug 2026"`). Reproducibility is untouched — the date is still passed in and
+never read from the clock, so two runs of the same scene still produce identical reports.
 
 #### Routed, not fixed — three emitters, and only one of them was ever audited
 

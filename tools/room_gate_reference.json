@@ -496,10 +496,10 @@
       7,
       8
     ],
-    "certified_commit": "8729ffd",
-    "certified_at": "2026-08-05",
-    "content_fingerprint": "c33934740463e4831b82633c038da09a5ff2d5c38088f94e6cc210be289601c7",
-    "basis": "STANDING VERDICT, not a fresh walk. Allen walked 9e1b4e4/44d8df3 and passed; the fingerprint expired on the R35 glow rebuild, which changes EMISSION only - no geometry, no collider, no transform moved. Allen ruled his verdict carries across it (2026-08-05).",
+    "certified_commit": "638e592",
+    "certified_at": "2026-08-07",
+    "content_fingerprint": "8b0088222ea55bf591296a5ea28767964c9685530d3cd8d4ed1ce7d26c6b9cbb",
+    "basis": "STANDING VERDICT, not a fresh walk. Allen's word via the orchestrator 2026-08-07: gates 6-8 carry forward from his 2026-08-03 re-walk (PASS) because everything since 8729ffd is emission values and capture instrumentation, not geometry. Corroborated by the structural gates on this same run: 29 colliders, 27 dims 0 mismatch, 4/4 singletons, 8 Lights, 6 Dressing_*, 0 dangling refs. Expires automatically on the next content change.",
     "revoked": null,
     "note": "R22: gates 6-8 have no automated instrument; a human walks the build. Expires automatically when content_fingerprint stops matching."
   }
