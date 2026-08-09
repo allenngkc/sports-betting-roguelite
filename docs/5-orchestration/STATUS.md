@@ -46,6 +46,38 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-08 cycle 135 · **THE HUNT TURNED ON ITS INSTRUMENTS; Allen is now
+  the decisive one** — since 134: _Sharpness found (the one field the
+  generator never sets; default = widest ramp) but its A/B verdict was
+  itself INVALID (success would sit under the 1px floor) — un-retired with
+  its riders; the ink-ring control proven INVALID for edge sharpness (soft
+  by design — room re-audited every elimination, most stand on other
+  evidence, the blur is NO LONGER known glyph-specific); render-path
+  costing done (A render-scale-1.5 / B RT-refused / C accept) then the
+  measure-first proof KILLED A (ramp did not narrow at 1.5×); joint
+  pipeline read split at the seam; combined sweep at 1.5 (floor 0.67px):
+  _Sharpness real but maxed buys 9.6% not 50% — glyphs AND geometry floor
+  alike at ~1.6px post-resolve, frame-wide; harness self-audit: filterMode
+  eliminated, backbuffer arm failed (batchmode has no game view — owned
+  foresight miss), so the harness is neither convicted nor cleared and
+  every number carries the untested-path caveat. Allen ruled: HIS
+  desk-pose PNG is the decisive arm (his display is the path the complaint
+  came from; the harness was never in that loop). Instructions relayed
+  (Play Mode desk-zoom = ratified 0.52m by construction; FORM/R1/clean;
+  PNG unresized; measured as ramp÷stroke ≈0.478 ratio, three pre-committed
+  readings). SureThing seat rotated fresh at 98% (handoff a5ce804,
+  corrected two of its own predecessor's errors on arrival). Merged this
+  arc: fb8e248, 4c2d567 chain via 3727ee6 earlier.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | fresh seat, holding | on Allen's frame verdict | lead |
+  | tv-sweat | clean-holding | DD verdicts + G1 forms | DD |
+  | room | holding | measures Allen's PNG on land | lead |
+  | markets-2 | clean-holding | none | — |
+  | DD bridge | fed | batch-18 case on the blur's close | orchestrator |
+  | Editor | free (Allen's on open) | his screenshot session | Allen |
+  | **Need Allen** | **the desk-pose PNG** (decisive arm) · settings-churn convention · Sentis pin question | frame + rulings | Allen |
 - 2026-08-08 cycle 134 · **THE BLUR HUNT: six exonerations, one hard number,
   properly stuck** — the in-room glyph blur has now survived: the grade
   (1.44× room vs 1.14× UI), the bitmaps (sharp throughout), the SDF atlas
