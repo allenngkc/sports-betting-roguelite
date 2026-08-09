@@ -76,6 +76,37 @@ namespace SBR.EditorTools
         internal static string ShaderName => UseMobileSdfShader ? ShaderArmB : ShaderArmA;
         internal static string ShaderArmTag => UseMobileSdfShader ? "MobileSDF" : "DF";
 
+        // ---- C13: the edge ramp -------------------------------------------------------------------
+        //
+        // `TMP_SDF.shader:186` — `scale *= abs(input.texcoord0.w) * _GradientScale * (_Sharpness + 1)`.
+        // `texcoord0.w` carries the per-glyph scale, so `scale` grows with the glyph and **the SDF's
+        // edge ramp is constant in SCREEN space at every size**. That is not a malfunction; it is the
+        // mechanism that produces the exact signature room measured — a fixed ~1.6px ramp that does
+        // not scale with the glyph.
+        //
+        // **`_Sharpness` is the only term in that expression this generator never set.** It fell to
+        // the shader's default of 0, which is the WIDEST ramp the shader permits; the range is -1..1
+        // and at +1 the multiplier doubles, halving the ramp uniformly at every glyph size. Uniform
+        // is the point: it is the only shape that can move a fixed screen-space ramp.
+        //
+        // Measured at 1:1 on the flat captures at 0: 1.14-2.04px, mean ~1.5px. **The ramp is present
+        // without any magnification**, which is why this is measurable here rather than only at the
+        // desk pose.
+        //
+        // TMP ships 0 by default, so this is not a defect introduced here — it is a default that may
+        // simply be wrong for a surface read at an angle through a graded room. **The value is a
+        // design call (Allen's eye, then the DD); this constant only makes the arms producible.**
+        public const float Sharpness = 0f;
+
+        /// <summary>Stamped into every material name and the Verify line. Invariant-formatted so the
+        /// tag cannot come out as "s0,5" on a comma-decimal machine and quietly split the set.</summary>
+        internal static string SharpnessTag =>
+            Sharpness.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+
+        /// <summary>`_Sharpness` has no cached id in ShaderUtilities, so it is resolved by name once
+        /// rather than per material.</summary>
+        internal static readonly int SharpnessId = Shader.PropertyToID("_Sharpness");
+
         private const string FontDir = "Assets/SBR/Resources/SureThing/Fonts";
 
         /// <summary>TMP maps a weight to its table by `fontWeight / 100`, so SemiBold (600) is 6.
@@ -205,7 +236,7 @@ namespace SBR.EditorTools
             }
             var material = new Material(shader)
             {
-                name = $"{assetName} Atlas Material [{ShaderArmTag}]"
+                name = $"{assetName} Atlas Material [{ShaderArmTag} s{SharpnessTag}]"
             };
             material.SetTexture(ShaderUtilities.ID_MainTex, atlas);
 
@@ -226,6 +257,9 @@ namespace SBR.EditorTools
             material.SetFloat(ShaderUtilities.ID_GradientScale, AtlasPadding + 1);
             material.SetFloat(ShaderUtilities.ID_WeightNormal, asset.normalStyle);
             material.SetFloat(ShaderUtilities.ID_WeightBold, asset.boldStyle);
+            // Set EXPLICITLY even at 0, so every arm — including the baseline — comes out of the same
+            // code path. An arm that is "whatever the shader defaults to" is not a measured arm.
+            material.SetFloat(SharpnessId, Sharpness);
             asset.material = material;
             AssetDatabase.AddObjectToAsset(material, asset);
 

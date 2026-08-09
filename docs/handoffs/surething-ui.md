@@ -859,8 +859,41 @@ regress — **and exonerated by room as the cause**: the reimport did not sharpe
 | **canvas render scale · world-space pixel density** | **bitmaps stay sharp while glyphs are soft** — same canvas, same magnification; a coarse canvas would soften the ink sprites too |
 | **TMP shader variant** | the A/B: arms differ on **43 scanlines** at clip boundaries (y≈641–649, y≈48) and are **byte-identical** across the form header, matchup rows and margin labels. A shader softening glyphs would change every glyph |
 
-**Left standing: sampling point size (90pt) against rendered size (13–31px).** Routed to room's
-desk-pose rig — the one instrument that measures at magnification against a control.
+**`_Sharpness` was the next candidate and it is DEAD, measured.** `TMP_SDF.shader:186` multiplies the
+SDF scale by `(_Sharpness + 1)`, so +1 should halve the ramp uniformly — the only shape that can move
+a fixed screen-space ramp. Three arms generated, shot and measured at 1:1:
+
+| slot | s0.0 | s0.5 | s1.0 | predicted |
+|---|---|---|---|---|
+| SURETHING 26px | 2.04 | 1.83 | 2.00 | ×0.5 |
+| team name 19px | 1.26 | 1.38 | 1.33 | ×0.5 |
+| column head 13px | 1.68 | 1.69 | 1.55 | ×0.5 |
+| payout 31px | 1.14 | 1.00 | 1.00 | ×0.5 |
+
+**×0.88–1.06.** The frames differ between arms, so the property reaches the renderer — it just does
+not move the ramp. **And the failure is the finding: if doubling `scale` does not halve the ramp,
+`scale` is not what limits the edge.** Measured ramps sit at 1.0–2.0px against a **~1px floor for
+single-sampled rasterisation**, so no material property can go lower.
+
+### ⚠ The control that eliminated canvas render scale is NOT VALID
+
+"Bitmaps stay sharp while glyphs are soft" killed canvas render scale and world-space pixel density.
+Measured, same frame, same 1:1:
+
+| element | ramp |
+|---|---|
+| **wide biro ring (bitmap)** | **6.50px**, and no measurable edge at all on most scanlines |
+| column head (glyph) | 2.92px |
+
+**The ink sprites are more than twice as soft as the glyphs.** They are hand-drawn soft-edged ink
+strokes — **they have no hard edge to lose**, so they can show neither softening nor sharpening. They
+read as sharp because they are supposed to be soft. **Those eliminations should go back on the board.**
+
+**Left standing: more samples per pixel** — supersampling the canvas, or MSAA — which is where the
+1px floor points and which returns to canvas render mode. **Held for a separate call: it is the first
+candidate that makes the room pay for the UI's gain**, so the trade-off question recorded as dead may
+need reopening on different grounds. Sampling point size (90pt against 13–31px rendered) also remains
+untested.
 
 **The edge table, for that shoot.** Ramp share normalised to each element's own ground-to-ink span:
 

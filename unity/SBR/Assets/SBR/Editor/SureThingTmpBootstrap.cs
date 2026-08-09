@@ -188,6 +188,17 @@ namespace SBR.EditorTools
                           $"against configured {SureThingTmpFontAssets.AtlasWidth}x" +
                           $"{SureThingTmpFontAssets.AtlasHeight} — {(mirrorOk ? "AGREE" : "DISAGREE")} · " +
                           $"shader '{fa.material.shader.name}' arm [{SureThingTmpFontAssets.ShaderArmTag}]");
+                // The arm under test. A face left behind at another sharpness would mix the
+                // comparison silently, and the ramp measurement would average two arms.
+                float sharp = fa.material.GetFloat(SureThingTmpFontAssets.SharpnessId);
+                if (!Mathf.Approximately(sharp, SureThingTmpFontAssets.Sharpness))
+                {
+                    Debug.LogError($"[SureThingTmpBootstrap] {label} carries _Sharpness {sharp} but " +
+                                   $"this tree is set to {SureThingTmpFontAssets.Sharpness} — " +
+                                   "regenerate before shooting; a mixed set is not a measurement.");
+                    EditorApplication.Exit(3);
+                    return;
+                }
                 if (fa.material.shader.name != SureThingTmpFontAssets.ShaderName)
                 {
                     // Assets left over from the other arm would silently mix the comparison.
