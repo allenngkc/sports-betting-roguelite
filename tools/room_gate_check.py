@@ -1941,6 +1941,23 @@ def print_summary(results, exit_code):
 # Main
 # ---------------------------------------------------------------------------
 
+def _certified_gates(args):
+    """The subset of gates 6/7/8 a walk cleared. Default: all three."""
+    raw = getattr(args, "certify_gates", None)
+    if not raw:
+        return [6, 7, 8]
+    try:
+        gates = sorted({int(x) for x in raw.replace(" ", "").split(",") if x})
+    except ValueError:
+        sys.exit(f"--certify-gates must be a comma list of gate numbers, got {raw!r}")
+    bad = [g for g in gates if g not in (6, 7, 8)]
+    if bad:
+        sys.exit(f"--certify-gates only covers the human gates 6,7,8; got {bad}")
+    if not gates:
+        sys.exit("--certify-gates named no gates; omit the flag to certify all three")
+    return gates
+
+
 def _certified_at(args):
     """The date to stamp on a human-gate record. Required, validated, never guessed.
 
@@ -2009,6 +2026,14 @@ def main():
              "non-verdict, never as a pass.",
     )
     parser.add_argument(
+        "--certify-gates",
+        metavar="N,N",
+        help="Which of gates 6,7,8 the walk actually cleared (default 6,7,8). A human walk can "
+             "come back split -- room clean, one finding -- and the gate the finding lands in "
+             "must NOT be stamped PASS alongside the ones that were clean. Gates left out are "
+             "reported VOID and named as deliberately withheld, not as expired.",
+    )
+    parser.add_argument(
         "--certified-at",
         metavar="YYYY-MM-DD",
         help="Date of the human verdict being recorded or revoked. REQUIRED with "
@@ -2075,7 +2100,7 @@ def main():
         _docs = split_documents(load_scene_text(scene_path))
         _payload = json.loads(REFERENCE_JSON_PATH.read_text(encoding="utf-8"))
         _payload["human_gates"] = {
-            "gates": [6, 7, 8],
+            "gates": _certified_gates(args),
             "certified_commit": args.certify_human_gates,
             "certified_at": _certified_at(args),
             "content_fingerprint": scene_content_fingerprint(_docs),
@@ -2322,7 +2347,30 @@ def main():
         revoked = cert.get("revoked") or None
         certified = bool(cert_fp) and cert_fp == current_fp and not revoked
 
+        # WHICH gates the walk actually covered. Until 2026-08-08 this was hardcoded
+        # [6,7,8] and the loop stamped all three identically, so the instrument could
+        # only record "the human passed everything" or nothing at all.
+        #
+        # Allen's walk of this build produced a SPLIT verdict -- the room clean, one
+        # finding, and the finding lands squarely inside gate 6's subject (readability).
+        # With the old shape the only options were to stamp PASS on the gate his finding
+        # is about, or to discard two verdicts he actually gave. Both are lies of a
+        # different size. A gate that cannot record the verdict it was given is not
+        # recording verdicts.
+        covered = cert.get("gates") or [6, 7, 8]
+
         for num, gname in ((6, "UI/HUD readability"), (7, "UI/HUD contrast"), (8, "structural-only check")):
+            if certified and num not in covered:
+                results.append(void(
+                    num, gname,
+                    f"NOT covered by the {cert_when} walk -- that walk certified gates "
+                    f"{', '.join(str(g) for g in covered)} only",
+                    blind_spot="a human walked this build and did NOT clear this gate. That is "
+                               "not the same as an expired certification and not the same as a "
+                               "failure: it is a verdict the walk deliberately withheld. Read "
+                               "the basis line on the covered gates for what he did say.",
+                ))
+                continue
             if certified:
                 results.append(GateResult(
                     num, gname, "PASS",

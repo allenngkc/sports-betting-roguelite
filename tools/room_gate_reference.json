@@ -492,14 +492,13 @@
   ],
   "human_gates": {
     "gates": [
-      6,
       7,
       8
     ],
-    "certified_commit": "801ccb9",
-    "certified_at": "2026-08-07",
-    "content_fingerprint": "9b7b531aed828cfeb6d2fe1990b25aca844bfa2794956356da78a9317e468098",
-    "basis": "STANDING VERDICT, not a fresh walk. FOURTH issuance. Allen's word via the orchestrator 2026-08-07 on the batch-14 emission bake: light-only change, geometry untouched and instrument-confirmed. Corroborated on this run - 29 colliders, 27 dims 0 mismatch, 4/4 singletons, 8 Lights, 6 Dressing_*, 0 dangling refs, R33 14/14. Measured: every ratified room region held within 0.13 L* across the bake. Expires automatically on the next content change.",
+    "certified_commit": "a0469b9",
+    "certified_at": "2026-08-08",
+    "content_fingerprint": "880969c8ccc8b547fc18275f0b27ee9996a538347fcfd5e13b80837aa90e0a40",
+    "basis": "FRESH WALK by Allen 2026-08-08 on the post-C13-merge tree (he opened the project himself). Verdict: 'everything else is great' across the room, with ONE finding -- the SureThing UI on the laptop is VERY BLURRY (whole surface uniformly soft, text legible but fuzzy; screenshot at main-2/docs/design/dd-import/allen-walk-2026-08-08/). Gates 7 (contrast) and 8 (structural) are cleared by that walk: the finding is SHARPNESS, not contrast, and he reported no structural problem. Gate 6 (readability) is deliberately NOT certified -- the single finding lands inside its subject, and stamping it PASS on the same walk that produced it would launder the finding. Gate 6 re-walks when the blur is fixed.",
     "revoked": null,
     "note": "R22: gates 6-8 have no automated instrument; a human walks the build. Expires automatically when content_fingerprint stops matching."
   }
