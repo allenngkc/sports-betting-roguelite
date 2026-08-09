@@ -46,6 +46,34 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-08 cycle 133 · **ALLEN'S DAY: walk done, C13 merged, LFS fixed;
+  one finding in flight** — R22 walk: "everything else is great," ONE
+  finding: the SureThing UI blurry in-room (screenshot preserved). C13's
+  investigation found there was NO content package — the current surface
+  arrives by merging main; room merged (491afc5), survival checks pass,
+  LaptopScreen.cs hand-read per the adjacent-hunk hazard. LFS: main's merge
+  brought the top-level attributes file so the macro works; Allen ruled
+  skip-explicit-lines → all-31-one-commit → LFS-objects-only-push
+  (a0469b9) — the phantom-M class is dead; SureThing's 8 parked for its
+  lane. Blur chain: room's graded-vs-ungraded A/B EXONERATED the grade
+  (softens room 1.44× vs UI 1.14×) and the SDF atlas; cause = canvas draws
+  at authored 1024 vs ~1300 displayed (1.27×). Allen rules: SHARP, blur
+  goes regardless of cause, his eye at the desk is the bar. Fix split on
+  which-is-soft (bitmaps → CanvasScaler density; glyphs → _GradientScale)
+  — room measuring its existing frames. Markets: stake-block suites green,
+  two files committed, 4.563px decomposed (1.963 owned, rest is S51's,
+  stated at the call site). Gates 6/7/8: adjudication holds pending the
+  blur item's disposition.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | answered, holding | build whichever lever room's measurement names | lead |
+  | tv-sweat | clean-holding | DD verdicts + G1 forms | DD |
+  | room | measuring | which-is-soft → route fix → gates re-issue | lead |
+  | markets-2 | clean-holding | none | — |
+  | DD bridge | fed | batch-18 case accumulating (walk + blur + stake block) | orchestrator |
+  | Editor | free | fix-verify window on demand | orchestrator |
+  | **Need Allen** | desk-pose eyeball of the sharp fix when it lands | verdict | Allen |
 - 2026-08-08 cycle 132 · **BATCH 17 LANDED — everything granted; the wave's
   scoreboard is clean** — T67/T68/T69 closed (blocker verified independently
   at 7.95:1 in linear space — the DD recorded its OWN space error, birthing
