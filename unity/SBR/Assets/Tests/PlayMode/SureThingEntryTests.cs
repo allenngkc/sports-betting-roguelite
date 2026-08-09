@@ -849,18 +849,30 @@ namespace SBR.Tests.PlayMode
                 // the band between them fails, so this passed on every run whose generated names
                 // happened to be short enough and failed on the first one that was not — which is
                 // exactly what noise looks like until you measure it.
-                float receiptTextWidth = ((RectTransform)Required(receipt, "ReceiptHeader")).rect.width;
-                // "STAGED" was dropped from the header on purpose: the block itself is the staged
-                // receipt, and the word was what pushed "PAYS $167" past the 280px fit and into a
-                // mid-word ellipsis. The payout is a product fact and outranks a redundant label.
-                Assert.AreEqual(
-                    LaptopUi.FitText(font,
-                        // S62: the identity now carries its own "TICKET" word, so the prefix that
-                        // used to sit here would double it.
-                        $"{identity} · {Money(model.Stake)} · " +
-                        $"{OddsFormat.American(model.Combined)} · PAYS {Money(model.Payout)}",
-                        13, receiptTextWidth),
-                    TextOf(Required(receipt, "ReceiptHeader")));
+                // **Read off a LEG ROW now, not the header.** S70(3) split the header into a narrow
+                // identity and a right-aligned leg count, so it is no longer the receipt's text
+                // width — reading it there would under-report by 40% and quietly re-create the exact
+                // stale-width defect this line was written to kill, one element over. The leg rows
+                // are what this width actually governs, so they are what it is measured from.
+                float receiptTextWidth = ((RectTransform)Required(receipt, "TicketLeg0")).rect.width;
+
+                // S70(3): the kit's header grammar — identity and leg count as separate elements at
+                // separate trackings. **Asserted separately because the separation IS the ruling**;
+                // one concatenated string is precisely what it replaced, so a single assertion over
+                // a joined string would pass while conforming to nothing.
+                Assert.AreEqual(identity, TextOf(Required(receipt, "ReceiptHeader")),
+                    "S70(3): the header carries the identity alone");
+                Assert.AreEqual($"{ticket.Legs.Count} {SportsbookApp.Pluralize(ticket.Legs.Count, "LEG")}",
+                    TextOf(Required(receipt, "ReceiptLegCount")),
+                    "S70(3): the count is the kit's `key` cell, not part of the identity string");
+
+                // The money facts moved to the footer row, which is where the kit has always had
+                // them. Asserted against the model rather than the render's own expression, so the
+                // fixture cannot agree with a defect (S62's lesson).
+                Assert.AreEqual(Money(model.Stake), TextOf(Required(receipt, "ReceiptStakeValue")));
+                Assert.AreEqual(OddsFormat.American(model.Combined),
+                    TextOf(Required(receipt, "ReceiptCombinedValue")));
+                Assert.AreEqual(Money(model.Payout), TextOf(Required(receipt, "ReceiptPaysValue")));
 
                 for (int legIndex = 0; legIndex < ticket.Legs.Count; legIndex++)
                 {

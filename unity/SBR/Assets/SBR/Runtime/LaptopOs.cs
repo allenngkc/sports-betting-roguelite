@@ -664,6 +664,20 @@ namespace SBR.Game
         public const float Actions = 0.14f;
         /// <summary>Margin headers (S33/S60's biro header).</summary>
         public const float MarginHeader = 0.15f;
+
+        /// <summary>S68: stamped reasons — `StampReason.jsx`'s own `.04em`. Deliberately the
+        /// smallest value on the surface, because a blocked reason is **factual copy**, not a label:
+        /// it states a cause and a remedy (T47, S43) and it is read as a sentence. Tracking it to a
+        /// label's value is what degraded the legibility of the exact strings those rulings exist to
+        /// make readable.</summary>
+        public const float StampReason = 0.04f;
+
+        /// <summary>S70: `--st-track-chrome`, `.13em` — the rail's identity mark and nothing else.
+        /// `OsRail.jsx:17` hard-coded this and it matched no token; it gets a name rather than being
+        /// bent to a neighbouring one, because the rail is OS chrome rather than product copy and it
+        /// is the one element carrying S20's deliberate 600. **A named exception with one member is
+        /// still named** — which is the whole difference between an exception and a stray value.</summary>
+        public const float Chrome = 0.13f;
     }
 
     internal static class LaptopUi
@@ -1466,7 +1480,7 @@ namespace SBR.Game
             float wordX = RailPadX + swatchSize + identityGap;
             LaptopUi.MakeText(rail, "Machine", new Vector2(0f, .5f), new Vector2(0f, .5f),
                 new Vector2(wordX, 0f), new Vector2(160f, 24f), ChromeText, TextAnchor.MiddleLeft,
-                LaptopOs.TonerSecondary, MachineMark, font, 0f, FontWeight.SemiBold);
+                LaptopOs.TonerSecondary, MachineMark, font, LaptopTrack.Chrome, FontWeight.SemiBold);
 
             // W2 (sticker): a bordered chip — --biro text, a rule-w border in --biro-deep, 2px 6px
             // padding, tilted -.6deg. Sized to hug its own measured text (MeasureWidth, the same
@@ -1482,8 +1496,13 @@ namespace SBR.Game
             // would under-report and walk the sticker into the word — the same measure-versus-render
             // trap tracking set, one weight channel over. The comment above already promises this
             // edge is clear "for any font metrics"; WeightFace is what keeps that true.
+            // **Fourth time this coupling has come up, and it was predicted.** The handoff's Phase L
+            // close says any further type channel must measure with what it renders with; S70 adds
+            // tracking to this very slot, so the measurement takes BOTH the SemiBold face and the
+            // `.13em`. Miss either and the sticker walks into "NOTEBOOK".
             float machineWidth = LaptopUi.MeasureWidth(
-                LaptopUi.WeightFace(font, FontWeight.SemiBold), MachineMark, ChromeText);
+                LaptopUi.WeightFace(font, FontWeight.SemiBold), MachineMark, ChromeText,
+                LaptopTrack.Chrome);
             float stickerX = wordX + machineWidth + groupGap;
             float stickerTextW = LaptopUi.MeasureWidth(font, StickerText, ChromeText);
             const float stickerTextH = 14f;
