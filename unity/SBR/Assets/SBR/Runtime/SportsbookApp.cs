@@ -841,9 +841,17 @@ namespace SBR.Game
             float y = -44f;
             if (slip.Picks.Count == 0)
             {
+                // S71: names the STATE, not the owner. This read "YOUR MARGIN IS CLEAR" — someone
+                // addressing him, three lines under "MY MARKS", which is him, in the one column the
+                // owning doc says is his. §6 puts second person in genuine imperatives only, and this
+                // is a statement; it also allows first person exactly once on the surface, and that
+                // once is the header directly above. A second speaker is most expensive here.
+                //
+                // The ownership does not need saying: the header states it and the column is drawn
+                // in the ink that means "what he chose".
                 LaptopUi.MakeText(panel, "Empty", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(14f, y), new Vector2(300f, 26f), 13, TextAnchor.UpperLeft, LaptopOs.Muted,
-                    "YOUR MARGIN IS CLEAR", _font);
+                    "NO MARKS ON THIS SHEET", _font);
                 y -= 30f;
             }
             for (int i = 0; i < slip.Picks.Count; i++)
