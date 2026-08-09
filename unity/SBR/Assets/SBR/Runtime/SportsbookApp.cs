@@ -964,6 +964,46 @@ namespace SBR.Game
                 y -= 34f;
             }
 
+            // M-04 + M-05, against kit StakeControls.jsx:11-29. Two defects, one block, one fix.
+            //
+            // M-05 — the kit LEADS with the figure: one baseline row (label left, figure right),
+            // then the fractions, then the nudges. Shipped ran that order backwards, so the fact the
+            // controls exist to set was printed underneath the controls. The figure is the fact; it
+            // goes first.
+            //
+            // M-04 — shipped fused label and figure into one `"STAKE $N"` string at 16px roman,
+            // left-aligned. That is the exact failure S28 names: one string, one size, one colour
+            // leaves the label and the fact indistinguishable. The COMBINED row twenty lines up was
+            // already corrected to the kit's two-node form, so this is the same treatment, not a new
+            // pattern — label roman at the 13px fact floor in `--toner-3` carrying its own .12em
+            // track (reachable since the TMP migration expired S28), figure condensed at the kit's
+            // `--st-size-stake` 26px in `--toner`, right-flushed across the row.
+            //
+            // Both nodes share one 30px row and are LOWER-anchored so their baselines meet, which is
+            // what the kit's `alignItems:"baseline"` asks for; top-anchoring two boxes 13px apart in
+            // size would not. The value node keeps the name "Stake" — SureThingEntryTests reads that
+            // node by name across a destination switch.
+            TMP_Text stakeLabel = LaptopUi.MakeText(panel, "StakeLabel", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(14f, y), new Vector2(120f, 30f), 13, TextAnchor.LowerLeft, LaptopOs.Muted,
+                "STAKE", _font, 0.12f);
+            TMP_Text stakeFigure = LaptopUi.MakeText(panel, "Stake", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(14f, y), new Vector2(headerRight, 30f), 26, TextAnchor.LowerRight, LaptopOs.White,
+                LaptopUi.Money(slip.Stake), _fontCond);
+            // The kit asks for alignItems:"baseline". Bottom-anchoring aligned the two DESCENDER
+            // lines instead, and a 26px face's descender is deeper than a 13px one's, so the two
+            // baselines missed by exactly that difference — measured 3px on the frame at
+            // 20260809-002525-948, label sitting low. TMP aligns a baseline natively, and both nodes
+            // share one rect top and height, so pinning both to it lands the baselines on the same
+            // line. This REMOVES a font-metric dependency rather than adding a computed offset: it
+            // stays correct if either face is replaced, which a hand-derived nudge would not.
+            stakeLabel.alignment = TextAlignmentOptions.BaselineLeft;
+            stakeFigure.alignment = TextAlignmentOptions.BaselineRight;
+            // 34px = the kit's own arithmetic: a 26px figure (`--st-size-stake`, line-height tight)
+            // plus the 8px it puts above the fractions. The 30px box is deliberately taller than the
+            // 26px line so a face whose ascent+descent exceeds its em cannot clip; it overlaps into
+            // the 8px gap, which draws nothing. The old block advanced 32px for a 16px figure, so
+            // being 1:1 here costs the flow +2px — see the S51 note below, this does not absorb.
+            y -= 34f;
             float chipX = 14f;
             MakeChip(panel, "10%", chipX, y, () => slip.SetStakeFraction(0.10)); chipX += 76f;
             MakeChip(panel, "25%", chipX, y, () => slip.SetStakeFraction(0.25)); chipX += 76f;
@@ -974,10 +1014,6 @@ namespace SBR.Game
             // the quick fraction chips above (10%/25%/50%/MAX) stay on the data face.
             MakeChip(panel, "−$10", 14f, y, () => slip.Nudge(-10), 88f, _fontCond);
             MakeChip(panel, "+$10", 110f, y, () => slip.Nudge(10), 88f, _fontCond);
-            y -= 32f;
-            LaptopUi.MakeText(panel, "Stake", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(14f, y), new Vector2(300f, 24f), 16, TextAnchor.UpperLeft, LaptopOs.White,
-                $"STAKE {LaptopUi.Money(slip.Stake)}", _font);
             y -= 32f;
             // B1-5/M-06: PayoutFigure.jsx (kit) carries a "POTENTIAL PAYOUT" label — roman, fact
             // floor, --toner-3 — above the value; shipped had none. Added by moving the cursor down
