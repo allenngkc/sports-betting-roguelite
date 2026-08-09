@@ -285,7 +285,7 @@ Real gates, per C9. Each states its instrument and, per C18 §4.2, **what it can
 | # | Gate | Instrument | Blind to |
 |---|---|---|---|
 | L1 | Band arithmetic sums to 704; every band named | layout assert, canvas-local px | rendered glyph bleed |
-| L2 | No text below 13px states a product fact | rendered measurement at review distance | strings not exercised by a capture state |
+| L2 | No text below 13px states a product fact | **which constant each slot uses** (`MakeText`'s `Mathf.Max(13, …)` clamp, checked against the face's own metrics once at design time), slots named — *amended batch 15: a rendered frame cannot separate 12px from 13px (both render 9px of cap ink at canvas-local resolution), so the frame-check instrument was specified coarser than the distinction it exists to make (C32)* | the rendered result; TMP point size and UGUI pixel size are not the same quantity |
 | L3 | Two-ink conformance — no wax, biro or stamp outside its meaning | palette scan incl. markup + rendered frame | HDR emission (§10, no capture path exists) |
 | L4 | Every state carries ≥2 channels | rendered frames, both states side by side | states without a forced capture |
 | L5 | Chrome is pixel-identical across all destinations | per-band sample comparison | anything outside the two bands |
@@ -322,3 +322,66 @@ disambiguates); the losing verdict drains as a group (headline `--toner-2`,
 subline `--toner-3`), NEW RUN full wax on both screens. **R38 joins the open
 items:** forced capture states take a numeric run seed — a rig string never
 prints in a player-facing slot.
+
+---
+
+## Amendment — 2026-08-08 (batch 15, transcribed by the orchestrator)
+
+**C15 Phase L is GRANTED and merged to main (`5903750`).** The TMP migration
+verified on the final set against the pinned before-set — every product-fact
+slot identical ink at identical scanlines. **The signed type deviations are
+expired: S28 (tracking), S29 (tnum), S20 (weight 600), and markets' ladder
+letter-spacing.** S8 and S52 re-verified on the same evidence; the OS chrome's
+Design-verified status stands. The roman voice is **Regular 400** (S20closed —
+the rail identity's 600 is the one deliberate weight); **masthead run figures
+render in the condensed face** per §4.1's own assignment (S29 closed — the TMP
+Regular face declares no `tnum`).
+
+**New ruled items:**
+
+- **S68** — tracking values are the kit's, not the category's: `.08em` on SKIP
+  (`--st-track-rec`), `.04em` on stamped reasons. §4.3's principle: short
+  labels are tracked uppercase; **factual copy stays literal** — a
+  label-plus-instruction is factual copy. Recovers the SKIP headroom by
+  construction.
+- **S69** — disabled action grounds conform to the kit: PLACE disabled fills
+  `--ground-3`; LOCK disabled is transparent with a `1px --rule` border (§2.2:
+  a 52px ruled control in both states). One commit with S68.
+- **S70** — the three untracked values ruled: LedgerEntry legs line →
+  `--st-track-name` (.03em); the rail identity's `.13em` **stays and is
+  tokenised as `--st-track-chrome`** (a named exception with one member is
+  still named); the staged-receipt header renders the kit's **three
+  trackings** (identity / count / state — the receipt's grammar).
+
+**§9's L2 gate is amended in place** (see the gate table): the constant check
+is the instrument; the frame cannot resolve 12px from 13px, and the gate now
+says so in its own line. The owed frame-check is retired, not deferred.
+
+---
+
+## Amendment — 2026-08-08 (batch 17, transcribed by the orchestrator)
+
+**S68, S69, S70 GRANTED and closed** on the re-shot receipt frames. Inside
+S70's grant: the ticket's identity had rendered in the money ink — `PAYS` is
+now the only wax on the receipt (S3 enforced where S70 never looked).
+
+**Three questions RATIFIED AS BUILT — do not re-open, do not "fix":**
+
+1. **The receipt footer stays 13px throughout.** The receipt is index, not
+   display (T29's distinction); the margin's `POTENTIAL PAYOUT` is where this
+   screen shouts, and a printed form sets key and value at one size.
+2. **The `$0` payout keeps its wax highlight at zero selections.** A sum of
+   zero is money arithmetic; the highlight marks the slot, not the amount.
+3. **The disabled PLACE fill (4/255) is never deepened.** It is a supporting
+   channel; the dimmed label and the stamped reason carry the state, and a
+   deeper value would be a fourth ground in a three-ground palette.
+
+**New ruled item — S71:** the margin's empty state spoke with two voices
+(`MY MARKS` is him; `YOUR MARGIN IS CLEAR` addresses him). Ruled: name the
+state, not the owner — `NO MARKS ON THIS SHEET`. §6 unchanged: second person
+only in genuine imperatives; first person exactly once, and it is him.
+
+**Three instruments, three spaces (C33-am3, studio-wide):** the brightness
+ladder is Rec.709 luma on display-encoded values; a contrast ratio is
+relative luminance in linear space; emission hue/chroma is CIELAB on linear
+authored values. Every measurement states its space as well as its unit.

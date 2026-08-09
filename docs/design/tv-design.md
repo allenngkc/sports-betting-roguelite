@@ -1,9 +1,11 @@
 # TV sweat — the match theatre
 
-> **APPROVED — Allen, 2026-08-07.** Canon under C9's two-tier authority. The §10 quarantine stays quarantined (provisional values settle against the real panel); §10's C3→T49-cl reconciliation stands. The DRAFT file is the preserved draft.
+> **APPROVED — Allen, 2026-08-07.** Canon under C9's two-tier authority. Revised by the Design
+> Director 2026-08-08 (batch 15): T63/T64/T65/T66 moved out of §10 into the body, T67 added, gate V1
+> amended for C33-am, R42's textured-emitter clause cross-referenced.
 
-**Owning document** under C9's two-tier authority · **Status:** CANON (Allen-approved 2026-08-07) · **Drafted:** Design Director, 2026-08-07
-**Canonical home on approval:** `main-2/docs/design/tv-design.md`
+**Owning document** under C9's two-tier authority · **Status:** RATIFIED — Allen 2026-08-07
+**Canonical home:** `main-2/docs/design/tv-design.md` · **Revised:** Design Director, 2026-08-08 (batch 15)
 **Companion:** `docs/design/constitution.md` (authority and evidence)
 **Siblings:** `docs/design/room-design.md` (R13) · `docs/design/surething-design.md` (C26-am)
 
@@ -98,6 +100,19 @@ contrast against `--tv-extinguished`.
 (C33). RGB-average and linear-space luminance both mis-rank this surface's own palette and are not the
 ladder's unit — see §10.
 
+**Where an L4 candidate is a filled field and its competitor is type, dominance is judged on zone mean
+and peak together** (C33-am). Peak-versus-peak silently compares a field against a glyph, and a field
+always loses that comparison while dominating the frame. **No gold can out-rank cold white on peak
+luma at all** — within the range a `Color32` canvas colour is clamped to, matching cold white's 0.942
+requires G ≈ 1.0, which is lemon. A gold field's L4 standing is therefore established by field area,
+zone mean and boost, never by out-peaking white type.
+
+**Three instruments, three spaces** (C33-am3, studio-wide): the brightness ladder is Rec.709 luma on
+**display-encoded** values; a contrast ratio is relative luminance in **linear** space (undefined
+elsewhere); emission hue/chroma is CIELAB on **linear authored** values. Every measurement states its
+space as well as its unit; luma-parity values are measured, never linearly scaled; the three ladders
+are never compared to each other.
+
 ---
 
 ## 3. Colour
@@ -122,8 +137,9 @@ warm, and the scarcity is the signal.**
 - **No full-field washes** (T40). The LEG-WON gold wash and the dead-leg oxide wash are *deleted, not
   dimmed* — a full-field wash spends the whole ration in one frame and is a celebration. The win is
   carried where it is already carried.
-- **This extends into the room** (T65). An event-driven room re-tint is a full-field wash on a larger
-  surface. The mechanism is open (C5) and endorsed (T45); the amplitude and hue are not.
+- **This extends into the room** (T65, closed on frames). An event-driven room re-tint is a full-field
+  wash on a larger surface. The mechanism is open (C5) and endorsed (T45). **It fires on settlement
+  only, from one painting point, carrying a room-palette warm — and no call site names a colour.**
 - **CASHED OUT $x prints in the cash-out slot at L3** (T35). A 96px full-screen figure is a
   celebration *and* resizes a zone to content — forbidden on both counts independently.
 - The goal flash is a **brightness event on the cold-white channel** (T58, closed on frames at 0.0%
@@ -213,7 +229,7 @@ an information hierarchy for three tenths of a pixel** (T51) — the stacked lab
 
 | State | Treatment |
 |---|---|
-| actionable | gold at **L4**, inverted field, dark type punched out — the surface's only L4 |
+| actionable | gold at **L4**, inverted field, dark type punched out — the surface's only L4. **The inversion is a two-part operation: field AND type** (T68) — `HOLD E` and the amount take `goldInk` on `actionable` and `accepted`; unlit states keep light ink |
 | updating | gold at **L3** — never L4: brightness must not promise what input refuses |
 | suspended | **L1 unlit slate from its first frame** (T43), `MARKET SUSPENDED`, no amount |
 | pending | as suspended; intervention controls live in their own overlay, never in this row |
@@ -229,6 +245,12 @@ already dark and labelled. Accepting a declared-refused input on a money control
 available outcome: the player gets a price the display is not showing.
 
 **`MARKET SUSPENDED` owns the slot exclusively** (TV-12/13) — no actionable offer beside it.
+
+**A lit field blooms into its neighbours** (T67). Risk/pays taking gold is not a ration event; **the
+event strip taking gold is**, because T27 keeps the bar neutral. This is judged at the seated in-room
+render and nowhere else (§1.3) — bloom through real glass at four metres is what that view exists for.
+If the strip warms at that distance the remedy is **separation**: a gutter between field and strip.
+Never a bloom change (sealed) and never dimming the band.
 
 **Confirm gesture** (T22, T36): **hold to preview; release always abandons; release is never confirm**
 — commit is an act on the laptop. The bounded fallback is a second key during the hold. **No timer, no
@@ -324,6 +346,11 @@ hue at L4 — banned on all three counts.
 The strip stays **neutral even when the event helps or hurts**; money semantics live on the leg rows
 and the cash-out slot.
 
+**Leg statements are authored to fit their measured column at the source** (T69, batch 17).
+Truncation on a word boundary is the structural backstop and should never be reached in shipped copy —
+truncation cannot produce good copy; it can only stop producing broken glyphs. The per-market short
+forms are the DD's (G1). The backed side is named once per row.
+
 Fictional leagues, teams and players only.
 
 ---
@@ -334,13 +361,14 @@ Real gates, per C9. Each states its instrument and, per C18 §4.2, **what it can
 
 | # | Gate | Instrument | Blind to |
 |---|---|---|---|
-| V1 | **One L4 token at a time** | one-token invariant + per-frame ladder scan in Rec.709 luma | anything the capture states do not force |
+| V1 | **One L4 token at a time** | one-token invariant + per-frame ladder scan in Rec.709 luma, **zone mean AND peak** (C33-am); **companion: every element that inverts reports the contrast between its field and its own ink** (C33-am2 — a dominance gate cannot see legibility) | anything the capture states do not force |
 | V2 | Gold appears only on won legs, payout figures, cash-out | palette scan incl. markup, light colours, colour arrays | gold reaching the player as **room light** (V6) |
 | V3 | No retired hue anywhere — verbatim constant match | `LooksLikeRetiredRed`-class scan over four surfaces | near-misses; the guard missed `#FF4038` by 0.00098 |
 | V4 | No zone resizes to content; stage clips to its region | per-frame edge assertion | z-order and overdraw between correctly-sized zones |
 | V5 | Display state == input state on the cash-out slot | one-value read + T43 same-frame test | whether the rendered field agrees with the flag |
 | V6 | **Room re-tint stays inside the room's palette** | room-region hue/sat/luma across an event burst | the panel's own content |
 | V7 | Variation reads as variation at review distance | rendered frames, five seeds, named manifest | anything asserted from signature diversity (T19) |
+| V8 | **Every inverting element reads against its own ink** (C33-am2) | field-vs-own-ink contrast in **linear relative luminance** (C33-am3 — a CR is undefined outside linear space) | **the label is the thinner margin and fails first if the field brightens** — rendered ink (0.222) sits far above authored (0.046) via bloom, AA and the black lift, so authored-value arithmetic overstates the margin |
 
 Every invocation reports its **executed case count** and exits non-zero on zero cases (C29). Every
 measurement is reported **with its scope and its resolution** attached (C25, C32).
@@ -369,16 +397,20 @@ measurement is reported **with its scope and its resolution** attached (C25, C32
 
 | Item | State |
 |---|---|
-| **T63** cash-out band never reaches L4 | Ruled batch 13; unbuilt |
-| **T64** TV idle-emission flicker | Struck batch 13; unbuilt |
-| **T65** room gold flood on leg-win | Ruled batch 13; unbuilt |
+| **G1** leg-statement authored short forms per market | Owed by the DD seat (batch 17); market list + column width requested from TV's lane |
+| **T65** settlement re-tint value (hue 88.0°, intensity 0.9) | Upper bound — owed a settlement capture |
 | **T9** `chromeCyan` retired-hue debt | Phase 3 |
 | **T10** two hardcoded emission rest values, one below the black floor | Phase 3 |
 | **T25.2–25.7** seated-sweat findings | TV's queue |
 | **C2** light spill colour into the room — shipped green tolerated, target cold white-grey | Interim, Allen |
 | **C6** PRD §14.1 carries deprecated `08` colour law | Documentation conflict |
-| **C15** TMP migration | Scheduled, orchestrator-side |
+| **C15** TMP migration | Phase L merged to main (`5903750`); Phase T scheduled, orchestrator-side |
 
 **Closed and verified end to end:** T41 (stage capped), T48 (grade black point), T49 (bloom 1.4,
-sealed), T58 (goal flash neutral), T6 (scene grammar), T50 (face in situ). The ladder is verified from
-substrate to L4.
+sealed), T58 (goal flash neutral), T6 (scene grammar), T50 (face in situ), **T63** (band's HDR material
+structural — the field was unboosted, not third-brightest), **T64** (idle flicker deleted), **T65**
+(room quiet on a leg win — eight frames indistinguishable from rest), **T66** (event strip at L2, one
+painting point), **T67** (batch 16: the strip does not warm at the seated view — mean +0.006, under
+the instrument's resolution; structural guard adopted: the strip's text zone begins 40px past the
+boundary, x 305–980, so any line at any length starts outside measured bloom reach). **The ladder is
+verified from substrate to L4.**
