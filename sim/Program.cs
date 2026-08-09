@@ -11,10 +11,13 @@ namespace SBR.Sim;
 /// The /sim Monte Carlo harness: plays N seeded runs per strategy bot and emits the markdown
 /// balance report. The economy rework (PLAN.md 2026-07-13) added the GATE CAMPAIGN (--gates:
 /// G1–G6 + item flags, the milestone's acceptance criteria) and the payment-curve GRID (--grid:
-/// growth × P1 cells, gates-lite per cell — how the curve gets chosen).
+/// growth × P1 cells, gates-lite per cell — how the curve gets chosen). SCORER CALIBRATION
+/// (--scorer-ev, sim/ScorerCalibration.cs) is bot-independent — no strategy ever prices Anytime
+/// Scorer, so it runs standalone instead of joining a strategy batch.
 ///
 ///   dotnet run --project sim -- [--runs N] [--strategy naive|random|skilled|noshop|martyr|all]
-///       [--seed-prefix STR] [--audit] [--combos N] [--gates] [--grid] [--report PATH] [--verify]
+///       [--seed-prefix STR] [--audit] [--combos N] [--gates] [--grid] [--scorer-ev]
+///       [--report PATH] [--verify]
 /// </summary>
 internal static class Program
 {
@@ -30,6 +33,7 @@ internal static class Program
         var cfg = new RunConfig(); // rework defaults — the sim reports on these, never mutates them
 
         if (opt.Verify) return Verify(opt, cfg);
+        if (opt.ScorerEv) return ScorerEv(opt, cfg);
         if (opt.Grid) return Grid(opt);
 
         return Run(opt, cfg);
@@ -93,7 +97,7 @@ internal static class Program
             gates = GateData.Evaluate(
                 byName.GetValueOrDefault("naive"), byName.GetValueOrDefault("skilled"),
                 byName.GetValueOrDefault("noshop"), byName.GetValueOrDefault("martyr"),
-                martyrWorst, audit, combos);
+                martyrWorst, audit, combos, byName.GetValueOrDefault("random"));
         }
 
         sw.Stop();
@@ -169,6 +173,23 @@ internal static class Program
         return 0;
     }
 
+    // The scorer calibration mode (sim/ScorerCalibration.cs): bot-independent by construction, so
+    // it never joins --gates/--audit/--combos or the default strategy batch — those all need a
+    // bot, and AnytimeScorer has none to give them (see the file's own header for why). No
+    // date/wall-time is printed here (unlike Header() below), so the whole stdout stays byte-
+    // identical run to run — the determinism check has nothing else to diff against.
+    private static int ScorerEv(CliOptions opt, RunConfig cfg)
+    {
+        ScorerCalibrationData data = ScorerCalibrationData.Compute(opt.Runs, opt.SeedPrefix, cfg);
+        int offersPerMatchup = cfg.PlayersPerTeam * 2;
+        Console.WriteLine($"# scorer calibration — --scorer-ev, {opt.Runs:N0} slates x {cfg.MatchupsPerSlate} "
+            + $"matchups x {offersPerMatchup} scorer offers, {ScorerCalibrationData.SamplesPerMatchup} "
+            + $"resamples/matchup, seed prefix \"{opt.SeedPrefix}\"");
+        Console.WriteLine();
+        Console.Out.Write(Report.ScorerEv(data, cfg));
+        return 0;
+    }
+
     private static BatchSummary SkilledBaseline(CliOptions opt, RunConfig cfg, ref long totalRuns)
     {
         RunResult[] r = Harness.RunBatch(new SkilledStrategy(), opt.Runs, opt.SeedPrefix, cfg);
@@ -227,6 +248,7 @@ internal static class Program
         "  --combos N            pairwise passive combo scan, N runs per pair\n" +
         "  --gates               the FULL gate campaign: G1-G6 + item flags (implies audit+combos)\n" +
         "  --grid                the payment-curve grid (growth x P1), gates-lite per cell\n" +
+        "  --scorer-ev           bot-independent AnytimeScorer calibration report (own mode; ignores --strategy)\n" +
         "  --report PATH         also write the markdown report to PATH\n" +
         "  --verify              determinism self-check (200 runs twice), then exit\n";
 }

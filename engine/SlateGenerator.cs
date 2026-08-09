@@ -45,8 +45,18 @@ public static class SlateGenerator
             if (hub != null)
             {
                 Pcg32 rosterRng = hub.DeriveMatch(round, i, "roster");
-                home = WithRoster(home, MakeRoster(rosterRng, config));
-                away = WithRoster(away, MakeRoster(rosterRng, config));
+                // The anytime-scorer board is one flat list spanning both rosters (M-01,
+                // MatchModel.BuildOffers), so this set must span both MakeRoster calls below —
+                // unique names within a single roster is not enough.
+                var usedNames = new HashSet<string>();
+                // Scoring-weight jitter draws from its OWN derived stream, never the roster stream.
+                // Sharing would shift every subsequent name draw, so before/after slates would
+                // differ in names as well as weights and no comparison could isolate the change.
+                // One stream per concern is also what makes the jitter re-tunable without moving
+                // anything else on the board.
+                Pcg32 weightRng = hub.DeriveMatch(round, i, "weights");
+                home = WithRoster(home, MakeRoster(rosterRng, config, usedNames, weightRng));
+                away = WithRoster(away, MakeRoster(rosterRng, config, usedNames, weightRng));
             }
 
             // The nine latent/signal draws are deliberately sequential and independent of the
@@ -96,17 +106,44 @@ public static class SlateGenerator
     private static readonly string[] PlayerLast =
         { "Ledger", "Cinder", "Muffin", "Pavement", "Coupon", "Wobble", "Gasket", "Pylon", "Ketchup", "Lanyard", "Racket", "Stapler" };
 
-    private static IReadOnlyList<Player> MakeRoster(Pcg32 rng, RunConfig config)
+    private static IReadOnlyList<Player> MakeRoster(Pcg32 rng, RunConfig config,
+        HashSet<string> usedNames, Pcg32 weightRng)
     {
         if (config.PlayersPerTeam <= 0) throw new InvalidOperationException("PlayersPerTeam must be positive");
+        // Both rosters share usedNames (see call site), so the exhaustion floor is the combined
+        // board, not one roster: PlayersPerTeam * 2 must fit the 144 first/last combinations.
+        if (config.PlayersPerTeam * 2 > PlayerFirst.Length * PlayerLast.Length)
+            throw new InvalidOperationException(
+                "PlayersPerTeam is too large: both rosters together must fit within the 144 available name combinations");
         var players = new List<Player>(config.PlayersPerTeam);
         for (int i = 0; i < config.PlayersPerTeam; i++)
         {
             // A stable role mix puts attackers up front while still listing midfielders and defenders.
             PlayerRole role = i % 7 < 3 ? PlayerRole.FW : i % 7 < 5 ? PlayerRole.MF : PlayerRole.DF;
-            double weight = role == PlayerRole.FW ? config.ForwardScoringWeight
+            double roleWeight = role == PlayerRole.FW ? config.ForwardScoringWeight
                 : role == PlayerRole.MF ? config.MidfielderScoringWeight : config.DefenderScoringWeight;
-            players.Add(new Player($"{PlayerFirst[rng.NextInt(0, PlayerFirst.Length)]} {PlayerLast[rng.NextInt(0, PlayerLast.Length)]}", role, weight));
+            // Per-player scoring variety. Weight was PURELY role-derived, so every forward on a
+            // team priced identically and a 14-row scorer board carried at most six distinct
+            // prices (2 teams × 3 roles) — on that tab the player was choosing a name, not a
+            // price. The jitter is multiplicative and symmetric about the role weight, so the
+            // ROLE ORDER still holds on average (a forward is still the striker) while individual
+            // players separate. Bounded by ScoringWeightJitter and clamped strictly positive: a
+            // zero or negative weight would make a listed player unscoreable while still being
+            // offered, which is worse than the flatness it replaces.
+            double jitter = config.ScoringWeightJitter;
+            double weight = roleWeight;
+            if (jitter > 0.0)
+                weight = Math.Max(roleWeight * 0.05,
+                    roleWeight * (1.0 + jitter * (2.0 * weightRng.NextDouble() - 1.0)));
+            // Rejection-resample on the same stream: a name collision (within or across
+            // rosters) is re-rolled until unique, so replay stays byte-identical and role/weight
+            // (index-derived above) never shift.
+            string name;
+            do
+            {
+                name = $"{PlayerFirst[rng.NextInt(0, PlayerFirst.Length)]} {PlayerLast[rng.NextInt(0, PlayerLast.Length)]}";
+            } while (!usedNames.Add(name));
+            players.Add(new Player(name, role, weight));
         }
         return players;
     }

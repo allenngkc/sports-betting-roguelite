@@ -14,6 +14,7 @@ public sealed class CliOptions
     public int Combos;                  // 0 = off; else runs per passive pair
     public bool Gates;                  // the full G1–G6 campaign (implies audit + combos + all bots)
     public bool Grid;                   // the payment-curve grid (growth × P1), gates-lite per cell
+    public bool ScorerEv;               // bot-independent AnytimeScorer calibration; own mode, never bundled
     public string? ReportPath;
     public bool Verify;
 
@@ -45,6 +46,9 @@ public sealed class CliOptions
                     break;
                 case "--grid":
                     options.Grid = true;
+                    break;
+                case "--scorer-ev":
+                    options.ScorerEv = true;
                     break;
                 case "--seed-prefix":
                     if (!TryTake(args, ref i, out options.SeedPrefix!, out error)) return false;

@@ -1,0 +1,17 @@
+/* MOTION — the two surfaces move in deliberately opposite ways. If they feel the same, one is wrong.
+   SURETHING: THE LAID-INK RULE. Motion is continuous, hand-paced, and caused by document marking.
+     DESIGN.md specifies no duration and no easing curve, and explicitly forbids inventing a flashy
+     motion system. The durations below are the only ones this system will assert: none.
+   TV: the native motion is PANEL REFRESH. State changes are quantised — a brightness level swaps in
+     a discrete step. One pulse kind exists on the whole surface (LIVE), off one shared clock. */
+:root{
+  --st-ease:cubic-bezier(.4,0,.2,1); /* @kind other */   /* continuous and unremarkable. Never a bounce, never a spring. */
+  --st-motion-note:"hand-paced, continuous, undurated"; /* @kind other */
+  --tv-step:steps(1,end); /* @kind other */              /* quantised: change state, do not tween between poses */
+  --tv-dur-punch:150ms; /* @kind other */                /* score / count punch — 120-180ms */
+  --tv-dur-event:150ms; /* @kind other */                /* event-strip entrance — 120-180ms */
+  --tv-dur-progress:210ms; /* @kind other */             /* active-leg progress change — 180-240ms */
+  --tv-dur-ticket:380ms; /* @kind other */               /* ticket crossfade / slide — 300-450ms */
+  --tv-dur-action:150ms; /* @kind other */               /* action-state label swap + colour settle — 120-180ms */
+  --tv-pulse-dur:1600ms; /* @kind other */               /* the LIVE pulse. The only pulse. In phase across all live legs. */
+}

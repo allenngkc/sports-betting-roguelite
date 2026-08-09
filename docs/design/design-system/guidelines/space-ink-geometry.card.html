@@ -1,0 +1,10 @@
+<!-- @dsCard group="Space" viewport="700x190" name="Ink ring geometry" subtitle="ring = cell + 16px, offset −8/−8. Additive, never proportional." -->
+<!doctype html><html lang="en"><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css"><link rel="stylesheet" href="card.css"></head><body><div style="display:flex;gap:34px;align-items:center;padding:14px 0">
+<div style="position:relative;width:96px;height:30px;border:1px dashed var(--rule);display:flex;align-items:center;justify-content:center" class="cond">
+<span style="font-size:19px">-260</span>
+<div style="position:absolute;left:-8px;top:-8px;width:112px;height:46px;border:1px dotted var(--biro-deep)"></div>
+<div style="position:absolute;left:-8px;top:-8px;width:112px;height:46px;background-color:var(--biro);-webkit-mask:url(../assets/ink/ring-price-a@2x.png) no-repeat 0 0/112px 46px;mask:url(../assets/ink/ring-price-a@2x.png) no-repeat 0 0/112px 46px"></div></div>
+<div style="font-family:var(--font-mono);font-size:11px;color:var(--toner-2);line-height:1.9">
+generic cell&nbsp;&nbsp; W × H<br>ring box&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(W+16) × (H+16)&nbsp;&nbsp; offset x −8, y −8<br>
+<span style="color:var(--wax-deep)">96 × 30 → 112 × 46&nbsp;&nbsp;&nbsp;&nbsp;112 × 32 → 128 × 48&nbsp;&nbsp;&nbsp;&nbsp;160 × 30 → 176 × 46</span></div></div>
+<p class="note" style="margin-top:6px">The overshoot needs somewhere to go: people do not stop the pen where they began, and removing that overshoot is the fastest way to make these read as clip art. Derive the ring from the <em>real control's</em> measured rect — a ring sized to its own box lands its widest point on the last digit.</p></body></html>

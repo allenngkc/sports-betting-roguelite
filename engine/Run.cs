@@ -74,6 +74,17 @@ public sealed class Run
     private readonly List<Ticket> _tickets = new List<Ticket>();
     public IReadOnlyList<Ticket> Tickets => _tickets;
 
+    private readonly List<Ticket> _settledTickets = new List<Ticket>();
+
+    /// <summary>Every ticket this run has settled, oldest first, across ALL rounds — the LEDGER's
+    /// source (S36, S35a). <see cref="Tickets"/> is the CURRENT round's working set and is cleared
+    /// at <see cref="ExitShop"/>, so before this existed a run-long settled record had nothing to
+    /// read: the shipped ledger could only ever show the round you were standing in, which is why
+    /// its own copy admitted it was "exposed by run.Tickets only". Appended at
+    /// <see cref="Settle"/>, which every round reaches — the final one included — so a run that
+    /// ends on its last round does not silently lose that round's records.</summary>
+    public IReadOnlyList<Ticket> SettledTickets => _settledTickets;
+
     private readonly List<SweatSession> _sweats = new List<SweatSession>();
 
     /// <summary>One session per ticket in placement order; empty until the round is locked.</summary>
@@ -427,6 +438,12 @@ public sealed class Run
         }
         _effects.OnRoundResolved(new RoundResolution(
             Round, roundPnl, _tickets.Count, won, lost, cashed, refunds));
+
+        // Hand this round's tickets to the run-long settled record before ExitShop clears the
+        // working set. Every ticket is terminal by now — the tally above is what establishes that —
+        // and each carries its own round in Id ("round.placementIndex"), so the record needs no
+        // parallel bookkeeping to say which round a row belongs to.
+        _settledTickets.AddRange(_tickets);
 
         if (Bank >= payment)
         {

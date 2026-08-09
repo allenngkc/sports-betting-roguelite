@@ -51,10 +51,14 @@ public static class Report
         if (gates == null) return;
         sb.AppendLine("## 0. Gate campaign (PLAN.md acceptance criteria)");
         sb.AppendLine();
-        sb.AppendLine("| Gate | Criterion | Verdict | Actual |");
-        sb.AppendLine("|---|---|---|---|");
+        // C32: the resolution travels WITH the verdict, in the same table. A PASS whose resolution
+        // is coarser than the drift it exists to catch is not a clean result, and putting the
+        // number in a footnote is how that goes unread.
+        sb.AppendLine("| Gate | Criterion | Verdict | Actual | Resolution |");
+        sb.AppendLine("|---|---|---|---|---|");
         foreach (GateData.Gate g in gates.Gates)
-            sb.AppendLine($"| {g.Id} | {g.Description} | {(g.Pass ? "**PASS**" : "**FAIL**")} | {g.Actual} |");
+            sb.AppendLine($"| {g.Id} | {g.Description} | {(g.Pass ? "**PASS**" : "**FAIL**")} | {g.Actual} "
+                + $"| {(g.Resolution.Length == 0 ? "—" : g.Resolution)} |");
         sb.AppendLine();
         if (gates.ItemFlags.Count == 0)
             sb.AppendLine("Item flags: none — no DEAD items, no DOMINANT item, Totem in the healthy band.");
@@ -188,6 +192,125 @@ public static class Report
         sb.AppendLine();
     }
 
+    // ---- scorer calibration (--scorer-ev; its own standalone mode — see Program.ScorerEv) ----
+
+    /// <summary>Renders the --scorer-ev report. Deliberately outside Full/Body: this mode never
+    /// runs alongside the batch report, carries no date/wall-time, and has no reason to enter the
+    /// --verify byte-diff surface those two already own — Program.ScorerEv diffs this output
+    /// directly instead.</summary>
+    public static string ScorerEv(ScorerCalibrationData data, RunConfig cfg)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("## Scorer calibration");
+        sb.AppendLine();
+        double r = cfg.Overround;
+        double expectedEvPp = 100.0 * (1.0 / (1.0 + r) - 1.0);
+        sb.AppendLine("Every bot is policy-excluded from pricing Anytime Scorer (a declared "
+            + "human-agency market), so no strategy can de-vig it and no gate can verify it that "
+            + "way. This measures the one thing that needs no strategy: does the probability the "
+            + "engine PRICES a scorer at (`Matchup.TrueProb`) match the frequency the engine's own "
+            + "sampler REALISES for that player (`SampleStatLine` + `SampleScorers`)? Each offer is "
+            + $"resampled {ScorerCalibrationData.SamplesPerMatchup} times on a stream derived from "
+            + "the run seed — never the sequential Outcomes/Slate streams — so measuring an offer "
+            + "can never perturb the slate it was priced from. Under correct pricing at overround "
+            + $"{Pct(r * 100.0)}, realised EV should sit at 1/(1+r) − 1 = **{expectedEvPp.ToString("F2", Inv)}pp** "
+            + "— the same figure every two-way market in this sim converges to.");
+        sb.AppendLine();
+
+        sb.AppendLine("| priced p band | offers | samples | mean priced p | realised freq | Δ (pp) | realised EV (pp) | freq SE | EV SE |");
+        sb.AppendLine("|---|---|---|---|---|---|---|---|---|");
+        foreach (ScorerCalibrationData.Bucket b in data.ByProbabilityBand())
+            AppendCalibrationRow(sb, b);
+        sb.AppendLine();
+
+        sb.AppendLine("By role — role sets the base scoring weight and per-player jitter spreads "
+            + "players within it, so this split is the fastest check for whether a miscalibration "
+            + "is role-shaped rather than a general drift. What it cannot see: a miss confined to "
+            + "one player inside a role, which pools away here and needs the band table:");
+        sb.AppendLine();
+        sb.AppendLine("| role | offers | samples | mean priced p | realised freq | Δ (pp) | realised EV (pp) | freq SE | EV SE |");
+        sb.AppendLine("|---|---|---|---|---|---|---|---|---|");
+        foreach (ScorerCalibrationData.Bucket b in data.ByRole())
+            AppendCalibrationRow(sb, b);
+        sb.AppendLine();
+
+        sb.AppendLine("What this instrument cannot see:");
+        sb.AppendLine("- It measures the engine against itself (priced probability vs. that same "
+            + "engine's own sampler) — a shared upstream error in the scoring-weight model would "
+            + "be invisible to it.");
+        sb.AppendLine("- It says nothing about whether the market is FUN, or well-priced against a "
+            + "human reader of the odds — only whether the engine's two halves agree with each other.");
+        sb.AppendLine("- It does not exercise settlement or the parlay path — every number here is "
+            + "single-leg and pre-stake.");
+        sb.AppendLine("- A bucket pools many different players and matchups; its sample count is "
+            + "TOTAL resamples, not one player measured repeatedly — read the by-role table before "
+            + "blaming one player for a bucket's number.");
+        sb.AppendLine();
+
+        sb.AppendLine($"> Takeaway: {ScorerEvTakeaway(data, 1.0 / (1.0 + r) - 1.0)}");
+        sb.AppendLine();
+        return sb.ToString();
+    }
+
+    private static void AppendCalibrationRow(StringBuilder sb, ScorerCalibrationData.Bucket b)
+    {
+        if (b.OfferCount == 0)
+        {
+            sb.AppendLine($"| {b.Label} | 0 | 0 | — | — | — | — | — |");
+            return;
+        }
+        sb.AppendLine($"| {b.Label} | {b.OfferCount.ToString("N0", Inv)} | {b.SampleCount.ToString("N0", Inv)} "
+            + $"| {Pct(b.MeanPricedProb * 100.0)} | {Pct(b.RealizedFreq * 100.0)} "
+            + $"| {SignedPct(100.0 * (b.RealizedFreq - b.MeanPricedProb))} "
+            + $"| {SignedPct(b.EvFraction * 100.0)} | ±{(b.SeFraction * 100.0).ToString("F1", Inv)}pp | ±{(b.EvSeFraction * 100.0).ToString("F1", Inv)}pp |");
+    }
+
+    /// <summary>An honest read of the buckets above, not a hand-authored verdict: flags bands
+    /// whose |Δ| exceeds 2 SE (≈95% two-sided) rather than asserting calibration either way.</summary>
+    private static string ScorerEvTakeaway(ScorerCalibrationData data, double expectedEv)
+    {
+        int populated = 0, outside2Se = 0;
+        double worstZ = 0;
+        string worstLabel = "";
+        foreach (ScorerCalibrationData.Bucket b in data.ByProbabilityBand())
+        {
+            if (b.OfferCount == 0 || b.SeFraction <= 0.0) continue;
+            populated++;
+            double z = Math.Abs(b.RealizedFreq - b.MeanPricedProb) / b.SeFraction;
+            if (z > 2.0) outside2Se++;
+            if (z > worstZ) { worstZ = z; worstLabel = b.Label; }
+        }
+        // The EV column needs its OWN verdict, judged against its OWN error. Calibration and EV
+        // fairness are not the same claim: at long odds a frequency error far too small to show in
+        // the Δ column is multiplied by the odds into a visible EV gap, and — the trap this seat
+        // fell into — an EV gap far smaller than the EV's own error looks exactly like a finding
+        // if the only SE printed beside it belongs to the frequency.
+        int evOutside2Se = 0;
+        double worstEvZ = 0;
+        string worstEvLabel = "";
+        foreach (ScorerCalibrationData.Bucket b in data.ByProbabilityBand())
+        {
+            if (b.OfferCount == 0 || b.EvSeFraction <= 0.0) continue;
+            double evZ = Math.Abs(b.EvFraction - expectedEv) / b.EvSeFraction;
+            if (evZ > 2.0) evOutside2Se++;
+            if (evZ > worstEvZ) { worstEvZ = evZ; worstEvLabel = b.Label; }
+        }
+
+        if (populated == 0) return "no offers sampled — widen --runs.";
+        if (outside2Se == 0 && evOutside2Se == 0)
+            return $"all {populated} probability bands sit within 2 SE of their priced probability, "
+                + $"and every band's realised EV is within 2 SE of {(expectedEv * 100.0).ToString("F2", Inv)}pp "
+                + $"(worst {worstEvLabel} at {worstEvZ.ToString("F1", Inv)} SE) — calibration and EV "
+                + "fairness both hold at this sample size.";
+        if (outside2Se == 0)
+            return $"all {populated} bands are calibrated, but {evOutside2Se} band(s) sit outside 2 SE "
+                + $"on realised EV (worst: {worstEvLabel} at {worstEvZ.ToString("F1", Inv)} SE) — the "
+                + "price is honest about frequency and still not returning the intended vig there.";
+        return $"{outside2Se}/{populated} probability bands sit outside 2 SE of their priced "
+            + $"probability (worst: {worstLabel} at {worstZ.ToString("F1", Inv)} SE) — price and "
+            + "sampler disagree there, not just noise.";
+    }
+
     // ---- 2. item audit ----
 
     private static void ItemAudit(StringBuilder sb, AuditData? audit)
@@ -208,7 +331,7 @@ public static class Report
             + "Sorted by Δ mean rounds survived.");
         sb.AppendLine();
         sb.AppendLine("| Item | kind | mean rounds | Δ mean | median death | won % | Δ won % (±SE) | exposure | totem fires |");
-        sb.AppendLine("|---|---|---|---|---|---|---|---|---|");
+        sb.AppendLine("|---|---|---|---|---|---|---|---|---|---|");
         foreach (AuditData.Entry e in audit.Entries)
         {
             string totem = e.Id == RelicCatalog.TotemId ? Pct(e.TotemFireRate) : "—";
@@ -234,7 +357,7 @@ public static class Report
         sb.AppendLine("Biggest single-ticket swing per run (won payout / cash-out taken / stake lost), and final bank of winning runs.");
         sb.AppendLine();
         sb.AppendLine("| Strategy | swing p10 | p50 | p90 | p99 | win-bank p10 | p50 | p90 | p99 |");
-        sb.AppendLine("|---|---|---|---|---|---|---|---|---|");
+        sb.AppendLine("|---|---|---|---|---|---|---|---|---|---|");
         foreach (BatchSummary b in batches)
         {
             string wb10, wb50, wb90, wb99;
@@ -470,7 +593,9 @@ public static class Report
 
     private static string SignedPct(double v)
         => Math.Abs(v) < 0.05 ? "0.0pp" : (v > 0 ? "+" : "") + v.ToString("F1", Inv) + "pp";
-    private static string MarketName(MarketKind kind) => kind switch
+    /// <summary>Internal rather than private: G7's coverage gate names the uncovered kinds, and
+    /// one mapping that tracks MarketKind beats two that can drift apart when a market ships.</summary>
+    internal static string MarketName(MarketKind kind) => kind switch
     {
         MarketKind.Moneyline => "Moneyline",
         MarketKind.TotalGoals => "Total Goals",
