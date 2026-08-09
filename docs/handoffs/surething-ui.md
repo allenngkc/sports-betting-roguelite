@@ -1,6 +1,53 @@
 # SureThing UI — re-seat state
 
-**STATUS 2026-08-08 · `5d545f3` · tree clean · EditMode 78/78 · PlayMode 57/57 · NOTHING IN FLIGHT**
+**STATUS 2026-08-09 · re-seat point · `f53c8ee` on `surething-ui` · tree clean (`artifacts/` untracked, as always)**
+
+### Verifiable state
+
+- **Suites: EditMode 78/78 · PlayMode 57/57.** Baseline every later comparison against **78/57** —
+  the extra two over the old 76 are S29's digit-spread assertions.
+- **Branch is 12 ahead of main and 3 BEHIND — main has moved since the Phase L merge.** A merge is
+  owed before the next drag. Last time the forecast said CLEAN and one file still needed reading;
+  `merge-tree --write-tree` writes nothing and is the cheap check.
+- **Nothing in flight. No editor held. No work in progress.**
+
+### ⚠ Flagged unverified — precisely, because the chain matters
+
+- **The last full suite run was the C13 `s0.0` sharpness arm**, which compiled the current Editor
+  scaffolding *including* its Verify gate. **That run covers the code as it stands.**
+- **`fb8e248` and `4c2d567` restored the three font assets out of HEAD rather than regenerating**, so
+  those artifacts are byte-identical to the ones verified at `6bd6da2`. **Correct, but not
+  re-verified as a pair with the current scaffolding.** One bootstrap + both suites closes it and is
+  the cheapest first act of the next session.
+- Consequence to expect, not a defect: **those materials carry no explicit `_Sharpness` and no
+  `[DF s0.0]` name tag** until the next bootstrap run. Verify gates on the shader and on the
+  *value* (default 0 == the constant), so it passes correctly meanwhile.
+- **`f53c8ee` is docs only.**
+
+### Open items
+
+1. **C13 is live and is the only active thread.** Room is shooting the render-scale-1.5
+   discriminator now. Everything else in that hunt is eliminated by measurement — see §4bb-C13 and
+   `docs/handoffs/c13-supersampling-cost.md`. **A-or-C, B refused, with Allen holding the call.**
+2. **Owed by others, not me:** GPU cost for render scale (room's), and whether render scale actually
+   narrows the ramp (room's shoot, in progress).
+3. **Routed away, do not pick up:** M-04/M-05 stake block → markets. The ledger's `OPEN` status →
+   engine-contract list. **B-01's ticket axis → needs a real ruling**; it has been ruled around four
+   times without being ruled on, and ratified-by-silence is not a ruling.
+4. **The 11/11 capture-state collision** (`11-desktop` vs markets' `11-margin-max-legs`) is with
+   markets. **`11-desktop` must not move** — S47, S56 and owning doc §5.2 cite it by name. 16 is free.
+
+### The three standing traps
+
+- **`artifacts/` is not git-ignored.** A bare `git add -A` sweeps ~100 PNGs. Stage explicitly, always.
+- **Ask the orchestrator for the editor every time**, including batch probes. I broke this once on a
+  misread of "editor is free today" and it is the same failure this file already recorded from
+  2026-08-06.
+- **`ProjectSettings.asset` gains a `SENTIS_ANALYTICS_ENABLED` scripting define when Unity opens.**
+  Leave it unstaged and out of every commit — orchestrator's standing call.
+
+---
+
 - **PHASE L IS GRANTED AND ON MAIN.** The whole laptop text stack is TextMeshPro. **C15, S20, S28 and S29 are CLOSED and every type deviation has expired** (batch 15). The migration was verified 1:1 — five product-fact slots measured identical ink heights at identical scanlines through a complete text-stack replacement. **S8 and S52 re-verified on it.**
 - **Batches 16–17 are closed too.** S68 (kit trackings — the SKIP headroom recovers by construction), S69 (disabled grounds un-inverted), S70 (three untokened kit values, receipt header split, height re-derived) and S71 (`NO MARKS ON THIS SHEET`) all granted.
 - **THE THREE PARKED QUESTIONS ARE RATIFIED AS BUILT — do not "fix" any of them.** Footer stays 13px (**the receipt is index, not display**); the wax highlight stays over the value (**it marks the slot, not the amount**); the disabled PLACE fill is **explicitly not to be deepened** — the other two channels carry that distinction.
