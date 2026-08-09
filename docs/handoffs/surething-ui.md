@@ -833,12 +833,56 @@ that, and it was sequenced deliberately.
 **S52 survived all of it:** rail band 0 differing of 34,816, tray past the app slots 0 of 22,576,
 through a type-stack replacement, a weight change and a face change.
 
-**Still owed, and named in the final set's README:** the **13px fact floor is verified in source, not
-at review distance** — `MakeText` clamps to `Mathf.Max(13, …)`, but TMP point size and UGUI pixel size
-are not the same quantity, and L2 is the one gate this phase never touched. Also: the digit jitter S29
-fixes was never photographed (no capture state varies the bank), and three kit values still match no
-token — `LedgerEntry.jsx:17` `.02em`, `OsRail.jsx:17` `.13em`, and the staged-receipt header this
-build renders as one string where the kit splits it across three trackings.
+**Both items that section used to carry are closed.** The three untokened kit values landed as S70.
+And **L2's fact-floor gate was AMENDED, not satisfied** (batch 15): at 1024×704 Archivo's 0.73em cap
+puts 13px at 9.49px of ink and 12px at 8.76px — **both render 9px**, so the gate specified an
+instrument coarser than the distinction it exists to make. It now checks *which constant each slot
+uses*; `MakeText`'s `Mathf.Max(13, …)` clamp is the instrument. The debt was never obtainable.
+
+## 4bb-C13. The laptop reads soft in the room — what is eliminated, and what is left
+
+**The laptop is not a package.** World-space canvas, `Camera.main`, no RenderTexture — see
+`docs/handoffs/c13-surething-side.md`. Room gets the surface by merging main.
+
+**One real defect found and fixed** (`6bd6da2`): the generator mirrored `atlas.width/height` into the
+material's `_TextureWidth/_TextureHeight`, and a **Dynamic atlas serialises at 1×1**, so the SDF
+shader derived its gradient against a 1-pixel texture. Correct as authored, gated so it cannot
+regress — **and exonerated by room as the cause**: the reimport did not sharpen.
+
+**Eliminated, each by measurement, not argument:**
+
+| suspect | killed by |
+|---|---|
+| the grade | room: 1.44× against the UI's 1.14× |
+| atlas health, `_GradientScale` | room: 10 against padding 9 is correct |
+| the material mirror | room: reimport, no change |
+| **canvas render scale · world-space pixel density** | **bitmaps stay sharp while glyphs are soft** — same canvas, same magnification; a coarse canvas would soften the ink sprites too |
+| **TMP shader variant** | the A/B: arms differ on **43 scanlines** at clip boundaries (y≈641–649, y≈48) and are **byte-identical** across the form header, matchup rows and margin labels. A shader softening glyphs would change every glyph |
+
+**Left standing: sampling point size (90pt) against rendered size (13–31px).** Routed to room's
+desk-pose rig — the one instrument that measures at magnification against a control.
+
+**The edge table, for that shoot.** Ramp share normalised to each element's own ground-to-ink span:
+
+| element | size | ramp share |
+|---|---|---|
+| column head (toner-3) | 13px | 69.4% |
+| masthead subline (toner-3) | 13px | 74.0% |
+| POTENTIAL PAYOUT (toner-3) | 13px | 80.1% |
+| payout figure (wax) | 31px | 70.7% |
+| SURETHING (toner) | 26px | 44.0% |
+
+**Suggestive, not conclusive, and the caveat travels with it.** No clean size relationship — if ramp
+width scaled with rendered size the 31px figure would be softest and it is not. **At 13px a stem is
+1–2px wide and everything is edge**, so this instrument cannot separate ramp width from stroke weight.
+My first cut of it was worse: absolute luminance thresholds, which made every `--toner-3` element read
+100% transitional **by construction**, because those glyphs peak near 106 and can never clear a >150
+"solid" cutoff. It would have reported ink colour as softness.
+
+**Arm B is one constant.** `SureThingTmpFontAssets.UseMobileSdfShader` → `true`, re-run the bootstrap.
+The arm is stamped into every material name and the Verify line, and **Verify fails if the assets in
+the tree were built with the other arm** — regenerate one face and forget another and the comparison
+mixes silently.
 
 The signed type deviations (**S28** tracking, **S29** tabular figures, **S20** weight 600, and
 **markets' ladder letter-spacing**) stay in force until this surface migrates and **expire the moment

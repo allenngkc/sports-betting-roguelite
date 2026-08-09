@@ -46,6 +46,36 @@ namespace SBR.EditorTools
         /// "read at an angle" is S2's first sentence about this surface.</summary>
         public const GlyphRenderMode RenderMode = GlyphRenderMode.SDFAA;
 
+        // ---- C13 shader A/B, in the drawer -------------------------------------------------------
+        //
+        // **Flip this one constant and re-run the bootstrap; nothing else moves.** It exists because
+        // the material-mirror fix may turn out to be a real defect that was not the CAUSE of the
+        // desk-pose softness, and this is the next suspect rather than a fresh start.
+        //
+        // TMP's own font-asset creation path builds its material from `ShaderRef_MobileSDF`
+        // (`TMP_FontAsset.cs:638`). This generator has always used the full `TextMeshPro/Distance
+        // Field` instead — my choice, made for quality on a world-space canvas read at an angle, and
+        // very possibly the better one. But it IS a divergence from TMP's convention that I
+        // introduced, it lives in the same three materials the softness lives in, and the two
+        // shaders do not antialias identically: the full shader declares 12 ScaleRatio references
+        // against the mobile shader's 10.
+        //
+        // **Arm A** (`TextMeshPro/Distance Field`) is what ships today.
+        // **Arm B** (`TextMeshPro/Mobile/Distance Field`) is TMP's own default.
+        //
+        // The arm is stamped into each material's NAME so a frame can always be traced back to the
+        // build that produced it — an A/B whose arms are indistinguishable in the artifact is how
+        // T49's bloom comparison ended up unreadable and had to be re-run.
+        private const bool UseMobileSdfShader = false;
+
+        private const string ShaderArmA = "TextMeshPro/Distance Field";
+        private const string ShaderArmB = "TextMeshPro/Mobile/Distance Field";
+
+        /// <summary>The shader this build uses, and the short tag that records it in every material
+        /// name and in the bootstrap's log line.</summary>
+        internal static string ShaderName => UseMobileSdfShader ? ShaderArmB : ShaderArmA;
+        internal static string ShaderArmTag => UseMobileSdfShader ? "MobileSDF" : "DF";
+
         private const string FontDir = "Assets/SBR/Resources/SureThing/Fonts";
 
         /// <summary>TMP maps a weight to its table by `fontWeight / 100`, so SemiBold (600) is 6.
@@ -89,7 +119,7 @@ namespace SBR.EditorTools
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.Log($"[SureThingTmpFontAssets] done at {SamplingPointSize}pt padding {AtlasPadding} " +
-                      $"{RenderMode} {AtlasWidth}x{AtlasHeight}");
+                      $"{RenderMode} {AtlasWidth}x{AtlasHeight} · shader arm [{ShaderArmTag}] '{ShaderName}'");
         }
 
         /// <summary>Finds the face index whose style name matches, so nothing here depends on a
@@ -166,14 +196,17 @@ namespace SBR.EditorTools
             atlas.name = assetName + " Atlas";
             AssetDatabase.AddObjectToAsset(atlas, asset);
 
-            Shader shader = Shader.Find("TextMeshPro/Distance Field");
+            Shader shader = Shader.Find(ShaderName);
             if (shader == null)
             {
-                Debug.LogError("[SureThingTmpFontAssets] TextMeshPro/Distance Field shader not found — " +
-                               "essential resources are missing or incomplete.");
+                Debug.LogError($"[SureThingTmpFontAssets] shader '{ShaderName}' not found — essential " +
+                               "resources are missing or incomplete.");
                 return null;
             }
-            var material = new Material(shader) { name = assetName + " Atlas Material" };
+            var material = new Material(shader)
+            {
+                name = $"{assetName} Atlas Material [{ShaderArmTag}]"
+            };
             material.SetTexture(ShaderUtilities.ID_MainTex, atlas);
 
             // **The CONFIGURED atlas size, never the texture's current size.** This read
