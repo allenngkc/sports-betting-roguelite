@@ -46,6 +46,34 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-08 cycle 134 · **THE BLUR HUNT: six exonerations, one hard number,
+  properly stuck** — the in-room glyph blur has now survived: the grade
+  (1.44× room vs 1.14× UI), the bitmaps (sharp throughout), the SDF atlas
+  (healthy, _GradientScale correct), the _TextureWidth mirror (real defect,
+  fixed 6bd6da2+4c2d567, exonerated by forced-reimport reshoot), a stale
+  import, and SMAA (ramp held 1.68px with it off; trade-off self-closed —
+  room hardens 0.868× vs UI 0.938×, no DD ruling needed). THE measurement:
+  glyph edge ramp FIXED at ~1.6px in screen pixels, does not scale with the
+  glyph — screen-space, constant, unexplained. Instrument lessons banked:
+  ring-in-frame caught a crop masquerading as magnification; ±25% pixel
+  quantisation rejected as a trend; rebuilt with sub-pixel edge fitting +
+  pre-committed thresholds (0.667× vs 1.000×) + per-FOV controls. Two
+  confident wrong answers → both leads now confirm-before-naming. Hunt
+  handed to SureThing (canvas render mode / UI shader path / world-space
+  canvas vs camera) with the ramp as acceptance: a candidate must predict
+  a fixed ~1.6px screen-space ramp. Merged to main this arc: 3727ee6
+  (S68-71 + C13 handoff + mirror fix). Allen's ruling stands: sharp at the
+  desk, his eye the bar.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | hunting | candidate that predicts the 1.6px ramp | lead |
+  | tv-sweat | clean-holding | DD verdicts + G1 forms | DD |
+  | room | clean-holding | shoots SureThing's next fix on its rig | lead |
+  | markets-2 | clean-holding | none | — |
+  | DD bridge | fed | batch-18 case (walk, blur trail, stake block) on land | orchestrator |
+  | Editor | free | SureThing on ask | orchestrator |
+  | **Need Allen** | desk-pose eyeball when the fix lands | verdict | Allen |
 - 2026-08-08 cycle 133 · **ALLEN'S DAY: walk done, C13 merged, LFS fixed;
   one finding in flight** — R22 walk: "everything else is great," ONE
   finding: the SureThing UI blurry in-room (screenshot preserved). C13's
