@@ -146,12 +146,25 @@ namespace SBR.Game
             /// <c>"MARKET PICK"</c> for every non-team market. Never a fabricated team.</summary>
             public readonly string Identity;
 
-            public ActiveLegCopy(string need, string live, bool isTeamMarket, string identity)
+            /// <summary>G1: the shorter AUTHORED line for this requirement, or null where the form
+            /// cannot overflow. §8 says copy "truncates or chooses a shorter authored line; it never
+            /// shrinks" — and T69 established that truncation is the structural backstop, never the
+            /// remedy: it can stop broken glyphs, it cannot produce a sentence. When the primary form
+            /// misses its measured column the view takes THIS, which is authored to read whole.
+            ///
+            /// <para><c>"TO WIN"</c> and <c>"TO SCORE"</c> are complete sentences, not amputated ones:
+            /// the backed side is already marked on the scorebug and the leg's own row is the
+            /// subject. The subject is not missing, it is simply not repeated.</para></summary>
+            public readonly string NeedFallback;
+
+            public ActiveLegCopy(string need, string live, bool isTeamMarket, string identity,
+                                 string needFallback = null)
             {
                 Need = need;
                 Live = live;
                 IsTeamMarket = isTeamMarket;
                 Identity = identity;
+                NeedFallback = needFallback;
             }
         }
 
@@ -177,7 +190,7 @@ namespace SBR.Game
                         ? DescribeBttsYes(input)
                         : DescribeBttsNo(input);
                 case MarketKind.TotalCorners:
-                    return DescribeCount(input, "CORNERS");
+                    return DescribeCount(input, "CORNERS", shortNoun: "CNRS");
                 case MarketKind.TotalCards:
                     return DescribeCount(input, "CARDS");
                 case MarketKind.AnytimeScorer:
@@ -203,13 +216,23 @@ namespace SBR.Game
 
         private static ActiveLegCopy DescribeMoneyline(ActiveLegInput l)
         {
+            // G1: clubs are named by their DISTINCTIVE WORD, city dropped — "Atlanta Middlemen" ->
+            // "MIDDLEMEN". The convention is not new; T69 shipped it on the compact row. The variable
+            // was the whole width problem here: `ATLANTA MIDDLEMEN TO WIN` is 24 chars against a
+            // ~18-char budget, `MIDDLEMEN TO WIN` is 16.
+            //
+            // `Identity` deliberately keeps the FULL name: it is the backed-team display name other
+            // callers read, and shortening it here would narrow a fact to solve a layout problem.
             string team = (l.BackedTeamName ?? string.Empty).ToUpperInvariant();
-            string need = $"{team} TO WIN";
+            string club = SweatFlavor.Short(l.BackedTeamName ?? string.Empty).ToUpperInvariant();
+            string need = $"{club} TO WIN";
             string score = $"{l.RevealedGoalsFor}{Dash}{l.RevealedGoalsAgainst}";
             string live = l.RevealedGoalsFor > l.RevealedGoalsAgainst ? $"LEADING {score}"
                 : l.RevealedGoalsFor < l.RevealedGoalsAgainst ? $"TRAILING {score}"
                 : $"LEVEL {score}";
-            return new ActiveLegCopy(need, live, isTeamMarket: true, identity: team);
+            // Fallback for an unlucky club — `GRAVEDIGGERS TO WIN` is 19 and over budget.
+            return new ActiveLegCopy(need, live, isTeamMarket: true, identity: team,
+                                     needFallback: "TO WIN");
         }
 
         // ------------------------------------------------------------------------- total goals
@@ -240,7 +263,9 @@ namespace SBR.Game
         {
             int scored = (l.RevealedGoalsFor > 0 ? 1 : 0) + (l.RevealedGoalsAgainst > 0 ? 1 : 0);
             string live = $"{scored}/2 TEAMS SCORED";
-            return new ActiveLegCopy("BOTH TEAMS TO SCORE", live, isTeamMarket: false, identity: MarketPick);
+            // G1: "BOTH TEAMS TO SCORE" (19) was a permanently marginal CONSTANT — no variable in it
+            // at all, so it was over budget on every frame it ever drew. One word clears it.
+            return new ActiveLegCopy("BOTH TEAMS SCORE", live, isTeamMarket: false, identity: MarketPick);
         }
 
         private static ActiveLegCopy DescribeBttsNo(ActiveLegInput l)
@@ -249,15 +274,27 @@ namespace SBR.Game
             // gated by ScoreLedger.CompleteGoal — never a projection from the locked endpoint.
             bool bothScored = l.RevealedGoalsFor > 0 && l.RevealedGoalsAgainst > 0;
             string live = bothScored ? "BOTH HAVE SCORED" : "CLEAN-SHEET PATH LIVE";
-            return new ActiveLegCopy("KEEP ONE TEAM SCORELESS", live, isTeamMarket: false, identity: MarketPick);
+            // G1: "KEEP ONE TEAM SCORELESS" (23) was over budget as a constant, and "KEEP" was also a
+            // §8 register problem — an instruction to the player about a thing he cannot influence.
+            // The requirement is a state of the match, so the copy names the state.
+            return new ActiveLegCopy("ONE TEAM SCORELESS", live, isTeamMarket: false, identity: MarketPick,
+                                     needFallback: "ONE TEAM BLANKED");
         }
 
         // ------------------------------------------------------------------------- corners / cards
 
-        private static ActiveLegCopy DescribeCount(ActiveLegInput l, string noun)
+        /// <param name="shortNoun">G1's LAST-RESORT abbreviation for this noun, or null where the
+        /// full word always fits. `UNDER 10.5 CORNERS` is 18 and sits exactly at the budget; CARDS
+        /// is four characters shorter and cannot overflow, so it has none. The deck is explicit that
+        /// the full word is preferred and the abbreviation is reached only if the measurement says
+        /// it must be.</param>
+        private static ActiveLegCopy DescribeCount(ActiveLegInput l, string noun, string shortNoun = null)
         {
             bool over = l.Choice == MarketChoice.Over;
             string need = $"{(over ? "OVER" : "UNDER")} {l.Line:0.0} {noun}";
+            string needFallback = shortNoun == null
+                ? null
+                : $"{(over ? "OVER" : "UNDER")} {l.Line:0.0} {shortNoun}";
             int total = l.RevealedCountHome + l.RevealedCountAway;
             string live;
             if (over && HalfLineThreshold(l.Line, out int threshold))
@@ -266,25 +303,37 @@ namespace SBR.Game
                 live = $"{total} {noun} {Bullet} LIMIT {Math.Max(0, maxAllowed - total)}";
             else
                 live = $"{total} {noun}";
-            return new ActiveLegCopy(need, live, isTeamMarket: false, identity: MarketPick);
+            return new ActiveLegCopy(need, live, isTeamMarket: false, identity: MarketPick,
+                                     needFallback: needFallback);
         }
 
         // ------------------------------------------------------------------------- anytime scorer
 
         private static ActiveLegCopy DescribeAnytimeScorer(ActiveLegInput l)
         {
-            string player = (l.BackedPlayerName ?? string.Empty).ToUpperInvariant();
-            string need = $"{player} TO SCORE";
+            // G1: players are named by SURNAME — the convention the progress line below already used.
+            // This is the T69 case itself: `RICO LANYARD TO SCORE` (21) is the string that rendered
+            // as `RICO LANYARD TO`. `LANYARD TO SCORE` is 16.
+            string need = $"{Surname(l.BackedPlayerName).ToUpperInvariant()} TO SCORE";
             // SCORED is admissible ONLY at the causal identity payoff (input.ScorerRevealed),
             // which the caller sets from the same gate as TvSweatScreen.ScorerFor — never
             // inferred here from a revealed goal count, since the backed player's own team can
             // score via a different actor without the backed player having scored (PRD §4.1,
             // TVS-H03's exact defect class).
-            string live = l.ScorerRevealed ? "SCORED" : $"WAITING FOR {Surname(l.BackedPlayerName)}";
-            return new ActiveLegCopy(need, live, isTeamMarket: false, identity: MarketPick);
+            // G1, the pair-defect: NEED and this line are ONE authored pair, and they both named the
+            // surname — `LANYARD TO SCORE` over `WAITING FOR LANYARD`, three lines apart, saying the
+            // same thing. That is T69's defect (a fact named twice in one statement) reproduced
+            // vertically instead of horizontally. The player is named ONCE, by NEED directly above.
+            string live = l.ScorerRevealed ? "SCORED" : "NOT YET";
+            return new ActiveLegCopy(need, live, isTeamMarket: false, identity: MarketPick,
+                                     needFallback: "TO SCORE");
         }
 
-        private static string Surname(string fullName)
+        /// <summary>G1's player-naming convention: surname, uppercase. Exposed because the TV's
+        /// COMPACT statement needs the identical rule (`{SURNAME} ANYTIME`) — two copies of one
+        /// convention is how the two halves of a statement drift apart, which is the defect class
+        /// this whole deck exists to close.</summary>
+        internal static string Surname(string fullName)
         {
             if (string.IsNullOrEmpty(fullName)) return string.Empty;
             int i = fullName.LastIndexOf(' ');

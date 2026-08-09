@@ -53,19 +53,32 @@ namespace SBR.Tests.EditMode
         [Test]
         public void Btts_yes_need_is_exact()
         {
-            Assert.AreEqual("BOTH TEAMS TO SCORE", Describe(ActiveLegInput.BothTeamsToScore(true, 0, 0)).Need);
+            // G1 re-authored: "BOTH TEAMS TO SCORE" (19) was a permanently marginal CONSTANT against
+            // the 249px NEED column — no variable in it, so it was over budget on every frame.
+            Assert.AreEqual("BOTH TEAMS SCORE", Describe(ActiveLegInput.BothTeamsToScore(true, 0, 0)).Need);
         }
 
         [Test]
         public void Btts_no_need_is_exact()
         {
-            Assert.AreEqual("KEEP ONE TEAM SCORELESS", Describe(ActiveLegInput.BothTeamsToScore(false, 0, 0)).Need);
+            // G1 re-authored: "KEEP ONE TEAM SCORELESS" (23) was over budget as a constant, and
+            // "KEEP" was a §8 register problem too — an instruction about a thing he cannot
+            // influence. The requirement is a state of the match, so the copy names the state.
+            ActiveLegCopy no = Describe(ActiveLegInput.BothTeamsToScore(false, 0, 0));
+            Assert.AreEqual("ONE TEAM SCORELESS", no.Need);
+            Assert.AreEqual("ONE TEAM BLANKED", no.NeedFallback,
+                "G1 authored a shorter line for this form; truncation is the backstop, never the remedy.");
         }
 
         [Test]
         public void Anytime_scorer_need_is_the_backed_player_to_score()
         {
-            Assert.AreEqual("HARRY KANE TO SCORE", Describe(ActiveLegInput.AnytimeScorer("Harry Kane", false)).Need);
+            // G1 re-authored: players are named by SURNAME — the convention the progress line
+            // already used. This is the T69 case itself: "RICO LANYARD TO SCORE" is the string that
+            // rendered as "RICO LANYARD TO".
+            ActiveLegCopy copy = Describe(ActiveLegInput.AnytimeScorer("Harry Kane", false));
+            Assert.AreEqual("KANE TO SCORE", copy.Need);
+            Assert.AreEqual("TO SCORE", copy.NeedFallback);
         }
 
         // ------------------------------------------------------------------------- 2. LIVE progress: zero, mid, at-the-line
@@ -178,8 +191,12 @@ namespace SBR.Tests.EditMode
         [Test]
         public void Anytime_scorer_waits_for_surname_until_revealed_then_says_scored_only_at_payoff()
         {
+            // G1's pair-defect: this line used to read "WAITING FOR KANE" directly under a NEED of
+            // "KANE TO SCORE" — the surname twice, three lines apart, both saying the same thing.
+            // T69's "a fact named twice" reproduced vertically. The player is named ONCE, above.
             ActiveLegCopy waiting = Describe(ActiveLegInput.AnytimeScorer("Harry Kane", scorerRevealed: false));
-            Assert.AreEqual("WAITING FOR KANE", waiting.Live);
+            Assert.AreEqual("NOT YET", waiting.Live);
+            Assert.AreEqual("KANE TO SCORE", waiting.Need, "the surname belongs to NEED, and only to NEED");
 
             ActiveLegCopy scored = Describe(ActiveLegInput.AnytimeScorer("Harry Kane", scorerRevealed: true));
             Assert.AreEqual("SCORED", scored.Live);
@@ -188,8 +205,11 @@ namespace SBR.Tests.EditMode
         [Test]
         public void Anytime_scorer_surname_handles_a_single_word_name()
         {
+            // The surname rule still has to handle a one-word name — it now lands in NEED, which is
+            // where G1 moved the player's name. The progress line no longer carries it at all.
             ActiveLegCopy copy = Describe(ActiveLegInput.AnytimeScorer("Neymar", scorerRevealed: false));
-            Assert.AreEqual("WAITING FOR NEYMAR", copy.Live);
+            Assert.AreEqual("NEYMAR TO SCORE", copy.Need);
+            Assert.AreEqual("NOT YET", copy.Live);
         }
 
         // ------------------------------------------------------------------------- 5. Team identity vs MARKET PICK
@@ -295,8 +315,8 @@ namespace SBR.Tests.EditMode
             Assert.AreEqual("LEADING 1–0", copies[0].Live);
             Assert.AreEqual("OVER 9.5 CORNERS", copies[1].Need);
             Assert.AreEqual("5 CORNERS • NEED 5", copies[1].Live);
-            Assert.AreEqual("HARRY KANE TO SCORE", copies[2].Need);
-            Assert.AreEqual("WAITING FOR KANE", copies[2].Live);
+            Assert.AreEqual("KANE TO SCORE", copies[2].Need);   // G1: surname, and named only here
+            Assert.AreEqual("NOT YET", copies[2].Live);         // G1: the pair names the player once
         }
 
         [Test]

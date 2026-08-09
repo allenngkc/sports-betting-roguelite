@@ -2115,7 +2115,7 @@ namespace SBR.Game
                     // better than the mid-word cut it replaces. But the DURABLE fix is shorter
                     // AUTHORED copy, and what a leg statement should say is a copy decision this
                     // seat does not hold. This removes the defect; it does not settle the string.
-                    _legRow[i].Need.text = FitToColumn(_legRow[i].Need, copy.Need);
+                    _legRow[i].Need.text = FitOrFallback(_legRow[i].Need, copy.Need, copy.NeedFallback);
                     _legRow[i].Progress.color = liveInk;
                     _legRow[i].Progress.text = copy.Live;
                 }
@@ -2661,23 +2661,57 @@ namespace SBR.Game
         /// called.</para></summary>
         private string LegStatement(Leg leg)
         {
-            string away = SweatFlavor.Short(leg.Matchup.Away.Name).ToUpperInvariant();
-            string home = SweatFlavor.Short(leg.Matchup.Home.Name).ToUpperInvariant();
-
-            if (leg.Selection.Kind == MarketKind.Moneyline)
+            // G1: NEED states the REQUIREMENT, this states the IDENTITY. A live row asks "what does
+            // my money still need"; every other row asks "which bet is this". Where those two
+            // questions have the same answer — the totals markets — the two strings are IDENTICAL,
+            // and that is correct rather than a duplication to design away.
+            //
+            // Built from the SELECTION, not parsed out of DisplayLabel: the fixture half is dropped
+            // entirely, because the scorebug already carries who is playing whom and the BACKED
+            // marker already carries the side. That is what makes 143px workable at all.
+            MarketSelection sel = leg.Selection;
+            string overUnder = sel.Choice == MarketChoice.Over ? "OVER" : "UNDER";
+            switch (sel.Kind)
             {
-                // The ruling's own form: the backed side once, then the opponent. Both facts, no
-                // restatement. The separator is the surface's existing middle dot (the chrome row
-                // already uses it) — TV-32 governs which DASH to use, and this form has none.
-                bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
-                return $"{(pickedHome ? home : away)} ML · v {(pickedHome ? away : home)}";
+                case MarketKind.Moneyline:
+                    // Clubs by their distinctive word, city dropped — the convention T69 shipped.
+                    bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
+                    string club = SweatFlavor.Short(
+                        (pickedHome ? leg.Matchup.Home.Name : leg.Matchup.Away.Name)).ToUpperInvariant();
+                    return $"{club} ML";
+                case MarketKind.TotalGoals:
+                    return $"{overUnder} {sel.Line:0.0} GOALS";
+                case MarketKind.BothTeamsToScore:
+                    return sel.Choice == MarketChoice.Yes ? "BTTS YES" : "BTTS NO";
+                case MarketKind.TotalCorners:
+                    return $"{overUnder} {sel.Line:0.0} CORNERS";
+                case MarketKind.TotalCards:
+                    return $"{overUnder} {sel.Line:0.0} CARDS";
+                case MarketKind.AnytimeScorer:
+                    // Same surname rule as NEED, from the same helper — two copies of one convention
+                    // is how the two halves of a statement drift apart.
+                    return $"{SweatActiveLegModel.Surname(leg.Matchup.PlayerAt(sel.PlayerIndex).Name)} ANYTIME";
+                default:
+                    // A seventh market would arrive here unauthored. G1 names that explicitly as not
+                    // covered, so fall back to the engine's own label rather than inventing copy.
+                    return leg.DisplayLabel;
             }
+        }
 
-            // Non-Moneyline: keep the engine's market half verbatim (it is authored copy) and
-            // shorten only the fixture, which is what makes these rows overrun.
-            string label = leg.DisplayLabel;
-            int cut = label.IndexOf(" — ", System.StringComparison.Ordinal);
-            return cut < 0 ? label : $"{label.Substring(0, cut)} — {away} v {home}";
+        /// <summary>G1: the authored form if it fits, else the authored SHORTER line, else the
+        /// truncation backstop.
+        ///
+        /// <para>§8: copy "truncates or chooses a shorter authored line; it never shrinks", and T69
+        /// settled which is which — <b>truncation is the floor, re-authoring is the fix</b>. So a
+        /// miss takes the fallback, which is authored to read as a whole sentence, and never a
+        /// sentence with its end cut off. <see cref="FitToColumn"/> remains only as the structural
+        /// guard against broken glyphs and should not be reached by shipped copy.</para></summary>
+        private static string FitOrFallback(Text target, string primary, string fallback)
+        {
+            if (Fits(target, primary)) return primary;
+            if (!string.IsNullOrEmpty(fallback) && Fits(target, fallback)) return fallback;
+            // Both missed: clip the better of the two on a word boundary rather than emit nothing.
+            return FitToColumn(target, string.IsNullOrEmpty(fallback) ? primary : fallback);
         }
 
         /// <summary>T69/TV-12/13: fit a statement to its measured column by dropping whole words.
@@ -2690,6 +2724,19 @@ namespace SBR.Game
         /// <para>Truncation is on a WORD boundary, never mid-word (TV-12/13). A single word wider
         /// than the column is returned whole and left to the element's existing Wrap mode to clip —
         /// that is T46's containment backstop, and it is preferred to emitting a half-word.</para></summary>
+        /// <summary>Does this string fit its element's measured column? One measurement, shared by
+        /// the fallback chooser and the truncation backstop, so the two can never disagree about
+        /// what "fits" means.</summary>
+        private static bool Fits(Text target, string s)
+        {
+            if (target == null || string.IsNullOrEmpty(s)) return true;
+            float max = target.rectTransform.rect.width;
+            if (max <= 0f) return true; // no layout yet — do not judge against a width of zero
+            TextGenerationSettings settings = target.GetGenerationSettings(Vector2.zero);
+            return target.cachedTextGeneratorForLayout.GetPreferredWidth(s, settings)
+                   / target.pixelsPerUnit <= max;
+        }
+
         private static string FitToColumn(Text target, string s)
         {
             if (target == null || string.IsNullOrEmpty(s)) return s;

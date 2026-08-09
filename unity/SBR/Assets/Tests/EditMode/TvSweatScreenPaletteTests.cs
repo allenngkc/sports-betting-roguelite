@@ -1870,6 +1870,102 @@ namespace SBR.Tests.EditMode
         // instrument compared an element to its own ink.
 
         [Test]
+        public void G1_the_two_at_budget_forms_fit_their_measured_columns()
+        {
+            // The DD authored these against ~13.6px/char at 28px and ~7.3px at 15px — planning
+            // figures extrapolated from two strings — and said explicitly: FitToColumn is the
+            // authority, not the character counts; measure the two that sit at the budget line and
+            // take the authored fallback if either misses. This is that measurement.
+            var go = new GameObject("G1Budget");
+            go.SetActive(false);
+            try
+            {
+                var screen = go.AddComponent<TvSweatScreen>();
+                screen.theaterEnabled = false;
+                InvokePrivate(screen, "Awake");
+
+                Text need = FindChild<Text>(screen, "LegRowNeed0");
+                Text line = FindChild<Text>(screen, "LegRowLine0");
+                Assert.IsNotNull(need, "LegRowNeed0 not found — row builder changed?");
+                Assert.IsNotNull(line, "LegRowLine0 not found — row builder changed?");
+
+                MethodInfo fits = typeof(TvSweatScreen).GetMethod("Fits",
+                    BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.IsNotNull(fits, "Fits not found by reflection — was it renamed?");
+                bool Fit(Text t, string s) => (bool)fits.Invoke(null, new object[] { t, s });
+
+                // Reported either way, because a miss here is not a failure — it is the signal to
+                // ship the authored fallback, and the DD pre-committed both.
+                bool scoreless = Fit(need, "ONE TEAM SCORELESS");
+                bool corners = Fit(line, "UNDER 10.5 CORNERS");
+                // Reported, not merely asserted: the DD asked WHICH of the two lands, because the
+                // answer decides whether the fallback ships. A gate that only says "one of them
+                // worked" answers a question nobody asked.
+                TestContext.WriteLine($"G1 MEASURED  NEED col {need.rectTransform.rect.width:0.0}px: "
+                    + $"'ONE TEAM SCORELESS' {(scoreless ? "FITS" : "MISSES -> ONE TEAM BLANKED")}");
+                TestContext.WriteLine($"G1 MEASURED  compact col {line.rectTransform.rect.width:0.0}px: "
+                    + $"'UNDER 10.5 CORNERS' {(corners ? "FITS" : "MISSES -> UNDER 10.5 CNRS")}");
+                foreach (string s in new[] { "MIDDLEMEN ML", "LANYARD TO SCORE", "BOTH TEAMS SCORE", "NOT YET" })
+                    TestContext.WriteLine($"G1 MEASURED  '{s}': NEED {(Fit(need, s) ? "fits" : "MISSES")}, "
+                        + $"compact {(Fit(line, s) ? "fits" : "MISSES")}");
+                Assert.IsTrue(scoreless || Fit(need, "ONE TEAM BLANKED"),
+                    "G1: neither `ONE TEAM SCORELESS` nor its authored fallback `ONE TEAM BLANKED` "
+                    + "fits the 249px NEED column. Both forms are constants — if both miss, the "
+                    + "budget itself is wrong and the deck needs a third line, not a truncation.");
+                Assert.IsTrue(corners || Fit(line, "UNDER 10.5 CNRS"),
+                    "G1: neither `UNDER 10.5 CORNERS` nor its last-resort `UNDER 10.5 CNRS` fits the "
+                    + "143px compact column.");
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
+        public void G1_the_compact_statement_carries_identity_and_never_the_fixture()
+        {
+            // The compact form states WHICH BET THIS IS. The fixture is dropped entirely — the
+            // scorebug carries who is playing whom and the BACKED marker carries the side, which is
+            // what makes 143px workable. A re-introduced `v {other}` is the T69 defect returning.
+            string src = File.ReadAllText(Path.Combine(Application.dataPath, "SBR", "Runtime", "TvSweatScreen.cs"));
+            int at = src.IndexOf("private string LegStatement(", System.StringComparison.Ordinal);
+            Assert.Greater(at, -1, "LegStatement not found — re-point this scan rather than deleting it.");
+            int end = src.IndexOf("private static string FitOrFallback", System.StringComparison.Ordinal);
+            Assert.Greater(end, at, "LegStatement's end marker not found.");
+            string body = src.Substring(at, end - at);
+
+            Assert.IsFalse(body.Contains("ML · v") || body.Contains(" v {"),
+                "G1: the compact statement must not name the fixture. The scorebug already carries "
+                + "it; restating it here is what overran the 143px column in the first place.");
+            foreach (string form in new[] { "ML\"", "GOALS\"", "BTTS YES", "BTTS NO", "CORNERS\"", "CARDS\"", "ANYTIME" })
+                Assert.IsTrue(body.Contains(form), $"G1: the authored compact form `{form}` is missing.");
+        }
+
+        [Test]
+        public void G1_the_scorer_pair_names_its_player_exactly_once()
+        {
+            // The pair-defect the DD found while authoring the top of it: NEED said
+            // `LANYARD TO SCORE` and the progress line said `WAITING FOR LANYARD` — T69's
+            // "a fact named twice" reproduced vertically instead of horizontally.
+            string src = File.ReadAllText(Path.Combine(Application.dataPath, "SBR", "Runtime", "SweatActiveLegModel.cs"));
+            int at = src.IndexOf("DescribeAnytimeScorer(ActiveLegInput", System.StringComparison.Ordinal);
+            Assert.Greater(at, -1, "DescribeAnytimeScorer not found — re-point this scan.");
+            // CODE ONLY. The first version of this scan matched the retired string inside the very
+            // comment that records why it was retired — a scan that fails on its own documentation.
+            string body = string.Join("\n",
+                src.Substring(at, System.Math.Min(1400, src.Length - at))
+                   .Split('\n')
+                   .Where(l => !l.TrimStart().StartsWith("//")));
+
+            Assert.IsFalse(body.Contains("WAITING FOR"),
+                "G1: the scorer progress line must be `NOT YET` / `SCORED`. `WAITING FOR {SURNAME}` "
+                + "names the player a second time, three lines under the NEED that already named him.");
+            Assert.IsTrue(body.Contains("\"NOT YET\"") && body.Contains("\"SCORED\""),
+                "G1: the scorer progress line is `NOT YET` (unscored) and `SCORED` (resolved).");
+            // and NEED carries the surname, not the full name
+            Assert.IsTrue(body.Contains("Surname(l.BackedPlayerName)"),
+                "G1: NEED names the player by surname — the convention the progress line already used.");
+        }
+
+        [Test]
         public void T68_the_slot_ink_has_one_authority_and_the_taunt_yields_to_it()
         {
             // The defect was not the value, it was that the value had five authors. The field
@@ -1967,8 +2063,11 @@ namespace SBR.Tests.EditMode
             int at = src.IndexOf("private string LegStatement(", System.StringComparison.Ordinal);
             Assert.Greater(at, -1, "LegStatement not found — re-point this scan rather than deleting it.");
             string body = src.Substring(at, System.Math.Min(2200, src.Length - at));
-            Assert.IsTrue(body.Contains("ML · v"),
-                "T69: the Moneyline form is `{BACKED} ML · v {OTHER}` — both facts, stated once.");
+            // G1 superseded T69's interim form: the compact statement states IDENTITY, and the
+            // fixture is dropped entirely because the scorebug already carries it. `{CLUB} ML`.
+            Assert.IsTrue(body.Contains("{club} ML"),
+                "T69/G1: the Moneyline compact form is `{CLUB} ML` — the identity, named once, with "
+                + "no fixture. The `ML · v {OTHER}` form was the interim step, not the destination.");
         }
 
         [Test]
