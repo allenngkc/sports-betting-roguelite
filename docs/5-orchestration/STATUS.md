@@ -46,6 +46,29 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-08 cycle 136 · **G1 BUILT AND SHIPPED; every lane's queue is
+  empty** — batches 18 + the G1 deck pulled, landed, transcribed (G1
+  closed; T70 new with the pair rule: requirement above, state below, no
+  term repeated); TV built the deck in one commit with T70's progress
+  lines (41d5cbe, suites green, FitToColumn measured, two stale test pins
+  fixed, DisplayLabel untouched elsewhere), pushed to PR #3; its
+  T68-accepted-half question staged and delivered to the DD inbox; TV
+  owning doc §8 carries the deck reference + pair rule. DD status brief
+  pushed correcting batch-18's stale carried list (S71 merged, EMIT
+  registered, R22 walk done, C13 merged). Lease discipline restated to TV
+  (took a free editor without the ask). Board: ALL FOUR LANES EMPTY —
+  open items are human-only: Allen's desk PNG (blur's decisive arm),
+  Allen's settings-churn ruling (convention recommended), DD's batch 19.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | clean-holding | on the PNG verdict | lead |
+  | tv-sweat | clean-holding | DD verdicts | DD |
+  | room | clean-holding | measures Allen's PNG on land | lead |
+  | markets-2 | clean-holding | none | — |
+  | DD bridge | fed: status brief + T68-half + full batch-19 case | next DD session | DD |
+  | Editor | free | Allen's screenshot session on open | Allen |
+  | **Need Allen** | **desk PNG** · settings-churn convention | frame + ruling | Allen |
 - 2026-08-08 cycle 135 · **THE HUNT TURNED ON ITS INSTRUMENTS; Allen is now
   the decisive one** — since 134: _Sharpness found (the one field the
   generator never sets; default = widest ramp) but its A/B verdict was
