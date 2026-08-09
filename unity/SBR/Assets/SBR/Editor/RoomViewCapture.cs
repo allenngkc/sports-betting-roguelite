@@ -28,6 +28,7 @@ namespace SBR
         private const string ScenePath = "Assets/Scenes/Room.unity";
         private const string ArmedKey = "SBR.RoomViewCapture.Armed";
         private const string GlowCueArmedKey = "SBR.RoomViewCapture.GlowCueArmed";
+        private const string BlurArmedKey = "SBR.RoomViewCapture.BlurArmed";
         private const string OutDirKey = "SBR.RoomViewCapture.OutDir";
         private const int Width = 2560;
         private const int Height = 1440;
@@ -35,6 +36,7 @@ namespace SBR
 
         private static int _frames;
         private static int _glowFrames;
+        private static int _blurFrames;
 
         /// <summary>
         /// Edit-mode capture. No Play Mode, so no domain reload - this runs to completion in a
@@ -768,6 +770,127 @@ namespace SBR
 
             File.WriteAllLines(Path.Combine(outDir, "manifest.txt"), manifest);
             Debug.Log($"[EMIT] {found.Count} emitters captured -> {outDir}");
+        }
+
+        /// <summary>
+        /// Allen's blur finding — is it the GRADE or the canvas RESOLUTION?
+        ///
+        /// He walked the post-C13-merge tree and reported the SureThing UI "VERY BLURRY", whole
+        /// surface uniformly soft, text legible but fuzzy. Three of the four quiet-failure checks
+        /// pass on his screenshot (two voices present, U+2212 rendering, rail reads NOTEBOOK), so
+        /// the TMP assets travelled and it is not running on a fallback face. Two candidates
+        /// survive and they route to different owners, which is why this must be measured rather
+        /// than argued:
+        ///
+        ///   GRADE       FilmGrain 0.2, ChromaticAberration 0.065 (visibly fringing the blue box
+        ///               in his frame), Bloom threshold 0.9 / scatter 0.7 with highQualityFiltering
+        ///               OFF. Screens sit inside the unified grade and are not exempt. The grade
+        ///               was tuned against the OLD laptop surface; the new one is authored to a
+        ///               13px fact floor with 1-2px rules. -> the DD, under C20.
+        ///   RESOLUTION  the canvas is authored 1024 wide (S2's locked artboard) and his frame
+        ///               shows it ~1310 across, so ~1.28x magnification. Harmless for SDF text,
+        ///               real upsampling blur for sprite content. -> room's canvas number.
+        ///
+        /// PLAY MODE, AND THAT IS NOT OPTIONAL. The SureThing canvas is built in Awake, so in Edit
+        /// Mode there is no UI on the lid at all — the entire subject of this test is absent. Every
+        /// emission set this lane has shot was Edit Mode for the opposite reason.
+        ///
+        /// Same pose, same frame, grade on then off. If the ungraded frame is sharp the grade is
+        /// the cause; if both are soft it is resolution; if both are sharp the blur is neither and
+        /// lives in something only Allen's own display path shows.
+        ///
+        ///   Unity.exe -batchmode -projectPath (project)
+        ///             -executeMethod SBR.RoomViewCapture.CaptureLaptopBlurAB -outDir (path)
+        ///
+        /// NO -quit: exits itself, as CaptureAll does.
+        /// </summary>
+        public static void CaptureLaptopBlurAB()
+        {
+            string outDir = OutDirFromArgs();
+            Directory.CreateDirectory(outDir);
+            SessionState.SetString(OutDirKey, outDir);
+            SessionState.SetBool(BlurArmedKey, true);
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            EditorApplication.EnterPlaymode();
+        }
+
+        [InitializeOnLoadMethod]
+        private static void RehookBlur()
+        {
+            if (SessionState.GetBool(BlurArmedKey, false))
+                EditorApplication.update += OnBlurUpdate;
+        }
+
+        private static void OnBlurUpdate()
+        {
+            if (!EditorApplication.isPlaying)
+                return;
+
+            _blurFrames++;
+            if (_blurFrames < WarmupFrames)
+                return;
+
+            EditorApplication.update -= OnBlurUpdate;
+            SessionState.SetBool(BlurArmedKey, false);
+
+            int code = 0;
+            try
+            {
+                BlurRun(SessionState.GetString(OutDirKey, string.Empty));
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[BlurAB] capture failed: {e}");
+                code = 1;
+            }
+
+            EditorApplication.Exit(code);
+        }
+
+        private static void BlurRun(string outDir)
+        {
+            if (string.IsNullOrEmpty(outDir))
+                throw new InvalidOperationException("output directory lost across domain reload");
+
+            // The UI must actually be there, or a soft frame and an EMPTY frame look alike in a
+            // sharpness metric. Assert the canvas exists before either arm is shot.
+            var book = UnityEngine.Object.FindAnyObjectByType<SBR.Game.LaptopScreen>();
+            if (book == null)
+                throw new InvalidOperationException("no LaptopScreen - nothing to measure");
+            var canvas = book.GetComponentInChildren<Canvas>(true);
+            if (canvas == null)
+                throw new InvalidOperationException(
+                    "the laptop canvas does not exist in this Play session, so both arms would be " +
+                    "blank and would score identically 'sharp'. Not a blur measurement.");
+            int graphics = canvas.GetComponentsInChildren<UnityEngine.UI.Graphic>(true).Length;
+            Debug.Log($"[BlurAB] canvas present with {graphics} Graphic(s) - the subject is in frame");
+            if (graphics == 0)
+                throw new InvalidOperationException("canvas draws nothing; no blur to measure");
+
+            Camera cam = FindPlayerCamera();
+            var controller = UnityEngine.Object.FindAnyObjectByType<FirstPersonController>();
+            if (controller != null) controller.enabled = false;
+
+            GameObject volGo = GameObject.Find("RoomPostFx");
+            var vol = volGo != null ? volGo.GetComponent<Volume>() : null;
+            if (vol == null)
+                throw new InvalidOperationException(
+                    "RoomPostFx volume not found - the grade cannot be bypassed, so this run " +
+                    "cannot separate grade from resolution and must not pretend to");
+
+            WarmRender(cam);
+            string gradedDir = Path.Combine(outDir, "graded");
+            Directory.CreateDirectory(gradedDir);
+            Capture(gradedDir);
+            Debug.Log("[BlurAB] graded arm shot");
+
+            vol.enabled = false;
+            WarmRender(cam);
+            string plainDir = Path.Combine(outDir, "ungraded");
+            Directory.CreateDirectory(plainDir);
+            Capture(plainDir);
+            vol.enabled = true;
+            Debug.Log("[BlurAB] ungraded arm shot; volume restored");
         }
 
         public static void CaptureAll()
