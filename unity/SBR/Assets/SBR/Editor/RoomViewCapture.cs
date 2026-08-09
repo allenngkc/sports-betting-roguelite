@@ -32,6 +32,7 @@ namespace SBR
         private const string BlurArmedKey = "SBR.RoomViewCapture.BlurArmed";
         private const string ScaleArmedKey = "SBR.RoomViewCapture.ScaleArmed";
         private const string SmaaArmedKey = "SBR.RoomViewCapture.SmaaArmed";
+        private const string RsArmedKey = "SBR.RoomViewCapture.RsArmed";
         private const string OutDirKey = "SBR.RoomViewCapture.OutDir";
         private const int Width = 2560;
         private const int Height = 1440;
@@ -42,6 +43,7 @@ namespace SBR
         private static int _blurFrames;
         private static int _scaleFrames;
         private static int _smaaFrames;
+        private static int _rsFrames;
 
         /// <summary>
         /// Edit-mode capture. No Play Mode, so no domain reload - this runs to completion in a
@@ -1168,6 +1170,113 @@ namespace SBR
 
             data.antialiasing = before;
             Debug.Log($"[SMAA] arms shot; antialiasing restored to {data.antialiasing}");
+        }
+
+        /// <summary>
+        /// Does RENDER SCALE narrow the pinned ramp? The one mechanism whose shape still fits.
+        ///
+        /// The glyph ramp measures ~1.68 px and does NOT scale with the glyph (1.679 / 1.683 /
+        /// 1.743 across 1.00x / 1.25x / 1.50x magnification while the stroke grew 36%). A ramp
+        /// fixed in screen pixels is set by something in the render path, and render scale is the
+        /// one candidate left whose shape matches: at 1.5 the frame is rendered at 1.5x internally
+        /// and resolved down, so every edge gets more samples and a resolution-set ramp should
+        /// narrow toward ~1.68/1.5 = 1.12 px. If it holds at 1.68, resolution is not what sets it.
+        ///
+        /// SET AT RUNTIME, NOT IN THE ASSET. Editing PC_RPAsset would leave a tracked file dirty
+        /// and rely on me remembering to revert it — and this lane has already reverted
+        /// ProjectSettings three times for exactly that shape of accident. The property is restored
+        /// in the same session, and the restored value is read back and logged rather than assumed.
+        ///
+        ///   Unity.exe -batchmode -projectPath (project)
+        ///             -executeMethod SBR.RoomViewCapture.CaptureRenderScaleProof -outDir (path)
+        /// </summary>
+        public static void CaptureRenderScaleProof()
+        {
+            string outDir = OutDirFromArgs();
+            Directory.CreateDirectory(outDir);
+            SessionState.SetString(OutDirKey, outDir);
+            SessionState.SetBool(RsArmedKey, true);
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            EditorApplication.EnterPlaymode();
+        }
+
+        [InitializeOnLoadMethod]
+        private static void RehookRs()
+        {
+            if (SessionState.GetBool(RsArmedKey, false))
+                EditorApplication.update += OnRsUpdate;
+        }
+
+        private static void OnRsUpdate()
+        {
+            if (!EditorApplication.isPlaying) return;
+            _rsFrames++;
+            if (_rsFrames < WarmupFrames) return;
+
+            EditorApplication.update -= OnRsUpdate;
+            SessionState.SetBool(RsArmedKey, false);
+
+            int code = 0;
+            try { RsRun(SessionState.GetString(OutDirKey, string.Empty)); }
+            catch (Exception e) { Debug.LogError($"[RenderScale] failed: {e}"); code = 1; }
+            EditorApplication.Exit(code);
+        }
+
+        private static void RsRun(string outDir)
+        {
+            if (string.IsNullOrEmpty(outDir))
+                throw new InvalidOperationException("output directory lost across domain reload");
+
+            var book = UnityEngine.Object.FindAnyObjectByType<SBR.Game.LaptopScreen>();
+            var canvas = book != null ? book.GetComponentInChildren<Canvas>(true) : null;
+            int graphics = canvas != null
+                ? canvas.GetComponentsInChildren<UnityEngine.UI.Graphic>(true).Length : 0;
+            if (graphics == 0)
+                throw new InvalidOperationException("no live laptop canvas - nothing to measure");
+            Debug.Log($"[RenderScale] canvas present with {graphics} Graphic(s)");
+
+            var urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+            if (urp == null)
+                throw new InvalidOperationException(
+                    "no UniversalRenderPipelineAsset active - render scale cannot be set, so this " +
+                    "run cannot prove or disprove anything and must not pretend to");
+
+            float original = urp.renderScale;
+            Debug.Log($"[RenderScale] shipped renderScale = {original}");
+
+            Camera cam = FindPlayerCamera();
+            var controller = UnityEngine.Object.FindAnyObjectByType<FirstPersonController>();
+            if (controller != null) controller.enabled = false;
+
+            try
+            {
+                foreach (string ctl in new[] { "control-a", "control-b" })
+                {
+                    WarmRender(cam);
+                    string cd = Path.Combine(outDir, ctl);
+                    Directory.CreateDirectory(cd);
+                    Capture(cd);
+                }
+
+                WarmRender(cam);
+                string baseDir = Path.Combine(outDir, "scale-1.0");
+                Directory.CreateDirectory(baseDir);
+                Capture(baseDir);
+
+                urp.renderScale = 1.5f;
+                WarmRender(cam);
+                string upDir = Path.Combine(outDir, "scale-1.5");
+                Directory.CreateDirectory(upDir);
+                Capture(upDir);
+                Debug.Log("[RenderScale] 1.5 arm shot");
+            }
+            finally
+            {
+                // finally, so a throw mid-capture cannot leave the project on 1.5.
+                urp.renderScale = original;
+                Debug.Log($"[RenderScale] RESTORED renderScale = {urp.renderScale} " +
+                          $"(shipped was {original})");
+            }
         }
 
         public static void CaptureAll()
