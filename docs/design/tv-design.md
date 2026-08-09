@@ -348,8 +348,15 @@ and the cash-out slot.
 
 **Leg statements are authored to fit their measured column at the source** (T69, batch 17).
 Truncation on a word boundary is the structural backstop and should never be reached in shipped copy —
-truncation cannot produce good copy; it can only stop producing broken glyphs. The per-market short
-forms are the DD's (G1). The backed side is named once per row.
+truncation cannot produce good copy; it can only stop producing broken glyphs. **The authored forms
+live in the copy deck** (`docs/design/tv-g1-authored-leg-statements-2026-08-08.md`, G1 closed batch
+18): NEED states the requirement, the compact statement states the identity; clubs by distinctive
+word, players by surname; authored fallbacks over character-shaving; `FitToColumn` is the authority.
+The backed side is named once per row.
+
+**T70's pair rule (batch 18): requirement above, state below, no term repeated across the pair.**
+NEED and the progress line are one authored pair — AnytimeScorer's progress is `NOT YET` / `SCORED`,
+the player named once by NEED above it. Any new market's pair is checked against this rule.
 
 Fictional leagues, teams and players only.
 
