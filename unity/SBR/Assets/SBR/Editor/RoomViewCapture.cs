@@ -6,6 +6,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;   // Volume - the R23 diagnostic disables the grade for one frame
+using UnityEngine.Rendering.Universal;   // UniversalAdditionalCameraData - the SMAA toggle
 
 namespace SBR
 {
@@ -29,6 +30,8 @@ namespace SBR
         private const string ArmedKey = "SBR.RoomViewCapture.Armed";
         private const string GlowCueArmedKey = "SBR.RoomViewCapture.GlowCueArmed";
         private const string BlurArmedKey = "SBR.RoomViewCapture.BlurArmed";
+        private const string ScaleArmedKey = "SBR.RoomViewCapture.ScaleArmed";
+        private const string SmaaArmedKey = "SBR.RoomViewCapture.SmaaArmed";
         private const string OutDirKey = "SBR.RoomViewCapture.OutDir";
         private const int Width = 2560;
         private const int Height = 1440;
@@ -37,6 +40,8 @@ namespace SBR
         private static int _frames;
         private static int _glowFrames;
         private static int _blurFrames;
+        private static int _scaleFrames;
+        private static int _smaaFrames;
 
         /// <summary>
         /// Edit-mode capture. No Play Mode, so no domain reload - this runs to completion in a
@@ -939,6 +944,230 @@ namespace SBR
             Capture(plainDir);
             vol.enabled = true;
             Debug.Log("[BlurAB] ungraded arm shot; volume restored");
+        }
+
+        /// <summary>
+        /// The glyph-blur discriminator: does the softness scale with the GLYPH or with the SCREEN?
+        ///
+        /// At 13px every part of a glyph is edge, so ramp width and stroke weight are the same
+        /// size and no flat instrument can separate them. Magnify the same glyph and they stop
+        /// being the same size — and the two surviving candidates then behave in OPPOSITE ways:
+        ///
+        ///   intrinsic to glyph rendering   ramp scales WITH the glyph -> ramp/stroke CONSTANT
+        ///   (SDF ramp, sampling-size ratio)
+        ///
+        ///   fixed screen-space blur        ramp fixed in screen px    -> ramp/stroke FALLS
+        ///   (filtering, display path, anything downstream)
+        ///
+        /// So this measures a RATIO across magnifications, not sharpness. Constant convicts glyph
+        /// rendering and makes SureThing's sampling-size lever worth testing; falling exonerates it
+        /// and their arm B would answer a question that did not matter.
+        ///
+        /// FOV VARIES, THE CAMERA DOES NOT MOVE. Magnification is 1/tan(fov/2), so 30deg / 19deg /
+        /// 12.2deg give 1.0x / 1.6x / 2.5x on the same pixels. Dollying the camera would do it too
+        /// and would also change perspective, near-clip margin and which parts of the lid are in
+        /// shot; changing only the FOV leaves the surface, its angle and its lighting untouched, so
+        /// the magnification is the ONLY difference between the arms.
+        ///
+        /// A CONTROL PAIR AT EVERY FOV, not one for the run. Each FOV is a different camera setup
+        /// and a control that passed at one says nothing about another — carrying one forward is
+        /// the assumption this lane has already been burned by twice.
+        ///
+        /// The bitmap ink-ring rides along in every frame as the geometric reference: it must
+        /// scale purely with magnification, so it is the in-frame check that the magnification is
+        /// doing what the arithmetic says.
+        ///
+        ///   Unity.exe -batchmode -projectPath (project)
+        ///             -executeMethod SBR.RoomViewCapture.CaptureGlyphScaleSeries -outDir (path)
+        /// </summary>
+        public static void CaptureGlyphScaleSeries()
+        {
+            string outDir = OutDirFromArgs();
+            Directory.CreateDirectory(outDir);
+            SessionState.SetString(OutDirKey, outDir);
+            SessionState.SetBool(ScaleArmedKey, true);
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            EditorApplication.EnterPlaymode();
+        }
+
+        [InitializeOnLoadMethod]
+        private static void RehookScale()
+        {
+            if (SessionState.GetBool(ScaleArmedKey, false))
+                EditorApplication.update += OnScaleUpdate;
+        }
+
+        private static void OnScaleUpdate()
+        {
+            if (!EditorApplication.isPlaying) return;
+            _scaleFrames++;
+            if (_scaleFrames < WarmupFrames) return;
+
+            EditorApplication.update -= OnScaleUpdate;
+            SessionState.SetBool(ScaleArmedKey, false);
+
+            int code = 0;
+            try { ScaleRun(SessionState.GetString(OutDirKey, string.Empty)); }
+            catch (Exception e) { Debug.LogError($"[GlyphScale] failed: {e}"); code = 1; }
+            EditorApplication.Exit(code);
+        }
+
+        private static void ScaleRun(string outDir)
+        {
+            if (string.IsNullOrEmpty(outDir))
+                throw new InvalidOperationException("output directory lost across domain reload");
+
+            var book = UnityEngine.Object.FindAnyObjectByType<SBR.Game.LaptopScreen>();
+            var canvas = book != null ? book.GetComponentInChildren<Canvas>(true) : null;
+            int graphics = canvas != null
+                ? canvas.GetComponentsInChildren<UnityEngine.UI.Graphic>(true).Length : 0;
+            if (graphics == 0)
+                throw new InvalidOperationException(
+                    "no live laptop canvas - every arm would be blank and blank frames measure as " +
+                    "perfectly sharp, which is the vacuous-green shape this studio keeps killing");
+            Debug.Log($"[GlyphScale] canvas present with {graphics} Graphic(s)");
+
+            Camera cam = FindPlayerCamera();
+            var controller = UnityEngine.Object.FindAnyObjectByType<FirstPersonController>();
+            if (controller != null) controller.enabled = false;
+
+            // The ratified focused-laptop eye and look. Only the field of view changes.
+            var eye = new Vector3(0.738982f, 1.051217f, 1.620000f);
+            var rot = Quaternion.LookRotation(new Vector3(0.939693f, -0.342020f, 0f),
+                                              new Vector3(0.342020f, 0.939693f, 0f));
+
+            // MAGNIFICATIONS BOUNDED BY THE FRAME, corrected after the first run.
+            //
+            // The first attempt used 1.0x / 1.6x / 2.5x and BOTH upper arms were void: the ink
+            // ring measured 2558 px at each of them against a 2560-wide frame. It had run off the
+            // edge and stopped growing, so those were crops rather than magnifications, and the
+            // glyph strokes measured short for exactly that reason.
+            //
+            // The ring is 1634 px at 1.0x, so anything past 2560/1634 = 1.57x clips it. The usable
+            // range is narrow and these three sit inside it with margin. A tighter range needs a
+            // more precise measurement to stay discriminating, which is the other half of this
+            // rebuild — at 1.0x -> 1.5x a fixed screen-space blur drops ramp/stroke to ~0.67 of its
+            // starting value while an intrinsic one holds flat, and those are far apart IF the
+            // ramp is measured sub-pixel rather than counted in whole pixels.
+            foreach (var (label, fov, mag) in new[]
+                     {
+                         ("m100", 30.0f, "1.00x"),
+                         ("m125", 24.2f, "1.25x"),
+                         ("m150", 20.2f, "1.50x"),
+                     })
+            {
+                foreach (string arm in new[] { "a", "b" })
+                {
+                    WarmRender(cam);
+                    string dir = Path.Combine(outDir, $"{label}-{arm}");
+                    Directory.CreateDirectory(dir);
+                    Shoot(cam, dir, "focused-laptop-desk.png", eye, rot, fov);
+                }
+                Debug.Log($"[GlyphScale] {label}: fov {fov}deg = {mag} magnification, control pair shot");
+            }
+        }
+
+        /// <summary>
+        /// Is the fixed screen-space blur SMAA? Confirm before naming, after this hunt.
+        ///
+        /// The scale series measured the glyph ramp PINNED at 1.679 / 1.683 / 1.743 px across
+        /// 1.00x / 1.25x / 1.50x magnification while the stroke grew 36%. A ramp that does not
+        /// scale with its glyph is a screen-space effect, and the camera carries
+        /// m_Antialiasing: 2 — URP's SMAA, a post pass that softens high-contrast edges at a
+        /// fixed pixel radius regardless of what is being drawn.
+        ///
+        /// It fits all six standing observations (glyphs soft / bitmaps sharp, uniform across the
+        /// surface, survives the SDF fix and a forced reimport, not the post volume, room fine).
+        /// Fitting six observations is exactly what the LAST hypothesis did before it was wrong,
+        /// so this shoots rather than concludes.
+        ///
+        /// The decisive number is the ramp: if it drops off ~1.7 px with SMAA disabled it is SMAA;
+        /// if it holds, it is not, and the cause is still open.
+        ///
+        ///   Unity.exe -batchmode -projectPath (project)
+        ///             -executeMethod SBR.RoomViewCapture.CaptureSmaaAB -outDir (path)
+        /// </summary>
+        public static void CaptureSmaaAB()
+        {
+            string outDir = OutDirFromArgs();
+            Directory.CreateDirectory(outDir);
+            SessionState.SetString(OutDirKey, outDir);
+            SessionState.SetBool(SmaaArmedKey, true);
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            EditorApplication.EnterPlaymode();
+        }
+
+        [InitializeOnLoadMethod]
+        private static void RehookSmaa()
+        {
+            if (SessionState.GetBool(SmaaArmedKey, false))
+                EditorApplication.update += OnSmaaUpdate;
+        }
+
+        private static void OnSmaaUpdate()
+        {
+            if (!EditorApplication.isPlaying) return;
+            _smaaFrames++;
+            if (_smaaFrames < WarmupFrames) return;
+
+            EditorApplication.update -= OnSmaaUpdate;
+            SessionState.SetBool(SmaaArmedKey, false);
+
+            int code = 0;
+            try { SmaaRun(SessionState.GetString(OutDirKey, string.Empty)); }
+            catch (Exception e) { Debug.LogError($"[SMAA] failed: {e}"); code = 1; }
+            EditorApplication.Exit(code);
+        }
+
+        private static void SmaaRun(string outDir)
+        {
+            if (string.IsNullOrEmpty(outDir))
+                throw new InvalidOperationException("output directory lost across domain reload");
+
+            var book = UnityEngine.Object.FindAnyObjectByType<SBR.Game.LaptopScreen>();
+            var canvas = book != null ? book.GetComponentInChildren<Canvas>(true) : null;
+            int graphics = canvas != null
+                ? canvas.GetComponentsInChildren<UnityEngine.UI.Graphic>(true).Length : 0;
+            if (graphics == 0)
+                throw new InvalidOperationException(
+                    "no live laptop canvas - both arms would be blank, and blank frames measure " +
+                    "as perfectly sharp");
+            Debug.Log($"[SMAA] canvas present with {graphics} Graphic(s)");
+
+            Camera cam = FindPlayerCamera();
+            var controller = UnityEngine.Object.FindAnyObjectByType<FirstPersonController>();
+            if (controller != null) controller.enabled = false;
+
+            var data = cam.GetComponent<UniversalAdditionalCameraData>();
+            if (data == null)
+                throw new InvalidOperationException(
+                    "no UniversalAdditionalCameraData on PlayerCamera - the antialiasing mode " +
+                    "cannot be toggled, so this run cannot isolate SMAA and must not pretend to");
+
+            var before = data.antialiasing;
+            Debug.Log($"[SMAA] camera antialiasing as shipped: {before}");
+
+            foreach (string ctl in new[] { "control-a", "control-b" })
+            {
+                WarmRender(cam);
+                string cd = Path.Combine(outDir, ctl);
+                Directory.CreateDirectory(cd);
+                Capture(cd);
+            }
+
+            WarmRender(cam);
+            string onDir = Path.Combine(outDir, "smaa-on");
+            Directory.CreateDirectory(onDir);
+            Capture(onDir);
+
+            data.antialiasing = AntialiasingMode.None;
+            WarmRender(cam);
+            string offDir = Path.Combine(outDir, "smaa-off");
+            Directory.CreateDirectory(offDir);
+            Capture(offDir);
+
+            data.antialiasing = before;
+            Debug.Log($"[SMAA] arms shot; antialiasing restored to {data.antialiasing}");
         }
 
         public static void CaptureAll()
