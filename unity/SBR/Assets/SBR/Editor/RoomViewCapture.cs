@@ -808,6 +808,36 @@ namespace SBR
         {
             string outDir = OutDirFromArgs();
             Directory.CreateDirectory(outDir);
+
+            // FORCE THE FONT ASSETS TO REIMPORT, in this session, before anything renders.
+            //
+            // SureThing's generator fix corrected _TextureWidth/_TextureHeight from 1x1 to the
+            // atlas's real 1024x1024 on all three faces. The .asset files in this tree are
+            // verifiably correct — and the first verification shoot measured NO change at all
+            // (1.00x on the UI panel, 1.01x on the glyph strip, crops indistinguishable).
+            //
+            // Two readings survive that and they need separating: either the corrected material
+            // never reached the render because a -batchmode run reused a stale Library import, or
+            // the mismatch was never what softens these glyphs. A serialized material change with
+            // no reimport is exactly the shape that produces a false negative, and this lane threw
+            // one away an hour ago by shooting a tree whose fix had not travelled.
+            //
+            // So the reimport happens HERE rather than as a separate launch: same session, same
+            // editor, guaranteed to precede the first frame. If the glyphs sharpen now, it was a
+            // stale import; if they do not, the mismatch is exonerated as the cause and stays
+            // correct-as-authored.
+            foreach (string face in new[]
+                     {
+                         "Assets/SBR/Resources/SureThing/Fonts/Archivo SDF.asset",
+                         "Assets/SBR/Resources/SureThing/Fonts/Archivo SemiBold SDF.asset",
+                         "Assets/SBR/Resources/SureThing/Fonts/ArchivoNarrow SDF.asset",
+                     })
+            {
+                AssetDatabase.ImportAsset(face, ImportAssetOptions.ForceUpdate);
+                Debug.Log($"[BlurAB] force-reimported {face}");
+            }
+            AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
+
             SessionState.SetString(OutDirKey, outDir);
             SessionState.SetBool(BlurArmedKey, true);
             EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
@@ -877,6 +907,24 @@ namespace SBR
                 throw new InvalidOperationException(
                     "RoomPostFx volume not found - the grade cannot be bypassed, so this run " +
                     "cannot separate grade from resolution and must not pretend to");
+
+            // CONTROLS, and this pass is why they are here. The first blur A/B had none: it shot
+            // graded then ungraded straight through, so its 1.44x / 1.14x figures rested on the
+            // assumption that two captures of an unchanged main-camera state agree. A routed
+            // finding says that assumption is unestablished — C34 reproducibility was only ever
+            // demonstrated for the flat halves, and the MAIN-CAMERA halves measurably are not
+            // reproducible. Until this pair comes back identical, every number I have reported off
+            // a room-camera frame is illustration rather than measurement, including my own.
+            //
+            // So the control runs FIRST and the analyser is told to believe nothing without it.
+            foreach (string ctl in new[] { "control-a", "control-b" })
+            {
+                WarmRender(cam);
+                string cd = Path.Combine(outDir, ctl);
+                Directory.CreateDirectory(cd);
+                Capture(cd);
+            }
+            Debug.Log("[BlurAB] control pair shot (main camera, unchanged state)");
 
             WarmRender(cam);
             string gradedDir = Path.Combine(outDir, "graded");
