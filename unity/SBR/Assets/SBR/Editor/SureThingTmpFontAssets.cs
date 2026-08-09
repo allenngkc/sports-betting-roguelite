@@ -175,8 +175,21 @@ namespace SBR.EditorTools
             }
             var material = new Material(shader) { name = assetName + " Atlas Material" };
             material.SetTexture(ShaderUtilities.ID_MainTex, atlas);
-            material.SetFloat(ShaderUtilities.ID_TextureWidth, atlas.width);
-            material.SetFloat(ShaderUtilities.ID_TextureHeight, atlas.height);
+
+            // **The CONFIGURED atlas size, never the texture's current size.** This read
+            // `atlas.width`/`atlas.height`, and a Dynamic atlas serialises at 1x1 and only grows to
+            // its configured ceiling at runtime — so the material shipped `_TextureWidth = 1`. The
+            // SDF shader derives its antialiasing gradient from these two fields, so at 1 it computed
+            // the wrong screen-space sample rate and every glyph on the surface rendered soft. That
+            // is C13's first-capture finding, and it is why the room read the laptop as blurry at
+            // the desk pose while the grade and the atlas both measured clean.
+            //
+            // I logged "atlas 1x1" at generation and wrote it down as expected Dynamic behaviour,
+            // which it is — the mistake was mirroring the texture's state into a field that must
+            // describe its CONFIGURATION. **A named constant does not protect a value that is copied
+            // from somewhere else**; the constant was right the whole time.
+            material.SetFloat(ShaderUtilities.ID_TextureWidth, AtlasWidth);
+            material.SetFloat(ShaderUtilities.ID_TextureHeight, AtlasHeight);
             material.SetFloat(ShaderUtilities.ID_GradientScale, AtlasPadding + 1);
             material.SetFloat(ShaderUtilities.ID_WeightNormal, asset.normalStyle);
             material.SetFloat(ShaderUtilities.ID_WeightBold, asset.boldStyle);
@@ -185,7 +198,10 @@ namespace SBR.EditorTools
 
             EditorUtility.SetDirty(asset);
             Debug.Log($"[SureThingTmpFontAssets] {face} '{styleName}' (faceIndex {faceIndex}) -> {outPath} " +
-                      $"· reported style '{asset.faceInfo.styleName}'");
+                      $"· style '{asset.faceInfo.styleName}' · material mirrors " +
+                      $"{material.GetFloat(ShaderUtilities.ID_TextureWidth)}x" +
+                      $"{material.GetFloat(ShaderUtilities.ID_TextureHeight)} " +
+                      $"(texture is currently {atlas.width}x{atlas.height} — Dynamic, grows at runtime)");
             return asset;
         }
     }

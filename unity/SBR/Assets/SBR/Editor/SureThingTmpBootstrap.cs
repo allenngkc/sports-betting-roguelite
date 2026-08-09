@@ -166,6 +166,31 @@ namespace SBR.EditorTools
                     return;
                 }
 
+                // **C13's first-capture defect, gated.** The SDF shader derives its antialiasing
+                // gradient from the material's own copy of the atlas dimensions. The generator used
+                // to mirror the TEXTURE's size, and a Dynamic atlas is 1x1 until runtime — so the
+                // material shipped `_TextureWidth = 1` and every glyph rendered soft, while the
+                // asset, the atlas and the constants all measured correct.
+                //
+                // This is the third derived-value defect on this surface after the unassigned atlas
+                // and the SemiBold default face, and the pattern is the same each time: **presence
+                // was checked, agreement was not.** So this checks agreement.
+                float mirroredW = fa.material.GetFloat(TMPro.ShaderUtilities.ID_TextureWidth);
+                float mirroredH = fa.material.GetFloat(TMPro.ShaderUtilities.ID_TextureHeight);
+                bool mirrorOk = Mathf.Approximately(mirroredW, SureThingTmpFontAssets.AtlasWidth)
+                                && Mathf.Approximately(mirroredH, SureThingTmpFontAssets.AtlasHeight);
+                Debug.Log($"[SureThingTmpBootstrap] {label}: material mirrors {mirroredW}x{mirroredH} " +
+                          $"against configured {SureThingTmpFontAssets.AtlasWidth}x" +
+                          $"{SureThingTmpFontAssets.AtlasHeight} — {(mirrorOk ? "AGREE" : "DISAGREE")}");
+                if (!mirrorOk)
+                {
+                    Debug.LogError($"[SureThingTmpBootstrap] {label}'s material describes an atlas it " +
+                                   "does not have. Glyphs will render soft and nothing else will " +
+                                   "look wrong — refusing to report this bootstrap as usable.");
+                    EditorApplication.Exit(3);
+                    return;
+                }
+
                 // **The gate that would have caught the whole thing.** Archivo.ttf's default face is
                 // SemiBold, so a generator that took faceIndex 0 shipped the roman voice at weight
                 // 600 for an entire migration and nothing said a word — every earlier check here
