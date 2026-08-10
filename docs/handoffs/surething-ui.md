@@ -147,20 +147,25 @@ Part 2 room's, Part 3 the closing.
 *(Not "the three" any more. The count was in this heading and went stale the moment a fourth arrived —
 the same defect as the `(gitignored)` line below, in the heading rather than the body.)*
 
-- **⚠ DESTRUCTIVE AND LIVE — do not `git add -A`, do not `commit -a`, do not touch the TV fonts.**
-  `unity/SBR/Assets/SBR/Resources/Tv/Fonts/EncodeSans.ttf` and `EncodeSansCondensed.ttf` show
-  **permanently modified in every worktree on main** and **`git checkout` cannot clear them.**
-  Verified here rather than relayed: HEAD's blob is **raw TTF** (285,792 bytes, real `GDEF`/`GPOS`
-  tables), `.gitattributes` routes the path to LFS (`git check-attr filter` → `lfs`), and
-  **`git lfs ls-files` has no record of them.** So the clean filter would write a pointer to an LFS
-  object **that does not exist** — staging them converts real fonts into **dangling pointers**, and
-  the bytes stop being reachable from that commit.
-  **Stage by explicit path only until TV's conversion fix lands on main.** It is TV's to fix; the
-  remedy (`git lfs migrate` versus untracking the path) is repo-wide and has history implications.
-  **It also breaks `git merge --abort`:** the stale index throws *"Entry … not uptodate. Cannot
-  merge. Could not reset index file to revision HEAD"*. `git reset --hard HEAD` clears it, and costs
-  nothing **provided this seat's own work is committed first** — which is the reason to commit before
-  merging rather than after.
+- **CLEARED 2026-08-10 — the TV-font LFS hazard. History, not a live trap.** Kept because the
+  *recovery* is not obvious and the class can recur on any path where a raw blob sits under an `lfs`
+  attribute.
+  **What it was:** `Tv/Fonts/EncodeSans.ttf` and `EncodeSansCondensed.ttf` were raw TTF blobs in HEAD
+  under an `lfs` attribute with **no LFS object behind them**, so they showed permanently modified in
+  every worktree and the clean filter would have written a pointer to nothing — `git add -A` or
+  `commit -a` would have converted real fonts into **dangling pointers**. TV renormalised them at
+  `d97e9e4`; verified afterwards, the blob is now a 131-byte pointer with its object present.
+  **Neither `checkout` NOR `reset --hard` can clear that state** while it exists — the clean filter
+  regenerates the mismatch on every comparison — so `git merge` refuses with *"Please commit your
+  changes or stash them"*, and committing is the one forbidden act. **The way through is to neutralise
+  the filter for a single command rather than change any repo state:**
+  `git -c filter.lfs.process= -c filter.lfs.clean=cat -c filter.lfs.smudge=cat -c filter.lfs.required=false merge --no-ff main`
+  **That has one side effect which must be undone immediately:** with smudge off, incoming pointers
+  land on disk as pointer TEXT, so the working tree carries 131-byte "fonts" until **`git lfs
+  checkout`** restores them. A font that loads as nothing is a quiet failure.
+  It also breaks `git merge --abort` (*"Entry … not uptodate"*); `git reset --hard HEAD` clears the
+  index and costs nothing **provided this seat's own work is committed first** — the reason to commit
+  before merging rather than after.
 - **`artifacts/` is NOT git-ignored.** A bare `git add -A` sweeps ~100 PNGs. Stage explicitly, always.
   Verify rather than trust: `git check-ignore -v artifacts/surething-ui` matches nothing.
   **This file told two seats the opposite** — §5 read "(gitignored)" until 2026-08-09, cancelling the

@@ -22,6 +22,7 @@ hold, Part B's numbers are not worth recording and this tool says so.
     python tools/glyph_ramp_baseline.py [--report PATH]
 """
 import argparse
+import json
 import statistics
 import sys
 from pathlib import Path
@@ -194,7 +195,41 @@ def main():
                          "so the quantity stays monotonic in blur while keeping clause "
                          "2's meaning. Within one frame the measured stroke is correct "
                          "and is always reported.")
+    ap.add_argument("--laptop-frame", metavar="PATH",
+                    help="measure this laptop frame instead of the built-in r9a-refresh "
+                         "one. ADDED BY THE SURETHING SEAT, 2026-08-10, and deliberately "
+                         "an override rather than an edit to SURFACES: the built-in path "
+                         "is room's COMMITTED baseline set, and a re-shoot that wrote over "
+                         "it would destroy the very comparand it is measured against. The "
+                         "default is unchanged, so room's own runs behave exactly as "
+                         "before. Boxes are NOT auto-adjusted — if the layout moved, "
+                         "re-cut and eye-confirm them (C27) or this silently measures the "
+                         "wrong pixels.")
+    ap.add_argument("--smallest-json", metavar="PATH",
+                    help="replace the SMALLEST boxes from a JSON file of "
+                         "{group: [[x0,y0,x1,y1], ...]}. ADDED BY THE SURETHING SEAT, "
+                         "2026-08-10, for the same reason as --laptop-frame: the built-in "
+                         "boxes are eye-confirmed against ROOM'S frame and are correct "
+                         "there. They are NOT correct on a re-shoot, because the season "
+                         "record's x depends on the team name beside it and the harness "
+                         "renders a live, unpinned slate — so a different deal moves the "
+                         "records and leaves the boxes measuring team names, empty ground, "
+                         "or half a glyph. The row-number column survives a re-deal because "
+                         "its x is fixed. Whatever is passed here must be eye-confirmed on "
+                         "the frame it will be used on (C27); nothing about this flag makes "
+                         "that unnecessary.")
     args = ap.parse_args()
+
+    if args.laptop_frame:
+        # .resolve() matters: the PROVENANCE block does frame.relative_to(repo root),
+        # which raises on a relative path. Passing "artifacts/..." on the command line
+        # therefore crashed the run AFTER Part B had already printed - the numbers
+        # looked complete and the report file was never written.
+        SURFACES[0]["frame"] = Path(args.laptop_frame).resolve()
+    if args.smallest_json:
+        SMALLEST.clear()
+        SMALLEST.update({k: [tuple(b) for b in v]
+                         for k, v in json.loads(Path(args.smallest_json).read_text()).items()})
 
     lines = []
 
