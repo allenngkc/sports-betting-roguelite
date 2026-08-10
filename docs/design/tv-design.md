@@ -1,9 +1,12 @@
 # TV sweat — the match theatre
 
-> **APPROVED — Allen, 2026-08-07.** Canon under C9's two-tier authority. The §10 quarantine stays quarantined (provisional values settle against the real panel); §10's C3→T49-cl reconciliation stands. The DRAFT file is the preserved draft.
+> **APPROVED — Allen, 2026-08-07.** Canon under C9's two-tier authority. This is the Design
+> Director's batch-19 revision, landed verbatim by the orchestrator with one bookkeeping correction:
+> the new element-and-ground law was issued as "C34" and is transcribed as **C35** (C34 =
+> reproducibility, batch 14; earlier ID governs).
 
-**Owning document** under C9's two-tier authority · **Status:** CANON (Allen-approved 2026-08-07) · **Drafted:** Design Director, 2026-08-07
-**Canonical home on approval:** `main-2/docs/design/tv-design.md`
+**Owning document** under C9's two-tier authority · **Status:** RATIFIED — Allen 2026-08-07
+**Canonical home:** `main-2/docs/design/tv-design.md` · **Revised:** Design Director, 2026-08-08 (batch 19)
 **Companion:** `docs/design/constitution.md` (authority and evidence)
 **Siblings:** `docs/design/room-design.md` (R13) · `docs/design/surething-design.md` (C26-am)
 
@@ -98,6 +101,25 @@ contrast against `--tv-extinguished`.
 (C33). RGB-average and linear-space luminance both mis-rank this surface's own palette and are not the
 ladder's unit — see §10.
 
+**Where an L4 candidate is a filled field and its competitor is type, dominance is judged on zone mean
+and peak together** (C33-am). Peak-versus-peak silently compares a field against a glyph, and a field
+always loses that comparison while dominating the frame. **Three measurements, three spaces** (C33-am3), never compared: the **ladder** is Rec.709 luma on
+**display-encoded** values; a **contrast ratio** is relative luminance in **linear** space; **emission
+hue and chroma** are CIELAB from the **linear authored** value. Every number states its unit *and* its
+space.
+
+**An element and its ground must not be driven by one control** (C35). `ApplyBoost`'s `Payout` case
+drives the payout text and the flood behind it together, preserving their ratio — **no brightness
+change can separate a pair that moves together.** Legibility comes from a stable ground and an inverted
+ink, never from boosting both sides of a contrast.
+
+**A ranking gate is silent on legibility** (C33-am2): the ladder answers which element dominates, never
+whether that element can be read. Dominance and internal contrast are two instruments, and this surface
+shipped only the first until T68. **No gold can out-rank cold white on peak
+luma at all** — within the range a `Color32` canvas colour is clamped to, matching cold white's 0.942
+requires G ≈ 1.0, which is lemon. A gold field's L4 standing is therefore established by field area,
+zone mean and boost, never by out-peaking white type.
+
 ---
 
 ## 3. Colour
@@ -122,8 +144,9 @@ warm, and the scarcity is the signal.**
 - **No full-field washes** (T40). The LEG-WON gold wash and the dead-leg oxide wash are *deleted, not
   dimmed* — a full-field wash spends the whole ration in one frame and is a celebration. The win is
   carried where it is already carried.
-- **This extends into the room** (T65). An event-driven room re-tint is a full-field wash on a larger
-  surface. The mechanism is open (C5) and endorsed (T45); the amplitude and hue are not.
+- **This extends into the room** (T65, closed on frames). An event-driven room re-tint is a full-field
+  wash on a larger surface. The mechanism is open (C5) and endorsed (T45). **It fires on settlement
+  only, from one painting point, carrying a room-palette warm — and no call site names a colour.**
 - **CASHED OUT $x prints in the cash-out slot at L3** (T35). A 96px full-screen figure is a
   celebration *and* resizes a zone to content — forbidden on both counts independently.
 - The goal flash is a **brightness event on the cold-white channel** (T58, closed on frames at 0.0%
@@ -182,6 +205,10 @@ production face was re-taken; the deficit dissolved at `64ccf53`).
   on the stage.
 - **Compact scorebug + stage** fill the right.
 - **Cash-out anchored at the foot of the ticket column.**
+- **The event strip's text zone begins at canvas x 305**, 40px past the ticket-column boundary (T67).
+  The lit gold field blooms 40px into the strip's empty left margin and zero beyond x=365; starting the
+  text zone past that reach means **any authored line, at any length, begins outside the halo.** The
+  strip's copy does not warm at the acceptance view and no bloom value is touched.
 - **Momentum tape**: one 28px strip at the scorebug foot, a MOMENTUM label, one shared centre line —
   no numerals, no hue, never above L2 (T16, T28, T52). Match-scoped: a row per leg would be a second
   ticket column re-introducing team hue by construction. The **win-probability numeral is out** (§7
@@ -213,15 +240,32 @@ an information hierarchy for three tenths of a pixel** (T51) — the stacked lab
 
 | State | Treatment |
 |---|---|
-| actionable | gold at **L4**, inverted field, dark type punched out — the surface's only L4 |
+| actionable | gold at **L4**, inverted field, **dark type punched out — field AND type invert** (T68) |
 | updating | gold at **L3** — never L4: brightness must not promise what input refuses |
 | suspended | **L1 unlit slate from its first frame** (T43), `MARKET SUSPENDED`, no amount |
 | pending | as suspended; intervention controls live in their own overlay, never in this row |
 | unavailable | L1, quiet, no reflow |
-| accepted | brief L4 punch, then `CASHED OUT $x` at L3 |
+| accepted | brief L4 punch, then `CASHED OUT $x` **in the slot** at L3, inverted — the gold flood is a celebration ground, **never the field a money figure is read against** (T68-am) |
 
 **The brightness of this slot is a promise about input.** L4 means the key works *right now*. If the
 slot is bright and the press does nothing, the surface has lied.
+
+**`accepted` renders in the slot, not over the flood** (T68-am). T43 retires the *offer* — the amount,
+the instruction, the actionable field — not the rectangle: the slot is the surface's furniture and
+`accepted` is one of its six states. Over the flood the ground is a sine pulse (alpha 0 → 0.55 → 0),
+so gold reads **12.47:1** at the ends and **1.71:1** at the peak while `goldInk` reads 1.08:1 and
+7.87:1 — **complementary, and neither static ink is correct.** An L3 gold field gives **9.68:1**.
+**`WinBeat`'s `+$X` tally takes the same treatment** (T71); two payoff moments must not diverge.
+
+**The inversion is a two-part operation** (T68). On `actionable` and `accepted` the field takes gold
+**and the label and amount take `goldInk`**. Inverting the field alone raises it to meet a light label:
+measured at the acceptance view, `HOLD E` on the lit field read **1.19:1** where the punched-out build
+reads **7.95:1** (linear). The unlit states keep their light ink and are correct as they stand.
+
+**The label is the thinner margin of the two and fails first.** Rendered ink lands near 0.222 against an
+authored `goldInk` of 0.046 — bloom, antialiasing and T48's black lift all raise it — and a small thin
+label's strokes fill in further than a large bold amount's. **If the field is ever brightened, check the
+label before the amount.**
 
 **Display state and input state are the same state, read from one value** (T59). `suspended`,
 `pending` and `updating` refuse `E`; `actionable` accepts. A refused press draws nothing — the slot is
@@ -229,6 +273,12 @@ already dark and labelled. Accepting a declared-refused input on a money control
 available outcome: the player gets a price the display is not showing.
 
 **`MARKET SUSPENDED` owns the slot exclusively** (TV-12/13) — no actionable offer beside it.
+
+**A lit field blooms into its neighbours** (T67). Risk/pays taking gold is not a ration event; **the
+event strip taking gold is**, because T27 keeps the bar neutral. This is judged at the seated in-room
+render and nowhere else (§1.3) — bloom through real glass at four metres is what that view exists for.
+If the strip warms at that distance the remedy is **separation**: a gutter between field and strip.
+Never a bloom change (sealed) and never dimming the band.
 
 **Confirm gesture** (T22, T36): **hold to preview; release always abandons; release is never confirm**
 — commit is an act on the laptop. The bounded fallback is a second key during the hold. **No timer, no
@@ -241,6 +291,11 @@ Multiple legs may be live at once — **L3 is a tier, not a slot** — and concu
 phase off one shared clock**. `LIVE` is the only pulse on the surface.
 
 **Progress lines are driven from the revealed payload and land on the same frame as it** (T62).
+
+**A leg statement names each fact once** (T69). Concatenating the pick and the fixture restates the
+backed team — `ATLANTA MIDDLEMEN ML · v TULSA STARTUPS`, never `Atlanta Middlemen ML — Atlanta
+Middlemen v Tulsa Startups`. Statements are **re-authored against a call-site-recorded measurement**
+and never wrap: a row that wraps to three lines is a string exceeding a fixed slot, which §5.1 forbids.
 
 ### 6.3 Risk and pays
 
@@ -317,6 +372,18 @@ stage (TV-12/13).
 superlatives, no promises.** One casing, one dash (em). *"off the bar - a miracle brewing?!"* is the
 banned shape, verbatim.
 
+**Statements are authored to fit their measured column at the source** (T69). The authored forms live
+in the copy deck (`tv-g1-authored-leg-statements-2026-08-08.md`, G1): **NEED states the requirement,
+the compact statement states the identity**, clubs are named by their distinctive word and players by
+surname, and every form that can overflow has its shorter line authored rather than truncated.
+
+**NEED and the progress line beneath it are one authored pair** (T70): requirement above, state below,
+**no term repeated across the two.** `LANYARD TO SCORE` over `WAITING FOR LANYARD` named the player
+twice — T69's defect turned vertical. Truncation on a word
+boundary is the structural backstop against broken glyphs — **it is not the remedy**, and shipped copy
+should never reach it: a clean cut still ends on a dangling word. §5.1's *re-authored, never truncated*
+governs, and truncation only guarantees the failure is not ugly.
+
 **The TV never instructs the player to bet** (T27). Idle prints **`ROUND n OF 8 · BOARD OPEN`** in
 `--tv-fact`, and the bar carries no hue. *"PLACE YOUR BETS"* was celebratory exhortation in a retired
 hue at L4 — banned on all three counts.
@@ -334,7 +401,8 @@ Real gates, per C9. Each states its instrument and, per C18 §4.2, **what it can
 
 | # | Gate | Instrument | Blind to |
 |---|---|---|---|
-| V1 | **One L4 token at a time** | one-token invariant + per-frame ladder scan in Rec.709 luma | anything the capture states do not force |
+| V1 | **One L4 token at a time** | one-token invariant + per-frame ladder scan in Rec.709 luma, **zone mean AND peak** (C33-am) | **internal contrast — see V8** |
+| V8 | **Every element that inverts reports field-vs-own-ink contrast** (C33-am2) **and whether its ground is static across the beat** (C35) | contrast ratio **in linear relative luminance** (C33-am3), per state, at the acceptance view | elements that never invert |
 | V2 | Gold appears only on won legs, payout figures, cash-out | palette scan incl. markup, light colours, colour arrays | gold reaching the player as **room light** (V6) |
 | V3 | No retired hue anywhere — verbatim constant match | `LooksLikeRetiredRed`-class scan over four surfaces | near-misses; the guard missed `#FF4038` by 0.00098 |
 | V4 | No zone resizes to content; stage clips to its region | per-frame edge assertion | z-order and overdraw between correctly-sized zones |
@@ -369,16 +437,22 @@ measurement is reported **with its scope and its resolution** attached (C25, C32
 
 | Item | State |
 |---|---|
-| **T63** cash-out band never reaches L4 | Ruled batch 13; unbuilt |
-| **T64** TV idle-emission flicker | Struck batch 13; unbuilt |
-| **T65** room gold flood on leg-win | Ruled batch 13; unbuilt |
+| **T70** AnytimeScorer progress line repeats NEED's surname | Ruled batch 18; **built with the G1 deck** (`41d5cbe`) |
+| **T68-am / T71** `accepted` and `WinBeat` into the slot | Ruled batch 19; **building — one commit, not two** |
+| **SureThing blur on the laptop** | R22 walk finding; hunt live, C13's first-capture defect |
+| **T65** settlement re-tint value (hue 88.0°, intensity 0.9) | Upper bound — owed a settlement capture |
 | **T9** `chromeCyan` retired-hue debt | Phase 3 |
 | **T10** two hardcoded emission rest values, one below the black floor | Phase 3 |
 | **T25.2–25.7** seated-sweat findings | TV's queue |
 | **C2** light spill colour into the room — shipped green tolerated, target cold white-grey | Interim, Allen |
 | **C6** PRD §14.1 carries deprecated `08` colour law | Documentation conflict |
-| **C15** TMP migration | Scheduled, orchestrator-side |
+| **C15** TMP migration | **Phase L merged to main (`5903750`)**; Phase T scheduled, orchestrator-side |
 
 **Closed and verified end to end:** T41 (stage capped), T48 (grade black point), T49 (bloom 1.4,
-sealed), T58 (goal flash neutral), T6 (scene grammar), T50 (face in situ). The ladder is verified from
-substrate to L4.
+sealed), T58 (goal flash neutral), T6 (scene grammar), T50 (face in situ), **T63** (band's HDR material
+structural — the field was unboosted, not third-brightest), **T64** (idle flicker deleted), **T65**
+(room quiet on a leg win — eight frames indistinguishable from rest), **T66** (event strip at L2, one
+painting point), **T67** (bloom does not warm the strip's copy at the acceptance view; a 40px zone inset
+covers the long-line case), **T68** (both halves of the inversion — 1.19:1 → 7.95:1 linear), **T69**
+(statement names each fact once, no wrap, no mid-word cut). **The ladder is verified from substrate to
+L4 — and T68 is why a verified ladder never meant a readable element.**

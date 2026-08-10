@@ -240,3 +240,93 @@ the graded captures for colour.
 | C2 | TV light spill colour | Interim — green tolerated, cold white-grey at TV Phase 3 |
 | C5 | Room re-tint from TV light in-engine | Open deliberately; if the rig supports it, big payoffs drive it |
 | C7 | Four documents still assert the revoked palette laws | Documentation debt |
+
+---
+
+## Amendment — 2026-08-08 (batch 15, transcribed by the orchestrator)
+
+**R39 closed — exact values granted on the adopted emission instrument.** The
+phone's isolated contribution reads 85.4°/chroma 5.0 against the laptop's
+84.3°/5.3: one chromaticity family in render, held **by construction** — all
+three phone states are `Amp(1/3/15)` off `LaptopScreen.GrantedLidEmission`.
+**R39-am:** the "these are observable" line is struck (the phone's canvas sits
+1.5mm over the emissive quad, the lid's arrangement); owed an in-Play A/B with
+the disposition **pre-committed** — if unobservable at runtime, the granted
+colours stand and no cue is ever built on the phone's glow.
+
+**R40 closed** — the material carries the granted value from the shared
+constant. **R40-am:** the DD's bake premise is falsified (every ratified
+region within ΔL* 0.13; `Mat()` sets `RealtimeEmissive`, which bakes nothing);
+the Edit-Mode half was load-bearing and stands. Emission-only changes need no
+bake but still void gates 6–8 through the builder; no tool re-issues a human
+gate (C28).
+
+**New ruled items:**
+
+- **R41** — the art indicator is struck **as a colour, kept as an object**: at
+  chroma 43–49 rendered it is ten times more saturated than any other emitter
+  and loses on scarcity, not area; C4/T34 admit no red-in-light exception. It
+  moves into the room's warm family (the rust end or the screens' 83–85°,
+  never signal-red), chroma bounded against the room's other emitters on the
+  instrument.
+- **R42** — WindowGlow is **ratified as textured**: the emission map governs
+  the window's colour (the night-city sodium is R24's contract). Standing
+  clause: on a textured emitter the authored value is **a multiplier, not a
+  colour**, and stays near-neutral. The gate detects emission maps and
+  annotates those surfaces.
+
+**The emission instrument is adopted as the room's standing emission gate** —
+controls `a == b == z` bit-identical per pose, an independent
+authored-chromaticity cross-check, footprint coherence (the lid predicts 0px
+seated / 51.18% focused), sub-2-code-value regions reported UNCOVERED, and
+ON | OFF | DIFF×6 crops as delivered evidence. The first instrument in the
+studio that reads light rather than pixels or constants.
+
+---
+
+## Amendment — 2026-08-08 (batch 16, transcribed by the orchestrator)
+
+**R41 closed at the restored luminance.** Chroma granted (43–49 → 5.7–6.5, in
+the room's emitter band, every value from ratified law); the luminance halving
+reversed — the lamp carries `(0.3292, 0.2770, 0.2572)`, L\* 60.49, chroma 5.4,
+hue 49.7°. A standby lamp that does not read as lit is the broken register.
+
+**R41-am, standing law:** when a direction names a swatch, **the swatch
+supplies hue and chroma; luminance is the element's own and never travels
+with it.** (And the DD's two-ends direction is recorded as a false choice —
+rust's chromaticity cannot meet a chroma-5 bound at any amplitude; treating
+the bound as the constraint was the correct resolution.)
+
+**R39-am closed — the pre-committed disposition fired.** The phone's emission
+is invisible at runtime even mid-buzz at `Amp(15)`: granted colours stand
+(they govern Edit-Mode captures, the material, and every bake-adjacent path),
+and **no cue, state or gameplay signal is ever built on the phone's glow.**
+
+**Adopted:** a small-object albedo change needs no bake (measured ΔL\* ±0.00
+on every ratified region) — it still voids gates 6–8 through the builder, and
+no tool re-issues a human gate (C28). And the control rule, alongside C32:
+*a control that fails for a known harmless reason is a control everyone
+learns to ignore* — fix it at the cause.
+
+---
+
+## Amendment — 2026-08-08 (batch 17, transcribed by the orchestrator)
+
+**R41-am closed whole:** Allen's luma-parity-intent value shipped
+`(0.2334, 0.1924, 0.1769)`; the DD's lit-read confirms a lit standby lamp;
+the residual rendered chroma 7.8 (band 4.9–5.5) is accepted — 0.031% of
+frame, brightness is not the lever (chroma does not track luminance), and a
+band tighter than the instrument's own spread is C32.
+
+**EMIT gate bookkeeping:** WindowGlow registers R42's ruling WITH the
+multiplier clause (a future saturated multiplier FAILS rather than passing
+as textured); ArtIndicator registers Allen's R41-am value.
+
+**Gates 6/7/8 remain VOID** — a human walk (R22's instrument) is the only
+re-issue path (C28); escalated to Allen's schedule, three batches standing.
+
+**Three instruments, three spaces (C33-am3, studio-wide):** ladder = Rec.709
+luma on display-encoded; contrast = relative luminance in linear; emission
+hue/chroma = CIELAB on linear authored. Space is stated with every number;
+luma-parity values are measured, never linearly scaled (this lane's own
+14.2% miss is the founding case).
