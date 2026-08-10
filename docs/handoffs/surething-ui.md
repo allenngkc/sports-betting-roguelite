@@ -1,21 +1,21 @@
 # SureThing UI — re-seat state
 
-**STATUS 2026-08-09 · converged at `1d6eb35`, IDENTICAL to main · tree carries two phantom-modified TV
-fonts that are NOT this seat's and MUST NOT be staged — see the traps · `artifacts/` untracked, as always**
+**STATUS 2026-08-10 · `cebe39d` on `surething-ui` · 4 ahead of main, 0 behind · tree clean (`artifacts/`
+and the three S2-am2 frames untracked, deliberately — see the baseline item)**
 
 ### Verifiable state
 
-- **This surface's own suites: EditMode 78/78 · PlayMode 58/58**, last run by this seat at `45cb958`.
-  **PlayMode moved 57 → 58** at `af0c42c` — the S71 margin-empty-state gate. **A run reporting 57 means
-  that gate did not execute**, and the wrapper's count is what tells you.
-- **Those two figures were NOT re-run on the converged tree, and do not need to be.** The convergence
-  took 89 commits and 109 files including code, so the "nothing under `unity/` has changed" claim that
-  used to sit here **is void** — do not carry it forward. What replaces it is better evidence, not
-  weaker: **the merged tree was validated studio-wide at `1d6eb35` — engine 183/183, EditMode 250/250,
-  PlayMode 84 + 6 by-design skips** — and this surface's 78 and 58 are subsets of those totals.
-  **Studio counts are not this surface's counts.** 250 and 84 are every lane together; the 78/58 above
-  is what a filtered run of this surface should report, and comparing the two directly is a category
-  error waiting to be made by whoever reads a green 250 as covering something specific.
+- **⚠ THE SUITE FIGURES ARE NOW STUDIO-WIDE, NOT THIS SURFACE'S. Read that before comparing anything.**
+  **EditMode 250/250 · PlayMode 90 discovered → 84 passed, 0 failed, 6 skipped**, run by this seat on
+  the converged tree at `cebe39d`, both through the C29 wrapper.
+- **The six skips are BY DESIGN.** A run reporting **90 executed** is as much a discrepancy as a
+  failure and a much quieter one. Check the skip count, not just the pass count.
+- **What changed is the denominator, not this surface.** This seat's own suites were **78/78 and
+  58/58** — the figures a filtered run of this surface should still report, with **PlayMode 57 → 58**
+  at `af0c42c` (the S71 gate; a 57 means that gate did not execute). The 89-commit convergence brought
+  every lane's tests into this tree, so 250 and 90 are **every lane together** and 78/58 are subsets of
+  them. **Nothing on this surface moved.** Reading a green 250 as covering something specific is the
+  category error to avoid, and it now applies to this seat's own tree rather than only to the studio's.
 - **Branch is CONVERGED — 0 ahead, 0 behind at the fast-forward.** It was fast-forwarded deliberately
   rather than merged: HEAD was already an ancestor of main (this seat's work landed at `23f9da6`), so a
   `--no-ff` merge commit would have invented a sibling of main instead of becoming it. Read the counts
@@ -95,6 +95,41 @@ Read §4bb-C13 for the trail, but read it as history. **What survives and must n
 
 The joint read is at `main-2/docs/design/dd-import/blur-pipeline-read-2026-08-08.md` — Part 1 mine,
 Part 2 room's, Part 3 the closing.
+
+### The S2-am2 baseline — the numbers, and the resolution they do NOT have
+
+Shot and measured at `fa93238` on `2026-08-10-s2am2-postflood/focused-laptop-desk.png`. **It stands;
+no re-shoot is owed.** The three frames are on disk and **deliberately not in git** — evidence storage
+is an open general question with Allen and this does not pre-empt it. Reports and boxes are committed.
+
+| group | ramp | **across-time form** (÷ authored) | measured form | verdict |
+|---|---|---|---|---|
+| season records | 2.234 px | **1.152** (÷ 1.94) | 0.788 | **reads: yes** |
+| row numbers `01`–`06` | 2.529 px | **1.246** (÷ 2.03) | 0.789 | **reads: yes** |
+
+**The unit is "1.152 and it reads", never the number alone.** The two forms are different quantities
+and are **never compared to each other** — batch 26's 0.775/0.789 are the measured form, so reading
+`0.775 → 1.152` as a collapse is reading the amendment rather than the surface. The values hold **only
+at the ratified acceptance view** (focused-laptop-desk, 0.52 m along the lid normal, 30°); any other
+pose rescales them.
+
+**⚠ THE CAVEAT THAT BINDS HOW THESE MAY BE CITED (DD, 2026-08-10).** Deal-to-deal variation is
+**uncharacterised inside these numbers**, so **no future movement of ~0.037 size may be called a change
+OR a null on this baseline** until a pinned-seed assertion exists. It cuts both ways and must not be
+quoted one-directionally: this seat's own 1.115 → 1.152 is exactly that size, so **the baseline
+currently supports "floor unmoved" as an ACCEPTANCE, not as a measurement.**
+
+**The next shoot is bound by the amended recipe (main `1b4aa8d`): slate pinning moved from reporting
+(§3) to METHOD (§2a).** A pinned slate is the shoot's **precondition**; per-frame boxes are **fallback
+only**, and the report must state which set the boxes were. The reason is this seat's finding: a season
+record's x depends on the team name beside it, and `CaptureAll` renders a live, unpinned slate — so a
+different deal moved every record and left the stock boxes on team names, empty ground, or half a
+glyph, which would have **flattered the number with no error at all.** The row-number column survived
+only because its x is fixed.
+
+**The mechanism already exists** — `RoomViewCapture:1684-1700` pins and reads a seed back on the phone
+path (`PhoneSeed`); it is simply not applied to `CaptureAll`. Room's file, room's change, dispatched.
+**Do not shoot on fallback boxes if the pinned path is available.**
 
 ### Open items
 
@@ -221,10 +256,9 @@ the same defect as the `(gitignored)` line below, in the heading rather than the
 
 **Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-09, after C13 closed, the
 font-asset re-verification, batch 21, the strays collection, S71's gate rebuild and S72's clean sweep.
-**Converged at:** `1d6eb35`, identical to main · **Branch:** `surething-ui` · this entry is the only
-commit beyond the convergence. **The working tree is NOT clean and cannot be made clean:** two TV font
-files are phantom-modified under a broken LFS attribute and `checkout` will not clear them. That is
-expected, it is not this seat's, and staging them destroys them — see the first standing trap.
+**Last updated:** 2026-08-10, after the S2-am2 baseline re-shoot, the studio-wide suite run and
+the LFS font hazard clearing. **HEAD:** `cebe39d` · **Branch:** `surething-ui` · 4 ahead of main,
+0 behind · working tree clean (the three S2-am2 frames and `artifacts/` are untracked on purpose).
 
 **Read the re-seat block at the top of this file first.** Everything below it is the accumulated
 record and some of it describes states that have since closed — where that is true the section says
