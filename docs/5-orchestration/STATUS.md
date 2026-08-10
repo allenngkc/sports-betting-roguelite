@@ -59,6 +59,40 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-09 cycle 149 · **POST-ROUND CONVERGENCE + THE FONT LANDMINE
+  DEFUSED; DD RE-SEATED; TV'S CAPTURE WINDOW LIVE** — all lanes converged
+  on new main (TV/SureThing/room at 1d6eb35, ff, zero conflicts). Room
+  upgraded the two TV font phantoms from churn to LANDMINE: raw blobs in
+  HEAD under an lfs attribute, so any lane's broad `git add` writes
+  dangling pointers (no LFS object) — Allen routed the fix to TV (staged
+  ruling, fired); TV renormalized both fonts (c6458a0, LFS objects
+  uploaded 2/2, no ref moved), fast-tracked to main `d97e9e4`
+  (filter-neutralized merge over the phantom guard; smudged fonts
+  cmp-verified identical to originals; fast-path basis in the message).
+  **Main's tree is fully clean — zero phantom lines — for the first time
+  in weeks.** TV self-caught and honestly reported a transient DLL
+  corruption during convergence (its cat-file restore reflex vs the new
+  pointer-stored DLL; caught by assembly-load, not hash) — its §1 rule
+  correction APPROVED, rides the capture work. DD re-seated per §6a
+  hygiene (Allen's staged /clear+re-seat, fired; MSYS ate the first /clear
+  — PowerShell send is the slash-command path): fresh session confirmed
+  252 register rows, canon batch 28; its stale phone-row fix landed
+  `244910d`. Allen's S2-am3 window grant fired with serialization: TV's
+  flood-removal window first (LIVE now — compile clean, shooting payoff
+  beats), SureThing on its close. DD's punch-regression catch relayed into
+  the live window (L4 punch-then-settle 0.688→0.586@f24 measured alongside
+  the contrast reads — verdict closes in one pass). Sentis churn cleared
+  per §7a, not committed. Reversal: revert d97e9e4 / 244910d.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | tv-sweat | capture window LIVE | frames + punch read → close window, report path | lead |
+  | surething-ui | prepping S2-am3 recipe | shoot on my tap when TV closes | lead |
+  | room | holding 1d6eb35, clean | ff to d97e9e4 at leisure | lead |
+  | markets-2 | clean | none | — |
+  | DD terminal | fresh-seated, standing by | flood verdict when frames land | DD |
+  | Editor | leased to TV | pass to SureThing on close | orchestrator |
+  | **Need Allen** | evidence-in-git policy (unchanged) | call | Allen |
 - 2026-08-09 cycle 148 · **THE MERGE ROUND LANDED — three branches, zero
   conflicts, merged tree VALIDATION GREEN** — on Allen's word ("if
   everything is done lets merge"): tv-sweat 1e02d42 → `2217107`,
