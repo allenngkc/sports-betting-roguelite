@@ -1,20 +1,47 @@
 # SureThing UI — re-seat state
 
-**STATUS 2026-08-09 · `58bfd92` on `surething-ui` · 10 ahead of main, 0 BEHIND · tree clean (`artifacts/` untracked, as always)**
+**STATUS 2026-08-09 · `3320a40` on `surething-ui` · 14 ahead of main, 0 BEHIND · tree clean (`artifacts/` untracked, as always)**
 
 ### Verifiable state
 
 - **Suites: EditMode 78/78 · PlayMode 58/58.** Baseline every later comparison against **78/58**.
   **PlayMode moved 57 → 58** at `af0c42c` — the S71 margin-empty-state gate. **A run reporting 57 means
   that gate did not execute**, and the wrapper's count is what tells you.
-- **Both suites were run on the MERGED tree, before the merge was committed.** Main's 37-commit
-  emission convergence is in and green behind it.
-- **Branch is 10 AHEAD and 0 BEHIND.** Read those two counts separately —
+- **Verified at `1d5a2df`** (the S71 gate rebuild), and **nothing under `unity/` has changed since** —
+  `3320a40` is a docs-only merge. So the figures above describe this tree exactly and no re-run is owed.
+  Check it the same way rather than trusting this line: `git diff --stat 1d5a2df HEAD -- unity/`.
+- **Branch is 14 AHEAD and 0 BEHIND.** Read those two counts separately —
   `git rev-list --count main..HEAD` is ahead, `HEAD..main` is behind. An earlier version of this file
   printed "12 ahead and 3 BEHIND" with the labels **swapped**, off a single
   `--left-right --count main...HEAD` whose output is *behind* then *ahead*. Do not trust a remembered
   pair; run the two commands.
 - **Nothing in flight. No editor held. No work in progress.**
+
+### S71's gate, as rebuilt — read this before touching it
+
+Batch 24 granted three proposals off this lane's own audit of the gate it had just written. All three
+are built at `1d5a2df`, tests only, no runtime change:
+
+- **The second-person guard is the pronoun class as standalone words** (`YOU`, `YOUR`, `YOURS`),
+  enumerated, splitting on runs of non-letters so `YOU'RE` and `YOU’RE` both reduce to `YOU`. It
+  replaced a single-substring `YOUR` check that `YOU HAVE NO MARKS` walked straight through.
+  **It is a PROXY and is labelled as one at the assertion:** S71 forbids a second *speaker*; second
+  person is its commonest symptom, not its definition. **`YOURSELF` is deliberately NOT guarded** —
+  outside the granted class, and widening past a grant quietly is its own defect.
+- **The player-ink check is enumerated** (`Accent`, `BiroDeep`), replacing an `AreNotEqual` that could
+  not fail. **Its independence is stated narrowly on purpose:** it cannot fail today either, while the
+  assertion above it pins the empty line to `Muted`. What it survives is that assertion being
+  *re-ruled*. Independent of the ruling's future, not of today's constants — overstating that would
+  repeat the defect it replaced.
+- **A negative control that fires**, and it calls the *same* function as the live check rather than
+  re-implementing it. It asserts **what** was caught, not that something was: `YOUR MARGIN IS CLEAR`
+  → `YOUR`, `YOU HAVE NO MARKS` → `YOU`, `YOU’RE CLEAR` → `YOU`, and `NOTHING ON YOUTH POLICY` →
+  `null` so the widening cannot collapse back into a substring match. **Green on the live string alone
+  proved only that the guard does not false-positive** — a broken tokeniser would have passed too.
+
+**Do not propose a pixel close for S71.** Batch 24 refused it, and not on cost: the residue is
+*does an authored token survive the rendering path*, which is surface-wide, and three layers already
+cover it. The reasoning is recorded at the test's scope note.
 
 ### Nothing is flagged unverified
 
@@ -62,20 +89,47 @@ Part 2 room's, Part 3 the closing.
 
 ### Open items
 
-1. **Nothing is live on this seat.** No SureThing build item is open.
-2. **Owed by others, not me:** whether design evidence lives in git long-term (Allen, unhurried —
+1. **No SureThing BUILD item is open.** Two things are in flight that are not builds:
+   - **S72 — the empty-state voice inventory — came back CLEAN and is with the DD**, filed at
+     `main-2/docs/design/dd-import/surething-s72-empty-state-voice-inventory-2026-08-09.md`
+     (untracked, rides the drag). **Eleven members named**, every one naming the state, and **zero
+     second-person pronouns exist in live code anywhere on this surface** — the only `YOU/YOUR` hit
+     in the whole runtime is inside the S71 comment recording the string that was removed. Two
+     observations were raised and NOT ruled: **first person appears four times** (`MY MARKS`,
+     `MY BETS`, that screen's scope line, and a status line naming it) against §6's "exactly once",
+     three of them being one destination's proper name; and **the kit pairs a statement with an
+     imperative while three of six statements have no pair**, S71's own slot among them.
+   - **The sweep's own method is the reusable part:** no single pass was complete. The structural
+     pass over emptiness branches missed three members (the MY BETS mirror gates on
+     `!view.HasTicket`, not a count); the absence-copy string pass missed the zero-ticket lock
+     reason; the `*Empty*`/`*Waiting*` naming pass caught the last. **Any one alone would have
+     reported a clean sweep that was not one.**
+2. **⚠ NEW AND UNROUTED — batch 25's `S2-am3` puts a measurement on this surface.** A legibility
+   claim about *this* surface's smallest type (season records `6-3`/`4-5`, row numbers `01`–`06`) was
+   **returned unadjudicated**: it had been read on Allen's `surething-form-blurry.png`, which is **the
+   complaint frame**, shot before the Game-view toggle fix and measured at **0.613** ramp÷stroke
+   against the harness's **0.482**. A confounded measurement closes nothing.
+   **The sharpened ask, and it is arithmetic rather than opinion:** 0.482 was taken on **price
+   figures**, the ramp is fixed in screen pixels while stroke scales with type size, **so the smallest
+   type is worse than 0.482 by construction** — the hunt's headline number was measured on type larger
+   than the floor it is now used to reason about. What is wanted is **ramp ÷ stroke on the smallest
+   product fact on the surface**. The DD stated the bias direction *before* the re-read: Allen's path
+   ran ~27% worse, so those elements likely read **better** than the returned claim said.
+   **Whose it is has not been settled** — the measurement is on this surface, the harness is room's.
+   **Do not assume it is this seat's and do not assume it is not.** Raise it.
+3. **Owed by others, not me:** whether design evidence lives in git long-term (Allen, unhurried —
    405 files under `artifacts/` are tracked on main, of which 356 are PNGs totalling ~1.05 GB of
    **raw** blobs; none are LFS pointers and `.gitattributes` routes neither `artifacts/` nor `*.png`
    to LFS). Main also carries `SENTIS_ANALYTICS_ENABLED` **committed** — main's to resolve.
-3. **Routed away, do not pick up:** M-04/M-05 stake block → markets. The ledger's `OPEN` status →
+4. **Routed away, do not pick up:** M-04/M-05 stake block → markets. The ledger's `OPEN` status →
    engine-contract list. **B-01's ticket axis → needs a real ruling**; it has been ruled around four
    times without being ruled on, and ratified-by-silence is not a ruling.
-4. **S67's residue is still open and was deliberately not tidied.** Batch 21 ruled the *string* —
+5. **S67's residue is still open and was deliberately not tidied.** Batch 21 ruled the *string* —
    `PRICES FINAL` left the masthead subline, so `SportsbookApp.cs:98` and the LEDGER's `Scope` now
    print identically. **The two sites still differ in NAME (`Run` vs `Scope`) and both still build the
    string inline rather than through a `LaptopUi` helper.** That is S67's actual finding; the ruling
    did not touch it and neither should a passing tidy.
-5. **The capture-state collision resolved as `11-desktop` stays, markets moved to 16.** Markets' tree
+6. **The capture-state collision resolved as `11-desktop` stays, markets moved to 16.** Markets' tree
    holds the only frames of `16-margin-max-legs-staged-receipt` — **this tree cannot regenerate them**,
    because it still carries `11-`.
 
@@ -135,8 +189,8 @@ Part 2 room's, Part 3 the closing.
 - **Two traps still live in this tree:** `artifacts/` is no longer git-ignored (a bare `git add -A` sweeps ~100 PNGs), and two capture states share the number `09` (markets' test, needs their nod).
 
 **Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-09, after C13 closed, the
-font-asset re-verification, batch 21 and the strays collection.
-**HEAD:** `58bfd92` · **Branch:** `surething-ui` · 10 ahead of main, 0 behind · working tree clean.
+font-asset re-verification, batch 21, the strays collection, S71's gate rebuild and S72's clean sweep.
+**HEAD:** `3320a40` · **Branch:** `surething-ui` · 14 ahead of main, 0 behind · working tree clean.
 
 **Read the re-seat block at the top of this file first.** Everything below it is the accumulated
 record and some of it describes states that have since closed — where that is true the section says
