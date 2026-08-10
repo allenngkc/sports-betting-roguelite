@@ -1,0 +1,135 @@
+# Rig recipe — re-shooting the S2-am2 clause-2 baseline
+
+**Written by:** room lead (`room-refinement`), 2026-08-09, at Allen's request, for the **SureThing
+seat**. **Source of truth:** `tools/glyph_ramp_baseline.py`, `tools/glyph_ramp_ratio.py`
+(`crossings()`), and `unity/SBR/Assets/SBR/Editor/RoomViewCapture.cs`. **Where this document and the
+code disagree, the code is right — tell me and I will correct this file.**
+
+Companion to `rig-r23-recipe.md`, which covers the screens-dark conformance set. Same house rules,
+different instrument.
+
+---
+
+## 0. What this is for, and what it is not
+
+**S2-am3 is CLOSED.** The legibility claim was struck as an artifact (batch 26) on the frames this
+lane staged. **You are not re-litigating that.**
+
+What survives and needs re-shooting over time is **clause 2's baseline**: the ratio *paired with a
+verdict*, so a future reading has something to be worse than. The immediate trigger is batch 27 —
+the full-field flood is struck and deleted. **That changes what sits behind the type, so the baseline
+must be re-taken once it lands.** A ground change is exactly the kind of thing this number exists to
+catch.
+
+**Batch 26's ratified pairing, which your re-shoot is compared against:**
+
+| element group | ramp ÷ stroke | reads? |
+|---|---|---|
+| season records (smallest product facts) | **0.775** | **yes** |
+| row numbers `01`–`06` | **0.789** | **yes** |
+| price figures (bundle's headline) | 0.482 | yes |
+
+**Record the verdict with the number or the number is not usable.** *0.789-and-it-reads* is the unit.
+
+## 1. Shoot the frame
+
+The measurement is only as good as the frame, and **the frame must not come from the Game view.**
+
+```
+Unity.exe -batchmode -projectPath <project>
+          -executeMethod SBR.RoomViewCapture.CaptureAll
+          -outDir <ABSOLUTE path>
+```
+
+- **No `-quit`.** The harness exits the editor itself; `-quit` races it.
+- **Never `-nographics`.** Post-processing needs a graphics device.
+- `-outDir` must be absolute; the harness throws without it.
+- Produces the three ratified poses. **`focused-laptop-desk.png` is the one you want** — 0.52 m along
+  the lid normal, 30° FOV, 2560×1440.
+
+**Why not a Game-view grab.** `Shoot()` renders `PlayerCamera` into a `RenderTexture` and reads it
+back (`RoomViewCapture.cs:1883`). It never touches the Game view, so it cannot carry *Low Resolution
+Aspect Ratios*. That toggle is **per-user Editor state and nothing in the repo holds it off** — it is
+what contaminated `surething-form-blurry.png` and cost the studio the whole blur hunt. A harness frame
+is immune by construction; your own screen grab is not.
+
+### 1a. Three traps that cost this lane a cycle on 2026-08-09
+
+1. **Exit 0 arrives before the frames do.** The shell returns while the editor is still booting, so
+   *exit 0 with an empty `-outDir`* is what a **healthy** run looks like for its first minute or two.
+   It is indistinguishable from a real failure. **Poll until `Temp/UnityLockfile` clears AND the PNGs
+   exist**, then confirm the log carries one `[RoomViewCapture] wrote` line per frame.
+2. **Serialize runs.** A second editor launched while the project is still held exits **0** after
+   licensing having opened nothing — a ~47-line log with no error in it.
+3. **`CaptureAll` is not byte-deterministic.** It renders live Play-Mode content, so two runs give
+   byte-different frames. That is not a fault and a byte-comparison control on it will always read red
+   and always mean nothing. **The measured number is the control** — two runs agreed to 0.09 on R9-A.
+
+## 2. Measure it
+
+```
+python tools/glyph_ramp_baseline.py --report artifacts/.../<name>.txt \
+       [--authored-stroke <PX>]
+```
+
+Part A characterizes the instrument, Part B records the two-surface baseline, Part C measures the
+smallest product facts. **Part A runs first and gates the rest** — if the instrument stops tracking a
+known kernel within 15%, Part B does not run (C37).
+
+### 2a. The boxes are in the tool, and they must be re-cut for a changed layout
+
+`SMALLEST` in `glyph_ramp_baseline.py` holds 12 season-record boxes and one row-number column, in
+frame pixels. **If the flood removal moves the board, these boxes are wrong and will silently measure
+the wrong thing.** Re-cut them and **eye-confirm each one** (C27).
+
+Two of mine needed re-cutting on the first pass: one clipped a glyph, one caught a sliver of the team
+name behind the digits. **Neither failed loudly** — a clipped stem just quietly biases the median
+— which is why C27 is eye-confirmation and not a variance threshold. Crop them, look at them, then
+measure.
+
+**Do not pool the small type with larger type.** The ramp is fixed in screen px and the stroke scales
+with size, so including team names or price figures inflates the denominator and flatters the result.
+That is exactly how the hunt's headline 0.482 came to be quoted for a floor it did not describe.
+
+### 2b. Which denominator — this is the amended part, so read it
+
+**S2-am2-am (batch 26):**
+
+- **Within one frame at one view: the MEASURED stroke.** A fraction-of-stroke-in-transition,
+  comparable across elements in the same frame. Batch 26's three rows are this form.
+- **Across time: the AUTHORED stroke** — the face's own metric at the shipped point size, in screen px
+  at this view. Pass it as `--authored-stroke`. The tool reports it beside the measured form.
+
+**Why.** `ramp ÷ measured stroke` **is not monotonic in blur**: 0.710 → 0.774 → 0.686 → 0.583 → 0.653
+→ 0.677 → 0.229 across σ 0.0–2.0, because blur merges adjacent glyphs and the falling 50% crossing
+that ends a stroke runs on into the next gap, so the denominator outruns the numerator. **A larger
+ratio does not mean a softer surface.** A constant denominator cannot be inflated by that artefact.
+
+**You must supply the authored stroke — this lane cannot.** It is your face, your point size. The tool
+prints a loud note when the flag is absent and reports only the within-frame form.
+
+### 2c. Two numbers not to misread
+
+- **`1.680` is the BUILD's floor, not an instrument artefact.** Measured: the instrument's own ramp on
+  a synthetic hard-edged bar is **0.800 px** — the linear-interpolation limit. `1.680` is 2.1× that,
+  so it is C38's real ~1.6 px screen-space ramp, already ruled a characteristic. Subtracting it in
+  quadrature isolates blur *above the known floor*, which is right for a regression — but **a residual
+  near zero means "at the floor", not "sharp".**
+- **Saturation.** The ratio compresses above σ≈1, where the measured ramp reaches ~3.2 px. Batch 26's
+  numbers sit below that. **A future reading near the ceiling means "badly blurred", not a
+  proportional worsening.**
+
+## 3. Report it
+
+Ratio **and** verdict, per element group, with: the view, the space, the boxes, the frame's
+provenance, and whether the authored-stroke form was used. `--report` tees the whole run to a file —
+pass it every time. C11 wants the evidence, C17 wants it retained, C25 wants its scope attached.
+
+**Reproducibility (C34):** the frame is not byte-reproducible, so state the run, the commit and the
+pose rather than a hash. If the surface is content-dependent, pin and assert the seed before shooting.
+
+## 4. What is NOT asked
+
+No fix, no re-authoring, no tuning. **S2-am2 clause 4 discharged type re-authoring permanently** and
+nothing here re-opens it. If the re-shoot comes back worse, that is a finding to route — not a licence
+to change type.
