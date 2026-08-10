@@ -257,7 +257,7 @@ namespace SBR.Tests.EditMode
                 foreach (System.Type t in surface)
                 {
                     // Compiler-generated types are not palette. A coroutine's state machine
-                    // (TvSweatScreen+<FloodPulse>d__264) hoists captured locals into fields, so a
+                    // (TvSweatScreen+<AnimateCashOut>d__NNN) hoists captured locals into fields, so a
                     // Color local inside an iterator surfaces here as an unconstructible "colour
                     // field". That is a local the SOURCE scan can see and this one cannot, and
                     // treating it as the scan going blind would keep this test permanently red for
@@ -753,7 +753,13 @@ namespace SBR.Tests.EditMode
         /// figure alone, so `RequestL4(HdrFocus.CashOut)` boosted a number and left the field it
         /// sits on at rest — measured, field 0.696 against figure 0.827 in the same zone.</para></summary>
         private static readonly string[] SanctionedL4Elements =
-            { "CashOut", "CashOutField", "BigAmount", "GoldFlood", "Score", "Ball" };
+            // "GoldFlood" REMOVED batch 27. This gate asks that a change here be routed before it is
+            // made; T40's enforcement IS that routing — the element is struck, so a name for it here
+            // would assert an eligibility that has nowhere to land. Dropping a name is the other
+            // thing this gate watches for, and the reason it watches is "an element that must reach
+            // L4 silently fell back to the clamped default material". That is not this: there is no
+            // element.
+            { "CashOut", "CashOutField", "BigAmount", "Score", "Ball" };
 
         // ------------------------------------------------------------------ C3: the one-token
         // invariant. Reflection, because RequestL4/ReleaseL4/_l4Holder are private and should stay
@@ -810,10 +816,12 @@ namespace SBR.Tests.EditMode
         /// mapping although nothing currently requests it — see the note on `_tBigAmount`.</para></summary>
         private static int MaterialsDrivenBy(string focus)
         {
+            // Both counts dropped by one at batch 27, for the same reason: the gold flood rode each
+            // of these focuses at some point and is now struck. CashOut is the slot's figure and its
+            // field; Payout is BigAmount alone.
             switch (focus)
             {
-                case "CashOut": return 3;
-                case "Payout": return 2;
+                case "CashOut": return 2;
                 default: return 1;
             }
         }
@@ -826,7 +834,7 @@ namespace SBR.Tests.EditMode
             // actually about. A counter with a hard-coded list silently stops covering whatever is
             // added next — the same shape as C33-am2 and C35, one level down.
             string[] mats = { "_cashOutHdrMat", "_cashOutFieldHdrMat", "_bigAmountHdrMat",
-                              "_goldFloodHdrMat", "_scoreHdrMat", "_ballHdrMat" };
+                              "_scoreHdrMat", "_ballHdrMat" };
             int boostId = Shader.PropertyToID("_HdrBoost");
             float l4 = ConstBoost("HdrBoostL4");
             int n = 0;
@@ -1139,22 +1147,16 @@ namespace SBR.Tests.EditMode
 
                 Text cashOut = FindChild<Text>(screen, "CashOut");
                 Text bigAmount = FindChild<Text>(screen, "BigAmount");
-                Image goldFlood = FindChild<Image>(screen, "GoldFlood");
-                Image wonFlood = FindChild<Image>(screen, "WonFlood");
                 Text flavor = FindChild<Text>(screen, "Flavor");
 
                 Assert.IsNotNull(cashOut, "CashOut text not found — canvas layout changed?");
                 Assert.IsNotNull(bigAmount, "BigAmount text not found — canvas layout changed?");
-                Assert.IsNotNull(goldFlood, "GoldFlood image not found — canvas layout changed?");
-                Assert.IsNotNull(wonFlood, "WonFlood image not found (renamed from GreenFlood) — canvas layout changed?");
                 Assert.IsNotNull(flavor, "Flavor text not found — canvas layout changed?");
 
                 Assert.AreEqual("SBR/TvSweatHdrUI", cashOut.material.shader.name,
                     "the cash-out band must be able to reach L4 (§8.5 Actionable)");
                 Assert.AreEqual("SBR/TvSweatHdrUI", bigAmount.material.shader.name,
                     "the big win/cash-out amount must be able to reach L4 (§3: the payoff at its callback)");
-                Assert.AreEqual("SBR/TvSweatHdrUI", goldFlood.material.shader.name,
-                    "the gold flood must be able to reach L4 for the cash-out/payout beats");
 
                 // Flavor text must not have opted into the HDR material, so it can never EXCEED 1.0.
                 //
@@ -1167,12 +1169,26 @@ namespace SBR.Tests.EditMode
                     "routine beat text must stay on the default (LDR) UI material, so it can never "
                     + "exceed 1.0. This does not by itself place it below L4 — V1 does that.");
 
-                // No trace of the old GameObject name survives the WonLegBeat rename.
-                Assert.IsNull(FindChild<Image>(screen, "GreenFlood"), "GreenFlood must be renamed to WonFlood");
+                // T40 ENFORCED (batch 27). These three assertions used to require the two floods to
+                // EXIST and to be HDR-capable. They are INVERTED rather than deleted, per T17's
+                // precedent — the check that guarded a thing's colour now guards its absence, so a
+                // full-screen wash cannot come back quietly the way `_wonFlood` did after T40 ruled
+                // it deleted in batch 5 and it stayed in the tree for four weeks.
+                //
+                // Any full-screen `MakeStretchImage(root, …)` created after the zones washes every
+                // fact on the surface, which is what the frame showed at flood peak. `DimOverlay` is
+                // the one such element that stays, by name and by ruling — a dim is not a wash.
+                foreach (string wash in new[] { "GoldFlood", "WonFlood", "GreenFlood" })
+                    Assert.IsNull(FindChild<Image>(screen, wash),
+                        $"T40: `{wash}` is a full-screen gold wash and is struck — deleted, not "
+                        + "z-ordered and not dimmed (C10). At its peak every fact on the surface "
+                        + "renders gold, so the money signal means nothing on the one beat it "
+                        + "matters most. If a payoff needs punctuation, §6.1's brief L4 punch is "
+                        + "measured already providing it.");
 
-                // The renamed flood's construction colour is gold-hued, not the retired green.
-                Assert.IsFalse(LooksLikeRetiredGreen(new Color(wonFlood.color.r, wonFlood.color.g, wonFlood.color.b)),
-                    "WonFlood's colour must be gold, not the retired green");
+                Assert.IsNotNull(FindChild<Image>(screen, "DimOverlay"),
+                    "DimOverlay is NOT struck — a dim is not a wash and T40 does not reach it. "
+                    + "Asserted so the flood removal cannot quietly take a third element with it.");
             }
             finally
             {

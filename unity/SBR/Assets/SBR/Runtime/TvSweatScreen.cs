@@ -262,7 +262,10 @@ namespace SBR.Game
         public float ticketDeadSilenceDuration = 0.8f;
         public float ticketDeadConsolationDuration = 1.0f;
         public float cashOutFloodDuration = 0.8f;
-        public float winFloodDuration = 1.0f;
+        // T40 (batch 27): `winFloodDuration` is REMOVED with the flood it timed — removed, not
+        // zeroed, so a serialized value in Room.unity cannot resurrect it. WinBeat's own pacing is
+        // unchanged: it is `winTallyDuration` then the remainder of `winConfettiDuration`, both of
+        // which the flood ran alongside rather than gated.
         public float cashOutTickDuration = 0.4f;
         public double cashOutRoundMultiple = 100.0;
         public float winTallyDuration = 1.2f;
@@ -661,7 +664,7 @@ namespace SBR.Game
         // renders NOTHING. That was measured, not guessed — the field vanished from all 8 frames of
         // a capture that had shown it solid before the change (see the same-token note in ApplyBoost).
         // `Payout` already drove two materials off one focus; this follows that precedent exactly.
-        private Material _cashOutHdrMat, _cashOutFieldHdrMat, _bigAmountHdrMat, _goldFloodHdrMat, _scoreHdrMat, _ballHdrMat;
+        private Material _cashOutHdrMat, _cashOutFieldHdrMat, _bigAmountHdrMat, _scoreHdrMat, _ballHdrMat;
 
         /// <summary>C3: the five HDR-eligible focuses. <see cref="Payout"/> drives BOTH the
         /// BigAmount and GoldFlood materials together — a ticket's payout tally and its gold wash
@@ -822,7 +825,20 @@ namespace SBR.Game
         private Text _tCashOutStatus;
         // C3: the score's momentary L4 punch overlay — see BuildScoreBug and OnGoalPlayed.
         private Text _tScoreFlash;
-        private Image _backing, _wonFlood, _goldFlood, _dimOverlay;
+        // T40 ENFORCED (batch 27): `_wonFlood` and `_goldFlood` are GONE — deleted, not z-ordered and
+        // not dimmed (C10). Both were `MakeStretchImage(root, …)`: full-SCREEN washes created after
+        // every zone, so they painted over the ticket column, the scorebug, the stage, the event
+        // strip, the chrome and the cash-out slot alike.
+        //
+        // T40 ruled them deleted back in batch 5 — `_wonFlood` is that ruling's first named subject —
+        // and the frame proved the case better than the ruling did: at flood peak EVERY fact on the
+        // surface is gold, so for 0.6s the money signal means nothing, on the exact beat three
+        // batches of ladder work existed to protect. It is T65's defect one layer up: the room was
+        // stopped from flooding gold and routed through one settlement point; the screen still did it.
+        //
+        // `_dimOverlay` is the same construction and is deliberately NOT struck — a dim is not a
+        // wash and T40 does not reach it. Named so this removal cannot quietly take a third element.
+        private Image _backing, _dimOverlay;
         // C3: the ball's momentary L4 punch overlay — built unconditionally (never gated behind
         // theaterEnabled) so eligibility does not depend on whether the theater stage exists.
         // TheaterStage.cs owns the real ball actor privately and is outside this phase's file
@@ -1779,8 +1795,6 @@ namespace SBR.Game
             _emissRest = _emissIdle;
             tvLight?.ResetToIdle();
 
-            SetAlpha(_wonFlood, 0f);
-            SetAlpha(_goldFlood, 0f);
             SetAlpha(_dimOverlay, 0f);
             _tBigAmount.text = string.Empty;
             if (_tConsolation != null) _tConsolation.enabled = false;
@@ -2367,8 +2381,6 @@ namespace SBR.Game
             _stage?.Show(false);
             _tape?.Show(false); // T16
             if (_tConsolation != null) _tConsolation.enabled = false;
-            SetAlpha(_wonFlood, 0f);
-            SetAlpha(_goldFlood, 0f);
             SetAlpha(_dimOverlay, 0f);
             HideCashOutSlot(); // T43
             _tInterventionPrompt.enabled = false;
@@ -2950,7 +2962,6 @@ namespace SBR.Game
             EmissionFlash(goldL4);
             RoomSettlementGlow(); // T65: the ticket paying out IS the settlement this is reserved for
             StartCoroutine(PunchThenSettle(HdrFocus.CashOut));
-            StartCoroutine(FloodPulse(_goldFlood, gold, 0.5f, winFloodDuration));
             StartCoroutine(WinConfetti());
 
             float duration = Mathf.Max(0f, winTallyDuration * Mathf.Max(0f, TimeScaleOverride));
@@ -3036,7 +3047,11 @@ namespace SBR.Game
             // The punch runs ALONGSIDE the flood, not before it: blocking here would delay the
             // celebration ground by hdrPunchDuration and quietly re-pace a shipped beat.
             StartCoroutine(PunchThenSettle(HdrFocus.CashOut));
-            yield return FloodPulse(_goldFlood, gold, 0.55f, cashOutFloodDuration);
+            // T40 (batch 27): the flood is struck, but the BEAT'S LENGTH is not — it is how long the
+            // accepted figure holds before the slot clears, and shortening it here would re-pace a
+            // shipped beat under cover of deleting an effect. The duration keeps its name because
+            // three tests and the scene asset address it by that name.
+            yield return ScaledWait(cashOutFloodDuration);
             HideCashOutSlot(); // the figure and its field leave together
         }
 
@@ -3056,20 +3071,11 @@ namespace SBR.Game
             ReleaseL4(focus);
         }
 
-        private IEnumerator FloodPulse(Image flood, Color color, float peakAlpha, float baseDuration)
-        {
-            flood.color = new Color(color.r, color.g, color.b, 0f);
-            float dur = Mathf.Max(0f, baseDuration * Mathf.Max(0f, TimeScaleOverride));
-            float t = 0f;
-            while (t < dur)
-            {
-                t += SeatedDeltaTime; // TVS-H02: freezes exactly while standing
-                float a = Mathf.Sin(Mathf.Clamp01(t / dur) * Mathf.PI) * peakAlpha; // rise then settle
-                SetAlpha(flood, a);
-                yield return null;
-            }
-            SetAlpha(flood, 0f);
-        }
+        // T40 (batch 27): `FloodPulse` is removed with the two floods it animated — it had no other
+        // caller. Its sine envelope is exactly what made the floods indefensible as a ground: an
+        // element whose luminance sweeps 0 → peak → 0 cannot be something a money figure is read
+        // against, which is what the accept-beat time series measured (ink 0.064 → 0.384 tracking
+        // the flood's own 0.063 → 0.507, CR collapsing 6.47 → 1.70).
 
         // ---------------------------------------------------------------- input (Update)
 
@@ -3536,8 +3542,6 @@ namespace SBR.Game
             }
 
             // --- overlays (front to back after content) ---
-            // A won leg is money, gold — not the retired green.
-            _wonFlood = MakeStretchImage(root, "WonFlood", new Color(gold.r, gold.g, gold.b, 0f));
             // T8 (Allen, 2026-07-31): the StaticNoise overlay is REMOVED — DESIGN.md §2 bans
             // interference noise by name. Nothing replaces it; loss is darkness, which DimOverlay
             // below already provides.
@@ -3545,9 +3549,10 @@ namespace SBR.Game
             // must not sit below the room's deepest shadow, so its RGB matches the same floor as
             // screenBg/barBgColor/pitchBgColor rather than true (0,0,0). Only alpha animates.
             _dimOverlay = MakeStretchImage(root, "DimOverlay", new Color(0.048f, 0.055f, 0.068f, 0f));
-            _goldFlood = MakeStretchImage(root, "GoldFlood", new Color(gold.r, gold.g, gold.b, 0f));
-            _goldFloodHdrMat = MakeHdrMaterial();
-            if (_goldFloodHdrMat != null) _goldFlood.material = _goldFloodHdrMat;
+            // T40 (batch 27): GoldFlood and WonFlood were built here. Both are struck. Nothing
+            // replaces them — the payoff is carried by the slot treatment alone, and §6.1's brief
+            // L4 punch is measured doing the punctuation the flood was assumed to add
+            // (0.688 → 0.586 at the settle). The flood was redundant with the punch, not carrying it.
             _tBigAmount = MakeText(root, "BigAmount", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 Vector2.zero, new Vector2(w - 40f, 200f), 96,
                 TextAnchor.MiddleCenter, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Bold);
@@ -4076,7 +4081,6 @@ namespace SBR.Game
             _cashOutHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
             _cashOutFieldHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
             _bigAmountHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
-            _goldFloodHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
             _scoreHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
             _ballHdrMat?.SetFloat(HdrBoostId, HdrBoostL3);
         }
@@ -4085,19 +4089,10 @@ namespace SBR.Game
         {
             switch (focus)
             {
-                // T68-am consequence, caught in diff review before it ran: moving the payoff figure
-                // from `Payout` to `CashOut` left NOTHING requesting `Payout`, so `_goldFloodHdrMat`
-                // would have quietly stopped punching and the celebration ground would have rendered
-                // ~40% dimmer than it ships today. The ruling says the flood "stays … nothing here
-                // touches it", so the flood rides this focus now.
-                //
-                // This is NOT C35's forbidden coupling: that law is about an element and the ground
-                // BEHIND IT moving together. The figure's ground is the slot's field, not the flood
-                // — the whole point of the ruling was to separate those two — and the ink is
-                // near-black, so boosting the pair widens the ratio rather than preserving it.
-                // Outside a payoff the flood's alpha is 0, so a boost there changes nothing.
+                // The flood rode this focus for one batch, to keep it punching after the payoff
+                // figure moved off `Payout`. T40 struck the flood outright, so the question of what
+                // boosts it is gone with it — the slot's own two graphics are the whole focus again.
                 case HdrFocus.CashOut:
-                    _goldFloodHdrMat?.SetFloat(HdrBoostId, boost);
                     // T63: ONE token, BOTH graphics of the band. The figure alone used to be
                     // boosted, so granting the token moved a number and left the gold field it
                     // sits on at rest — the band could not reach L4 however the token arbitrated.
@@ -4107,7 +4102,6 @@ namespace SBR.Game
                     break;
                 case HdrFocus.Payout:
                     _bigAmountHdrMat?.SetFloat(HdrBoostId, boost);
-                    _goldFloodHdrMat?.SetFloat(HdrBoostId, boost);
                     break;
                 case HdrFocus.Score:
                     _scoreHdrMat?.SetFloat(HdrBoostId, boost);

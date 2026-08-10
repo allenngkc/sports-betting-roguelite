@@ -376,23 +376,32 @@ namespace SBR.Tests.PlayMode
             PressCashOutInteract(screen);
             Assert.AreEqual(TicketState.CashedOut, director.CurrentTicket.State, "setup: cash-out must accept");
 
-            Image goldFlood = FindChildComponent<Image>(screen, "GoldFlood");
-            Assert.IsNotNull(goldFlood, "GoldFlood image not found - canvas layout changed?");
+            // RE-POINTED batch 27, not deleted. This test's SUBJECT is TVS-H02 — standing freezes the
+            // accept beat and sitting resumes it with no catch-up. Its former INSTRUMENT was the
+            // gold flood's alpha, and T40 struck the flood. The contract is unchanged; what is
+            // observable changed, so the observation moves to the beat's own visible state.
+            //
+            // The accepted figure holds in the slot for ScaledWait(cashOutFloodDuration) and the slot
+            // clears when that wait completes. So "still showing after standing well past the beat's
+            // own length" is exactly the freeze, and it is a stronger read than an alpha mid-curve:
+            // the beat here runs 1.0 * 0.3 = 0.3s, and the stand below is 1.0s — more than three
+            // times over. If the wait advanced at all while standing, the slot would be gone.
+            screen.cashOutFloodDuration = 1f;
+            Text figure = FindChildComponent<Text>(screen, "CashOut");
+            Assert.IsNotNull(figure, "CashOut figure not found - canvas layout changed?");
 
-            yield return WaitUntil(() => goldFlood.color.a > 0.02f, 5f, "the cash-out flood never started");
+            yield return WaitUntil(() => figure.enabled && figure.text.StartsWith("CASHED OUT"),
+                5f, "the accept beat never showed its figure in the slot");
 
-            float frozenAlpha = goldFlood.color.a;
             screen.ForceSeated(false);
-            yield return WaitRealtime(0.1f);
-            Assert.AreEqual(frozenAlpha, goldFlood.color.a, 0.0001f,
-                "TVS-H02: cash-out flood alpha advanced while standing");
-            yield return WaitRealtime(0.4f);
-            Assert.AreEqual(frozenAlpha, goldFlood.color.a, 0.0001f,
-                "TVS-H02: cash-out flood alpha kept animating (hidden catch-up) while standing");
+            yield return WaitRealtime(1.0f);
+            Assert.IsTrue(figure.enabled && figure.text.StartsWith("CASHED OUT"),
+                "TVS-H02: the accept beat advanced while standing - the slot cleared, which it can "
+                + "only do by completing a wait that is supposed to be frozen");
 
             screen.ForceSeated(true);
-            yield return WaitUntil(() => Mathf.Abs(goldFlood.color.a - frozenAlpha) > 0.0001f
-                || goldFlood.color.a <= 0.0001f, 10f, "flood never resumed after sitting back down");
+            yield return WaitUntil(() => !figure.enabled, 10f,
+                "the accept beat never completed after sitting back down");
         }
 
         [UnityTest]
