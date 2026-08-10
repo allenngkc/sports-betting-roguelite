@@ -1,16 +1,17 @@
 # Studio Status — 2026-08-09 (header refreshed every cycle per Allen)
 
-**THE BLUR ARC IS CLOSED AND EVERYTHING ALLEN WAS ASKED IS APPROVED** — the
-studio's longest hunt ended with the display half found by Allen himself (a
-per-user Editor toggle), the build's ~1.6px floor ruled a measured
-characteristic with his eye reading clear on both surfaces, and four
-approvals in one word: gates 6/7/8 RE-ISSUED, C36+C37 constitution canon
-(§4.4/§4.5), the settings-churn convention chartered (§7a). The DD now
-rules from a main-2 terminal (transport retired; batches 20+21 were its
-first direct dockets — the blur ruling self-amended in place with its
-disposition audit intact). Register canon through batch 21. Remaining
-queue is thin: SureThing's one-string commit (PRICES FINAL out), DD's
-phone reference frame → phone owning doc, and the S2 player-path baseline.
+**THE ROUND IS ON MAIN AND THE MERGED TREE IS CERTIFIED GREEN** — Allen's
+"if everything is done lets merge" executed as three clean no-ff merges,
+zero conflicts: TV at 1e02d42 (`2217107` — T40 enforced, gold washes
+struck, capture path), SureThing at 07a9028 (`23f9da6` — negative-controlled
+gates, batch-28 member fixes, clean sweep), room at ef6f283 (`dcde7fd` —
+phone reference set, calibrated rig recipe). Canonical validation of the
+merged tree: engine 183/183, warm compile clean, EditMode 250/250,
+PlayMode 84/90 passed with 6 deliberate capture-harness skips, real
+graphics device, DLL bytes identical. Register canon through batch 28;
+all five owning docs Allen-approved. Open queue: S2-am3 re-measurement
+(SureThing on room's rig), DD's flood-removal frames verdict on TV's next
+capture, evidence-in-git policy (Allen).
 
 **THE TMP MIGRATION IS ON MAIN** (`5903750`, fast-forward to the validated
 SHA) — full type package: TMP swap, tracking (six slot groups), Regular 400
@@ -58,6 +59,36 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-09 cycle 148 · **THE MERGE ROUND LANDED — three branches, zero
+  conflicts, merged tree VALIDATION GREEN** — on Allen's word ("if
+  everything is done lets merge"): tv-sweat 1e02d42 → `2217107`,
+  surething-ui 07a9028 → `23f9da6`, room-refinement ef6f283 → `dcde7fd`,
+  each a real `--no-ff --no-commit` merge with the validation basis in the
+  message. Post-merge residue: two TV font files in the known
+  raw-blob-vs-LFS-attribute phantom class — cmp-proven BYTES IDENTICAL,
+  left in place (owner-lane conversion item, same class as SureThing's
+  eight; §7a: renormalize is an owner's act). Canonical validation agent
+  on `dcde7fd`: engine dotnet 183/183; warm compile settled clean (no
+  -quit, lockfile cleared at proc 0); EditMode 250/250 (union of the
+  lanes' suites, above the 78 floor); PlayMode 90 total — 84 passed, 0
+  failed, 6 skipped, all six TV's by-design evidence-capture exclusions
+  (filter-only harness tests); Direct3D 12 real device, `-nographics`
+  absent; DLL byte-restored and BYTES IDENTICAL vs HEAD; single-instance
+  held (zero Unity at each launch). Evidence: scratchpad
+  `val-main-merge/`. Lanes notified to re-converge on new main; TV's
+  room-file observation (stale scene value, T64-flicker-dial class)
+  routed to room with the round. Reversal: `git revert -m 1` per merge
+  commit.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | merged; re-converge | S2-am3 shoot on room's rig | lead |
+  | tv-sweat | merged; re-converge | next capture window (flood-removal frames) | lead |
+  | room | merged; re-converge | rig handoff to SureThing; stale scene value check | lead |
+  | markets-2 | clean | none | — |
+  | DD terminal | idle-legal | flood-removal verdict when TV's frames land | DD |
+  | Editor | free | S2-am3 / TV capture windows on ask | orchestrator |
+  | **Need Allen** | evidence-in-git policy (~1GB raw frame history: accept / new-rule+convert-forward / rewrite) | call | Allen |
 - 2026-08-09 cycle 147 · **FIVE CANONS; the wave closes round-ready** —
   Allen APPROVED `phone-design.md` (bde5c81): five surfaces, five
   Allen-approved owning documents, the studio's design authority complete.
