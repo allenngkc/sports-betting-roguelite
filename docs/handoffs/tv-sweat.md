@@ -44,6 +44,24 @@ win tally   L4 0.6927 -> L3 0.5870    step 0.1056 (15.2%)   at frame 21
 capture step. **Carry this shape forward: when an effect is removed because something else was doing
 its job, measure the thing that was doing its job.** Contrast reads cannot see it.
 
+### Why the CR landed ABOVE batch 27's pre-commitment, not equal to it
+
+Batch 27 predicted the shipping value from the old capture's frame 0 — *"frame 0 IS the
+flood-at-alpha-0 state"* — giving 6.47 accept / 6.58 win. It came in at 7.92–8.49 / 7.52–8.42.
+
+**Frame 0 was not a flood-free frame.** It is one capture step *into* the beat, so `FloodPulse` had
+already run its first `SetAlpha` and the wash was faintly up: the flood region reads **0.063** there
+against **0.029** now. The whole difference is in the ink, and the ground confirms it — old ground
+0.6881, new 0.6877, four ten-thousandths apart. Only the denominator moved: ink **0.0640 → 0.0371**,
+which is `goldInk` through the grade with nothing added on top of it. Run the numbers and both fall
+out exactly: (0.6881+0.05)/(0.0640+0.05) = 6.47, (0.6877+0.05)/(0.0371+0.05) = 8.47.
+
+**So the pre-commitment was a floor, not a target** — it was measured on the least-contaminated frame
+that existed rather than an uncontaminated one, because before the removal no uncontaminated frame
+could exist. **A prediction taken from the cleanest available sample of a thing you are deleting
+inherits whatever is left of it.** Landing above such a prediction is the expected direction; landing
+*at* it would have meant a residue of the flood survived.
+
 ### THE INSTRUMENT FIX — a capture directory accumulates runs, and filenames do not separate them
 
 **The first pass over these frames reported the accept beat as 60 frames with CR alternating
