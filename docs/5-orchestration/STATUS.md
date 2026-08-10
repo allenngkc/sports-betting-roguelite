@@ -58,6 +58,77 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-09 cycle 146 · **The verdicts wave ran end to end through the new
+  channel** — batches 22–25 landed/transcribed (S37-cl + T70 granted;
+  S71 closed at the token on SureThing's own answer; S72 opened, swept,
+  staged; the phone's P1–P8 with `phone-design.md` DRAFTED for Allen;
+  S2-am3 returned unadjudicated on a three-outcome pre-commitment). Built
+  and proven: SureThing's three gates with a negative control that asserts
+  WHAT was caught (lane closed converged/documented d85a3c4, 15 ahead);
+  room's R9-A evidence refresh (arm B kept as hashes per Allen — "the
+  control's value is the number"), the two-surface player-path baseline,
+  and the C34 bookkeeping that found a FIFTH contaminated finding (S2-am's
+  legibility half — frames staged, DD pre-committed); TV's consolidated
+  window shot with two honest gaps filed as findings and its capture
+  infrastructure committed on Allen's word. All evidence is with the DD:
+  the window set, the legibility frames, the voice inventory, the gate
+  answer. Allen's routing: the S2-am3 re-measurement is SureThing's on
+  room's rig. Editor relay ran five windows today without one collision.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | clean-holding (d85a3c4) | S2-am3 re-measure on rig handoff | lead |
+  | tv-sweat | committing capture path | → clean-holding | lead |
+  | room | clean-holding | rig handoff to SureThing on ask | lead |
+  | markets-2 | clean-holding | none | — |
+  | DD terminal | WORKING: full docket (window set + frames + inventory) | rulings → I commit | DD |
+  | Editor | free | S2-am3 window on ask | orchestrator |
+  | **Need Allen** | phone-design.md read · evidence-in-git policy | reads | Allen |
+- 2026-08-09 cycle 144 · **§6a's blocked-on-idle ban chartered (37b18ea) and
+  applied; the DD is batched, the phone set delivered** — the ban's founding
+  failure was THIS cycle's: lanes "holding for verdicts" while the DD sat
+  unbatched, until Allen prodded. Same-cycle fix: the DD's verdicts docket
+  assembled and dispatched (built wave since batch 19 — TV 04f7739+41d5cbe,
+  SureThing af0c42c), then the phone reference set handed over
+  (phone-reference-set-2026-08-09 + two contract-reshaping findings: empty
+  UNREACHABLE measured; longest message 60 chars — line budget, not
+  wrapping). Room self-caught a second host-assumption harness error (one
+  update-tick driver — backbuffer's cousin), rebuilt on count-change,
+  named directories honestly, deleted the misleading set; at 98% context →
+  handoff ordered, rotation next. Stray artifacts routed to SureThing
+  (Allen's relay). **Waiting-to-idle edge check: PASSES** — every waiting
+  lane points at the WORKING DD; markets idle with no dispatchable work;
+  lease queue empty.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | working | collect strays from room's tree | lead |
+  | tv-sweat | waiting → DD (working) | verdicts | DD |
+  | room | writing handoff | rotation on commit | orchestrator |
+  | markets-2 | idle, no work exists | none | — |
+  | DD terminal | WORKING: verdicts docket + phone set + owning doc | rulings into docs/design/ | DD |
+  | Editor | free, queue empty | — | — |
+  | **Need Allen** | evidence-in-git policy (~1GB history) — unhurried | call | Allen |
+- 2026-08-09 cycle 143 · **Full convergence; one correction to my own report**
+  — SureThing merged main (58bfd92, hand-read per the C13 hazard, suites
+  green before commit); all four lanes now share main's tip lineage. Strays
+  cleaned (368 untracked frames), handoff landmine line fixed (47d4d51).
+  **CORRECTION (mine):** I told Allen the 405 tracked evidence frames ride
+  as LFS pointers — SureThing measured and they do NOT: room's evidence
+  sets were committed BEFORE the top-level .gitattributes existed on its
+  branch, so main carries ~1GB of raw frame content in HISTORY, not in
+  LFS. The evidence-in-git policy question now turns on that fact (history
+  rewrite vs renormalize-forward vs accept); recorded in the merge commit
+  itself so it travels with the merge. Unhurried, Allen's call.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | converged, clean-holding | DD verdicts / merge round on Allen's word | — |
+  | tv-sweat | clean-holding | DD verdicts | DD |
+  | room | converged, clean-holding | phone frame on DD sequencing | lead |
+  | markets-2 | clean-holding | none | — |
+  | DD terminal | standing | phone sequence | DD |
+  | **Need Allen** | evidence-in-git policy (now: ~1GB raw history, NOT pointers — my earlier line corrected) | unhurried call | Allen |
 - 2026-08-09 cycle 142 · **THE EMISSION ERA IS ON MAIN** — room-refinement
   merged at 7cb5344 (Allen's order): canonical validation GREEN at the tip
   (engine 183/183, EditMode 78/78, PlayMode 57/57 real graphics, DLL bytes

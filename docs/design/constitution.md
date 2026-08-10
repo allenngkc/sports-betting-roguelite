@@ -31,12 +31,19 @@ binding art authority for that surface. Current owning documents:
 | Surface | Owning document | State |
 |---|---|---|
 | Room | `docs/design/room-design.md` | Approved · Allen 2026-07-31 (R13) |
-| SureThing — the laptop | not yet written | owed |
-| TV — match theatre | not yet written | owed |
-| Phone | **stub** | deliberate (C9) |
+| SureThing — the laptop | `docs/design/surething-design.md` | Approved · Allen 2026-08-06 (C26-am) |
+| TV — match theatre | `docs/design/tv-design.md` | Approved · Allen 2026-08-07 (C26-am2) |
+| Phone | `docs/design/phone-design.md` | **DRAFT for Allen** · 2026-08-09 (C26-am3) |
+
+*(Table corrected 2026-08-09 — factual bookkeeping, not a clause amendment. Three of four rows were
+stale: both approvals were recorded in the register at C26-am/C26-am2 and never reached this table,
+which is C7's shape inside the constitution itself.)*
 
 An owning document keeps its own real gates. A stub is a legitimate state: it says the surface has
 no authority yet, which is honest, where an empty section pretends to authority it does not have.
+**The phone's stub was legitimate until Allen put the surface in scope** — at which point the surface
+needed an authority to be judged against, and C26-am3 expired the stub rather than letting it stand as
+cover.
 
 ### 1.2 Precedence
 
