@@ -32,6 +32,10 @@ except ImportError:
     print("Pillow required: pip install pillow")
     sys.exit(2)
 
+# Importing a sibling tool writes tools/__pycache__ next to the sources, which is
+# a stray in a repo whose untracked-file hygiene is actively being cleaned up.
+# Suppressed at the cause rather than deleted after each run.
+sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from glyph_ramp_ratio import crossings, MIN_CONTRAST   # noqa: E402  shared primitive
 
