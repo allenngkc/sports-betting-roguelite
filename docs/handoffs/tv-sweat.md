@@ -72,8 +72,21 @@ overwrite the new ones — both sets sit in the same directory, and a glob on `*
 collects both. **It would have reported the pre-removal defect as still present**, in the window
 whose entire purpose was to show it gone.
 
-**Fix, now in `fr_measure.py` and the rule for any capture measurement:** scope by **mtime to the
+**Fix, now in `tools/fr_measure.py` and the rule for any capture measurement:** scope by **mtime to the
 current window**, then keep the **newest file per frame index**. Never trust the moment name alone.
+
+**Promoted out of scratch 2026-08-10 on Allen's instruction** — it had lived only in a session temp
+directory that is swept on restart, so the "fix" above was one reboot from being a paragraph about a
+file nobody had. `tools/fr_measure.py` reproduces every number in this section exactly and hardens
+the *selection*, which was the part carrying the risk. The rolling `time.time() - 45*60` cutoff is
+gone: the window is anchored, and each run prints a `--since/--until` line that replays its own
+selection (round-trip verified). `--expect` (default 30) asserts the count and contiguous indices.
+**And the real guard turned out not to be the window at all** — seed, boost, scene and grammar are
+all in the filenames, so C34.1's *"an unasserted pin is a comment"* is buildable: the run asserts one
+seed, one grammar, one scene, one boost across the selected set and refuses to print numbers
+otherwise. Newest-per-index could never have caught **two runs inside one window with a short newer
+run** — indices past the new run's end backfill from the old one and the count still reads full. The
+pin assert catches that regardless of mtime.
 
 This is the same family as the two fixed scan windows (§0-BW) and the hard-coded material list: an
 instrument that silently stops covering what it claims. It is the third distinct shape and the first
