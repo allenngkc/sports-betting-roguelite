@@ -209,7 +209,7 @@ count.
 
 ### 4.4 A control must bracket the interval it certifies (C36)
 
-> **PROPOSED — awaiting Allen, 2026-08-09.** New clause text; not canon until approved (§6).
+> **APPROVED — Allen, 2026-08-09.** Canon.
 
 **A control certifies only the interval its samples enclose, and it is checked by the other half of
 the instrument — never asserted by the half being checked.** An opening control pair brackets the
@@ -225,7 +225,7 @@ its green says so if anyone reads it.
 
 ### 4.5 A null is invalid unless success would have been resolvable (C37)
 
-> **PROPOSED — awaiting Allen, 2026-08-09.** New clause text; not canon until approved (§6).
+> **APPROVED — Allen, 2026-08-09.** Canon.
 
 Extends C32 from positive results to negative ones. C32 governs what a gate reports; this governs
 when a gate's *"no effect"* is allowed to mean anything.

@@ -1,4 +1,16 @@
-# Studio Status — 2026-08-08 (header refreshed every cycle per Allen)
+# Studio Status — 2026-08-09 (header refreshed every cycle per Allen)
+
+**THE BLUR ARC IS CLOSED AND EVERYTHING ALLEN WAS ASKED IS APPROVED** — the
+studio's longest hunt ended with the display half found by Allen himself (a
+per-user Editor toggle), the build's ~1.6px floor ruled a measured
+characteristic with his eye reading clear on both surfaces, and four
+approvals in one word: gates 6/7/8 RE-ISSUED, C36+C37 constitution canon
+(§4.4/§4.5), the settings-churn convention chartered (§7a). The DD now
+rules from a main-2 terminal (transport retired; batches 20+21 were its
+first direct dockets — the blur ruling self-amended in place with its
+disposition audit intact). Register canon through batch 21. Remaining
+queue is thin: SureThing's one-string commit (PRICES FINAL out), DD's
+phone reference frame → phone owning doc, and the S2 player-path baseline.
 
 **THE TMP MIGRATION IS ON MAIN** (`5903750`, fast-forward to the validated
 SHA) — full type package: TMP swap, tracking (six slot groups), Regular 400

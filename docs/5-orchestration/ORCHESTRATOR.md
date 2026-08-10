@@ -204,3 +204,17 @@ continuing when:
 - a lead terminal is gone or unresponsive;
 - any Allen-listed decision arises (STUDIO.md autonomy policy);
 - evidence contradicts a lead's report.
+
+### 7a. Settings-churn convention (Allen, 2026-08-09)
+
+Unity packages rewrite two tracked settings files on open with no repo-side
+pin available for both (Sentis toggles `SENTIS_ANALYTICS_ENABLED` in
+`ProjectSettings/ProjectSettings.asset`; Shader Graph churns
+`ProjectSettings/ShaderGraphSettings.asset` and has no documented pin):
+
+- **Nobody commits either file's churn.** Leads clear the phantom lines
+  (cmp-verified byte-identical → checkout; genuinely changed → report before
+  touching) before any commit. A commit that must touch these files for a
+  real reason names the field and the reason in its message.
+- The Sentis `FORCE_SENTIS_ANALYTICS` pin was considered and not taken (it
+  covers one of the two files and force-enables an analytics define).
