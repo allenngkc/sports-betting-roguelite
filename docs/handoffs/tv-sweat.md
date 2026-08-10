@@ -1081,8 +1081,40 @@ materials and lighting rig (room-refinement) · Laptop/SureThing files (surethin
 
 - **Build side effects.** Every `dotnet test` and Unity run dirties `SBR.Engine.dll`,
   `ProjectSettings/EditorBuildSettings.asset`, `ProjectSettings/ProjectSettings.asset` — two of which
-  are integration-only. Revert with `git checkout --` after **every** run and verify `git status`
-  before committing. This recurs constantly and is a property of the build wiring, not agent error.
+  are integration-only. Revert after **every** run and verify `git status` before committing. This
+  recurs constantly and is a property of the build wiring, not agent error.
+
+  **Chartered convention (Allen, 2026-08-09): nobody commits the Sentis/ShaderGraph settings churn.
+  Cmp-verify, then checkout.** It is studio-wide, not a TV rule.
+
+  **HOW to cmp-verify here, because the obvious two ways are both wrong on this repo:**
+
+  1. **Not the `git status` line.** `SBR.Engine.dll` shows ` M` permanently. `[attr]lfs` is declared
+     in `unity/SBR/.gitattributes` but git honours attribute macros only in a **top-level**
+     `.gitattributes`, and this repo has none at root — that is what the `not allowed:` warning on
+     every git command means. The filter never binds, so the file reads as modified whatever its
+     content.
+  2. **Not `git hash-object` either, and this one is newer.** It applies the same broken clean filter
+     and returns **different hashes for identical bytes between invocations** — measured 2026-08-09:
+     it reported `83f8a7de…` against HEAD's `b57d25c5…` on a file that was byte-for-byte identical.
+     A check that disagrees with itself is worse than no check.
+  3. **Compare the FILE BYTES.** `Get-FileHash -Algorithm SHA256` on the working file against HEAD's
+     blob extracted to a temp path, or `fc /b`. That agreed with HEAD immediately in the same test.
+
+  **And `git checkout -- <path>` cannot restore this file** — the smudge filter cannot run, so each
+  attempt writes different bytes. The method that works:
+
+  ```
+  sha=$(git rev-parse "HEAD:unity/SBR/Assets/Plugins/SBR/SBR.Engine.dll")
+  cmd /c "git cat-file -p $sha > <path>"     # cmd redirection is byte-safe; PowerShell's `>` is NOT
+  ```
+
+  PowerShell's `>` re-encodes as text and **corrupts the DLL** — that was caught by hashing the
+  result, not by anything failing loudly. Verify the restore loads: `[Reflection.Assembly]::LoadFile`
+  should report `SBR.Engine`, 74 types.
+
+  **A .NET rebuild can never hash-match its predecessor** — the MVID is regenerated every build — so a
+  genuinely rebuilt DLL always needs the restore above; only an untouched one is already identical.
 - **`GrayboxRoomBuilder.Build()` regenerates `Room.unity` from scratch** and rewrites builder-owned
   material properties. Nothing hand-placed survives. Anything this worktree needs persistent in the
   room goes through the room lead.
