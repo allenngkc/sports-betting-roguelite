@@ -174,6 +174,18 @@ An idle lane with available work at cycle end is a missed stop condition, not a
 scheduling choice. The audit table (lane / state / next action / who acts) goes
 in `STATUS.md` every cycle — it is also what Allen reads instead of chasing.
 
+**Blocked-on-idle is a deadlock, and it is yours (Allen, 2026-08-09).** The
+failure this bans: every lane read "holding for director verdicts," the DD read
+"idle — no batch assigned," and the audit accepted both as legitimate until
+Allen prodded. In the audit graph, a waiting lane's arrow may never point at an
+idle lane. "A blocked on B" + "B idle" means B's work exists by definition —
+the orchestrator assembles it **that same cycle**: lanes holding for verdicts →
+build the DD docket from their staged evidence and dispatch it; lanes holding
+for a merge → run the checklist now; lanes holding for the editor → grant the
+lease. "Blocked" is only a legal state when the blocker is actually working or
+the block is on Allen's own list. Check every waiting→idle edge before the
+audit table is allowed to close.
+
 Wake discipline: watchers die with every Orca restart — treat the fallback
 heartbeat (≤30 min) as the guarantee and watchers as an optimization. First
 action on every wake: verify watcher liveness and re-arm before anything else.
