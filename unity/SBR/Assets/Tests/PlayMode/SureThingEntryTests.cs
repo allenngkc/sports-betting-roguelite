@@ -208,6 +208,11 @@ namespace SBR.Tests.PlayMode
             Transform margin = Required(App(laptop), "WorkingMargin");
             Transform empty = Required(margin, "Empty");
             Transform title = Required(margin, "Title");
+            // S71-am3 (batch 28) added the kit's imperative beside the state line. Required() rather
+            // than Find(): the pair is the ruling, so a vanished remedy is a failure and not an
+            // absence to tolerate. Fetching it is also what lets the guard below reach it — new copy
+            // in this slot arriving outside the gate's sight is exactly what S72 was opened about.
+            Transform remedy = Required(margin, "EmptyRemedy");
 
             Assert.AreEqual("NO MARKS ON THIS SHEET", TextOf(empty),
                 "S71: the empty state names the STATE. It read 'YOUR MARGIN IS CLEAR' — a second " +
@@ -262,11 +267,17 @@ namespace SBR.Tests.PlayMode
                 "Without this line the widening could silently collapse back into a substring match, " +
                 "which is the defect it was granted to fix");
 
-            // The live check, through the same function the control just proved fires.
-            Assert.IsNull(offendingPronoun(TextOf(empty)),
-                $"Voice §6 puts second person in genuine imperatives only and this slot is a " +
-                $"statement. Found '{offendingPronoun(TextOf(empty))}' in \"{TextOf(empty)}\". The " +
-                $"assertion above pins today's words; this one pins the ruling.");
+            // The live check, through the same function the control just proved fires — over BOTH
+            // strings in the slot, not just the statement. S71-am3 put a second string here, and a
+            // guard that reads only the first would have let new copy in behind a green run, which
+            // is the shape S72 was opened to find. The offending slot is named in the failure so the
+            // message points at which of the two, rather than at the pair.
+            foreach (Transform slot in new[] { empty, remedy })
+                Assert.IsNull(offendingPronoun(TextOf(slot)),
+                    $"Voice §6 puts second person in genuine imperatives only. Found " +
+                    $"'{offendingPronoun(TextOf(slot))}' in \"{TextOf(slot)}\" ({slot.name}). The " +
+                    $"string assertion above pins today's words; this one pins the ruling. Note the " +
+                    $"remedy IS an imperative, which §6 permits — what it may not do is address him.");
 
             Assert.AreEqual((Color32)LaptopOs.Muted, (Color32)empty.GetComponent<TMP_Text>().color,
                 "the empty state reports the sheet's condition, so it takes the neutral toner " +

@@ -869,7 +869,24 @@ namespace SBR.Game
                 LaptopUi.MakeText(panel, "Empty", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(14f, y), new Vector2(300f, 26f), 13, TextAnchor.UpperLeft, LaptopOs.Muted,
                     "NO MARKS ON THIS SHEET", _font);
-                y -= 30f;
+                // S71-am3 (DD 2026-08-09, batch 28): member 1 takes the KIT'S PAIR. The kit authors
+                // this slot as a statement then a genuine imperative — margin.jsx:24, "No marks on
+                // this sheet. Circle a price to start a ticket." S71 took the second SPEAKER out of
+                // the statement and did not put the remedy back, because S71 was a ruling about
+                // ownership and the remedy was never in view. The imperative carries no pronoun, so
+                // §6 is satisfied by it rather than strained.
+                //
+                // Built as the surface's existing pair, not as one joined string: statement in
+                // --toner at the state's own weight, remedy in --toner-2 beneath it, which is how
+                // MyBetsEmpty/Remedy and RewardsEmpty/Remedy already read. The kit's single text node
+                // is its grammar, not its layout.
+                //
+                // The stop is S72-p: this is a sentence, and sentences take one. The statement above
+                // is a fragment and correctly does not.
+                LaptopUi.MakeText(panel, "EmptyRemedy", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(14f, y - 30f), new Vector2(300f, 26f), 13, TextAnchor.UpperLeft,
+                    LaptopOs.TonerSecondary, "CIRCLE A PRICE TO START A TICKET.", _font);
+                y -= 60f;
             }
             for (int i = 0; i < slip.Picks.Count; i++)
             {
@@ -1720,7 +1737,10 @@ namespace SBR.Game
             {
                 LaptopUi.MakeText(board, "RewardsEmpty", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(14f, -94f), new Vector2(672f, 28f), 16, TextAnchor.UpperLeft,
-                    LaptopOs.Muted, "NO OFFERS REMAIN ON THIS SHEET", _font);
+                    // S72-p (batch 28): a sentence takes a stop, a fragment does not. This one has a
+                    // verb — "remain" — so it is a sentence and was missing its stop. Members 1, 2, 8
+                    // and 10 are fragments and correctly carry none.
+                    LaptopOs.Muted, "NO OFFERS REMAIN ON THIS SHEET.", _font);
                 LaptopUi.MakeText(board, "RewardsEmptyRemedy", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(14f, -126f), new Vector2(672f, 28f), 13, TextAnchor.UpperLeft,
                     LaptopOs.TonerSecondary, "LEAVE REWARDS TO CONTINUE THE RUN.", _font);
@@ -1972,7 +1992,12 @@ namespace SBR.Game
             {
                 LaptopUi.MakeText(margin, "RewardsInventoryEmpty", new Vector2(0f, 1f),
                     new Vector2(0f, 1f), new Vector2(14f, y), new Vector2(296f, 42f), 13,
-                    TextAnchor.UpperLeft, LaptopOs.Muted, "NO OWNED REWARDS TO SELL BACK.", _font);
+                    // S72-p (batch 28): the mirror of the change on RewardsEmpty. This has no verb —
+                    // it is a fragment — so the stop it carried comes off. S71-am3 separately
+                    // ratifies this member as built in every other respect: nothing is bought from
+                    // this screen in this state, so there is no honest next action to pair it with
+                    // and a manufactured imperative would be worse than none.
+                    TextAnchor.UpperLeft, LaptopOs.Muted, "NO OWNED REWARDS TO SELL BACK", _font);
                 y -= 46f;
             }
             for (int i = 0; i < run.OwnedRelics.Count; i++)
