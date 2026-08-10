@@ -33,11 +33,16 @@ binding art authority for that surface. Current owning documents:
 | Room | `docs/design/room-design.md` | Approved · Allen 2026-07-31 (R13) |
 | SureThing — the laptop | `docs/design/surething-design.md` | Approved · Allen 2026-08-06 (C26-am) |
 | TV — match theatre | `docs/design/tv-design.md` | Approved · Allen 2026-08-07 (C26-am2) |
-| Phone | `docs/design/phone-design.md` | **DRAFT for Allen** · 2026-08-09 (C26-am3) |
+| Phone | `docs/design/phone-design.md` | Approved · Allen 2026-08-09 (C26-am3) |
 
 *(Table corrected 2026-08-09 — factual bookkeeping, not a clause amendment. Three of four rows were
 stale: both approvals were recorded in the register at C26-am/C26-am2 and never reached this table,
 which is C7's shape inside the constitution itself.)*
+
+*(Phone row corrected 2026-08-09, later the same day, same class — `phone-design.md` carries
+**APPROVED — Allen, 2026-08-09** in its own header and the register's P-section header records it as
+CANON; only this table still read DRAFT. Twice in one day is the argument for checking this table
+against the owning documents at every seating, not for a new clause.)*
 
 An owning document keeps its own real gates. A stub is a legitimate state: it says the surface has
 no authority yet, which is honest, where an empty section pretends to authority it does not have.
