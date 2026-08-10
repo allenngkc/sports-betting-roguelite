@@ -89,7 +89,8 @@ internal static class BettingScreen
 
         if (run.ScarStacks > 0)
             Ui.WriteLine(ConsoleColor.Magenta,
-                $"SCAR {run.ScarStacks:0.#}pp — your FIRST ticket this round carries it (burns on a hit)");
+                // T44: impersonal — the copy names the thing, not the reader.
+                $"SCAR {run.ScarStacks:0.#}pp — the FIRST ticket this round carries it (burns on a hit)");
         GameLoop.WriteEffectStates(run); // chalk/iron/jar/system stacks (rev 5 §20)
 
         if (run.OwnedRelics.Count > 0)

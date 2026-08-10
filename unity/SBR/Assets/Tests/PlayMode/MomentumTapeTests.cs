@@ -9,8 +9,13 @@ namespace SBR.Tests.PlayMode
 {
     /// <summary>
     /// The momentum tape's laws (F_0.2.0 M-T4): dots accumulate per leg strip, resolved legs
-    /// collapse to their sanctioned money-signal cap (green W / red L / cyan VOID), and a
-    /// resolved strip accepts no further beats.
+    /// collapse to a resolution cap, and a resolved strip accepts no further beats.
+    ///
+    /// <para><b>The caps carry no hue (T16, TV-01).</b> This comment used to read "green W / red L /
+    /// cyan VOID" — that was the violation, not the vocabulary. T16 rules this component "no
+    /// numerals, no hue, never above L2", so the three grades are separated on the palette's
+    /// colourless three-step ramp instead, under an L2 ceiling. The distinctness assertion below is
+    /// unchanged and still passes; what changed is the channel it is distinct in.</para>
     /// </summary>
     public class MomentumTapeTests
     {

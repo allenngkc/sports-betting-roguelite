@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="550" viewBox="0 0 980 550" role="img" aria-labelledby="title desc">
+  <title id="title">Proposed live TV sweat layout</title>
+  <desc id="desc">A live soccer sweat with a scorebug, fixed match theater, active-leg card, event strip, ticket risk row, and cash-out action.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9EDCF6"/>
+    </marker>
+    <filter id="glow-blue" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-gold" x="-20%" y="-40%" width="140%" height="180%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="980" height="550" fill="#040807"/>
+  <rect x="4" y="4" width="972" height="542" rx="8" fill="none" stroke="#10242B" stroke-width="2"/>
+
+  <!-- scorebug -->
+  <rect x="16" y="12" width="948" height="72" rx="8" fill="#071015" stroke="#1D343F" stroke-width="2"/>
+  <text x="32" y="34" fill="#9EDCF6" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="1.2">TICKET 1/2</text>
+  <text x="32" y="59" fill="#E7F1F5" font-family="Inter, Arial, sans-serif" font-size="19" font-weight="700">LEG 2/3</text>
+
+  <rect x="164" y="30" width="72" height="24" rx="12" fill="#132C5F" stroke="#3D7BFF"/>
+  <text x="200" y="47" text-anchor="middle" fill="#CFE0FF" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="800" letter-spacing="0.8">BACKED</text>
+  <circle cx="248" cy="47" r="7" fill="#3D7BFF" filter="url(#glow-blue)"/>
+  <text x="262" y="55" fill="#3D7BFF" font-family="Inter, Arial, sans-serif" font-size="27" font-weight="800">NORTHSIDE</text>
+
+  <text x="520" y="60" text-anchor="middle" fill="#E7F1F5" font-family="Inter, Arial, sans-serif" font-size="39" font-weight="900">1 — 0</text>
+
+  <text x="625" y="55" fill="#E84DD0" font-family="Inter, Arial, sans-serif" font-size="27" font-weight="800">RIVERS</text>
+  <circle cx="744" cy="47" r="7" fill="#E84DD0"/>
+
+  <text x="930" y="57" text-anchor="end" fill="#9EDCF6" font-family="Inter, Arial, sans-serif" font-size="29" font-weight="800">67'</text>
+
+  <!-- theater frame -->
+  <rect x="16" y="96" width="648" height="268" rx="8" fill="#071015" stroke="#1D343F" stroke-width="2"/>
+  <text x="30" y="116" fill="#6B8994" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="1.1">MATCH THEATER • FIXED FRAME</text>
+  <rect x="28" y="126" width="624" height="226" rx="3" fill="#061014" stroke="#8BB7C4" stroke-opacity="0.55" stroke-width="2"/>
+  <line x1="340" y1="126" x2="340" y2="352" stroke="#8BB7C4" stroke-opacity="0.55" stroke-width="2"/>
+  <circle cx="340" cy="239" r="36" fill="none" stroke="#8BB7C4" stroke-opacity="0.55" stroke-width="2"/>
+  <circle cx="340" cy="239" r="3" fill="#8BB7C4"/>
+  <rect x="28" y="181" width="92" height="116" fill="none" stroke="#8BB7C4" stroke-opacity="0.55" stroke-width="2"/>
+  <rect x="560" y="181" width="92" height="116" fill="none" stroke="#8BB7C4" stroke-opacity="0.55" stroke-width="2"/>
+  <rect x="28" y="214" width="8" height="50" fill="none" stroke="#E7F1F5" stroke-width="2"/>
+  <rect x="644" y="214" width="8" height="50" fill="none" stroke="#E7F1F5" stroke-width="2"/>
+
+  <!-- team shapes -->
+  <g fill="#3D7BFF">
+    <circle cx="135" cy="171" r="9"/><circle cx="123" cy="239" r="9"/><circle cx="138" cy="307" r="9"/>
+    <circle cx="265" cy="160" r="9"/><circle cx="250" cy="231" r="9"/><circle cx="272" cy="318" r="9"/>
+    <circle cx="421" cy="181" r="9"/><circle cx="474" cy="289" r="9"/>
+  </g>
+  <circle cx="59" cy="239" r="10" fill="#87A9FF"/>
+  <g fill="#E84DD0">
+    <circle cx="546" cy="170" r="9"/><circle cx="529" cy="239" r="9"/><circle cx="548" cy="306" r="9"/>
+    <circle cx="434" cy="153" r="9"/><circle cx="447" cy="232" r="9"/><circle cx="426" cy="323" r="9"/>
+    <circle cx="329" cy="192" r="9"/><circle cx="345" cy="294" r="9"/>
+  </g>
+  <circle cx="620" cy="239" r="10" fill="#F18ADF"/>
+
+  <!-- switch and cutback route -->
+  <path d="M 250 231 C 300 185, 360 164, 421 181 S 515 156, 548 170" fill="none" stroke="#9EDCF6" stroke-width="3" stroke-dasharray="8 7" marker-end="url(#arrow)" opacity="0.9"/>
+  <path d="M 548 170 C 580 173, 603 191, 607 217 C 580 229, 544 238, 512 244" fill="none" stroke="#9EDCF6" stroke-width="3" stroke-dasharray="8 7" marker-end="url(#arrow)" opacity="0.9"/>
+  <circle cx="512" cy="244" r="5" fill="#FFFFFF" filter="url(#glow-blue)"/>
+
+  <!-- active leg -->
+  <rect x="680" y="96" width="284" height="268" rx="8" fill="#071015" stroke="#1D343F" stroke-width="2"/>
+  <text x="700" y="123" fill="#9EDCF6" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="800" letter-spacing="1.2">YOUR ACTIVE LEG</text>
+  <line x1="700" y1="138" x2="944" y2="138" stroke="#1D343F" stroke-width="2"/>
+  <text x="700" y="169" fill="#E7F1F5" font-family="Inter, Arial, sans-serif" font-size="21" font-weight="750">MONEYLINE</text>
+  <text x="944" y="169" text-anchor="end" fill="#9EDCF6" font-family="Inter, Arial, sans-serif" font-size="21" font-weight="750">+135</text>
+  <text x="700" y="205" fill="#6B8994" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" letter-spacing="1">NEED</text>
+  <text x="700" y="239" fill="#E7F1F5" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="900">NORTHSIDE</text>
+  <text x="700" y="270" fill="#E7F1F5" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="900">TO WIN</text>
+  <rect x="700" y="292" width="244" height="42" rx="6" fill="#0B1720" stroke="#29444F"/>
+  <text x="716" y="319" fill="#E7F1F5" font-family="Inter, Arial, sans-serif" font-size="21" font-weight="800">LIVE • LEADING 1–0</text>
+  <circle cx="711" cy="348" r="5" fill="#3D7BFF"/>
+  <text x="724" y="353" fill="#8DA7B1" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700">BACKED TEAM</text>
+
+  <!-- event strip -->
+  <rect x="16" y="376" width="948" height="40" rx="6" fill="#0A1419" stroke="#1D343F"/>
+  <rect x="16" y="376" width="5" height="40" rx="2" fill="#9EDCF6"/>
+  <text x="36" y="402" fill="#E7F1F5" font-family="Inter, Arial, sans-serif" font-size="21" font-weight="750">NORTHSIDE SWITCH THE PLAY — CUTBACK BLOCKED</text>
+  <text x="944" y="401" text-anchor="end" fill="#75909A" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700">PRICE MOVED</text>
+
+  <!-- ticket row -->
+  <rect x="16" y="428" width="620" height="66" rx="8" fill="#071015" stroke="#1D343F" stroke-width="2"/>
+  <text x="34" y="454" fill="#9EDCF6" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" letter-spacing="1">TICKET RISK</text>
+  <text x="34" y="480" fill="#E7F1F5" font-family="Inter, Arial, sans-serif" font-size="23" font-weight="850">RISK $50</text>
+  <text x="158" y="480" fill="#F2BC45" font-family="Inter, Arial, sans-serif" font-size="23" font-weight="850">PAYS $310</text>
+
+  <rect x="340" y="445" width="70" height="32" rx="16" fill="#123A29" stroke="#3CE873"/>
+  <text x="375" y="466" text-anchor="middle" fill="#3CE873" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="850">1 • W</text>
+  <rect x="420" y="445" width="92" height="32" rx="16" fill="#132C5F" stroke="#3D7BFF"/>
+  <text x="466" y="466" text-anchor="middle" fill="#CFE0FF" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="850">2 • LIVE</text>
+  <rect x="522" y="445" width="88" height="32" rx="16" fill="#111B20" stroke="#52646B"/>
+  <text x="566" y="466" text-anchor="middle" fill="#87969C" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="850">3 • NEXT</text>
+
+  <!-- cash out -->
+  <rect x="652" y="428" width="312" height="66" rx="8" fill="#241C0B" stroke="#F2BC45" stroke-width="2" filter="url(#glow-gold)"/>
+  <text x="808" y="456" text-anchor="middle" fill="#C89A38" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" letter-spacing="1.1">ACTIONABLE</text>
+  <text x="808" y="482" text-anchor="middle" fill="#F2BC45" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="900">CASH OUT $184  [E]</text>
+
+  <!-- low-priority chrome -->
+  <text x="16" y="533" fill="#66818A" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="650">R3/8  •  BANK $420  •  PAY $160  •  SEED TV-REFINE-07</text>
+</svg>

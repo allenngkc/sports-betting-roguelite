@@ -46,9 +46,21 @@ namespace SBR.Game
         public readonly bool LeadChangeIntro;
         /// <summary>#10 overlay: urgency modifiers (actor speed, pass tempo).</summary>
         public readonly bool Urgent;
-        /// <summary>Whether the beat's beneficiary (the side running the move) is the picked
-        /// team — the stage routes passes through that team's dots. For/Against templates
-        /// already encode it; direction-neutral templates (calm, fallback) rely on this.</summary>
+        /// <summary>On a goal/moneyline-family scene: whether the beat's beneficiary (the side
+        /// running the move) is the picked team — the stage routes passes through that team's
+        /// dots. For/Against templates already encode it; direction-neutral templates (calm,
+        /// fallback) rely on this. Coherent for team markets (moneyline) where the pick IS a
+        /// team.
+        /// On a count scene (corner/booking): totals markets have no picked team at all
+        /// (PRD §7.6), so this field instead carries the bettor's hope/dread MOOD — the
+        /// selection's Over/Under sense (F_0.4.0 P3 r2), the same value that chose
+        /// CornerFor/CornerAgainst for a corner. It rides along for Booking too (which has no
+        /// For/Against template split to carry the mood instead) but is not currently read by
+        /// any renderer there — reserved for a future mood-differentiated Booking treatment
+        /// (sting, flavor line) rather than silently dropped. This field must NEVER drive which
+        /// team's dots physically move for a count scene, for either template — that is
+        /// <see cref="CountBeneficiaryIsHome"/>'s job, exclusively (TVS-S01 follow-up: routing
+        /// driven by this field, in either direction, is the class of bug being guarded against).</summary>
         public readonly bool ForPicked;
         /// <summary>The goal playback this scene stages, if any (ledger-decided commit/chalk).</summary>
         public readonly ScoreLedger.StagedGoal? Goal;
@@ -59,15 +71,30 @@ namespace SBR.Game
         public readonly MarketKind Market;
         /// <summary>Beat-scene seconds from the pacer (finals add correction sub-scenes separately).</summary>
         public readonly float Duration;
+        /// <summary>TVS-S01 fix (PRD §7.6): which TEAM the engine actually credited this
+        /// corner/booking batch to — home when true, away when false — mirroring
+        /// <see cref="CountLedger.StagedCount.BeneficiaryIsHome"/>. Null for every scene that
+        /// is not a count scene. This is intentionally a SEPARATE field from
+        /// <see cref="ForPicked"/> rather than a repurposing of it: "which team" (absolute,
+        /// home/away) and "is it my team"/"does this help my bet" (relative to a picked side or
+        /// selection) are different concepts, and totals markets only have the former.
+        /// Consulted directly, and EXCLUSIVELY, by the stage for routing on both count
+        /// templates: Booking's single-template `atkPicked`, and Corner's For/Against Mirror
+        /// decision. The CornerFor/CornerAgainst TEMPLATE choice itself carries no routing
+        /// information any more — it is <see cref="ForPicked"/>'s hope/dread mood, entirely
+        /// independent of this field (reviewer correction: a prior revision of this fix
+        /// conflated the two, making Corner's routing follow the template/bet again).</summary>
+        public readonly bool? CountBeneficiaryIsHome;
 
         public SceneSpec(SceneTemplate template, int variant, bool leadChangeIntro, bool urgent,
             bool forPicked, ScoreLedger.StagedGoal? goal, float duration)
             : this(template, variant, leadChangeIntro, urgent, forPicked, goal, null, null,
-                MarketKind.Moneyline, duration) { }
+                MarketKind.Moneyline, duration, null) { }
 
         public SceneSpec(SceneTemplate template, int variant, bool leadChangeIntro, bool urgent,
             bool forPicked, ScoreLedger.StagedGoal? goal, CountLedger.StagedCount? count,
-            CountLedger.FinalPlan? countFinal, MarketKind market, float duration)
+            CountLedger.FinalPlan? countFinal, MarketKind market, float duration,
+            bool? countBeneficiaryIsHome = null)
         {
             Template = template;
             Variant = variant;
@@ -79,6 +106,7 @@ namespace SBR.Game
             CountFinal = countFinal;
             Market = market;
             Duration = duration;
+            CountBeneficiaryIsHome = countBeneficiaryIsHome;
         }
     }
 

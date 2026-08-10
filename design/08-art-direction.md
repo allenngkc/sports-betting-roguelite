@@ -1,4 +1,20 @@
-# 08 — Art Direction (decided 2026-07-10, Allen)
+# 08 — Art Direction (decided 2026-07-10, Allen) — **DEPRECATED 2026-07-24**
+
+> **DEPRECATED by Allen, 2026-07-24.** This document is no longer binding. The TV sweat refinement
+> is a redesign, not a polish pass, and the visual world below is being replaced rather than
+> extended. Nothing here — the casino-neon-on-black palette, the green/red/gold purity rule, the
+> CRT/phosphor/scanline treatment, the capsule composition — constrains new work.
+>
+> This file is retained for two reasons: it is **evidence** of what the product is and what it was
+> reaching for, and it is an explicit **anti-reference** — landing back on this look means the
+> redesign did not happen.
+>
+> What survived the deprecation is recorded in `PRODUCT.md` under Brand Commitments: diegesis,
+> voice, fictional-league constraint, and typography carrying heavy load. The room spec below
+> (prop list, room-state health bar) is **product truth about the space, not art direction**, and
+> remains in force until Allen says otherwise.
+>
+> The replacement world is decided in `docs/tv-sweat-refinement/` and recorded in `DESIGN.md`.
 
 ## The one-line brief
 

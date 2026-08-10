@@ -308,9 +308,9 @@ namespace SBR.Tests.EditMode
         public void Count_final_plan_converges_to_the_baked_endpoint()
         {
             var ledger = new CountLedger(7, 3, 4);
-            ledger.CompleteCount(ledger.StageBeat(true));
-            ledger.CompleteCount(ledger.StageBeat(false));
-            foreach (CountLedger.StagedCount count in ledger.PlanFinal(true).Counts)
+            ledger.CompleteCount(ledger.StageBeat());
+            ledger.CompleteCount(ledger.StageBeat());
+            foreach (CountLedger.StagedCount count in ledger.PlanFinal().Counts)
                 ledger.CompleteCount(count);
 
             Assert.AreEqual(7, ledger.Home);
@@ -340,6 +340,12 @@ namespace SBR.Tests.EditMode
             // corner always bites an Under bettor, even on a beat whose price drifted their
             // way (the count arriving slower than the line needs). Beat direction must not
             // leak into the count scene's mood.
+            //
+            // Restored unmodified (reviewer correction, TVS-S01 follow-up) after a prior
+            // revision of the TVS-S01 fix incorrectly retired this test instead of fixing the
+            // regression it had caught: CornerFor/CornerAgainst is the bettor's MOOD, not team
+            // routing — routing is the separate CountBeneficiaryIsHome/BeneficiaryIsHome fact
+            // (see Corner_mood_follows_the_bet_and_routing_follows_the_team_independently below).
             var run = new Run("COUNT-DIRECTION", new RunConfig());
             Ticket ticket = run.PlaceTicket(new[]
             {
@@ -392,6 +398,676 @@ namespace SBR.Tests.EditMode
             {
                 Assert.AreEqual(SceneTemplate.CornerFor, downBeatOver.Template);
                 Assert.IsTrue(downBeatOver.ForPicked);
+            }
+        }
+
+        // ---------------------------------------------------------------- TVS-S01 regression
+        //
+        // Three separable concepts, never conflated (PRD §7.6, reviewer correction):
+        //   1. ROUTING — which team physically wins the corner/commits the foul. The staged
+        //      fact, CountLedger.StagedCount.BeneficiaryIsHome / SceneSpec.CountBeneficiaryIsHome,
+        //      derived only from HomeDelta/AwayDelta. NEVER the bet.
+        //   2. MOOD — whether the event helps or hurts the bettor. The selection's Over/Under
+        //      sense; drives CornerFor/CornerAgainst template choice, and rides along on
+        //      SceneSpec.ForPicked for Booking's single template. NEVER the team.
+        //   3. ForPicked on the goal path — whether the beneficiary is the picked TEAM,
+        //      meaningful only for moneyline. Untouched by this fix.
+        // The original TVS-S01 defect conflated 1 and 2 by driving routing from the bet
+        // (leg.Selection.Choice == MarketChoice.Over). An earlier revision of this fix
+        // overcorrected and conflated them the other way, driving the CornerFor/CornerAgainst
+        // TEMPLATE from the team instead of the bet — silently destroying the mood signal that
+        // Count_scene_direction_is_the_selections_sense_never_the_beat_direction (below,
+        // restored unmodified) exists to protect. Both directions are guarded here now.
+
+        [Test]
+        public void StagedCount_beneficiary_comes_from_deltas_never_a_flag_and_ties_break_deterministically()
+        {
+            // StagedCount no longer even accepts a bet-derived flag — its third constructor
+            // argument is a beat index, consulted only to break a genuine tie.
+            Assert.IsTrue(new CountLedger.StagedCount(2, 0, beatIndex: 0).BeneficiaryIsHome);
+            Assert.IsFalse(new CountLedger.StagedCount(0, 2, beatIndex: 0).BeneficiaryIsHome);
+            Assert.IsTrue(new CountLedger.StagedCount(3, 1, beatIndex: 7).BeneficiaryIsHome);
+            Assert.IsFalse(new CountLedger.StagedCount(1, 3, beatIndex: 7).BeneficiaryIsHome);
+
+            // A genuine tie (both sides credited equally in the same beat) has no factual
+            // winner; the tie-break is deterministic from the beat index (PRD §4.3's "event
+            // step" key component), not RNG, and not hardcoded to one side.
+            Assert.IsTrue(new CountLedger.StagedCount(1, 1, beatIndex: 0).BeneficiaryIsHome);
+            Assert.IsFalse(new CountLedger.StagedCount(1, 1, beatIndex: 1).BeneficiaryIsHome);
+            Assert.AreEqual(new CountLedger.StagedCount(1, 1, beatIndex: 4).BeneficiaryIsHome,
+                new CountLedger.StagedCount(1, 1, beatIndex: 4).BeneficiaryIsHome,
+                "same input must always resolve the same way");
+        }
+
+        private static Leg BuildCountLeg(MarketSelection selection, string runId)
+        {
+            var run = new Run(runId, new RunConfig());
+            Ticket ticket = run.PlaceTicket(new[] { new Pick(0, selection) }, 10);
+            run.LockRound();
+            return ticket.Legs[0];
+        }
+
+        [Test]
+        public void Corner_credited_home_routes_to_home_regardless_of_over_under_pick()
+        {
+            // Regression #1 (corrected, reviewer follow-up): a corner the engine credits to the
+            // HOME side must ROUTE the move to the home team's dots
+            // (BeneficiaryIsHome/CountBeneficiaryIsHome) whether the bettor picked Over or
+            // Under — the bet must never change which team physically wins the corner. This is
+            // deliberately NOT an assertion on spec.Template: the template legitimately DOES
+            // follow the bet (CornerFor for Over, CornerAgainst for Under) — that is the
+            // separate MOOD concept, restored by
+            // Count_scene_direction_is_the_selections_sense_never_the_beat_direction and pinned
+            // together with routing by
+            // Corner_mood_follows_the_bet_and_routing_follows_the_team_independently.
+            var choreo = new TheaterChoreographer(new SweatPacer());
+            var evt = new DramaEvent(0, 1, 4, DramaEventType.Momentum, 0.55, TensionTag.Calm);
+
+            foreach (bool over in new[] { true, false })
+            {
+                Leg leg = BuildCountLeg(MarketSelection.TotalCorners(8.5, over), $"S01-HOME-{over}");
+                var counts = new CountLedger();
+                counts.ConfigureEndpoint(targetHome: 2, targetAway: 0, beatCount: 1);
+
+                SceneSpec spec = choreo.ResolveBeat(evt, up: true, delta: 0.05, new ScoreLedger(), leg, counts);
+
+                Assert.IsTrue(spec.Count.HasValue && spec.Count.Value.TotalDelta > 0,
+                    "the single scheduled beat must stage the batch");
+                Assert.IsTrue(spec.Count.Value.BeneficiaryIsHome, $"over={over}: HomeDelta beats AwayDelta");
+                Assert.IsTrue(spec.CountBeneficiaryIsHome.HasValue && spec.CountBeneficiaryIsHome.Value,
+                    $"over={over}: a home-credited corner must route to home regardless of the pick");
+            }
+        }
+
+        [Test]
+        public void Corner_credited_away_routes_to_away_regardless_of_over_under_pick()
+        {
+            // Regression #2 (corrected, reviewer follow-up): same law, away-credited corner —
+            // routing only, template is deliberately not asserted here (see #1's comment).
+            var choreo = new TheaterChoreographer(new SweatPacer());
+            var evt = new DramaEvent(0, 1, 4, DramaEventType.Momentum, 0.45, TensionTag.Calm);
+
+            foreach (bool over in new[] { true, false })
+            {
+                Leg leg = BuildCountLeg(MarketSelection.TotalCorners(8.5, over), $"S01-AWAY-{over}");
+                var counts = new CountLedger();
+                counts.ConfigureEndpoint(targetHome: 0, targetAway: 2, beatCount: 1);
+
+                SceneSpec spec = choreo.ResolveBeat(evt, up: false, delta: -0.05, new ScoreLedger(), leg, counts);
+
+                Assert.IsTrue(spec.Count.HasValue && spec.Count.Value.TotalDelta > 0);
+                Assert.IsFalse(spec.Count.Value.BeneficiaryIsHome, $"over={over}: AwayDelta beats HomeDelta");
+                Assert.IsTrue(spec.CountBeneficiaryIsHome.HasValue);
+                Assert.IsFalse(spec.CountBeneficiaryIsHome.Value,
+                    $"over={over}: an away-credited corner must route to away regardless of the pick");
+            }
+        }
+
+        [Test]
+        public void Corner_mood_follows_the_bet_and_routing_follows_the_team_independently()
+        {
+            // The disambiguating test the reviewer asked for, generalized to all four
+            // (bet, team) combinations rather than only "Under leg, away wins": that specific
+            // combination alone does NOT distinguish this fix from either direction of
+            // regression, because Under=false and away=false happen to agree — a template-
+            // driven-by-team bug (the prior revision) and a routing-driven-by-bet bug (the
+            // original TVS-S01) would BOTH reproduce the same template/routing values for that
+            // one case. The disagreeing combinations (Under+home, Over+away) are what actually
+            // pin the two concepts apart; this test includes the reviewer's literal example
+            // (over=false, homeWins=false) plus its three siblings.
+            var choreo = new TheaterChoreographer(new SweatPacer());
+            var evt = new DramaEvent(0, 1, 4, DramaEventType.Momentum, 0.5, TensionTag.Calm);
+
+            foreach (bool over in new[] { true, false })
+            {
+                foreach (bool homeWins in new[] { true, false })
+                {
+                    Leg leg = BuildCountLeg(MarketSelection.TotalCorners(8.5, over),
+                        $"S01-MOOD-ROUTE-{over}-{homeWins}");
+                    var counts = new CountLedger();
+                    counts.ConfigureEndpoint(
+                        targetHome: homeWins ? 2 : 0, targetAway: homeWins ? 0 : 2, beatCount: 1);
+
+                    SceneSpec spec = choreo.ResolveBeat(evt, up: true, delta: 0.05, new ScoreLedger(), leg, counts);
+
+                    Assert.IsTrue(spec.Count.HasValue && spec.Count.Value.TotalDelta > 0,
+                        $"over={over}, homeWins={homeWins}: the single scheduled beat must stage the batch");
+
+                    SceneTemplate expectedMood = over ? SceneTemplate.CornerFor : SceneTemplate.CornerAgainst;
+                    Assert.AreEqual(expectedMood, spec.Template,
+                        $"over={over}, homeWins={homeWins}: mood (template) must follow the bet, never the team");
+
+                    Assert.AreEqual(homeWins, spec.Count.Value.BeneficiaryIsHome,
+                        $"over={over}, homeWins={homeWins}: routing must follow the team, never the bet");
+                    Assert.IsTrue(spec.CountBeneficiaryIsHome.HasValue);
+                    Assert.AreEqual(homeWins, spec.CountBeneficiaryIsHome.Value,
+                        $"over={over}, homeWins={homeWins}: routing must follow the team, never the bet");
+                }
+            }
+        }
+
+        [Test]
+        public void Booking_beneficiary_is_read_from_the_staged_fact_on_both_over_and_under_legs()
+        {
+            // Regression #3: bookings use one direction-neutral template (no For/Against
+            // split), so the beneficiary rides SceneSpec.CountBeneficiaryIsHome directly —
+            // never ForPicked, which is incoherent for a totals market with no picked team.
+            var choreo = new TheaterChoreographer(new SweatPacer());
+            var evt = new DramaEvent(0, 1, 4, DramaEventType.Momentum, 0.5, TensionTag.Calm);
+
+            foreach (bool over in new[] { true, false })
+            {
+                Leg homeLeg = BuildCountLeg(MarketSelection.TotalCards(3.5, over), $"S01-CARD-HOME-{over}");
+                var homeCounts = new CountLedger();
+                homeCounts.ConfigureEndpoint(targetHome: 1, targetAway: 0, beatCount: 1);
+                SceneSpec homeSpec = choreo.ResolveBeat(evt, up: true, delta: 0.05, new ScoreLedger(), homeLeg, homeCounts);
+                Assert.AreEqual(SceneTemplate.Booking, homeSpec.Template);
+                Assert.IsTrue(homeSpec.CountBeneficiaryIsHome.HasValue && homeSpec.CountBeneficiaryIsHome.Value,
+                    $"over={over}: a home-credited booking must attribute home regardless of the pick");
+
+                Leg awayLeg = BuildCountLeg(MarketSelection.TotalCards(3.5, over), $"S01-CARD-AWAY-{over}");
+                var awayCounts = new CountLedger();
+                awayCounts.ConfigureEndpoint(targetHome: 0, targetAway: 1, beatCount: 1);
+                SceneSpec awaySpec = choreo.ResolveBeat(evt, up: false, delta: -0.05, new ScoreLedger(), awayLeg, awayCounts);
+                Assert.AreEqual(SceneTemplate.Booking, awaySpec.Template);
+                Assert.IsTrue(awaySpec.CountBeneficiaryIsHome.HasValue && !awaySpec.CountBeneficiaryIsHome.Value,
+                    $"over={over}: an away-credited booking must attribute away regardless of the pick");
+            }
+        }
+
+        [Test]
+        public void Goal_attribution_on_a_moneyline_leg_is_unchanged_by_the_count_attribution_fix()
+        {
+            // Regression #4: the goal path's ForPicked/ScoredByPicked semantics are untouched,
+            // and a non-count scene carries no count-beneficiary fact at all.
+            var choreo = new TheaterChoreographer(new SweatPacer());
+            Leg homeLeg = BuildCountLeg(MarketSelection.Moneyline(Side.Home), "S01-GOAL-ML");
+
+            SceneSpec up = choreo.ResolveBeat(
+                new DramaEvent(0, 1, 6, DramaEventType.Score, 0.7, TensionTag.Swing),
+                up: true, delta: 0.05, new ScoreLedger(), homeLeg, null);
+            Assert.AreEqual(SceneTemplate.GoalFor, up.Template);
+            Assert.IsTrue(up.Goal.HasValue && up.Goal.Value.ForPicked);
+            Assert.IsFalse(up.CountBeneficiaryIsHome.HasValue, "a goal scene carries no count-beneficiary fact");
+
+            SceneSpec down = choreo.ResolveBeat(
+                new DramaEvent(0, 2, 6, DramaEventType.Score, 0.3, TensionTag.Swing),
+                up: false, delta: -0.05, new ScoreLedger(), homeLeg, null);
+            Assert.AreEqual(SceneTemplate.GoalAgainst, down.Template);
+            Assert.IsTrue(down.Goal.HasValue && !down.Goal.Value.ForPicked);
+            Assert.IsFalse(down.CountBeneficiaryIsHome.HasValue);
+        }
+
+        [Test]
+        public void Concurrent_corners_and_cards_legs_on_one_match_each_attribute_independently()
+        {
+            // PRD §8.2A: two legs can be live on the SAME match at once — here a corners leg
+            // and a cards leg on the same fixture, placed as two separate tickets (a single
+            // ticket cannot carry two legs on one matchup — Run.PlaceTicket enforces that).
+            // The fix must attribute each leg's own staged batches correctly regardless of
+            // interleaving, and never reach back to "the active leg" to decide it.
+            var run = new Run("S01-CONCURRENT", new RunConfig());
+            Ticket cornersTicket = run.PlaceTicket(new[] { new Pick(0, MarketSelection.TotalCorners(8.5, true)) }, 10);
+            Ticket cardsTicket = run.PlaceTicket(new[] { new Pick(0, MarketSelection.TotalCards(3.5, false)) }, 10);
+            run.LockRound();
+            Leg cornersLeg = cornersTicket.Legs[0];
+            Leg cardsLeg = cardsTicket.Legs[0];
+            Assert.AreSame(cornersLeg.Matchup, cardsLeg.Matchup, "both legs ride the same match");
+
+            var cornersCounts = new CountLedger();
+            cornersCounts.ConfigureEndpoint(cornersLeg.Matchup.StatLine, MarketKind.TotalCorners, 6);
+            var cardsCounts = new CountLedger();
+            cardsCounts.ConfigureEndpoint(cardsLeg.Matchup.StatLine, MarketKind.TotalCards, 6);
+            var choreo = new TheaterChoreographer(new SweatPacer());
+
+            // Drive both legs' beats interleaved (cards, corners, cards, corners, ...) to prove
+            // neither ledger's attribution depends on the other or on ordering.
+            for (int step = 1; step <= 6; step++)
+            {
+                SceneSpec cardsSpec = choreo.ResolveBeat(
+                    new DramaEvent(1, step, 6, DramaEventType.Momentum, 0.5, TensionTag.Calm),
+                    up: step % 2 == 0, delta: step % 2 == 0 ? 0.05 : -0.05, new ScoreLedger(), cardsLeg, cardsCounts);
+                if (cardsSpec.Count.HasValue && cardsSpec.Count.Value.TotalDelta > 0)
+                {
+                    CountLedger.StagedCount c = cardsSpec.Count.Value;
+                    Assert.AreEqual(SceneTemplate.Booking, cardsSpec.Template);
+                    if (c.HomeDelta > c.AwayDelta) Assert.IsTrue(c.BeneficiaryIsHome);
+                    if (c.AwayDelta > c.HomeDelta) Assert.IsFalse(c.BeneficiaryIsHome);
+                    Assert.AreEqual(c.BeneficiaryIsHome, cardsSpec.CountBeneficiaryIsHome);
+                }
+
+                SceneSpec cornersSpec = choreo.ResolveBeat(
+                    new DramaEvent(0, step, 6, DramaEventType.Momentum, 0.5, TensionTag.Calm),
+                    up: step % 2 == 0, delta: step % 2 == 0 ? 0.05 : -0.05, new ScoreLedger(), cornersLeg, cornersCounts);
+                if (cornersSpec.Count.HasValue && cornersSpec.Count.Value.TotalDelta > 0)
+                {
+                    CountLedger.StagedCount c = cornersSpec.Count.Value;
+                    // cornersLeg is a fixed Over pick for the whole test, so the MOOD template
+                    // is always CornerFor regardless of which team the engine actually credits —
+                    // template tracks the bet, never the team (reviewer correction).
+                    Assert.AreEqual(SceneTemplate.CornerFor, cornersSpec.Template);
+                    // ROUTING tracks the team fact instead, independently of that fixed mood.
+                    if (c.HomeDelta > c.AwayDelta) Assert.IsTrue(c.BeneficiaryIsHome);
+                    if (c.AwayDelta > c.HomeDelta) Assert.IsFalse(c.BeneficiaryIsHome);
+                    Assert.AreEqual(c.BeneficiaryIsHome, cornersSpec.CountBeneficiaryIsHome);
+                }
+            }
+
+            // Both ledgers converge to their OWN market's endpoint from the same locked match —
+            // proof neither leg's schedule leaked into the other's.
+            Assert.AreEqual(cornersLeg.Matchup.StatLine.HomeCorners + cornersLeg.Matchup.StatLine.AwayCorners,
+                SumPlanned(cornersCounts));
+            Assert.AreEqual(cardsLeg.Matchup.StatLine.HomeCards + cardsLeg.Matchup.StatLine.AwayCards,
+                SumPlanned(cardsCounts));
+        }
+
+        private static int SumPlanned(CountLedger ledger)
+        {
+            int sum = 0;
+            foreach (int d in ledger.PlannedDeltas) sum += d;
+            return sum;
+        }
+
+        // ---------------------------------------------------------------- TVS-H03 regression
+        //
+        // Anytime-scorer identity binding (PRD §4.1, §4.3, §7.7). The defect: SetScoringActor
+        // only ever renamed an unrendered GameObject.name, with no read-side connection to the
+        // stage's actual route/carrier selection — so the name in the reveal copy and the actor
+        // visibly taking the final touch could disagree. The fix binds ONE roster identity onto
+        // the goal that carries it, at PLAN time (ScoreLedger.BindAnytimeScorer), before any
+        // playback: TvSweatScreen.ScorerFor (copy) and TheaterStage.EnterStep (the stage's
+        // actor routing) both read that same StagedGoal.HasBoundScorer/ScorerIsHome/
+        // ScorerRosterIndex — never a post-hoc reconciliation of two separately-computed values.
+        //
+        // This also fixes a related latent mismatch these tests pin directly: ScoreLedger.
+        // ConfigureEndpoint(Leg) used to compute its own "picked is home" anchor inline, forcing
+        // Picked/Opponent onto literal home/away for every non-moneyline market including
+        // anytime-scorer — but SweatFlavor.PickedHomeForPresentation (and therefore the stage's
+        // whole attacking-direction convention, _homeAttacksRight) already special-cases
+        // anytime-scorer onto the BACKED PLAYER's own side, which can be away. The two anchors
+        // silently disagreed for an away-backed leg. ConfigureEndpoint(Leg) now calls the same
+        // shared helper, so they cannot drift apart again.
+
+        private static Leg BuildScorerLeg(int playerIndex, string runId)
+            => BuildCountLeg(MarketSelection.AnytimeScorer(playerIndex), runId);
+
+        [Test]
+        public void ConfigureEndpoint_anchors_an_anytime_scorer_leg_on_the_backed_players_own_side()
+        {
+            int awayRosterSize = new RunConfig().PlayersPerTeam;
+
+            Leg awayBacked = BuildScorerLeg(0, "H03-ANCHOR-AWAY");
+            Assert.AreEqual(awayRosterSize, awayBacked.Matchup.Away.Players.Count,
+                "test assumption: default roster size");
+            var awayLedger = new ScoreLedger();
+            awayLedger.ConfigureEndpoint(awayBacked);
+            Assert.AreEqual(awayBacked.Matchup.StatLine.AwayGoals, awayLedger.TargetPicked,
+                "an away-backed scorer leg must anchor Picked on the away goal count, not home");
+            Assert.AreEqual(awayBacked.Matchup.StatLine.HomeGoals, awayLedger.TargetOpponent);
+
+            Leg homeBacked = BuildScorerLeg(awayRosterSize, "H03-ANCHOR-HOME");
+            var homeLedger = new ScoreLedger();
+            homeLedger.ConfigureEndpoint(homeBacked);
+            Assert.AreEqual(homeBacked.Matchup.StatLine.HomeGoals, homeLedger.TargetPicked,
+                "a home-backed scorer leg must anchor Picked on the home goal count");
+            Assert.AreEqual(homeBacked.Matchup.StatLine.AwayGoals, homeLedger.TargetOpponent);
+        }
+
+        [Test]
+        public void BindAnytimeScorer_won_leg_binds_the_exact_backed_player_home_or_away()
+        {
+            int awayRosterSize = new RunConfig().PlayersPerTeam;
+
+            foreach (bool backedHome in new[] { false, true })
+            {
+                int playerIndex = backedHome ? awayRosterSize : 0; // first home vs. first away player
+                Leg leg = BuildScorerLeg(playerIndex, $"H03-BIND-WON-{backedHome}");
+                Player backedPlayer = leg.Matchup.PlayerAt(playerIndex);
+
+                var ledger = new ScoreLedger();
+                ledger.ConfigureEndpoint(leg);
+                ScoreLedger.FinalPlan plan = ledger.PlanFinal(LegGrade.Won);
+                ScoreLedger.FinalPlan bound = ScoreLedger.BindAnytimeScorer(plan, leg);
+
+                bool foundBinding = false;
+                foreach (ScoreLedger.StagedGoal g in bound.Goals)
+                {
+                    if (!g.HasBoundScorer) continue;
+                    foundBinding = true;
+                    Assert.AreEqual(backedHome, g.ScorerIsHome,
+                        $"backedHome={backedHome}: the bound side must match the backed player's real side");
+                    var roster = g.ScorerIsHome ? leg.Matchup.Home.Players : leg.Matchup.Away.Players;
+                    Assert.IsTrue(g.ScorerRosterIndex >= 0 && g.ScorerRosterIndex < roster.Count,
+                        $"backedHome={backedHome}: roster index must be in range");
+                    Assert.AreSame(backedPlayer, roster[g.ScorerRosterIndex],
+                        $"backedHome={backedHome}: the bound roster identity must BE the backed player, " +
+                        "by reference, never a lookalike from the match's full scorer list");
+                }
+                Assert.IsTrue(foundBinding,
+                    $"backedHome={backedHome}: a Won anytime-scorer leg's final plan must carry a bound goal " +
+                    "(this run's target for the backed side was reached during PlanFinal's own construction, " +
+                    "so a fresh ScoreLedger — 0 committed either side — always leaves a correction to bind)");
+
+                // Every OTHER goal in the plan (if any — the opponent-side correction) stays unbound.
+                foreach (ScoreLedger.StagedGoal g in bound.Goals)
+                    if (!g.ScoredByPicked) Assert.IsFalse(g.HasBoundScorer,
+                        "only the backed side's own goal may ever carry the bound identity");
+            }
+        }
+
+        /// <summary>The SCORER-REVEAL GAP — reproduced in Phase 3, deferred by name from Phase 1B,
+        /// carried in PRD §5's Phase 1B closure note, and CLOSED by T17.
+        ///
+        /// <para>The mechanism it pinned: <see cref="ScoreLedger.BindAnytimeScorer"/> scans the
+        /// FINAL plan for a goal that both <c>Commits</c> and is <c>ScoredByPicked</c>, and binds
+        /// the backed player's identity onto it. That is the causal reveal point. The sibling test
+        /// above notes its own precondition — a fresh ledger with nothing committed "always leaves
+        /// a correction to bind". The gap was the inverse: when the backed side's baked goals were
+        /// ALL spent during ordinary beats, <c>PlanFinal</c> had no backed-side correction left,
+        /// the loop matched nothing, and the plan came back unbound.</para>
+        ///
+        /// <para>Player-visible consequence: an anytime-scorer bet WINS and the scorer is never
+        /// revealed.</para>
+        ///
+        /// <para><b>T17 — CLOSED, and this test is the original reproduction INVERTED IN PLACE</b>
+        /// (Design Director's instruction: invert, do not delete). The scenario, both seeds and both
+        /// backed sides are byte-for-byte the ones that pinned the gap red, so what used to prove
+        /// "no reveal" now proves the reveal happens. The fix is upstream and the ruling was
+        /// "reserve, don't spend": <see cref="ScoreLedger.ConfigureEndpoint(Leg)"/> reserves the
+        /// backed side's last baked goal before a single beat runs, so the spending loop below
+        /// cannot exhaust it however hard it tries. <see cref="ScoreLedger.BindAnytimeScorer"/> is
+        /// itself unchanged — the causal reveal point has not moved, the goal it needs is simply
+        /// still there. Nothing is synthesised after resolution and no win is suppressed.</para></summary>
+        [Test]
+        public void BindAnytimeScorer_binds_even_when_ordinary_beats_try_to_spend_the_backed_sides_goals()
+        {
+            int awayRosterSize = new RunConfig().PlayersPerTeam;
+
+            foreach (bool backedHome in new[] { false, true })
+            {
+                int playerIndex = backedHome ? awayRosterSize : 0;
+                Leg leg = BuildScorerLeg(playerIndex, $"GAP-SPENT-{backedHome}");
+                Player backedPlayer = leg.Matchup.PlayerAt(playerIndex);
+
+                var ledger = new ScoreLedger();
+                ledger.ConfigureEndpoint(leg);
+
+                Assert.Greater(ledger.TargetPicked, 0,
+                    $"backedHome={backedHome}: this seed bakes no goals for the backed side, so the " +
+                    "scenario is not constructible here — pick another run id rather than deleting this");
+                Assert.AreEqual(1, ledger.ReservedPicked,
+                    $"backedHome={backedHome}: an anytime-scorer leg must claim its reveal goal at " +
+                    "CONFIGURE time, before any beat has had the chance to spend it");
+
+                // The original attack, unchanged: drive CompleteGoal directly at the backed side,
+                // harder than any real beat sequence could. It bypasses StageBeatGoal deliberately
+                // (that method will not reliably drive a scorer leg to exhaustion), which is
+                // precisely why the reserve is enforced inside CompleteGoal — the single score
+                // mutator — and not merely at staging, where this loop would walk straight past it.
+                for (int i = 0; i < 64; i++)
+                    ledger.CompleteGoal(new ScoreLedger.StagedGoal(true, true));
+
+                Assert.AreEqual(ledger.TargetPicked - 1, ledger.Picked,
+                    $"backedHome={backedHome}: the reserve must HOLD — ordinary play may spend the backed " +
+                    "side down to exactly one short of its endpoint and no further");
+
+                ScoreLedger.FinalPlan plan = ledger.PlanFinal(LegGrade.Won);
+                ScoreLedger.FinalPlan bound = ScoreLedger.BindAnytimeScorer(plan, leg);
+
+                int boundCount = 0;
+                foreach (ScoreLedger.StagedGoal g in bound.Goals)
+                {
+                    if (!g.HasBoundScorer) continue;
+                    boundCount++;
+                    Assert.IsTrue(g.Commits,
+                        $"backedHome={backedHome}: a reveal must ride a goal that actually commits — a " +
+                        "chalked-off goal reveals a scorer for a goal that never counted");
+                    Assert.AreEqual(backedHome, g.ScorerIsHome,
+                        $"backedHome={backedHome}: the bound side must match the backed player's real side");
+                    var roster = g.ScorerIsHome ? leg.Matchup.Home.Players : leg.Matchup.Away.Players;
+                    Assert.AreSame(backedPlayer, roster[g.ScorerRosterIndex],
+                        $"backedHome={backedHome}: the bound identity must BE the backed player, by reference");
+                }
+                Assert.AreEqual(1, boundCount,
+                    $"backedHome={backedHome}: THE GAP, INVERTED — a won anytime-scorer leg whose backed-side " +
+                    "goals were played early must still reveal its scorer, exactly once and never twice");
+
+                // The reserve must not distort the endpoint: playing the plan still converges exactly
+                // on the locked stat line, which is what makes this a presentation fix and not a
+                // scoreline change.
+                foreach (ScoreLedger.StagedGoal g in bound.Goals) ledger.CompleteGoal(g);
+                Assert.AreEqual(ledger.TargetPicked, ledger.Picked,
+                    $"backedHome={backedHome}: the backed side must still converge exactly on the stat line");
+                Assert.AreEqual(ledger.TargetOpponent, ledger.Opponent,
+                    $"backedHome={backedHome}: the opponent side must converge exactly too");
+            }
+        }
+
+        /// <summary>T17 acceptance, as the Design Director specified it: a PROPERTY over settled
+        /// legs, not a single scenario, and a test rather than a capture. Every anytime-scorer leg
+        /// that grades Won must be traceable to a staged, revealed scorer event that preceded or
+        /// coincided with its resolution — here, a committing backed-side goal inside the final
+        /// plan, carrying the bound identity, before any of it plays.</summary>
+        [Test]
+        public void Every_won_anytime_scorer_leg_reveals_exactly_one_scorer_however_its_beats_ran()
+        {
+            int awayRosterSize = new RunConfig().PlayersPerTeam;
+            int exercised = 0;
+
+            foreach (string runId in new[] { "T17-SWEEP-A", "T17-SWEEP-B", "T17-SWEEP-C", "T17-SWEEP-D" })
+            {
+                foreach (bool backedHome in new[] { false, true })
+                {
+                    int playerIndex = backedHome ? awayRosterSize : 0;
+                    Leg leg = BuildScorerLeg(playerIndex, $"{runId}-{backedHome}");
+                    var ledger = new ScoreLedger();
+                    ledger.ConfigureEndpoint(leg);
+                    // A stat line baking no backed-side goal cannot grade Won as an anytime scorer.
+                    if (ledger.TargetPicked < 1) continue;
+                    exercised++;
+
+                    // Ordinary play through the real beat path first, then the direct attack — the
+                    // property must hold however the beats happened to fall.
+                    for (int i = 0; i < 24; i++)
+                    {
+                        ScoreLedger.StagedGoal? staged =
+                            ledger.StageBeatGoal(DramaEventType.Score, up: true, 0.09, 0.5);
+                        if (staged.HasValue) ledger.CompleteGoal(staged.Value);
+                    }
+                    for (int i = 0; i < 24; i++)
+                        ledger.CompleteGoal(new ScoreLedger.StagedGoal(true, true));
+
+                    ScoreLedger.FinalPlan bound =
+                        ScoreLedger.BindAnytimeScorer(ledger.PlanFinal(LegGrade.Won), leg);
+
+                    int reveals = 0;
+                    foreach (ScoreLedger.StagedGoal g in bound.Goals)
+                    {
+                        if (!g.HasBoundScorer) continue;
+                        reveals++;
+                        Assert.IsTrue(g.Commits && g.ScoredByPicked,
+                            $"{runId} backedHome={backedHome}: the revealed goal must be a committing " +
+                            "goal on the backed player's own side");
+                    }
+                    Assert.AreEqual(1, reveals,
+                        $"{runId} backedHome={backedHome}: every settled WON anytime-scorer leg must carry " +
+                        "exactly one revealed scorer, whatever its beats did (T17 acceptance)");
+                }
+            }
+
+            Assert.Greater(exercised, 0,
+                "the sweep exercised no legs at all — these run ids bake no backed-side goals, so this " +
+                "test proves nothing; pick others rather than leaving it vacuously green");
+        }
+
+        /// <summary>T17 must be surgical. Only anytime-scorer legs reserve anything, so every other
+        /// market's ordinary play must still spend its backed side all the way to the locked
+        /// endpoint exactly as it did before the fix.</summary>
+        [Test]
+        public void Non_scorer_markets_reserve_nothing_and_still_spend_to_their_full_endpoint()
+        {
+            int exercised = 0;
+
+            foreach (string runId in new[] { "T17-NO-RESERVE-A", "T17-NO-RESERVE-B", "T17-NO-RESERVE-C" })
+            {
+                Leg ml = BuildCountLeg(MarketSelection.Moneyline(Side.Home), runId);
+                var ledger = new ScoreLedger();
+                ledger.ConfigureEndpoint(ml);
+
+                Assert.AreEqual(0, ledger.ReservedPicked,
+                    $"{runId}: a moneyline leg must reserve nothing — T17 changes the arithmetic for " +
+                    "anytime-scorer legs and for nothing else");
+                if (ledger.TargetPicked < 1) continue;
+                exercised++;
+
+                for (int i = 0; i < 64 && ledger.Picked < ledger.TargetPicked; i++)
+                    ledger.CompleteGoal(new ScoreLedger.StagedGoal(true, true));
+
+                Assert.AreEqual(ledger.TargetPicked, ledger.Picked,
+                    $"{runId}: a non-scorer leg's ordinary play must still reach its full endpoint");
+            }
+
+            Assert.Greater(exercised, 0, "no moneyline seed here bakes a home goal; pick other run ids");
+        }
+
+        [Test]
+        public void BindAnytimeScorer_lost_leg_binds_nothing()
+        {
+            Leg leg = BuildScorerLeg(0, "H03-BIND-LOST");
+            var ledger = new ScoreLedger();
+            ledger.ConfigureEndpoint(leg);
+            ScoreLedger.FinalPlan plan = ledger.PlanFinal(LegGrade.Lost);
+            ScoreLedger.FinalPlan bound = ScoreLedger.BindAnytimeScorer(plan, leg);
+
+            Assert.AreEqual(plan.Goals.Length, bound.Goals.Length);
+            foreach (ScoreLedger.StagedGoal g in bound.Goals)
+                Assert.IsFalse(g.HasBoundScorer, "a lost anytime-scorer leg must never bind a scorer identity");
+        }
+
+        [Test]
+        public void BindAnytimeScorer_voided_leg_binds_nothing()
+        {
+            Leg leg = BuildScorerLeg(0, "H03-BIND-VOID");
+            var ledger = new ScoreLedger();
+            ledger.ConfigureEndpoint(leg);
+            ScoreLedger.FinalPlan plan = ledger.PlanFinal(LegGrade.Voided);
+            ScoreLedger.FinalPlan bound = ScoreLedger.BindAnytimeScorer(plan, leg);
+
+            foreach (ScoreLedger.StagedGoal g in bound.Goals)
+                Assert.IsFalse(g.HasBoundScorer, "a voided leg must never bind a scorer identity");
+        }
+
+        [Test]
+        public void BindAnytimeScorer_ignores_every_non_scorer_market()
+        {
+            // A moneyline leg's Won final plan has committing goals too (the correction the
+            // clamp deferred) — BindAnytimeScorer must never touch them.
+            Leg leg = BuildCountLeg(MarketSelection.Moneyline(Side.Home), "H03-BIND-ML");
+            var ledger = new ScoreLedger();
+            ledger.ConfigureEndpoint(leg.Matchup.StatLine, pickedHome: true);
+            ScoreLedger.FinalPlan plan = ledger.PlanFinal(LegGrade.Won);
+            ScoreLedger.FinalPlan bound = ScoreLedger.BindAnytimeScorer(plan, leg);
+
+            Assert.AreEqual(plan.Goals.Length, bound.Goals.Length);
+            for (int i = 0; i < plan.Goals.Length; i++)
+            {
+                Assert.IsFalse(bound.Goals[i].HasBoundScorer, "a moneyline leg must never bind a scorer identity");
+                Assert.AreEqual(plan.Goals[i].Commits, bound.Goals[i].Commits, "no other field may change either");
+                Assert.AreEqual(plan.Goals[i].ScoredByPicked, bound.Goals[i].ScoredByPicked);
+            }
+        }
+
+        [Test]
+        public void BindAnytimeScorer_is_deterministic_across_repeated_calls()
+        {
+            Leg leg = BuildScorerLeg(0, "H03-BIND-DETERMINISM");
+            var ledgerA = new ScoreLedger();
+            ledgerA.ConfigureEndpoint(leg);
+            ScoreLedger.FinalPlan boundA = ScoreLedger.BindAnytimeScorer(ledgerA.PlanFinal(LegGrade.Won), leg);
+
+            var ledgerB = new ScoreLedger();
+            ledgerB.ConfigureEndpoint(leg);
+            ScoreLedger.FinalPlan boundB = ScoreLedger.BindAnytimeScorer(ledgerB.PlanFinal(LegGrade.Won), leg);
+
+            Assert.AreEqual(boundA.Goals.Length, boundB.Goals.Length);
+            for (int i = 0; i < boundA.Goals.Length; i++)
+            {
+                Assert.AreEqual(boundA.Goals[i].HasBoundScorer, boundB.Goals[i].HasBoundScorer);
+                Assert.AreEqual(boundA.Goals[i].ScorerIsHome, boundB.Goals[i].ScorerIsHome);
+                Assert.AreEqual(boundA.Goals[i].ScorerRosterIndex, boundB.Goals[i].ScorerRosterIndex);
+            }
+        }
+
+        [Test]
+        public void BindAnytimeScorer_two_concurrent_scorer_legs_on_one_match_bind_independently()
+        {
+            // PRD §8.2A: two legs can be live on the SAME match at once. Two separate
+            // anytime-scorer tickets on the same matchup, one backing a home player and one
+            // backing an away player — binding must come from each leg's own selection, never
+            // a shared "the active leg" notion, so neither call may see or influence the other.
+            int awayRosterSize = new RunConfig().PlayersPerTeam;
+            var run = new Run("H03-CONCURRENT", new RunConfig());
+            Ticket homeTicket = run.PlaceTicket(new[] { new Pick(0, MarketSelection.AnytimeScorer(awayRosterSize)) }, 10);
+            Ticket awayTicket = run.PlaceTicket(new[] { new Pick(0, MarketSelection.AnytimeScorer(0)) }, 10);
+            run.LockRound();
+            Leg homeLeg = homeTicket.Legs[0];
+            Leg awayLeg = awayTicket.Legs[0];
+            Assert.AreSame(homeLeg.Matchup, awayLeg.Matchup, "both legs ride the same match");
+
+            var homeLedger = new ScoreLedger();
+            homeLedger.ConfigureEndpoint(homeLeg);
+            var awayLedger = new ScoreLedger();
+            awayLedger.ConfigureEndpoint(awayLeg);
+
+            // Interleave the two legs' planning/binding calls to prove neither reaches for the
+            // other's state.
+            ScoreLedger.FinalPlan homePlan = homeLedger.PlanFinal(LegGrade.Won);
+            ScoreLedger.FinalPlan awayPlan = awayLedger.PlanFinal(LegGrade.Won);
+            ScoreLedger.FinalPlan homeBound = ScoreLedger.BindAnytimeScorer(homePlan, homeLeg);
+            ScoreLedger.FinalPlan awayBound = ScoreLedger.BindAnytimeScorer(awayPlan, awayLeg);
+
+            Player homeBackedPlayer = homeLeg.Matchup.PlayerAt(awayRosterSize);
+            Player awayBackedPlayer = awayLeg.Matchup.PlayerAt(0);
+            Assert.AreNotSame(homeBackedPlayer, awayBackedPlayer);
+
+            bool foundHome = false, foundAway = false;
+            foreach (ScoreLedger.StagedGoal g in homeBound.Goals)
+            {
+                if (!g.HasBoundScorer) continue;
+                foundHome = true;
+                Assert.IsTrue(g.ScorerIsHome, "the home ticket's leg must bind a home actor");
+                Assert.AreSame(homeBackedPlayer, homeLeg.Matchup.Home.Players[g.ScorerRosterIndex]);
+            }
+            foreach (ScoreLedger.StagedGoal g in awayBound.Goals)
+            {
+                if (!g.HasBoundScorer) continue;
+                foundAway = true;
+                Assert.IsFalse(g.ScorerIsHome, "the away ticket's leg must bind an away actor");
+                Assert.AreSame(awayBackedPlayer, awayLeg.Matchup.Away.Players[g.ScorerRosterIndex]);
+            }
+            Assert.IsTrue(foundHome, "the home-backed leg must have bound its own goal");
+            Assert.IsTrue(foundAway, "the away-backed leg must have bound its own goal");
+        }
+
+        [Test]
+        public void StageBeatGoal_never_produces_a_bound_scorer_the_pre_final_causal_reveal_guard()
+        {
+            // Structural half of the causal-reveal-timing guarantee (PRD §4.1): the ONLY
+            // producer of a pre-final StagedGoal is StageBeatGoal, and BindAnytimeScorer is only
+            // ever invoked (TvSweatScreen.TheaterBeat) on a FinalPlan inside the LegFinal branch.
+            // If StageBeatGoal itself never sets HasBoundScorer, no pre-final beat can carry a
+            // bound identity regardless of call order — this exhausts every (type, direction,
+            // endpoint) combination StageBeatGoal accepts.
+            foreach (DramaEventType type in new[]
+                { DramaEventType.Score, DramaEventType.BigPlay, DramaEventType.Momentum, DramaEventType.LegFinal })
+            {
+                foreach (bool up in new[] { true, false })
+                {
+                    var ledger = new ScoreLedger();
+                    ScoreLedger.StagedGoal? g = ledger.StageBeatGoal(type, up, up ? 0.05 : -0.05, up ? 0.9 : 0.1);
+                    if (g.HasValue) Assert.IsFalse(g.Value.HasBoundScorer,
+                        $"{type}/{up}: StageBeatGoal must never itself bind a scorer identity");
+                }
             }
         }
     }

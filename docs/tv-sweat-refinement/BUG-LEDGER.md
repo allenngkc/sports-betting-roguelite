@@ -1,0 +1,810 @@
+# TV Sweat Refinement Bug Ledger
+
+**Status:** Phase 1A execution pass complete for source-verdict work (TVS-H01/H02/H03 adjudicated;
+§7.6/§7.7 structural findings filed as TVS-S01/S02). The PRD §6.2/§6.3 execution matrices (§6-9 below)
+remain **not run** — this pass did not author or execute the new 16×3/market/transition test matrix,
+only confirmed (via [phase-1a-execution-report.md](phase-1a-execution-report.md) §1) that this
+environment can actually run Unity EditMode/PlayMode headlessly, including existing
+`TheaterStageTests`/`TvSweatScreenTests` scene-playback tests (20/20 passed as executed, unchanged
+from what already existed) — so that matrix is achievable work for a following pass, not blocked.
+Screenshot/video evidence cannot be captured in this environment (`-nographics` Null graphics device);
+see execution report §1.6.  
+**Baseline commit:** `d665438`  
+**Baseline local branch:** `tv-sweat`  
+**Requested implementation branch:** `slice/tv-sweat-refinement` (created; checked out for this pass)  
+**Rule:** A source-confirmed code-path gap is not a runtime-reproduced bug. Phase 1A must still
+capture the exact seed/round/ticket/market context, reproduction rate, and visual evidence.
+
+## 1. Required row schema
+
+| Field | Required content |
+|---|---|
+| ID | Stable `TVS-###` identifier |
+| Build | Commit and Unity version |
+| Seed | Exact run seed; `NOT CAPTURED — STATIC REVIEW` only for hypotheses |
+| Round | 1-based round |
+| Ticket / leg | Ticket index/count and leg index/count |
+| Market | Kind, choice, line/player, and odds |
+| Scene | Template, current variant, and later scene signature when relevant |
+| Playback state | Open, suspended, pending, paused, resolving, transitioning, settling |
+| Expected | Observable contract |
+| Actual | Observable failure, without diagnosis substituted for behavior |
+| Reproduction | `failures / attempts` |
+| Evidence | Screenshot for visual defects; short video for motion/timing defects |
+| Severity | Blocker, major, or polish |
+| Regression | Test name, proposed test, or why impractical |
+| Status | Hypothesis, confirmed, fixing, fixed, verified, deferred, rejected |
+| Ownership | Owning allowed file/helper |
+| Fix / verification | Fix commit and audit rerun result |
+
+## 2. Severity
+
+- **Blocker:** playback cannot finish or continue; state is unrecoverable; false result or illegal
+  cash-out can change the player’s decision; score/count endpoint cannot converge.
+- **Major:** false visual event or identity; pause, suspension, reopen, pending window, ticket
+  transition, final-leg, or settle contract fails; active requirement or backed side is materially
+  misleading.
+- **Polish:** readable and recoverable but visually awkward, repetitive, low-salience, or below the
+  signed-off motion/UI quality bar.
+
+## 3. Evidence and reproduction rules
+
+- Deterministic scene-harness failure: minimum 3 reruns.
+- Timing/input/transition failure: minimum 10 attempts.
+- End-to-end seed failure: same seed 3 times plus a neighboring seed where practical.
+- Visual bug: screenshot. Motion, pause, or sequencing bug: short video.
+- Store evidence under `docs/tv-sweat-refinement/evidence/` as:
+
+```text
+TVS-###_<seed>_R<round>_T<ticket>_L<leg>_<market>_<short-description>.<png|mp4>
+```
+
+- Never infer a reproduction rate from code review.
+
+## 4. Source-confirmed audit candidates
+
+These rows seed investigation from staff-reviewed source evidence. They do not satisfy the
+bug-audit gate and must be reproduced or rejected at runtime. `NOT RUN` is intentional; no
+reproduction rate is inferred from source.
+
+Phase 1A source verdicts (full citations in
+[phase-1a-execution-report.md](phase-1a-execution-report.md) §2): all three are
+**CONFIRMED-BY-SOURCE**. Per PRD §6.1 a confirmed-by-source finding is still not a reproduced bug —
+seed/round/ticket/market stay `NOT CAPTURED — STATIC REVIEW`, reproduction stays `NOT RUN`, and status
+stays `HYPOTHESIS` until a runtime session actually reproduces it. Part 1 of the execution report
+establishes that this environment *can* run PlayMode tests headlessly (including `TheaterStageTests`),
+so the runtime reproduction these rows still need is achievable work for the next phase, not blocked
+work.
+
+| ID | Seed / round / ticket / market | Expected | Source-confirmed code path—not a runtime reproduction | Reproduction | Severity if reproduced | Regression proposal | Status |
+|---|---|---|---|---|---|---|---|
+| TVS-H01 | `NOT CAPTURED — STATIC REVIEW` | When the cash-out slot reads `MARKET SUSPENDED` or `UPDATING`, Interact is not reserved as a live cash-out action; the player retains the normal stand contract. | **CONFIRMED-BY-SOURCE.** `CashOutLive()` (`TvSweatScreen.cs:442-443`) returns true for any engine offer without consulting `_marketSuspended` or `_cashOutAnimation`, wired as `SitSpot.InteractStandSuppressed` (`TvSweatScreen.cs:414`; consumed at `SitSpot.cs:87-88`) to suppress standing. In the same frame, `TvSweatScreen.cs:1751-1752` calls `TryCashOut()`, which rejects the input at `TvSweatScreen.cs:1757-1758` (`_marketSuspended` / `_cashOutAnimation != null`). Net effect during suspended/updating: the Interact press neither cashes out nor stands the player up. | `NOT RUN` | Major | PlayMode: with an offer, assert the stand-suppression predicate is false while suspended/updating and true only after a stable reopen. | Static finding — runtime repro pending |
+| TVS-H02 | `NOT CAPTURED — STATIC REVIEW` | Standing freezes the exact visible frame throughout every sweat ceremony and transition. | **CONFIRMED-BY-SOURCE.** `TheaterStage.cs` is fully compliant — its entire `Update()` is gated by one line (`TheaterStage.cs:427`, `if (!_live \|\| _frozen) return;`), so every stage-internal timer is correctly paused. The violation is entirely in `TvSweatScreen.cs`: of 24 enumerated timers/coroutines/accumulators (full table in the execution report §2.2), 21 advance from raw `Time.deltaTime` with no `_seated` check while reachable during standing — `ScaledWait` (`TvSweatScreen.cs:1876-1881`), `WaitRealtime` (`TvSweatScreen.cs:1883-1887`), `AnimateCashOut` (`TvSweatScreen.cs:1451-1483`), `FloodPulse`/`GreenLegBeat`/`CashOutFloodBeat`, `TicketDeadBeat`'s dim ramp and holds, `WinBeat`'s tally, `WinConfetti`'s physics loop, and the four unconditional per-frame animators called every `Update()` regardless of seating: `ApplyEmission`, `AnimateBar`, `AnimateFlavorPunch`, `AnimateCashOutTaunt` (`TvSweatScreen.cs:1726-1729`). `SeatedHold` and `TickClock` are the correctly-gated counterexamples proving the pattern is known but inconsistently applied. | `NOT RUN` | Major | Parameterized PlayMode pause test for cash-out interpolation, static, flood, ticket-dead, win tally/confetti, ticket card, transition, and settle phases (one case per enumerated timer in the execution report table). | Static finding — runtime repro pending |
+| TVS-H03 | `NOT CAPTURED — STATIC REVIEW` | On an anytime-scorer payoff, the named player is the actor taking the visible final touch. | **CONFIRMED-BY-SOURCE — no binding exists in any path, for any market.** `PrepareScoringActor` is called only inside the non-final beat branch (`TvSweatScreen.cs:568,596`); the final path (`TvSweatScreen.cs:643-673`) never calls it. For `AnytimeScorer` legs specifically, `ScorerFor` returns `null` while `!_finalSequenceActive` (`TvSweatScreen.cs:1088`), so `PrepareScoringActor` also no-ops during non-final beats — `SetScoringActor` is never invoked at all for a scorer leg, at any point. Even when reached, `SetScoringActor` (`TheaterStage.cs:344-349`) only sets `dots[...].gameObject.name` — an unrendered Unity object identifier (no `Text`/`TMP` component exists on any dot) — with zero read-side connection to `EnterStep`/`CompleteStep`'s spatial-nearest-neighbor route/carrier selection (`TheaterStage.cs:479-580`). The displayed scorer name is a separate read of the locked `StatLine` scorers list (`TvSweatScreen.cs:1082-1094`), independent of which dot the stage animates. `TheaterChoreographer.cs` has no player-identity concept anywhere in its resolver surface. | `NOT RUN` | Major | Expose the final-touch actor ID in a TV-specific diagnostic snapshot; scorer win/loss tests assert the revealed identity and routed actor agree, and that a losing pick is never named as scorer. | Static finding — runtime repro pending |
+
+## 4A. §7.6 / §7.7 Phase 1A structural findings (Allen, 2026-07-24 additions)
+
+Not bug rows — structural findings requested by PRD §7.6/§7.7, by source analysis only. Full citations
+in [phase-1a-execution-report.md](phase-1a-execution-report.md) §3.
+
+| ID | Finding | Severity per PRD | Detail |
+|---|---|---|---|
+| TVS-S01 | §7.6 corner/card beneficiary is **not reliable** — it is the bettor's Over/Under pick (`MarketChoice.Over`/`Under`, the only choices these markets have per `engine/Domain.cs:21,75-79`), reused as if it were team attribution. `TheaterChoreographer.cs:59-72`'s `countHelps` (→ `SceneSpec.ForPicked`, documented at `ScenePlaybook.cs:49-52` as "the picked team") drives `CornerFor`/`CornerAgainst`/`Booking` attacking direction in `TheaterStage.cs:851-879`. The true per-team fact (`StagedCount.HomeDelta`/`AwayDelta`, sourced honestly from the locked stat line at `SweatPresentationModel.cs:373-386,440-443`) is computed but never read by the scene builder. | **Blocker for Phase 2**, per PRD §7.6's explicit escalation rule ("if the beneficiary is unreliable, that is a blocker, not a polish item") | Execution report §3.1 |
+| TVS-S02 | §7.7 backed-player locator has no structural foundation yet: no rendering surface on any stage actor (dots are plain `Image` circles, no `Text`/`TMP`, `TheaterStage.cs:220-221,1289`), no stable/continuous roster-to-dot identity (dot roles are reassigned per-step by spatial proximity, `TheaterStage.cs:479-524`), no jersey-number field on the engine `Player` model (`engine/Domain.cs:184-198` has only `Name`/`Role`/`ScoringWeight`, and `engine/**` is out of scope to modify), and the one existing identity-tagging mechanism (`SetScoringActor`) is the same mechanism TVS-H03 shows is unbound from the actual scoring touch — reusing it as-is for a continuous locator would risk a genuine outcome leak, not just a cosmetic mislabel. The backed player's *identity* (not outcome) is already available pre-final via `leg.Selection.PlayerIndex`/`Matchup.PlayerAt` (`engine/Domain.cs:82-83,283`), so no new plumbing is needed for that half. | Not a bug — structural inventory for the design track; flags that Phase 2 cannot build a continuous locator on `SetScoringActor` until TVS-H03 is resolved | Execution report §3.2 |
+
+## 5. Design and coverage debt—not bug rows
+
+| ID | Observation | Required follow-up |
+|---|---|---|
+| TVS-D01 | Current variants are primarily center/upper/lower lane changes over the same script. | Scene-plan grammar work after Phase 1 reliability gate. |
+| TVS-D02 | Existing “one scene per template” PlayMode coverage constructs variant `0` for 14 non-final templates; a separate test covers `LegFinalWon`, but there is no 16 × 3 enumeration. | Execute and automate all 16 × 3 current cells. |
+| TVS-D03 | Current TV flow tests cover two-ticket completion and event-cursor freeze, but not the full visual/input state matrix. | Add bounded diagnostics and parameterized transition tests after sign-off. |
+| TVS-D04 | `TheaterStage` uses a wall-clock-seeded local RNG for idle behavior and scene `ForwardRuns`; TV emission/static use `UnityEngine.Random`. | Keep engine outcomes isolated, replace every changed or newly relied-on discrete scene choice with named presentation hashes, and add an engine/global-RNG isolation assertion where practical. |
+
+## 6. Template × current-variant execution matrix
+
+Legend: `—` not run, `P` pass, `F` fail with linked bug ID.
+
+| Template | Variant 0 | Variant 1 | Variant 2 | Evidence / notes |
+|---|---:|---:|---:|---|
+| GoalFor | — | — | — | |
+| GoalAgainst | — | — | — | |
+| BreakawayFor | — | — | — | |
+| BreakawayAgainst | — | — | — | |
+| TerritoryFor | — | — | — | |
+| TerritoryAgainst | — | — | — | |
+| NearMissHope | — | — | — | |
+| NearMissScare | — | — | — | |
+| CalmPossession | — | — | — | |
+| LegFinalWon | — | — | — | |
+| LegFinalLost | — | — | — | |
+| Kickoff | — | — | — | |
+| Fallback | — | — | — | |
+| CornerFor | — | — | — | |
+| CornerAgainst | — | — | — | |
+| Booking | — | — | — | |
+
+Each cell verifies starts, completes, reveals exactly once, uses only allowed payoff callbacks,
+retains valid possession/actors, freezes/resumes, and leaves the next scene startable.
+
+## 7. Event and market audit matrix
+
+| Scenario | Seed | Round | Ticket / leg | Market | Result | Bug IDs / evidence |
+|---|---|---:|---|---|---|---|
+| Committing goal | — | — | — | Moneyline | Not run | |
+| Chalked goal | — | — | — | Moneyline | Not run | |
+| Breakaway | — | — | — | Moneyline | Not run | |
+| Calm possession | — | — | — | Any | Not run | |
+| Pressured possession / lead change | — | — | — | Any | Not run | |
+| Near miss: block | — | — | — | Any | Not run | |
+| Near miss: interception | — | — | — | Any | Not run | |
+| Near miss: keeper save | — | — | — | Any | Not run | |
+| Near miss: clearance | — | — | — | Any | Not run | |
+| Near miss: post | — | — | — | Any | Not run | |
+| Near miss: near wide | — | — | — | Any | Not run | |
+| Corner positive batch | — | — | — | Total corners | Not run | |
+| Booking positive batch | — | — | — | Total cards | Not run | |
+| Anytime scorer wins, correct identity | — | — | — | Anytime scorer | Not run | |
+| Anytime scorer loses, no false identity | — | — | — | Anytime scorer | Not run | |
+| Total goals Over / Under | — | — | — | Total goals | Not run | |
+| BTTS Yes / No | — | — | — | BTTS | Not run | |
+| Corners Over / Under | — | — | — | Total corners | Not run | |
+| Cards Over / Under | — | — | — | Total cards | Not run | |
+
+## 8. Playback and transition audit matrix
+
+| Scenario | Attempts required | Result | Bug IDs / evidence |
+|---|---:|---|---|
+| Cash-out open → suspended → reopened | 10 | Not run | |
+| Accept during legal open window | 10 | Not run | |
+| Reject acceptance while suspended | 10 | Not run | |
+| Reject acceptance while price animates | 10 | Not run | |
+| Mulligan → Void → ticket continues | 10 | Not run | |
+| Whistle → Won continuation | 10 | Not run | |
+| Whistle → Lost continuation | 10 | Not run | |
+| Decline pending loss | 10 | Not run | |
+| Stand/resume ordinary scene | 10 | Not run | |
+| Stand/resume dangerous scene before payoff | 10 | Not run | |
+| Stand/resume dangerous scene after payoff | 10 | Not run | |
+| Stand/resume frozen pending shot | 10 | Not run | |
+| Stand/resume GREEN/DEAD/VOID ceremony | 10 | Not run | |
+| Stand/resume ticket card and ticket transition | 10 | Not run | |
+| Stand/resume final scene and settle | 10 | Not run | |
+| Goal endpoint convergence | 3 per seed | Not run | |
+| Corner endpoint convergence | 3 per seed | Not run | |
+| Card endpoint convergence | 3 per seed | Not run | |
+| Two-ticket transition: no stale chrome/offer/tape | 10 | Not run | |
+| Final leg → ticket settle ordering | 10 | Not run | |
+| Last ticket → round settle → next phase | 10 | Not run | |
+
+## 4B. Phase 1B — fixes for TVS-H01 and TVS-H02
+
+**Executed by:** Sonnet 5 execution agent (Phase 1B dispatch)
+**Branch:** `slice/tv-sweat-refinement`
+**Baseline commit fixed against:** `d665438` (working tree not committed by this agent, per dispatch
+instruction "Do not commit.")
+**Files touched:** `unity/SBR/Assets/SBR/Runtime/TvSweatScreen.cs`,
+`unity/SBR/Assets/Tests/PlayMode/TvSweatScreenTests.cs` — no other file.
+**Scope:** TVS-H01 and TVS-H02 only. TVS-H03 and TVS-S01 are explicitly **not** touched in this
+pass (held pending the §7.7 locator design decision, per dispatch instruction) and remain
+`HYPOTHESIS` at their Phase 1A source verdicts above.
+
+Evidence standard follows §6.1. Both defects are pause/resume/input/state-machine classes, so per
+§6.1.1 pass/fail PlayMode evidence is sufficient — no screenshot/video is claimed or required.
+
+### TVS-H01 — cash-out input reservation vs. legal acceptance — FIXED
+
+| Field | Content |
+|---|---|
+| ID | TVS-H01 |
+| Build | `d665438` + this working tree (uncommitted) |
+| Seed / Round / Ticket-leg / Market | `NOT CAPTURED — PLAYMODE INTEGRATION TEST, NOT A SEEDED MANUAL SWEAT` (the regression tests below drive the real engine/session/theater stack through `RunDirector`/`DemoTicketPolicy` inside the `Room` scene, but do not pin a specific seed — the defect is a state-machine predicate mismatch, reproducible at any seed that reaches a suspended/animating/open cash-out window) |
+| Scene | N/A — input/state-machine defect, not scene-specific |
+| Playback state | Suspended, price-animating (updating), and open/legal — all three cash-out states named in VISUAL-DESIGN.md §8.5 |
+| Expected | Suspended/updating: Interact follows the normal stand contract, never swallowed as a cash-out attempt. Open/legal: Interact is reserved for cash-out acceptance and does not stand the player (§8.5). |
+| Actual (pre-fix, per Phase 1A source verdict) | `CashOutLive()` ignored `_marketSuspended`/`_cashOutAnimation`; while either was true and an offer existed, the stand-suppression hook still reported "reserved," so `SitSpot` refused to stand the player, while `TryCashOut()` independently bailed on the same guards — net effect, the press did neither. |
+| Reproduction | Pre-fix: confirmed by source only (Phase 1A), `NOT RUN` at runtime. Post-fix: reproduced by real PlayMode execution, `0 failures / 3 attempts` (one PlayMode run covering all three states; see regression tests below) — real suite output pasted in §4B.3. |
+| Evidence | Pass/fail PlayMode evidence (§6.1.1 — sufficient for this defect class); no screenshot/video applicable |
+| Severity | Major (as scoped in the Phase 1A row above) |
+| Regression | `Interact_DuringSuspendedMarket_StandsAndDoesNotCashOut`, `Interact_DuringCashOutPriceAnimation_StandsAndDoesNotCashOut`, `Interact_DuringLegalOpenOffer_CashesOutAndDoesNotStand` (`TvSweatScreenTests.cs`) |
+| Owner / status | TV execution agent / **FIXED, verified** |
+| Fix | Extracted one shared predicate, `TvSweatScreen.CanAcceptCashOutNow()`, consulted by both `CashOutLive()` (bound to `SitSpot.InteractStandSuppressed`) and `TryCashOut()`. It checks seated, session live, ≥1 event revealed, **not** suspended, **not** mid-tween, and an offer is quoted — the exact union VISUAL-DESIGN.md §8.5 names across Open/Updating/Suspended. `CashOutLive()`'s method identity is unchanged, so the `OnDisable` unbind delegate-equality check at the old line 423 still matches. |
+| Verification | 3 new PlayMode tests pass (below); full EditMode/PlayMode/engine suites remain green (§4B.3). |
+
+### TVS-H02 — literal-pause coverage across ceremony/cash-out/effect/tally/transition timers — FIXED
+
+| Field | Content |
+|---|---|
+| ID | TVS-H02 |
+| Build | `d665438` + this working tree (uncommitted) |
+| Seed / Round / Ticket-leg / Market | `NOT CAPTURED — PLAYMODE INTEGRATION TEST, NOT A SEEDED MANUAL SWEAT` (see TVS-H01 row; the four regression tests below each force-stand at a deterministically reached ceremony/effect state rather than pinning a seed) |
+| Scene | N/A for 3 of 4 regression cases (ancillary UI timers, not scene-specific); the fourth (`Standing_Freezes_SettlementHold`) covers the cash-out settlement ceremony, also not scene-specific |
+| Playback state | Continuous idle animation, cash-out price tween, cash-out resolution flood/tally, and the post-cash-out settlement hold — 4 of the 4 mechanism classes identified in `phase-1a-execution-report.md` §2.2's 24-row table |
+| Expected | PRD §4.4: standing freezes the exact presentation state with no hidden catch-up; sitting resumes from that state. |
+| Actual (pre-fix, per Phase 1A source verdict) | 21 of 24 enumerated timers/coroutines/animators advanced from raw `Time.deltaTime`/`Time.time` with no `_seated` check, including four animators called unconditionally every `Update()` frame (`ApplyEmission`, `AnimateBar`, `AnimateFlavorPunch`, `AnimateCashOutTaunt`). `TheaterStage.cs` was already fully compliant via its single `_frozen` gate. |
+| Reproduction | Pre-fix: confirmed by source only (Phase 1A), `NOT RUN` at runtime. Post-fix: reproduced by real PlayMode execution, `0 failures / 4 attempts` (4 regression tests, each independently forcing a stand mid-timer and asserting a frozen value across a real wall-clock window, then a resume with no jump) — real suite output pasted in §4B.3. |
+| Evidence | Pass/fail PlayMode evidence (§6.1.1 — sufficient for this defect class); no screenshot/video applicable |
+| Severity | Major (as scoped in the Phase 1A row above) |
+| Regression | `Standing_Freezes_ContinuousPerFrameAnimators_NoResumeCatchUp`, `Standing_Freezes_CashOutTween_NoResumeCatchUp`, `Standing_Freezes_ResolutionEffectFlood_NoResumeCatchUp`, `Standing_Freezes_SettlementHold_NoResumeCatchUp` (`TvSweatScreenTests.cs`) |
+| Owner / status | TV execution agent / **FIXED, verified** |
+| Fix | One gated delta-time primitive instead of 21 scattered `if (!_seated) return;` lines: `SeatedDeltaTime` (`_seated ? Time.deltaTime : 0f`) and a companion `_seatedClock` accumulator (a frozen substitute for `Time.time`, advanced once per frame in `Update()` by `SeatedDeltaTime`). Every one of the 15 raw `Time.deltaTime`/`Time.time` reads Phase 1A's table flagged now reads through this gate: `AnimateCashOut`, `TicketDeadBeat`'s dim ramp, `WinBeat`'s tally, `WinConfetti`'s physics loop, `FloodPulse` (shared by `GreenLegBeat`/`CashOutFloodBeat`/`WinBeat`'s gold flood), `ApplyEmission`, `AnimateBar`, `AnimateFlavorPunch`, `AnimateCashOutTaunt`, and the two shared wait primitives `ScaledWait`/`WaitRealtime` (which alone cover 8 of the 21 flagged rows: `DeadLegBeat`'s red-line hold and static-regen crawl, `TicketDeadBeat`'s silence/consolation holds, `WinBeat`'s post-tally hold, `SettlementBeat`'s cash-out-flood hold, `SettleCardBeat`'s hold, and `PendingWindowBeat`'s post-decision hold). Fixing the primitive fixed every call site at once, rather than requiring 21 separate edits. |
+| Unchanged, deliberately not gated | `TheaterStage.SetFrozen(!_seated)` (the mechanism that IS the stage's own freeze — must run every frame to reflect the current seated state); `RefreshChrome()` (system chrome — round/bank/pay/comps/seed — lowest priority per PRD §8.1, not part of the §4.4 freeze list, and must keep reading current `Run` state even while standing so it isn't stale when the player returns to the couch without ever sitting on the TV's own timers); `TvAudioDirector` tension/duck calls (file is out-of-scope/forbidden per §11, and its own dread/duck logic already reacts to `!_seated` on its own terms); `TickClock`, `SeatedHold`, `WaitSceneDone` (rows 1–3 — already correctly gated before this fix, left untouched to keep the diff minimal and risk-free). |
+| Verification | 4 new PlayMode tests pass (below); full EditMode/PlayMode/engine suites remain green (§4B.3); behavior/pacing while seated is provably unchanged because `SeatedDeltaTime` returns the real `Time.deltaTime` whenever `_seated` is true — every gated call site is byte-identical to its pre-fix arithmetic in that case. |
+
+### 4B.3 — Real suite results (Phase 1B fixing commit / working tree)
+
+```
+dotnet test engine.tests
+Passed!  - Failed:     0, Passed:   160, Skipped:     0, Total:   160, Duration: 660 ms - SBR.Engine.Tests.dll (net10.0)
+```
+
+```
+Unity.exe -batchmode -nographics -projectPath <repo>\unity\SBR -runTests -testPlatform EditMode ...
+testcasecount="73" result="Passed" total="73" passed="73" failed="0" inconclusive="0" skipped="0"
+```
+
+```
+Unity.exe -batchmode -nographics -projectPath <repo>\unity\SBR -runTests -testPlatform PlayMode ...
+testcasecount="27" result="Passed" total="27" passed="27" failed="0" inconclusive="0" skipped="0"
+```
+
+All 20 pre-existing PlayMode cases from Phase 1A's baseline still pass unchanged, plus the 7 new
+TVS-H01/H02 regression cases (20 + 7 = 27):
+
+```
+Passed  SBR.Tests.PlayMode.TvSweatScreenTests.Interact_DuringCashOutPriceAnimation_StandsAndDoesNotCashOut
+Passed  SBR.Tests.PlayMode.TvSweatScreenTests.Interact_DuringLegalOpenOffer_CashesOutAndDoesNotStand
+Passed  SBR.Tests.PlayMode.TvSweatScreenTests.Interact_DuringSuspendedMarket_StandsAndDoesNotCashOut
+Passed  SBR.Tests.PlayMode.TvSweatScreenTests.Standing_Freezes_CashOutTween_NoResumeCatchUp
+Passed  SBR.Tests.PlayMode.TvSweatScreenTests.Standing_Freezes_ContinuousPerFrameAnimators_NoResumeCatchUp
+Passed  SBR.Tests.PlayMode.TvSweatScreenTests.Standing_Freezes_ResolutionEffectFlood_NoResumeCatchUp
+Passed  SBR.Tests.PlayMode.TvSweatScreenTests.Standing_Freezes_SettlementHold_NoResumeCatchUp
+```
+
+Build side-effect hazard (§6.1.1) reproduced again as expected: `SBR.Engine.dll`,
+`ProjectSettings/EditorBuildSettings.asset`, and `ProjectSettings/ProjectSettings.asset` were each
+touched by the three invocations above and reverted with `git checkout --` immediately after. The
+working tree after this pass contains only `TvSweatScreen.cs` and `TvSweatScreenTests.cs` as
+intended changes, plus pre-existing unrelated working-tree state from concurrent tracks (the visual
+design track's `DESIGN.md`/`PRODUCT.md`/`design/08-art-direction.md`) that this agent did not create
+or modify.
+
+## 4C. TVS-S01 fix — corner/card team attribution read from the staged fact
+
+**Executed by:** Sonnet 5 execution agent (TVS-S01 dispatch, following the Phase 1B pass above)
+**Branch:** `slice/tv-sweat-refinement`
+**Baseline commit fixed against:** `d665438` + the Phase 1B working tree in §4B (working tree not
+committed by this agent, per dispatch instruction "Do not commit.")
+**Files touched:** `unity/SBR/Assets/SBR/Runtime/ScenePlaybook.cs`, `TheaterChoreographer.cs`,
+`TheaterStage.cs`, `TvSweatScreen.cs` (two-line surgical change only — did not touch, revert, or
+disturb the Phase 1B `CanAcceptCashOutNow`/`SeatedDeltaTime`/`_seatedClock` work in that file),
+`unity/SBR/Assets/Tests/EditMode/ScoreLedgerTests.cs`. No other file. `engine/**`, `RunDirector.cs`,
+`TvAudioDirector.cs`, `Room.unity`, `GrayboxRoomBuilder.cs`, and every Laptop/SureThing file were not
+touched, per the dispatch's file allowlist.
+**Scope:** TVS-S01 only. TVS-H03 (scorer identity binding) remains deliberately untouched, held for
+a later dispatch per the dispatch instruction.
+
+### TVS-S01 — corner and card team attribution — FIXED
+
+| Field | Content |
+|---|---|
+| ID | TVS-S01 |
+| Build | `d665438` + this working tree (uncommitted) |
+| Seed / Round / Ticket-leg / Market | `NOT CAPTURED — EDITMODE/PLAYMODE INTEGRATION TESTS, NOT A SEEDED MANUAL SWEAT` (the regression tests below drive `TheaterChoreographer`/`CountLedger` directly, several through a real engine `Run`/`Ticket`/`LockRound()` stack, without pinning one seed — the defect is a data/routing bug reproducible for any corners/cards leg regardless of seed) |
+| Scene | `CornerFor` / `CornerAgainst` / `Booking` (templates #16/#17/#18) |
+| Playback state | Open beat scene (non-final) and final-wrap remaining-batch scenes (`AppendFinalCounts`) — both paths were affected |
+| Expected | PRD §7.6: the scene shows which team actually wins the corner or commits the foul, read from the staged fact's beneficiary; the planner may not choose it from the bet. |
+| Actual (pre-fix, per TVS-S01 structural finding) | `TheaterChoreographer.cs:141` (`ResolveFinal`) and the (then-)line-59 non-final branch, plus the independent copy at `TvSweatScreen.cs:658`/685, all computed `bool countForPicked = leg.Selection.Choice == MarketChoice.Over` and used it as team attribution. `CountLedger.StageBeat`/`PlanFinal` accepted and stored this bet-derived flag on `StagedCount.ForPicked`, which `TheaterStage.cs:1074` and the `Booking` case (`TheaterStage.cs:871-876`) consumed to pick the attacking side. The engine-true per-team fact, `StagedCount.HomeDelta`/`AwayDelta`, was computed correctly by `CountLedger.PlanForBeats`/`Distribute` from the locked stat line but never read for this purpose. Net effect: an Over bettor always saw their team win every corner/booking; an Under bettor never did — regardless of which team the engine actually credited. |
+| Reproduction | Pre-fix: confirmed by source only (Phase 1A, TVS-S01 finding), `NOT RUN` at runtime — this dispatch received it pre-reproduced/pre-verified from source per its own instructions and fixed it directly. Post-fix: reproduced by real EditMode/PlayMode execution, `0 failures` across the 6 regression cases below plus the full existing suite — real suite output pasted in §4C.3. |
+| Evidence | Pass/fail EditMode/PlayMode evidence for the DATA/ROUTING contract (§6.1.1 — sufficient to prove the correct team is selected and reaches the stage's routing input). **Per §6.1.1, attribution is explicitly a "what is drawn" defect class: pass/fail is NOT sufficient to close the visual claim, and this environment cannot rasterize a frame (`-nographics`).** The visible on-screen result — that the dots and the delivery actually render on the credited side at couch distance — is `PENDING-VISUAL-EVIDENCE` and is not claimed here. |
+| Severity | Blocker for Phase 2, as scoped by the original TVS-S01 finding (PRD §7.6's explicit escalation rule) |
+| Regression | `Count_scene_direction_is_the_selections_sense_never_the_beat_direction` (restored, see §4C.4), `Corner_credited_home_routes_to_home_regardless_of_over_under_pick`, `Corner_credited_away_routes_to_away_regardless_of_over_under_pick`, `Corner_mood_follows_the_bet_and_routing_follows_the_team_independently`, `Booking_beneficiary_is_read_from_the_staged_fact_on_both_over_and_under_legs`, `Goal_attribution_on_a_moneyline_leg_is_unchanged_by_the_count_attribution_fix`, `Concurrent_corners_and_cards_legs_on_one_match_each_attribute_independently`, `StagedCount_beneficiary_comes_from_deltas_never_a_flag_and_ties_break_deterministically` (all `ScoreLedgerTests.cs`, EditMode; see §4C.4 for the naming/assertion corrections a reviewer pass required) |
+| Owner / status | TV execution agent / **FIXED, data/routing-verified; visual claim PENDING-VISUAL-EVIDENCE** |
+
+### Design decision (final, post-review): three separable concepts, not two
+
+The dispatch required resolving `ForPicked`'s incoherence for totals markets (no picked team exists
+for corners/cards) before fixing the value it carried. **The model below is the final, reviewer-
+accepted version — see §4C.4 for the intermediate version that shipped first and the regression it
+introduced.** The chosen model separates three concepts, not two:
+
+1. **Routing — which team physically wins the corner or commits the foul.** Absolute match fact.
+   `CountLedger.StagedCount.BeneficiaryIsHome` (`SweatPresentationModel.cs`) is the authoritative
+   engine-true value, derived only from `HomeDelta`/`AwayDelta` — never from `leg.Selection.Choice`.
+   `SceneSpec.CountBeneficiaryIsHome` (`ScenePlaybook.cs`) mirrors it up to the scene-spec layer,
+   null for every non-count scene. The stage reads this field EXCLUSIVELY for routing on both count
+   templates: `Booking`'s single-template `atkPicked`, and Corner's For/Against `Mirror()` decision
+   (`TheaterStage.cs`). Neither ever reads `ForPicked`/`StagedCount.ForPicked` for routing — that old
+   bet-derived `StagedCount.ForPicked` field no longer exists at all, so there is nothing left to
+   accidentally fall back to.
+2. **Mood — whether the event helps or hurts the bettor.** Derived from the selection's Over/Under
+   sense (`leg.Selection.Choice == MarketChoice.Over`, F_0.4.0 P3 r2 — "a corner always bites an
+   Under bettor... beat direction must not leak into the count scene's mood"). This chooses the
+   `CornerFor`/`CornerAgainst` TEMPLATE for corners, and rides along on `SceneSpec.ForPicked` for
+   `Booking` (which has no For/Against template split to carry mood instead — not currently read by
+   any renderer there, reserved for a future mood-differentiated Booking treatment rather than
+   silently dropped). **This must never drive routing, in either direction** — see §4C.4.
+3. **`ForPicked` on the goal/moneyline path** — whether the beneficiary is the picked TEAM, coherent
+   only where the pick IS a team (`ScoreLedger.StagedGoal.ForPicked`/`ScoredByPicked`,
+   `SweatPresentationModel.cs:127-129`, `TvSweatScreen.cs:595,612`/622,639). Untouched by this fix.
+
+- **Why not a single field for routing+mood?** Because "which team" (absolute, home/away) and
+  "does this help my bet" (selection-relative) are different concepts that only numerically
+  coincide by an implementation accident: `SweatFlavor.PickedHomeForPresentation` always anchors
+  home as "picked" for any non-moneyline leg, so `_homeAttacksRight` is always `true` for a
+  corners/cards leg. Driving BOTH concepts from one field — either routing from the bet (the
+  original TVS-S01 bug) or mood from the team (the regression an earlier revision of this fix
+  introduced, caught by a reviewer pass, §4C.4) — is the same class of bug in either direction.
+  Two separate, honestly-named fields make each caller's contract explicit.
+- **Tie-break, not a coin flip:** a batch that credits both sides in the same beat
+  (`HomeDelta == AwayDelta > 0`) has no factual winner. The tie-break is deterministic from the beat
+  index (`CountLedger`'s internal beat counter — the "event step" component of PRD §4.3's
+  presentation key), never `RngHub`, `UnityEngine.Random`, or wall clock. Pinned by
+  `StagedCount_beneficiary_comes_from_deltas_never_a_flag_and_ties_break_deterministically`.
+- **No reach-back to "the active leg":** `CountLedger`/`StagedCount` are already one instance per
+  leg (`TvSweatScreen._countLedger`, rebuilt per `BeginLeg`); attribution is computed from that
+  instance's own `HomeDelta`/`AwayDelta` for the batch just staged, never from any shared/global
+  "current leg" state. `Concurrent_corners_and_cards_legs_on_one_match_each_attribute_independently`
+  drives two legs' `CountLedger`s on the same locked match interleaved and out of order and asserts
+  each attributes only from its own batch.
+
+### 4C.1 — Goal attribution unchanged
+
+`ScoreLedger`, `StagedGoal`, and every goal-path read of `ForPicked` were not modified.
+`Goal_attribution_on_a_moneyline_leg_is_unchanged_by_the_count_attribution_fix` pins
+`GoalFor`/`GoalAgainst` template selection and `StagedGoal.ForPicked` for a moneyline leg, and
+additionally asserts `SceneSpec.CountBeneficiaryIsHome` is null on a goal scene (proving the new
+field does not leak into paths where it does not apply). Every pre-existing `ScoreLedgerTests.cs`
+and `TheaterChoreographerTests.cs` goal-path test (attribution, clamp, reconciliation, final
+staging, duration acceptance) passed unchanged in the same EditMode run — see §4C.3.
+
+### 4C.2 — Engine/RNG isolation
+
+No file under `engine/` was modified. `dotnet test engine.tests` remains 160/160 (§4C.3), the same
+count as the Phase 1A/1B baseline, confirming the engine golden pins are byte-identical. No
+`RngHub`, `UnityEngine.Random`, or wall-clock access was introduced; the only new discrete choice
+(the beneficiary tie-break) derives from the existing beat-index component of the PRD §4.3
+presentation key, per the design decision above.
+
+### 4C.4 — Reviewer correction: mood and routing re-conflated in the opposite direction
+
+The first version of this fix shipped with a real regression, caught by staff review before
+sign-off — recorded here rather than silently folded into §4C's narrative above, per the "a test
+that fails after a change is evidence, not an obstacle" principle.
+
+**What shipped first:** `TheaterChoreographer.cs`'s count branch computed
+`countTemplate = beneficiaryIsHome ? CornerFor : CornerAgainst` — i.e. it drove the
+`CornerFor`/`CornerAgainst` TEMPLATE from the team fact instead of the bet. `Booking`'s routing fix
+was correct in isolation, but Corner's routing (`TheaterStage.cs`'s `Mirror()` call) still keyed off
+`spec.Template`, which was now itself team-driven — so routing was *coincidentally* still correct,
+while the template's MOOD meaning (hope for Over, dread for Under — F_0.4.0 P3 r2) was silently
+replaced by team identity. The regression test guarding exactly this,
+`Count_scene_direction_is_the_selections_sense_never_the_beat_direction`, was retired instead of
+consulted — the ledger's original §4C draft removed it as "obsolete" without reviewer sign-off.
+
+**Reviewer catch:** `CornerFor`/`CornerAgainst` means "for/against the BETTOR" (hope/dread), not
+"for/against the home team" — a third, independent concept from routing (see the three-concept
+model above). Fixing routing by driving it through the template reintroduces the ORIGINAL TVS-S01
+class of bug for Corner specifically the moment the template is restored to bet-derived, unless
+routing is separately keyed off `CountBeneficiaryIsHome`.
+
+**Fix:**
+- `TheaterChoreographer.cs`: restored `countTemplate = countHelps ? CornerFor : CornerAgainst`
+  (`countHelps = leg.Selection.Choice == MarketChoice.Over`) and `SceneSpec.ForPicked = countHelps`
+  — both exactly as before the whole TVS-S01 pass, since neither was ever the actual defect.
+  `count.Value.BeneficiaryIsHome` still flows into `SceneSpec.CountBeneficiaryIsHome`, unchanged.
+- `TheaterStage.cs`: Corner's `Mirror()` decision changed from `spec.Template == CornerAgainst` to
+  `!(spec.CountBeneficiaryIsHome ?? true)` — routing now reads the team fact directly, completely
+  decoupled from which template (mood) was chosen. This was "the real work remaining" the reviewer
+  flagged, and was the actual gap: `AppendFinalCounts` and `Booking` already routed off
+  `BeneficiaryIsHome` correctly; only the non-final Corner beat path still inferred routing from the
+  template.
+- `Count_scene_direction_is_the_selections_sense_never_the_beat_direction` restored **unmodified**.
+- Two of the six original regression tests (`Corner_credited_home/away_attributes_..._on_both_...`)
+  had asserted `spec.Template` follows the TEAM across both Over and Under picks — itself the wrong
+  invariant now that mood correctly follows the bet again. Renamed to
+  `Corner_credited_home/away_routes_to_home/away_regardless_of_over_under_pick` and narrowed to
+  assert only routing (`BeneficiaryIsHome`/`CountBeneficiaryIsHome`), never `spec.Template`. The
+  `Concurrent_...` test's corner-side assertions had the same defect (asserting Template from the
+  per-beat team fact on a leg that is a FIXED Over pick throughout) and were corrected the same way:
+  Template is now asserted as the constant `CornerFor` (the leg's fixed mood), and routing is
+  asserted separately per beat from `BeneficiaryIsHome`.
+- New test added per the dispatch: `Corner_mood_follows_the_bet_and_routing_follows_the_team_independently`.
+  The reviewer's literal example (Under leg, away team wins) does not by itself distinguish this fix
+  from either regression direction — `Under` and `away` both evaluate `false`, so a template-driven-
+  by-team bug and a routing-driven-by-bet bug both reproduce the SAME template/routing values for
+  that one case (worked through in the test's own comment). The test therefore covers all four
+  `(over, homeWins)` combinations, including the reviewer's literal case as one of the four; the two
+  *disagreeing* combinations (Under+home, Over+away) are what actually pin mood and routing apart.
+- `ScenePlaybook.cs`'s `ForPicked`/`CountBeneficiaryIsHome` doc comments, and
+  `TheaterChoreographer.cs`'s class-level and inline comments, were corrected to state the three-
+  concept model accurately (the first draft's comments asserted "Corner attribution is additionally
+  encoded via the CornerFor/CornerAgainst template choice" — exactly the false claim being fixed).
+
+**Update — measured, root-caused, and fixed (later dispatch, same branch, HEAD `3d1b138`):** the
+flake above was not noise. A dedicated dispatch measured it properly per PRD §6.1 (≥10 full-suite
+attempts, `failures/attempts`, real assertion text on every failure) and found a **real, reproducible
+product race** in `TvSweatScreen.cs`, not a test-harness or cross-test-pollution defect.
+
+*Pre-fix baseline* (HEAD `3d1b138`, source unmodified, reverified with `git diff` after every run,
+forbidden files reverted every run): **6 failures / 10 full-suite attempts.** 5 of the 6 were the
+identical signature originally recorded here — `TVS-H02: cash-out amount kept ticking while
+standing`, expected `"CASH OUT $NN   [E]"`, actual `"MARKET SUSPENDED"` (dollar amount varies run to
+run, as expected from unseeded sim state; the signature does not). The 6th failure was a distinct
+message — `never observed the cash-out amount mid-tween (waited 20s)` — on a run whose total suite
+duration was 76s against a ~35s norm; see the environmental-flake note below, this is not the same
+defect. This is a materially higher rate than the `2/2` originally observed, not lower — the earlier
+`0 failures / 5 attempts` isolation/rerun finding undersold it.
+
+*Root cause, with `file:line` evidence:* confirmed directly by instrumenting `TvSweatScreen.cs` with
+temporary frame/timestamp logging (`Debug.Log` at `SetSeated`, `SuspendMarket`, `TheaterBeat` entry,
+`SetCashOutOffer`), reproducing the failure, then removing the instrumentation. The captured log for
+one repro:
+```
+frame=5263  SetCashOutOffer(104.29)   seated=True    <- FinalSlam's ReopenMarket starts a new tween
+frame=5263  SetSeated(False)          cashOutText="CASH OUT $101   [E]"   <- test stands
+frame=5264  TheaterBeat ENTER         seated=False   eventsEmitted=3
+frame=5264  SuspendMarket ENTER       seated=False   eventsEmitted=3
+```
+`PlaySweat`'s loop (`TvSweatScreen.cs`, `while (_session != null && !_session.IsComplete) { yield
+return WaitSeated(); ... yield return TheaterBeat(evt); }`) gates entry to each beat with
+`WaitSeated()`, but that check passed *while still seated* (frame 5263). `TheaterBeat(DramaEvent evt)`
+(`TvSweatScreen.cs`, then starting immediately with `Leg leg = _ticket.Legs[evt.LegIndex];` and
+unconditionally calling `SuspendMarket()`/`RevealBeatChrome()` for the new beat) did not get its first
+step from Unity's coroutine scheduler until the *next* frame (5264) — by which point `ForceSeated`
+had already run, `_seated` was already `false`, and nothing between the `WaitSeated()` pass and
+`SuspendMarket()`'s call re-checked it. The gap between "passed the seated gate" and "committed the
+beat's side effects" is exactly one scheduling frame, and standing in that window lets the new beat
+announce itself (overwriting the frozen cash-out text) after the player has already stood. This is
+candidate 1 from the dispatch brief — a real race in the Phase 1B freeze implementation — confirmed
+by direct evidence, not inferred. (An earlier hypothesis in this same investigation — that
+`TvSweatScreen.Update()` and `TheaterStage.Update()` have no guaranteed relative order — led to a
+first fix, synchronizing `_stage.SetFrozen()` immediately on every `_seated` change instead of waiting
+for `Update()`. That fix was applied and re-measured *first*, alone, and did **not** eliminate the
+failure — the identical `MARKET SUSPENDED` signature recurred on a normal-speed run. It is kept as a
+harmless, independently-defensible hardening of the freeze-propagation path, but it was not the actual
+defect; the instrumentation above found the real one afterward.)
+
+**Fix** (`TvSweatScreen.cs`): added `while (!_seated) yield return null;` as the first statement of
+`TheaterBeat`, re-verifying seated status at the last possible moment before any beat-committing side
+effect, regardless of which frame Unity schedules the coroutine's first step. Also kept the `SetSeated`
+helper (single assignment point for `_seated`, propagating `_stage.SetFrozen()` synchronously) as a
+secondary hardening.
+
+*Post-fix re-measurement* (same protocol, 10 more full-suite attempts): **0 failures / 10 attempts**
+with the `MARKET SUSPENDED` signature — it did not recur once. 2 of the 10 runs failed with the
+*different* `never observed the cash-out amount mid-tween (waited 20s)` message (one on this test, one
+on `Interact_DuringCashOutPriceAnimation_StandsAndDoesNotCashOut`), both on runs whose total suite
+duration was 52-54s against the ~35s norm — the same environmental pattern seen once in the pre-fix
+baseline. This is a distinct, pre-existing issue (present both before and after this fix, on more than
+one test, via a different assertion) — a fixed 20s real-time wait for a precondition occasionally not
+being met when the whole suite runs unusually slowly — not the race this dispatch was scoped to fix,
+and not touched here; flagging for whoever owns general suite timing robustness next.
+
+This test is Phase 1B's own (`TvSweatScreenTests.cs`); the fix lives entirely in `TvSweatScreen.cs`,
+the file this dispatch was scoped to. Build side-effect files (`SBR.Engine.dll`,
+`ProjectSettings/EditorBuildSettings.asset`, `ProjectSettings/ProjectSettings.asset`) were reverted
+with `git checkout --` after every one of the ~30 Unity invocations in this investigation; `git status`
+throughout showed only `TvSweatScreen.cs` plus pre-existing, unrelated working-tree state from other
+tracks (`DESIGN.md`, `PRODUCT.md`, `docs/tv-sweat-refinement/PRD.md`, `brand-book-prompts.md`,
+`.impeccable/`, `unified-grade-spec.md`) that this agent did not create or modify.
+
+### 4C.5 — Real suite results (final, post-review)
+
+```
+dotnet test engine.tests
+Passed!  - Failed:     0, Passed:   160, Skipped:     0, Total:   160, Duration: 233 ms - SBR.Engine.Tests.dll (net10.0)
+```
+
+```
+Unity.exe -batchmode -nographics -projectPath <repo>\unity\SBR -runTests -testPlatform EditMode ...
+<test-run id="2" testcasecount="80" result="Passed" total="80" passed="80" failed="0" inconclusive="0" skipped="0" .../>
+```
+
+80 EditMode cases = the 73 baseline pinned in §6.1.1, plus the restored
+`Count_scene_direction_is_the_selections_sense_never_the_beat_direction` (+1), plus the seven TVS-S01
+regression cases below (73 + 1 + 7 = 80; two of the seven are renamed/narrowed versions of the
+original six, one is new per §4C.4):
+
+```
+Passed  SBR.Tests.EditMode.ScoreLedgerTests.Count_scene_direction_is_the_selections_sense_never_the_beat_direction
+Passed  SBR.Tests.EditMode.ScoreLedgerTests.StagedCount_beneficiary_comes_from_deltas_never_a_flag_and_ties_break_deterministically
+Passed  SBR.Tests.EditMode.ScoreLedgerTests.Corner_credited_home_routes_to_home_regardless_of_over_under_pick
+Passed  SBR.Tests.EditMode.ScoreLedgerTests.Corner_credited_away_routes_to_away_regardless_of_over_under_pick
+Passed  SBR.Tests.EditMode.ScoreLedgerTests.Corner_mood_follows_the_bet_and_routing_follows_the_team_independently
+Passed  SBR.Tests.EditMode.ScoreLedgerTests.Booking_beneficiary_is_read_from_the_staged_fact_on_both_over_and_under_legs
+Passed  SBR.Tests.EditMode.ScoreLedgerTests.Goal_attribution_on_a_moneyline_leg_is_unchanged_by_the_count_attribution_fix
+Passed  SBR.Tests.EditMode.ScoreLedgerTests.Concurrent_corners_and_cards_legs_on_one_match_each_attribute_independently
+```
+
+(An earlier EditMode attempt, before this correction, used a `TotalCards` line of `2.5`, not in the
+default `RunConfig.CardLines` offer set `{3.5, 4.5, 5.5}` — `Matchup.Odds` correctly threw
+`ArgumentException: Market selection is not offered: TotalCards`. Fixed by using `3.5`. Reported here
+rather than silently discarded, per the "never invent a test result" rule.)
+
+```
+Unity.exe -batchmode -nographics -projectPath <repo>\unity\SBR -runTests -testPlatform PlayMode ...
+Run 1: <test-run testcasecount="27" result="Failed(Child)" total="27" passed="26" failed="1" .../>  (Standing_Freezes_CashOutTween_NoResumeCatchUp — see §4C.4 flake investigation)
+Run 2: <test-run testcasecount="27" result="Failed(Child)" total="27" passed="26" failed="1" .../>  (same test, same failure)
+Standing_Freezes_CashOutTween_NoResumeCatchUp isolated via -testFilter, 4 consecutive runs: Passed, Passed, Passed, Passed
+Run 3 (full suite): <test-run id="2" testcasecount="27" result="Passed" total="27" passed="27" failed="0" inconclusive="0" skipped="0" .../>
+```
+
+All 27 PlayMode cases from the Phase 1B baseline (§4B.3) pass, including
+`TheaterStageTests.One_scene_per_template_plays_to_completion_and_reveals_once` (exercises
+`CornerFor`/`CornerAgainst`/`Booking` playback end-to-end through the modified `TheaterStage.cs`
+switch cases, including the corrected Corner `Mirror()`-routing logic) and every Phase 1B
+`TvSweatScreenTests` case. No new PlayMode test was added: TVS-S01 and its follow-up are data/routing
+defects fully exercised by `TheaterChoreographer`/`CountLedger` in pure C#, and the existing PlayMode
+suite already proves the modified `TheaterStage.cs` code paths still play to completion and reveal
+exactly once with the corrected field wiring.
+
+Build side-effect hazard (§6.1.1) reproduced again as expected across every `dotnet test` and Unity
+invocation in this pass (initial fix, reviewer-correction rerun, and the flake investigation's 9
+additional Unity invocations): `SBR.Engine.dll`, `ProjectSettings/EditorBuildSettings.asset`, and
+`ProjectSettings/ProjectSettings.asset` were touched and reverted with `git checkout --` immediately
+after every single run. `git status` after this pass shows only the six intended files (
+`ScenePlaybook.cs`, `SweatPresentationModel.cs`, `TheaterChoreographer.cs`, `TheaterStage.cs`,
+`TvSweatScreen.cs`, `ScoreLedgerTests.cs`), plus the pre-existing Phase 1B (`TvSweatScreenTests.cs`)
+and visual-design track (`design/08-art-direction.md`, `DESIGN.md`, `PRODUCT.md`,
+`docs/tv-sweat-refinement/`, `.impeccable/`) working-tree state that this agent did not create or
+modify.
+
+## 4D. TVS-H03 fix — anytime-scorer identity binding
+
+**Scope:** TVS-H03 only. Dispatched separately from Phase 1B/4C per the design's own instruction to
+hold it for the §7.7 locator decision; that decision (jersey/ring/tag visual treatment, §14) is still
+pending and out of scope here — this fixes the data binding underneath, not any visual locator.
+
+### Reachability claim — re-verified, holds
+
+Phase 1A's finding was: `SetScoringActor` is unreachable with a real identity for an `AnytimeScorer`
+leg, both before and during the final. Re-read from source independently before touching anything:
+
+- **Pre-final:** `PrepareScoringActor` was called only from `TheaterBeat`'s non-final branch
+  (`TvSweatScreen.cs:657`, pre-fix), which calls `ScorerFor`. `ScorerFor` had
+  `if (leg.Selection.Kind == MarketKind.AnytimeScorer && !_finalSequenceActive) return null;`
+  (`TvSweatScreen.cs:1162`, pre-fix) — `_finalSequenceActive` is only ever set true inside the
+  `LegFinal` branch's `BeginFinalSequenceClock()`, which the non-final branch never reaches. So
+  `ScorerFor` always returned `null` here for a scorer leg, `PrepareScoringActor` always no-opped
+  (`scorer == null` early return), and `SetScoringActor` was never called. **Confirmed.**
+- **Final:** Neither final path (`TvSweatScreen.cs:707-725` pending-loss/`ResumeSuspended`, or
+  `:726-735` plain `PlayFinalScene`) called `PrepareScoringActor` at all. **Confirmed unreachable.**
+- **Every other market:** `PrepareScoringActor`/`SetScoringActor` WAS reachable and DID run during
+  non-final goal beats (the `AnytimeScorer` gate above doesn't apply to moneyline/totals/BTTS), but
+  `SetScoringActor` only renamed `dots[i].gameObject.name` — no `Text`/`TMP` component exists on any
+  dot, and `EnterStep`/`CompleteStep`'s route/carrier selection never reads `.gameObject.name`
+  anywhere in the file (verified by search: `gameObject.name` had exactly one write site and zero
+  read sites in `TheaterStage.cs`). So the mechanism was reachable-but-inert for every market, not
+  just a no-op for scorer legs — worse than Phase 1A's finding stated, in that a broken "binding" was
+  actively running and doing nothing, for every goal on every market, the whole time.
+
+The reachability claim held. The reveal path for an anytime-scorer leg's identity ran entirely
+through a SEPARATE, independent read — `OnGoalPlayed` → `ScorerFor` → `leg.Matchup.StatLine.
+HomeScorers[_ledger.Picked]` / `AwayScorers[_ledger.Opponent]` — with zero connection to
+`SetScoringActor` at all. That separate read is where the actual defect lived, not in
+`SetScoringActor` narrowly; see the design note below.
+
+### A related latent defect found while tracing the reveal path
+
+Before designing the binding, the reveal path's own correctness needed checking: could
+`HomeScorers[_ledger.Picked]`/`AwayScorers[_ledger.Opponent]` name the WRONG player even on a won
+leg? Tracing it: `ScoreLedger.ConfigureEndpoint(Leg leg)` computed its own inline "picked is home"
+anchor — `leg.Selection.Kind != MarketKind.Moneyline || leg.Selection.Choice == MarketChoice.Home`,
+which is unconditionally `true` for `AnytimeScorer` (`Kind != Moneyline`) regardless of which side
+the backed player is actually on. `_targetPicked`/`_targetOpponent` (and therefore the
+`Picked`/`Opponent` counters `ScorerFor` indexed by) were consequently anchored on literal home/away.
+But `SweatFlavor.PickedHomeForPresentation` — the anchor the STAGE itself uses for attacking
+direction (`_homeAttacksRight`), team color, and every other scorer-leg renderer — special-cases
+`AnytimeScorer` onto the BACKED PLAYER's own side (`leg.Matchup.PlayerSide(leg.Selection.
+PlayerIndex) == Side.Home`), which can be away. For an away-backed scorer leg the two anchors
+disagreed, so `ScorerFor`'s home/away-indexed lookup and the stage's picked-relative goal mirroring
+were reading two different conventions under the same "Picked" name — the identity named in copy,
+when it happened to fire at all, was not reliably even reading from the correct side's scorer list.
+Fixed as part of this same change (`SweatPresentationModel.cs`,
+`ConfigureEndpoint(Leg leg)` now calls `SweatFlavor.PickedHomeForPresentation(leg)` instead of
+duplicating the formula) — see `ConfigureEndpoint_anchors_an_anytime_scorer_leg_on_the_backed_players_own_side`
+below. This call is a no-op for every other market (the two formulas were already identical there).
+
+### TVS-H03 — anytime-scorer identity binding — FIXED
+
+| Field | Content |
+|---|---|
+| ID | TVS-H03 |
+| Build | `674b69e` + this working tree (uncommitted) |
+| Seed / Round / Ticket-leg / Market | `NOT CAPTURED — EDITMODE/PLAYMODE UNIT AND COMPONENT TESTS, NOT A SEEDED MANUAL SWEAT` (regression tests below drive `ScoreLedger`/`TheaterStage` directly, several through a real engine `Run`/`Ticket`/`LockRound()` stack for a `MarketKind.AnytimeScorer` selection, without pinning one seed — the defect is a data-binding/routing bug reproducible for any anytime-scorer leg regardless of seed) |
+| Scene | Any goal-producing template played through `PlayFinalScene`/`ResumeSuspended` (final whistle sequence) on an `AnytimeScorer` leg |
+| Playback state | Final sequence goal reveal (`MkGoal`/`RouteShot`), both the unsuspended final and the pending-loss suspended-shot continuation |
+| Expected | PRD §4.1: anytime-scorer identity appears only at its causal reveal point and belongs to the actor that takes the visible final touch. |
+| Actual (pre-fix) | Confirmed by source (this dispatch, re-verifying Phase 1A): `SetScoringActor` was unreachable-with-identity for a scorer leg, as above. Separately, `ScorerFor`'s `HomeScorers`/`AwayScorers`-index reconstruction had no causal link to which dot `EnterStep`'s `RoutePass` (spatial nearest-neighbor) had actually routed the ball through on the preceding step — the two were computed independently, from different data, with no shared identity. A name could be revealed in copy while an unrelated dot visibly carried the ball into the net. |
+| Reproduction | Pre-fix: confirmed by source only (Phase 1A + this dispatch's re-verification), `NOT RUN` at runtime (there is no rendering to observe the mismatch visually in this harness — see §6.1.1 — and the mismatch is a data-binding fact, provable by source inspection: two independent computations feeding two independent consumers, with no shared value between them). Post-fix: reproduced correct by real EditMode/PlayMode execution, `0 failures` across the 9 regression cases below plus the full existing suite — real suite output pasted below. |
+| Evidence | Pass/fail EditMode/PlayMode evidence for the DATA/ROUTING contract (§6.1.1 — sufficient: this is a state-machine/data-binding defect, not a "what is drawn" defect — no color, layout, or legibility claim is made). The dots themselves remain plain, unlabeled circles pre- and post-fix (§7.7's visual locator is explicitly out of scope for this dispatch); no screenshot/video is claimed or needed. |
+| Severity | Major (as scoped by Phase 1A's original finding) |
+| Regression | `ConfigureEndpoint_anchors_an_anytime_scorer_leg_on_the_backed_players_own_side`, `BindAnytimeScorer_won_leg_binds_the_exact_backed_player_home_or_away`, `BindAnytimeScorer_lost_leg_binds_nothing`, `BindAnytimeScorer_voided_leg_binds_nothing`, `BindAnytimeScorer_ignores_every_non_scorer_market`, `BindAnytimeScorer_is_deterministic_across_repeated_calls`, `BindAnytimeScorer_two_concurrent_scorer_legs_on_one_match_bind_independently`, `StageBeatGoal_never_produces_a_bound_scorer_the_pre_final_causal_reveal_guard` (all `ScoreLedgerTests.cs`, EditMode); `Bound_goal_routes_the_carrier_to_the_exact_bound_actor`, `Bound_goal_on_the_home_side_routes_home`, `Unbound_goals_never_report_a_routed_actor` (all `TheaterStageTests.cs`, PlayMode) |
+| Owner / status | TV execution agent / **FIXED, verified** |
+
+### The binding model: one struct field, bound once, read twice — never reconciled
+
+**Where identity now lives.** `ScoreLedger.StagedGoal` (`SweatPresentationModel.cs`) gained three new
+fields — `HasBoundScorer`, `ScorerIsHome`, `ScorerRosterIndex` — defaulting to unbound on every
+existing constructor (a dedicated private constructor and a `WithBoundScorer(bool, int)` method are
+the only way to set them true, so no existing call site anywhere in the codebase can accidentally
+produce a bound goal). This mirrors the TVS-S01 precedent deliberately: a genuinely new, orthogonal
+fact gets its own field rather than overloading an existing one (`ForPicked`/`ScoredByPicked` keep
+their existing meaning, untouched).
+
+**Where the binding happens.** `ScoreLedger.BindAnytimeScorer(FinalPlan plan, Leg leg)` is a new pure,
+static, stateless function. Called from `TvSweatScreen.TheaterBeat`'s `LegFinal` branch, in BOTH the
+pending-loss (`ResumeSuspended`) and plain (`PlayFinalScene`) paths, immediately after
+`_ledger.PlanFinal(grade)` and before either is handed to the stage — i.e. at PLAN time, before a
+single frame of the final sequence plays. It:
+
+1. No-ops for every non-`AnytimeScorer` leg, every non-`Won` grade, and an empty/null plan.
+2. Reads the backed player's own side and per-side roster index directly from the leg's own
+   selection (`leg.Matchup.PlayerSide(leg.Selection.PlayerIndex)`, `leg.Selection.PlayerIndex`
+   offset by the away roster size) — no engine RNG, no `UnityEngine.Random`, no wall clock, no frame
+   timing; every input is a staged fact already fixed at bet-placement time.
+3. Finds the one committing goal in the plan whose `ScoredByPicked` matches the backed player's own
+   side (reliable now that `ConfigureEndpoint`'s anchor fix makes `ScoredByPicked` agree with
+   `SweatFlavor.PickedHomeForPresentation` again) and calls `WithBoundScorer` on it. A Lost or Voided
+   leg finds nothing (grade gate). A Won leg whose backed side's quota was already exhausted before
+   the final finds nothing either — this method never invents a goal to force a reveal, which would
+   move the causal reveal point (out of scope, and PRD §4.1 forbids revealing early — inventing a
+   late one is the same law from the other direction).
+
+**Where identity is read.** Exactly two places, both reading the same three fields off the same
+`StagedGoal` value — never a third, independently-derived one:
+
+- **Copy:** `TvSweatScreen.ScorerFor` — for an `AnytimeScorer` leg, returns
+  `(goal.ScorerIsHome ? Home : Away).Players[goal.ScorerRosterIndex]` directly, gated on
+  `_finalSequenceActive && goal.HasBoundScorer`. The old `HomeScorers`/`AwayScorers`-index
+  reconstruction is gone for this market entirely (kept, unchanged, for every other market).
+- **Stage:** `TheaterStage.EnterStep`'s `RoutePass` case — when `s.Goal.HasBoundScorer`, routes
+  `_routeDotIx`/`_routeDotHome` straight to `(ScorerIsHome, ScorerRosterIndex % dots.Length)` instead
+  of calling `NearestOutfield` (spatial nearest-neighbor). This is the run step immediately before
+  the `RouteShot` step that fires `MkGoal` — `RouteShot` never reassigns the routed dot — so the
+  bound actor is genuinely the dot the ball is carried by into the shot, not a label attached after
+  the fact. `goal:` is threaded onto the run step (previously only the shot step carried it) in all
+  three script builders (`BuildFinalScript` Won/Lost, `BuildContinuationScript` Won/Lost) for
+  uniformity; only the Won branches can ever actually be bound, per `BindAnytimeScorer`'s grade gate.
+
+**Old mechanism removed.** `TheaterStage.SetScoringActor` and `TvSweatScreen.PrepareScoringActor` are
+deleted rather than left alongside the new mechanism — keeping a second, confirmed-inert "scorer
+actor" concept in the file risks a future reader assuming it does something. Their one call site
+(`TvSweatScreen.cs`, non-final beat branch) is removed with an inline comment pointing at the
+replacement. No test anywhere referenced either method (grepped clean before removal).
+
+**Forward-compatibility for §7.7.** The binding is a real (side, roster-index) pair carried on the
+goal that plans the whole final reveal, not a name computed at the last instant — the same shape
+§7.7's continuous backed-player locator will need (a stable roster identity, addressable on the
+stage, for the WHOLE sweat rather than one reveal moment). This dispatch deliberately does not build
+the continuous version (no locator, no visual treatment, no jersey numerals) — only the single-goal
+binding required to close TVS-H03 — but it does not paint that future work into a corner: extending
+`BindAnytimeScorer`'s (side, index) computation to run at leg-start instead of at the final plan, and
+threading it onto every step instead of just a goal's run+shot pair, is an additive change to the
+same mechanism, not a redesign.
+
+### Concurrency (PRD §8.2A)
+
+`BindAnytimeScorer` takes the leg and its own already-built `FinalPlan` as parameters — nothing reads
+"the active leg," a static/shared field, or any other global. Two anytime-scorer legs live on the
+same match (or an anytime-scorer leg live alongside a totals/moneyline leg on the same match) each
+call `BindAnytimeScorer` with their own `Leg`/`ScoreLedger`/`FinalPlan` instance — `TvSweatScreen`
+already runs one leg's sweat to completion per `ScoreLedger` instance (`_ledger` is reset and
+reconfigured per leg via `BeginStageLeg`), so this was already leg-scoped before this fix; the new
+method preserves that scoping rather than introducing a new "current leg" dependency.
+`BindAnytimeScorer_two_concurrent_scorer_legs_on_one_match_bind_independently` pins this directly:
+two separate tickets on the same matchup, one backing a home player and one an away player, planned
+and bound in interleaved call order, each producing only its own player's binding.
+
+### Real suite results
+
+```
+dotnet test engine.tests
+Passed!  - Failed:     0, Passed:   160, Skipped:     0, Total:   160, Duration: 479 ms - SBR.Engine.Tests.dll (net10.0)
+```
+
+```
+Unity.exe -batchmode -nographics -projectPath <repo>\unity\SBR -runTests -testPlatform EditMode -testResults ...editmode-results.xml -logFile ...editmode.log
+<test-run id="2" testcasecount="88" result="Passed" total="88" passed="88" failed="0" inconclusive="0" skipped="0" .../>
+```
+
+88 EditMode cases = the 80 baseline (§4C.5) plus the 8 new TVS-H03 regression cases listed above
+(80 + 8 = 88), all passing individually (confirmed by grepping each case's own `result="Passed"` in
+the results XML, not just the aggregate).
+
+```
+Unity.exe -batchmode -nographics -projectPath <repo>\unity\SBR -runTests -testPlatform PlayMode -testResults ...playmode-results.xml -logFile ...playmode.log
+<test-run id="2" testcasecount="30" result="Passed" total="30" passed="30" failed="0" inconclusive="0" skipped="0" .../>
+```
+
+30 PlayMode cases = the 27 baseline plus the 3 new TVS-H03 `TheaterStageTests` cases listed above
+(27 + 3 = 30), all passing individually. This run did not hit the known
+`never observed the cash-out amount mid-tween` flake (BUG-LEDGER.md §4C.4) — a single run was
+sufficient, no re-run was needed.
+
+Build side-effect hazard (§6.1.1) reproduced again as expected across both `dotnet test` and both
+Unity invocations: `SBR.Engine.dll`, `ProjectSettings/EditorBuildSettings.asset`, and
+`ProjectSettings/ProjectSettings.asset` were touched and reverted with `git checkout --` immediately
+after every run. `git status` after this pass shows only the five intended files
+(`SweatPresentationModel.cs`, `TheaterStage.cs`, `TvSweatScreen.cs`, `ScoreLedgerTests.cs`,
+`TheaterStageTests.cs`), plus the pre-existing `DESIGN.md` and
+`docs/tv-sweat-refinement/room-layout-update.md` working-tree modifications and the untracked
+`.impeccable/` directory that this agent did not create or modify.
+
+### Known scope boundary, stated rather than silently left
+
+`BindAnytimeScorer` only ever finds a goal to bind when the final plan's `PlanFinal` naturally leaves
+a committing correction for the backed side (the common case, by design — `MaxLiveLead` pushes most
+of a scorer leg's goal quota into the final correction). If a Won leg's backed-side quota was already
+fully spent during ordinary (non-final) play before the final sequence starts, no reveal fires this
+dispatch: `ScorerFor` was already suppressing identity before final for every case (pre-fix), so this
+is not a regression, and manufacturing a guaranteed reveal moment for that edge case would either
+move the causal reveal point or require the whole-sweat identity tracking §7.7 exists for — explicitly
+deferred, per the dispatch instruction not to build it here.
+
+### T17 — the scope boundary above is now CLOSED (2026-07-31)
+
+The Design Director reclassified the gap as a **correctness defect**, above every remaining Phase 3
+visual refinement, and ruled the approach: **reserve, don't spend**. A scorer leg claims its
+backed-side goal *before* ordinary beats can spend the baked goals. If binding were ever impossible,
+stage the reveal — never suppress the win, never synthesise a reveal after resolution.
+
+**The fix is upstream of `BindAnytimeScorer`, which is unchanged.** `ScoreLedger` now reserves one
+backed-side goal (`_reservePicked`, set in `ConfigureEndpoint(Leg)` for `MarketKind.AnytimeScorer`
+when the stat line bakes at least one; **0 for every other market**). It is enforced inside
+`CompleteGoal` — the single score mutator — so the reserve holds for *any* caller, not only goals
+routed through `StageBeatGoal`; `StageBeatGoal` itself stages **chalked-off** rather than committing
+once only the reserve remains, so the beat still plays and only the commit is withheld. `PlanFinal`
+releases the reserve, which is what it was held for. Both production callers (`TvSweatScreen`'s two
+LegFinal branches) call `PlanFinal` and then `BindAnytimeScorer` with playback next — never
+speculatively — so the release cannot hand a beat back the goal it was denied.
+
+**Exact convergence is preserved:** ordinary play can reach at most `TargetPicked - 1`, and
+`PlanFinal` emits the remainder, so the scoreline still lands exactly on the locked stat line. The
+causal reveal point is unmoved; the goal the binding loop needs is simply still available.
+
+**Player-visible consequence, stated rather than buried:** on an anytime-scorer leg the backed side's
+on-screen score now holds one goal short until the final sequence. That is what "reserve, don't
+spend" *means*, but it is a presentation change and is flagged to the Design Director as such.
+
+**Tests.** The Phase 3 reproduction was **inverted in place, not deleted** (DD instruction): same
+seeds, same both-sides loop, same direct-`CompleteGoal` attack, now asserting the reserve holds at
+`TargetPicked - 1` and that exactly one bound reveal exists, commits, and is the backed player by
+reference. Added `Every_won_anytime_scorer_leg_reveals_exactly_one_scorer_however_its_beats_ran`
+(the DD's acceptance property, a 4-seed × 2-side sweep driven through the real beat path, with a
+non-vacuity guard) and `Non_scorer_markets_reserve_nothing_and_still_spend_to_their_full_endpoint`
+(pins the "every other market is bit-for-bit unchanged" claim).
+
+```
+dotnet test engine.tests                 Passed 160/160
+-runTests -testPlatform EditMode         total=199 passed=199 failed=0
+-runTests -testPlatform PlayMode         total=45  passed=43  failed=1  skipped=1
+```
+
+EditMode 197 → 199: the inversion replaces one case, the two new tests add two. Every pre-existing
+scorer guard stayed green, including `StageBeatGoal_never_produces_a_bound_scorer_the_pre_final_
+causal_reveal_guard` and `BindAnytimeScorer_two_concurrent_scorer_legs_on_one_match_bind_independently`.
+
+**The one PlayMode failure is the §4C.4 flake, and T17 is ruled out by mechanism rather than by
+allowance.** It failed `Interact_DuringCashOutPriceAnimation_StandsAndDoesNotCashOut` with
+`never observed the cash-out amount mid-tween (waited 20s)` — the documented message, not
+`kept ticking while standing`. That test builds its ticket from `DemoTicketPolicy`, which constructs
+picks as `new Pick(m.Index, side)` — **moneyline only, never `AnytimeScorer`**. T17 reserves 0 on
+such a leg, making `SpendableTargetPicked == TargetPicked`, so every expression on that test's path
+is bit-for-bit what it was before the change. There is no code path by which T17 could reach it.
+
+**New flake datum worth recording:** it failed **2 of 2 full PlayMode runs** here, against a measured
+**3 of 10** on `-testFilter`-isolated runs (both stack and clean-HEAD arms, 2026-07-31, TVS-H02
+verification). Consistent with §4C.4's load-correlated characterisation — the full suite is the
+heavier load — and a caution against reading the isolated 3/10 as the whole-suite rate.
+
+## 9. Three-sweat acceptance record
+
+| Gate sweat | Seed / build | Ticket and markets | Required stress | Muted result | Evidence | Open bugs |
+|---|---|---|---|---|---|---|
+| A — team/score | — | Moneyline-led | goals, possession, near miss, suspend/reopen | Not run | — | — |
+| B — identity/goal market | — | Anytime scorer + totals/BTTS | identity win/loss across audit set, endpoint truth | Not run | — | — |
+| C — count/transition | — | Corners/cards, 2+ tickets | intervention, final leg, ticket + round settle | Not run | — | — |
+
+Acceptance requires all three rows to pass with no blocker or major open.
