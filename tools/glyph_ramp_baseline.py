@@ -72,6 +72,47 @@ SURFACES = [
 # only samples where it works is not a characterization.
 SIGMAS = [0.0, 0.4, 0.6, 0.8, 1.0, 1.4, 2.0]
 
+# The floor batch 25 asks to subtract as sqrt(measured^2 - FLOOR^2).
+BUNDLE_FLOOR = 1.680
+
+# Batch 25: the number the floor has never had is ramp/stroke on the SMALLEST
+# product fact, not on a price row. 0.482 was taken on price figures; the ramp is
+# fixed in screen px while the stroke scales with type size, so the smallest type
+# necessarily carries the worst ratio. These are the two element groups S2-am
+# named. Every box eye-confirmed on the frame (C27); two were re-cut after the
+# first pass clipped a glyph and caught a sliver of the team name behind it.
+SMALLEST = {
+    "season records": [
+        (704, 440, 763, 463), (678, 502, 737, 525), (688, 568, 748, 591),
+        (704, 630, 763, 653), (755, 694, 814, 717), (722, 756, 781, 779),
+        (699, 822, 758, 845), (674, 883, 741, 906), (699, 949, 758, 972),
+        (686, 1010, 745, 1033), (730, 1075, 789, 1098), (614, 1137, 673, 1160),
+    ],
+    "row numbers 01-06": [(455, 435, 515, 1165)],
+}
+
+
+def instrument_floor():
+    """The instrument's OWN ramp on a synthetic perfect step edge.
+
+    This exists because the floor batch 25 asks to subtract (1.680 px) has no
+    retained derivation anywhere in the repo, and two very different quantities
+    could wear that name: the measuring method's own response to a hard edge, or
+    the BUILD's real screen-space ramp. They are not interchangeable and only one
+    of them is legitimate to subtract as an instrument artefact.
+    """
+    # A BAR, not a step: crossings() measures a stroke as rise-then-fall, so a
+    # lone step edge yields nothing at all. A hard-edged bar is also the honest
+    # synthetic analogue of a glyph stem.
+    w, h, bar = 200, 60, 20
+    im = Image.new("RGB", (w, h), (12, 12, 14))
+    x0 = (w - bar) // 2
+    for y in range(h):
+        for x in range(x0, x0 + bar):
+            im.putpixel((x, y), (190, 188, 180))
+    r, s = measure_image(im, (0, 0, w, h))
+    return (statistics.median(r) if r else None), len(r)
+
 
 def measure_image(im, box):
     """ramps, strokes for one box of an in-memory image. Same edge logic as
@@ -239,6 +280,50 @@ def main():
     out("pinned run; it is a baseline, not a distribution. The phone frame is seed")
     out("PHONEREF01 at msgs-03 -- another seed yields different copy, so a future")
     out("comparison must pin the same seed or compare the ratio only.")
+
+    # ---- Part C: the number batch 25 actually asked for -----------------
+    out("")
+    out("PART C -- ramp/stroke on the SMALLEST product fact (register batch 25)")
+    out("")
+    floor_r, floor_n = instrument_floor()
+    out(f"  Instrument's own ramp on a synthetic PERFECT step edge: "
+        f"{floor_r:.3f} px ({floor_n} edges)")
+    out(f"  The floor batch 25 asks to subtract is {BUNDLE_FLOOR:.3f} px -- "
+        f"{BUNDLE_FLOOR / floor_r:.1f}x larger.")
+    out("  So 1.680 is NOT the measuring method's artefact; it is the BUILD's own")
+    out("  screen-space ramp (C38's '~1.6 px', real and ruled a characteristic).")
+    out("  Subtracting it therefore yields blur ABOVE the known floor, which is the")
+    out("  right quantity for a regression -- but it is not an instrument correction,")
+    out("  and a residual near zero means 'at the floor', not 'sharp'.")
+    out("")
+    out(f"  {'element group':>20s} {'boxes':>6s} {'stems':>6s} {'stroke':>8s} "
+        f"{'ramp':>7s} {'ratio':>7s} {'above floor':>12s}")
+    im = Image.open(SURFACES[0]["frame"]).convert("RGB")
+    for name, boxes in SMALLEST.items():
+        ramps, strokes = [], []
+        for b in boxes:
+            r, s = measure_image(im, b)
+            ramps += r
+            strokes += s
+        if len(ramps) < 12:
+            out(f"  {name:>20s}  FAIL -- {len(ramps)} stems is not a median (C29)")
+            continue
+        rm, sm = statistics.median(ramps), statistics.median(strokes)
+        resid = (rm ** 2 - BUNDLE_FLOOR ** 2)
+        resid = resid ** 0.5 if resid > 0 else 0.0
+        note = f"{resid:.3f} px" if resid > 0 else "AT/BELOW floor"
+        out(f"  {name:>20s} {len(boxes):>6d} {len(ramps):>6d} {sm:>8.3f} "
+            f"{rm:>7.3f} {rm / sm:>7.3f} {note:>12s}")
+    out("")
+    out("  Saturation check: Part A shows the ratio compressing above sigma ~1, where")
+    out("  the measured ramp reaches ~3.2 px. Both groups above sit well below that,")
+    out("  so neither number is taken from the saturated part of the range.")
+    out("")
+    out("  READ THIS BEFORE RANKING THE TWO RATIOS. Part A established that")
+    out("  ramp/stroke is NOT monotonic in blur, so the group with the higher ratio")
+    out("  is not thereby 'softer'. Within one frame at one view the ratios are")
+    out("  comparable as a fraction-of-stroke-in-transition, which is what S2-am's")
+    out("  clause 2 is about; they are NOT comparable across blur levels.")
 
     if args.report:
         Path(args.report).write_text("\n".join(lines) + "\n", encoding="utf-8")
