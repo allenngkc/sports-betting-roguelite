@@ -496,10 +496,10 @@
       7,
       8
     ],
-    "certified_commit": "44d8df3",
-    "certified_at": "2026-08-05",
-    "content_fingerprint": "9b89ecfea1d2b017de8d376fafc41dd1a005520b64b90c0dadbe406880147f7a",
-    "basis": "FRESH WALKTHROUGH: Allen walked the re-check on the post-retirement build and passed gates 6-8. Not a standing verdict - this build was walked.",
+    "certified_commit": "c975cc2",
+    "certified_at": "2026-08-08",
+    "content_fingerprint": "880969c8ccc8b547fc18275f0b27ee9996a538347fcfd5e13b80837aa90e0a40",
+    "basis": "ALLEN'S WALK of 2026-08-08, RE-ISSUED on his word 2026-08-09 and recorded in the register. All three gates cleared. The single finding from that walk -- the in-room UI reading blurry -- is resolved as C38-cl: a PER-USER EDITOR SETTING ('Low Resolution Aspect Ratios' enabled in his Game view), not a build defect. With it off his verdict is 'everything is clear now' on both the laptop and the phone. Walk date is his walk, not today. Scene content fingerprint MATCHES the state certified at a0469b9, and the R41-am lamp shipped BEFORE the walk (ArtIndicator.mat unchanged since), so the walk covers the current room. NAMED LIMIT: three SureThing kit commits (S68/S69/S70, S70(3), S71) landed AFTER the walk and change the laptop surface's runtime content; the scene fingerprint does not cover SureThing scripts and neither does this certification -- gate 6 covers the room, not the current laptop UI. Build-side ~1.6px softness floor remains a measured characteristic with the DD, bar already met.",
     "revoked": null,
     "note": "R22: gates 6-8 have no automated instrument; a human walks the build. Expires automatically when content_fingerprint stops matching."
   }

@@ -77,9 +77,66 @@ namespace SBR
             Material steel = GrayboxRoomBuilder.HousingSteelMat();
             Material stencilMat = GrayboxRoomBuilder.Mat("ArtStencil", Color.white,
                 smoothness: 0.10f, baseMap: GetOrCreateStencil("RM-4B 217-9C", 256, 64));
+            // R41 (DD 2026-08-08, batch 15). The standby lamp was the ONLY saturated emitter in
+            // the room: emission (0.85, 0.14, 0.08), chroma 63.1 authored, 43.0-48.6 rendered,
+            // against every other emitter in this room driven to 5.0-5.5. Ten times more
+            // saturated than anything else, which made it the loudest colour event in frame
+            // however few pixels it took -- and red is retired game-wide (C4, T34).
+            //
+            // It LOST ON SCARCITY, NOT ON AREA, and it stays an object: struck as a colour, kept
+            // as a lamp.
+            //
+            // Both values come from ratified law, nothing picked by eye:
+            //
+            //   albedo   = --room-rust #6B3A24, the ratified swatch. R35's shape -- strike the
+            //              requirement that needs an escape, apply the swatch that already exists.
+            //   emission = rust's own hue (49.7deg) at the room's EMITTER chroma (5.4, which is
+            //              the screens' authored figure), at RENDERED-BRIGHTNESS parity with the
+            //              original lamp. Chroma 63.1 -> 5.4: from ten times the room to parity.
+            //
+            // L* 51.84, NOT the original's L* 60.49 -- ALLEN 2026-08-08, superseding batch-16's
+            // value. "Restore the original luminance" turned out to be ambiguous between two
+            // ladders, and they disagree by 43%:
+            //
+            //   authored L* 60.49 (L*-parity)     -> rendered dY' seated +70.26, chroma 8.0
+            //   authored L* 51.84 (luma-parity)   -> targets the original's measured +49.02
+            //
+            // The original saturated lamp rendered +49.02 seated. A near-neutral at the SAME L*
+            // carries more Rec.709 luma than a saturated red does, because its energy spreads
+            // across all three channels instead of sitting in the one the luma weights discount
+            // (R is 0.2126). So matching L* made the lamp 43% brighter than it had ever been.
+            // Ruled on rendered brightness, which is the ladder that governs how bright it looks.
+            // C33's unit distinction deciding a real value rather than a report's wording.
+            //
+            // THE LUMINANCE IS THE LAMP'S OWN, and the first build got that wrong. I took L* 30
+            // from the direction's phrase "warm, DARK, low-chroma" and halved the lamp's output
+            // (rendered dY' +40.41/+49.02 -> +16.12/+23.61). Reversed at R41-am: the after-frame
+            // read as a dull grey-brown patch rather than a lit lamp, and a standby lamp that
+            // does not read as lit is the broken register -- T1's ground is maintained industrial
+            // equipment that WORKS. The ruling was "struck as a colour, KEPT as an object", and
+            // halving the luminance took away the half it said to keep.
+            //
+            // STANDING LAW out of that (R41-am): when a direction names a swatch, THE SWATCH
+            // SUPPLIES HUE AND CHROMA; LUMINANCE IS THE ELEMENT'S OWN AND DOES NOT TRAVEL WITH
+            // IT. "Warm, dark" described rust the swatch, not an instruction to dim the lamp.
+            //
+            // It is also R35's caution turned on me: a hue change must not become a value change.
+            // The phone's ladder was preserved to +/-1 L* for exactly that reason, and this was
+            // the same author doing the opposite one object over.
+            //
+            // WHY THE EMISSION IS NOT LITERALLY RUST, because the ruling offered "the rust end"
+            // and this is one step off it: rust's chromaticity CANNOT meet a chroma-5 bound at
+            // any amplitude. Dimming a saturated chromaticity drops L* faster than chroma -- at
+            // scale 0.08 rust still measures chroma 8.1 at L* 4.54, which is black. So the bound
+            // and the swatch are not simultaneously satisfiable, and the bound is the ruled
+            // constraint while the hue was a choice between two sanctioned ends. Rust's HUE at
+            // the room's chroma keeps the lamp warm and distinguishable from the screens' 83-85
+            // deg; the alternative sanctioned end was the screens' family itself.
+            //
+            // EXACT VALUE NOT RULED -- direction was, and the value lands on the instrument.
             Material indicator = GrayboxRoomBuilder.Mat("ArtIndicator",
-                new Color(0.35f, 0.06f, 0.04f),
-                emission: new Color(0.85f, 0.14f, 0.08f), smoothness: 0.45f);
+                new Color(0.1470f, 0.0423f, 0.0176f),
+                emission: new Color(0.2334f, 0.1924f, 0.1769f), smoothness: 0.45f);
 
             // R7 Tier 1 wear. Colour lives here, never in the textures - see
             // ProceduralWearTextures. Cutoffs are the shape control: the alpha channel stores a
@@ -659,6 +716,18 @@ namespace SBR
             // its way down to the TV; moisture that beads on the surface-mounted pipe has nowhere
             // to go but down the wall it is stapled to, so the wall stains along the run rather
             // than the pipe itself.
+            // R8 (2026-08-05): a re-place to (1.30, 0.30) was tried and REVERTED. It raised the
+            // seated pose's frustum coverage from 30% to 67% and changed the rendered frame by
+            // exactly nothing - the seated A/B stayed bit-identical - because the TV housing sits
+            // in front of this wall: TVBody spans x 1.235..1.295 at y 0.775..1.425, z -0.25..0.85,
+            // and the stain plane is x 1.297. The move took the quad from 34% occluded to 64%.
+            // Better framed, less visible. Frustum coverage is not visibility.
+            //
+            // The measurement that matters is bigger than this decal: with the ENTIRE wear
+            // inventory disabled, the seated and laptop frames are bit-identical and the standing
+            // frame moves 0.90% of pixels. Improving the framing of a piece did not move it. So
+            // R7's parking diagnosis - "placement versus camera, not technique" - does not hold
+            // as the whole story, and re-placing is not the fix on its own.
             WearQuad(g, "ConduitDrip", new Vector3(HalfW - off, 1.55f, 0.55f),
                      new Vector2(0.70f, 0.90f), Vector3.left, Vector3.up, condensation, 1f);
         }

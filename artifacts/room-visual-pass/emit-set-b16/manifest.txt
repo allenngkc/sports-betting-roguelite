@@ -1,0 +1,13 @@
+# EMIT Part B capture manifest
+scene=Assets/Scenes/Room.unity
+width=2560 height=1440
+poses=standing-overview.png,seated-tv-couch.png,focused-laptop-desk.png
+mode=EditMode (no world-space canvas exists; emitters are unoccluded)
+emitters=5
+control=control-a,control-b (identical state; must be bit-identical)
+emitter=ArtIndicator value=0.3292,0.2770,0.2572 renderers=1 off_dir=off-ArtIndicator
+emitter=ScreenLaptop value=0.0380,0.0320,0.0240 renderers=1 off_dir=off-ScreenLaptop
+emitter=ScreenTV value=0.0480,0.0550,0.0680 renderers=1 off_dir=off-ScreenTV
+emitter=ScreenPhone value=0.0380,0.0320,0.0240 renderers=1 off_dir=off-ScreenPhone
+emitter=WindowGlow value=0.8000,0.8000,0.8600 renderers=1 off_dir=off-WindowGlow
+control_close=control-z (after all restores; must equal control-a)

@@ -350,10 +350,21 @@ namespace SBR
                 // sit at 0.02-0.25 in TvSweatScreen.cs. Ordering must stay idle < flash.
                 TvScreen = Mat("ScreenTV", new Color(0.012f, 0.014f, 0.018f),
                     emission: new Color(0.048f, 0.055f, 0.068f), doubleSided: true),
+                // R40 (batch 14): was emission (0.025, 0.055, 0.035) — hue 155.5deg, GREEN-dominant,
+                // 72deg and 2.5x chroma from the granted lid colour, and green is retired game-wide
+                // (C4). The runtime property block wrote the granted value over the top, so the
+                // PLAYER saw the ruling while the APV bake and every Edit Mode capture saw this.
+                // One definition now, shared with the component that applies it at runtime.
                 LaptopScreen = Mat("ScreenLaptop", new Color(0.01f, 0.02f, 0.015f),
-                    emission: new Color(0.025f, 0.055f, 0.035f), doubleSided: true),
+                    emission: SBR.Game.LaptopScreen.GrantedLidEmission, doubleSided: true),
+                // R39 (batch 14): was emission (0.020, 0.030, 0.060) — the same blue as the phone's
+                // struck idleEmission. Not named in the ruling, which addressed the component's
+                // three fields, but it is the value the BAKE reads: strike the runtime blue and
+                // leave this and the bake keeps baking blue, which is R40's defect repeating on the
+                // next object over. Since the whole point of sequencing R39 and R40 into one bake
+                // is a correct bake, it moves with them.
                 PhoneScreen = Mat("ScreenPhone", new Color(0.01f, 0.015f, 0.02f),
-                    emission: new Color(0.020f, 0.030f, 0.060f), doubleSided: true),
+                    emission: SBR.Game.PhoneScreen.RestEmission, doubleSided: true),
                 // The pane is no longer a flat blue rectangle: it carries a generated night-city
                 // view as both base and emission map, so the window reads as somewhere the
                 // player is not. Base colour goes white so the texture is not tinted away, and
@@ -883,7 +894,14 @@ namespace SBR
             feed.director = director;
             feed.phoneFocus = focus;
 
-            // A tiny cyan/white blink is chrome, never money-green (design/08 palette law).
+            // R39 (batch 14): the blink was (0.55, 0.82, 1.0) — L* 90.58, chroma 16.3, hue 241.7deg,
+            // a saturated cool source in a room whose three signed-off sources contain no such
+            // light. It carried its own licence inline — "a tiny cyan/white blink is chrome, never
+            // money-green (design/08 palette law)" — and design/08 is T3, the deprecated
+            // anti-reference, dead since 2026-07-24. The citation is deleted with the value, as
+            // ruled. The EVENT is kept: colour struck, blink kept, timing untouched.
+            //
+            // Same chromaticity as the screen it sits on, normalised so the brightest channel is 1.
             var lightGo = new GameObject("PhoneBuzzLight");
             lightGo.transform.SetParent(root.transform, false);
             lightGo.transform.position = screenT.position + Vector3.up * 0.035f;
@@ -891,7 +909,8 @@ namespace SBR
             buzzLight.type = LightType.Point;
             buzzLight.range = 0.55f;
             buzzLight.intensity = 0f;
-            buzzLight.color = new Color(0.55f, 0.82f, 1.0f);
+            Color rest = SBR.Game.PhoneScreen.RestEmission;
+            buzzLight.color = new Color(1f, rest.g / rest.r, rest.b / rest.r);
             buzzLight.shadows = LightShadows.None;
             buzzLight.enabled = false;
 

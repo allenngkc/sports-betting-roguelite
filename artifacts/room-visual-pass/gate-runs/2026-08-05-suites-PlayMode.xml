@@ -1,46 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
-<test-run id="2" testcasecount="20" result="Passed" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-08-06 04:05:41Z" end-time="2026-08-06 04:06:02Z" duration="21.4459715">
-  <test-suite type="TestSuite" id="1035" name="SBR" fullname="SBR" runstate="Runnable" testcasecount="20" result="Passed" start-time="2026-08-06 04:05:41Z" end-time="2026-08-06 04:06:02Z" duration="21.445972" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0">
+<test-run id="2" testcasecount="20" result="Passed" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-08-06 06:08:17Z" end-time="2026-08-06 06:08:37Z" duration="20.1533629">
+  <test-suite type="TestSuite" id="1035" name="SBR" fullname="SBR" runstate="Runnable" testcasecount="20" result="Passed" start-time="2026-08-06 06:08:17Z" end-time="2026-08-06 06:08:37Z" duration="20.153363" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0">
     <properties>
       <property name="platform" value="PlayMode" />
     </properties>
-    <test-suite type="Assembly" id="1028" name="SBR.Tests.PlayMode.dll" fullname="C:/Users/Allen/orca/workspaces/sports-betting-roguelite/room-refinement/unity/SBR/Library/ScriptAssemblies/SBR.Tests.PlayMode.dll" runstate="Runnable" testcasecount="20" result="Passed" start-time="2026-08-06 04:05:41Z" end-time="2026-08-06 04:06:02Z" duration="21.405705" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <test-suite type="Assembly" id="1028" name="SBR.Tests.PlayMode.dll" fullname="C:/Users/Allen/orca/workspaces/sports-betting-roguelite/room-refinement/unity/SBR/Library/ScriptAssemblies/SBR.Tests.PlayMode.dll" runstate="Runnable" testcasecount="20" result="Passed" start-time="2026-08-06 06:08:17Z" end-time="2026-08-06 06:08:37Z" duration="20.113347" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0">
       <properties>
-        <property name="_PID" value="14868" />
+        <property name="_PID" value="2724" />
         <property name="_APPDOMAIN" value="Unity Child Domain" />
         <property name="platform" value="PlayMode" />
         <property name="EditorOnly" value="False" />
       </properties>
-      <test-suite type="TestSuite" id="1029" name="SBR" fullname="SBR" runstate="Runnable" testcasecount="20" result="Passed" start-time="2026-08-06 04:05:41Z" end-time="2026-08-06 04:06:02Z" duration="21.402640" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <test-suite type="TestSuite" id="1029" name="SBR" fullname="SBR" runstate="Runnable" testcasecount="20" result="Passed" start-time="2026-08-06 06:08:17Z" end-time="2026-08-06 06:08:37Z" duration="20.110694" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0">
         <properties />
-        <test-suite type="TestSuite" id="1030" name="Tests" fullname="SBR.Tests" runstate="Runnable" testcasecount="20" result="Passed" start-time="2026-08-06 04:05:41Z" end-time="2026-08-06 04:06:02Z" duration="21.401089" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <test-suite type="TestSuite" id="1030" name="Tests" fullname="SBR.Tests" runstate="Runnable" testcasecount="20" result="Passed" start-time="2026-08-06 06:08:17Z" end-time="2026-08-06 06:08:37Z" duration="20.109302" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0">
           <properties />
-          <test-suite type="TestSuite" id="1031" name="PlayMode" fullname="SBR.Tests.PlayMode" runstate="Runnable" testcasecount="20" result="Passed" start-time="2026-08-06 04:05:41Z" end-time="2026-08-06 04:06:02Z" duration="21.399429" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <test-suite type="TestSuite" id="1031" name="PlayMode" fullname="SBR.Tests.PlayMode" runstate="Runnable" testcasecount="20" result="Passed" start-time="2026-08-06 06:08:17Z" end-time="2026-08-06 06:08:37Z" duration="20.107894" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0">
             <properties />
-            <test-suite type="TestFixture" id="1001" name="LaptopOsTests" fullname="SBR.Tests.PlayMode.LaptopOsTests" classname="SBR.Tests.PlayMode.LaptopOsTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-08-06 04:05:41Z" end-time="2026-08-06 04:05:47Z" duration="6.443174" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <test-suite type="TestFixture" id="1001" name="LaptopOsTests" fullname="SBR.Tests.PlayMode.LaptopOsTests" classname="SBR.Tests.PlayMode.LaptopOsTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-08-06 06:08:17Z" end-time="2026-08-06 06:08:21Z" duration="4.679094" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
               <properties />
-              <test-case id="1003" name="Mirror_reveals_nothing_unseated_and_lands_engine_truth_at_settle" fullname="SBR.Tests.PlayMode.LaptopOsTests.Mirror_reveals_nothing_unseated_and_lands_engine_truth_at_settle" methodname="Mirror_reveals_nothing_unseated_and_lands_engine_truth_at_settle" classname="SBR.Tests.PlayMode.LaptopOsTests" runstate="Runnable" seed="1130168641" result="Passed" start-time="2026-08-06 04:05:41Z" end-time="2026-08-06 04:05:46Z" duration="5.342253" asserts="0">
+              <test-case id="1003" name="Mirror_reveals_nothing_unseated_and_lands_engine_truth_at_settle" fullname="SBR.Tests.PlayMode.LaptopOsTests.Mirror_reveals_nothing_unseated_and_lands_engine_truth_at_settle" methodname="Mirror_reveals_nothing_unseated_and_lands_engine_truth_at_settle" classname="SBR.Tests.PlayMode.LaptopOsTests" runstate="Runnable" seed="61680369" result="Passed" start-time="2026-08-06 06:08:17Z" end-time="2026-08-06 06:08:20Z" duration="3.532369" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
                 </properties>
-                <output><![CDATA[[RunDirector] NEW RUN seed=ESNM5ECV bank=350 payment=60
+                <output><![CDATA[[RunDirector] NEW RUN seed=32HHMJ7N bank=350 payment=60
 ]]></output>
               </test-case>
-              <test-case id="1002" name="Os_boots_switches_apps_and_keeps_chrome_over_every_tab" fullname="SBR.Tests.PlayMode.LaptopOsTests.Os_boots_switches_apps_and_keeps_chrome_over_every_tab" methodname="Os_boots_switches_apps_and_keeps_chrome_over_every_tab" classname="SBR.Tests.PlayMode.LaptopOsTests" runstate="Runnable" seed="1634340744" result="Passed" start-time="2026-08-06 04:05:46Z" end-time="2026-08-06 04:05:47Z" duration="1.055897" asserts="0">
+              <test-case id="1002" name="Os_boots_switches_apps_and_keeps_chrome_over_every_tab" fullname="SBR.Tests.PlayMode.LaptopOsTests.Os_boots_switches_apps_and_keeps_chrome_over_every_tab" methodname="Os_boots_switches_apps_and_keeps_chrome_over_every_tab" classname="SBR.Tests.PlayMode.LaptopOsTests" runstate="Runnable" seed="184502490" result="Passed" start-time="2026-08-06 06:08:20Z" end-time="2026-08-06 06:08:21Z" duration="1.100265" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
                 </properties>
-                <output><![CDATA[[RunDirector] NEW RUN seed=0UXVNSFG bank=350 payment=60
+                <output><![CDATA[[RunDirector] NEW RUN seed=R76CNZKL bank=350 payment=60
 ]]></output>
               </test-case>
             </test-suite>
-            <test-suite type="TestFixture" id="1004" name="MomentumTapeTests" fullname="SBR.Tests.PlayMode.MomentumTapeTests" classname="SBR.Tests.PlayMode.MomentumTapeTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-08-06 04:05:47Z" end-time="2026-08-06 04:05:47Z" duration="0.070064" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <test-suite type="TestFixture" id="1004" name="MomentumTapeTests" fullname="SBR.Tests.PlayMode.MomentumTapeTests" classname="SBR.Tests.PlayMode.MomentumTapeTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-08-06 06:08:21Z" end-time="2026-08-06 06:08:22Z" duration="0.062093" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
               <properties />
-              <test-case id="1005" name="Tape_accumulates_dots_and_collapses_to_caps" fullname="SBR.Tests.PlayMode.MomentumTapeTests.Tape_accumulates_dots_and_collapses_to_caps" methodname="Tape_accumulates_dots_and_collapses_to_caps" classname="SBR.Tests.PlayMode.MomentumTapeTests" runstate="Runnable" seed="1806566518" result="Passed" start-time="2026-08-06 04:05:47Z" end-time="2026-08-06 04:05:47Z" duration="0.035077" asserts="0">
+              <test-case id="1005" name="Tape_accumulates_dots_and_collapses_to_caps" fullname="SBR.Tests.PlayMode.MomentumTapeTests.Tape_accumulates_dots_and_collapses_to_caps" methodname="Tape_accumulates_dots_and_collapses_to_caps" classname="SBR.Tests.PlayMode.MomentumTapeTests" runstate="Runnable" seed="288754095" result="Passed" start-time="2026-08-06 06:08:21Z" end-time="2026-08-06 06:08:22Z" duration="0.033422" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
@@ -48,120 +48,110 @@
                 </properties>
               </test-case>
             </test-suite>
-            <test-suite type="TestFixture" id="1006" name="PhoneTests" fullname="SBR.Tests.PlayMode.PhoneTests" classname="SBR.Tests.PlayMode.PhoneTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-08-06 04:05:47Z" end-time="2026-08-06 04:05:52Z" duration="4.602552" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <test-suite type="TestFixture" id="1006" name="PhoneTests" fullname="SBR.Tests.PlayMode.PhoneTests" classname="SBR.Tests.PlayMode.PhoneTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-08-06 06:08:22Z" end-time="2026-08-06 06:08:26Z" duration="4.818701" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
               <properties />
-              <test-case id="1009" name="Disabling_focus_mid_glide_restores_camera_controller_and_cursor" fullname="SBR.Tests.PlayMode.PhoneTests.Disabling_focus_mid_glide_restores_camera_controller_and_cursor" methodname="Disabling_focus_mid_glide_restores_camera_controller_and_cursor" classname="SBR.Tests.PlayMode.PhoneTests" runstate="Runnable" seed="402499130" result="Passed" start-time="2026-08-06 04:05:47Z" end-time="2026-08-06 04:05:48Z" duration="0.967932" asserts="0">
+              <test-case id="1009" name="Disabling_focus_mid_glide_restores_camera_controller_and_cursor" fullname="SBR.Tests.PlayMode.PhoneTests.Disabling_focus_mid_glide_restores_camera_controller_and_cursor" methodname="Disabling_focus_mid_glide_restores_camera_controller_and_cursor" classname="SBR.Tests.PlayMode.PhoneTests" runstate="Runnable" seed="1576520692" result="Passed" start-time="2026-08-06 06:08:22Z" end-time="2026-08-06 06:08:23Z" duration="0.995029" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
                 </properties>
-                <output><![CDATA[[RunDirector] NEW RUN seed=A6FF8AW4 bank=350 payment=60
+                <output><![CDATA[[RunDirector] NEW RUN seed=UF6ZB4XZ bank=350 payment=60
 ]]></output>
               </test-case>
-              <test-case id="1007" name="Laptop_focus_does_not_clear_unread_but_phone_focus_does" fullname="SBR.Tests.PlayMode.PhoneTests.Laptop_focus_does_not_clear_unread_but_phone_focus_does" methodname="Laptop_focus_does_not_clear_unread_but_phone_focus_does" classname="SBR.Tests.PlayMode.PhoneTests" runstate="Runnable" seed="1835227282" result="Passed" start-time="2026-08-06 04:05:48Z" end-time="2026-08-06 04:05:49Z" duration="0.998661" asserts="0">
+              <test-case id="1007" name="Laptop_focus_does_not_clear_unread_but_phone_focus_does" fullname="SBR.Tests.PlayMode.PhoneTests.Laptop_focus_does_not_clear_unread_but_phone_focus_does" methodname="Laptop_focus_does_not_clear_unread_but_phone_focus_does" classname="SBR.Tests.PlayMode.PhoneTests" runstate="Runnable" seed="1203932640" result="Passed" start-time="2026-08-06 06:08:23Z" end-time="2026-08-06 06:08:24Z" duration="1.080699" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
                 </properties>
-                <output><![CDATA[[RunDirector] NEW RUN seed=U6D1KDHF bank=350 payment=60
+                <output><![CDATA[[RunDirector] NEW RUN seed=OU9WPIJR bank=350 payment=60
 ]]></output>
               </test-case>
-              <test-case id="1010" name="Real_adapter_walks_a_no_bet_run_to_the_cliff_and_the_collection_text" fullname="SBR.Tests.PlayMode.PhoneTests.Real_adapter_walks_a_no_bet_run_to_the_cliff_and_the_collection_text" methodname="Real_adapter_walks_a_no_bet_run_to_the_cliff_and_the_collection_text" classname="SBR.Tests.PlayMode.PhoneTests" runstate="Runnable" seed="643885430" result="Passed" start-time="2026-08-06 04:05:49Z" end-time="2026-08-06 04:05:50Z" duration="1.146427" asserts="0">
+              <test-case id="1010" name="Real_adapter_walks_a_no_bet_run_to_the_cliff_and_the_collection_text" fullname="SBR.Tests.PlayMode.PhoneTests.Real_adapter_walks_a_no_bet_run_to_the_cliff_and_the_collection_text" methodname="Real_adapter_walks_a_no_bet_run_to_the_cliff_and_the_collection_text" classname="SBR.Tests.PlayMode.PhoneTests" runstate="Runnable" seed="694468691" result="Passed" start-time="2026-08-06 06:08:24Z" end-time="2026-08-06 06:08:25Z" duration="1.231299" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
                 </properties>
-                <output><![CDATA[[RunDirector] NEW RUN seed=9WR4VV3X bank=350 payment=60
+                <output><![CDATA[[RunDirector] NEW RUN seed=619W0PF1 bank=350 payment=60
 [RunDirector] NEW RUN seed=M5-CLIFF bank=350 payment=60
 ]]></output>
               </test-case>
-              <test-case id="1008" name="Second_focus_is_rejected_during_focus_in_and_focus_out" fullname="SBR.Tests.PlayMode.PhoneTests.Second_focus_is_rejected_during_focus_in_and_focus_out" methodname="Second_focus_is_rejected_during_focus_in_and_focus_out" classname="SBR.Tests.PlayMode.PhoneTests" runstate="Runnable" seed="1814115146" result="Passed" start-time="2026-08-06 04:05:50Z" end-time="2026-08-06 04:05:52Z" duration="1.484410" asserts="0">
+              <test-case id="1008" name="Second_focus_is_rejected_during_focus_in_and_focus_out" fullname="SBR.Tests.PlayMode.PhoneTests.Second_focus_is_rejected_during_focus_in_and_focus_out" methodname="Second_focus_is_rejected_during_focus_in_and_focus_out" classname="SBR.Tests.PlayMode.PhoneTests" runstate="Runnable" seed="542751655" result="Passed" start-time="2026-08-06 06:08:25Z" end-time="2026-08-06 06:08:26Z" duration="1.506378" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
                 </properties>
-                <output><![CDATA[[RunDirector] NEW RUN seed=98UG6ALG bank=350 payment=60
+                <output><![CDATA[[RunDirector] NEW RUN seed=YRM9EJR9 bank=350 payment=60
 ]]></output>
               </test-case>
             </test-suite>
-            <test-suite type="TestFixture" id="1011" name="RoomSmokeTests" fullname="SBR.Tests.PlayMode.RoomSmokeTests" classname="SBR.Tests.PlayMode.RoomSmokeTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-08-06 04:05:52Z" end-time="2026-08-06 04:05:53Z" duration="1.221471" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <test-suite type="TestFixture" id="1011" name="RoomSmokeTests" fullname="SBR.Tests.PlayMode.RoomSmokeTests" classname="SBR.Tests.PlayMode.RoomSmokeTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-08-06 06:08:26Z" end-time="2026-08-06 06:08:28Z" duration="1.278967" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
               <properties />
-              <test-case id="1012" name="Room_LoadsWiredAndSurvivesSixtyFrames" fullname="SBR.Tests.PlayMode.RoomSmokeTests.Room_LoadsWiredAndSurvivesSixtyFrames" methodname="Room_LoadsWiredAndSurvivesSixtyFrames" classname="SBR.Tests.PlayMode.RoomSmokeTests" runstate="Runnable" seed="1715197979" result="Passed" start-time="2026-08-06 04:05:52Z" end-time="2026-08-06 04:05:53Z" duration="1.219123" asserts="0">
+              <test-case id="1012" name="Room_LoadsWiredAndSurvivesSixtyFrames" fullname="SBR.Tests.PlayMode.RoomSmokeTests.Room_LoadsWiredAndSurvivesSixtyFrames" methodname="Room_LoadsWiredAndSurvivesSixtyFrames" classname="SBR.Tests.PlayMode.RoomSmokeTests" runstate="Runnable" seed="1811687196" result="Passed" start-time="2026-08-06 06:08:26Z" end-time="2026-08-06 06:08:28Z" duration="1.276913" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
                 </properties>
-                <output><![CDATA[[RunDirector] NEW RUN seed=DAFN323A bank=350 payment=60
+                <output><![CDATA[[RunDirector] NEW RUN seed=O27H75EY bank=350 payment=60
 ]]></output>
               </test-case>
             </test-suite>
-            <test-suite type="TestFixture" id="1013" name="TheaterStageTests" fullname="SBR.Tests.PlayMode.TheaterStageTests" classname="SBR.Tests.PlayMode.TheaterStageTests" runstate="Runnable" testcasecount="8" result="Passed" start-time="2026-08-06 04:05:53Z" end-time="2026-08-06 04:05:56Z" duration="3.031964" total="8" passed="8" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <test-suite type="TestFixture" id="1013" name="TheaterStageTests" fullname="SBR.Tests.PlayMode.TheaterStageTests" classname="SBR.Tests.PlayMode.TheaterStageTests" runstate="Runnable" testcasecount="8" result="Passed" start-time="2026-08-06 06:08:28Z" end-time="2026-08-06 06:08:31Z" duration="3.020404" total="8" passed="8" failed="0" inconclusive="0" skipped="0" asserts="0">
               <properties />
-              <test-case id="1019" name="Final_scene_stages_the_plan_goals_then_completes" fullname="SBR.Tests.PlayMode.TheaterStageTests.Final_scene_stages_the_plan_goals_then_completes" methodname="Final_scene_stages_the_plan_goals_then_completes" classname="SBR.Tests.PlayMode.TheaterStageTests" runstate="Runnable" seed="1302939561" result="Passed" start-time="2026-08-06 04:05:53Z" end-time="2026-08-06 04:05:53Z" duration="0.168853" asserts="0">
+              <test-case id="1019" name="Final_scene_stages_the_plan_goals_then_completes" fullname="SBR.Tests.PlayMode.TheaterStageTests.Final_scene_stages_the_plan_goals_then_completes" methodname="Final_scene_stages_the_plan_goals_then_completes" classname="SBR.Tests.PlayMode.TheaterStageTests" runstate="Runnable" seed="1203622649" result="Passed" start-time="2026-08-06 06:08:28Z" end-time="2026-08-06 06:08:28Z" duration="0.166628" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
                 </properties>
               </test-case>
-              <test-case id="1021" name="Freezing_holds_the_exact_frame" fullname="SBR.Tests.PlayMode.TheaterStageTests.Freezing_holds_the_exact_frame" methodname="Freezing_holds_the_exact_frame" classname="SBR.Tests.PlayMode.TheaterStageTests" runstate="Runnable" seed="863043436" result="Passed" start-time="2026-08-06 04:05:53Z" end-time="2026-08-06 04:05:53Z" duration="0.031147" asserts="0">
+              <test-case id="1021" name="Freezing_holds_the_exact_frame" fullname="SBR.Tests.PlayMode.TheaterStageTests.Freezing_holds_the_exact_frame" methodname="Freezing_holds_the_exact_frame" classname="SBR.Tests.PlayMode.TheaterStageTests" runstate="Runnable" seed="145159531" result="Passed" start-time="2026-08-06 06:08:28Z" end-time="2026-08-06 06:08:28Z" duration="0.031083" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
                 </properties>
               </test-case>
-              <test-case id="1018" name="Goal_playback_reports_commit_and_chalked_variants" fullname="SBR.Tests.PlayMode.TheaterStageTests.Goal_playback_reports_commit_and_chalked_variants" methodname="Goal_playback_reports_commit_and_chalked_variants" classname="SBR.Tests.PlayMode.TheaterStageTests" runstate="Runnable" seed="1528327837" result="Passed" start-time="2026-08-06 04:05:53Z" end-time="2026-08-06 04:05:53Z" duration="0.151958" asserts="0">
+              <test-case id="1018" name="Goal_playback_reports_commit_and_chalked_variants" fullname="SBR.Tests.PlayMode.TheaterStageTests.Goal_playback_reports_commit_and_chalked_variants" methodname="Goal_playback_reports_commit_and_chalked_variants" classname="SBR.Tests.PlayMode.TheaterStageTests" runstate="Runnable" seed="1910250067" result="Passed" start-time="2026-08-06 06:08:28Z" end-time="2026-08-06 06:08:28Z" duration="0.150890" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
                 </properties>
               </test-case>
-              <test-case id="1017" name="Goal_scenes_reveal_with_the_goal_before_scene_end" fullname="SBR.Tests.PlayMode.TheaterStageTests.Goal_scenes_reveal_with_the_goal_before_scene_end" methodname="Goal_scenes_reveal_with_the_goal_before_scene_end" classname="SBR.Tests.PlayMode.TheaterStageTests" runstate="Runnable" seed="900308213" result="Passed" start-time="2026-08-06 04:05:53Z" end-time="2026-08-06 04:05:53Z" duration="0.073198" asserts="0">
+              <test-case id="1017" name="Goal_scenes_reveal_with_the_goal_before_scene_end" fullname="SBR.Tests.PlayMode.TheaterStageTests.Goal_scenes_reveal_with_the_goal_before_scene_end" methodname="Goal_scenes_reveal_with_the_goal_before_scene_end" classname="SBR.Tests.PlayMode.TheaterStageTests" runstate="Runnable" seed="144530257" result="Passed" start-time="2026-08-06 06:08:28Z" end-time="2026-08-06 06:08:28Z" duration="0.072154" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
                 </properties>
               </test-case>
-              <test-case id="1016" name="One_scene_per_template_plays_to_completion_and_reveals_once" fullname="SBR.Tests.PlayMode.TheaterStageTests.One_scene_per_template_plays_to_completion_and_reveals_once" methodname="One_scene_per_template_plays_to_completion_and_reveals_once" classname="SBR.Tests.PlayMode.TheaterStageTests" runstate="Runnable" seed="861506346" result="Passed" start-time="2026-08-06 04:05:53Z" end-time="2026-08-06 04:05:54Z" duration="0.920466" asserts="0">
+              <test-case id="1016" name="One_scene_per_template_plays_to_completion_and_reveals_once" fullname="SBR.Tests.PlayMode.TheaterStageTests.One_scene_per_template_plays_to_completion_and_reveals_once" methodname="One_scene_per_template_plays_to_completion_and_reveals_once" classname="SBR.Tests.PlayMode.TheaterStageTests" runstate="Runnable" seed="1966119498" result="Passed" start-time="2026-08-06 06:08:28Z" end-time="2026-08-06 06:08:29Z" duration="0.922338" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
                 </properties>
               </test-case>
-              <test-case id="1020" name="Pending_window_suspends_at_the_shot_and_resumes_each_way" fullname="SBR.Tests.PlayMode.TheaterStageTests.Pending_window_suspends_at_the_shot_and_resumes_each_way" methodname="Pending_window_suspends_at_the_shot_and_resumes_each_way" classname="SBR.Tests.PlayMode.TheaterStageTests" runstate="Runnable" seed="652204314" result="Passed" start-time="2026-08-06 04:05:54Z" end-time="2026-08-06 04:05:55Z" duration="0.193337" asserts="0">
+              <test-case id="1020" name="Pending_window_suspends_at_the_shot_and_resumes_each_way" fullname="SBR.Tests.PlayMode.TheaterStageTests.Pending_window_suspends_at_the_shot_and_resumes_each_way" methodname="Pending_window_suspends_at_the_shot_and_resumes_each_way" classname="SBR.Tests.PlayMode.TheaterStageTests" runstate="Runnable" seed="1677682082" result="Passed" start-time="2026-08-06 06:08:29Z" end-time="2026-08-06 06:08:29Z" duration="0.189121" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
                 </properties>
               </test-case>
-              <test-case id="1015" name="Pulse_kicks_territory_toward_the_beneficiary_then_decays" fullname="SBR.Tests.PlayMode.TheaterStageTests.Pulse_kicks_territory_toward_the_beneficiary_then_decays" methodname="Pulse_kicks_territory_toward_the_beneficiary_then_decays" classname="SBR.Tests.PlayMode.TheaterStageTests" runstate="Runnable" seed="395349577" result="Passed" start-time="2026-08-06 04:05:55Z" end-time="2026-08-06 04:05:56Z" duration="1.468557" asserts="0">
+              <test-case id="1015" name="Pulse_kicks_territory_toward_the_beneficiary_then_decays" fullname="SBR.Tests.PlayMode.TheaterStageTests.Pulse_kicks_territory_toward_the_beneficiary_then_decays" methodname="Pulse_kicks_territory_toward_the_beneficiary_then_decays" classname="SBR.Tests.PlayMode.TheaterStageTests" runstate="Runnable" seed="1225257670" result="Passed" start-time="2026-08-06 06:08:29Z" end-time="2026-08-06 06:08:31Z" duration="1.468767" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
                 </properties>
               </test-case>
-              <test-case id="1014" name="Territory_restates_the_live_probability" fullname="SBR.Tests.PlayMode.TheaterStageTests.Territory_restates_the_live_probability" methodname="Territory_restates_the_live_probability" classname="SBR.Tests.PlayMode.TheaterStageTests" runstate="Runnable" seed="472983775" result="Passed" start-time="2026-08-06 04:05:56Z" end-time="2026-08-06 04:05:56Z" duration="0.017382" asserts="0">
-                <properties>
-                  <property name="_JOINTYPE" value="UnityCombinatorial" />
-                  <property name="retryIteration" value="0" />
-                  <property name="repeatIteration" value="0" />
-                </properties>
-              </test-case>
-            </test-suite>
-            <test-suite type="TestFixture" id="1022" name="TvAudioDirectorTests" fullname="SBR.Tests.PlayMode.TvAudioDirectorTests" classname="SBR.Tests.PlayMode.TvAudioDirectorTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-08-06 04:05:56Z" end-time="2026-08-06 04:05:56Z" duration="0.209772" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
-              <properties />
-              <test-case id="1023" name="Director_builds_fires_and_ducks_without_throwing" fullname="SBR.Tests.PlayMode.TvAudioDirectorTests.Director_builds_fires_and_ducks_without_throwing" methodname="Director_builds_fires_and_ducks_without_throwing" classname="SBR.Tests.PlayMode.TvAudioDirectorTests" runstate="Runnable" seed="1544208982" result="Passed" start-time="2026-08-06 04:05:56Z" end-time="2026-08-06 04:05:56Z" duration="0.206050" asserts="0">
+              <test-case id="1014" name="Territory_restates_the_live_probability" fullname="SBR.Tests.PlayMode.TheaterStageTests.Territory_restates_the_live_probability" methodname="Territory_restates_the_live_probability" classname="SBR.Tests.PlayMode.TheaterStageTests" runstate="Runnable" seed="1010787767" result="Passed" start-time="2026-08-06 06:08:31Z" end-time="2026-08-06 06:08:31Z" duration="0.013952" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
@@ -169,33 +159,43 @@
                 </properties>
               </test-case>
             </test-suite>
-            <test-suite type="TestFixture" id="1024" name="TvSweatScreenTests" fullname="SBR.Tests.PlayMode.TvSweatScreenTests" classname="SBR.Tests.PlayMode.TvSweatScreenTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-08-06 04:05:56Z" end-time="2026-08-06 04:06:02Z" duration="5.813643" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <test-suite type="TestFixture" id="1022" name="TvAudioDirectorTests" fullname="SBR.Tests.PlayMode.TvAudioDirectorTests" classname="SBR.Tests.PlayMode.TvAudioDirectorTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-08-06 06:08:31Z" end-time="2026-08-06 06:08:31Z" duration="0.198749" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
               <properties />
-              <test-case id="1025" name="FullRound_TwoTickets_SweatsSeriallyToSettleAndShop" fullname="SBR.Tests.PlayMode.TvSweatScreenTests.FullRound_TwoTickets_SweatsSeriallyToSettleAndShop" methodname="FullRound_TwoTickets_SweatsSeriallyToSettleAndShop" classname="SBR.Tests.PlayMode.TvSweatScreenTests" runstate="Runnable" seed="1233299687" result="Passed" start-time="2026-08-06 04:05:56Z" end-time="2026-08-06 04:05:58Z" duration="1.359244" asserts="0">
+              <test-case id="1023" name="Director_builds_fires_and_ducks_without_throwing" fullname="SBR.Tests.PlayMode.TvAudioDirectorTests.Director_builds_fires_and_ducks_without_throwing" methodname="Director_builds_fires_and_ducks_without_throwing" classname="SBR.Tests.PlayMode.TvAudioDirectorTests" runstate="Runnable" seed="260330676" result="Passed" start-time="2026-08-06 06:08:31Z" end-time="2026-08-06 06:08:31Z" duration="0.196588" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
                 </properties>
-                <output><![CDATA[[RunDirector] NEW RUN seed=QB4PQBHF bank=350 payment=60
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1024" name="TvSweatScreenTests" fullname="SBR.Tests.PlayMode.TvSweatScreenTests" classname="SBR.Tests.PlayMode.TvSweatScreenTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-08-06 06:08:31Z" end-time="2026-08-06 06:08:37Z" duration="6.042815" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1025" name="FullRound_TwoTickets_SweatsSeriallyToSettleAndShop" fullname="SBR.Tests.PlayMode.TvSweatScreenTests.FullRound_TwoTickets_SweatsSeriallyToSettleAndShop" methodname="FullRound_TwoTickets_SweatsSeriallyToSettleAndShop" classname="SBR.Tests.PlayMode.TvSweatScreenTests" runstate="Runnable" seed="699490025" result="Passed" start-time="2026-08-06 06:08:31Z" end-time="2026-08-06 06:08:32Z" duration="1.405900" asserts="0">
+                <properties>
+                  <property name="_JOINTYPE" value="UnityCombinatorial" />
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[[RunDirector] NEW RUN seed=XUO4GZGF bank=350 payment=60
 ]]></output>
               </test-case>
-              <test-case id="1026" name="StandingMidSweatFreezesTheEventCursor" fullname="SBR.Tests.PlayMode.TvSweatScreenTests.StandingMidSweatFreezesTheEventCursor" methodname="StandingMidSweatFreezesTheEventCursor" classname="SBR.Tests.PlayMode.TvSweatScreenTests" runstate="Runnable" seed="320502028" result="Passed" start-time="2026-08-06 04:05:58Z" end-time="2026-08-06 04:06:01Z" duration="3.481581" asserts="0">
+              <test-case id="1026" name="StandingMidSweatFreezesTheEventCursor" fullname="SBR.Tests.PlayMode.TvSweatScreenTests.StandingMidSweatFreezesTheEventCursor" methodname="StandingMidSweatFreezesTheEventCursor" classname="SBR.Tests.PlayMode.TvSweatScreenTests" runstate="Runnable" seed="43611969" result="Passed" start-time="2026-08-06 06:08:32Z" end-time="2026-08-06 06:08:36Z" duration="3.532923" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
                 </properties>
-                <output><![CDATA[[RunDirector] NEW RUN seed=AMQM5OZ7 bank=350 payment=60
+                <output><![CDATA[[RunDirector] NEW RUN seed=36LEP872 bank=350 payment=60
 ]]></output>
               </test-case>
-              <test-case id="1027" name="ZeroTicketLockSettlesOnTheSpot" fullname="SBR.Tests.PlayMode.TvSweatScreenTests.ZeroTicketLockSettlesOnTheSpot" methodname="ZeroTicketLockSettlesOnTheSpot" classname="SBR.Tests.PlayMode.TvSweatScreenTests" runstate="Runnable" seed="1377047189" result="Passed" start-time="2026-08-06 04:06:01Z" end-time="2026-08-06 04:06:02Z" duration="0.968214" asserts="0">
+              <test-case id="1027" name="ZeroTicketLockSettlesOnTheSpot" fullname="SBR.Tests.PlayMode.TvSweatScreenTests.ZeroTicketLockSettlesOnTheSpot" methodname="ZeroTicketLockSettlesOnTheSpot" classname="SBR.Tests.PlayMode.TvSweatScreenTests" runstate="Runnable" seed="2032068259" result="Passed" start-time="2026-08-06 06:08:36Z" end-time="2026-08-06 06:08:37Z" duration="1.100782" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
                 </properties>
-                <output><![CDATA[[RunDirector] NEW RUN seed=KSY775MB bank=350 payment=60
+                <output><![CDATA[[RunDirector] NEW RUN seed=782TQBE3 bank=350 payment=60
 Saving results to: C:/Users/Allen/AppData/LocalLow/DefaultCompany/SBR\TestResults.xml
 ]]></output>
               </test-case>

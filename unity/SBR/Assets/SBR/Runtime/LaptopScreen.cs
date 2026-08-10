@@ -25,10 +25,62 @@ namespace SBR.Game
         public float canvasOffset = 0.004f;
         public int referencePixelsWide = 1024;
 
-        [Header("Attention glow")]
-        [ColorUsage(false, true)] public Color idleEmission = new Color(0.025f, 0.035f, 0.055f);
-        [ColorUsage(false, true)] public Color attentionEmission = new Color(0.28f, 0.10f, 0.55f);
-        public float attentionBreathHz = 0.6f;
+        [Header("Lid emission")]
+        // S63-am2 (DD 2026-08-07, batch 13). TWO rulings landed on this field, and they point
+        // opposite ways:
+        //
+        //   1. THE COLOUR IS GRANTED AND SHIPS, BOTH ENDS. Chroma 68.97 -> 0.24; the room cast
+        //      moved 355.7deg red -> 85.1deg against the room's key at 92deg. idleEmission is
+        //      always on and must not be cool for 99% of the running time, so that half was
+        //      ruled unconditional.
+        //
+        //   2. THE ATTENTION CUE IS STRUCK. It was suspended pending one Play Mode frame with
+        //      wantsYou && !engaged true from a pose containing the laptop; the disposition was
+        //      pre-committed both ways. The frame was shot (artifacts/room-visual-pass/
+        //      s63am2-glow-cue, RoomViewCapture.CaptureLidEmissionInPlay) and the cue cannot be
+        //      framed:
+        //
+        //        seated pose ... the lid is OUT OF FRUSTUM (viewport x -0.638). When the cue
+        //                        fires the player is at the TV, and the laptop is not in shot.
+        //        focused pose .. IDENTICAL, 0.00%. At 0.52m, dead centre, the lid filling ~80%
+        //                        of the frame, a 3x step changes NOTHING - BuildSkeleton() puts
+        //                        the SureThing canvas 4mm in front at the lid's own world size,
+        //                        so the surface is behind an opaque quad.
+        //        standing pose . 233 px above JND out of 3.69M (0.0063%), max 9 levels, and the
+        //                        picture shows what they are: a one-pixel rim line on the lid's
+        //                        exposed edge.
+        //        room cast ..... 0.000 on right wall, floor aisle and ceiling plaster.
+        //
+        //      The ~3x ceiling had already been struck as a bound that did not bind. Note that
+        //      raising the amplitude could not have rescued this either: occlusion and framing
+        //      are both amplitude-invariant. That is why the ceiling was never what stopped it.
+        //
+        // attentionEmission is REMOVED, not zeroed, for the same reason attentionBreathHz was
+        // (R37): a dead serialized field is an invitation to reinstate the behaviour it drove.
+        // The struck value survives only as a quoted comparand inside the capture harness.
+        //
+        // What remains is one colour on one surface. The lid does not signal; it is lit.
+        /// <summary>
+        /// The granted lid colour, and the ONE definition of it. L* 21.09, chroma 5.4, hue 83.3deg,
+        /// R >= G > B — warm near-neutral, sitting just red of the room's #D8C48A key so it reads as
+        /// the screen's own light rather than as a separate source. It replaced a violet
+        /// (0.28, 0.10, 0.55) at chroma 64.1 and a cool idle (0.025, 0.035, 0.055).
+        ///
+        /// R40 (DD 2026-08-07, batch 14) is why this is a shared constant rather than a literal here
+        /// and another in the builder. The ScreenLaptop MATERIAL carried (0.025, 0.055, 0.035) —
+        /// hue 155.5deg, green-dominant, 72deg and 2.5x chroma away from this — while the runtime
+        /// property block wrote the granted value over the top. The player saw the ruling; the APV
+        /// bake and every Edit Mode capture saw the contradiction, including the captures that
+        /// settled this colour one batch earlier. Two literals is how that happens quietly, and
+        /// R19(b) already had to un-drift this project's institutional metal once for the same
+        /// reason — the fix there was one shared factory, HousingSteelMat(), and this is that.
+        ///
+        /// PhoneScreen takes its rest value from here too: the phone is HIS (§6), same personal
+        /// register as the laptop, so both of his screens rest on one authored chromaticity.
+        /// </summary>
+        public static readonly Color GrantedLidEmission = new Color(0.038f, 0.032f, 0.024f);
+
+        [ColorUsage(false, true)] public Color idleEmission = GrantedLidEmission;
 
         private Canvas _canvas;
         private TMP_FontAsset _font;
@@ -71,6 +123,7 @@ namespace SBR.Game
             _emissBlock = new MaterialPropertyBlock();
             if (tv == null) tv = FindAnyObjectByType<TvSweatScreen>();
             BuildSkeleton();
+            ApplyLidEmission();
         }
 
         private void Update()
@@ -80,7 +133,6 @@ namespace SBR.Game
 
             EnsureSlip();
             _os.Tick(director.Run, _slip);
-            Glow();
         }
 
         private void EnsureSlip()
@@ -118,20 +170,20 @@ namespace SBR.Game
             _os = new LaptopOs((RectTransform)root, _font, _fontCond, this, w, h);
         }
 
-        private void Glow()
+        /// <summary>
+        /// Writes the granted lid colour once. Not per-frame: with the cue struck there is no
+        /// state left to track, and re-asserting a constant every Update would imply one.
+        ///
+        /// This still has to run, because the property block is what makes the lid the ruled
+        /// colour -- the ScreenLaptop MATERIAL carries a different, older emission and disagrees
+        /// with the ruling. That disagreement is routed, not fixed here: the material's value is
+        /// what the APV bake and every Edit Mode capture see, so changing it re-opens the bake
+        /// and the structural gates.
+        /// </summary>
+        private void ApplyLidEmission()
         {
             if (lidRenderer == null) return;
-            Phase phase = director.Run.Phase;
-            bool wantsYou = phase == Phase.Betting || phase == Phase.Shop
-                || phase == Phase.RunWon || phase == Phase.RunLost;
-            bool engaged = DeskFocus.Active != null;
-            Color emission = idleEmission;
-            if (wantsYou && !engaged)
-            {
-                float breathe = 0.5f + 0.5f * Mathf.Sin(Time.time * attentionBreathHz * 2f * Mathf.PI);
-                emission = Color.Lerp(idleEmission, attentionEmission, breathe);
-            }
-            _emissBlock.SetColor(EmissionColorId, emission);
+            _emissBlock.SetColor(EmissionColorId, idleEmission);
             lidRenderer.SetPropertyBlock(_emissBlock);
         }
 
