@@ -37,6 +37,24 @@ Unity.exe -batchmode -quit -projectPath <project>
 - **Never `-nographics`.** Post-processing needs a graphics device. (`CaptureAll` additionally needs
   *no* `-quit` — it exits the editor itself. `CaptureConformance` takes `-quit` normally.)
 - `-outDir` must be absolute; the harness throws without it.
+- **Exit 0 arrives before the frames do. Never read the output directory to decide whether a run
+  worked.** The shell returns while the editor is still booting, so *exit 0 with an empty `-outDir`*
+  is exactly what a **healthy** run looks like for its first minute or two — and it is
+  indistinguishable from a real failure. `CaptureAll` is the sharp case, because Play Mode adds a
+  domain reload before anything is shot, but the trap belongs to the harness, not the mode: it
+  signals completion to nobody.
+
+  **Wait, then verify.** Poll until `Temp/UnityLockfile` has cleared *and* the expected PNGs exist,
+  then confirm the log carries one `[RoomViewCapture] wrote` line per frame.
+
+  **Serialize runs.** A second editor launched while the project is still held exits **0** after
+  licensing, having opened nothing — a ~47-line log and an empty directory, with no error anywhere.
+
+  This cost a cycle on 2026-08-09: the empty directory was read as failure, the run was relaunched in
+  a second host mode, and for a few minutes two arms of one comparison existed on two instruments —
+  the batch-9 defect, re-committed by someone who had just finished reading about it. §9.4's *"exit
+  code 0 alone does not prove the method ran"* has a twin worth stating in its own words: **exit
+  code 0 with no artifacts does not prove it failed.**
 
 ## 2. Scene and camera state
 
