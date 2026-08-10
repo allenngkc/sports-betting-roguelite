@@ -186,6 +186,14 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--report", help="tee the run to a file (C11/C17)")
+    ap.add_argument("--authored-stroke", type=float, metavar="PX",
+                    help="the face's own stroke metric at the shipped point size, in "
+                         "SCREEN px at this view. S2-am2-am makes this the denominator "
+                         "for any ACROSS-TIME comparison: a constant cannot be inflated "
+                         "by the glyph-merging artefact that inflates a measured stroke, "
+                         "so the quantity stays monotonic in blur while keeping clause "
+                         "2's meaning. Within one frame the measured stroke is correct "
+                         "and is always reported.")
     args = ap.parse_args()
 
     lines = []
@@ -314,6 +322,17 @@ def main():
         note = f"{resid:.3f} px" if resid > 0 else "AT/BELOW floor"
         out(f"  {name:>20s} {len(boxes):>6d} {len(ramps):>6d} {sm:>8.3f} "
             f"{rm:>7.3f} {rm / sm:>7.3f} {note:>12s}")
+        if args.authored_stroke:
+            out(f"  {'':>20s} S2-am2-am, across-time form: ramp / AUTHORED stroke "
+                f"({args.authored_stroke:.3f} px) = "
+                f"{rm / args.authored_stroke:.3f}")
+    if not args.authored_stroke:
+        out("")
+        out("  NOTE: --authored-stroke was not supplied, so only the WITHIN-FRAME form")
+        out("  is reported above. Per S2-am2-am that form is correct for comparing")
+        out("  elements inside this frame and is NOT valid across time. Supply the")
+        out("  face's authored stroke at the shipped point size, in screen px at this")
+        out("  view, to get the regression-safe number.")
     out("")
     out("  Saturation check: Part A shows the ratio compressing above sigma ~1, where")
     out("  the measured ramp reaches ~3.2 px. Both groups above sit well below that,")
