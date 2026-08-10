@@ -1101,20 +1101,35 @@ materials and lighting rig (room-refinement) · Laptop/SureThing files (surethin
   3. **Compare the FILE BYTES.** `Get-FileHash -Algorithm SHA256` on the working file against HEAD's
      blob extracted to a temp path, or `fc /b`. That agreed with HEAD immediately in the same test.
 
-  **And `git checkout -- <path>` cannot restore this file** — the smudge filter cannot run, so each
-  attempt writes different bytes. The method that works:
+  **RESTORING: check what the blob IS before you restore from it.** This is the rule, and the
+  previous version of this note got it wrong in a way that corrupted the DLL on 2026-08-10.
 
-  ```
-  sha=$(git rev-parse "HEAD:unity/SBR/Assets/Plugins/SBR/SBR.Engine.dll")
-  cmd /c "git cat-file -p $sha > <path>"     # cmd redirection is byte-safe; PowerShell's `>` is NOT
-  ```
+  A tracked binary here is in one of two states, and **the correct restore is opposite in each**:
 
-  PowerShell's `>` re-encodes as text and **corrupts the DLL** — that was caught by hashing the
-  result, not by anything failing loudly. Verify the restore loads: `[Reflection.Assembly]::LoadFile`
-  should report `SBR.Engine`, 74 types.
+  | HEAD's blob | `git checkout -- <path>` | `git cat-file -p <sha> > <path>` |
+  |---|---|---|
+  | **a raw binary** (pre-round) | writes different bytes each time — broken | **correct** |
+  | **an LFS pointer** (post-round) | **correct** — smudges to the real file | writes the 130-byte POINTER TEXT — corrupts it |
 
-  **A .NET rebuild can never hash-match its predecessor** — the MVID is regenerated every build — so a
-  genuinely rebuilt DLL always needs the restore above; only an untouched one is already identical.
+  So: `git cat-file -s $(git rev-parse "HEAD:<path>")`. **~130 bytes means a pointer** — use
+  `checkout`. A full-size blob means a raw binary — use `cat-file` through **cmd** redirection
+  (PowerShell's `>` re-encodes as text and corrupts binaries).
+
+  **What went wrong, because the failure mode is the point.** After the round, `SBR.Engine.dll`
+  became pointer-backed. The fast-forward smudged it correctly to 94,720 bytes. Then the old rule
+  above was applied by reflex — `cat-file` — which overwrote a working assembly with the pointer's
+  own text. `Bad IL format`.
+
+  **And the cmp-verify PASSED while the file was broken**, because it hashed the restored file
+  against the same blob it had just copied from: pointer against pointer, identical, green. **A
+  comparison against the thing you just wrote proves only that the copy succeeded.**
+
+  **So verify a restore by USING the artefact, not by hashing it.**
+  `[Reflection.Assembly]::LoadFile` must report `SBR.Engine` and a plausible type count. That check
+  caught this; the hash endorsed it.
+
+  **A .NET rebuild can never hash-match its predecessor** — the MVID is regenerated every build — so
+  a genuinely rebuilt DLL always needs a restore; only an untouched one is already identical.
 - **`GrayboxRoomBuilder.Build()` regenerates `Room.unity` from scratch** and rewrites builder-owned
   material properties. Nothing hand-placed survives. Anything this worktree needs persistent in the
   room goes through the room lead.
