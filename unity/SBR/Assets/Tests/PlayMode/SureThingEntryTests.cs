@@ -166,6 +166,60 @@ namespace SBR.Tests.PlayMode
                 TextOf(Required(margin, "LockReason")));
         }
 
+        /// <summary>S71, closed by measurement rather than by eye. The ruling was granted
+        /// qualitatively on `03-staged-receipt-lock-enabled` — the frame showed one speaker where
+        /// there had been two — and NOTHING gated it. A re-authored empty state could put the second
+        /// speaker back with every suite green, which is this surface's most-repeated failure shape.
+        ///
+        /// Asserted BY TOKEN, not by weight. C33b rules that a ranking is asserted by weight only
+        /// among neutrals: Muted (0x6E6B5E) is neutral and Accent (0x5E86B8) is biro — chromatic —
+        /// so comparing their luminance would measure the wrong axis. Compared as Color32, which is
+        /// the space both tokens are authored in (C33-am3: state the space, not only the unit), so
+        /// the check cannot drift on float conversion.
+        ///
+        /// BOTH inks are read, not just the empty line's, because the claim S71 rests on is that
+        /// ownership is carried by the HEADER. An empty line that stopped restating ownership while
+        /// the header quietly stopped asserting it would satisfy half the ruling and lose the fact.
+        ///
+        /// Scope (C25): this reads the authored ink at the component. It is the token channel, not a
+        /// rendered pixel — the frame stays the authority for how it READS, and this gate only holds
+        /// the tokens the frame was granted on.</summary>
+        [UnityTest, Order(10)]
+        public IEnumerator Margin_empty_state_names_the_state_and_leaves_ownership_to_the_header()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            yield return OpenEntry(laptop);
+
+            Assert.AreEqual(0, laptop.Slip.Picks.Count,
+                "this gate reads the EMPTY state, so a freshly booted entry screen must carry no " +
+                "working marks — if this ever fails the test is measuring the wrong state");
+
+            Transform margin = Required(App(laptop), "WorkingMargin");
+            Transform empty = Required(margin, "Empty");
+            Transform title = Required(margin, "Title");
+
+            Assert.AreEqual("NO MARKS ON THIS SHEET", TextOf(empty),
+                "S71: the empty state names the STATE. It read 'YOUR MARGIN IS CLEAR' — a second " +
+                "speaker addressing the player, three lines under 'MY MARKS', which is him.");
+            StringAssert.DoesNotContain("YOUR", TextOf(empty).ToUpperInvariant(),
+                "Voice §6 puts second person in genuine imperatives only and this slot is a " +
+                "statement. This assertion is the one that survives a re-authoring of the copy: " +
+                "the line above pins today's words, this one pins the ruling.");
+
+            Assert.AreEqual((Color32)LaptopOs.Muted, (Color32)empty.GetComponent<TMP_Text>().color,
+                "the empty state reports the sheet's condition, so it takes the neutral toner " +
+                "rather than the ink that means 'what he chose'");
+            Assert.AreEqual((Color32)LaptopOs.Accent, (Color32)title.GetComponent<TMP_Text>().color,
+                "MY MARKS stays biro. S71 leaves ownership to this header, so if the header ever " +
+                "stops being the player's ink then nothing on the column carries ownership at all");
+            Assert.AreNotEqual((Color32)title.GetComponent<TMP_Text>().color,
+                (Color32)empty.GetComponent<TMP_Text>().color,
+                "one voice per column: the header owns it and the empty line reports it. The two " +
+                "collapsing into one ink is the composition S71 was ruled against, arriving by a " +
+                "different route than the words did.");
+        }
+
         [UnityTest, Order(4)]
         public IEnumerator Market_offer_rows_stay_within_the_market_viewport_horizontally_on_every_destination()
         {

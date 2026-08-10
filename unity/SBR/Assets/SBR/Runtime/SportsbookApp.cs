@@ -95,7 +95,20 @@ namespace SBR.Game
             // construction S16 deleted in "SURETHING LEDGER". The 300px box is unchanged: it was
             // already sized for the longer string, and BuildRunFigures starts at x=398.
             LaptopUi.MakeText(mast, "Brand", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(16f, -8f), new Vector2(300f, 28f), 26, TextAnchor.UpperLeft, LaptopOs.White, "SURETHING", _fontCond, LaptopTrack.Names);
-            LaptopUi.MakeText(mast, "Run", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(17f, -38f), new Vector2(340f, 20f), 13, TextAnchor.UpperLeft, LaptopOs.Muted, $"ROUND {run.Round} OF {run.Config.Rounds}  ·  PRICES FINAL", _font);
+            // Batch 21: PRICES FINAL leaves this subline. The masthead carries the run's SCOPE and
+            // nothing else — whether a price can still move is the board's fact, not the run's, and
+            // stating it here made one 13px line carry two registers. Text is deleted INSIDE the
+            // existing 340x20 box: no re-derivation, and the box was already sized for the longer
+            // string, so nothing below it moves.
+            //
+            // It also closes the disagreement S67 filed. This site and the LEDGER's "Scope"
+            // (BuildLedgerChrome, ~:2261) print the identical string now, and SureThingLedgerTests
+            // has asserted that string on the LEDGER side since batch 7 — where S37's first instance
+            // was resolved the same way, by deleting the restating clause rather than the line.
+            // The two sites still differ in NAME ("Run" here, "Scope" there) and still build the
+            // string inline rather than through a LaptopUi helper. That is S67's actual finding and
+            // this ruling did not touch it: it is left alone rather than tidied in passing.
+            LaptopUi.MakeText(mast, "Run", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(17f, -38f), new Vector2(340f, 20f), 13, TextAnchor.UpperLeft, LaptopOs.Muted, $"ROUND {run.Round} OF {run.Config.Rounds}", _font);
             // S31: the masthead's run figures, shared with OldSlipsApp.BuildLedgerChrome so LEDGER
             // carries the exact same BANK/TARGET/TICKETS figures rather than a parallel string.
             BuildRunFigures(mast, run, _fontCond);
@@ -833,11 +846,15 @@ namespace SBR.Game
             LaptopUi.MakePanel(panel, "HeaderRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -34f), new Vector2(headerRight, 2f), LaptopOs.BiroDeep);
 
-            // S50 §1: the house status line is DELETED — 18px. It restated the board header's own
-            // "ROUND n OF 8 · PRICES FINAL", which S37 forbids outright (the masthead carries the
-            // run's scope, the board header the screen's, and nothing restates either), and the
-            // markets C14 audit already carried it as invented (M-09). This was never an open
-            // question — an unexecuted ruling is not a pending one.
+            // S50 §1: the house status line is DELETED — 18px. It restated the scope line, which at
+            // the time read "ROUND n OF 8 · PRICES FINAL" — batch 21 has since taken PRICES FINAL
+            // off the masthead subline (see :98), so that quotation is HISTORICAL and is kept only
+            // because it is what S50 was ruled against. The restatement it describes was of the
+            // SCOPE, which the masthead still carries, so the ruling is untouched by that change.
+            // S37 forbids it outright (the masthead carries the run's scope, the board header the
+            // screen's, and nothing restates either), and the markets C14 audit already carried it
+            // as invented (M-09). This was never an open question — an unexecuted ruling is not a
+            // pending one.
             float y = -44f;
             if (slip.Picks.Count == 0)
             {
