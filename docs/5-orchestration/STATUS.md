@@ -58,6 +58,29 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-09 cycle 147 · **FIVE CANONS; the wave closes round-ready** —
+  Allen APPROVED `phone-design.md` (bde5c81): five surfaces, five
+  Allen-approved owning documents, the studio's design authority complete.
+  Batches 26–28 landed/transcribed: the legibility scare was an ARTIFACT
+  (struck; readability rule now calibrated on clean frames); T68-am+T71
+  REFUSED on their own commissioned frames — the flood itself is the
+  violation, and TV built the removal (1e02d42 "T40 enforced: the
+  full-field gold washes are struck", pushed with the capture path); G1
+  GRANTED-CLOSED; S72 clean-closed with C40 (a proxy is labelled a proxy)
+  and the exactly-once clause recounted in speakers; batch-28's member
+  fixes committed (45cb958). All three branches converged and round-ready
+  (room 8 ahead, TV pushed, SureThing current). Queued next: the S2-am3
+  measurement (thinnest 13px condensed fact, staged-ticket precondition,
+  room's rig) and the merge round on Allen's word.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | converged | S2-am3 shoot on rig handoff | lead |
+  | tv-sweat | pushed, round-ready | merge round | Allen/orch |
+  | room | round-ready (8 ahead) | merge round | Allen/orch |
+  | markets-2 | clean | none | — |
+  | DD terminal | idle-legal | flood-removal frames / measurement on land | DD |
+  | **Need Allen** | merge-round word · evidence-in-git policy | word + call | Allen |
 - 2026-08-09 cycle 146 · **The verdicts wave ran end to end through the new
   channel** — batches 22–25 landed/transcribed (S37-cl + T70 granted;
   S71 closed at the token on SureThing's own answer; S72 opened, swept,
