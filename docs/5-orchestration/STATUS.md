@@ -58,6 +58,26 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-09 cycle 143 · **Full convergence; one correction to my own report**
+  — SureThing merged main (58bfd92, hand-read per the C13 hazard, suites
+  green before commit); all four lanes now share main's tip lineage. Strays
+  cleaned (368 untracked frames), handoff landmine line fixed (47d4d51).
+  **CORRECTION (mine):** I told Allen the 405 tracked evidence frames ride
+  as LFS pointers — SureThing measured and they do NOT: room's evidence
+  sets were committed BEFORE the top-level .gitattributes existed on its
+  branch, so main carries ~1GB of raw frame content in HISTORY, not in
+  LFS. The evidence-in-git policy question now turns on that fact (history
+  rewrite vs renormalize-forward vs accept); recorded in the merge commit
+  itself so it travels with the merge. Unhurried, Allen's call.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | converged, clean-holding | DD verdicts / merge round on Allen's word | — |
+  | tv-sweat | clean-holding | DD verdicts | DD |
+  | room | converged, clean-holding | phone frame on DD sequencing | lead |
+  | markets-2 | clean-holding | none | — |
+  | DD terminal | standing | phone sequence | DD |
+  | **Need Allen** | evidence-in-git policy (now: ~1GB raw history, NOT pointers — my earlier line corrected) | unhurried call | Allen |
 - 2026-08-09 cycle 142 · **THE EMISSION ERA IS ON MAIN** — room-refinement
   merged at 7cb5344 (Allen's order): canonical validation GREEN at the tip
   (engine 183/183, EditMode 78/78, PlayMode 57/57 real graphics, DLL bytes
