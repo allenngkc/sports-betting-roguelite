@@ -1180,8 +1180,20 @@ Archivo Narrow's digits are already uniform, so this is insurance rather than a 
   -testResults "<worktree>/evidence/test-results/x.xml" -logFile "<worktree>/evidence/logs/x.log"
 ```
 
-Captures land in `artifacts/surething-ui/` (gitignored). Nine states across two `[UnityTest]`s in
-`SureThingVisualCaptureTests`.
+Captures land in `artifacts/surething-ui/`, which is **NOT gitignored.** Main un-ignored it
+deliberately on 2026-07-28 so design evidence stops being silently swallowed, so a bare `git add -A`
+after a capture run sweeps in ~100 PNGs. **Stage explicitly, always.** Do not trust this line either —
+check it: `git check-ignore -v artifacts/surething-ui` prints nothing, and `git status --short` shows
+the directory as `??`.
+
+**Seven** `[UnityTest]`s in `SureThingVisualCaptureTests`, covering **20** distinct capture states.
+
+This sentence read *"(gitignored). Nine states across two `[UnityTest]`s"* until 2026-08-09 — wrong on
+all three counts, and the first is the expensive kind: **it told the next seat that the landmine this
+file warns about twice elsewhere did not exist.** A warning is worth nothing while another sentence
+quietly cancels it. Corrected after clearing **368 stray frames out of four other worktrees** — which
+is exactly what the un-ignored path produces once other lanes start running this surface's capture
+suite, and which no one had looked for because this line said there was nothing to find.
 
 ## 6. Standing laws
 
