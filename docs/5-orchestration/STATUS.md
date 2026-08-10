@@ -59,6 +59,41 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-10 cycle 150 · **BOTH MEASUREMENT ARCS DELIVERED; TV'S SEAT
+  ROTATED; THE DD READS THE FLOOD FRAMES** — TV's window results certified
+  by its own explanation of the out-of-band contrast (the 6.47/6.58
+  pre-commitment was a FLOOR computed from the cleanest pre-removal frame;
+  landing above it is what full removal looks like — relayed to the DD,
+  who had flagged it and requested exactly that). TV handoff `5d794c6`
+  pushed/remote-verified, seat rotated at 99% context: fresh Opus 5 seat
+  seeded on a refreshed orchestrator-brief, old terminal closed, watcher
+  re-armed as v18 on the new handle. **Slash-command sends go via
+  PowerShell only** — Bash/MSYS path-mangles them (ate one /clear and one
+  /effort max this stretch; both caught on verify-read and re-sent). DD's
+  authored-stroke ruling landed `2c7ceeb`: season records 1.94 / row
+  numbers 2.03 frame px, per-group never pooled, pose-bound; the
+  variable-font SemiBold-default trap (S29's shape) caught by its own
+  two-group coherence check. SureThing's S2-am3 arc complete at
+  `fa93238`: C37 instrument gate passed, all boxes eye-confirmed (stock
+  record boxes re-cut — unpinned slate moves record x with team names;
+  consequence docketed to the DD as a recipe call: pin the slate or
+  per-frame boxes), across-time baseline: **the flood removal did not
+  move the surface's floor** (authored 1.115→1.152 / 1.243→1.246,
+  measured flat). Allen's staged rulings all fired same-cycle: rig's
+  boxes as targets, new dated directory, eye-confirm→within-frame,
+  reports+boxes only (frames stay on disk per open storage policy), push
+  it, rotate, merge-main+suites, go-ahead on the flood verdict. DD queue:
+  flood verdict (reading frames now), then S2-am3 record + slate call.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | tv-sweat (fresh seat) | orienting on brief | stand by for flood verdict | lead |
+  | surething-ui | merging main + both suites | report SHA + counts | lead |
+  | room | holding 6917a64 per Allen | — | — |
+  | markets-2 | clean | none | — |
+  | DD terminal | reading flood frames | verdict → then S2-am3 docket | DD |
+  | Editor | free (both windows closed clean) | — | orchestrator |
+  | **Need Allen** | evidence-in-git policy (unchanged) | call | Allen |
 - 2026-08-09 cycle 149 · **POST-ROUND CONVERGENCE + THE FONT LANDMINE
   DEFUSED; DD RE-SEATED; TV'S CAPTURE WINDOW LIVE** — all lanes converged
   on new main (TV/SureThing/room at 1d6eb35, ff, zero conflicts). Room

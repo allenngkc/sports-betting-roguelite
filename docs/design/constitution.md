@@ -254,6 +254,37 @@ the code behaved.
 Its first application **un-retired two verdicts**: this clause recovers work as often as it discards
 it, which is the correct shape for an instrument law.
 
+### 4.6 A prediction made from a contaminated frame is a floor, not a target (C41)
+
+> **APPROVED — Allen, 2026-08-10.** Canon.
+
+Third of the instrument laws, and the one that governs the moment *before* a measurement is taken.
+
+**Where an expected value is derived from a frame that still contains the element under test, that
+value is a floor and not a target, and it is stated as a direction of travel — never as a number to
+land on.** A frame containing the defect carries the defect's contribution into every value read off
+it, including the value predicted for the defect's absence.
+
+*Founding case:* batch 27 struck the TV's full-field flood and ruled the fix "pre-verified", because
+one existing frame showed the flood at **alpha 0** and measured 6.47:1 accept / 6.58:1 win tally. The
+DD seat then pre-committed its own verdict to a ±0.35 band around those numbers. Both were wrong the
+same way. `_goldFlood` carries an HDR material, and at alpha 0 it still contributed **0.0269** of
+ground luminance: the ground read 0.0640 with the flood present-but-invisible and 0.0371 with it
+deleted, while the ink never moved (0.6881 → 0.6877). The removal landed at 8.4:1 — **outside the
+band, on the high side, and landing inside it would have meant residue survived.** The pre-commitment
+had inverted its own test.
+
+**An element at zero alpha is not an absent element.** That is this clause's short form, and it is
+§2.5's shape one step earlier: an authored zero is not a measured zero.
+
+The pre-commitment is not what failed and is not weakened here — it is what forced an explanation
+instead of letting a pleasing number through, and the correction came back as checkable arithmetic
+inside the window. What failed was expressing it as a value. Had it read *"ground falls, ink stops
+moving"* it would have been satisfied exactly as the frames satisfied it.
+
+Recorded under §1.5 as the seat's own error, twice over: the ruling that made the prediction and the
+pre-commitment that inherited it were both this seat's.
+
 ---
 
 ## 5. Variety
@@ -283,7 +314,8 @@ legible grammars from nineteen authored pieces on this rule.
 `C18` inventories and gates, and gate visibility · `C19` reachability · `C20` grade authority ·
 `C22` the tables are the canon · `C22.1` one ruling one ID · `C23` build-corrects-doc ·
 `C36` a control brackets what it certifies · `C37` a null needs a resolvable success ·
-`T18` compose don't multiply · `T19` rendered distinctness.
+`C41` a contaminated prediction is a floor · `T18` compose don't multiply ·
+`T19` rendered distinctness.
 
 Not carried here, and deliberately: every colour, type, layout, motion and palette law. Those are
 the owning documents' content, and the reason this document is short.
