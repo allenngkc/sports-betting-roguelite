@@ -33,6 +33,8 @@ namespace SBR
         private const string ScaleArmedKey = "SBR.RoomViewCapture.ScaleArmed";
         private const string SmaaArmedKey = "SBR.RoomViewCapture.SmaaArmed";
         private const string RsArmedKey = "SBR.RoomViewCapture.RsArmed";
+        private const string SweepArmedKey = "SBR.RoomViewCapture.SweepArmed";
+        private const string AuditArmedKey = "SBR.RoomViewCapture.AuditArmed";
         private const string OutDirKey = "SBR.RoomViewCapture.OutDir";
         private const int Width = 2560;
         private const int Height = 1440;
@@ -44,6 +46,8 @@ namespace SBR
         private static int _scaleFrames;
         private static int _smaaFrames;
         private static int _rsFrames;
+        private static int _sweepFrames;
+        private static int _auditFrames;
 
         /// <summary>
         /// Edit-mode capture. No Play Mode, so no domain reload - this runs to completion in a
@@ -1276,6 +1280,278 @@ namespace SBR
                 urp.renderScale = original;
                 Debug.Log($"[RenderScale] RESTORED renderScale = {urp.renderScale} " +
                           $"(shipped was {original})");
+            }
+        }
+
+        /// <summary>
+        /// The discriminating session: geometry validity FIRST, then _Sharpness at renderScale 1.5.
+        ///
+        /// VALIDITY. The render-scale null (ramp 1.686 -> 1.815 at 1.5x, no narrowing) is only
+        /// physics if the override actually reached the captured path. SureThing's §6 names the
+        /// positive control it needs: a HARD GEOMETRY edge in the same frames that narrows toward
+        /// x0.667 as ordinary supersampling requires. If nothing in the frame narrows, the runtime
+        /// renderScale never reached this capture path and the null is instrument, not evidence.
+        /// The original 1.5 pair was discarded on instruction, so it is re-shot here.
+        ///
+        /// WHY THE SWEEP IS AT 1.5 AND NOT 1.0. My _Sharpness null at scale 1.0 was INVALID and
+        /// I accept the correction: a successful halving lands at 0.84 px, under the ~1 px
+        /// single-sample floor, so that test could not resolve success either way. It is C32 --
+        /// resolution below the band being judged -- which I had applied to my own whole-pixel
+        /// ramp measurement and failed to apply to this. At 1.5 the floor drops to ~0.67 px and a
+        /// halved ramp becomes visible.
+        ///
+        /// ONE SESSION, SHARED RENDER PATH. A validity check shot in a different session covers
+        /// nothing about the frames the sweep is measured on.
+        ///
+        /// Everything is set at RUNTIME and restored in a finally: renderScale, and _Sharpness on
+        /// all three font materials. Nothing is written to disk.
+        ///
+        /// The sweep frames are captured regardless, but they are only REPORTED if the geometry
+        /// check passes. Capturing them costs nothing extra in one session; concluding from them
+        /// under a failed validity check would be building on a broken result.
+        ///
+        ///   Unity.exe -batchmode -projectPath (project)
+        ///             -executeMethod SBR.RoomViewCapture.CaptureSharpnessSweep -outDir (path)
+        /// </summary>
+        public static void CaptureSharpnessSweep()
+        {
+            string outDir = OutDirFromArgs();
+            Directory.CreateDirectory(outDir);
+            SessionState.SetString(OutDirKey, outDir);
+            SessionState.SetBool(SweepArmedKey, true);
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            EditorApplication.EnterPlaymode();
+        }
+
+        [InitializeOnLoadMethod]
+        private static void RehookSweep()
+        {
+            if (SessionState.GetBool(SweepArmedKey, false))
+                EditorApplication.update += OnSweepUpdate;
+        }
+
+        private static void OnSweepUpdate()
+        {
+            if (!EditorApplication.isPlaying) return;
+            _sweepFrames++;
+            if (_sweepFrames < WarmupFrames) return;
+
+            EditorApplication.update -= OnSweepUpdate;
+            SessionState.SetBool(SweepArmedKey, false);
+
+            int code = 0;
+            try { SweepRun(SessionState.GetString(OutDirKey, string.Empty)); }
+            catch (Exception e) { Debug.LogError($"[Sweep] failed: {e}"); code = 1; }
+            EditorApplication.Exit(code);
+        }
+
+        private static void SweepRun(string outDir)
+        {
+            if (string.IsNullOrEmpty(outDir))
+                throw new InvalidOperationException("output directory lost across domain reload");
+
+            var book = UnityEngine.Object.FindAnyObjectByType<SBR.Game.LaptopScreen>();
+            var canvas = book != null ? book.GetComponentInChildren<Canvas>(true) : null;
+            int graphics = canvas != null
+                ? canvas.GetComponentsInChildren<UnityEngine.UI.Graphic>(true).Length : 0;
+            if (graphics == 0)
+                throw new InvalidOperationException("no live laptop canvas - nothing to measure");
+
+            var urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+            if (urp == null)
+                throw new InvalidOperationException("no UniversalRenderPipelineAsset active");
+
+            var fonts = Resources.LoadAll<TMPro.TMP_FontAsset>("SureThing/Fonts");
+            if (fonts == null || fonts.Length == 0)
+                throw new InvalidOperationException(
+                    "no TMP font assets under Resources/SureThing/Fonts - the sweep would set " +
+                    "_Sharpness on nothing and every arm would be identical, which reads as " +
+                    "'sharpness does nothing'");
+            Debug.Log($"[Sweep] {graphics} Graphic(s); {fonts.Length} font asset(s)");
+
+            float scale0 = urp.renderScale;
+            var sharp0 = new Dictionary<TMPro.TMP_FontAsset, float>();
+            foreach (var f in fonts)
+                if (f.material != null && f.material.HasProperty("_Sharpness"))
+                    sharp0[f] = f.material.GetFloat("_Sharpness");
+            Debug.Log($"[Sweep] shipped renderScale={scale0}; _Sharpness captured on {sharp0.Count} material(s)");
+
+            Camera cam = FindPlayerCamera();
+            var controller = UnityEngine.Object.FindAnyObjectByType<FirstPersonController>();
+            if (controller != null) controller.enabled = false;
+
+            try
+            {
+                foreach (string ctl in new[] { "control-a", "control-b" })
+                {
+                    WarmRender(cam);
+                    string cd = Path.Combine(outDir, ctl);
+                    Directory.CreateDirectory(cd);
+                    Capture(cd);
+                }
+
+                // --- validity: the same geometry at both scales, nothing else changed ---
+                WarmRender(cam);
+                string g10 = Path.Combine(outDir, "geom-scale-1.0");
+                Directory.CreateDirectory(g10);
+                Capture(g10);
+
+                urp.renderScale = 1.5f;
+                WarmRender(cam);
+                string g15 = Path.Combine(outDir, "geom-scale-1.5");
+                Directory.CreateDirectory(g15);
+                Capture(g15);
+                Debug.Log("[Sweep] validity pair shot at 1.0 and 1.5");
+
+                // --- sweep, at 1.5, where a halved ramp clears the sampling floor ---
+                foreach (float s in new[] { 0.00f, 0.25f, 0.50f, 0.75f, 1.00f })
+                {
+                    foreach (var f in fonts)
+                        if (f.material != null && f.material.HasProperty("_Sharpness"))
+                            f.material.SetFloat("_Sharpness", s);
+                    WarmRender(cam);
+                    string d = Path.Combine(outDir, $"sharp-{s:0.00}");
+                    Directory.CreateDirectory(d);
+                    Capture(d);
+                    Debug.Log($"[Sweep] _Sharpness {s:0.00} shot at renderScale 1.5");
+                }
+            }
+            finally
+            {
+                urp.renderScale = scale0;
+                foreach (var kv in sharp0)
+                    if (kv.Key.material != null) kv.Key.material.SetFloat("_Sharpness", kv.Value);
+                Debug.Log($"[Sweep] RESTORED renderScale={urp.renderScale}; " +
+                          $"_Sharpness restored on {sharp0.Count} material(s)");
+            }
+        }
+
+        /// <summary>
+        /// Is the ~1.6 px floor the HARNESS's own path? The instrument audits itself.
+        ///
+        /// Every number in this hunt was measured through Shoot(): camera -> 2560x1440
+        /// RenderTexture -> ReadPixels -> PNG. That RT is an output-resolution stage, frame-wide by
+        /// construction, and NO control run so far covers it — a control pair proves two captures
+        /// agree with each other, which a CONSTANT instrument contribution satisfies perfectly.
+        /// A ramp introduced there would be fixed in screen pixels, invariant to magnification, and
+        /// survive supersampling: all three acceptance conditions, from the instrument.
+        ///
+        /// Three arms:
+        ///   rt-bilinear   the harness exactly as it has always run
+        ///   rt-point      same, RT filterMode Point. EXPECTED NULL, and stated as such in advance:
+        ///                 ReadPixels is a direct copy, not a sample, so filterMode should not
+        ///                 enter this path at all. If it DOES change the frame, my model of the
+        ///                 harness is wrong, which is worth knowing on its own.
+        ///   backbuffer    targetTexture null, rendered to screen, read with
+        ///                 ScreenCapture.CaptureScreenshotAsTexture — a DIFFERENT destination path,
+        ///                 and the one that reconnects to what Allen actually saw on his display.
+        ///
+        /// The backbuffer arm is the load-bearing one. Its resolution is whatever the batch game
+        /// view is rather than 2560x1440, so it is logged and the comparison is stated per-pixel
+        /// against that, not assumed equal.
+        ///
+        ///   Unity.exe -batchmode -projectPath (project)
+        ///             -executeMethod SBR.RoomViewCapture.CaptureHarnessAudit -outDir (path)
+        /// </summary>
+        public static void CaptureHarnessAudit()
+        {
+            string outDir = OutDirFromArgs();
+            Directory.CreateDirectory(outDir);
+            SessionState.SetString(OutDirKey, outDir);
+            SessionState.SetBool(AuditArmedKey, true);
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            EditorApplication.EnterPlaymode();
+        }
+
+        [InitializeOnLoadMethod]
+        private static void RehookAudit()
+        {
+            if (SessionState.GetBool(AuditArmedKey, false))
+                EditorApplication.update += OnAuditUpdate;
+        }
+
+        private static void OnAuditUpdate()
+        {
+            if (!EditorApplication.isPlaying) return;
+            _auditFrames++;
+            if (_auditFrames < WarmupFrames) return;
+
+            EditorApplication.update -= OnAuditUpdate;
+            SessionState.SetBool(AuditArmedKey, false);
+
+            int code = 0;
+            try { AuditRun(SessionState.GetString(OutDirKey, string.Empty)); }
+            catch (Exception e) { Debug.LogError($"[Audit] failed: {e}"); code = 1; }
+            EditorApplication.Exit(code);
+        }
+
+        private static void AuditRun(string outDir)
+        {
+            if (string.IsNullOrEmpty(outDir))
+                throw new InvalidOperationException("output directory lost across domain reload");
+
+            var book = UnityEngine.Object.FindAnyObjectByType<SBR.Game.LaptopScreen>();
+            var canvas = book != null ? book.GetComponentInChildren<Canvas>(true) : null;
+            if (canvas == null || canvas.GetComponentsInChildren<UnityEngine.UI.Graphic>(true).Length == 0)
+                throw new InvalidOperationException("no live laptop canvas - nothing to measure");
+
+            Camera cam = FindPlayerCamera();
+            var controller = UnityEngine.Object.FindAnyObjectByType<FirstPersonController>();
+            if (controller != null) controller.enabled = false;
+
+            var eye = new Vector3(0.738982f, 1.051217f, 1.620000f);
+            var rot = Quaternion.LookRotation(new Vector3(0.939693f, -0.342020f, 0f),
+                                              new Vector3(0.342020f, 0.939693f, 0f));
+            cam.transform.SetPositionAndRotation(eye, rot);
+            cam.fieldOfView = 30f;
+
+            foreach (var (label, mode) in new[]
+                     {
+                         ("rt-bilinear", FilterMode.Bilinear),
+                         ("rt-point", FilterMode.Point),
+                     })
+            {
+                var rt = new RenderTexture(Width, Height, 24, RenderTextureFormat.ARGB32)
+                { antiAliasing = 1, filterMode = mode };
+                RenderTexture prevT = cam.targetTexture, prevA = RenderTexture.active;
+                Texture2D tex = null;
+                try
+                {
+                    cam.targetTexture = rt;
+                    for (int i = 0; i < 4; i++) cam.Render();
+                    RenderTexture.active = rt;
+                    tex = new Texture2D(Width, Height, TextureFormat.RGB24, false);
+                    tex.ReadPixels(new Rect(0, 0, Width, Height), 0, 0);
+                    tex.Apply();
+                    string d = Path.Combine(outDir, label);
+                    Directory.CreateDirectory(d);
+                    File.WriteAllBytes(Path.Combine(d, "focused-laptop-desk.png"), tex.EncodeToPNG());
+                    Debug.Log($"[Audit] {label} written at {Width}x{Height}, filterMode {mode}");
+                }
+                finally
+                {
+                    cam.targetTexture = prevT;
+                    RenderTexture.active = prevA;
+                    if (tex != null) UnityEngine.Object.DestroyImmediate(tex);
+                    rt.Release();
+                    UnityEngine.Object.DestroyImmediate(rt);
+                }
+            }
+
+            // The load-bearing arm: no RenderTexture at all, straight off the backbuffer.
+            cam.targetTexture = null;
+            Debug.Log($"[Audit] backbuffer path: Screen is {Screen.width}x{Screen.height}");
+            var shot = ScreenCapture.CaptureScreenshotAsTexture();
+            if (shot == null)
+                Debug.LogWarning("[Audit] backbuffer capture returned null - the decisive arm is MISSING, " +
+                                 "and its absence must not be read as agreement");
+            else
+            {
+                string d = Path.Combine(outDir, "backbuffer");
+                Directory.CreateDirectory(d);
+                File.WriteAllBytes(Path.Combine(d, "focused-laptop-desk.png"), shot.EncodeToPNG());
+                Debug.Log($"[Audit] backbuffer written at {shot.width}x{shot.height}");
+                UnityEngine.Object.DestroyImmediate(shot);
             }
         }
 
