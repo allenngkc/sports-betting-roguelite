@@ -798,9 +798,35 @@ namespace SBR.Tests.EditMode
         private static float ConstBoost(string name) => (float)typeof(TvSweatScreen)
             .GetField(name, BindingFlags.NonPublic | BindingFlags.Static).GetRawConstantValue();
 
+        /// <summary>How many GRAPHICS one focus lights. The invariant is over FOCUSES, not
+        /// materials — a visual moment can legitimately be more than one graphic, and C3 corrected
+        /// exactly this confusion once already ("how many things are lit" is not "how many things
+        /// decided to be lit").
+        ///
+        /// <para>`CashOut` drives three since batch 19: the slot's figure, the slot's field (T63 —
+        /// the inversion needs both halves), and the gold flood. The flood joined when T68-am moved
+        /// both payoff figures into the slot: the tally and its wash are still one visual moment,
+        /// they simply belong to this focus now rather than to `Payout`. `Payout` keeps its own
+        /// mapping although nothing currently requests it — see the note on `_tBigAmount`.</para></summary>
+        private static int MaterialsDrivenBy(string focus)
+        {
+            switch (focus)
+            {
+                case "CashOut": return 3;
+                case "Payout": return 2;
+                default: return 1;
+            }
+        }
+
         private static int MaterialsAtL4(TvSweatScreen s)
         {
-            string[] mats = { "_cashOutHdrMat", "_bigAmountHdrMat", "_goldFloodHdrMat", "_scoreHdrMat", "_ballHdrMat" };
+            // `_cashOutFieldHdrMat` ADDED batch 19, and its absence was a real blind spot: T63 gave
+            // the actionable FIELD its own material and this counter never saw it, so from T63 until
+            // now the one-token instrument could not observe the element that batch 16's blocker was
+            // actually about. A counter with a hard-coded list silently stops covering whatever is
+            // added next — the same shape as C33-am2 and C35, one level down.
+            string[] mats = { "_cashOutHdrMat", "_cashOutFieldHdrMat", "_bigAmountHdrMat",
+                              "_goldFloodHdrMat", "_scoreHdrMat", "_ballHdrMat" };
             int boostId = Shader.PropertyToID("_HdrBoost");
             float l4 = ConstBoost("HdrBoostL4");
             int n = 0;
@@ -861,7 +887,7 @@ namespace SBR.Tests.EditMode
                 Assert.AreEqual(0, MaterialsAtL4(s), "a freshly built canvas must have nothing at L4");
 
                 Assert.IsTrue(RequestL4(s, "CashOut", false), "an uncontested sustained request must succeed");
-                Assert.AreEqual(1, MaterialsAtL4(s));
+                Assert.AreEqual(MaterialsDrivenBy("CashOut"), MaterialsAtL4(s));
 
                 // Every other eligible focus piles on. Whatever the arbitration decides, the count
                 // may never exceed one.
@@ -874,7 +900,7 @@ namespace SBR.Tests.EditMode
                     // asserted a flat material count of 1 and failed on exactly that, which is the
                     // eligibility-vs-simultaneity confusion C3 corrected, made one level down:
                     // "how many things are lit" is not "how many things decided to be lit".
-                    int expected = L4Holder(s) == "Payout" ? 2 : 1;
+                    int expected = MaterialsDrivenBy(L4Holder(s));
                     Assert.AreEqual(expected, MaterialsAtL4(s),
                         $"after {f} requested L4, the lit materials must correspond to exactly ONE " +
                         $"focus (holder={L4Holder(s)}, so {expected} material(s)) — the token is the " +
@@ -1868,6 +1894,94 @@ namespace SBR.Tests.EditMode
         // is a seated capture of the actionable band, and it is owed at the next capture — the
         // defect T68 names was invisible to every suite this surface has precisely because no
         // instrument compared an element to its own ink.
+
+        [Test]
+        public void T68am_the_accepted_figure_renders_in_the_slot_with_the_inversion()
+        {
+            // §6.1's accepted state, built. The figure used to sit on a canvas-centre element over a
+            // SINE-PULSING flood: gold-on-flood runs 12.47:1 at alpha 0 down to 1.71:1 at the 0.55
+            // peak, and dark ink inverts that to 1.08:1 for most of the beat. Neither static ink is
+            // right because the ground MOVES. The slot gives it a stable field.
+            var go = new GameObject("T68amAccepted");
+            go.SetActive(false);
+            try
+            {
+                var screen = go.AddComponent<TvSweatScreen>();
+                screen.theaterEnabled = false;
+                InvokePrivate(screen, "Awake");
+
+                Text figure = FindChild<Text>(screen, "CashOut");
+                Text status = FindChild<Text>(screen, "CashOutStatus");
+                Image field = FindChild<Image>(screen, "CashOutField");
+                Assert.IsNotNull(figure); Assert.IsNotNull(status); Assert.IsNotNull(field);
+
+                typeof(TvSweatScreen).GetMethod("ShowCashOutAccepted",
+                    BindingFlags.NonPublic | BindingFlags.Instance)
+                    .Invoke(screen, new object[] { "CASHED OUT $199" });
+
+                Assert.IsTrue(field.enabled,
+                    "T68-am: the accepted state lights the slot's field — that is the stable ground "
+                    + "the figure is legible against, and the reason the flood does not have to be.");
+                Assert.AreEqual(screen.goldInk, figure.color,
+                    "T68-am: the figure is punched out of the field, the same inversion T68 built "
+                    + "and measured at 7.95:1 (9.68:1 computed at this state's L3).");
+                Assert.IsFalse(status.enabled,
+                    "T68-am: no status word. The OFFER is over — T43's 'nothing of the offer "
+                    + "outlives the accept' is about the price and the HOLD E instruction, not the "
+                    + "slot rectangle, which §6.1 gives six states.");
+                Assert.AreEqual("CASHED OUT $199", figure.text);
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
+        public void T71_both_payoff_moments_take_one_treatment()
+        {
+            // The reason to rule them together is the reason T68 exists: two payoff moments drifting
+            // apart in treatment is the class of drift that produced a money control with an
+            // unreadable label. One state got measured, its sibling did not, and they drifted.
+            string src = File.ReadAllText(Path.Combine(Application.dataPath, "SBR", "Runtime", "TvSweatScreen.cs"));
+
+            foreach (string beat in new[] { "IEnumerator CashOutFloodBeat", "IEnumerator WinBeat" })
+            {
+                int at = src.IndexOf(beat, System.StringComparison.Ordinal);
+                Assert.Greater(at, -1, $"{beat} not found — re-point this scan rather than deleting it.");
+                string body = string.Join("\n",
+                    src.Substring(at, System.Math.Min(2000, src.Length - at))
+                       .Split('\n').Where(l => !l.TrimStart().StartsWith("//")));
+
+                Assert.IsTrue(body.Contains("ShowCashOutAccepted("),
+                    $"T71: {beat} must render its figure in the slot. Splitting the two payoff "
+                    + "moments re-creates exactly the divergence T68 was.");
+                Assert.IsFalse(body.Contains("_tBigAmount.text = $\"") || body.Contains("_tBigAmount.text = \"+$0\""),
+                    $"T71: {beat} still writes a money figure to the canvas-centre element, which "
+                    + "puts it back on the pulsing flood.");
+            }
+        }
+
+        [Test]
+        public void C35_the_accept_beat_owns_its_token_so_the_punch_can_settle()
+        {
+            // C34[C35]: an element and its ground must not move together. The corollary here is that
+            // the per-frame derivation must NOT re-assert the token while accepted — it would either
+            // cancel §6.1's brief punch on the next Update or hold it for the whole beat, and V8's
+            // new clause asks whether the ground is static across the beat. It is only static if one
+            // owner drives it.
+            // Searched over the WHOLE source, not a fixed window from the method head. The first
+            // version used a 4000-char window and the method's comments had grown past it — the
+            // second time a fixed scan window has silently stopped covering its target (batch 16
+            // used 500 and hit the same wall). The literal below appears in code and nowhere else.
+            string src = File.ReadAllText(Path.Combine(Application.dataPath, "SBR", "Runtime", "TvSweatScreen.cs"));
+            Assert.Greater(src.IndexOf("private void ApplyCashOutSlotState", System.StringComparison.Ordinal), -1,
+                "ApplyCashOutSlotState not found — re-point this scan rather than deleting it.");
+
+            Assert.IsTrue(src.Contains("_cashOutHdrMat != null && !accepted"),
+                "C35: while accepted, the BEAT owns the L4 token. If this derivation re-asserts it "
+                + "every frame, the brief punch either never settles or never happens.");
+            Assert.IsTrue(src.Contains("IEnumerator PunchThenSettle"),
+                "C35/§6.1: the punch-then-L3 arc is its own coroutine, run detached so it cannot "
+                + "re-pace the beat it decorates.");
+        }
 
         [Test]
         public void G1_the_two_at_budget_forms_fit_their_measured_columns()

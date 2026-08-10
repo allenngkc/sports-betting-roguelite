@@ -522,6 +522,11 @@ namespace SBR.Game
         // the same reason `_cashOutTweening` is one — the state must be readable from outside the
         // one method that computes it, without that method's predicate being duplicated.
         private bool _cashOutFieldLit;
+        // T68-am / T71: §6.1's `accepted` state. Both payoff moments — the cash-out accept and the
+        // ticket's win tally — render their money figure HERE, in the slot, over the flood rather
+        // than against it. Set by ShowCashOutAccepted, cleared by HideCashOutSlot, and read by the
+        // one derivation so the state cannot be half-entered.
+        private bool _cashOutAccepted;
         private float _cashOutScale = 1f;
         private float _cashOutFlash;
         private int _cashOutRoundShown;
@@ -802,6 +807,13 @@ namespace SBR.Game
         /// boolean-blindness bug waiting to happen.</summary>
         private enum Face { Regular, Condensed }
         private int _resolvedThrough; // legs below this index are PRESENTED as resolved (not engine truth)
+        // T68-am / T71 CONSEQUENCE, flagged rather than acted on: `_tBigAmount` no longer renders
+        // anything. Both payoff figures moved into the cash-out slot, so it is now built, cleared on
+        // reset, and never given content. It is left in place because its name is in the DD-gated
+        // `SanctionedL4Elements` list, whose own gate says to route a change before editing it —
+        // and because if the accepted treatment is revisited on frames this is the element it would
+        // come back to. **Named here in the same commit that orphaned it**, which is the difference
+        // between a flagged consequence and the kind of corpse `_wonFlood` became.
         private Text _tMatchup, _tLeg, _tClock, _tFlavor, _tCashOut, _tChrome, _tAttract, _tBigAmount, _tConsolation;
         private Text _tTicketHeader, _tRiskPays, _tInterventionPrompt, _tTakeoverTitle, _tTakeoverSub, _tSubtitle;
         // TV-03/TV-04: the cash-out slot is three things, not one — an actionable FIELD, the money
@@ -2503,8 +2515,37 @@ namespace SBR.Game
         private void HideCashOutSlot()
         {
             _cashOutSlotSuspended = false;
+            _cashOutAccepted = false; // T68-am: the accepted state ends when the slot does
             _tCashOut.enabled = false;
             ApplyCashOutSlotState();
+        }
+
+        /// <summary>T68-am / T71: §6.1's `accepted` state — the payoff figure rendered IN THE SLOT.
+        ///
+        /// <para>Both payoff moments used to draw their money on a 96px canvas-centre figure over a
+        /// SINE-PULSING gold flood. That ground is not a field: measured in linear relative
+        /// luminance, gold-on-flood runs 12.47:1 at alpha 0 down to <b>1.71:1</b> at the 0.55 peak
+        /// (1.83:1 for the win tally at 0.50), and the obvious fix — dark ink — inverts the problem
+        /// rather than solving it, at 1.08:1 for most of the beat. Neither static ink is right
+        /// because the ground moves.</para>
+        ///
+        /// <para>So the figure comes back to the slot §6.1 always specified for it, where the field
+        /// is stable and the inversion T68 built is already measured at 7.95:1 (9.68:1 computed at
+        /// this state's L3). <b>The flood is untouched</b> — it stays as the payoff's celebration
+        /// ground and simply stops being the thing a money figure has to be legible against.</para>
+        ///
+        /// <para>T43 is not in tension: "nothing of the offer outlives the accept" means the OFFER —
+        /// the price, the `HOLD E` instruction, the actionable field's promise about input. The slot
+        /// as a rectangle is the surface's own furniture and this is one of its six states.
+        /// T35 is satisfied in the same move: the full-screen celebration figure is gone.</para></summary>
+        private void ShowCashOutAccepted(string figure)
+        {
+            if (_tCashOut == null) return;
+            _cashOutSlotSuspended = false;   // an accepted slot is not a slate
+            _cashOutAccepted = true;
+            _tCashOut.enabled = true;
+            _tCashOut.text = figure;
+            ApplyCashOutSlotState();         // one derivation lights the field and punches the ink out
         }
 
         private void ReopenMarket()
@@ -2898,14 +2939,17 @@ namespace SBR.Game
         {
             double payout = _ticket.PotentialPayout;
             _audio?.SlamWon();
-            _tBigAmount.color = new Color(gold.r, gold.g, gold.b, 1f);
-            _tBigAmount.text = "+$0";
+            // T71: the SAME treatment as the accept. Both payoff moments render their figure in the
+            // slot, over the flood rather than against it — measured at 1.83:1 gold-on-flood at this
+            // beat's 0.50 peak, which is T68's defect one beat over. Ruling them together is the
+            // whole point: two payoff moments drifting apart in treatment is the class of drift that
+            // produced a money control with an unreadable label.
+            ShowCashOutAccepted("+$0");
             // The ticket's payout tally — §3's L4, "the payoff at its callback", brighter than a
-            // routine won-leg flash so the ordering idle < flash < L4 stays visible. C3: a momentary
-            // punch, so it takes the token from anything else currently holding it.
+            // routine won-leg flash so the ordering idle < flash < L4 stays visible.
             EmissionFlash(goldL4);
             RoomSettlementGlow(); // T65: the ticket paying out IS the settlement this is reserved for
-            RequestL4(HdrFocus.Payout, momentary: true);
+            StartCoroutine(PunchThenSettle(HdrFocus.CashOut));
             StartCoroutine(FloodPulse(_goldFlood, gold, 0.5f, winFloodDuration));
             StartCoroutine(WinConfetti());
 
@@ -2915,12 +2959,13 @@ namespace SBR.Game
             {
                 elapsed += SeatedDeltaTime; // TVS-H02: freezes exactly while standing
                 float t = duration <= 0f ? 1f : Mathf.Clamp01(elapsed / duration);
-                _tBigAmount.text = $"+${Money(payout * t)}";
+                // The figure tallies in place; the slot's field and ink do not move under it.
+                _tCashOut.text = $"+${Money(payout * t)}";
                 yield return null;
             }
-            _tBigAmount.text = $"+${Money(payout)}";
+            _tCashOut.text = $"+${Money(payout)}";
             yield return ScaledWait(Mathf.Max(0f, winConfettiDuration - winTallyDuration));
-            _tBigAmount.text = string.Empty;
+            HideCashOutSlot();
         }
 
         private IEnumerator WinConfetti()
@@ -2983,16 +3028,32 @@ namespace SBR.Game
         /// <summary>Fired from Update the instant E is accepted, so the gold hit is responsive.</summary>
         private IEnumerator CashOutFloodBeat(double amount)
         {
-            _tBigAmount.color = new Color(gold.r, gold.g, gold.b, 1f);
-            // §8.5 Accepted: "gold, brief L4 punch, then CASHED OUT $x at L3 into the settle
-            // transition."
-            _tBigAmount.text = $"CASHED OUT ${Money(amount)}";
-            HideCashOutSlot(); // T43: nothing of the offer outlives the accept
+            // T68-am: §6.1's accepted state — "brief L4 punch, then CASHED OUT $x at L3" — rendered
+            // in the slot, not on a canvas-centre figure over the flood.
+            ShowCashOutAccepted($"CASHED OUT ${Money(amount)}");
             EmissionFlash(goldL4);
             RoomSettlementGlow(); // T65: taking the money is a settlement
-            RequestL4(HdrFocus.Payout, momentary: true); // C3: a momentary punch preempts CashOut's hold
+            // The punch runs ALONGSIDE the flood, not before it: blocking here would delay the
+            // celebration ground by hdrPunchDuration and quietly re-pace a shipped beat.
+            StartCoroutine(PunchThenSettle(HdrFocus.CashOut));
             yield return FloodPulse(_goldFlood, gold, 0.55f, cashOutFloodDuration);
-            _tBigAmount.text = string.Empty;
+            HideCashOutSlot(); // the figure and its field leave together
+        }
+
+        /// <summary>§6.1's "brief L4 punch, then … at L3", as its own arc.
+        ///
+        /// <para>The accept beat owns the token across this window — ApplyCashOutSlotState stands
+        /// aside while `accepted`, because a per-frame re-derivation would either cancel the punch
+        /// on the next Update or hold it for the whole beat. Releasing is what drops the field from
+        /// the punch to L3, which is the state §6.1 actually names.</para>
+        ///
+        /// <para>Runs detached so it cannot re-pace the beat it decorates. ReleaseL4 is a no-op if
+        /// something else has since taken the token, so a late release cannot steal a punch.</para></summary>
+        private IEnumerator PunchThenSettle(HdrFocus focus)
+        {
+            RequestL4(focus, momentary: true);
+            yield return ScaledWait(hdrPunchDuration);
+            ReleaseL4(focus);
         }
 
         private IEnumerator FloodPulse(Image flood, Color color, float peakAlpha, float baseDuration)
@@ -3172,7 +3233,11 @@ namespace SBR.Game
             // so for `fieldLit` the flag is now belt-and-braces rather than load-bearing — kept
             // because the field and the key are supposed to be the same promise, and a future edit
             // to either predicate should not be able to separate them silently.
-            bool live = slotVisible && !_cashOutSlotSuspended;
+            // T68-am: `accepted` is §6.1's sixth state and it reuses this same slot. It is NOT live —
+            // the offer is over, so no status word and no accept gate — but the field IS lit, because
+            // the money figure has to inherit the inversion rather than sit on a moving flood.
+            bool accepted = slotVisible && _cashOutAccepted;
+            bool live = slotVisible && !_cashOutSlotSuspended && !accepted;
             // `!_cashOutTweening` is NOT redundant with CanAcceptCashOutNow's own
             // `_cashOutAnimation == null`, and leaving it out re-opened TVS-H02 in a new place —
             // caught in diff review of this very change, before it ever ran.
@@ -3189,7 +3254,7 @@ namespace SBR.Game
             // synchronous step (see its declaration, and §4B of the handoff). It is set true BEFORE
             // StartCoroutine and false before each settle render, so it is true across exactly the
             // window the handle is wrong about. Read the flag, never the handle.
-            bool fieldLit = live && !_cashOutTweening && CanAcceptCashOutNow();
+            bool fieldLit = accepted || (live && !_cashOutTweening && CanAcceptCashOutNow());
             if (_cashOutField != null) _cashOutField.enabled = fieldLit;
             _cashOutFieldLit = fieldLit;
 
@@ -3211,7 +3276,7 @@ namespace SBR.Game
             // call site gets to choose. Three states, and the call sites now set none of them.
             if (_tCashOut != null)
             {
-                _tCashOut.color = _cashOutSlotSuspended
+                _tCashOut.color = (_cashOutSlotSuspended && !accepted)
                     ? structureGrey                                   // §8.5 suspended: L1 unlit slate
                     : fieldLit
                         ? goldInk                                     // punched out of the lit field
@@ -3233,7 +3298,11 @@ namespace SBR.Game
             // (the old taunt-flash lerp up to HdrBoostL4 * 1.15 is retired). CashOut's request is
             // SUSTAINED: it re-asks every frame while actionable, and yields the instant a momentary
             // punch (a goal's score, a payoff's ball, a win/cash-out tally) takes the token instead.
-            if (_cashOutHdrMat != null)
+            // T68-am: while `accepted`, the BEAT owns the token — it fires §6.1's brief L4 punch and
+            // then releases to L3, and a per-frame re-derivation here would either cancel the punch
+            // on the next Update or hold it for the whole beat. The accept beat is the only state
+            // whose brightness is a scripted arc rather than a standing promise about input.
+            if (_cashOutHdrMat != null && !accepted)
             {
                 if (fieldLit) RequestL4(HdrFocus.CashOut, momentary: false);
                 else ReleaseL4(HdrFocus.CashOut);
@@ -4016,7 +4085,19 @@ namespace SBR.Game
         {
             switch (focus)
             {
+                // T68-am consequence, caught in diff review before it ran: moving the payoff figure
+                // from `Payout` to `CashOut` left NOTHING requesting `Payout`, so `_goldFloodHdrMat`
+                // would have quietly stopped punching and the celebration ground would have rendered
+                // ~40% dimmer than it ships today. The ruling says the flood "stays … nothing here
+                // touches it", so the flood rides this focus now.
+                //
+                // This is NOT C35's forbidden coupling: that law is about an element and the ground
+                // BEHIND IT moving together. The figure's ground is the slot's field, not the flood
+                // — the whole point of the ruling was to separate those two — and the ink is
+                // near-black, so boosting the pair widens the ratio rather than preserving it.
+                // Outside a payoff the flood's alpha is 0, so a boost there changes nothing.
                 case HdrFocus.CashOut:
+                    _goldFloodHdrMat?.SetFloat(HdrBoostId, boost);
                     // T63: ONE token, BOTH graphics of the band. The figure alone used to be
                     // boosted, so granting the token moved a number and left the gold field it
                     // sits on at rest — the band could not reach L4 however the token arbitrated.
