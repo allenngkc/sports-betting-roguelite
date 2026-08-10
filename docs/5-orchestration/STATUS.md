@@ -46,6 +46,32 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-09 cycle 138 · **THE BLUR SPLIT IN TWO; transport retired; DD
+  terminal seated** — Allen's playtest PNGs (the decisive arm) measured:
+  his frame reads ~2.61px against the build's ~1.6px floor — BOTH real,
+  ~56% of what he sees is display-path (downstream of the rendered frame,
+  on his machine; his 1330px-wide crop of a ~2033px render + a ~2x factor
+  fit Windows 200% scaling). Harness exonerated in the same stroke. His
+  ruling extended: the phone reads clear too. Four-check list relayed
+  (check 3 — same shot at 100% display scale — is decisive). Protocol
+  16cb8de executed: DD seat moved to a main-2 terminal (briefed, C35
+  renumber included), dd-inbox/dd-outbox retired (final README pulled +
+  archived; 290 files deleted; DesignSync = gallery only). TV: batch-19
+  payoff commit 04f7739 (both money moments into the slot; two informative
+  first-run failures — the new gate's blind spot surfacing + a fixed scan
+  window that had silently stopped covering its target, now whole-source)
+  + handoff 479f3da, both pushed. Batch-19 evidence PNGs of Allen's
+  findings now tracked (LFS working repo-wide).
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | clean-holding | on display-path verdict | lead |
+  | tv-sweat | clean-holding, wave pushed | DD verdicts | DD |
+  | room | holding | measures check-3 shot on land | lead |
+  | markets-2 | clean-holding | none | — |
+  | DD terminal | booting on charter | ready report → batch-20 case | DD |
+  | Editor | free | none queued | orchestrator |
+  | **Need Allen** | **check-3 screenshot (100% scale)** · gate 6/7/8 re-issue word · settings-churn convention | shot + rulings | Allen |
 - 2026-08-09 cycle 137 · **BATCH 19 LANDED after a second Orca restart —
   seats revived, one register collision caught** — restart took all four
   lead terminals; recreated with --continue + max effort (one dialog
