@@ -453,6 +453,269 @@ the laptop, TV or phone body, so R19(a)'s separation has only ever been albedo a
 R19(b)-am the carrying channel is **value**, which is measurable in a frame — so regions for those
 bodies would convert R19(a) from asserted to measured.
 
+### Batch 13 (2026-08-07) — the colour ships, the cue does not exist
+
+**S63-am2. Two rulings on one field, pointing opposite ways.** The colour is GRANTED and ships,
+both ends. The ~3× ceiling is STRUCK — its premise was falsified by this lane's own measurement
+(the lid's contribution to room colour does not vary with amplitude; the desk lamp owns that pool).
+The cue was SUSPENDED pending one Play-Mode frame, disposition pre-committed both ways.
+
+**First, the grant was checked as actually shipping, not merely granted.** `Room.unity:5211`
+carried the granted triple serialized on the live component. That check is not ceremony: a public
+field's default does not touch an already-serialized component, which is why the first strike was
+never built and the A/B captured the value it was supposed to be replacing.
+
+**The frame was shot. The cue cannot be framed.** `CaptureLidEmissionInPlay`, Play Mode, state
+reached rather than forced — `phase=Betting`, `DeskFocus.Active=null`, `Glow()` wrote the attention
+value unaided, all three logged as proof:
+
+| pose | result |
+|---|---|
+| seated | lid **OUT OF FRUSTUM** (viewport x −0.638) — when the cue fires the player is at the TV, and the laptop is not in shot |
+| focused | **IDENTICAL, 0.00%** — 0.52m, dead centre, lid filling ~80% of frame, a 3× step changes nothing |
+| standing | **233 px above JND out of 3.69M** (0.0063%), max 9 levels |
+| room cast | **0.000** on right wall, floor aisle, ceiling plaster |
+
+Only the picture says what those 233 pixels are: **a one-pixel rim line** on the lid's exposed edge,
+where the canvas does not quite cover it. `BuildSkeleton()` puts the SureThing canvas 4mm in front
+of the lid at the lid's own world size, so the ruled surface is behind an opaque quad.
+
+**Raising the amplitude could not have rescued this.** Occlusion and framing are both
+amplitude-invariant — which is why the struck ceiling was never what stopped the cue. The disposition
+resolves to *struck*, and it does so robustly rather than marginally.
+
+**Built:** `attentionEmission` removed (not zeroed — `attentionBreathHz`'s reason, one field over);
+`Glow()` replaced by `ApplyLidEmission()`, written once at Awake rather than re-asserted every frame,
+because there is no state left to track. The dead `attentionEmission` line was also removed from the
+serialized scene — a value in a scene file for a field that no longer exists is the same invitation.
+The struck 3.00× triple survives only as a quoted comparand in the harness, so the four-arm A/B the
+colour grant rests on stays reproducible.
+
+**Scope note the record should carry (C25).** The grant is confirmed hard on the lid face — struck
+violet spread 111.85 → attention 0.42. But the **idle end renders faintly cool** (R 38.1, G 40.3,
+B 42.9 — B>G>R by 4.8 levels), because at that amplitude the room's own fill owns the surface rather
+than its emission. The authored value is warm and R ≥ G > B; the rendered rest state is not. R12's
+mechanism, and **not** a case for raising idle. Recorded so the register does not end up carrying
+"warm at both ends" when only one end is.
+
+#### The instrument trap I set for myself, caught by its own FAIL
+
+Running the gates against the A/B's `cue-off` frames **failed R9-A — mattress 36.81 against
+38.3 ±1.0.** It would have been easy to report that as the strike costing a luminance figure. It was
+not:
+
+| | mattress |
+|---|---|
+| `batch13` (ratified `CaptureAll`, pre-strike) | 44.10 |
+| `cue-on` (this A/B) | 38.08 |
+| `cue-off` (this A/B) | **38.08 — identical to cue-on** |
+| `batch13-poststrike` (ratified `CaptureAll`, post-strike) | **38.43 → PASS** |
+
+The two arms agree to the last decimal, so the lid never touched the mattress. But `cue-off` differs
+from the ratified set across **95.4% of pixels** — my method warms and poses the camera differently,
+and I had it walking all three poses in a framing diagnostic *before* shooting the arms. **Two
+capture instruments, one ratified number, judged across them** — the batch-9 mattress defect exactly,
+committed by the person who wrote up the batch-9 mattress defect.
+
+Fixed at the cause: the framing log now runs **after** both arms, and the method's own doc states in
+its scope block that its output is an internally-valid pair and **must never** be used to judge a
+ratified figure. Re-shot through `CaptureAll` — the instrument R9-A is actually defined on — and it
+passes at **38.43**, 0.16 off the pre-strike 38.27.
+
+**Final gate state: 6 PASS, 0 FAIL, 5 SKIP, 3 VOID, 1 INFO. Suites `EditMode 73/73`, `PlayMode 20/20`,
+0 failed, 0 skipped, both XMLs written and case-counted through `check_test_results.py`.**
+
+#### ⚠️ Gates 6–8 are VOID at HEAD, and were before this session touched anything
+
+The seat brief, `STATUS.md` and the register all read *gates certified on Allen's standing verdict*.
+**The instrument disagrees.** `tools/room_gate_check.py` reports all three VOID —
+*"scene content CHANGED since the walkthrough at `8729ffd` — certification expired."*
+
+`git log 8729ffd..HEAD -- Room.unity` returns exactly one commit: **`22b0a99`**, this lane's own
+R37 re-shot, which rewrote the serialized emission values. **The certification expired there**, one
+commit before this session opened. Verified independently of the harness by hashing both scenes with
+the tool's own `scene_content_fingerprint`: stored cert `c3393474`, committed HEAD `876c328b`.
+
+So the studio record is stale, not wrong-in-principle — this is C18's mechanism working exactly as
+designed and C28's *"do not report N/N"* being needed exactly as written. No tool may re-issue it.
+**RESOLVED — Allen 2026-08-07, via the orchestrator.** Re-certified on his **standing walkthrough
+verdict**, recorded with provenance, the basis text saying in its own words that it is a standing
+verdict and not a fresh walk. His reasoning: everything since `8729ffd` is light and instrumentation,
+not geometry. Corroborated on the same run — 29 colliders, 27 dims 0 mismatch, 4/4 singletons,
+8 Lights, 6 Dressing_*, 0 dangling refs.
+
+**Final: 9 PASS, 0 FAIL, 5 SKIP, 1 INFO, 0 VOID. Coverage 9/15, stated.**
+
+#### The certification tool was stamping the wrong date, and it stamped mine
+
+Caught reading back the record I had just written: it said **`certified 2026-08-05`** on a
+certification made on the **7th**.
+
+`tools/room_gate_check.py:614` was `TODAY = "2026-08-05"` — a hardcoded literal, sitting under a
+comment that read *"Certification date is passed in, never read from the clock."* **Nothing passed it
+in and nobody bumped it**, so every certification made after that date silently stamped it. The
+comment's intent was right; only the implementation was missing.
+
+This is worse than a cosmetic date. `--revoke-human-gates`' own help text states what the record is
+for: *"who certified what, when, on what basis, and why it was withdrawn is the audit trail."* A wrong
+date **reads as provenance**, and nothing downstream can detect it.
+
+Fixed as the comment already specified — a required, validated `--certified-at YYYY-MM-DD`,
+deliberately **not defaulted**, because a default is precisely what the old constant was. Certifying
+or revoking without it now exits with the reason. Re-recorded at the correct date; both guards tested
+(missing flag, and `"7 Aug 2026"`). Reproducibility is untouched — the date is still passed in and
+never read from the clock, so two runs of the same scene still produce identical reports.
+
+#### Routed, not fixed — three emitters, and only one of them was ever audited
+
+**1. The `ScreenLaptop` MATERIAL disagrees with the ruling.** `GrayboxRoomBuilder:353` builds it with
+emission `(0.025, 0.055, 0.035)` — **green-dominant**, G>B>R. The ruled warm value exists only as a
+runtime property block. So the material is what the APV bake and **every Edit-Mode capture** see.
+Not fixed here: changing a baked emission re-opens the bake and the structural gates.
+
+**2. The phone is the same defect class as the lid, unaudited.** R28 makes the object room-owned, and
+emission into the room is light, not content — S63's split exactly, one surface over:
+
+| where | value | |
+|---|---|---|
+| `PhoneScreen.idleEmission` | `(0.020, 0.030, 0.060)` | blue-dominant, **always on** |
+| `unreadEmission` | `(0.055, 0.105, 0.180)` | blue-dominant; **this is what was live in the batch-13 frame** |
+| `buzzEmission` | `(0.30, 0.50, 0.90)` | saturated blue, ~15× idle |
+| `PhoneBuzzLight` (`GrayboxRoomBuilder:890`) | colour `(0.55, 0.82, 1.0)` | a **room-built `Light`**, cited at `:886` to `design/08` — T3, the deprecated anti-reference |
+
+S63-am's own words were *"idleEmission is the same defect unaudited — blue-dominant, a tenth the
+amplitude, always on: fix both."* That is verbatim this, one surface over. **Weighting honestly:** the
+always-on blue is the strong charge and needs no frame, as S63 did not. The 0.55s buzz is a *brief
+event*, not R37's continuous breath — a weaker charge, and it should not be flattened into the same
+one. The replacement colour is a design call, not a lead's.
+
+**Open question for whoever owns T30's scan:** its stated scope included room light colours, and
+`PhoneBuzzLight` is still there. `(0.55, 0.82, 1.0)` is not `chromeCyan` `(0.62, 0.86, 0.96)`
+verbatim — same family, hand-typed differently. Whether that is out of scope or a near-miss the scan
+cannot see, I cannot tell from this worktree; the scan does not live here.
+
+#### T65 — the room floods gold, and our regions join TV's capture contract
+
+TV's fix, not ours. Two things this seat owes the coordination:
+
+- **The region boxes do not transfer.** `R19_REGIONS` / `R23_REGIONS` in `tools/room_gate_check.py`
+  are pixel rectangles on the room rig's own poses at 2560×1440. TV's frames are a different camera.
+  What transfers is *which surfaces* to watch and *what bands mean* — R23's warm 20–110°, cool
+  200–300°, anything between reported neutral rather than forced to a verdict, and the 1.5 chroma
+  floor below which no hue verdict is supportable.
+- **C27 will bite them immediately.** Their frames are dominated by the panel, and the first-pass
+  boxes in this lane bled the plaster behind the metal and reported the wall's hue as the metal's.
+  Surface-pure means eye-confirmed, not low-variance.
+
+Also worth knowing: T65's ruling now cites **the lid's 85.1–85.3°** as the sanctioned contribution,
+so this room's glow number is load-bearing inside a TV ruling.
+
+### Batch 12 (2026-08-05) — the wear fork closes, and the glow gets a rule
+
+**R8 wear: RULED option 3 — wear lives in the standing shot.** Both technique escapes refused
+(scale/contrast *and* the URP Decal Renderer). **The re-placement precondition closes as
+tested-and-null** — it was tried, measured, and changed nothing. Nothing further is owed here.
+
+**`R7-F` is now INFORMATIONAL**, ruled the sixth vacuous green. The finding is that it was never a
+gate: it can prove a piece is *in frame*; it cannot prove it is *visible*, and this lane showed the
+gap twice in one session — `TrafficPath` "failed" on an origin-point test with a fifth of it in shot,
+and `ConduitDrip` "improved" 30% → 67% coverage while going 34% → 64% hidden, changing the frame by
+nothing. **A check that can go green on invisible wear is not a gate on whether wear reads.**
+`CaptureWearAB` is the instrument that answers that, and option 3 was ruled on its numbers.
+
+**R35/R37 — the glow rule, built:**
+
+| rule | built |
+|---|---|
+| warm near-neutral, **R ≥ G > B** | `0.038 ≥ 0.032 > 0.024`, preserved under ×3 |
+| attention differs by **amplitude only** | attention **is** idle × 3, exactly |
+| **~3× maximum** | **3.00×** by construction (previous build was 4.07×) |
+| `idleEmission` carries the same defect | both ends are now one colour |
+| **NO PULSE** (R37) | `emission = (wantsYou && !engaged) ? attention : idle` |
+
+Writing attention as `idle × 3` rather than a second hand-picked triple is deliberate: *amplitude
+only* then holds **by construction** instead of by my matching two chromaticities and asserting they
+agree. Any future edit to idle carries attention with it, so the two cannot drift apart the way idle
+(cool) and attention (violet) had.
+
+`attentionBreathHz` is **removed**, not left at zero — a dead serialized dial invites someone to
+reinstate the breathing it used to drive. There is also no easing on the step: a lerp with a duration
+would be R37's finding wearing a shorter clock.
+
+**Owed:** one capture to rule the exact values on. Editor is after SureThing.
+
+### R8 / weathering — measured, and the parking diagnosis does not survive it
+
+**With the entire wear inventory disabled, two of the three review poses are bit-identical.**
+
+| pose | changed | >JND |
+|---|---|---|
+| standing | 1.49% | **0.90%** |
+| seated | 0.00% | **identical** |
+| laptop | 0.00% | **identical** |
+
+Run it with `SBR.RoomViewCapture.CaptureWearAB -outDir <dir>` then
+`python tools/wear_ab_diff.py <dir>`. **This is the only instrument that answers "does the wear
+read".** Box statistics on a still frame do not: a decal is small against busy geometry, so a box
+around it measures the pipe fitting beside it — that method scored two of four sites as reading
+where brightened crops show nothing at all.
+
+**R7 was parked on "placement versus camera, not technique". That is falsified as the whole story.**
+`ConduitDrip` was re-placed to raise its seated frustum coverage 30% → 67%; the rendered frame
+changed by *exactly nothing*, because the TV housing stands in front of that wall and the move took
+the quad from 34% to 64% occluded. Reverted. **Frustum coverage is not visibility.**
+
+**Two instrument traps, both mine, both now closed:**
+
+- **First-render artefact.** The first A/B reported 91.76% changed and its determinism control
+  *passed twice* — the same fault repeats every run. The frames showed a magenta TV panel: the first
+  Edit Mode render lands before the pipeline settles, and the method had captured render #1 and #2
+  as the two halves. `WarmRender` discards three frames first. **Only the picture caught it.**
+- **Occlusion.** R7-F now reports occluded fraction beside frustum coverage, against a table of the
+  solid boxes that sit in front of wear surfaces.
+
+**Open for the DD, three-way and all of it ruled territory:** scale/contrast on the existing decals,
+the URP Decal Renderer (whose "not yet — re-place against the frusta first" precondition is now met
+*and answered*), or accepting that wear lives only in the standing shot.
+
+### ⚠️ `attentionEmission` — a saturated violet the room throws, and it is ours
+
+Raised by SureThing's colour audit; **their read that this is room lighting is correct.**
+
+`LaptopScreen.cs:29` — `attentionEmission = (0.28, 0.10, 0.55)`, B > R > G, **10× `idleEmission` on
+blue**. `Glow()` drives the **lid renderer**, and the room builds that object and attaches the
+component (`GrayboxRoomBuilder` 810, 836). A lid emitting into the room is light, not app content —
+R28's split exactly, one surface over.
+
+> **⚠️ CORRECTION (2026-08-05).** I reported the laptop panel measuring **hue 303.6° / chroma 9.17**
+> as rendered evidence of `attentionEmission`. **That attribution was wrong.** The panel region is
+> the SureThing canvas drawn *over* the lid, and what it is showing is the **superseded violet
+> laptop package** — purple tabs, magenta team names, violet DETAILS buttons, a magenta LOCK IT IN.
+> That is **C13**, already ruled an *integration item, not a room defect*. I measured their stale
+> content through our camera and called it our light.
+>
+> Proof: the strike landed in the build and the panel still reads **308.7°** in `batch11`. If the
+> violet had been ours, that number would have moved.
+>
+> **The finding against `attentionEmission` still stands** — on the source value (`0.28, 0.10, 0.55`,
+> hue 312°, chroma 64.1), on ownership (lid renderer, room-built object), and on the direction. The
+> DD struck it *without needing a frame*, which was the right call and is now visibly why.
+>
+> **Standing consequence: room captures near the laptop are contaminated.** Any colour claim in that
+> region is reading C13's stale package until the surfaces' content is re-integrated.
+
+It fires when `wantsYou && !engaged` — Betting/Shop/RunWon/RunLost with the player **away from the
+desk**, i.e. precisely while seated at the TV, and it *breathes*.
+
+Against: purple is retired project-wide; §2's palette carries no violet (its only cool is the window
+`#5679C2`); §1.2 requires screens "quiet, with faint spill"; §1.1's named failure mode is a
+saturated cool cast.
+
+**Not fixed — the replacement colour is a design call, not a lead's.** Constraint space if it helps:
+the laptop is *his* machine (§6), so its register is personal, and SureThing's own wax amber
+`#D9A441` would be coherent with the surface it sits on. Whatever replaces it must satisfy §1.2's
+"quiet".
+
 ### Batch 10 (2026-08-05) — the slice closes: 10 PASS, 0 FAIL, no VOIDs
 
 **Gates 6–8 re-certified on a FRESH walk.** Allen walked the post-retirement build and passed. The

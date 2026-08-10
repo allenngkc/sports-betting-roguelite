@@ -58,6 +58,50 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-09 cycle 142 · **THE EMISSION ERA IS ON MAIN** — room-refinement
+  merged at 7cb5344 (Allen's order): canonical validation GREEN at the tip
+  (engine 183/183, EditMode 78/78, PlayMode 57/57 real graphics, DLL bytes
+  identical, single-instance held), then a zero-conflict merge. Main now
+  carries: the emission instrument (the studio's first light-reading gate),
+  the lamp and phone rulings closed whole, 31 legacy textures as proper LFS
+  pointers, the blur hunt's rig and record, and room's gate table at 10
+  PASS / 0 VOID re-issued on Allen's walk. Room clears the SENTIS churn per
+  §7a and re-converges with main at its convenience. Remaining unmerged
+  anywhere: SureThing's post-3727ee6 tail (sharpness closure, fonts, batch
+  21 — its next merge round on Allen's word); TV rides its PR.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | clean-holding | next merge round on Allen's word | Allen/orch |
+  | tv-sweat | clean-holding, PR current | DD verdicts | DD |
+  | room | MERGED · clean-holding | re-converge + §7a cleanup | lead |
+  | markets-2 | clean-holding | none | — |
+  | DD terminal | standing | phone frame sequencing | DD |
+  | Editor | free | none queued | orchestrator |
+  | **Need Allen** | nothing blocking (SureThing merge round when he wants it) | — | — |
+- 2026-08-09 cycle 141 · **BOARD FULLY CLEAN; the approvals cycle closed
+  every open thread** — batches 20+21 transcribed (the DD's first direct
+  dockets: blur ruled AND closed with the disposition audit intact; C38-cl;
+  S2 baseline; C26-am3 phone doc owed; S37-cl). Allen approved everything:
+  gates 6/7/8 RE-ISSUED, C36+C37 constitution canon, settings-churn
+  convention chartered §7a + markets' texture-vs-churn distinction
+  (renormalize is an owner's act, never a cleanup reflex, d304faa). Lanes:
+  SureThing shipped batch-21 (af0c42c — PRICES FINAL out + S71's gate) and
+  merged main clean (6068ff0); TV folded the convention into its handoff
+  (7ab60b8) and pushed; room updated its gate table to re-issued; markets'
+  catch chartered. Studio queue: the DD's phone reference frame → phone
+  owning doc → the S2 player-path baseline (instrument characterized
+  first). Nothing waits on Allen.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | clean-holding, current with main | DD verdicts | DD |
+  | tv-sweat | clean-holding, pushed | DD verdicts | DD |
+  | room | clean-holding, gates green | phone frame on DD's sequencing | lead |
+  | markets-2 | clean-holding | none | — |
+  | DD terminal | standing: takes the phone frame on arrival | sequence the slot | DD |
+  | Editor | free | phone-frame slot on the DD's word | orchestrator |
+  | **Need Allen** | nothing | — | — |
 - 2026-08-09 cycle 139 · **THE BLUR IS SOLVED — Allen found the cause at his
   own machine** — Unity Game view's 'Low Resolution Aspect Ratios' was ON;
   off, his verdict: "everything is clear now" on BOTH surfaces. Fits room's

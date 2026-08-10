@@ -6,8 +6,18 @@ namespace SBR.Game
 {
     /// <summary>
     /// M5's face-up bookie thread: a code-built world-space canvas, bottom anchored like texting,
-    /// with stamped rounds from the model rather than the live run. Neutral bubbles keep design/08's
-    /// palette law intact; cyan is chrome, while the visual-only buzz pulses emission and a tiny light.
+    /// with stamped rounds from the model rather than the live run. The visual-only buzz drives
+    /// emission and a tiny light.
+    ///
+    /// The design/08 authority claim that stood here is deleted with R39's values. design/08 is T3,
+    /// the deprecated anti-reference, dead since 2026-07-24 — a live comment in shipped code citing
+    /// it as a licence is C7's shape inside source rather than in docs.
+    ///
+    /// OWNERSHIP, because this file straddles the line: the room owns the OBJECT and therefore its
+    /// EMISSION, which reaches the room as light (R28, and S63's split one surface over). Nobody
+    /// owns the CONTENT — R28-am keeps the live BookieFeed and forbids anything being authored onto
+    /// the screen. So the emission block below is ruled and built; the content colours further down
+    /// are neither, and R39 does not touch them.
     /// </summary>
     public sealed class PhoneScreen : MonoBehaviour
     {
@@ -22,14 +32,69 @@ namespace SBR.Game
         public float canvasOffset = 0.0015f;
         public int referencePixelsWide = 420;
 
-        [Header("Visual buzz")]
-        [ColorUsage(false, true)] public Color idleEmission = new Color(0.020f, 0.030f, 0.060f);
-        [ColorUsage(false, true)] public Color unreadEmission = new Color(0.055f, 0.105f, 0.180f);
-        [ColorUsage(false, true)] public Color buzzEmission = new Color(0.30f, 0.50f, 0.90f);
+        [Header("Screen emission")]
+        // R39 (DD 2026-08-07, batch 14) — STRUCK, same family as S63 and for the same reason.
+        //
+        // Was:  idle   (0.020, 0.030, 0.060)  chroma 14.5  hue 278.9deg  — and ALWAYS ON
+        //       unread (0.055, 0.105, 0.180)  chroma 18.0  hue 264.5deg  — live in the b13 frame
+        //       buzz   (0.30,  0.50,  0.90 )  chroma 31.9  hue 271.4deg
+        //
+        // All three blue-dominant, in the quadrant §1.1 names as its own failure mode, on an object
+        // the room owns (R28) — and the rest state carried 2.7x the chroma of the laptop's granted
+        // rest state. None of it was ever audited: no instrument in this studio reads an emission
+        // value and judges it, so the only region that samples this phone reads it on the
+        // screens-DARK set, with its emission switched off by construction.
+        //
+        // The phone is HIS (§6), so it joins the laptop's granted family rather than taking a
+        // colour of its own — ONE authored chromaticity for both of his screens, amplitude per
+        // state. Writing the ladder as multiples of one base instead of three hand-picked triples
+        // is the lid's lesson: "one family" then holds BY CONSTRUCTION rather than by my matching
+        // three chromaticities and asserting they agree.
+        //
+        // THE AMPLITUDE LADDER IS PRESERVED, so this is a hue change and not a value change —
+        // R35's caution, which the drab-green swatch had to answer:
+        //
+        //   idle    x1    L* 21.09   (was 20.06,  +1.03)
+        //   unread  x3    L* 37.50   (was 37.80,  -0.30)
+        //   buzz    x15   L* 75.48   (was 75.22,  +0.26)
+        //
+        // chroma falls 14.5 -> 5.4, 18.0 -> 7.8, 31.9 -> 13.3; hue is 83.3deg at all three ends.
+        //
+        // EXACT VALUES ARE NOT RULED. The DD ruled the direction and held the values for the
+        // instrument, exactly as S63's were held — "I am not setting three values blind". Unlike
+        // the lid, these are observable, so the frame is obtainable. Treat these as the proposal.
+        //
+        // THE BUZZ ITSELF IS KEPT: colours struck, event kept. buzzDuration and the wave below are
+        // untouched. A 0.55s flash is not R37's continuous pulse and the two were explicitly not
+        // flattened together — what was ruled is the blue at chroma 31.9 driving a real Light.
+        public static readonly Color RestEmission = LaptopScreen.GrantedLidEmission;
+
+        [ColorUsage(false, true)] public Color idleEmission = Amp(1f);
+        [ColorUsage(false, true)] public Color unreadEmission = Amp(3f);
+        [ColorUsage(false, true)] public Color buzzEmission = Amp(15f);
         public float buzzDuration = 0.55f;
         public float lightIntensity = 0.65f;
 
-        [Header("Palette (design/08)")]
+        /// <summary>
+        /// One base chromaticity, scaled. Written out rather than using Color * float because that
+        /// operator scales alpha too, and a serialized a=15 on an emission colour is a puzzle
+        /// waiting for whoever reads the scene next.
+        /// </summary>
+        private static Color Amp(float k)
+            => new Color(RestEmission.r * k, RestEmission.g * k, RestEmission.b * k);
+
+        // CONTENT colours — drawn on the canvas, not emitted into the room. Deliberately NOT
+        // touched by R39, which ruled the emission above and nothing else.
+        //
+        // The "(design/08)" authority that headed this block is deleted for the reason given in the
+        // class summary, but deleting a false citation is not the same as ruling the values under
+        // it, and these are not mine to rule: chromeCyan (0.62, 0.86, 0.96) is T9, a RETIRED hue,
+        // still printed on the BOOKIE label below. Its replacement is a design call and the
+        // surface's content authority is exactly what R28/R28-am leave unassigned — the room owns
+        // the object, nobody owns the content, and nothing may be authored onto the screen.
+        // Flagged, not fixed. It is also invisible to T30's scan, which matches named retired
+        // constants verbatim and would only catch this one because it IS the verbatim constant.
+        [Header("Palette — CONTENT, unruled (see note)")]
         public Color screenBg = new Color(0.018f, 0.022f, 0.030f, 0.98f);
         public Color bubble = new Color(0.18f, 0.19f, 0.21f, 0.98f);
         public Color textColor = new Color(0.93f, 0.92f, 0.88f, 1f);
