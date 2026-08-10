@@ -58,6 +58,31 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-09 cycle 144 · **§6a's blocked-on-idle ban chartered (37b18ea) and
+  applied; the DD is batched, the phone set delivered** — the ban's founding
+  failure was THIS cycle's: lanes "holding for verdicts" while the DD sat
+  unbatched, until Allen prodded. Same-cycle fix: the DD's verdicts docket
+  assembled and dispatched (built wave since batch 19 — TV 04f7739+41d5cbe,
+  SureThing af0c42c), then the phone reference set handed over
+  (phone-reference-set-2026-08-09 + two contract-reshaping findings: empty
+  UNREACHABLE measured; longest message 60 chars — line budget, not
+  wrapping). Room self-caught a second host-assumption harness error (one
+  update-tick driver — backbuffer's cousin), rebuilt on count-change,
+  named directories honestly, deleted the misleading set; at 98% context →
+  handoff ordered, rotation next. Stray artifacts routed to SureThing
+  (Allen's relay). **Waiting-to-idle edge check: PASSES** — every waiting
+  lane points at the WORKING DD; markets idle with no dispatchable work;
+  lease queue empty.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | working | collect strays from room's tree | lead |
+  | tv-sweat | waiting → DD (working) | verdicts | DD |
+  | room | writing handoff | rotation on commit | orchestrator |
+  | markets-2 | idle, no work exists | none | — |
+  | DD terminal | WORKING: verdicts docket + phone set + owning doc | rulings into docs/design/ | DD |
+  | Editor | free, queue empty | — | — |
+  | **Need Allen** | evidence-in-git policy (~1GB history) — unhurried | call | Allen |
 - 2026-08-09 cycle 143 · **Full convergence; one correction to my own report**
   — SureThing merged main (58bfd92, hand-read per the C13 hazard, suites
   green before commit); all four lanes now share main's tip lineage. Strays
