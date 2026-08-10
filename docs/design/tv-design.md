@@ -234,7 +234,7 @@ an information hierarchy for three tenths of a pixel** (T51) — the stacked lab
 | suspended | **L1 unlit slate from its first frame** (T43), `MARKET SUSPENDED`, no amount |
 | pending | as suspended; intervention controls live in their own overlay, never in this row |
 | unavailable | L1, quiet, no reflow |
-| accepted | brief L4 punch, then `CASHED OUT $x` at L3 |
+| accepted | brief L4 punch, then `CASHED OUT $x` at L3 — **in the slot, with the inversion; the slot is reused and the flood is not a field** (T68-am: money never reads against the moving flood; the flood stays as celebration ground). `WinBeat`'s `+$X` tally takes the identical slot treatment (T71) — the two payoff moments never diverge |
 
 **The brightness of this slot is a promise about input.** L4 means the key works *right now*. If the
 slot is bright and the press does nothing, the surface has lied.
@@ -375,7 +375,7 @@ Real gates, per C9. Each states its instrument and, per C18 §4.2, **what it can
 | V5 | Display state == input state on the cash-out slot | one-value read + T43 same-frame test | whether the rendered field agrees with the flag |
 | V6 | **Room re-tint stays inside the room's palette** | room-region hue/sat/luma across an event burst | the panel's own content |
 | V7 | Variation reads as variation at review distance | rendered frames, five seeds, named manifest | anything asserted from signature diversity (T19) |
-| V8 | **Every inverting element reads against its own ink** (C33-am2) | field-vs-own-ink contrast in **linear relative luminance** (C33-am3 — a CR is undefined outside linear space) | **the label is the thinner margin and fails first if the field brightens** — rendered ink (0.222) sits far above authored (0.046) via bloom, AA and the black lift, so authored-value arithmetic overstates the margin |
+| V8 | **Every inverting element reads against its own ink** (C33-am2) | field-vs-own-ink contrast in **linear relative luminance** (C33-am3 — a CR is undefined outside linear space); **and the element reports whether its own ground is STATIC across the beat** (C35 — where one control drives both element and ground, no brightness change can separate them; a moving ground makes the ratio an instant, not a state) | **the label is the thinner margin and fails first if the field brightens** — rendered ink (0.222) sits far above authored (0.046) via bloom, AA and the black lift, so authored-value arithmetic overstates the margin |
 
 Every invocation reports its **executed case count** and exits non-zero on zero cases (C29). Every
 measurement is reported **with its scope and its resolution** attached (C25, C32).

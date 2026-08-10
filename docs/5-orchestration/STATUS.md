@@ -46,6 +46,33 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-09 cycle 137 · **BATCH 19 LANDED after a second Orca restart —
+  seats revived, one register collision caught** — restart took all four
+  lead terminals; recreated with --continue + max effort (one dialog
+  confirmed). Batch 19: T68-am (the DD's accepted-half ruling was
+  unbuildable — goldInk 1.08:1 against the pulsing flood; route 2 ruled:
+  the accepted treatment moves INTO the slot per §6.1's own spec, 9.68:1
+  computed; interpolation and a new ground refused; fifth carried-context
+  seat error) + T71 (WinBeat's tally, same treatment, ONE commit with
+  T68-am) dispatched to TV. New law issued as "C34" COLLIDED with the
+  existing reproducibility law — transcribed as **C35** (element and
+  ground must not move together; V8 gains the static-ground clause),
+  renumber note pushed to the DD inbox. The DD adopted both blur
+  instrument laws ahead of the bundle, endorsed not spending the 9.6%,
+  acknowledged all four carried closures, and recorded it would NOT hold
+  gates 6/7/8 on the blur — re-issue is Allen's one-word call. Allen's
+  other session pitched a browser-prototype lane; parked per its own
+  memory note. TV owning doc: §6.1 accepted row + V8 + T71.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | clean-holding (revived) | on the PNG verdict | lead |
+  | tv-sweat | working (revived) | T68-am + T71 one commit → push | lead |
+  | room | clean-holding (revived) | measures Allen's PNG on land | lead |
+  | markets-2 | clean-holding (revived) | none | — |
+  | DD bridge | drained; renumber note + next: TV's commit evidence | push on land | orchestrator |
+  | Editor | free | TV suites on ask | orchestrator |
+  | **Need Allen** | **desk PNG** · **gate 6/7/8 re-issue** (DD recommends re-issue now; one word) · settings-churn convention | frame + rulings | Allen |
 - 2026-08-08 cycle 136 · **G1 BUILT AND SHIPPED; every lane's queue is
   empty** — batches 18 + the G1 deck pulled, landed, transcribed (G1
   closed; T70 new with the pair rule: requirement above, state below, no
