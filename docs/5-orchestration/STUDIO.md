@@ -14,8 +14,9 @@ reverted.
   integration approval, Unity scheduling. Does not implement slice code. Treated as a
   scarce resource: enters for planning, disputes, architecture, and integration — not
   routine status relay.
-- **Design Director — Claude Design, its own dedicated session (seat moved from
-  Opus 5 per Allen, 2026-07-31).**
+- **Design Director — Claude Code (Opus 5, max effort), its own Orca terminal in
+  `main-2` (seat moved from Claude Design per Allen, 2026-08-08; the
+  claude.ai/design project stays as Allen's visual gallery via DesignSync).**
   Positioned alongside the orchestrator, not under engineering. Direct conversations
   with Allen. Owns every design decision: UI design flows, interaction flows, visual
   direction, art direction, 3D modeling. Produces design specifications and does
