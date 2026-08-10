@@ -1,11 +1,173 @@
 # SureThing UI — re-seat state
 
-**STATUS 2026-08-08 · `5d545f3` · tree clean · EditMode 78/78 · PlayMode 57/57 · NOTHING IN FLIGHT**
+**STATUS 2026-08-09 · `3320a40` on `surething-ui` · 14 ahead of main, 0 BEHIND · tree clean (`artifacts/` untracked, as always)**
+
+### Verifiable state
+
+- **Suites: EditMode 78/78 · PlayMode 58/58.** Baseline every later comparison against **78/58**.
+  **PlayMode moved 57 → 58** at `af0c42c` — the S71 margin-empty-state gate. **A run reporting 57 means
+  that gate did not execute**, and the wrapper's count is what tells you.
+- **Verified at `1d5a2df`** (the S71 gate rebuild), and **nothing under `unity/` has changed since** —
+  `3320a40` is a docs-only merge. So the figures above describe this tree exactly and no re-run is owed.
+  Check it the same way rather than trusting this line: `git diff --stat 1d5a2df HEAD -- unity/`.
+- **Branch is 14 AHEAD and 0 BEHIND.** Read those two counts separately —
+  `git rev-list --count main..HEAD` is ahead, `HEAD..main` is behind. An earlier version of this file
+  printed "12 ahead and 3 BEHIND" with the labels **swapped**, off a single
+  `--left-right --count main...HEAD` whose output is *behind* then *ahead*. Do not trust a remembered
+  pair; run the two commands.
+- **Nothing in flight. No editor held. No work in progress.**
+
+### S71's gate, as rebuilt — read this before touching it
+
+Batch 24 granted three proposals off this lane's own audit of the gate it had just written. All three
+are built at `1d5a2df`, tests only, no runtime change:
+
+- **The second-person guard is the pronoun class as standalone words** (`YOU`, `YOUR`, `YOURS`),
+  enumerated, splitting on runs of non-letters so `YOU'RE` and `YOU’RE` both reduce to `YOU`. It
+  replaced a single-substring `YOUR` check that `YOU HAVE NO MARKS` walked straight through.
+  **It is a PROXY and is labelled as one at the assertion:** S71 forbids a second *speaker*; second
+  person is its commonest symptom, not its definition. **`YOURSELF` is deliberately NOT guarded** —
+  outside the granted class, and widening past a grant quietly is its own defect.
+- **The player-ink check is enumerated** (`Accent`, `BiroDeep`), replacing an `AreNotEqual` that could
+  not fail. **Its independence is stated narrowly on purpose:** it cannot fail today either, while the
+  assertion above it pins the empty line to `Muted`. What it survives is that assertion being
+  *re-ruled*. Independent of the ruling's future, not of today's constants — overstating that would
+  repeat the defect it replaced.
+- **A negative control that fires**, and it calls the *same* function as the live check rather than
+  re-implementing it. It asserts **what** was caught, not that something was: `YOUR MARGIN IS CLEAR`
+  → `YOUR`, `YOU HAVE NO MARKS` → `YOU`, `YOU’RE CLEAR` → `YOU`, and `NOTHING ON YOUTH POLICY` →
+  `null` so the widening cannot collapse back into a substring match. **Green on the live string alone
+  proved only that the guard does not false-positive** — a broken tokeniser would have passed too.
+
+**Do not propose a pixel close for S71.** Batch 24 refused it, and not on cost: the residue is
+*does an authored token survive the rendering path*, which is surface-wide, and three layers already
+cover it. The reasoning is recorded at the test's scope note.
+
+### Nothing is flagged unverified
+
+**The debt this section used to carry is closed.** `fb8e248`/`4c2d567` had restored the three font
+assets out of HEAD rather than regenerating them. The bootstrap has since run
+(`tools/tmp-phase-l-bootstrap.ps1`, exit 0, mirror gate reading *`material mirrors 1024x1024 against
+configured 1024x1024 — AGREE`* on both faces, faces resolved by style name with no fallback, weight
+600 wired at table index 6, shader arm `[DF]`), both suites are green behind it, and the regenerated
+pair is committed at `7acb704`.
+
+**What that re-verification found, and it will confuse the next person who diffs a font asset:**
+generation **strips** the OpenType layout tables — 0 kerning pairs, 0 mark records, a 68,700-line
+deletion — and **first use restores them.** TMP repopulates a dynamic font asset when the fonts first
+render and Unity serialises it; measured back at 71 pairs / 142 value records / 4028 mark records
+after the suites. **A generated font asset is not stable until something has rendered with it.** I
+measured that diff before the suites, committed after them, and described a change that no longer
+existed — the commit's own `--stat` caught it. **Measure the diff you are actually committing, at the
+moment you commit it.**
+
+### C13 is SOLVED — do not re-open the hunt
+
+**Allen's Game view had *Low Resolution Aspect Ratios* enabled.** Turned off, both surfaces read clear
+to his eye. **No build change was needed and none was made.** It resamples at output resolution, which
+is why it is frame-wide, hits the laptop and the phone equally, survives 1.5× supersampling, and no
+material property could reach it — and why the harness could never clear itself: *it was never in the
+game at all.*
+
+Read §4bb-C13 for the trail, but read it as history. **What survives and must not be undone:**
+
+- **The `_TextureWidth` mirror fix (`6bd6da2`) was a real defect and stays** — exonerated as the
+  *cause*, never as a defect, and now gated by the bootstrap's mirror line.
+- **The `_Sharpness` margin stays unspent.** Maxed it buys 9.6%, not 50%. Spending it converts a
+  diagnosable defect into a marginal one that still fails and no longer points anywhere.
+- **A TMP SDF ramp cannot be narrowed by URP render scale.** `TMP_SDF.shader:183-186` normalises
+  against `_ScreenParams`; URP binds that from `camera.pixelWidth` (display) and keeps
+  `_ScaledScreenParams` separate. Hand that to anyone who proposes supersampling to sharpen text here.
+- **Two instrument laws, adopted in batch 19:** *a control must be able to witness the failure it
+  guards* (the ink ring is soft by design and could witness nothing), and *a null is invalid if
+  success would sit under the instrument's own floor* (the `_Sharpness` arms predicted 0.84px against
+  a ~1px floor). **Two verdicts were un-retired on the second one.** A third is proposed in the joint
+  note's Part 3: *a search space is a claim, and it needs a control like any other.*
+
+The joint read is at `main-2/docs/design/dd-import/blur-pipeline-read-2026-08-08.md` — Part 1 mine,
+Part 2 room's, Part 3 the closing.
+
+### Open items
+
+1. **No SureThing BUILD item is open.** Two things are in flight that are not builds:
+   - **S72 — the empty-state voice inventory — came back CLEAN and is with the DD**, filed at
+     `main-2/docs/design/dd-import/surething-s72-empty-state-voice-inventory-2026-08-09.md`
+     (untracked, rides the drag). **Eleven members named**, every one naming the state, and **zero
+     second-person pronouns exist in live code anywhere on this surface** — the only `YOU/YOUR` hit
+     in the whole runtime is inside the S71 comment recording the string that was removed. Two
+     observations were raised and NOT ruled: **first person appears four times** (`MY MARKS`,
+     `MY BETS`, that screen's scope line, and a status line naming it) against §6's "exactly once",
+     three of them being one destination's proper name; and **the kit pairs a statement with an
+     imperative while three of six statements have no pair**, S71's own slot among them.
+   - **The sweep's own method is the reusable part:** no single pass was complete. The structural
+     pass over emptiness branches missed three members (the MY BETS mirror gates on
+     `!view.HasTicket`, not a count); the absence-copy string pass missed the zero-ticket lock
+     reason; the `*Empty*`/`*Waiting*` naming pass caught the last. **Any one alone would have
+     reported a clean sweep that was not one.**
+2. **⚠ NEW AND UNROUTED — batch 25's `S2-am3` puts a measurement on this surface.** A legibility
+   claim about *this* surface's smallest type (season records `6-3`/`4-5`, row numbers `01`–`06`) was
+   **returned unadjudicated**: it had been read on Allen's `surething-form-blurry.png`, which is **the
+   complaint frame**, shot before the Game-view toggle fix and measured at **0.613** ramp÷stroke
+   against the harness's **0.482**. A confounded measurement closes nothing.
+   **The sharpened ask, and it is arithmetic rather than opinion:** 0.482 was taken on **price
+   figures**, the ramp is fixed in screen pixels while stroke scales with type size, **so the smallest
+   type is worse than 0.482 by construction** — the hunt's headline number was measured on type larger
+   than the floor it is now used to reason about. What is wanted is **ramp ÷ stroke on the smallest
+   product fact on the surface**. The DD stated the bias direction *before* the re-read: Allen's path
+   ran ~27% worse, so those elements likely read **better** than the returned claim said.
+   **Whose it is has not been settled** — the measurement is on this surface, the harness is room's.
+   **Do not assume it is this seat's and do not assume it is not.** Raise it.
+3. **Owed by others, not me:** whether design evidence lives in git long-term (Allen, unhurried —
+   405 files under `artifacts/` are tracked on main, of which 356 are PNGs totalling ~1.05 GB of
+   **raw** blobs; none are LFS pointers and `.gitattributes` routes neither `artifacts/` nor `*.png`
+   to LFS). Main also carries `SENTIS_ANALYTICS_ENABLED` **committed** — main's to resolve.
+4. **Routed away, do not pick up:** M-04/M-05 stake block → markets. The ledger's `OPEN` status →
+   engine-contract list. **B-01's ticket axis → needs a real ruling**; it has been ruled around four
+   times without being ruled on, and ratified-by-silence is not a ruling.
+5. **S67's residue is still open and was deliberately not tidied.** Batch 21 ruled the *string* —
+   `PRICES FINAL` left the masthead subline, so `SportsbookApp.cs:98` and the LEDGER's `Scope` now
+   print identically. **The two sites still differ in NAME (`Run` vs `Scope`) and both still build the
+   string inline rather than through a `LaptopUi` helper.** That is S67's actual finding; the ruling
+   did not touch it and neither should a passing tidy.
+6. **The capture-state collision resolved as `11-desktop` stays, markets moved to 16.** Markets' tree
+   holds the only frames of `16-margin-max-legs-staged-receipt` — **this tree cannot regenerate them**,
+   because it still carries `11-`.
+
+### The three standing traps
+
+- **`artifacts/` is NOT git-ignored.** A bare `git add -A` sweeps ~100 PNGs. Stage explicitly, always.
+  Verify rather than trust: `git check-ignore -v artifacts/surething-ui` matches nothing.
+  **This file told two seats the opposite** — §5 read "(gitignored)" until 2026-08-09, cancelling the
+  warning it gives here. Corrected at `47d4d51`, and found only by consequence: **368 stray frames had
+  accumulated across all four other worktrees** because other lanes run this surface's capture suite.
+  Cleared. Four preserved in markets' tree on purpose (item 5 above).
+- **Ask the orchestrator for the editor every time**, including batch probes. Contention does not look
+  like contention, it looks like a flaky run. Verify zero yourself before starting — `Get-Process
+  Unity` — and again on release; on 2026-08-09 another lane's editor opened *during* this seat's
+  PlayMode run and the suite passed anyway, which is luck rather than design.
+- **`ProjectSettings.asset` and the Sentis define — the trap has changed shape.** Unity adds
+  `SENTIS_ANALYTICS_ENABLED` on open and normalises it away again on exit, so the working copy churns
+  in both directions. **Main now carries the define COMMITTED** (`:839`). Under the settings-churn
+  charter nobody commits the churn: cmp-verify, then `git checkout` the file. **Do not strip main's
+  committed value through a merge** — that silently flips a scripting define for every lane and
+  diverges on a line the next merge re-fights.
+
+### Evidence lives in two places, and only one of them is disposable
+
+- **`artifacts/surething-ui/`** is working output. Regenerable by construction (C34 pins every seed),
+  and safe to clear. It is not evidence, and nothing in the register cites it.
+- **`docs/design/dd-import/surething-*/`** are the granted bundles — batch 10's sixteen-state set, the
+  ledger resubmit, S6–S8, the S8 refold, the verdict ground. **87 files, tracked on main, checked out
+  in every worktree that merges main. Leave them alone**; deleting them from another lane's tree is a
+  content change to committed state, not a cleanup.
+
+---
+
 - **PHASE L IS GRANTED AND ON MAIN.** The whole laptop text stack is TextMeshPro. **C15, S20, S28 and S29 are CLOSED and every type deviation has expired** (batch 15). The migration was verified 1:1 — five product-fact slots measured identical ink heights at identical scanlines through a complete text-stack replacement. **S8 and S52 re-verified on it.**
 - **Batches 16–17 are closed too.** S68 (kit trackings — the SKIP headroom recovers by construction), S69 (disabled grounds un-inverted), S70 (three untokened kit values, receipt header split, height re-derived) and S71 (`NO MARKS ON THIS SHEET`) all granted.
 - **THE THREE PARKED QUESTIONS ARE RATIFIED AS BUILT — do not "fix" any of them.** Footer stays 13px (**the receipt is index, not display**); the wax highlight stays over the value (**it marks the slot, not the amount**); the disabled PLACE fill is **explicitly not to be deepened** — the other two channels carry that distinction.
 - **The C14 audit is now a bounded list, not an open document** — `dd-import/dd-followup-surething-c14-audit-sweep.md`. **S71 was M-11 in that audit**, rediscovered from a frame months after it was named, which is why the sweep exists. Four rows still live; **M-04/M-05 (the stake block) routed to markets' seat**; the ledger's `OPEN` status is on the engine-contract list; **B-01's ticket axis is filed as needing a real ruling — it has been ruled around four times without being ruled on, and ratified-by-silence is not a ruling.**
-- **EditMode is 78, not 76** — the two S29 digit-spread assertions. PlayMode stays 57. Baseline any later comparison against **78/57**.
+- **EditMode is 78, not 76** — the two S29 digit-spread assertions. **PlayMode is 58 since `af0c42c`** (the S71 gate), not the 57 this line claimed until 2026-08-09. **Baseline any later comparison against `78/58`**, which the re-seat block at the top states as the live figure — this bullet is kept only to record that the 76 → 78 step was S29's.
 - **⚠ THE ROMAN VOICE WAS AT WEIGHT 600 FOR MONTHS AND NOBODY CHOSE IT.** `Archivo.ttf`'s **default face is SemiBold**; Regular is a named instance. UGUI loaded the default under S11 and my first TMP generator did the same. Ruled Regular 400 (Allen, 2026-08-08). **Faces now resolve by STYLE NAME and the generator refuses to fall back to the default face** — falling back is exactly how this happened, twice. See §4bb.
 - **The surface had tabular digits by ACCIDENT.** SemiBold is near-tabular (spread 0.1875); the ruled Regular is proportional (**4.7656 units**). Correcting the weight removed a guarantee nobody knew was load-bearing, which is what opened S29 — see §4bb.
 - **C34 is tested, not asserted — and the residual is named.** `01-form-lobby`, pinned since `102a571`, re-shot in a separate Unity process: **alpha 0 differing; RGB 440 of 720,896 (0.061%), max delta 2/255.** Content is fully reproducible. The 440 sit on **exactly two rows, y=581 and y=607** — 26px apart, inside the margin: two of **S34's ruled-paper rule lines**, a 1px untextured line rasterising with different subpixel coverage between processes. **Not seed-dependent, not content.** It is why two runs' PNGs are never byte-identical; do not chase it as a regression.
@@ -26,8 +188,14 @@
 - **The kit is at `docs/design/design-system/`, not `ui_kits/`** — those paths are relative to that root. **Read it before calling anything unspecified**; this surface has now twice concluded a screen was unspecced when it was not.
 - **Two traps still live in this tree:** `artifacts/` is no longer git-ignored (a bare `git add -A` sweeps ~100 PNGs), and two capture states share the number `09` (markets' test, needs their nod).
 
-**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-07, after R38 + the riding capture.
-**HEAD:** `6ece398` · **Branch:** `surething-ui` · working tree clean.
+**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-09, after C13 closed, the
+font-asset re-verification, batch 21, the strays collection, S71's gate rebuild and S72's clean sweep.
+**HEAD:** `3320a40` · **Branch:** `surething-ui` · 14 ahead of main, 0 behind · working tree clean.
+
+**Read the re-seat block at the top of this file first.** Everything below it is the accumulated
+record and some of it describes states that have since closed — where that is true the section says
+so at its own head, rather than being deleted, because the reasoning is usually worth more than the
+conclusion. The top block is the only part that claims to be current.
 
 This is written for a seat with **no conversation context**. Everything below is either verifiable in
 the repo or flagged as unverified.
@@ -833,12 +1001,108 @@ that, and it was sequenced deliberately.
 **S52 survived all of it:** rail band 0 differing of 34,816, tray past the app slots 0 of 22,576,
 through a type-stack replacement, a weight change and a face change.
 
-**Still owed, and named in the final set's README:** the **13px fact floor is verified in source, not
-at review distance** — `MakeText` clamps to `Mathf.Max(13, …)`, but TMP point size and UGUI pixel size
-are not the same quantity, and L2 is the one gate this phase never touched. Also: the digit jitter S29
-fixes was never photographed (no capture state varies the bank), and three kit values still match no
-token — `LedgerEntry.jsx:17` `.02em`, `OsRail.jsx:17` `.13em`, and the staged-receipt header this
-build renders as one string where the kit splits it across three trackings.
+**Both items that section used to carry are closed.** The three untokened kit values landed as S70.
+And **L2's fact-floor gate was AMENDED, not satisfied** (batch 15): at 1024×704 Archivo's 0.73em cap
+puts 13px at 9.49px of ink and 12px at 8.76px — **both render 9px**, so the gate specified an
+instrument coarser than the distinction it exists to make. It now checks *which constant each slot
+uses*; `MakeText`'s `Mathf.Max(13, …)` clamp is the instrument. The debt was never obtainable.
+
+## 4bb-C13. The laptop reads soft in the room — what is eliminated, and what is left
+
+> ## ⚠ SOLVED 2026-08-09 — READ THIS SECTION AS HISTORY
+>
+> **The cause was *Low Resolution Aspect Ratios* enabled in Allen's Game view.** Off, both surfaces
+> read clear. **No build change was needed and none was made.** Everything below is the elimination
+> trail, and it is accurate — but every candidate in it was inside the rendering pipeline, and the
+> cause was outside it, in the display path the complaint arrived through.
+>
+> **Do not re-run any arm below.** What survives is in the re-seat block at the top of this file: the
+> mirror fix stays and is gated, the 9.6% `_Sharpness` margin stays unspent, and a TMP SDF ramp
+> cannot be narrowed by URP render scale. The closing is Part 3 of
+> `main-2/docs/design/dd-import/blur-pipeline-read-2026-08-08.md`.
+>
+> **Two corrections to what is written below, so it is not read as still-standing:**
+> `docs/handoffs/c13-supersampling-cost.md` recommends *A at 1.5, or C* — **option A is disproven by
+> measurement** (room's runtime render-scale arm, `5c9ad05`: ramp 1.686 → 1.815px against a predicted
+> 1.12), so that document is superseded and its option set never had to be chosen between. And the
+> `_Sharpness` table below **did not retire `scale`**: the arms were run where a success would have
+> landed under the rasterisation floor, which is the second of the two instrument laws.
+
+**The laptop is not a package.** World-space canvas, `Camera.main`, no RenderTexture — see
+`docs/handoffs/c13-surething-side.md`. Room gets the surface by merging main.
+
+**One real defect found and fixed** (`6bd6da2`): the generator mirrored `atlas.width/height` into the
+material's `_TextureWidth/_TextureHeight`, and a **Dynamic atlas serialises at 1×1**, so the SDF
+shader derived its gradient against a 1-pixel texture. Correct as authored, gated so it cannot
+regress — **and exonerated by room as the cause**: the reimport did not sharpen.
+
+**Eliminated, each by measurement, not argument:**
+
+| suspect | killed by |
+|---|---|
+| the grade | room: 1.44× against the UI's 1.14× |
+| atlas health, `_GradientScale` | room: 10 against padding 9 is correct |
+| the material mirror | room: reimport, no change |
+| **canvas render scale · world-space pixel density** | **bitmaps stay sharp while glyphs are soft** — same canvas, same magnification; a coarse canvas would soften the ink sprites too |
+| **TMP shader variant** | the A/B: arms differ on **43 scanlines** at clip boundaries (y≈641–649, y≈48) and are **byte-identical** across the form header, matchup rows and margin labels. A shader softening glyphs would change every glyph |
+
+**`_Sharpness` was the next candidate and it is DEAD, measured.** `TMP_SDF.shader:186` multiplies the
+SDF scale by `(_Sharpness + 1)`, so +1 should halve the ramp uniformly — the only shape that can move
+a fixed screen-space ramp. Three arms generated, shot and measured at 1:1:
+
+| slot | s0.0 | s0.5 | s1.0 | predicted |
+|---|---|---|---|---|
+| SURETHING 26px | 2.04 | 1.83 | 2.00 | ×0.5 |
+| team name 19px | 1.26 | 1.38 | 1.33 | ×0.5 |
+| column head 13px | 1.68 | 1.69 | 1.55 | ×0.5 |
+| payout 31px | 1.14 | 1.00 | 1.00 | ×0.5 |
+
+**×0.88–1.06.** The frames differ between arms, so the property reaches the renderer — it just does
+not move the ramp. **And the failure is the finding: if doubling `scale` does not halve the ramp,
+`scale` is not what limits the edge.** Measured ramps sit at 1.0–2.0px against a **~1px floor for
+single-sampled rasterisation**, so no material property can go lower.
+
+### ⚠ The control that eliminated canvas render scale is NOT VALID
+
+"Bitmaps stay sharp while glyphs are soft" killed canvas render scale and world-space pixel density.
+Measured, same frame, same 1:1:
+
+| element | ramp |
+|---|---|
+| **wide biro ring (bitmap)** | **6.50px**, and no measurable edge at all on most scanlines |
+| column head (glyph) | 2.92px |
+
+**The ink sprites are more than twice as soft as the glyphs.** They are hand-drawn soft-edged ink
+strokes — **they have no hard edge to lose**, so they can show neither softening nor sharpening. They
+read as sharp because they are supposed to be soft. **Those eliminations should go back on the board.**
+
+**Left standing: more samples per pixel** — supersampling the canvas, or MSAA — which is where the
+1px floor points and which returns to canvas render mode. **Held for a separate call: it is the first
+candidate that makes the room pay for the UI's gain**, so the trade-off question recorded as dead may
+need reopening on different grounds. Sampling point size (90pt against 13–31px rendered) also remains
+untested.
+
+**The edge table, for that shoot.** Ramp share normalised to each element's own ground-to-ink span:
+
+| element | size | ramp share |
+|---|---|---|
+| column head (toner-3) | 13px | 69.4% |
+| masthead subline (toner-3) | 13px | 74.0% |
+| POTENTIAL PAYOUT (toner-3) | 13px | 80.1% |
+| payout figure (wax) | 31px | 70.7% |
+| SURETHING (toner) | 26px | 44.0% |
+
+**Suggestive, not conclusive, and the caveat travels with it.** No clean size relationship — if ramp
+width scaled with rendered size the 31px figure would be softest and it is not. **At 13px a stem is
+1–2px wide and everything is edge**, so this instrument cannot separate ramp width from stroke weight.
+My first cut of it was worse: absolute luminance thresholds, which made every `--toner-3` element read
+100% transitional **by construction**, because those glyphs peak near 106 and can never clear a >150
+"solid" cutoff. It would have reported ink colour as softness.
+
+**Arm B is one constant.** `SureThingTmpFontAssets.UseMobileSdfShader` → `true`, re-run the bootstrap.
+The arm is stamped into every material name and the Verify line, and **Verify fails if the assets in
+the tree were built with the other arm** — regenerate one face and forget another and the comparison
+mixes silently.
 
 The signed type deviations (**S28** tracking, **S29** tabular figures, **S20** weight 600, and
 **markets' ladder letter-spacing**) stay in force until this surface migrates and **expire the moment
@@ -1056,8 +1320,20 @@ Archivo Narrow's digits are already uniform, so this is insurance rather than a 
   -testResults "<worktree>/evidence/test-results/x.xml" -logFile "<worktree>/evidence/logs/x.log"
 ```
 
-Captures land in `artifacts/surething-ui/` (gitignored). Nine states across two `[UnityTest]`s in
-`SureThingVisualCaptureTests`.
+Captures land in `artifacts/surething-ui/`, which is **NOT gitignored.** Main un-ignored it
+deliberately on 2026-07-28 so design evidence stops being silently swallowed, so a bare `git add -A`
+after a capture run sweeps in ~100 PNGs. **Stage explicitly, always.** Do not trust this line either —
+check it: `git check-ignore -v artifacts/surething-ui` prints nothing, and `git status --short` shows
+the directory as `??`.
+
+**Seven** `[UnityTest]`s in `SureThingVisualCaptureTests`, covering **20** distinct capture states.
+
+This sentence read *"(gitignored). Nine states across two `[UnityTest]`s"* until 2026-08-09 — wrong on
+all three counts, and the first is the expensive kind: **it told the next seat that the landmine this
+file warns about twice elsewhere did not exist.** A warning is worth nothing while another sentence
+quietly cancels it. Corrected after clearing **368 stray frames out of four other worktrees** — which
+is exactly what the un-ignored path produces once other lanes start running this surface's capture
+suite, and which no one had looked for because this line said there was nothing to find.
 
 ## 6. Standing laws
 

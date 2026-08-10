@@ -46,6 +46,67 @@ namespace SBR.EditorTools
         /// "read at an angle" is S2's first sentence about this surface.</summary>
         public const GlyphRenderMode RenderMode = GlyphRenderMode.SDFAA;
 
+        // ---- C13 shader A/B, in the drawer -------------------------------------------------------
+        //
+        // **Flip this one constant and re-run the bootstrap; nothing else moves.** It exists because
+        // the material-mirror fix may turn out to be a real defect that was not the CAUSE of the
+        // desk-pose softness, and this is the next suspect rather than a fresh start.
+        //
+        // TMP's own font-asset creation path builds its material from `ShaderRef_MobileSDF`
+        // (`TMP_FontAsset.cs:638`). This generator has always used the full `TextMeshPro/Distance
+        // Field` instead — my choice, made for quality on a world-space canvas read at an angle, and
+        // very possibly the better one. But it IS a divergence from TMP's convention that I
+        // introduced, it lives in the same three materials the softness lives in, and the two
+        // shaders do not antialias identically: the full shader declares 12 ScaleRatio references
+        // against the mobile shader's 10.
+        //
+        // **Arm A** (`TextMeshPro/Distance Field`) is what ships today.
+        // **Arm B** (`TextMeshPro/Mobile/Distance Field`) is TMP's own default.
+        //
+        // The arm is stamped into each material's NAME so a frame can always be traced back to the
+        // build that produced it — an A/B whose arms are indistinguishable in the artifact is how
+        // T49's bloom comparison ended up unreadable and had to be re-run.
+        private const bool UseMobileSdfShader = false;
+
+        private const string ShaderArmA = "TextMeshPro/Distance Field";
+        private const string ShaderArmB = "TextMeshPro/Mobile/Distance Field";
+
+        /// <summary>The shader this build uses, and the short tag that records it in every material
+        /// name and in the bootstrap's log line.</summary>
+        internal static string ShaderName => UseMobileSdfShader ? ShaderArmB : ShaderArmA;
+        internal static string ShaderArmTag => UseMobileSdfShader ? "MobileSDF" : "DF";
+
+        // ---- C13: the edge ramp -------------------------------------------------------------------
+        //
+        // `TMP_SDF.shader:186` — `scale *= abs(input.texcoord0.w) * _GradientScale * (_Sharpness + 1)`.
+        // `texcoord0.w` carries the per-glyph scale, so `scale` grows with the glyph and **the SDF's
+        // edge ramp is constant in SCREEN space at every size**. That is not a malfunction; it is the
+        // mechanism that produces the exact signature room measured — a fixed ~1.6px ramp that does
+        // not scale with the glyph.
+        //
+        // **`_Sharpness` is the only term in that expression this generator never set.** It fell to
+        // the shader's default of 0, which is the WIDEST ramp the shader permits; the range is -1..1
+        // and at +1 the multiplier doubles, halving the ramp uniformly at every glyph size. Uniform
+        // is the point: it is the only shape that can move a fixed screen-space ramp.
+        //
+        // Measured at 1:1 on the flat captures at 0: 1.14-2.04px, mean ~1.5px. **The ramp is present
+        // without any magnification**, which is why this is measurable here rather than only at the
+        // desk pose.
+        //
+        // TMP ships 0 by default, so this is not a defect introduced here — it is a default that may
+        // simply be wrong for a surface read at an angle through a graded room. **The value is a
+        // design call (Allen's eye, then the DD); this constant only makes the arms producible.**
+        public const float Sharpness = 0f;
+
+        /// <summary>Stamped into every material name and the Verify line. Invariant-formatted so the
+        /// tag cannot come out as "s0,5" on a comma-decimal machine and quietly split the set.</summary>
+        internal static string SharpnessTag =>
+            Sharpness.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+
+        /// <summary>`_Sharpness` has no cached id in ShaderUtilities, so it is resolved by name once
+        /// rather than per material.</summary>
+        internal static readonly int SharpnessId = Shader.PropertyToID("_Sharpness");
+
         private const string FontDir = "Assets/SBR/Resources/SureThing/Fonts";
 
         /// <summary>TMP maps a weight to its table by `fontWeight / 100`, so SemiBold (600) is 6.
@@ -89,7 +150,7 @@ namespace SBR.EditorTools
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.Log($"[SureThingTmpFontAssets] done at {SamplingPointSize}pt padding {AtlasPadding} " +
-                      $"{RenderMode} {AtlasWidth}x{AtlasHeight}");
+                      $"{RenderMode} {AtlasWidth}x{AtlasHeight} · shader arm [{ShaderArmTag}] '{ShaderName}'");
         }
 
         /// <summary>Finds the face index whose style name matches, so nothing here depends on a
@@ -166,14 +227,17 @@ namespace SBR.EditorTools
             atlas.name = assetName + " Atlas";
             AssetDatabase.AddObjectToAsset(atlas, asset);
 
-            Shader shader = Shader.Find("TextMeshPro/Distance Field");
+            Shader shader = Shader.Find(ShaderName);
             if (shader == null)
             {
-                Debug.LogError("[SureThingTmpFontAssets] TextMeshPro/Distance Field shader not found — " +
-                               "essential resources are missing or incomplete.");
+                Debug.LogError($"[SureThingTmpFontAssets] shader '{ShaderName}' not found — essential " +
+                               "resources are missing or incomplete.");
                 return null;
             }
-            var material = new Material(shader) { name = assetName + " Atlas Material" };
+            var material = new Material(shader)
+            {
+                name = $"{assetName} Atlas Material [{ShaderArmTag} s{SharpnessTag}]"
+            };
             material.SetTexture(ShaderUtilities.ID_MainTex, atlas);
 
             // **The CONFIGURED atlas size, never the texture's current size.** This read
@@ -193,6 +257,9 @@ namespace SBR.EditorTools
             material.SetFloat(ShaderUtilities.ID_GradientScale, AtlasPadding + 1);
             material.SetFloat(ShaderUtilities.ID_WeightNormal, asset.normalStyle);
             material.SetFloat(ShaderUtilities.ID_WeightBold, asset.boldStyle);
+            // Set EXPLICITLY even at 0, so every arm — including the baseline — comes out of the same
+            // code path. An arm that is "whatever the shader defaults to" is not a measured arm.
+            material.SetFloat(SharpnessId, Sharpness);
             asset.material = material;
             AssetDatabase.AddObjectToAsset(material, asset);
 

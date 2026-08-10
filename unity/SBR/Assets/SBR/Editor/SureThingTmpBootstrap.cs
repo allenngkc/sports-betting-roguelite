@@ -179,9 +179,35 @@ namespace SBR.EditorTools
                 float mirroredH = fa.material.GetFloat(TMPro.ShaderUtilities.ID_TextureHeight);
                 bool mirrorOk = Mathf.Approximately(mirroredW, SureThingTmpFontAssets.AtlasWidth)
                                 && Mathf.Approximately(mirroredH, SureThingTmpFontAssets.AtlasHeight);
+                // The shader arm is reported on the same line as the mirror, because if the C13 hunt
+                // reopens these frames get compared across arms and **a capture whose arm is not
+                // recorded is not in the comparison** (T49's bloom A/B had to be re-run for exactly
+                // this). The material's own name carries it too, so the artifact is self-describing
+                // even without the log.
                 Debug.Log($"[SureThingTmpBootstrap] {label}: material mirrors {mirroredW}x{mirroredH} " +
                           $"against configured {SureThingTmpFontAssets.AtlasWidth}x" +
-                          $"{SureThingTmpFontAssets.AtlasHeight} — {(mirrorOk ? "AGREE" : "DISAGREE")}");
+                          $"{SureThingTmpFontAssets.AtlasHeight} — {(mirrorOk ? "AGREE" : "DISAGREE")} · " +
+                          $"shader '{fa.material.shader.name}' arm [{SureThingTmpFontAssets.ShaderArmTag}]");
+                // The arm under test. A face left behind at another sharpness would mix the
+                // comparison silently, and the ramp measurement would average two arms.
+                float sharp = fa.material.GetFloat(SureThingTmpFontAssets.SharpnessId);
+                if (!Mathf.Approximately(sharp, SureThingTmpFontAssets.Sharpness))
+                {
+                    Debug.LogError($"[SureThingTmpBootstrap] {label} carries _Sharpness {sharp} but " +
+                                   $"this tree is set to {SureThingTmpFontAssets.Sharpness} — " +
+                                   "regenerate before shooting; a mixed set is not a measurement.");
+                    EditorApplication.Exit(3);
+                    return;
+                }
+                if (fa.material.shader.name != SureThingTmpFontAssets.ShaderName)
+                {
+                    // Assets left over from the other arm would silently mix the comparison.
+                    Debug.LogError($"[SureThingTmpBootstrap] {label} was built with " +
+                                   $"'{fa.material.shader.name}' but this tree is set to " +
+                                   $"'{SureThingTmpFontAssets.ShaderName}' — regenerate before shooting.");
+                    EditorApplication.Exit(3);
+                    return;
+                }
                 if (!mirrorOk)
                 {
                     Debug.LogError($"[SureThingTmpBootstrap] {label}'s material describes an atlas it " +

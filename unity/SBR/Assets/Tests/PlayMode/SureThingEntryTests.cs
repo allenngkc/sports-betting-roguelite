@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 using SBR.Engine;
 using SBR.Game;
@@ -164,6 +165,147 @@ namespace SBR.Tests.PlayMode
                 "a new unplaced mark must disable LOCK without erasing receipts");
             Assert.AreEqual("PLACE OR CLEAR THIS WORKING SLIP",
                 TextOf(Required(margin, "LockReason")));
+        }
+
+        /// <summary>S71, closed by measurement rather than by eye. The ruling was granted
+        /// qualitatively on `03-staged-receipt-lock-enabled` — the frame showed one speaker where
+        /// there had been two — and NOTHING gated it. A re-authored empty state could put the second
+        /// speaker back with every suite green, which is this surface's most-repeated failure shape.
+        ///
+        /// Asserted BY TOKEN, not by weight. C33b rules that a ranking is asserted by weight only
+        /// among neutrals: Muted (0x6E6B5E) is neutral and Accent (0x5E86B8) is biro — chromatic —
+        /// so comparing their luminance would measure the wrong axis. Compared as Color32, which is
+        /// the space both tokens are authored in (C33-am3: state the space, not only the unit), so
+        /// the check cannot drift on float conversion.
+        ///
+        /// BOTH inks are read, not just the empty line's, because the claim S71 rests on is that
+        /// ownership is carried by the HEADER. An empty line that stopped restating ownership while
+        /// the header quietly stopped asserting it would satisfy half the ruling and lose the fact.
+        ///
+        /// Scope (C25): this reads the authored ink at the component. It is the token channel, not a
+        /// rendered pixel — the frame stays the authority for how it READS, and this gate only holds
+        /// the tokens the frame was granted on.
+        ///
+        /// DO NOT PROPOSE CLOSING THAT RESIDUE HERE. Batch 24 refused a pixel close for S71, and not
+        /// on cost: the residue is *does an authored token survive the rendering path*, which is
+        /// surface-wide rather than this element's. Three layers already cover it — this gate catches
+        /// ink ABSENT (the header silently ceasing to be biro, which nothing else sees), L3 catches
+        /// ink MISUSED on a rendered frame, and the DD read the composed pair on Allen's frame.
+        /// Answering it per item means every item eventually demands its own capture window. If the
+        /// path is ever suspected, that is a surface-wide investigation: enumerate the path, not the
+        /// elements on it (C39).</summary>
+        [UnityTest, Order(10)]
+        public IEnumerator Margin_empty_state_names_the_state_and_leaves_ownership_to_the_header()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            yield return OpenEntry(laptop);
+
+            Assert.AreEqual(0, laptop.Slip.Picks.Count,
+                "this gate reads the EMPTY state, so a freshly booted entry screen must carry no " +
+                "working marks — if this ever fails the test is measuring the wrong state");
+
+            Transform margin = Required(App(laptop), "WorkingMargin");
+            Transform empty = Required(margin, "Empty");
+            Transform title = Required(margin, "Title");
+            // S71-am3 (batch 28) added the kit's imperative beside the state line. Required() rather
+            // than Find(): the pair is the ruling, so a vanished remedy is a failure and not an
+            // absence to tolerate. Fetching it is also what lets the guard below reach it — new copy
+            // in this slot arriving outside the gate's sight is exactly what S72 was opened about.
+            Transform remedy = Required(margin, "EmptyRemedy");
+
+            Assert.AreEqual("NO MARKS ON THIS SHEET", TextOf(empty),
+                "S71: the empty state names the STATE. It read 'YOUR MARGIN IS CLEAR' — a second " +
+                "speaker addressing the player, three lines under 'MY MARKS', which is him.");
+            // (d) GRANTED, WIDENED BY ONE STEP (DD, batch 24). This guarded the single substring
+            // "YOUR", which `YOU HAVE NO MARKS` and `NO MARKS FOR YOU` both pass while violating
+            // Voice §6 — most of the assertion's value gone. It now guards the second-person
+            // PRONOUN CLASS as standalone words, enumerated so the check names its members.
+            //
+            // RECORDED SO IT IS NOT MISTAKEN FOR THE RULING, in the DD's own terms: THIS IS A PROXY.
+            // S71 forbids a second SPEAKER; second person is its most common symptom, not its
+            // definition. A pronoun guard is the practical instrument and it is not the law. Copy
+            // that addressed the player with no pronoun at all would pass this and still violate
+            // S71 — and so would YOURSELF, which sits outside the ruled class and is deliberately
+            // NOT added here rather than quietly widened past what was granted.
+            //
+            // Split on runs of non-letters instead of matching word boundaries directly: it makes
+            // YOU'RE and YOU’RE behave identically, both reducing to the token YOU. A typographic
+            // apostrophe is exactly the character a re-authoring introduces without anyone noticing.
+            string[] secondPerson = { "YOU", "YOUR", "YOURS" };
+
+            // ONE implementation, called twice — once by the control below and once on the live
+            // string. It returns the offending pronoun rather than a bool so a failure names what it
+            // found. **The control must exercise the same code as the check**: a control that
+            // re-implements the matching tests the copy and not the instrument, which is this
+            // surface's most-repeated defect (S33, S34, S60, the MY BETS mirror identity — four
+            // times, always a second site hand-building what a shared one already did).
+            Func<string, string> offendingPronoun = s =>
+            {
+                foreach (string word in Regex.Split(s.ToUpperInvariant(), "[^A-Z]+"))
+                    if (Array.IndexOf(secondPerson, word) >= 0) return word;
+                return null;
+            };
+
+            // NEGATIVE CONTROL, and it runs BEFORE the real assertion on purpose.
+            //
+            // `NO MARKS ON THIS SHEET` contains no pronoun, so the check passing proves only that it
+            // does not false-positive. If the tokenising were broken the gate would still go green —
+            // the vacuous shape, and the first of the two instrument laws this lane's own hunt put in
+            // the constitution says a control must be able to witness the failure it guards. So it is
+            // demonstrated here rather than reasoned about in a comment.
+            Assert.AreEqual("YOUR", offendingPronoun("YOUR MARGIN IS CLEAR"),
+                "the guard must fire on the exact string S71 removed");
+            Assert.AreEqual("YOU", offendingPronoun("YOU HAVE NO MARKS"),
+                "the guard must fire on the case that defeated the old substring check");
+            Assert.AreEqual("YOU", offendingPronoun("YOU’RE CLEAR"),
+                "a TYPOGRAPHIC apostrophe must behave like a plain one — this is why the split is on " +
+                "runs of non-letters rather than on word boundaries, and it is the character a " +
+                "re-authoring introduces without anyone noticing");
+            Assert.IsNull(offendingPronoun("NOTHING ON YOUTH POLICY"),
+                "and it must NOT fire on a substring: YOUTH contains YOU and is not second person. " +
+                "Without this line the widening could silently collapse back into a substring match, " +
+                "which is the defect it was granted to fix");
+
+            // The live check, through the same function the control just proved fires — over BOTH
+            // strings in the slot, not just the statement. S71-am3 put a second string here, and a
+            // guard that reads only the first would have let new copy in behind a green run, which
+            // is the shape S72 was opened to find. The offending slot is named in the failure so the
+            // message points at which of the two, rather than at the pair.
+            foreach (Transform slot in new[] { empty, remedy })
+                Assert.IsNull(offendingPronoun(TextOf(slot)),
+                    $"Voice §6 puts second person in genuine imperatives only. Found " +
+                    $"'{offendingPronoun(TextOf(slot))}' in \"{TextOf(slot)}\" ({slot.name}). The " +
+                    $"string assertion above pins today's words; this one pins the ruling. Note the " +
+                    $"remedy IS an imperative, which §6 permits — what it may not do is address him.");
+
+            Assert.AreEqual((Color32)LaptopOs.Muted, (Color32)empty.GetComponent<TMP_Text>().color,
+                "the empty state reports the sheet's condition, so it takes the neutral toner " +
+                "rather than the ink that means 'what he chose'");
+            Assert.AreEqual((Color32)LaptopOs.Accent, (Color32)title.GetComponent<TMP_Text>().color,
+                "MY MARKS stays biro. S71 leaves ownership to this header, so if the header ever " +
+                "stops being the player's ink then nothing on the column carries ownership at all");
+            // (c) GRANTED AS THE STRENGTHENING, NOT THE DELETION (DD, batch 24). What stood here was
+            // AreNotEqual(title, empty), which CANNOT FAIL unless one of the two assertions above it
+            // already has: Muted and Accent are distinct constants, so equality with each implies
+            // inequality with the other. The gate looked like three ink checks and was two.
+            //
+            // The claim actually meant is that the empty line does not wear the PLAYER'S ink —
+            // "biro is only what the player chose". Enumerated rather than counted, which is C18 §4.1
+            // carried by construction: the check has to name the player-ink tokens to make the claim.
+            //
+            // BE PRECISE ABOUT THE INDEPENDENCE, because overstating it would repeat the defect this
+            // replaces. While the assertion above pins the empty line to Muted, this one cannot fail
+            // either — Muted is in neither set. What it survives is that assertion being RE-RULED: if
+            // the empty line is ever moved to another token, this still forbids the player's ink,
+            // where the old AreNotEqual would have passed a margin whose empty line went BiroDeep
+            // beside an Accent header. It is independent of the ruling's future, not of today's
+            // constants, and that is the whole of its value.
+            Color32[] playerInk = { (Color32)LaptopOs.Accent, (Color32)LaptopOs.BiroDeep };
+            CollectionAssert.DoesNotContain(playerInk, (Color32)empty.GetComponent<TMP_Text>().color,
+                "one voice per column: the header owns it and the empty line reports it. An empty " +
+                "line drawn in biro is the composition S71 was ruled against, arriving by a " +
+                "different route than the words did.");
         }
 
         [UnityTest, Order(4)]
