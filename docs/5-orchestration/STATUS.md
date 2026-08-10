@@ -58,6 +58,29 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-09 cycle 141 · **BOARD FULLY CLEAN; the approvals cycle closed
+  every open thread** — batches 20+21 transcribed (the DD's first direct
+  dockets: blur ruled AND closed with the disposition audit intact; C38-cl;
+  S2 baseline; C26-am3 phone doc owed; S37-cl). Allen approved everything:
+  gates 6/7/8 RE-ISSUED, C36+C37 constitution canon, settings-churn
+  convention chartered §7a + markets' texture-vs-churn distinction
+  (renormalize is an owner's act, never a cleanup reflex, d304faa). Lanes:
+  SureThing shipped batch-21 (af0c42c — PRICES FINAL out + S71's gate) and
+  merged main clean (6068ff0); TV folded the convention into its handoff
+  (7ab60b8) and pushed; room updated its gate table to re-issued; markets'
+  catch chartered. Studio queue: the DD's phone reference frame → phone
+  owning doc → the S2 player-path baseline (instrument characterized
+  first). Nothing waits on Allen.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | clean-holding, current with main | DD verdicts | DD |
+  | tv-sweat | clean-holding, pushed | DD verdicts | DD |
+  | room | clean-holding, gates green | phone frame on DD's sequencing | lead |
+  | markets-2 | clean-holding | none | — |
+  | DD terminal | standing: takes the phone frame on arrival | sequence the slot | DD |
+  | Editor | free | phone-frame slot on the DD's word | orchestrator |
+  | **Need Allen** | nothing | — | — |
 - 2026-08-09 cycle 139 · **THE BLUR IS SOLVED — Allen found the cause at his
   own machine** — Unity Game view's 'Low Resolution Aspect Ratios' was ON;
   off, his verdict: "everything is clear now" on BOTH surfaces. Fits room's
