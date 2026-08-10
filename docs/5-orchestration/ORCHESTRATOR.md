@@ -204,3 +204,24 @@ continuing when:
 - a lead terminal is gone or unresponsive;
 - any Allen-listed decision arises (STUDIO.md autonomy policy);
 - evidence contradicts a lead's report.
+
+### 7a. Settings-churn convention (Allen, 2026-08-09)
+
+Unity packages rewrite two tracked settings files on open with no repo-side
+pin available for both (Sentis toggles `SENTIS_ANALYTICS_ENABLED` in
+`ProjectSettings/ProjectSettings.asset`; Shader Graph churns
+`ProjectSettings/ShaderGraphSettings.asset` and has no documented pin):
+
+- **Nobody commits either file's churn.** Leads clear the phantom lines
+  (cmp-verified byte-identical → checkout; genuinely changed → report before
+  touching) before any commit. A commit that must touch these files for a
+  real reason names the field and the reason in its message.
+- The Sentis `FORCE_SENTIS_ANALYTICS` pin was considered and not taken (it
+  covers one of the two files and force-enables an analytics define).
+- **Distinct class, do not conflate (markets, routed by Allen 2026-08-09):**
+  the legacy raw-blob textures were a one-time, owner-lane LFS conversion
+  (`a0469b9`) — a *real content fix*, done. Settings churn is *recurring
+  noise that is never committed*. The failure this line prevents: escalating
+  `git add --renormalize` on a stuck checkout and silently committing LFS
+  pointers on another lane's files. Renormalize is an owner's deliberate
+  act, never a cleanup reflex.

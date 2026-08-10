@@ -207,6 +207,41 @@ Only captures caught any of them. A suite that cannot tell whether something dre
 scroll with a printed position rail (S27). A deliberate cap is a ruled exception that prints its own
 count.
 
+### 4.4 A control must bracket the interval it certifies (C36)
+
+> **APPROVED — Allen, 2026-08-09.** Canon.
+
+**A control certifies only the interval its samples enclose, and it is checked by the other half of
+the instrument — never asserted by the half being checked.** An opening control pair brackets the
+warm-up and nothing after it. A closing control is what certifies the run.
+
+*Founding case:* an emission set passed `control-a == control-b` while the room was being mutated
+underneath it — a capture step reset renderers to their shared-material value instead of restoring
+their own state, so every later frame was shot against a changed room. The opening pair could not see
+it by construction. Two capture sets were discarded learning this.
+
+This is §4.2's temporal form: a control that brackets only the beginning cannot see the middle, and
+its green says so if anyone reads it.
+
+### 4.5 A null is invalid unless success would have been resolvable (C37)
+
+> **APPROVED — Allen, 2026-08-09.** Canon.
+
+Extends C32 from positive results to negative ones. C32 governs what a gate reports; this governs
+when a gate's *"no effect"* is allowed to mean anything.
+
+**Before a null is recorded, the instrument must be able to resolve the success it was looking for.
+Where a successful outcome would land under the instrument's own floor, the test could not have shown
+success in either direction, and its null is void — not a pass, and not evidence of absence.**
+
+*Founding cases:* whole-pixel ramp counting carried ±25% on a 2 px ramp, so a three-point trend built
+on it was never a trend; and a `_Sharpness` null was invalid because a successful halving would have
+landed at 0.84 px, under the ~1 px single-sample floor — that arm could not have shown success however
+the code behaved.
+
+Its first application **un-retired two verdicts**: this clause recovers work as often as it discards
+it, which is the correct shape for an instrument law.
+
 ---
 
 ## 5. Variety
@@ -235,6 +270,7 @@ legible grammars from nineteen authored pieces on this rule.
 `C14` fidelity · `C16` impossible vs expensive · `C17` capture precedes rebuild ·
 `C18` inventories and gates, and gate visibility · `C19` reachability · `C20` grade authority ·
 `C22` the tables are the canon · `C22.1` one ruling one ID · `C23` build-corrects-doc ·
+`C36` a control brackets what it certifies · `C37` a null needs a resolvable success ·
 `T18` compose don't multiply · `T19` rendered distinctness.
 
 Not carried here, and deliberately: every colour, type, layout, motion and palette law. Those are

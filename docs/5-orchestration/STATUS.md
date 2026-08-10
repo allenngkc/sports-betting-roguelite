@@ -1,4 +1,16 @@
-# Studio Status — 2026-08-08 (header refreshed every cycle per Allen)
+# Studio Status — 2026-08-09 (header refreshed every cycle per Allen)
+
+**THE BLUR ARC IS CLOSED AND EVERYTHING ALLEN WAS ASKED IS APPROVED** — the
+studio's longest hunt ended with the display half found by Allen himself (a
+per-user Editor toggle), the build's ~1.6px floor ruled a measured
+characteristic with his eye reading clear on both surfaces, and four
+approvals in one word: gates 6/7/8 RE-ISSUED, C36+C37 constitution canon
+(§4.4/§4.5), the settings-churn convention chartered (§7a). The DD now
+rules from a main-2 terminal (transport retired; batches 20+21 were its
+first direct dockets — the blur ruling self-amended in place with its
+disposition audit intact). Register canon through batch 21. Remaining
+queue is thin: SureThing's one-string commit (PRICES FINAL out), DD's
+phone reference frame → phone owning doc, and the S2 player-path baseline.
 
 **THE TMP MIGRATION IS ON MAIN** (`5903750`, fast-forward to the validated
 SHA) — full type package: TMP swap, tracking (six slot groups), Regular 400
@@ -46,6 +58,30 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-09 cycle 139 · **THE BLUR IS SOLVED — Allen found the cause at his
+  own machine** — Unity Game view's 'Low Resolution Aspect Ratios' was ON;
+  off, his verdict: "everything is clear now" on BOTH surfaces. Fits room's
+  numbers exactly (the inferred ~2033px render and ~2x factor were that
+  setting). The acceptance bar — his eye at the desk — is MET. Broadcast:
+  room updates the bundle README (display half closed, cause named, its
+  split measurement confirmed in both halves); the DD rules the complete
+  bundle (build's ~1.6px floor as characteristic-vs-defect with the bar
+  met, the two instrument laws to the constitution, item closure);
+  SureThing stands down from the hunt (mirror fix stays, 9.6% margin stays
+  unspent). Also this cycle: SureThing's hygiene pass green (merge
+  docs-only clean, bootstrap proved the mirror gate, suites), Allen ruled
+  the regenerated font assets canon (committing); its 3 resident Unity
+  processes flagged for its own kill-if-hung check.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | committing fonts | zero-Unity confirm → clean-holding | lead |
+  | tv-sweat | clean-holding | DD verdicts | DD |
+  | room | updating bundle README | → clean-holding | lead |
+  | markets-2 | clean-holding | none | — |
+  | DD terminal | ruling the complete bundle | rulings into docs/design/ → I commit | DD |
+  | Editor | free on SureThing's zero-confirm | none queued | orchestrator |
+  | **Need Allen** | gate 6/7/8 re-issue word (the walk's one finding is now resolved as a machine setting) · settings-churn convention | two words | Allen |
 - 2026-08-09 cycle 138 · **THE BLUR SPLIT IN TWO; transport retired; DD
   terminal seated** — Allen's playtest PNGs (the decisive arm) measured:
   his frame reads ~2.61px against the build's ~1.6px floor — BOTH real,
