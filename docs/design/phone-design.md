@@ -1,6 +1,10 @@
 # Phone — the bookie's channel
 
-**Owning document** under C9's two-tier authority · **Status:** DRAFT for Allen · **Drafted:** Design
+> **APPROVED — Allen, 2026-08-09.** Canon under C9's two-tier authority. The §10 quarantine stays
+> quarantined (the ladder settles on more than one afternoon's evidence); §10.4's notification
+> question stays closed unless Allen re-opens it.
+
+**Owning document** under C9's two-tier authority · **Status:** CANON (Allen-approved 2026-08-09) · **Drafted:** Design
 Director, 2026-08-09
 **Canonical home on approval:** `main-2/docs/design/phone-design.md`
 **Companion:** `docs/design/constitution.md` (authority and evidence) · **Siblings:**

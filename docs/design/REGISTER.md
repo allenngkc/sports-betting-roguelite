@@ -279,7 +279,7 @@ under this seat. That is the gap this register exists to close.
 | C39 | Enumerate the path before auditing the segment you own | **Law (register-level; deliberately NOT proposed for the constitution — one founding case)** · DD 2026-08-09 batch 20: a complaint's candidate set is the whole path from build to eye; enumerate every segment, check the cheap ones first, audit your own segment LAST. Founding case: six candidates, a harness audit and two discarded sets all inside the build — the cause was an Editor checkbox reached only after the expensive half. Both seats made the same blindness the same fortnight (the DD's own pre-commit treated Allen's path as one black box — §1.5). Promotes to §2 if it catches a second case. Third fault-between-seats instance (with R40's form and C13) | batch 20 |
 | C40 | A rule states the property it protects; a proxy is labelled as one | **Law** · DD 2026-08-09 batch 28: where a ruling names a detectable test alongside the property it protects, the test is labelled as the PROXY and the property as the LAW — so a passing proxy is never read as the property held (the S71-am2 false positive is the founding case: a word-count proxy read as a voice law) | batch 28 |
 
-## Phone (P) — the fifth surface's register (opened batch 23; owning doc `phone-design.md`, DRAFT for Allen)
+## Phone (P) — the fifth surface's register (opened batch 23; owning doc `phone-design.md`, **CANON — Allen-approved 2026-08-09**)
 
 | ID | Item | State | Batch |
 |---|---|---|---|
