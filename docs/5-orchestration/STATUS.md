@@ -58,6 +58,32 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-09 cycle 146 · **The verdicts wave ran end to end through the new
+  channel** — batches 22–25 landed/transcribed (S37-cl + T70 granted;
+  S71 closed at the token on SureThing's own answer; S72 opened, swept,
+  staged; the phone's P1–P8 with `phone-design.md` DRAFTED for Allen;
+  S2-am3 returned unadjudicated on a three-outcome pre-commitment). Built
+  and proven: SureThing's three gates with a negative control that asserts
+  WHAT was caught (lane closed converged/documented d85a3c4, 15 ahead);
+  room's R9-A evidence refresh (arm B kept as hashes per Allen — "the
+  control's value is the number"), the two-surface player-path baseline,
+  and the C34 bookkeeping that found a FIFTH contaminated finding (S2-am's
+  legibility half — frames staged, DD pre-committed); TV's consolidated
+  window shot with two honest gaps filed as findings and its capture
+  infrastructure committed on Allen's word. All evidence is with the DD:
+  the window set, the legibility frames, the voice inventory, the gate
+  answer. Allen's routing: the S2-am3 re-measurement is SureThing's on
+  room's rig. Editor relay ran five windows today without one collision.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | surething-ui | clean-holding (d85a3c4) | S2-am3 re-measure on rig handoff | lead |
+  | tv-sweat | committing capture path | → clean-holding | lead |
+  | room | clean-holding | rig handoff to SureThing on ask | lead |
+  | markets-2 | clean-holding | none | — |
+  | DD terminal | WORKING: full docket (window set + frames + inventory) | rulings → I commit | DD |
+  | Editor | free | S2-am3 window on ask | orchestrator |
+  | **Need Allen** | phone-design.md read · evidence-in-git policy | reads | Allen |
 - 2026-08-09 cycle 144 · **§6a's blocked-on-idle ban chartered (37b18ea) and
   applied; the DD is batched, the phone set delivered** — the ban's founding
   failure was THIS cycle's: lanes "holding for verdicts" while the DD sat
