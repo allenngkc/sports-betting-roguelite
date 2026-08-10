@@ -237,6 +237,159 @@ namespace SBR.Tests.PlayMode
         /// <para>Evidence infrastructure is run deliberately, when captures are wanted:
         /// <c>-testFilter "SBR.Tests.PlayMode.TvSweatCaptureHarness"</c>. It is not verification and
         /// nothing gates on it.</para></summary>
+        /// <summary>Batch-22 evidence, one shoot: the G1 statement fit, and BOTH payoff beats.
+        ///
+        /// <para>Separate from the named-moments sweat because none of these three states occur in
+        /// it. The sweat photographs what the match happens to produce; these are states that have
+        /// to be ENTERED. The accept beat needs a press, WinBeat needs the ticket to win, and G1's
+        /// case is the LONGEST statement each market can produce — none of which a seed reliably
+        /// hands you.</para>
+        ///
+        /// <para>The two payoff beats are invoked directly, which is the point rather than a
+        /// shortcut: the DD required both siblings shot, and inferring one from the other is the
+        /// error that produced T68. They are driven through the production coroutines, so what is
+        /// photographed is the shipped beat, not a re-staging of it.</para>
+        ///
+        /// <para>Bursts run at <c>intervalSeconds: 0</c> — one capture per rendered frame, each
+        /// advancing the sim by <c>captureDeltaTime</c> (1/50s). That is what makes "is the ground
+        /// static ACROSS the beat" answerable: the frames are a time series through the flood's
+        /// pulse, not samples at an arbitrary instant. C35/V8 is a per-beat property and a single
+        /// frame cannot report it.</para></summary>
+        [Explicit("Batch-22 evidence capture: statement fit + both payoff beats. Run by filter only.")]
+        [Timeout(480000)]
+        [UnityTest]
+        public IEnumerator Capture_Batch22_StatementFit_And_PayoffBeats()
+        {
+            _seed = "48151623";
+            s_sceneIndex = 0;
+            Directory.CreateDirectory(OutputDir);
+            TheaterStage.PresentationSeedOverride = StableSeed(_seed);
+            Time.captureDeltaTime = 1f / 50f; // frame-locked arms, per the named-moments rationale
+
+            yield return LoadRoom();
+
+            var director = Object.FindAnyObjectByType<RunDirector>();
+            var screen = Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing - run SBR.GrayboxRoomBuilder.Build first.");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+            Camera cam = Camera.main;
+            Assert.IsNotNull(cam, "MainCamera (PlayerCamera) missing");
+
+            screen.TimeScaleOverride = 1f;
+            couch.transitionDuration = 0.01f;
+            yield return WaitUntilOrFail(() => director.Run != null,
+                Time.realtimeSinceStartup + 10f, "director never started a run");
+            director.StartNewRun(_seed);
+            Run run = director.Run;
+
+            // ---- G1: one leg per market kind, on the LONGEST names this slate offers.
+            //
+            // "Shoot the at-budget forms specifically — the longest statement each market can
+            // produce." The variable half is the club or player name, so the ticket is built against
+            // whichever matchup carries the longest SHORT name — the same shortening the statement
+            // itself applies, so this picks the longest RENDERED form rather than the longest raw one.
+            //
+            // SCOPE, and it is stated on the frames too: this is the longest the SEED offers, not the
+            // longest the generator can produce. A worst case beyond this slate is not photographed.
+            var byClub = new List<Matchup>(run.CurrentSlate.Matchups);
+            byClub.Sort((x, y) => LongestClub(y).CompareTo(LongestClub(x)));
+            Assert.GreaterOrEqual(byClub.Count, 3, "need 3 matchups for a one-leg-per-market ticket");
+
+            // One leg per matchup: a ticket may not carry two legs on the same fixture, so the
+            // markets are spread across DISTINCT matchups rather than stacked on the longest one.
+            Matchup longestMl = byClub[0];
+            // LEG ORDER IS THE INSTRUMENT HERE, not a detail. The live row is the FIRST unresolved
+            // leg, so whichever market sits at index 0 is the only one whose requirement/state pair
+            // composes on screen. Every other market renders as a compact row and its pair is never
+            // seen at all.
+            //
+            // Learned by shooting it wrong: a first pass put moneyline first and BTTS third, and the
+            // BTTS pair — the one a ruling was waiting on — simply never appeared. The run was green
+            // and the frames were fine; the wanted state was just not in them. **To photograph a
+            // market's PAIR, put that market at index 0.** BTTS holds it here because its resolved
+            // line is the open question; move it to shoot a different market's pair.
+            var picks = new List<Pick>
+            {
+                new Pick(byClub[2].Index, MarketSelection.BothTeamsToScore(yes: false)), // ONE TEAM SCORELESS
+                new Pick(longestMl.Index, longestMl.HomeOdds <= longestMl.AwayOdds ? Side.Home : Side.Away),
+                new Pick(byClub[1].Index, MarketSelection.TotalGoals(2.5, over: true)),
+            };
+            // The scorer leg needs a FOURTH matchup with a roster. If the slate has none, the ticket
+            // ships three markets and the scorer form is simply not in this set — stated rather than
+            // silently dropped, because a missing market reads as a passing one otherwise.
+            Matchup scorer = null;
+            for (int i = 3; i < byClub.Count; i++)
+                if (byClub[i].Away.Players.Count + byClub[i].Home.Players.Count > 0) { scorer = byClub[i]; break; }
+            if (scorer != null)
+                picks.Add(new Pick(scorer.Index, MarketSelection.AnytimeScorer(LongestPlayerIndex(scorer))));
+            else
+                Debug.LogWarning("[Batch22] no fourth matchup with a roster — AnytimeScorer not in this set");
+            (_, double stake) = DemoTicketPolicy.Choose(run);
+            run.PlaceTicket(picks, stake);
+            director.LockRound();
+            Assert.AreEqual(Phase.Sweat, run.Phase);
+
+            couch.OnInteract(null);
+            yield return WaitUntilOrFail(() => SitSpot.Active != null,
+                Time.realtimeSinceStartup + 10f, "player never sat down");
+            yield return WaitRealtime(0.25f);
+            var controller = Object.FindAnyObjectByType<FirstPersonController>();
+            if (controller != null) controller.enabled = false;
+            cam.transform.SetPositionAndRotation(SeatedEye,
+                Quaternion.LookRotation(TvScreenCenter - SeatedEye, Vector3.up));
+            cam.fieldOfView = SeatedFovDeg;
+
+            // The column with every market present: four compact statements at their measured fit.
+            yield return CaptureBurst(screen, cam, "g1-column-all-markets", 2, 0.2f);
+
+            // Let the sweat run so the live row composes a real requirement/state pair (T70-am).
+            float deadline = Time.realtimeSinceStartup + 90f;
+            string baseline = screen.RevealedView.ScoreText;
+            yield return WaitUntilOrAbsent(() => screen.RevealedView.ScoreText != baseline,
+                director, deadline, "no event landed to compose a live pair against");
+            if (s_conditionMet) yield return CaptureBurst(screen, cam, "t70am-live-pair", 4, 0.25f);
+
+            // ---- T68-am: the accept beat, sampled ACROSS the flood pulse.
+            IEnumerator accept = (IEnumerator)typeof(TvSweatScreen)
+                .GetMethod("CashOutFloodBeat", System.Reflection.BindingFlags.NonPublic
+                                             | System.Reflection.BindingFlags.Instance)
+                .Invoke(screen, new object[] { 199.0 });
+            screen.StartCoroutine(accept);
+            yield return CaptureBurst(screen, cam, "t68am-accept-slot", 30, 0f);
+
+            // ---- T71: the win tally, the same treatment on its sibling beat.
+            yield return WaitRealtime(0.5f);
+            IEnumerator win = (IEnumerator)typeof(TvSweatScreen)
+                .GetMethod("WinBeat", System.Reflection.BindingFlags.NonPublic
+                                    | System.Reflection.BindingFlags.Instance)
+                .Invoke(screen, null);
+            screen.StartCoroutine(win);
+            yield return CaptureBurst(screen, cam, "t71-win-tally-slot", 30, 0f);
+        }
+
+        /// <summary>Length of the longer SHORT club name in a matchup — the shortening the statement
+        /// itself applies, so this ranks by rendered length rather than raw length.</summary>
+        private static int LongestClub(Matchup m)
+            => Mathf.Max(SweatFlavor.Short(m.Away.Name).Length, SweatFlavor.Short(m.Home.Name).Length);
+
+        /// <summary>Index of the roster player with the longest SURNAME — G1 names players by
+        /// surname, so the worst case for `{SURNAME} TO SCORE` is the longest surname, not the
+        /// longest full name.</summary>
+        private static int LongestPlayerIndex(Matchup m)
+        {
+            int best = 0, bestLen = -1;
+            for (int i = 0; i < m.Away.Players.Count; i++)
+            {
+                string n = m.Away.Players[i].Name ?? string.Empty;
+                int cut = n.LastIndexOf(' ');
+                int len = (cut >= 0 ? n.Substring(cut + 1) : n).Length;
+                if (len > bestLen) { bestLen = len; best = i; }
+            }
+            return best;
+        }
+
         [Explicit("Evidence capture, not verification: ship-paced and up to 240s. Run by filter only — "
             + "including it in routine suites would slow them enough to aggravate the documented "
             + "load-correlated flake (BUG-LEDGER §4C.4).")]
