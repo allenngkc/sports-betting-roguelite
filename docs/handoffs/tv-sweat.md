@@ -11,6 +11,172 @@ discarded.
 
 ---
 
+## 0-BW. THE BLOCKER WAVE — batches 16–19. T67/T68/T69 closed, G1 built, T68-am+T71 landed
+
+**Four batches, one arc: a money control with no readable label, and everything that fell out of
+finding it.** Commits `112df65` (batch 16), `41d5cbe` (G1), `04f7739` (T68-am + T71). Suites at the
+end: compile clean · engine 160/160 · **EditMode 247/247** · PlayMode 70 executed, 65 passed, 0
+failed, 5 `[Explicit]` skips.
+
+### T68 — the blocker. `HOLD E` was invisible on its own field
+
+The DD found it in the T67 capture, which had been shot to answer a different question. **The
+inversion is a two-part operation and only the field was inverting**: the type kept its light ink and
+the field rose to meet it. At the acceptance view the label measured **1.02 : 1** against the field
+it sits on.
+
+**It predates T63 and T63 made it marginally worse** (1.17 : 1 → 1.02 : 1), and the grant stands —
+the field's HDR material was genuinely missing.
+
+**Why no instrument caught it, and this is the transferable part:** every T63 measurement compared
+the band to *other* elements — scoreline, ball, ticket column, event strip. Three submissions and two
+batches of ladder work, **none of it comparing an element to its own ink**. A dominance gate is
+silent on legibility; they are different instruments and this surface had only the first (C33-am2).
+
+Fixed by rule: the ink derives **with** the field, from the same predicate, in one authority. Four
+scattered ink sites removed — the defect was never the value, it was that the value had five authors.
+The per-frame taunt is gated on `!_cashOutFieldLit`; unguarded it repaints the amount gold-on-gold
+every Update and undoes the punch-out, which is the same repaint T43 caught once already.
+
+**Verified on frames at 7.95 : 1.**
+
+### The near-miss, recorded because the DD called it the most valuable thing in the submission
+
+On the contact sheet `HOLD E` looked light grey and **this seat was about to file the label as
+unfixed**. Measured, it was dark ink at 6.99 : 1. The eye was wrong and the measurement corrected it.
+
+The explanation matters as much as the outcome: the label reads lighter than the amount because it is
+**small and thin** — antialiasing and the lit field's own bloom fill in its strokes, so its darkest 2%
+reaches 0.350 where the large bold amount reaches 0.216. **Same ink, different stroke weight,
+different rendered floor.** On a bloomed field, stroke weight changes what a contrast reading means.
+
+**Standing:** the label is the thinner margin of the two and fails first if the field ever brightens.
+
+### C33-am3 — three instruments, three spaces (and my number was the right one)
+
+The DD computed T68's contrast from Rec.709 luma on display-encoded values and got 3.18 : 1 against
+this seat's 8.12 : 1. **A contrast ratio is undefined outside linear space**, so the linear figure was
+correct. Ruled into law:
+
+| measurement | quantity | space |
+|---|---|---|
+| brightness ladder (dominance) | Rec.709 luma | **display-encoded** |
+| contrast ratio (legibility) | `(L1+0.05)/(L2+0.05)` | **linear** |
+| emission hue/chroma (palette) | CIELAB | **linear authored** |
+
+**Every measurement states its space, not only its unit.** Fifth reporting axis after scope (C25),
+coverage (C28), resolution (C32) and unit (C33). **The three ladders are never compared to each other.**
+
+### T69 → G1 — truncation cannot produce good copy
+
+The leg row named its backed team twice (`Atlanta Middlemen ML — Atlanta Middlemen v Tulsa Startups`)
+and wrapped to three lines. Only Moneyline had that shape — verified in `MatchModel.DisplayLabel`;
+every other market names no team in its own half. **The engine is untouched**: `DisplayLabel` is
+shared with the console and the laptop, so it is read and re-authored on this surface (T42's shape).
+
+The live statement's mid-word cut was found **mid-window** — `RICO LANYARD TO SCO` lives on the NEED
+element, not the one first changed. Fixed to a word boundary, and **the result was the argument for
+the real fix**: it read `RICO LANYARD TO`, ending on a dangling preposition.
+
+> *Truncation can stop broken glyphs; it cannot produce a sentence.*
+
+Escalated rather than absorbed, and **granted**: §5.1 says NEED is re-authored, T69 said truncate on a
+word boundary, and those are not equal remedies — **truncation is the floor, re-authoring is the fix.**
+
+### G1 — and the deck works because the list corrected its premise
+
+G1 asked for "the authored statement string for every market". **There are two per leg**, from two
+sources into two boxes — NEED (249px @ 28px, the requirement, live) and compact (**143px @ 15px**, the
+identity, everywhere else). Authoring one would have left the other exactly as it was, and the one
+that broke was NEED. Six `MarketKind`s produce **eight** NEED forms: BTTS is two different sentences,
+not a parameter.
+
+Built: `{CLUB} TO WIN`, `{SURNAME} TO SCORE`, `BOTH TEAMS SCORE`, `ONE TEAM SCORELESS`, totals
+unchanged; compact `{CLUB} ML`, `{SURNAME} ANYTIME`, `BTTS YES/NO`, totals identical to NEED **and
+that identity is correct, not a duplication to design away**. Compact is built from the *selection*,
+not parsed out of `DisplayLabel`, and the fixture is dropped entirely — the scorebug carries who is
+playing whom.
+
+**Two of the old forms were CONSTANTS over budget with no variable in them**, so they had been
+overflowing on every frame they ever drew. `KEEP` was also a §8 register problem: an instruction about
+a thing the player cannot influence.
+
+**MEASURED, because `FitToColumn` is the authority and not character counts:**
+
+```
+NEED col 249.0px   'ONE TEAM SCORELESS'   MISSES  -> ships ONE TEAM BLANKED
+compact  143.0px   'UNDER 10.5 CORNERS'   FITS    -> the CNRS last resort unused
+```
+
+**One of the two at-budget forms missed.** The fallback mechanism takes it at runtime.
+
+The DD's own pair-defect, found while authoring the top of it: NEED said `LANYARD TO SCORE` over a
+progress line of `WAITING FOR LANYARD` — **T69's "a fact named twice" reproduced vertically.** The
+scorer progress line is now `NOT YET` / `SCORED`.
+
+### T68-am + T71 — the accepted half, and why it could not be built as first ruled
+
+T68 said the ink takes `goldInk` on `actionable` **and** `accepted`. On `accepted` that produces
+**1.08 : 1** for most of the beat, because the slot is hidden there and the figure renders over a
+**sine-pulsing** flood. Filed with the numbers; the DD verified them figure-for-figure and recorded
+the seat's error (*a value ruled for one context does not carry to another without checking what it
+lands on*).
+
+**The two inks are exactly complementary:** gold is 12.47 : 1 at flood alpha 0 and 1.71 : 1 at the
+0.55 peak; `goldInk` is the reverse. **Neither static ink is right because the ground moves.**
+
+Ruled route (2), built: both payoff figures move **into the slot**, §6.1's own spec, where the field
+is stable and the inversion is already measured. Interpolating the ink (a hue lerp on the payout
+figure — §7 is quantised) and inventing a new opaque ground were both refused. **The flood stays**
+and stops being what money reads against. T71 takes `WinBeat` the same way — 1.83 : 1 at its 0.50
+peak, the same defect one beat over — **and ruling them together is the point**, since two payoff
+moments drifting apart in treatment is exactly what produced T68.
+
+**C35** (transcribed from the DD's C34, renumbered on collision): *where an element and the surface
+behind it are driven by one control, no brightness change can make the element readable.* Promoted
+from this seat's §3 — `ApplyBoost`'s `Payout` case drove the text and its ground together, so their
+ratio was preserved at any amplitude.
+
+### THE LESSON WORTH CARRYING: a fixed scan window quietly stops covering its target
+
+**Twice now.** A source-scan guard took a fixed character window from a method head — 500 chars in
+batch 16, 4000 in batch 19 — and both times the method's own comments grew past it, so the scan
+silently stopped reaching the code it existed to check. The batch-16 one threw
+`ArgumentOutOfRangeException`; the batch-19 one **failed green-side**, asserting absence of a string
+that was present just beyond the window.
+
+> **Rule: search the whole source, or search to a real end marker. Never a character count.**
+
+Same family, same wave, three instances of an instrument not covering what it claims:
+
+- **`MaterialsAtL4` counted a hard-coded list of five that omitted `_cashOutFieldHdrMat`** — so from
+  T63 until batch 19 the one-token instrument could not see the field that T68's blocker was about.
+  A counter with a hard-coded list stops covering whatever is added next.
+- **A scan that matched the very comment recording why a string was retired** (batch 16's T69 guard).
+  Strip comment lines, or the documentation fails the test.
+- The two fixed windows above.
+
+### Two consequences caught in diff review, before they ran
+
+1. **The gold flood silently lost its punch.** Moving the payoff figure from `HdrFocus.Payout` to
+   `CashOut` left *nothing* requesting `Payout`, so `_goldFloodHdrMat` would have stopped boosting and
+   the celebration ground would have rendered ~40% dimmer — against a ruling that says the flood is
+   untouched. The flood rides the `CashOut` focus now. **Not C35's coupling:** that law is about an
+   element and the ground *behind* it, and the figure's ground is now the slot's field.
+2. **`_tBigAmount` is orphaned** — built, cleared on reset, never given content. **Not deleted:** its
+   name is in the DD-gated `SanctionedL4Elements`, whose own gate says route before editing, and it is
+   the element the accepted treatment would return to if revisited on frames. Flagged at its
+   declaration **in the same commit that orphaned it** — the difference between a named consequence
+   and what `_wonFlood` became.
+
+### State
+
+`04f7739` on `origin/tv-sweat`; PR #3 carries the wave. Working tree clean apart from the inert
+`SBR.Engine.dll` line. **Nothing owed from this seat** — open with the DD: `_tBigAmount`'s inventory
+call, and the blur bundle (not this lane's).
+
+---
+
 ## 0-VW. VERIFY WINDOW — 2026-08-07/08. BATCHES 13+14 GREEN, T65 CLOSED ON FRAMES, editor released
 
 **Compile CLEAN · engine 160/160 · EditMode 237/237 · PlayMode 64 passed / 1 documented flake / 5
@@ -1029,8 +1195,8 @@ harmless that time. The procedure below closes it.
 4. `git checkout --` the three build side-effect files; confirm `git status` shows only intended
    changes before committing.
 
-**Current baselines — measured 2026-08-07/08, batches 13+14 (§0-VW):** engine **160/160** ·
-EditMode **237/237** · PlayMode **70 executed: 64 passed, 1 documented flake, 5 `[Explicit]` skips**.
+**Current baselines — measured 2026-08-09, batches 16–19 (§0-BW):** engine **160/160** ·
+EditMode **247/247** · PlayMode **70 executed: 65 passed, 0 failed, 5 `[Explicit]` skips**.
 
 *(Superseded: `220c5ec`'s 160 / 129 / 44. EditMode grew 129 → 222 on the main merge, → 224 (batch 9),
 → 228 (T61/T62), → 237 (batches 13+14). PlayMode reads 70 rather than 44 because the suite now
