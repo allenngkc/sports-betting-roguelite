@@ -1,16 +1,25 @@
 # SureThing UI — re-seat state
 
-**STATUS 2026-08-09 · `3320a40` on `surething-ui` · 14 ahead of main, 0 BEHIND · tree clean (`artifacts/` untracked, as always)**
+**STATUS 2026-08-09 · converged at `1d6eb35`, IDENTICAL to main · tree carries two phantom-modified TV
+fonts that are NOT this seat's and MUST NOT be staged — see the traps · `artifacts/` untracked, as always**
 
 ### Verifiable state
 
-- **Suites: EditMode 78/78 · PlayMode 58/58.** Baseline every later comparison against **78/58**.
+- **This surface's own suites: EditMode 78/78 · PlayMode 58/58**, last run by this seat at `45cb958`.
   **PlayMode moved 57 → 58** at `af0c42c` — the S71 margin-empty-state gate. **A run reporting 57 means
   that gate did not execute**, and the wrapper's count is what tells you.
-- **Verified at `1d5a2df`** (the S71 gate rebuild), and **nothing under `unity/` has changed since** —
-  `3320a40` is a docs-only merge. So the figures above describe this tree exactly and no re-run is owed.
-  Check it the same way rather than trusting this line: `git diff --stat 1d5a2df HEAD -- unity/`.
-- **Branch is 14 AHEAD and 0 BEHIND.** Read those two counts separately —
+- **Those two figures were NOT re-run on the converged tree, and do not need to be.** The convergence
+  took 89 commits and 109 files including code, so the "nothing under `unity/` has changed" claim that
+  used to sit here **is void** — do not carry it forward. What replaces it is better evidence, not
+  weaker: **the merged tree was validated studio-wide at `1d6eb35` — engine 183/183, EditMode 250/250,
+  PlayMode 84 + 6 by-design skips** — and this surface's 78 and 58 are subsets of those totals.
+  **Studio counts are not this surface's counts.** 250 and 84 are every lane together; the 78/58 above
+  is what a filtered run of this surface should report, and comparing the two directly is a category
+  error waiting to be made by whoever reads a green 250 as covering something specific.
+- **Branch is CONVERGED — 0 ahead, 0 behind at the fast-forward.** It was fast-forwarded deliberately
+  rather than merged: HEAD was already an ancestor of main (this seat's work landed at `23f9da6`), so a
+  `--no-ff` merge commit would have invented a sibling of main instead of becoming it. Read the counts
+  separately —
   `git rev-list --count main..HEAD` is ahead, `HEAD..main` is behind. An earlier version of this file
   printed "12 ahead and 3 BEHIND" with the labels **swapped**, off a single
   `--left-right --count main...HEAD` whose output is *behind* then *ahead*. Do not trust a remembered
@@ -133,8 +142,25 @@ Part 2 room's, Part 3 the closing.
    holds the only frames of `16-margin-max-legs-staged-receipt` — **this tree cannot regenerate them**,
    because it still carries `11-`.
 
-### The three standing traps
+### The standing traps
 
+*(Not "the three" any more. The count was in this heading and went stale the moment a fourth arrived —
+the same defect as the `(gitignored)` line below, in the heading rather than the body.)*
+
+- **⚠ DESTRUCTIVE AND LIVE — do not `git add -A`, do not `commit -a`, do not touch the TV fonts.**
+  `unity/SBR/Assets/SBR/Resources/Tv/Fonts/EncodeSans.ttf` and `EncodeSansCondensed.ttf` show
+  **permanently modified in every worktree on main** and **`git checkout` cannot clear them.**
+  Verified here rather than relayed: HEAD's blob is **raw TTF** (285,792 bytes, real `GDEF`/`GPOS`
+  tables), `.gitattributes` routes the path to LFS (`git check-attr filter` → `lfs`), and
+  **`git lfs ls-files` has no record of them.** So the clean filter would write a pointer to an LFS
+  object **that does not exist** — staging them converts real fonts into **dangling pointers**, and
+  the bytes stop being reachable from that commit.
+  **Stage by explicit path only until TV's conversion fix lands on main.** It is TV's to fix; the
+  remedy (`git lfs migrate` versus untracking the path) is repo-wide and has history implications.
+  **It also breaks `git merge --abort`:** the stale index throws *"Entry … not uptodate. Cannot
+  merge. Could not reset index file to revision HEAD"*. `git reset --hard HEAD` clears it, and costs
+  nothing **provided this seat's own work is committed first** — which is the reason to commit before
+  merging rather than after.
 - **`artifacts/` is NOT git-ignored.** A bare `git add -A` sweeps ~100 PNGs. Stage explicitly, always.
   Verify rather than trust: `git check-ignore -v artifacts/surething-ui` matches nothing.
   **This file told two seats the opposite** — §5 read "(gitignored)" until 2026-08-09, cancelling the
@@ -190,7 +216,10 @@ Part 2 room's, Part 3 the closing.
 
 **Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-09, after C13 closed, the
 font-asset re-verification, batch 21, the strays collection, S71's gate rebuild and S72's clean sweep.
-**HEAD:** `3320a40` · **Branch:** `surething-ui` · 14 ahead of main, 0 behind · working tree clean.
+**Converged at:** `1d6eb35`, identical to main · **Branch:** `surething-ui` · this entry is the only
+commit beyond the convergence. **The working tree is NOT clean and cannot be made clean:** two TV font
+files are phantom-modified under a broken LFS attribute and `checkout` will not clear them. That is
+expected, it is not this seat's, and staging them destroys them — see the first standing trap.
 
 **Read the re-seat block at the top of this file first.** Everything below it is the accumulated
 record and some of it describes states that have since closed — where that is true the section says
