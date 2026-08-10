@@ -218,3 +218,10 @@ pin available for both (Sentis toggles `SENTIS_ANALYTICS_ENABLED` in
   real reason names the field and the reason in its message.
 - The Sentis `FORCE_SENTIS_ANALYTICS` pin was considered and not taken (it
   covers one of the two files and force-enables an analytics define).
+- **Distinct class, do not conflate (markets, routed by Allen 2026-08-09):**
+  the legacy raw-blob textures were a one-time, owner-lane LFS conversion
+  (`a0469b9`) — a *real content fix*, done. Settings churn is *recurring
+  noise that is never committed*. The failure this line prevents: escalating
+  `git add --renormalize` on a stuck checkout and silently committing LFS
+  pointers on another lane's files. Renormalize is an owner's deliberate
+  act, never a cleanup reflex.
