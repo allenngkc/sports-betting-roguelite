@@ -295,3 +295,110 @@ outside the harness.
   mechanism that predicts the shape.
 - **The render-scale null it all rests on is itself unvalidated** — §6's geometry control was never
   run, and the frames were discarded before it was asked for. It is being re-shot now.
+
+---
+
+## Part 3 — Closing: the answer, and what each half got right
+
+**Filed by the SureThing UI lead, 2026-08-09.** Appended; nothing above is edited. Part 1's §6
+geometry control is now moot and is answered here instead.
+
+### 1. The answer
+
+**Allen's Game view had *Low Resolution Aspect Ratios* enabled.** Turned off, both surfaces read clear
+to his eye. **No build change is needed.**
+
+It fits every constraint the hunt accumulated, simultaneously — which is precisely why it survived
+nine eliminations:
+
+| constraint | why this satisfies it |
+|---|---|
+| fixed ~1.68 px, constant across glyph sizes | it is a resample of the finished image, referred to the display |
+| survives 1.5× supersampling | it acts at output resolution, downstream of the scaled target entirely |
+| frame-wide — glyphs **and** geometry floor | it is applied to the whole view, not to any draw |
+| both surfaces, on separate canvases | same reason |
+| no material property reaches it | the glyph is already correct before it happens |
+| the harness could not clear itself | **it was never in the game at all** |
+
+### 2. The scorecard, stated plainly
+
+**Room's locating inference was right and mine was the objection.** *After the resolve, at output
+resolution* is exactly where this lives.
+
+**Part 1 §2 remains true and was not the cause.** TMP's SDF ramp really is normalised to
+`_ScreenParams`, URP really does bind that from `camera.pixelWidth`, and a TMP ramp really is
+render-scale-invariant by construction. It was a sound derivation from a true premise that was not
+the operative one. §0 said at the time that it was not a claim of cause; that hedge is the only
+reason it cost nothing.
+
+**The thread that mattered was §6**, and not for the reason it was written. It asked whether *anything*
+in the 1.5× pair narrowed, and said that if nothing did, **the null is instrument rather than
+physics.** That was right, and the word *instrument* was one layer too narrow: the defect was not in
+the capture harness but in the **display path the complaint arrived through**. Room's Part 2 §4
+records that the geometry control was never run and its frames were discarded — so the question stayed
+open to the end, and the answer arrived from Allen's eye rather than from either of our halves.
+
+### 3. The two-surface observation
+
+`surething-form-blurry.png` and `phone-bookie-blurry.png` — Allen's own playtest frames, 2026-08-09.
+
+**The phone blurs identically on a separate canvas.** `PhoneScreen` is its own world-space canvas on
+the same camera (`PhoneScreen.cs:61-62`, `:165`), sharing no font asset configuration, no material and
+no layout code with the laptop. **That kills every surface-specific candidate in one frame** — and it
+did so before anyone knew the cause, which is what a good discriminator does.
+
+Recorded as a method note rather than a trophy: **the cheapest discriminator in the whole hunt was
+noticing that a second surface had the same symptom.** It cost one `ls` of an import directory. Nine
+measured eliminations preceded it.
+
+### 4. The un-retired verdicts — the lesson, and it is now three
+
+Two verdicts were un-retired during this hunt, both nulls that had been read as exclusions:
+
+- **The bitmap control** — *bitmaps stay sharp while glyphs are soft* eliminated canvas render scale
+  and world-space pixel density. The ink rings are hand-drawn soft-edged strokes measuring 6.50 px of
+  ramp against a glyph's 2.92 px. **They have no hard edge to lose, so they could show neither
+  softening nor sharpening.** The control could not witness the failure it guarded.
+- **The `_Sharpness` null** — doubling the SDF `scale` term did not halve the ramp, which retired
+  `_Sharpness`, `_GradientScale`, atlas padding and sampling point size together. It was run at the one
+  render scale where the predicted result (1.68 → 0.84 px) sits under the ~1 px single-sample floor.
+  **The experiment could not have resolved a success.**
+
+Both are adopted as law in batch 19: *a control must be able to witness the failure it guards*, and
+*a null is invalid if success would sit under the instrument's own floor.*
+
+**The resolution adds a third, and it is the one that would have shortened this hunt most:**
+
+> **A search space is a claim, and it needs a control like any other.** Every elimination here was
+> sound *inside the pipeline*, and the defect was outside it. Nine correct negatives cannot find a
+> cause that the boundary excluded before the first measurement — and nothing in the method was
+> capable of noticing that the boundary was the assumption.
+
+The tell was present and was read as a limitation rather than as evidence: **the harness could not run
+the decisive case**, and the complaint had arrived through a path no instrument covered. Batch 19
+recorded that *an instrument that cannot run the decisive case does not get to return a verdict.*
+Stated forward, it is stronger: **when the instrument cannot reach where the complaint came from, that
+gap is the first place to look, not a caveat to carry.**
+
+### 5. What survives, and what this closing cannot say (C25)
+
+**Survives, and should not be undone:**
+
+- **The `_TextureWidth` mirror fix (`6bd6da2`) was a real defect and stays.** Exonerated as the *cause*,
+  never as a defect. It is now gated: the bootstrap's mirror line reads `1024x1024 against configured
+  1024x1024 — AGREE` on both faces, verified again on freshly generated assets 2026-08-09.
+- **The `_Sharpness` margin stays unspent, as ruled.** Maxed it buys 9.6%, not 50%. Spending it would
+  convert a diagnosable defect into a marginal one that still fails and no longer points anywhere.
+- **Part 1 §2's derivation** is a true property of this type stack and is worth keeping on the record
+  independently of this hunt: **a TMP SDF ramp cannot be narrowed by URP render scale.** Anyone who
+  later proposes supersampling to sharpen text on this project should be handed that table.
+
+**This closing cannot say:**
+
+- **Why the setting was on**, or for how long, or whether any earlier frame in the evidence set was
+  shot through it. **No frame in any bundle has been re-examined against this.** If a past measurement
+  was taken from Allen's Game view rather than from a harness capture, it inherits the resample — that
+  is a scoping question for the DD, not a finding.
+- **Nothing here re-opens a granted item.** Raised as a boundary, not a claim.
+
+**— SureThing UI lead, 2026-08-09**
