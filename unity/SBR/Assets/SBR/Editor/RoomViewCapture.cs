@@ -35,6 +35,7 @@ namespace SBR
         private const string RsArmedKey = "SBR.RoomViewCapture.RsArmed";
         private const string SweepArmedKey = "SBR.RoomViewCapture.SweepArmed";
         private const string AuditArmedKey = "SBR.RoomViewCapture.AuditArmed";
+        private const string PhoneArmedKey = "SBR.RoomViewCapture.PhoneArmed";
         private const string OutDirKey = "SBR.RoomViewCapture.OutDir";
         private const int Width = 2560;
         private const int Height = 1440;
@@ -48,6 +49,7 @@ namespace SBR
         private static int _rsFrames;
         private static int _sweepFrames;
         private static int _auditFrames;
+        private static int _phoneFrames;
 
         /// <summary>
         /// Edit-mode capture. No Play Mode, so no domain reload - this runs to completion in a
@@ -1553,6 +1555,196 @@ namespace SBR
                 Debug.Log($"[Audit] backbuffer written at {shot.width}x{shot.height}");
                 UnityEngine.Object.DestroyImmediate(shot);
             }
+        }
+
+        /// <summary>
+        /// The phone reference set (DD capture contract, 2026-08-09).
+        ///
+        /// FOUR LIVE STATES, and R28-am binds hard: live engine data only, nothing authored. The run
+        /// is driven with the director's own verbs — StartNewRun(seed), LockRound, AdvanceSweat,
+        /// FinishAndSettle, ExitShop — so every message on screen is one the engine actually emitted.
+        /// No string is composed for the shot; a mocked line would make the owning document's
+        /// measurements fiction, and this surface has no owner to catch that.
+        ///
+        /// SEED PINNED AND ASSERTED (C34). The feed is run-state dependent, so an unpinned set is
+        /// not a set. The seed is passed to StartNewRun and read back before anything is shot.
+        ///
+        /// TWO VIEWS per state (contract §3): the seated ROOM view — is it readable in the room at
+        /// all — and a FOCUSED view derived from the phone's own transform rather than a hardcoded
+        /// pose, so it cannot drift from the object it frames.
+        ///
+        /// Message texts are logged at every capture, so the DD reads the frames against what was
+        /// actually live rather than against an assumption about it.
+        ///
+        ///   Unity.exe -batchmode -projectPath (project)
+        ///             -executeMethod SBR.RoomViewCapture.CapturePhoneReference -outDir (path)
+        /// </summary>
+        public static void CapturePhoneReference()
+        {
+            string outDir = OutDirFromArgs();
+            Directory.CreateDirectory(outDir);
+            SessionState.SetString(OutDirKey, outDir);
+            SessionState.SetBool(PhoneArmedKey, true);
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            EditorApplication.EnterPlaymode();
+        }
+
+        [InitializeOnLoadMethod]
+        private static void RehookPhone()
+        {
+            if (SessionState.GetBool(PhoneArmedKey, false))
+                EditorApplication.update += OnPhoneUpdate;
+        }
+
+        // The stepped driver. The first version ran the whole run inside ONE update callback, so
+        // PhoneScreen.Update never ticked between the director's verbs and the feed never processed
+        // them — three "states" came back holding the same single message. The engine was fine; the
+        // harness drove the game inside a single frame and expected per-frame work to happen.
+        //
+        // One verb per update, with frames deliberately left between them, and a capture whenever
+        // the message COUNT changes rather than at points I guessed in advance.
+        private static SBR.Game.PhoneScreen _pPhone;
+        private static SBR.Game.RunDirector _pDirector;
+        private static Camera _pCam;
+        private static Vector3 _pFocusEye, _pSeatedEye;
+        private static Quaternion _pFocusRot, _pSeatedRot;
+        private static string _pOutDir;
+        private static int _pStage, _pWait, _pLastCount = -1, _pSteps;
+
+        private static void OnPhoneUpdate()
+        {
+            if (!EditorApplication.isPlaying) return;
+            _phoneFrames++;
+            if (_phoneFrames < WarmupFrames) return;
+
+            int code = 0;
+            try
+            {
+                if (_pPhone == null) { PhoneInit(SessionState.GetString(OutDirKey, string.Empty)); return; }
+                if (_pWait > 0) { _pWait--; return; }
+                if (PhoneStep()) return;              // more to do
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[PhoneRef] failed: {e}");
+                code = 1;
+            }
+
+            EditorApplication.update -= OnPhoneUpdate;
+            SessionState.SetBool(PhoneArmedKey, false);
+            EditorApplication.Exit(code);
+        }
+
+        /// <summary>One verb per call. Returns false when the run is finished or the budget is spent.</summary>
+        private static bool PhoneStep()
+        {
+            if (_pSteps++ > 120)
+            {
+                Debug.LogWarning("[PhoneRef] step budget spent - capturing what the feed reached " +
+                                 "rather than driving further");
+                PhoneShot("Z-final");
+                return false;
+            }
+
+            try
+            {
+                switch (_pStage % 4)
+                {
+                    case 0: _pDirector.LockRound(); break;
+                    case 1:
+                        if (_pDirector.AdvanceSweat()) { _pWait = 1; PhoneCheck(); return true; }
+                        break;
+                    case 2: _pDirector.FinishAndSettle(); break;
+                    case 3: _pDirector.ExitShop(); break;
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[PhoneRef] run ended at stage {_pStage} ({e.GetType().Name}) - " +
+                                 "capturing what the feed reached rather than forcing further");
+                PhoneShot("Z-final");
+                return false;
+            }
+
+            _pStage++;
+            _pWait = 3;                                // let Update tick so the feed processes
+            PhoneCheck();
+            return true;
+        }
+
+        /// <summary>Capture whenever the message count moves — the states are found, not guessed.</summary>
+        private static void PhoneCheck()
+        {
+            int n = _pPhone.feed.Messages.Count;
+            if (n == _pLastCount) return;
+            _pLastCount = n;
+            PhoneShot($"msgs-{n:00}");
+        }
+
+        private const string PhoneSeed = "PHONEREF01";
+
+        private static void PhoneInit(string outDir)
+        {
+            if (string.IsNullOrEmpty(outDir))
+                throw new InvalidOperationException("output directory lost across domain reload");
+            _pOutDir = outDir;
+
+            var phone = UnityEngine.Object.FindAnyObjectByType<SBR.Game.PhoneScreen>();
+            if (phone == null || phone.feed == null || phone.screenRenderer == null)
+                throw new InvalidOperationException("no PhoneScreen/BookieFeed - nothing to shoot");
+            var director = UnityEngine.Object.FindAnyObjectByType<SBR.Game.RunDirector>();
+            if (director == null)
+                throw new InvalidOperationException("no RunDirector - the run cannot be driven live");
+
+            director.StartNewRun(PhoneSeed);
+            string actual = director.Run?.Rng.RunSeed ?? "<none>";
+            if (actual != PhoneSeed)
+                throw new InvalidOperationException(
+                    $"seed not pinned: asked {PhoneSeed}, run reports {actual}. An unpinned set is " +
+                    "not a set (C34) and its content findings would be unreproducible.");
+            Debug.Log($"[PhoneRef] seed PINNED and asserted: {actual}");
+
+            _pCam = FindPlayerCamera();
+            var controller = UnityEngine.Object.FindAnyObjectByType<FirstPersonController>();
+            if (controller != null) controller.enabled = false;
+
+            Transform scr = phone.screenRenderer.transform;
+            Vector3 n = -scr.forward;
+            _pFocusEye = scr.position + n * 0.315f;
+            _pFocusRot = Quaternion.LookRotation(-n, scr.up);
+            _pSeatedEye = new Vector3(-0.950f, 1.150f, 0.300f);
+            _pSeatedRot = Quaternion.LookRotation(
+                new Vector3(1.232f, 1.100f, 0.300f) - _pSeatedEye, Vector3.up);
+
+            _pPhone = phone; _pDirector = director;
+
+            foreach (string ctl in new[] { "control-a", "control-b" })
+            {
+                WarmRender(_pCam);
+                string cd = Path.Combine(outDir, ctl);
+                Directory.CreateDirectory(cd);
+                Shoot(_pCam, cd, "phone-focused.png", _pFocusEye, _pFocusRot, 30f);
+            }
+            _pWait = 2;
+            PhoneCheck();
+        }
+
+        private static void PhoneShot(string state)
+        {
+            var msgs = _pPhone.feed.Messages;
+            int n = msgs.Count;
+            string dir = Path.Combine(_pOutDir, state);
+            Directory.CreateDirectory(dir);
+            WarmRender(_pCam);
+            Shoot(_pCam, dir, "phone-focused.png", _pFocusEye, _pFocusRot, 30f);
+            Shoot(_pCam, dir, "seated-room.png", _pSeatedEye, _pSeatedRot, 17f);
+            int longest = 0;
+            for (int i = 0; i < n; i++)
+            {
+                Debug.Log($"[PhoneRef]   [{state}] msg {i}: \"{msgs[i].Text}\" ({msgs[i].Text.Length} chars)");
+                if (msgs[i].Text.Length > longest) longest = msgs[i].Text.Length;
+            }
+            Debug.Log($"[PhoneRef] {state}: {n} message(s), longest {longest} chars");
         }
 
         public static void CaptureAll()
