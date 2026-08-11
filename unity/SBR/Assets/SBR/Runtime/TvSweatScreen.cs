@@ -448,6 +448,31 @@ namespace SBR.Game
         /// _cashOutAnimation is otherwise unobservable from outside the sweat, and this is the exact
         /// condition CanAcceptCashOutNow also refuses.</summary>
         public bool DebugCashOutAnimating => _cashOutTweening;
+        /// <summary>Test/debug hook: has a cash-out figure been rendered at least once? This is the
+        /// DURABLE precondition behind <see cref="DebugCashOutAnimating"/> — until it is true,
+        /// SetCashOutOffer takes its first-time branch and no tween can ever start. A test that
+        /// wants to observe a tween polls this (a state that latches) rather than the animation
+        /// flag (a state that passes).</summary>
+        public bool DebugHasCashOutShown => _hasCashOutShown;
+        /// <summary>Test/debug hook: displace the SHOWN cash-out figure so that the next natural
+        /// offer read must take the tween branch of SetCashOutOffer.
+        ///
+        /// <para>The PlayMode tests that assert mid-tween behaviour used to wait for the simulation
+        /// to move the price on its own, inside a fixed timeout. That is a race by construction: a
+        /// tween starts only when a new offer differs from the shown figure by 0.005 or more, so
+        /// the wait depended on unpinned generated content arriving inside the window. It failed
+        /// about one run in N on a byte-identical tree and passed on re-run.</para>
+        ///
+        /// <para>This does NOT fake the tween — it moves only the displayed figure, so the real
+        /// production path (Update → SetCashOutOffer → AnimateCashOut) is still what runs and still
+        /// what the assertions observe. Returns false if no figure has been shown yet, so a caller
+        /// cannot silently displace nothing.</para></summary>
+        public bool ForceCashOutDisplacement(double delta)
+        {
+            if (!_hasCashOutShown) return false;
+            _cashOutShown += delta;
+            return true;
+        }
 
         /// <summary>PRD §9's read-only diagnostic surface: the scene grammar the stage is currently
         /// playing, as its <c>SceneTemplate</c> name.
