@@ -1,4 +1,13 @@
-# Studio Status — 2026-08-09 (header refreshed every cycle per Allen)
+# Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
+
+**Keeper-era heartbeat stamp: 2026-08-10, cycle 153 live.** Loop state:
+watcher v19 + heartbeat both armed. Room's determinism pair LANDED (pinned
++asserted both runs, record merged `08e8f44`); SureThing's pinned re-shoot
+RUNNING (editor leased, Allen's tap fired on verified Unity-zero); TV
+hardened BOTH races (reported + byte-identical twin at :331; root cause:
+0.2× TimeScaleOverride cancelling the wait margin) — PlayMode repeat-run
+confirmation window queued behind SureThing; DD docketed with room's
+record, may rule it together with SureThing's shoot.
 
 **THE ROUND IS ON MAIN AND THE MERGED TREE IS CERTIFIED GREEN** — Allen's
 "if everything is done lets merge" executed as three clean no-ff merges,
@@ -59,6 +68,36 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-10 cycle 152 · **ALLEN'S FOUR-LANE ORDER EXECUTED; AUTONOMY
+  CORRECTION CHARTERED; SUITE COUNTS RE-ESTABLISHED WITH ONE FLAKE
+  ROUTED** — Allen: "I should not need to order this. Please be auto" →
+  §6.3 re-affirmed in ORCHESTRATOR.md; executed immediately: TV's branch
+  merged (`c6f2910` — fr_measure.py in tools/ with pin+count asserts) and
+  SureThing's merged (`4dfb053` — S2-am3 reports + handoffs), both
+  fast-path (docs/tools only), tree clean. SureThing re-established the
+  merged tree's counts: EditMode 250/250; PlayMode failed ONCE
+  (WaitUntil on DebugCashOutAnimating, TvSweatScreenTests.cs:201 — a
+  catch-in-flight race), discriminator on a byte-identical tree passed
+  84+6 matching studio validation — labeled per its own pre-commitment
+  "did not reproduce in one re-run", routed to TV as a hardening item
+  (poll the state machine, not the animation flag). The tempting cause
+  (flood strike) was retired by measurement before suspicion could stick.
+  Room dispatched: fresh determinism pair on the pinned rig (ROOMREF01
+  live), autonomous-verify class per Allen. DD: Allen CONFIRMED the
+  seating corrections (landed b3c8765 + b9ea968). **Evidence-storage
+  call ANSWERED in direction: Allen deletes his old raw playtest frames
+  and takes new ones** — no history rewrite ordered; fresh playtest
+  evidence incoming, intake ready at dd-import. DD seated at 253 rows.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | tv-sweat | hardening the WaitUntil race | commit + report | lead |
+  | surething-ui | merging main 4dfb053, then clean-hold | confirm state | lead |
+  | room | fresh determinism pair, editor leased | verdict + window close | lead |
+  | markets-2 | clean-hold | none | — |
+  | DD | standing by | next docket: room's pair or Allen's new frames | DD |
+  | Allen | deleting old playtest frames, shooting new | frames arrive → staged to DD | Allen |
+  | **Need Allen** | — (storage call answered) | — | — |
 - 2026-08-10 cycle 151 · **THE FLOOD ARC CLOSED END TO END; ORCA RESTART
   RECOVERED, ALL WORK LANDED FIRST** — batch 29 verdict: T68-am+T71
   GRANTED·CLOSED on the DD's independent frame reads (ink moved 0.0000 at
