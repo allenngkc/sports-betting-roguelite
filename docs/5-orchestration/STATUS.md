@@ -59,6 +59,36 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-10 cycle 152 · **ALLEN'S FOUR-LANE ORDER EXECUTED; AUTONOMY
+  CORRECTION CHARTERED; SUITE COUNTS RE-ESTABLISHED WITH ONE FLAKE
+  ROUTED** — Allen: "I should not need to order this. Please be auto" →
+  §6.3 re-affirmed in ORCHESTRATOR.md; executed immediately: TV's branch
+  merged (`c6f2910` — fr_measure.py in tools/ with pin+count asserts) and
+  SureThing's merged (`4dfb053` — S2-am3 reports + handoffs), both
+  fast-path (docs/tools only), tree clean. SureThing re-established the
+  merged tree's counts: EditMode 250/250; PlayMode failed ONCE
+  (WaitUntil on DebugCashOutAnimating, TvSweatScreenTests.cs:201 — a
+  catch-in-flight race), discriminator on a byte-identical tree passed
+  84+6 matching studio validation — labeled per its own pre-commitment
+  "did not reproduce in one re-run", routed to TV as a hardening item
+  (poll the state machine, not the animation flag). The tempting cause
+  (flood strike) was retired by measurement before suspicion could stick.
+  Room dispatched: fresh determinism pair on the pinned rig (ROOMREF01
+  live), autonomous-verify class per Allen. DD: Allen CONFIRMED the
+  seating corrections (landed b3c8765 + b9ea968). **Evidence-storage
+  call ANSWERED in direction: Allen deletes his old raw playtest frames
+  and takes new ones** — no history rewrite ordered; fresh playtest
+  evidence incoming, intake ready at dd-import. DD seated at 253 rows.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | tv-sweat | hardening the WaitUntil race | commit + report | lead |
+  | surething-ui | merging main 4dfb053, then clean-hold | confirm state | lead |
+  | room | fresh determinism pair, editor leased | verdict + window close | lead |
+  | markets-2 | clean-hold | none | — |
+  | DD | standing by | next docket: room's pair or Allen's new frames | DD |
+  | Allen | deleting old playtest frames, shooting new | frames arrive → staged to DD | Allen |
+  | **Need Allen** | — (storage call answered) | — | — |
 - 2026-08-10 cycle 151 · **THE FLOOD ARC CLOSED END TO END; ORCA RESTART
   RECOVERED, ALL WORK LANDED FIRST** — batch 29 verdict: T68-am+T71
   GRANTED·CLOSED on the DD's independent frame reads (ink moved 0.0000 at

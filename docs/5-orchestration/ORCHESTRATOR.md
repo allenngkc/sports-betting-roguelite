@@ -147,7 +147,10 @@ One cycle:
    logs. Criteria met → advance the phase and dispatch the next task (§3a). Not
    met → send it back with the gap named.
 3. Merge a branch that passes the clean-merge checklist (STUDIO.md); queue any
-   other merge for Allen.
+   other merge for Allen. **Re-affirmed by Allen 2026-08-10 ("I should not
+   need to order this. Please be auto on these stuff"): checklist-passing
+   merges and routine re-verification calls are the orchestrator's to execute
+   unprompted. Queueing one for Allen's word is the defect, not the caution.**
 4. Log every autonomous decision in `STATUS.md` under **Autonomous decisions
    (Allen veto window)**: the decision, evidence checked, and the reversal path.
 5. Heartbeat-stamp the cycle in `STATUS.md`. Between cycles block on
