@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-11, cycle 163.** THE DE-FLAKE ARC
+**Keeper-era heartbeat stamp: 2026-08-11, cycle 164 — THE BOARD IS
+QUIET.** Counts re-established on the final tree: EditMode 250/250,
+PlayMode 90→84/0/6, exercising TV's seed-pin including the test that
+started the arc; SureThing's qualification discharged, merged `8c8748c`.
+Every lane clean-holding; every arc closed (flood, baseline, de-flake);
+canon through batch 31. Open with Allen only: new playtest frames when he
+takes them; TV's 1e539a9 push on his word; Phase T stays deferred.
+Wave-close push sent per 6d.
+
+*(prior stamp, cycle 163:)* THE DE-FLAKE ARC
 CLOSED: TV's pinned-seed table 30/30 clean (XML-verified; vs 3/30 at ship
 pacing - the wait was unsatisfiable, not slow), full suite 90/84/0/6
 matches baseline, fix merged `3fe7e12`. TV's diagnostic lesson on the
