@@ -1,6 +1,6 @@
 # SureThing UI — re-seat state
 
-**STATUS 2026-08-10 · converged at `0e77557`, IDENTICAL to main · tree clean (`artifacts/` and both S2-am2 frame sets untracked, deliberately)**
+**STATUS 2026-08-10 · converged at `cace46b`, IDENTICAL to main · tree clean (`artifacts/` and both S2-am2 frame sets untracked, deliberately)**
 
 ### Verifiable state
 
@@ -128,11 +128,31 @@ re-derives them wondering where they went.
 So the delta is **deal-to-deal variation, isolated, with a control proving it is not instrument
 drift.** That is also why branch 1 was never satisfiable against the old comparand.
 
-**⚠ THE ~0.037 BOUND'S FATE IS NOT DECIDED HERE — DD RULING PENDING.** The DD is ruling on these
-numbers now, and the live options are **discharge / tighten / replace**. **Do not read this section as
-having settled it, and do not cite the bound as either live or lifted until that ruling lands.** What
-is recorded is only the evidence: the pinned baseline is reproducible by construction, and the
-row-number group demonstrated exactly that across two deals.
+**THE BOUND IS REPLACED, NOT TIGHTENED — RULED, batch 31 (S2-am2-am4).** Branch 2 is confirmed and
+the retirement stands. The ~0.037 bound is gone; a **structure** replaces it, and the two halves are
+different instruments that must not be swapped:
+
+| purpose | instrument | scope |
+|---|---|---|
+| **across-time baseline** | **row numbers, AUTHORED form** — deal-invariant (moved **0.0002** across two deals) | compare over time |
+| **within-frame legibility** | **both groups, MEASURED form** | **one frame only**, never across time |
+
+**The 0.025 is an observation and is never promoted.** It is deal variation on a slate-dependent
+group; it is not a bound, not a tolerance, and not a threshold anything may be tested against.
+
+**Precision note on this seat's own claim.** This file previously said the row numbers moved `0.000`
+and were "identical on every figure". That was true **at the tool's reported precision** (3 decimals);
+the DD resolved it finer at **0.0002**. Their figure is the one to cite — "identical" was a display
+artefact, not a measurement, and the distinction is exactly what an across-time baseline lives on.
+
+**⚠ THE PHONE NUMBER IS NOT AN ACROSS-TIME BASELINE.** `0.567` is **deal-dependent with no invariant
+subgroup** — it has no row-number equivalent to anchor it. **Never compare it across time at another
+seed.** It is passed through by this seat, not owned by it.
+
+**Part A is endorsed as the standard** — "the C37 characterization this instrument never had". Worth
+knowing *why*: it reported the result that **complicated its own headline**, showing ramp ÷ measured
+stroke is not monotonic in blur. An instrument that only ever flatters its own number is not
+characterized.
 
 **The pin makes boxes stable, not automatically correct.** They were re-cut against `ROOMREF01` and
 eye-confirmed (C27) — all three sets: the twelve records, the row-number column, and the Part A/B
@@ -266,9 +286,9 @@ the same defect as the `(gitignored)` line below, in the heading rather than the
 - **The kit is at `docs/design/design-system/`, not `ui_kits/`** — those paths are relative to that root. **Read it before calling anything unspecified**; this surface has now twice concluded a screen was unspecced when it was not.
 - **Two traps still live in this tree:** `artifacts/` is no longer git-ignored (a bare `git add -A` sweeps ~100 PNGs), and two capture states share the number `09` (markets' test, needs their nod).
 
-**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-10, after the PINNED S2-am2 re-shoot retired `fa93238` and became the
-baseline. **HEAD:** `0e77557` · **Branch:** `surething-ui` · converged, identical to main · working
-tree clean (both S2-am2 frame sets and `artifacts/` are untracked on purpose).
+**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-10, after batch 31 replaced the ~0.037 bound with the across-time /
+within-frame structure. **HEAD:** `cace46b` · **Branch:** `surething-ui` · converged, identical to
+main · working tree clean (both S2-am2 frame sets and `artifacts/` are untracked on purpose).
 
 **Read the re-seat block at the top of this file first.** Everything below it is the accumulated
 record and some of it describes states that have since closed — where that is true the section says
