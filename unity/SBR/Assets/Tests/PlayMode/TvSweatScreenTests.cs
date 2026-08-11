@@ -185,14 +185,34 @@ namespace SBR.Tests.PlayMode
             yield return LoadRoom();
             (RunDirector director, TvSweatScreen screen, SitSpot couch) = FindTrio();
 
-            screen.TimeScaleOverride = 0.2f;
-            // AnimateCashOut's real duration is cashOutTickDuration * TimeScaleOverride, so the
-            // 0.2f above SHRINKS this fivefold: the old 4f bought a 0.8s window, not a 4s one.
-            screen.cashOutTickDuration = 30f;
+            // TimeScaleOverride's own tooltip: "1 = ship pacing, tiny = fast-forward". The old 0.2f
+            // therefore ran the sweat FIVE TIMES FASTER, and that is what kept killing these two
+            // tests: the session sprinted to completion and the live cash-out offer window shut
+            // before a tween could be driven into it. Measured at 0.2f: 4 failures in 12 runs, every
+            // one of them with the session already null at the timeout. Ship pacing gives the widest
+            // window, and it is the honest speed at which to assert a TVS-H01 input contract.
+            screen.TimeScaleOverride = 1f;
+            // AnimateCashOut's duration is cashOutTickDuration * TimeScaleOverride. The 30f this
+            // replaces was compensating for the 0.2f shrink; at ship pacing the original 4f is a
+            // real 4s tween, and SetCashOutOffer's per-frame re-targeting keeps the screen in the
+            // animating state far longer than the assertions below need.
+            screen.cashOutTickDuration = 4f;
             couch.transitionDuration = 0.01f;
 
             yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            // C34, and the lesson TvSweatCaptureHarness already paid for in full: PIN THE SEED.
+            // Start() rolls a random one, and DemoTicketPolicy derives the ticket's leg count from it
+            // (`2 + hash(seed#round) % 2`), so an unpinned run sometimes builds a ticket that dies on
+            // an early leg. The sweat then ends after two events and a sustained cash-out offer never
+            // exists — the wait is UNSATISFIABLE, not slow. That is why raising deadlines and slowing
+            // the pacing each only changed how long it took to fail. Measured unpinned at ship
+            // pacing: 3 failures in 30, every one reporting exactly "events emitted: 2" with the
+            // session already complete.
+            director.StartNewRun(PinnedSweatSeed);
             Run run = director.Run;
+            // C34.1: "an unasserted pin is a comment."
+            Assert.AreEqual(PinnedSweatSeed, run.Rng.RunSeed,
+                "C34: the run is not carrying the pinned seed, so nothing below is reproducible");
             (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run);
             run.PlaceTicket(picks, stake);
             director.LockRound();
@@ -200,25 +220,17 @@ namespace SBR.Tests.PlayMode
             couch.OnInteract(null);
             yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
 
-            // Poll the state machine, not the animation flag. Waiting on DebugCashOutAnimating
-            // alone was a race by construction: a tween starts only when a NEW offer differs from
-            // the shown figure by 0.005 or more, so the old wait depended on the simulation moving
-            // the price inside its 20s window — unpinned generated content, which is exactly the
-            // thing that fails one run in N and passes on re-run. Wait instead for the DURABLE
-            // precondition (the same gate SetCashOutOffer's caller applies, plus the shown-once
-            // latch), then drive the displacement rather than hoping for it.
-            yield return WaitUntil(() =>
-                director.CurrentSession != null && !director.CurrentSession.IsComplete
-                && screen.EventsEmitted >= 1
-                && director.CurrentSession.CashOutOffer().HasValue
-                && screen.DebugHasCashOutShown,
-                20f, "never reached a live, rendered cash-out offer to animate");
+            // Drive the tween rather than waiting for the simulation to produce one.
+            // See DriveCashOutTween: one displacement is not enough, and the reason is instructive.
+            yield return DriveCashOutTween(director, screen);
 
-            Assert.IsTrue(screen.ForceCashOutDisplacement(CashOutDisplacement),
-                "a cash-out figure was shown but could not be displaced");
-
-            yield return WaitUntil(() => screen.DebugCashOutAnimating, 5f,
-                "the displaced cash-out figure did not produce a tween");
+            // TVS-H01's PREMISE, asserted rather than assumed. Everything below is a claim about
+            // behaviour "while the price is animating"; if the tween has ended by now the test would
+            // pass VACUOUSLY against a settled slot. This is the check that stops a TimeScaleOverride
+            // change — this one or a later one — from quietly altering what TVS-H01 means.
+            Assert.IsTrue(screen.DebugCashOutAnimating,
+                "TVS-H01 premise lost: the cash-out is not animating, so the assertions below would "
+                + "not be exercising the animating-price contract at all");
 
             Assert.IsFalse(SitSpot.InteractStandSuppressed(),
                 "TVS-H01: CashOutLive must not reserve Interact while the price is animating");
@@ -334,14 +346,34 @@ namespace SBR.Tests.PlayMode
             yield return LoadRoom();
             (RunDirector director, TvSweatScreen screen, SitSpot couch) = FindTrio();
 
-            screen.TimeScaleOverride = 0.2f;
-            // AnimateCashOut's real duration is cashOutTickDuration * TimeScaleOverride, so the
-            // 0.2f above SHRINKS this fivefold: the old 4f bought a 0.8s window, not a 4s one.
-            screen.cashOutTickDuration = 30f;
+            // TimeScaleOverride's own tooltip: "1 = ship pacing, tiny = fast-forward". The old 0.2f
+            // therefore ran the sweat FIVE TIMES FASTER, and that is what kept killing these two
+            // tests: the session sprinted to completion and the live cash-out offer window shut
+            // before a tween could be driven into it. Measured at 0.2f: 4 failures in 12 runs, every
+            // one of them with the session already null at the timeout. Ship pacing gives the widest
+            // window, and it is the honest speed at which to assert a TVS-H01 input contract.
+            screen.TimeScaleOverride = 1f;
+            // AnimateCashOut's duration is cashOutTickDuration * TimeScaleOverride. The 30f this
+            // replaces was compensating for the 0.2f shrink; at ship pacing the original 4f is a
+            // real 4s tween, and SetCashOutOffer's per-frame re-targeting keeps the screen in the
+            // animating state far longer than the assertions below need.
+            screen.cashOutTickDuration = 4f;
             couch.transitionDuration = 0.01f;
 
             yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            // C34, and the lesson TvSweatCaptureHarness already paid for in full: PIN THE SEED.
+            // Start() rolls a random one, and DemoTicketPolicy derives the ticket's leg count from it
+            // (`2 + hash(seed#round) % 2`), so an unpinned run sometimes builds a ticket that dies on
+            // an early leg. The sweat then ends after two events and a sustained cash-out offer never
+            // exists — the wait is UNSATISFIABLE, not slow. That is why raising deadlines and slowing
+            // the pacing each only changed how long it took to fail. Measured unpinned at ship
+            // pacing: 3 failures in 30, every one reporting exactly "events emitted: 2" with the
+            // session already complete.
+            director.StartNewRun(PinnedSweatSeed);
             Run run = director.Run;
+            // C34.1: "an unasserted pin is a comment."
+            Assert.AreEqual(PinnedSweatSeed, run.Rng.RunSeed,
+                "C34: the run is not carrying the pinned seed, so nothing below is reproducible");
             (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run);
             run.PlaceTicket(picks, stake);
             director.LockRound();
@@ -349,28 +381,16 @@ namespace SBR.Tests.PlayMode
             couch.OnInteract(null);
             yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
 
-            // Poll the state machine, not the animation flag. Waiting on DebugCashOutAnimating
-            // alone was a race by construction: a tween starts only when a NEW offer differs from
-            // the shown figure by 0.005 or more, so the old wait depended on the simulation moving
-            // the price inside its 20s window — unpinned generated content, which is exactly the
-            // thing that fails one run in N and passes on re-run. Wait instead for the DURABLE
-            // precondition (the same gate SetCashOutOffer's caller applies, plus the shown-once
-            // latch), then drive the displacement rather than hoping for it.
-            yield return WaitUntil(() =>
-                director.CurrentSession != null && !director.CurrentSession.IsComplete
-                && screen.EventsEmitted >= 1
-                && director.CurrentSession.CashOutOffer().HasValue
-                && screen.DebugHasCashOutShown,
-                20f, "never reached a live, rendered cash-out offer to animate");
-
-            Assert.IsTrue(screen.ForceCashOutDisplacement(CashOutDisplacement),
-                "a cash-out figure was shown but could not be displaced");
-
-            yield return WaitUntil(() => screen.DebugCashOutAnimating, 5f,
-                "the displaced cash-out figure did not produce a tween");
+            // Drive the tween rather than waiting for the simulation to produce one.
+            // See DriveCashOutTween: one displacement is not enough, and the reason is instructive.
+            yield return DriveCashOutTween(director, screen);
 
             Text cashOut = FindChildComponent<Text>(screen, "CashOut");
             Assert.IsNotNull(cashOut, "CashOut text not found - canvas layout changed?");
+            // TVS-H02's premise, same reason: freezing a figure that was not moving proves nothing.
+            Assert.IsTrue(screen.DebugCashOutAnimating,
+                "TVS-H02 premise lost: nothing was animating, so the freeze assertions below would "
+                + "hold trivially");
             string frozen = cashOut.text;
 
             screen.ForceSeated(false);
@@ -489,6 +509,16 @@ namespace SBR.Tests.PlayMode
 
         // ---- helpers ----
 
+        /// <summary>The run seed the two mid-tween tests pin (C34).
+        ///
+        /// <para><c>48151623</c> is <c>CaptureSeeds[0]</c> from TvSweatCaptureHarness — the one seed
+        /// in this repo with a written record of sustaining a full sweat. That harness documents the
+        /// same defect these tests hit: "Seed 01 completes in 60s; seeds 02–05 burned the full budget
+        /// waiting for something that was never going to happen," and "that is exactly why this
+        /// harness failed on four seeds and passed on one, from the same code." The flood-removal
+        /// frames were shot on it too.</para></summary>
+        private const string PinnedSweatSeed = "48151623";
+
         /// <summary>How far the mid-tween tests displace the shown cash-out figure.
         ///
         /// <para>Deliberately far larger than the 0.005 that arms a tween. SetCashOutOffer re-targets
@@ -502,6 +532,56 @@ namespace SBR.Tests.PlayMode
         /// cosmetic side effect neither of these tests asserts on, noted so it is not a surprise
         /// to whoever reads a frame from one of them.</para></summary>
         private const double CashOutDisplacement = 60.0;
+
+        /// <summary>Put the screen into a cash-out tween and leave it there, without depending on
+        /// the simulation to move the price.
+        ///
+        /// <para>Displacing the shown figure only BECOMES a tween when SetCashOutOffer next runs
+        /// with a live offer — and the market closes and reopens repeatedly across a sweat, so a
+        /// lone displacement can sit unconsumed for an arbitrary stretch. That is exactly how the
+        /// first version of this hardening failed: it displaced once, then waited a fixed 5s, and
+        /// the market happened to be shut for all of it. Trading a wide timing dependency for a
+        /// narrow one is not the same as removing it.</para>
+        ///
+        /// <para>So: displace whenever the offer is live, and keep doing it until the tween is
+        /// actually observed. Once live, the very next Update consumes the displacement, so this
+        /// costs a frame or two — it is a retry, not a spin. The failure carries the state that
+        /// explains it, because the first version's message did not and cost a diagnosis.</para>
+        /// </summary>
+        private static IEnumerator DriveCashOutTween(
+            // 60s, not 25: at ship pacing the sweat's first events arrive five times later than they
+            // did at the old 0.2f fast-forward, and this budget must cover reaching a live offer.
+            RunDirector director, TvSweatScreen screen, float maxSeconds = 60f)
+        {
+            float start = Time.realtimeSinceStartup;
+            bool everLive = false;
+            while (!screen.DebugCashOutAnimating)
+            {
+                if (Time.realtimeSinceStartup - start > maxSeconds)
+                {
+                    Assert.Fail(
+                        $"never drove the cash-out into a tween (waited {maxSeconds}s) — " +
+                        $"offer was live at least once: {everLive}; " +
+                        $"figure shown: {screen.DebugHasCashOutShown}; " +
+                        $"events emitted: {screen.EventsEmitted}; " +
+                        $"session complete: {director.CurrentSession?.IsComplete}; " +
+                        $"offer now: {director.CurrentSession?.CashOutOffer()}");
+                    yield break;
+                }
+
+                bool live = director.CurrentSession != null
+                            && !director.CurrentSession.IsComplete
+                            && screen.EventsEmitted >= 1
+                            && director.CurrentSession.CashOutOffer().HasValue
+                            && screen.DebugHasCashOutShown;
+                if (live)
+                {
+                    everLive = true;
+                    screen.ForceCashOutDisplacement(CashOutDisplacement);
+                }
+                yield return null;
+            }
+        }
 
         private static (RunDirector, TvSweatScreen, SitSpot) FindTrio()
         {
