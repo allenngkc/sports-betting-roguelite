@@ -212,6 +212,28 @@ commands. That is handholding wearing a status report.
   dialog — take the charter/board default where one exists, otherwise park the
   question in Need Allen and continue.
 
+### 6c. The keeper (Allen, 2026-08-10)
+
+A dumb Windows scheduled task ("SBR Studio Keeper", `tools/keeper/studio-keeper.ps1`,
+every 15 min, log beside it) watches exactly one fact: `STATUS.md` mtime. Stale
+>45 min → it pokes an idle orchestrator seat; no seat found → it boots a fresh
+one with a §3-style prompt (2 h cooldown). It contains no model and makes no
+decisions. It exists because ~25 of Allen's messages were "continue" prods after
+compactions and Orca restarts silently killed the loop.
+
+- The `STATUS.md` heartbeat stamp is load-bearing: stamp it **every** cycle —
+  an unstamped healthy loop will get pointlessly poked.
+- A message prefixed `keeper heartbeat:` or `keeper:` may arrive concatenated
+  with text already sitting in the composer. Anything *preceding* the prefix is
+  Allen's UNSENT draft — treat it as not delivered; confirm with him before
+  acting on it.
+- On a keeper reseat prompt: verify no other orchestrator seat is active
+  (`orca terminal list` + a fresh read of `STATUS.md`) before taking the seat;
+  stand down if one is.
+- After any context compaction or session resume, treat it as a fresh wake:
+  re-arm monitors and the heartbeat FIRST — compaction kills background waits
+  silently; that is exactly how the "continue" prods were born.
+
 Stop the loop and ping Allen (push notification or a waiting message) instead of
 continuing when:
 
