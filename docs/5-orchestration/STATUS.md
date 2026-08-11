@@ -1,6 +1,57 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-10, cycle 155 live.** Room's recipe
+**Keeper-era heartbeat stamp: 2026-08-11, cycle 163.** THE DE-FLAKE ARC
+CLOSED: TV's pinned-seed table 30/30 clean (XML-verified; vs 3/30 at ship
+pacing - the wait was unsatisfiable, not slow), full suite 90/84/0/6
+matches baseline, fix merged `3fe7e12`. TV's diagnostic lesson on the
+record: a constant in every failure signature is content, not timing.
+Editor released; SureThing's suite re-establishment FIRED (last open
+item). TV's 1e539a9 unpushed - branch pushes stay on Allen's word.
+Background-kill note for future campaigns: foreground batches ran clean
+throughout. Wave-close push to Allen on SureThing's counts.
+
+*(prior stamp, cycle 162:)*
+TV 28+ min into its foreground pinned-seed batches (proc-zero lockfile
+guard inline per run) - healthy grind, no report yet. All else quiet.
+
+*(prior stamp, cycle 161:)*
+TV: option-1 table honest-failed (3/30 - the wait was unsatisfiable, not
+slow; content not timing); real fix = pinned seed 48151623 per the
+harness's own scar comment; campaign now running as FOREGROUND batches of
+four after its session's background-task kills. Nothing commits until a
+clean table. SureThing still armed on the close. All else quiet.
+
+*(prior stamp, cycle 160:)*
+TV campaign still mid-run (ship pacing, expected). No other movement;
+SureThing armed on the close. Quiet is healthy.
+
+*(prior stamp, cycle 159:)*
+TV's option-1 revalidation campaign running (~35 min at ship pacing;
+fresh run directory per campaign after the accumulation trap's third
+bite; commit only on a clean full table - the last campaign was green for
+three runs before failing on the fourth). SureThing armed on the close.
+6d adopted: dead-turn debts + pushed reports. All else quiet.
+
+*(prior stamp, cycle 158:)* TV's seat hit a
+403 auth failure mid-campaign (session-level - the other four seats never
+lost auth); recovered: seat recreated with --continue, effort max, stale
+lockfile cleared at proc zero, campaign relaunch seeded (partial table on
+disk counts if per-run XMLs complete), watcher v20 armed on the new
+handle. DriveCashOutTween fix stays uncommitted pending the repeats'
+verdict, as the lead ruled for itself.
+
+*(prior stamp, cycle 157:)* TV's
+validated 30-run campaign in progress (~34 min; run-1 executed 2/2 gate
+passed, two harness guards added after the vacuous-filter catch). All
+other lanes clean-holding; SureThing's suites queued on the close.
+
+*(prior stamp, cycle 156:)*
+TV's ×30 repeat table still running (single instance held, ~30 sequential
+Unity launches take time by design). SureThing's suite re-establishment
+queued on its close — one early "window closed" draft held against
+observable state (Unity 2, no table). All other lanes clean-holding.
+
+*(prior stamp, cycle 155:)* Room's recipe
 amendment merged (`92c7232` — validity precondition explicit; its session
 hit ECONNRESET retries mid-commit but the commit landed on disk first,
 verified from git). TV's repeat-run window live (baseline running, ×30

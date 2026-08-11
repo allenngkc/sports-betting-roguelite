@@ -31,8 +31,26 @@ if ($seat) {
         $idle = ((Get-Date) - ([DateTimeOffset]::FromUnixTimeMilliseconds($seat.lastOutputAt).LocalDateTime)).TotalMinutes
     }
     if ($idle -lt 20) { Log "board stale $([int]$age)m but seat active $([int]$idle)m ago (long turn?) - no poke"; exit 0 }
+
+    # If pokes stopped working (auth death: turns 403 and the board never moves),
+    # escalate to a visible toast once, then hold until the board moves again.
+    $statusTime = (Get-Item $status).LastWriteTime
+    if (Test-Path $log) {
+        $esc = Get-Content $log -Tail 60 | Where-Object { $_ -match "escalated:" } | Select-Object -Last 1
+        if ($esc) {
+            $ets = [datetime]::Parse(($esc -split ' ')[0])
+            if ($ets -gt $statusTime) { Log "holding post-escalation (board still stale)"; exit 0 }
+        }
+    }
+
     & $orca terminal send --terminal $seat.handle --enter --text $poke | Out-Null
     Log "poked $($seat.handle) - board $([int]$age)m stale, seat idle $([int]$idle)m"
+
+    $tail = @(Get-Content $log -Tail 3)
+    if (@($tail | Where-Object { $_ -match "poked " }).Count -ge 3) {
+        powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "toast.ps1") 2>$null
+        Log "escalated: 3 pokes without board movement - toast sent (likely /login needed)"
+    }
     exit 0
 }
 
