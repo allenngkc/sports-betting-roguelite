@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-10, cycle 154 live.** Loop state:
+**Keeper-era heartbeat stamp: 2026-08-10, cycle 155 live.** Room's recipe
+amendment merged (`92c7232` — validity precondition explicit; its session
+hit ECONNRESET retries mid-commit but the commit landed on disk first,
+verified from git). TV's repeat-run window live (baseline running, ×30
+harness ready — 0/0-on-typo guard). SureThing clean-holding on batch 31's
+structure. DD standing by.
+
+*(prior stamp, cycle 154:)* Loop state:
 watcher v19 + heartbeat armed. **The baseline arc closed (batches 30+31,
 canon through 31):** room's rig GRANTED deterministic (R43 — the unpinned
 arm recognized as the positive control certifying the null); SureThing's
