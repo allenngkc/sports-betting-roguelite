@@ -1,4 +1,10 @@
-# Studio Status — 2026-08-09 (header refreshed every cycle per Allen)
+# Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
+
+**Keeper-era heartbeat stamp: 2026-08-10, cycle 152+ live.** Loop state:
+watcher v19 armed, heartbeat re-armed (old one found dead at §6c adoption —
+the exact silent-kill class the keeper exists for). In flight: room's
+determinism pair (editor leased), SureThing's pinned re-shoot queued behind
+it, TV hardening the WaitUntil race, DD standing by.
 
 **THE ROUND IS ON MAIN AND THE MERGED TREE IS CERTIFIED GREEN** — Allen's
 "if everything is done lets merge" executed as three clean no-ff merges,
