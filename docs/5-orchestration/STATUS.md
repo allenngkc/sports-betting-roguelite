@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-10, cycle 157 (heartbeat).** TV's
+**Keeper-era heartbeat stamp: 2026-08-10, cycle 158.** TV's seat hit a
+403 auth failure mid-campaign (session-level - the other four seats never
+lost auth); recovered: seat recreated with --continue, effort max, stale
+lockfile cleared at proc zero, campaign relaunch seeded (partial table on
+disk counts if per-run XMLs complete), watcher v20 armed on the new
+handle. DriveCashOutTween fix stays uncommitted pending the repeats'
+verdict, as the lead ruled for itself.
+
+*(prior stamp, cycle 157:)* TV's
 validated 30-run campaign in progress (~34 min; run-1 executed 2/2 gate
 passed, two harness guards added after the vacuous-filter catch). All
 other lanes clean-holding; SureThing's suites queued on the close.
