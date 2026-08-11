@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-10, cycle 156 (heartbeat sweep).**
+**Keeper-era heartbeat stamp: 2026-08-10, cycle 157 (heartbeat).** TV's
+validated 30-run campaign in progress (~34 min; run-1 executed 2/2 gate
+passed, two harness guards added after the vacuous-filter catch). All
+other lanes clean-holding; SureThing's suites queued on the close.
+
+*(prior stamp, cycle 156:)*
 TV's ×30 repeat table still running (single instance held, ~30 sequential
 Unity launches take time by design). SureThing's suite re-establishment
 queued on its close — one early "window closed" draft held against
