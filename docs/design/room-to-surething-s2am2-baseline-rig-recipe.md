@@ -23,13 +23,17 @@ catch.
 
 **Batch 26's ratified pairing, which your re-shoot is compared against:**
 
-| element group | ramp ÷ stroke | reads? |
-|---|---|---|
-| season records (smallest product facts) | **0.775** | **yes** |
-| row numbers `01`–`06` | **0.789** | **yes** |
-| price figures (bundle's headline) | 0.482 | yes |
+| element group | ramp ÷ stroke | reads? | comparable across deals? |
+|---|---|---|---|
+| **row numbers `01`–`06`** | **0.789** | **yes** | **YES — this is the across-time baseline** |
+| season records (smallest product facts) | 0.775 | yes | **no** — within-frame only (§2a-i) |
+| price figures (bundle's headline) | 0.482 | yes | not the floor's type |
 
 **Record the verdict with the number or the number is not usable.** *0.789-and-it-reads* is the unit.
+
+**Compare the row numbers across shoots. Do not compare the season records across shoots** — batch 31
+replaced the ~0.037 bound for exactly that reason, and §2a-i says why in full. All three numbers
+remain valid *within* batch 26's frame.
 
 ## 1. Shoot the frame
 
@@ -113,6 +117,33 @@ measure.
 **Do not pool the small type with larger type.** The ramp is fixed in screen px and the stroke scales
 with size, so including team names or price figures inflates the denominator and flatters the result.
 That is exactly how the hunt's headline 0.482 came to be quoted for a floor it did not describe.
+
+### 2a-i. THE INSTRUMENT'S VALIDITY PRECONDITION — state it, do not derive it
+
+**Amended · batch 31.** **`ramp ÷ stroke` is only meaningful against an IDENTICAL STRING at an
+IDENTICAL SIZE.** Outside that, the comparison is not weak — it is undefined.
+
+This was derivable from Part A's characterization and was never written down, which is the whole
+problem: **a lane that baselines a deal-dependent group makes no visible mistake at the time.** The
+boxes are eye-confirmed, the stems are plentiful, the sd/mean is clean, the number is plausible and
+lands next to the last one. Nothing anywhere goes red. The error only surfaces later, as a "change"
+that is really two different strings measured under one label.
+
+**Consequence, ruled (batch 31) — the ~0.037 bound is REPLACED:**
+
+| group | across deals | why |
+|---|---|---|
+| **row numbers `01`–`06`** | **THE across-time baseline** | the string is identical in every deal, at a fixed size and position — the precondition holds by construction |
+| season records (`5-4`, `9-0`, …) | **within-frame only** | the string itself changes with the deal, *and* its x tracks the team name beside it. Comparing it across deals was the instrument read outside its validity |
+
+**Season records are not demoted as a measurement.** Within one frame they remain the smallest
+product fact and the honest worst case, and batch 26's 0.775-and-it-reads stands as that. What they
+cannot be is a *time series*.
+
+**Pinning the slate does not rescue them.** §2a's pin makes two shoots of the **same** deal
+comparable; it does nothing for two shoots of **different** deals, which is what any re-seed or
+content change produces. Pin *and* precondition are separate requirements and neither implies the
+other.
 
 ### 2b. Which denominator — this is the amended part, so read it
 
