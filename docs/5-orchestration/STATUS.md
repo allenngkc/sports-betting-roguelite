@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-10, cycle 155 live.** Room's recipe
+**Keeper-era heartbeat stamp: 2026-08-10, cycle 156 (heartbeat sweep).**
+TV's ×30 repeat table still running (single instance held, ~30 sequential
+Unity launches take time by design). SureThing's suite re-establishment
+queued on its close — one early "window closed" draft held against
+observable state (Unity 2, no table). All other lanes clean-holding.
+
+*(prior stamp, cycle 155:)* Room's recipe
 amendment merged (`92c7232` — validity precondition explicit; its session
 hit ECONNRESET retries mid-commit but the commit landed on disk first,
 verified from git). TV's repeat-run window live (baseline running, ×30
