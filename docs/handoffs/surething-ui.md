@@ -1,13 +1,14 @@
 # SureThing UI — re-seat state
 
-**STATUS 2026-08-10 · `cebe39d` on `surething-ui` · 4 ahead of main, 0 behind · tree clean (`artifacts/`
-and the three S2-am2 frames untracked, deliberately — see the baseline item)**
+**STATUS 2026-08-10 · converged at `0e77557`, IDENTICAL to main · tree clean (`artifacts/` and both S2-am2 frame sets untracked, deliberately)**
 
 ### Verifiable state
 
 - **⚠ THE SUITE FIGURES ARE NOW STUDIO-WIDE, NOT THIS SURFACE'S. Read that before comparing anything.**
   **EditMode 250/250 · PlayMode 90 discovered → 84 passed, 0 failed, 6 skipped**, run by this seat on
-  the converged tree at `cebe39d`, both through the C29 wrapper.
+  the converged tree at `d5ff7f8`, both through the C29 wrapper. **Code has moved under `unity/` since**
+  (TV hardened `TvSweatScreenTests` in place, **0 tests added**, so the counts are expected
+  unchanged) — **expected is not verified. Re-establish before quoting them again.**
 - **The six skips are BY DESIGN.** A run reporting **90 executed** is as much a discrepancy as a
   failure and a much quieter one. Check the skip count, not just the pass count.
 - **What changed is the denominator, not this surface.** This seat's own suites were **78/78 and
@@ -96,40 +97,51 @@ Read §4bb-C13 for the trail, but read it as history. **What survives and must n
 The joint read is at `main-2/docs/design/dd-import/blur-pipeline-read-2026-08-08.md` — Part 1 mine,
 Part 2 room's, Part 3 the closing.
 
-### The S2-am2 baseline — the numbers, and the resolution they do NOT have
+### The S2-am2 baseline — RE-SHOT UNDER THE PIN. `fa93238` is RETIRED.
 
-Shot and measured at `fa93238` on `2026-08-10-s2am2-postflood/focused-laptop-desk.png`. **It stands;
-no re-shoot is owed.** The three frames are on disk and **deliberately not in git** — evidence storage
-is an open general question with Allen and this does not pre-empt it. Reports and boxes are committed.
+**Current baseline: `5e9588b`**, shot on `2026-08-10-s2am2-pinned/focused-laptop-desk.png` with the
+slate **pinned and asserted** (`ROOMREF01`, both in the log). Boxes were the **pinned set, not the
+fallback set** — the recipe requires the report to say which, and it does.
 
 | group | ramp | **across-time form** (÷ authored) | measured form | verdict |
 |---|---|---|---|---|
-| season records | 2.234 px | **1.152** (÷ 1.94) | 0.788 | **reads: yes** |
+| season records | 2.187 px | **1.127** (÷ 1.94) | 0.798 | **reads: yes** |
 | row numbers `01`–`06` | 2.529 px | **1.246** (÷ 2.03) | 0.789 | **reads: yes** |
 
-**The unit is "1.152 and it reads", never the number alone.** The two forms are different quantities
-and are **never compared to each other** — batch 26's 0.775/0.789 are the measured form, so reading
-`0.775 → 1.152` as a collapse is reading the amendment rather than the surface. The values hold **only
-at the ratified acceptance view** (focused-laptop-desk, 0.52 m along the lid normal, 30°); any other
-pose rescales them.
+**The unit is "1.127 and it reads", never the number alone.** The two forms are different quantities
+and are **never compared to each other**. Values hold **only at the ratified acceptance view**
+(focused-laptop-desk, 0.52 m along the lid normal, 30°); any other pose rescales them.
 
-**⚠ THE CAVEAT THAT BINDS HOW THESE MAY BE CITED (DD, 2026-08-10).** Deal-to-deal variation is
-**uncharacterised inside these numbers**, so **no future movement of ~0.037 size may be called a change
-OR a null on this baseline** until a pinned-seed assertion exists. It cuts both ways and must not be
-quoted one-directionally: this seat's own 1.115 → 1.152 is exactly that size, so **the baseline
-currently supports "floor unmoved" as an ACCEPTANCE, not as a measurement.**
+**Why the old one retired, and it was mechanical rather than a judgement.** Batch 30 pre-committed
+both dispositions before the frames existed: reproduce → `fa93238` stands, else → `fa93238` retires
+and the re-shoot becomes the baseline. Season records went 1.152 → **1.127**, so the values were not
+reproduced and **branch 2 applied**. **No reconciliation of the old numbers was attempted**, as ruled.
+The retired figures were 1.152 / 1.246 on `2026-08-10-s2am2-postflood` — recorded only so nobody
+re-derives them wondering where they went.
 
-**The next shoot is bound by the amended recipe (main `1b4aa8d`): slate pinning moved from reporting
-(§3) to METHOD (§2a).** A pinned slate is the shoot's **precondition**; per-frame boxes are **fallback
-only**, and the report must state which set the boxes were. The reason is this seat's finding: a season
-record's x depends on the team name beside it, and `CaptureAll` renders a live, unpinned slate — so a
-different deal moved every record and left the stock boxes on team names, empty ground, or half a
-glyph, which would have **flattered the number with no error at all.** The row-number column survived
-only because its x is fixed.
+**The same-frame control is the part to keep.** Across two different deals, one view, one instrument:
 
-**The mechanism already exists** — `RoomViewCapture:1684-1700` pins and reads a seed back on the phone
-path (`PhoneSeed`); it is simply not applied to `CaptureAll`. Room's file, room's change, dispatched.
-**Do not shoot on fallback boxes if the pinned path is available.**
+- **row numbers moved 0.000** — identical on *every* figure (166 stems, stroke 3.206, ramp 2.529,
+  ratio 0.789). That group is **slate-independent**: fixed digits at a fixed x.
+- **season records moved 0.025** — that group is **slate-dependent**.
+
+So the delta is **deal-to-deal variation, isolated, with a control proving it is not instrument
+drift.** That is also why branch 1 was never satisfiable against the old comparand.
+
+**⚠ THE ~0.037 BOUND'S FATE IS NOT DECIDED HERE — DD RULING PENDING.** The DD is ruling on these
+numbers now, and the live options are **discharge / tighten / replace**. **Do not read this section as
+having settled it, and do not cite the bound as either live or lifted until that ruling lands.** What
+is recorded is only the evidence: the pinned baseline is reproducible by construction, and the
+row-number group demonstrated exactly that across two deals.
+
+**The pin makes boxes stable, not automatically correct.** They were re-cut against `ROOMREF01` and
+eye-confirmed (C27) — all three sets: the twelve records, the row-number column, and the Part A/B
+header band that gates C37. **This should be the last re-cut needed**; a future run on `ROOMREF01`
+should reproduce these boxes and these numbers, so **later drift is a real change rather than a
+re-deal**.
+
+**Frames stay on disk, untracked** — for both shoots. Evidence storage in git is an open general
+question with Allen and neither shoot pre-empts it. Reports and boxes are committed.
 
 ### Open items
 
@@ -254,11 +266,9 @@ the same defect as the `(gitignored)` line below, in the heading rather than the
 - **The kit is at `docs/design/design-system/`, not `ui_kits/`** — those paths are relative to that root. **Read it before calling anything unspecified**; this surface has now twice concluded a screen was unspecced when it was not.
 - **Two traps still live in this tree:** `artifacts/` is no longer git-ignored (a bare `git add -A` sweeps ~100 PNGs), and two capture states share the number `09` (markets' test, needs their nod).
 
-**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-09, after C13 closed, the
-font-asset re-verification, batch 21, the strays collection, S71's gate rebuild and S72's clean sweep.
-**Last updated:** 2026-08-10, after the S2-am2 baseline re-shoot, the studio-wide suite run and
-the LFS font hazard clearing. **HEAD:** `cebe39d` · **Branch:** `surething-ui` · 4 ahead of main,
-0 behind · working tree clean (the three S2-am2 frames and `artifacts/` are untracked on purpose).
+**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-10, after the PINNED S2-am2 re-shoot retired `fa93238` and became the
+baseline. **HEAD:** `0e77557` · **Branch:** `surething-ui` · converged, identical to main · working
+tree clean (both S2-am2 frame sets and `artifacts/` are untracked on purpose).
 
 **Read the re-seat block at the top of this file first.** Everything below it is the accumulated
 record and some of it describes states that have since closed — where that is true the section says
