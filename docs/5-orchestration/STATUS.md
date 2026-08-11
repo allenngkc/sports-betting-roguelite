@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-10, cycle 158.** TV's seat hit a
+**Keeper-era heartbeat stamp: 2026-08-10, cycle 159 (heartbeat).**
+TV's option-1 revalidation campaign running (~35 min at ship pacing;
+fresh run directory per campaign after the accumulation trap's third
+bite; commit only on a clean full table - the last campaign was green for
+three runs before failing on the fourth). SureThing armed on the close.
+6d adopted: dead-turn debts + pushed reports. All else quiet.
+
+*(prior stamp, cycle 158:)* TV's seat hit a
 403 auth failure mid-campaign (session-level - the other four seats never
 lost auth); recovered: seat recreated with --continue, effort max, stale
 lockfile cleared at proc zero, campaign relaunch seeded (partial table on
