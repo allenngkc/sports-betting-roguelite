@@ -1,13 +1,20 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-10, cycle 153 live.** Loop state:
-watcher v19 + heartbeat both armed. Room's determinism pair LANDED (pinned
-+asserted both runs, record merged `08e8f44`); SureThing's pinned re-shoot
-RUNNING (editor leased, Allen's tap fired on verified Unity-zero); TV
-hardened BOTH races (reported + byte-identical twin at :331; root cause:
-0.2× TimeScaleOverride cancelling the wait margin) — PlayMode repeat-run
-confirmation window queued behind SureThing; DD docketed with room's
-record, may rule it together with SureThing's shoot.
+**Keeper-era heartbeat stamp: 2026-08-10, cycle 154 live.** Loop state:
+watcher v19 + heartbeat armed. **The baseline arc closed (batches 30+31,
+canon through 31):** room's rig GRANTED deterministic (R43 — the unpinned
+arm recognized as the positive control certifying the null); SureThing's
+pinned re-shoot ruled — fa93238 RETIRED (unpinned, batch 30's reason),
+the ~0.037 bound REPLACED by structure (row numbers = across-time
+baseline, authored form, moved 0.0002 across deals; season records were
+the instrument outside its validity); C42 law (in-frame invariant over
+size bound); the DD recorded its own branch-1 defect (§1.5 — retroactive
+pinning, two guesses filed as one pre-commitment). Merges through
+`0e77557`/`5bc6cec`; batch 31 at `58ff808`+`cace46b`. In flight: TV's
+PlayMode repeat-run window (de-flake confirmation); room's one-line
+recipe amendment (validity precondition explicit). SureThing clean-holds
+on the new baseline structure; phone number flagged never-compare-across-
+seeds. DD standing by.
 
 **THE ROUND IS ON MAIN AND THE MERGED TREE IS CERTIFIED GREEN** — Allen's
 "if everything is done lets merge" executed as three clean no-ff merges,
