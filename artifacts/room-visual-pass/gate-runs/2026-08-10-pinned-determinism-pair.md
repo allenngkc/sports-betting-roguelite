@@ -57,12 +57,28 @@ residual variation does not reach the measured region at all.
 | pinverify-a | **38.20** | 10 PASS, 5 SKIP, 1 INFO, 0 FAIL, 0 VOID |
 | pinverify-b | **38.20** | 10 PASS, 5 SKIP, 1 INFO, 0 FAIL, 0 VOID |
 
-Identical, and identical to the pre-crash pinned pair (38.20 / 38.20). Unpinned was 38.30 / 38.21.
+Identical, and identical to the pre-crash pinned pair (38.20 / 38.20).
 
-**Against batch 29's ~0.037 bound:** run-to-run movement of the measured quantity on the pinned rig
-is **0.00** — an order of magnitude below the bound. So movement at that scale is **rulable**: a
-future reading that differs by ~0.037 is the surface changing, not the rig breathing. That claim
-rests on the assertion in §1; without it, C37 would void the null.
+### The unpinned arm is the POSITIVE CONTROL, not a footnote
+
+*(Strengthened after batch 30 — the DD's read, and it is right. The first draft of this file filed
+the unpinned numbers as a comparison, which undersells what they do.)*
+
+**Unpinned: 38.30 / 38.21, scatter 0.09.** Same instrument, same rig, same box, same three poses —
+**the only variable removed is the pin.** That arm moved, and this instrument measured the movement.
+
+That is precisely what **C37** demands before a null may be believed: a null whose success would fall
+below the instrument's own resolution proves nothing. Here the instrument is shown, on its own
+evidence, to resolve movement at 0.09 — so the pinned **0.00 is a certified null, not merely an
+absence of objection.** The pinned pair alone could not have established that; the unpinned pair is
+what licenses it.
+
+**Against batch 29's ~0.037 bound:** run-to-run movement on the pinned rig is **0.00**, against an
+instrument demonstrated to resolve 0.09. Movement at 0.037 is therefore **rulable** — a future
+reading that differs by that much is the surface changing, not the rig breathing.
+
+Both legs are load-bearing: the assertion in §1 (without it C37 voids the null) and the positive
+control here (without it the null has no resolution floor beneath it).
 
 ## 4. Scope (C25)
 
