@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-11, cycle 161 (heartbeat).**
+**Keeper-era heartbeat stamp: 2026-08-11, cycle 162 (heartbeat).**
+TV 28+ min into its foreground pinned-seed batches (proc-zero lockfile
+guard inline per run) - healthy grind, no report yet. All else quiet.
+
+*(prior stamp, cycle 161:)*
 TV: option-1 table honest-failed (3/30 - the wait was unsatisfiable, not
 slow; content not timing); real fix = pinned seed 48151623 per the
 harness's own scar comment; campaign now running as FOREGROUND batches of
