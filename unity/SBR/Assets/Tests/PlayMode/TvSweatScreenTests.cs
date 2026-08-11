@@ -186,7 +186,9 @@ namespace SBR.Tests.PlayMode
             (RunDirector director, TvSweatScreen screen, SitSpot couch) = FindTrio();
 
             screen.TimeScaleOverride = 0.2f;
-            screen.cashOutTickDuration = 4f; // widen the real tween window for reliable polling
+            // AnimateCashOut's real duration is cashOutTickDuration * TimeScaleOverride, so the
+            // 0.2f above SHRINKS this fivefold: the old 4f bought a 0.8s window, not a 4s one.
+            screen.cashOutTickDuration = 30f;
             couch.transitionDuration = 0.01f;
 
             yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
@@ -198,8 +200,25 @@ namespace SBR.Tests.PlayMode
             couch.OnInteract(null);
             yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
 
-            yield return WaitUntil(() => screen.DebugCashOutAnimating, 20f,
-                "never observed the cash-out amount mid-tween");
+            // Poll the state machine, not the animation flag. Waiting on DebugCashOutAnimating
+            // alone was a race by construction: a tween starts only when a NEW offer differs from
+            // the shown figure by 0.005 or more, so the old wait depended on the simulation moving
+            // the price inside its 20s window — unpinned generated content, which is exactly the
+            // thing that fails one run in N and passes on re-run. Wait instead for the DURABLE
+            // precondition (the same gate SetCashOutOffer's caller applies, plus the shown-once
+            // latch), then drive the displacement rather than hoping for it.
+            yield return WaitUntil(() =>
+                director.CurrentSession != null && !director.CurrentSession.IsComplete
+                && screen.EventsEmitted >= 1
+                && director.CurrentSession.CashOutOffer().HasValue
+                && screen.DebugHasCashOutShown,
+                20f, "never reached a live, rendered cash-out offer to animate");
+
+            Assert.IsTrue(screen.ForceCashOutDisplacement(CashOutDisplacement),
+                "a cash-out figure was shown but could not be displaced");
+
+            yield return WaitUntil(() => screen.DebugCashOutAnimating, 5f,
+                "the displaced cash-out figure did not produce a tween");
 
             Assert.IsFalse(SitSpot.InteractStandSuppressed(),
                 "TVS-H01: CashOutLive must not reserve Interact while the price is animating");
@@ -316,7 +335,9 @@ namespace SBR.Tests.PlayMode
             (RunDirector director, TvSweatScreen screen, SitSpot couch) = FindTrio();
 
             screen.TimeScaleOverride = 0.2f;
-            screen.cashOutTickDuration = 4f; // widen the real tween window for reliable polling
+            // AnimateCashOut's real duration is cashOutTickDuration * TimeScaleOverride, so the
+            // 0.2f above SHRINKS this fivefold: the old 4f bought a 0.8s window, not a 4s one.
+            screen.cashOutTickDuration = 30f;
             couch.transitionDuration = 0.01f;
 
             yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
@@ -328,8 +349,25 @@ namespace SBR.Tests.PlayMode
             couch.OnInteract(null);
             yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
 
-            yield return WaitUntil(() => screen.DebugCashOutAnimating, 20f,
-                "never observed the cash-out amount mid-tween");
+            // Poll the state machine, not the animation flag. Waiting on DebugCashOutAnimating
+            // alone was a race by construction: a tween starts only when a NEW offer differs from
+            // the shown figure by 0.005 or more, so the old wait depended on the simulation moving
+            // the price inside its 20s window — unpinned generated content, which is exactly the
+            // thing that fails one run in N and passes on re-run. Wait instead for the DURABLE
+            // precondition (the same gate SetCashOutOffer's caller applies, plus the shown-once
+            // latch), then drive the displacement rather than hoping for it.
+            yield return WaitUntil(() =>
+                director.CurrentSession != null && !director.CurrentSession.IsComplete
+                && screen.EventsEmitted >= 1
+                && director.CurrentSession.CashOutOffer().HasValue
+                && screen.DebugHasCashOutShown,
+                20f, "never reached a live, rendered cash-out offer to animate");
+
+            Assert.IsTrue(screen.ForceCashOutDisplacement(CashOutDisplacement),
+                "a cash-out figure was shown but could not be displaced");
+
+            yield return WaitUntil(() => screen.DebugCashOutAnimating, 5f,
+                "the displaced cash-out figure did not produce a tween");
 
             Text cashOut = FindChildComponent<Text>(screen, "CashOut");
             Assert.IsNotNull(cashOut, "CashOut text not found - canvas layout changed?");
@@ -450,6 +488,20 @@ namespace SBR.Tests.PlayMode
         }
 
         // ---- helpers ----
+
+        /// <summary>How far the mid-tween tests displace the shown cash-out figure.
+        ///
+        /// <para>Deliberately far larger than the 0.005 that arms a tween. SetCashOutOffer re-targets
+        /// every frame while the shown figure is still more than 0.005 from the live offer, so the
+        /// screen converges on the real price exponentially and stays in the animating state for
+        /// thousands of frames at these durations. The assertions downstream therefore cannot race
+        /// the tween's end — which is the property the old "catch it in flight" wait lacked.</para>
+        ///
+        /// <para>Positive, so the shown figure never goes negative on a small offer. The cost is
+        /// that the next real offer reads as a DROP and arms the gold taunt (_cashOutFlash) — a
+        /// cosmetic side effect neither of these tests asserts on, noted so it is not a surprise
+        /// to whoever reads a frame from one of them.</para></summary>
+        private const double CashOutDisplacement = 60.0;
 
         private static (RunDirector, TvSweatScreen, SitSpot) FindTrio()
         {
