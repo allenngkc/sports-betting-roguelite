@@ -234,6 +234,29 @@ compactions and Orca restarts silently killed the loop.
   re-arm monitors and the heartbeat FIRST — compaction kills background waits
   silently; that is exactly how the "continue" prods were born.
 
+### 6d. Errored turns and push reporting (Allen, 2026-08-10)
+
+Two defects from the 403 incident (an auth blip killed the turn that was
+answering Allen; he had to re-ask, and he only ever hears state when he asks):
+
+**A dead turn's debts survive it.** An API/auth error (403, /login, overload)
+kills a turn silently — including whatever it was answering. First action on
+the next successful wake: read the recent scrollback above the error; anything
+Allen asked that went unanswered gets answered NOW, unprompted. Allen never has
+to repeat a question because a turn died.
+
+**Reports are pushed, not pulled.** Allen asking "what's the state" should be
+optional, never the trigger. Send a push notification (plus the board line in
+this terminal) unprompted when:
+
+- his gated queue goes empty → nonempty — rulings, walkthroughs, or playtest
+  asks are now waiting on him;
+- a wave closes — the board goes fully quiet, or everything left is his;
+- an incident was auto-recovered (seat death, auth blip, Orca restart).
+
+Between those pushes, silence means "running fine" — and the keeper's watch is
+what keeps that silence honest.
+
 Stop the loop and ping Allen (push notification or a waiting message) instead of
 continuing when:
 
