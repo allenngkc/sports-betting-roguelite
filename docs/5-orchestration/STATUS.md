@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-11, cycle 162 (heartbeat).**
+**Keeper-era heartbeat stamp: 2026-08-11, cycle 163.** THE DE-FLAKE ARC
+CLOSED: TV's pinned-seed table 30/30 clean (XML-verified; vs 3/30 at ship
+pacing - the wait was unsatisfiable, not slow), full suite 90/84/0/6
+matches baseline, fix merged `3fe7e12`. TV's diagnostic lesson on the
+record: a constant in every failure signature is content, not timing.
+Editor released; SureThing's suite re-establishment FIRED (last open
+item). TV's 1e539a9 unpushed - branch pushes stay on Allen's word.
+Background-kill note for future campaigns: foreground batches ran clean
+throughout. Wave-close push to Allen on SureThing's counts.
+
+*(prior stamp, cycle 162:)*
 TV 28+ min into its foreground pinned-seed batches (proc-zero lockfile
 guard inline per run) - healthy grind, no report yet. All else quiet.
 
