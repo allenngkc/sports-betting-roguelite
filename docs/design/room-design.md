@@ -2,12 +2,19 @@
 
 <!-- impeccable:design-schema 1 -->
 
+> **APPROVED — Allen, 2026-07-31 (R13).** Canon under C9's two-tier authority — the room's binding
+> art authority. Banner added 2026-08-10 at seating: this document carried a DRAFT header for ten
+> days after its own approval, while the register (R13) and the constitution's §1.1 table both
+> recorded it approved. Factual bookkeeping, not a clause amendment — the same class of drift §1.1
+> already corrected in the other direction on 2026-08-09, and the reason that table is checked
+> against the owning documents at every seating.
+
 **Scope:** the room. Geometry, light, material, atmosphere, dressing, and the grade every surface in
 it renders through. It does not govern the TV panel's contents (`[TV] DESIGN.md`), the laptop's
 contents (`[ST] direction-concepts/DESIGN.md`), or the phone.
 
-**Status:** DRAFT for Allen's approval. First surface document under the two-tier art authority
-approved as C9. Assembled from ratified material — it derives nothing new.
+**Status:** APPROVED — Allen 2026-07-31 (R13). First surface document under the two-tier art
+authority approved as C9. Assembled from ratified material — it derives nothing new.
 
 **Supersedes:** `design/08-art-direction.md` for the room, deprecated by Allen 2026-07-24. That world
 — casino neon on black, CRT phosphor, green/red/gold purity — is an explicit anti-reference here as
