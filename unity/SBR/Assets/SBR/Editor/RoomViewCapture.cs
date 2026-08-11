@@ -1774,6 +1774,18 @@ namespace SBR
                 return;
 
             _frames++;
+
+            // Pin on the FIRST play frame, shoot on the eighth. Deliberately not the same
+            // callback: StartNewRun rebuilds the board, and Update() does not tick between two
+            // statements of one editor callback, so pinning and shooting together would capture
+            // whatever the UI looked like BEFORE the new slate was built. That exact mistake -
+            // a whole run driven inside one update callback - is on this file's record already.
+            if (_frames == 1)
+            {
+                PinRoomSlate();
+                return;
+            }
+
             if (_frames < WarmupFrames)
                 return;
 
@@ -1795,6 +1807,41 @@ namespace SBR
             }
 
             EditorApplication.Exit(code);
+        }
+
+        /// <summary>The room set's pinned slate. Mirrors PhoneSeed one entry point over.</summary>
+        private const string RoomSeed = "ROOMREF01";
+
+        /// <summary>
+        /// C34, extended from the phone path to the room poses: pin the slate and ASSERT it
+        /// before anything is shot.
+        ///
+        /// Why this was missing and why it mattered. CaptureAll shot whatever run Play Mode
+        /// happened to land in, so the laptop's board carried an unpinned deal - different team
+        /// names, different season records, in different places. SureThing traced a slate gap to
+        /// exactly this: a season record sits immediately after the team name, so its x tracks the
+        /// name's length and no fixed measurement box survives a re-deal. The phone path pinned
+        /// from the start (PhoneSeed); the room poses never did, which is why their slates diverged.
+        ///
+        /// Assert, do not merely request. StartNewRun could silently no-op or be overridden and the
+        /// frames would look perfectly plausible - an unpinned set is not a set, and its content
+        /// findings are unreproducible in a way nothing downstream can detect.
+        /// </summary>
+        private static void PinRoomSlate()
+        {
+            var director = UnityEngine.Object.FindAnyObjectByType<SBR.Game.RunDirector>();
+            if (director == null)
+                throw new InvalidOperationException(
+                    "no RunDirector - the room's slate cannot be pinned, so this set would not be " +
+                    "reproducible (C34). Refusing to shoot rather than shipping an unpinned set.");
+
+            director.StartNewRun(RoomSeed);
+            string actual = director.Run?.Rng.RunSeed ?? "<none>";
+            if (actual != RoomSeed)
+                throw new InvalidOperationException(
+                    $"slate not pinned: asked {RoomSeed}, run reports {actual}. An unpinned set is " +
+                    "not a set (C34) and every box cut against it would be a fallback, not a method.");
+            Debug.Log($"[RoomViewCapture] slate PINNED and asserted: {actual}");
         }
 
         /// <summary>One ratified review pose: the eye, the look, the field of view.</summary>
