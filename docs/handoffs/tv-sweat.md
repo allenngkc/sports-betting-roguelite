@@ -11,6 +11,128 @@ discarded.
 
 ---
 
+## 0-FR. FLOOD REMOVAL VERIFIED — 2026-08-10. T40 enforced, punch intact, seat rotating
+
+**Converged on new main and re-converged after.** Commits this stretch: `1e02d42` (T40 enforced, the
+washes struck) → merged to main at `2217107` → `c6458a0` (font LFS fix, fast-tracked to main) →
+`0bab25e` (§1 correction). `origin/tv-sweat` at `0bab25e`. Frames staged at
+`dd-import/tv-flood-removal-2026-08-10.zip` (18.9 MB). **DD verdict pending on the frames.**
+
+### The flood removal, measured — three things, one window
+
+Batch 27 struck both full-screen gold washes (T40 enforced). This window verified it on frames, at
+the seated acceptance view, both payoff beats, 30 frames each at 1/50s.
+
+| | before (batch 22) | after |
+|---|---|---|
+| accept — ink across the beat | 0.064 → **0.384** | **0.030 → 0.037** (spread 0.007) |
+| accept — CR | 6.47 → **1.70 : 1** | **7.92 – 8.49 : 1**, every frame |
+| win tally — CR | 6.58 → **1.86 : 1** | **7.52 – 8.42 : 1**, every frame |
+| flood region | 0.063 → 0.507 | **0.028 – 0.034 flat** — gone, not dimmed |
+
+**The third measurement is the one that mattered, and it came from the DD mid-window.** Batch 27
+found the flood *redundant* with §6.1's L4 punch rather than carrying it — so "the punch left with
+the flood" was the live regression, and it would have degraded **silently while every contrast
+number above still landed**:
+
+```
+accept      L4 0.6883 -> L3 0.5847    step 0.1036 (15.1%)   at frame 21
+win tally   L4 0.6927 -> L3 0.5870    step 0.1056 (15.2%)   at frame 21
+```
+
+**Intact on both beats** — one step, held after, at frame 21 = 0.42s = `hdrPunchDuration` at the
+capture step. **Carry this shape forward: when an effect is removed because something else was doing
+its job, measure the thing that was doing its job.** Contrast reads cannot see it.
+
+### Why the CR landed ABOVE batch 27's pre-commitment, not equal to it
+
+Batch 27 predicted the shipping value from the old capture's frame 0 — *"frame 0 IS the
+flood-at-alpha-0 state"* — giving 6.47 accept / 6.58 win. It came in at 7.92–8.49 / 7.52–8.42.
+
+**Frame 0 was not a flood-free frame.** It is one capture step *into* the beat, so `FloodPulse` had
+already run its first `SetAlpha` and the wash was faintly up: the flood region reads **0.063** there
+against **0.029** now. The whole difference is in the ink, and the ground confirms it — old ground
+0.6881, new 0.6877, four ten-thousandths apart. Only the denominator moved: ink **0.0640 → 0.0371**,
+which is `goldInk` through the grade with nothing added on top of it. Run the numbers and both fall
+out exactly: (0.6881+0.05)/(0.0640+0.05) = 6.47, (0.6877+0.05)/(0.0371+0.05) = 8.47.
+
+**So the pre-commitment was a floor, not a target** — it was measured on the least-contaminated frame
+that existed rather than an uncontaminated one, because before the removal no uncontaminated frame
+could exist. **A prediction taken from the cleanest available sample of a thing you are deleting
+inherits whatever is left of it.** Landing above such a prediction is the expected direction; landing
+*at* it would have meant a residue of the flood survived.
+
+### THE INSTRUMENT FIX — a capture directory accumulates runs, and filenames do not separate them
+
+**The first pass over these frames reported the accept beat as 60 frames with CR alternating
+8.47 / 1.70 frame by frame. It was measuring TWO RUNS AT ONCE.**
+
+The previous capture's accept frames carry a **different scene-grammar token**, so they do not
+overwrite the new ones — both sets sit in the same directory, and a glob on `*moment-<name>__frame*`
+collects both. **It would have reported the pre-removal defect as still present**, in the window
+whose entire purpose was to show it gone.
+
+**Fix, now in `tools/fr_measure.py` and the rule for any capture measurement:** scope by **mtime to the
+current window**, then keep the **newest file per frame index**. Never trust the moment name alone.
+
+**Promoted out of scratch 2026-08-10 on Allen's instruction** — it had lived only in a session temp
+directory that is swept on restart, so the "fix" above was one reboot from being a paragraph about a
+file nobody had. `tools/fr_measure.py` reproduces every number in this section exactly and hardens
+the *selection*, which was the part carrying the risk. The rolling `time.time() - 45*60` cutoff is
+gone: the window is anchored, and each run prints a `--since/--until` line that replays its own
+selection (round-trip verified). `--expect` (default 30) asserts the count and contiguous indices.
+**And the real guard turned out not to be the window at all** — seed, boost, scene and grammar are
+all in the filenames, so C34.1's *"an unasserted pin is a comment"* is buildable: the run asserts one
+seed, one grammar, one scene, one boost across the selected set and refuses to print numbers
+otherwise. Newest-per-index could never have caught **two runs inside one window with a short newer
+run** — indices past the new run's end backfill from the old one and the count still reads full. The
+pin assert catches that regardless of mtime.
+
+This is the same family as the two fixed scan windows (§0-BW) and the hard-coded material list: an
+instrument that silently stops covering what it claims. It is the third distinct shape and the first
+where **stale data, not stale code, was the vector**.
+
+### §1's restore rule was wrong two days after writing it — corrected at `0bab25e`
+
+While converging onto new main I **corrupted `SBR.Engine.dll`** by applying §1's own restore method
+reflexively. The blob had become an **LFS pointer** at the round; the fast-forward smudged it
+correctly to 94,720 bytes; `cat-file` then overwrote a working assembly with the pointer's 130-byte
+text. `Bad IL format`.
+
+**And the cmp-verify passed while it was broken** — it hashed the restored file against the same blob
+it had just copied from. Pointer against pointer, identical, green.
+
+Two rules out of it, both now in §1:
+
+1. **Check what the blob IS before restoring from it.** `git cat-file -s`: ~130 bytes = a pointer,
+   use `checkout`; full size = a raw binary, use `cat-file` through **cmd**. The correct method is
+   **opposite** in the two states, and this repo has both.
+2. **Verify a restore by USING the artefact, not by hashing it.** `LoadFile` must report
+   `SBR.Engine` and a plausible type count. **A comparison against the thing you just wrote proves
+   only that the copy succeeded.**
+
+### Fonts converted to LFS — `c6458a0`, already in main
+
+`EncodeSans.ttf` and `EncodeSansCondensed.ttf` were raw blobs under a live `filter=lfs` rule, so any
+lane's `git add -A` silently produced **dangling pointers with no object behind them**. Room hit it
+first (`a0469b9`, 31 textures); this is the same remedy on the two files this lane owns. Explicit
+two-path `--renormalize`, **oids verified resolvable in the local store at full size before
+committing**, LFS objects pushed, no ref.
+
+### State at rotation
+
+Converged, clean tree, Unity zero. **Open, none of it this lane's to close:** the DD verdict on the
+flood frames; `_tBigAmount`'s inventory call (orphaned since both payoff figures moved into the slot,
+flagged at its declaration); `docs/ARCHI.md:267` still asserting the superseded 5–8% G3 band;
+`Room.unity`'s orphaned `winFloodDuration: 1`.
+
+**A push caveat worth knowing:** the branch now carries 300+ commits and ~10 MB of LFS objects. The
+first `git push` died with `send-pack: unexpected disconnect` and printed `Everything up-to-date`
+from the LFS hook — **which reads like success and is not**. The ref had not moved. Check the remote
+SHA after every push here; a retry carried it.
+
+---
+
 ## 0-BW. THE BLOCKER WAVE — batches 16–19. T67/T68/T69 closed, G1 built, T68-am+T71 landed
 
 **Four batches, one arc: a money control with no readable label, and everything that fell out of
@@ -1101,20 +1223,35 @@ materials and lighting rig (room-refinement) · Laptop/SureThing files (surethin
   3. **Compare the FILE BYTES.** `Get-FileHash -Algorithm SHA256` on the working file against HEAD's
      blob extracted to a temp path, or `fc /b`. That agreed with HEAD immediately in the same test.
 
-  **And `git checkout -- <path>` cannot restore this file** — the smudge filter cannot run, so each
-  attempt writes different bytes. The method that works:
+  **RESTORING: check what the blob IS before you restore from it.** This is the rule, and the
+  previous version of this note got it wrong in a way that corrupted the DLL on 2026-08-10.
 
-  ```
-  sha=$(git rev-parse "HEAD:unity/SBR/Assets/Plugins/SBR/SBR.Engine.dll")
-  cmd /c "git cat-file -p $sha > <path>"     # cmd redirection is byte-safe; PowerShell's `>` is NOT
-  ```
+  A tracked binary here is in one of two states, and **the correct restore is opposite in each**:
 
-  PowerShell's `>` re-encodes as text and **corrupts the DLL** — that was caught by hashing the
-  result, not by anything failing loudly. Verify the restore loads: `[Reflection.Assembly]::LoadFile`
-  should report `SBR.Engine`, 74 types.
+  | HEAD's blob | `git checkout -- <path>` | `git cat-file -p <sha> > <path>` |
+  |---|---|---|
+  | **a raw binary** (pre-round) | writes different bytes each time — broken | **correct** |
+  | **an LFS pointer** (post-round) | **correct** — smudges to the real file | writes the 130-byte POINTER TEXT — corrupts it |
 
-  **A .NET rebuild can never hash-match its predecessor** — the MVID is regenerated every build — so a
-  genuinely rebuilt DLL always needs the restore above; only an untouched one is already identical.
+  So: `git cat-file -s $(git rev-parse "HEAD:<path>")`. **~130 bytes means a pointer** — use
+  `checkout`. A full-size blob means a raw binary — use `cat-file` through **cmd** redirection
+  (PowerShell's `>` re-encodes as text and corrupts binaries).
+
+  **What went wrong, because the failure mode is the point.** After the round, `SBR.Engine.dll`
+  became pointer-backed. The fast-forward smudged it correctly to 94,720 bytes. Then the old rule
+  above was applied by reflex — `cat-file` — which overwrote a working assembly with the pointer's
+  own text. `Bad IL format`.
+
+  **And the cmp-verify PASSED while the file was broken**, because it hashed the restored file
+  against the same blob it had just copied from: pointer against pointer, identical, green. **A
+  comparison against the thing you just wrote proves only that the copy succeeded.**
+
+  **So verify a restore by USING the artefact, not by hashing it.**
+  `[Reflection.Assembly]::LoadFile` must report `SBR.Engine` and a plausible type count. That check
+  caught this; the hash endorsed it.
+
+  **A .NET rebuild can never hash-match its predecessor** — the MVID is regenerated every build — so
+  a genuinely rebuilt DLL always needs a restore; only an untouched one is already identical.
 - **`GrayboxRoomBuilder.Build()` regenerates `Room.unity` from scratch** and rewrites builder-owned
   material properties. Nothing hand-placed survives. Anything this worktree needs persistent in the
   room goes through the room lead.
