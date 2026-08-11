@@ -1,16 +1,25 @@
 # SureThing UI — re-seat state
 
-**STATUS 2026-08-09 · `3320a40` on `surething-ui` · 14 ahead of main, 0 BEHIND · tree clean (`artifacts/` untracked, as always)**
+**STATUS 2026-08-10 · `cebe39d` on `surething-ui` · 4 ahead of main, 0 behind · tree clean (`artifacts/`
+and the three S2-am2 frames untracked, deliberately — see the baseline item)**
 
 ### Verifiable state
 
-- **Suites: EditMode 78/78 · PlayMode 58/58.** Baseline every later comparison against **78/58**.
-  **PlayMode moved 57 → 58** at `af0c42c` — the S71 margin-empty-state gate. **A run reporting 57 means
-  that gate did not execute**, and the wrapper's count is what tells you.
-- **Verified at `1d5a2df`** (the S71 gate rebuild), and **nothing under `unity/` has changed since** —
-  `3320a40` is a docs-only merge. So the figures above describe this tree exactly and no re-run is owed.
-  Check it the same way rather than trusting this line: `git diff --stat 1d5a2df HEAD -- unity/`.
-- **Branch is 14 AHEAD and 0 BEHIND.** Read those two counts separately —
+- **⚠ THE SUITE FIGURES ARE NOW STUDIO-WIDE, NOT THIS SURFACE'S. Read that before comparing anything.**
+  **EditMode 250/250 · PlayMode 90 discovered → 84 passed, 0 failed, 6 skipped**, run by this seat on
+  the converged tree at `cebe39d`, both through the C29 wrapper.
+- **The six skips are BY DESIGN.** A run reporting **90 executed** is as much a discrepancy as a
+  failure and a much quieter one. Check the skip count, not just the pass count.
+- **What changed is the denominator, not this surface.** This seat's own suites were **78/78 and
+  58/58** — the figures a filtered run of this surface should still report, with **PlayMode 57 → 58**
+  at `af0c42c` (the S71 gate; a 57 means that gate did not execute). The 89-commit convergence brought
+  every lane's tests into this tree, so 250 and 90 are **every lane together** and 78/58 are subsets of
+  them. **Nothing on this surface moved.** Reading a green 250 as covering something specific is the
+  category error to avoid, and it now applies to this seat's own tree rather than only to the studio's.
+- **Branch is CONVERGED — 0 ahead, 0 behind at the fast-forward.** It was fast-forwarded deliberately
+  rather than merged: HEAD was already an ancestor of main (this seat's work landed at `23f9da6`), so a
+  `--no-ff` merge commit would have invented a sibling of main instead of becoming it. Read the counts
+  separately —
   `git rev-list --count main..HEAD` is ahead, `HEAD..main` is behind. An earlier version of this file
   printed "12 ahead and 3 BEHIND" with the labels **swapped**, off a single
   `--left-right --count main...HEAD` whose output is *behind* then *ahead*. Do not trust a remembered
@@ -87,6 +96,41 @@ Read §4bb-C13 for the trail, but read it as history. **What survives and must n
 The joint read is at `main-2/docs/design/dd-import/blur-pipeline-read-2026-08-08.md` — Part 1 mine,
 Part 2 room's, Part 3 the closing.
 
+### The S2-am2 baseline — the numbers, and the resolution they do NOT have
+
+Shot and measured at `fa93238` on `2026-08-10-s2am2-postflood/focused-laptop-desk.png`. **It stands;
+no re-shoot is owed.** The three frames are on disk and **deliberately not in git** — evidence storage
+is an open general question with Allen and this does not pre-empt it. Reports and boxes are committed.
+
+| group | ramp | **across-time form** (÷ authored) | measured form | verdict |
+|---|---|---|---|---|
+| season records | 2.234 px | **1.152** (÷ 1.94) | 0.788 | **reads: yes** |
+| row numbers `01`–`06` | 2.529 px | **1.246** (÷ 2.03) | 0.789 | **reads: yes** |
+
+**The unit is "1.152 and it reads", never the number alone.** The two forms are different quantities
+and are **never compared to each other** — batch 26's 0.775/0.789 are the measured form, so reading
+`0.775 → 1.152` as a collapse is reading the amendment rather than the surface. The values hold **only
+at the ratified acceptance view** (focused-laptop-desk, 0.52 m along the lid normal, 30°); any other
+pose rescales them.
+
+**⚠ THE CAVEAT THAT BINDS HOW THESE MAY BE CITED (DD, 2026-08-10).** Deal-to-deal variation is
+**uncharacterised inside these numbers**, so **no future movement of ~0.037 size may be called a change
+OR a null on this baseline** until a pinned-seed assertion exists. It cuts both ways and must not be
+quoted one-directionally: this seat's own 1.115 → 1.152 is exactly that size, so **the baseline
+currently supports "floor unmoved" as an ACCEPTANCE, not as a measurement.**
+
+**The next shoot is bound by the amended recipe (main `1b4aa8d`): slate pinning moved from reporting
+(§3) to METHOD (§2a).** A pinned slate is the shoot's **precondition**; per-frame boxes are **fallback
+only**, and the report must state which set the boxes were. The reason is this seat's finding: a season
+record's x depends on the team name beside it, and `CaptureAll` renders a live, unpinned slate — so a
+different deal moved every record and left the stock boxes on team names, empty ground, or half a
+glyph, which would have **flattered the number with no error at all.** The row-number column survived
+only because its x is fixed.
+
+**The mechanism already exists** — `RoomViewCapture:1684-1700` pins and reads a seed back on the phone
+path (`PhoneSeed`); it is simply not applied to `CaptureAll`. Room's file, room's change, dispatched.
+**Do not shoot on fallback boxes if the pinned path is available.**
+
 ### Open items
 
 1. **No SureThing BUILD item is open.** Two things are in flight that are not builds:
@@ -133,8 +177,30 @@ Part 2 room's, Part 3 the closing.
    holds the only frames of `16-margin-max-legs-staged-receipt` — **this tree cannot regenerate them**,
    because it still carries `11-`.
 
-### The three standing traps
+### The standing traps
 
+*(Not "the three" any more. The count was in this heading and went stale the moment a fourth arrived —
+the same defect as the `(gitignored)` line below, in the heading rather than the body.)*
+
+- **CLEARED 2026-08-10 — the TV-font LFS hazard. History, not a live trap.** Kept because the
+  *recovery* is not obvious and the class can recur on any path where a raw blob sits under an `lfs`
+  attribute.
+  **What it was:** `Tv/Fonts/EncodeSans.ttf` and `EncodeSansCondensed.ttf` were raw TTF blobs in HEAD
+  under an `lfs` attribute with **no LFS object behind them**, so they showed permanently modified in
+  every worktree and the clean filter would have written a pointer to nothing — `git add -A` or
+  `commit -a` would have converted real fonts into **dangling pointers**. TV renormalised them at
+  `d97e9e4`; verified afterwards, the blob is now a 131-byte pointer with its object present.
+  **Neither `checkout` NOR `reset --hard` can clear that state** while it exists — the clean filter
+  regenerates the mismatch on every comparison — so `git merge` refuses with *"Please commit your
+  changes or stash them"*, and committing is the one forbidden act. **The way through is to neutralise
+  the filter for a single command rather than change any repo state:**
+  `git -c filter.lfs.process= -c filter.lfs.clean=cat -c filter.lfs.smudge=cat -c filter.lfs.required=false merge --no-ff main`
+  **That has one side effect which must be undone immediately:** with smudge off, incoming pointers
+  land on disk as pointer TEXT, so the working tree carries 131-byte "fonts" until **`git lfs
+  checkout`** restores them. A font that loads as nothing is a quiet failure.
+  It also breaks `git merge --abort` (*"Entry … not uptodate"*); `git reset --hard HEAD` clears the
+  index and costs nothing **provided this seat's own work is committed first** — the reason to commit
+  before merging rather than after.
 - **`artifacts/` is NOT git-ignored.** A bare `git add -A` sweeps ~100 PNGs. Stage explicitly, always.
   Verify rather than trust: `git check-ignore -v artifacts/surething-ui` matches nothing.
   **This file told two seats the opposite** — §5 read "(gitignored)" until 2026-08-09, cancelling the
@@ -190,7 +256,9 @@ Part 2 room's, Part 3 the closing.
 
 **Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-09, after C13 closed, the
 font-asset re-verification, batch 21, the strays collection, S71's gate rebuild and S72's clean sweep.
-**HEAD:** `3320a40` · **Branch:** `surething-ui` · 14 ahead of main, 0 behind · working tree clean.
+**Last updated:** 2026-08-10, after the S2-am2 baseline re-shoot, the studio-wide suite run and
+the LFS font hazard clearing. **HEAD:** `cebe39d` · **Branch:** `surething-ui` · 4 ahead of main,
+0 behind · working tree clean (the three S2-am2 frames and `artifacts/` are untracked on purpose).
 
 **Read the re-seat block at the top of this file first.** Everything below it is the accumulated
 record and some of it describes states that have since closed — where that is true the section says
