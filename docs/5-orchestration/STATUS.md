@@ -59,6 +59,41 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-10 cycle 151 · **THE FLOOD ARC CLOSED END TO END; ORCA RESTART
+  RECOVERED, ALL WORK LANDED FIRST** — batch 29 verdict: T68-am+T71
+  GRANTED·CLOSED on the DD's independent frame reads (ink moved 0.0000 at
+  the old flood peak vs 0.3200 before; wash deleted not dimmed, three-way
+  confirmed; punch intact both beats, reproduced at the DD seat). C41
+  canon same day (constitution §4.6, `aad6178`): a prediction from a
+  contaminated frame is a floor, not a target — founding case batch 27's
+  own pre-verified-fix claim, recorded as the DD seat's error twice under
+  §1.5. Batch 29 transcribed (`cb5120f`, canon through 29). Slate-pinning
+  ruled method-not-reporting; room amended the recipe (merged `1b4aa8d`),
+  then extended CaptureAll's seed-pin to room poses AND caught its own
+  instrument flag failing the ruling (single-float would have silently
+  pooled 1.94/2.03 — now per-group), merged `904f987`. TV promoted
+  fr_measure.py to tools/ with the pin assert C34 actually asks for
+  (`1911b47`), fixing two of its own bugs en route; _dimOverlay already
+  discharged in source; 30-of-30 confirmed with the leak path named.
+  SureThing: both suites green on converged `cebe39d`, handoff refreshed
+  with the ~0.037 caveat + studio-count labels, merged main `0d866da`.
+  **Orca restarted at cycle end** — all five seats died AFTER their
+  commits landed (disk verified); recovery: five seats recreated
+  (leads --continue, DD fresh per charter), effort max all, watcher v19
+  armed on new handles, Unity zero. Lost only: room's R9-A verdict
+  REPORT (runs' outputs on disk — re-verification dispatched).
+  Allen staged-rulings fired this cycle: C41 approval, flag check, tool
+  promotion, push order, handoff refreshes, merge orders, recipe handoff.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | tv-sweat (resumed) | verifying push of 1911b47 | push if unlanded + frame028 disposition | lead |
+  | surething-ui (resumed) | merging main 904f987 | clean-hold; next shoot unblocked (pinned slate live) | lead |
+  | room (resumed) | re-verifying R9-A runs from disk | report verdict + determinism | lead |
+  | markets-2 (resumed) | confirming texture-phantom class | clean-hold | lead |
+  | DD (fresh seat) | seating, row-count confirm | stand by for next batch | DD |
+  | Editor | free (Unity 0 verified) | — | orchestrator |
+  | **Need Allen** | evidence-in-git policy (unchanged) | call | Allen |
 - 2026-08-10 cycle 150 · **BOTH MEASUREMENT ARCS DELIVERED; TV'S SEAT
   ROTATED; THE DD READS THE FLOOD FRAMES** — TV's window results certified
   by its own explanation of the out-of-band contrast (the 6.47/6.58
