@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-10, cycle 159 (heartbeat).**
+**Keeper-era heartbeat stamp: 2026-08-10, cycle 160 (heartbeat).**
+TV campaign still mid-run (ship pacing, expected). No other movement;
+SureThing armed on the close. Quiet is healthy.
+
+*(prior stamp, cycle 159:)*
 TV's option-1 revalidation campaign running (~35 min at ship pacing;
 fresh run directory per campaign after the accumulation trap's third
 bite; commit only on a clean full table - the last campaign was green for
