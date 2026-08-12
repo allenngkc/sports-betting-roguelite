@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 186.** Batch 37 canon
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 187 (heartbeat).** Room's
+anchor amendment merged (6e6bccf), room converged clean. TV on T-4. DD
+standing by for the after-set. Freeze holds.
+
+*(prior stamp, cycle 186:)* Batch 37 canon
 (65e6a49): V6 ruled, C44 law, T65-am2 corrects batch 36's authored-hue
 figure - BOTH lanes nudged directly before anyone touched the stale
 constant (the DD's own recommendation, executed same cycle). Three
