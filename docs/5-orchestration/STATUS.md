@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-11, cycle 165 (post-restart).**
+**Keeper-era heartbeat stamp: 2026-08-11, cycle 166 (heartbeat).**
+Quiet hold verified: main unchanged, tree clean, no seat activity, no
+work pending. Open items remain Allen's three (frames, push word,
+Phase T).
+
+*(prior stamp, cycle 165:)*
 Orca + session restarted AFTER the wave closed - nothing in flight was
 lost (main at d71a0f7 verified from disk, tree clean). All five agent
 seats died with the restart; posture: RECREATE ON DEMAND - the board is
