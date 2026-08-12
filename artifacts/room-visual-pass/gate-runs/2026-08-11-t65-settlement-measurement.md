@@ -30,8 +30,24 @@ not depend on resolving the authoring-space question.
 
 **The band is CIELAB.** Through the same converter (`linear_to_lab`, the room's own, shared with the
 emission instrument), a representative warm room emission `(0.038, 0.032, 0.024)` returns **83.3°** —
-the family T65 cites as the room's palette (lid 85.1–85.3°, phone 85.4°, laptop 84.3°). A colour at
-125.7° is not in that family; it is green.
+the family T65 cites as the room's palette. A colour at 125.7° is not in that family; it is green.
+
+> **⚠️ CORRECTED after T65-am2 (batch 37). This list was incomplete, and the omission caused a
+> downstream error.** As first written it named only the **screens** — lid 85.1–85.3°, phone 85.4°,
+> laptop 84.3° — and not the **warm key tube at ~92°**, which is the band's **upper anchor**. Batch 36
+> read the family off this record, found no member above 85.4°, inferred the band's upper half
+> bracketed nothing, and restated T65's band from 85–92° to 83–85°. **T65-am2 withdraws that
+> restatement; the ruled band 85–92° stands as written.** The key entered the record one docket later,
+> in the V6 provenance trace — which is where it should have been all along, because a band is defined
+> by its anchors and I listed only the ones at the bottom.
+>
+> **Two anchors, both rendered CIELAB, both from batch-13 records:** lid **85.1–85.3°** at the bottom,
+> warm key tube **~92°** at the top.
+>
+> **And the band is RENDERED.** `roomSettlementWarm` is an authored constant; 85–92° is checked on the
+> rendered cast, on TV's own box under R23 with `TvLight` disabled. Nobody authors to the band's number
+> and assumes it renders there — the authored↔rendered gap is real and not uniform (1.9° on the lid,
+> 10.7° on the key).
 
 ## 2. The frames — what they do and do not settle
 
