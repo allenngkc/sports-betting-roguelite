@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-11, cycle 172 (heartbeat).** Quiet
+**Keeper-era heartbeat stamp: 2026-08-11, cycle 173 — PHASE T IS GO;
+MARKETS' STRANDED WORK FOUND AND MERGED.** Allen's go on Phase T: TV seat
+recreated, chartered via orchestrator-brief (inventory-first, Phase L's
+shape, design gaps route to DD). Merge audit on Allen's ask found
+markets-2 15 commits UNMERGED (incl. the M-04/M-05 stake-figure fix,
+ead9396, recorded 'done' but never merged) — merged `42d3f5a`, DLL bytes
+identical, canonical validation agent running on the merged tree (holds
+the editor lease). TV/SureThing/room branches verified 0-ahead. Watcher
+v22 (room+tv). Allen's queue: view the fresh set.
+
+*(prior stamp, cycle 172:)* Quiet
 hold: tree clean, room clean-holding, all other seats vacant by design.
 Allen's queue: view the fresh set; Phase T go-word.
 
