@@ -1,7 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-11, cycle 171 — FRESH-FRAMES WAVE
-CLOSED.** The replacement set is on main at `bd182f7`: three surfaces,
+**Keeper-era heartbeat stamp: 2026-08-11, cycle 172 (heartbeat).** Quiet
+hold: tree clean, room clean-holding, all other seats vacant by design.
+Allen's queue: view the fresh set; Phase T go-word.
+
+*(prior stamp, cycle 171 — FRESH-FRAMES WAVE CLOSED:)* The replacement set is on main at `bd182f7`: three surfaces,
 both seeds pinned AND asserted, phone frames MD5-identical across runs,
 both surfaces eye-confirmed populated. Stored as LFS under a set-scoped
 rule (11 objects, 32MB, objects pushed) — the first evidence set stored
