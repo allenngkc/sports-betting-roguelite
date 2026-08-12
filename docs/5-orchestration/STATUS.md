@@ -1,7 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-11, cycle 170 — NEW WAVE on
-Allen's three orders.** (1) Old raw playtest frames DELETED (`7487481` -
+**Keeper-era heartbeat stamp: 2026-08-11, cycle 171 — FRESH-FRAMES WAVE
+CLOSED.** The replacement set is on main at `bd182f7`: three surfaces,
+both seeds pinned AND asserted, phone frames MD5-identical across runs,
+both surfaces eye-confirmed populated. Stored as LFS under a set-scoped
+rule (11 objects, 32MB, objects pushed) — the first evidence set stored
+per the new-rule-going-forward direction; room superseded its own
+don't-store reasoning in place. Old blurry sets deleted `7487481`; TV
+pushed 1e539a9 on Allen's word. Room converging then clean-hold. ALLEN'S
+QUEUE: look at the fresh frames — docs/design/dd-import/
+fresh-reference-set-2026-08-11/. Phase T awaits his go.
+
+*(prior stamp, cycle 170:)* (1) Old raw playtest frames DELETED (`7487481` -
 findings all transcribed, history retains, no rewrite); fresh pinned
 reference shoot DISPATCHED to a recreated room seat (three surfaces,
 ROOMREF01/PHONEREF01 asserted, staged to dd-import/fresh-reference-set-
