@@ -1,7 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-11, cycle 173 — PHASE T IS GO;
-MARKETS' STRANDED WORK FOUND AND MERGED.** Allen's go on Phase T: TV seat
+**Keeper-era heartbeat stamp: 2026-08-11, cycle 174.** Phase T rolling:
+TV's inventory landed (6-stage plan, SemiBold trap ranked top risk, a
+MISSING bold-condensed face found, ratio-law conflict flagged not
+decided); T-1 started on Allen's word; G1-G5 gap docket staging for a
+fresh DD seat (created, seating now). Worktrees RETIRED on Allen's order:
+surething-ui + markets-2 deleted (branches survive; pinned baseline
+evidence preserved first at f8b7b54 under a scoped LFS rule);
+room-refinement KEPT until Phase T closes (active shooting lane). Orca
+blipped mid-removal, recovered, seats survived. Markets-merge validation
+still running (holds editor); TV's T-2 window queued behind it.
+
+*(prior stamp, cycle 173:)* Allen's go on Phase T: TV seat
 recreated, chartered via orchestrator-brief (inventory-first, Phase L's
 shape, design gaps route to DD). Merge audit on Allen's ask found
 markets-2 15 commits UNMERGED (incl. the M-04/M-05 stake-figure fix,
