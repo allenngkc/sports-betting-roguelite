@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-11, cycle 169 (heartbeat).**
+**Keeper-era heartbeat stamp: 2026-08-11, cycle 170 — NEW WAVE on
+Allen's three orders.** (1) Old raw playtest frames DELETED (`7487481` -
+findings all transcribed, history retains, no rewrite); fresh pinned
+reference shoot DISPATCHED to a recreated room seat (three surfaces,
+ROOMREF01/PHONEREF01 asserted, staged to dd-import/fresh-reference-set-
+2026-08-11, editor leased). (2) TV's de-flake pushed on Allen's word:
+origin/tv-sweat = 1e539a9. (3) Phase T elaborated to Allen - awaiting
+his go. Watcher v21 armed (room). Heartbeat live.
+
+*(prior stamp, cycle 169:)*
 Quiet hold continues: tree clean, no new intake, no seat activity.
 
 *(prior stamp, cycle 168:)*
