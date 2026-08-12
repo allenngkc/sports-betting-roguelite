@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-11, cycle 184 (heartbeat).** T-3
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 185.** API instability
+hit both active seats in one stretch: TV's T-4 turn died on connection
+loss (nudged, resuming with verify-disk-first); the DD 403'd mid-batch-37
+but recovered on a prod (transient, unlike TV's persistent 403
+yesterday). Batch 36 landed 8731ba6 (T65-am on correct-space deltas).
+In flight: TV's T-4, DD's batch 37 (V6 + row repairs + its own T65
+correction). T-3 done: canon face wired, two drifts caught and kept out.
+Freeze holds.
+
+*(prior stamp, cycle 184:)* T-3
 resumed 6+ min in (canon face wiring); DD 6+ min into T65. Both working,
 nothing stalled, freeze holds.
 
