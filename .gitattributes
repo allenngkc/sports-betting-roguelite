@@ -23,3 +23,4 @@
 # readable in the repo. A `**` rule turns it into a 130-byte pointer, which is
 # a silent loss of the document that explains the frames.
 docs/design/dd-import/fresh-reference-set-2026-08-11/**/*.png lfs
+docs/design/evidence-of-record/**/*.png lfs
