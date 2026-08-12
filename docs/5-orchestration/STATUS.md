@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 185.** API instability
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 186.** Batch 37 canon
+(65e6a49): V6 ruled, C44 law, T65-am2 corrects batch 36's authored-hue
+figure - BOTH lanes nudged directly before anyone touched the stale
+constant (the DD's own recommendation, executed same cycle). Three
+broken register rows repaired; 268 rows verified well-formed. DD queue
+EMPTY - standing by for the after-set. TV on T-4; room clean-holding.
+Freeze holds.
+
+*(prior stamp, cycle 185:)* API instability
 hit both active seats in one stretch: TV's T-4 turn died on connection
 loss (nudged, resuming with verify-disk-first); the DD 403'd mid-batch-37
 but recovered on a prod (transient, unlike TV's persistent 403
