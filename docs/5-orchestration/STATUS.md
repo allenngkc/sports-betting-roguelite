@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 187 (heartbeat).** Room's
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 188 (heartbeat).** T-4
+and T-5 both closed clean (sizes tokenised no-rescale; tracking + tnum
+in; TV self-caught the TypeTeam over-retirement - restored on Allen's
+word; digit-probe crash logged as post-phase follow-up). AFTER-SET
+SHOOTING NOW - the phase's closing capture, carrying G1 re-cert +
+T75-am2 clock strings. Freeze lifts on its report. DD standing by for
+the pair verdict.
+
+*(prior stamp, cycle 187:)* Room's
 anchor amendment merged (6e6bccf), room converged clean. TV on T-4. DD
 standing by for the after-set. Freeze holds.
 
