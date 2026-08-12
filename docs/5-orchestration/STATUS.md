@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-11, cycle 164 — THE BOARD IS
+**Keeper-era heartbeat stamp: 2026-08-11, cycle 165 (post-restart).**
+Orca + session restarted AFTER the wave closed - nothing in flight was
+lost (main at d71a0f7 verified from disk, tree clean). All five agent
+seats died with the restart; posture: RECREATE ON DEMAND - the board is
+quiet, no lane has work, and idle seats burn quota. Census notes: two
+stale DD-era sessions idle in main-2 (batch-29 and batch-31 vintage,
+nothing owed, left alone; next DD seating creates fresh); one stale
+tv-sweat session. Heartbeat re-armed; lead watcher deliberately NOT
+armed until seats exist. Keeper satisfied by this stamp.
+
+*(prior stamp, cycle 164:)*
+**Cycle 164 — THE BOARD IS
 QUIET.** Counts re-established on the final tree: EditMode 250/250,
 PlayMode 90→84/0/6, exercising TV's seed-pin including the test that
 started the arc; SureThing's qualification discharged, merged `8c8748c`.
