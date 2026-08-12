@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-11, cycle 183 — T-3 UNHELD.**
+**Keeper-era heartbeat stamp: 2026-08-11, cycle 184 (heartbeat).** T-3
+resumed 6+ min in (canon face wiring); DD 6+ min into T65. Both working,
+nothing stalled, freeze holds.
+
+*(prior stamp, cycle 183 - T-3 UNHELD:)*
 Batch 35 canon (5546e8f): T81 rules the migration LANDS THE CANON FACE -
 renderer+face are one variable on this surface, option 1 was never the
 conservative arm; C43 applied, not bent. G1-am: fit grant void,
