@@ -52,14 +52,29 @@ The **room** set is deliberately not hash-comparable: `CaptureAll` renders live 
 pinned runs differ by ≤5/255 (animation phase + rounding). The slate reproduces; the pixels do not.
 Judge it by what is measured on it — R43, batch 30.
 
-## Why the bytes are not committed here
+## The bytes ARE committed — as LFS objects (resolved, Allen 2026-08-11)
 
-The set is **35 MB of raw PNG**, and `7487481` had just deleted raw playtest frames in the other
-direction; no `.gitattributes` rule matches `artifacts/`, so these would land raw in history while
-the evidence-in-git question is still open. **Because both pins are asserted, the set is
-reproducible from the recipe above** — which is what the pinning work bought, and the honest reason
-the bytes need not be stored.
+This section originally argued the bytes need not be stored, because asserted pins make the set
+reproducible. **Allen ruled otherwise and the set is committed** at `193a7b7`, tracked at
+`docs/design/dd-import/fresh-reference-set-2026-08-11/`. Superseded rather than deleted, because the
+reasoning it replaced is the reasoning a future seat will reach for.
 
-**Flagged, not decided:** the delivered copy lives in `dd-import`, which is untracked by channel
-convention, so a `git clean` in `main-2` would remove it. Re-shooting restores it, but say the word
-and I will commit the bytes instead.
+**Committed as LFS, under a deliberately narrow rule:**
+
+```
+docs/design/dd-import/fresh-reference-set-2026-08-11/**/*.png lfs
+```
+
+**The scope check is the load-bearing part.** 82 PNGs are already tracked **raw** under
+`docs/design/dd-import/` — the blur-bundle crops among them. A rule broad enough to catch those
+would clean each to a pointer on diff while HEAD still held the raw blob: permanent phantom
+modifications in every worktree, and any commit including them converts them to pointers with no LFS
+object behind. That is the Encode Sans landmine at forty times the scale. Verified **before**
+committing: `git ls-files` under the new path returned zero, and `check-attr` over all 82
+pre-existing PNGs returned `unspecified` for every one.
+
+**`*.png`, not `**`** — a `**` rule also turned the set's README into a 132-byte pointer, silently
+losing the document that explains the frames. Caught on the first check and narrowed.
+
+Verified after: 11 files LFS-tracked, git blobs 132 B, worktree files real PNGs (`89504e47`), README
+still 5,393 B of prose, all 11 OIDs resolving. Objects pushed (32 MB, 11/11); **no ref pushed**.
