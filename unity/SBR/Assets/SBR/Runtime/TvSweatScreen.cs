@@ -768,14 +768,34 @@ namespace SBR.Game
         // authored copy to fit a stale measurement is how the statement line was lost once already.
         private const int TypeScore = 36;
         private const int TypeCashOut = 29;
-        private const int TypeTeam = 28;
         private const int TypeClock = 28;
         private const int TypeNeed = 28;
         private const int TypeRisk = 24;
         private const int TypeEvent = 22;
         private const int TypeProgress = 19;
-        private const int TypeLeg = 19;
         private const int TypeEyebrow = 15;
+
+        // T-4: `TypeTeam = 28` and `TypeLeg = 19` used to sit in the block above with exactly one
+        // reference each — their own declaration. Retired rather than left, because a size constant
+        // nothing reads is indistinguishable from one that IS read until somebody greps, and the
+        // inventory found them by counting references rather than by reading the list.
+        //
+        // The eight below are the sizes this file used to spell as bare integers at the call site.
+        // Same numbers, named — T-4 tokenises, it does not re-scale, so nothing here moves a pixel.
+        // These are the slots T75 ruled regular; they carry no canon ratio of their own (§4.1 names
+        // ten roles and the surface has 23), so each name states its slot and nothing more.
+        private const int TypeAttract = 46;
+        private const int TypeTakeoverTitle = 30;
+        private const int TypeTakeoverSub = 18;
+        private const int TypeSubtitle = 22;
+        private const int TypeIntervention = 22;
+        private const int TypeConsolation = 28;
+        private const int TypeChrome = 14;
+        /// <summary>The dormant payoff figure's size, kept with the others so the block is the whole
+        /// list rather than the part that renders. `_tBigAmount` draws nothing (T68-am/T71 moved both
+        /// payoff figures into the cash-out slot) and T79 holds the question of what that element is
+        /// for — out of Phase T by C43. Named here, not woken.</summary>
+        private const int TypeBigAmount = 96;
 
         /// <summary>The per-face scale factor Phase T reserves for preserving RENDERED size across
         /// the renderer swap, and the one place it would be applied.
@@ -3530,7 +3550,7 @@ namespace SBR.Game
 
             // --- attract state (before the sweat is live) ---
             _tAttract = MakeText(root, "Attract", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                Vector2.zero, new Vector2(w - 60f, 130f), 46,
+                Vector2.zero, new Vector2(w - 60f, 130f), TypeAttract,
                 TextAnchor.MiddleCenter, flavorColor, FontStyle.Bold); // §4 Fact: cold white, not money
             _tAttract.text = "SIT TO WATCH THE SWEAT";
 
@@ -3539,17 +3559,17 @@ namespace SBR.Game
             // between markets"). Sits inside the fixed Stage zone rather than floating over the
             // whole canvas, so it never competes with the ticket rail.
             _tTakeoverTitle = MakeText(root, "TakeoverTitle", new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
-                AnchorCenter(grid.Stage) + new Vector2(0f, 40f), new Vector2(grid.Stage.width - 60f, 60f), 30,
+                AnchorCenter(grid.Stage) + new Vector2(0f, 40f), new Vector2(grid.Stage.width - 60f, 60f), TypeTakeoverTitle,
                 TextAnchor.MiddleCenter, flavorColor, FontStyle.Bold);
             _tTakeoverSub = MakeText(root, "TakeoverSub", new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
-                AnchorCenter(grid.Stage) + new Vector2(0f, -20f), new Vector2(grid.Stage.width - 60f, 60f), 18,
+                AnchorCenter(grid.Stage) + new Vector2(0f, -20f), new Vector2(grid.Stage.width - 60f, 60f), TypeTakeoverSub,
                 TextAnchor.MiddleCenter, contextGrey);
 
             // Subtitle line reused ONLY by the idle/run-over screens (non-sweat states); never
             // shown during a live sweat — DESIGN.md §7's component list has no standalone win%/
             // subtitle slot for the live grid.
             _tSubtitle = MakeText(root, "Subtitle", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, -60f), new Vector2(w - 120f, 34f), 22, TextAnchor.MiddleCenter, flavorColor);
+                new Vector2(0f, -60f), new Vector2(w - 120f, 34f), TypeSubtitle, TextAnchor.MiddleCenter, flavorColor);
 
             // C3 (Design Director ruling): "the ball at a payoff" joins the HDR-eligible set. Built
             // HERE, unconditionally — never gated behind `if (theaterEnabled)` — so eligibility does
@@ -3615,7 +3635,7 @@ namespace SBR.Game
             // L4 punch is measured doing the punctuation the flood was assumed to add
             // (0.688 → 0.586 at the settle). The flood was redundant with the punch, not carrying it.
             _tBigAmount = MakeText(root, "BigAmount", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                Vector2.zero, new Vector2(w - 40f, 200f), 96,
+                Vector2.zero, new Vector2(w - 40f, 200f), TypeBigAmount,
                 TextAnchor.MiddleCenter, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Bold);
             _tBigAmount.text = string.Empty;
             _bigAmountHdrMat = MakeHdrMaterial();
@@ -3624,8 +3644,12 @@ namespace SBR.Game
             // The bad-beat consolation line — built ABOVE the dim overlay so the sting stays
             // readable through the 94% dim (Sol, M-T4); neutral chrome, never money-red.
             _tConsolation = MakeText(root, "Consolation", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, -20f), new Vector2(w - 80f, 44f), 28,
-                TextAnchor.MiddleCenter, flavorColor, FontStyle.Italic);
+                new Vector2(0f, -20f), new Vector2(w - 80f, 44f), TypeConsolation,
+                // T77 (batch 32): the synthesised italic goes and the slot drops to regular. There is
+                // no italic anywhere in Encode Sans — its axes are weight and width only, so this was
+                // a shear applied to an upright face, not a face. The only styled slot on the surface
+                // with nothing real behind it.
+                TextAnchor.MiddleCenter, flavorColor);
             _tConsolation.enabled = false;
 
             // T8 (Allen, 2026-07-31): the Scanlines overlay is REMOVED — DESIGN.md §2 bans
@@ -3706,7 +3730,7 @@ namespace SBR.Game
 
                 TMP_Text line = MakeText(root, $"LegRowLine{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     AnchorTopLeft(row, 8f, 4f), new Vector2(stmtW, compactH), TypeEyebrow,
-                    TextAnchor.UpperLeft, structureGrey, FontStyle.Bold, Face.Condensed); // TvLegRow.jsx:57-61
+                    TextAnchor.UpperLeft, structureGrey, FontStyle.Normal, Face.Condensed, FontWeight.Bold); // TvLegRow.jsx:57-61
                 line.enableWordWrapping = true; // so the statement clips, not sprawls (was Wrap)
 
                 TMP_Text price = MakeText(root, $"LegRowPrice{i}", new Vector2(0f, 1f), new Vector2(1f, 1f),
@@ -3720,7 +3744,7 @@ namespace SBR.Game
                 // Live form: the authored NEED statement, then the revealed progress beneath it.
                 TMP_Text need = MakeText(root, $"LegRowNeed{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     AnchorTopLeft(row, 8f, 4f), new Vector2(lineW, needH), TypeNeed,
-                    TextAnchor.UpperLeft, flavorColor, FontStyle.Bold, Face.Condensed); // inherits TvLegRow.jsx:35
+                    TextAnchor.UpperLeft, flavorColor, FontStyle.Normal, Face.Condensed, FontWeight.Bold); // inherits TvLegRow.jsx:35
                 TMP_Text progress = MakeText(root, $"LegRowProgress{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     AnchorTopLeft(row, 8f, 4f + needH), new Vector2(lineW, progressH), TypeProgress,
                     TextAnchor.UpperLeft, flavorColor, FontStyle.Normal, Face.Condensed); // TvLegRow.jsx:82
@@ -3747,7 +3771,7 @@ namespace SBR.Game
             _tRiskPays = MakeText(root, "RiskPays", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 AnchorTopLeft(grid.TicketFooter, 8f, 8f),
                 new Vector2(grid.TicketFooter.width - 16f, grid.TicketFooter.height - 8f), TypeRisk,
-                TextAnchor.UpperLeft, goldL2, FontStyle.Bold, Face.Condensed); // TvRiskPays.jsx:14
+                TextAnchor.UpperLeft, goldL2, FontStyle.Normal, Face.Condensed, FontWeight.Bold); // TvRiskPays.jsx:14
         }
 
         private void BuildScoreBug(Transform root, LayoutGrid grid)
@@ -3881,8 +3905,8 @@ namespace SBR.Game
             _tCashOut = MakeText(root, "CashOut", new Vector2(0f, 1f), new Vector2(0f, 0.5f),
                 AnchorCenter(grid.CashOut) + new Vector2(-grid.CashOut.width * 0.5f + 12f, 0f),
                 new Vector2(grid.CashOut.width - 24f, grid.CashOut.height - 8f), TypeCashOut,
-                TextAnchor.MiddleLeft, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Bold,
-                Face.Condensed); // TvCashOutSlot.jsx:33
+                TextAnchor.MiddleLeft, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Normal,
+                Face.Condensed, FontWeight.Bold); // TvCashOutSlot.jsx:33 · T73: real Condensed Bold 700
             _tCashOut.enabled = false;
 
             _tCashOutStatus = MakeText(root, "CashOutStatus", new Vector2(0f, 1f), new Vector2(1f, 0.5f),
@@ -3907,7 +3931,7 @@ namespace SBR.Game
             // in [the cash-out] row." Centered over the stage's safe area, where the frozen shot
             // remains visible.
             _tInterventionPrompt = MakeText(root, "InterventionPrompt", new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
-                AnchorCenter(grid.Stage), new Vector2(grid.Stage.width - 80f, 90f), 22,
+                AnchorCenter(grid.Stage), new Vector2(grid.Stage.width - 80f, 90f), TypeIntervention,
                 TextAnchor.MiddleCenter, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Bold);
             _tInterventionPrompt.enabled = false;
         }
@@ -3924,7 +3948,7 @@ namespace SBR.Game
             _tChrome = MakeText(root, "Chrome", new Vector2(0f, 1f), new Vector2(0.5f, 1f),
                 AnchorTopCenter(grid.ChromeStrip, 2f),
                 new Vector2(grid.ChromeStrip.width - 30f, grid.ChromeStrip.height - 2f),
-                14, TextAnchor.UpperCenter, contextGrey);
+                TypeChrome, TextAnchor.UpperCenter, contextGrey);
         }
 
         /// <summary>DESIGN.md §6: "Zones may be separated by hairline rules or by unlit gutters
@@ -3981,15 +4005,23 @@ namespace SBR.Game
         /// vocabulary the rest of the file uses. The laptop's own migration kept its signature for
         /// the same reason (<c>LaptopOs.ToTmpAlignment</c>'s note).
         ///
-        /// <para><b>C43 — one variable.</b> Only the renderer moves here. Sizes are carried across
-        /// unchanged, and <c>FontStyle.Bold</c> maps to <c>FontStyles.Bold</c>, which is TMP's
-        /// material-level faux bold and therefore the same synthesised weight UGUI was drawing. The
-        /// real Condensed Bold 700 that T73 rules, and the italic T77 strikes, are T-4's — each with
-        /// its own attribution. Landing them here would put three changes in one before/after pair
-        /// and the pair would stop being an instrument.</para></summary>
+        /// <para><b>WEIGHT IS TWO DIFFERENT THINGS HERE, and the call site says which.</b>
+        /// <c>style: FontStyle.Bold</c> is TMP's material-level FAUX bold — the synthesised weight
+        /// UGUI drew, kept wherever no ruling has replaced it. <c>weight: FontWeight.Bold</c> resolves
+        /// through the font asset's weight table to the REAL 700 face. T73 (batch 32) ruled real
+        /// Condensed Bold 700 for the four condensed slots that carry it; those pass
+        /// <c>style: Normal, weight: Bold</c>, because setting both would lay faux bold on top of a
+        /// real bold face and thicken it twice.</para>
+        ///
+        /// <para>The seven REGULAR-face slots that ask for bold are deliberately left synthesised.
+        /// T73 names four sites and they are all condensed; `EncodeSans Bold SDF` is built and wired
+        /// into the regular face's weight table at 700, so switching them is one argument each — but
+        /// it is a design change nobody has ruled, and generating a face does not license using
+        /// it.</para></summary>
         private TMP_Text MakeText(Transform parent, string name, Vector2 anchor, Vector2 pivot, Vector2 pos,
             Vector2 size, int fontSize, TextAnchor align, Color color,
-            FontStyle style = FontStyle.Normal, Face face = Face.Regular)
+            FontStyle style = FontStyle.Normal, Face face = Face.Regular,
+            FontWeight weight = FontWeight.Regular)
         {
             var go = new GameObject(name, typeof(TextMeshProUGUI));
             go.transform.SetParent(parent, false);
@@ -4001,6 +4033,10 @@ namespace SBR.Game
             if (want != null) t.font = want;
             t.fontSize = fontSize * TypeScale;
             t.fontStyle = ToTmpStyle(style);
+            // Set unconditionally, including at Regular, so every slot comes out of the same code
+            // path. A weight that is "whatever TMP defaults to" is not a chosen weight, and this
+            // surface has already paid once for a face nobody chose.
+            t.fontWeight = weight;
             t.alignment = ToTmpAlignment(align);
             t.color = color;
             t.raycastTarget = false;
