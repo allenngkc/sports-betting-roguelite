@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-11, cycle 176.** Batch 32 landed
+**Keeper-era heartbeat stamp: 2026-08-11, cycle 177 (heartbeat).** DD
+re-seated at the batch boundary (263 rows, arithmetic coherent with the
+253+10 added; 1.1 table accurate - first seating needing no correction).
+TV 38+ min into T-1b/T-2 (PlayMode run live in its window). tv-design
+amendments landed 808c371. All quiet otherwise.
+
+*(prior stamp, cycle 176:)* Batch 32 landed
 AND transcribed same-cycle (6b6eb6c + 71f0802, canon through 32): Phase
 T's seven gaps ruled (T72-T78) + C43 law (a migration moves one
 variable). T78's headline: the docket's Thin-rendering inference REFUSED
