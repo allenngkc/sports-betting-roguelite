@@ -5,6 +5,7 @@ using System.Reflection;
 using NUnit.Framework;
 using SBR.Engine;
 using SBR.Game;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -317,7 +318,7 @@ namespace SBR.Tests.PlayMode
             couch.OnInteract(null);
             yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
 
-            Text flavor = FindChildComponent<Text>(screen, "Flavor");
+            TMP_Text flavor = FindChildComponent<TMP_Text>(screen, "Flavor");
             Assert.IsNotNull(flavor, "Flavor text not found - canvas layout changed?");
 
             // Every beat reveal punches the flavor scale to 1.12, then AnimateFlavorPunch decays it
@@ -385,7 +386,7 @@ namespace SBR.Tests.PlayMode
             // See DriveCashOutTween: one displacement is not enough, and the reason is instructive.
             yield return DriveCashOutTween(director, screen);
 
-            Text cashOut = FindChildComponent<Text>(screen, "CashOut");
+            TMP_Text cashOut = FindChildComponent<TMP_Text>(screen, "CashOut");
             Assert.IsNotNull(cashOut, "CashOut text not found - canvas layout changed?");
             // TVS-H02's premise, same reason: freezing a figure that was not moving proves nothing.
             Assert.IsTrue(screen.DebugCashOutAnimating,
@@ -445,7 +446,7 @@ namespace SBR.Tests.PlayMode
             // the beat here runs 1.0 * 0.3 = 0.3s, and the stand below is 1.0s — more than three
             // times over. If the wait advanced at all while standing, the slot would be gone.
             screen.cashOutFloodDuration = 1f;
-            Text figure = FindChildComponent<Text>(screen, "CashOut");
+            TMP_Text figure = FindChildComponent<TMP_Text>(screen, "CashOut");
             Assert.IsNotNull(figure, "CashOut figure not found - canvas layout changed?");
 
             yield return WaitUntil(() => figure.enabled && figure.text.StartsWith("CASHED OUT"),
@@ -508,6 +509,30 @@ namespace SBR.Tests.PlayMode
         }
 
         // ---- helpers ----
+
+        /// <summary>T75-am: `_tBigAmount` owes an assignment and an assertion, not a frame.
+        ///
+        /// <para>The DD's original carve-out asked for that slot to be verified tabular on frames.
+        /// It cannot be — the element renders nothing since both payoff figures moved into the
+        /// cash-out slot (T68-am/T71), so it appears in no capture and never will. T75-am re-cast
+        /// the debt, and this is where it is paid.</para>
+        ///
+        /// <para>`AreSame`, not `AreEqual`: the ruling is that the slot carries the SHARED regular
+        /// asset. A per-slot copy would satisfy any check written against the font's name, pass
+        /// review, and quietly double the atlas.</para></summary>
+        [UnityTest]
+        public IEnumerator BigAmount_CarriesTheSharedRegularFontAsset()
+        {
+            yield return LoadRoom();
+            (_, TvSweatScreen screen, _) = FindTrio();
+
+            Assert.IsNotNull(screen.DebugRegularFont,
+                "the regular TV face did not load — every assertion below would be vacuous");
+            Assert.IsNotNull(screen.DebugBigAmountFont,
+                "T75-am: BigAmount has no font asset assigned at all");
+            Assert.AreSame(screen.DebugRegularFont, screen.DebugBigAmountFont,
+                "T75-am: BigAmount must carry the SHARED regular asset, not an equal-looking copy");
+        }
 
         /// <summary>The run seed the two mid-tween tests pin (C34).
         ///

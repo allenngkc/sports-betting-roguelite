@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using SBR.Engine;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -448,6 +449,18 @@ namespace SBR.Game
         /// _cashOutAnimation is otherwise unobservable from outside the sweat, and this is the exact
         /// condition CanAcceptCashOutNow also refuses.</summary>
         public bool DebugCashOutAnimating => _cashOutTweening;
+        /// <summary>T75-am: the shared regular face, and the face `_tBigAmount` actually holds.
+        ///
+        /// <para>The DD's carve-out originally asked for that slot to be verified tabular ON FRAMES.
+        /// It cannot be: `_tBigAmount` renders nothing — both payoff figures moved into the cash-out
+        /// slot at T68-am/T71 — so it appears in no capture and never will. T75-am re-cast the debt
+        /// as an ASSIGNMENT and an ASSERTION instead, and this is the assertion's surface.</para>
+        ///
+        /// <para>Two references, not two names, so the test compares identity: the slot must carry
+        /// the SHARED asset, not an equal-looking one. A per-slot copy would pass any check written
+        /// against the font's name and would quietly double the atlas.</para></summary>
+        public TMP_FontAsset DebugRegularFont => _font;
+        public TMP_FontAsset DebugBigAmountFont => _tBigAmount != null ? _tBigAmount.font : null;
         /// <summary>Test/debug hook: has a cash-out figure been rendered at least once? This is the
         /// DURABLE precondition behind <see cref="DebugCashOutAnimating"/> — until it is true,
         /// SetCashOutOffer takes its first-time branch and no tween can ever start. A test that
@@ -764,6 +777,22 @@ namespace SBR.Game
         private const int TypeLeg = 19;
         private const int TypeEyebrow = 15;
 
+        /// <summary>The per-face scale factor Phase T reserves for preserving RENDERED size across
+        /// the renderer swap, and the one place it would be applied.
+        ///
+        /// <para>It is 1.0 because the two renderers denote the same thing by <c>fontSize</c>: UGUI
+        /// rasterises the face at that em size in canvas units, and TMP scales glyph metrics stored
+        /// at the asset's sampling size by <c>fontSize / faceInfo.pointSize</c>, which lands on the
+        /// same em. So the sizes above carry across untouched and this constant changes nothing
+        /// today.</para>
+        ///
+        /// <para>It exists named and at 1.0 rather than absent because "the sizes are the same
+        /// number" and "the type renders at the same size" are different claims, and only the
+        /// before/after pair can settle the second. If the pair shows drift, the correction belongs
+        /// here — one place, one diff — and not spread across the 22 call sites that would each look
+        /// like a design change.</para></summary>
+        private const float TypeScale = 1f;
+
         /// <summary>Unity lays one line of <c>Text</c> out in roughly this multiple of its
         /// fontSize. Used to budget the leg row's stacked lines against the FIXED row height.
         /// Deliberately generous, and pinned by a test rather than trusted — a knife-edge fit here
@@ -822,13 +851,15 @@ namespace SBR.Game
         // progress, the cash-out band, risk/pays figures, team names); regular carries the market
         // eyebrow, the state chip, the event line and the SCORE figures.
         //
-        // NOT YET WIRED: _fontCond is loaded but MakeText still assigns _font to every slot, so the
-        // whole surface renders regular. Tracked as TV-19 in docs/tv-sweat-refinement/C14-gap-list.md.
-        // Stated here rather than left as a comment that describes an intention as if it were the
-        // code — the audit caught an earlier version of this comment claiming call sites that did
-        // not exist.
-        private Font _font;       // --font-tv           : "Encode Sans"
-        private Font _fontCond;   // --font-tv-cond      : "Encode Sans Condensed"
+        // WIRED, and this note is the correction of its predecessor. The comment that stood here
+        // said "_fontCond is loaded but MakeText still assigns _font to every slot, so the whole
+        // surface renders regular". That stopped being true at `c53d7ca` (2026-08-02), one day
+        // after it was written: MakeText resolves the face and six call sites pass Face.Condensed.
+        // Its own last line warned that an earlier version had claimed call sites that did not
+        // exist; it then spent nine days denying call sites that did. Corrected in the commit that
+        // makes it false a second time, which is the only moment anyone reliably notices.
+        private TMP_FontAsset _font;       // --font-tv        : Encode Sans, Regular 400 / wdth 100
+        private TMP_FontAsset _fontCond;   // --font-tv-cond   : Encode Sans, Condensed Regular 400
 
         /// <summary>Which canon face a text slot is set in. Named rather than a bool so a call site
         /// reads as the component reference does, and so adding a third face later is not a
@@ -842,14 +873,14 @@ namespace SBR.Game
         // and because if the accepted treatment is revisited on frames this is the element it would
         // come back to. **Named here in the same commit that orphaned it**, which is the difference
         // between a flagged consequence and the kind of corpse `_wonFlood` became.
-        private Text _tMatchup, _tLeg, _tClock, _tFlavor, _tCashOut, _tChrome, _tAttract, _tBigAmount, _tConsolation;
-        private Text _tTicketHeader, _tRiskPays, _tInterventionPrompt, _tTakeoverTitle, _tTakeoverSub, _tSubtitle;
+        private TMP_Text _tMatchup, _tLeg, _tClock, _tFlavor, _tCashOut, _tChrome, _tAttract, _tBigAmount, _tConsolation;
+        private TMP_Text _tTicketHeader, _tRiskPays, _tInterventionPrompt, _tTakeoverTitle, _tTakeoverSub, _tSubtitle;
         // TV-03/TV-04: the cash-out slot is three things, not one — an actionable FIELD, the money
         // figure, and a status word at label scale beside it.
         private Image _cashOutField;
-        private Text _tCashOutStatus;
+        private TMP_Text _tCashOutStatus;
         // C3: the score's momentary L4 punch overlay — see BuildScoreBug and OnGoalPlayed.
-        private Text _tScoreFlash;
+        private TMP_Text _tScoreFlash;
         // T40 ENFORCED (batch 27): `_wonFlood` and `_goldFlood` are GONE — deleted, not z-ordered and
         // not dimmed (C10). Both were `MakeStretchImage(root, …)`: full-SCREEN washes created after
         // every zone, so they painted over the ticket column, the scorebug, the stage, the event
@@ -900,11 +931,11 @@ namespace SBR.Game
             // wrong twice over: the price must carry --tv-context rather than inherit the row's
             // state hue, and the state belongs in a right-aligned chip, not in front of the fact.
             // The statement is what the row is FOR; it should start at the row's left edge.
-            public Text Line;      // compact: the authored statement
-            public Text Price;     // compact: the price, --tv-context, never the state hue
-            public Text State;     // compact: the right-aligned state chip
-            public Text Need;      // live: the authored §6 statement, printed verbatim
-            public Text Progress;  // live: the revealed causal progress line
+            public TMP_Text Line;      // compact: the authored statement
+            public TMP_Text Price;     // compact: the price, --tv-context, never the state hue
+            public TMP_Text State;     // compact: the right-aligned state chip
+            public TMP_Text Need;      // live: the authored §6 statement, printed verbatim
+            public TMP_Text Progress;  // live: the revealed causal progress line
             public Image Strike;      // §8 VOID only: the struck-through rule
             public Image Extinguish;  // TV-21: a LOST row's unlit background, --tv-extinguished
             public bool IsLive;
@@ -2784,7 +2815,7 @@ namespace SBR.Game
         /// miss takes the fallback, which is authored to read as a whole sentence, and never a
         /// sentence with its end cut off. <see cref="FitToColumn"/> remains only as the structural
         /// guard against broken glyphs and should not be reached by shipped copy.</para></summary>
-        private static string FitOrFallback(Text target, string primary, string fallback)
+        private static string FitOrFallback(TMP_Text target, string primary, string fallback)
         {
             if (Fits(target, primary)) return primary;
             if (!string.IsNullOrEmpty(fallback) && Fits(target, fallback)) return fallback;
@@ -2805,26 +2836,31 @@ namespace SBR.Game
         /// <summary>Does this string fit its element's measured column? One measurement, shared by
         /// the fallback chooser and the truncation backstop, so the two can never disagree about
         /// what "fits" means.</summary>
-        private static bool Fits(Text target, string s)
+        private static bool Fits(TMP_Text target, string s)
         {
             if (target == null || string.IsNullOrEmpty(s)) return true;
             float max = target.rectTransform.rect.width;
             if (max <= 0f) return true; // no layout yet — do not judge against a width of zero
-            TextGenerationSettings settings = target.GetGenerationSettings(Vector2.zero);
-            return target.cachedTextGeneratorForLayout.GetPreferredWidth(s, settings)
-                   / target.pixelsPerUnit <= max;
+            // TMP's GetPreferredValues returns canvas units directly, so the UGUI form's division by
+            // pixelsPerUnit has no counterpart here — carrying it across would have shrunk every
+            // measured width by the canvas scale and made everything "fit".
+            return PreferredWidth(target, s) <= max;
         }
 
-        private static string FitToColumn(Text target, string s)
+        /// <summary>One preferred-width measurement, shared by the fallback chooser and the
+        /// truncation backstop so the two can never disagree about what "fits" means — the property
+        /// the UGUI version had by sharing one TextGenerator, kept by sharing one call.</summary>
+        private static float PreferredWidth(TMP_Text target, string s)
+            => target.GetPreferredValues(s, 0f, 0f).x;
+
+        private static string FitToColumn(TMP_Text target, string s)
         {
             if (target == null || string.IsNullOrEmpty(s)) return s;
             float max = target.rectTransform.rect.width;
             if (max <= 0f) return s; // no layout yet — never truncate against a width of zero
 
-            TextGenerationSettings settings = target.GetGenerationSettings(Vector2.zero);
-            TextGenerator gen = target.cachedTextGeneratorForLayout;
             string cur = s;
-            while (gen.GetPreferredWidth(cur, settings) / target.pixelsPerUnit > max)
+            while (PreferredWidth(target, cur) > max)
             {
                 int cut = cur.LastIndexOf(' ');
                 if (cut <= 0) return cur; // one long word: clip it, do not split it
@@ -3668,24 +3704,24 @@ namespace SBR.Game
                 const float chipW = 38f, priceW = 52f, gap = 8f;
                 float stmtW = lineW - chipW - priceW - gap * 2f;
 
-                Text line = MakeText(root, $"LegRowLine{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                TMP_Text line = MakeText(root, $"LegRowLine{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     AnchorTopLeft(row, 8f, 4f), new Vector2(stmtW, compactH), TypeEyebrow,
                     TextAnchor.UpperLeft, structureGrey, FontStyle.Bold, Face.Condensed); // TvLegRow.jsx:57-61
-                line.horizontalOverflow = HorizontalWrapMode.Wrap; // so the statement clips, not sprawls
+                line.enableWordWrapping = true; // so the statement clips, not sprawls (was Wrap)
 
-                Text price = MakeText(root, $"LegRowPrice{i}", new Vector2(0f, 1f), new Vector2(1f, 1f),
+                TMP_Text price = MakeText(root, $"LegRowPrice{i}", new Vector2(0f, 1f), new Vector2(1f, 1f),
                     AnchorTopLeft(row, 8f + stmtW + gap + priceW, 4f), new Vector2(priceW, compactH),
                     TypeEyebrow, TextAnchor.UpperRight, AtTier(contextGrey, TierL2),
                     FontStyle.Normal, Face.Condensed); // TvLegRow.jsx:62 — --tv-context, its own tier
 
-                Text state = MakeText(root, $"LegRowState{i}", new Vector2(0f, 1f), new Vector2(1f, 1f),
+                TMP_Text state = MakeText(root, $"LegRowState{i}", new Vector2(0f, 1f), new Vector2(1f, 1f),
                     AnchorTopLeft(row, 8f + lineW, 4f), new Vector2(chipW, compactH), TypeEyebrow,
                     TextAnchor.UpperRight, structureGrey); // TvLegRow.jsx:27-31 — regular face, min 38px
                 // Live form: the authored NEED statement, then the revealed progress beneath it.
-                Text need = MakeText(root, $"LegRowNeed{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                TMP_Text need = MakeText(root, $"LegRowNeed{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     AnchorTopLeft(row, 8f, 4f), new Vector2(lineW, needH), TypeNeed,
                     TextAnchor.UpperLeft, flavorColor, FontStyle.Bold, Face.Condensed); // inherits TvLegRow.jsx:35
-                Text progress = MakeText(root, $"LegRowProgress{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                TMP_Text progress = MakeText(root, $"LegRowProgress{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     AnchorTopLeft(row, 8f, 4f + needH), new Vector2(lineW, progressH), TypeProgress,
                     TextAnchor.UpperLeft, flavorColor, FontStyle.Normal, Face.Condensed); // TvLegRow.jsx:82
                 // T20/3D — §8's VOID treatment is "L2 cyan, STRUCK THROUGH on the matrix". Colour
@@ -3939,25 +3975,41 @@ namespace SBR.Game
         private static Vector2 AnchorCenter(Rect zone)
             => new Vector2(zone.x + zone.width * 0.5f, -(zone.y + zone.height * 0.5f));
 
-        private Text MakeText(Transform parent, string name, Vector2 anchor, Vector2 pivot, Vector2 pos,
+        /// <summary>Phase T: this builds a <see cref="TextMeshProUGUI"/>. The SIGNATURE is unchanged
+        /// on purpose — <c>TextAnchor</c> and <c>FontStyle</c> stay in it and are mapped here, so the
+        /// migration is a helper change and all 22 call sites keep their authored intent in the same
+        /// vocabulary the rest of the file uses. The laptop's own migration kept its signature for
+        /// the same reason (<c>LaptopOs.ToTmpAlignment</c>'s note).
+        ///
+        /// <para><b>C43 — one variable.</b> Only the renderer moves here. Sizes are carried across
+        /// unchanged, and <c>FontStyle.Bold</c> maps to <c>FontStyles.Bold</c>, which is TMP's
+        /// material-level faux bold and therefore the same synthesised weight UGUI was drawing. The
+        /// real Condensed Bold 700 that T73 rules, and the italic T77 strikes, are T-4's — each with
+        /// its own attribution. Landing them here would put three changes in one before/after pair
+        /// and the pair would stop being an instrument.</para></summary>
+        private TMP_Text MakeText(Transform parent, string name, Vector2 anchor, Vector2 pivot, Vector2 pos,
             Vector2 size, int fontSize, TextAnchor align, Color color,
             FontStyle style = FontStyle.Normal, Face face = Face.Regular)
         {
-            var go = new GameObject(name, typeof(Text));
+            var go = new GameObject(name, typeof(TextMeshProUGUI));
             go.transform.SetParent(parent, false);
-            var t = go.GetComponent<Text>();
+            var t = go.GetComponent<TextMeshProUGUI>();
             // TV-19: canon assigns the face per slot (tokens/fonts.css), read off the component
             // references one at a time — it is not a stylistic default. Falls back to the regular
             // face if the condensed asset is missing, rather than rendering nothing.
-            Font want = face == Face.Condensed && _fontCond != null ? _fontCond : _font;
+            TMP_FontAsset want = face == Face.Condensed && _fontCond != null ? _fontCond : _font;
             if (want != null) t.font = want;
-            t.fontSize = fontSize;
-            t.fontStyle = style;
-            t.alignment = align;
+            t.fontSize = fontSize * TypeScale;
+            t.fontStyle = ToTmpStyle(style);
+            t.alignment = ToTmpAlignment(align);
             t.color = color;
             t.raycastTarget = false;
-            t.horizontalOverflow = HorizontalWrapMode.Overflow;
-            t.verticalOverflow = VerticalWrapMode.Overflow;
+            // The pair of overflow modes UGUI's HorizontalWrapMode.Overflow + VerticalWrapMode.Overflow
+            // expressed: never wrap, never clip. T46's containment is done by the zone panels' own
+            // clipping, not by the text component, and §5.1's fixed slots depend on a string never
+            // reflowing into a second line.
+            t.enableWordWrapping = false;
+            t.overflowMode = TextOverflowModes.Overflow;
             var rt = t.rectTransform;
             rt.anchorMin = rt.anchorMax = anchor;
             rt.pivot = pivot;
@@ -3965,6 +4017,34 @@ namespace SBR.Game
             rt.anchoredPosition = pos;
             return t;
         }
+
+        /// <summary>Mirrors <c>LaptopOs.ToTmpAlignment</c> exactly. Duplicated rather than shared
+        /// because that one is private to the laptop's class, and reaching across surfaces to
+        /// consolidate it would be a second change inside a migration that is allowed one. Worth
+        /// hoisting into a shared UI helper once both surfaces are on TMP; noted, not done.</summary>
+        private static TextAlignmentOptions ToTmpAlignment(TextAnchor align) => align switch
+        {
+            TextAnchor.UpperLeft => TextAlignmentOptions.TopLeft,
+            TextAnchor.UpperCenter => TextAlignmentOptions.Top,
+            TextAnchor.UpperRight => TextAlignmentOptions.TopRight,
+            TextAnchor.MiddleLeft => TextAlignmentOptions.Left,
+            TextAnchor.MiddleCenter => TextAlignmentOptions.Center,
+            TextAnchor.MiddleRight => TextAlignmentOptions.Right,
+            TextAnchor.LowerLeft => TextAlignmentOptions.BottomLeft,
+            TextAnchor.LowerCenter => TextAlignmentOptions.Bottom,
+            _ => TextAlignmentOptions.BottomRight
+        };
+
+        /// <summary>UGUI's FontStyle to TMP's FontStyles. Both bold and italic here are TMP's
+        /// synthesised forms, which is what UGUI was drawing — preserving the render is the whole
+        /// point of this step (C43).</summary>
+        private static FontStyles ToTmpStyle(FontStyle style) => style switch
+        {
+            FontStyle.Bold => FontStyles.Bold,
+            FontStyle.Italic => FontStyles.Italic,
+            FontStyle.BoldAndItalic => FontStyles.Bold | FontStyles.Italic,
+            _ => FontStyles.Normal
+        };
 
         /// <summary>T46 (layout defect, DD 2026-08-02): makes a zone panel the OWNER of its content
         /// rather than a backdrop its content happens to sit beside, and clips it to its own region.
@@ -4165,10 +4245,13 @@ namespace SBR.Game
         /// should degrade to readable-but-wrong, never to an invisible surface. The fallback is
         /// logged loudly because silently rendering in the wrong face is exactly the failure this
         /// change exists to end.</para></summary>
-        private static Font LoadFont() => LoadFace("Tv/Fonts/EncodeSans", "--font-tv");
+        /// <summary>Phase T: the TMP asset, not the TTF. `EncodeSans SDF` is the Regular 400 / wdth
+        /// 100 NAMED INSTANCE, resolved by style name at generation time (see TvTmpFontAssets) —
+        /// never faceIndex 0, whose axis defaults on this family are wght 100 / wdth 75.</summary>
+        private static TMP_FontAsset LoadFont() => LoadFace("Tv/Fonts/EncodeSans SDF", "--font-tv");
 
-        private static Font LoadFontCondensed()
-            => LoadFace("Tv/Fonts/EncodeSansCondensed", "--font-tv-cond");
+        private static TMP_FontAsset LoadFontCondensed()
+            => LoadFace("Tv/Fonts/EncodeSansCondensed SDF", "--font-tv-cond");
 
         /// <summary>Resolves one of canon's two TV faces (`tokens/fonts.css`). Falls back to the
         /// built-in face rather than to null: a missing font asset should degrade to
@@ -4178,19 +4261,20 @@ namespace SBR.Game
         /// surface was derived against Encode Sans — T20's whole re-derivation is a metrics
         /// argument — so copy fit and the type scale are NOT valid in the fallback. Silently
         /// rendering in the wrong face is the failure this exists to end.</para></summary>
-        private static Font LoadFace(string resourcePath, string token)
+        private static TMP_FontAsset LoadFace(string resourcePath, string token)
         {
-            Font face = Resources.Load<Font>(resourcePath);
+            TMP_FontAsset face = Resources.Load<TMP_FontAsset>(resourcePath);
             if (face != null) return face;
 
             Debug.LogWarning($"[TvSweatScreen] {token} not found at Resources/{resourcePath} — falling " +
-                "back to the built-in face. Copy fit and the T20 type scale are NOT valid in the fallback.");
-            try { return Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); }
-            catch
-            {
-                Debug.LogWarning("[TvSweatScreen] built-in font not found either; text will not render.");
-                return null;
-            }
+                "back to TMP's default face. Copy fit and the T20 type scale are NOT valid in the fallback.");
+            // TMP's default rather than LegacyRuntime.ttf: the components are TMP now, and handing
+            // one a null font asset renders nothing at all. Degrade to readable-but-wrong, never to
+            // an invisible surface — the same rule the UGUI version stated, in the new currency.
+            TMP_FontAsset fallback = TMP_Settings.defaultFontAsset;
+            if (fallback == null)
+                Debug.LogWarning("[TvSweatScreen] TMP has no default font asset either; text will not render.");
+            return fallback;
         }
     }
 }

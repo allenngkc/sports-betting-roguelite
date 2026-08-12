@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using SBR.Engine;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -32,7 +33,7 @@ namespace SBR.Game
         private const float LabelWidth = 96f;
         private const float LabelGap = 10f;
 
-        private Text _label;
+        private TMP_Text _label;
 
         private readonly List<Row> _rows = new List<Row>();
         private RectTransform _rect;
@@ -98,7 +99,7 @@ namespace SBR.Game
         /// (`--font-tv`) for the MOMENTUM label; the tape holds no font policy of its own, so the
         /// caller that already resolves the surface's two faces passes the right one in.</summary>
         public static MomentumTape Build(Transform parent, Vector2 position, Vector2 size,
-            Font labelFont = null)
+            TMP_FontAsset labelFont = null)
         {
             var go = new GameObject("MomentumTape", typeof(RectTransform), typeof(MomentumTape));
             go.transform.SetParent(parent, false);
@@ -121,16 +122,16 @@ namespace SBR.Game
             // regular (TvMomentumTape.jsx:23) and only the dense numeric slots condensed.
             if (labelFont != null)
             {
-                var labelGo = new GameObject("MomentumLabel", typeof(RectTransform), typeof(Text));
+                var labelGo = new GameObject("MomentumLabel", typeof(RectTransform), typeof(TextMeshProUGUI));
                 labelGo.transform.SetParent(tape.transform, false);
-                var label = labelGo.GetComponent<Text>();
+                var label = labelGo.GetComponent<TextMeshProUGUI>();
                 label.font = labelFont;
                 label.fontSize = LabelSize;
                 label.text = "MOMENTUM";
                 label.color = Neutral(NeutralContext, TierL2);
-                label.alignment = TextAnchor.MiddleLeft;
+                label.alignment = TextAlignmentOptions.Left;
                 label.raycastTarget = false;
-                label.horizontalOverflow = HorizontalWrapMode.Overflow;
+                label.enableWordWrapping = false; // was HorizontalWrapMode.Overflow: never wrap
                 var lrt = label.rectTransform;
                 lrt.anchorMin = lrt.anchorMax = new Vector2(0f, 0.5f);
                 lrt.pivot = new Vector2(1f, 0.5f);           // sits to the LEFT of the bars
