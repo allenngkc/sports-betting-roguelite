@@ -127,6 +127,10 @@ namespace SBR.Game
                 var label = labelGo.GetComponent<TextMeshProUGUI>();
                 label.font = labelFont;
                 label.fontSize = LabelSize;
+                // --tv-track-label, .16em, in TMP's hundredths of an em (TvMomentumTape.jsx:26).
+                // Reachable for the first time now the label is a TMP component; UI.Text had no
+                // tracking at all, so this read at 0 for its whole life.
+                label.characterSpacing = 16f;
                 label.text = "MOMENTUM";
                 label.color = Neutral(NeutralContext, TierL2);
                 label.alignment = TextAlignmentOptions.Left;

@@ -89,6 +89,58 @@ namespace SBR.EditorTools
             }
         }
 
+        /// <summary>Are this surface's faces TABULAR BY CONSTRUCTION? Owning doc §4 makes tabular
+        /// figures mandatory — "scores, clocks, money and counts all change in place; non-tabular
+        /// figures make the whole surface twitch on every tick" — and that cannot be satisfied by
+        /// turning a feature on. TMP's OTL_FeatureTag declares only kern, liga, mark and mkmk, so
+        /// there is no `tnum` to enable; the laptop established this at S29 and closed it by putting
+        /// figures on a face whose digits are equal-advance to begin with.
+        ///
+        /// <para>So the question is a measurement, and this is it: ten of each digit, per face, per
+        /// size the surface actually uses for numbers. A tabular face returns one width for all ten.
+        /// The spread is the jitter, in canvas px, that a ten-digit figure would show as its digits
+        /// change — which is the defect §4 names, stated in the unit it is seen in.</para></summary>
+        [MenuItem("SBR/TV/Probe digit advances (tabular check)")]
+        public static void ProbeDigits()
+        {
+            var faces = new (string label, string path, int[] sizes)[]
+            {
+                ("REGULAR   (score, clock)", "Tv/Fonts/EncodeSans SDF", new[] { 36, 28 }),
+                ("REG BOLD  (score, clock)", "Tv/Fonts/EncodeSans Bold SDF", new[] { 36, 28 }),
+                ("CONDENSED (money, count)", "Tv/Fonts/EncodeSansCondensed SDF", new[] { 29, 24, 19 }),
+                ("COND BOLD (money, count)", "Tv/Fonts/EncodeSansCondensed Bold SDF", new[] { 29, 24, 19 }),
+            };
+
+            var canvasGo = new GameObject("DigitProbeCanvas", typeof(Canvas));
+            try
+            {
+                foreach ((string label, string path, int[] sizes) in faces)
+                {
+                    TMP_FontAsset f = Resources.Load<TMP_FontAsset>(path);
+                    if (f == null) { Debug.Log($"[TvDigitProbe] {label}: MISSING at {path}"); continue; }
+                    foreach (int size in sizes)
+                    {
+                        float min = float.MaxValue, max = float.MinValue;
+                        string widest = "", narrowest = "";
+                        for (char d = '0'; d <= '9'; d++)
+                        {
+                            float w = TmpWidth(canvasGo.transform, f, size, new string(d, 10));
+                            if (w < min) { min = w; narrowest = d.ToString(); }
+                            if (w > max) { max = w; widest = d.ToString(); }
+                        }
+                        float spread = max - min;
+                        Debug.Log($"[TvDigitProbe] {label} {size,3}pt  ten-digit width {min:0.00}-{max:0.00}px  " +
+                                  $"SPREAD {spread:0.0000}px  " +
+                                  $"{(spread < 0.01f ? "TABULAR by construction" : $"PROPORTIONAL (widest '{widest}', narrowest '{narrowest}')")}");
+                    }
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(canvasGo);
+            }
+        }
+
         private static float UguiWidth(Transform parent, Font font, int size, string content)
         {
             var go = new GameObject("u", typeof(Text));

@@ -797,6 +797,33 @@ namespace SBR.Game
         /// for — out of Phase T by C43. Named here, not woken.</summary>
         private const int TypeBigAmount = 96;
 
+        /// <summary>This surface's tracking scale, in **em** — the unit the design system states it
+        /// in. <see cref="MakeText"/> converts to TMP's hundredths-of-an-em internally, so no call
+        /// site has to know TMP's unit. The laptop's LaptopTrack is the same shape for the same
+        /// reason.
+        ///
+        /// <para><b>Reachable for the first time in Phase T.</b> UI.Text could not address tracking
+        /// at all, so every one of these was rendered at 0 until now. That is why they arrive as a
+        /// group rather than one at a time: they were not omitted by choice, they were unbuildable.</para>
+        ///
+        /// <para>Values are canon's, from <c>tokens/typography.css</c> and the TV kit — NOT the
+        /// owning doc, which has no tracking clause. Named so the register can be pointed at a
+        /// symbol, and so a slot and any future measurement of it cannot be handed different
+        /// numbers.</para></summary>
+        private static class TvTrack
+        {
+            /// <summary><c>--tv-track-name</c>. The authored facts: the compact statement, NEED, the
+            /// progress line, the cash-out figure, the event strip.</summary>
+            public const float Name = 0.02f;
+            /// <summary><c>--tv-track-label</c>. The words ABOUT a fact rather than the fact: the
+            /// cash-out status word, the momentum label, the ticket header.</summary>
+            public const float Label = 0.16f;
+            /// <summary>TvLegRow's `meta` and `stateChip` literal — the row's own chrome, the market
+            /// eyebrow, the price and the state chip. Stated as a literal in the kit rather than a
+            /// token; carried here as one so the three slots that share it cannot drift apart.</summary>
+            public const float Meta = 0.10f;
+        }
+
         /// <summary>The per-face scale factor Phase T reserves for preserving RENDERED size across
         /// the renderer swap, and the one place it would be applied.
         ///
@@ -3697,7 +3724,7 @@ namespace SBR.Game
             _tTicketHeader = MakeText(root, "TicketHeader", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 AnchorTopLeft(grid.TicketHeader, 8f, 4f),
                 new Vector2(grid.TicketHeader.width - 16f, grid.TicketHeader.height - 4f), TypeEyebrow,
-                TextAnchor.UpperLeft, structureGrey);
+                TextAnchor.UpperLeft, structureGrey, tracking: TvTrack.Label); // tv.card.html:20
 
             _legRow = new LegRowUi[TicketRowSlots];
             // T20 row stack, budgeted from the canon type scale rather than hand-placed. The two
@@ -3730,24 +3757,27 @@ namespace SBR.Game
 
                 TMP_Text line = MakeText(root, $"LegRowLine{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     AnchorTopLeft(row, 8f, 4f), new Vector2(stmtW, compactH), TypeEyebrow,
-                    TextAnchor.UpperLeft, structureGrey, FontStyle.Normal, Face.Condensed, FontWeight.Bold); // TvLegRow.jsx:57-61
+                    TextAnchor.UpperLeft, structureGrey, FontStyle.Normal, Face.Condensed,
+                    FontWeight.Bold, TvTrack.Name); // TvLegRow.jsx:57-61
                 line.enableWordWrapping = true; // so the statement clips, not sprawls (was Wrap)
 
                 TMP_Text price = MakeText(root, $"LegRowPrice{i}", new Vector2(0f, 1f), new Vector2(1f, 1f),
                     AnchorTopLeft(row, 8f + stmtW + gap + priceW, 4f), new Vector2(priceW, compactH),
                     TypeEyebrow, TextAnchor.UpperRight, AtTier(contextGrey, TierL2),
-                    FontStyle.Normal, Face.Condensed); // TvLegRow.jsx:62 — --tv-context, its own tier
+                    FontStyle.Normal, Face.Condensed, tracking: TvTrack.Meta); // TvLegRow.jsx:62 — --tv-context, its own tier
 
                 TMP_Text state = MakeText(root, $"LegRowState{i}", new Vector2(0f, 1f), new Vector2(1f, 1f),
                     AnchorTopLeft(row, 8f + lineW, 4f), new Vector2(chipW, compactH), TypeEyebrow,
-                    TextAnchor.UpperRight, structureGrey); // TvLegRow.jsx:27-31 — regular face, min 38px
+                    TextAnchor.UpperRight, structureGrey, tracking: TvTrack.Meta); // TvLegRow.jsx:27-31 — regular face, min 38px
                 // Live form: the authored NEED statement, then the revealed progress beneath it.
                 TMP_Text need = MakeText(root, $"LegRowNeed{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     AnchorTopLeft(row, 8f, 4f), new Vector2(lineW, needH), TypeNeed,
-                    TextAnchor.UpperLeft, flavorColor, FontStyle.Normal, Face.Condensed, FontWeight.Bold); // inherits TvLegRow.jsx:35
+                    TextAnchor.UpperLeft, flavorColor, FontStyle.Normal, Face.Condensed,
+                    FontWeight.Bold, TvTrack.Name); // inherits TvLegRow.jsx:35, tracked per :78
                 TMP_Text progress = MakeText(root, $"LegRowProgress{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     AnchorTopLeft(row, 8f, 4f + needH), new Vector2(lineW, progressH), TypeProgress,
-                    TextAnchor.UpperLeft, flavorColor, FontStyle.Normal, Face.Condensed); // TvLegRow.jsx:82
+                    TextAnchor.UpperLeft, flavorColor, FontStyle.Normal, Face.Condensed,
+                    tracking: TvTrack.Name); // TvLegRow.jsx:82 — the .02em literal
                 // T20/3D — §8's VOID treatment is "L2 cyan, STRUCK THROUGH on the matrix". Colour
                 // alone was carrying the whole state before; this is the strike. A fixed-width rule
                 // across the compact line, never measured from the text: §6 forbids geometry
@@ -3855,7 +3885,8 @@ namespace SBR.Game
             // site elsewhere in this file.
             _tFlavor = MakeText(esRoot, "Flavor", new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
                 AnchorCenter(es), new Vector2(es.width - 24f, es.height - 8f),
-                TypeEvent, TextAnchor.MiddleCenter, flavorColor, FontStyle.Bold);
+                TypeEvent, TextAnchor.MiddleCenter, flavorColor, FontStyle.Bold,
+                tracking: TvTrack.Name); // TvEventStrip.jsx:12
         }
 
         private void BuildCashOutZone(Transform root, LayoutGrid grid)
@@ -3906,13 +3937,15 @@ namespace SBR.Game
                 AnchorCenter(grid.CashOut) + new Vector2(-grid.CashOut.width * 0.5f + 12f, 0f),
                 new Vector2(grid.CashOut.width - 24f, grid.CashOut.height - 8f), TypeCashOut,
                 TextAnchor.MiddleLeft, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Normal,
-                Face.Condensed, FontWeight.Bold); // TvCashOutSlot.jsx:33 · T73: real Condensed Bold 700
+                Face.Condensed, FontWeight.Bold,
+                TvTrack.Name); // TvCashOutSlot.jsx:33/37 · T73: real Condensed Bold 700
             _tCashOut.enabled = false;
 
             _tCashOutStatus = MakeText(root, "CashOutStatus", new Vector2(0f, 1f), new Vector2(1f, 0.5f),
                 AnchorCenter(grid.CashOut) + new Vector2(grid.CashOut.width * 0.5f - 12f, 0f),
                 new Vector2(grid.CashOut.width - 24f, Mathf.Ceil(TypeEyebrow * LineBox)), TypeEyebrow,
-                TextAnchor.MiddleRight, AtTier(contextGrey, TierL2));
+                TextAnchor.MiddleRight, AtTier(contextGrey, TierL2),
+                tracking: TvTrack.Label); // TvCashOutSlot.jsx:44 — the status word, not the figure
             _tCashOutStatus.enabled = false;
             // T63: ONE material, both elements of the slot. The boost used to reach only the money
             // figure, so `RequestL4(HdrFocus.CashOut)` moved a number and left the field it sits on
@@ -4021,7 +4054,7 @@ namespace SBR.Game
         private TMP_Text MakeText(Transform parent, string name, Vector2 anchor, Vector2 pivot, Vector2 pos,
             Vector2 size, int fontSize, TextAnchor align, Color color,
             FontStyle style = FontStyle.Normal, Face face = Face.Regular,
-            FontWeight weight = FontWeight.Regular)
+            FontWeight weight = FontWeight.Regular, float tracking = 0f)
         {
             var go = new GameObject(name, typeof(TextMeshProUGUI));
             go.transform.SetParent(parent, false);
@@ -4037,6 +4070,11 @@ namespace SBR.Game
             // path. A weight that is "whatever TMP defaults to" is not a chosen weight, and this
             // surface has already paid once for a face nobody chose.
             t.fontWeight = weight;
+            // em -> TMP's hundredths of an em, converted here so no call site knows TMP's unit.
+            // Fits and FitToColumn measure through GetPreferredValues on the component itself, so
+            // they pick this up automatically — a slot cannot render with tracking and measure
+            // without it, which is the failure the laptop had to add a term to MeasureWidth to avoid.
+            t.characterSpacing = tracking * 100f;
             t.alignment = ToTmpAlignment(align);
             t.color = color;
             t.raycastTarget = false;
