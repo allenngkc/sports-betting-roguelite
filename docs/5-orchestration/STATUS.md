@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-11, cycle 182.** The V6 arc
+**Keeper-era heartbeat stamp: 2026-08-11, cycle 183 — T-3 UNHELD.**
+Batch 35 canon (5546e8f): T81 rules the migration LANDS THE CANON FACE -
+renderer+face are one variable on this surface, option 1 was never the
+conservative arm; C43 applied, not bent. G1-am: fit grant void,
+re-certifies on the after-set (re-measurement, not re-authoring). T78-am:
+the DD softened its own refusal argument under 1.5. Second Phone-table
+placement fix (C43's founding defect recurring - G1/C25/C26 resited). TV
+resuming T-3 with the canon face; DD onto T65 then V6. Freeze holds.
+
+*(prior stamp, cycle 182:)* The V6 arc
 concluded and merged (9ab2cfe): gate computes HSV, band references were
 Lab-derived, verdicts NEAR-INVERTED for the band's question - every
 historical V6 in-band verdict suspect; room's conversion recommendation
