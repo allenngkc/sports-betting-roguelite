@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-11, cycle 181.** C43's first real
+**Keeper-era heartbeat stamp: 2026-08-11, cycle 182.** The V6 arc
+concluded and merged (9ab2cfe): gate computes HSV, band references were
+Lab-derived, verdicts NEAR-INVERTED for the band's question - every
+historical V6 in-band verdict suspect; room's conversion recommendation
+docketed to the DD (third in queue). DD deep in its three-item queue
+(collision ruling first, T-3 held on it; then T65 value; then V6). Room
+converged clean-holding; TV holding with the parity probe preserved.
+Freeze holds.
+
+*(prior stamp, cycle 181:)* C43's first real
 collision routed to the DD: the legacy face was never canon-correct, so
 renderer-only migration means shipping a knowingly-wrong face through a
 shot set (option 1) vs renderer+face as one coarser variable (option 2,
