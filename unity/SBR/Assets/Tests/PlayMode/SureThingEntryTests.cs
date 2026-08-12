@@ -757,17 +757,40 @@ namespace SBR.Tests.PlayMode
             // it also fails if it shrinks. A silent improvement is not a win here — it means someone
             // changed the thing nobody has identified, and the register entry must be closed by
             // whoever did it rather than quietly going green.
-            const float signedOverrunPx = 2.6f;
+            // RE-SOURCED 2026-08-08 against the current build, per T24-am: a measurement taken
+            // before the production face is stale, and this pin was set when the stake figure was
+            // 16px roman. M-04 lands it at the kit's `--st-size-stake` 26px condensed, which is a
+            // RULED size, not a drift — so the number moves and the reason is written here rather
+            // than the figure being shrunk to protect the old pin. Allen, via the orchestrator:
+            // re-source at the call site, never shrink a figure to fit.
+            //
+            // The pin is now a SUM of two parts, and they are not the same kind of thing:
+            //
+            //   2.600px  UN-OWNED  — S51's original excursion, still unexplained, still expiring
+            //                        when its owner is identified (then FIXED, not re-signed).
+            //   1.963px  OWNED     — M-04's figure growing 16px → 26px. Measured, attributable,
+            //                        and the honest price of 1:1 on this row.
+            //   ------
+            //   4.563px  measured on the frame at 20260809-002525-948.
+            //
+            // Recording the split is the point. A single bigger number would read as "the mystery
+            // grew", and it did not — the mystery is the same 2.6px it always was, now carrying a
+            // known, ruled cost on top of it. Whoever closes S51 subtracts 2.6 from this pin, not
+            // all of it.
+            const float signedOverrunPx = 4.56f;
             const float signedOverrunTolerancePx = 0.15f;
             float overrunPx = -SportsbookApp.MarginFlowBudget - flowBottom;
             Assert.AreEqual(signedOverrunPx, overrunPx, signedOverrunTolerancePx,
                 $"the margin flow's overrun moved: measured {overrunPx:F2}px against the signed "
-                + $"{signedOverrunPx:F1}px (S51). Lowest flow element {flowBottom:F1}px, budget "
+                + $"{signedOverrunPx:F2}px (S51). Lowest flow element {flowBottom:F1}px, budget "
                 + $"-{SportsbookApp.MarginFlowBudget:F0}px, action band reserves "
-                + $"{SportsbookApp.ActionBandReservedHeight:F0}px. If this SHRANK, the 2.6px owner "
-                + "has been found — fix it and close S51 rather than re-signing. If it GREW, "
-                + "something entered the margin flow: staged receipts live in the 700px sheet and "
-                + "must never re-enter it (both-screens kit amendment, DD 2026-08-04).");
+                + $"{SportsbookApp.ActionBandReservedHeight:F0}px. This pin is 2.60px UN-OWNED "
+                + "(S51) + 1.96px OWNED (M-04's 26px stake figure). If it SHRANK by ~2.6px, S51's "
+                + "owner has been found — fix it, close S51, and re-source this to the owned part "
+                + "alone rather than re-signing. If it GREW, something entered the margin flow: "
+                + "staged receipts live in the 700px sheet and must never re-enter it (both-screens "
+                + "kit amendment, DD 2026-08-04). If a RULED size changed again, re-source at this "
+                + "call site with the new split written out — never shrink a figure to fit the pin.");
 
             // T53 — every gate states what it cannot see. THIS ONE CANNOT SEE:
             //  · rendered glyphs. It measures RectTransforms, so text bleeding outside its own rect

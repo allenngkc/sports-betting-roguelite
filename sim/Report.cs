@@ -12,7 +12,9 @@ namespace SBR.Sim;
 public static class Report
 {
     private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
-    private static readonly Dictionary<string, double> Price = BuildPrices();
+    // The relic Price lookup that lived here is gone with ComboTag's price clause (Allen
+    // 2026-08-08). It had exactly one reader, and that reader compared comps prices against a
+    // cash-scale constant. A lookup kept "in case" is how the next such comparison gets written.
     private static readonly Dictionary<string, string> RelicName = BuildNames();
 
     // ---- public entry points ----
@@ -60,6 +62,25 @@ public static class Report
             sb.AppendLine($"| {g.Id} | {g.Description} | {(g.Pass ? "**PASS**" : "**FAIL**")} | {g.Actual} "
                 + $"| {(g.Resolution.Length == 0 ? "—" : g.Resolution)} |");
         sb.AppendLine();
+        // C28/C29: the campaign states how many gates ran, how many passed and how many actually
+        // produced a verdict. A table nobody counted is a count nobody stated, and a gate that
+        // could not separate its reading from its own criterion line is not one of the passes.
+        int total = gates.Gates.Count, passed = 0, adjudicated = gates.AdjudicatedCount;
+        var unadjudicated = new List<string>();
+        foreach (GateData.Gate g in gates.Gates)
+        {
+            if (g.Pass) passed++;
+            if (!g.Adjudicated) unadjudicated.Add(g.Id);
+        }
+        // C28 names every non-verdict rather than leaving a reader to find it — a count that says
+        // "one of these decided nothing" without saying which is a count you cannot act on.
+        sb.AppendLine($"Gates evaluated: **{total}** · passed: **{passed}** · produced a verdict: "
+            + $"**{adjudicated}**"
+            + (unadjudicated.Count == 0
+                ? "."
+                : $" — **{unadjudicated.Count} NOT ADJUDICATED: {string.Join(", ", unadjudicated)}** "
+                  + "(reading within its own resolution of the criterion line; see Resolution)."));
+        sb.AppendLine();
         if (gates.ItemFlags.Count == 0)
             sb.AppendLine("Item flags: none — no DEAD items, no DOMINANT item, Totem in the healthy band.");
         else
@@ -68,7 +89,18 @@ public static class Report
         foreach (string note in gates.Notes)
             sb.AppendLine($"- ℹ {note}");
         sb.AppendLine();
-        sb.AppendLine($"> **{(gates.AllPass && gates.ItemFlags.Count == 0 ? "ALL GATES PASS — the economy holds." : "NOT DONE — iterate the knobs (item numbers / prices / curve) and rerun.")}**");
+        // The banner is what a human reads, so it is the one line that must not overstate. A
+        // campaign carrying an unadjudicated gate has not passed everything it ran — it has a
+        // re-run owed at Allen's escalation size (2026-08-07). Exit code is deliberately unchanged:
+        // he ruled a re-run, not a failure.
+        string banner = !gates.AllPass || gates.ItemFlags.Count > 0
+            ? "NOT DONE — iterate the knobs (item numbers / prices / curve) and rerun."
+            : adjudicated == total
+                ? $"ALL {total} GATES PASS — the economy holds."
+                : $"{passed}/{total} GATES PASS, but {string.Join(", ", unadjudicated)} DID NOT "
+                  + $"ADJUDICATE — re-run at `--runs {GateData.EscalationRuns}` (Allen's recorded "
+                  + "escalation, 2026-08-07) before reading this campaign as clean.";
+        sb.AppendLine($"> **{banner}**");
         sb.AppendLine();
     }
 
@@ -92,6 +124,14 @@ public static class Report
             + $"{cfg.MatchupsPerSlate} matchups/round, {cfg.MaxTicketsPerRound} tickets/round, "
             + $"{cfg.RelicSlots} relic + {cfg.ConsumableSlots} consumable slots");
         sb.AppendLine($"- Strategies: {string.Join(", ", Names(batches))}");
+        // C34 (batch 14): evidence that cannot be reproduced is not a set — a flow pins its seed
+        // AND asserts it. This campaign was always pinned by construction, but until this line the
+        // report never recorded WHICH prefix, so every gate table's pinning lived in the prose
+        // wrapped around the artifact instead of in the artifact. --scorer-ev printed its prefix;
+        // the campaign the gates are actually read off did not.
+        sb.AppendLine($"- Seed: **pinned** — run i uses engine seed \"{opt.SeedPrefix}-{{i}}\". Same "
+            + "arguments reproduce this report's body byte-for-byte; the header's date and wall time "
+            + "are the exceptions and carry no verdict. `--verify` is the standing self-check.");
         sb.AppendLine($"- Runs per batch: {opt.Runs.ToString("N0", Inv)}");
         sb.AppendLine($"- Total runs (incl. audit/combos): {total.ToString("N0", Inv)}");
         sb.AppendLine($"- Wall time: {wallSeconds.ToString("F2", Inv)} s");
@@ -481,8 +521,11 @@ public static class Report
         if (combos != null) Combos(sb, combos);
         else sb.AppendLine("_Combo scan not run — pass `--combos N` (e.g. 2000) for the pairwise synergy table._");
         sb.AppendLine();
+        // The "hard-to-assemble vs trivially cheap" half of this takeaway went with ComboTag's
+        // price clause: nothing in this report measures assembly difficulty, and saying it here
+        // would restate the claim the tag was just stripped of one screen further down.
         sb.AppendLine("> Takeaway: brokenness should live in the tail (max ≫ p99) and, if combos ran, in a few "
-            + "hard-to-assemble pairs rather than trivial cheap ones.");
+            + "pairs that clear their own error rather than across the whole table.");
         sb.AppendLine();
     }
 
@@ -492,24 +535,49 @@ public static class Report
         sb.AppendLine($"Pairwise relic synergy ({combos.RunsPerConfig.ToString("N0", Inv)} runs/config, baseline won {Pct(combos.BaselineWonPct)}). "
             + "Synergy excess = pair Δwon − (soloA Δ + soloB Δ). Top 10:");
         sb.AppendLine();
-        sb.AppendLine("| Pair | pair won % | synergy excess (pp) | tag |");
-        sb.AppendLine("|---|---|---|---|");
+        sb.AppendLine("| Pair | pair won % | synergy excess (pp) | ±2 SE (paired) | tag |");
+        sb.AppendLine("|---|---|---|---|---|");
         int shown = 0;
         foreach (ComboData.Pair p in combos.Pairs)
         {
             if (shown++ >= 10) break;
             string names = $"{RelicName.GetValueOrDefault(p.IdA, p.IdA)} + {RelicName.GetValueOrDefault(p.IdB, p.IdB)}";
-            sb.AppendLine($"| {names} | {Pct(p.PairWonPct)} | {Signed(p.SynergyExcess)} | {ComboTag(p)} |");
+            string se = double.IsNaN(p.SynergyExcessTwoSePp)
+                ? "—"
+                : $"±{p.SynergyExcessTwoSePp.ToString("0.00", Inv)}";
+            sb.AppendLine($"| {names} | {Pct(p.PairWonPct)} | {Signed(p.SynergyExcess)} | {se} | {ComboTag(p)} |");
         }
+        // The error column is not decoration: every excess in this table is a combination of four
+        // measured rates, and the table ranked them for a fortnight with no way to tell a real
+        // 2.96pp from a noisy one. G5 certifies a design pillar off one of these rows.
+        sb.AppendLine();
+        sb.AppendLine("Ranked by excess; the ±2 SE column is paired by seed, so it is the error of "
+            + "the *combination*, not of any one arm. A row whose excess is inside its own error is "
+            + "tagged as such and its rank means nothing.");
     }
 
+    /// <summary>The pair's tag. **A taxonomy label is an instrument too** (Allen 2026-08-08) — it
+    /// makes a claim, and it can be wrong in exactly the way a gate can.
+    ///
+    /// What this used to be: a 1pp cut, then a split on combined price ≤ 450 into "degenerate:
+    /// cheap pair, trivially assembled" vs "delicious: costly pair, bounded by run length". Every
+    /// relic is priced **2–7 COMPS**, so the largest pair in the catalog totals 14 — the branch was
+    /// always true, "degenerate: cheap" printed on every pair above the line, and "delicious" was
+    /// unreachable. A cash-scale threshold left behind when prices moved to comps (design/10 F),
+    /// asserting cheapness it never measured. Allen ruled it dropped rather than re-scaled.
+    ///
+    /// "no real loop" went with it, and that is worth stating rather than slipping through: it was
+    /// the same kind of claim — a statement about item interaction that this measurement cannot
+    /// see. The tag now reports only what the numbers support, the excess against its own paired
+    /// error, and says plainly when there is no signal to report at all.</summary>
     private static string ComboTag(ComboData.Pair p)
     {
-        if (p.SynergyExcess <= 1.0) return "marginal (no real loop)";
-        double combined = Price.GetValueOrDefault(p.IdA) + Price.GetValueOrDefault(p.IdB);
-        return combined <= 450.0
-            ? "degenerate: cheap pair, trivially assembled"
-            : "delicious: costly pair, bounded by run length";
+        double se = p.SynergyExcessTwoSePp;
+        if (double.IsNaN(se) || se <= 0.0) return "no signal — the arms never separated";
+        if (Math.Abs(p.SynergyExcess) <= se) return "indistinguishable from zero";
+        return p.SynergyExcess <= 1.0
+            ? $"marginal — {p.SynergyExcess / se:0.0}× its own error"
+            : $"superadditive — {p.SynergyExcess / se:0.0}× its own error";
     }
 
     // ---- 7. grind ----
@@ -613,13 +681,6 @@ public static class Report
         var parts = new List<string>();
         foreach (double t in cfg.Payments) parts.Add(((long)t).ToString(Inv));
         return string.Join(", ", parts);
-    }
-
-    private static Dictionary<string, double> BuildPrices()
-    {
-        var d = new Dictionary<string, double>();
-        foreach (RelicDefinition r in RelicCatalog.All) d[r.Id] = r.Price;
-        return d;
     }
 
     private static Dictionary<string, string> BuildNames()
