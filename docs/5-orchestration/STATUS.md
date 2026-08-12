@@ -1,7 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-11, cycle 179 — T80 FREEZE IN
-FORCE.** Batch 34 landed (39b0090): before-set ACCEPTED as half-
+**Keeper-era heartbeat stamp: 2026-08-11, cycle 180 (heartbeat).** T-3
+running (TV 22+ min in, type-parity batch check live); room 9+ min into
+the T65 measurement; DD re-seated post-batches-33/34 (reading in). C43
+row moved to Cross-surface + authoring clause (5a9669a) - the
+misplacement recorded as the AUTHORING seat's error under 1.5, new
+standing practice: batches name destination tables. Freeze holds.
+
+*(prior stamp, cycle 179 - T80 FREEZE IN FORCE:)* Batch 34 landed (39b0090): before-set ACCEPTED as half-
 instrument; **STANDING FREEZE C2/T9/T10/T61 until the after-set ships** -
 ground-movers void the pair (C43 admits no partial pair); enforced at
 dispatch level, notified to both active lanes, nothing scheduled touches
