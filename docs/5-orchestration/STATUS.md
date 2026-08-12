@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-11, cycle 174.** Phase T rolling:
+**Keeper-era heartbeat stamp: 2026-08-11, cycle 175 — MARKETS CERTIFIED
+DONE.** Validation GREEN on 42d3f5a (pass 9): engine 183/183, EditMode
+250/250, PlayMode 90→84/0/6 exact baseline, DLL checkout-restored + 75
+types loaded, single-instance held. Markets' stranded 15 commits are
+certified; the lane is closed end to end (worktree already retired).
+Sentis churn cleared per 7a. Editor FREE — TV's T-2 window available on
+its T-1 report. G1 collision fixed free (re-key to T72-T76 ordered
+pre-staging; DD confirmed). In flight: TV's T-1 + docket staging.
+
+*(prior stamp, cycle 174:)* Phase T rolling:
 TV's inventory landed (6-stage plan, SemiBold trap ranked top risk, a
 MISSING bold-condensed face found, ratio-law conflict flagged not
 decided); T-1 started on Allen's word; G1-G5 gap docket staging for a
