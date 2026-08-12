@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-11, cycle 180 (heartbeat).** T-3
+**Keeper-era heartbeat stamp: 2026-08-11, cycle 181.** C43's first real
+collision routed to the DD: the legacy face was never canon-correct, so
+renderer-only migration means shipping a knowingly-wrong face through a
+shot set (option 1) vs renderer+face as one coarser variable (option 2,
+TV's lean) - T-3 HELD on the ruling. Room's T65 measurement merged
+(fd11364): settlement cast measured in the correct space; V6 gate-space
+catch (HSV-pass vs CIELAB-fail = bounding nothing) routed to TV as
+held-work desk item; provisional value queued to the DD behind the
+collision. Freeze holds; room converging.
+
+*(prior stamp, cycle 180:)* T-3
 running (TV 22+ min in, type-parity batch check live); room 9+ min into
 the T65 measurement; DD re-seated post-batches-33/34 (reading in). C43
 row moved to Cross-surface + authoring clause (5a9669a) - the
