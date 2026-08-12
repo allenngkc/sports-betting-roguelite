@@ -5,3 +5,21 @@
 [attr]lfs               filter=lfs diff=lfs merge=lfs -text
 [attr]unity-json        eol=lf linguist-language=json
 [attr]unity-yaml        merge=unityyamlmerge eol=lf linguist-language=yaml
+
+# Evidence sets that ride as LFS objects rather than raw blobs.
+#
+# DELIBERATELY NARROW — one directory, not a pattern over the tree. 82 PNGs are
+# already tracked RAW elsewhere under docs/design/dd-import/ (the blur-bundle
+# crops among them). A rule broad enough to catch those would clean each of them
+# to a pointer on diff while HEAD still holds the raw blob, so every worktree
+# would report them permanently modified and any commit including them would
+# convert them to pointers with no LFS object behind them. That is exactly the
+# landmine the two Encode Sans fonts produced on 2026-08-09.
+#
+# Scope check before this rule was committed: `git ls-files` under the path
+# returned ZERO tracked files, and `git check-attr` confirmed the 82 raw PNGs
+# elsewhere in the tree are untouched by it. Re-run both before widening this.
+# PNG only, not `**`: the set's README is prose and must stay diffable and
+# readable in the repo. A `**` rule turns it into a 130-byte pointer, which is
+# a silent loss of the document that explains the frames.
+docs/design/dd-import/fresh-reference-set-2026-08-11/**/*.png lfs
