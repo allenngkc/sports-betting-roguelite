@@ -12,16 +12,20 @@ function Log($m) { Add-Content -Path $log -Value "$(Get-Date -Format s) $m" }
 
 if (-not (Test-Path $status)) { Log "STATUS.md missing"; exit 0 }
 $age = ((Get-Date) - (Get-Item $status).LastWriteTime).TotalMinutes
-if ($age -lt 45) { exit 0 }  # heartbeat healthy — do nothing, log nothing
-
 try { $json = (& $orca terminal list --json 2>$null) -join "`n" | ConvertFrom-Json }
-catch { Log "board stale $([int]$age)m but orca CLI unreachable"; exit 0 }
-if (-not $json.ok) { Log "board stale $([int]$age)m; orca returned not-ok"; exit 0 }
+catch { if ($age -ge 45) { Log "board stale $([int]$age)m but orca CLI unreachable (app closed?)" }; exit 0 }
+if (-not $json.ok) { if ($age -ge 45) { Log "board stale $([int]$age)m; orca returned not-ok" }; exit 0 }
 
 $terms = @($json.result.terminals | Where-Object {
     $_.connected -and $_.worktreePath -like "*sports-betting-roguelite/main-2" })
 $seat = $terms | Where-Object { $_.title -match 'orchestrat|sweep|studio' } |
         Select-Object -First 1
+
+# Fresh Orca restart: app reachable but the studio has zero main-2 terminals.
+# Don't wait out the 45-min staleness window — reseat now (cooldown still applies).
+$restart = ($terms.Count -eq 0 -and $age -gt 10)
+if ($age -lt 45 -and -not $restart) { exit 0 }  # heartbeat healthy — silent
+if ($restart) { Log "orca restart detected: zero main-2 terminals, board $([int]$age)m old" }
 
 $poke = "keeper heartbeat: STATUS.md is $([int]$age) minutes stale. If any text precedes this line, it is Allen's UNSENT draft - do not act on it without his confirm (ORCHESTRATOR.md 6c). Run one section-6 cycle now: re-arm monitors, 6a audit, dispatch, stamp the board."
 
@@ -66,7 +70,7 @@ $created = (& $orca terminal create --worktree "path:$mainWt" --command "claude 
 if ($created -match 'term_[0-9a-f-]+') {
     $handle = $Matches[0]
     Start-Sleep -Seconds 15
-    & $orca terminal send --terminal $handle --enter --text "keeper: the previous orchestrator seat is dead (STATUS.md stale). You are the Studio Orchestrator now. Read docs/5-orchestration/STUDIO.md and ORCHESTRATOR.md; verify via 'orca terminal list' that no other orchestrator seat is active (exit the role if one is); then run one section-6 cycle and stamp STATUS.md." | Out-Null
+    & $orca terminal send --terminal $handle --enter --text "keeper: the previous orchestrator seat is dead or Orca restarted. You are the Studio Orchestrator now. Read docs/5-orchestration/STUDIO.md and ORCHESTRATOR.md (6c covers this wake). Verify no other orchestrator seat is active; revive any missing lead/DD seats per 6c; then run one section-6 cycle and stamp STATUS.md." | Out-Null
     Log "reseated: created $handle (board was $([int]$age)m stale)"
 } else {
     Log "reseat failed: create returned '$created'"

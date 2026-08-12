@@ -233,6 +233,14 @@ compactions and Orca restarts silently killed the loop.
 - After any context compaction or session resume, treat it as a fresh wake:
   re-arm monitors and the heartbeat FIRST — compaction kills background waits
   silently; that is exactly how the "continue" prods were born.
+- **Studio-wide Orca restart** (keeper detects zero main-2 terminals and
+  reseats immediately, no 45-min wait): this is NOT the single-seat
+  "lead terminal is gone" stop condition — do not ping Allen and wait. Revive
+  every missing lead and DD seat yourself:
+  `orca terminal create --worktree path:<wt> --command "claude --continue --dangerously-skip-permissions"`
+  (worktree-scoped, so `--continue` is unambiguous everywhere except `main-2`;
+  main-2 seats boot fresh from their charters instead). Then re-arm watchers
+  and resume the loop. Allen never clicks per-worktree Resume again.
 
 ### 6d. Errored turns and push reporting (Allen, 2026-08-10)
 
