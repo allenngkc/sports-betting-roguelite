@@ -7,6 +7,11 @@
 
 **Owning document** under C9's two-tier authority · **Status:** RATIFIED — Allen 2026-08-07
 **Canonical home:** `main-2/docs/design/tv-design.md` · **Revised:** Design Director, 2026-08-08 (batch 19)
+**Amended:** Design Director, 2026-08-11 (batch 32 — TV Phase T). Touches §4 (the face split, all 23
+slots, and the no-synthesised-styling law), §4.1 (order vs fit), §6.2 (the VOID matrix rule), §9 (gate
+V9) and §10 (item 5, and four open rows). Those clauses transcribe **T72–T78 + C43**, authored
+2026-08-11; the register transcription ran in parallel, so the tables are the authority if the two ever
+read differently (C22).
 **Companion:** `docs/design/constitution.md` (authority and evidence)
 **Siblings:** `docs/design/room-design.md` (R13) · `docs/design/surething-design.md` (C26-am)
 
@@ -182,16 +187,91 @@ explicit.
 **Tabular numerals are mandatory.** Scores, clocks, money and counts all change in place; non-tabular
 figures make the whole surface twitch on every tick.
 
+**No synthesised styling on this surface** (T73, T77). Weight comes from a real named instance of the
+family; slant is not used at all. A synthesised bold is a smear and a synthesised italic is a shear —
+neither is a letterform the family contains, and retiring them is what the TMP migration is *for*
+(C15). Encode Sans carries **Condensed Bold at `wght=700 wdth=75`** in the file already committed, so
+real weight costs no asset and no licence decision. The family has **no italic on any axis**, so an
+italic here would mean a second family for one slot, against §4's *one hand, different jobs*.
+
+**Every slot's face is ruled, none defaults.** The split below is the whole surface — 23 slot types.
+Before T75 the canon named 10 of them and the other 13 rendered regular by *defaulting*, which is an
+inventory that does not name its members (C18).
+
+**Condensed** — the ticket column and the money control:
+
+| slot | weight | canon role |
+|---|---|---|
+| `LegRowLine{i}` | **Bold 700** | compact statement |
+| `LegRowPrice{i}` | Regular | price |
+| `LegRowNeed{i}` | **Bold 700** | NEED |
+| `LegRowProgress{i}` | Regular | progress |
+| `RiskPays` | **Bold 700** | risk / pays |
+| `CashOut` | **Bold 700** | cash-out figure |
+
+**Regular — canon-named:**
+
+| slot | weight | canon role |
+|---|---|---|
+| `LegRowState{i}` | Regular | state chip |
+| `Flavor` | Bold | event line |
+| `Score` | Bold | SCORE figures |
+| `Matchup` | Bold | **splits into name / score / name spans (T72)** |
+
+**Regular — ruled at T75**, not defaulted: `TicketHeader`, `Leg`, `Clock`, `CashOutStatus`,
+`Attract`, `TakeoverTitle`, `TakeoverSub`, `Subtitle`, `BigAmount`, `Consolation`,
+`InterventionPrompt`, `Chrome`, and `MomentumLabel` (which cited canon already).
+
+Three of those carry conditions:
+
+- **`Clock` and `BigAmount` are named by the tabular mandate above** — a clock and a money figure both
+  change in place. Regular is the face the mandate wants, so the default confirms rather than
+  conflicts, but both are **verified tabular on the built face, per slot, on frames.** A figure slot
+  ruled by default and never checked for `tnum` is S29's defect, and S29 is why nobody assumes this
+  twice.
+- **`CashOutStatus` sits inside the money control** (§6.1, six states) beside a figure that is
+  condensed and Bold 700. Its face is shown on the Phase T pair with the disposition pre-committed:
+  reads as two voices inside one control → it moves to condensed; reads as label-and-figure → regular
+  stands.
+- **`Consolation`** loses its italic and renders regular (T77). If that line needs to sit apart from
+  its neighbours, size, value or position carry it — never a letterform the family does not have.
+
+**The scoreline is three spans, not one string** (T72). Canon puts team names on condensed and SCORE
+figures on regular, and a single `Text` cannot hold both. Ruling the whole line condensed would move
+the surface's largest element off its ruled face and put the most-changing figures on a figure set
+nobody has measured; ruling it regular would render team names two ways depending on where they
+appear, which is S60's defect. The three-span shape already exists on this surface — TV-14 used it for
+the compact leg row.
+
 ### 4.1 Hierarchy
 
 **The score is the largest element on the surface at all times. Nothing outgrows it, cash-out
-included.** Ratios are the law (score 1.00 · cash-out 0.70 · team 0.55 · clock 0.50 · need 0.50 ·
-progress 0.40 · risk 0.40 · event 0.36 · leg 0.34 · label 0.22).
+included.** That sentence is the law, and it is a **ranking**.
 
-Column px, re-derived for the corrected 26–28% column (T20): **NEED 28px** unchanged, **live progress
-23→19px**, **resolved and pending rows 19→15px** — *live rows are display, resolved rows are index*.
+**The ratio line and the px line are two instruments answering different questions, and neither is a
+size authority** (T74).
+
+- **Ratios encode ORDER** — score 1.00 · cash-out 0.70 · team 0.55 · clock 0.50 · need 0.50 ·
+  progress 0.40 · risk 0.40 · event 0.36 · leg 0.34 · label 0.22. What binds is the ordering they
+  describe: **score > cash-out > team ≈ clock ≈ need > risk > event > progress ≈ leg > label.** It is
+  asserted **against the composition**, never as ten per-element size checks — C33(b), *a per-element
+  value check cannot see a ranking*, on the size axis instead of the brightness axis.
+- **Px encode FIT** — what a 26–28% column and a legibility floor actually produce. Shipped and
+  re-derived at T20: **NEED 28px**, **live progress 23→19px**, **resolved and pending rows 19→15px**
+  — *live rows are display, resolved rows are index*.
+
+The two do not reconcile: no single base satisfies the ratios, and the implied score-size runs 36 →
+68. Read literally against a 36px score the ratios would give label 7.9px and a ticket column shrunk
+past legibility. **That is why neither table governs sizing on its own, and why §10.5 stays
+quarantined rather than being resolved by picking a winner.**
+
+**The reconciliation is owed and deferred, deliberately.** Re-authoring this surface's type scale is a
+sizing pass with its own frames. It is not a font-stack swap and does not ride inside one (C43).
+
 **Authored strings do not bend to stale measurements** (T24-am: every measurement predating the
-production face was re-taken; the deficit dissolved at `64ccf53`).
+production face was re-taken; the deficit dissolved at `64ccf53`). Where a weight or face change makes
+a string overrun, the remedy is the size or the span — **never the copy**; §8's authored forms exist
+so truncation is never reached.
 
 ---
 
@@ -296,6 +376,16 @@ phase off one shared clock**. `LIVE` is the only pulse on the surface.
 backed team — `ATLANTA MIDDLEMEN ML · v TULSA STARTUPS`, never `Atlanta Middlemen ML — Atlanta
 Middlemen v Tulsa Startups`. Statements are **re-authored against a call-site-recorded measurement**
 and never wrap: a row that wraps to three lines is a string exceeding a fixed slot, which §5.1 forbids.
+
+**The VOID mark is a drawn matrix rule, not a text strikethrough** (T76). Canon asks for a row *struck
+through on the matrix*, and those are different objects: a strikethrough is a property of a string, a
+matrix rule is a mark the board makes across a cell — the institution striking a line through a row,
+which is this surface's whole register. The laptop rules its analogue the same way (the oxide strike is
+the house's mark, drawn — S3, S15-am). TMP makes a native strikethrough *available*; that does not make
+it correct. It is content-derived geometry by construction, which §6 forbids, and a fixed-width rule is
+also the only one whose length does not move when the face changes. The rule's width is set against the
+column: it does not move under a face migration, and if a later sizing pass changes the column it
+re-derives with it once, at design time.
 
 ### 6.3 Risk and pays
 
@@ -409,6 +499,7 @@ Real gates, per C9. Each states its instrument and, per C18 §4.2, **what it can
 | V5 | Display state == input state on the cash-out slot | one-value read + T43 same-frame test | whether the rendered field agrees with the flag |
 | V6 | **Room re-tint stays inside the room's palette** | room-region hue/sat/luma across an event burst | the panel's own content |
 | V7 | Variation reads as variation at review distance | rendered frames, five seeds, named manifest | anything asserted from signature diversity (T19) |
+| V9 | **The §4.1 size ORDER holds on the built surface** (T74) | rendered size per slot, compared as a **ranking** against the composition — not ten per-element checks (C33(b)) | **whether any individual size is right.** The order holding says nothing about fit, legibility, or whether a slot's px is the value it should have — that is the deferred sizing pass, not this gate |
 
 Every invocation reports its **executed case count** and exits non-zero on zero cases (C29). Every
 measurement is reported **with its scope and its resolution** attached (C25, C32).
@@ -430,8 +521,11 @@ measurement is reported **with its scope and its resolution** attached (C25, C32
    reconciliation, not a new ruling: T49-cl is later, explicit and sealed, and the current capture set
    is `boost1.4`. C3's other clauses stand.
 5. **The two DESIGN.md/VISUAL-DESIGN.md type tables disagree** — relative ratios versus reference px
-   cannot both hold. Ratios are the law; the px table is one provisional instantiation, and it
-   predates the column narrowing to 26–28%.
+   cannot both hold. The px table is one provisional instantiation, and it predates the column
+   narrowing to 26–28%. **T74 resolves how to read them without resolving the sizes**: the ratios
+   govern order, the px govern fit, neither is a size authority, and §4.1 now carries that split. The
+   quarantine stands — the px table is still not ratified, and promoting it is the deferred sizing
+   pass's business, not this document's.
 
 **Open items:**
 
@@ -446,7 +540,10 @@ measurement is reported **with its scope and its resolution** attached (C25, C32
 | **T25.2–25.7** seated-sweat findings | TV's queue |
 | **C2** light spill colour into the room — shipped green tolerated, target cold white-grey | Interim, Allen |
 | **C6** PRD §14.1 carries deprecated `08` colour law | Documentation conflict |
-| **C15** TMP migration | **Phase L merged to main (`5903750`)**; Phase T scheduled, orchestrator-side |
+| **C15** TMP migration | **Phase L merged to main (`5903750`)**. **Phase T ruled at batch 32** (T72–T78): it is a **face** migration and **preserves rendered size** at every product-fact slot — the bar Phase L was granted on. Tokenising a raw integer at its identical value is a no-op on the frame and is in scope; changing one is not (8 of 23 slots carry raw ints today) |
+| **T78** which instance the surface actually renders | **Open on the before-set.** The file's default instance is Condensed Thin (`wght=100 wdth=75`) — measured, not disputed. The inference that the surface therefore *renders* it is **refused**: existing frames at `7ab60b8` show the non-bold slots at a solid regular-class weight, and weight 100 at 19–28px is a hairline. The **width axis is not settled** and this seat offers no read on it. Both dispositions pre-committed in batch 32 before the frames land |
+| **The sizing pass** | **Owed, deferred by ruling** (T74/C43). The ratio and px tables reconcile in a pass with its own frames, after T78 names the face — never inside the migration, because a pair spanning two variables cannot attribute a difference to either |
+| **`FONTS.md` + `tools/ttf_faces.py`** | Both state Unity's default-instance render behaviour as fact; it is an inference and is contradicted by frames. Label it as an inference in both (C40). The tool's measured output is untouched and stays |
 
 **Closed and verified end to end:** T41 (stage capped), T48 (grade black point), T49 (bloom 1.4,
 sealed), T58 (goal flash neutral), T6 (scene grammar), T50 (face in situ), **T63** (band's HDR material
