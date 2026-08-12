@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-11, cycle 178.** Batch 33 landed
+**Keeper-era heartbeat stamp: 2026-08-11, cycle 179 — T80 FREEZE IN
+FORCE.** Batch 34 landed (39b0090): before-set ACCEPTED as half-
+instrument; **STANDING FREEZE C2/T9/T10/T61 until the after-set ships** -
+ground-movers void the pair (C43 admits no partial pair); enforced at
+dispatch level, notified to both active lanes, nothing scheduled touches
+the four, NO milestone-order change needed (Allen informed, no decision
+owed). T75-am2: clock string owed per frame in the after-set; the DD's
+bloom-confounded read returned unadjudicated rather than forced. T65
+settlement measurement dispatched to room (joint with TV, desk work).
+T-3 running. Register 265 rows, TV 86.
+
+*(prior stamp, cycle 178:)* Batch 33 landed
 (1835f12): T75-am (BigAmount owes assignment+assertion, not a frame) and
 T79 opened - the dormant element holds a LIVE seat in C3's invariant set
 (gate green on an unexercisable member), NOT ruled, sequenced after Phase
