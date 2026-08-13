@@ -7,6 +7,8 @@ using SBR.Engine;
 using SBR.Game;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using UnityEngine.UI;
@@ -606,6 +608,168 @@ namespace SBR.Tests.PlayMode
                 }
                 yield return null;
             }
+        }
+
+        // ---- T88 / C48: the gesture's own falsifiers ---------------------------------------------
+        //
+        // EVERY cash-out test above reaches the accept through `PressCashOutInteract`, which invokes
+        // the private TryCashOut by reflection because "batchmode has no keyboard to actually press
+        // Interact". THAT BYPASS IS WHY PRESS-TO-COMMIT SURVIVED A WHOLE PHASE. The money control's
+        // accept path was only ever exercised from BELOW the input layer, and the gesture the copy
+        // promised lives above it — so no test here could notice that a press committed instantly,
+        // and none did. When the input changed under T88, the suite stayed green either way.
+        //
+        // A test that cannot press the key cannot falsify the fix. These add a VIRTUAL keyboard and
+        // drive the real InputAction: `InputSystem.AddDevice` is in the runtime assembly rather than
+        // the input test framework, so a headless run can hold a key down after all.
+        //
+        // The device is added INSIDE each test and removed after, deliberately not in a [SetUp]:
+        // PendingWindowBeat declines immediately when `Keyboard.current == null`, which is what stops
+        // batch autoplay hanging on the pending window, so a keyboard present for every test in this
+        // class would change the behaviour of tests that have nothing to do with input.
+
+        /// <summary>Queue a keyboard state and let the FRAME process it. Deliberately not followed by
+        /// a manual <c>InputSystem.Update()</c>: `wasPressedThisFrame` is only true during the frame
+        /// the event is processed in, so the press has to land in the same input update the
+        /// MonoBehaviour Update() reads — which is what yielding one frame gives.</summary>
+        private static void HoldKeys(Keyboard kb, params Key[] down)
+            => InputSystem.QueueStateEvent(kb, new KeyboardState(down));
+
+        /// <summary>A HELD key does not survive a headless run without this, and the first version of
+        /// these tests did not know it.
+        ///
+        /// <para>Batch mode is never focused, and the Input System's documented response to lost focus
+        /// is to <c>ResetDevice</c> every device that cannot run in the background. So a queued key
+        /// registered and was then wiped before the next frame read it — which is invisible in a test
+        /// whose assertion is that NOTHING happened. The press-commits-nothing pin passed green while
+        /// the key was never actually down: S51's shape exactly, a suite going green by recording
+        /// nothing. Both tests now prove the input ARRIVED before they assert what it did not do.</para></summary>
+        private static (InputSettings.BackgroundBehavior, InputSettings.EditorInputBehaviorInPlayMode) LetDevicesRunUnfocused()
+        {
+            var previous = (InputSystem.settings.backgroundBehavior,
+                            InputSystem.settings.editorInputBehaviorInPlayMode);
+            InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
+            InputSystem.settings.editorInputBehaviorInPlayMode =
+                InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+            return previous;
+        }
+
+        private static void RestoreFocusBehaviour(
+            (InputSettings.BackgroundBehavior, InputSettings.EditorInputBehaviorInPlayMode) previous)
+        {
+            InputSystem.settings.backgroundBehavior = previous.Item1;
+            InputSystem.settings.editorInputBehaviorInPlayMode = previous.Item2;
+        }
+
+        /// <summary>Reads the private preview amount — non-zero means the hold actually reached
+        /// §8.10's machinery, which is the precondition every "and then nothing happened" assertion
+        /// below depends on.</summary>
+        private static double PreviewAmount(TvSweatScreen screen)
+            => (double)typeof(TvSweatScreen)
+                .GetField("_cashOutPreviewAmount", BindingFlags.NonPublic | BindingFlags.Instance)
+                .GetValue(screen);
+
+        [UnityTest]
+        public IEnumerator T88_a_press_commits_nothing_and_release_abandons()
+        {
+            yield return LoadRoom();
+            (RunDirector director, TvSweatScreen screen, SitSpot couch) = FindTrio();
+            screen.TimeScaleOverride = 0.15f;
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            Run run = director.Run;
+            (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run);
+            run.PlaceTicket(picks, stake);
+            director.LockRound();
+
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+
+            var previousFocus = LetDevicesRunUnfocused();
+            Keyboard kb = InputSystem.AddDevice<Keyboard>();
+            try
+            {
+                yield return WaitUntil(() => SitSpot.InteractStandSuppressed != null
+                    && SitSpot.InteractStandSuppressed(), 25f, "never observed a live acceptable offer");
+
+                TicketState before = director.CurrentTicket.State;
+
+                // HOLD E. Five frames is far past the one frame the old input needed to spend it.
+                HoldKeys(kb, Key.E);
+                for (int i = 0; i < 5; i++) yield return null;
+
+                // THE PRECONDITION, asserted first. Without it every assertion below passes whenever
+                // the key silently failed to arrive, which is precisely how this test first went green.
+                Assert.IsTrue(kb.eKey.isPressed, "the virtual key never stayed down — the test proves nothing");
+                Assert.Greater(PreviewAmount(screen), 0.0,
+                    "the hold must ENTER §8.10's preview; if it did not, 'the press committed nothing' is unfalsifiable");
+
+                Assert.AreEqual(before, director.CurrentTicket.State,
+                    "T88: a press must commit NOTHING — this is the defect itself, money spent on the first frame of input");
+                Assert.IsNotNull(SitSpot.Active,
+                    "the hold must not stand the player up: a fresh press on the press-path is the hazard room's SitSpot answer named");
+
+                // RELEASE ABANDONS — always, T22.
+                HoldKeys(kb);
+                for (int i = 0; i < 3; i++) yield return null;
+
+                Assert.AreEqual(before, director.CurrentTicket.State,
+                    "T88: release abandons — a hold that ends without the second key must leave the ticket untouched");
+                Assert.AreEqual(0.0, PreviewAmount(screen),
+                    "release is a full revert (§8.10): the preview must be gone, not merely uncommitted");
+            }
+            finally { InputSystem.RemoveDevice(kb); RestoreFocusBehaviour(previousFocus); }
+        }
+
+        [UnityTest]
+        public IEnumerator T88_the_second_key_during_the_hold_commits_the_previewed_amount()
+        {
+            yield return LoadRoom();
+            (RunDirector director, TvSweatScreen screen, SitSpot couch) = FindTrio();
+            screen.TimeScaleOverride = 0.15f;
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            Run run = director.Run;
+            (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run);
+            run.PlaceTicket(picks, stake);
+            director.LockRound();
+
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+
+            var previousFocus = LetDevicesRunUnfocused();
+            Keyboard kb = InputSystem.AddDevice<Keyboard>();
+            try
+            {
+                yield return WaitUntil(() => SitSpot.InteractStandSuppressed != null
+                    && SitSpot.InteractStandSuppressed(), 25f, "never observed a live acceptable offer");
+
+                HoldKeys(kb, Key.E);
+                yield return null;
+                yield return null;
+
+                // The preview is what the player is being shown, and §8.10 says the accepted number
+                // IS that number. Read it before the commit clears it.
+                double previewed = PreviewAmount(screen);
+                Assert.Greater(previewed, 0.0,
+                    "holding E must ENTER the preview — §8.10's machinery had no caller at all before T88");
+
+                // The second key, during the hold.
+                HoldKeys(kb, Key.E, Key.Enter);
+                yield return null;
+                yield return null;
+
+                Assert.AreEqual(TicketState.CashedOut, director.CurrentTicket.State,
+                    "T88: a second key during the hold COMMITS — otherwise the control cannot be finished at all");
+
+                FieldInfo lastAmount = typeof(TvSweatScreen)
+                    .GetField("_lastCashOutAmount", BindingFlags.NonPublic | BindingFlags.Instance);
+                Assert.AreEqual(previewed, (double)lastAmount.GetValue(screen),
+                    "§8.10: the previewed and accepted numbers can never differ — T59's worst outcome on a money control");
+            }
+            finally { InputSystem.RemoveDevice(kb); RestoreFocusBehaviour(previousFocus); }
         }
 
         private static (RunDirector, TvSweatScreen, SitSpot) FindTrio()
