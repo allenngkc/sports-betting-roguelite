@@ -73,9 +73,22 @@ public static class SlateGenerator
             TeamStats awayStats = DisplayStats(latents.AwayGoalRate, latents.AwayCornerRate,
                 latents.AwayCardRate, rng, config);
 
+            // Priced in two steps because the 1X2 triple needs the draw mass, and that is read off
+            // the latents (Matchup.DrawProb) rather than dialled — so the matchup must exist first.
+            // The two-way call below survives only as the seed for those placeholders; the real
+            // moneyline prices are the three set immediately after.
             (double homeOdds, double awayOdds) = OddsMath.OverroundOdds(p, config.Overround);
             var matchup = new Matchup(i, home, away, p, homeOdds, awayOdds, latents,
                 homeStats, awayStats, System.Array.Empty<MarketOffer>(), config);
+            double[] moneyline = OddsMath.OverroundOdds(
+                new[]
+                {
+                    matchup.TrueProb(MatchResult.Home),
+                    matchup.TrueProb(MatchResult.Draw),
+                    matchup.TrueProb(MatchResult.Away),
+                },
+                config.Overround);
+            matchup.SetMoneylineOdds(moneyline[0], moneyline[1], moneyline[2]);
             matchups.Add(matchup);
             matchup.SetMarkets(MatchModel.BuildOffers(matchup, config));
         }

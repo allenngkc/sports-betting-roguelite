@@ -94,11 +94,19 @@ public class ShopAndGiftTests
     }
 
     /// <summary>A guaranteed-loss round for ANY seed: proportional dutching — stake ⌊100/odds⌋ on
-    /// both sides of matchup 0, so every outcome pays ≤ 100 against ~103–105 staked (the vig).</summary>
+    /// EVERY outcome of matchup 0, so whatever happens pays ≤ 100 against ~103–105 staked (the vig).
+    ///
+    /// The draw ruling (D1, 2026-08-12) broke this and it is worth recording why, because the
+    /// helper's guarantee was never about the seed — it was about COVERING THE OUTCOME SPACE.
+    /// Backing home and away alone used to be complete; under 1X2 it covers only 0.772 of the
+    /// implied probability, so the total staked fell to ~77 while the winner still returned ~100
+    /// and the "guaranteed losing" round started turning a ~20 profit. Adding the draw restores
+    /// completeness, and with it the guarantee — by construction again, not by seed.</summary>
     private static void PlayGuaranteedLosingRound(Run run)
     {
         Matchup m = run.CurrentSlate.Matchups[0];
         run.PlaceTicket(new[] { new Pick(0, Side.Home) }, Math.Floor(100 / m.HomeOdds));
+        run.PlaceTicket(new[] { new Pick(0, MarketSelection.MoneylineDraw()) }, Math.Floor(100 / m.DrawOdds));
         run.PlaceTicket(new[] { new Pick(0, Side.Away) }, Math.Floor(100 / m.AwayOdds));
         run.LockRound();
         run.FastForwardRound();

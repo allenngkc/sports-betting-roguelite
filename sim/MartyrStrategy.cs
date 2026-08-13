@@ -41,11 +41,19 @@ public sealed class MartyrStrategy : IStrategy
         var sides = new List<(int m, Side s, double pHat, double odds)>(slate.Count);
         foreach (Matchup m in slate)
         {
-            double implHome = 1.0 / m.HomeOdds;
-            double pHome = implHome / (implHome + 1.0 / m.AwayOdds);
+            // 1X2 de-vig: the draw's implied probability belongs in the denominator. Normalizing
+            // Home against Away ALONE recovers P(home | decisive) while a moneyline leg pays on
+            // P(home) — the martyr would have farmed against the wrong probabilities, and it is
+            // G6's guard bot, so that error would have landed inside a gate rather than beside it.
+            // The away estimate is de-vigged in its own right, not taken as 1 − pHome, which stops
+            // being the complement the moment a third outcome exists.
+            double total = 1.0 / m.HomeOdds + 1.0 / m.DrawOdds + 1.0 / m.AwayOdds;
             // Track BOTH sides; the farmer wants longshots, the carrier wants the favorite.
-            sides.Add((m.Index, Side.Home, pHome, m.HomeOdds));
-            sides.Add((m.Index, Side.Away, 1.0 - pHome, m.AwayOdds));
+            // The DRAW is deliberately not tracked here: this bot's identity is picking a TEAM
+            // badly, and widening its surface would silently redefine G6's guard (the F_0.4.0 P5
+            // precedent — one inheritance default changed the meaning of the campaign).
+            sides.Add((m.Index, Side.Home, (1.0 / m.HomeOdds) / total, m.HomeOdds));
+            sides.Add((m.Index, Side.Away, (1.0 / m.AwayOdds) / total, m.AwayOdds));
         }
 
         double reserve = PaymentReserve * run.CurrentPayment;

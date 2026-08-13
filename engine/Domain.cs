@@ -4,7 +4,16 @@ using System.Linq;
 
 namespace SBR.Engine;
 
+/// <summary>Which TEAM — rosters, per-team corners and cards, scorer attribution. Deliberately
+/// still two-valued after draws landed: a draw is not a team. What became three-valued is the
+/// match RESULT (<see cref="MatchResult"/>), and keeping the two separate is what stopped the
+/// draw ruling from touching every roster call site.</summary>
 public enum Side { Home, Away }
+
+/// <summary>How a match finished. Replaces the two-valued winner the no-draws-in-v1 constraint
+/// allowed (Allen lifted it 2026-08-12). The engine always computed the draw mass — the truncated
+/// score grid conditioned it away — so this renders a distribution the model already had.</summary>
+public enum MatchResult { Home, Draw, Away }
 
 public enum MarketKind
 {
@@ -16,9 +25,11 @@ public enum MarketKind
     AnytimeScorer,
 }
 
-/// <summary>The two-way choice vocabulary is kept separate from team side because counting
-/// markets use Over/Under and BTTS uses Yes/No.</summary>
-public enum MarketChoice { Home, Away, Over, Under, Yes, No }
+/// <summary>The choice vocabulary is kept separate from team side because counting markets use
+/// Over/Under and BTTS uses Yes/No. <c>Draw</c> is moneyline-only — the market is 1X2 now, and it
+/// is the one non-two-way member of this enum, which is why every de-vig site had to stop asking
+/// for "the opposite" and start asking for the whole sibling set.</summary>
+public enum MarketChoice { Home, Away, Over, Under, Yes, No, Draw }
 
 public enum LegState { Pending, Won, Lost }
 
@@ -65,6 +76,19 @@ public readonly struct MarketSelection : IEquatable<MarketSelection>
     public static MarketSelection Moneyline(Side side)
         => new MarketSelection(MarketKind.Moneyline, 0.0,
             side == Side.Home ? MarketChoice.Home : MarketChoice.Away);
+
+    /// <summary>The X of 1X2. Has no <see cref="Side"/> by construction — which is exactly why
+    /// <see cref="Pick.Side"/> and <see cref="Leg.Side"/> throw on it rather than guessing.</summary>
+    public static MarketSelection MoneylineDraw()
+        => new MarketSelection(MarketKind.Moneyline, 0.0, MarketChoice.Draw);
+
+    public static MarketSelection Moneyline(MatchResult result) => result switch
+    {
+        MatchResult.Home => Moneyline(Side.Home),
+        MatchResult.Away => Moneyline(Side.Away),
+        MatchResult.Draw => MoneylineDraw(),
+        _ => throw new ArgumentOutOfRangeException(nameof(result)),
+    };
 
     public static MarketSelection TotalGoals(double line, bool over)
         => new MarketSelection(MarketKind.TotalGoals, line, over ? MarketChoice.Over : MarketChoice.Under);
@@ -151,12 +175,18 @@ public sealed class MatchStatLine
     public IReadOnlyList<Player> HomeScorers { get; private set; } = Array.Empty<Player>();
     public IReadOnlyList<Player> AwayScorers { get; private set; } = Array.Empty<Player>();
 
-    public Side Winner => HomeGoals > AwayGoals ? Side.Home : Side.Away;
+    /// <summary>How the match finished. Was <c>Winner</c>, a two-valued <see cref="Side"/>, while
+    /// the no-draws constraint held; a level score is a Draw, not a team.</summary>
+    public MatchResult Result => HomeGoals > AwayGoals ? MatchResult.Home
+        : HomeGoals < AwayGoals ? MatchResult.Away
+        : MatchResult.Draw;
 
     public MatchStatLine(int homeGoals, int awayGoals, int homeCorners, int awayCorners,
         int homeCards, int awayCards)
     {
-        if (homeGoals == awayGoals) throw new ArgumentException("Soccer stat lines cannot draw in v1");
+        // The "Soccer stat lines cannot draw in v1" throw stood here and WAS the constraint,
+        // in code. Allen lifted it 2026-08-12. A level score is now representable, which is what
+        // gives the correct-score grid its 0-0 and 1-1 and makes double chance a real market.
         HomeGoals = homeGoals;
         AwayGoals = awayGoals;
         HomeCorners = homeCorners;
@@ -222,17 +252,47 @@ public sealed class Matchup
     public int Index { get; }
     public Team Home { get; }
     public Team Away { get; }
+
+    /// <summary>**P(home wins | the match is decisive)** — NOT the moneyline probability.
+    /// Its value and its tuning band are unchanged by the draw ruling, because before draws every
+    /// match WAS decisive and so this already meant the conditional. The unconditional 1X2 prices
+    /// are <see cref="TrueProb(MatchResult)"/>: home is <c>TrueHomeProb × (1 − DrawProb)</c>.
+    /// Keeping the conditional as the generated dial is what let <c>MinTrueProb</c>/<c>MaxTrueProb</c>
+    /// and everything tuned against them survive the ruling untouched.</summary>
     public double TrueHomeProb { get; }
-    public double HomeOdds { get; }
-    public double AwayOdds { get; }
+
+    /// <summary>1X2 prices. These were the two-way pair; they are now three, and
+    /// <see cref="Odds(Side)"/> returns the 1X2 price so a bot that SELECTS on this pair and
+    /// PLACES a moneyline pick cannot price one thing and be paid another.</summary>
+    public double HomeOdds { get; private set; }
+    public double AwayOdds { get; private set; }
+    public double DrawOdds { get; private set; }
+
+    /// <summary>Set by slate generation once the latents are known, because the draw price is a
+    /// READ off those latents (<see cref="DrawProb"/>) rather than a constructor argument — the
+    /// 1X2 triple cannot be priced before the distributions exist.</summary>
+    internal void SetMoneylineOdds(double home, double draw, double away)
+    {
+        HomeOdds = home;
+        DrawOdds = draw;
+        AwayOdds = away;
+    }
 
     public MatchLatents Latents { get; }
     public TeamStats HomeStats { get; }
     public TeamStats AwayStats { get; }
     public IReadOnlyList<MarketOffer> Markets { get; private set; }
 
-    /// <summary>Derived from the locked stat line, shared by every leg referencing this matchup.</summary>
-    public Side? Result => StatLine?.Winner;
+    /// <summary>Derived from the locked stat line, shared by every leg referencing this matchup.
+    /// Null still means "not locked yet"; <see cref="MatchResult.Draw"/> now means drawn, and the
+    /// two were indistinguishable while this was a <c>Side?</c>.</summary>
+    public MatchResult? Result => StatLine?.Result;
+
+    /// <summary>P(draw), read off the matchup's own latents rather than dialled: the truncated
+    /// Poisson grid already implies it (measured 22.6%–28.4% across the generator's latent box,
+    /// higher for even matches, which is what real football does). No new RunConfig knob exists
+    /// for it deliberately — a hand-set draw rate would be a number nobody measured.</summary>
+    public double DrawProb => Dist.DrawProb;
     public MatchStatLine? StatLine { get; internal set; }
     /// <summary>The RunConfig this matchup's markets were priced under — public read access
     /// for the sim's honest estimators (they price from the same dials, never engine internals).</summary>
@@ -291,9 +351,22 @@ public sealed class Matchup
         }
     }
 
-    public double TrueProb(Side side) => side == Side.Home ? TrueHomeProb : 1.0 - TrueHomeProb;
+    /// <summary>The unconditional 1X2 probability. The old <c>TrueProb(Side)</c> overload was
+    /// DELETED rather than redefined: under draws "the true probability of Home" has two defensible
+    /// readings — <see cref="TrueHomeProb"/> (conditional) and this one (unconditional) — and a
+    /// silently-wrong answer at a call site expecting the other is exactly the defect class this
+    /// lane keeps finding. Every caller now names which one it wants, and the compiler found them.</summary>
+    public double TrueProb(MatchResult result) => result switch
+    {
+        MatchResult.Home => TrueHomeProb * (1.0 - DrawProb),
+        MatchResult.Away => (1.0 - TrueHomeProb) * (1.0 - DrawProb),
+        MatchResult.Draw => DrawProb,
+        _ => throw new ArgumentOutOfRangeException(nameof(result)),
+    };
+
     public double Odds(Side side) => side == Side.Home ? HomeOdds : AwayOdds;
-    public double FairOdds(Side side) => 1.0 / TrueProb(side);
+    public double FairOdds(Side side)
+        => 1.0 / TrueProb(side == Side.Home ? MatchResult.Home : MatchResult.Away);
 
     /// <summary>The offered board already carries this exact number: <c>MatchModel.Offer</c>
     /// stores the same <c>TrueProbability</c> call's result on the <see cref="MarketOffer"/>, so
@@ -353,9 +426,17 @@ public readonly struct Pick
 
     /// <summary>The picked team — MONEYLINE ONLY. Throws for market selections so a
     /// counting-market pick can never be silently misread as a team side.</summary>
-    public Side Side => Selection.Kind == MarketKind.Moneyline
-        ? (Selection.Choice == MarketChoice.Home ? Side.Home : Side.Away)
-        : throw new InvalidOperationException($"Pick.Side is undefined for {Selection.Kind}; use Selection");
+    public Side Side => Selection.Kind != MarketKind.Moneyline
+        ? throw new InvalidOperationException($"Pick.Side is undefined for {Selection.Kind}; use Selection")
+        : Selection.Choice switch
+        {
+            MarketChoice.Home => Side.Home,
+            MarketChoice.Away => Side.Away,
+            // The draw has no side. The old shape was `Choice == Home ? Home : Away`, which would
+            // have answered "Away" for the X of 1X2 — silently, at every call site.
+            _ => throw new InvalidOperationException(
+                "Pick.Side is undefined for a moneyline DRAW; use Selection"),
+        };
 
     public Pick(int matchupIndex, Side side)
     {
@@ -377,9 +458,15 @@ public sealed class Leg
 
     /// <summary>The picked team — MONEYLINE ONLY. Throws for market selections so a
     /// counting-market leg can never be silently misread as a team side.</summary>
-    public Side Side => Selection.Kind == MarketKind.Moneyline
-        ? (Selection.Choice == MarketChoice.Home ? Side.Home : Side.Away)
-        : throw new InvalidOperationException($"Leg.Side is undefined for {Selection.Kind}; use Selection");
+    public Side Side => Selection.Kind != MarketKind.Moneyline
+        ? throw new InvalidOperationException($"Leg.Side is undefined for {Selection.Kind}; use Selection")
+        : Selection.Choice switch
+        {
+            MarketChoice.Home => Side.Home,
+            MarketChoice.Away => Side.Away,
+            _ => throw new InvalidOperationException(
+                "Leg.Side is undefined for a moneyline DRAW; use Selection"),
+        };
 
     public string DisplayLabel => MatchModel.DisplayLabel(Matchup, Selection);
 

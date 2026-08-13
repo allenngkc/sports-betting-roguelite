@@ -572,29 +572,47 @@ public class SkilledStrategy : IStrategy
     private static double EstimateProbability(Matchup matchup, MarketSelection selection)
     {
         double impl = 1.0 / matchup.Odds(selection);
-        double implOpp = 1.0 / matchup.Odds(Opposite(selection));
-        return impl / (impl + implOpp);
+        double total = 0.0;
+        foreach (MarketSelection sibling in Siblings(selection)) total += 1.0 / matchup.Odds(sibling);
+        return impl / total;
     }
 
     /// <summary>Exact de-vig ties every selection at −vig EV; float noise (~1e-16) must not
     /// break those ties, genuine disagreements (v2) are orders of magnitude larger.</summary>
     private const double EvTieEps = 1e-9;
 
-    private static MarketSelection Opposite(MarketSelection s) => s.Kind switch
+    /// <summary>The market's COMPLETE, mutually exclusive outcome set — including the selection
+    /// itself. Replaces the old <c>Opposite()</c>, which encoded a two-way assumption the 1X2
+    /// moneyline broke. The estimator's concept never changed ("normalize the implied probs of the
+    /// offered set"); only the set size was wrong, which is why this generalizes draws, double
+    /// chance, and every future multi-way market with one change.
+    ///
+    /// A market may only appear here if the set is EXHAUSTIVE. A floor-truncated board (correct
+    /// score) must stay bot-excluded instead: normalizing a partial set silently over-normalizes
+    /// and would manufacture an edge out of the missing rows.</summary>
+    private static IReadOnlyList<MarketSelection> Siblings(MarketSelection s) => s.Kind switch
     {
-        MarketKind.Moneyline => MarketSelection.Moneyline(s.Choice == MarketChoice.Home ? Side.Away : Side.Home),
-        MarketKind.TotalGoals => MarketSelection.TotalGoals(s.Line, s.Choice != MarketChoice.Over),
-        MarketKind.TotalCorners => MarketSelection.TotalCorners(s.Line, s.Choice != MarketChoice.Over),
-        MarketKind.TotalCards => MarketSelection.TotalCards(s.Line, s.Choice != MarketChoice.Over),
-        MarketKind.BothTeamsToScore => MarketSelection.BothTeamsToScore(s.Choice != MarketChoice.Yes),
+        MarketKind.Moneyline => new[]
+        {
+            MarketSelection.Moneyline(Side.Home),
+            MarketSelection.MoneylineDraw(),
+            MarketSelection.Moneyline(Side.Away),
+        },
+        MarketKind.TotalGoals => Pair(MarketSelection.TotalGoals(s.Line, true), MarketSelection.TotalGoals(s.Line, false)),
+        MarketKind.TotalCorners => Pair(MarketSelection.TotalCorners(s.Line, true), MarketSelection.TotalCorners(s.Line, false)),
+        MarketKind.TotalCards => Pair(MarketSelection.TotalCards(s.Line, true), MarketSelection.TotalCards(s.Line, false)),
+        MarketKind.BothTeamsToScore => Pair(MarketSelection.BothTeamsToScore(true), MarketSelection.BothTeamsToScore(false)),
         _ => throw new ArgumentException($"Bots do not price {s.Kind}"),
     };
 
+    private static MarketSelection[] Pair(MarketSelection a, MarketSelection b) => new[] { a, b };
+
+    /// <summary>De-vigs the 1X2 triple, not a pair — the draw carries real implied probability and
+    /// omitting it recovers P(home | decisive) while the leg actually pays on P(home).</summary>
     private static double DevigHome(Matchup m)
     {
         double implHome = 1.0 / m.HomeOdds;
-        double implAway = 1.0 / m.AwayOdds;
-        return implHome / (implHome + implAway);
+        return implHome / (implHome + 1.0 / m.DrawOdds + 1.0 / m.AwayOdds);
     }
 
     private static double PHat(BotState state, Leg leg)

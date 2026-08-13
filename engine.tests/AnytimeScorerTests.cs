@@ -36,7 +36,15 @@ public class AnytimeScorerTests
         // (RunConfig.ScoringWeightJitter) separates players within a role, so this seed's forward
         // moved 0.2146→0.2397. The pin is a DETERMINISM guard and the number is expected to move
         // when the model does; an UNINTENTIONAL change here is still a regression to investigate.
-        Assert.Equal(0.23968857550621281, forward, 10);
+        //
+        // RE-PINNED 2026-08-12, draws (Allen): 0.2397 → 0.2479. The DIRECTION is checked, not just
+        // accepted — a scorer price that FELL here would have been a defect. Restoring the draw
+        // class puts probability mass back on level scores (1-1, 2-2), where both teams score; the
+        // old truncation forced one team strictly above the other and so suppressed the weaker
+        // side's goals. P(a given team scores at least once) therefore RISES, which is the same
+        // move measured independently on BTTS-yes (37.7–56.2% → 44.8–62.1%). Index 0 is an AWAY
+        // player (the board lists away first), i.e. exactly the side that suppression cost most.
+        Assert.Equal(0.24792434650147654, forward, 10);
         // The semantic assertion, and the one that must survive any weighting change: a forward
         // outranks a DEFENDER. The jitter is symmetric and bounded, so at the shipped weights a
         // jittered forward (3.0 × 0.65 = 1.95) still clears a jittered defender (0.5 × 1.35 =

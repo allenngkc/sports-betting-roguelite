@@ -16,6 +16,11 @@ internal sealed class MatchDistributions
 {
     public IReadOnlyList<MatchModel.ScoreOutcome> HomeWinScores { get; private set; } = null!;
     public IReadOnlyList<MatchModel.ScoreOutcome> AwayWinScores { get; private set; } = null!;
+    /// <summary>The level-score class. It was always computable — the grid enumerated it and the
+    /// old truncation threw it away.</summary>
+    public IReadOnlyList<MatchModel.ScoreOutcome> DrawScores { get; private set; } = null!;
+    /// <summary>P(draw) implied by these latents: the draw class's share of the untruncated grid.</summary>
+    public double DrawProb { get; private set; }
     public double[] HomeCornerRaw { get; private set; } = null!;
     public double[] AwayCornerRaw { get; private set; } = null!;
     public double[] HomeCardRaw { get; private set; } = null!;
@@ -27,10 +32,21 @@ internal sealed class MatchDistributions
 
     public static MatchDistributions Build(MatchLatents l, RunConfig config)
     {
+        // One pass over the grid gives all three classes AND their raw masses, so P(draw) is read
+        // off the same enumeration that prices and samples — it is never a separately-maintained
+        // number that could drift from the distribution it is supposed to describe.
+        (IReadOnlyList<MatchModel.ScoreOutcome> home, double homeMass) =
+            MatchModel.EnumerateClass(l, MatchResult.Home, config);
+        (IReadOnlyList<MatchModel.ScoreOutcome> draw, double drawMass) =
+            MatchModel.EnumerateClass(l, MatchResult.Draw, config);
+        (IReadOnlyList<MatchModel.ScoreOutcome> away, double awayMass) =
+            MatchModel.EnumerateClass(l, MatchResult.Away, config);
         var d = new MatchDistributions
         {
-            HomeWinScores = MatchModel.EnumerateScores(l, true, config),
-            AwayWinScores = MatchModel.EnumerateScores(l, false, config),
+            HomeWinScores = home,
+            AwayWinScores = away,
+            DrawScores = draw,
+            DrawProb = drawMass / (homeMass + drawMass + awayMass),
         };
         (d.HomeCornerRaw, d.HomeCornerTotal) = MatchModel.RawPoisson(l.HomeCornerRate, config.MaxCornerGrid);
         (d.AwayCornerRaw, d.AwayCornerTotal) = MatchModel.RawPoisson(l.AwayCornerRate, config.MaxCornerGrid);
@@ -110,9 +126,11 @@ public static class MatchModel
 
     public static IReadOnlyList<MarketOffer> BuildOffers(Matchup matchup, RunConfig config)
     {
+        // 1X2 — the draw is emitted BETWEEN the two sides, the order a book prints it.
         var offers = new List<MarketOffer>
         {
             Offer(matchup, MarketSelection.Moneyline(Side.Home), config),
+            Offer(matchup, MarketSelection.MoneylineDraw(), config),
             Offer(matchup, MarketSelection.Moneyline(Side.Away), config),
         };
         foreach (double line in config.GoalLines)
@@ -155,8 +173,12 @@ public static class MatchModel
     public static MatchStatLine SampleStatLine(Matchup matchup, Pcg32 outcomes)
     {
         MatchDistributions d = matchup.Dist;
-        bool homeWon = outcomes.NextDouble() < matchup.TrueHomeProb;
-        ScoreOutcome score = SampleScore(homeWon ? d.HomeWinScores : d.AwayWinScores, outcomes);
+        // THE SIX-DRAW CONTRACT IS UNCHANGED BY DRAWS. This was one NextDouble compared against
+        // TrueHomeProb; it is still ONE NextDouble, now walked across three cumulative bounds.
+        // The draw ruling therefore re-pins the golden seeds on VALUES only — no later draw shifts
+        // position in the Outcomes stream, so nothing downstream of a matchup moves.
+        MatchResult result = SampleResult(matchup, outcomes.NextDouble());
+        ScoreOutcome score = SampleScore(ScoresFor(d, result), outcomes);
         int homeCorners = SampleFromRaw(d.HomeCornerRaw, d.HomeCornerTotal, outcomes);
         int awayCorners = SampleFromRaw(d.AwayCornerRaw, d.AwayCornerTotal, outcomes);
         int homeCards = SampleFromRaw(d.HomeCardRaw, d.HomeCardTotal, outcomes);
@@ -184,8 +206,9 @@ public static class MatchModel
         switch (selection.Kind)
         {
             case MarketKind.Moneyline:
-                RequireChoice(selection, MarketChoice.Home, MarketChoice.Away);
-                return selection.Choice == MarketChoice.Home ? matchup.TrueHomeProb : 1.0 - matchup.TrueHomeProb;
+                // 1X2. NOT TrueHomeProb, which is the CONDITIONAL P(home | decisive) and is what
+                // this line returned while every match was decisive.
+                return matchup.TrueProb(ResultOf(selection.Choice));
 
             case MarketKind.TotalGoals:
                 RequireChoice(selection, MarketChoice.Over, MarketChoice.Under);
@@ -243,7 +266,7 @@ public static class MatchModel
         switch (selection.Kind)
         {
             case MarketKind.Moneyline:
-                return selection.Choice == (line.Winner == Side.Home ? MarketChoice.Home : MarketChoice.Away);
+                return ResultOf(selection.Choice) == line.Result;
             case MarketKind.TotalGoals:
                 return Compare(line.HomeGoals + line.AwayGoals, selection.Line, selection.Choice);
             case MarketKind.BothTeamsToScore:
@@ -286,7 +309,12 @@ public static class MatchModel
         switch (selection.Kind)
         {
             case MarketKind.Moneyline:
-                return $"{(selection.Choice == MarketChoice.Home ? matchup.Home.Name : matchup.Away.Name)} ML — {match}";
+                return ResultOf(selection.Choice) switch
+                {
+                    MatchResult.Home => $"{matchup.Home.Name} ML — {match}",
+                    MatchResult.Away => $"{matchup.Away.Name} ML — {match}",
+                    _ => $"DRAW ML — {match}",
+                };
             case MarketKind.TotalGoals:
                 return $"{selection.Choice.ToString().ToUpperInvariant()} {selection.Line:0.0} GOALS — {match}";
             case MarketKind.BothTeamsToScore:
@@ -313,9 +341,21 @@ public static class MatchModel
         switch (selection.Kind)
         {
             case MarketKind.Moneyline:
-                RequireChoice(selection, MarketChoice.Home, MarketChoice.Away);
-                string team = selection.Choice == MarketChoice.Home ? matchup.Home.Name : matchup.Away.Name;
-                return new MarketFields("MONEYLINE", team, "", fixture, "");
+            {
+                // The DRAW's subject is the match itself, not a team — the same shape BTTS and the
+                // counting markets already use. Surface wording for the draw row is Phase S / DD's
+                // call; "DRAW" is the DS-neutral placeholder and is deliberately not invented past
+                // that (S22: the engine emits fields, the surface composes).
+                MatchResult result = ResultOf(selection.Choice);
+                string subject = result switch
+                {
+                    MatchResult.Home => matchup.Home.Name,
+                    MatchResult.Away => matchup.Away.Name,
+                    _ => "",
+                };
+                return new MarketFields("MONEYLINE", subject,
+                    result == MatchResult.Draw ? "DRAW" : "", fixture, "");
+            }
 
             case MarketKind.TotalGoals:
             {
@@ -372,13 +412,20 @@ public static class MatchModel
         _ => throw new ArgumentOutOfRangeException(nameof(role)),
     };
 
-    public static IReadOnlyList<ScoreOutcome> EnumerateScores(MatchLatents latents, bool homeWon, RunConfig config)
+    public static IReadOnlyList<ScoreOutcome> EnumerateScores(MatchLatents latents, MatchResult result,
+        RunConfig config) => EnumerateClass(latents, result, config).scores;
+
+    /// <summary>One result class's score distribution, normalized, PLUS its raw mass before
+    /// normalization. The mass is what makes P(draw) a read rather than a dial — see
+    /// <see cref="MatchDistributions.DrawProb"/>.</summary>
+    internal static (IReadOnlyList<ScoreOutcome> scores, double mass) EnumerateClass(
+        MatchLatents latents, MatchResult result, RunConfig config)
     {
         var values = new List<ScoreOutcome>();
         double total = 0.0;
         for (int h = 0; h <= config.MaxGoalsGrid; h++)
             for (int a = 0; a <= config.MaxGoalsGrid; a++)
-                if ((homeWon && h > a) || (!homeWon && a > h))
+                if (ClassOf(h, a) == result)
                 {
                     double p = PoissonPmf(h, latents.HomeGoalRate) * PoissonPmf(a, latents.AwayGoalRate);
                     values.Add(new ScoreOutcome(h, a, p));
@@ -387,8 +434,31 @@ public static class MatchModel
 
         for (int i = 0; i < values.Count; i++)
             values[i] = new ScoreOutcome(values[i].HomeGoals, values[i].AwayGoals, values[i].Probability / total);
-        return values;
+        return (values, total);
     }
+
+    private static MatchResult ClassOf(int homeGoals, int awayGoals)
+        => homeGoals > awayGoals ? MatchResult.Home
+        : homeGoals < awayGoals ? MatchResult.Away
+        : MatchResult.Draw;
+
+    /// <summary>Home / Draw / Away from a single uniform, in that order. The ordering is part of
+    /// the replay contract — reordering these branches would silently re-map every seed.</summary>
+    private static MatchResult SampleResult(Matchup matchup, double roll)
+    {
+        double pHome = matchup.TrueProb(MatchResult.Home);
+        if (roll < pHome) return MatchResult.Home;
+        return roll < pHome + matchup.TrueProb(MatchResult.Draw) ? MatchResult.Draw : MatchResult.Away;
+    }
+
+    private static IReadOnlyList<ScoreOutcome> ScoresFor(MatchDistributions d, MatchResult result)
+        => result switch
+        {
+            MatchResult.Home => d.HomeWinScores,
+            MatchResult.Draw => d.DrawScores,
+            MatchResult.Away => d.AwayWinScores,
+            _ => throw new ArgumentOutOfRangeException(nameof(result)),
+        };
 
     private static ScoreOutcome SampleScore(IReadOnlyList<ScoreOutcome> scores, Pcg32 rng)
     {
@@ -425,24 +495,40 @@ public static class MatchModel
     private static double GoalTotalProbability(Matchup matchup, double line, RunConfig config)
         => ScoreProbability(matchup, (h, a) => h + a > line, config);
 
+    /// <summary>The unconditional law of the generative model, now a THREE-class mixture. Pricing
+    /// and the sampler share it, so every goal market reprices consistently with what gets sampled
+    /// — the divergence failure mode (priced off one distribution, graded off another) stays killed
+    /// structurally rather than by test.</summary>
     private static double ScoreProbability(Matchup matchup, Func<int, int, bool> predicate, RunConfig config)
     {
         double p = 0.0;
-        foreach (ScoreOutcome x in matchup.Dist.HomeWinScores)
-            if (predicate(x.HomeGoals, x.AwayGoals)) p += matchup.TrueHomeProb * x.Probability;
-        foreach (ScoreOutcome x in matchup.Dist.AwayWinScores)
-            if (predicate(x.HomeGoals, x.AwayGoals)) p += (1.0 - matchup.TrueHomeProb) * x.Probability;
+        foreach ((MatchResult result, IReadOnlyList<ScoreOutcome> scores) in Classes(matchup))
+        {
+            double weight = matchup.TrueProb(result);
+            foreach (ScoreOutcome x in scores)
+                if (predicate(x.HomeGoals, x.AwayGoals)) p += weight * x.Probability;
+        }
         return p;
     }
 
     private static double ScoreExpectation(Matchup matchup, Func<int, int, double> value)
     {
         double sum = 0.0;
-        foreach (ScoreOutcome x in matchup.Dist.HomeWinScores)
-            sum += matchup.TrueHomeProb * x.Probability * value(x.HomeGoals, x.AwayGoals);
-        foreach (ScoreOutcome x in matchup.Dist.AwayWinScores)
-            sum += (1.0 - matchup.TrueHomeProb) * x.Probability * value(x.HomeGoals, x.AwayGoals);
+        foreach ((MatchResult result, IReadOnlyList<ScoreOutcome> scores) in Classes(matchup))
+        {
+            double weight = matchup.TrueProb(result);
+            foreach (ScoreOutcome x in scores)
+                sum += weight * x.Probability * value(x.HomeGoals, x.AwayGoals);
+        }
         return sum;
+    }
+
+    private static IEnumerable<(MatchResult, IReadOnlyList<ScoreOutcome>)> Classes(Matchup matchup)
+    {
+        MatchDistributions d = matchup.Dist;
+        yield return (MatchResult.Home, d.HomeWinScores);
+        yield return (MatchResult.Draw, d.DrawScores);
+        yield return (MatchResult.Away, d.AwayWinScores);
     }
 
     private static Player SamplePlayer(IReadOnlyList<Player> roster, Pcg32 rng)
@@ -476,6 +562,17 @@ public static class MatchModel
         for (int i = 1; i <= k; i++) p *= lambda / i;
         return p;
     }
+
+    /// <summary>The 1X2 choice vocabulary as a result. Throws rather than defaulting: a moneyline
+    /// selection carrying Over/Under/Yes/No is a construction bug, and answering "Away" for it —
+    /// which the old two-way ternaries did — is how it would have shipped unnoticed.</summary>
+    internal static MatchResult ResultOf(MarketChoice choice) => choice switch
+    {
+        MarketChoice.Home => MatchResult.Home,
+        MarketChoice.Draw => MatchResult.Draw,
+        MarketChoice.Away => MatchResult.Away,
+        _ => throw new ArgumentException($"Invalid moneyline choice {choice}; expected Home, Draw or Away"),
+    };
 
     private static void RequireChoice(MarketSelection selection, MarketChoice first, MarketChoice second)
     {
