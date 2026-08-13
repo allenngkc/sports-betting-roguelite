@@ -1,7 +1,18 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 208 — THE PARLAY
-PRICING RULING (S73).** Batch 45 canon (2c6a40d): a same-game ticket is
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 209.** Batches 46+47
+canon (4917dc7): THE PRINCIPLE - the theatre prints facts and offers,
+never opinions (unifies three prior deletions); (99%) goes, print-the-
+cost is the constructive half; T22 commit-boundary question to TV. The
+owed shared-canon edit EXECUTED at integration (238238d - the dead
+exploit framing replaced; exploit lives in relics now). Allen named
+both: the instrument is SAME MATCH, the mark is THE HOUSE'S LINE -
+recorded, both lanes notified. Honest book YES recorded. SGP: step 2
+approved, step 3 GO, cash-out-after-gates approved. TV seat ROTATED
+(98pct), fresh seat seeded with the copy fixes + T22 question. RF number
+still open with Allen; research package + play questions likewise.
+
+*(prior stamp, cycle 208:)* Batch 45 canon (2c6a40d): a same-game ticket is
 ITS OWN INSTRUMENT - no product-with-adjustment ever rendered (the nerf
 reading is manufactured by the comparison); the relationship marked in
 OXIDE as an annotation ('legs the house has marked pay less' - learnable
