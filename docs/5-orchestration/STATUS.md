@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 218 (heartbeat).** All
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 219 — PHASE T's CLOSING
+LEDGER IS EXPLICIT.** The DD's accounting (Allen-read) exposed my relay
+gap - headlines where the seat needed TABLES; fixed: TV dispatched five
+deliverables with table-and-traceability-pass-first ordering (the pass
+guards LegRowLine0's landed relief against the generator that invented
+PEND). Room closed its arc: practice edit + bytes drop done, SitSpot
+answer delivered (PRESS not release - the hazard is the mirror; press-
+poll bypasses Hold) - merged c8525d1, room clean-holding. TV builds the
+gesture against the press-path. Campaign A still grinding; sgp 3b;
+research holds for Allen.
+
+*(prior stamp, cycle 218:)* All
 working: campaign A's shell still running (mpregame); the DD composing
 its Phase T blockers accounting on Allen's ask; TV 4+ min into the
 gesture build; sgp 3b; research holding. Quiet is healthy.
