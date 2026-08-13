@@ -1,6 +1,18 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 202 (heartbeat).** TV
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 203 — THE WIRING IS IN
+AND HELD ITS BOUNDS.** TV's re-measure: every wired value at or under
+its predicted bound - the screen never understated, its one design
+requirement; pre-existing overruns hold ship-not-wiring; the money
+collision worsened as predicted (no new collision); verify-the-verifier
+lesson recorded. T-6 (finish) STARTED on Allen's word. Batch 43 canon
+(2e95753): three tracking values ratified, Consolation takes 0 on the
+label-vs-COPY split, two slots held on their strings (pre-committed both
+ways), PEND authored-vs-clipped pre-committed, probe data-intact
+condition set. TV owes three cheap answers with T-6. RF-12 still held on
+Allen's number.
+
+*(prior stamp, cycle 202:)* TV
 13+ min into the wiring turn; DD mid-ratification with an API retry in
 progress (1/10, watching); Tier-2 probes running. HELD: 'RF-12 granted'
 - no RF-12 exists (IDs run RF-1..RF-9); asked Allen for the intended
