@@ -1,7 +1,11 @@
 # 00 — Reference list: verification + proposal
 
 **Lane:** research (compulsion-loop references) · **Lead:** Claude (Opus 5) · **Date:** 2026-08-12
-**Status:** PROPOSAL — awaiting Allen (this lane's design authority). No deep dives start until ruled.
+**Status:** **RULED 2026-08-12 (Allen, via orchestrator).** List APPROVED; **Buckshot Roulette ADDED** to
+Tier 1 (RF-1 granted). Allen has played **Balatro** and **CloverPit** — those two autopsies weighted
+accordingly, questions on his sheet at `07-questions-for-allen-from-play.md`. **RF-2 (Schüll / near-miss /
+LDW literature) NOT RULED — parked on Allen's list**; the review corpus + achievement funnel are confirmed
+as the substitute for play access. Deep dives ran: `02`–`05` (autopsies), `06` (mapping).
 **Routes:** lead → orchestrator → Allen. Never to the DD seat (`docs/handoffs/research.md` §3).
 
 ---
