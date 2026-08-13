@@ -1,6 +1,19 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 193 (heartbeat).** Both
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 194 — PHASE T VERDICT:
+GRANTED, NOT SHIPPED.** Batch 39 canon (c057fcc): the pair caught two
+live rendered defects (NEED truncation dropping the operative word; the
+money control collision) - constitution 3.5's fourth instance, first via
+a face; both fixable, neither a direction change; the lane's work called
+good. Pair valid 130/151 (21 grammar-mismatch exclusions, R23-am).
+T85: T-5's tracking was a fourth, separable, UNRULED variable (~10px of
+the overrun) - remedy order RULED: tracking-0 re-measure FIRST, no layout
+changes before it. T82 survived its own falsifier. Dispatched to TV in
+the ruled order on Allen's word. ALLEN'S LINE: Phase T is held short of
+shipping on two fixable defects - the instrument you paid for caught
+them before a player ever could.
+
+*(prior stamp, cycle 193:)* Both
 seats working in parallel: TV 4+ min into T82 (tabular atlas build), DD
 4+ min into the pair verdict. Nothing stalled.
 
