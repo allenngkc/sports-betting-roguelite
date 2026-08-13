@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 229.** TV's fix pass
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 230 — MAIN IS PUSHED.**
+origin/main 7ff558d → 69c89f7 on Allen's ask (the local-only hold died
+with the storage question he answered): merged + shipped - TV's fix-pass
+era (ead5430), draws + the full v1 vocabulary (54291b4), research Tier-2
+(69c89f7); 18 LFS objects 41MB clean; DLL verified identical. SGP's
+engine work held until step 3 completes. STANDING: main pushes with each
+merge sweep from here. TV standing by on the two composition rulings;
+Campaign B mid-run.
+
+*(prior stamp, cycle 229:)* TV's fix pass
 COMMITTED (f84d431 + db5157f, suites green, payout maximum enumerated
 real). TWO composition calls to the DD - the LAST build items before the
 after-frames: RiskPays height (branch-2 span re-derivation, over by 20)
