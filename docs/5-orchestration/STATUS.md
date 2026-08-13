@@ -1,6 +1,19 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 212 (heartbeat).** Three
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 213.** Dense stretch:
+batch 50 canon (c9ceb77 - T22 ruled, label-is-the-contract; C48 LAW: the
+INPUT is corrected to match the copy, never the reverse - the hold-gate
+fix is TV's). Room's R23 pair: DISPOSITION 3 fired honestly (anchors do
+not separate; the band's own upper anchor may be wrong - underived ~92
+vs computed/rendered ~101-103 agreeing) - merged 38c44da, the band's-top
+adjudication with the DD. TV seat chaos resolved: the timed-out create
+had spawned TWO copies of the exhausted session - all four stale
+terminals closed, ONE fresh seat created (no --continue - the handoff is
+the rotation instrument), seeded with the C48 fix mandate. Watcher v28.
+Allen approvals fired: same-match-holds-to-settlement (sgp phase 3),
+research's five probes + two autopsies. Campaign A still grinding.
+
+*(prior stamp, cycle 212:)* Three
 staged orders fired: room's Route B window GRANTED (coupling answer came
 back coupled; Unity verified zero; frame-locked pair per the spec's
 pre-commitments); TV's (99%) copy fix (offer-not-opinion form, sweep-
