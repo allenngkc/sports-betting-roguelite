@@ -46,7 +46,10 @@ reverted.
 | `surething-ui` | `surething-ui` | Claude (Opus 5) | Active |
 | `room-refinement` | `room-refinement` | Claude (Opus 5) | Active |
 | `tv-sweat` | `slice/tv-sweat-refinement` | Claude (Opus 5) | Active |
-| `markets-2` | `markets-2` | Claude (Opus 5) | Active (seated 2026-07-31; F_0.4.0 follow-up, sim/data scope until surething-ui merges) |
+| `markets-2` | `markets-2` | Claude (Opus 5) | Retired 2026-08-11 — fully merged (42d3f5a, validated); worktree deleted on Allen's order |
+| `markets-pregame` | `markets-pregame` | Claude (Opus 5) | Active (seated 2026-08-12; Lane 1 of `next-slices-2026-08-12.md` — full v1 pre-game vocabulary, one campaign one re-baseline) |
+| `sgp` | `sgp` | Claude (Opus 5) | Active (seated 2026-08-12; Lane 2 — same-game parlay, research-first, TV PRD §8.2A order) |
+| `research` | `research` | Claude (Opus 5) | Active (seated 2026-08-12; Lane 3 — compulsion-loop reference research, docs-only. **GOVERNANCE EXCEPTION: Allen personally holds the DD role for this lane; findings route to Allen, not the DD seat; standing creative mandate to PROPOSE overriding any design doc — proposals, never edits**) |
 | `Documents/CodingProjects/sports-betting-roguelite` | `feat/soccer-markets` | — | Retired 2026-07-31 — fully merged into main (56 behind); superseded by `markets-2` |
 
 ## Ownership rules
