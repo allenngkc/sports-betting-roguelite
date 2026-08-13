@@ -1,6 +1,19 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 213.** Dense stretch:
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 214 — THE BAND'S TOP
+WITHDRAWN.** Batch 51 canon (4bca23d): the ~92 anchor withdrawn on
+room's find (underived since batch 13; the DD's own misread of the
+10.7-degree miss recorded with its evidence trail - two errors one
+cause, C44's subject one batch after writing C44); 101.4 NOT installed
+(C41 bars the third repeat); the band re-derives ONCE - dispatched to
+room on Allen's word (members named, the lights-vs-lit-objects fork to
+be decided by derivation, C44 practice beside the bound). V6's bounds
+void with the top; T65's subject unadjudicated but its VIOLATION stands
+under every candidate; batch 36's credit restored; R40 closed on MD5
+identity. Elsewhere: campaign A grinding, sgp phase 3, TV's C48 fix,
+research autopsies+probes.
+
+*(prior stamp, cycle 213:)* Dense stretch:
 batch 50 canon (c9ceb77 - T22 ruled, label-is-the-contract; C48 LAW: the
 INPUT is corrected to match the copy, never the reverse - the hold-gate
 fix is TV's). Room's R23 pair: DISPOSITION 3 fired honestly (anchors do
