@@ -8,6 +8,26 @@ rather than at the presentation boundary.
 Self-contained — no need to read the lane docs. Numbers are measured, not estimated: an exact
 enumeration over the sim's own match model, verified to 2.554e-15 across 437,832 checks.
 
+> **AMENDED AFTER RELAY, 2026-08-12.** This brief was relayed, then two rulings landed that answer
+> much of it. Recorded here so the file is not read later as though it were still open.
+>
+> - **Q1 is answered by canon (S73, batch 45).** The ticket is its own instrument: the surface shows
+>   no product-of-legs and no adjustment line, and the relationship is marked as an annotation. The
+>   model has been changed to emit a structured **relation label** beside its joint probability, so
+>   presentation can compose a sentence rather than expose arithmetic. Nothing further needed from
+>   the DD on Q1.
+> - **Q2 is mostly answered.** An implication pair now carries a relation annotation of its own
+>   ("this has already happened whenever that does"), which is a warning by construction. What
+>   remains genuinely open is narrower: does the slip additionally *refuse* the combination, or is
+>   annotating it enough?
+> - **Q3's trap has largely dissolved — draws were greenlit** the same day (Lane 1). The two
+>   combinations that were impossible only because our matches never drew become possible again, so
+>   the copy no longer has to say something a football-literate player knows is false. Refusal copy
+>   is still owed for the combinations that remain genuinely impossible, but it can now be honest
+>   without qualification.
+>
+> Two items ride separately to Allen and are not the DD's: the mark's name, and the honest-book call.
+
 ---
 
 ## What is already decided (not your call, context only)

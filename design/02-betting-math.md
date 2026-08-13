@@ -41,11 +41,13 @@ Selections partition into three families — **GOAL** (moneyline, total goals, B
 p_joint = p_GOAL × p_CORNER × p_CARD
 ```
 
-**Goal family** — one pass over the winner-conditioned score enumeration:
+**Goal family** — one pass over the scoreline distribution:
 
 ```
-p_GOAL = Σ_{w ∈ {H,A}} P(w) · Σ_{(h,a) ∈ S_w} P(h,a | w) · 1[non-scorer goal predicates hold] · Π_t Q_t(g_t)
+p_GOAL = Σ_{(h,a)} P(h,a) · 1[non-scorer goal predicates hold] · Π_t Q_t(g_t)
 ```
+
+`P(h,a)` is the model's unconditional distribution over scorelines. The engine *constructs* it by drawing an outcome class and then a conditional score, `P(h,a) = Σ_{w ∈ W} P(w) · P(h,a | w)`. **Write that sum over `W`, never over a hard-coded pair of branches.** `W` is `{home, away}` in the pre-draws model and `{home, draw, away}` once draws land (Lane 1, greenlit 2026-08-12 — see *Pending: draws* below). Nothing else in this model depends on which it is, and a partition-agnostic sum costs nothing to write.
 
 **Scorer term** — for `k` backed players on team `t` holding roster-normalized weights `w_1..w_k`, against `g` goals by that team:
 
@@ -69,6 +71,34 @@ p_CORNER = Σ_{c_h} Σ_{c_a} P(c_h) · P(c_a) · 1[corner predicates hold]
 ```
 
 `ρ` is a pure property of the joint distribution and is **independent of the overround**. Measured range on the shipped board: `[0, 3.11]` at two legs, `[0, 11.88]` at three, `[0, 14.82]` at four. At two legs, 51.4% of combinations are exactly independent (`ρ = 1`), 3.49% are impossible (`ρ = 0`), and 3.49% are logical implications where one leg strictly implies the other.
+
+**`ρ` is a diagnostic, not an interface.** It is what the audit and the reconnaissance report. It is *not* what the model hands downstream — see the next section, where shipping it as a bare scalar is a named and prohibited failure.
+
+### What the model emits: a joint probability *and* a relation label
+
+**Binding constraint (S73, batch 45, canon).** The ticket is its own instrument. The surface never shows a product-of-legs or an adjustment line; the relationship is marked as an annotation. So the model must emit, beside its joint probability, a **relation label** — structured data carrying enough for presentation to compose a *sentence*, never a formula. And:
+
+> **Where the model finds correlation it cannot label, the price does not move.**
+
+The prohibited implementation is `p_joint` collapsed to a bare scalar `ρ`: that leaves step 5 holding a price it cannot explain, and the rework lands back here. **The model's output type is `(p_joint, relations[])`, not a number.**
+
+**The relation vocabulary.** Correlation on this board is not diffuse — it arises from a closed set of structural causes, which is why this constraint is satisfiable rather than aspirational:
+
+| Relation | Arises when | The sentence it must support |
+|---|---|---|
+| `MutuallyExclusive` | `p_joint = 0` | these cannot both happen |
+| `Implies(a → b)` | `p_joint = min p_i`; one leg strictly entails another | b has already happened whenever a does |
+| `SharedScoreline(reinforcing \| opposing)` | two GOAL-family legs read the same scoreline | one makes the other likelier / less likely |
+| `ScorerOfSide(side)` | a scorer leg beside a leg on that team's goals | the same goals settle both |
+| `Independent` | legs drawn from different families | unrelated — no adjustment |
+
+Presentation composes the words; **the model never emits English.** That seam keeps copy authority with the Design Director and pricing authority here.
+
+**The no-label fallback, stated precisely.** A ticket prices on its exact joint only if *every* correlated relation it carries resolves to a label. If any does not, the whole ticket prices at `Π p_i`. Partial per-relation application is not offered: a joint probability is not a product of pairwise adjustments and cannot be half-applied honestly.
+
+**One carve-out, and it is load-bearing.** The `p_joint = 0` check is a **validity test, not a price movement**, and is never subject to the fallback. Without this carve-out an unlabelable zero would fall through to the naive product and sell an impossible ticket — reintroducing exactly the defect this model exists to remove. Validity runs first; labelling governs pricing only.
+
+**Totality, and why the fallback must be instrumented.** Every correlated combination in the shipped vocabulary falls into the table above, so the fallback should never fire in v1 — it exists to keep vocabulary growth safe, not as a live path. But if it ever does fire on a positively-correlated ticket, the player silently collects the naive-product edge, up to +274% EV on an implication pair. **A silent fallback is a money leak.** It must be counted and surfaced by the gate campaign, not merely logged.
 
 ### Pricing
 
@@ -102,7 +132,7 @@ At `κ = 1` an independent combination prices *identically* to the legs multipli
 
 Logical implications (`p_joint = min p_i`, one leg strictly implying another) are **not** blocked: the joint prices them correctly and automatically. The player pays two legs of vig for one leg of risk, which is a bad bet rather than a broken one. Whether the interface should discourage them is a presentation question, not a math one.
 
-Two impossible shapes — `BTTS YES + Under 2.5`, and `Under 2.5 ⊂ BTTS NO` — exist *only* because draws are unrepresentable in v1. They are artefacts of that constraint, not of football, and need revisiting if draws are ever added. (OPEN, coupled to the no-draws decision.)
+Two of these shapes — `BTTS YES + Under 2.5`, and the implication `Under 2.5 ⊂ BTTS NO` — were artefacts of draws being unrepresentable, and **draws were greenlit 2026-08-12** (Lane 1). A 1–1 result restores both, so each leaves its set: the first becomes merely unlikely, the second stops being an implication at all. See *Pending: draws* below.
 
 ### Void: re-price on the survivors
 
@@ -115,6 +145,16 @@ o_sgp' = 1 / (p_joint(surviving legs) × κ × (1 + Ω)^{n−1})
 Dropping a voided leg's factor out of a product — today's behaviour — is **wrong under a joint price, and is what no real book does**. Real books split between re-pricing on the remainder and voiding the whole ticket. Re-pricing is chosen here because the price was a statement about a joint event: remove a leg and the event itself has changed.
 
 Void-replacement prices are **computed and locked at ticket lock**, one per single-void scenario, never re-derived at settlement. That keeps settlement deterministic and independent of when a void is discovered. (Multiple simultaneous voids: OPEN — the one documented commercial mechanism covers a single void only.)
+
+### Pending: draws (Lane 1, greenlit 2026-08-12)
+
+Draws are being introduced by the pre-game markets lane. **Sequencing is not assumed here** — coordinate through the orchestrator, never against that lane's timeline. What the change does and does not touch:
+
+**Unaffected — the model is structurally draws-agnostic by construction:** the pricing rule, the EV-parity property, the relation vocabulary and the no-label fallback, the void re-pricing rule, the conditional cash-out form, the count-family joints (corners and cards never read the score), and the scorer inclusion–exclusion (it conditions on a team's goal count, not on who won). The goal-family sum is already written over `W` rather than a hard-coded pair of branches, so it absorbs a third outcome class without a rewrite.
+
+**Affected — every measured quantity in this section, without exception.** All counts and percentages above (the 22 impossible pair shapes, the 57 triple shapes, `ρ` ranges, the 51.4% independent share, the 3.49% figures) were measured against the pre-draws model and **must be re-measured once draws land**. The reconnaissance harness and its method are recorded in `docs/sgp/correlation-recon.md` §1, so a re-measure is a re-run, not a rebuild.
+
+**Expect the sets to change in both directions.** The two artefact shapes leave. If a draw becomes a selectable market, new mutually-exclusive pairs arrive with it (`Draw` against either moneyline) — all of them labelable under the existing vocabulary, which is the point of having defined relations structurally rather than empirically.
 
 ## Generalized payoff functions
 
