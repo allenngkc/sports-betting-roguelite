@@ -768,6 +768,19 @@ namespace SBR.Game
         // authored copy to fit a stale measurement is how the statement line was lost once already.
         private const int TypeScore = 36;
         private const int TypeCashOut = 29;
+        /// <summary><c>--tv-size-team</c>, 28px. Currently read by nothing, and RESTORED anyway after
+        /// T-4 retired it on exactly that evidence.
+        ///
+        /// <para>Retiring it was wrong. It is not a leftover — it is canon
+        /// (<c>tokens/typography.css</c>) with no slot yet able to consume it, because team names and
+        /// the score share one component today and that component is sized at
+        /// <see cref="TypeScore"/>. T72 (batch 32) ruled the split — name / score / name spans — and
+        /// the name spans are what this is for.</para>
+        ///
+        /// <para>The split itself is deliberately NOT in this phase: it appears in no T-order, and
+        /// C43 keeps a migration to one variable. So this sits unread until T72 is built, which is a
+        /// different thing from dead. "Nothing references it" was true and was the wrong test.</para></summary>
+        private const int TypeTeam = 28;
         private const int TypeClock = 28;
         private const int TypeNeed = 28;
         private const int TypeRisk = 24;
@@ -775,10 +788,12 @@ namespace SBR.Game
         private const int TypeProgress = 19;
         private const int TypeEyebrow = 15;
 
-        // T-4: `TypeTeam = 28` and `TypeLeg = 19` used to sit in the block above with exactly one
-        // reference each — their own declaration. Retired rather than left, because a size constant
-        // nothing reads is indistinguishable from one that IS read until somebody greps, and the
-        // inventory found them by counting references rather than by reading the list.
+        // T-4 retired `TypeTeam` and `TypeLeg` together, on the evidence that each had exactly one
+        // reference — its own declaration. `TypeTeam` is back above, because that test was the wrong
+        // one: it is canon awaiting T72's split, not a leftover. `TypeLeg = 19` stays retired on
+        // different grounds — T20 moved resolved and pending rows 19 -> 15px, so the 19 it named is
+        // superseded rather than pending. Two constants that looked identical to a reference count
+        // and were not, which is the lesson worth keeping from the mistake.
         //
         // The eight below are the sizes this file used to spell as bare integers at the call site.
         // Same numbers, named — T-4 tokenises, it does not re-scale, so nothing here moves a pixel.
