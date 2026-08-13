@@ -70,14 +70,40 @@ namespace SBR.EditorTools
             ("Flavor", "event strip, authored narration", new[]
                 { "REGULATORS BREAK AWAY DOWN THE RIGHT", "ZAMBONIS CLEAR THE LINE", "GOAL" }),
             ("Chrome", "PRD §8.1 chrome row", new[] { "ROUND 3   BANK $1,240   PAYMENT $800   SEED 48151623" }),
+
+            // The six that were UNSWEPT, now enumerated from their assignment sites rather than
+            // guessed. Five resolve to literals or to formats with bounded fields; the sixth is
+            // marked CONSTRUCTED because its content is engine-generated and has no bound readable
+            // from this surface.
+            ("Attract", "4 assignment sites: 2 literals, the win/lose pair, RenderIdle titles", new[]
+                { "ROUND 10 OF 12 · BOARD OPEN", "SIT TO WATCH THE SWEAT", "THE HOUSE BLINKS FIRST",
+                  "THE BOOKIE COLLECTS", "SHOP OPEN" }),
+            ("TakeoverTitle", "3 assignment sites (a fourth clears it)", new[]
+                { "SHORT — $12,340 AGAINST $20,000", "TICKET 1 OF 2", "PAYMENT MADE" }),
+            ("TakeoverSub", "the deferral line, plus the leg list — CONSTRUCTED, see note", new[]
+                { "PAYMENT DEFERRED — YOUR BANK STANDS. THE NEXT ONE GROWS BY $1,200",
+                  "LANYARD TO SCORE ANYTIME +450   ·   BOTH TEAMS TO SCORE -110   ·   UNDER 10.5 CORNERS +240" }),
+            ("Subtitle", "RenderIdle sub, plus the run-over line", new[]
+                { "FINAL BANK $12,340  —  NEW RUN AT THE LAPTOP",
+                  "gear up at the laptop, then the next round" }),
+            ("Consolation", "the authored four-line deck, verbatim", new[]
+                { "the model remains extremely confident.", "the book thanks you for your patronage.",
+                  "a courtesy: nobody saw that.", "so close. they always are." }),
+            ("InterventionPrompt", "one site; widest LINE with both consumables owned", new[]
+                { "SHOT FROZEN\n[M] MULLIGAN   ·   [R] SEND TO REVIEW (99%)   ·   [N] LET IT DIE" }),
         };
 
-        /// <summary>Slots reported but NOT swept, because their longest renderable form is not
-        /// enumerable from here. Named so the inventory says what it does not cover.</summary>
-        private static readonly string[] Unswept =
-        {
-            "Attract", "TakeoverTitle", "TakeoverSub", "Subtitle", "Consolation", "InterventionPrompt",
-        };
+        /// <summary>Slots reported but NOT swept. Empty now: the six that stood here were enumerated
+        /// from their assignment sites, which is what "a slot is only as swept as its string set is
+        /// complete" obliges.
+        ///
+        /// <para><b>One residual, carried rather than cleared.</b> `TakeoverSub` renders the ticket's
+        /// leg list — <c>DisplayLabel</c> joined by a separator, one entry per leg — and
+        /// <c>DisplayLabel</c> is the ENGINE's label, the long concatenated form T69 ruled against on
+        /// the leg row. Its length is not bounded by anything readable on this surface, so its entry
+        /// is a CONSTRUCTED three-leg worst case, not an enumeration. A longer ticket or a longer
+        /// fixture makes it longer, and this sweep cannot say by how much.</para></summary>
+        private static readonly string[] Unswept = { };
 
         [MenuItem("SBR/TV/T84 extent sweep")]
         public static void Sweep()
@@ -135,8 +161,8 @@ namespace SBR.EditorTools
 
                     bool over = worstTab > box;
                     if (over) overrunning++;
-                    string digitNote = Mathf.Approximately(worstTab, worst) ? "no digits" : $"screened from '{worstTabS}'";
-                    Debug.Log($"[T84] {slot,-16} box {box,6:0.0}px  widest '{worstS}' {worst,6:0.0}px  " +
+                    string digitNote = Mathf.Approximately(worstTab, worst) ? "no digits" : $"screened from '{Show(worstTabS)}'";
+                    Debug.Log($"[T84] {slot,-16} box {box,6:0.0}px  widest '{Show(worstS)}' {worst,6:0.0}px  " +
                               $"TABULAR {worstTab,6:0.0}px ({digitNote})  " +
                               $"{(over ? $"OVERRUNS by {worstTab - box:0.0}px" : $"fits, {box - worstTab:0.0}px spare")}  " +
                               $"· set: {source}");
@@ -154,6 +180,11 @@ namespace SBR.EditorTools
             }
             finally { Object.DestroyImmediate(go); }
         }
+
+        /// <summary>A multi-line string on one log line. `InterventionPrompt` carries a newline, and
+        /// its row came out fractured across three log lines with its verdict on the third — a table
+        /// that cannot be read as a table. The measurement was right; the report was not.</summary>
+        private static string Show(string s) => s.Replace("\n", "\\n");
 
         /// <summary>Each digit's CURRENT advance on this component, in px, measured as ten of it.
         ///
