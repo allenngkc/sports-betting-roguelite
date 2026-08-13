@@ -187,6 +187,32 @@ explicit.
 **Tabular numerals are mandatory.** Scores, clocks, money and counts all change in place; non-tabular
 figures make the whole surface twitch on every tick.
 
+**How they are obtained — the atlas carries them, because the runtime cannot ask for them** (T82,
+2026-08-12, measured three ways at `cb84278`). T11 was right and is vindicated at the file level:
+`tnum` is present in the GSUB of both faces, and the tabular figures are genuinely drawn. They are
+nonetheless unreachable at runtime — TextMeshPro's `OTL_FeatureTag` declares only `kern`, `liga`,
+`mark` and `mkmk`, and no rich-text tag or component property exposes a `tnum`. **The default digit
+set both faces ship is proportional** at 0.242 em (Regular) and 0.244 em (Condensed), widest `0` and
+narrowest `1` in every face at every size, which is **46–93 px of spread across ten digits** at the
+sizes this surface renders numbers. The laptop's S29 escape does not exist here: Archivo Narrow's
+digits are equal-advance by construction, so a face assignment satisfied that mandate without a
+feature, and **both TV faces are proportional** — no face assignment on this surface can make the
+mandate true.
+
+So the mandate is delivered **at the font asset, not at the slot and not at runtime**: the atlas is
+built from the font's own tabular glyphs, with the substitution resolved at generation time and
+U+0030–0039 mapped to the tabular glyph indices. These are the figures the type designer drew. A
+forced uniform advance (`<mspace>`) is **not** an acceptable substitute — it imposes a metric the
+family does not contain, which is this section's *no synthesised styling* rule in the spacing
+channel, and it hits letters in mixed strings such as `CASH OUT $183`.
+
+Two standing consequences. **Digits alone satisfy the mandate** — digits are the characters that
+change, so `$`, `:` and separators need nothing; the requirement is equal advance *among digits*, not
+constant string width (a score going 9 to 10 adds a character and widens, and that is layout).
+**Every generated asset that any figure slot renders on takes the tabular set, and the inventory
+names its members** — the condensed Bold 700 asset carries `CashOut`, and an inventory that names two
+assets while missing a third ships a money control that still twitches.
+
 **No synthesised styling on this surface** (T73, T77). Weight comes from a real named instance of the
 family; slant is not used at all. A synthesised bold is a smear and a synthesised italic is a shear —
 neither is a letterform the family contains, and retiring them is what the TMP migration is *for*
@@ -226,9 +252,16 @@ Three of those carry conditions:
 
 - **`Clock` and `BigAmount` are named by the tabular mandate above** — a clock and a money figure both
   change in place. Regular is the face the mandate wants, so the default confirms rather than
-  conflicts, but both are **verified tabular on the built face, per slot, on frames.** A figure slot
-  ruled by default and never checked for `tnum` is S29's defect, and S29 is why nobody assumes this
-  twice.
+  conflicts. *(Verification clause corrected 2026-08-12, T75-am3: it read "verified tabular on the
+  built face, **per slot**, on frames", and both halves of that are now known wrong. The property
+  lives on the **font asset**, not the slot — T75-am — and on the shipped stack no slot and no face
+  can be tabular at all, so a per-slot frame check could never have returned a pass. `Clock` stays
+  Regular; the tabular property arrives with the atlas above, never with a face swap. The frame
+  evidence is corroboration, and the acceptance test is the harness's clock string: within a set of
+  equal-character-count strings in this right-anchored slot, the left ink edge is invariant iff the
+  digits are tabular.)* A figure slot ruled by default and never checked for `tnum` is S29's defect,
+  and S29 is why nobody assumes this twice — the check was right to demand, and what it found is
+  T82.
 - **`CashOutStatus` sits inside the money control** (§6.1, six states) beside a figure that is
   condensed and Bold 700. Its face is shown on the Phase T pair with the disposition pre-committed:
   reads as two voices inside one control → it moves to condensed; reads as label-and-figure → regular
