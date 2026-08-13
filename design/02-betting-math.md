@@ -94,7 +94,17 @@ The prohibited implementation is `p_joint` collapsed to a bare scalar `ρ`: that
 
 Presentation composes the words; **the model never emits English.** That seam keeps copy authority with the Design Director and pricing authority here.
 
-**The two canon names (Allen, 2026-08-12).** The instrument is **SAME MATCH**. The mark that annotates the relationship is **THE HOUSE'S LINE**. These are names, not composed copy, so they are baked in wherever code needs them rather than left as placeholders — the same precedent as the DS-verbatim market names already carried in `MatchModel.MarketFields`. Sentences built *from* the relation vocabulary above remain presentation's to write.
+**The two canon names, and their authoring boundary (Allen, batch 48, e729235).** The instrument is **SAME MATCH** — uppercase market vocabulary, untracked. The mark is **THE HOUSE'S LINE**.
+
+**The mark is drawn, not captioned.** The oxide line carries no label and the name is never printed beside it. `THE HOUSE'S LINE` appears only in rules copy, the ledger, and first-encounter. Where the slip needs a *statement*, it states the **relation** — a sentence composed from the vocabulary above, once per slip.
+
+That last clause binds this model, not presentation. **A slip states one relation, so the model must nominate which one.** A four-leg same-match ticket carries up to six pairwise relations, and choosing between them is a claim about what moved the price — which only the pricing layer is in a position to make. So the output contract is:
+
+```
+(p_joint, relations[], principal)
+```
+
+`principal` is the labelable relation carrying the largest `|ln ρ_pair|` — the one doing the most work on the price — with ties broken by precedence `Implies > ScorerOfSide > SharedScoreline`. `Independent` is never principal (there is nothing to state), and `MutuallyExclusive` never reaches a slip at all, because it is a rejection rather than a price. Leaving this choice to presentation would make presentation assert a pricing claim it has no basis for — precisely the failure S73 exists to prevent.
 
 **The no-label fallback, stated precisely.** A ticket prices on its exact joint only if *every* correlated relation it carries resolves to a label. If any does not, the whole ticket prices at `Π p_i`. Partial per-relation application is not offered: a joint probability is not a product of pairwise adjustments and cannot be half-applied honestly.
 
