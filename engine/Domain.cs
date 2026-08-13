@@ -265,19 +265,54 @@ public sealed class Matchup
         ModelConfig = modelConfig;
     }
 
-    internal void SetMarkets(IReadOnlyList<MarketOffer> markets) => Markets = markets;
+    internal void SetMarkets(IReadOnlyList<MarketOffer> markets)
+    {
+        Markets = markets;
+        _bySelection = null; // the board changed; the index below must be rebuilt against it
+    }
+
+    private Dictionary<MarketSelection, MarketOffer>? _bySelection;
+
+    /// <summary>Board index, built once lazily (the <see cref="Dist"/> pattern). Both lookups
+    /// below were linear scans over <see cref="Markets"/>, and the sim's sharp calls them twice
+    /// per candidate inside a loop over every offer — so the bot's per-matchup cost was quadratic
+    /// in board size, which is a cost the pre-game vocabulary expansion multiplies rather than
+    /// adds to. FIRST WINS on a duplicate selection, exactly as the old scan's early return did:
+    /// a config with a repeated line must keep behaving as it does today, not start throwing on
+    /// dictionary construction.</summary>
+    private Dictionary<MarketSelection, MarketOffer> BySelection
+    {
+        get
+        {
+            if (_bySelection != null) return _bySelection;
+            var index = new Dictionary<MarketSelection, MarketOffer>(Markets.Count);
+            foreach (MarketOffer offer in Markets) index.TryAdd(offer.Selection, offer);
+            return _bySelection = index;
+        }
+    }
 
     public double TrueProb(Side side) => side == Side.Home ? TrueHomeProb : 1.0 - TrueHomeProb;
     public double Odds(Side side) => side == Side.Home ? HomeOdds : AwayOdds;
     public double FairOdds(Side side) => 1.0 / TrueProb(side);
 
-    public double TrueProb(MarketSelection selection) => MatchModel.TrueProbability(this, selection);
+    /// <summary>The offered board already carries this exact number: <c>MatchModel.Offer</c>
+    /// stores the same <c>TrueProbability</c> call's result on the <see cref="MarketOffer"/>, so
+    /// reading it back is bit-identical, not merely equivalent. Recomputing it walked the full
+    /// score enumeration on EVERY access, and <see cref="Leg.TrueProb"/> is a property the sweat
+    /// re-reads per leg transition and per remaining leg when it prices a cash-out.
+    /// The fallback is not dead code and must stay: this method's contract is a pure function of
+    /// the model, defined for selections that were never offered (a bare <see cref="Matchup"/>
+    /// carries an empty board), and tests price selections off the board.</summary>
+    public double TrueProb(MarketSelection selection)
+        => BySelection.TryGetValue(selection, out MarketOffer? offer)
+            ? offer.TrueProb
+            : MatchModel.TrueProbability(this, selection);
+
     public double Odds(MarketSelection selection)
-    {
-        foreach (MarketOffer offer in Markets)
-            if (offer.Selection == selection) return offer.Odds;
-        throw new ArgumentException($"Market selection is not offered: {selection.Kind}");
-    }
+        => BySelection.TryGetValue(selection, out MarketOffer? offer)
+            ? offer.Odds
+            : throw new ArgumentException($"Market selection is not offered: {selection.Kind}");
+
     public double FairOdds(MarketSelection selection) => 1.0 / TrueProb(selection);
     /// <summary>Scorer-board ordering is stable: away players then home players.</summary>
     public Player PlayerAt(int playerIndex)
