@@ -261,7 +261,15 @@ namespace SBR.EditorTools
                         : $"screened from '{Show(worstTabS)}'";
                     Debug.Log($"[T84] {slot,-16} box {box,6:0.0}px  widest '{Show(worstS)}' {worst,6:0.0}px  " +
                               $"TABULAR {worstTab,6:0.0}px ({digitNote})  " +
-                              $"[face '{t.font?.name}' tracking {t.characterSpacing / 100f:0.000}em type {t.fontSize:0.#}px]  " +
+                              // `t.font` is the PRIMARY asset, not the arm that renders. A slot built
+                              // at FontWeight.Bold draws through the bold asset wired by WireBold
+                              // while `font.name` still reads the regular one — so printing the face
+                              // alone said `EncodeSansCondensed SDF` for CashOut, which is real
+                              // Condensed BOLD 700 (T73) and is recorded as such in the DD's own
+                              // batch-38 inventory. The weight is what disambiguates the pair, so the
+                              // weight ships beside the face.
+                              $"[face '{t.font?.name}' w{(int)t.fontWeight} style {t.fontStyle} " +
+                              $"tracking {t.characterSpacing / 100f:0.000}em type {t.fontSize:0.#}px]  " +
                               $"{(over ? $"OVERRUNS by {worstTab - box:0.0}px" : $"fits, {box - worstTab:0.0}px spare")}  " +
                               $"· set: {source}");
                 }
