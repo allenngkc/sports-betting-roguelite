@@ -27,6 +27,15 @@ enumeration over the sim's own match model, verified to 2.554e-15 across 437,832
 >   without qualification.
 >
 > Two items ride separately to Allen and are not the DD's: the mark's name, and the honest-book call.
+>
+> **CLOSED 2026-08-12 by S73-am4.** `docs/design/surething-design.md` §3.3 and the S73/S74/C47
+> amendment answer all three outright, and that doc is the authority:
+> **Q1** — the mark carries it, with no arithmetic on the face; where a statement is needed it states
+> the relation, in toner, once per slip. **Q2** — a redundant leg is legal, priced and added, stated
+> in toner; blocking it is explicitly refused. **Q3** — a refused combination is a Blocked state
+> taking stamp ink, with a literal reason carrying cause *and* remedy inside the control.
+> Nothing further is owed to this lane from the DD. One measured datum going back the other way is
+> in the lane report, not here.
 
 ---
 

@@ -158,7 +158,11 @@ At `κ = 1` an independent combination prices *identically* to the legs multipli
 
 Both are needed, and the second does not subsume the first. Two repeats of a *long* leg stay comfortably above evens and so pass the price check while remaining a pure ripoff: double margin for identical risk. The duplicate rule catches those; the evens rule is the backstop for anything else that drifts above `p_joint > 1/(κ(1+Ω)^n)`.
 
-Logical implications (`p_joint = min p_i`, one leg strictly implying another) are **not** blocked: the joint prices them correctly and automatically. The player pays two legs of vig for one leg of risk, which is a bad bet rather than a broken one. Whether the interface should discourage them is a presentation question, not a math one.
+**A refusal must emit cause AND remedy, structurally** (S73-am4, `docs/design/surething-design.md` §3.3 — the owning doc). A refused combination is a *Blocked* state, and that row has always required both halves: naming what cannot happen is the cause, **naming which leg to drop is the remedy**. So a rejection is not an exception string — it carries the offending leg set and a droppable leg that makes the ticket valid. The surface stamps it; the model supplies the parts, as with `principal`.
+
+Two things the same law fixes in place, both already true here: the engine **prices the individual leg and refuses only the combination**, so a refused leg stays reachable on its own; and a bet that cannot win is never purchasable, because a price is a factual claim about an outcome.
+
+Logical implications (`p_joint = min p_i`, one leg strictly implying another) are **not** blocked, and this is now settled rather than open: the leg is legal, correctly priced, and added, with the fact stated in its own space. The player pays two legs of vig for one leg of risk — a bad bet, not a broken one. A house that stops him being stupid is not this product; one that tells him and lets him proceed is.
 
 Two of these shapes — `BTTS YES + Under 2.5`, and the implication `Under 2.5 ⊂ BTTS NO` — were artefacts of draws being unrepresentable, and **draws were greenlit 2026-08-12** (Lane 1). A 1–1 result restores both, so each leaves its set: the first becomes merely unlikely, the second stops being an implication at all. See *Pending: draws* below.
 
