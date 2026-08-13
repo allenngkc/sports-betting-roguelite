@@ -44,21 +44,84 @@ namespace SBR.EditorTools
         /// behaviour did not survive the port. Reported as a finding of this sweep.</para></summary>
         private const float Unconstrained = 100000f;
 
+        /// <summary>The engine's CLOSED name pools, transcribed from `SlateGenerator`.
+        ///
+        /// <para><b>The traceability pass's finding, and it is the direction T89-C says is invisible in
+        /// frames.</b> Both generated arms of the leg row were swept against a PICKED champion rather
+        /// than an enumerated pool — `REGULATORS ML` for the club arm, when `Gravediggers` and
+        /// `Spreadsheets` are both in the pool and both two characters longer. The surface's own source
+        /// names the case this missed: <i>"Fallback for an unlucky club — `GRAVEDIGGERS TO WIN` is 19
+        /// and over budget."</i> The code knew the worst club; the sweep did not use it.</para>
+        ///
+        /// <para><b>And the two directions were not independent.</b> The old set also carried
+        /// `BRICKLAYERS ANYTIME` — a CLUB noun in the SURNAME slot, which
+        /// <c>{Surname} ANYTIME</c> cannot emit. That invented string was the widest member of its
+        /// set, so it SET the measured worst case and hid the fact that the real widest producible
+        /// form had never been measured. `PEND`'s class of error was concealing the opposite class.
+        /// An over-generated string is not merely noise: while it is the maximum, it suppresses the
+        /// under-generation it sits on top of.</para>
+        ///
+        /// <para>Picked champions are retired here. The pools are closed and small — 20 nouns and 12
+        /// surnames — so every producible form is generated and measured, and no future name added to
+        /// either pool can be missed by a champion nobody re-picked.</para></summary>
+        private static readonly string[] ClubNouns =
+        {
+            "Yams", "Startups", "Bricklayers", "Longhaulers", "Mallards", "Spreadsheets",
+            "Turnips", "Middlemen", "Regulators", "Plumbers", "Meatballs", "Auditors",
+            "Ferrets", "Overheads", "Gravediggers", "Notaries", "Muskrats", "Zambonis",
+            "Loopholes", "Refunds",
+        };
+
+        /// <summary>`SlateGenerator.PlayerLast`. The scorer arms take a SURNAME, never a club.</summary>
+        private static readonly string[] Surnames =
+        {
+            "Ledger", "Cinder", "Muffin", "Pavement", "Coupon", "Wobble",
+            "Gasket", "Pylon", "Ketchup", "Lanyard", "Racket", "Stapler",
+        };
+
+        /// <summary>Every member of a closed pool through one authored format, upper-cased the way the
+        /// surface upper-cases it. Generating beats picking: the sweep then re-derives its own worst
+        /// case whenever a pool grows.</summary>
+        private static string[] From(string[] pool, string format)
+        {
+            var forms = new string[pool.Length];
+            for (int i = 0; i < pool.Length; i++) forms[i] = string.Format(format, pool[i].ToUpperInvariant());
+            return forms;
+        }
+
+        private static string[] And(params string[][] sets)
+        {
+            var all = new List<string>();
+            foreach (string[] s in sets) all.AddRange(s);
+            return all.ToArray();
+        }
+
         /// <summary>Per slot: the strings it can be asked to render, longest-form first where known.
         /// Sources are named so a reader can check the set rather than trust it.</summary>
         private static readonly (string slot, string source, string[] strings)[] Cases =
         {
-            ("LegRowNeed0", "G1 deck (authored NEED statements)", new[]
-                { "ONE TEAM SCORELESS", "ONE TEAM BLANKED", "LANYARD TO SCORE", "BOTH TEAMS SCORE",
-                  "MIDDLEMEN ML", "NOT YET" }),
+            // RE-ENUMERATED by the T89-C pass. The old set picked `LANYARD TO SCORE` out of a
+            // 12-surname pool and carried `MIDDLEMEN ML` — an ML form, which is the LINE slot's
+            // vocabulary and one NEED never emits (its moneyline form is `{CLUB} TO WIN`). Both
+            // generated arms are now generated. The authored constants and the two fallbacks are
+            // verbatim from ActiveLegCopy's construction sites.
+            ("LegRowNeed0", "G1's NEED deck: two arms generated over the closed pools, constants verbatim",
+                And(From(ClubNouns, "{0} TO WIN"), From(Surnames, "{0} TO SCORE"), new[]
+                { "ONE TEAM SCORELESS", "ONE TEAM BLANKED", "BOTH TEAMS SCORE", "NOT YET",
+                  "TO WIN", "TO SCORE" })),
             // CORRECTED by the traceability pass, in BOTH directions. The old set was
             // {UNDER 10.5 CORNERS, UNDER 10.5 CNRS, LANYARD TO SCORE, BOTH TEAMS SCORE, MIDDLEMEN ML}.
             // Two of those — LANYARD TO SCORE and BOTH TEAMS SCORE — are forms LegStatement does NOT
             // produce (it emits `{SURNAME} ANYTIME` and `BTTS YES`/`BTTS NO`), and the set missed the
             // GOALS and CARDS totals entirely. Enumerated from LegStatement's switch, every arm.
-            ("LegRowLine0", "LegStatement's six market arms — see the UNBOUNDED note on its default", new[]
+            // RE-ENUMERATED by the T89-C pass, and this is the slot whose 1.8px relief rested on the
+            // old set. `BRICKLAYERS ANYTIME` was unproducible (a club noun in the surname slot) and
+            // was the set's own maximum; `REGULATORS ML` was a picked champion two characters short
+            // of the pool's longest. Both arms are generated now.
+            ("LegRowLine0", "LegStatement's six arms: ML and ANYTIME generated over the closed pools — see the UNBOUNDED note on its default",
+                And(From(ClubNouns, "{0} ML"), From(Surnames, "{0} ANYTIME"), new[]
                 { "UNDER 10.5 CORNERS", "UNDER 10.5 GOALS", "UNDER 10.5 CARDS",
-                  "BRICKLAYERS ANYTIME", "REGULATORS ML", "BTTS YES", "BTTS NO" }),
+                  "BTTS YES", "BTTS NO" })),
             ("LegRowPrice0", "price forms, generated", new[] { "+450", "-110", "2.75", "+1200" }),
             // CORRECTED. The first set here was {LIVE, NEXT, WON, LOST, VOID, PEND} and I invented
             // it — the plausible vocabulary for a state chip, not this build's. Enumerated properly
@@ -72,7 +135,10 @@ namespace SBR.EditorTools
                 { "0-0, 62' PLAYED", "NEEDS 1 MORE, 78'", "2-1, 88' PLAYED" }),
             ("CashOut", "§6.1 money control, six states", new[]
                 { "MARKET SUSPENDED", "CASHED OUT $1,240", "CASH OUT $1,240", "CASH OUT $183" }),
-            ("CashOutStatus", "§6.1 status words", new[] { "UPDATING", "HOLD E" }),
+            // T88's gesture gave the status word a THIRD state: under a held preview the only act left
+            // is the commit, so the word says so. Added with the wiring rather than after it.
+            ("CashOutStatus", "§6.1 status words — all three states of CashOutStatusWord()",
+                new[] { "UPDATING", "HOLD E", "ENTER TO CASH OUT" }),
             // CORRECTED: the separator is FIVE spaces in the format string, not three, and
             // PotentialPayout is parlay-multiplied so its magnitude has no ceiling here.
             ("RiskPays", "the format string at :2299 — payout magnitude UNBOUNDED", new[]
@@ -104,9 +170,14 @@ namespace SBR.EditorTools
             ("Consolation", "the authored four-line deck, verbatim", new[]
                 { "the model remains extremely confident.", "the book thanks you for your patronage.",
                   "a courtesy: nobody saw that.", "so close. they always are." }),
-            // T86(a): brackets retired, so this is the post-ruling copy.
-            ("InterventionPrompt", "one site; widest LINE with both consumables owned (T86(a) form)", new[]
-                { "SHOT FROZEN\nHOLD M MULLIGAN   ·   HOLD R SEND TO REVIEW (ONE REF'S WHISTLE)   ·   HOLD N LET IT DIE" }),
+            // The prompt is a LIST now (DD batch 50), so its renderable forms are ROWS rather than one
+            // run-on line, and a row is what this sweep's widest-line measure was always reporting.
+            // T88's gesture adds the two held-preview rows. Height is not this instrument's question
+            // and is answered by `SBR/TV/T88 prompt composition`, which owns the zone's 90px.
+            ("InterventionPrompt", "the list's rows + the held preview's, from PendingWindowBeat", new[]
+                { "SHOT FROZEN", "HOLD M MULLIGAN (ONE MULLIGAN SLIP)",
+                  "HOLD R SEND TO REVIEW (ONE REF'S WHISTLE)", "HOLD N LET IT DIE",
+                  "ENTER CONFIRMS   ·   RELEASE ABANDONS" }),
         };
 
         /// <summary>Slots reported but NOT swept. Empty now: the six that stood here were enumerated
