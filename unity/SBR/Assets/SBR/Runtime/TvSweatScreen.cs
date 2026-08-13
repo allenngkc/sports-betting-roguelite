@@ -2925,9 +2925,26 @@ namespace SBR.Game
 
         /// <summary>One preferred-width measurement, shared by the fallback chooser and the
         /// truncation backstop so the two can never disagree about what "fits" means — the property
-        /// the UGUI version had by sharing one TextGenerator, kept by sharing one call.</summary>
+        /// the UGUI version had by sharing one TextGenerator, kept by sharing one call.
+        ///
+        /// <para><b>The width argument is not decoration; passing 0 broke this.</b> T-3 ported the
+        /// UGUI form as <c>GetPreferredValues(s, 0f, 0f)</c>, and on a component with wrapping
+        /// enabled TMP takes that literally: it wraps at zero width and returns the widest GLYPH
+        /// rather than the widest STRING. The compact statement slot is the one slot here with
+        /// wrapping on, so <see cref="FitToColumn"/> compared about 12.5px against a 143px column and
+        /// its loop never ran — the truncation backstop was dead from the migration until T84's sweep
+        /// measured the measurer. UGUI's <c>GetPreferredWidth</c> returned the unwrapped width
+        /// whatever the wrap mode, so nothing in the diff looked wrong.</para>
+        ///
+        /// <para>Measured unconstrained, which is what both callers mean: "how wide would this be if
+        /// nothing stopped it", asked so it can be compared against the width that does.</para></summary>
         private static float PreferredWidth(TMP_Text target, string s)
-            => target.GetPreferredValues(s, 0f, 0f).x;
+            => target.GetPreferredValues(s, Unconstrained, 0f).x;
+
+        /// <summary>A width no string on this surface can reach, standing in for "do not wrap while
+        /// measuring". Not float.MaxValue: TMP multiplies the constraint into its layout maths, and a
+        /// value that large returns infinities.</summary>
+        private const float Unconstrained = 100000f;
 
         private static string FitToColumn(TMP_Text target, string s)
         {

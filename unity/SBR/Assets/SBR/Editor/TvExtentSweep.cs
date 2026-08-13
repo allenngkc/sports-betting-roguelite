@@ -108,17 +108,37 @@ namespace SBR.EditorTools
                         continue;
                     }
                     float box = t.rectTransform.rect.width;
-                    float worst = float.MinValue;
-                    string worstS = "";
+                    float[] digitPx = MeasureDigits(t);
+                    // The tabular advance, as an UPPER BOUND measured on this component rather than
+                    // assumed. The first cut used 0.5 * fontSize — 1000 of the font's 2000 upem — and
+                    // that is only true of the DEFAULT instance. These assets are other instances of
+                    // a variable family, where the same glyph's advance scales, and the tell was
+                    // LegRowPrice screening NARROWER on a string of narrow digits, which no tabular
+                    // set can do. Using the widest proportional digit instead: a tabular set is
+                    // uniform and sits at or below its family's widest figure (1000 against 1036 in
+                    // the default instance here), so this never understates, which is the only
+                    // direction a screen may err in.
+                    float tabularPx = 0f;
+                    foreach (float d in digitPx) tabularPx = Mathf.Max(tabularPx, d);
+
+                    float worst = float.MinValue, worstTab = float.MinValue;
+                    string worstS = "", worstTabS = "";
                     foreach (string s in strings)
                     {
                         float w = t.GetPreferredValues(s, Unconstrained, 0f).x;
                         if (w > worst) { worst = w; worstS = s; }
+                        float tab = w;
+                        foreach (char c in s)
+                            if (c >= '0' && c <= '9') tab += tabularPx - digitPx[c - '0'];
+                        if (tab > worstTab) { worstTab = tab; worstTabS = s; }
                     }
-                    bool over = worst > box;
+
+                    bool over = worstTab > box;
                     if (over) overrunning++;
+                    string digitNote = Mathf.Approximately(worstTab, worst) ? "no digits" : $"screened from '{worstTabS}'";
                     Debug.Log($"[T84] {slot,-16} box {box,6:0.0}px  widest '{worstS}' {worst,6:0.0}px  " +
-                              $"{(over ? $"OVERRUNS by {worst - box:0.0}px" : $"fits, {box - worst:0.0}px spare")}  " +
+                              $"TABULAR {worstTab,6:0.0}px ({digitNote})  " +
+                              $"{(over ? $"OVERRUNS by {worstTab - box:0.0}px" : $"fits, {box - worstTab:0.0}px spare")}  " +
                               $"· set: {source}");
                 }
 
@@ -133,6 +153,25 @@ namespace SBR.EditorTools
                 Debug.Log($"[T84] slots overrunning their fixed box: {overrunning} of {Cases.Length} swept");
             }
             finally { Object.DestroyImmediate(go); }
+        }
+
+        /// <summary>Each digit's CURRENT advance on this component, in px, measured as ten of it.
+        ///
+        /// <para>Batch 41 binds digit rows to TABULAR metrics: the assets are still built from the
+        /// source face, so every digit-bearing row measured as-shipped is measured proportionally,
+        /// and against the widest realistic digits that UNDERSTATES what the wired surface will do.
+        /// The screen replaces each digit's proportional advance with the tabular one — 1000 of the
+        /// font's 2000 upem, exactly half an em, which the derived font makes true for all ten.</para>
+        ///
+        /// <para>Measured rather than read from hmtx so the number is in the same units, on the same
+        /// component, as the string widths it corrects. Screening only: a flagged box takes rendered
+        /// confirmation once the wiring lands.</para></summary>
+        private static float[] MeasureDigits(TMP_Text t)
+        {
+            var px = new float[10];
+            for (int d = 0; d < 10; d++)
+                px[d] = t.GetPreferredValues(new string((char)('0' + d), 10), Unconstrained, 0f).x / 10f;
+            return px;
         }
 
         /// <summary>Two slots anchored from opposite edges of one rectangle. Neither overruns its own
