@@ -22,7 +22,10 @@ reverted.
   direction, art direction, 3D modeling. Produces design specifications and does
   post-implementation design review. Does not assign production work to leads —
   approved specs flow through the orchestrator.
-- **Worktree leads — Claude (Opus 5), one per active worktree.**
+- **Worktree leads — Claude (Opus 5, max effort), one per active worktree.**
+  Opus 5 max is the standing seat spec (Allen, 2026-08-01; re-affirmed for all
+  new seats 2026-08-12) — whoever seats a lead sets `/model opus` + `/effort max`
+  as part of seating, every time.
   Own the local plan, file ownership, delegation, review, verification, commits, and
   the integration handoff. Implement approved design specs; they make essentially no
   design decisions. Contract lives at `docs/handoffs/<worktree>.md` (root
