@@ -1,7 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 217 — T65 CLOSES (batch
-53).** The four-batch arc ends on the property, not a number: the glow
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 218 (heartbeat).** All
+working: campaign A's shell still running (mpregame); the DD composing
+its Phase T blockers accounting on Allen's ask; TV 4+ min into the
+gesture build; sgp 3b; research holding. Quiet is healthy.
+
+*(prior stamp, cycle 217 - T65 CLOSES:)* The four-batch arc ends on the property, not a number: the glow
 answers settlement in the room's own warmth (33-38 degrees from the TV
 green that motivated the finding); the element was its own fixture,
 member of no family; C40's converse ruled; per-fixture-family bounds
