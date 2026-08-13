@@ -11,6 +11,91 @@ discarded.
 
 ---
 
+## 0-PT. PHASE T — the type migration SHIPPED AND BLOCKED. 2026-08-12, seat rotating at 97%
+
+**Branch `9459348`, pushed and remote-verified. Tree clean, Unity zero, main local.** Suites on
+every commit of this phase: **EditMode 250 discovered / 249 passed / 0 failed / 1 ignored**
+(G1's grant, held), **PlayMode 91 / 85 / 0 / 6 by-design capture skips**.
+
+**Phase T's build work is complete. The surface does not ship.** Seven slots overrun their fixed box
+and the money control collides; those are T74/T84 rulings, not this seat's to close.
+
+### What landed
+
+TMP behind an unchanged `MakeText` seam — the signature keeps `TextAnchor`/`FontStyle` so all 22 call
+sites read as authored. The canon face resolved **by style name**, never index. T73's real Condensed
+Bold 700 at its four sites; T77's synthesised italic struck; T85's unruled .02em withdrawn (Label
+.16em and Meta .10em ratified as built, NEED 0 on doctrine). T82's tabular figures **derived, wired
+and confirmed at spread 0.0000** across four faces and ten measurements.
+
+### The three traps, all of which cost a cycle before they were seen
+
+1. **The face was never what the file said.** `EncodeSans.ttf`'s default instance is
+   `Condensed Thin` — wght 100, wdth 75. Legacy `Font` rendered the roman voice **narrower than the
+   condensed face**, 241px against 254px on one string. No Regular 400 can do that. Resolve by style
+   name; the generator refuses rather than falling back.
+2. **A Dynamic TMP asset serializes no character or glyph table.** Anything written there at build
+   time is discarded on save — `m_Unicode` entries: 0. That is why `tnum` is resolved into a derived
+   font (`tools/tnum_font.py`, cmap only) instead of into the asset.
+3. **`GetPreferredValues(s, 0f, 0f)` on a wrapping component returns the widest GLYPH.** It killed
+   the compact statement's truncation backstop from T-3 until T84 measured the measurer. Measure
+   unconstrained.
+
+### The blockers, tabular-screened and re-traced (batch 44)
+
+| slot | box | widest | over |
+|---|---|---|---|
+| `TakeoverSub` | 655.0 | 829.8 | 174.8 — **CONSTRUCTED**, `DisplayLabel` is unbounded |
+| `InterventionPrompt` | 635.0 | 844.8 | 209.8 — after T86(a) |
+| `RiskPays` | 249.0 | 296.5 | 47.5 — payout magnitude unbounded |
+| `CashOut` | 241.0 | 267.7 | 26.7 — `MARKET SUSPENDED`, alone in its slot (T43) |
+| `LegRowNeed0` | 249.0 | 272.4 | 23.4 |
+| `LegRowLine0` | 147.0 | 152.8 | **5.8 — the landed relief is insufficient** |
+| `LegRowState0` | 38.0 | 42.7 | 4.7 — widest is `NEXT`; there is no `PEND` |
+
+Plus the money control's two pair collisions, 45.0 and 47.8, neither member overrunning alone.
+
+**`LegRowLine0` cannot be finished by span.** The only slack left is the price column's, and
+`OddsFormat.American` returns `+{a}` with nothing bounding `a`. Its own default arm is
+`DisplayLabel`, so like `TakeoverSub` **it has no bounded worst case at all.**
+
+### THE LESSON THIS SEAT PAID FOR THREE TIMES
+
+**A sweep is only as sound as its string sets, and I invented sets instead of enumerating them.**
+`PEND` was measured on a chip that renders `VOID / NEXT / W / L / ""`. `LANYARD TO SCORE` and
+`BOTH TEAMS SCORE` were measured on a slot whose `LegStatement` emits `{SURNAME} ANYTIME` and
+`BTTS YES`. `RiskPays` was measured with a three-space separator where the format string has five.
+Each was reported to the DD as a finding; each was withdrawn by the pass that read the source.
+
+**Enumerate from the assignment site — grep the field, read every `.text =`, follow every
+indirection — and where content is engine-generated, say UNBOUNDED rather than constructing a worst
+case and forgetting you built it.**
+
+### Owed, and not this seat's
+
+- **T74**: the seven magnitudes. `LegRowLine0` and `TakeoverSub` need an answer that is not a span.
+- **T86(a)**: the wording beyond the retired bracketed form is the DD's to ratify.
+- **Attract's three strings** — `SIT TO WATCH THE SWEAT`, `THE HOUSE BLINKS FIRST`,
+  `THE BOOKIE COLLECTS` — are T27's class (instruction, celebratory editorial) and need authored
+  replacements. `ROUND n OF m · BOARD OPEN` is T27's own ruled string and is compliant.
+- **T16 boundary**: `(99%)` is T16's quantity, not a different one — `PendingLossProbBefore` is
+  documented in the engine as *"the leg's displayed win-prob"*. Whether T16's ban reaches past the
+  momentum tape is routed to the DD.
+- **Probe hygiene**: `SBR/TV/T84 extent sweep` and the digit probe have twice exited
+  `-1073741819` after printing. Data intact both times and verifiable — results go to `-logFile` in
+  the same step that produces them, never a terminal buffer.
+
+### The instruments, all committed and re-runnable
+
+`tools/ttf_faces.py` (a font's real instances) · `tools/tnum_font.py` (derive the tabular font) ·
+`SBR/TV/T84 extent sweep` (every box against its longest renderable form) · `SBR/TV/Probe digit
+advances` · `SBR/TV/Probe type parity` (UGUI vs TMP) · `tools/tv-phase-t-bootstrap.ps1`
+(generate + verify). **The pair is at `dd-import/tv-phase-t-before-2026-08-11/` and
+`…-after-2026-08-12/`** — 151 paired frames each side, plus the after-set's unpaired
+`scorer-leg-resolved` and its 159-row clock-string manifest.
+
+---
+
 ## 0-FR. FLOOD REMOVAL VERIFIED — 2026-08-10. T40 enforced, punch intact, seat rotating
 
 **Converged on new main and re-converged after.** Commits this stretch: `1e02d42` (T40 enforced, the
