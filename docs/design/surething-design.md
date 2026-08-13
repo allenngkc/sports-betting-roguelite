@@ -2,8 +2,14 @@
 > **APPROVED — Allen, 2026-08-06.** Canon under C9's two-tier authority; open items (S55/S56/S57-era leftovers named inside) tracked in the register, not re-litigated here. The DRAFT file is the preserved draft.
 
 
-**Owning document** under C9's two-tier authority · **Status:** DRAFT for Allen · **Drafted:** Design Director, 2026-08-06
-**Canonical home on approval:** `main-2/docs/design/surething-design.md`
+**Owning document** under C9's two-tier authority · **Status:** APPROVED — Allen 2026-08-06 (C26-am) · **Drafted:** Design Director, 2026-08-06
+**Canonical home:** `main-2/docs/design/surething-design.md`
+
+*(Status line corrected 2026-08-12 at seating — it read `DRAFT for Allen` beneath this document's own
+APPROVED banner. Factual bookkeeping, not a clause amendment: the same drift `room-design.md` carried
+for ten days and had repaired at the 2026-08-10 seating, and the third instance of the class the
+constitution's §1.1 note names. This was the last of the four owning documents still carrying it —
+the §1.1 table itself is correct and was checked against all four headers at this seating.)*
 **Companion:** `docs/design/constitution.md` (authority and evidence) · **Sibling:** `docs/design/room-design.md` (R13)
 
 ---
