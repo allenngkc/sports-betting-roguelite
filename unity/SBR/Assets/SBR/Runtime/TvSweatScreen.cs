@@ -828,8 +828,22 @@ namespace SBR.Game
         private static class TvTrack
         {
             /// <summary><c>--tv-track-name</c>. The authored facts: the compact statement, NEED, the
-            /// progress line, the cash-out figure, the event strip.</summary>
-            public const float Name = 0.02f;
+            /// progress line, the cash-out figure, the event strip.
+            ///
+            /// <para><b>WITHDRAWN to 0 by T85 (batch 39).</b> It was .02em, taken from the kit, and
+            /// the owning doc has no tracking clause to authorise it — so it was applied on the
+            /// kit's authority alone. The pair then caught two defects it contributes to: the NEED
+            /// line truncates and the money control collides, and at 18 characters .02em is roughly
+            /// 10px of the NEED overrun.</para>
+            ///
+            /// <para>Zeroed rather than deleted, and the five call sites still name it, so the kit's
+            /// per-slot assignment stays legible and re-enabling is one number if a tracking clause
+            /// is ever ruled. The ruled order is explicit: re-measure at 0 FIRST, and only overruns
+            /// that survive that go to T74. Nothing is widened or shrunk ahead of the measurement.</para>
+            ///
+            /// <para>Label (.16em) and Meta (.10em) are UNTOUCHED. They rest on the same authority —
+            /// kit, not owning doc — and T85 named only .02em. Flagged, not acted on.</para></summary>
+            public const float Name = 0f;
             /// <summary><c>--tv-track-label</c>. The words ABOUT a fact rather than the fact: the
             /// cash-out status word, the momentum label, the ticket header.</summary>
             public const float Label = 0.16f;

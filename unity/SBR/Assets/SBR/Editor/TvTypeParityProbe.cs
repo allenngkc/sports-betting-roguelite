@@ -174,6 +174,81 @@ namespace SBR.EditorTools
             }
         }
 
+        /// <summary>T85's second re-measure: does the money control collide? The pair caught the
+        /// CASH OUT figure overprinting HOLD E, and the ruled order is to re-measure at tracking 0
+        /// before anything is widened or shrunk.
+        ///
+        /// <para>Builds the real screen and measures the two slots that share §6.1's one fixed
+        /// rectangle, rather than reasoning from the layout constants — the figure and the status
+        /// word are anchored from opposite edges of the same box, so whether they meet is a fact
+        /// about rendered widths, not about the box.</para></summary>
+        [MenuItem("SBR/TV/Probe money control fit")]
+        public static void ProbeMoneyControl()
+        {
+            var go = new GameObject("MoneyProbe");
+            go.SetActive(false);
+            try
+            {
+                var screen = go.AddComponent<SBR.Game.TvSweatScreen>();
+                screen.theaterEnabled = false;
+                typeof(SBR.Game.TvSweatScreen)
+                    .GetMethod("Awake", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                    ?.Invoke(screen, null);
+
+                TMP_Text figure = FindChild<TMP_Text>(screen.transform, "CashOut");
+                TMP_Text status = FindChild<TMP_Text>(screen.transform, "CashOutStatus");
+                if (figure == null || status == null)
+                {
+                    Debug.Log($"[TvMoneyProbe] slots not found (figure {(figure == null ? "MISSING" : "ok")}, " +
+                              $"status {(status == null ? "MISSING" : "ok")})");
+                    return;
+                }
+
+                float slot = figure.rectTransform.rect.width;
+                // The six states §6.1 names, in the copy each actually renders.
+                foreach (string money in new[] { "CASH OUT $183", "CASH OUT $1,240", "CASHED OUT $183", "MARKET SUSPENDED" })
+                {
+                    foreach (string word in new[] { "HOLD E", "UPDATING" })
+                    {
+                        float fw = figure.GetPreferredValues(money, 0f, 0f).x;
+                        float sw = status.GetPreferredValues(word, 0f, 0f).x;
+                        float slack = slot - (fw + sw);
+                        Debug.Log($"[TvMoneyProbe] slot {slot:0.0}px  figure '{money}' {fw:0.0}px + " +
+                                  $"status '{word}' {sw:0.0}px = {fw + sw:0.0}px  " +
+                                  $"slack {slack:0.0}px  {(slack < 0f ? "COLLIDES" : "clears")}");
+                    }
+                }
+                Debug.Log($"[TvMoneyProbe] tracking in force: figure {figure.characterSpacing:0.##}, " +
+                          $"status {status.characterSpacing:0.##} (TMP hundredths of an em)");
+
+                // T85's other re-measure, in the same run so both defects are read off one build.
+                // The gate reports fits/misses; T74 needs the MAGNITUDE to choose between widening a
+                // span, shrinking a ruled size, and re-authoring.
+                TMP_Text need = FindChild<TMP_Text>(screen.transform, "LegRowNeed0");
+                if (need != null)
+                {
+                    float col = need.rectTransform.rect.width;
+                    foreach (string s in new[] { "ONE TEAM SCORELESS", "ONE TEAM BLANKED", "LANYARD TO SCORE",
+                                                 "BOTH TEAMS SCORE", "MIDDLEMEN ML", "NOT YET" })
+                    {
+                        float w = need.GetPreferredValues(s, 0f, 0f).x;
+                        Debug.Log($"[TvNeedProbe] NEED col {col:0.0}px  '{s}' {w:0.0}px  " +
+                                  $"over by {w - col:0.0}px  {(w <= col ? "fits" : "OVERRUNS")}");
+                    }
+                    Debug.Log($"[TvNeedProbe] tracking in force: {need.characterSpacing:0.##} " +
+                              $"(hundredths of an em), size {need.fontSize:0.#}");
+                }
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        private static T FindChild<T>(Transform root, string name) where T : Component
+        {
+            foreach (T t in root.GetComponentsInChildren<T>(true))
+                if (t.gameObject.name == name) return t;
+            return null;
+        }
+
         private static float UguiWidth(Transform parent, Font font, int size, string content)
         {
             var go = new GameObject("u", typeof(Text));
