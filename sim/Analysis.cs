@@ -419,7 +419,24 @@ public sealed class GateData
             // the error was measured, which is the order Allen imposed on this gate and the first
             // time in this family it was followed — G6 and G3 were each set where their instrument
             // could not read them, and each cost campaigns to discover it.
-            const string exemplarA = RelicCatalog.MultiplierId, exemplarB = "house_key";
+            // EXEMPLAR MOVED AGAIN — Allen 2026-08-12, on Campaign A (the draws re-baseline).
+            // Multiplier + House Key fell +2.96pp → +1.22pp under draws. The SYNERGY stayed real
+            // (5.4× its own error, still classed superadditive) but the 1.0pp floor ended up 0.22pp
+            // under the reading against ±0.23pp resolution, so the gate could no longer separate
+            // "clears the floor" from "sits on it". Escalation was computed and REFUSED: at 18,500
+            // the resolution only reaches ~±0.17pp for a ~0.22pp clearance — ~1.3×, still under the
+            // 2× tier at which a gate can reliably fail, so a 58-minute run would have bought no
+            // verdict. Lowering the floor was named and not taken: it would move the report's own
+            // marginal/superadditive taxonomy to fit a reading.
+            //
+            // Longshot Larry's Photo + House Key STRENGTHENED under draws (+2.67pp → +2.87pp) and
+            // clears the unchanged floor by 1.87pp at ~5.3× resolution. THE FLOOR IS UNCHANGED at
+            // 1.0pp — only the exemplar moved.
+            //
+            // Prior exemplars, kept beneath rather than overwritten (the standing form):
+            //   2026-08-08 Allen — Multiplier + House Key (was Multiplier + Scar Tissue, +0.1pp
+            //   against ±0.06pp: real, but the weakest loop in the table).
+            const string exemplarA = "longshot_photo", exemplarB = "house_key";
 
             // Threshold 1.0pp, and deliberately NOT a fresh invention: it is the line the report's
             // own taxonomy already draws between "marginal" and "superadditive". Against the new
@@ -474,12 +491,16 @@ public sealed class GateData
                               : "**INSIDE its own resolution — NOT ADJUDICATED**");
 
                 g.Add("G5", "composition superadditive: the exemplar pair's synergy excess ≥ "
-                    + $"{minExcessPp:0.#}pp (exemplar moved by Allen 2026-08-08 to The Multiplier + "
-                    + "House Key, +2.96pp at 8.7× its own error; it was Multiplier + Scar Tissue, "
-                    + "measured +0.1pp against ±0.06pp — real, but the weakest loop in the table and "
-                    + "~30× smaller than the strongest. Threshold set AFTER the error was measured, "
-                    + "and adopts the report's own marginal/superadditive line rather than inventing "
-                    + "a number)",
+                    + $"{minExcessPp:0.#}pp (exemplar moved by Allen 2026-08-12 to Longshot Larry's "
+                    + "Photo + House Key on the draws re-baseline: the prior exemplar, The "
+                    + "Multiplier + House Key, fell +2.96pp → +1.22pp under draws — its synergy "
+                    + "still real at 5.4× its own error, but the floor ended up inside the reading's "
+                    + "resolution and the gate stopped adjudicating. Escalation to 18,500 was "
+                    + "computed to buy ~1.3× and REFUSED. THE FLOOR IS UNCHANGED at 1.0pp — it is "
+                    + "the report's own marginal/superadditive line, set AFTER the error was "
+                    + "measured, and moving it to fit a reading was the alternative not taken. "
+                    + "Prior exemplar Allen 2026-08-08, itself moved from Multiplier + Scar Tissue "
+                    + "at +0.1pp against ±0.06pp — real, but the weakest loop in the table)",
                     pair.SynergyExcess >= minExcessPp,
                     $"synergy excess {pair.SynergyExcess:+0.0;-0.0}pp",
                     resolution,
