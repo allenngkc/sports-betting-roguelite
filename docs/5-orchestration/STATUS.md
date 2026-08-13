@@ -1,6 +1,18 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 200 (heartbeat).** Sweep
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 201 — THE WIRING IS GO;
+RESEARCH PACKAGE DELIVERED.** TV's two gate conditions arrived together
+(LegRowLine0 relief + full enumeration); Allen gave the wiring word
+directly - TV wiring now (one constant, regenerate, re-measure). Six
+tracking values proposed under the doctrine, with the DD for
+ratification. RiskPays reasoning accepted as recorded, no exemption
+proposed. Research lane's first package MERGED (410524c): four autopsies
+with corpus numbers, the SBR mapping proposal, and play questions keyed
+to Allen's titles - all his docket now. Carried non-gating: chip PEND
+overrun; sweep-probe exit crash x2 (post-phase). NEED ALLEN: grill R1-R4,
+literature scope, research mapping + play questions.
+
+*(prior stamp, cycle 200:)* Sweep
 clean: TV on its two closing conditions; sgp's D3 recon deep (14m+);
 research diving; DD + mpregame standing by on rulings (DD: enumeration;
 Allen: grill R1-R4 + literature scope). Two hundred cycles on this seat.
