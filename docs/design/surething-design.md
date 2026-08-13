@@ -128,6 +128,17 @@ rect — never proportional, never eyeballed.
 **Nothing else may borrow any of the three.** `--wax-ink #1A1305` is the type punched out of a solid
 wax field; `--wax-deep #8A6620` is the 2px pressed edge.
 
+**`THE HOUSE'S LINE` is a named use of Stamp** (S73, Allen 2026-08-12). Where two of his picks are
+priced as related, **the house marks the connection between them in Stamp** — he picks in Biro, the
+house marks in its own ink. That is this table's third row doing exactly the job it was written for:
+*the house acting on the document*. **A correlation is an annotation**, which is what this whole
+surface is.
+
+**The mark is DRAWN, not CAPTIONED.** The line carries no label; the name is what the thing is
+*called* — rules copy, the ledger, a first-encounter explanation — never a tag beside every
+occurrence. A mark that needs a caption every time is a mark that is not working, and the house does
+not narrate its own presence on his document (S44).
+
 Money grammar, ratified on frames and **not to be "fixed"**:
 - **Stake reads toner; payout reads wax.** In the MY BETS tally that is `AT RISK` toner (218,213,198)
   and `IF EVERYTHING LANDS` wax (220,167,65) — the working margin's own grammar, one screen over.
@@ -162,6 +173,28 @@ Every state carries a mark, glyph, word, border or position change as well as it
 
 Measured on `05-my-bets-green-dead`: DEAD glyph rows at (110,106,95), strike rows at (181,74,59).
 **Only the strike is oxide** (S15-am). Leg sub-rows carry **no per-outcome hue** at all (S35c, S40).
+
+**A refused leg combination is a Blocked state and takes Blocked's treatment** (S73-am4, correcting
+the register). Where two picks cannot both land, the second is refused at the slip with a **stamped
+literal reason ≥13px, cause AND remedy, inside the control** — this table's own row, not a new
+treatment. **Never a disabled control** (S24 bans the disabled state outright; S56 bans a distinction
+carried in a channel he cannot see), and the leg **stays reachable on its own**, because the engine
+prices the leg and refuses only the *combination*.
+
+Cause and remedy, both, because this row has always required both: *these two cannot both land* names
+the cause; what to drop names the remedy.
+
+**A bet that cannot win must never be purchasable.** A price is a factual claim about an outcome, and
+selling a finite price on an impossible event is the product lying in the one place it has promised
+not to.
+
+**A legal-but-pointless leg is NOT a Blocked state and does not take Stamp.** Where a second leg adds
+no risk — one pick already contains the other — the leg is **legal, correctly priced, and added**; the
+machine simply **states the fact in toner, in its own space**: *this adds nothing; the first already
+contains it.* Silence there would let him be quietly charged for a leg that cannot lose, which is a
+cost he cannot see at the point of spending (S17). **Blocking it is refused** — a redundant leg is a
+legal bet, and **a house that prevents him from being stupid is not this product; a house that tells
+him and lets him do it anyway is.**
 
 ---
 
@@ -391,3 +424,68 @@ only in genuine imperatives; first person exactly once, and it is him.
 ladder is Rec.709 luma on display-encoded values; a contrast ratio is
 relative luminance in linear space; emission hue/chroma is CIELAB on linear
 authored values. Every measurement states its space as well as its unit.
+
+---
+
+## Amendment — 2026-08-12 (S73, S74, C47 — the same-match ticket and the draw)
+
+### `SAME MATCH` is its own instrument — never a parlay with an adjustment
+
+Two or more legs on one match are correlated, so the ticket **cannot be priced by multiplying the
+legs**. The book prices the true joint. **The surface never displays a product-of-legs figure for one
+of these tickets, and never displays an adjustment, a correlation discount, a was/now, or any
+deduction line.**
+
+**The reasoning, because it will be argued with:** the "nerf" reading is manufactured by the
+comparison, and the comparison is manufactured by showing the product. A slip printing
+*1.85 × 2.10 × 3.40 = 13.21 · adjustment −32% · price 8.98* has **literally rendered a number being
+taken away from him.** No copy fixes that. **There is nothing to deduct from if nothing is presented
+to deduct from** — and a same-match ticket is one bet on one compound outcome, which *has a price*.
+
+**`SAME MATCH`** is the instrument's name (Allen, 2026-08-12), uppercase like the rest of the market
+vocabulary — a role printed as a word, a fact rather than a brand. **`SGP` is industry jargon and
+never reaches him.**
+
+### What he sees, and the rule it teaches
+
+**The mark, and no arithmetic.** With `THE HOUSE'S LINE` on the connected picks (§3.1), his complete
+and *correct* mental model needs no maths at all:
+
+> **unmarked legs multiply; marked legs pay less.**
+
+**The mark is what MAKES his multiplication work** rather than what replaces it — it tells him exactly
+when his own arithmetic applies. Independent tickets price *identically* to the multiplied number, so
+he is right about half the time; the mark is what tells him about the other half.
+
+**Where a statement is needed it states the RELATION, not the name** — what the legs *share*, in
+toner, once per slip. **The pricing model must therefore emit a nameable relation, not only a
+coefficient: where a correlation cannot be labelled, the price does not move.** A price that shortens
+for a reason the surface cannot state is a cost he cannot see at the point of spending (S17).
+
+**The lengthening is not remarked.** No badge, no "better value", no flag. A product congratulating
+itself for charging less is exhortation, and nothing ever claimed the price was a product.
+
+**No formulae on the face.** No coefficient, no multiplier, no percentage — values appear when the sim
+emits them as first-class, never computed in presentation.
+
+**The fairness fact is true and stays off the slip.** A same-match ticket carries the same house edge
+as the equivalent cross-game parlay; **a house that explains its own fairness at the point of spending
+reads as a house with something to explain** (S44's boundary).
+
+### The draw on the board
+
+The moneyline is three-way. **Three offers, the draw in the MIDDLE** — its position is *meaning*, not
+borrowed convention: the draw is the outcome where **neither wins**, and either end would make it look
+like a third competitor. **It is not a team**, the engine having ruled that structurally, and the
+surface does not undo it: named `DRAW`, no team treatment, no team hue.
+
+**A two-outcome paired row no longer describes this market** (S24) and must not be forced to.
+
+**`1X2` never reaches him** — a code word for a market shape, which stays in the code.
+
+### Settlement language does not change (C47)
+
+**The match has three outcomes; a bet has two.** Back the draw and it draws — **he won**. Back a team
+and it draws — **he lost**. **No third result word, no new state, no new column.** Inventing a `DREW`
+state would model the match inside the bet's vocabulary. A market that returns the stake on a draw is
+a **VOID**, which the enum already carries.
