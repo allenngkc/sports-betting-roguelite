@@ -55,7 +55,14 @@ namespace SBR.EditorTools
                 { "UNDER 10.5 CORNERS", "UNDER 10.5 CNRS", "LANYARD TO SCORE", "BOTH TEAMS SCORE",
                   "MIDDLEMEN ML" }),
             ("LegRowPrice0", "price forms, generated", new[] { "+450", "-110", "2.75", "+1200" }),
-            ("LegRowState0", "the state vocabulary", new[] { "LIVE", "NEXT", "WON", "LOST", "VOID", "PEND" }),
+            // CORRECTED. The first set here was {LIVE, NEXT, WON, LOST, VOID, PEND} and I invented
+            // it — the plausible vocabulary for a state chip, not this build's. Enumerated properly
+            // from every SetRowChip call site, the chip renders exactly five things, and PEND is not
+            // among them. The 6px overrun this slot reported was on a string it cannot display.
+            // My own rule, broken by me on the one slot I did not grep: a slot is only as swept as
+            // its string set is complete.
+            ("LegRowState0", "every SetRowChip call site: 2215, 2221, 2230, 2254, 2287",
+                new[] { "VOID", "NEXT", "W", "L", "" }),
             ("LegRowProgress0", "revealed progress lines, generated", new[]
                 { "0-0, 62' PLAYED", "NEEDS 1 MORE, 78'", "2-1, 88' PLAYED" }),
             ("CashOut", "§6.1 money control, six states", new[]
