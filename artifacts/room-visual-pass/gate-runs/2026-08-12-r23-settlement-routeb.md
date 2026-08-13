@@ -70,9 +70,21 @@ founding value. The record says the key sits at **~92°**; the instrument return
 **9.4° miss on a band 7° wide**. The instrument is therefore *not* calibrated on the band it is
 judging, which is the precise defect that voided every historical V6 verdict.
 
-**(c) The subject cannot be pinned to the band's width anyway.** Two surface-pure boxes in one frame
-give **87.3°** and **92.7°** — **5.4° apart, 77 % of the band's total width**. A measurement whose
-own spread nearly fills the band cannot adjudicate membership of it.
+**(c) The subject cannot be pinned tightly enough anyway.** Two surface-pure boxes in one frame give
+**87.3°** (ceiling plaster, chroma 2.28) and **92.7°** (wall-right plaster, chroma 6.51) — **a spread
+of 5.4°.**
+
+> **RESTATED IN DEGREES after batch 51/52.** This originally read *"77 % of the band's total width"*.
+> That percentage was taken against the 85–92° band, **which is withdrawn** — a fraction of a void
+> denominator, and it goes the way the denominator went. **5.4° is the figure; it needs no band to
+> mean something**, which is the point.
+>
+> **The instrument demonstrated two spreads, and they differ by chroma.** On the *key* — the stronger
+> delta, chroma 3.76–7.26 — the two boxes give 101.4° and 103.0°, a spread of **1.6°**. On the
+> *subject* — the weaker delta, chroma 2.28–6.51 — the spread is **5.4°**. A tolerance "floored at the
+> instrument's demonstrated spread" should say which it means: **1.6° is the best case on a strong
+> signal, 5.4° is what this subject actually delivered.** Flooring at 5.4° floors on the worst case
+> observed, which is the conservative reading and the one I would defend.
 
 **So the subject's 87.3–92.7° is NOT reported as conforming.** It is what disposition 3 names in
 advance: *not a pass, not a failure, and specifically not evidence that the cast conforms.*
@@ -119,3 +131,47 @@ provenance of the recorded ~92°.
 
 **T80 freeze respected** — nothing here changes C2, T9, T10 or T61. `TvLight`'s rest colour is
 reported as measured because it is the OFF half of the pair, not proposed for change.
+
+---
+
+## 7. Frame availability — checked before naming any window (added 2026-08-12, batch 52)
+
+**The four-half set DID contain a glow-off / glow-on pair under one recipe** — `BASE` and `GLOW`,
+frame-locked in one callback. **The delta in question was computed from exactly those two halves**:
+`GLOW − BASE` is where 87.3° and 92.7° come from. So for any quantity already derived, **no window is
+needed — the answer is on the record.**
+
+**But the frames themselves are gone.** Dropped after measurement per this lane's standing practice
+(record the numbers, drop the bytes); never committed, and present nowhere else — checked on disk, in
+git across all refs, and across the sibling worktrees.
+
+**So that practice's trade-off has come due, and it should be said plainly.** Keeping numbers instead
+of pixels is right when the question is settled and wrong when the *question* changes. A new bound
+arrived; re-measuring the same pair against a **new box** — TV's `housing above panel`, say — now
+costs a re-shoot that would have cost nothing an hour earlier. **The practice is still right on
+balance** (two sets, ~66 MB, against an open evidence-in-git question) — but the bill is real, this is
+the first time it has been paid, and the honest form of the practice is *drop the bytes when the
+question is closed*, not *drop the bytes when the measurement is done*.
+
+**One window, named, and only if wanted:** a single `CaptureSettlementPair` run reproduces the set —
+harness exists, pin asserted, ~2.5 minutes. **Nothing needs it unless the subject is to be re-measured
+on a region other than the two already reported.**
+
+## 8. Against the new bound — arithmetic only, not a verdict
+
+The bound is now the key's **rendered 101.4°**, tolerance floored at the instrument's demonstrated
+spread.
+
+| | value | distance below 101.4° |
+|---|---|---|
+| subject, wall-right (chroma 6.51) | 92.7° | **8.7°** |
+| subject, ceiling (chroma 2.28) | 87.3° | **14.1°** |
+
+With tolerance ±5.4° (the subject's own demonstrated spread) the admissible interval is
+**96.0–106.8°**; the subject's *nearest* reading sits 3.3° below its floor. With ±1.6° (the key's
+spread) it sits 7.1° below.
+
+**Stated as arithmetic and not as a disposition.** The subject's own spread (5.4°) is the same order
+as the tolerance it would be judged against — which is disposition 3's resolution problem re-expressed
+against a point-and-tolerance bound rather than a 7° interval. **It has not gone away, and the
+adjudication remains the DD's.**
