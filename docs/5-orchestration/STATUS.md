@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 199.** Batches 40+42
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 200 (heartbeat).** Sweep
+clean: TV on its two closing conditions; sgp's D3 recon deep (14m+);
+research diving; DD + mpregame standing by on rulings (DD: enumeration;
+Allen: grill R1-R4 + literature scope). Two hundred cycles on this seat.
+
+*(prior stamp, cycle 199:)* Batches 40+42
 landed (5f8eac7, canon through 42): T74 magnitudes ruled with levers
 (span-then-size never copy; column outer width fixed); tracking clause
 in tv-design 4 (tracking marks a LABEL never a FACT; Label/Meta ratified
