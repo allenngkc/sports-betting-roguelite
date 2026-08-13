@@ -189,8 +189,6 @@ public sealed class Run
             throw new InvalidOperationException($"Max {Config.MaxTicketsPerRound} tickets per round");
         if (picks.Count < 1 || picks.Count > Config.MaxLegs)
             throw new ArgumentException($"Tickets take 1 to {Config.MaxLegs} legs, got {picks.Count}");
-        if (picks.Select(p => p.MatchupIndex).Distinct().Count() != picks.Count)
-            throw new ArgumentException("A ticket cannot have two legs on the same matchup");
         if (stake < Config.MinStake)
             throw new ArgumentException($"Minimum stake is {Config.MinStake}, got {stake}");
 
@@ -222,6 +220,39 @@ public sealed class Run
             })
             .ToList();
 
+        // SAME MATCH (F_0.6.0). Two legs on one matchup are correlated, so the product of their
+        // offered odds is not this ticket's probability and cannot be its price. The joint model
+        // prices it — and is entered ONLY when some matchup carries 2+ legs, so a ticket with at most
+        // one leg per matchup keeps the pre-existing path below, verbatim and bit-for-bit.
+        SameMatchPrice? sameMatch = SameMatchModel.IsSameMatch(legs)
+            ? SameMatchModel.Price(legs, Config.Overround, Config.SgpMargin)
+            : null;
+
+        // REPLACES the one-pick-per-matchup guard. Two legs on one matchup are now sellable; a
+        // combination that no outcome wins is not. Per design/02 this is a VALIDITY test rather than
+        // a price movement, so it is exempt from the no-label fallback and runs before any consumable
+        // is spent — atomic legality, PLAN.md rev 5 §7.
+        if (sameMatch != null && sameMatch.Impossible)
+            throw new ArgumentException(
+                "These legs cannot all win: the combination has probability zero and has no price");
+
+        // A leg-targeted Profit Boost scales the TICKET's price by the factor it would have applied to
+        // the product, so the relic is worth exactly what it was worth before this feature. Read here,
+        // ahead of consumption, because the boosted figure is the contract the next check judges.
+        double boost = profitBoostLeg >= 0 ? RelicCatalog.ProfitBoostMult : 1.0;
+
+        // A joint price can land at or below evens where a single leg's cannot: the board guarantees
+        // p < 1/(1+O) per leg, but p_ticket x (1+O)^n is not bounded below 1 by that — repeat or
+        // near-repeat legs on one high-probability market are the reachable case. OddsMath rejects
+        // decimals <= 1 everywhere downstream, so fail here with the reason, exactly as
+        // MatchModel.Offer does for a single leg, instead of surfacing as an arithmetic complaint.
+        // NOT a policy choice: such a ticket is unsellable either way. Whether the book should instead
+        // refuse repeat legs outright is a DESIGN question, open (design/02 does not cover it).
+        if (sameMatch != null && !sameMatch.NaiveFallback && sameMatch.Price * boost <= 1.0)
+            throw new ArgumentException(
+                $"This combination prices at {sameMatch.Price * boost:0.000} <= 1.0 and cannot be offered: "
+                + "its legs are close enough to a repeat that the joint carries no room for the margin");
+
         // The played Profit Boost rewrites the chosen leg's offered odds BEFORE vig is computed —
         // like every promo, it can legitimately drive the ticket's vig to zero or below.
         if (profitBoostLeg >= 0)
@@ -230,9 +261,20 @@ public sealed class Run
             ConsumeConsumable("profit_boost");
         }
 
-        double offered = OddsMath.ParlayDecimal(legs.Select(l => l.OfferedOdds).ToList());
-        double fair = OddsMath.FairDecimal(OddsMath.ParlayProb(legs.Select(l => l.TrueProb).ToList()));
-        var ticket = new Ticket(legs, stake, OddsMath.VigPaid(stake, offered, fair))
+        // Under the no-label fallback the price does not move at all: it is literally today's
+        // expression, boosted leg included.
+        double offered = sameMatch == null || sameMatch.NaiveFallback
+            ? OddsMath.ParlayDecimal(legs.Select(l => l.OfferedOdds).ToList())
+            : sameMatch.Price * boost;
+
+        // Vig accounting: fair is 1/p_ticket wherever the exact joint is known — including under the
+        // fallback, where the joint is still correct and only the PRICE was held back. That makes a
+        // fired fallback show up as anomalous vig in the gate campaign, on top of its counter.
+        double fair = sameMatch == null
+            ? OddsMath.FairDecimal(OddsMath.ParlayProb(legs.Select(l => l.TrueProb).ToList()))
+            : OddsMath.FairDecimal(sameMatch.PTicket);
+
+        var ticket = new Ticket(legs, stake, OddsMath.VigPaid(stake, offered, fair), offered, sameMatch)
         {
             Id = $"{Round}.{_tickets.Count}",
         };

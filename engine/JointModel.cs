@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 
 namespace SBR.Engine;
 
@@ -82,14 +83,36 @@ public readonly struct Relation : IEquatable<Relation>
     /// <summary>Set only on <see cref="RelationKind.ScorerOfSide"/>.</summary>
     public Side? ScorerSide { get; }
 
+    /// <summary>|ln rho_pair| for this pair — how much work the relation does on the price, and the
+    /// ranking key behind a ticket's principal relation (<c>design/02-betting-math.md</c>, batch 48:
+    /// the slip states the relation ONCE, so the model nominates which one). Zero for a ticket-level
+    /// <see cref="RelationKind.MutuallyExclusive"/>, which spans every leg rather than a pair, and
+    /// zero for a pairwise exclusion, whose rho is 0 — an exclusion is a validity verdict, not a
+    /// price movement, and is never eligible to be principal.
+    ///
+    /// <para><b>Diagnostic, not identity.</b> Deliberately excluded from
+    /// <see cref="Equals(Relation)"/> and <see cref="GetHashCode"/>: a relation IS its structure,
+    /// and two structurally identical relations must compare equal whatever arithmetic produced
+    /// them.</para></summary>
+    public double Strength { get; }
+
+    /// <summary>True when the model measured correlation on this pair, i.e. |rho - 1| beyond
+    /// <see cref="JointModel.CorrelationTolerance"/>. An <see cref="RelationKind.Independent"/>
+    /// relation carrying this flag is correlation the vocabulary could not label — the sole trigger
+    /// of the ticket-wide no-label fallback, and the money leak that fallback exists to bound.
+    /// Excluded from equality for the same reason as <see cref="Strength"/>.</summary>
+    public bool Correlated { get; }
+
     public Relation(RelationKind kind, IReadOnlyList<int> legs, RelationSign sign,
-        SelectionFamily? family, Side? scorerSide)
+        SelectionFamily? family, Side? scorerSide, double strength = 0.0, bool correlated = false)
     {
         Kind = kind;
         Legs = legs ?? throw new ArgumentNullException(nameof(legs));
         Sign = sign;
         Family = family;
         ScorerSide = scorerSide;
+        Strength = strength;
+        Correlated = correlated;
     }
 
     public bool Equals(Relation other)
@@ -142,11 +165,14 @@ public static class JointModel
     public const double CorrelationTolerance = 1e-9;
 
     /// <summary>Exact joint probability of <paramref name="selections"/> on
-    /// <paramref name="matchup"/>, together with the structural relations that explain it.</summary>
-    /// <returns><c>pJoint</c> — the enumerated joint, exactly 0.0 for an impossible ticket — and
+    /// <paramref name="matchup"/>, together with the structural relations that explain it and the
+    /// one relation a slip would state.</summary>
+    /// <returns><c>pJoint</c> — the enumerated joint, exactly 0.0 for an impossible ticket;
     /// <c>relations</c>, one label per selection pair plus, when the whole ticket is impossible
-    /// without any impossible pair, a ticket-level <see cref="RelationKind.MutuallyExclusive"/>.</returns>
-    public static (double pJoint, IReadOnlyList<Relation> relations) JointProbability(
+    /// without any impossible pair, a ticket-level <see cref="RelationKind.MutuallyExclusive"/>;
+    /// and <c>principal</c>, the single relation the slip states — see
+    /// <see cref="SelectPrincipal"/>. <c>principal</c> is null when nothing is statable.</returns>
+    public static (double pJoint, IReadOnlyList<Relation> relations, Relation? principal) JointProbability(
         Matchup matchup, IReadOnlyList<MarketSelection> selections)
     {
         if (matchup == null) throw new ArgumentNullException(nameof(matchup));
@@ -156,7 +182,7 @@ public static class JointModel
 
         double pJoint = Probability(matchup, selections);
         var relations = new List<Relation>();
-        if (selections.Count == 1) return (pJoint, relations);
+        if (selections.Count == 1) return (pJoint, relations, null);
 
         var marginals = new double[selections.Count];
         for (int i = 0; i < selections.Count; i++)
@@ -183,11 +209,65 @@ public static class JointModel
         {
             var all = new int[selections.Count];
             for (int i = 0; i < all.Length; i++) all[i] = i;
-            relations.Add(new Relation(RelationKind.MutuallyExclusive, all, RelationSign.None, null, null));
+            relations.Add(new Relation(RelationKind.MutuallyExclusive, all, RelationSign.None, null, null,
+                strength: 0.0, correlated: true));
         }
 
-        return (pJoint, relations);
+        return (pJoint, relations, SelectPrincipal(relations));
     }
+
+    /// <summary>
+    /// The one relation a slip states (<c>design/02-betting-math.md</c>, batch 48: "a slip states one
+    /// relation, so the model must nominate which one"). It is the labelable relation carrying the
+    /// largest <see cref="Relation.Strength"/> — the one doing the most work on the price — with ties
+    /// broken by the precedence <c>Implies &gt; ScorerOfSide &gt; SharedScoreline &gt; SharedCount</c>
+    /// and, beyond that, by pair order, so the choice is deterministic.
+    ///
+    /// <para>Two kinds are never principal. <see cref="RelationKind.Independent"/> has nothing to
+    /// state, and <see cref="RelationKind.MutuallyExclusive"/> never reaches a slip at all — it is a
+    /// rejection rather than a price. An exclusion is still returned in <c>relations</c>, because the
+    /// caller must be able to reach it for refusal handling.</para>
+    ///
+    /// <para>Public because a ticket spans several matchups: the ticket layer re-ranks the union of
+    /// every group's relations through this same function rather than re-deriving the rule.</para>
+    /// </summary>
+    public static Relation? SelectPrincipal(IReadOnlyList<Relation> relations)
+    {
+        if (relations == null) throw new ArgumentNullException(nameof(relations));
+
+        Relation? best = null;
+        double bestStrength = 0.0;
+        int bestPrecedence = int.MaxValue;
+        for (int i = 0; i < relations.Count; i++)
+        {
+            Relation candidate = relations[i];
+            int precedence = Precedence(candidate.Kind);
+            if (precedence == NotPrincipal) continue;
+
+            bool wins = best == null
+                || candidate.Strength > bestStrength
+                || (candidate.Strength == bestStrength && precedence < bestPrecedence);
+            if (!wins) continue;
+
+            best = candidate;
+            bestStrength = candidate.Strength;
+            bestPrecedence = precedence;
+        }
+        return best;
+    }
+
+    private const int NotPrincipal = int.MaxValue;
+
+    /// <summary>Tie-break precedence, lowest wins. <see cref="NotPrincipal"/> marks the two kinds
+    /// that are never eligible.</summary>
+    private static int Precedence(RelationKind kind) => kind switch
+    {
+        RelationKind.Implies => 0,
+        RelationKind.ScorerOfSide => 1,
+        RelationKind.SharedScoreline => 2,
+        RelationKind.SharedCount => 3,
+        _ => NotPrincipal,
+    };
 
     /// <summary>Which draw a selection reads. GOAL is the only family holding more than one market
     /// kind, which is why it is the only one needing the scoreline enumeration.</summary>
@@ -378,13 +458,16 @@ public static class JointModel
         int i, int j, double pair, double pi, double pj)
     {
         var legs = new[] { i, j };
-
-        // Validity runs first and is never subject to the no-label fallback (design doc's carve-out).
-        if (pair == 0.0)
-            return new Relation(RelationKind.MutuallyExclusive, legs, RelationSign.None, null, null);
-
         double product = pi * pj;
         bool correlated = IsCorrelated(pair, product);
+        double strength = Strength(pair, product);
+
+        // Validity runs first and is never subject to the no-label fallback (design doc's carve-out).
+        // An exclusion carries no strength: |ln 0| is unbounded, and ranking a rejection against
+        // prices would be a category error — it never reaches a slip to be stated.
+        if (pair == 0.0)
+            return new Relation(RelationKind.MutuallyExclusive, legs, RelationSign.None, null, null,
+                strength: 0.0, correlated: correlated);
 
         // rho > 1 as well as p_joint = min p_i: an implication always reinforces (rho = 1/p of the
         // implying leg), and requiring both is what stops a near-certain independent leg from
@@ -393,25 +476,36 @@ public static class JointModel
         {
             int a = pi <= pj ? i : j;
             int b = pi <= pj ? j : i;
-            return new Relation(RelationKind.Implies, new[] { a, b }, RelationSign.Reinforcing, null, null);
+            return new Relation(RelationKind.Implies, new[] { a, b }, RelationSign.Reinforcing, null, null,
+                strength, correlated);
         }
 
         SelectionFamily fi = FamilyOf(selections[i]);
         SelectionFamily fj = FamilyOf(selections[j]);
         if (fi != fj)
-            return new Relation(RelationKind.Independent, legs, RelationSign.None, null, null);
+            return new Relation(RelationKind.Independent, legs, RelationSign.None, null, null,
+                strength, correlated);
 
         RelationSign sign = pair > product ? RelationSign.Reinforcing
             : pair < product ? RelationSign.Opposing
             : RelationSign.None;
 
         if (fi != SelectionFamily.Goal)
-            return new Relation(RelationKind.SharedCount, legs, sign, fi, null);
+            return new Relation(RelationKind.SharedCount, legs, sign, fi, null, strength, correlated);
 
         Side? side = SharedScorerSide(matchup, selections[i], selections[j]);
         return side.HasValue
-            ? new Relation(RelationKind.ScorerOfSide, legs, sign, SelectionFamily.Goal, side)
-            : new Relation(RelationKind.SharedScoreline, legs, sign, SelectionFamily.Goal, null);
+            ? new Relation(RelationKind.ScorerOfSide, legs, sign, SelectionFamily.Goal, side, strength, correlated)
+            : new Relation(RelationKind.SharedScoreline, legs, sign, SelectionFamily.Goal, null, strength, correlated);
+    }
+
+    /// <summary>|ln rho| for one pair, the ranking key behind the principal relation. Zero where rho
+    /// is not a finite positive number — an impossible pair or a zero marginal — because those carry
+    /// no price movement to rank.</summary>
+    private static double Strength(double pair, double product)
+    {
+        if (pair <= 0.0 || product <= 0.0) return 0.0;
+        return Math.Abs(Math.Log(pair / product));
     }
 
     /// <summary>"A scorer leg beside a leg on that team's goals." Moneyline, total goals and BTTS
@@ -608,5 +702,199 @@ public static class JointModel
                 throw new InvalidOperationException(
                     $"Outcome class {Partition[i].Name} carries negative weight {weights[i]:R} — the partition does not sum to 1");
         return weights;
+    }
+}
+
+/// <summary>The price of one ticket under the correlation model, locked at placement. Produced by
+/// <see cref="SameMatchModel.Price"/> and carried on <see cref="Ticket.SameMatch"/>; a ticket with at
+/// most one leg per matchup has none, and keeps the product-of-leg-odds path untouched.</summary>
+public sealed class SameMatchPrice
+{
+    /// <summary>p_ticket: the product, over matchups, of each matchup's exact joint. Different
+    /// matchups are independent, which is what makes the product legitimate. Exactly 0.0 when the
+    /// combination cannot happen.</summary>
+    public double PTicket { get; }
+
+    /// <summary>o_ticket = 1 / (p_ticket × κ × (1 + Ω)^n), before any leg-targeted Profit Boost —
+    /// the boost is applied by the placing layer, which owns whether the relic was played.
+    ///
+    /// <para>Under <see cref="NaiveFallback"/> this is instead the product of the legs' offered odds:
+    /// where the model finds correlation it cannot label, the price does not move. Exactly 0.0 when
+    /// <see cref="Impossible"/> — no finite price exists, and a caller that ignores the refusal pays
+    /// nothing rather than paying infinity.</para></summary>
+    public double Price { get; }
+
+    /// <summary>Every relation the ticket carries, from every matchup group. <see cref="Relation.Legs"/>
+    /// indexes the TICKET's leg list, not a group's — a surface points at legs it can name.</summary>
+    public IReadOnlyList<Relation> Relations { get; }
+
+    /// <summary>The single relation a slip states (<see cref="JointModel.SelectPrincipal"/>), ranked
+    /// across every matchup on the ticket. Null when nothing is statable.</summary>
+    public Relation? Principal { get; }
+
+    /// <summary>The ticket priced at the naive product because some correlated relation on it could
+    /// not be labelled. Should never be true on the shipped board — Phase 1 verified the vocabulary
+    /// is total — which is exactly why <see cref="SameMatchModel.NoLabelFallbacks"/> counts it.</summary>
+    public bool NaiveFallback { get; }
+
+    /// <summary>No outcome wins this ticket. A validity verdict, never a price: the placing layer
+    /// refuses it (design/02's load-bearing carve-out) rather than selling it at some large number.</summary>
+    public bool Impossible => PTicket == 0.0;
+
+    public SameMatchPrice(double pTicket, double price, IReadOnlyList<Relation> relations,
+        Relation? principal, bool naiveFallback)
+    {
+        PTicket = pTicket;
+        Price = price;
+        Relations = relations ?? throw new ArgumentNullException(nameof(relations));
+        Principal = principal;
+        NaiveFallback = naiveFallback;
+    }
+}
+
+/// <summary>
+/// Ticket-level pricing under the correlation model (<c>design/02-betting-math.md</c> § *Same-game
+/// tickets*, plan F_0.6.0 Phase 2). <see cref="JointModel"/> knows one matchup; this knows a ticket.
+///
+/// <para>Legs on different matchups are independent, so the ticket's probability is the product over
+/// matchups of each matchup's joint, and margin is charged once per leg exactly as it is on an
+/// ordinary parlay:</para>
+///
+/// <code>
+/// p_ticket = PROD over matchups m of p_joint(legs on m)
+/// o_ticket = 1 / (p_ticket × κ × (1 + Ω)^n)
+/// </code>
+///
+/// <para><b>This type is entered only when some matchup carries two or more legs.</b> A ticket with
+/// at most one leg per matchup never reaches here — it keeps the pre-existing product-of-leg-odds
+/// path, verbatim, so its price, payout, void behaviour and settlement stay bit-identical. The two
+/// paths agree algebraically at κ = 1 on an independent combination, but not necessarily in the last
+/// bits of an IEEE double, and the whole gate baseline sits downstream of those bits.</para>
+/// </summary>
+public static class SameMatchModel
+{
+    /// <summary>The instrument's canon name (Allen, batch 48) — uppercase market vocabulary,
+    /// untracked. A NAME, not a caption: presentation decides where an instrument name appears, and
+    /// this type never composes a sentence out of it.</summary>
+    public const string Instrument = "SAME MATCH";
+
+    /// <summary>The mark's canon name (Allen, batch 48). <b>Authoring boundary:</b> the mark is drawn,
+    /// not captioned — this string is never emitted beside the mark, a price or a relation. It belongs
+    /// to rules copy, the ledger, and first-encounter only. Named here so pricing and presentation
+    /// inherit one spelling instead of a placeholder.</summary>
+    public const string Mark = "THE HOUSE'S LINE";
+
+    private static long _noLabelFallbacks;
+
+    /// <summary>Process-wide count of tickets priced at the naive product because a correlated
+    /// relation on them could not be labelled. Zero is the only acceptable value on the shipped
+    /// board; a non-zero reading is a live money leak worth up to +274% EV on an implication pair,
+    /// which is why the design doc requires it counted and surfaced rather than logged. The gate
+    /// campaign reads this; per-ticket, <see cref="SameMatchPrice.NaiveFallback"/> says which.</summary>
+    public static long NoLabelFallbacks => Interlocked.Read(ref _noLabelFallbacks);
+
+    /// <summary>Zeroes the fallback counter. For a test or a campaign run that wants a clean window;
+    /// nothing in the engine calls it.</summary>
+    public static void ResetNoLabelFallbacks() => Interlocked.Exchange(ref _noLabelFallbacks, 0L);
+
+    /// <summary>Whether this ticket is a SAME MATCH ticket at all: does any matchup carry two or more
+    /// legs. This is the switch between the joint path and the untouched product path.</summary>
+    public static bool IsSameMatch(IReadOnlyList<Leg> legs)
+    {
+        if (legs == null) throw new ArgumentNullException(nameof(legs));
+        for (int i = 0; i < legs.Count; i++)
+            for (int j = i + 1; j < legs.Count; j++)
+                if (ReferenceEquals(legs[i].Matchup, legs[j].Matchup)) return true;
+        return false;
+    }
+
+    /// <summary>Prices a ticket on its exact joint.</summary>
+    /// <param name="legs">The ticket's legs, in ticket order.</param>
+    /// <param name="overround">Ω, the per-leg margin the book already charges on every single.</param>
+    /// <param name="margin">κ, the SAME MATCH margin dial (<see cref="RunConfig.SgpMargin"/>).</param>
+    public static SameMatchPrice Price(IReadOnlyList<Leg> legs, double overround, double margin)
+    {
+        if (legs == null) throw new ArgumentNullException(nameof(legs));
+        if (legs.Count == 0) throw new ArgumentException("A ticket needs at least one leg", nameof(legs));
+        if (overround < 0.0 || double.IsNaN(overround))
+            throw new ArgumentException($"Overround must be >= 0, got {overround}", nameof(overround));
+        if (margin <= 0.0 || double.IsNaN(margin) || double.IsInfinity(margin))
+            throw new ArgumentException($"The SAME MATCH margin dial must be > 0, got {margin}", nameof(margin));
+
+        // First-appearance grouping, by matchup identity. Deliberately not a hash-ordered group-by:
+        // the multiplication order — and therefore the last bits of the price — must be a function of
+        // the ticket alone, reproducible from a seed on any run.
+        var matchups = new List<Matchup>();
+        var groups = new List<List<int>>();
+        for (int i = 0; i < legs.Count; i++)
+        {
+            int group = -1;
+            for (int m = 0; m < matchups.Count; m++)
+                if (ReferenceEquals(matchups[m], legs[i].Matchup)) { group = m; break; }
+            if (group < 0)
+            {
+                matchups.Add(legs[i].Matchup);
+                groups.Add(new List<int>());
+                group = groups.Count - 1;
+            }
+            groups[group].Add(i);
+        }
+
+        double pTicket = 1.0;
+        var relations = new List<Relation>();
+        bool unlabelled = false;
+
+        for (int g = 0; g < groups.Count; g++)
+        {
+            List<int> members = groups[g];
+            var selections = new MarketSelection[members.Count];
+            for (int i = 0; i < members.Count; i++) selections[i] = legs[members[i]].Selection;
+
+            (double pJoint, IReadOnlyList<Relation> groupRelations, Relation? _) =
+                JointModel.JointProbability(matchups[g], selections);
+            pTicket *= pJoint;
+
+            for (int r = 0; r < groupRelations.Count; r++)
+            {
+                Relation relation = groupRelations[r];
+
+                // Relation.Legs indexes the GROUP's selection list; re-key it onto the ticket, or a
+                // surface would annotate the wrong leg on any ticket with more than one matchup.
+                var mapped = new int[relation.Legs.Count];
+                for (int i = 0; i < mapped.Length; i++) mapped[i] = members[relation.Legs[i]];
+
+                relations.Add(new Relation(relation.Kind, mapped, relation.Sign, relation.Family,
+                    relation.ScorerSide, relation.Strength, relation.Correlated));
+
+                // The only unlabelable shape the vocabulary can produce: measurable correlation that
+                // classified as Independent. Every other kind IS a label.
+                if (relation.Kind == RelationKind.Independent && relation.Correlated) unlabelled = true;
+            }
+        }
+
+        Relation? principal = JointModel.SelectPrincipal(relations);
+
+        // Validity first, and never subject to the fallback. An unlabelable zero that fell through to
+        // naive pricing would sell a ticket that cannot win, at odds up to a mean decimal of 2070.
+        if (pTicket == 0.0)
+            return new SameMatchPrice(0.0, 0.0, relations, principal, naiveFallback: false);
+
+        if (unlabelled)
+        {
+            Interlocked.Increment(ref _noLabelFallbacks);
+            return new SameMatchPrice(pTicket, NaivePrice(legs), relations, principal, naiveFallback: true);
+        }
+
+        double price = 1.0 / (pTicket * margin * Math.Pow(1.0 + overround, legs.Count));
+        return new SameMatchPrice(pTicket, price, relations, principal, naiveFallback: false);
+    }
+
+    /// <summary>The board's own product of leg odds — today's price, which is what the no-label
+    /// fallback falls back TO ("the price does not move").</summary>
+    private static double NaivePrice(IReadOnlyList<Leg> legs)
+    {
+        var odds = new double[legs.Count];
+        for (int i = 0; i < legs.Count; i++) odds[i] = legs[i].OfferedOdds;
+        return OddsMath.ParlayDecimal(odds);
     }
 }

@@ -444,11 +444,26 @@ public sealed class Ticket
     internal double ScarStacksIfBust { get; set; }
     internal bool ScarCarrier { get; set; }
 
-    public Ticket(IReadOnlyList<Leg> legs, double stake, double vigPaid)
+    /// <summary>The ticket's contract price in decimal odds, locked at placement — every promo and
+    /// relic that rewrote the price before lock is already in it. For an ordinary ticket this is the
+    /// placement-time product of the legs' offered odds; for a SAME MATCH ticket it is the joint
+    /// price, which is NOT that product.</summary>
+    public double LockedPrice { get; }
+
+    /// <summary>The correlation model's output for this ticket, non-null exactly when some matchup on
+    /// it carries two or more legs (F_0.6.0). Carries the joint probability, the relation labels and
+    /// the one relation a slip states. Null on every ordinary ticket, and that null is what routes
+    /// <see cref="PotentialPayout"/> down the untouched pre-F_0.6.0 path.</summary>
+    public SameMatchPrice? SameMatch { get; }
+
+    public Ticket(IReadOnlyList<Leg> legs, double stake, double vigPaid, double lockedPrice,
+        SameMatchPrice? sameMatch = null)
     {
         Legs = legs;
         Stake = stake;
         VigPaid = vigPaid;
+        LockedPrice = lockedPrice;
+        SameMatch = sameMatch;
     }
 
     /// <summary>Legs that still count toward the ticket: voided (mulligan'd) legs are excluded.</summary>
@@ -470,7 +485,20 @@ public sealed class Ticket
         }
     }
 
-    /// <summary>Payout on a win: stake × product of the active legs' offered odds (voided legs drop out),
-    /// scaled by any relic payout multiplier.</summary>
-    public double PotentialPayout => Stake * OddsMath.ParlayDecimal(ActiveLegs.Select(l => l.OfferedOdds).ToList()) * PayoutMultiplier;
+    /// <summary>Payout on a win: stake × the ticket's price × any relic payout multiplier.
+    ///
+    /// <para><b>The ordinary path is preserved verbatim, and that is the whole safety story.</b> A
+    /// ticket with at most one leg per matchup carries no <see cref="SameMatch"/> block and still
+    /// multiplies its ACTIVE legs' offered odds at read time — the same expression in the same order,
+    /// so a voided leg drops out and the number is bit-identical to before F_0.6.0. Routing it through
+    /// <see cref="LockedPrice"/> instead would agree algebraically and could still differ in the last
+    /// bits, and the golden seeds and the whole gate baseline sit downstream of those bits.</para>
+    ///
+    /// <para>A SAME MATCH ticket reads its locked joint price: the product of its legs' odds is not
+    /// its price, so re-multiplying them would be wrong rather than merely imprecise. Re-pricing that
+    /// locked figure on a VOID is Phase 3 — until then a void leaves a same-match ticket's price
+    /// unchanged, which is the conservative direction (the ticket does not silently gain value).</para></summary>
+    public double PotentialPayout => SameMatch == null
+        ? Stake * OddsMath.ParlayDecimal(ActiveLegs.Select(l => l.OfferedOdds).ToList()) * PayoutMultiplier
+        : Stake * LockedPrice * PayoutMultiplier;
 }

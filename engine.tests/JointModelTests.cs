@@ -79,7 +79,7 @@ public class JointModelTests
         foreach (Matchup matchup in population)
             foreach (MarketSelection selection in Board(matchup))
             {
-                (double pJoint, IReadOnlyList<Relation> relations) =
+                (double pJoint, IReadOnlyList<Relation> relations, _) =
                     JointModel.JointProbability(matchup, new[] { selection });
 
                 // One leg is one leg: nothing to relate it to.
@@ -144,7 +144,7 @@ public class JointModelTests
             for (int i = 0; i < board.Length; i++)
                 for (int j = i + 1; j < board.Length; j++)
                 {
-                    (double pJoint, IReadOnlyList<Relation> relations) =
+                    (double pJoint, IReadOnlyList<Relation> relations, _) =
                         JointModel.JointProbability(matchup, new[] { board[i], board[j] });
 
                     // Exactly one relation per pair — the classifier is a total function on pairs.
@@ -196,7 +196,7 @@ public class JointModelTests
                 for (int j = i + 1; j < board.Length; j++)
                     for (int k = j + 1; k < board.Length; k++)
                     {
-                        (double pJoint, IReadOnlyList<Relation> relations) =
+                        (double pJoint, IReadOnlyList<Relation> relations, _) =
                             JointModel.JointProbability(matchup, new[] { board[i], board[j], board[k] });
 
                         Assert.True(relations.Count >= 3, "every leg pair must be classified");
@@ -250,7 +250,7 @@ public class JointModelTests
         Matchup matchup = OneMatchup();
         var legs = new[] { MarketSelection.BothTeamsToScore(true), MarketSelection.TotalGoals(1.5, false) };
 
-        (double pJoint, IReadOnlyList<Relation> relations) = JointModel.JointProbability(matchup, legs);
+        (double pJoint, IReadOnlyList<Relation> relations, _) = JointModel.JointProbability(matchup, legs);
 
         Assert.True(pJoint == 0.0, $"expected exactly 0.0, got {pJoint:R}");
         Relation relation = Assert.Single(relations);
@@ -268,7 +268,7 @@ public class JointModelTests
         Matchup matchup = OneMatchup();
         var legs = new[] { MarketSelection.TotalGoals(1.5, true), MarketSelection.TotalGoals(2.5, true) };
 
-        (double pJoint, IReadOnlyList<Relation> relations) = JointModel.JointProbability(matchup, legs);
+        (double pJoint, IReadOnlyList<Relation> relations, _) = JointModel.JointProbability(matchup, legs);
 
         double stronger = MatchModel.TrueProbability(matchup, legs[1]);
         Assert.True(pJoint == stronger, $"expected exactly {stronger:R}, got {pJoint:R}");
@@ -289,7 +289,7 @@ public class JointModelTests
         Matchup matchup = OneMatchup();
         var legs = new[] { MarketSelection.TotalGoals(2.5, true), MarketSelection.TotalCorners(9.5, true) };
 
-        (double pJoint, IReadOnlyList<Relation> relations) = JointModel.JointProbability(matchup, legs);
+        (double pJoint, IReadOnlyList<Relation> relations, _) = JointModel.JointProbability(matchup, legs);
 
         double product = MatchModel.TrueProbability(matchup, legs[0]) * MatchModel.TrueProbability(matchup, legs[1]);
         Assert.True(pJoint == product, $"expected exactly {product:R}, got {pJoint:R}");
@@ -318,7 +318,7 @@ public class JointModelTests
             MarketSelection.TotalGoals(1.5, false),
         };
 
-        (double pJoint, IReadOnlyList<Relation> relations) = JointModel.JointProbability(matchup, legs);
+        (double pJoint, IReadOnlyList<Relation> relations, _) = JointModel.JointProbability(matchup, legs);
         Assert.True(pJoint == 0.0, $"expected exactly 0.0, got {pJoint:R}");
 
         // No sub-pair is impossible on its own, so the exclusion can only come from the whole
@@ -330,7 +330,7 @@ public class JointModelTests
         Assert.Contains(relations, r => r.Kind == RelationKind.MutuallyExclusive && r.Legs.Count == 3);
 
         // The two scorers alone are perfectly possible, and the same goals settle both.
-        (double pPair, IReadOnlyList<Relation> pairRelations) =
+        (double pPair, IReadOnlyList<Relation> pairRelations, _) =
             JointModel.JointProbability(matchup, new[] { legs[0], legs[1] });
         Assert.True(pPair > 0.0);
         Relation scorerRelation = Assert.Single(pairRelations);
@@ -387,7 +387,7 @@ public class JointModelTests
         Matchup matchup = OneMatchup();
         var legs = new[] { MarketSelection.TotalCorners(8.5, true), MarketSelection.TotalCorners(10.5, false) };
 
-        (double pJoint, IReadOnlyList<Relation> relations) = JointModel.JointProbability(matchup, legs);
+        (double pJoint, IReadOnlyList<Relation> relations, _) = JointModel.JointProbability(matchup, legs);
 
         double product = Marginal(matchup, legs[0]) * Marginal(matchup, legs[1]);
         Assert.True(pJoint > 0.0, "the band is possible");
@@ -408,7 +408,7 @@ public class JointModelTests
         MarketSelection scorer = MarketSelection.AnytimeScorer(0);
 
         double single = Marginal(matchup, scorer);
-        (double pJoint, IReadOnlyList<Relation> relations) =
+        (double pJoint, IReadOnlyList<Relation> relations, _) =
             JointModel.JointProbability(matchup, new[] { scorer, scorer });
 
         Assert.True(pJoint == single, $"expected exactly {single:R}, got {pJoint:R}");

@@ -113,7 +113,7 @@ That last clause binds this model, not presentation. **A slip states one relatio
 (p_joint, relations[], principal)
 ```
 
-`principal` is the labelable relation carrying the largest `|ln ρ_pair|` — the one doing the most work on the price — with ties broken by precedence `Implies > ScorerOfSide > SharedScoreline`. `Independent` is never principal (there is nothing to state), and `MutuallyExclusive` never reaches a slip at all, because it is a rejection rather than a price. Leaving this choice to presentation would make presentation assert a pricing claim it has no basis for — precisely the failure S73 exists to prevent.
+`principal` is the labelable relation carrying the largest `|ln ρ_pair|` — the one doing the most work on the price — with ties broken by precedence `Implies > ScorerOfSide > SharedScoreline > SharedCount`. `Independent` is never principal (there is nothing to state), and `MutuallyExclusive` never reaches a slip at all, because it is a rejection rather than a price. Leaving this choice to presentation would make presentation assert a pricing claim it has no basis for — precisely the failure S73 exists to prevent.
 
 **The no-label fallback, stated precisely.** A ticket prices on its exact joint only if *every* correlated relation it carries resolves to a label. If any does not, the whole ticket prices at `Π p_i`. Partial per-relation application is not offered: a joint probability is not a product of pairwise adjustments and cannot be half-applied honestly.
 
@@ -150,6 +150,13 @@ At `κ = 1` an independent combination prices *identically* to the legs multipli
 ### Impossible combinations are blocked, not priced
 
 `p_joint = 0` has no finite price. These combinations are **rejected at slip construction** — that is what replaces the one-leg-per-match guard, rather than the guard simply being deleted.
+
+**Two further validity rules, both found in build 2026-08-12 and ruled here.** Lifting the guard let a ticket carry the *same selection more than once*, which the old guard had made unreachable:
+
+- **A selection may not appear twice on a ticket.** The joint is idempotent — repeating a leg adds no risk — while `(1 + Ω)^n` charges a full extra leg of margin for it. It is the degenerate case of `Implies`: a leg entails itself. Real books do not accept it either.
+- **A ticket priced at or below evens is refused**, with a reason, exactly as `MatchModel.Offer` already refuses a single market that prices ≤ 1.0. Four repeats of `UNDER 5.5 CARDS` priced at **0.9664** — pay one, win less than one.
+
+Both are needed, and the second does not subsume the first. Two repeats of a *long* leg stay comfortably above evens and so pass the price check while remaining a pure ripoff: double margin for identical risk. The duplicate rule catches those; the evens rule is the backstop for anything else that drifts above `p_joint > 1/(κ(1+Ω)^n)`.
 
 Logical implications (`p_joint = min p_i`, one leg strictly implying another) are **not** blocked: the joint prices them correctly and automatically. The player pays two legs of vig for one leg of risk, which is a bad bet rather than a broken one. Whether the interface should discourage them is a presentation question, not a math one.
 
