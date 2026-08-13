@@ -248,16 +248,17 @@ a fact. **It does not return when the pair closes.**
 **Exceptions take their own named token and are listed here.** A named exception with one member is
 still named (S70's shape).
 
-**The inventory is INCOMPLETE, and here is exactly how.** The string-set enumeration completed
-2026-08-12 and four of its six slots are ruled into the table above. **Two remain open —
-`InterventionPrompt` and `Attract`** — held not for want of a decision but for want of their strings,
-since both were proposed as labels on a class description and this clause classifies against strings.
-Their dispositions are already pre-committed (T85-am3): a short name or affordance takes the label
-value; a string carrying a fact, a figure, or an instruction in sentence form takes 0.
+| `InterventionPrompt` | **0** | instruction form, and it carries a figure |
+| `Attract` | **0** | three of its four strings are sentences, one of them an instruction |
 
-**Until a slot appears in the table above, its tracking value is not canon, and it does not become
-canon by having shipped.** This subsection states its own gap rather than implying the list is
-complete (C18 §4.2).
+**Every slot not named above is 0 — by rule, not by default.** Tracking on this surface is **opt-in
+and named**: silence in this table is a ruling, not a gap. §4 names 23 slot types and nine appear
+here, so the other fourteen are ruled to 0 rather than left to default — which is the state T75 caught
+across half the surface's type and the reason this clause is written as a total rule with named
+exceptions rather than as an inventory forever chasing its members.
+
+*(Clause CLOSED 2026-08-12, T85-am4, on the completed string-set enumeration. It no longer states a
+gap because it no longer has one.)*
 
 **No synthesised styling on this surface** (T73, T77). Weight comes from a real named instance of the
 family; slant is not used at all. A synthesised bold is a smear and a synthesised italic is a shear —
