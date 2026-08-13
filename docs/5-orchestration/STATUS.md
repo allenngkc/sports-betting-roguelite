@@ -1,7 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 205 — ALLEN RULES:
-DRAWS GO IN.** The no-draws-in-v1 constraint FALLS on Allen's word:
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 206 (heartbeat).**
+markets-pregame mid-execution-plan (early re-derivations: today's
+moneyline survives draws as 'draw no bet' renamed; correct score at the
+ratified floor = 12-16 rows, 47.3x longest, inside the tail). DD writing
+batch 44 (two-slot ruling + clause close). Research holds the unfired
+RF-12 draft pending Allen's number. TV standing by post-push.
+
+*(prior stamp, cycle 205:)* The no-draws-in-v1 constraint FALLS on Allen's word:
 draws first, then the unfreeze wave re-evaluated under draws-exist
 (double chance revives), correct score ships with its draw column (the
 fiction question dissolved), the 2% floor RATIFIED. markets-pregame's
