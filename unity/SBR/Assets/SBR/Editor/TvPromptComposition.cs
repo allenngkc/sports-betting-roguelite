@@ -260,6 +260,21 @@ namespace SBR.EditorTools
                                   $"{(2f * one > Footer ? $"OVERRUNS by {2f * one - Footer:0.0}px" : $"fits, {Footer - 2f * one:0.0}px spare")}");
                         Row(c.rectTransform.rect.width, "risk row        ", "RISK $1,234", W(c, "RISK $1,234"));
                         Row(c.rectTransform.rect.width, "pays row        ", "PAYS $12,340", W(c, "PAYS $12,340"));
+
+                        // C49/T74-am4's owed arithmetic, now computed: the parlay term is
+                        // maxOdds^MaxLegs = 52.0359^4 = 7,331,837.65 x stake, enumerated over 648,000
+                        // priced offers in `engine.tests/PayoutMaximumTests`. The stake ceiling is the
+                        // BANK (MaxStakeFraction 1.0), which is run state rather than config — so the
+                        // longest renderable form is stated per bank assumption, not as one number.
+                        // C49 forbids abbreviating, rounding or capping any of these digits away.
+                        Debug.Log("[T88] --- the MAXIMUM RENDERABLE PAYOUT, by bank assumption (C49: printed in full) ---");
+                        foreach (string s in new[]
+                                 {
+                                     "PAYS $7,331,837,650",     // bank $1,000
+                                     "PAYS $73,318,376,502",    // bank $10,000
+                                     "PAYS $733,183,765,022",   // bank $100,000
+                                 })
+                            Row(c.rectTransform.rect.width, "pays MAX        ", s, W(c, s));
                         break;
                     }
 
