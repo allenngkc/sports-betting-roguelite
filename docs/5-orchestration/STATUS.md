@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 215.** TV's C48 pass
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 216 — THE BAND
+RE-DERIVED (batch 52).** Four kinds of object, not one population: the
+screens' 83-85 stands (tight by construction); the key tube is the
+room's LIGHT and the settlement subject's true class; ~92's origin
+found (a citation, never a measurement); batch 51's own comparison
+corrected (authored-vs-rendered - the subject neither conforms nor
+fails; both readings void). Route B ruled the correct primary in
+retrospect. Room dispatched two likely-no-window items (spread in
+degrees; delta from the existing four-half frames, checked before any
+booking). All else grinding.
+
+*(prior stamp, cycle 215:)* TV's C48 pass
 widened on Allen's yes (cash-out HOLD E rides; the shared Interact/
 SitSpot boundary is room's contract - both lanes wired through me).
 Research's WIDENED MANDATE DISCHARGED: 15 titles studied; the whole
