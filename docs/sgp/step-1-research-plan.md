@@ -2,6 +2,9 @@
 
 **Lane:** 2 (correlated parlays / same-game parlay) · **Lead:** Claude (Opus 5) · **Branch:** `sgp`
 **Contract:** `docs/handoffs/sgp.md` · **Charter:** `docs/5-orchestration/next-slices-2026-08-12.md` Lane 2
+**Plan number:** F_0.6.0 (assigned 2026-08-12; Lane 1 markets-pregame holds F_0.5.0). It applies to
+the step-2 plan doc — `docs/1-plans/F_0.6.0_*.plan.md` — which does not exist yet and must not be
+opened before step 1 is accepted.
 **Status:** ACCEPTED (orchestrator relaying Allen, 2026-08-12). All three dispatches authorized and
 running. D3's execute-against-the-engine ruling was granted explicitly — see §5.
 
@@ -116,10 +119,17 @@ in §0.
 
 ## 3. Method
 
-Per STUDIO.md, the bulk reading goes to bounded sub-agents (≤2 at once); I plan, dispatch, review,
-and integrate. Three dispatches, each with named allowed files, an evidence requirement (every
-factual claim carries a source and a quote), a forbidden list (`engine/**`, `sim/**`, `unity/**`,
-`design/**` — read-only; writes confined to `docs/sgp/`), and an exit gate.
+Per STUDIO.md, the bulk reading goes to bounded sub-agents; I plan, dispatch, review, and integrate.
+Three dispatches, each with named allowed files, an evidence requirement (every factual claim
+carries a source and a quote), a forbidden list (`engine/**`, `sim/**`, `unity/**`, `design/**` —
+read-only; writes confined to one named file each under `docs/sgp/`; no git commands at all), and an
+exit gate.
+
+**Concurrency: all three run at once** (Allen, relayed 2026-08-12), overriding STUDIO.md's standing
+"at most two per lead at once" cap for this dispatch set. Allen's reasoning, recorded: if D1's
+findings adjust D2's framing, that costs a revision pass, not a redo — serialized waiting costs the
+whole window. D2's brief carries a delimited "Depends on real-book practice (D1)" section so that
+reconciliation stays surgical.
 
 - **D1 — real-book practice.** Q1 (what books actually do), Q2, Q3. Output: a claims table, one row
   per claim, each with source. Exit gate: void, restricted-combination, and cash-out rules each
