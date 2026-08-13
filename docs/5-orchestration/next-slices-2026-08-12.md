@@ -49,13 +49,15 @@ Balatro, CloverPit, Raccoin (lead verifies titles), and close neighbors — one
 hooks), then a mapping doc onto SBR. Docs-only output under `docs/7-research/`;
 no Unity, no product code.
 
-**Governance exception (Allen, 2026-08-12):** Allen personally holds the Design
-Director role for this lane. Research findings and design challenges route to
-Allen directly — NOT to the DD seat. The lane has a standing creative mandate:
-it may propose overriding ANY existing design doc where research argues
-something better. Proposals, not edits — Allen ratifies; canon changes land
-through the normal register flow after his word. Write this exception into the
-lane's handoff and note it in STUDIO.md when registering the worktree.
+**Governance exception (Allen, 2026-08-12; routing corrected same day):** Allen
+personally holds the Design *authority* for this lane — the DD seat is not in
+its loop. Reporting still follows the normal chain: lead → orchestrator → Allen.
+The orchestrator relays findings and design proposals up to Allen and his
+rulings back down; it does not route any of it to the DD. The lane has a
+standing creative mandate: it may propose overriding ANY existing design doc
+where research argues something better. Proposals, not edits — Allen ratifies;
+canon changes land through the normal register flow after his word. Write this
+into the lane's handoff and note it in STUDIO.md when registering the worktree.
 
 ## Editor note
 
