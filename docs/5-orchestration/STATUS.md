@@ -1,7 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 219 — PHASE T's CLOSING
-LEDGER IS EXPLICIT.** The DD's accounting (Allen-read) exposed my relay
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 220.** Both owning docs
+now carry today's rulings. The laptop fold (760581c, unqueued and right)
+CAUGHT A CONFLICT: batch 46's refusal treatment contradicted the doc's
+standing Blocked-state row - owning doc wins (S73-am4): refusals take
+STAMP with cause-AND-remedy copy; correction relayed to sgp mid-build.
+Lesson canon: a ruling that never meets the owning document never meets
+its own surface's existing law. Campaign A ~22min (heartbeats clean);
+sgp 3c; TV deliverables; research holds.
+
+*(prior stamp, cycle 219:)* The DD's accounting (Allen-read) exposed my relay
 gap - headlines where the seat needed TABLES; fixed: TV dispatched five
 deliverables with table-and-traceability-pass-first ordering (the pass
 guards LegRowLine0's landed relief against the generator that invented
