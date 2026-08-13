@@ -1,7 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 222 — CAMPAIGN A
-LANDED: GREEN EXCEPT G5's EXEMPLAR.** The draws re-baseline scored
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 223 (heartbeat).** A2
+(G5 exemplar re-run) ~24 min in, heartbeats clean; Allen's chained order
+delivered: on a green G5, Campaign B fires immediately, pre-authorized -
+on a miss, hold and report. TV on gesture pins; sgp 3c-3d; research on
+Allen. Quiet is healthy.
+
+*(prior stamp, cycle 222:)* The draws re-baseline scored
 against all 15 predictions: reference bots unmoved (the D2 risk did not
 bite), wall-time missed honestly (4th, not blamed on draws), and G5's
 exemplar pair HALVED under draws to within instrument resolution of the
