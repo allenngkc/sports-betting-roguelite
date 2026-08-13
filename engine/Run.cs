@@ -297,37 +297,41 @@ public sealed class Run
             : OddsMath.FairDecimal(sameMatch.PTicket);
 
         // VOID RE-PRICING, LOCKED HERE (design/02 § *Void: re-price on the survivors*). One contract
-        // price per single-void scenario, frozen at ticket lock and never re-derived at settlement —
-        // that is what makes settlement deterministic and independent of when a void is discovered.
+        // price per SURVIVOR SUBSET — every scenario the ticket can ever be voided down to, not just
+        // the single-void row — frozen at ticket lock and never re-derived at settlement. That is what
+        // makes settlement deterministic and independent of when, and how often, a void is discovered;
+        // multiple voids are canon as of 2026-08-12 and cost 15 prices at MaxLegs = 4.
         // An ordinary ticket gets none: it re-multiplies its surviving legs at read time, verbatim.
-        IReadOnlyList<double> voidPrices = Array.Empty<double>();
+        IReadOnlyList<double> subsetPrices = Array.Empty<double>();
         if (sameMatch != null)
         {
-            var locked = new double[legs.Count];
-            for (int v = 0; v < legs.Count; v++)
+            int full = (1 << legs.Count) - 1;
+            var locked = new double[full + 1];
+            for (int mask = 1; mask <= full; mask++)
             {
                 if (sameMatch.NaiveFallback)
                 {
                     // "Where the model finds correlation it cannot label, the price does not move" —
                     // on void too. Literally today's expression, evaluated over the survivors.
-                    var survivors = new List<double>(legs.Count - 1);
+                    var survivors = new List<double>(legs.Count);
                     for (int i = 0; i < legs.Count; i++)
-                        if (i != v) survivors.Add(legs[i].OfferedOdds);
-                    locked[v] = OddsMath.ParlayDecimal(survivors);
+                        if ((mask & (1 << i)) != 0) survivors.Add(legs[i].OfferedOdds);
+                    locked[mask] = OddsMath.ParlayDecimal(survivors);
                 }
                 else
                 {
-                    // A leg-targeted Profit Boost dies with its leg, exactly as it does on the ordinary
-                    // path: there the boosted odds simply leave the product. Boost surviving legs'
-                    // scenarios, never the scenario in which the boosted leg is the one struck out.
-                    locked[v] = sameMatch.VoidPrices[v] * (v == profitBoostLeg ? 1.0 : boost);
+                    // A leg-targeted Profit Boost travels with its leg, exactly as it does on the
+                    // ordinary path: there the boosted odds are simply in or out of the product. Boost
+                    // every scenario in which that leg SURVIVES, and none in which it is struck out.
+                    bool boostSurvives = profitBoostLeg >= 0 && (mask & (1 << profitBoostLeg)) != 0;
+                    locked[mask] = sameMatch.SubsetPrices[mask] * (boostSurvives ? boost : 1.0);
                 }
             }
-            voidPrices = locked;
+            subsetPrices = locked;
         }
 
         var ticket = new Ticket(legs, stake, OddsMath.VigPaid(stake, offered, fair), offered, sameMatch,
-            voidPrices)
+            subsetPrices)
         {
             Id = $"{Round}.{_tickets.Count}",
         };
@@ -414,21 +418,12 @@ public sealed class Run
         if (!OwnsConsumable("mulligan_slip"))
             throw new InvalidOperationException("No Mulligan Slip held");
 
-        // A SECOND void on a SAME MATCH ticket has no price (design/02 § *Void: re-price on the
-        // survivors*): the one documented commercial mechanism covers a single void, and canon leaves
-        // multiple simultaneous voids OPEN. Refuse loudly, BEFORE the slip is consumed (atomic
-        // legality), rather than invent a rule and settle the ticket at something arbitrary. An
-        // ordinary ticket is unaffected — it drops each voided leg out of its product, as it always
-        // has, for any number of voids.
-        Ticket voiding = session.TicketRef;
-        if (voiding.SameMatch != null)
-            foreach (Leg leg in voiding.Legs)
-                if (leg.IsVoided)
-                    throw new NotSupportedException(
-                        "This SAME MATCH ticket already carries a voided leg. Re-pricing covers a SINGLE "
-                        + "void (design/02 § Void: re-price on the survivors — multiple simultaneous "
-                        + "voids are OPEN); a second void has no price.");
-
+        // No cap on how many legs of one ticket may void (design/02 § *Void: re-price on the
+        // survivors*, CLOSED 2026-08-12). A SAME MATCH ticket re-prices onto the locked price for
+        // whatever survivor set is left — every subset was priced at placement, so the second and third
+        // void are the same table lookup as the first. An ordinary ticket drops each voided leg out of
+        // its product, as it always has. SweatSession.CanMulliganPendingLoss is the only limit that
+        // remains: a Mulligan needs two active legs, so the last one never voids.
         ConsumeConsumable("mulligan_slip");
         session.ResolvePendingLossAsMulligan();
         // The designed post-lock toggle (PLAN.md rev 5 §2): a void can strip the ticket's last

@@ -742,32 +742,72 @@ public sealed class SameMatchPrice
     public bool Impossible => PTicket == 0.0;
 
     /// <summary>
-    /// The single-void replacement prices (<c>design/02-betting-math.md</c> § *Void: re-price on the
-    /// survivors*), one per leg index: <c>VoidPrices[v]</c> is what this ticket prices at when leg
-    /// <c>v</c> — and only leg <c>v</c> — voids, i.e.
-    /// <c>1 / (p_joint(survivors) × κ × (1 + Ω)^(n−1))</c>.
+    /// The replacement price of EVERY survivor subset (<c>design/02-betting-math.md</c> § *Void:
+    /// re-price on the survivors*), indexed by SURVIVOR BITMASK over the ticket's leg list: bit
+    /// <c>i</c> set means leg <c>i</c> survives. <c>SubsetPrices[m]</c> is
+    /// <c>1 / (p_joint(legs in m) × κ × (1 + Ω)^popcount(m))</c>.
     ///
     /// <para><b>Computed here, at ticket lock, and never re-derived at settlement.</b> That is the
     /// design's requirement, not an optimization: it makes settlement deterministic and independent of
-    /// WHEN a void is discovered. Note <c>n</c> drops with the leg, so the ticket pays less margin
-    /// after a void — intended.</para>
+    /// WHEN — and now, how often — a void is discovered. Note the exponent drops with each leg, so the
+    /// ticket pays less margin after a void — intended.</para>
     ///
-    /// <para>Empty in the two cases that have no single-void scenario to price: an
-    /// <see cref="Impossible"/> ticket (it is refused, so it never reaches a void) and a one-leg list
-    /// (voiding the only leg leaves no event to price — the engine never voids a ticket's last active
-    /// leg). <b>Multiple simultaneous voids are OPEN in canon</b> and deliberately not represented
-    /// here: there is one entry per SINGLE void and no rule to compose two.</para></summary>
+    /// <para><b>Multiple voids are supported (canon CLOSED 2026-08-12, reversing the earlier OPEN).</b>
+    /// Books cap themselves at a single void for latency and volume reasons we do not have; two Slips
+    /// on a three-leg ticket is an ordinary hand. With <c>MaxLegs = 4</c> the whole table is at most 15
+    /// live prices, so every subset is priced up front rather than composing a rule at settlement.</para>
+    ///
+    /// <para>Layout: length <c>1 &lt;&lt; n</c>. Slot 0 (no survivors) is 0.0 and unreachable — the
+    /// engine never voids a ticket's last active leg. The full mask holds <see cref="Price"/> itself,
+    /// so "no voids yet" is the same lookup as any other.</para>
+    ///
+    /// <para>Empty in the two cases with no void scenario at all: an <see cref="Impossible"/> ticket
+    /// (refused, so it never reaches a void) and a one-leg list.</para></summary>
+    public IReadOnlyList<double> SubsetPrices { get; }
+
+    /// <summary>The single-void row of <see cref="SubsetPrices"/>, one per leg index:
+    /// <c>VoidPrices[v]</c> is what this ticket prices at when leg <c>v</c> — and only leg <c>v</c> —
+    /// voids. A view, not a second source of truth: it is read straight out of the subset table.</summary>
     public IReadOnlyList<double> VoidPrices { get; }
 
     public SameMatchPrice(double pTicket, double price, IReadOnlyList<Relation> relations,
-        Relation? principal, bool naiveFallback, IReadOnlyList<double> voidPrices)
+        Relation? principal, bool naiveFallback, IReadOnlyList<double> subsetPrices)
     {
         PTicket = pTicket;
         Price = price;
         Relations = relations ?? throw new ArgumentNullException(nameof(relations));
         Principal = principal;
         NaiveFallback = naiveFallback;
-        VoidPrices = voidPrices ?? throw new ArgumentNullException(nameof(voidPrices));
+        SubsetPrices = subsetPrices ?? throw new ArgumentNullException(nameof(subsetPrices));
+        VoidPrices = SingleVoidRow(SubsetPrices);
+    }
+
+    /// <summary>How many legs a subset table of this length covers: <c>Count == 1 &lt;&lt; n</c>. Zero
+    /// for an empty table.</summary>
+    public static int LegCountOf(IReadOnlyList<double> subsetPrices)
+    {
+        if (subsetPrices == null) throw new ArgumentNullException(nameof(subsetPrices));
+        if (subsetPrices.Count == 0) return 0;
+        int n = 0;
+        while ((1 << n) < subsetPrices.Count) n++;
+        if ((1 << n) != subsetPrices.Count)
+            throw new ArgumentException(
+                $"A survivor-subset table is 2^n entries; {subsetPrices.Count} is not a power of two",
+                nameof(subsetPrices));
+        return n;
+    }
+
+    /// <summary>The single-void row of a survivor-subset table: entry <c>v</c> is the subset with
+    /// every leg but <c>v</c> surviving. Shared by <see cref="SameMatchPrice"/> and
+    /// <c>Ticket.LockedVoidPrices</c> so the two never drift.</summary>
+    public static IReadOnlyList<double> SingleVoidRow(IReadOnlyList<double> subsetPrices)
+    {
+        int n = LegCountOf(subsetPrices);
+        if (n == 0) return Array.Empty<double>();
+        int full = subsetPrices.Count - 1;
+        var row = new double[n];
+        for (int v = 0; v < n; v++) row[v] = subsetPrices[full & ~(1 << v)];
+        return row;
     }
 }
 
@@ -827,15 +867,27 @@ public static class SameMatchModel
         return false;
     }
 
+    /// <summary>The most legs this model will build a survivor-subset table for. The table is
+    /// <c>2^n</c> entries, so the bound is on the exponent, not on taste: at the shipped
+    /// <see cref="RunConfig.MaxLegs"/> of 4 a ticket costs 15 live prices, and 12 leaves an order of
+    /// magnitude of headroom before the cost is worth a second thought. Above it, fail with the reason
+    /// rather than quietly allocating.</summary>
+    public const int MaxSubsetLegs = 12;
+
     /// <summary>
-    /// Prices a ticket on its exact joint, and — in the same pass — prices every single-void scenario
-    /// it can reach (<see cref="SameMatchPrice.VoidPrices"/>).
+    /// Prices a ticket on its exact joint, and — in the same pass — prices EVERY survivor subset it
+    /// can ever be voided down to (<see cref="SameMatchPrice.SubsetPrices"/>).
     ///
-    /// <para>The void prices are LOCKED HERE by design: canon requires settlement to be deterministic
-    /// and independent of when a void is discovered, so a void is a table lookup at settlement rather
-    /// than a re-derivation. A scenario's price is simply this same function applied to the survivors,
-    /// in ticket order, so the survivors' grouping — and therefore the last bits of their price — is a
-    /// function of the ticket alone.</para>
+    /// <para>The replacement prices are LOCKED HERE by design: canon requires settlement to be
+    /// deterministic and independent of when a void is discovered, so a void is a table lookup at
+    /// settlement rather than a re-derivation. A scenario's price is simply this same function applied
+    /// to the survivors, in ticket order, so the survivors' grouping — and therefore the last bits of
+    /// their price — is a function of the ticket alone.</para>
+    ///
+    /// <para><b>Every subset, not just the single-void row</b> (canon CLOSED 2026-08-12): multiple
+    /// voids are ordinary play, and at <c>MaxLegs = 4</c> the complete table is at most 15 prices.
+    /// Composing a rule for the second void at settlement would break the locked-at-placement property;
+    /// enumerating the subsets keeps it.</para>
     /// </summary>
     /// <param name="legs">The ticket's legs, in ticket order.</param>
     /// <param name="overround">Ω, the per-leg margin the book already charges on every single.</param>
@@ -844,35 +896,49 @@ public static class SameMatchModel
     {
         SameMatchPrice core = PriceCore(legs, overround, margin, countFallback: true);
 
-        // No single-void scenario exists for an impossible ticket (it is refused before it can be
-        // sweated) or for a one-leg list (there would be nothing left to price, and the engine never
-        // voids a ticket's last active leg). Both leave VoidPrices empty rather than fabricating one.
+        // No void scenario exists for an impossible ticket (it is refused before it can be sweated) or
+        // for a one-leg list (there would be nothing left to price, and the engine never voids a
+        // ticket's last active leg). Both leave the table empty rather than fabricating one.
         if (core.Impossible || legs.Count < 2) return core;
 
-        var voidPrices = new double[legs.Count];
-        for (int v = 0; v < legs.Count; v++)
+        if (legs.Count > MaxSubsetLegs)
+            throw new ArgumentException(
+                $"A survivor-subset table for {legs.Count} legs is {1L << legs.Count} prices; the model "
+                + $"builds them up to {MaxSubsetLegs} legs (RunConfig.MaxLegs ships at 4)", nameof(legs));
+
+        // Indexed by SURVIVOR mask: bit i set means leg i survives. Slot 0 (nothing survives) stays
+        // 0.0 and is unreachable — a Mulligan needs two active legs, so the last one never voids.
+        int full = (1 << legs.Count) - 1;
+        var subsetPrices = new double[full + 1];
+        for (int mask = 1; mask <= full; mask++)
         {
-            Leg[] survivors = Survivors(legs, v);
+            // The full mask IS this ticket. Assigned rather than re-priced so "no voids yet" is the
+            // same number, to the bit, as the price the ticket was sold at.
+            if (mask == full) { subsetPrices[mask] = core.Price; continue; }
+
+            Leg[] survivors = Survivors(legs, mask);
             // Under the no-label fallback "the price does not move" — on void too. The scenario
             // prices at the board's own product over the survivors, not at their joint, so this
             // ticket's replacements stay consistent with the price it was actually sold at.
-            voidPrices[v] = core.NaiveFallback
+            subsetPrices[mask] = core.NaiveFallback
                 ? NaivePrice(survivors)
                 : PriceCore(survivors, overround, margin, countFallback: false).Price;
         }
 
         return new SameMatchPrice(core.PTicket, core.Price, core.Relations, core.Principal,
-            core.NaiveFallback, voidPrices);
+            core.NaiveFallback, subsetPrices);
     }
 
-    /// <summary>The ticket's legs with <paramref name="voided"/> struck out, ticket order preserved —
-    /// the survivors ARE a ticket, and their price must be reproducible from the seed like any
-    /// other.</summary>
-    private static Leg[] Survivors(IReadOnlyList<Leg> legs, int voided)
+    /// <summary>The legs <paramref name="survivorMask"/> keeps, ticket order preserved — the survivors
+    /// ARE a ticket, and their price must be reproducible from the seed like any other.</summary>
+    private static Leg[] Survivors(IReadOnlyList<Leg> legs, int survivorMask)
     {
-        var rest = new Leg[legs.Count - 1];
+        int kept = 0;
+        for (int i = 0; i < legs.Count; i++) if ((survivorMask & (1 << i)) != 0) kept++;
+
+        var rest = new Leg[kept];
         for (int i = 0, k = 0; i < legs.Count; i++)
-            if (i != voided) rest[k++] = legs[i];
+            if ((survivorMask & (1 << i)) != 0) rest[k++] = legs[i];
         return rest;
     }
 
@@ -948,18 +1014,18 @@ public static class SameMatchModel
         // naive pricing would sell a ticket that cannot win, at odds up to a mean decimal of 2070.
         if (pTicket == 0.0)
             return new SameMatchPrice(0.0, 0.0, relations, principal, naiveFallback: false,
-                voidPrices: Array.Empty<double>());
+                subsetPrices: Array.Empty<double>());
 
         if (unlabelled)
         {
             if (countFallback) Interlocked.Increment(ref _noLabelFallbacks);
             return new SameMatchPrice(pTicket, NaivePrice(legs), relations, principal, naiveFallback: true,
-                voidPrices: Array.Empty<double>());
+                subsetPrices: Array.Empty<double>());
         }
 
         double price = 1.0 / (pTicket * margin * Math.Pow(1.0 + overround, legs.Count));
         return new SameMatchPrice(pTicket, price, relations, principal, naiveFallback: false,
-            voidPrices: Array.Empty<double>());
+            subsetPrices: Array.Empty<double>());
     }
 
     /// <summary>The board's own product of leg odds — today's price, which is what the no-label

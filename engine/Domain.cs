@@ -457,30 +457,37 @@ public sealed class Ticket
     public SameMatchPrice? SameMatch { get; }
 
     /// <summary>
-    /// The CONTRACT price this ticket re-prices to if leg <c>v</c> — and only leg <c>v</c> — voids
-    /// (<c>design/02-betting-math.md</c> § *Void: re-price on the survivors*). One entry per leg,
-    /// locked at placement and never re-derived at settlement, which is what keeps settlement
-    /// deterministic and independent of when a void is discovered.
+    /// The CONTRACT price this ticket re-prices to for EVERY survivor subset
+    /// (<c>design/02-betting-math.md</c> § *Void: re-price on the survivors*), indexed by survivor
+    /// bitmask: bit <c>i</c> set means leg <c>i</c> survives. Locked at placement and never re-derived
+    /// at settlement, which is what keeps settlement deterministic and independent of when — and how
+    /// often — a void is discovered.
     ///
-    /// <para>This is <see cref="SameMatchPrice.VoidPrices"/> after the placing layer's own
+    /// <para>This is <see cref="SameMatchPrice.SubsetPrices"/> after the placing layer's own
     /// adjustments — the same relationship <see cref="LockedPrice"/> has to
     /// <see cref="SameMatchPrice.Price"/> — so it is the number to settle on, not the model's raw
     /// figure.</para>
     ///
     /// <para>EMPTY on an ordinary ticket, and that emptiness is load-bearing: such a ticket has no
     /// locked price to replace. It re-multiplies its surviving legs at read time exactly as it did
-    /// before F_0.6.0.</para></summary>
+    /// before F_0.6.0, for any number of voids.</para></summary>
+    public IReadOnlyList<double> LockedSubsetPrices { get; }
+
+    /// <summary>The single-void row of <see cref="LockedSubsetPrices"/> — <c>LockedVoidPrices[v]</c> is
+    /// the contract price when leg <c>v</c>, and only leg <c>v</c>, voids. A view over the subset
+    /// table, so the two can never disagree.</summary>
     public IReadOnlyList<double> LockedVoidPrices { get; }
 
     public Ticket(IReadOnlyList<Leg> legs, double stake, double vigPaid, double lockedPrice,
-        SameMatchPrice? sameMatch = null, IReadOnlyList<double>? lockedVoidPrices = null)
+        SameMatchPrice? sameMatch = null, IReadOnlyList<double>? lockedSubsetPrices = null)
     {
         Legs = legs;
         Stake = stake;
         VigPaid = vigPaid;
         LockedPrice = lockedPrice;
         SameMatch = sameMatch;
-        LockedVoidPrices = lockedVoidPrices ?? Array.Empty<double>();
+        LockedSubsetPrices = lockedSubsetPrices ?? Array.Empty<double>();
+        LockedVoidPrices = SameMatchPrice.SingleVoidRow(LockedSubsetPrices);
     }
 
     /// <summary>Legs that still count toward the ticket: voided (mulligan'd) legs are excluded.</summary>
@@ -526,11 +533,23 @@ public sealed class Ticket
     /// ticket re-prices against the SURVIVORS' joint, at the figure locked for that scenario when the
     /// ticket locked.
     ///
-    /// <para><b>Two or more voided legs throw.</b> Canon leaves multiple simultaneous voids OPEN —
-    /// the one documented commercial mechanism covers a single void — so there is no rule to apply,
-    /// and pricing something arbitrary here would be inventing one silently. Failing loudly is the
-    /// designed behaviour, and <c>Run.PlayMulliganSlip</c> refuses the second void before it happens
-    /// so this is a backstop rather than the primary guard.</para></summary>
+    /// <para><b>Any number of voids (canon CLOSED 2026-08-12).</b> The survivors are a bitmask and the
+    /// replacement is a table lookup, so a second and third void are the same operation as the first —
+    /// no rule is composed at settlement, and every price this ticket can ever show was locked at
+    /// placement.</para>
+    ///
+    /// <para><b>The floor.</b> A replacement at or below evens pays exactly the stake back
+    /// (canon: "a replacement price floors at 1.0"). Placement refuses a sub-evens ticket, but a void
+    /// re-prices a ticket that is already sold — at κ above roughly 1.11 the board can produce one —
+    /// and refusal is unavailable by then. Flooring the PRICE rather than the payout is deliberate: the
+    /// stake-back arrives down the existing <see cref="PotentialPayout"/> path, so
+    /// <see cref="PayoutMultiplier"/> and the ticket modifiers compose with it exactly as they compose
+    /// with any other price, instead of a special case that would have to re-state their rules.</para>
+    ///
+    /// <para>The no-void case returns <see cref="LockedPrice"/> directly rather than through the table.
+    /// The full-mask entry holds the same number to the bit; reading the field is simply the shorter
+    /// proof that an unvoided ticket's price is untouched by any of this — and it is never floored,
+    /// because placement already refused it if it were sub-evens.</para></summary>
     public double SameMatchContractPrice
     {
         get
@@ -539,27 +558,31 @@ public sealed class Ticket
                 throw new InvalidOperationException(
                     "This ticket has no SAME MATCH price; an ordinary ticket re-multiplies its active legs");
 
-            int voided = -1;
-            int count = 0;
+            int survivors = 0;
+            int voided = 0;
             for (int i = 0; i < Legs.Count; i++)
-                if (Legs[i].IsVoided) { voided = i; count++; }
+                if (Legs[i].IsVoided) voided++;
+                else survivors |= 1 << i;
 
-            if (count == 0) return LockedPrice;
-            if (count > 1)
-                throw new NotSupportedException(
-                    $"{count} legs of this SAME MATCH ticket are voided. Re-pricing covers a SINGLE void "
-                    + "(design/02 § Void: re-price on the survivors — multiple simultaneous voids are OPEN); "
-                    + "there is no rule to price this ticket.");
+            if (voided == 0) return LockedPrice;
 
-            if (voided >= LockedVoidPrices.Count)
+            if (survivors == 0)
+                throw new InvalidOperationException(
+                    "Every leg of this SAME MATCH ticket is voided; there is no event left to price "
+                    + "(a Mulligan needs two active legs, so the engine never voids the last one)");
+
+            if (survivors >= LockedSubsetPrices.Count)
                 throw new InvalidOperationException(
                     "No void-replacement price was locked for this ticket — it cannot re-price on a void");
 
-            double replacement = LockedVoidPrices[voided];
+            double replacement = LockedSubsetPrices[survivors];
             if (!(replacement > 0.0) || double.IsInfinity(replacement))
                 throw new InvalidOperationException(
-                    $"The locked void-replacement price for leg {voided} is {replacement:R}, not a price");
-            return replacement;
+                    $"The locked replacement price for survivor set 0x{survivors:X} is {replacement:R}, "
+                    + "not a price");
+
+            // THE FLOOR. At or below evens the ticket returns the stake and nothing more.
+            return replacement <= 1.0 ? 1.0 : replacement;
         }
     }
 }
