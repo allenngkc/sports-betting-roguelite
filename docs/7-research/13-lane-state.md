@@ -21,10 +21,15 @@ Report telegraphic: Done / Next / Risk / Need-Allen. The Need-Allen line is load
 | `43eddab` | `02`–`05` Tier-1 autopsies (Balatro, CloverPit, RACCOIN, Buckshot Roulette), `06` mapping, `07` play questions |
 | `cb0166f` | `08`–`11` Tier-2 probes (Gambonanza, Luck be a Landlord, D&DG, Scritchy Scratchy), `12` probe-set findings, template updated with the rarity floor + frozen lexicon |
 | `89c9808` | `13` this state file, `14` the widened census + new cohort + RF-14/15/16 |
-| *(this commit)* | `15` Insider Trading autopsy, `16` Nubby's Number Factory autopsy; `14`'s Insider Trading sentiment band corrected |
+| `117eefa` | `15` Insider Trading autopsy, `16` Nubby's Number Factory autopsy; `14`'s Insider Trading sentiment band corrected |
+| *(this commit)* | `17` probe set 2 — Slots & Daggers, Dungeon Clawler, Sol Cesto, Tharsis, Bills Must Be Paid; RF-17/18/19 |
 
-**Next up, approved by Allen and not yet run:** the five probes — Bills Must Be Paid, Slots & Daggers,
-Dungeon Clawler, Sol Cesto, Tharsis (`14` §2).
+**The widened mandate is now fully discharged.** 15 titles studied: 4 Tier-1 autopsies + 4 Tier-2 probes +
+2 widened autopsies + 5 widened probes. Nothing is queued; the lane is idle pending Allen's rulings.
+
+**Ruling bundles, as the evidence now groups them:**
+*Retention* — RF-5 · RF-8 · RF-12 · RF-14 · RF-17 · *Product shape* — RF-3 · RF-11 · RF-15 · RF-19 ·
+*The sweat* — RF-7 · RF-10 · RF-18 · *Standalone* — RF-2 · RF-4 · RF-6 · RF-9 · RF-13 · RF-16.
 
 **Never commit** `unity/SBR/Assets/TutorialInfo/Icons/URP.png` — phantom-modified, known legacy
 raw-blob class. Stage lane files **by explicit path only**; `git add -A` sweeps it in.
