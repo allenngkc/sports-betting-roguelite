@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 211.** Batch 49 canon
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 212 (heartbeat).** Three
+staged orders fired: room's Route B window GRANTED (coupling answer came
+back coupled; Unity verified zero; frame-locked pair per the spec's
+pre-commitments); TV's (99%) copy fix (offer-not-opinion form, sweep-
+routed); campaign A grinding (~20 min). Watcher gap FIXED: room's
+re-seated handle was unwatched in v26 - v27 armed on all six seats.
+Research idle at 263k tokens pending Allen's rulings (RF number, mapping,
+play questions). SGP phase 2 running.
+
+*(prior stamp, cycle 211:)* Batch 49 canon
 (8a8e7a6): the three draw questions ruled - the draw is not a team
 (engine's refusal ratified as design); three-offer board with DRAW in
 the middle; the final beat is the match ENDING LEVEL, STATED; a draw is
