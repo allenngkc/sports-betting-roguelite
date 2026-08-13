@@ -131,11 +131,19 @@ at all. This section is allowed to recommend refusing a lever that works.
 | Loss rate / how a run ends | | |
 | Seconds from run-over to next run | | |
 | Playtime distribution from the review corpus (median, IQR, n) | | |
+| Share under 2h (refund window) / over 20h / over 50h | | |
 | **Achievement funnel** — % of owners reaching each milestone | | Steam global achievement % , pull date |
+| **Rarity floor** — the rarest achievement in the game, and the count | | same pull |
 
 The achievement funnel is this lane's best public read on drop-off: the beat-round-1 percentage against
 the finish-a-run percentage says how many owners ever saw the design's back half. Record the raw rows,
 not just the conclusion.
+
+**The rarity floor** (added 2026-08-12, from the Scritchy Scratchy probe) is the rarest achievement a title
+has. It measures how much of a game is reachable by almost everybody, and it separates *engagement* from
+*completion space*. Observed range across the first eight titles: 0.1%–1.5%, except Scritchy Scratchy at
+**12.1%** — nothing in that game is hidden from the median player, and its tail is 3.6% over fifty hours
+despite an 11.7h median. **A high median with a low tail is the signature of a game everyone finishes.**
 
 **Inferred** — the shape of the arc, the real quit point, and whether the design's intended session
 matches the observed one. Falsifier per line.
@@ -209,6 +217,45 @@ Per source: URL, access date, and **what it could and could not establish**. A w
 not feel; a review corpus settles language and not intent; a store page settles nothing but marketing.
 
 ---
+
+## B2. The frozen lexicon — use exactly this, or the cells do not compare
+
+Added 2026-08-12 after the Tier-2 probes found drift in my own method. The Tier-1 and Tier-2 pulls used
+slightly different patterns, which made two families non-comparable across the table (`C44` — a bound and
+the reading it judges must come from one instrument). **Do not edit these patterns. If a family must
+change, re-run every prior title against the new pattern before publishing a comparison.**
+
+```
+addiction      addict|hooked|dopamine|\bcrack\b|can'?t stop|couldn'?t stop|cannot stop
+boredom_quit   repetitive|got (boring|old|stale)|gets (boring|old|stale)|grindy|\bgrind\b|
+               burn(ed|t) out|stopped playing|same every|samey|monoton
+luck_vs_skill  \bluck\b|\brng\b|random|skill|strateg|synerg|combo|build
+dread_tension  tense|tension|anxiet|anxious|stress|heart (was )?(racing|pounding)|palms|sweat|
+               dread|terrif|scary|nerve|adrenaline
+gambling_real  gambling|casino|slot machine|real money|problem gambl|degenerate
+price_value    not worth|overpriced|wait for (a )?sale|\bprice\b|\$\d|too expensive|worth (the|every)
+too_hard       too hard|unfair|brutal|punishing|impossible|\bwall\b|bullshit
+too_easy       too easy|no challenge|easy once|breeze
+onboard        tutorial|learn|confusing|didn'?t know|hard to (understand|follow)|
+               easy to (pick up|learn)|explain|teaches|rules
+depth_thin     shallow|not enough content|lacks (depth|content)|too short|thin|no depth|surface level
+one_more       \bone more\b|\bjust one more\b|\blast (run|spin|game|hand)\b
+cash_out       cash ?out|cash(ing)? out|double or nothing|walk away|quit while
+```
+
+**Two rules that come with it.**
+
+1. **Contamination check, every title, before publishing a number.** If a pattern term appears in the game's
+   own title or is its core verb, that family is unusable for that title and must be struck, not footnoted.
+   Two live examples: `scratch` inside *Scritchy Scratchy*, `degenerate` inside *Dungeons & Degenerate
+   Gamblers* — both inflate `gambling_real` mechanically.
+2. **Two families are known-dead and are not to be reported as findings.** `near_miss` returned 1 hit in
+   4,000 reviews and `cash_out` 12 in 4,000 — Steam reviewers do not narrate moments. Run them if you like;
+   a null from either is an instrument failure, never evidence of absence (`C37`).
+
+Sampling is fixed too: `appreviews`, `language=english`, `purchase_type=all`, `filter=recent`,
+cursor-paged to n=1,000 (or the full pool if smaller — record which). Recent-filter skews toward the current
+build and sale cohorts; say so in §8 every time.
 
 ## C. Notes on running the template
 
