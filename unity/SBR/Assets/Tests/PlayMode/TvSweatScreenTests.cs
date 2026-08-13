@@ -772,6 +772,117 @@ namespace SBR.Tests.PlayMode
             finally { InputSystem.RemoveDevice(kb); RestoreFocusBehaviour(previousFocus); }
         }
 
+        /// <summary>The pending-loss window is seed-decided, so the seed is PINNED and the pin is
+        /// ASSERTED — a window that stops opening must fail loudly rather than let the gesture
+        /// assertions pass on a sweat that never reached them.
+        ///
+        /// <para><b>Not searched for: taken from the engine's own table.</b>
+        /// `CharmExpansionTests.Whistle_rescues_at_full_odds_or_busts_honestly` pins this same seed
+        /// with the same hand-built pair and records what it produces — <i>"leg 0 (matchup 1, Home)
+        /// dies; leg 1 (matchup 0, Away) would win"</i> — and that test is green in the engine suite.
+        /// Reusing it means the two suites move together instead of drifting onto separate seeds that
+        /// each look fine alone.</para>
+        ///
+        /// <para>The ticket is HAND-BUILT rather than taken from `DemoTicketPolicy`, the capture
+        /// harness's precedent for the same reason: the policy's picks are moneyline-only and chosen
+        /// from whatever the slate offers, so they are not the pair the engine's pin describes.
+        /// Both consumables are granted, which is also what OPENS the window at all — the session
+        /// suspends only when a legal save is held.</para></summary>
+        private const string PendingLossSeed = "GOLDEN-W2";
+
+        private static ConsumableDefinition Consumable(string id)
+        {
+            foreach (ConsumableDefinition c in RelicCatalog.Consumables)
+                if (c.Id == id) return c;
+            throw new ArgumentException($"no consumable '{id}' in RelicCatalog");
+        }
+
+        [UnityTest]
+        public IEnumerator T88_the_intervention_prompt_spends_nothing_on_a_press_and_commits_on_the_second_key()
+        {
+            yield return LoadRoom();
+            (RunDirector director, TvSweatScreen screen, SitSpot couch) = FindTrio();
+            screen.TimeScaleOverride = 0.15f;
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+
+            director.StartNewRun(PendingLossSeed);   // overrides whatever Start() rolled
+            Run run = director.Run;
+            run.GrantConsumable(Consumable("mulligan_slip"));
+            run.GrantConsumable(Consumable("refs_whistle"));
+            run.PlaceTicket(new List<Pick> { new Pick(1, Side.Home), new Pick(0, Side.Away) }, 20);
+            director.LockRound();
+
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+
+            var previousFocus = LetDevicesRunUnfocused();
+            Keyboard kb = InputSystem.AddDevice<Keyboard>();
+            try
+            {
+                // Found by object NAME rather than by private field, the way the extent sweep finds
+                // it: the name is what the instrument and the DD's table already refer to, and it
+                // does not couple this test to a field's lifecycle.
+                TMP_Text prompt = null;
+                foreach (TMP_Text t in screen.GetComponentsInChildren<TMP_Text>(true))
+                    if (t.gameObject.name == "InterventionPrompt") { prompt = t; break; }
+                Assert.IsNotNull(prompt, "InterventionPrompt is not built on this screen");
+
+                // THE PIN-ASSERT, and it waits on the RENDERED state rather than the engine's.
+                // `HasPendingLoss` goes true the moment the session suspends, but the theatre reaches
+                // PendingWindowBeat some frames later — waiting on the engine flag alone pressed the
+                // key at a surface that had not drawn the prompt yet. The gesture acts on what is
+                // shown, so what is shown is the precondition.
+                yield return WaitUntil(() => director.CurrentSession != null
+                    && director.CurrentSession.HasPendingLoss && prompt.enabled, 40f,
+                    $"seed '{PendingLossSeed}' did not put a rendered pending-loss window on the surface — " +
+                    "the pin has drifted. Re-derive it from CharmExpansionTests' table before trusting anything below.");
+
+                Assert.IsTrue(run.OwnsConsumable("mulligan_slip"), "precondition: the slip must be held");
+
+                // HOLD M. A press spends nothing.
+                HoldKeys(kb, Key.M);
+                for (int i = 0; i < 5; i++) yield return null;
+
+                Assert.IsTrue(kb.mKey.isPressed, "the virtual key never stayed down — the test proves nothing");
+                string held = prompt.text ?? "<null>";
+                int screens = UnityEngine.Object
+                    .FindObjectsByType<TvSweatScreen>(FindObjectsSortMode.None).Length;
+                Assert.IsTrue(held.Contains("CONFIRMS"),
+                    "the hold must render its PREVIEW — the option, its cost, and how to finish or " +
+                    $"abandon it. Actual: '{held.Replace("\n", "\\n")}' · promptEnabled={prompt.enabled}" +
+                    $" · screensInScene={screens} · sameScreen={ReferenceEquals(prompt.transform.root.GetComponentInChildren<TvSweatScreen>(true), screen)}");
+                Assert.IsTrue(run.OwnsConsumable("mulligan_slip"),
+                    "T88: a press must spend NOTHING — this is the irreversible spend on one frame of input");
+                Assert.IsTrue(director.CurrentSession.HasPendingLoss,
+                    "T88: the window must still be open — a press resolved the leg's grading");
+
+                // RELEASE ABANDONS.
+                HoldKeys(kb);
+                for (int i = 0; i < 3; i++) yield return null;
+
+                Assert.IsTrue(run.OwnsConsumable("mulligan_slip"), "T88: release abandons — nothing is spent");
+                Assert.IsTrue(director.CurrentSession.HasPendingLoss, "T88: release leaves the window open");
+                Assert.IsTrue(prompt.text.Contains("HOLD N LET IT DIE"),
+                    "release returns the OFFER LIST — the preview must not be residue. " +
+                    $"Actual: '{prompt.text.Replace("\n", "\\n")}'");
+
+                // THE SECOND KEY DURING THE HOLD COMMITS.
+                HoldKeys(kb, Key.M);
+                yield return null;
+                yield return null;
+                HoldKeys(kb, Key.M, Key.Enter);
+                for (int i = 0; i < 4; i++) yield return null;
+
+                Assert.IsFalse(run.OwnsConsumable("mulligan_slip"),
+                    "T88: a second key during the hold COMMITS — the slip is spent");
+                Assert.IsFalse(director.CurrentSession.HasPendingLoss,
+                    "T88: committing resolves the window");
+            }
+            finally { InputSystem.RemoveDevice(kb); RestoreFocusBehaviour(previousFocus); }
+        }
+
         private static (RunDirector, TvSweatScreen, SitSpot) FindTrio()
         {
             var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
