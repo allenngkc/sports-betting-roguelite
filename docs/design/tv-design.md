@@ -210,8 +210,24 @@ Two standing consequences. **Digits alone satisfy the mandate** — digits are t
 change, so `$`, `:` and separators need nothing; the requirement is equal advance *among digits*, not
 constant string width (a score going 9 to 10 adds a character and widens, and that is layout).
 **Every generated asset that any figure slot renders on takes the tabular set, and the inventory
-names its members** — the condensed Bold 700 asset carries `CashOut`, and an inventory that names two
-assets while missing a third ships a money control that still twitches.
+names its members.** The surface generates **four** TMP assets, all from the derived
+`EncodeSans-Tabular.ttf` as their single source face:
+
+| asset | instance | weight | carries |
+|---|---|---|---|
+| `EncodeSans SDF` | Regular | 400 | `Attract`, `LegRowState0`, `TakeoverSub`, `Flavor` |
+| `EncodeSans Bold SDF` | Bold | 700 | the roman's bold arm, via `WireBold` |
+| `EncodeSansCondensed SDF` | Condensed Regular | 400 | the condensed primary |
+| `EncodeSansCondensed Bold SDF` | Condensed **Bold 700** | 700 | **`CashOut`, `RiskPays`, `LegRowNeed0`** |
+
+*(Corrected 2026-08-13, T75-am5. This clause previously reasoned about "a third" asset and the
+register's T75-am says the surface generates **exactly three** — it generates four. Naming a subset is
+the defect the inventory rule exists to prevent, so the members are listed rather than counted.)*
+
+**Read the resolved WEIGHT, never `TMP_Text.font` alone.** `font` names the *primary* asset, so a slot
+built at `FontWeight.Bold` renders through the bold arm while `font.name` still reads the regular one —
+which mis-attributed all three Condensed Bold 700 sites once already. The sweep now prints `w700`
+beside the face so the misreading cannot recur.
 
 ### Tracking — marks a label, never a fact
 
