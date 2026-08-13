@@ -2,7 +2,8 @@
 
 **Lane:** 2 (correlated parlays / same-game parlay) · **Lead:** Claude (Opus 5) · **Branch:** `sgp`
 **Contract:** `docs/handoffs/sgp.md` · **Charter:** `docs/5-orchestration/next-slices-2026-08-12.md` Lane 2
-**Status:** proposed — awaiting orchestrator acceptance before the research runs.
+**Status:** ACCEPTED (orchestrator relaying Allen, 2026-08-12). All three dispatches authorized and
+running. D3's execute-against-the-engine ruling was granted explicitly — see §5.
 
 Step 1 is docs-only. Nothing below edits `design/02-betting-math.md` (that is step 2) or touches
 `engine/**` (step 3).
@@ -45,9 +46,10 @@ strictly stronger than a copula, an exact joint. Step 2 amends that sentence. Re
 establish whether the copula idea survives at all, and my prior is that its only surviving job is
 F3: *introducing* goal↔corner/card correlation the model currently lacks.
 
-**Stale anchors, recorded.** The one-pick-per-matchup guard is at **`Run.cs:192-193`**, not
-`Run.cs:181-182` as recorded in TV PRD §8.2A and the F_0.4.0 plan. `Domain.cs` payout is at **:475**,
-not `:465`. Step 3 should key off the text, not those numbers.
+**Stale anchors — corrected, and these are now the accurate versions** (orchestrator, noted on the
+board 2026-08-12). The one-pick-per-matchup guard is at **`Run.cs:192-193`**, not `Run.cs:181-182`
+as recorded in TV PRD §8.2A and the F_0.4.0 plan. `Domain.cs` payout is at **:475**, not `:465`.
+`OddsMath.cs:59` is still correct. Step 3 keys off the text, not any of these numbers — they drift.
 
 **Reframing.** Step 1 is therefore not "invent a correlation model." The correlation is already in
 the world. Step 1 is: *how do real books turn a joint model into a price, a margin, and a
@@ -160,20 +162,21 @@ alternatives. Then stop at the orchestrator. No edit to `design/02-betting-math.
 
 ## 5. Flagged now, not later
 
-- **Ruling requested on D3.** Step 1 is "docs-only output." D3 writes no product code and ships
-  nothing, but it *executes* against the engine to produce numbers. Recommend allowing it: a
-  correlation model designed without knowing the magnitude of correlation in our own sim is a guess,
-  and step 2 must be writable for the Monte Carlo audit. If "docs-only" is strict, I will run it as
-  a scratch computation outside the repo and report only the numbers.
-- **UX consequence, flagged early per the handoff.** If our book prices SGPs correctly, the shown
-  SGP price will be *lower* than the product of leg odds the player can multiply off the board
-  themselves. Real books have exactly this problem. Players read it as the game cheating. That is a
-  Design Director question about how a correlated price is presented and justified — presentation is
-  step 5, but the answer may constrain step 2's choice of pricing rule, so it should be asked now.
-- **The gate campaign is G1–G7, not six.** `sim/Analysis.cs` adds **G7 — market coverage**
-  ("every shipped MarketKind is exercised by the skilled strategy"). Step 4's re-validation needs an
-  SGP arm in the strategies or G7 cannot see the feature at all. The handoff's "six-gate" wording
-  predates G7.
+- **D3 — GRANTED (Allen, relayed 2026-08-12).** The docs-only reading yields: the numbers-only
+  engine computation ships no code and is what makes step 2 a design rather than a guess. D3 runs.
+  Its throwaway project lives in the session scratchpad, never in the repo, and compiles the engine
+  *sources* rather than referencing the engine project — a project reference would trigger the
+  post-build DLL copy into the Unity tree and dirty a tracked LFS asset.
+- **UX consequence — QUEUED to the Design Director at the step-2 boundary** (orchestrator,
+  2026-08-12), so the ruling exists before the pricing choice binds. The question: if our book
+  prices SGPs correctly, the shown SGP price is *lower* than the product of leg odds a player can
+  multiply off the board themselves. Real books have exactly this problem. Players read it as the
+  game cheating. D3 measures the size of that gap (the `o_sgp / Π o_i` shortening ratio), so the DD
+  gets a number to rule against rather than an adjective.
+- **The gate campaign is G1–G7, not six — this is the accurate version** (orchestrator, noted on the
+  board 2026-08-12). `sim/Analysis.cs` adds **G7 — market coverage** ("every shipped MarketKind is
+  exercised by the skilled strategy"). Step 4's re-validation needs an SGP arm in the strategies or
+  G7 cannot see the feature at all. The handoff's "six-gate" wording predates G7; read it as seven.
 - **`DramaEvent.Step` is leg-scoped and becomes wrong here.** TV PRD §4.3.1a records that this is
   harmless only while one leg maps to one match, and that whoever builds step 1's dependency owns
   it. That is this lane. Noting it now so it is not discovered at step 5.
