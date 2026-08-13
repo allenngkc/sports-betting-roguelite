@@ -11,6 +11,69 @@ discarded.
 
 ---
 
+## 0-IP. THE INTERVENTION PROMPT — three correct rulings, one box 1.6x its width. 2026-08-12, seat rotating at 97%
+
+**Branch `0a2ef90`, pushed and remote-verified. Tree clean, Unity zero, main local.** Suites
+unchanged: EditMode 250 / 249 / 0 / 1 ignored, PlayMode 91 / 85 / 0 / 6 skips.
+
+Read §0-PT below for Phase T's state; this section is the one slot that moved after it, because the
+shape of what happened to it is the thing worth carrying.
+
+### The arc
+
+    found          51.1px over its 635px box
+    T86(a)        209.8px over   the bracketed-key form retired: [M]/[R]/[N] -> HOLD M/R/N,
+                                 in T22's established form ("print the word, not the glyph")
+    batch 46      380.0px over   the win-prob GOES, the cost takes its place:
+                                 SEND TO REVIEW (99%) -> SEND TO REVIEW (ONE REF'S WHISTLE)
+
+**Every one of those rulings is right, and each made the box worse.** The slot is now 1015.0px in a
+635.0px box. Nothing new failed at any step — overrunning slots held at 7 of 20 throughout — the same
+one simply got further from fitting. **It needs a T74 answer that is not copy**; there is no wording
+at 635px that says what three rulings require it to say.
+
+`(99%)` was T16's quantity, not a different one: `PendingLossProbBefore` is documented in the engine
+as *"the leg's displayed win-prob"*. The cost is named from `RelicCatalog`'s own "Ref's Whistle"
+rather than a bare `WHISTLE` — an abbreviation nobody authored is G1's class, and this lane withdrew
+three findings built on invented strings before learning it.
+
+**MULLIGAN was deliberately left alone.** Identical shape — an offer whose cost of one Mulligan Slip
+goes unstated — so if the basis-must-be-an-offer form binds generally it binds there. The ruling
+named SEND TO REVIEW. Flagged upward rather than fixed by inference; that restraint is the same one
+T73's four-of-eleven bold sites needed.
+
+### TWO OPEN ITEMS ON THIS SLOT, both with the DD
+
+**1. The prompt COMMITS from the theatre.** Traced from source and answered to the DD:
+
+| key | call | commits |
+|---|---|---|
+| `M` | `Run.PlayMulliganSlip` | `ConsumeConsumable` → `ResolvePendingLossAsMulligan` → `RefreshPhotoFactor` |
+| `R` | `Run.PlayRefsWhistle` | `ConsumeConsumable` → `Rng.Derive(...)` → `ResolvePendingLossWithWhistle` |
+| `N` | `Session.DeclinePendingLoss` | closes the window irrevocably |
+
+A keypress at the TV spends run inventory, draws from the run RNG, and resolves a leg's grading. No
+laptop step, no confirmation, nothing reversible. **Both verbs open with `RequirePhase(Phase.Sweat)`,
+so the engine sanctions a Sweat-phase commit — and mid-sweat the theatre is its only possible
+operator.** T22's "commit-is-the-laptop's" and this mechanic cannot both stand as written. Ruling
+queued.
+
+**2. The copy says HOLD; the input is `wasPressedThisFrame`.** There is no hold gate anywhere on this
+surface. That mismatch is this seat's, introduced by applying T86(a)'s "print the word" form to a
+press verb, and it folds into the T22 ruling: a press committing an irreversible spend under an
+instruction to hold is the concrete case that ruling exists for.
+
+### On the board, not started
+
+Draws reaching the theatre (batch 49): the final beat is the match **ending level, stated** — no
+climax, no absence, `decisive` must never reach a slot. Two DD-authored strings join the sweep
+population under C46 when they land. Measured headroom for them: **`Flavor` has 140.2px spare** and
+can take a stated ending line; **the leg-row state chip has none** — it is already 4.7px over on
+`NEXT`, so any new chip word arrives as a T84 blocker on day one. Trace new strings from their
+assignment site, including whatever chooses between them.
+
+---
+
 ## 0-PT. PHASE T — the type migration SHIPPED AND BLOCKED. 2026-08-12, seat rotating at 97%
 
 **Branch `9459348`, pushed and remote-verified. Tree clean, Unity zero, main local.** Suites on
