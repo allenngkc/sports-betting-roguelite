@@ -747,6 +747,11 @@ public sealed class SameMatchPrice
     /// <c>i</c> set means leg <c>i</c> survives. <c>SubsetPrices[m]</c> is
     /// <c>1 / (p_joint(legs in m) × κ × (1 + Ω)^popcount(m))</c>.
     ///
+    /// <para><b>κ applies only while a same-match group survives (canon 2026-08-12).</b> A subset whose
+    /// legs are all on DISTINCT matchups is an ordinary parlay — there is no correlation left to charge
+    /// for — so it prices at κ = 1 whatever the ticket was sold under. Moot at the shipped default and
+    /// real the moment the gate campaign moves the dial.</para>
+    ///
     /// <para><b>Computed here, at ticket lock, and never re-derived at settlement.</b> That is the
     /// design's requirement, not an optimization: it makes settlement deterministic and independent of
     /// WHEN — and now, how often — a void is discovered. Note the exponent drops with each leg, so the
@@ -917,12 +922,25 @@ public static class SameMatchModel
             if (mask == full) { subsetPrices[mask] = core.Price; continue; }
 
             Leg[] survivors = Survivors(legs, mask);
+
+            // κ APPLIES ONLY WHILE A SAME-MATCH GROUP SURVIVES (canon 2026-08-12). Voiding can leave
+            // survivors that no longer share a matchup — two legs on one match plus a third elsewhere,
+            // void one of the pair — and what remains is an ordinary parlay. κ is the price of
+            // correlation, so with no correlation left there is nothing to charge for and the subset
+            // prices at κ = 1. A one-leg subset is the degenerate case of the same rule.
+            //
+            // Invisible at the shipped κ = 1, and real the moment the gate campaign moves the dial. It
+            // also bounds the sub-evens case: a subset with at most one leg per matchup prices at
+            // Π 1/(p_i (1+Ω)) — the board's own singles, each above evens — so a replacement can only
+            // fall to or below evens while a correlated group is still on the ticket.
+            double subsetMargin = IsSameMatch(survivors) ? margin : 1.0;
+
             // Under the no-label fallback "the price does not move" — on void too. The scenario
             // prices at the board's own product over the survivors, not at their joint, so this
             // ticket's replacements stay consistent with the price it was actually sold at.
             subsetPrices[mask] = core.NaiveFallback
                 ? NaivePrice(survivors)
-                : PriceCore(survivors, overround, margin, countFallback: false).Price;
+                : PriceCore(survivors, overround, subsetMargin, countFallback: false).Price;
         }
 
         return new SameMatchPrice(core.PTicket, core.Price, core.Relations, core.Principal,

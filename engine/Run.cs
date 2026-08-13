@@ -417,6 +417,7 @@ public sealed class Run
             throw new InvalidOperationException("No dead leg is awaiting a Mulligan Slip");
         if (!OwnsConsumable("mulligan_slip"))
             throw new InvalidOperationException("No Mulligan Slip held");
+        RequireLiveTicket(session);
 
         // No cap on how many legs of one ticket may void (design/02 § *Void: re-price on the
         // survivors*, CLOSED 2026-08-12). A SAME MATCH ticket re-prices onto the locked price for
@@ -429,6 +430,42 @@ public sealed class Run
         // The designed post-lock toggle (PLAN.md rev 5 §2): a void can strip the ticket's last
         // qualifying longshot leg — only the photo factor re-evaluates.
         _effects.RefreshPhotoFactor(session.TicketRef);
+
+        // THE SUB-EVENS VOID (design/02 § *Void: re-price on the survivors*, CORRECTED 2026-08-12).
+        // If this void re-priced the ticket to at or below evens, the ticket VOIDS IN FULL: it stops
+        // being a live contract here and the stake is returned unconditionally by the stake-return
+        // ledger in FinishSweat. The superseded rule floored the price at 1.0 and left the ticket
+        // live, which returned the stake only if the survivors WON — worse for the player than the
+        // full void it claimed to imitate. Realized at the moment of the void, not at settlement, so
+        // the outcome cannot depend on how the rest of the sweat runs: the state change alone closes
+        // the cash-out window (SweatSession requires an Open ticket) and takes the ticket out of
+        // FinishSweat's Won/Lost decision.
+        MarkVoidedInFull(session.TicketRef);
+    }
+
+    /// <summary>A ticket that already voided in full is terminal: it is neither won nor lost and the
+    /// stake is already owed back, so a save spent on it could not change anything. Refuse before the
+    /// consumable is spent rather than burning it for nothing.</summary>
+    private static void RequireLiveTicket(SweatSession session)
+    {
+        if (session.TicketRef.State == TicketState.Voided)
+            throw new InvalidOperationException(
+                "This ticket has already voided in full — a void re-priced it to at or below evens and "
+                + "its stake is returned; no save can change that");
+    }
+
+    /// <summary>Moves a ticket to <see cref="TicketState.Voided"/> the moment a void re-prices it to at
+    /// or below evens. Idempotent, and a no-op for every ticket that has not (an ordinary ticket can
+    /// never reach it — it carries no locked replacement price at all).</summary>
+    private static void MarkVoidedInFull(Ticket ticket)
+    {
+        // Never over a ticket that has already realized value. Unreachable today — a cash-out needs an
+        // Open ticket and the void closes that window the instant it lands, and the Won assignment runs
+        // after this — but if it ever were reachable, the refund would be credited ON TOP of money the
+        // player already banked. Fail towards the payment that actually happened.
+        if (ticket.State == TicketState.Won || ticket.State == TicketState.CashedOut) return;
+
+        if (ticket.VoidedInFull) ticket.State = TicketState.Voided;
     }
 
     /// <summary>Plays a held Ref's Whistle on the session's pending dead leg: the leg's GRADING
@@ -443,6 +480,7 @@ public sealed class Run
             throw new InvalidOperationException("No dead leg is awaiting a Ref's Whistle");
         if (!OwnsConsumable("refs_whistle"))
             throw new InvalidOperationException("No Ref's Whistle held");
+        RequireLiveTicket(session);
 
         ConsumeConsumable("refs_whistle");
         Pcg32 roll = Rng.Derive(Round, session.TicketRef.Id, session.PendingDeadLegIndex, "whistle", 0);
@@ -466,7 +504,14 @@ public sealed class Run
 
         foreach (Ticket ticket in _tickets)
         {
-            if (ticket.State != TicketState.Open) continue; // CashedOut or dead-leg Lost: already settled
+            // Belt and braces: PlayMulliganSlip already moved a sub-evens re-price to Voided the moment
+            // it happened, and nothing else in the engine voids a leg. Re-asserting it HERE, ahead of
+            // the Won/Lost decision, is what makes "the outcome does not depend on whether the
+            // surviving legs win" a structural property of settlement rather than a promise kept by one
+            // call site.
+            MarkVoidedInFull(ticket);
+
+            if (ticket.State != TicketState.Open) continue; // CashedOut, Voided, or dead-leg Lost
 
             if (ticket.GradesWon)
             {
@@ -481,13 +526,29 @@ public sealed class Run
             }
         }
 
-        // Terminal-realization ledger: every Lost Free Bet ticket refunds its stake, once.
-        // The loss still happened everywhere it matters (scar fed, jar counts it).
+        // Terminal-realization ledger — THE STAKE-RETURN PATH. Two things reach it, and both return
+        // exactly the stake: raw, once, and untouched by PayoutMultiplier or any ticket modifier.
+        //
+        //   * a Lost Free Bet ticket. The loss still happened everywhere it matters (scar fed, jar
+        //     counts it) — the refund is the modifier's contract on top.
+        //   * a ticket that VOIDED IN FULL (F_0.6.0): a void re-priced it to at or below evens, so the
+        //     ticket voids and the stake comes back UNCONDITIONALLY — it never graded, so whether the
+        //     survivors would have won is not consulted.
+        //
+        // A refund is not a payout, which is why it is credited here as `Bank += Stake` rather than
+        // through `Stake × price × PayoutMultiplier`: otherwise a Double or Nothing ticket would turn
+        // a void into a profit, and a void is not something a player should ever want. The two clauses
+        // share the one `Refunded` latch and are mutually exclusive by state — a ticket that voids in
+        // full is never Lost — so a Free Bet that voids gets its single stake back, not two.
         foreach (Ticket ticket in _tickets)
         {
-            if (ticket.State == TicketState.Lost
-                && ticket.Modifier == TicketModifier.FreeBet
-                && !ticket.Refunded)
+            if (ticket.Refunded) continue;
+
+            bool voidRefund = ticket.State == TicketState.Voided;
+            bool freeBetRefund = ticket.State == TicketState.Lost
+                && ticket.Modifier == TicketModifier.FreeBet;
+
+            if (voidRefund || freeBetRefund)
             {
                 ticket.Refunded = true;
                 Bank += ticket.Stake;
@@ -509,7 +570,24 @@ public sealed class Run
 
     private void CreditBank(double amount) => Bank += amount;
 
-    private void HandleBust(Ticket ticket) => _effects.OnBust(ticket);
+    /// <summary>The bust seam, handed to every <see cref="SweatSession"/> and used by
+    /// <see cref="FinishSweat"/>.
+    ///
+    /// <para>A ticket that VOIDED IN FULL cannot bust. Its outcome stopped depending on the surviving
+    /// legs the moment the void re-priced it under evens, so a later dead leg is not a loss — it is
+    /// noise on a contract that is already settled at the stake. The session still calls in (it sets
+    /// Lost and reports the bust before this runs, and SweatSession is not F_0.6.0's to change), so the
+    /// state is restored here and the bust chain — Scar growth, the Bad Beat Jar's all-lost round — is
+    /// not fed a loss that did not happen.</para></summary>
+    private void HandleBust(Ticket ticket)
+    {
+        if (ticket.VoidedInFull)
+        {
+            MarkVoidedInFull(ticket);
+            return;
+        }
+        _effects.OnBust(ticket);
+    }
 
     /// <summary>
     /// The payment settle (design/10): the round's payment is DEDUCTED. Meet it and the run

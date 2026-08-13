@@ -180,7 +180,9 @@ Void-replacement prices are **computed and locked at ticket lock**, never re-der
 
 **Multiple voids are supported — CLOSED 2026-08-12, reversing the earlier OPEN.** The original note deferred this because the one documented commercial mechanism covers a single void only. That reasoning does not transfer: books limit themselves for latency and volume reasons we do not have. Two Mulligan Slips on a three-leg ticket is an ordinary hand, and refusing it dead-ends real play. With `MaxLegs = 4` the complete set of survivor subsets is at most **15 prices per ticket**, computed once at lock — so price *every* subset, not just the single-void row.
 
-**A replacement at or below evens voids the ticket and returns the stake — CORRECTED 2026-08-12.** The tightest replacement on the shipped board is `1.1181` at `κ = 1`, so any `κ` above roughly 1.11 — well inside the range the gate campaign will explore — would re-price a live ticket to at or below evens, and placement-time refusal is unavailable by then because the ticket is already sold.
+**A replacement at or below evens voids the ticket and returns the stake — CORRECTED 2026-08-12.** A replacement can price at or below evens, and placement-time refusal is unavailable by then because the ticket is already sold.
+
+**The two rulings in this section interact, and stating them independently understated the threshold.** The `1.1181` figure first quoted here was measured against *one-leg* survivors — but the κ-drop below puts a lone survivor permanently above evens, since it is just the board's own single, which `MatchModel.Offer` already guarantees prices above 1.0. With that accounted for, the real threshold is **≈1.3**, and a sub-evens replacement now **requires a correlated group to survive**: a distinct-matchup remainder is a product of board singles and cannot go sub-evens at any `κ`. Still inside the range the gate campaign will explore, so the rule stands — but it fires later and more narrowly than first written.
 
 This section first specified *flooring the price* at 1.0 while justifying it as "the same outcome the full-void camp of real books produces." **Those are not the same outcome**, and the gap is not academic: a live ticket priced at 1.0 returns the stake only *if it wins*, and still loses everything if it does not. That is strictly worse for the player than the full void it claimed to imitate, and it produces the absurd contract *win and receive nothing*. The rule is the one that was actually argued for: **the ticket voids in full and the stake is returned, unconditionally.**
 
@@ -189,6 +191,12 @@ A refund is not a payout, so payout multipliers and ticket modifiers do not act 
 **κ applies only while a same-match group survives.** Voiding can leave survivors that no longer share a matchup: two legs on one match plus a third elsewhere, with one of the pair voided, leaves an ordinary parlay. `κ` is the price of correlation, so with no correlation left there is nothing to charge for and the survivors re-price at `κ = 1`. Moot at today's default; real the moment the gate campaign moves the dial.
 
 **A Profit Boost travels with its leg.** It survives if that leg survives and dies if that leg voids, mirroring the ordinary-ticket path exactly. Any other rule would let a void change the value of a relic applied to a different leg.
+
+**What a full void does to the rest of the ticket's economy** (ruled 2026-08-12; mine, reversible, flagged for veto):
+
+- **The Free Bet token returns.** Its benefit is a refund on a *loss*, and a voided ticket neither won nor lost, so the token was never resolved and should not be burnt. This is also what real books do with a free bet on a void.
+- **The Mulligan Slip does not return.** The player spent it to void a leg and it voided the leg — consumed doing exactly its job. That the downstream re-price then voided the ticket is a consequence of the bet, not a failure of the consumable.
+- **A void feeds no loss-triggered mechanic** — not Scar Tissue, not the Bad Beat Jar, and it does not enter the bust chain. A void is not a loss. Any other reading would let a player farm loss-triggered rewards by voiding into them, which is a mechanic nobody designed.
 
 ### Pending: draws (Lane 1, greenlit 2026-08-12)
 

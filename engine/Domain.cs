@@ -22,7 +22,13 @@ public enum MarketChoice { Home, Away, Over, Under, Yes, No }
 
 public enum LegState { Pending, Won, Lost }
 
-public enum TicketState { Open, Won, Lost, CashedOut }
+/// <summary>A ticket's terminal state. <c>Voided</c> (F_0.6.0) is neither a win nor a loss: a void
+/// re-priced the ticket to at or below evens, so the ticket voids IN FULL and the stake is returned
+/// unconditionally (<c>design/02-betting-math.md</c> § *Void: re-price on the survivors*, CORRECTED
+/// 2026-08-12). It is a distinct state rather than a flavour of Lost because every consumer that
+/// counts losses — the Bad Beat Jar, the Scar, the run's own tally — would otherwise book a refund as
+/// a bust.</summary>
+public enum TicketState { Open, Won, Lost, CashedOut, Voided }
 
 /// <summary>A ticket's final, ticket-local grading of one leg — what OnLegResolved carries
 /// after any pending-loss window has closed (charm expansion, PLAN.md rev 5).</summary>
@@ -435,7 +441,11 @@ public sealed class Ticket
     /// cash-out offers.</summary>
     public TicketModifier Modifier { get; internal set; } = TicketModifier.None;
 
-    /// <summary>Free Bet's exactly-once latch, set by the terminal-realization ledger.</summary>
+    /// <summary>The STAKE-RETURN latch — exactly-once, set by the terminal-realization ledger. Two
+    /// things reach it: a Lost Free Bet ticket, and (F_0.6.0) a ticket that
+    /// <see cref="VoidedInFull"/>. One latch rather than two because they must never both pay: the
+    /// stake comes back once or not at all, and a ticket that voids in full is never
+    /// <see cref="TicketState.Lost"/>, so a Free Bet on it refunds the same single stake.</summary>
     public bool Refunded { get; internal set; }
 
     /// <summary>Scar Tissue bookkeeping (design/10 B): the stacks this ticket's bust would add,
@@ -521,10 +531,63 @@ public sealed class Ticket
     /// <para>A SAME MATCH ticket reads its locked joint price: the product of its legs' odds is not
     /// its price, so re-multiplying them would be wrong rather than merely imprecise. On a void it
     /// reads the replacement price locked for that scenario at placement — see
-    /// <see cref="SameMatchContractPrice"/>.</para></summary>
-    public double PotentialPayout => SameMatch == null
-        ? Stake * OddsMath.ParlayDecimal(ActiveLegs.Select(l => l.OfferedOdds).ToList()) * PayoutMultiplier
-        : Stake * SameMatchContractPrice * PayoutMultiplier;
+    /// <see cref="SameMatchContractPrice"/>.</para>
+    ///
+    /// <para><b>Zero once the ticket <see cref="VoidedInFull"/>.</b> Such a ticket has no payout at
+    /// all: it returns the stake, and a refund is not a payout (canon 2026-08-12), so it must not be
+    /// reachable through this expression — where <see cref="PayoutMultiplier"/> and Double or Nothing
+    /// would act on it and turn a void into a profit. The stake comes back down the run's stake-return
+    /// ledger instead, raw, and a zero here is the fail-safe: any caller that still credited this would
+    /// credit nothing rather than a phantom sub-evens payout.</para></summary>
+    public double PotentialPayout => VoidedInFull
+        ? 0.0
+        : SameMatch == null
+            ? Stake * OddsMath.ParlayDecimal(ActiveLegs.Select(l => l.OfferedOdds).ToList()) * PayoutMultiplier
+            : Stake * SameMatchContractPrice * PayoutMultiplier;
+
+    /// <summary>The SURVIVOR bitmask over <see cref="Legs"/>: bit <c>i</c> set means leg <c>i</c> is
+    /// not voided. The index into <see cref="LockedSubsetPrices"/>.</summary>
+    private int SurvivorMask()
+    {
+        int mask = 0;
+        for (int i = 0; i < Legs.Count; i++)
+            if (!Legs[i].IsVoided) mask |= 1 << i;
+        return mask;
+    }
+
+    /// <summary>
+    /// A void has re-priced this ticket to AT OR BELOW EVENS, so the ticket voids IN FULL and the stake
+    /// is returned unconditionally (<c>design/02-betting-math.md</c> § *Void: re-price on the
+    /// survivors*, CORRECTED 2026-08-12).
+    ///
+    /// <para><b>This replaces the price floor, it does not sit beside it.</b> The superseded rule
+    /// floored the contract price at 1.0 and justified that as the outcome the full-void camp of real
+    /// books produces — which it is not. A live ticket priced at 1.0 returns the stake only IF IT WINS
+    /// and still loses everything if it does not: strictly worse for the player than the full void it
+    /// claimed to imitate, and the absurd contract <i>win and receive nothing</i>. The outcome no
+    /// longer depends on whether the surviving legs win.</para>
+    ///
+    /// <para>Reachable for real. Placement refuses a sub-evens ticket, but a void re-prices a ticket
+    /// that is ALREADY SOLD and refusal is unavailable by then; the tightest replacement on the shipped
+    /// board is ~1.118 at κ = 1, so any κ past that — inside the range the gate campaign explores —
+    /// produces one.</para>
+    ///
+    /// <para>Read off <see cref="LockedSubsetPrices"/> rather than the model's raw table, so a Profit
+    /// Boost that travelled with a surviving leg counts: what matters is the price the ticket would
+    /// actually settle on. Structurally false for an ordinary ticket (no locked replacement exists) and
+    /// for an unvoided one (placement already refused it if it were sub-evens), which is what keeps the
+    /// at-most-one-leg-per-matchup path untouched.</para></summary>
+    public bool VoidedInFull
+    {
+        get
+        {
+            if (SameMatch == null) return false;
+            int survivors = SurvivorMask();
+            if (survivors == (1 << Legs.Count) - 1) return false; // nothing voided
+            if (survivors == 0 || survivors >= LockedSubsetPrices.Count) return false;
+            return LockedSubsetPrices[survivors] <= 1.0;
+        }
+    }
 
     /// <summary>
     /// A SAME MATCH ticket's contract price given the voids that have actually happened
@@ -538,18 +601,17 @@ public sealed class Ticket
     /// no rule is composed at settlement, and every price this ticket can ever show was locked at
     /// placement.</para>
     ///
-    /// <para><b>The floor.</b> A replacement at or below evens pays exactly the stake back
-    /// (canon: "a replacement price floors at 1.0"). Placement refuses a sub-evens ticket, but a void
-    /// re-prices a ticket that is already sold — at κ above roughly 1.11 the board can produce one —
-    /// and refusal is unavailable by then. Flooring the PRICE rather than the payout is deliberate: the
-    /// stake-back arrives down the existing <see cref="PotentialPayout"/> path, so
-    /// <see cref="PayoutMultiplier"/> and the ticket modifiers compose with it exactly as they compose
-    /// with any other price, instead of a special case that would have to re-state their rules.</para>
+    /// <para><b>No floor — the sub-evens case is not priced at all.</b> The superseded rule floored
+    /// this at 1.0; canon CORRECTED that 2026-08-12, because a live ticket priced at 1.0 returns the
+    /// stake only if it WINS. A replacement at or below evens now voids the ticket in full and returns
+    /// the stake unconditionally: see <see cref="VoidedInFull"/>. This property therefore reports the
+    /// raw locked replacement even when that is at or below evens — it is the figure that DECIDES the
+    /// void, and no money is ever computed from it, because a ticket that voids in full has a
+    /// <see cref="PotentialPayout"/> of zero and never settles Won or Lost.</para>
     ///
     /// <para>The no-void case returns <see cref="LockedPrice"/> directly rather than through the table.
     /// The full-mask entry holds the same number to the bit; reading the field is simply the shorter
-    /// proof that an unvoided ticket's price is untouched by any of this — and it is never floored,
-    /// because placement already refused it if it were sub-evens.</para></summary>
+    /// proof that an unvoided ticket's price is untouched by any of this.</para></summary>
     public double SameMatchContractPrice
     {
         get
@@ -558,13 +620,9 @@ public sealed class Ticket
                 throw new InvalidOperationException(
                     "This ticket has no SAME MATCH price; an ordinary ticket re-multiplies its active legs");
 
-            int survivors = 0;
-            int voided = 0;
-            for (int i = 0; i < Legs.Count; i++)
-                if (Legs[i].IsVoided) voided++;
-                else survivors |= 1 << i;
+            int survivors = SurvivorMask();
 
-            if (voided == 0) return LockedPrice;
+            if (survivors == (1 << Legs.Count) - 1) return LockedPrice; // nothing voided
 
             if (survivors == 0)
                 throw new InvalidOperationException(
@@ -581,8 +639,7 @@ public sealed class Ticket
                     $"The locked replacement price for survivor set 0x{survivors:X} is {replacement:R}, "
                     + "not a price");
 
-            // THE FLOOR. At or below evens the ticket returns the stake and nothing more.
-            return replacement <= 1.0 ? 1.0 : replacement;
+            return replacement;
         }
     }
 }

@@ -12,13 +12,18 @@ namespace SBR.Engine.Tests;
 /// <para><c>Gate1_*</c> is the equivalence invariant carried onto the VOID path — an ordinary ticket
 /// must still drop a voided leg out of its product, bit-for-bit, through the real Mulligan flow — and
 /// the multi-void hands the survivor-subset table now supports. <c>Gate2_*</c> is the re-price itself
-/// and the at-or-below-evens floor beside it, <c>Gate3_*</c> the duplicate ban and the placement-time
-/// sub-evens refusal, <c>Gate4_*</c> the voided-down-to-one-leg case.</para>
+/// and the sub-evens FULL VOID beside it, <c>Gate3_*</c> the duplicate ban and the placement-time
+/// sub-evens refusal, <c>Gate4_*</c> the voided-down-to-one-leg case, <c>Gate5_*</c> the κ-drop.</para>
 ///
-/// <para><b>Amended 2026-08-12</b> for the three rulings: multiple voids are supported (the earlier
-/// OPEN is closed — every survivor subset is priced at lock, not just the single-void row), a
-/// replacement price floors at 1.0 and pays the stake back, and a Profit Boost travels with its
-/// leg.</para>
+/// <para><b>Amended 2026-08-12</b> for the rulings: multiple voids are supported (the earlier OPEN is
+/// closed — every survivor subset is priced at lock, not just the single-void row), a Profit Boost
+/// travels with its leg, and κ applies only while a same-match group survives.</para>
+///
+/// <para><b>Corrected 2026-08-12.</b> The earlier "a replacement price floors at 1.0" rule is gone,
+/// not supplemented. A live ticket priced at 1.0 returns the stake only IF IT WINS, which is worse for
+/// the player than the full void it claimed to imitate; the rule is that a replacement at or below
+/// evens voids the ticket in full and returns the stake unconditionally, and the refund is not a
+/// payout so no multiplier or modifier acts on it.</para>
 ///
 /// <para>Every void here goes through <c>Run.PlayMulliganSlip</c>. <c>Leg.IsVoided</c> has an
 /// internal setter and the test assembly has no access to it, which is a feature: there is no way to
@@ -308,8 +313,8 @@ public class VoidRepricingTests
     ///
     /// <para>It also reports the tightest replacement price on the board. Canon's evens refusal is a
     /// PLACEMENT rule and says nothing about a price a void produces; measuring the gap here is what
-    /// established that the shipped board bottoms out at ~1.118 at κ = 1, which is the figure the
-    /// 2026-08-12 floor ruling is calibrated against.</para>
+    /// established that the shipped board bottoms out at ~1.118 at κ = 1, the figure the 2026-08-12
+    /// sub-evens ruling is calibrated against.</para>
     /// </summary>
     [Fact]
     public void Void_replacement_prices_cover_every_single_void_scenario_and_match_the_formula()
@@ -360,11 +365,12 @@ public class VoidRepricingTests
         _output.WriteLine($"tightest replacement price: {tightest:0.0000} on {tightestAt}");
         Assert.True(scenarios > 10_000, $"sweep too thin: {scenarios} scenarios");
         Assert.True(worst == 0.0, $"a replacement price drifted from the formula by {worst:E3}");
-        // At the shipped κ = 1 the floor never binds — this is the headroom measurement, and if it
-        // ever stops holding the default dial has moved into territory canon prices at the stake.
+        // At the shipped κ = 1 no void goes sub-evens — this is the headroom measurement, and if it
+        // ever stops holding the default dial has moved into territory canon voids and refunds.
         Assert.True(tightest > 1.0,
-            $"a void re-priced a ticket to {tightest:0.0000} <= evens at the DEFAULT kappa; the floor "
-            + "is meant to be a κ-campaign safeguard, not the shipped board's normal behaviour");
+            $"a void re-priced a ticket to {tightest:0.0000} <= evens at the DEFAULT kappa; the "
+            + "full-void rule is meant to be a κ-campaign safeguard, not the shipped board's normal "
+            + "behaviour");
     }
 
     /// <summary>A voided leg's own Profit Boost dies with it, and a surviving leg's boost carries into
@@ -644,43 +650,63 @@ public class VoidRepricingTests
     }
 
     // =======================================================================================
-    // EXIT GATE 2 — the evens floor: a replacement at or below 1.0 pays exactly the stake.
+    // EXIT GATE 2 — the sub-evens void: the ticket voids IN FULL and the stake comes back.
     // =======================================================================================
 
+    /// <summary>One located scenario: a SAME MATCH ticket that a real Mulligan has just voided down to
+    /// a survivor set priced at or below evens, plus whether those survivors WOULD have won — the fact
+    /// the corrected rule says settlement must not consult.</summary>
+    private readonly record struct SubEvensVoid(
+        Run Run, Ticket Ticket, double Raw, bool SurvivorsWouldWin);
+
     /// <summary>
-    /// Locates a SAME MATCH pair on a real board whose ticket is sellable but whose ONE-leg survivor
-    /// set prices at or below evens, then drives the real Mulligan flow until that void actually
-    /// happens. Returns null if no seed under <paramref name="seeds"/> produced it.
+    /// Every scenario, over <paramref name="seeds"/> real runs, in which a Mulligan re-prices a live
+    /// SAME MATCH ticket to at or below evens.
     ///
-    /// <para>The pair is ordered so leg 0 is the survivor that floors, which is why the search accepts
-    /// only a sweat that kills leg 1.</para>
+    /// <para><b>Three legs on one matchup, not two.</b> Since κ dropped to 1 on a survivor set with at
+    /// most one leg per matchup (canon 2026-08-12) a two-leg ticket can no longer reach this at all:
+    /// its one-leg remainder prices at <c>1/(p (1+Ω))</c>, the board's own single, which the board
+    /// guarantees above evens. A sub-evens replacement now REQUIRES a correlated group to survive, so
+    /// the shape is a triple whose every two-leg remainder is still sub-evens — which also means the
+    /// scenario does not depend on which leg the sweat happens to kill.</para>
+    ///
+    /// <para>The candidate search is restricted to selections at p ≥ 0.45: a sub-evens replacement
+    /// needs a high joint, and scanning the whole 36-selection board for triples costs far more than
+    /// it finds.</para>
     /// </summary>
-    private (Run run, Ticket ticket, double rawReplacement)? FloorScenario(
-        RunConfig config, TicketModifier modifier, string tag, int seeds)
+    private static IEnumerable<SubEvensVoid> SubEvensVoids(
+        RunConfig config, TicketModifier modifier, string tag, int seeds, RelicDefinition? relic)
     {
         for (int seed = 0; seed < seeds; seed++)
         {
             var run = new Run($"{tag}-{seed}", config);
             run.GrantConsumable(Mulligan());
-            if (modifier == TicketModifier.DoubleOrNothing)
-                run.GrantConsumable(RelicCatalog.Consumables.First(c => c.Id == "double_or_nothing"));
+            if (relic != null) run.GrantRelic(relic);
+            if (modifier != TicketModifier.None)
+                run.GrantConsumable(RelicCatalog.Consumables.First(c =>
+                    c.Id == (modifier == TicketModifier.FreeBet ? "free_bet" : "double_or_nothing")));
+
             Matchup matchup = run.CurrentSlate.Matchups[0];
-            MarketSelection[] board = Board(matchup);
+            MarketSelection[] board = Board(matchup).Where(s => matchup.TrueProb(s) >= 0.45).ToArray();
 
             Pick[]? picks = null;
-            double raw = 0.0;
             for (int a = 0; a < board.Length && picks == null; a++)
-                for (int b = 0; b < board.Length && picks == null; b++)
-                {
-                    if (a == b) continue;
-                    var legs = new List<Leg> { LegFor(matchup, board[a]), LegFor(matchup, board[b]) };
-                    SameMatchPrice p = SameMatchModel.Price(legs, config.Overround, config.SgpMargin);
-                    if (p.Impossible || p.NaiveFallback || p.Price <= 1.0) continue;
-                    if (p.SubsetPrices[0b01] > 1.0) continue; // leg 0 alone must be at or below evens
+                for (int b = a + 1; b < board.Length && picks == null; b++)
+                    for (int c = b + 1; c < board.Length && picks == null; c++)
+                    {
+                        var legs = new List<Leg>
+                        {
+                            LegFor(matchup, board[a]), LegFor(matchup, board[b]), LegFor(matchup, board[c]),
+                        };
+                        SameMatchPrice p = SameMatchModel.Price(legs, config.Overround, config.SgpMargin);
+                        if (p.Impossible || p.NaiveFallback || p.Price <= 1.0) continue;
 
-                    raw = p.SubsetPrices[0b01];
-                    picks = new[] { new Pick(0, board[a]), new Pick(0, board[b]) };
-                }
+                        // Sellable, but EVERY single-void remainder is under evens.
+                        if (p.SubsetPrices[0b011] > 1.0 || p.SubsetPrices[0b101] > 1.0
+                            || p.SubsetPrices[0b110] > 1.0) continue;
+
+                        picks = new[] { new Pick(0, board[a]), new Pick(0, board[b]), new Pick(0, board[c]) };
+                    }
             if (picks == null) continue;
 
             Ticket ticket = run.PlaceTicket(picks, 10, modifier: modifier);
@@ -688,90 +714,181 @@ public class VoidRepricingTests
             SweatSession sweat = run.Sweats[0];
 
             if (!StepToPendingLoss(sweat)) continue;
-            if (sweat.PendingDeadLegIndex != 1 || !sweat.CanMulliganPendingLoss) continue;
-
+            if (!sweat.CanMulliganPendingLoss) continue;
             run.PlayMulliganSlip(sweat);
-            return (run, ticket, raw);
+            if (!ticket.VoidedInFull) continue;
+
+            bool wouldWin = true;
+            foreach (Leg leg in ticket.Legs)
+                if (!leg.IsVoided && leg.State != LegState.Won) wouldWin = false;
+
+            yield return new SubEvensVoid(run, ticket, ticket.LockedSubsetPrices[SurvivorMask(ticket)],
+                wouldWin);
         }
-        return null;
+    }
+
+    private static SubEvensVoid FirstSubEvensVoid(
+        RunConfig config, TicketModifier modifier, string tag, RelicDefinition? relic = null)
+    {
+        foreach (SubEvensVoid s in SubEvensVoids(config, modifier, tag, 150, relic)) return s;
+        Assert.Fail($"no seed voided a same-match ticket to a sub-evens survivor set ({modifier})");
+        return default;
+    }
+
+    /// <summary>The gate, stated as money: the ticket is credited its stake and nothing else, once,
+    /// and settlement did not consult a payout multiplier or a modifier to get there.</summary>
+    private void AssertRefundIsExactlyOneStake(SubEvensVoid s)
+    {
+        Ticket ticket = s.Ticket;
+
+        // A refund is not a payout — so there is no payout to scale in the first place.
+        Assert.True(ticket.PotentialPayout == 0.0,
+            $"a voided ticket still offers a payout of {ticket.PotentialPayout:R}");
+
+        double bank = s.Run.Bank;
+        s.Run.FastForwardRound();
+
+        Assert.Equal(TicketState.Voided, ticket.State);
+        Assert.True(ticket.Refunded, "the stake-return latch never fired");
+        Assert.True(s.Run.Bank == bank + ticket.Stake,
+            $"the refund was scaled: credited {s.Run.Bank - bank:R} on a stake of {ticket.Stake:R}, "
+            + $"with PayoutMultiplier {ticket.PayoutMultiplier:R} and modifier {ticket.Modifier}");
     }
 
     /// <summary>
-    /// A replacement price that would land at or below evens pays exactly the stake back
-    /// (<c>design/02</c> § *Void: re-price on the survivors* — "a replacement price floors at 1.0").
-    /// Reachable for real: the tightest replacement on the shipped board is ~1.118 at κ = 1, so any κ
-    /// past that — inside the range the gate campaign explores — re-prices a LIVE ticket under evens,
-    /// and the ticket is already sold by then, so placement-time refusal is unavailable.
+    /// EXIT GATE 1. A replacement at or below evens VOIDS THE TICKET IN FULL and returns the stake —
+    /// <b>regardless of whether the surviving legs would have won</b> (<c>design/02</c> § *Void:
+    /// re-price on the survivors*, CORRECTED 2026-08-12).
     ///
-    /// <para>The raw locked figure is asserted to be genuinely below 1.0 first: without that this test
-    /// would pass on a board where the floor never binds and prove nothing.</para>
+    /// <para>The correction matters and this is the test that shows it. The superseded rule floored the
+    /// contract price at 1.0, which returns the stake only IF THE TICKET WINS and still loses
+    /// everything if it does not — strictly worse for the player than the full void it claimed to
+    /// imitate, and the absurd contract <i>win and receive nothing</i>. So this sweeps until it has
+    /// found the scenario in BOTH directions — survivors that would have graded Won, and survivors
+    /// that would have graded Lost — and asserts the identical credit in each. Under the old rule the
+    /// second branch credited zero.</para>
+    ///
+    /// <para>Reachable for real: the tightest replacement on the shipped board is ~1.118 at κ = 1, and
+    /// the ticket is already sold when the void lands, so placement-time refusal is unavailable.</para>
     /// </summary>
     [Fact]
-    public void Gate2_a_replacement_at_or_below_evens_pays_exactly_the_stake()
+    public void Gate2_a_sub_evens_replacement_voids_the_ticket_and_returns_the_stake()
     {
         var config = SweepConfig();
         config.SgpMargin = 1.5;
 
-        var found = FloorScenario(config, TicketModifier.None, "sgp-void-floor", 200);
-        Assert.True(found.HasValue, "no seed voided a same-match ticket down to a sub-evens survivor");
-        (Run run, Ticket ticket, double raw) = found!.Value;
+        int wouldWin = 0, wouldLose = 0;
+        foreach (SubEvensVoid s in SubEvensVoids(config, TicketModifier.None, "sgp-void-full", 150, null))
+        {
+            Ticket ticket = s.Ticket;
 
-        Assert.True(raw <= 1.0, $"the scenario did not actually floor: raw replacement {raw:R}");
-        Assert.True(ticket.PayoutMultiplier == 1.0, "no relic is in play, so the multiplier is 1");
+            // The scenario is genuine, and THE FLOOR IS GONE: the contract price reports the raw
+            // sub-evens figure rather than being read up to 1.0.
+            Assert.True(s.Raw <= 1.0, $"the scenario is not sub-evens: replacement {s.Raw:R}");
+            Assert.True(ticket.SameMatchContractPrice == s.Raw,
+                $"the superseded 1.0 floor is still in the read path: "
+                + $"{ticket.SameMatchContractPrice:R} vs the locked {s.Raw:R}");
+            Assert.True(ticket.PayoutMultiplier == 1.0, "no relic is in play, so the multiplier is 1");
 
-        Assert.True(ticket.SameMatchContractPrice == 1.0,
-            $"the floored contract price is {ticket.SameMatchContractPrice:R}, not evens");
-        Assert.True(ticket.PotentialPayout == ticket.Stake,
-            $"a floored ticket paid {ticket.PotentialPayout:R} rather than its stake {ticket.Stake:R}");
+            // Void, not live-at-evens: neither won nor lost, and terminal the instant the void landed.
+            Assert.True(ticket.VoidedInFull);
+            Assert.Equal(TicketState.Voided, ticket.State);
 
-        // The raw figure is still on the ticket, unfloored: the floor is a reading rule on the
-        // contract price, not a rewrite of what was locked.
-        Assert.True(ticket.LockedSubsetPrices[0b01] == raw,
-            "the locked table was rewritten by the floor");
+            AssertRefundIsExactlyOneStake(s);
 
-        // And it settles at the stake: a win returns exactly what was risked, no profit, no loss.
-        double bank = run.Bank;
-        run.FastForwardRound();
-        if (ticket.State == TicketState.Won)
-            Assert.True(run.Bank == bank + ticket.Stake,
-                "settlement credited something other than the stake");
-        Assert.True(ticket.PotentialPayout == ticket.Stake,
-            "the floored figure did not survive settlement");
+            // Never books as a loss — the Scar and the Bad Beat Jar must not see a bust here.
+            Assert.NotEqual(TicketState.Lost, ticket.State);
 
-        _output.WriteLine($"raw replacement {raw:0.0000} floored to 1.0000; "
-            + $"stake {ticket.Stake} paid back exactly; ticket {ticket.State}");
+            if (s.SurvivorsWouldWin) wouldWin++; else wouldLose++;
+            _output.WriteLine($"replacement {s.Raw:0.0000} <= evens -> VOID, stake {ticket.Stake} back; "
+                + $"survivors would have {(s.SurvivorsWouldWin ? "WON" : "LOST")}");
+            if (wouldWin > 0 && wouldLose > 0) break;
+        }
+
+        // Both branches, or the gate is not proven. The would-have-lost case is the one the superseded
+        // floor got wrong, and the would-have-won case is the one it got accidentally right.
+        Assert.True(wouldWin > 0,
+            "no scenario in which the surviving legs would have WON — the sweep proves nothing about "
+            + "the outcome being ignored");
+        Assert.True(wouldLose > 0,
+            "no scenario in which the surviving legs would have LOST — that is precisely the case the "
+            + "superseded price floor paid nothing on");
     }
 
     /// <summary>
-    /// The floor is applied to the PRICE, so it composes with <c>PayoutMultiplier</c> down the existing
-    /// payout path instead of overriding it: a floored ticket carrying Double or Nothing pays
-    /// <c>stake × 2</c>, exactly as a floored price × the ticket's factor product.
+    /// EXIT GATE 2. <b>A refund is not a payout.</b> It is credited raw down the run's stake-return
+    /// ledger, so <c>PayoutMultiplier</c>, Double or Nothing and Free Bet cannot act on it — otherwise
+    /// a Double or Nothing ticket would convert a void into a profit, which is a void a player would
+    /// deliberately seek out.
     ///
-    /// <para>Canon says a floored replacement "pays exactly the stake back", which is the bare case
-    /// (multiplier 1). It does not say what a payout relic does to that stake-back, and this test pins
-    /// the answer the ruling's own wording implies — "reached through the existing payout path rather
-    /// than a special-case branch" — so the choice is visible rather than incidental.</para>
+    /// <para>Each case asserts the modifier is genuinely LOADED (a multiplier above 1, the DoN factor,
+    /// the Free Bet contract) before asserting the credit is still exactly one stake — otherwise the
+    /// test would pass on a ticket that simply had no modifier to ignore.</para>
+    ///
+    /// <para>Free Bet is the one that could double-pay: it refunds the stake on a LOSS, and a void
+    /// refunds the stake too. The engine settles that with a single stake-return latch, and a ticket
+    /// that voids in full is never <c>Lost</c>, so exactly one stake comes back.</para>
     /// </summary>
     [Fact]
-    public void The_evens_floor_composes_with_the_payout_multiplier_rather_than_replacing_it()
+    public void Gate2_the_void_refund_is_untouched_by_payout_multipliers_and_ticket_modifiers()
     {
         var config = SweepConfig();
         config.SgpMargin = 1.5;
 
-        var found = FloorScenario(config, TicketModifier.DoubleOrNothing, "sgp-void-floor-don", 200);
-        Assert.True(found.HasValue, "no seed floored a Double or Nothing same-match ticket");
-        (Run _, Ticket ticket, double raw) = found!.Value;
+        // (a) A payout relic. The Multiplier pays x1.6 on a 3+ leg ticket, which is exactly this shape.
+        RelicDefinition multiplier = RelicCatalog.All.First(r => r.Id == RelicCatalog.MultiplierId);
+        SubEvensVoid mult = FirstSubEvensVoid(config, TicketModifier.None, "sgp-void-full", multiplier);
+        Assert.True(mult.Ticket.PayoutMultiplier > 1.0,
+            $"the relic never loaded: PayoutMultiplier {mult.Ticket.PayoutMultiplier:R}");
+        AssertRefundIsExactlyOneStake(mult);
 
-        Assert.True(raw <= 1.0, $"the scenario did not actually floor: raw replacement {raw:R}");
-        Assert.True(ticket.PayoutMultiplier == RelicCatalog.DoubleOrNothingMult,
-            $"expected the DoN factor alone, got {ticket.PayoutMultiplier:R}");
+        // (b) Double or Nothing — the case canon names. x2 on a refund would make a void profitable.
+        SubEvensVoid don = FirstSubEvensVoid(config, TicketModifier.DoubleOrNothing, "sgp-void-full");
+        Assert.True(don.Ticket.PayoutMultiplier == RelicCatalog.DoubleOrNothingMult,
+            $"expected the DoN factor, got {don.Ticket.PayoutMultiplier:R}");
+        AssertRefundIsExactlyOneStake(don);
 
-        Assert.True(ticket.SameMatchContractPrice == 1.0);
-        Assert.True(ticket.PotentialPayout == ticket.Stake * RelicCatalog.DoubleOrNothingMult,
-            $"{ticket.PotentialPayout:R} != stake x {RelicCatalog.DoubleOrNothingMult:R}");
+        // (c) Free Bet — one stake back, not two, and the ticket is Voided rather than Lost so the
+        //     modifier's own loss-refund clause never fires beside the void's.
+        SubEvensVoid freeBet = FirstSubEvensVoid(config, TicketModifier.FreeBet, "sgp-void-full");
+        Assert.Equal(TicketModifier.FreeBet, freeBet.Ticket.Modifier);
+        AssertRefundIsExactlyOneStake(freeBet);
 
-        _output.WriteLine($"floored + Double or Nothing: raw {raw:0.0000} -> 1.0000, "
-            + $"payout {ticket.PotentialPayout:0.00} on a stake of {ticket.Stake:0.00}");
+        _output.WriteLine($"refund untouched by: multiplier x{mult.Ticket.PayoutMultiplier:0.00}, "
+            + $"DoN x{don.Ticket.PayoutMultiplier:0.00}, Free Bet");
+    }
+
+    /// <summary>A save spent on a ticket that has already voided in full cannot change anything — the
+    /// stake is already owed back — so the engine refuses before the consumable is burnt.</summary>
+    [Fact]
+    public void A_voided_in_full_ticket_refuses_further_saves_rather_than_burning_them()
+    {
+        var config = SweepConfig();
+        config.SgpMargin = 1.5;
+
+        foreach (SubEvensVoid s in SubEvensVoids(config, TicketModifier.None, "sgp-void-full", 150, null))
+        {
+            s.Run.GrantConsumable(Mulligan());
+            s.Run.GrantConsumable(RelicCatalog.Consumables.First(c => c.Id == "refs_whistle"));
+
+            // Step on until one of the SURVIVORS reveals dead and the save window reopens.
+            SweatSession sweat = s.Run.Sweats[0];
+            while (!sweat.HasPendingLoss && sweat.MoveNext(out _)) { }
+            if (!sweat.HasPendingLoss) continue; // every survivor held; try the next scenario
+
+            Assert.Equal(TicketState.Voided, s.Ticket.State);
+            Assert.Throws<InvalidOperationException>(() => s.Run.PlayMulliganSlip(sweat));
+            Assert.Throws<InvalidOperationException>(() => s.Run.PlayRefsWhistle(sweat));
+
+            // Nothing was burnt for nothing.
+            Assert.Contains(s.Run.OwnedConsumables, c => c.Id == "mulligan_slip");
+            Assert.Contains(s.Run.OwnedConsumables, c => c.Id == "refs_whistle");
+
+            _output.WriteLine("a save offered to an already-voided ticket was refused, not spent");
+            return;
+        }
+
+        Assert.Fail("no voided-in-full ticket ever reopened a save window; the refusal is unproven");
     }
 
     // =======================================================================================
@@ -944,5 +1061,170 @@ public class VoidRepricingTests
         }
 
         Assert.Fail("no seed voided a two-leg same-match ticket down to one leg");
+    }
+
+    // =======================================================================================
+    // EXIT GATE 5 — κ applies only while a same-match group survives.
+    // =======================================================================================
+
+    /// <summary>Canon's price for a leg set at a given κ, rebuilt the way the model builds it: group by
+    /// matchup in FIRST-APPEARANCE order, multiply the groups' joints, then
+    /// <c>1 / (p × κ × (1 + Ω)^n)</c>. The same operations in the same order, so the comparison can be
+    /// <c>==</c> rather than a tolerance.</summary>
+    private static double PriceAt(double kappa, RunConfig config,
+        params (Matchup m, MarketSelection s)[] legs)
+    {
+        var matchups = new List<Matchup>();
+        var groups = new List<List<MarketSelection>>();
+        foreach ((Matchup m, MarketSelection s) in legs)
+        {
+            int g = matchups.FindIndex(x => ReferenceEquals(x, m));
+            if (g < 0)
+            {
+                matchups.Add(m);
+                groups.Add(new List<MarketSelection>());
+                g = groups.Count - 1;
+            }
+            groups[g].Add(s);
+        }
+
+        double p = 1.0;
+        for (int g = 0; g < groups.Count; g++)
+            p *= JointModel.JointProbability(matchups[g], groups[g].ToArray()).pJoint;
+        return 1.0 / (p * kappa * Math.Pow(1.0 + config.Overround, legs.Length));
+    }
+
+    /// <summary>
+    /// A survivor subset whose legs are all on DISTINCT matchups prices at κ = 1 (<c>design/02</c>
+    /// § *Void: re-price on the survivors*, 2026-08-12). Voiding can leave survivors that no longer
+    /// share a matchup — two legs on one match plus a third elsewhere, void one of the pair — and what
+    /// remains is an ordinary parlay. κ is the price of correlation; with no correlation left there is
+    /// nothing to charge for.
+    ///
+    /// <para><b>Asserted at κ = 1.4, not at the shipped default.</b> The rule is invisible at κ = 1, so
+    /// a test run there would pass without exercising anything. Every κ = 1 expectation is also
+    /// asserted to DIFFER from what κ would have charged, which is what stops the test passing by
+    /// arithmetic coincidence.</para>
+    /// </summary>
+    [Fact]
+    public void Gate5_a_survivor_subset_spanning_distinct_matchups_prices_at_kappa_1()
+    {
+        var config = SweepConfig();
+        config.SgpMargin = 1.4;
+
+        var run = new Run("sgp-kappa-drop", config);
+        Matchup m0 = run.CurrentSlate.Matchups[0];
+        Matchup m1 = run.CurrentSlate.Matchups[1];
+
+        MarketSelection over25 = MarketSelection.TotalGoals(2.5, true);
+        MarketSelection btts = MarketSelection.BothTeamsToScore(true);
+
+        // Legs 0 and 1 share matchup 0; leg 2 is somewhere else entirely.
+        Ticket ticket = run.PlaceTicket(
+            new[] { new Pick(0, over25), new Pick(0, btts), new Pick(1, over25) }, 10);
+        Assert.NotNull(ticket.SameMatch);
+        Assert.False(ticket.SameMatch!.NaiveFallback);
+        IReadOnlyList<double> locked = ticket.LockedSubsetPrices;
+
+        // The ticket itself, and any remainder that still carries the pair, pay κ.
+        Assert.True(locked[0b111] == PriceAt(config.SgpMargin, config,
+                (m0, over25), (m0, btts), (m1, over25)),
+            $"the sold ticket stopped paying kappa: {locked[0b111]:R}");
+        Assert.True(locked[0b011] == PriceAt(config.SgpMargin, config, (m0, over25), (m0, btts)),
+            $"a surviving same-match pair stopped paying kappa: {locked[0b011]:R}");
+
+        // THE GATE. Every remainder with at most one leg per matchup prices at κ = 1.
+        Assert.True(locked[0b101] == PriceAt(1.0, config, (m0, over25), (m1, over25)),
+            $"a distinct-matchup remainder is still paying kappa: {locked[0b101]:R}");
+        Assert.True(locked[0b110] == PriceAt(1.0, config, (m0, btts), (m1, over25)),
+            $"a distinct-matchup remainder is still paying kappa: {locked[0b110]:R}");
+        Assert.True(locked[0b001] == PriceAt(1.0, config, (m0, over25)),
+            $"a lone survivor is still paying kappa: {locked[0b001]:R}");
+        Assert.True(locked[0b100] == PriceAt(1.0, config, (m1, over25)),
+            $"a lone survivor is still paying kappa: {locked[0b100]:R}");
+
+        // A lone survivor therefore pays the board's own single — now at ANY κ, not only at κ = 1.
+        Assert.True(locked[0b001] == m0.Odds(over25), $"{locked[0b001]:R} != {m0.Odds(over25):R}");
+        Assert.True(locked[0b100] == m1.Odds(over25), $"{locked[0b100]:R} != {m1.Odds(over25):R}");
+
+        // And none of that is a coincidence: κ would have charged a different number in every case.
+        Assert.True(locked[0b101] != PriceAt(config.SgpMargin, config, (m0, over25), (m1, over25)));
+        Assert.True(locked[0b110] != PriceAt(config.SgpMargin, config, (m0, btts), (m1, over25)));
+        Assert.True(locked[0b001] != PriceAt(config.SgpMargin, config, (m0, over25)));
+        Assert.True(locked[0b011] != PriceAt(1.0, config, (m0, over25), (m0, btts)));
+
+        _output.WriteLine($"kappa {config.SgpMargin}: ticket {locked[0b111]:0.0000}, "
+            + $"pair-survives {locked[0b011]:0.0000} (kappa), "
+            + $"split-survives {locked[0b101]:0.0000}/{locked[0b110]:0.0000} (kappa = 1), "
+            + $"singles {locked[0b001]:0.0000}/{locked[0b100]:0.0000} (= the board's own)");
+    }
+
+    /// <summary>The κ-drop through the REAL Mulligan flow, and into settlement: void one of the
+    /// same-match pair and the ticket that is left is an ordinary parlay, so it re-prices at κ = 1 and
+    /// pays on that figure. Also pins the consequence that makes the sub-evens rule narrower than it
+    /// was — an ordinary-parlay remainder is a product of board singles, each above evens, so it can
+    /// never itself go sub-evens whatever κ the campaign sets.</summary>
+    [Fact]
+    public void Gate5_the_kappa_drop_survives_the_real_mulligan_flow_and_settlement()
+    {
+        var config = SweepConfig();
+        config.SgpMargin = 1.4;
+
+        MarketSelection over25 = MarketSelection.TotalGoals(2.5, true);
+        MarketSelection btts = MarketSelection.BothTeamsToScore(true);
+
+        for (int seed = 0; seed < 400; seed++)
+        {
+            var run = new Run($"sgp-kappa-void-{seed}", config);
+            run.GrantConsumable(Mulligan());
+            Matchup m0 = run.CurrentSlate.Matchups[0];
+            Matchup m1 = run.CurrentSlate.Matchups[1];
+
+            Ticket ticket;
+            try
+            {
+                ticket = run.PlaceTicket(
+                    new[] { new Pick(0, over25), new Pick(0, btts), new Pick(1, over25) }, 10);
+            }
+            catch (ArgumentException) { continue; } // refused at this κ; not this test's business
+
+            run.LockRound();
+            SweatSession sweat = run.Sweats[0];
+            if (!StepToPendingLoss(sweat)) continue;
+            if (!sweat.CanMulliganPendingLoss) continue;
+            run.PlayMulliganSlip(sweat);
+
+            int dead = VoidedIndex(ticket);
+            if (dead == 2) continue; // the correlated pair survived — κ still applies, not this case
+
+            MarketSelection survivorOnM0 = dead == 0 ? btts : over25;
+            double atKappa1 = PriceAt(1.0, config, (m0, survivorOnM0), (m1, over25));
+            double atKappa = PriceAt(config.SgpMargin, config, (m0, survivorOnM0), (m1, over25));
+
+            Assert.True(ticket.SameMatchContractPrice == atKappa1,
+                $"the ordinary-parlay remainder priced at {ticket.SameMatchContractPrice:R}, "
+                + $"not the kappa = 1 figure {atKappa1:R}");
+            Assert.True(ticket.SameMatchContractPrice != atKappa,
+                "kappa = 1.4 and kappa = 1 produced the same number; the test proves nothing");
+
+            // A product of board singles cannot be at or below evens, so the sub-evens rule is now
+            // structurally unreachable here whatever the dial says.
+            Assert.False(ticket.VoidedInFull);
+            Assert.True(ticket.SameMatchContractPrice > 1.0);
+
+            double bank = run.Bank;
+            run.FastForwardRound();
+            if (ticket.State == TicketState.Won)
+                Assert.True(run.Bank == bank + 10 * atKappa1 * ticket.PayoutMultiplier,
+                    "settlement credited something other than the kappa = 1 re-price");
+            Assert.True(ticket.PotentialPayout == 10 * atKappa1 * ticket.PayoutMultiplier,
+                "the kappa = 1 figure did not survive settlement");
+
+            _output.WriteLine($"seed {seed}: leg {dead} voided, remainder spans two matchups; "
+                + $"{atKappa:0.0000} (kappa) -> {atKappa1:0.0000} (kappa = 1); ticket {ticket.State}");
+            return;
+        }
+
+        Assert.Fail("no seed voided one of the same-match pair, leaving an ordinary parlay");
     }
 }
