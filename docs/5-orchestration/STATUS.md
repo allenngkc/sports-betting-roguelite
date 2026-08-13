@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 210.** Batch 48 canon
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 211.** Batch 49 canon
+(8a8e7a6): the three draw questions ruled - the draw is not a team
+(engine's refusal ratified as design); three-offer board with DRAW in
+the middle; the final beat is the match ENDING LEVEL, STATED; a draw is
+quiet for the room and loud for one ticket (T65's glow already correct);
+'decisive' never prints (the named risk, guarded at both lanes). Both
+consumer lanes relayed. DD standing by. Register 279 rows.
+
+*(prior stamp, cycle 210:)* Batch 48 canon
 (e729235): the names locked with their authoring boundary - THE MARK IS
 DRAWN, NOT CAPTIONED (the toner sentence teaches the relation once per
 slip; the name lives in rules copy and first encounter only). SGP
