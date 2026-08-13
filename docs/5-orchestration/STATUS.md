@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 228 (heartbeat).** Batch
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 229.** TV's fix pass
+COMMITTED (f84d431 + db5157f, suites green, payout maximum enumerated
+real). TWO composition calls to the DD - the LAST build items before the
+after-frames: RiskPays height (branch-2 span re-derivation, over by 20)
+and the money control's two-row 3px. TV pushing + handoff. Campaign B
+~35min (its own runtime claim tests at ~45). Sgp 3d. Research on Allen.
+
+*(prior stamp, cycle 228:)* Batch
 58 landed (T82 CLOSES - the tabular arc fully done; digits-alone mandate
 folded to the doc). TV's fix pass near-complete: payout-maximum
 enumeration + RiskPays sizing running on Allen's word, one four-element
