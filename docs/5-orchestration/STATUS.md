@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 188 (heartbeat).** T-4
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 189 (post-restart
+recovery).** Orca+session restarted MID-AFTER-SET: the window died but
+T-5's commit survived on disk (8350256 - 'tracking lands, tabular
+CANNOT, and the measurement says why' - a finding against the owning
+doc's mandatory-tnum clause, routing to the DD ahead of the pair). Stale
+lockfile cleared at proc 0; TV + DD seats recreated with --continue,
+effort max, both seeded (TV: tabular paragraph + re-shoot; DD: expect
+the finding). Room stays down (recreate on demand, nothing pending).
+Watcher v24 + heartbeat re-armed FIRST per 6c. Freeze still holds -
+lifts only when the after-set is actually shot.
+
+*(prior stamp, cycle 188:)* T-4
 and T-5 both closed clean (sizes tokenised no-rescale; tracking + tnum
 in; TV self-caught the TypeTeam over-retirement - restored on Allen's
 word; digit-probe crash logged as post-phase follow-up). AFTER-SET
