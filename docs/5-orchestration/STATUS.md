@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 221 (heartbeat).** Board
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 222 — CAMPAIGN A
+LANDED: GREEN EXCEPT G5's EXEMPLAR.** The draws re-baseline scored
+against all 15 predictions: reference bots unmoved (the D2 risk did not
+bite), wall-time missed honestly (4th, not blamed on draws), and G5's
+exemplar pair HALVED under draws to within instrument resolution of the
+floor - escalation computed useless (18.5k runs still too blunt).
+Allen's call fired: exemplar moves to Longshot Photo + House Key
+(+2.87pp at 8.1x error, STRONGER under draws), floor unchanged, G5
+re-running. Campaign B (the vocabulary) unblocked on green. Elsewhere:
+sgp 3c-3d, TV deliverables, research on Allen.
+
+*(prior stamp, cycle 221:)* Board
 reported to Allen in full. Campaign A past 30 min (its author's own
 wall-time prediction being tested live); sgp 3c finishing; TV on its
 deliverables; room + DD clean; research on Allen. Quiet is healthy.
