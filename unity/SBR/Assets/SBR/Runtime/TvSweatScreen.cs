@@ -3798,7 +3798,25 @@ namespace SBR.Game
                 // at the right edge, the price reserves a column left of it, and the statement takes
                 // the remainder and ellipsises. A price that moved with the statement's length would
                 // make the column's right edge ragged across six rows.
-                const float chipW = 38f, priceW = 52f, gap = 8f;
+                // T84/T74 relief for the compact statement, sourced from the GAPS (8f -> 6f), which
+                // widens stmtW by 4px inside an unchanged column. Span, not size, and not the copy.
+                //
+                // WHY NOT FROM THE PRICE, which the sweep shows with 5.8px spare: that spare is an
+                // artefact of the string set, not a property of the slot. `OddsFormat.American`
+                // returns `+{a}` for a rounded profit and nothing bounds `a` — a profit-boost relic
+                // multiplies the odds outright — so the price column has no measurable ceiling to
+                // lend from. Taking its "spare" would move a pre-existing risk onto a slot that
+                // cannot be swept, which is the exact mistake this sweep was written to catch.
+                //
+                // The gaps carry no content, so 4px out of them cannot break a measurement. The
+                // partition stays consistent: 6px still separates statement from price and price
+                // from chip, and the column's outer width does not move (T46, R30).
+                //
+                // stmtW 143 -> 147 against a tabular-screened worst case of 144.8 — 2.2px of margin
+                // where there were -1.8. The chip's own 6px overrun is untouched and unrelated: it
+                // carries no digits, so the wiring cannot move it, and it holds the ship rather than
+                // the wiring.
+                const float chipW = 38f, priceW = 52f, gap = 6f;
                 float stmtW = lineW - chipW - priceW - gap * 2f;
 
                 TMP_Text line = MakeText(root, $"LegRowLine{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
