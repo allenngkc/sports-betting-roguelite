@@ -1,7 +1,19 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 203 — THE WIRING IS IN
-AND HELD ITS BOUNDS.** TV's re-measure: every wired value at or under
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 204 — PHASE T BUILD
+WORK COMPLETE.** T-6 done: stale notes closed (both false), FONTS.md
+carries the face story + re-derivation recipe. TV's three answers routed
+to the DD: InterventionPrompt = instruction-form with a figure; Attract =
+four authored-voice sites; PEND = THE QUESTION HAS NO SUBJECT (TV
+invented the string - the 6px row measured an impossible string, sweep
+artifact self-caught); probe data written-before-crash, corroborated
+twice - no doubt. TV pushing on Allen's word. Remaining to phase close:
+DD closes the tracking clause + rules the six overruns and the money
+collision (T74/T84) -> fix pass -> final verification -> merge. Also in
+flight: draws costing (mpregame), DD's housing-cast desk setup, Tier-2
+probes. SGP step-1 merged (bbd67e6, 78pct headline).
+
+*(prior stamp, cycle 203:)* TV's re-measure: every wired value at or under
 its predicted bound - the screen never understated, its one design
 requirement; pre-existing overruns hold ship-not-wiring; the money
 collision worsened as predicted (no new collision); verify-the-verifier
