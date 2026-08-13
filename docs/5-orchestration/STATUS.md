@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 225 (heartbeat).** All
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 226 — PHASE T's FIX
+PASS IS GO (batch 56).** The closing set ruled: C48's own defect caught
+inside the fix by the listed-set section built for it; the zone does not
+grow (SHOT FROZEN leaves); ENTER is THE studio commit key (standing);
+TV's derived rule named standing (the gesture acts on what is shown);
+Attract one-compliant-two-violations with replacements. TV building the
+pass. DD onto the money-abbreviation ruling (Allen's word). Chain: V1
+implementing then Campaign B; sgp 3d deep; research on Allen.
+
+*(prior stamp, cycle 225:)* All
 three working lanes deep in turns: mpregame on V1 (5m+), TV on the M/R
 pin hunt (13m+), sgp's 3d structured-refusals agent at 16m+. Room, DD
 clean; research on Allen. Quiet is healthy.
