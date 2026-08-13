@@ -1,7 +1,19 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 189 (post-restart
-recovery).** Orca+session restarted MID-AFTER-SET: the window died but
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 190 — THE STAND-DOWN
+MYSTERY RESOLVED: IT WAS THIS SEAT'S OWN TWIN.** The 'DD seat' recreated
+at cycle 189 with `claude --continue` in main-2 resumed THIS orchestrator
+session (exit screen named this session's ID). The twin woke with cycles
+100-189 in context, saw the incumbent sweeping, sincerely applied 6c with
+the roles inverted, sent the orchestrator-to-orchestrator stand-down, and
+exited. The incumbent verified against observable state and refused -
+correctly. **Standing lesson: NEVER `claude --continue` in main-2 for the
+DD; the DD charter's fresh-seat prompt is the only seating.** Twin
+terminal closed; proper fresh DD seated (canon through 37 briefed);
+watcher v25. TV 25+ min into the after-set re-shoot, healthy. Freeze
+holds.
+
+*(prior stamp, cycle 189:)* Orca+session restarted MID-AFTER-SET: the window died but
 T-5's commit survived on disk (8350256 - 'tracking lands, tabular
 CANNOT, and the measurement says why' - a finding against the owning
 doc's mandatory-tnum clause, routing to the DD ahead of the pair). Stale
