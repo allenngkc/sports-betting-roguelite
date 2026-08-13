@@ -89,8 +89,17 @@ The prohibited implementation is `p_joint` collapsed to a bare scalar `ρ`: that
 | `MutuallyExclusive` | `p_joint = 0` | these cannot both happen |
 | `Implies(a → b)` | `p_joint = min p_i`; one leg strictly entails another | b has already happened whenever a does |
 | `SharedScoreline(reinforcing \| opposing)` | two GOAL-family legs read the same scoreline | one makes the other likelier / less likely |
+| `SharedCount(family, sign)` | two legs of the same COUNT family read the same corner or card draw | one makes the other likelier / less likely |
 | `ScorerOfSide(side)` | a scorer leg beside a leg on that team's goals | the same goals settle both |
 | `Independent` | legs drawn from different families | unrelated — no adjustment |
+
+**`SharedCount` was a hole in this table, found in build (2026-08-12) and ratified here.** The board ships three corner lines and three card lines, so a *band* — corners `OVER 8.5` with `UNDER 10.5` — is correlated, is not an implication, and is not impossible. It had no label, and under this section's own no-label fallback it would have priced at the naive product. Corner×corner `ρ` reaches 4.13, so that was a real leak, not a rounding-scale one. Six pair shapes per matchup.
+
+**Resolution rules, so classification is total and deterministic:**
+
+- **One relation per pair, most specific wins.** Every GOAL leg technically reads both teams' goals, so a scorer beside a goal leg satisfies both `ScorerOfSide` and `SharedScoreline`; the specific one is emitted.
+- **Two scorers on opposite teams are `SharedScoreline`, not `ScorerOfSide`.** Given the scoreline they are conditionally independent — their dependence runs entirely through the shared score, which is what `SharedScoreline` names.
+- **A ticket can be impossible without any impossible pair.** Some three-leg shapes reach `p_joint = 0` while every sub-pair is positive, so exclusion must also be expressible at ticket level, spanning all legs. A purely pairwise classifier would emit no exclusion label for them at all.
 
 Presentation composes the words; **the model never emits English.** That seam keeps copy authority with the Design Director and pricing authority here.
 
