@@ -51,9 +51,14 @@ namespace SBR.EditorTools
             ("LegRowNeed0", "G1 deck (authored NEED statements)", new[]
                 { "ONE TEAM SCORELESS", "ONE TEAM BLANKED", "LANYARD TO SCORE", "BOTH TEAMS SCORE",
                   "MIDDLEMEN ML", "NOT YET" }),
-            ("LegRowLine0", "G1 deck (compact statements)", new[]
-                { "UNDER 10.5 CORNERS", "UNDER 10.5 CNRS", "LANYARD TO SCORE", "BOTH TEAMS SCORE",
-                  "MIDDLEMEN ML" }),
+            // CORRECTED by the traceability pass, in BOTH directions. The old set was
+            // {UNDER 10.5 CORNERS, UNDER 10.5 CNRS, LANYARD TO SCORE, BOTH TEAMS SCORE, MIDDLEMEN ML}.
+            // Two of those — LANYARD TO SCORE and BOTH TEAMS SCORE — are forms LegStatement does NOT
+            // produce (it emits `{SURNAME} ANYTIME` and `BTTS YES`/`BTTS NO`), and the set missed the
+            // GOALS and CARDS totals entirely. Enumerated from LegStatement's switch, every arm.
+            ("LegRowLine0", "LegStatement's six market arms — see the UNBOUNDED note on its default", new[]
+                { "UNDER 10.5 CORNERS", "UNDER 10.5 GOALS", "UNDER 10.5 CARDS",
+                  "BRICKLAYERS ANYTIME", "REGULATORS ML", "BTTS YES", "BTTS NO" }),
             ("LegRowPrice0", "price forms, generated", new[] { "+450", "-110", "2.75", "+1200" }),
             // CORRECTED. The first set here was {LIVE, NEXT, WON, LOST, VOID, PEND} and I invented
             // it — the plausible vocabulary for a state chip, not this build's. Enumerated properly
@@ -68,7 +73,10 @@ namespace SBR.EditorTools
             ("CashOut", "§6.1 money control, six states", new[]
                 { "MARKET SUSPENDED", "CASHED OUT $1,240", "CASH OUT $1,240", "CASH OUT $183" }),
             ("CashOutStatus", "§6.1 status words", new[] { "UPDATING", "HOLD E" }),
-            ("RiskPays", "risk/pays figures, generated", new[] { "RISK $1,234   PAYS $12,340", "RISK $50   PAYS $450" }),
+            // CORRECTED: the separator is FIVE spaces in the format string, not three, and
+            // PotentialPayout is parlay-multiplied so its magnitude has no ceiling here.
+            ("RiskPays", "the format string at :2299 — payout magnitude UNBOUNDED", new[]
+                { "RISK $1,234     PAYS $12,340", "RISK $50     PAYS $450" }),
             ("Matchup", "scoreline, generated team names", new[]
                 { "ZAMBONIS 0 — REGULATORS 1", "BRICKLAYERS 0 — MIDDLEMEN 0", "STARTUPS 1 — PLUMBERS 2" }),
             ("Score", "the punch overlay mirrors Matchup", new[] { "ZAMBONIS 0 — REGULATORS 1" }),
@@ -96,8 +104,9 @@ namespace SBR.EditorTools
             ("Consolation", "the authored four-line deck, verbatim", new[]
                 { "the model remains extremely confident.", "the book thanks you for your patronage.",
                   "a courtesy: nobody saw that.", "so close. they always are." }),
-            ("InterventionPrompt", "one site; widest LINE with both consumables owned", new[]
-                { "SHOT FROZEN\n[M] MULLIGAN   ·   [R] SEND TO REVIEW (99%)   ·   [N] LET IT DIE" }),
+            // T86(a): brackets retired, so this is the post-ruling copy.
+            ("InterventionPrompt", "one site; widest LINE with both consumables owned (T86(a) form)", new[]
+                { "SHOT FROZEN\nHOLD M MULLIGAN   ·   HOLD R SEND TO REVIEW (99%)   ·   HOLD N LET IT DIE" }),
         };
 
         /// <summary>Slots reported but NOT swept. Empty now: the six that stood here were enumerated

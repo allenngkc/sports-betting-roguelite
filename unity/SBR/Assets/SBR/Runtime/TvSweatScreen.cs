@@ -1811,15 +1811,24 @@ namespace SBR.Game
 
             bool canM = director.Run.OwnsConsumable("mulligan_slip") && _session.CanMulliganPendingLoss;
             bool canR = director.Run.OwnsConsumable("refs_whistle");
-            string verbs = (canM ? "[M] MULLIGAN   ·   " : "")
-                + (canR ? $"[R] SEND TO REVIEW ({Mathf.RoundToInt((float)(_session.PendingLossProbBefore * 100))}%)   ·   " : "");
+            // T86(a) (batch 44): the bracketed-key form is RETIRED on this surface. `[M]`/`[R]`/`[N]`
+            // go the way of `[E]`, and T22's reasoning was never local to the cash-out slot — "not a
+            // label, it is a debug token, and it is on a shipped surface in every frame". Its
+            // replacement is the established one: where another product would draw a glyph, this one
+            // prints the word, so `[E]` became `HOLD E` and these become `HOLD M` / `HOLD R` /
+            // `HOLD N`.
+            //
+            // The exact wording beyond the retired form is the DD's to ratify; what is applied here
+            // is the ruled FORM. The extent consequence routes through the sweep, per the ruling.
+            string verbs = (canM ? "HOLD M MULLIGAN   ·   " : "")
+                + (canR ? $"HOLD R SEND TO REVIEW ({Mathf.RoundToInt((float)(_session.PendingLossProbBefore * 100))}%)   ·   " : "");
             // T43: §8.5 Pending window: "As suspended" — L1 unlit slate. This site used to hand-set
             // the word and its colour and nothing else, which is why the slate never reached the
             // field, the status word or the L4 token here. One call, one slate, both sites.
             ShowMarketSuspended();
             _tInterventionPrompt.enabled = true;
             _tInterventionPrompt.color = new Color(gold.r, gold.g, gold.b, 1f);
-            _tInterventionPrompt.text = "SHOT FROZEN\n" + verbs + "[N] LET IT DIE";
+            _tInterventionPrompt.text = "SHOT FROZEN\n" + verbs + "HOLD N LET IT DIE";
 
             while (_session.HasPendingLoss)
             {
