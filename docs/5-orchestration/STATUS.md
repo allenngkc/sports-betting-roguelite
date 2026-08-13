@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 227 (heartbeat).**
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 228 (heartbeat).** Batch
+58 landed (T82 CLOSES - the tabular arc fully done; digits-alone mandate
+folded to the doc). TV's fix pass near-complete: payout-maximum
+enumeration + RiskPays sizing running on Allen's word, one four-element
+option held for routing. Campaign B grinding (heartbeats clean). Sgp 3d.
+Research on Allen.
+
+*(prior stamp, cycle 227:)*
 Campaign B RUNNING (the chain executed itself: V1 done, B fired
 pre-authorized, scored table on land). Batch 57 landed (abbreviation
 refused both branches; the box sizes against the payout maximum). TV
