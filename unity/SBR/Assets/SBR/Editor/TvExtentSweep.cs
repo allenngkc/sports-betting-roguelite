@@ -248,9 +248,20 @@ namespace SBR.EditorTools
 
                     bool over = worstTab > box;
                     if (over) overrunning++;
-                    string digitNote = Mathf.Approximately(worstTab, worst) ? "no digits" : $"screened from '{Show(worstTabS)}'";
+                    // T89-B wants the tabular BASIS per row, and "no digits" was doing two jobs: it
+                    // printed for a string with no figures in it AND for a string whose figures are
+                    // already uniform, which are different facts. `RISK $1,234     PAYS $12,340` is
+                    // full of digits and still screened to zero — because the derived tabular font is
+                    // wired and the advances are already equal. Reporting that as "no digits" hid the
+                    // very confirmation the condition asks for.
+                    bool hasDigits = false;
+                    foreach (char c in worstTabS) if (c >= '0' && c <= '9') { hasDigits = true; break; }
+                    string digitNote = !hasDigits ? "no digits in the widest form"
+                        : Mathf.Approximately(worstTab, worst) ? "digits ALREADY TABULAR — screen is a no-op"
+                        : $"screened from '{Show(worstTabS)}'";
                     Debug.Log($"[T84] {slot,-16} box {box,6:0.0}px  widest '{Show(worstS)}' {worst,6:0.0}px  " +
                               $"TABULAR {worstTab,6:0.0}px ({digitNote})  " +
+                              $"[face '{t.font?.name}' tracking {t.characterSpacing / 100f:0.000}em type {t.fontSize:0.#}px]  " +
                               $"{(over ? $"OVERRUNS by {worstTab - box:0.0}px" : $"fits, {box - worstTab:0.0}px spare")}  " +
                               $"· set: {source}");
                 }
