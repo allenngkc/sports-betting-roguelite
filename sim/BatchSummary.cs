@@ -122,6 +122,7 @@ public sealed class BatchSummary
                     if (!s.MarketExposure.TryGetValue(kind, out MarketExposure? total))
                         s.MarketExposure[kind] = total = new MarketExposure();
                     total.LegsPlaced += exposure.LegsPlaced;
+                    total.DrawLegs += exposure.DrawLegs;
                     total.Stake += exposure.Stake;
                     total.RealizedNet += exposure.RealizedNet;
                     total.RealizedNetUnit += exposure.RealizedNetUnit;

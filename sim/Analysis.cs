@@ -549,6 +549,23 @@ public sealed class GateData
                     + $"(M1, expires at v2 pricing) — {bttsEvidence}",
             };
 
+            // The 1X2 split, reported because a leg count per KIND cannot answer it. The draw is a
+            // CHOICE inside the moneyline (D1, Allen 2026-08-12), so "Moneyline: 3,724 legs" is
+            // true whether the bot took the draw 3,724 times or never. G7 exists to stop a market
+            // being invisibly untouched, and the newest market on the board is exactly the one that
+            // would hide here. This is telemetry, not a criterion: what the right draw share IS is
+            // Campaign A's reading and then Allen's, and inventing a band for it now would be the
+            // "threshold set before the instrument was measured" mistake this campaign keeps paying
+            // for.
+            if (skilled.MarketExposure.TryGetValue(MarketKind.Moneyline, out MarketExposure? ml))
+            {
+                g.Notes.Add(ml.LegsPlaced == 0
+                    ? "1X2 SPLIT: skilled placed no moneyline legs at all this run"
+                    : $"1X2 SPLIT: skilled placed {ml.DrawLegs:N0} DRAW legs of {ml.LegsPlaced:N0} "
+                      + $"moneyline legs ({100.0 * ml.DrawLegs / ml.LegsPlaced:F1}%) — telemetry for "
+                      + "the draws re-baseline, not a gate criterion");
+            }
+
             var uncovered = new List<MarketKind>();
             foreach (MarketKind kind in Enum.GetValues(typeof(MarketKind)))
             {

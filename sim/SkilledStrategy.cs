@@ -151,11 +151,19 @@ public class SkilledStrategy : IStrategy
         foreach (Matchup m in slate)
         {
             Cand? best = null;
-            int tiedNonMoneyline = 1; // reservoir count for the arm-B tie-break below
+            int tiedNonHome = 1; // reservoir count for the arm-B tie-break below
             foreach (MarketOffer offer in m.Markets)
             {
                 MarketSelection selection = offer.Selection;
                 if (selection.Kind == MarketKind.AnytimeScorer) continue; // declared human-agency market
+                // MONEYLINE-ONLY BOTS NOW SEE THE DRAW, and that is a deliberate call rather than
+                // an oversight — recorded here because it silently redefines what the banded
+                // reference arms measure (noshop is G2's stick and G3's reference; fixed is G5's).
+                // The moneyline IS 1X2 now, so a "moneyline-only" bot that could not back the draw
+                // would be playing a market that no longer exists. The consequence is real and
+                // Campaign A must read it: their surface now carries a LONGSHOT (the draw, 3.35–
+                // 4.21) where it previously topped out around 3.81 on a team, so their variance
+                // profile moves even though their policy did not.
                 if (!IncludesMarketOffers && selection.Kind != MarketKind.Moneyline) continue;
 
                 double pHat = EstimateProbability(m, selection);
@@ -166,15 +174,15 @@ public class SkilledStrategy : IStrategy
                 // is the moneyline FAVORITE (the ML-era candidate). A strictly-better EV pulls it
                 // off the ML — owned item factors (Photo flips a longshot +EV) or, in v2, pricing
                 // noise. That movement toward what the build pays for is the point of the board.
-                if (best is null) { best = candidate; tiedNonMoneyline = 1; }
-                else if (candidate.Ev > best.Value.Ev + EvTieEps) { best = candidate; tiedNonMoneyline = 1; }
+                if (best is null) { best = candidate; tiedNonHome = 1; }
+                else if (candidate.Ev > best.Value.Ev + EvTieEps) { best = candidate; tiedNonHome = 1; }
                 else if (candidate.Ev >= best.Value.Ev - EvTieEps
-                         && selection.Kind == MarketKind.Moneyline
-                         && best.Value.Selection.Kind == MarketKind.Moneyline
-                         && candidate.PHat > best.Value.PHat) { best = candidate; tiedNonMoneyline = 1; }
+                         && IsSharpsHome(selection)
+                         && IsSharpsHome(best.Value.Selection)
+                         && candidate.PHat > best.Value.PHat) { best = candidate; tiedNonHome = 1; }
                 else if (candidate.Ev >= best.Value.Ev - EvTieEps
-                         && selection.Kind != MarketKind.Moneyline
-                         && best.Value.Selection.Kind != MarketKind.Moneyline)
+                         && !IsSharpsHome(selection)
+                         && !IsSharpsHome(best.Value.Selection))
                 {
                     // ARM B. The sharp's zero coverage of BTTS/corners/cards was never a policy
                     // exclusion — IncludesMarketOffers is already true and every non-scorer market
@@ -184,13 +192,20 @@ public class SkilledStrategy : IStrategy
                     // lifts longshots, several offers tie again at the same ×1.6 and goals wins the
                     // tie for the same reason. Ordering is not a reason to prefer a market.
                     //
-                    // The moneyline persona is untouched above: a tie between ML and anything else
-                    // still goes to the ML, because that IS the sharp's home. This only decides
-                    // which longshot he takes once an item has already pulled him off the ML — and
-                    // it decides it by reservoir sampling on the bot's own rng, so it stays exactly
-                    // deterministic per seed while ceasing to be alphabetical-by-construction.
-                    tiedNonMoneyline++;
-                    if (rng.NextDouble() < 1.0 / tiedNonMoneyline) best = candidate;
+                    // The sharp's HOME is untouched above: a tie between the sharp's home and
+                    // anything else still goes home. This only decides which longshot he takes once
+                    // an item has already pulled him off it — and it decides it by reservoir
+                    // sampling on the bot's own rng, so it stays exactly deterministic per seed
+                    // while ceasing to be alphabetical-by-construction.
+                    //
+                    // DRAWS (D2, 2026-08-12): the draw joins THIS pool, and that is the whole fix
+                    // for the G7 red D1 shipped. See IsSharpsHome — the draw is a moneyline-KIND
+                    // longshot, and treating "kind == Moneyline" as "the sharp's home" let it win
+                    // every boosted tie by sitting second in BuildOffers' emission order. That is
+                    // precisely the defect arm B exists to prevent, arriving through a new market
+                    // rather than through the old ordering.
+                    tiedNonHome++;
+                    if (rng.NextDouble() < 1.0 / tiedNonHome) best = candidate;
                 }
             }
             if (best is { } chosen) cands.Add(chosen);
@@ -580,6 +595,20 @@ public class SkilledStrategy : IStrategy
     /// <summary>Exact de-vig ties every selection at −vig EV; float noise (~1e-16) must not
     /// break those ties, genuine disagreements (v2) are orders of magnitude larger.</summary>
     private const double EvTieEps = 1e-9;
+
+    /// <summary>The sharp's HOME: backing a team to win. Deliberately NOT "kind == Moneyline",
+    /// which is what it used to be and what broke when the moneyline became 1X2.
+    ///
+    /// The persona this encodes is "the sharp defaults to the favourite" — a SHORT price on a
+    /// team. The draw is a moneyline-kind selection that prices 3.35–4.21, i.e. a longshot; it is
+    /// something an item pulls him ONTO, not something he starts from. Reading it as home gave it
+    /// the sharp's-home tie privilege, and because BuildOffers emits it second it then won every
+    /// boosted tie by list position — taking Total Goals, Total Corners and Total Cards to zero
+    /// legs and G7 to red. Ordering is not a reason to prefer a market (arm B, Allen 2026-08-06),
+    /// and that law did not stop applying because the market that broke it was new.</summary>
+    private static bool IsSharpsHome(MarketSelection s)
+        => s.Kind == MarketKind.Moneyline
+            && (s.Choice == MarketChoice.Home || s.Choice == MarketChoice.Away);
 
     /// <summary>The market's COMPLETE, mutually exclusive outcome set — including the selection
     /// itself. Replaces the old <c>Opposite()</c>, which encoded a two-way assumption the 1X2
