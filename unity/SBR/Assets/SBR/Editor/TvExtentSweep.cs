@@ -106,7 +106,7 @@ namespace SBR.EditorTools
                   "a courtesy: nobody saw that.", "so close. they always are." }),
             // T86(a): brackets retired, so this is the post-ruling copy.
             ("InterventionPrompt", "one site; widest LINE with both consumables owned (T86(a) form)", new[]
-                { "SHOT FROZEN\nHOLD M MULLIGAN   ·   HOLD R SEND TO REVIEW (99%)   ·   HOLD N LET IT DIE" }),
+                { "SHOT FROZEN\nHOLD M MULLIGAN   ·   HOLD R SEND TO REVIEW (ONE REF'S WHISTLE)   ·   HOLD N LET IT DIE" }),
         };
 
         /// <summary>Slots reported but NOT swept. Empty now: the six that stood here were enumerated

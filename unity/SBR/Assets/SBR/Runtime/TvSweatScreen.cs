@@ -1820,8 +1820,19 @@ namespace SBR.Game
             //
             // The exact wording beyond the retired form is the DD's to ratify; what is applied here
             // is the ruled FORM. The extent consequence routes through the sweep, per the ruling.
+            // BATCH 46/47: the probability GOES. `PendingLossProbBefore` is documented in the engine
+            // as "the leg's displayed win-prob", so the parenthetical was a win-probability numeral
+            // on a slot — the theatre prints facts and offers, never opinions, and an offer states
+            // its COST rather than its odds. The whistle costs one whistle, so that is what prints,
+            // under its authored catalogue name (`RelicCatalog`: "Ref's Whistle") rather than a short
+            // form nobody wrote — G1's class of defect.
+            //
+            // MULLIGAN is left alone deliberately. It has the same shape — an offer with an unstated
+            // cost of one Mulligan Slip — but the ruling names SEND TO REVIEW, and authoring copy for
+            // a slot nobody ruled is how this surface acquired strings it could not render. Flagged
+            // upward, not fixed here.
             string verbs = (canM ? "HOLD M MULLIGAN   ·   " : "")
-                + (canR ? $"HOLD R SEND TO REVIEW ({Mathf.RoundToInt((float)(_session.PendingLossProbBefore * 100))}%)   ·   " : "");
+                + (canR ? "HOLD R SEND TO REVIEW (ONE REF'S WHISTLE)   ·   " : "");
             // T43: §8.5 Pending window: "As suspended" — L1 unlit slate. This site used to hand-set
             // the word and its colour and nothing else, which is why the slate never reached the
             // field, the status word or the L4 token here. One call, one slate, both sites.
