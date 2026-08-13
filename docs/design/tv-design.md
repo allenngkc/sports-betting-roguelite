@@ -232,6 +232,14 @@ Ruled members:
 | `Label` | **.16 em** | label-class; ratified as built on frames |
 | `Meta` | **.10 em** | label-class, lighter value for a smaller and quieter slot; ratified as built |
 | `NEED` | **0** | **a fact, not a label** — the requirement statement is what has to happen for the player's money to land |
+| `TakeoverTitle` | **0** | carries money and leg facts |
+| `TakeoverSub` | **0** | carries money and leg facts |
+| `Subtitle` | **0** | carries money and leg facts |
+| `Consolation` | **0** | **authored voice is COPY, not furniture** — a written line is read, not scanned past; if it must sit apart, T77's remedy is size, value or position |
+
+**Classify a slot against its STRINGS, not its name.** A slot's name describes its position; only its
+strings reveal its voice. S68 is the case that earned this line — a tracking value applied by class to
+strings whose class turned out to be different from what the slot suggested.
 
 `NEED` carried .02 em briefly and it was withdrawn twice over: procedurally, as a fourth variable
 inside an open verification pair (T85), and substantively, because tracking a requirement is tracking
@@ -240,10 +248,16 @@ a fact. **It does not return when the pair closes.**
 **Exceptions take their own named token and are listed here.** A named exception with one member is
 still named (S70's shape).
 
-**The inventory is INCOMPLETE.** Six slots are pending string-set enumeration at the time of writing
-and are not yet listed. **Until a slot appears in the table above, its tracking value is not canon,
-and it does not become canon by having shipped.** This subsection states its own gap rather than
-implying the list is three (C18 §4.2).
+**The inventory is INCOMPLETE, and here is exactly how.** The string-set enumeration completed
+2026-08-12 and four of its six slots are ruled into the table above. **Two remain open —
+`InterventionPrompt` and `Attract`** — held not for want of a decision but for want of their strings,
+since both were proposed as labels on a class description and this clause classifies against strings.
+Their dispositions are already pre-committed (T85-am3): a short name or affordance takes the label
+value; a string carrying a fact, a figure, or an instruction in sentence form takes 0.
+
+**Until a slot appears in the table above, its tracking value is not canon, and it does not become
+canon by having shipped.** This subsection states its own gap rather than implying the list is
+complete (C18 §4.2).
 
 **No synthesised styling on this surface** (T73, T77). Weight comes from a real named instance of the
 family; slant is not used at all. A synthesised bold is a smear and a synthesised italic is a shear —
