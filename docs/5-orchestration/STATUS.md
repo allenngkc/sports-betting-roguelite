@@ -1,7 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 214 — THE BAND'S TOP
-WITHDRAWN.** Batch 51 canon (4bca23d): the ~92 anchor withdrawn on
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 215.** TV's C48 pass
+widened on Allen's yes (cash-out HOLD E rides; the shared Interact/
+SitSpot boundary is room's contract - both lanes wired through me).
+Research's WIDENED MANDATE DISCHARGED: 15 titles studied; the whole
+ruling queue bundled for Allen in docs/7-research/13-lane-state.md
+(Retention / Product shape / The sweat / standalone + play answers) -
+lane holding on his word. Band derivation running at room. Campaign A
+still grinding. SGP phase 3.
+
+*(prior stamp, cycle 214:)* Batch 51 canon (4bca23d): the ~92 anchor withdrawn on
 room's find (underived since batch 13; the DD's own misread of the
 10.7-degree miss recorded with its evidence trail - two errors one
 cause, C44's subject one batch after writing C44); 101.4 NOT installed
