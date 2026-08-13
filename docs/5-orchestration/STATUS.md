@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 209.** Batches 46+47
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 210.** Batch 48 canon
+(e729235): the names locked with their authoring boundary - THE MARK IS
+DRAWN, NOT CAPTIONED (the toner sentence teaches the relation once per
+slip; the name lives in rules copy and first encounter only). SGP
+notified with the specific wrong-guess named. Board: sgp phase 1
+running; TV orienting; room source-reading; mpregame D1; research
+probes. Open with Allen: RF number, mapping proposals, play questions,
+literature scope.
+
+*(prior stamp, cycle 209:)* Batches 46+47
 canon (4917dc7): THE PRINCIPLE - the theatre prints facts and offers,
 never opinions (unifies three prior deletions); (99%) goes, print-the-
 cost is the constructive half; T22 commit-boundary question to TV. The
