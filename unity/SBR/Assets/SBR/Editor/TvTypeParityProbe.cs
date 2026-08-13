@@ -141,6 +141,39 @@ namespace SBR.EditorTools
             }
         }
 
+        /// <summary>T82: what does `tnum` actually substitute, in the font being built? Prints the
+        /// digit map <see cref="TvTabularFigures"/> resolves, so the substitution is a printed fact
+        /// rather than a claim, and so the reader is exercised by something other than the generator.
+        ///
+        /// <para>The map is the half of T82 that is solved. What it cannot yet do is REACH the shipped
+        /// asset — see the finding recorded with this probe's commit.</para></summary>
+        [MenuItem("SBR/TV/Probe tnum substitution")]
+        public static void ProbeTnum()
+        {
+            foreach (string face in new[] { "EncodeSans", "EncodeSansCondensed" })
+            {
+                string path = $"Assets/SBR/Resources/Tv/Fonts/{face}.ttf";
+                var map = TvTabularFigures.ReadTnumMap(path, out string note);
+                Debug.Log($"[TvTnumProbe] {face}: {note}");
+                if (map.Count == 0) continue;
+
+                // The digits are what the mandate is about; the other ~97 substitutions are the rest
+                // of the figure set (fractions, superiors) and are printed only as a count.
+                var f = Resources.Load<TMP_FontAsset>($"Tv/Fonts/{face} SDF");
+                string digits = f == null ? "(asset not loaded — showing map size only)" : "";
+                if (f != null)
+                {
+                    var parts = new System.Collections.Generic.List<string>();
+                    f.TryAddCharacters("0123456789");
+                    for (uint u = '0'; u <= '9'; u++)
+                        if (f.characterLookupTable.TryGetValue(u, out TMP_Character ch))
+                            parts.Add($"{(char)u}:{ch.glyphIndex}->{(map.TryGetValue(ch.glyphIndex, out uint t) ? t.ToString() : "NONE")}");
+                    digits = string.Join(" ", parts);
+                }
+                Debug.Log($"[TvTnumProbe]   digits {digits}");
+            }
+        }
+
         private static float UguiWidth(Transform parent, Font font, int size, string content)
         {
             var go = new GameObject("u", typeof(Text));
