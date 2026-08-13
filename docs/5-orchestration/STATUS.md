@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 195 (heartbeat).** TV
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 196.** Batch 41 canon
+(7a7223e): T82 stays open (mechanism granted at the font layer, surface
+unchanged - TV's qualification adopted; the DD recorded its own defective
+close-condition under 1.5); WIRING GRANTED, sequenced after-sweep-not-
+mid-sweep; TV's population reframe adopted as the sweep definition and
+founded C46 (a fixed box carries an unstated face assumption). BINDING
+condition relayed into the running sweep: digit worst-cases compute
+against TABULAR metrics - proportional-metric digit rows are void.
+Tracking-0 survivors + tracking clause remain the DD's next docket on
+the sweep numbers.
+
+*(prior stamp, cycle 195:)* TV
 9+ min into the remedy sequence (tracking-0 re-measure first, per the
 ruled order). DD standing by for the re-measure results. All else quiet.
 
