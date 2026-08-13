@@ -1,7 +1,18 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 207 — FULL-WIDTH
-DISPATCH.** Batch 44 + R23 spec canon (6d0ee19). Fired on Allen's words:
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 208 — THE PARLAY
+PRICING RULING (S73).** Batch 45 canon (2c6a40d): a same-game ticket is
+ITS OWN INSTRUMENT - no product-with-adjustment ever rendered (the nerf
+reading is manufactured by the comparison); the relationship marked in
+OXIDE as an annotation ('legs the house has marked pay less' - learnable
+without formula); step 2's binding dial constraint: the model emits a
+RELATION LABEL, and unlabelable correlation does NOT move the price.
+Step 2 unblocked draws-aware. Cross-lane draws notice wired to sgp + DD.
+NEED ALLEN: (1) the oxide mark's NAME; (2) the honest-book call - DD
+recommends YES on the design argument. Plus standing: RF number, research
+package, literature scope.
+
+*(prior stamp, cycle 207:)* Batch 44 + R23 spec canon (6d0ee19). Fired on Allen's words:
 room re-seated + R23 capture contract (source-read precondition first,
 Route A/B pre-committed, V6 inventory rider); TV's four batch-44 items
 (traceability pass priority - under-generation unbounded, LegRowLine0's
