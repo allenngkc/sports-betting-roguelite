@@ -578,6 +578,32 @@ namespace SBR.Game
         // ---- input ----
         private InputAction _interact;
 
+        /// <summary>T22/T36's SECOND KEY — the one that commits during a hold. C48 (batch 50) makes
+        /// the label the contract on a money control, and T88 rules the gesture for every spending
+        /// option: <i>hold to preview, release abandons, a second key during the hold commits, no
+        /// timer, no auto-commit.</i> A press commits nothing anywhere on this surface.
+        ///
+        /// <para><b>Which key is UNRATIFIED and deliberately one constant.</b> T22 and T36 both
+        /// specify "a second key" and neither names it, so this is the seat's choice and is routed
+        /// for ratification rather than presented as canon. Enter was taken because it is bound to
+        /// nothing in the shared action asset (Move/Look/Jump/Crouch/Interact/Attack/Cancel), so the
+        /// gesture reserves no key the room lane is using, and because ONE commit key across both
+        /// money controls is what keeps their contracts readable as the same contract. Changing it is
+        /// this constant and the word below.</para>
+        ///
+        /// <para>Read straight off <see cref="Keyboard"/> rather than added to
+        /// <c>InputSystem_Actions.inputactions</c>: that asset is the ROOM lane's contract, and the
+        /// intervention window already reads its M/R/N the same way. Nothing shared is touched.</para></summary>
+        private const string ConfirmKeyWord = "ENTER";
+
+        /// <summary>The commit half of the gesture. Momentary by construction — a second key that
+        /// auto-repeated would be a timer, which T22/T36 forbid.</summary>
+        private static bool ConfirmPressed()
+            => Keyboard.current != null && Keyboard.current.enterKey.wasPressedThisFrame;
+
+        // The stand-suppression question this gesture raised is ANSWERED, and the answer removed the
+        // mechanism rather than tuning it. See CashOutLive() — there is no frame arithmetic here.
+
         // ---- §8.10 held cash-out preview ----
         //
         /// <summary>True while the player is previewing the settled future (PRD §8.10). The preview
@@ -1167,6 +1193,12 @@ namespace SBR.Game
                 _cashOutTextBeforePreview = _tCashOut.text;
                 _tCashOut.text = $"CASHED OUT ${Money(_cashOutPreviewAmount)}";
             }
+            // The instruction moves with the state, at the moment the state moves. The status word is
+            // otherwise written only when a price is rendered, and a preview is entered between those
+            // moments — so without this the slot would sit under a held preview still reading HOLD E.
+            // DERIVED rather than snapshotted, unlike the figure above: it is a pure function of state
+            // the exit restores anyway, and recomputing from truth is what makes the revert total.
+            if (_tCashOutStatus != null) _tCashOutStatus.text = CashOutStatusWord();
             UpdateTicketColumn(_liveLegIndexShown);
             return true;
         }
@@ -1181,6 +1213,7 @@ namespace SBR.Game
             _cashOutPreviewAmount = 0.0;
             if (_tCashOut != null) _tCashOut.text = _cashOutTextBeforePreview;
             _cashOutTextBeforePreview = string.Empty;
+            if (_tCashOutStatus != null) _tCashOutStatus.text = CashOutStatusWord();
             UpdateTicketColumn(_liveLegIndexShown);
         }
 
@@ -1209,9 +1242,31 @@ namespace SBR.Game
         }
 
         /// <summary>An offer is showing that E should accept (rather than stand the player up).
-        /// Must agree exactly with TryCashOut's acceptance gate (TVS-H01) — both read
-        /// CanAcceptCashOutNow so a future edit cannot let the two drift apart again.</summary>
-        private bool CashOutLive() => CanAcceptCashOutNow();
+        ///
+        /// <para>TVS-H01 said this must agree EXACTLY with TryCashOut's acceptance gate, and the half
+        /// that mattered is intact: both still read <see cref="CanAcceptCashOutNow"/>, so a suspended
+        /// or mid-tween offer can no more reserve E than it can be accepted. The second term only ever
+        /// EXTENDS the reservation, and only across a hold and the two frames after it — it can never
+        /// make an unacceptable offer acceptable, because it is not on the accept path at all.</para>
+        ///
+        /// <para>It exists because T88's gesture gives E a DURATION. A press-to-commit input needed no
+        /// second term; a hold does, and the term is the preview itself.</para>
+        ///
+        /// <para><b>The hazard is on the PRESS path, and the first design here guarded the wrong one.</b>
+        /// The room lane's source answers it (merged `c8525d1`): <see cref="SitSpot"/> acts on
+        /// <c>WasPressedThisFrame()</c> — press, never release — and <c>PlayerInteractor</c>'s
+        /// press-poll deliberately bypasses the action's own Hold interaction. So the release that
+        /// abandons a preview cannot stand anybody up, and the two-frame post-release reservation
+        /// written here for that hypothetical guarded nothing while <b>introducing</b> a defect: a
+        /// player who released E and immediately pressed it again to stand would have had that stand
+        /// silently swallowed. It is gone.</para>
+        ///
+        /// <para>What the real hazard is: a FRESH press arriving while the preview is held —
+        /// <c>Interact</c> carries more bindings than the E key — which on the press path would stand
+        /// the player mid-sweat out from under his own held preview. <c>_cashOutPreview</c> covers
+        /// exactly that window and not one frame more, so the instant a preview ends, standing behaves
+        /// precisely as it did before this gesture existed.</para></summary>
+        private bool CashOutLive() => CanAcceptCashOutNow() || _cashOutPreview;
 
         /// <summary>The single truth for "is there a cash-out offer Interact may legally accept right
         /// now" (TVS-H01; VISUAL-DESIGN.md §8.5). Open only when seated, the session is live, at
@@ -1827,23 +1882,79 @@ namespace SBR.Game
             // under its authored catalogue name (`RelicCatalog`: "Ref's Whistle") rather than a short
             // form nobody wrote — G1's class of defect.
             //
-            // MULLIGAN is left alone deliberately. It has the same shape — an offer with an unstated
-            // cost of one Mulligan Slip — but the ruling names SEND TO REVIEW, and authoring copy for
-            // a slot nobody ruled is how this surface acquired strings it could not render. Flagged
-            // upward, not fixed here.
-            string verbs = (canM ? "HOLD M MULLIGAN   ·   " : "")
-                + (canR ? "HOLD R SEND TO REVIEW (ONE REF'S WHISTLE)   ·   " : "");
+            // MULLIGAN was left alone deliberately last pass — "the ruling names SEND TO REVIEW, and
+            // authoring copy for a slot nobody ruled is how this surface acquired strings it could
+            // not render" — and T88(b) has now answered it generally: the preview shows what the
+            // option does AND WHAT IT COSTS, on every spending option. So the cost prints under
+            // `RelicCatalog`'s authored name ("Mulligan Slip"), the same source and the same
+            // parenthetical form the whistle's already uses. No abbreviation is coined: a short form
+            // nobody authored is G1's defect class, which is what that rule exists to prevent.
+            //
+            // THE COMPOSITION IS A LIST — DD batch 50 answering the 380px structurally, from S24's
+            // shape: "N offers are a list; putting them on one line is a row pretending to be a
+            // sentence." One option per row is also the only composition with room for a per-option
+            // cost and a hold affordance. MEASURED on this tree by `SBR/TV/T88 prompt composition`:
+            // every option row fits the 635.0px zone, the widest at 523.8px with 111.2px spare, so
+            // line-to-list retires the whole 380.0px overrun on WIDTH.
+            //
+            // HEIGHT is the open item, and it is the DD's under the ruling's own condition, reported
+            // with the zone's dimensions as that condition requires: the zone is 635.0 x 90.0 and
+            // carries exactly THREE rows at 22px (27.5px each, first row 27.5). Title + three options
+            // is 110.0px — over by 20.0px, and only in the worst case where the run owns both
+            // consumables. §6's grid does not resize to content, so which row yields is not a call
+            // this seat may absorb.
+            const string optM = "HOLD M MULLIGAN (ONE MULLIGAN SLIP)";
+            const string optR = "HOLD R SEND TO REVIEW (ONE REF'S WHISTLE)";
+            const string optN = "HOLD N LET IT DIE";
+            string offers = "SHOT FROZEN\n"
+                + (canM ? optM + "\n" : "")
+                + (canR ? optR + "\n" : "")
+                + optN;
+            // The HELD composition: the option being previewed, and how to finish or abandon it.
+            // UNRATIFIED copy in T22/T86(a)'s established form — print the word, not the glyph —
+            // routed with the rest of this batch's strings rather than presented as canon.
+            string PreviewOf(string option)
+                => option + "\n" + ConfirmKeyWord + " CONFIRMS   ·   RELEASE ABANDONS";
+
             // T43: §8.5 Pending window: "As suspended" — L1 unlit slate. This site used to hand-set
             // the word and its colour and nothing else, which is why the slate never reached the
             // field, the status word or the L4 token here. One call, one slate, both sites.
             ShowMarketSuspended();
             _tInterventionPrompt.enabled = true;
             _tInterventionPrompt.color = new Color(gold.r, gold.g, gold.b, 1f);
-            _tInterventionPrompt.text = "SHOT FROZEN\n" + verbs + "HOLD N LET IT DIE";
+            _tInterventionPrompt.text = offers;
+
+            // Which spending option is being previewed: "M", "R", or null. NEVER "N" — T88(c) rules
+            // the decline out of the gesture entirely.
+            string held = null;
 
             while (_session.HasPendingLoss)
             {
-                if (_seated && canM && Keyboard.current.mKey.wasPressedThisFrame)
+                // The hold is a STATE, sampled every frame. Nothing in this loop measures how long a
+                // key has been down, and that absence IS "no timer, no auto-commit": there is no
+                // elapsed quantity for an auto-commit to compare against.
+                bool downM = _seated && canM && Keyboard.current.mKey.isPressed;
+                bool downR = _seated && canR && Keyboard.current.rKey.isPressed;
+
+                // One preview at a time, and whichever was held first keeps it until it is released.
+                // Rolling a finger onto the other key mid-hold must not move the commit to a different
+                // spend while the player is still reading the first one's cost.
+                string nowHeld = held == "M" && downM ? "M"
+                               : held == "R" && downR ? "R"
+                               : downM ? "M"
+                               : downR ? "R"
+                               : null;
+
+                if (nowHeld != held)
+                {
+                    held = nowHeld;
+                    // RELEASE ABANDONS, always (T22). The offers come back and nothing has been
+                    // spent — there is no state to unwind, because a preview never touched the run.
+                    _tInterventionPrompt.text = held == null ? offers : PreviewOf(held == "M" ? optM : optR);
+                }
+
+                // A PRESS COMMITS NOTHING. The commit is the second key, during the hold.
+                if (held == "M" && ConfirmPressed())
                 {
                     director.Run.PlayMulliganSlip(_session);
                     HideCashOutSlot(); // T43: the field and status leave with the figure, same frame
@@ -1856,7 +1967,7 @@ namespace SBR.Game
                     yield return ScaledWait(deadLineDuration);
                     yield break;
                 }
-                if (_seated && canR && Keyboard.current.rKey.wasPressedThisFrame)
+                if (held == "R" && ConfirmPressed())
                 {
                     director.Run.PlayRefsWhistle(_session);
                     HideCashOutSlot(); // T43
@@ -1880,6 +1991,11 @@ namespace SBR.Game
                     yield return ScaledWait(deadLineDuration);
                     yield break;
                 }
+                // T88(c): the decline is NOT a spend and does not take the gesture. It costs nothing
+                // and is already what happens if the player does nothing, so one press is
+                // proportionate — "the weight of the gesture matches the weight of the act", which is
+                // also what stops the three reading as peers when two spend and one does not. A press
+                // here is the ruled input, not a leftover of the one this pass removed.
                 if (_seated && Keyboard.current.nKey.wasPressedThisFrame)
                 {
                     _session.DeclinePendingLoss();
@@ -2830,12 +2946,31 @@ namespace SBR.Game
             // `CASH OUT $183` with `HOLD E` beneath. Where another product would draw a glyph, this
             // one prints the word.
             _tCashOut.text = $"CASH OUT ${Money(amount)}";
-            if (_tCashOutStatus != null) _tCashOutStatus.text = _cashOutTweening ? "UPDATING" : "HOLD E";
+            if (_tCashOutStatus != null) _tCashOutStatus.text = CashOutStatusWord();
             // T43: whether the status word SHOWS is not this method's call — a suspended slot carries
             // none at all (TV-12/13). One authority derives visibility, at the transition and in
             // Update alike, so the two can never disagree for a frame.
             ApplyCashOutSlotState();
         }
+
+        /// <summary>The status word beside the money figure. ONE authority for all three sites that
+        /// write it, which is this surface's standing remedy for a value with several authors — T68's
+        /// defect was never the ink, it was that the ink had five of them.
+        ///
+        /// <para><b>C48 (batch 50): the label is the contract.</b> The word has to describe what the
+        /// input will actually do at the moment it is read, so it now has three states rather than
+        /// two: at rest E previews, mid-tween nothing is acceptable, and under a held preview the only
+        /// remaining act is the commit. Printing <c>HOLD E</c> during the hold would tell the player
+        /// to do the thing he is already doing and never say how to finish it.</para>
+        ///
+        /// <para><b>UNRATIFIED:</b> the previewing string is the seat's, in T22/T86(a)'s established
+        /// form (print the word, not the glyph). It is routed with the intervention prompt's strings.
+        /// Its extent is measured, not assumed — this slot shares one rectangle with the money figure
+        /// and the pair already collides.</para></summary>
+        private string CashOutStatusWord()
+            => _cashOutPreview ? $"{ConfirmKeyWord} TO CASH OUT"
+             : _cashOutTweening ? "UPDATING"
+             : "HOLD E";
 
         private void StopCashOutAnimation()
         {
@@ -3293,8 +3428,60 @@ namespace SBR.Game
                 _stage.timeScale = Mathf.Max(0f, TimeScaleOverride);
             }
 
-            if (_interact != null && _interact.WasPressedThisFrame())
-                TryCashOut();
+            ResolveCashOutGesture();
+        }
+
+        /// <summary>T22/T36's confirm gesture on §6.1's money control, wired.
+        ///
+        /// <para><b>What was actually wrong, because it was not a missing feature.</b> §8.10's
+        /// hold-to-preview was BUILT — <see cref="EnterCashOutPreview"/>, its full-revert twin, the
+        /// previewed bank, the stepped-down rows, all of it render-aware and pinned by EditMode — and
+        /// it had <b>no production call site</b>. The only thing that had ever called it was a test,
+        /// by reflection. Meanwhile this method's predecessor was one line,
+        /// <c>if (_interact.WasPressedThisFrame()) TryCashOut()</c>, so the surface printed
+        /// <c>HOLD E</c>, implemented a preview nobody could reach, and committed the money on the
+        /// first frame of the press. The gesture is not new here; it is CONNECTED here.</para>
+        ///
+        /// <para><b>The asset's own Hold is deliberately not used.</b> <c>Interact</c> carries
+        /// <c>"interactions": "Hold"</c>, and the Input System documents <c>WasPressedThisFrame</c> as
+        /// true on the press "even if there is an interaction on the action that has not yet
+        /// performed" — which is exactly how a declared hold went unobserved. Honouring it would be
+        /// the other wrong repair: a HoldInteraction performs on a DURATION, and T22/T36 rule "no
+        /// timer, no auto-commit". So the hold is read as a STATE (<c>IsPressed</c>) and the commit
+        /// comes from a key, never from elapsed time. Nothing in the shared asset is edited.</para></summary>
+        private void ResolveCashOutGesture()
+        {
+            if (_interact == null) return;
+            bool held = _interact.IsPressed();
+
+            // Entry refuses on its own gate, so holding E over a suspended or mid-tween slot previews
+            // nothing — TVS-H01's predicate, unchanged, and the reason the previewed number and the
+            // acceptable number cannot be different numbers.
+            if (held && !_cashOutPreview) EnterCashOutPreview();
+            if (!_cashOutPreview) return;
+
+            // Release ABANDONS — always, per T22, and it is the same full revert a stand performs.
+            // So does the offer going away underneath the hold: a suspension, a new price starting to
+            // tween, or the session settling all make the previewed offer unacceptable, and holding a
+            // preview of an offer that can no longer be taken is the display promising input the gate
+            // would refuse (T59).
+            if (!held || !CanAcceptCashOutNow())
+            {
+                ExitCashOutPreview();
+                return;
+            }
+
+            if (!ConfirmPressed()) return;
+
+            // §8.10's invariant, enforced rather than reasoned: "the previewed and accepted numbers
+            // can never differ." They cannot drift while the gate above holds, but the guard costs
+            // nothing and turns an argument into a check — and if they ever DO differ, abandoning is
+            // the ruled outcome, since committing would hand the player a price the display was not
+            // showing, which T59 names the worst available outcome on a money control.
+            double previewed = _cashOutPreviewAmount;
+            double? offerNow = _session.CashOutOffer();
+            ExitCashOutPreview();
+            if (offerNow.HasValue && offerNow.Value == previewed) TryCashOut();
         }
 
         private void TryCashOut()
