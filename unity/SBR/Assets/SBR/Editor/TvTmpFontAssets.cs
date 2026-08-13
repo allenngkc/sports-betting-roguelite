@@ -76,7 +76,19 @@ namespace SBR.EditorTools
         private const int MaxNamedInstanceProbe = 64;
 
         private const string FontDir = "Assets/SBR/Resources/Tv/Fonts";
-        private const string SourceFace = "EncodeSans";
+        /// <summary>T82's wiring, and it is one constant by design.
+        ///
+        /// <para><c>EncodeSans-Tabular.ttf</c> is derived from the committed <c>EncodeSans.ttf</c> by
+        /// <c>tools/tnum_font.py</c>, which rewrites ONLY the cmap so the ten digit codepoints
+        /// address the glyphs the `tnum` feature substitutes. Nothing else in the file moves — glyph
+        /// ids, metrics and variation data are byte-identical — so the 45 named instances this
+        /// generator selects by style name are the same instances they always were.</para>
+        ///
+        /// <para>The substitution is resolved before TMP sees the font because TMP cannot resolve it
+        /// after: <c>OTL_FeatureTag</c> declares only kern, liga, mark and mkmk. Patching the asset
+        /// instead was tried and cannot work — a Dynamic font asset serializes no character or glyph
+        /// table, so a build-time remap is discarded on save.</para></summary>
+        private const string SourceFace = "EncodeSans-Tabular";
 
         /// <summary>TMP maps a weight to its table by <c>fontWeight / 100</c>, so Bold (700) is 7.
         /// The laptop wires SemiBold at 6 for its one wordmark; this surface's kit components are the
@@ -263,6 +275,28 @@ namespace SBR.EditorTools
             return asset;
         }
 
+        /// <summary>T82: the unit is the ASSET, and the inventory NAMES its members. Which slots ride
+        /// which asset is otherwise recoverable only by reading 22 call sites, and an inventory that
+        /// does not say what it covers is a claim rather than a list (C18).
+        ///
+        /// <para>It is also the argument that settled RiskPays: tabular lives on the asset, and
+        /// RiskPays shares condensed Bold 700 with CashOut, which ticks — so it takes tabular because
+        /// its asset-mate needs it, not on its own merits.</para></summary>
+        private static string Members(string asset) => asset switch
+        {
+            "EncodeSans SDF" =>
+                "TicketHeader, LegRowState, Leg, Clock, CashOutStatus, TakeoverSub, Subtitle, Chrome, " +
+                "Consolation, and the seven on synthesised bold: Attract, TakeoverTitle, " +
+                "BigAmount (renders nothing, T79), Matchup, Score, Flavor, InterventionPrompt",
+            "EncodeSans Bold SDF" =>
+                "NO SLOT TODAY — built and wired into the regular face's weight table at 700, but T73 " +
+                "names only condensed sites. An unused member is a fact about the inventory, not an " +
+                "omission from it",
+            "EncodeSansCondensed SDF" => "LegRowPrice, LegRowProgress",
+            "EncodeSansCondensed Bold SDF" => "LegRowLine, LegRowNeed, RiskPays, CashOut",
+            _ => "(unlisted)",
+        };
+
         /// <summary>Asserts the pin rather than describing it (C34.1: "an unasserted pin is a
         /// comment"). Reads back what each generated asset actually carries, so a wrong instance is
         /// caught here and not four batches later on a frame nobody re-measured.</summary>
@@ -290,10 +324,31 @@ namespace SBR.EditorTools
                              && Mathf.Approximately(a.material.GetFloat(ShaderUtilities.ID_TextureWidth), AtlasWidth)
                              && Mathf.Approximately(a.material.GetFloat(ShaderUtilities.ID_TextureHeight), AtlasHeight);
 
-                if (!styleOk || !atlasOk || !matOk) ok = false;
+                // T82, asserted where the property actually lives. Counting tabular digits in the
+                // asset's characterLookupTable would always read 0 of 0 — a Dynamic font asset
+                // serializes no character table, which is the finding that sent T82 to a derived font
+                // in the first place. The tabular property is in the SOURCE FONT's cmap, so what an
+                // asset must prove is which font it was built from.
+                //
+                // Structural on purpose: no canvas, no rasterisation, nothing to crash. The rendered
+                // confirmation the ruling asks for is the digit probe, run separately.
+                // The path-based CreateFontAsset overload this generator uses records its source in
+                // `m_SourceFontFilePath` and leaves BOTH `sourceFontFile` and `m_SourceFontFileGUID`
+                // empty. Two assertions were written against those before the asset file was read;
+                // both reported NONE against correctly generated assets, which is a verify that fails
+                // an artefact for a property of the verifier. Read the field the asset actually
+                // writes — through SerializedObject, public Editor API.
+                string wantPath = $"{FontDir}/{SourceFace}.ttf";
+                string gotPath = new SerializedObject(a).FindProperty("m_SourceFontFilePath")?.stringValue;
+                bool tabOk = gotPath == wantPath;
+                string src = string.IsNullOrEmpty(gotPath) ? "NONE" : gotPath;
+
+                if (!styleOk || !atlasOk || !matOk || !tabOk) ok = false;
                 Debug.Log($"[TvTmpFontAssets] {name}: style '{style}' expected '{expect}' " +
                           $"{(styleOk ? "OK" : "WRONG INSTANCE")} · atlas {(atlasOk ? "OK" : "MISSING")} " +
-                          $"· material mirror {(matOk ? "OK" : "WRONG")}");
+                          $"· material mirror {(matOk ? "OK" : "WRONG")} · source '{src}' " +
+                          $"{(tabOk ? "OK (tabular)" : $"NOT THE TABULAR FONT — expected '{SourceFace}'")}");
+                Debug.Log($"[TvTmpFontAssets]   members: {Members(name)}");
             }
             Debug.Log(ok
                 ? "[TvTmpFontAssets] VERIFY PASS — every face is the named instance it claims."
