@@ -11,6 +11,103 @@ discarded.
 
 ---
 
+## 0-FP. THE FIX PASS — batches 56/57/58 built · TWO COMPOSITION CALLS WITH THE DD · 2026-08-13
+
+**Branch `db5157f`, pushed and REMOTE-VERIFIED.** Tree clean, Unity zero. Two commits on top of
+§0-GC: `f84d431` (the fix pass) and `db5157f` (the payout maximum).
+
+**TOP LINE: the fix pass is built and green. Two composition calls are routed and nothing else is
+open in this lane.** §0-GC's four DD calls are all ANSWERED by batch 56 — do not chase them.
+
+| suite | discovered | executed | passed | failed | skipped |
+|---|---|---|---|---|---|
+| EditMode | 250 | 250 | 249 | 0 | 1 ignored — G1's grant, held |
+| PlayMode | 94 | 94 | 88 | 0 | 6 by-design capture skips |
+
+Sweep: **5 of 20 overrunning**, and **no pair collisions on the money control** — retired by
+construction, not by a number.
+
+### What landed
+
+1. **`N LET IT DIE`** — no `HOLD`. It rode in under *"unchanged"*, which was true, and never met
+   T88(c), the ruling that changed its class. The prompt was printing `HOLD` over a press: **C48's own
+   defect surviving inside the pass that fixed C48.** *A string that never meets the ruling that
+   changed its class is the same defect one level up* — and it was caught in the "listed so the set is
+   the whole set" section, which is why that section exists.
+2. **`SHOT FROZEN` left the zone**, and the zone did not grow. Three option rows are 82.5 in 90.0 and
+   fit **in every ownership combination**, not only when one consumable is held (C46 forbids leaning on
+   the common case). Its optional home is measured and available — 156.4px on the 651.0px event strip,
+   494.6 spare — and deliberately **not built**, because it is not required.
+3. **Attract states 4+5 → `BOARD CLOSED`**, `flavorColor` in both. `won` no longer selects an ink
+   there; the §3.1 gold ration violation is gone.
+4. **The money control's members stopped sharing one rectangle.** All three pair collisions retired,
+   including the 198.5 this lane created.
+
+### THE PAYOUT MAXIMUM — the arithmetic nobody had done, and it holds
+
+*"Unbounded" was the wrong word: parlay multiplication is **UN-ENUMERATED**.* Enumerated over the
+generator's own offer space (`engine.tests/PayoutMaximumTests`, re-runnable):
+
+```
+648,000 offers priced · 3,000 seeds · max single-leg odds 52.0359 (true prob 0.018302)
+produced by AnytimeScorer — the one-way YES-only board, the only market with no
+complementary side to bound it. Last improved at seed 1051 of 2999.
+PARLAY TERM = 52.0359^4 = 7,331,837.65 x stake
+```
+
+**The stake ceiling is the BANK** (`MaxStakeFraction` 1.0) — run state, not config — so the figure is
+stated per bank assumption rather than as one number that buries its dependency. Tabular condensed
+Bold 700 digits advance **13.6px each**, so the 249.0px row holds **eleven digits and not twelve**:
+
+> **Any payout below $100,000,000,000 — i.e. any stake up to $13,639.** The payment schedule tops out
+> at $1,350 and totals $2,910 across all eight rounds, so the threshold sits **~4.7× above the entire
+> run's payments. Width CLOSES with no further ruling.**
+
+Two caveats, both moving the threshold **down**: a bank above $13,639 is reachable after one large
+win (the box fails at twelve digits and nowhere before), and **`PayoutMultiplier` — up to eleven named
+relic factors — is a further multiplier ON TOP and is deliberately excluded**, because the DD's formula
+named `MaxLegs`, the stake ceiling and the odds range. Folding in a relic product nobody asked for
+would overstate the figure while looking more rigorous.
+
+### THE TWO CALLS WITH THE DD — measured, stopped at, not built around
+
+| call | the number | state |
+|---|---|---|
+| **`RiskPays` two rows** (T74-am4) | width CLOSES (above); **height needs 60.0px in the 40.0px footer — over by 20.0** | batch 57's branch-2 span re-derivation, pre-authorised. Not built: it also needs four elements rather than one |
+| **The money control's two rows** (T74-am3) | **55.0px in the 52.0px grid row — over by 3.0** | BUILT and rendering (allocated 34/18, both components Overflow), but it does **not** fit by the sweep's standard and is not claimed to |
+
+**One ruling expectation was falsified and is recorded as such:** `MARKET SUSPENDED` did **not** retire
+on the two-row change. It is 267.7 in 241.0 and was **already exclusive** in its slot (T43), so sharing
+was never its problem. The 26.7 stands as a plain width overrun.
+
+### THE REUSABLE FACT, and it will bite any height arithmetic on this surface
+
+> **`LineBox` is 1.18. TMP's real advance ratio on this face is 1.25.**
+
+Every height computed from the design constant understates by ~6%. It is exactly why the money control
+"fit" on paper (29×1.18 + 15×1.18 = 51.9 in 52.0) and overruns in fact (36.3 + 18.8 = 55.0).
+**Measure heights with `GetPreferredValues`; never derive them from `LineBox`.**
+
+### A REAL BUG THE PASS SURFACED — a keyboard that leaves mid-window
+
+`PendingWindowBeat` checks `Keyboard.current` **once** at entry, and every frame of its loop then
+dereferenced it. A device going away mid-window — a wireless keyboard sleeping, a controller swap —
+threw a `NullReferenceException` **inside the coroutine**, killing the beat and leaving the pending
+window hanging **on an irreversible money decision**. **Pre-existing:** the press-era code dereferenced
+it the same way. Found only because a gesture test added a virtual device and removed it. Now re-read
+every frame and treated as the entry guard treats it: no keyboard, no way to decide, so the window
+declines rather than hangs.
+
+### Two instrument corrections in the same family as §0-GC's three
+
+- **A check that outlives its composition.** The sweep's `Pair()` for `CashOut`+`CashOutStatus` kept
+  measuring a shared rectangle **after the members moved to separate rows** — it would have reported
+  the old build with the new build's confidence. Retired with the composition it measured.
+- **My own test assertion went stale against my own copy change** (`HOLD N LET IT DIE`). It failed
+  loudly with the actual string in the message, which is the only reason it took one run to see.
+
+---
+
 ## 0-GC. THE GESTURE CONNECTED · T89's deliverables sent · BUILD COMPLETE, EVERY OPEN ITEM IS THE DD's. 2026-08-13
 
 **Branch `47d3f7e`, pushed and REMOTE-VERIFIED** (`git ls-remote` reads `47d3f7e` on
