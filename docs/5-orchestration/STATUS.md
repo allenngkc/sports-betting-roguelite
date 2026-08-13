@@ -1,7 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 224 — G5 GREEN ON THE
-NEW EXEMPLAR; THE CHAIN RUNS.** A2 completed at ~its comparable's wall
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 225 (heartbeat).** All
+three working lanes deep in turns: mpregame on V1 (5m+), TV on the M/R
+pin hunt (13m+), sgp's 3d structured-refusals agent at 16m+. Room, DD
+clean; research on Allen. Quiet is healthy.
+
+*(prior stamp, cycle 224 - G5 GREEN, THE CHAIN RUNS:)* A2 completed at ~its comparable's wall
 time - the kill order was held on evidence (live heartbeats tracking A's
 34.3 actual) and converted to a 40-min tripwire that never fired; the
 run finished green about a minute past where the kill would have landed.
