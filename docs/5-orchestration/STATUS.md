@@ -1,7 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 192 — THE PAIR IS
-COMPLETE; THE FREEZE IS LIFTED.** After-set staged (151 paired frames, 9
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 193 (heartbeat).** Both
+seats working in parallel: TV 4+ min into T82 (tabular atlas build), DD
+4+ min into the pair verdict. Nothing stalled.
+
+*(prior stamp, cycle 192 - PAIR COMPLETE, FREEZE LIFTED:)* After-set staged (151 paired frames, 9
 moments, seed-matched to the before-set; 8 unpaired scorer-leg frames;
 TV tree cb84278, window closed clean). T80's freeze on C2/T9/T10/T61/T82
 LIFTS with the shot - announced to all seats; the parked Phase-3 items
