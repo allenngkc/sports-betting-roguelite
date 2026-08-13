@@ -124,6 +124,14 @@ step 2 should cost it explicitly.
    draws being unrepresentable. Accept, or let this lane's findings count as evidence toward
    revisiting that v1 constraint.
 
+> **Superseded in part, 2026-08-12, by step 2's design.** R2 is adopted in the sharper form
+> `(1 + Ω_sgp) = κ (1 + Ω)^n` with `κ = 1` default — margin compounds per leg exactly as for an
+> independent parlay. Under that rule the price ratio is `1/(κρ)`, not `(1+Ω)^{n−1}/ρ`, so the
+> "lengthens 78% of two-leg tickets" figure below (and `correlation-recon.md` §8) describes the
+> *alternative* rule of charging margin once. Under the adopted rule independent tickets price
+> identically to the board's product. The DD section immediately below is therefore also superseded —
+> `dd-question-same-game-pricing.md` is the version that went to the Design Director.
+
 ## For the Design Director — the queued question, reframed
 
 The question queued at the step-2 boundary was framed backwards and should be re-put. It is **not**
