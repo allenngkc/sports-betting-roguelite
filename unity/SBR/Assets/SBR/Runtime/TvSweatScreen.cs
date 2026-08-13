@@ -1903,11 +1903,26 @@ namespace SBR.Game
             // is 110.0px — over by 20.0px, and only in the worst case where the run owns both
             // consumables. §6's grid does not resize to content, so which row yields is not a call
             // this seat may absorb.
+            // BATCH 56, and the correction is to this seat's own fix. `HOLD N LET IT DIE` carried
+            // forward under "unchanged" — which was true — and never met T88(c), the ruling that
+            // changed its class. So the prompt printed HOLD over an input that is a press: **C48's
+            // own defect, surviving inside the pass that fixed C48.** A string that never meets the
+            // ruling that changed its class is the same defect one level up.
+            //
+            // The two spending rows keep their HOLD and the difference now does real work — it tells
+            // him which options cost him something.
             const string optM = "HOLD M MULLIGAN (ONE MULLIGAN SLIP)";
             const string optR = "HOLD R SEND TO REVIEW (ONE REF'S WHISTLE)";
-            const string optN = "HOLD N LET IT DIE";
-            string offers = "SHOT FROZEN\n"
-                + (canM ? optM + "\n" : "")
+            const string optN = "N LET IT DIE";
+            // `SHOT FROZEN` LEAVES THE ZONE (batch 56) and the zone does not grow. The stage already
+            // says it: the shot is frozen on screen, and a title announcing what the frame is already
+            // displaying is the restatement class S37/S58/T69/T70 have each ruled. Growing a locked
+            // dimension to restate something is R30's shape.
+            //
+            // It also removes the worst case rather than affording it: three option rows measure 82.5
+            // in a 90.0 zone and fit in EVERY ownership combination, not only when one consumable is
+            // held — C46 forbids leaning on the common case.
+            string offers = (canM ? optM + "\n" : "")
                 + (canR ? optR + "\n" : "")
                 + optN;
             // The HELD composition: the option being previewed, and how to finish or abandon it.
@@ -1930,11 +1945,33 @@ namespace SBR.Game
 
             while (_session.HasPendingLoss)
             {
+                // The keyboard is re-read EVERY FRAME, not once at entry.
+                //
+                // The guard at the top of this method runs a single time, and every frame of this loop
+                // then dereferenced `Keyboard.current`. A keyboard that goes away mid-window — a
+                // wireless device sleeping, a controller swap, or a test removing a virtual one —
+                // threw a NullReferenceException INSIDE the coroutine, which kills the beat and leaves
+                // the pending window hanging on an irreversible money decision. Pre-existing: the
+                // press-era code dereferenced it the same way. Found because a gesture test added a
+                // device and removed it.
+                //
+                // Treated exactly as the entry guard treats it: no keyboard, no way to decide, so the
+                // window declines rather than hangs. That is the documented behaviour that stops batch
+                // autoplay hanging, applied to the case where the device leaves after we started.
+                Keyboard keys = Keyboard.current;
+                if (keys == null)
+                {
+                    _session.DeclinePendingLoss();
+                    HideCashOutSlot(); // T43
+                    _tInterventionPrompt.enabled = false;
+                    yield break;
+                }
+
                 // The hold is a STATE, sampled every frame. Nothing in this loop measures how long a
                 // key has been down, and that absence IS "no timer, no auto-commit": there is no
                 // elapsed quantity for an auto-commit to compare against.
-                bool downM = _seated && canM && Keyboard.current.mKey.isPressed;
-                bool downR = _seated && canR && Keyboard.current.rKey.isPressed;
+                bool downM = _seated && canM && keys.mKey.isPressed;
+                bool downR = _seated && canR && keys.rKey.isPressed;
 
                 // One preview at a time, and whichever was held first keeps it until it is released.
                 // Rolling a finger onto the other key mid-hold must not move the commit to a different
@@ -1996,7 +2033,7 @@ namespace SBR.Game
                 // proportionate — "the weight of the gesture matches the weight of the act", which is
                 // also what stops the three reading as peers when two spend and one does not. A press
                 // here is the ruled input, not a leftover of the one this pass removed.
-                if (_seated && Keyboard.current.nKey.wasPressedThisFrame)
+                if (_seated && keys.nKey.wasPressedThisFrame)
                 {
                     _session.DeclinePendingLoss();
                     HideCashOutSlot(); // T43
@@ -2585,11 +2622,24 @@ namespace SBR.Game
 
             ClearToBlankScreen();
             _tAttract.enabled = true;
-            _tAttract.text = won ? "THE HOUSE BLINKS FIRST" : "THE BOOKIE COLLECTS";
-            // Won = money, gold. Lost = context, not a hue — legible grey, never the retired red.
-            _tAttract.color = won
-                ? new Color(gold.r, gold.g, gold.b, 1f)
-                : contextGrey;
+            // T86-am2 (batch 56): BOTH states were violations and both take one authored replacement.
+            //
+            // `THE HOUSE BLINKS FIRST` rendered in GOLD, and §3.1 rations gold to won legs, payout
+            // figures and the cash-out band — an editorial line is none of the three. That is a
+            // ration violation on §3's own terms, independent of T27, and the copy was separately
+            // celebratory editorial. `THE BOOKIE COLLECTS` was S53's string, the LAPTOP's losing
+            // verdict headline, on a surface with a different register: the theatre does not announce
+            // a verdict another surface owns.
+            //
+            // `BOARD CLOSED` is the surface's own vocabulary — idle prints `ROUND n OF m · BOARD
+            // OPEN`, and the run ending closes the board. One word changes and the grammar is
+            // identical. **The collapse to one string is the point:** the run's verdict is the
+            // laptop's screen (S53/S59), so the theatre reports that the board is shut and says
+            // nothing about how the run ended, because that is not its to say.
+            _tAttract.text = "BOARD CLOSED";
+            // flavorColor in BOTH states, like states 1–3. Not gold in either — that was the ration
+            // violation, and `won` no longer selects an ink here.
+            _tAttract.color = flavorColor;
             _tSubtitle.text = $"FINAL BANK ${Money(r.Bank)}  —  NEW RUN AT THE LAPTOP";
 
             if (won)
@@ -4204,17 +4254,39 @@ namespace SBR.Game
             // — the build rendered `CASH OUT $184   •   UPDATING` as one 29px string, which says the
             // status is as important as the number. Money keeps the name "CashOut" because the L4
             // token, the bloom-floor protected set and three tests all address it by that name.
+            // T74-am3 (batch 56): THE MEMBERS STOP SHARING ONE RECTANGLE. Anchored from opposite
+            // edges of one 241px box, each one's slack was the other's overrun, so any pair of long
+            // strings collided — at rest (45.0), mid-tween (47.8) and at the held preview (198.5).
+            // §6.1's "one fixed rectangle owning all six states, never reflows" is untouched: a
+            // two-row rectangle is still fixed and still never reflows.
+            //
+            // The subdivision is MEASURED, and it is the one number in this pass that does not clear.
+            // TMP's preferred line box is 36.3px for the 29px figure and 18.8px for the 15px status —
+            // 55.0px against a 52.0px grid row, over by 3.0px. The design constants predicted a fit
+            // (29*LineBox + 15*LineBox = 51.9) because LineBox is 1.18 and TMP's real advance ratio on
+            // this face is 1.25. Allocated 34/18 to the row it has rather than the row it wants; both
+            // components are Overflow, so the figure's line box is 2.3px taller than its allocation
+            // and renders, but this does NOT fit by the sweep's standard and is reported as such.
+            const float figureRowH = 34f, statusRowH = 18f;
+            // +y is UP: AnchorCenter negates the grid's top-down y (see its body), which is why the
+            // takeover pair reads +40 above and -20 below. Figure on top, status beneath it.
+            const float figureRowY = 9f, statusRowY = -17f;
+
             _tCashOut = MakeText(root, "CashOut", new Vector2(0f, 1f), new Vector2(0f, 0.5f),
-                AnchorCenter(grid.CashOut) + new Vector2(-grid.CashOut.width * 0.5f + 12f, 0f),
-                new Vector2(grid.CashOut.width - 24f, grid.CashOut.height - 8f), TypeCashOut,
+                AnchorCenter(grid.CashOut) + new Vector2(-grid.CashOut.width * 0.5f + 12f, figureRowY),
+                new Vector2(grid.CashOut.width - 24f, figureRowH), TypeCashOut,
                 TextAnchor.MiddleLeft, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Normal,
                 Face.Condensed, FontWeight.Bold,
                 TvTrack.Name); // TvCashOutSlot.jsx:33/37 · T73: real Condensed Bold 700
             _tCashOut.enabled = false;
 
+            // Its own row now, at the full width instead of the figure's leftovers. Anchors are left
+            // exactly as they were on both members: the ruling moved them onto separate rows and said
+            // nothing about alignment, and inventing a new one here would be the composition change
+            // nobody asked for.
             _tCashOutStatus = MakeText(root, "CashOutStatus", new Vector2(0f, 1f), new Vector2(1f, 0.5f),
-                AnchorCenter(grid.CashOut) + new Vector2(grid.CashOut.width * 0.5f - 12f, 0f),
-                new Vector2(grid.CashOut.width - 24f, Mathf.Ceil(TypeEyebrow * LineBox)), TypeEyebrow,
+                AnchorCenter(grid.CashOut) + new Vector2(grid.CashOut.width * 0.5f - 12f, statusRowY),
+                new Vector2(grid.CashOut.width - 24f, statusRowH), TypeEyebrow,
                 TextAnchor.MiddleRight, AtTier(contextGrey, TierL2),
                 tracking: TvTrack.Label); // TvCashOutSlot.jsx:44 — the status word, not the figure
             _tCashOutStatus.enabled = false;

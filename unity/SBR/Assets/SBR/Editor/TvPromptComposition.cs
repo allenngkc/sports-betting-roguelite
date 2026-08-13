@@ -56,7 +56,8 @@ namespace SBR.EditorTools
         private const string Title = "SHOT FROZEN";
         private const string OptM = "HOLD M MULLIGAN (ONE MULLIGAN SLIP)";
         private const string OptR = "HOLD R SEND TO REVIEW (ONE REF'S WHISTLE)";
-        private const string OptN = "HOLD N LET IT DIE";
+        // Batch 56: no HOLD. The decline is a press (T88(c)), and the copy now says so.
+        private const string OptN = "N LET IT DIE";
 
         // T88's gesture copy, added with the wiring. Both are UNRATIFIED and both are composed in the
         // source from `ConfirmKeyWord`, so the scan below asserts the invariant HALF of each \u2014 the
@@ -214,6 +215,65 @@ namespace SBR.EditorTools
                               $"(wrap {fig.textWrappingMode}) — {(Mathf.Abs(z - u) < 0.05f ? "AGREE: the sweep's pair figures stand" : "DISAGREE: every Pair() figure in the sweep is measured wrong")}");
                 }
 
+                // ---- batch 56: the money control's TWO ROWS, measured before they land ------------
+                //
+                // T74-am3 rules the figure and the status word onto separate rows, because sharing one
+                // rectangle from opposite edges makes any pair of long strings collide — and
+                // `CASHED OUT $1,240` overruns the box by 14.6 with no second member at all.
+                //
+                // The design constants say this fits and TMP may disagree: 29*LineBox(1.18) +
+                // 15*1.18 = 51.9 in the 52.0 row, which clears by 0.08px on paper. But the prompt
+                // measured 27.5px of advance at 22px type — a ratio of 1.25, not 1.18 — and on that
+                // ratio the two rows need 55.0 and do NOT fit. Which is right is a measurement, and
+                // the ruling asks for one before it lands.
+                if (fig != null && status != null)
+                {
+                    const float GridRow = 52.0f;   // LayoutGrid.BottomRowHeight — the zone, not the rect
+                    float hFig = fig.GetPreferredValues("CASHED OUT $1,240", Unconstrained, 0f).y;
+                    float hStatus = status.GetPreferredValues(StatusPreview, Unconstrained, 0f).y;
+                    float stacked = hFig + hStatus;
+                    Debug.Log($"[T88] --- money control as TWO ROWS (T74-am3) ---");
+                    Debug.Log($"[T88] figure row {hFig:0.0}px ({fig.fontSize:0.#}px type) + status row {hStatus:0.0}px " +
+                              $"({status.fontSize:0.#}px type) = {stacked:0.0}px vs the {GridRow:0.0}px grid row  " +
+                              $"{(stacked > GridRow ? $"OVERRUNS by {stacked - GridRow:0.0}px" : $"fits, {GridRow - stacked:0.0}px spare")}");
+
+                    // On its own row each member has the FULL width instead of the other's leftovers.
+                    float box = fig.rectTransform.rect.width;
+                    foreach (string s in new[] { "CASHED OUT $1,240", "CASH OUT $1,240", "MARKET SUSPENDED" })
+                        Row(box, "figure row      ", s, W(fig, s));
+                    foreach (string s in new[] { StatusPreview, "UPDATING", "HOLD E" })
+                        Row(box, "status row      ", s, W(status, s));
+                }
+
+                // ---- batch 57: RiskPays as two rows, measured BEFORE it is built --------------------
+                // T74-am4 rules RISK and PAYS onto separate rows, label left and figure
+                // right-anchored. The footer is 40.0px (LayoutGrid.TicketFooterHeight) and the type is
+                // 24px, so the question is whether two rows of it fit at all — asked before four new
+                // elements are built, because a composition that cannot land is not a build task.
+                foreach (TMP_Text c in screen.GetComponentsInChildren<TMP_Text>(true))
+                    if (c.gameObject.name == "RiskPays")
+                    {
+                        const float Footer = 40.0f;   // LayoutGrid.TicketFooterHeight
+                        float one = c.GetPreferredValues("RISK $1,234", Unconstrained, 0f).y;
+                        Debug.Log($"[T88] --- RiskPays as TWO ROWS (T74-am4) --- one row {one:0.0}px " +
+                                  $"({c.fontSize:0.#}px type) · two rows {2f * one:0.0}px vs the {Footer:0.0}px footer  " +
+                                  $"{(2f * one > Footer ? $"OVERRUNS by {2f * one - Footer:0.0}px" : $"fits, {Footer - 2f * one:0.0}px spare")}");
+                        Row(c.rectTransform.rect.width, "risk row        ", "RISK $1,234", W(c, "RISK $1,234"));
+                        Row(c.rectTransform.rect.width, "pays row        ", "PAYS $12,340", W(c, "PAYS $12,340"));
+                        break;
+                    }
+
+                // ---- batch 56: `SHOT FROZEN` leaves the zone; the event strip is its optional home --
+                // "Not asserted to fit: measured before it lands." The strip carries ONE authored line
+                // at a time, so the question is not whether it fits BESIDE the flavour line but
+                // whether it fits AS one.
+                foreach (TMP_Text c in screen.GetComponentsInChildren<TMP_Text>(true))
+                    if (c.gameObject.name == "Flavor")
+                    {
+                        Row(c.rectTransform.rect.width, "event strip     ", Title, W(c, Title));
+                        break;
+                    }
+
                 Debug.Log($"[T88] AFFORDANCE BUDGET (in-row, per the ruling's 'somewhere for a hold affordance to live'): " +
                           $"M {zone.width - wM:0.0}px · R {zone.width - wR:0.0}px · N {zone.width - wN:0.0}px spare on a {zone.width:0.0}px row. " +
                           $"R is the binding one. No copy is proposed here — the strings are the DD's.");
@@ -283,9 +343,12 @@ namespace SBR.EditorTools
             // The list composition dropped the separators from the option rows (DD batch 50), so the
             // options are asserted bare. The two gesture strings are asserted on the half that does
             // not carry the confirm key, since that key is unratified and may move.
+            // `SHOT FROZEN` is NOT asserted: batch 56 took it out of the zone, so it is no longer a
+            // shipped string. It stays in this file only as the CANDIDATE measured against the event
+            // strip, which is the DD's optional home for it — a proposal, not a slot's content.
             var required = new List<string>
             {
-                Title, OptM, OptR, OptN,
+                OptM, OptR, OptN,
                 " CONFIRMS" + Sep + "RELEASE ABANDONS",
                 " TO CASH OUT",
             };

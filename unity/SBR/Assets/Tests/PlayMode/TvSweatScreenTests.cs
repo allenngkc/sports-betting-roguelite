@@ -864,7 +864,8 @@ namespace SBR.Tests.PlayMode
 
                 Assert.IsTrue(run.OwnsConsumable("mulligan_slip"), "T88: release abandons — nothing is spent");
                 Assert.IsTrue(director.CurrentSession.HasPendingLoss, "T88: release leaves the window open");
-                Assert.IsTrue(prompt.text.Contains("HOLD N LET IT DIE"),
+                // Batch 56: the decline lost its HOLD, because it takes a press (T88(c)).
+                Assert.IsTrue(prompt.text.Contains("N LET IT DIE"),
                     "release returns the OFFER LIST — the preview must not be residue. " +
                     $"Actual: '{prompt.text.Replace("\n", "\\n")}'");
 

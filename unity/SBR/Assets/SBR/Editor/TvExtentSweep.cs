@@ -156,9 +156,11 @@ namespace SBR.EditorTools
             // guessed. Five resolve to literals or to formats with bounded fields; the sixth is
             // marked CONSTRUCTED because its content is engine-generated and has no bound readable
             // from this surface.
-            ("Attract", "4 assignment sites: 2 literals, the win/lose pair, RenderIdle titles", new[]
-                { "ROUND 10 OF 12 · BOARD OPEN", "SIT TO WATCH THE SWEAT", "THE HOUSE BLINKS FIRST",
-                  "THE BOOKIE COLLECTS", "SHOP OPEN" }),
+            // T86-am2 (batch 56): states 4 and 5 were both violations — one a §3.1 gold-ration breach,
+            // one the laptop's own verdict headline — and BOTH collapse to `BOARD CLOSED`. The
+            // theatre reports that the board is shut and says nothing about how the run ended.
+            ("Attract", "4 assignment sites: 2 literals, the run-over string, RenderIdle titles", new[]
+                { "ROUND 10 OF 12 · BOARD OPEN", "SIT TO WATCH THE SWEAT", "BOARD CLOSED", "SHOP OPEN" }),
             ("TakeoverTitle", "3 assignment sites (a fourth clears it)", new[]
                 { "SHORT — $12,340 AGAINST $20,000", "TICKET 1 OF 2", "PAYMENT MADE" }),
             ("TakeoverSub", "the deferral line, plus the leg list — CONSTRUCTED, see note", new[]
@@ -174,9 +176,11 @@ namespace SBR.EditorTools
             // run-on line, and a row is what this sweep's widest-line measure was always reporting.
             // T88's gesture adds the two held-preview rows. Height is not this instrument's question
             // and is answered by `SBR/TV/T88 prompt composition`, which owns the zone's 90px.
+            // Batch 56: `SHOT FROZEN` left the zone (the stage already says it) and the decline lost
+            // its HOLD — it takes a press, so the copy says so.
             ("InterventionPrompt", "the list's rows + the held preview's, from PendingWindowBeat", new[]
-                { "SHOT FROZEN", "HOLD M MULLIGAN (ONE MULLIGAN SLIP)",
-                  "HOLD R SEND TO REVIEW (ONE REF'S WHISTLE)", "HOLD N LET IT DIE",
+                { "HOLD M MULLIGAN (ONE MULLIGAN SLIP)",
+                  "HOLD R SEND TO REVIEW (ONE REF'S WHISTLE)", "N LET IT DIE",
                   "ENTER CONFIRMS   ·   RELEASE ABANDONS" }),
         };
 
@@ -276,8 +280,15 @@ namespace SBR.EditorTools
 
                 // The two-into-one-box members: §6.1's money control and the leg row's three spans
                 // share a rectangle from opposite edges, so each one's slack is the other's overrun.
-                Pair(all, "CashOut", "CASH OUT $1,240", "CashOutStatus", "HOLD E");
-                Pair(all, "CashOut", "CASH OUT $183", "CashOutStatus", "UPDATING");
+                // RETIRED at batch 56, and retiring it is the point: T74-am3 put the figure and the
+                // status word on SEPARATE ROWS, so they no longer share a rectangle from opposite
+                // edges and no pair of strings can collide on this control at all. Leaving the check
+                // in would keep reporting collisions for a composition that no longer exists — a
+                // measurement of the old build, printed with the confidence of the new one, which is
+                // the same class as the stale expected-value this lane already paid for once.
+                //
+                // Each member's own width is swept individually above, which is now the whole
+                // question for this control.
 
                 foreach (string s in Unswept)
                     Debug.Log($"[T84] {s,-16} UNSWEPT — longest renderable form not enumerable from here");
