@@ -1,7 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 204 — PHASE T BUILD
-WORK COMPLETE.** T-6 done: stale notes closed (both false), FONTS.md
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 205 — ALLEN RULES:
+DRAWS GO IN.** The no-draws-in-v1 constraint FALLS on Allen's word:
+draws first, then the unfreeze wave re-evaluated under draws-exist
+(double chance revives), correct score ships with its draw column (the
+fiction question dissolved), the 2% floor RATIFIED. markets-pregame's
+costing becomes the execution plan; campaign structure proposal owed
+within the one-campaign-one-re-baseline doctrine. Grill R1-R4 resolved
+by supersession. TV pushed, standing by; DD ruling the last two slots.
+
+*(prior stamp, cycle 204:)* T-6 done: stale notes closed (both false), FONTS.md
 carries the face story + re-derivation recipe. TV's three answers routed
 to the DD: InterventionPrompt = instruction-form with a figure; Attract =
 four authored-voice sites; PEND = THE QUESTION HAS NO SUBJECT (TV
