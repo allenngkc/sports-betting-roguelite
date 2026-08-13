@@ -159,6 +159,39 @@ the window) and were replaced.
 reached the register got there by being hand-copied out of a terminal — the claim was the artifact and
 no run was reproducible. C11 wants the evidence, C17 wants it retained, C25 wants its scope attached.
 
+### 6a. When to drop the capture bytes — the question, not the measurement
+
+**Retain the numbers in a durable file; drop the frames when the ADJUDICATION QUESTION CLOSES — not
+when the measurement is done.**
+
+The earlier form of this practice was *drop the bytes once the numbers are extracted*, and it was
+right for the wrong reason. Numbers survive a settled question; they do not survive a **changed** one.
+On 2026-08-12 the settlement pair's frames were dropped straight after measurement, the bound they
+were measured against was then withdrawn and re-derived, and re-measuring the same pair on a new
+region cost a re-shoot that would have cost nothing an hour earlier. **The bill is small and the rule
+is cheap: hold the frames while the question they answer is still open.**
+
+Unchanged: **do not commit them by default.** Two sets of room captures are ~66 MB, no
+`.gitattributes` rule matches `artifacts/`, and the evidence-in-git question is open. Keep them on
+disk, keep the MD5s and the numbers in the report, and drop the bytes at close.
+
+### 6b. Never author to a rendered target without characterising the transfer
+
+**The authored→rendered gap is real, non-uniform, and on this room it spans a factor of eighteen.**
+Three measured instances, all CIELAB hue, all through the same converter:
+
+| element | authored | rendered | **gap** |
+|---|---|---|---|
+| laptop lid | 83.3° | 85.1–85.3° | **1.9°** |
+| fluorescent key | 102.7° | 101.4° | **1.3°** *(10.7° against the withdrawn record figure)* |
+| **settlement re-tint** | **125.7°** | **87.3–92.7°** | **~33–38°** |
+
+A constant authored at a number does **not** arrive at that number, and how far it moves depends on
+the element — its surface, what else lights it, and what the grade does after. **So an authored value
+is a knob, never a target**: choose it, render it, measure the render, and iterate on the measured
+figure. Anyone who reads a rendered bound and authors a constant to match it has skipped the only step
+that connects them.
+
 ## 7. Two things that will bite
 
 1. **Reproducibility is a feature and it has been verified.** At `d126318` every frame shared with the
