@@ -1,7 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 226 — PHASE T's FIX
-PASS IS GO (batch 56).** The closing set ruled: C48's own defect caught
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 227 (heartbeat).**
+Campaign B RUNNING (the chain executed itself: V1 done, B fired
+pre-authorized, scored table on land). Batch 57 landed (abbreviation
+refused both branches; the box sizes against the payout maximum). TV
+building the fix pass; DD accounting T89 for Allen; sgp 3d deep.
+
+*(prior stamp, cycle 226:)* The closing set ruled: C48's own defect caught
 inside the fix by the listed-set section built for it; the zone does not
 grow (SHOT FROZEN leaves); ENTER is THE studio commit key (standing);
 TV's derived rule named standing (the gesture acts on what is shown);
