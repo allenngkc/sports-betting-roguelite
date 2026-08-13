@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 223 (heartbeat).** A2
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 224 — G5 GREEN ON THE
+NEW EXEMPLAR; THE CHAIN RUNS.** A2 completed at ~its comparable's wall
+time - the kill order was held on evidence (live heartbeats tracking A's
+34.3 actual) and converted to a 40-min tripwire that never fired; the
+run finished green about a minute past where the kill would have landed.
+V1 implementing, Campaign B fires behind it unattended, report on fire.
+TV hunting the M/R pin seed; sgp 3c-3d; research on Allen.
+
+*(prior stamp, cycle 223:)* A2
 (G5 exemplar re-run) ~24 min in, heartbeats clean; Allen's chained order
 delivered: on a green G5, Campaign B fires immediately, pre-authorized -
 on a miss, hold and report. TV on gesture pins; sgp 3c-3d; research on
