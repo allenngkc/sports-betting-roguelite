@@ -1,7 +1,22 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 216 — THE BAND
-RE-DERIVED (batch 52).** Four kinds of object, not one population: the
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 218 (heartbeat).** All
+working: campaign A's shell still running (mpregame); the DD composing
+its Phase T blockers accounting on Allen's ask; TV 4+ min into the
+gesture build; sgp 3b; research holding. Quiet is healthy.
+
+*(prior stamp, cycle 217 - T65 CLOSES:)* The four-batch arc ends on the property, not a number: the glow
+answers settlement in the room's own warmth (33-38 degrees from the TV
+green that motivated the finding); the element was its own fixture,
+member of no family; C40's converse ruled; per-fixture-family bounds
+(V6-am3); room's correction adopted in full and credited - its line
+promoted to standing law (a bound is defended by the reasoning that
+groups its members, never by clustering). Room executing the approved
+practice edit + bytes drop. In flight: TV's gesture build (SitSpot
+answer pending from room), sgp 3b, campaign A, research holding for
+Allen's rulings pass.
+
+*(prior stamp, cycle 216:)* Four kinds of object, not one population: the
 screens' 83-85 stands (tight by construction); the key tube is the
 room's LIGHT and the settlement subject's true class; ~92's origin
 found (a citation, never a measurement); batch 51's own comparison
