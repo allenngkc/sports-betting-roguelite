@@ -56,7 +56,7 @@ Twenty new titles cleared the bar. Tiered by what each can answer that the exist
 
 | Title | Why |
 |---|---|
-| **Insider Trading** (2026-02-18, $12.89, 594 EN reviews, **Mixed**) | **The nearest existing implementation of SBR's own differentiator** — a roguelike deckbuilder about market manipulation and information, in our price band. It landed Mixed. See **RF-14**; this is the most consequential find of the sweep. |
+| **Insider Trading** (2026-02-18, $12.89, **632 all-language, Very Positive / 80.4%**) | **The nearest existing implementation of SBR's own differentiator** — a roguelike deckbuilder about market manipulation and information, in our price band. See **RF-14**; this is the most consequential find of the sweep. |
 | **Nubby's Number Factory** (2025-03-07, **$4.99**, 16,573 EN reviews, Overwhelmingly Positive) | A plinko roguelike by a **solo self-publishing developer**. Canon's business comps are Balatro (5M units, "a lottery ticket, not the plan") and CloverPit (small team + publisher). **Nubby is the comp that matches `00-vision`'s actual constraint** — solo, $0 cash budget — and it is absent from canon. |
 
 ### Probe (5)
@@ -81,6 +81,12 @@ Warlord Baby Trading Simulator · LuckLand · Roll · Plinbo: Roguelike Plinko �
 
 ### RF-14 — The information axis did not produce compulsion in the one place it has been tried
 
+> **Corrected 2026-08-12, same day:** I first wrote that this title "landed Mixed". It did not — the
+> all-language rating is **Very Positive (80.4%)**; the census row I read was the English-only slice, and I
+> over-stated it. **The finding does not rest on the sentiment band and is stronger without it** — see
+> `15-autopsy-insider-trading.md` §3, where the funnel shows 20.8% of owners beat the game and **1.7% beat
+> it three times**, an 8% winner-return conversion against Balatro's 61%.
+
 **Canon.** `03-mechanics-catalog.md`: Axis 1 Information is *"the game's soul, and our differentiation."*
 `00-vision`: our differentiation is *"the sweat + cash-out, the information axis, and real betting-edge
 concepts as mechanics."*
@@ -95,7 +101,7 @@ and trade wisely."* That is SBR's Axis 1 with the sport swapped for a stock.
 | `onboard` friction | **11.4%** | **highest in the study** (next: D&DG 8.0%) |
 | `depth_thin` | 20.7% | 3rd |
 | Under 2h | **29%** | 2nd (Gambonanza 34.4%) |
-| Positive rate (recent) | **80.9%** | 2nd worst (Gambonanza 75.1%) |
+| Positive rate (recent EN corpus) | 80.9% | 2nd lowest (Gambonanza 75.1%); **all-language is 80.4%, banded Very Positive** |
 | Median playtime | 3.5h | 2nd shortest |
 
 Funnel: tutorial 90.6% → pass week 3 58.1% → **beat the game as the Insider 20.8%**. Difficulty ladder
@@ -107,7 +113,7 @@ present and steep — Intern 14.1%, Junior 5.4%, Senior 3.1%. Rarity floor 0.1%,
 
 **What the research argues.** The nearest thing to SBR's stated soul, built by someone else, in our price
 band, with a real difficulty ladder and genuine depth behind it, **produced the study's highest
-luck-complaint rate and its highest onboarding friction, and its own audience says the hook is missing.**
+luck-complaint rate and its highest onboarding friction, and returns only 8% of the people who beat it.**
 An information axis gives players something to *understand*; on this evidence it does not by itself give
 them a reason to start another run.
 

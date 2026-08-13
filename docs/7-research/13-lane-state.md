@@ -20,7 +20,11 @@ Report telegraphic: Done / Next / Risk / Need-Allen. The Need-Allen line is load
 | `0c84f2e` | `00` reference-list proposal (+ title verification), `01` autopsy template |
 | `43eddab` | `02`–`05` Tier-1 autopsies (Balatro, CloverPit, RACCOIN, Buckshot Roulette), `06` mapping, `07` play questions |
 | `cb0166f` | `08`–`11` Tier-2 probes (Gambonanza, Luck be a Landlord, D&DG, Scritchy Scratchy), `12` probe-set findings, template updated with the rarity floor + frozen lexicon |
-| *(this commit)* | `13` this state file, `14` the widened census + new cohort + RF-14/15/16 |
+| `89c9808` | `13` this state file, `14` the widened census + new cohort + RF-14/15/16 |
+| *(this commit)* | `15` Insider Trading autopsy, `16` Nubby's Number Factory autopsy; `14`'s Insider Trading sentiment band corrected |
+
+**Next up, approved by Allen and not yet run:** the five probes — Bills Must Be Paid, Slots & Daggers,
+Dungeon Clawler, Sol Cesto, Tharsis (`14` §2).
 
 **Never commit** `unity/SBR/Assets/TutorialInfo/Icons/URP.png` — phantom-modified, known legacy
 raw-blob class. Stage lane files **by explicit path only**; `git add -A` sweeps it in.
