@@ -30,8 +30,10 @@ no piecemeal additions, no repeated restarts.
 
 Branch is main at creation (Phase T's docs included). No code yet. The editor is
 TV's-priority; this lane is editor-light (sim/engine) — dotnet suite is your fast loop.
-Known trap inherited from markets-2: **dotnet builds dirty the tracked Unity DLL** — restore
-by `git checkout` (it is an LFS pointer now), verify by loading, never commit it dirtied.
+Engine-DLL rule for THIS lane (corrected 2026-08-12 — the checkout-restore advice was the
+predecessor's explicitly RETRACTED rule and cost a lease window): an engine-changing lane
+**rebuilds and COMMITS** the DLL with its engine change; checkout-restore is only for lanes
+that did NOT intend an engine change. Verify any restored/rebuilt DLL by loading it.
 
 ## 4. Rules you inherit
 
