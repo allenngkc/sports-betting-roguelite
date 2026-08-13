@@ -347,8 +347,9 @@ public static class MatchModel
             }
 
             case MarketKind.CorrectScore:
-                return ScoreProbability(matchup,
-                    (h, a) => h == selection.ScoreHome && a == selection.ScoreAway, config);
+                // One cell of the joint, not a walk over the whole grid — see Matchup.JointScore
+                // for why that distinction is worth a method, and why it is bit-identical.
+                return matchup.JointScore(selection.ScoreHome, selection.ScoreAway);
 
             case MarketKind.WinningMargin:
             {

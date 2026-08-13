@@ -392,6 +392,45 @@ public sealed class Matchup
     /// for the sim's honest estimators (they price from the same dials, never engine internals).</summary>
     public RunConfig ModelConfig { get; }
 
+    private double[,]? _joint;
+
+    /// <summary>P(exactly h–a), read as ONE CELL of the unconditional joint rather than walked.
+    ///
+    /// Correct score made this necessary and it is the Phase 0 lesson repeating: pricing a single
+    /// score through the general predicate walk costs a full pass over all three class lists, and
+    /// BUILDING the score board does that once per grid cell to apply the probability floor — an
+    /// O(cells²) construction for an O(cells) fact. Measured at n=400 the V1 board took the smoke
+    /// from 56 s to 225 s before this; the campaign multiplies that by ~37.
+    ///
+    /// Bit-identical to the walk, not merely equivalent: a correct-score predicate matches exactly
+    /// one cell in exactly one class, so the walk's accumulator holds the single term
+    /// <c>weight × conditional</c> that this table stores.</summary>
+    internal double JointScore(int homeGoals, int awayGoals)
+    {
+        if (_joint == null)
+        {
+            int n = ModelConfig.MaxGoalsGrid + 1;
+            var j = new double[n, n];
+            foreach ((MatchResult result, IReadOnlyList<MatchModel.ScoreOutcome> scores) in
+                     new (MatchResult, IReadOnlyList<MatchModel.ScoreOutcome>)[]
+                     {
+                         (MatchResult.Home, Dist.HomeWinScores),
+                         (MatchResult.Draw, Dist.DrawScores),
+                         (MatchResult.Away, Dist.AwayWinScores),
+                     })
+            {
+                double weight = TrueProb(result);
+                foreach (MatchModel.ScoreOutcome x in scores)
+                    j[x.HomeGoals, x.AwayGoals] += weight * x.Probability;
+            }
+            _joint = j;
+        }
+        int size = _joint.GetLength(0);
+        return homeGoals < 0 || awayGoals < 0 || homeGoals >= size || awayGoals >= size
+            ? 0.0
+            : _joint[homeGoals, awayGoals];
+    }
+
     private MatchDistributions? _dist;
     /// <summary>The matchup's exact finite distributions, built once and shared by pricing,
     /// grading, and the stat-line sampler — the sim locks millions of rounds, so the score/count
