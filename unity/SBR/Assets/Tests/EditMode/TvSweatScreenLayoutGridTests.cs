@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using SBR.Game;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -70,9 +71,9 @@ namespace SBR.Tests.EditMode
             {
                 var screen = BuildScreen(go);
 
-                Text cashOut = FindChild<Text>(screen, "CashOut");
-                Text legRowLine = FindChild<Text>(screen, "LegRowLine0");
-                Text ticketHeader = FindChild<Text>(screen, "TicketHeader");
+                TMP_Text cashOut = FindChild<TMP_Text>(screen, "CashOut");
+                TMP_Text legRowLine = FindChild<TMP_Text>(screen, "LegRowLine0");
+                TMP_Text ticketHeader = FindChild<TMP_Text>(screen, "TicketHeader");
                 Assert.IsNotNull(cashOut, "CashOut text not found — canvas layout changed?");
                 Assert.IsNotNull(legRowLine, "LegRowLine0 not found — canvas layout changed?");
                 Assert.IsNotNull(ticketHeader, "TicketHeader not found — canvas layout changed?");
@@ -185,7 +186,7 @@ namespace SBR.Tests.EditMode
             {
                 var screen = BuildScreen(go);
 
-                Text cashOut = FindChild<Text>(screen, "CashOut");
+                TMP_Text cashOut = FindChild<TMP_Text>(screen, "CashOut");
                 Assert.IsNotNull(cashOut, "CashOut text not found — canvas layout changed?");
                 Vector2 posBefore = cashOut.rectTransform.anchoredPosition;
                 Vector2 sizeBefore = cashOut.rectTransform.sizeDelta;
@@ -240,9 +241,9 @@ namespace SBR.Tests.EditMode
             {
                 var screen = BuildScreen(go);
 
-                Text need = FindChild<Text>(screen, "LegRowNeed0");
-                Text progress = FindChild<Text>(screen, "LegRowProgress0");
-                Text line = FindChild<Text>(screen, "LegRowLine0");
+                TMP_Text need = FindChild<TMP_Text>(screen, "LegRowNeed0");
+                TMP_Text progress = FindChild<TMP_Text>(screen, "LegRowProgress0");
+                TMP_Text line = FindChild<TMP_Text>(screen, "LegRowLine0");
                 Assert.IsNotNull(need, "LegRowNeed0 not found — T20 split the row's Detail element into NEED + progress");
                 Assert.IsNotNull(progress, "LegRowProgress0 not found");
                 Assert.IsNotNull(line, "LegRowLine0 not found");
@@ -285,9 +286,9 @@ namespace SBR.Tests.EditMode
             {
                 var screen = BuildScreen(go);
 
-                Text need0 = FindChild<Text>(screen, "LegRowNeed0");
-                Text need1 = FindChild<Text>(screen, "LegRowNeed1");
-                Text progress0 = FindChild<Text>(screen, "LegRowProgress0");
+                TMP_Text need0 = FindChild<TMP_Text>(screen, "LegRowNeed0");
+                TMP_Text need1 = FindChild<TMP_Text>(screen, "LegRowNeed1");
+                TMP_Text progress0 = FindChild<TMP_Text>(screen, "LegRowProgress0");
                 Assert.IsNotNull(need0, "LegRowNeed0 not found");
                 Assert.IsNotNull(need1, "LegRowNeed1 not found");
                 Assert.IsNotNull(progress0, "LegRowProgress0 not found");
@@ -455,9 +456,9 @@ namespace SBR.Tests.EditMode
             try
             {
                 var screen = BuildScreen(go);
-                Text need = FindChild<Text>(screen, "LegRowNeed0");
-                Text progress = FindChild<Text>(screen, "LegRowProgress0");
-                Text need1 = FindChild<Text>(screen, "LegRowNeed1");
+                TMP_Text need = FindChild<TMP_Text>(screen, "LegRowNeed0");
+                TMP_Text progress = FindChild<TMP_Text>(screen, "LegRowProgress0");
+                TMP_Text need1 = FindChild<TMP_Text>(screen, "LegRowNeed1");
                 Assert.IsNotNull(need); Assert.IsNotNull(progress); Assert.IsNotNull(need1);
 
                 Assert.IsNotNull(need.font, "no font resolved — a measurement in the fallback face is void");
@@ -508,16 +509,16 @@ namespace SBR.Tests.EditMode
             try
             {
                 var screen = BuildScreen(go);
-                Text riskPays = FindChild<Text>(screen, "RiskPays");   // condensed, per TvRiskPays.jsx:14
-                Text eventLine = FindChild<Text>(screen, "Flavor");    // regular, per TvEventStrip.jsx:10
+                TMP_Text riskPays = FindChild<TMP_Text>(screen, "RiskPays");   // condensed, per TvRiskPays.jsx:14
+                TMP_Text eventLine = FindChild<TMP_Text>(screen, "Flavor");    // regular, per TvEventStrip.jsx:10
                 Assert.IsNotNull(riskPays, "RiskPays not found");
                 Assert.IsNotNull(eventLine, "Flavor not found");
                 Assert.IsNotNull(riskPays.font, "no font resolved — a measurement in the fallback is void");
                 Assert.IsTrue(riskPays.font.name.Contains("Encode"),
                     $"measured in '{riskPays.font.name}', not Encode Sans — the same mistake T20 made once");
 
-                Text label = MeasureText(riskPays.transform.parent, eventLine.font, 15, "PAYS");
-                Text value = MeasureText(riskPays.transform.parent, riskPays.font, 24, "$1,234");
+                TMP_Text label = MeasureText(riskPays.transform.parent, eventLine.font, 15, "PAYS");
+                TMP_Text value = MeasureText(riskPays.transform.parent, riskPays.font, 24, "$1,234");
 
                 float stackedH = label.preferredHeight + value.preferredHeight;
                 float cellW = Mathf.Max(label.preferredWidth, value.preferredWidth);
@@ -541,15 +542,18 @@ namespace SBR.Tests.EditMode
             }
         }
 
-        /// <summary>A throwaway Text used only to ask Unity what a string actually measures.</summary>
-        private static Text MeasureText(Transform parent, Font font, int size, string content)
+        /// <summary>A throwaway text component used only to ask Unity what a string actually
+        /// measures. Phase T: TMP, so it measures in the same renderer the surface now uses — a
+        /// measurement taken in the OTHER renderer would be exactly the T20 mistake this test's own
+        /// assertion warns about, one layer down.</summary>
+        private static TMP_Text MeasureText(Transform parent, TMP_FontAsset font, int size, string content)
         {
-            var go = new GameObject("Measure", typeof(Text));
+            var go = new GameObject("Measure", typeof(TextMeshProUGUI));
             go.transform.SetParent(parent, false);
-            var t = go.GetComponent<Text>();
+            var t = go.GetComponent<TextMeshProUGUI>();
             t.font = font;
             t.fontSize = size;
-            t.fontStyle = FontStyle.Bold;
+            t.fontStyle = FontStyles.Bold;
             t.text = content;
             return t;
         }
@@ -625,7 +629,7 @@ namespace SBR.Tests.EditMode
             {
                 var screen = BuildScreen(go);
 
-                Text score = FindChild<Text>(screen, "Matchup"); // the persistent score line
+                TMP_Text score = FindChild<TMP_Text>(screen, "Matchup"); // the persistent score line
                 Assert.IsNotNull(score, "Matchup (the score) not found");
                 Assert.AreEqual(CanonScore, score.fontSize, "the score must render at the canon --tv-size-score");
 
@@ -633,7 +637,7 @@ namespace SBR.Tests.EditMode
                     { "Clock", "CashOut", "RiskPays", "Flavor", "TicketHeader", "Leg",
                       "LegRowNeed0", "LegRowProgress0", "LegRowLine0" })
                 {
-                    Text t = FindChild<Text>(screen, name);
+                    TMP_Text t = FindChild<TMP_Text>(screen, name);
                     Assert.IsNotNull(t, $"{name} not found — canvas layout changed?");
                     Assert.LessOrEqual(t.fontSize, score.fontSize,
                         $"{name} renders at {t.fontSize}px against the score's {score.fontSize}px. " +
@@ -641,12 +645,12 @@ namespace SBR.Tests.EditMode
                 }
 
                 // Spot-check the rungs that carry a named ruling rather than every pair.
-                Assert.AreEqual(CanonCashOut, FindChild<Text>(screen, "CashOut").fontSize,
+                Assert.AreEqual(CanonCashOut, FindChild<TMP_Text>(screen, "CashOut").fontSize,
                     "cash-out sits at .70 of the score and must never reach it (DESIGN.md §5).");
-                Assert.AreEqual(CanonClock, FindChild<Text>(screen, "Clock").fontSize);
-                Assert.AreEqual(CanonRisk, FindChild<Text>(screen, "RiskPays").fontSize,
+                Assert.AreEqual(CanonClock, FindChild<TMP_Text>(screen, "Clock").fontSize);
+                Assert.AreEqual(CanonRisk, FindChild<TMP_Text>(screen, "RiskPays").fontSize,
                     "C8 put risk/pays in the protected set; it sits at the canon --tv-size-risk.");
-                Assert.AreEqual(CanonEvent, FindChild<Text>(screen, "Flavor").fontSize,
+                Assert.AreEqual(CanonEvent, FindChild<TMP_Text>(screen, "Flavor").fontSize,
                     "the event strip is one line at the canon --tv-size-event.");
             }
             finally
@@ -736,7 +740,7 @@ namespace SBR.Tests.EditMode
                 // rect crossing is EXPECTED and is exactly why the mask above must exist; if this
                 // ever stops crossing, the structural assertions have stopped being load-bearing and
                 // this test is passing for the wrong reason.
-                var matchup = FindChild<Text>(screen, "Matchup");
+                var matchup = FindChild<TMP_Text>(screen, "Matchup");
                 if (matchup.font == null)
                 {
                     // Scope, stated (C25): with no face loaded there is nothing to measure, so the

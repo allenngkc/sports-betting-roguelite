@@ -5,7 +5,10 @@ using System.Reflection;
 using NUnit.Framework;
 using SBR.Engine;
 using SBR.Game;
+using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using UnityEngine.UI;
@@ -317,7 +320,7 @@ namespace SBR.Tests.PlayMode
             couch.OnInteract(null);
             yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
 
-            Text flavor = FindChildComponent<Text>(screen, "Flavor");
+            TMP_Text flavor = FindChildComponent<TMP_Text>(screen, "Flavor");
             Assert.IsNotNull(flavor, "Flavor text not found - canvas layout changed?");
 
             // Every beat reveal punches the flavor scale to 1.12, then AnimateFlavorPunch decays it
@@ -385,7 +388,7 @@ namespace SBR.Tests.PlayMode
             // See DriveCashOutTween: one displacement is not enough, and the reason is instructive.
             yield return DriveCashOutTween(director, screen);
 
-            Text cashOut = FindChildComponent<Text>(screen, "CashOut");
+            TMP_Text cashOut = FindChildComponent<TMP_Text>(screen, "CashOut");
             Assert.IsNotNull(cashOut, "CashOut text not found - canvas layout changed?");
             // TVS-H02's premise, same reason: freezing a figure that was not moving proves nothing.
             Assert.IsTrue(screen.DebugCashOutAnimating,
@@ -445,7 +448,7 @@ namespace SBR.Tests.PlayMode
             // the beat here runs 1.0 * 0.3 = 0.3s, and the stand below is 1.0s — more than three
             // times over. If the wait advanced at all while standing, the slot would be gone.
             screen.cashOutFloodDuration = 1f;
-            Text figure = FindChildComponent<Text>(screen, "CashOut");
+            TMP_Text figure = FindChildComponent<TMP_Text>(screen, "CashOut");
             Assert.IsNotNull(figure, "CashOut figure not found - canvas layout changed?");
 
             yield return WaitUntil(() => figure.enabled && figure.text.StartsWith("CASHED OUT"),
@@ -508,6 +511,30 @@ namespace SBR.Tests.PlayMode
         }
 
         // ---- helpers ----
+
+        /// <summary>T75-am: `_tBigAmount` owes an assignment and an assertion, not a frame.
+        ///
+        /// <para>The DD's original carve-out asked for that slot to be verified tabular on frames.
+        /// It cannot be — the element renders nothing since both payoff figures moved into the
+        /// cash-out slot (T68-am/T71), so it appears in no capture and never will. T75-am re-cast
+        /// the debt, and this is where it is paid.</para>
+        ///
+        /// <para>`AreSame`, not `AreEqual`: the ruling is that the slot carries the SHARED regular
+        /// asset. A per-slot copy would satisfy any check written against the font's name, pass
+        /// review, and quietly double the atlas.</para></summary>
+        [UnityTest]
+        public IEnumerator BigAmount_CarriesTheSharedRegularFontAsset()
+        {
+            yield return LoadRoom();
+            (_, TvSweatScreen screen, _) = FindTrio();
+
+            Assert.IsNotNull(screen.DebugRegularFont,
+                "the regular TV face did not load — every assertion below would be vacuous");
+            Assert.IsNotNull(screen.DebugBigAmountFont,
+                "T75-am: BigAmount has no font asset assigned at all");
+            Assert.AreSame(screen.DebugRegularFont, screen.DebugBigAmountFont,
+                "T75-am: BigAmount must carry the SHARED regular asset, not an equal-looking copy");
+        }
 
         /// <summary>The run seed the two mid-tween tests pin (C34).
         ///
@@ -581,6 +608,280 @@ namespace SBR.Tests.PlayMode
                 }
                 yield return null;
             }
+        }
+
+        // ---- T88 / C48: the gesture's own falsifiers ---------------------------------------------
+        //
+        // EVERY cash-out test above reaches the accept through `PressCashOutInteract`, which invokes
+        // the private TryCashOut by reflection because "batchmode has no keyboard to actually press
+        // Interact". THAT BYPASS IS WHY PRESS-TO-COMMIT SURVIVED A WHOLE PHASE. The money control's
+        // accept path was only ever exercised from BELOW the input layer, and the gesture the copy
+        // promised lives above it — so no test here could notice that a press committed instantly,
+        // and none did. When the input changed under T88, the suite stayed green either way.
+        //
+        // A test that cannot press the key cannot falsify the fix. These add a VIRTUAL keyboard and
+        // drive the real InputAction: `InputSystem.AddDevice` is in the runtime assembly rather than
+        // the input test framework, so a headless run can hold a key down after all.
+        //
+        // The device is added INSIDE each test and removed after, deliberately not in a [SetUp]:
+        // PendingWindowBeat declines immediately when `Keyboard.current == null`, which is what stops
+        // batch autoplay hanging on the pending window, so a keyboard present for every test in this
+        // class would change the behaviour of tests that have nothing to do with input.
+
+        /// <summary>Queue a keyboard state and let the FRAME process it. Deliberately not followed by
+        /// a manual <c>InputSystem.Update()</c>: `wasPressedThisFrame` is only true during the frame
+        /// the event is processed in, so the press has to land in the same input update the
+        /// MonoBehaviour Update() reads — which is what yielding one frame gives.</summary>
+        private static void HoldKeys(Keyboard kb, params Key[] down)
+            => InputSystem.QueueStateEvent(kb, new KeyboardState(down));
+
+        /// <summary>A HELD key does not survive a headless run without this, and the first version of
+        /// these tests did not know it.
+        ///
+        /// <para>Batch mode is never focused, and the Input System's documented response to lost focus
+        /// is to <c>ResetDevice</c> every device that cannot run in the background. So a queued key
+        /// registered and was then wiped before the next frame read it — which is invisible in a test
+        /// whose assertion is that NOTHING happened. The press-commits-nothing pin passed green while
+        /// the key was never actually down: S51's shape exactly, a suite going green by recording
+        /// nothing. Both tests now prove the input ARRIVED before they assert what it did not do.</para></summary>
+        private static (InputSettings.BackgroundBehavior, InputSettings.EditorInputBehaviorInPlayMode) LetDevicesRunUnfocused()
+        {
+            var previous = (InputSystem.settings.backgroundBehavior,
+                            InputSystem.settings.editorInputBehaviorInPlayMode);
+            InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
+            InputSystem.settings.editorInputBehaviorInPlayMode =
+                InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+            return previous;
+        }
+
+        private static void RestoreFocusBehaviour(
+            (InputSettings.BackgroundBehavior, InputSettings.EditorInputBehaviorInPlayMode) previous)
+        {
+            InputSystem.settings.backgroundBehavior = previous.Item1;
+            InputSystem.settings.editorInputBehaviorInPlayMode = previous.Item2;
+        }
+
+        /// <summary>Reads the private preview amount — non-zero means the hold actually reached
+        /// §8.10's machinery, which is the precondition every "and then nothing happened" assertion
+        /// below depends on.</summary>
+        private static double PreviewAmount(TvSweatScreen screen)
+            => (double)typeof(TvSweatScreen)
+                .GetField("_cashOutPreviewAmount", BindingFlags.NonPublic | BindingFlags.Instance)
+                .GetValue(screen);
+
+        [UnityTest]
+        public IEnumerator T88_a_press_commits_nothing_and_release_abandons()
+        {
+            yield return LoadRoom();
+            (RunDirector director, TvSweatScreen screen, SitSpot couch) = FindTrio();
+            screen.TimeScaleOverride = 0.15f;
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            Run run = director.Run;
+            (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run);
+            run.PlaceTicket(picks, stake);
+            director.LockRound();
+
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+
+            var previousFocus = LetDevicesRunUnfocused();
+            Keyboard kb = InputSystem.AddDevice<Keyboard>();
+            try
+            {
+                yield return WaitUntil(() => SitSpot.InteractStandSuppressed != null
+                    && SitSpot.InteractStandSuppressed(), 25f, "never observed a live acceptable offer");
+
+                TicketState before = director.CurrentTicket.State;
+
+                // HOLD E. Five frames is far past the one frame the old input needed to spend it.
+                HoldKeys(kb, Key.E);
+                for (int i = 0; i < 5; i++) yield return null;
+
+                // THE PRECONDITION, asserted first. Without it every assertion below passes whenever
+                // the key silently failed to arrive, which is precisely how this test first went green.
+                Assert.IsTrue(kb.eKey.isPressed, "the virtual key never stayed down — the test proves nothing");
+                Assert.Greater(PreviewAmount(screen), 0.0,
+                    "the hold must ENTER §8.10's preview; if it did not, 'the press committed nothing' is unfalsifiable");
+
+                Assert.AreEqual(before, director.CurrentTicket.State,
+                    "T88: a press must commit NOTHING — this is the defect itself, money spent on the first frame of input");
+                Assert.IsNotNull(SitSpot.Active,
+                    "the hold must not stand the player up: a fresh press on the press-path is the hazard room's SitSpot answer named");
+
+                // RELEASE ABANDONS — always, T22.
+                HoldKeys(kb);
+                for (int i = 0; i < 3; i++) yield return null;
+
+                Assert.AreEqual(before, director.CurrentTicket.State,
+                    "T88: release abandons — a hold that ends without the second key must leave the ticket untouched");
+                Assert.AreEqual(0.0, PreviewAmount(screen),
+                    "release is a full revert (§8.10): the preview must be gone, not merely uncommitted");
+            }
+            finally { InputSystem.RemoveDevice(kb); RestoreFocusBehaviour(previousFocus); }
+        }
+
+        [UnityTest]
+        public IEnumerator T88_the_second_key_during_the_hold_commits_the_previewed_amount()
+        {
+            yield return LoadRoom();
+            (RunDirector director, TvSweatScreen screen, SitSpot couch) = FindTrio();
+            screen.TimeScaleOverride = 0.15f;
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            Run run = director.Run;
+            (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run);
+            run.PlaceTicket(picks, stake);
+            director.LockRound();
+
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+
+            var previousFocus = LetDevicesRunUnfocused();
+            Keyboard kb = InputSystem.AddDevice<Keyboard>();
+            try
+            {
+                yield return WaitUntil(() => SitSpot.InteractStandSuppressed != null
+                    && SitSpot.InteractStandSuppressed(), 25f, "never observed a live acceptable offer");
+
+                HoldKeys(kb, Key.E);
+                yield return null;
+                yield return null;
+
+                // The preview is what the player is being shown, and §8.10 says the accepted number
+                // IS that number. Read it before the commit clears it.
+                double previewed = PreviewAmount(screen);
+                Assert.Greater(previewed, 0.0,
+                    "holding E must ENTER the preview — §8.10's machinery had no caller at all before T88");
+
+                // The second key, during the hold.
+                HoldKeys(kb, Key.E, Key.Enter);
+                yield return null;
+                yield return null;
+
+                Assert.AreEqual(TicketState.CashedOut, director.CurrentTicket.State,
+                    "T88: a second key during the hold COMMITS — otherwise the control cannot be finished at all");
+
+                FieldInfo lastAmount = typeof(TvSweatScreen)
+                    .GetField("_lastCashOutAmount", BindingFlags.NonPublic | BindingFlags.Instance);
+                Assert.AreEqual(previewed, (double)lastAmount.GetValue(screen),
+                    "§8.10: the previewed and accepted numbers can never differ — T59's worst outcome on a money control");
+            }
+            finally { InputSystem.RemoveDevice(kb); RestoreFocusBehaviour(previousFocus); }
+        }
+
+        /// <summary>The pending-loss window is seed-decided, so the seed is PINNED and the pin is
+        /// ASSERTED — a window that stops opening must fail loudly rather than let the gesture
+        /// assertions pass on a sweat that never reached them.
+        ///
+        /// <para><b>Not searched for: taken from the engine's own table.</b>
+        /// `CharmExpansionTests.Whistle_rescues_at_full_odds_or_busts_honestly` pins this same seed
+        /// with the same hand-built pair and records what it produces — <i>"leg 0 (matchup 1, Home)
+        /// dies; leg 1 (matchup 0, Away) would win"</i> — and that test is green in the engine suite.
+        /// Reusing it means the two suites move together instead of drifting onto separate seeds that
+        /// each look fine alone.</para>
+        ///
+        /// <para>The ticket is HAND-BUILT rather than taken from `DemoTicketPolicy`, the capture
+        /// harness's precedent for the same reason: the policy's picks are moneyline-only and chosen
+        /// from whatever the slate offers, so they are not the pair the engine's pin describes.
+        /// Both consumables are granted, which is also what OPENS the window at all — the session
+        /// suspends only when a legal save is held.</para></summary>
+        private const string PendingLossSeed = "GOLDEN-W2";
+
+        private static ConsumableDefinition Consumable(string id)
+        {
+            foreach (ConsumableDefinition c in RelicCatalog.Consumables)
+                if (c.Id == id) return c;
+            throw new ArgumentException($"no consumable '{id}' in RelicCatalog");
+        }
+
+        [UnityTest]
+        public IEnumerator T88_the_intervention_prompt_spends_nothing_on_a_press_and_commits_on_the_second_key()
+        {
+            yield return LoadRoom();
+            (RunDirector director, TvSweatScreen screen, SitSpot couch) = FindTrio();
+            screen.TimeScaleOverride = 0.15f;
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+
+            director.StartNewRun(PendingLossSeed);   // overrides whatever Start() rolled
+            Run run = director.Run;
+            run.GrantConsumable(Consumable("mulligan_slip"));
+            run.GrantConsumable(Consumable("refs_whistle"));
+            run.PlaceTicket(new List<Pick> { new Pick(1, Side.Home), new Pick(0, Side.Away) }, 20);
+            director.LockRound();
+
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+
+            var previousFocus = LetDevicesRunUnfocused();
+            Keyboard kb = InputSystem.AddDevice<Keyboard>();
+            try
+            {
+                // Found by object NAME rather than by private field, the way the extent sweep finds
+                // it: the name is what the instrument and the DD's table already refer to, and it
+                // does not couple this test to a field's lifecycle.
+                TMP_Text prompt = null;
+                foreach (TMP_Text t in screen.GetComponentsInChildren<TMP_Text>(true))
+                    if (t.gameObject.name == "InterventionPrompt") { prompt = t; break; }
+                Assert.IsNotNull(prompt, "InterventionPrompt is not built on this screen");
+
+                // THE PIN-ASSERT, and it waits on the RENDERED state rather than the engine's.
+                // `HasPendingLoss` goes true the moment the session suspends, but the theatre reaches
+                // PendingWindowBeat some frames later — waiting on the engine flag alone pressed the
+                // key at a surface that had not drawn the prompt yet. The gesture acts on what is
+                // shown, so what is shown is the precondition.
+                yield return WaitUntil(() => director.CurrentSession != null
+                    && director.CurrentSession.HasPendingLoss && prompt.enabled, 40f,
+                    $"seed '{PendingLossSeed}' did not put a rendered pending-loss window on the surface — " +
+                    "the pin has drifted. Re-derive it from CharmExpansionTests' table before trusting anything below.");
+
+                Assert.IsTrue(run.OwnsConsumable("mulligan_slip"), "precondition: the slip must be held");
+
+                // HOLD M. A press spends nothing.
+                HoldKeys(kb, Key.M);
+                for (int i = 0; i < 5; i++) yield return null;
+
+                Assert.IsTrue(kb.mKey.isPressed, "the virtual key never stayed down — the test proves nothing");
+                string held = prompt.text ?? "<null>";
+                int screens = UnityEngine.Object
+                    .FindObjectsByType<TvSweatScreen>(FindObjectsSortMode.None).Length;
+                Assert.IsTrue(held.Contains("CONFIRMS"),
+                    "the hold must render its PREVIEW — the option, its cost, and how to finish or " +
+                    $"abandon it. Actual: '{held.Replace("\n", "\\n")}' · promptEnabled={prompt.enabled}" +
+                    $" · screensInScene={screens} · sameScreen={ReferenceEquals(prompt.transform.root.GetComponentInChildren<TvSweatScreen>(true), screen)}");
+                Assert.IsTrue(run.OwnsConsumable("mulligan_slip"),
+                    "T88: a press must spend NOTHING — this is the irreversible spend on one frame of input");
+                Assert.IsTrue(director.CurrentSession.HasPendingLoss,
+                    "T88: the window must still be open — a press resolved the leg's grading");
+
+                // RELEASE ABANDONS.
+                HoldKeys(kb);
+                for (int i = 0; i < 3; i++) yield return null;
+
+                Assert.IsTrue(run.OwnsConsumable("mulligan_slip"), "T88: release abandons — nothing is spent");
+                Assert.IsTrue(director.CurrentSession.HasPendingLoss, "T88: release leaves the window open");
+                // Batch 56: the decline lost its HOLD, because it takes a press (T88(c)).
+                Assert.IsTrue(prompt.text.Contains("N LET IT DIE"),
+                    "release returns the OFFER LIST — the preview must not be residue. " +
+                    $"Actual: '{prompt.text.Replace("\n", "\\n")}'");
+
+                // THE SECOND KEY DURING THE HOLD COMMITS.
+                HoldKeys(kb, Key.M);
+                yield return null;
+                yield return null;
+                HoldKeys(kb, Key.M, Key.Enter);
+                for (int i = 0; i < 4; i++) yield return null;
+
+                Assert.IsFalse(run.OwnsConsumable("mulligan_slip"),
+                    "T88: a second key during the hold COMMITS — the slip is spent");
+                Assert.IsFalse(director.CurrentSession.HasPendingLoss,
+                    "T88: committing resolves the window");
+            }
+            finally { InputSystem.RemoveDevice(kb); RestoreFocusBehaviour(previousFocus); }
         }
 
         private static (RunDirector, TvSweatScreen, SitSpot) FindTrio()

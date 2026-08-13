@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using SBR.Engine;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -448,6 +449,18 @@ namespace SBR.Game
         /// _cashOutAnimation is otherwise unobservable from outside the sweat, and this is the exact
         /// condition CanAcceptCashOutNow also refuses.</summary>
         public bool DebugCashOutAnimating => _cashOutTweening;
+        /// <summary>T75-am: the shared regular face, and the face `_tBigAmount` actually holds.
+        ///
+        /// <para>The DD's carve-out originally asked for that slot to be verified tabular ON FRAMES.
+        /// It cannot be: `_tBigAmount` renders nothing — both payoff figures moved into the cash-out
+        /// slot at T68-am/T71 — so it appears in no capture and never will. T75-am re-cast the debt
+        /// as an ASSIGNMENT and an ASSERTION instead, and this is the assertion's surface.</para>
+        ///
+        /// <para>Two references, not two names, so the test compares identity: the slot must carry
+        /// the SHARED asset, not an equal-looking one. A per-slot copy would pass any check written
+        /// against the font's name and would quietly double the atlas.</para></summary>
+        public TMP_FontAsset DebugRegularFont => _font;
+        public TMP_FontAsset DebugBigAmountFont => _tBigAmount != null ? _tBigAmount.font : null;
         /// <summary>Test/debug hook: has a cash-out figure been rendered at least once? This is the
         /// DURABLE precondition behind <see cref="DebugCashOutAnimating"/> — until it is true,
         /// SetCashOutOffer takes its first-time branch and no tween can ever start. A test that
@@ -564,6 +577,32 @@ namespace SBR.Game
 
         // ---- input ----
         private InputAction _interact;
+
+        /// <summary>T22/T36's SECOND KEY — the one that commits during a hold. C48 (batch 50) makes
+        /// the label the contract on a money control, and T88 rules the gesture for every spending
+        /// option: <i>hold to preview, release abandons, a second key during the hold commits, no
+        /// timer, no auto-commit.</i> A press commits nothing anywhere on this surface.
+        ///
+        /// <para><b>Which key is UNRATIFIED and deliberately one constant.</b> T22 and T36 both
+        /// specify "a second key" and neither names it, so this is the seat's choice and is routed
+        /// for ratification rather than presented as canon. Enter was taken because it is bound to
+        /// nothing in the shared action asset (Move/Look/Jump/Crouch/Interact/Attack/Cancel), so the
+        /// gesture reserves no key the room lane is using, and because ONE commit key across both
+        /// money controls is what keeps their contracts readable as the same contract. Changing it is
+        /// this constant and the word below.</para>
+        ///
+        /// <para>Read straight off <see cref="Keyboard"/> rather than added to
+        /// <c>InputSystem_Actions.inputactions</c>: that asset is the ROOM lane's contract, and the
+        /// intervention window already reads its M/R/N the same way. Nothing shared is touched.</para></summary>
+        private const string ConfirmKeyWord = "ENTER";
+
+        /// <summary>The commit half of the gesture. Momentary by construction — a second key that
+        /// auto-repeated would be a timer, which T22/T36 forbid.</summary>
+        private static bool ConfirmPressed()
+            => Keyboard.current != null && Keyboard.current.enterKey.wasPressedThisFrame;
+
+        // The stand-suppression question this gesture raised is ANSWERED, and the answer removed the
+        // mechanism rather than tuning it. See CashOutLive() — there is no frame arithmetic here.
 
         // ---- §8.10 held cash-out preview ----
         //
@@ -755,14 +794,106 @@ namespace SBR.Game
         // authored copy to fit a stale measurement is how the statement line was lost once already.
         private const int TypeScore = 36;
         private const int TypeCashOut = 29;
+        /// <summary><c>--tv-size-team</c>, 28px. Currently read by nothing, and RESTORED anyway after
+        /// T-4 retired it on exactly that evidence.
+        ///
+        /// <para>Retiring it was wrong. It is not a leftover — it is canon
+        /// (<c>tokens/typography.css</c>) with no slot yet able to consume it, because team names and
+        /// the score share one component today and that component is sized at
+        /// <see cref="TypeScore"/>. T72 (batch 32) ruled the split — name / score / name spans — and
+        /// the name spans are what this is for.</para>
+        ///
+        /// <para>The split itself is deliberately NOT in this phase: it appears in no T-order, and
+        /// C43 keeps a migration to one variable. So this sits unread until T72 is built, which is a
+        /// different thing from dead. "Nothing references it" was true and was the wrong test.</para></summary>
         private const int TypeTeam = 28;
         private const int TypeClock = 28;
         private const int TypeNeed = 28;
         private const int TypeRisk = 24;
         private const int TypeEvent = 22;
         private const int TypeProgress = 19;
-        private const int TypeLeg = 19;
         private const int TypeEyebrow = 15;
+
+        // T-4 retired `TypeTeam` and `TypeLeg` together, on the evidence that each had exactly one
+        // reference — its own declaration. `TypeTeam` is back above, because that test was the wrong
+        // one: it is canon awaiting T72's split, not a leftover. `TypeLeg = 19` stays retired on
+        // different grounds — T20 moved resolved and pending rows 19 -> 15px, so the 19 it named is
+        // superseded rather than pending. Two constants that looked identical to a reference count
+        // and were not, which is the lesson worth keeping from the mistake.
+        //
+        // The eight below are the sizes this file used to spell as bare integers at the call site.
+        // Same numbers, named — T-4 tokenises, it does not re-scale, so nothing here moves a pixel.
+        // These are the slots T75 ruled regular; they carry no canon ratio of their own (§4.1 names
+        // ten roles and the surface has 23), so each name states its slot and nothing more.
+        private const int TypeAttract = 46;
+        private const int TypeTakeoverTitle = 30;
+        private const int TypeTakeoverSub = 18;
+        private const int TypeSubtitle = 22;
+        private const int TypeIntervention = 22;
+        private const int TypeConsolation = 28;
+        private const int TypeChrome = 14;
+        /// <summary>The dormant payoff figure's size, kept with the others so the block is the whole
+        /// list rather than the part that renders. `_tBigAmount` draws nothing (T68-am/T71 moved both
+        /// payoff figures into the cash-out slot) and T79 holds the question of what that element is
+        /// for — out of Phase T by C43. Named here, not woken.</summary>
+        private const int TypeBigAmount = 96;
+
+        /// <summary>This surface's tracking scale, in **em** — the unit the design system states it
+        /// in. <see cref="MakeText"/> converts to TMP's hundredths-of-an-em internally, so no call
+        /// site has to know TMP's unit. The laptop's LaptopTrack is the same shape for the same
+        /// reason.
+        ///
+        /// <para><b>Reachable for the first time in Phase T.</b> UI.Text could not address tracking
+        /// at all, so every one of these was rendered at 0 until now. That is why they arrive as a
+        /// group rather than one at a time: they were not omitted by choice, they were unbuildable.</para>
+        ///
+        /// <para>Values are canon's, from <c>tokens/typography.css</c> and the TV kit — NOT the
+        /// owning doc, which has no tracking clause. Named so the register can be pointed at a
+        /// symbol, and so a slot and any future measurement of it cannot be handed different
+        /// numbers.</para></summary>
+        private static class TvTrack
+        {
+            /// <summary><c>--tv-track-name</c>. The authored facts: the compact statement, NEED, the
+            /// progress line, the cash-out figure, the event strip.
+            ///
+            /// <para><b>WITHDRAWN to 0 by T85 (batch 39).</b> It was .02em, taken from the kit, and
+            /// the owning doc has no tracking clause to authorise it — so it was applied on the
+            /// kit's authority alone. The pair then caught two defects it contributes to: the NEED
+            /// line truncates and the money control collides, and at 18 characters .02em is roughly
+            /// 10px of the NEED overrun.</para>
+            ///
+            /// <para>Zeroed rather than deleted, and the five call sites still name it, so the kit's
+            /// per-slot assignment stays legible and re-enabling is one number if a tracking clause
+            /// is ever ruled. The ruled order is explicit: re-measure at 0 FIRST, and only overruns
+            /// that survive that go to T74. Nothing is widened or shrunk ahead of the measurement.</para>
+            ///
+            /// <para>Label (.16em) and Meta (.10em) are UNTOUCHED. They rest on the same authority —
+            /// kit, not owning doc — and T85 named only .02em. Flagged, not acted on.</para></summary>
+            public const float Name = 0f;
+            /// <summary><c>--tv-track-label</c>. The words ABOUT a fact rather than the fact: the
+            /// cash-out status word, the momentum label, the ticket header.</summary>
+            public const float Label = 0.16f;
+            /// <summary>TvLegRow's `meta` and `stateChip` literal — the row's own chrome, the market
+            /// eyebrow, the price and the state chip. Stated as a literal in the kit rather than a
+            /// token; carried here as one so the three slots that share it cannot drift apart.</summary>
+            public const float Meta = 0.10f;
+        }
+
+        /// <summary>The per-face scale factor Phase T reserves for preserving RENDERED size across
+        /// the renderer swap, and the one place it would be applied.
+        ///
+        /// <para>It is 1.0 because the two renderers denote the same thing by <c>fontSize</c>: UGUI
+        /// rasterises the face at that em size in canvas units, and TMP scales glyph metrics stored
+        /// at the asset's sampling size by <c>fontSize / faceInfo.pointSize</c>, which lands on the
+        /// same em. So the sizes above carry across untouched and this constant changes nothing
+        /// today.</para>
+        ///
+        /// <para>It exists named and at 1.0 rather than absent because "the sizes are the same
+        /// number" and "the type renders at the same size" are different claims, and only the
+        /// before/after pair can settle the second. If the pair shows drift, the correction belongs
+        /// here — one place, one diff — and not spread across the 22 call sites that would each look
+        /// like a design change.</para></summary>
+        private const float TypeScale = 1f;
 
         /// <summary>Unity lays one line of <c>Text</c> out in roughly this multiple of its
         /// fontSize. Used to budget the leg row's stacked lines against the FIXED row height.
@@ -822,13 +953,15 @@ namespace SBR.Game
         // progress, the cash-out band, risk/pays figures, team names); regular carries the market
         // eyebrow, the state chip, the event line and the SCORE figures.
         //
-        // NOT YET WIRED: _fontCond is loaded but MakeText still assigns _font to every slot, so the
-        // whole surface renders regular. Tracked as TV-19 in docs/tv-sweat-refinement/C14-gap-list.md.
-        // Stated here rather than left as a comment that describes an intention as if it were the
-        // code — the audit caught an earlier version of this comment claiming call sites that did
-        // not exist.
-        private Font _font;       // --font-tv           : "Encode Sans"
-        private Font _fontCond;   // --font-tv-cond      : "Encode Sans Condensed"
+        // WIRED, and this note is the correction of its predecessor. The comment that stood here
+        // said "_fontCond is loaded but MakeText still assigns _font to every slot, so the whole
+        // surface renders regular". That stopped being true at `c53d7ca` (2026-08-02), one day
+        // after it was written: MakeText resolves the face and six call sites pass Face.Condensed.
+        // Its own last line warned that an earlier version had claimed call sites that did not
+        // exist; it then spent nine days denying call sites that did. Corrected in the commit that
+        // makes it false a second time, which is the only moment anyone reliably notices.
+        private TMP_FontAsset _font;       // --font-tv        : Encode Sans, Regular 400 / wdth 100
+        private TMP_FontAsset _fontCond;   // --font-tv-cond   : Encode Sans, Condensed Regular 400
 
         /// <summary>Which canon face a text slot is set in. Named rather than a bool so a call site
         /// reads as the component reference does, and so adding a third face later is not a
@@ -842,14 +975,14 @@ namespace SBR.Game
         // and because if the accepted treatment is revisited on frames this is the element it would
         // come back to. **Named here in the same commit that orphaned it**, which is the difference
         // between a flagged consequence and the kind of corpse `_wonFlood` became.
-        private Text _tMatchup, _tLeg, _tClock, _tFlavor, _tCashOut, _tChrome, _tAttract, _tBigAmount, _tConsolation;
-        private Text _tTicketHeader, _tRiskPays, _tInterventionPrompt, _tTakeoverTitle, _tTakeoverSub, _tSubtitle;
+        private TMP_Text _tMatchup, _tLeg, _tClock, _tFlavor, _tCashOut, _tChrome, _tAttract, _tBigAmount, _tConsolation;
+        private TMP_Text _tTicketHeader, _tRiskPays, _tInterventionPrompt, _tTakeoverTitle, _tTakeoverSub, _tSubtitle;
         // TV-03/TV-04: the cash-out slot is three things, not one — an actionable FIELD, the money
         // figure, and a status word at label scale beside it.
         private Image _cashOutField;
-        private Text _tCashOutStatus;
+        private TMP_Text _tCashOutStatus;
         // C3: the score's momentary L4 punch overlay — see BuildScoreBug and OnGoalPlayed.
-        private Text _tScoreFlash;
+        private TMP_Text _tScoreFlash;
         // T40 ENFORCED (batch 27): `_wonFlood` and `_goldFlood` are GONE — deleted, not z-ordered and
         // not dimmed (C10). Both were `MakeStretchImage(root, …)`: full-SCREEN washes created after
         // every zone, so they painted over the ticket column, the scorebug, the stage, the event
@@ -900,11 +1033,11 @@ namespace SBR.Game
             // wrong twice over: the price must carry --tv-context rather than inherit the row's
             // state hue, and the state belongs in a right-aligned chip, not in front of the fact.
             // The statement is what the row is FOR; it should start at the row's left edge.
-            public Text Line;      // compact: the authored statement
-            public Text Price;     // compact: the price, --tv-context, never the state hue
-            public Text State;     // compact: the right-aligned state chip
-            public Text Need;      // live: the authored §6 statement, printed verbatim
-            public Text Progress;  // live: the revealed causal progress line
+            public TMP_Text Line;      // compact: the authored statement
+            public TMP_Text Price;     // compact: the price, --tv-context, never the state hue
+            public TMP_Text State;     // compact: the right-aligned state chip
+            public TMP_Text Need;      // live: the authored §6 statement, printed verbatim
+            public TMP_Text Progress;  // live: the revealed causal progress line
             public Image Strike;      // §8 VOID only: the struck-through rule
             public Image Extinguish;  // TV-21: a LOST row's unlit background, --tv-extinguished
             public bool IsLive;
@@ -1060,6 +1193,12 @@ namespace SBR.Game
                 _cashOutTextBeforePreview = _tCashOut.text;
                 _tCashOut.text = $"CASHED OUT ${Money(_cashOutPreviewAmount)}";
             }
+            // The instruction moves with the state, at the moment the state moves. The status word is
+            // otherwise written only when a price is rendered, and a preview is entered between those
+            // moments — so without this the slot would sit under a held preview still reading HOLD E.
+            // DERIVED rather than snapshotted, unlike the figure above: it is a pure function of state
+            // the exit restores anyway, and recomputing from truth is what makes the revert total.
+            if (_tCashOutStatus != null) _tCashOutStatus.text = CashOutStatusWord();
             UpdateTicketColumn(_liveLegIndexShown);
             return true;
         }
@@ -1074,6 +1213,7 @@ namespace SBR.Game
             _cashOutPreviewAmount = 0.0;
             if (_tCashOut != null) _tCashOut.text = _cashOutTextBeforePreview;
             _cashOutTextBeforePreview = string.Empty;
+            if (_tCashOutStatus != null) _tCashOutStatus.text = CashOutStatusWord();
             UpdateTicketColumn(_liveLegIndexShown);
         }
 
@@ -1102,9 +1242,31 @@ namespace SBR.Game
         }
 
         /// <summary>An offer is showing that E should accept (rather than stand the player up).
-        /// Must agree exactly with TryCashOut's acceptance gate (TVS-H01) — both read
-        /// CanAcceptCashOutNow so a future edit cannot let the two drift apart again.</summary>
-        private bool CashOutLive() => CanAcceptCashOutNow();
+        ///
+        /// <para>TVS-H01 said this must agree EXACTLY with TryCashOut's acceptance gate, and the half
+        /// that mattered is intact: both still read <see cref="CanAcceptCashOutNow"/>, so a suspended
+        /// or mid-tween offer can no more reserve E than it can be accepted. The second term only ever
+        /// EXTENDS the reservation, and only across a hold and the two frames after it — it can never
+        /// make an unacceptable offer acceptable, because it is not on the accept path at all.</para>
+        ///
+        /// <para>It exists because T88's gesture gives E a DURATION. A press-to-commit input needed no
+        /// second term; a hold does, and the term is the preview itself.</para>
+        ///
+        /// <para><b>The hazard is on the PRESS path, and the first design here guarded the wrong one.</b>
+        /// The room lane's source answers it (merged `c8525d1`): <see cref="SitSpot"/> acts on
+        /// <c>WasPressedThisFrame()</c> — press, never release — and <c>PlayerInteractor</c>'s
+        /// press-poll deliberately bypasses the action's own Hold interaction. So the release that
+        /// abandons a preview cannot stand anybody up, and the two-frame post-release reservation
+        /// written here for that hypothetical guarded nothing while <b>introducing</b> a defect: a
+        /// player who released E and immediately pressed it again to stand would have had that stand
+        /// silently swallowed. It is gone.</para>
+        ///
+        /// <para>What the real hazard is: a FRESH press arriving while the preview is held —
+        /// <c>Interact</c> carries more bindings than the E key — which on the press path would stand
+        /// the player mid-sweat out from under his own held preview. <c>_cashOutPreview</c> covers
+        /// exactly that window and not one frame more, so the instant a preview ends, standing behaves
+        /// precisely as it did before this gesture existed.</para></summary>
+        private bool CashOutLive() => CanAcceptCashOutNow() || _cashOutPreview;
 
         /// <summary>The single truth for "is there a cash-out offer Interact may legally accept right
         /// now" (TVS-H01; VISUAL-DESIGN.md §8.5). Open only when seated, the session is live, at
@@ -1704,19 +1866,132 @@ namespace SBR.Game
 
             bool canM = director.Run.OwnsConsumable("mulligan_slip") && _session.CanMulliganPendingLoss;
             bool canR = director.Run.OwnsConsumable("refs_whistle");
-            string verbs = (canM ? "[M] MULLIGAN   ·   " : "")
-                + (canR ? $"[R] SEND TO REVIEW ({Mathf.RoundToInt((float)(_session.PendingLossProbBefore * 100))}%)   ·   " : "");
+            // T86(a) (batch 44): the bracketed-key form is RETIRED on this surface. `[M]`/`[R]`/`[N]`
+            // go the way of `[E]`, and T22's reasoning was never local to the cash-out slot — "not a
+            // label, it is a debug token, and it is on a shipped surface in every frame". Its
+            // replacement is the established one: where another product would draw a glyph, this one
+            // prints the word, so `[E]` became `HOLD E` and these become `HOLD M` / `HOLD R` /
+            // `HOLD N`.
+            //
+            // The exact wording beyond the retired form is the DD's to ratify; what is applied here
+            // is the ruled FORM. The extent consequence routes through the sweep, per the ruling.
+            // BATCH 46/47: the probability GOES. `PendingLossProbBefore` is documented in the engine
+            // as "the leg's displayed win-prob", so the parenthetical was a win-probability numeral
+            // on a slot — the theatre prints facts and offers, never opinions, and an offer states
+            // its COST rather than its odds. The whistle costs one whistle, so that is what prints,
+            // under its authored catalogue name (`RelicCatalog`: "Ref's Whistle") rather than a short
+            // form nobody wrote — G1's class of defect.
+            //
+            // MULLIGAN was left alone deliberately last pass — "the ruling names SEND TO REVIEW, and
+            // authoring copy for a slot nobody ruled is how this surface acquired strings it could
+            // not render" — and T88(b) has now answered it generally: the preview shows what the
+            // option does AND WHAT IT COSTS, on every spending option. So the cost prints under
+            // `RelicCatalog`'s authored name ("Mulligan Slip"), the same source and the same
+            // parenthetical form the whistle's already uses. No abbreviation is coined: a short form
+            // nobody authored is G1's defect class, which is what that rule exists to prevent.
+            //
+            // THE COMPOSITION IS A LIST — DD batch 50 answering the 380px structurally, from S24's
+            // shape: "N offers are a list; putting them on one line is a row pretending to be a
+            // sentence." One option per row is also the only composition with room for a per-option
+            // cost and a hold affordance. MEASURED on this tree by `SBR/TV/T88 prompt composition`:
+            // every option row fits the 635.0px zone, the widest at 523.8px with 111.2px spare, so
+            // line-to-list retires the whole 380.0px overrun on WIDTH.
+            //
+            // HEIGHT is the open item, and it is the DD's under the ruling's own condition, reported
+            // with the zone's dimensions as that condition requires: the zone is 635.0 x 90.0 and
+            // carries exactly THREE rows at 22px (27.5px each, first row 27.5). Title + three options
+            // is 110.0px — over by 20.0px, and only in the worst case where the run owns both
+            // consumables. §6's grid does not resize to content, so which row yields is not a call
+            // this seat may absorb.
+            // BATCH 56, and the correction is to this seat's own fix. `HOLD N LET IT DIE` carried
+            // forward under "unchanged" — which was true — and never met T88(c), the ruling that
+            // changed its class. So the prompt printed HOLD over an input that is a press: **C48's
+            // own defect, surviving inside the pass that fixed C48.** A string that never meets the
+            // ruling that changed its class is the same defect one level up.
+            //
+            // The two spending rows keep their HOLD and the difference now does real work — it tells
+            // him which options cost him something.
+            const string optM = "HOLD M MULLIGAN (ONE MULLIGAN SLIP)";
+            const string optR = "HOLD R SEND TO REVIEW (ONE REF'S WHISTLE)";
+            const string optN = "N LET IT DIE";
+            // `SHOT FROZEN` LEAVES THE ZONE (batch 56) and the zone does not grow. The stage already
+            // says it: the shot is frozen on screen, and a title announcing what the frame is already
+            // displaying is the restatement class S37/S58/T69/T70 have each ruled. Growing a locked
+            // dimension to restate something is R30's shape.
+            //
+            // It also removes the worst case rather than affording it: three option rows measure 82.5
+            // in a 90.0 zone and fit in EVERY ownership combination, not only when one consumable is
+            // held — C46 forbids leaning on the common case.
+            string offers = (canM ? optM + "\n" : "")
+                + (canR ? optR + "\n" : "")
+                + optN;
+            // The HELD composition: the option being previewed, and how to finish or abandon it.
+            // UNRATIFIED copy in T22/T86(a)'s established form — print the word, not the glyph —
+            // routed with the rest of this batch's strings rather than presented as canon.
+            string PreviewOf(string option)
+                => option + "\n" + ConfirmKeyWord + " CONFIRMS   ·   RELEASE ABANDONS";
+
             // T43: §8.5 Pending window: "As suspended" — L1 unlit slate. This site used to hand-set
             // the word and its colour and nothing else, which is why the slate never reached the
             // field, the status word or the L4 token here. One call, one slate, both sites.
             ShowMarketSuspended();
             _tInterventionPrompt.enabled = true;
             _tInterventionPrompt.color = new Color(gold.r, gold.g, gold.b, 1f);
-            _tInterventionPrompt.text = "SHOT FROZEN\n" + verbs + "[N] LET IT DIE";
+            _tInterventionPrompt.text = offers;
+
+            // Which spending option is being previewed: "M", "R", or null. NEVER "N" — T88(c) rules
+            // the decline out of the gesture entirely.
+            string held = null;
 
             while (_session.HasPendingLoss)
             {
-                if (_seated && canM && Keyboard.current.mKey.wasPressedThisFrame)
+                // The keyboard is re-read EVERY FRAME, not once at entry.
+                //
+                // The guard at the top of this method runs a single time, and every frame of this loop
+                // then dereferenced `Keyboard.current`. A keyboard that goes away mid-window — a
+                // wireless device sleeping, a controller swap, or a test removing a virtual one —
+                // threw a NullReferenceException INSIDE the coroutine, which kills the beat and leaves
+                // the pending window hanging on an irreversible money decision. Pre-existing: the
+                // press-era code dereferenced it the same way. Found because a gesture test added a
+                // device and removed it.
+                //
+                // Treated exactly as the entry guard treats it: no keyboard, no way to decide, so the
+                // window declines rather than hangs. That is the documented behaviour that stops batch
+                // autoplay hanging, applied to the case where the device leaves after we started.
+                Keyboard keys = Keyboard.current;
+                if (keys == null)
+                {
+                    _session.DeclinePendingLoss();
+                    HideCashOutSlot(); // T43
+                    _tInterventionPrompt.enabled = false;
+                    yield break;
+                }
+
+                // The hold is a STATE, sampled every frame. Nothing in this loop measures how long a
+                // key has been down, and that absence IS "no timer, no auto-commit": there is no
+                // elapsed quantity for an auto-commit to compare against.
+                bool downM = _seated && canM && keys.mKey.isPressed;
+                bool downR = _seated && canR && keys.rKey.isPressed;
+
+                // One preview at a time, and whichever was held first keeps it until it is released.
+                // Rolling a finger onto the other key mid-hold must not move the commit to a different
+                // spend while the player is still reading the first one's cost.
+                string nowHeld = held == "M" && downM ? "M"
+                               : held == "R" && downR ? "R"
+                               : downM ? "M"
+                               : downR ? "R"
+                               : null;
+
+                if (nowHeld != held)
+                {
+                    held = nowHeld;
+                    // RELEASE ABANDONS, always (T22). The offers come back and nothing has been
+                    // spent — there is no state to unwind, because a preview never touched the run.
+                    _tInterventionPrompt.text = held == null ? offers : PreviewOf(held == "M" ? optM : optR);
+                }
+
+                // A PRESS COMMITS NOTHING. The commit is the second key, during the hold.
+                if (held == "M" && ConfirmPressed())
                 {
                     director.Run.PlayMulliganSlip(_session);
                     HideCashOutSlot(); // T43: the field and status leave with the figure, same frame
@@ -1729,7 +2004,7 @@ namespace SBR.Game
                     yield return ScaledWait(deadLineDuration);
                     yield break;
                 }
-                if (_seated && canR && Keyboard.current.rKey.wasPressedThisFrame)
+                if (held == "R" && ConfirmPressed())
                 {
                     director.Run.PlayRefsWhistle(_session);
                     HideCashOutSlot(); // T43
@@ -1753,7 +2028,12 @@ namespace SBR.Game
                     yield return ScaledWait(deadLineDuration);
                     yield break;
                 }
-                if (_seated && Keyboard.current.nKey.wasPressedThisFrame)
+                // T88(c): the decline is NOT a spend and does not take the gesture. It costs nothing
+                // and is already what happens if the player does nothing, so one press is
+                // proportionate — "the weight of the gesture matches the weight of the act", which is
+                // also what stops the three reading as peers when two spend and one does not. A press
+                // here is the ruled input, not a leftover of the one this pass removed.
+                if (_seated && keys.nKey.wasPressedThisFrame)
                 {
                     _session.DeclinePendingLoss();
                     HideCashOutSlot(); // T43
@@ -2342,11 +2622,24 @@ namespace SBR.Game
 
             ClearToBlankScreen();
             _tAttract.enabled = true;
-            _tAttract.text = won ? "THE HOUSE BLINKS FIRST" : "THE BOOKIE COLLECTS";
-            // Won = money, gold. Lost = context, not a hue — legible grey, never the retired red.
-            _tAttract.color = won
-                ? new Color(gold.r, gold.g, gold.b, 1f)
-                : contextGrey;
+            // T86-am2 (batch 56): BOTH states were violations and both take one authored replacement.
+            //
+            // `THE HOUSE BLINKS FIRST` rendered in GOLD, and §3.1 rations gold to won legs, payout
+            // figures and the cash-out band — an editorial line is none of the three. That is a
+            // ration violation on §3's own terms, independent of T27, and the copy was separately
+            // celebratory editorial. `THE BOOKIE COLLECTS` was S53's string, the LAPTOP's losing
+            // verdict headline, on a surface with a different register: the theatre does not announce
+            // a verdict another surface owns.
+            //
+            // `BOARD CLOSED` is the surface's own vocabulary — idle prints `ROUND n OF m · BOARD
+            // OPEN`, and the run ending closes the board. One word changes and the grammar is
+            // identical. **The collapse to one string is the point:** the run's verdict is the
+            // laptop's screen (S53/S59), so the theatre reports that the board is shut and says
+            // nothing about how the run ended, because that is not its to say.
+            _tAttract.text = "BOARD CLOSED";
+            // flavorColor in BOTH states, like states 1–3. Not gold in either — that was the ration
+            // violation, and `won` no longer selects an ink here.
+            _tAttract.color = flavorColor;
             _tSubtitle.text = $"FINAL BANK ${Money(r.Bank)}  —  NEW RUN AT THE LAPTOP";
 
             if (won)
@@ -2703,12 +2996,31 @@ namespace SBR.Game
             // `CASH OUT $183` with `HOLD E` beneath. Where another product would draw a glyph, this
             // one prints the word.
             _tCashOut.text = $"CASH OUT ${Money(amount)}";
-            if (_tCashOutStatus != null) _tCashOutStatus.text = _cashOutTweening ? "UPDATING" : "HOLD E";
+            if (_tCashOutStatus != null) _tCashOutStatus.text = CashOutStatusWord();
             // T43: whether the status word SHOWS is not this method's call — a suspended slot carries
             // none at all (TV-12/13). One authority derives visibility, at the transition and in
             // Update alike, so the two can never disagree for a frame.
             ApplyCashOutSlotState();
         }
+
+        /// <summary>The status word beside the money figure. ONE authority for all three sites that
+        /// write it, which is this surface's standing remedy for a value with several authors — T68's
+        /// defect was never the ink, it was that the ink had five of them.
+        ///
+        /// <para><b>C48 (batch 50): the label is the contract.</b> The word has to describe what the
+        /// input will actually do at the moment it is read, so it now has three states rather than
+        /// two: at rest E previews, mid-tween nothing is acceptable, and under a held preview the only
+        /// remaining act is the commit. Printing <c>HOLD E</c> during the hold would tell the player
+        /// to do the thing he is already doing and never say how to finish it.</para>
+        ///
+        /// <para><b>UNRATIFIED:</b> the previewing string is the seat's, in T22/T86(a)'s established
+        /// form (print the word, not the glyph). It is routed with the intervention prompt's strings.
+        /// Its extent is measured, not assumed — this slot shares one rectangle with the money figure
+        /// and the pair already collides.</para></summary>
+        private string CashOutStatusWord()
+            => _cashOutPreview ? $"{ConfirmKeyWord} TO CASH OUT"
+             : _cashOutTweening ? "UPDATING"
+             : "HOLD E";
 
         private void StopCashOutAnimation()
         {
@@ -2784,7 +3096,7 @@ namespace SBR.Game
         /// miss takes the fallback, which is authored to read as a whole sentence, and never a
         /// sentence with its end cut off. <see cref="FitToColumn"/> remains only as the structural
         /// guard against broken glyphs and should not be reached by shipped copy.</para></summary>
-        private static string FitOrFallback(Text target, string primary, string fallback)
+        private static string FitOrFallback(TMP_Text target, string primary, string fallback)
         {
             if (Fits(target, primary)) return primary;
             if (!string.IsNullOrEmpty(fallback) && Fits(target, fallback)) return fallback;
@@ -2805,26 +3117,48 @@ namespace SBR.Game
         /// <summary>Does this string fit its element's measured column? One measurement, shared by
         /// the fallback chooser and the truncation backstop, so the two can never disagree about
         /// what "fits" means.</summary>
-        private static bool Fits(Text target, string s)
+        private static bool Fits(TMP_Text target, string s)
         {
             if (target == null || string.IsNullOrEmpty(s)) return true;
             float max = target.rectTransform.rect.width;
             if (max <= 0f) return true; // no layout yet — do not judge against a width of zero
-            TextGenerationSettings settings = target.GetGenerationSettings(Vector2.zero);
-            return target.cachedTextGeneratorForLayout.GetPreferredWidth(s, settings)
-                   / target.pixelsPerUnit <= max;
+            // TMP's GetPreferredValues returns canvas units directly, so the UGUI form's division by
+            // pixelsPerUnit has no counterpart here — carrying it across would have shrunk every
+            // measured width by the canvas scale and made everything "fit".
+            return PreferredWidth(target, s) <= max;
         }
 
-        private static string FitToColumn(Text target, string s)
+        /// <summary>One preferred-width measurement, shared by the fallback chooser and the
+        /// truncation backstop so the two can never disagree about what "fits" means — the property
+        /// the UGUI version had by sharing one TextGenerator, kept by sharing one call.
+        ///
+        /// <para><b>The width argument is not decoration; passing 0 broke this.</b> T-3 ported the
+        /// UGUI form as <c>GetPreferredValues(s, 0f, 0f)</c>, and on a component with wrapping
+        /// enabled TMP takes that literally: it wraps at zero width and returns the widest GLYPH
+        /// rather than the widest STRING. The compact statement slot is the one slot here with
+        /// wrapping on, so <see cref="FitToColumn"/> compared about 12.5px against a 143px column and
+        /// its loop never ran — the truncation backstop was dead from the migration until T84's sweep
+        /// measured the measurer. UGUI's <c>GetPreferredWidth</c> returned the unwrapped width
+        /// whatever the wrap mode, so nothing in the diff looked wrong.</para>
+        ///
+        /// <para>Measured unconstrained, which is what both callers mean: "how wide would this be if
+        /// nothing stopped it", asked so it can be compared against the width that does.</para></summary>
+        private static float PreferredWidth(TMP_Text target, string s)
+            => target.GetPreferredValues(s, Unconstrained, 0f).x;
+
+        /// <summary>A width no string on this surface can reach, standing in for "do not wrap while
+        /// measuring". Not float.MaxValue: TMP multiplies the constraint into its layout maths, and a
+        /// value that large returns infinities.</summary>
+        private const float Unconstrained = 100000f;
+
+        private static string FitToColumn(TMP_Text target, string s)
         {
             if (target == null || string.IsNullOrEmpty(s)) return s;
             float max = target.rectTransform.rect.width;
             if (max <= 0f) return s; // no layout yet — never truncate against a width of zero
 
-            TextGenerationSettings settings = target.GetGenerationSettings(Vector2.zero);
-            TextGenerator gen = target.cachedTextGeneratorForLayout;
             string cur = s;
-            while (gen.GetPreferredWidth(cur, settings) / target.pixelsPerUnit > max)
+            while (PreferredWidth(target, cur) > max)
             {
                 int cut = cur.LastIndexOf(' ');
                 if (cut <= 0) return cur; // one long word: clip it, do not split it
@@ -3144,8 +3478,60 @@ namespace SBR.Game
                 _stage.timeScale = Mathf.Max(0f, TimeScaleOverride);
             }
 
-            if (_interact != null && _interact.WasPressedThisFrame())
-                TryCashOut();
+            ResolveCashOutGesture();
+        }
+
+        /// <summary>T22/T36's confirm gesture on §6.1's money control, wired.
+        ///
+        /// <para><b>What was actually wrong, because it was not a missing feature.</b> §8.10's
+        /// hold-to-preview was BUILT — <see cref="EnterCashOutPreview"/>, its full-revert twin, the
+        /// previewed bank, the stepped-down rows, all of it render-aware and pinned by EditMode — and
+        /// it had <b>no production call site</b>. The only thing that had ever called it was a test,
+        /// by reflection. Meanwhile this method's predecessor was one line,
+        /// <c>if (_interact.WasPressedThisFrame()) TryCashOut()</c>, so the surface printed
+        /// <c>HOLD E</c>, implemented a preview nobody could reach, and committed the money on the
+        /// first frame of the press. The gesture is not new here; it is CONNECTED here.</para>
+        ///
+        /// <para><b>The asset's own Hold is deliberately not used.</b> <c>Interact</c> carries
+        /// <c>"interactions": "Hold"</c>, and the Input System documents <c>WasPressedThisFrame</c> as
+        /// true on the press "even if there is an interaction on the action that has not yet
+        /// performed" — which is exactly how a declared hold went unobserved. Honouring it would be
+        /// the other wrong repair: a HoldInteraction performs on a DURATION, and T22/T36 rule "no
+        /// timer, no auto-commit". So the hold is read as a STATE (<c>IsPressed</c>) and the commit
+        /// comes from a key, never from elapsed time. Nothing in the shared asset is edited.</para></summary>
+        private void ResolveCashOutGesture()
+        {
+            if (_interact == null) return;
+            bool held = _interact.IsPressed();
+
+            // Entry refuses on its own gate, so holding E over a suspended or mid-tween slot previews
+            // nothing — TVS-H01's predicate, unchanged, and the reason the previewed number and the
+            // acceptable number cannot be different numbers.
+            if (held && !_cashOutPreview) EnterCashOutPreview();
+            if (!_cashOutPreview) return;
+
+            // Release ABANDONS — always, per T22, and it is the same full revert a stand performs.
+            // So does the offer going away underneath the hold: a suspension, a new price starting to
+            // tween, or the session settling all make the previewed offer unacceptable, and holding a
+            // preview of an offer that can no longer be taken is the display promising input the gate
+            // would refuse (T59).
+            if (!held || !CanAcceptCashOutNow())
+            {
+                ExitCashOutPreview();
+                return;
+            }
+
+            if (!ConfirmPressed()) return;
+
+            // §8.10's invariant, enforced rather than reasoned: "the previewed and accepted numbers
+            // can never differ." They cannot drift while the gate above holds, but the guard costs
+            // nothing and turns an argument into a check — and if they ever DO differ, abandoning is
+            // the ruled outcome, since committing would hand the player a price the display was not
+            // showing, which T59 names the worst available outcome on a money control.
+            double previewed = _cashOutPreviewAmount;
+            double? offerNow = _session.CashOutOffer();
+            ExitCashOutPreview();
+            if (offerNow.HasValue && offerNow.Value == previewed) TryCashOut();
         }
 
         private void TryCashOut()
@@ -3494,7 +3880,7 @@ namespace SBR.Game
 
             // --- attract state (before the sweat is live) ---
             _tAttract = MakeText(root, "Attract", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                Vector2.zero, new Vector2(w - 60f, 130f), 46,
+                Vector2.zero, new Vector2(w - 60f, 130f), TypeAttract,
                 TextAnchor.MiddleCenter, flavorColor, FontStyle.Bold); // §4 Fact: cold white, not money
             _tAttract.text = "SIT TO WATCH THE SWEAT";
 
@@ -3503,17 +3889,17 @@ namespace SBR.Game
             // between markets"). Sits inside the fixed Stage zone rather than floating over the
             // whole canvas, so it never competes with the ticket rail.
             _tTakeoverTitle = MakeText(root, "TakeoverTitle", new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
-                AnchorCenter(grid.Stage) + new Vector2(0f, 40f), new Vector2(grid.Stage.width - 60f, 60f), 30,
+                AnchorCenter(grid.Stage) + new Vector2(0f, 40f), new Vector2(grid.Stage.width - 60f, 60f), TypeTakeoverTitle,
                 TextAnchor.MiddleCenter, flavorColor, FontStyle.Bold);
             _tTakeoverSub = MakeText(root, "TakeoverSub", new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
-                AnchorCenter(grid.Stage) + new Vector2(0f, -20f), new Vector2(grid.Stage.width - 60f, 60f), 18,
+                AnchorCenter(grid.Stage) + new Vector2(0f, -20f), new Vector2(grid.Stage.width - 60f, 60f), TypeTakeoverSub,
                 TextAnchor.MiddleCenter, contextGrey);
 
             // Subtitle line reused ONLY by the idle/run-over screens (non-sweat states); never
             // shown during a live sweat — DESIGN.md §7's component list has no standalone win%/
             // subtitle slot for the live grid.
             _tSubtitle = MakeText(root, "Subtitle", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, -60f), new Vector2(w - 120f, 34f), 22, TextAnchor.MiddleCenter, flavorColor);
+                new Vector2(0f, -60f), new Vector2(w - 120f, 34f), TypeSubtitle, TextAnchor.MiddleCenter, flavorColor);
 
             // C3 (Design Director ruling): "the ball at a payoff" joins the HDR-eligible set. Built
             // HERE, unconditionally — never gated behind `if (theaterEnabled)` — so eligibility does
@@ -3579,7 +3965,7 @@ namespace SBR.Game
             // L4 punch is measured doing the punctuation the flood was assumed to add
             // (0.688 → 0.586 at the settle). The flood was redundant with the punch, not carrying it.
             _tBigAmount = MakeText(root, "BigAmount", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                Vector2.zero, new Vector2(w - 40f, 200f), 96,
+                Vector2.zero, new Vector2(w - 40f, 200f), TypeBigAmount,
                 TextAnchor.MiddleCenter, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Bold);
             _tBigAmount.text = string.Empty;
             _bigAmountHdrMat = MakeHdrMaterial();
@@ -3588,8 +3974,12 @@ namespace SBR.Game
             // The bad-beat consolation line — built ABOVE the dim overlay so the sting stays
             // readable through the 94% dim (Sol, M-T4); neutral chrome, never money-red.
             _tConsolation = MakeText(root, "Consolation", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, -20f), new Vector2(w - 80f, 44f), 28,
-                TextAnchor.MiddleCenter, flavorColor, FontStyle.Italic);
+                new Vector2(0f, -20f), new Vector2(w - 80f, 44f), TypeConsolation,
+                // T77 (batch 32): the synthesised italic goes and the slot drops to regular. There is
+                // no italic anywhere in Encode Sans — its axes are weight and width only, so this was
+                // a shear applied to an upright face, not a face. The only styled slot on the surface
+                // with nothing real behind it.
+                TextAnchor.MiddleCenter, flavorColor);
             _tConsolation.enabled = false;
 
             // T8 (Allen, 2026-07-31): the Scanlines overlay is REMOVED — DESIGN.md §2 bans
@@ -3637,7 +4027,7 @@ namespace SBR.Game
             _tTicketHeader = MakeText(root, "TicketHeader", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 AnchorTopLeft(grid.TicketHeader, 8f, 4f),
                 new Vector2(grid.TicketHeader.width - 16f, grid.TicketHeader.height - 4f), TypeEyebrow,
-                TextAnchor.UpperLeft, structureGrey);
+                TextAnchor.UpperLeft, structureGrey, tracking: TvTrack.Label); // tv.card.html:20
 
             _legRow = new LegRowUi[TicketRowSlots];
             // T20 row stack, budgeted from the canon type scale rather than hand-placed. The two
@@ -3665,29 +4055,50 @@ namespace SBR.Game
                 // at the right edge, the price reserves a column left of it, and the statement takes
                 // the remainder and ellipsises. A price that moved with the statement's length would
                 // make the column's right edge ragged across six rows.
-                const float chipW = 38f, priceW = 52f, gap = 8f;
+                // T84/T74 relief for the compact statement, sourced from the GAPS (8f -> 6f), which
+                // widens stmtW by 4px inside an unchanged column. Span, not size, and not the copy.
+                //
+                // WHY NOT FROM THE PRICE, which the sweep shows with 5.8px spare: that spare is an
+                // artefact of the string set, not a property of the slot. `OddsFormat.American`
+                // returns `+{a}` for a rounded profit and nothing bounds `a` — a profit-boost relic
+                // multiplies the odds outright — so the price column has no measurable ceiling to
+                // lend from. Taking its "spare" would move a pre-existing risk onto a slot that
+                // cannot be swept, which is the exact mistake this sweep was written to catch.
+                //
+                // The gaps carry no content, so 4px out of them cannot break a measurement. The
+                // partition stays consistent: 6px still separates statement from price and price
+                // from chip, and the column's outer width does not move (T46, R30).
+                //
+                // stmtW 143 -> 147 against a tabular-screened worst case of 144.8 — 2.2px of margin
+                // where there were -1.8. The chip's own 6px overrun is untouched and unrelated: it
+                // carries no digits, so the wiring cannot move it, and it holds the ship rather than
+                // the wiring.
+                const float chipW = 38f, priceW = 52f, gap = 6f;
                 float stmtW = lineW - chipW - priceW - gap * 2f;
 
-                Text line = MakeText(root, $"LegRowLine{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                TMP_Text line = MakeText(root, $"LegRowLine{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     AnchorTopLeft(row, 8f, 4f), new Vector2(stmtW, compactH), TypeEyebrow,
-                    TextAnchor.UpperLeft, structureGrey, FontStyle.Bold, Face.Condensed); // TvLegRow.jsx:57-61
-                line.horizontalOverflow = HorizontalWrapMode.Wrap; // so the statement clips, not sprawls
+                    TextAnchor.UpperLeft, structureGrey, FontStyle.Normal, Face.Condensed,
+                    FontWeight.Bold, TvTrack.Name); // TvLegRow.jsx:57-61
+                line.enableWordWrapping = true; // so the statement clips, not sprawls (was Wrap)
 
-                Text price = MakeText(root, $"LegRowPrice{i}", new Vector2(0f, 1f), new Vector2(1f, 1f),
+                TMP_Text price = MakeText(root, $"LegRowPrice{i}", new Vector2(0f, 1f), new Vector2(1f, 1f),
                     AnchorTopLeft(row, 8f + stmtW + gap + priceW, 4f), new Vector2(priceW, compactH),
                     TypeEyebrow, TextAnchor.UpperRight, AtTier(contextGrey, TierL2),
-                    FontStyle.Normal, Face.Condensed); // TvLegRow.jsx:62 — --tv-context, its own tier
+                    FontStyle.Normal, Face.Condensed, tracking: TvTrack.Meta); // TvLegRow.jsx:62 — --tv-context, its own tier
 
-                Text state = MakeText(root, $"LegRowState{i}", new Vector2(0f, 1f), new Vector2(1f, 1f),
+                TMP_Text state = MakeText(root, $"LegRowState{i}", new Vector2(0f, 1f), new Vector2(1f, 1f),
                     AnchorTopLeft(row, 8f + lineW, 4f), new Vector2(chipW, compactH), TypeEyebrow,
-                    TextAnchor.UpperRight, structureGrey); // TvLegRow.jsx:27-31 — regular face, min 38px
+                    TextAnchor.UpperRight, structureGrey, tracking: TvTrack.Meta); // TvLegRow.jsx:27-31 — regular face, min 38px
                 // Live form: the authored NEED statement, then the revealed progress beneath it.
-                Text need = MakeText(root, $"LegRowNeed{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                TMP_Text need = MakeText(root, $"LegRowNeed{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     AnchorTopLeft(row, 8f, 4f), new Vector2(lineW, needH), TypeNeed,
-                    TextAnchor.UpperLeft, flavorColor, FontStyle.Bold, Face.Condensed); // inherits TvLegRow.jsx:35
-                Text progress = MakeText(root, $"LegRowProgress{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    TextAnchor.UpperLeft, flavorColor, FontStyle.Normal, Face.Condensed,
+                    FontWeight.Bold, TvTrack.Name); // inherits TvLegRow.jsx:35, tracked per :78
+                TMP_Text progress = MakeText(root, $"LegRowProgress{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     AnchorTopLeft(row, 8f, 4f + needH), new Vector2(lineW, progressH), TypeProgress,
-                    TextAnchor.UpperLeft, flavorColor, FontStyle.Normal, Face.Condensed); // TvLegRow.jsx:82
+                    TextAnchor.UpperLeft, flavorColor, FontStyle.Normal, Face.Condensed,
+                    tracking: TvTrack.Name); // TvLegRow.jsx:82 — the .02em literal
                 // T20/3D — §8's VOID treatment is "L2 cyan, STRUCK THROUGH on the matrix". Colour
                 // alone was carrying the whole state before; this is the strike. A fixed-width rule
                 // across the compact line, never measured from the text: §6 forbids geometry
@@ -3711,7 +4122,7 @@ namespace SBR.Game
             _tRiskPays = MakeText(root, "RiskPays", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 AnchorTopLeft(grid.TicketFooter, 8f, 8f),
                 new Vector2(grid.TicketFooter.width - 16f, grid.TicketFooter.height - 8f), TypeRisk,
-                TextAnchor.UpperLeft, goldL2, FontStyle.Bold, Face.Condensed); // TvRiskPays.jsx:14
+                TextAnchor.UpperLeft, goldL2, FontStyle.Normal, Face.Condensed, FontWeight.Bold); // TvRiskPays.jsx:14
         }
 
         private void BuildScoreBug(Transform root, LayoutGrid grid)
@@ -3795,7 +4206,8 @@ namespace SBR.Game
             // site elsewhere in this file.
             _tFlavor = MakeText(esRoot, "Flavor", new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
                 AnchorCenter(es), new Vector2(es.width - 24f, es.height - 8f),
-                TypeEvent, TextAnchor.MiddleCenter, flavorColor, FontStyle.Bold);
+                TypeEvent, TextAnchor.MiddleCenter, flavorColor, FontStyle.Bold,
+                tracking: TvTrack.Name); // TvEventStrip.jsx:12
         }
 
         private void BuildCashOutZone(Transform root, LayoutGrid grid)
@@ -3842,17 +4254,41 @@ namespace SBR.Game
             // — the build rendered `CASH OUT $184   •   UPDATING` as one 29px string, which says the
             // status is as important as the number. Money keeps the name "CashOut" because the L4
             // token, the bloom-floor protected set and three tests all address it by that name.
+            // T74-am3 (batch 56): THE MEMBERS STOP SHARING ONE RECTANGLE. Anchored from opposite
+            // edges of one 241px box, each one's slack was the other's overrun, so any pair of long
+            // strings collided — at rest (45.0), mid-tween (47.8) and at the held preview (198.5).
+            // §6.1's "one fixed rectangle owning all six states, never reflows" is untouched: a
+            // two-row rectangle is still fixed and still never reflows.
+            //
+            // The subdivision is MEASURED, and it is the one number in this pass that does not clear.
+            // TMP's preferred line box is 36.3px for the 29px figure and 18.8px for the 15px status —
+            // 55.0px against a 52.0px grid row, over by 3.0px. The design constants predicted a fit
+            // (29*LineBox + 15*LineBox = 51.9) because LineBox is 1.18 and TMP's real advance ratio on
+            // this face is 1.25. Allocated 34/18 to the row it has rather than the row it wants; both
+            // components are Overflow, so the figure's line box is 2.3px taller than its allocation
+            // and renders, but this does NOT fit by the sweep's standard and is reported as such.
+            const float figureRowH = 34f, statusRowH = 18f;
+            // +y is UP: AnchorCenter negates the grid's top-down y (see its body), which is why the
+            // takeover pair reads +40 above and -20 below. Figure on top, status beneath it.
+            const float figureRowY = 9f, statusRowY = -17f;
+
             _tCashOut = MakeText(root, "CashOut", new Vector2(0f, 1f), new Vector2(0f, 0.5f),
-                AnchorCenter(grid.CashOut) + new Vector2(-grid.CashOut.width * 0.5f + 12f, 0f),
-                new Vector2(grid.CashOut.width - 24f, grid.CashOut.height - 8f), TypeCashOut,
-                TextAnchor.MiddleLeft, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Bold,
-                Face.Condensed); // TvCashOutSlot.jsx:33
+                AnchorCenter(grid.CashOut) + new Vector2(-grid.CashOut.width * 0.5f + 12f, figureRowY),
+                new Vector2(grid.CashOut.width - 24f, figureRowH), TypeCashOut,
+                TextAnchor.MiddleLeft, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Normal,
+                Face.Condensed, FontWeight.Bold,
+                TvTrack.Name); // TvCashOutSlot.jsx:33/37 · T73: real Condensed Bold 700
             _tCashOut.enabled = false;
 
+            // Its own row now, at the full width instead of the figure's leftovers. Anchors are left
+            // exactly as they were on both members: the ruling moved them onto separate rows and said
+            // nothing about alignment, and inventing a new one here would be the composition change
+            // nobody asked for.
             _tCashOutStatus = MakeText(root, "CashOutStatus", new Vector2(0f, 1f), new Vector2(1f, 0.5f),
-                AnchorCenter(grid.CashOut) + new Vector2(grid.CashOut.width * 0.5f - 12f, 0f),
-                new Vector2(grid.CashOut.width - 24f, Mathf.Ceil(TypeEyebrow * LineBox)), TypeEyebrow,
-                TextAnchor.MiddleRight, AtTier(contextGrey, TierL2));
+                AnchorCenter(grid.CashOut) + new Vector2(grid.CashOut.width * 0.5f - 12f, statusRowY),
+                new Vector2(grid.CashOut.width - 24f, statusRowH), TypeEyebrow,
+                TextAnchor.MiddleRight, AtTier(contextGrey, TierL2),
+                tracking: TvTrack.Label); // TvCashOutSlot.jsx:44 — the status word, not the figure
             _tCashOutStatus.enabled = false;
             // T63: ONE material, both elements of the slot. The boost used to reach only the money
             // figure, so `RequestL4(HdrFocus.CashOut)` moved a number and left the field it sits on
@@ -3871,7 +4307,7 @@ namespace SBR.Game
             // in [the cash-out] row." Centered over the stage's safe area, where the frozen shot
             // remains visible.
             _tInterventionPrompt = MakeText(root, "InterventionPrompt", new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
-                AnchorCenter(grid.Stage), new Vector2(grid.Stage.width - 80f, 90f), 22,
+                AnchorCenter(grid.Stage), new Vector2(grid.Stage.width - 80f, 90f), TypeIntervention,
                 TextAnchor.MiddleCenter, new Color(gold.r, gold.g, gold.b, 1f), FontStyle.Bold);
             _tInterventionPrompt.enabled = false;
         }
@@ -3888,7 +4324,7 @@ namespace SBR.Game
             _tChrome = MakeText(root, "Chrome", new Vector2(0f, 1f), new Vector2(0.5f, 1f),
                 AnchorTopCenter(grid.ChromeStrip, 2f),
                 new Vector2(grid.ChromeStrip.width - 30f, grid.ChromeStrip.height - 2f),
-                14, TextAnchor.UpperCenter, contextGrey);
+                TypeChrome, TextAnchor.UpperCenter, contextGrey);
         }
 
         /// <summary>DESIGN.md §6: "Zones may be separated by hairline rules or by unlit gutters
@@ -3939,25 +4375,58 @@ namespace SBR.Game
         private static Vector2 AnchorCenter(Rect zone)
             => new Vector2(zone.x + zone.width * 0.5f, -(zone.y + zone.height * 0.5f));
 
-        private Text MakeText(Transform parent, string name, Vector2 anchor, Vector2 pivot, Vector2 pos,
+        /// <summary>Phase T: this builds a <see cref="TextMeshProUGUI"/>. The SIGNATURE is unchanged
+        /// on purpose — <c>TextAnchor</c> and <c>FontStyle</c> stay in it and are mapped here, so the
+        /// migration is a helper change and all 22 call sites keep their authored intent in the same
+        /// vocabulary the rest of the file uses. The laptop's own migration kept its signature for
+        /// the same reason (<c>LaptopOs.ToTmpAlignment</c>'s note).
+        ///
+        /// <para><b>WEIGHT IS TWO DIFFERENT THINGS HERE, and the call site says which.</b>
+        /// <c>style: FontStyle.Bold</c> is TMP's material-level FAUX bold — the synthesised weight
+        /// UGUI drew, kept wherever no ruling has replaced it. <c>weight: FontWeight.Bold</c> resolves
+        /// through the font asset's weight table to the REAL 700 face. T73 (batch 32) ruled real
+        /// Condensed Bold 700 for the four condensed slots that carry it; those pass
+        /// <c>style: Normal, weight: Bold</c>, because setting both would lay faux bold on top of a
+        /// real bold face and thicken it twice.</para>
+        ///
+        /// <para>The seven REGULAR-face slots that ask for bold are deliberately left synthesised.
+        /// T73 names four sites and they are all condensed; `EncodeSans Bold SDF` is built and wired
+        /// into the regular face's weight table at 700, so switching them is one argument each — but
+        /// it is a design change nobody has ruled, and generating a face does not license using
+        /// it.</para></summary>
+        private TMP_Text MakeText(Transform parent, string name, Vector2 anchor, Vector2 pivot, Vector2 pos,
             Vector2 size, int fontSize, TextAnchor align, Color color,
-            FontStyle style = FontStyle.Normal, Face face = Face.Regular)
+            FontStyle style = FontStyle.Normal, Face face = Face.Regular,
+            FontWeight weight = FontWeight.Regular, float tracking = 0f)
         {
-            var go = new GameObject(name, typeof(Text));
+            var go = new GameObject(name, typeof(TextMeshProUGUI));
             go.transform.SetParent(parent, false);
-            var t = go.GetComponent<Text>();
+            var t = go.GetComponent<TextMeshProUGUI>();
             // TV-19: canon assigns the face per slot (tokens/fonts.css), read off the component
             // references one at a time — it is not a stylistic default. Falls back to the regular
             // face if the condensed asset is missing, rather than rendering nothing.
-            Font want = face == Face.Condensed && _fontCond != null ? _fontCond : _font;
+            TMP_FontAsset want = face == Face.Condensed && _fontCond != null ? _fontCond : _font;
             if (want != null) t.font = want;
-            t.fontSize = fontSize;
-            t.fontStyle = style;
-            t.alignment = align;
+            t.fontSize = fontSize * TypeScale;
+            t.fontStyle = ToTmpStyle(style);
+            // Set unconditionally, including at Regular, so every slot comes out of the same code
+            // path. A weight that is "whatever TMP defaults to" is not a chosen weight, and this
+            // surface has already paid once for a face nobody chose.
+            t.fontWeight = weight;
+            // em -> TMP's hundredths of an em, converted here so no call site knows TMP's unit.
+            // Fits and FitToColumn measure through GetPreferredValues on the component itself, so
+            // they pick this up automatically — a slot cannot render with tracking and measure
+            // without it, which is the failure the laptop had to add a term to MeasureWidth to avoid.
+            t.characterSpacing = tracking * 100f;
+            t.alignment = ToTmpAlignment(align);
             t.color = color;
             t.raycastTarget = false;
-            t.horizontalOverflow = HorizontalWrapMode.Overflow;
-            t.verticalOverflow = VerticalWrapMode.Overflow;
+            // The pair of overflow modes UGUI's HorizontalWrapMode.Overflow + VerticalWrapMode.Overflow
+            // expressed: never wrap, never clip. T46's containment is done by the zone panels' own
+            // clipping, not by the text component, and §5.1's fixed slots depend on a string never
+            // reflowing into a second line.
+            t.enableWordWrapping = false;
+            t.overflowMode = TextOverflowModes.Overflow;
             var rt = t.rectTransform;
             rt.anchorMin = rt.anchorMax = anchor;
             rt.pivot = pivot;
@@ -3965,6 +4434,34 @@ namespace SBR.Game
             rt.anchoredPosition = pos;
             return t;
         }
+
+        /// <summary>Mirrors <c>LaptopOs.ToTmpAlignment</c> exactly. Duplicated rather than shared
+        /// because that one is private to the laptop's class, and reaching across surfaces to
+        /// consolidate it would be a second change inside a migration that is allowed one. Worth
+        /// hoisting into a shared UI helper once both surfaces are on TMP; noted, not done.</summary>
+        private static TextAlignmentOptions ToTmpAlignment(TextAnchor align) => align switch
+        {
+            TextAnchor.UpperLeft => TextAlignmentOptions.TopLeft,
+            TextAnchor.UpperCenter => TextAlignmentOptions.Top,
+            TextAnchor.UpperRight => TextAlignmentOptions.TopRight,
+            TextAnchor.MiddleLeft => TextAlignmentOptions.Left,
+            TextAnchor.MiddleCenter => TextAlignmentOptions.Center,
+            TextAnchor.MiddleRight => TextAlignmentOptions.Right,
+            TextAnchor.LowerLeft => TextAlignmentOptions.BottomLeft,
+            TextAnchor.LowerCenter => TextAlignmentOptions.Bottom,
+            _ => TextAlignmentOptions.BottomRight
+        };
+
+        /// <summary>UGUI's FontStyle to TMP's FontStyles. Both bold and italic here are TMP's
+        /// synthesised forms, which is what UGUI was drawing — preserving the render is the whole
+        /// point of this step (C43).</summary>
+        private static FontStyles ToTmpStyle(FontStyle style) => style switch
+        {
+            FontStyle.Bold => FontStyles.Bold,
+            FontStyle.Italic => FontStyles.Italic,
+            FontStyle.BoldAndItalic => FontStyles.Bold | FontStyles.Italic,
+            _ => FontStyles.Normal
+        };
 
         /// <summary>T46 (layout defect, DD 2026-08-02): makes a zone panel the OWNER of its content
         /// rather than a backdrop its content happens to sit beside, and clips it to its own region.
@@ -4165,10 +4662,13 @@ namespace SBR.Game
         /// should degrade to readable-but-wrong, never to an invisible surface. The fallback is
         /// logged loudly because silently rendering in the wrong face is exactly the failure this
         /// change exists to end.</para></summary>
-        private static Font LoadFont() => LoadFace("Tv/Fonts/EncodeSans", "--font-tv");
+        /// <summary>Phase T: the TMP asset, not the TTF. `EncodeSans SDF` is the Regular 400 / wdth
+        /// 100 NAMED INSTANCE, resolved by style name at generation time (see TvTmpFontAssets) —
+        /// never faceIndex 0, whose axis defaults on this family are wght 100 / wdth 75.</summary>
+        private static TMP_FontAsset LoadFont() => LoadFace("Tv/Fonts/EncodeSans SDF", "--font-tv");
 
-        private static Font LoadFontCondensed()
-            => LoadFace("Tv/Fonts/EncodeSansCondensed", "--font-tv-cond");
+        private static TMP_FontAsset LoadFontCondensed()
+            => LoadFace("Tv/Fonts/EncodeSansCondensed SDF", "--font-tv-cond");
 
         /// <summary>Resolves one of canon's two TV faces (`tokens/fonts.css`). Falls back to the
         /// built-in face rather than to null: a missing font asset should degrade to
@@ -4178,19 +4678,20 @@ namespace SBR.Game
         /// surface was derived against Encode Sans — T20's whole re-derivation is a metrics
         /// argument — so copy fit and the type scale are NOT valid in the fallback. Silently
         /// rendering in the wrong face is the failure this exists to end.</para></summary>
-        private static Font LoadFace(string resourcePath, string token)
+        private static TMP_FontAsset LoadFace(string resourcePath, string token)
         {
-            Font face = Resources.Load<Font>(resourcePath);
+            TMP_FontAsset face = Resources.Load<TMP_FontAsset>(resourcePath);
             if (face != null) return face;
 
             Debug.LogWarning($"[TvSweatScreen] {token} not found at Resources/{resourcePath} — falling " +
-                "back to the built-in face. Copy fit and the T20 type scale are NOT valid in the fallback.");
-            try { return Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); }
-            catch
-            {
-                Debug.LogWarning("[TvSweatScreen] built-in font not found either; text will not render.");
-                return null;
-            }
+                "back to TMP's default face. Copy fit and the T20 type scale are NOT valid in the fallback.");
+            // TMP's default rather than LegacyRuntime.ttf: the components are TMP now, and handing
+            // one a null font asset renders nothing at all. Degrade to readable-but-wrong, never to
+            // an invisible surface — the same rule the UGUI version stated, in the new currency.
+            TMP_FontAsset fallback = TMP_Settings.defaultFontAsset;
+            if (fallback == null)
+                Debug.LogWarning("[TvSweatScreen] TMP has no default font asset either; text will not render.");
+            return fallback;
         }
     }
 }

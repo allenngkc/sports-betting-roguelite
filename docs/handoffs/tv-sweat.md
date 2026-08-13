@@ -11,6 +11,397 @@ discarded.
 
 ---
 
+## 0-FP. THE FIX PASS — batches 56/57/58 built · TWO COMPOSITION CALLS WITH THE DD · 2026-08-13
+
+**Branch `db5157f`, pushed and REMOTE-VERIFIED.** Tree clean, Unity zero. Two commits on top of
+§0-GC: `f84d431` (the fix pass) and `db5157f` (the payout maximum).
+
+**TOP LINE: the fix pass is built and green. Two composition calls are routed and nothing else is
+open in this lane.** §0-GC's four DD calls are all ANSWERED by batch 56 — do not chase them.
+
+| suite | discovered | executed | passed | failed | skipped |
+|---|---|---|---|---|---|
+| EditMode | 250 | 250 | 249 | 0 | 1 ignored — G1's grant, held |
+| PlayMode | 94 | 94 | 88 | 0 | 6 by-design capture skips |
+
+Sweep: **5 of 20 overrunning**, and **no pair collisions on the money control** — retired by
+construction, not by a number.
+
+### What landed
+
+1. **`N LET IT DIE`** — no `HOLD`. It rode in under *"unchanged"*, which was true, and never met
+   T88(c), the ruling that changed its class. The prompt was printing `HOLD` over a press: **C48's own
+   defect surviving inside the pass that fixed C48.** *A string that never meets the ruling that
+   changed its class is the same defect one level up* — and it was caught in the "listed so the set is
+   the whole set" section, which is why that section exists.
+2. **`SHOT FROZEN` left the zone**, and the zone did not grow. Three option rows are 82.5 in 90.0 and
+   fit **in every ownership combination**, not only when one consumable is held (C46 forbids leaning on
+   the common case). Its optional home is measured and available — 156.4px on the 651.0px event strip,
+   494.6 spare — and deliberately **not built**, because it is not required.
+3. **Attract states 4+5 → `BOARD CLOSED`**, `flavorColor` in both. `won` no longer selects an ink
+   there; the §3.1 gold ration violation is gone.
+4. **The money control's members stopped sharing one rectangle.** All three pair collisions retired,
+   including the 198.5 this lane created.
+
+### THE PAYOUT MAXIMUM — the arithmetic nobody had done, and it holds
+
+*"Unbounded" was the wrong word: parlay multiplication is **UN-ENUMERATED**.* Enumerated over the
+generator's own offer space (`engine.tests/PayoutMaximumTests`, re-runnable):
+
+```
+648,000 offers priced · 3,000 seeds · max single-leg odds 52.0359 (true prob 0.018302)
+produced by AnytimeScorer — the one-way YES-only board, the only market with no
+complementary side to bound it. Last improved at seed 1051 of 2999.
+PARLAY TERM = 52.0359^4 = 7,331,837.65 x stake
+```
+
+**The stake ceiling is the BANK** (`MaxStakeFraction` 1.0) — run state, not config — so the figure is
+stated per bank assumption rather than as one number that buries its dependency. Tabular condensed
+Bold 700 digits advance **13.6px each**, so the 249.0px row holds **eleven digits and not twelve**:
+
+> **Any payout below $100,000,000,000 — i.e. any stake up to $13,639.** The payment schedule tops out
+> at $1,350 and totals $2,910 across all eight rounds, so the threshold sits **~4.7× above the entire
+> run's payments. Width CLOSES with no further ruling.**
+
+Two caveats, both moving the threshold **down**: a bank above $13,639 is reachable after one large
+win (the box fails at twelve digits and nowhere before), and **`PayoutMultiplier` — up to eleven named
+relic factors — is a further multiplier ON TOP and is deliberately excluded**, because the DD's formula
+named `MaxLegs`, the stake ceiling and the odds range. Folding in a relic product nobody asked for
+would overstate the figure while looking more rigorous.
+
+### THE TWO CALLS WITH THE DD — measured, stopped at, not built around
+
+| call | the number | state |
+|---|---|---|
+| **`RiskPays` two rows** (T74-am4) | width CLOSES (above); **height needs 60.0px in the 40.0px footer — over by 20.0** | batch 57's branch-2 span re-derivation, pre-authorised. Not built: it also needs four elements rather than one |
+| **The money control's two rows** (T74-am3) | **55.0px in the 52.0px grid row — over by 3.0** | BUILT and rendering (allocated 34/18, both components Overflow), but it does **not** fit by the sweep's standard and is not claimed to |
+
+**One ruling expectation was falsified and is recorded as such:** `MARKET SUSPENDED` did **not** retire
+on the two-row change. It is 267.7 in 241.0 and was **already exclusive** in its slot (T43), so sharing
+was never its problem. The 26.7 stands as a plain width overrun.
+
+### THE REUSABLE FACT, and it will bite any height arithmetic on this surface
+
+> **`LineBox` is 1.18. TMP's real advance ratio on this face is 1.25.**
+
+Every height computed from the design constant understates by ~6%. It is exactly why the money control
+"fit" on paper (29×1.18 + 15×1.18 = 51.9 in 52.0) and overruns in fact (36.3 + 18.8 = 55.0).
+**Measure heights with `GetPreferredValues`; never derive them from `LineBox`.**
+
+### A REAL BUG THE PASS SURFACED — a keyboard that leaves mid-window
+
+`PendingWindowBeat` checks `Keyboard.current` **once** at entry, and every frame of its loop then
+dereferenced it. A device going away mid-window — a wireless keyboard sleeping, a controller swap —
+threw a `NullReferenceException` **inside the coroutine**, killing the beat and leaving the pending
+window hanging **on an irreversible money decision**. **Pre-existing:** the press-era code dereferenced
+it the same way. Found only because a gesture test added a virtual device and removed it. Now re-read
+every frame and treated as the entry guard treats it: no keyboard, no way to decide, so the window
+declines rather than hangs.
+
+### Two instrument corrections in the same family as §0-GC's three
+
+- **A check that outlives its composition.** The sweep's `Pair()` for `CashOut`+`CashOutStatus` kept
+  measuring a shared rectangle **after the members moved to separate rows** — it would have reported
+  the old build with the new build's confidence. Retired with the composition it measured.
+- **My own test assertion went stale against my own copy change** (`HOLD N LET IT DIE`). It failed
+  loudly with the actual string in the message, which is the only reason it took one run to see.
+
+---
+
+## 0-GC. THE GESTURE CONNECTED · T89's deliverables sent · BUILD COMPLETE, EVERY OPEN ITEM IS THE DD's. 2026-08-13
+
+**Branch `47d3f7e`, pushed and REMOTE-VERIFIED** (`git ls-remote` reads `47d3f7e` on
+`refs/heads/tv-sweat`; the exit code is not the check on this branch — see §0-FR's push caveat).
+Tree clean, Unity zero, main local. Six commits: `ec5508c` → `3ce2e60` → `643b96a` → `8dfcb0c` →
+`ea82af2` → `47d3f7e`.
+
+**TOP LINE: there is no build work left in this lane.** Phase T's migration, T88's gesture, T89-B's
+sweep and T89-C's pass are all landed and pinned. **Four things are open and every one of them is a
+DD call, not a task.** A fresh seat should read §0-PT for Phase T's shape, this section for where it
+stands, and then wait rather than build.
+
+### Suites — the numbers to reproduce before touching anything
+
+| suite | discovered | executed | passed | failed | skipped |
+|---|---|---|---|---|---|
+| EditMode | 250 | 250 | 249 | 0 | **1 ignored — G1's grant, held deliberately** |
+| PlayMode | 94 | 94 | 88 | 0 | 6 by-design capture skips |
+
+PlayMode was 91/85 before this window; the +3 are the three new gesture pins. **Run PlayMode WITH
+graphics** or SureThing's capture tests fail environmentally and read as regressions.
+
+### C48 is law, and what it made this lane do
+
+Batch 50 (`c9ceb77`): *where copy and input disagree on a money control, **the input is corrected to
+match the copy**, never the reverse.* T88 then ruled the gesture — hold previews, **release always
+abandons**, **a second key during the hold commits**, **no timer, no auto-commit**, a press commits
+nothing; and T88(c) keeps the decline at one press, because the weight of the gesture matches the
+weight of the act.
+
+**THE FIND, and it is why this was small: §8.10's hold-to-preview was already BUILT and had no
+production caller.** `EnterCashOutPreview`, its full-revert twin, `PreviewedBank`, the stepped-down
+rows — render-aware, EditMode-pinned, and the only thing that had ever called it was a test, by
+reflection. Beside it sat `if (_interact.WasPressedThisFrame()) TryCashOut()`. **The gesture was
+never missing; it was disconnected.** Look for this shape before building anything on this surface.
+
+**The asset's own Hold is deliberately NOT used.** `Interact` carries `"interactions": "Hold"`, and
+the Input System documents `WasPressedThisFrame` as true on the press *"even if there is an
+interaction on the action that has not yet performed"* — which is how a declared hold went unobserved
+for a whole phase. Honouring it is the OTHER wrong repair: a HoldInteraction performs on a DURATION,
+and T22/T36 rule no timer. The hold is read as a STATE; the commit comes from a key.
+
+**The room boundary is ANSWERED — do not re-litigate it.** `SitSpot` acts on `WasPressedThisFrame`,
+**press, never release** (room's source, merged `c8525d1`), and `PlayerInteractor`'s press-poll
+deliberately bypasses the action's Hold. My first design guarded a release-path stand that cannot
+happen and *introduced* a defect — release E, press E again to stand, stand swallowed. It is gone.
+`CashOutLive()` is `CanAcceptCashOutNow() || _cashOutPreview`: it covers the real hazard (a fresh
+press arriving during a hold) and not one frame past it.
+
+### THE FOUR DD CALLS, with where the evidence is
+
+All four are staged in `main-2/docs/design/dd-import/` (untracked there, which is that folder's
+convention; nothing was committed in another lane's worktree).
+
+| # | the call | evidence |
+|---|---|---|
+| 1 | **The prompt zone's 20.0px height deficit.** Zone is 635.0 × 90.0 and carries exactly THREE rows at 22px; title + three options is 110.0px. Either +20.0px of zone or `SHOT FROZEN` leaves it. §6's grid does not resize to content, so it is not absorbable here | `tv-batch50-strings-2026-08-12.md` §3 |
+| 2 | **The confirm key and three unratified strings.** T22/T36 both say "a second key" and neither names one; `ENTER` is this seat's pick because it is bound to nothing in the room's asset. Strings: `HOLD M MULLIGAN (ONE MULLIGAN SLIP)`, `ENTER CONFIRMS · RELEASE ABANDONS`, `ENTER TO CASH OUT` | same file, §4–5 |
+| 3 | **T86(b): Attract's three non-compliant strings.** `SIT TO WATCH THE SWEAT`, `THE HOUSE BLINKS FIRST`, `THE BOOKIE COLLECTS` — outside T27's letter, inside its class. **189.8px of headroom**, so this slot can afford authored copy | `tv-t86b-attract-states-2026-08-12.md` |
+| 4 | **The held-preview pair collision, 198.5px**, which THIS PASS created on a known-blocked box (45.0 at rest). Disclosed, not absorbed | `tv-t74-table-2026-08-12.md` pair table |
+
+Plus the standing T74 five and T89's conditions A–F: `tv-t74-table-2026-08-12.md` (tree-stamped),
+`tv-traceability-pass-2026-08-12.md`, `tv-tabular-inventory-2026-08-12.md`.
+
+**T89 (batch 54, `0b39315`) pre-commits the closing bar** and C31 binds it both ways: that list is the
+whole list, and new findings open new items rather than retroactively withholding a grant. Build to
+the bar, not to an opinion.
+
+### THE PASS's transferable finding — an invented string CONCEALS the under-generation beneath it
+
+`LegRowLine0`'s set carried `BRICKLAYERS ANYTIME`, a club noun in the surname slot, which
+`{Surname} ANYTIME` cannot emit. It was also **the widest member of its own set** — so it SET the
+certified worst case and the real widest producible form was never reached.
+
+> **An over-generated string is only harmless when it is not the maximum. While it IS the maximum it
+> hides exactly the under-generation the other direction is looking for — so the two directions
+> cannot be swept separately, and finding one does not clear the other.**
+
+Champions are retired: the sweep now GENERATES every form over the engine's closed pools
+(`SlateGenerator.Nouns` 20, `PlayerLast` 12), so a name added to either cannot be missed by a champion
+nobody re-picked. `LegRowLine0` 152.8 → **144.3, fits by 2.8** (batch 54's first arm: relief
+unnecessary, STANDS, no revert). `LegRowNeed0` 272.4 → **289.9, 40.9 over** — it was certified 17.5px
+better than it is.
+
+### THE PINS — their seeds and their preconditions
+
+**Three pins, and every assertion is preceded by a precondition, so none can pass by never running.**
+
+- **Cash-out (2 pins), no seed pin.** `DemoTicketPolicy` picks; waits on
+  `SitSpot.InteractStandSuppressed()`, which is the public signal that an offer is live and
+  acceptable. Preconditions asserted: `kb.eKey.isPressed`, and `_cashOutPreviewAmount > 0` — the
+  latter is what makes them falsifiers, since before T88 that field's setter had no caller and reads 0.
+- **Intervention M/R, seed `GOLDEN-W2`.** **Not searched for — reused from `CharmExpansionTests`,**
+  which pins the same seed and the same hand-built pair and records *"leg 0 (matchup 1, Home) dies;
+  leg 1 (matchup 0, Away) would win"*. Ticket is hand-built (`Pick(1,Home)`, `Pick(0,Away)`, stake 20)
+  for the capture harness's reason: `DemoTicketPolicy`'s picks are moneyline-only. **Both consumables
+  are GRANTED, and that is not convenience — the session suspends into a pending loss only when a
+  legal save is HELD** (Mulligan needs ≥2 active legs; Whistle covers any ticket). No save, no window,
+  on any seed.
+- **Batch mode needs `LetDevicesRunUnfocused()`.** It is never focused, and the Input System's
+  documented response to lost focus is `ResetDevice` on every device — so a held key is wiped between
+  frames without it. `InputSystem.AddDevice` lives in the RUNTIME assembly, not the test framework,
+  which is why a headless run can hold a key at all. The device is added per-test, never in a
+  `[SetUp]`: `PendingWindowBeat` declines immediately when `Keyboard.current == null`, and that is
+  what stops batch autoplay hanging on the pending window.
+
+### THREE INSTRUMENT LESSONS, all of them mine and all of them the same family
+
+1. **THE VACUOUS FILTER — a test asserting "nothing happened" passes when nothing was attempted.**
+   The first press pin went GREEN while the key was never down. S51's shape (green by recording
+   nothing), in the pin written to close a coverage hole. **Assert the precondition before the
+   property**, every time.
+2. **WHAT IS SHOWN IS THE PRECONDITION.** The M/R pin first waited on `HasPendingLoss`, which goes
+   true the instant the *session* suspends — but the theatre reaches `PendingWindowBeat` some frames
+   later, so the key hit a surface that had not drawn the prompt. **The instrument caught this one
+   rather than a human:** it failed with `text='<null>' promptEnabled=False` because the assertion
+   named what it needed. Engine state is not rendered state; a gesture acts on what is shown.
+3. **THE FACE COLUMN — `TMP_Text.font` names the PRIMARY asset, not the arm that renders.** A slot
+   built at `FontWeight.Bold` draws through the bold asset wired by `WireBold` while `font.name` still
+   reads the regular one. My new T74 face column therefore misreported, and **the DD's own batch-38
+   record was right where my instrument was wrong** ("condensed Bold 700 carries CashOut"). **Three of
+   the five survivors are Condensed Bold 700**: `CashOut`, `RiskPays`, `LegRowNeed0`. The sweep now
+   prints the resolved weight beside the face.
+
+Two smaller ones in the same family: a **hard-coded expected value goes stale and then reads as a
+DEFECT rather than as silence** (a pin of 1015.0 survived one copy change and reported the instrument
+broken); and a label doing two jobs — `no digits` printed both for a string with no figures and for
+one whose figures are already tabular, **hiding the very confirmation T89-B asks for**.
+
+### Instruments, all committed and re-runnable
+
+`SBR/TV/T88 prompt composition` **(new)** — the prompt's widths, the zone's height, the money
+control's pair in all three states. It **refuses to measure** if the copy in `TvSweatScreen.cs` stops
+matching (comment-stripped whole-file scan), and reproduces the sweep's own figure as a cross-check.
+`SBR/TV/T84 extent sweep` — now generates from the closed pools and prints face, resolved weight,
+tracking and tabular basis per row. Plus §0-PT's list, unchanged.
+
+### An operational trap worth one line
+
+**`Set-Location` to the repo root before every Unity invocation.** The PowerShell tool's cwd persists
+between calls, and a relative `-projectPath` from a subdirectory silently opens the wrong project —
+Unity then wrote `unity/` and `evidence/` trees plus `.meta` files INSIDE `Assets/SBR/Runtime/`.
+Harmless once found, invisible until `git status`.
+
+---
+
+## 0-IP. THE INTERVENTION PROMPT — three correct rulings, one box 1.6x its width. 2026-08-12, seat rotating at 97%
+
+**Branch `0a2ef90`, pushed and remote-verified. Tree clean, Unity zero, main local.** Suites
+unchanged: EditMode 250 / 249 / 0 / 1 ignored, PlayMode 91 / 85 / 0 / 6 skips.
+
+Read §0-PT below for Phase T's state; this section is the one slot that moved after it, because the
+shape of what happened to it is the thing worth carrying.
+
+### The arc
+
+    found          51.1px over its 635px box
+    T86(a)        209.8px over   the bracketed-key form retired: [M]/[R]/[N] -> HOLD M/R/N,
+                                 in T22's established form ("print the word, not the glyph")
+    batch 46      380.0px over   the win-prob GOES, the cost takes its place:
+                                 SEND TO REVIEW (99%) -> SEND TO REVIEW (ONE REF'S WHISTLE)
+
+**Every one of those rulings is right, and each made the box worse.** The slot is now 1015.0px in a
+635.0px box. Nothing new failed at any step — overrunning slots held at 7 of 20 throughout — the same
+one simply got further from fitting. **It needs a T74 answer that is not copy**; there is no wording
+at 635px that says what three rulings require it to say.
+
+`(99%)` was T16's quantity, not a different one: `PendingLossProbBefore` is documented in the engine
+as *"the leg's displayed win-prob"*. The cost is named from `RelicCatalog`'s own "Ref's Whistle"
+rather than a bare `WHISTLE` — an abbreviation nobody authored is G1's class, and this lane withdrew
+three findings built on invented strings before learning it.
+
+**MULLIGAN was deliberately left alone.** Identical shape — an offer whose cost of one Mulligan Slip
+goes unstated — so if the basis-must-be-an-offer form binds generally it binds there. The ruling
+named SEND TO REVIEW. Flagged upward rather than fixed by inference; that restraint is the same one
+T73's four-of-eleven bold sites needed.
+
+### TWO OPEN ITEMS ON THIS SLOT, both with the DD
+
+**1. The prompt COMMITS from the theatre.** Traced from source and answered to the DD:
+
+| key | call | commits |
+|---|---|---|
+| `M` | `Run.PlayMulliganSlip` | `ConsumeConsumable` → `ResolvePendingLossAsMulligan` → `RefreshPhotoFactor` |
+| `R` | `Run.PlayRefsWhistle` | `ConsumeConsumable` → `Rng.Derive(...)` → `ResolvePendingLossWithWhistle` |
+| `N` | `Session.DeclinePendingLoss` | closes the window irrevocably |
+
+A keypress at the TV spends run inventory, draws from the run RNG, and resolves a leg's grading. No
+laptop step, no confirmation, nothing reversible. **Both verbs open with `RequirePhase(Phase.Sweat)`,
+so the engine sanctions a Sweat-phase commit — and mid-sweat the theatre is its only possible
+operator.** T22's "commit-is-the-laptop's" and this mechanic cannot both stand as written. Ruling
+queued.
+
+**2. The copy says HOLD; the input is `wasPressedThisFrame`.** There is no hold gate anywhere on this
+surface. That mismatch is this seat's, introduced by applying T86(a)'s "print the word" form to a
+press verb, and it folds into the T22 ruling: a press committing an irreversible spend under an
+instruction to hold is the concrete case that ruling exists for.
+
+### On the board, not started
+
+Draws reaching the theatre (batch 49): the final beat is the match **ending level, stated** — no
+climax, no absence, `decisive` must never reach a slot. Two DD-authored strings join the sweep
+population under C46 when they land. Measured headroom for them: **`Flavor` has 140.2px spare** and
+can take a stated ending line; **the leg-row state chip has none** — it is already 4.7px over on
+`NEXT`, so any new chip word arrives as a T84 blocker on day one. Trace new strings from their
+assignment site, including whatever chooses between them.
+
+---
+
+## 0-PT. PHASE T — the type migration SHIPPED AND BLOCKED. 2026-08-12, seat rotating at 97%
+
+**Branch `9459348`, pushed and remote-verified. Tree clean, Unity zero, main local.** Suites on
+every commit of this phase: **EditMode 250 discovered / 249 passed / 0 failed / 1 ignored**
+(G1's grant, held), **PlayMode 91 / 85 / 0 / 6 by-design capture skips**.
+
+**Phase T's build work is complete. The surface does not ship.** Seven slots overrun their fixed box
+and the money control collides; those are T74/T84 rulings, not this seat's to close.
+
+### What landed
+
+TMP behind an unchanged `MakeText` seam — the signature keeps `TextAnchor`/`FontStyle` so all 22 call
+sites read as authored. The canon face resolved **by style name**, never index. T73's real Condensed
+Bold 700 at its four sites; T77's synthesised italic struck; T85's unruled .02em withdrawn (Label
+.16em and Meta .10em ratified as built, NEED 0 on doctrine). T82's tabular figures **derived, wired
+and confirmed at spread 0.0000** across four faces and ten measurements.
+
+### The three traps, all of which cost a cycle before they were seen
+
+1. **The face was never what the file said.** `EncodeSans.ttf`'s default instance is
+   `Condensed Thin` — wght 100, wdth 75. Legacy `Font` rendered the roman voice **narrower than the
+   condensed face**, 241px against 254px on one string. No Regular 400 can do that. Resolve by style
+   name; the generator refuses rather than falling back.
+2. **A Dynamic TMP asset serializes no character or glyph table.** Anything written there at build
+   time is discarded on save — `m_Unicode` entries: 0. That is why `tnum` is resolved into a derived
+   font (`tools/tnum_font.py`, cmap only) instead of into the asset.
+3. **`GetPreferredValues(s, 0f, 0f)` on a wrapping component returns the widest GLYPH.** It killed
+   the compact statement's truncation backstop from T-3 until T84 measured the measurer. Measure
+   unconstrained.
+
+### The blockers, tabular-screened and re-traced (batch 44)
+
+| slot | box | widest | over |
+|---|---|---|---|
+| `TakeoverSub` | 655.0 | 829.8 | 174.8 — **CONSTRUCTED**, `DisplayLabel` is unbounded |
+| `InterventionPrompt` | 635.0 | 844.8 | 209.8 — after T86(a) |
+| `RiskPays` | 249.0 | 296.5 | 47.5 — payout magnitude unbounded |
+| `CashOut` | 241.0 | 267.7 | 26.7 — `MARKET SUSPENDED`, alone in its slot (T43) |
+| `LegRowNeed0` | 249.0 | 272.4 | 23.4 |
+| `LegRowLine0` | 147.0 | 152.8 | **5.8 — the landed relief is insufficient** |
+| `LegRowState0` | 38.0 | 42.7 | 4.7 — widest is `NEXT`; there is no `PEND` |
+
+Plus the money control's two pair collisions, 45.0 and 47.8, neither member overrunning alone.
+
+**`LegRowLine0` cannot be finished by span.** The only slack left is the price column's, and
+`OddsFormat.American` returns `+{a}` with nothing bounding `a`. Its own default arm is
+`DisplayLabel`, so like `TakeoverSub` **it has no bounded worst case at all.**
+
+### THE LESSON THIS SEAT PAID FOR THREE TIMES
+
+**A sweep is only as sound as its string sets, and I invented sets instead of enumerating them.**
+`PEND` was measured on a chip that renders `VOID / NEXT / W / L / ""`. `LANYARD TO SCORE` and
+`BOTH TEAMS SCORE` were measured on a slot whose `LegStatement` emits `{SURNAME} ANYTIME` and
+`BTTS YES`. `RiskPays` was measured with a three-space separator where the format string has five.
+Each was reported to the DD as a finding; each was withdrawn by the pass that read the source.
+
+**Enumerate from the assignment site — grep the field, read every `.text =`, follow every
+indirection — and where content is engine-generated, say UNBOUNDED rather than constructing a worst
+case and forgetting you built it.**
+
+### Owed, and not this seat's
+
+- **T74**: the seven magnitudes. `LegRowLine0` and `TakeoverSub` need an answer that is not a span.
+- **T86(a)**: the wording beyond the retired bracketed form is the DD's to ratify.
+- **Attract's three strings** — `SIT TO WATCH THE SWEAT`, `THE HOUSE BLINKS FIRST`,
+  `THE BOOKIE COLLECTS` — are T27's class (instruction, celebratory editorial) and need authored
+  replacements. `ROUND n OF m · BOARD OPEN` is T27's own ruled string and is compliant.
+- **T16 boundary**: `(99%)` is T16's quantity, not a different one — `PendingLossProbBefore` is
+  documented in the engine as *"the leg's displayed win-prob"*. Whether T16's ban reaches past the
+  momentum tape is routed to the DD.
+- **Probe hygiene**: `SBR/TV/T84 extent sweep` and the digit probe have twice exited
+  `-1073741819` after printing. Data intact both times and verifiable — results go to `-logFile` in
+  the same step that produces them, never a terminal buffer.
+
+### The instruments, all committed and re-runnable
+
+`tools/ttf_faces.py` (a font's real instances) · `tools/tnum_font.py` (derive the tabular font) ·
+`SBR/TV/T84 extent sweep` (every box against its longest renderable form) · `SBR/TV/Probe digit
+advances` · `SBR/TV/Probe type parity` (UGUI vs TMP) · `tools/tv-phase-t-bootstrap.ps1`
+(generate + verify). **The pair is at `dd-import/tv-phase-t-before-2026-08-11/` and
+`…-after-2026-08-12/`** — 151 paired frames each side, plus the after-set's unpaired
+`scorer-leg-resolved` and its 159-row clock-string manifest.
+
+---
+
 ## 0-FR. FLOOD REMOVAL VERIFIED — 2026-08-10. T40 enforced, punch intact, seat rotating
 
 **Converged on new main and re-converged after.** Commits this stretch: `1e02d42` (T40 enforced, the
