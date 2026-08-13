@@ -1,7 +1,18 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 197 — THREE NEW LANES
-LIVE.** Allen's next-slices brief executed (e141eed → ec4c15b): worktrees
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 198.** All six lanes
+moving: TV's final sweep table done (RiskPays 16.1→39.8 tabular;
+LegRowLine0 +3.4px today / -1.8px once wired - the dead-backstop box IS
+the wiring casualty, fix live on the wiring commit) - now enumerating the
+unswept six; DD ruling T74 magnitudes + tracking clause on the table;
+sgp research RUNNING (D3 approved by Allen - numbers-only divergence
+measurement; pricing-vs-perception queued as a DD question at step-2);
+research lane list APPROVED + Buckshot Roulette added, Allen played
+Balatro/CloverPit (weighting known), deep dives running; markets-pregame
+reading in. NEED ALLEN (parked): slot-machine literature (Schuell,
+near-miss/LDW) in research scope - yes/no.
+
+*(prior stamp, cycle 197:)* Allen's next-slices brief executed (e141eed → ec4c15b): worktrees
 created + chartered + registered + seated at Opus 5 max (per-terminal
 verified, the standing seat spec): **markets-pregame** (Lane 1 - full v1
 pre-game vocabulary, one campaign one re-baseline, plan-first),
