@@ -1,7 +1,18 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 190 — THE STAND-DOWN
-MYSTERY RESOLVED: IT WAS THIS SEAT'S OWN TWIN.** The 'DD seat' recreated
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 191.** Batch 38 canon
+(bb23b11): T82 - the tabular mandate STANDS, 'cannot' reclassified
+expensive-not-impossible (C16), option (a) granted with mechanism the
+lane's; mspace and mandate-amendment refused (fallback pre-committed).
+DD's arithmetic re-check corroborated the finding HARDER (uniform
+instance scale, 4-figure constant per face). Freeze +T82 (no practical
+cost); Clock stays Regular (T75-am3, both DD pre-commitment branches
+recorded defective 1.5); G1-am2 provisional-for-digits; C45 law. ALLEN
+NOTE (the one line the DD asked for): the font choice you ratified was
+made on the tabular criterion, and this ruling PRESERVES it - the mandate
+held. TV mid-after-set; ruling relayed, T82 sequenced after the pair.
+
+*(prior stamp, cycle 190 - THE STAND-DOWN MYSTERY RESOLVED:)* The 'DD seat' recreated
 at cycle 189 with `claude --continue` in main-2 resumed THIS orchestrator
 session (exit screen named this session's ID). The twin woke with cycles
 100-189 in context, saw the incumbent sweeping, sincerely applied 6c with
