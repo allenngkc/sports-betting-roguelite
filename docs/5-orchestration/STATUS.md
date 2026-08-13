@@ -1,7 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 201 — THE WIRING IS GO;
-RESEARCH PACKAGE DELIVERED.** TV's two gate conditions arrived together
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 202 (heartbeat).** TV
+13+ min into the wiring turn; DD mid-ratification with an API retry in
+progress (1/10, watching); Tier-2 probes running. HELD: 'RF-12 granted'
+- no RF-12 exists (IDs run RF-1..RF-9); asked Allen for the intended
+number, likeliest RF-2 (the parked literature probe) or an RF-3..9
+mapping proposal. NEED ALLEN: the RF number, grill R1-R4, the research
+package.
+
+*(prior stamp, cycle 201:)* TV's two gate conditions arrived together
 (LegRowLine0 relief + full enumeration); Allen gave the wiring word
 directly - TV wiring now (one constant, regenerate, re-measure). Six
 tracking values proposed under the doctrine, with the DD for
