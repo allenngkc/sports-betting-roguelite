@@ -172,7 +172,13 @@ o_sgp' = 1 / (p_joint(surviving legs) × κ × (1 + Ω)^{n−1})
 
 Dropping a voided leg's factor out of a product — today's behaviour — is **wrong under a joint price, and is what no real book does**. Real books split between re-pricing on the remainder and voiding the whole ticket. Re-pricing is chosen here because the price was a statement about a joint event: remove a leg and the event itself has changed.
 
-Void-replacement prices are **computed and locked at ticket lock**, one per single-void scenario, never re-derived at settlement. That keeps settlement deterministic and independent of when a void is discovered. (Multiple simultaneous voids: OPEN — the one documented commercial mechanism covers a single void only.)
+Void-replacement prices are **computed and locked at ticket lock**, never re-derived at settlement. That keeps settlement deterministic and independent of when a void is discovered.
+
+**Multiple voids are supported — CLOSED 2026-08-12, reversing the earlier OPEN.** The original note deferred this because the one documented commercial mechanism covers a single void only. That reasoning does not transfer: books limit themselves for latency and volume reasons we do not have. Two Mulligan Slips on a three-leg ticket is an ordinary hand, and refusing it dead-ends real play. With `MaxLegs = 4` the complete set of survivor subsets is at most **15 prices per ticket**, computed once at lock — so price *every* subset, not just the single-void row.
+
+**A replacement price floors at 1.0.** The tightest replacement on the shipped board is `1.1181` at `κ = 1`, so any `κ` above roughly 1.11 — well inside the range the gate campaign will explore — makes a live ticket re-price to at or below evens. Placement-time refusal is unavailable by then: the ticket is already sold. So a replacement that would price at or below evens pays exactly the stake back, which is the same outcome the full-void camp of real books produces, reached through the existing payout path instead of a special case.
+
+**A Profit Boost travels with its leg.** It survives if that leg survives and dies if that leg voids, mirroring the ordinary-ticket path exactly. Any other rule would let a void change the value of a relic applied to a different leg.
 
 ### Pending: draws (Lane 1, greenlit 2026-08-12)
 

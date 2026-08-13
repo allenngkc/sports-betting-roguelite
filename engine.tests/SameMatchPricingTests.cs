@@ -620,12 +620,15 @@ public class SameMatchPricingTests
             $"a same-match ticket priced at or below evens ({tightest:0.0000}) — unsellable: {tightestAt}");
     }
 
-    /// <summary>The reachable sub-evens case, pinned: four repeats of one high-probability market.
-    /// P(A and A) = P(A), so the joint barely moves while (1+Ω)^n keeps climbing, and the price falls
-    /// through 1.0. It must refuse with its reason — not throw out of OddsMath's arithmetic — and it
-    /// must cost the player nothing.</summary>
+    /// <summary>The construction that first found the sub-evens case — four repeats of one
+    /// high-probability market, where P(A and A) = P(A) leaves the joint flat while (1+Ω)^n keeps
+    /// climbing — now refuses one rule EARLIER (design/02, amended 2026-08-12, F_0.6.0 Phase 3): a
+    /// selection may not appear twice on a ticket at all. The evens rule is still the backstop for
+    /// everything that is not a literal repeat; it is pinned in <c>VoidRepricingTests</c>, which also
+    /// pins that the two rules are independent. Either way the refusal is legible and costs the player
+    /// nothing.</summary>
     [Fact]
-    public void A_repeat_leg_ticket_that_prices_below_evens_refuses_with_its_reason()
+    public void A_repeat_leg_ticket_is_refused_before_it_can_price_below_evens()
     {
         var config = SweepConfig();
         var run = new Run("sgp-repeat", config);
@@ -654,16 +657,16 @@ public class SameMatchPricingTests
             new Pick(bestMatchup, dearest), new Pick(bestMatchup, dearest),
         };
 
-        if (price > 1.0)
-        {
-            // Still sellable on this slate: assert it prices coherently rather than silently skipping.
-            Ticket ticket = run.PlaceTicket(picks, 10);
-            Assert.Equal(price, ticket.LockedPrice, 10);
-            return;
-        }
+        // The joint price this ticket WOULD carry is still computable — the model prices anything, the
+        // refusal lives at the slip. Whether it lands under evens or not, PlaceTicket refuses it as a
+        // duplicate, which is why the duplicate rule is not merely the evens rule restated.
+        Assert.Equal(price, SameMatchModel.Price(
+            picks.Select(p => LegFor(run.CurrentSlate.Matchups[p.MatchupIndex], p.Selection)).ToList(),
+            config.Overround, config.SgpMargin).Price, 10);
 
         ArgumentException thrown = Assert.Throws<ArgumentException>(() => run.PlaceTicket(picks, 10));
-        Assert.Contains("cannot be offered", thrown.Message);
+        Assert.Contains("may not appear twice", thrown.Message);
         Assert.Empty(run.Tickets);
+        Assert.Equal(config.StartingBank, run.Bank);
     }
 }

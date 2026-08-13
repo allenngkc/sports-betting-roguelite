@@ -741,14 +741,33 @@ public sealed class SameMatchPrice
     /// refuses it (design/02's load-bearing carve-out) rather than selling it at some large number.</summary>
     public bool Impossible => PTicket == 0.0;
 
+    /// <summary>
+    /// The single-void replacement prices (<c>design/02-betting-math.md</c> § *Void: re-price on the
+    /// survivors*), one per leg index: <c>VoidPrices[v]</c> is what this ticket prices at when leg
+    /// <c>v</c> — and only leg <c>v</c> — voids, i.e.
+    /// <c>1 / (p_joint(survivors) × κ × (1 + Ω)^(n−1))</c>.
+    ///
+    /// <para><b>Computed here, at ticket lock, and never re-derived at settlement.</b> That is the
+    /// design's requirement, not an optimization: it makes settlement deterministic and independent of
+    /// WHEN a void is discovered. Note <c>n</c> drops with the leg, so the ticket pays less margin
+    /// after a void — intended.</para>
+    ///
+    /// <para>Empty in the two cases that have no single-void scenario to price: an
+    /// <see cref="Impossible"/> ticket (it is refused, so it never reaches a void) and a one-leg list
+    /// (voiding the only leg leaves no event to price — the engine never voids a ticket's last active
+    /// leg). <b>Multiple simultaneous voids are OPEN in canon</b> and deliberately not represented
+    /// here: there is one entry per SINGLE void and no rule to compose two.</para></summary>
+    public IReadOnlyList<double> VoidPrices { get; }
+
     public SameMatchPrice(double pTicket, double price, IReadOnlyList<Relation> relations,
-        Relation? principal, bool naiveFallback)
+        Relation? principal, bool naiveFallback, IReadOnlyList<double> voidPrices)
     {
         PTicket = pTicket;
         Price = price;
         Relations = relations ?? throw new ArgumentNullException(nameof(relations));
         Principal = principal;
         NaiveFallback = naiveFallback;
+        VoidPrices = voidPrices ?? throw new ArgumentNullException(nameof(voidPrices));
     }
 }
 
@@ -808,11 +827,62 @@ public static class SameMatchModel
         return false;
     }
 
-    /// <summary>Prices a ticket on its exact joint.</summary>
+    /// <summary>
+    /// Prices a ticket on its exact joint, and — in the same pass — prices every single-void scenario
+    /// it can reach (<see cref="SameMatchPrice.VoidPrices"/>).
+    ///
+    /// <para>The void prices are LOCKED HERE by design: canon requires settlement to be deterministic
+    /// and independent of when a void is discovered, so a void is a table lookup at settlement rather
+    /// than a re-derivation. A scenario's price is simply this same function applied to the survivors,
+    /// in ticket order, so the survivors' grouping — and therefore the last bits of their price — is a
+    /// function of the ticket alone.</para>
+    /// </summary>
     /// <param name="legs">The ticket's legs, in ticket order.</param>
     /// <param name="overround">Ω, the per-leg margin the book already charges on every single.</param>
     /// <param name="margin">κ, the SAME MATCH margin dial (<see cref="RunConfig.SgpMargin"/>).</param>
     public static SameMatchPrice Price(IReadOnlyList<Leg> legs, double overround, double margin)
+    {
+        SameMatchPrice core = PriceCore(legs, overround, margin, countFallback: true);
+
+        // No single-void scenario exists for an impossible ticket (it is refused before it can be
+        // sweated) or for a one-leg list (there would be nothing left to price, and the engine never
+        // voids a ticket's last active leg). Both leave VoidPrices empty rather than fabricating one.
+        if (core.Impossible || legs.Count < 2) return core;
+
+        var voidPrices = new double[legs.Count];
+        for (int v = 0; v < legs.Count; v++)
+        {
+            Leg[] survivors = Survivors(legs, v);
+            // Under the no-label fallback "the price does not move" — on void too. The scenario
+            // prices at the board's own product over the survivors, not at their joint, so this
+            // ticket's replacements stay consistent with the price it was actually sold at.
+            voidPrices[v] = core.NaiveFallback
+                ? NaivePrice(survivors)
+                : PriceCore(survivors, overround, margin, countFallback: false).Price;
+        }
+
+        return new SameMatchPrice(core.PTicket, core.Price, core.Relations, core.Principal,
+            core.NaiveFallback, voidPrices);
+    }
+
+    /// <summary>The ticket's legs with <paramref name="voided"/> struck out, ticket order preserved —
+    /// the survivors ARE a ticket, and their price must be reproducible from the seed like any
+    /// other.</summary>
+    private static Leg[] Survivors(IReadOnlyList<Leg> legs, int voided)
+    {
+        var rest = new Leg[legs.Count - 1];
+        for (int i = 0, k = 0; i < legs.Count; i++)
+            if (i != voided) rest[k++] = legs[i];
+        return rest;
+    }
+
+    /// <summary>The price of one leg set, with no void scenarios attached.</summary>
+    /// <param name="countFallback">Whether a fired no-label fallback increments
+    /// <see cref="NoLabelFallbacks"/>. TRUE for the ticket actually being sold; FALSE for the
+    /// hypothetical survivor sets priced beside it — the counter means "tickets SOLD at the naive
+    /// product", and a scenario that may never happen must not inflate it.</param>
+    private static SameMatchPrice PriceCore(IReadOnlyList<Leg> legs, double overround, double margin,
+        bool countFallback)
     {
         if (legs == null) throw new ArgumentNullException(nameof(legs));
         if (legs.Count == 0) throw new ArgumentException("A ticket needs at least one leg", nameof(legs));
@@ -877,16 +947,19 @@ public static class SameMatchModel
         // Validity first, and never subject to the fallback. An unlabelable zero that fell through to
         // naive pricing would sell a ticket that cannot win, at odds up to a mean decimal of 2070.
         if (pTicket == 0.0)
-            return new SameMatchPrice(0.0, 0.0, relations, principal, naiveFallback: false);
+            return new SameMatchPrice(0.0, 0.0, relations, principal, naiveFallback: false,
+                voidPrices: Array.Empty<double>());
 
         if (unlabelled)
         {
-            Interlocked.Increment(ref _noLabelFallbacks);
-            return new SameMatchPrice(pTicket, NaivePrice(legs), relations, principal, naiveFallback: true);
+            if (countFallback) Interlocked.Increment(ref _noLabelFallbacks);
+            return new SameMatchPrice(pTicket, NaivePrice(legs), relations, principal, naiveFallback: true,
+                voidPrices: Array.Empty<double>());
         }
 
         double price = 1.0 / (pTicket * margin * Math.Pow(1.0 + overround, legs.Count));
-        return new SameMatchPrice(pTicket, price, relations, principal, naiveFallback: false);
+        return new SameMatchPrice(pTicket, price, relations, principal, naiveFallback: false,
+            voidPrices: Array.Empty<double>());
     }
 
     /// <summary>The board's own product of leg odds — today's price, which is what the no-label

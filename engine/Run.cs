@@ -220,6 +220,28 @@ public sealed class Run
             })
             .ToList();
 
+        // A SELECTION MAY NOT APPEAR TWICE (design/02 § *Impossible combinations are blocked, not
+        // priced*, ruled 2026-08-12). The joint is idempotent — P(A and A) = P(A), so a repeat adds no
+        // risk — while (1 + O)^n charges a full extra leg of margin for it. It is the degenerate case
+        // of Implies: a leg entails itself. Real books do not accept it either.
+        //
+        // SEPARATE from the sub-evens refusal below, and not subsumed by it: two repeats of a LONG leg
+        // stay comfortably above evens, so the price check passes while the ticket is still a pure
+        // ripoff — double margin for identical risk. The evens rule is the backstop for everything
+        // else; this rule is what catches those. Unreachable before F_0.6.0, because the old
+        // one-pick-per-matchup guard made it unconstructible.
+        //
+        // Runs before any consumable is spent (atomic legality, PLAN.md rev 5 §7) and cannot fire on a
+        // ticket with at most one leg per matchup, so the ordinary path never feels it.
+        for (int i = 0; i < legs.Count; i++)
+            for (int j = i + 1; j < legs.Count; j++)
+                if (ReferenceEquals(legs[i].Matchup, legs[j].Matchup)
+                    && legs[i].Selection == legs[j].Selection)
+                    throw new ArgumentException(
+                        $"Leg {j + 1} repeats leg {i + 1} ({legs[i].DisplayLabel}): a selection may not "
+                        + "appear twice on a ticket. The repeat adds no risk and costs a full extra leg "
+                        + "of margin.");
+
         // SAME MATCH (F_0.6.0). Two legs on one matchup are correlated, so the product of their
         // offered odds is not this ticket's probability and cannot be its price. The joint model
         // prices it — and is entered ONLY when some matchup carries 2+ legs, so a ticket with at most
@@ -274,7 +296,38 @@ public sealed class Run
             ? OddsMath.FairDecimal(OddsMath.ParlayProb(legs.Select(l => l.TrueProb).ToList()))
             : OddsMath.FairDecimal(sameMatch.PTicket);
 
-        var ticket = new Ticket(legs, stake, OddsMath.VigPaid(stake, offered, fair), offered, sameMatch)
+        // VOID RE-PRICING, LOCKED HERE (design/02 § *Void: re-price on the survivors*). One contract
+        // price per single-void scenario, frozen at ticket lock and never re-derived at settlement —
+        // that is what makes settlement deterministic and independent of when a void is discovered.
+        // An ordinary ticket gets none: it re-multiplies its surviving legs at read time, verbatim.
+        IReadOnlyList<double> voidPrices = Array.Empty<double>();
+        if (sameMatch != null)
+        {
+            var locked = new double[legs.Count];
+            for (int v = 0; v < legs.Count; v++)
+            {
+                if (sameMatch.NaiveFallback)
+                {
+                    // "Where the model finds correlation it cannot label, the price does not move" —
+                    // on void too. Literally today's expression, evaluated over the survivors.
+                    var survivors = new List<double>(legs.Count - 1);
+                    for (int i = 0; i < legs.Count; i++)
+                        if (i != v) survivors.Add(legs[i].OfferedOdds);
+                    locked[v] = OddsMath.ParlayDecimal(survivors);
+                }
+                else
+                {
+                    // A leg-targeted Profit Boost dies with its leg, exactly as it does on the ordinary
+                    // path: there the boosted odds simply leave the product. Boost surviving legs'
+                    // scenarios, never the scenario in which the boosted leg is the one struck out.
+                    locked[v] = sameMatch.VoidPrices[v] * (v == profitBoostLeg ? 1.0 : boost);
+                }
+            }
+            voidPrices = locked;
+        }
+
+        var ticket = new Ticket(legs, stake, OddsMath.VigPaid(stake, offered, fair), offered, sameMatch,
+            voidPrices)
         {
             Id = $"{Round}.{_tickets.Count}",
         };
@@ -360,6 +413,21 @@ public sealed class Run
             throw new InvalidOperationException("No dead leg is awaiting a Mulligan Slip");
         if (!OwnsConsumable("mulligan_slip"))
             throw new InvalidOperationException("No Mulligan Slip held");
+
+        // A SECOND void on a SAME MATCH ticket has no price (design/02 § *Void: re-price on the
+        // survivors*): the one documented commercial mechanism covers a single void, and canon leaves
+        // multiple simultaneous voids OPEN. Refuse loudly, BEFORE the slip is consumed (atomic
+        // legality), rather than invent a rule and settle the ticket at something arbitrary. An
+        // ordinary ticket is unaffected — it drops each voided leg out of its product, as it always
+        // has, for any number of voids.
+        Ticket voiding = session.TicketRef;
+        if (voiding.SameMatch != null)
+            foreach (Leg leg in voiding.Legs)
+                if (leg.IsVoided)
+                    throw new NotSupportedException(
+                        "This SAME MATCH ticket already carries a voided leg. Re-pricing covers a SINGLE "
+                        + "void (design/02 § Void: re-price on the survivors — multiple simultaneous "
+                        + "voids are OPEN); a second void has no price.");
 
         ConsumeConsumable("mulligan_slip");
         session.ResolvePendingLossAsMulligan();
