@@ -54,6 +54,12 @@ public sealed class RoundMetrics
 public sealed class MarketExposure
 {
     public int LegsPlaced;
+    /// <summary>Moneyline only: how many of <see cref="LegsPlaced"/> backed the DRAW. Exposure is
+    /// keyed by MarketKind, and the draw is a CHOICE inside the moneyline rather than a kind of its
+    /// own — so without this counter the newest market on the board would be invisible, folded into
+    /// the Moneyline row, and no report could say whether a bot ever touched it. G7's doctrine is
+    /// that a coverage question must be readable in every report, not reconstructed later.</summary>
+    public int DrawLegs;
     public double Stake;
     public double RealizedNet;
     /// <summary>Sum of per-leg unit returns ((odds−1) on a win, −1 on a loss), unweighted by

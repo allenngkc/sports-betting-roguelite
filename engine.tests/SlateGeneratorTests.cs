@@ -26,7 +26,12 @@ public class SlateGeneratorTests
     {
         foreach (Matchup m in NewSlate().Matchups)
         {
-            double impliedSum = OddsMath.ImpliedProb(m.HomeOdds) + OddsMath.ImpliedProb(m.AwayOdds);
+            // The moneyline is 1X2 now, so the overround is carried across THREE prices. Summing
+            // home + away alone reads 0.772 and would look like the book had lost its margin; what
+            // it actually omits is the draw's ~0.28 of implied probability.
+            double impliedSum = OddsMath.ImpliedProb(m.HomeOdds)
+                + OddsMath.ImpliedProb(m.DrawOdds)
+                + OddsMath.ImpliedProb(m.AwayOdds);
             Assert.Equal(1.05, impliedSum, 10);
         }
     }

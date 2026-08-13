@@ -247,6 +247,7 @@ public static class RunPlayer
         {
             MarketExposure exposure = Exposure(rm, leg.Selection.Kind);
             exposure.LegsPlaced++;
+            if (leg.Selection.Choice == MarketChoice.Draw) exposure.DrawLegs++;
             exposure.Stake += stakePerLeg;
         }
     }

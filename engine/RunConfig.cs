@@ -59,6 +59,25 @@ public sealed class RunConfig
     public double[] CornerLines { get; set; } = { 8.5, 9.5, 10.5 };
     public double[] CardLines { get; set; } = { 3.5, 4.5, 5.5 };
 
+    // ---- F_0.5.0 V1 lines. Each set is bounded by MEASURED offerability, not by taste: an offer
+    // priced at p ≥ 0.95238 makes Offer() throw, and a line that crosses it crashes a campaign
+    // half an hour in rather than failing a test in seconds. OffersArePriceable pins them.
+    /// <summary>Goal handicap, ±1.5 ONLY. ±0.5 duplicates the 1X2 price exactly; ±2.5's favourite
+    /// side reaches p 0.984 across the latent box and throws.</summary>
+    public double[] HandicapLines { get; set; } = { 1.5 };
+    /// <summary>Per-team goal lines. 2.5 is deliberately absent: its UNDER reaches p 0.949 under
+    /// draws — legal, but a 1.00 price is a junk row one rounding step from a crash.</summary>
+    public double[] TeamGoalLines { get; set; } = { 0.5, 1.5 };
+    public double[] TeamCornerLines { get; set; } = { 4.5 };
+    public double[] TeamCardLines { get; set; } = { 1.5 };
+
+    /// <summary>Probability floor for the enumerated one-way boards (correct score, player 2+).
+    /// **Ratified by Allen 2026-08-12 at 2%.** It decides whether the vocabulary is a vocabulary
+    /// change or an economy change: at 2% the score grid carries 12–16 rows topping out near 47×,
+    /// inside the ~63× tail the anytime-scorer board already puts in the economy; at 1% it reaches
+    /// 95× and at 0.5% past 190×.</summary>
+    public double CorrectScoreFloor { get; set; } = 0.02;
+
     // Anytime-scorer roster dials. There are deliberately no goalkeeper offers: these are the
     // listed outfield players whose normalized weights feed both price and attribution.
     public int PlayersPerTeam { get; set; } = 7;

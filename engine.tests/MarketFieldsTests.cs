@@ -218,6 +218,17 @@ public class MarketFieldsTests
         MarketKind.TotalCorners => MarketSelection.TotalCorners(9.5, true),
         MarketKind.TotalCards => MarketSelection.TotalCards(4.5, true),
         MarketKind.AnytimeScorer => MarketSelection.AnytimeScorer(0),
+        // F_0.5.0 V1. The throw below is the point of this fixture: a new kind must be added here
+        // deliberately rather than slipping through with no field coverage at all.
+        MarketKind.DoubleChance => MarketSelection.DoubleChance(MarketChoice.HomeOrDraw),
+        MarketKind.Handicap => MarketSelection.Handicap(Side.Home, -1.5),
+        MarketKind.TeamTotalGoals => MarketSelection.TeamTotalGoals(Side.Home, 1.5, true),
+        MarketKind.CorrectScore => MarketSelection.CorrectScore(2, 1),
+        MarketKind.WinningMargin => MarketSelection.WinningMargin(1),
+        MarketKind.TotalGoalsOddEven => MarketSelection.TotalGoalsOddEven(true),
+        MarketKind.TeamTotalCorners => MarketSelection.TeamTotalCorners(Side.Home, 4.5, true),
+        MarketKind.TeamTotalCards => MarketSelection.TeamTotalCards(Side.Home, 1.5, true),
+        MarketKind.PlayerMultiScorer => MarketSelection.PlayerMultiScorer(0),
         _ => throw new InvalidOperationException($"Unhandled {kind}; extend this test's fixture."),
     };
 }

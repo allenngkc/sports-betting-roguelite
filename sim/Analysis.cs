@@ -419,7 +419,24 @@ public sealed class GateData
             // the error was measured, which is the order Allen imposed on this gate and the first
             // time in this family it was followed — G6 and G3 were each set where their instrument
             // could not read them, and each cost campaigns to discover it.
-            const string exemplarA = RelicCatalog.MultiplierId, exemplarB = "house_key";
+            // EXEMPLAR MOVED AGAIN — Allen 2026-08-12, on Campaign A (the draws re-baseline).
+            // Multiplier + House Key fell +2.96pp → +1.22pp under draws. The SYNERGY stayed real
+            // (5.4× its own error, still classed superadditive) but the 1.0pp floor ended up 0.22pp
+            // under the reading against ±0.23pp resolution, so the gate could no longer separate
+            // "clears the floor" from "sits on it". Escalation was computed and REFUSED: at 18,500
+            // the resolution only reaches ~±0.17pp for a ~0.22pp clearance — ~1.3×, still under the
+            // 2× tier at which a gate can reliably fail, so a 58-minute run would have bought no
+            // verdict. Lowering the floor was named and not taken: it would move the report's own
+            // marginal/superadditive taxonomy to fit a reading.
+            //
+            // Longshot Larry's Photo + House Key STRENGTHENED under draws (+2.67pp → +2.87pp) and
+            // clears the unchanged floor by 1.87pp at ~5.3× resolution. THE FLOOR IS UNCHANGED at
+            // 1.0pp — only the exemplar moved.
+            //
+            // Prior exemplars, kept beneath rather than overwritten (the standing form):
+            //   2026-08-08 Allen — Multiplier + House Key (was Multiplier + Scar Tissue, +0.1pp
+            //   against ±0.06pp: real, but the weakest loop in the table).
+            const string exemplarA = "longshot_photo", exemplarB = "house_key";
 
             // Threshold 1.0pp, and deliberately NOT a fresh invention: it is the line the report's
             // own taxonomy already draws between "marginal" and "superadditive". Against the new
@@ -474,12 +491,16 @@ public sealed class GateData
                               : "**INSIDE its own resolution — NOT ADJUDICATED**");
 
                 g.Add("G5", "composition superadditive: the exemplar pair's synergy excess ≥ "
-                    + $"{minExcessPp:0.#}pp (exemplar moved by Allen 2026-08-08 to The Multiplier + "
-                    + "House Key, +2.96pp at 8.7× its own error; it was Multiplier + Scar Tissue, "
-                    + "measured +0.1pp against ±0.06pp — real, but the weakest loop in the table and "
-                    + "~30× smaller than the strongest. Threshold set AFTER the error was measured, "
-                    + "and adopts the report's own marginal/superadditive line rather than inventing "
-                    + "a number)",
+                    + $"{minExcessPp:0.#}pp (exemplar moved by Allen 2026-08-12 to Longshot Larry's "
+                    + "Photo + House Key on the draws re-baseline: the prior exemplar, The "
+                    + "Multiplier + House Key, fell +2.96pp → +1.22pp under draws — its synergy "
+                    + "still real at 5.4× its own error, but the floor ended up inside the reading's "
+                    + "resolution and the gate stopped adjudicating. Escalation to 18,500 was "
+                    + "computed to buy ~1.3× and REFUSED. THE FLOOR IS UNCHANGED at 1.0pp — it is "
+                    + "the report's own marginal/superadditive line, set AFTER the error was "
+                    + "measured, and moving it to fit a reading was the alternative not taken. "
+                    + "Prior exemplar Allen 2026-08-08, itself moved from Multiplier + Scar Tissue "
+                    + "at +0.1pp against ±0.06pp — real, but the weakest loop in the table)",
                     pair.SynergyExcess >= minExcessPp,
                     $"synergy excess {pair.SynergyExcess:+0.0;-0.0}pp",
                     resolution,
@@ -540,14 +561,70 @@ public sealed class GateData
                     : "NOT MEASURED REACHABLE: random placed 0 BTTS legs too — this exclusion is "
                       + "unproven and must not be trusted";
 
+            // F_0.5.0 V1. Reachability is MEASURED the same way M1 measured BTTS: the random bot
+            // prices nothing, so a market it places legs in is one the sharp DECLINED rather than
+            // one he was blocked from. An exclusion without that evidence is an assertion, and the
+            // whole point of G7 is that assertions are how coverage holes hide.
+            string Reach(MarketKind kind)
+            {
+                if (randomBot == null) return "unmeasured this run — needs the random bot in the batch";
+                int legs = randomBot.MarketExposure.TryGetValue(kind, out MarketExposure? rx) ? rx.LegsPlaced : 0;
+                return legs > 0
+                    ? $"measured reachable: random places {legs:N0} legs where skilled places 0, so it is DECLINED, not blocked"
+                    : "NOT MEASURED REACHABLE: random placed 0 legs too — this exclusion is unproven and must not be trusted";
+            }
+
             var botExcluded = new Dictionary<MarketKind, string>
             {
                 [MarketKind.AnytimeScorer] = "YES-only market, bots do not price it (declared policy)",
+                [MarketKind.PlayerMultiScorer] =
+                    "YES-only player market on a floor-truncated board — inherits the AnytimeScorer "
+                    + "human-agency policy, and its offered rows do not sum to the outcome space so "
+                    + "there is nothing to de-vig against (declared policy)",
+                [MarketKind.CorrectScore] =
+                    "the board is TRUNCATED at the ratified 2% probability floor, so the offered "
+                    + "scores are not an exhaustive outcome set; normalizing them would over-normalize "
+                    + $"and manufacture an edge out of the missing rows — {Reach(MarketKind.CorrectScore)}",
+                [MarketKind.WinningMargin] =
+                    "one-way buckets that deliberately omit the draw (margin 0), so the set is not a "
+                    + $"partition and de-vig has no denominator — {Reach(MarketKind.WinningMargin)}",
+                [MarketKind.DoubleChance] =
+                    "its three selections OVERLAP — 1X and X2 both contain the draw — so normalizing "
+                    + "the implied probabilities is double counting, not de-vig. Structural, and it "
+                    + $"does not expire at v2 pricing the way BTTS does — {Reach(MarketKind.DoubleChance)}",
+                [MarketKind.TotalGoalsOddEven] =
+                    "THE most near-even market on the board: measured across the latent box under "
+                    + "draws it prices odd 0.490–0.499 / even 0.501–0.510, i.e. odds 1.87–1.94 on "
+                    + "both sides, and NEITHER side reaches the 3.0 longshot threshold at any "
+                    + "sampled latent point (0 of 105). Under exact de-vig it therefore never "
+                    + "strictly wins a tie and no owned item can lift it, so a sharp correctly "
+                    + "declines it — the BTTS shape, and stronger. Worth recording WHY it is this "
+                    + "balanced: every draw carries an EVEN goal total (h+h), so the old no-draws "
+                    + "truncation was deleting even mass and had skewed parity to 64/36; restoring "
+                    + "draws restored it to ~50/50. Expires at v2 pricing, same as BTTS — "
+                    + $"{Reach(MarketKind.TotalGoalsOddEven)}",
                 [MarketKind.BothTeamsToScore] =
                     "near-even two-way market: under exact de-vig it never strictly wins a tie and "
                     + "its odds never clear the longshot threshold, so a sharp correctly declines it "
                     + $"(M1, expires at v2 pricing) — {bttsEvidence}",
             };
+
+            // The 1X2 split, reported because a leg count per KIND cannot answer it. The draw is a
+            // CHOICE inside the moneyline (D1, Allen 2026-08-12), so "Moneyline: 3,724 legs" is
+            // true whether the bot took the draw 3,724 times or never. G7 exists to stop a market
+            // being invisibly untouched, and the newest market on the board is exactly the one that
+            // would hide here. This is telemetry, not a criterion: what the right draw share IS is
+            // Campaign A's reading and then Allen's, and inventing a band for it now would be the
+            // "threshold set before the instrument was measured" mistake this campaign keeps paying
+            // for.
+            if (skilled.MarketExposure.TryGetValue(MarketKind.Moneyline, out MarketExposure? ml))
+            {
+                g.Notes.Add(ml.LegsPlaced == 0
+                    ? "1X2 SPLIT: skilled placed no moneyline legs at all this run"
+                    : $"1X2 SPLIT: skilled placed {ml.DrawLegs:N0} DRAW legs of {ml.LegsPlaced:N0} "
+                      + $"moneyline legs ({100.0 * ml.DrawLegs / ml.LegsPlaced:F1}%) — telemetry for "
+                      + "the draws re-baseline, not a gate criterion");
+            }
 
             var uncovered = new List<MarketKind>();
             foreach (MarketKind kind in Enum.GetValues(typeof(MarketKind)))

@@ -49,6 +49,38 @@ public static class OddsMath
         return (1.0 / qHome, 1.0 / qAway);
     }
 
+    /// <summary>The same proportional overround over an n-way market — 1X2 is the first, and
+    /// correct score will be the next. Identical rule to the two-way form: implied probabilities
+    /// sum to 1 + overround, so per-outcome EV is −vig regardless of how many outcomes there are.
+    /// The probabilities must be a complete, mutually exclusive partition; a set that does not sum
+    /// to 1 is a caller bug and is rejected rather than silently renormalized, because silently
+    /// renormalizing an incomplete set is how a market ships priced against the wrong universe.</summary>
+    public static double[] OverroundOdds(IReadOnlyList<double> trueProbs, double overround)
+    {
+        if (trueProbs == null || trueProbs.Count < 2)
+            throw new ArgumentException("an n-way market needs at least two outcomes", nameof(trueProbs));
+        if (overround < 0) throw new ArgumentException("overround must be >= 0");
+        double sum = 0.0;
+        foreach (double p in trueProbs) { RequireProb(p); sum += p; }
+        if (Math.Abs(sum - 1.0) > 1e-9)
+            throw new ArgumentException(
+                $"n-way true probabilities must partition the outcome space (sum {sum:0.############}, expected 1)",
+                nameof(trueProbs));
+
+        var odds = new double[trueProbs.Count];
+        for (int i = 0; i < trueProbs.Count; i++)
+        {
+            double q = trueProbs[i] * (1.0 + overround);
+            double o = 1.0 / q;
+            if (o <= 1.0)
+                throw new ArgumentException(
+                    $"outcome {i} prices at {o:0.000} <= 1.0 (true prob {trueProbs[i]:0.####} too high "
+                    + "for the configured overround)", nameof(trueProbs));
+            odds[i] = o;
+        }
+        return odds;
+    }
+
     public static double Ev(double p, double stake, double decimalOdds)
     {
         RequireProb(p);
