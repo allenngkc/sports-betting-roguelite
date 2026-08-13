@@ -1,7 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 194 — PHASE T VERDICT:
-GRANTED, NOT SHIPPED.** Batch 39 canon (c057fcc): the pair caught two
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 195 (heartbeat).** TV
+9+ min into the remedy sequence (tracking-0 re-measure first, per the
+ruled order). DD standing by for the re-measure results. All else quiet.
+
+*(prior stamp, cycle 194 - PHASE T VERDICT: GRANTED, NOT SHIPPED:)* Batch 39 canon (c057fcc): the pair caught two
 live rendered defects (NEED truncation dropping the operative word; the
 money control collision) - constitution 3.5's fourth instance, first via
 a face; both fixable, neither a direction change; the lane's work called
