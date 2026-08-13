@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 220.** Both owning docs
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 221 (heartbeat).** Board
+reported to Allen in full. Campaign A past 30 min (its author's own
+wall-time prediction being tested live); sgp 3c finishing; TV on its
+deliverables; room + DD clean; research on Allen. Quiet is healthy.
+
+*(prior stamp, cycle 220:)* Both owning docs
 now carry today's rulings. The laptop fold (760581c, unqueued and right)
 CAUGHT A CONFLICT: batch 46's refusal treatment contradicted the doc's
 standing Blocked-state row - owning doc wins (S73-am4): refusals take
