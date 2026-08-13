@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 230 — MAIN IS PUSHED.**
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 231.** Batch 59 canon
+(69929d9): both final composition calls ruled - RiskPays collapses to
+one row with both ends anchored (the height problem dissolves with the
+authored gap); the 3px lands as signed-deviation-or-leading-fix per
+where it falls. TV applies both + two residuals, then THE AFTER-FRAMES
+(window pre-granted). The phase's remaining path: after-frames -> E's
+re-reads -> the review note. Campaign B mid-run; sgp 3d; research on
+Allen.
+
+*(prior stamp, cycle 230 - MAIN IS PUSHED:)*
 origin/main 7ff558d → 69c89f7 on Allen's ask (the local-only hold died
 with the storage question he answered): merged + shipped - TV's fix-pass
 era (ead5430), draws + the full v1 vocabulary (54291b4), research Tier-2
