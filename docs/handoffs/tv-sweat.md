@@ -11,6 +11,152 @@ discarded.
 
 ---
 
+## 0-GC. THE GESTURE CONNECTED · T89's deliverables sent · BUILD COMPLETE, EVERY OPEN ITEM IS THE DD's. 2026-08-13
+
+**Branch `47d3f7e`, pushed and REMOTE-VERIFIED** (`git ls-remote` reads `47d3f7e` on
+`refs/heads/tv-sweat`; the exit code is not the check on this branch — see §0-FR's push caveat).
+Tree clean, Unity zero, main local. Six commits: `ec5508c` → `3ce2e60` → `643b96a` → `8dfcb0c` →
+`ea82af2` → `47d3f7e`.
+
+**TOP LINE: there is no build work left in this lane.** Phase T's migration, T88's gesture, T89-B's
+sweep and T89-C's pass are all landed and pinned. **Four things are open and every one of them is a
+DD call, not a task.** A fresh seat should read §0-PT for Phase T's shape, this section for where it
+stands, and then wait rather than build.
+
+### Suites — the numbers to reproduce before touching anything
+
+| suite | discovered | executed | passed | failed | skipped |
+|---|---|---|---|---|---|
+| EditMode | 250 | 250 | 249 | 0 | **1 ignored — G1's grant, held deliberately** |
+| PlayMode | 94 | 94 | 88 | 0 | 6 by-design capture skips |
+
+PlayMode was 91/85 before this window; the +3 are the three new gesture pins. **Run PlayMode WITH
+graphics** or SureThing's capture tests fail environmentally and read as regressions.
+
+### C48 is law, and what it made this lane do
+
+Batch 50 (`c9ceb77`): *where copy and input disagree on a money control, **the input is corrected to
+match the copy**, never the reverse.* T88 then ruled the gesture — hold previews, **release always
+abandons**, **a second key during the hold commits**, **no timer, no auto-commit**, a press commits
+nothing; and T88(c) keeps the decline at one press, because the weight of the gesture matches the
+weight of the act.
+
+**THE FIND, and it is why this was small: §8.10's hold-to-preview was already BUILT and had no
+production caller.** `EnterCashOutPreview`, its full-revert twin, `PreviewedBank`, the stepped-down
+rows — render-aware, EditMode-pinned, and the only thing that had ever called it was a test, by
+reflection. Beside it sat `if (_interact.WasPressedThisFrame()) TryCashOut()`. **The gesture was
+never missing; it was disconnected.** Look for this shape before building anything on this surface.
+
+**The asset's own Hold is deliberately NOT used.** `Interact` carries `"interactions": "Hold"`, and
+the Input System documents `WasPressedThisFrame` as true on the press *"even if there is an
+interaction on the action that has not yet performed"* — which is how a declared hold went unobserved
+for a whole phase. Honouring it is the OTHER wrong repair: a HoldInteraction performs on a DURATION,
+and T22/T36 rule no timer. The hold is read as a STATE; the commit comes from a key.
+
+**The room boundary is ANSWERED — do not re-litigate it.** `SitSpot` acts on `WasPressedThisFrame`,
+**press, never release** (room's source, merged `c8525d1`), and `PlayerInteractor`'s press-poll
+deliberately bypasses the action's Hold. My first design guarded a release-path stand that cannot
+happen and *introduced* a defect — release E, press E again to stand, stand swallowed. It is gone.
+`CashOutLive()` is `CanAcceptCashOutNow() || _cashOutPreview`: it covers the real hazard (a fresh
+press arriving during a hold) and not one frame past it.
+
+### THE FOUR DD CALLS, with where the evidence is
+
+All four are staged in `main-2/docs/design/dd-import/` (untracked there, which is that folder's
+convention; nothing was committed in another lane's worktree).
+
+| # | the call | evidence |
+|---|---|---|
+| 1 | **The prompt zone's 20.0px height deficit.** Zone is 635.0 × 90.0 and carries exactly THREE rows at 22px; title + three options is 110.0px. Either +20.0px of zone or `SHOT FROZEN` leaves it. §6's grid does not resize to content, so it is not absorbable here | `tv-batch50-strings-2026-08-12.md` §3 |
+| 2 | **The confirm key and three unratified strings.** T22/T36 both say "a second key" and neither names one; `ENTER` is this seat's pick because it is bound to nothing in the room's asset. Strings: `HOLD M MULLIGAN (ONE MULLIGAN SLIP)`, `ENTER CONFIRMS · RELEASE ABANDONS`, `ENTER TO CASH OUT` | same file, §4–5 |
+| 3 | **T86(b): Attract's three non-compliant strings.** `SIT TO WATCH THE SWEAT`, `THE HOUSE BLINKS FIRST`, `THE BOOKIE COLLECTS` — outside T27's letter, inside its class. **189.8px of headroom**, so this slot can afford authored copy | `tv-t86b-attract-states-2026-08-12.md` |
+| 4 | **The held-preview pair collision, 198.5px**, which THIS PASS created on a known-blocked box (45.0 at rest). Disclosed, not absorbed | `tv-t74-table-2026-08-12.md` pair table |
+
+Plus the standing T74 five and T89's conditions A–F: `tv-t74-table-2026-08-12.md` (tree-stamped),
+`tv-traceability-pass-2026-08-12.md`, `tv-tabular-inventory-2026-08-12.md`.
+
+**T89 (batch 54, `0b39315`) pre-commits the closing bar** and C31 binds it both ways: that list is the
+whole list, and new findings open new items rather than retroactively withholding a grant. Build to
+the bar, not to an opinion.
+
+### THE PASS's transferable finding — an invented string CONCEALS the under-generation beneath it
+
+`LegRowLine0`'s set carried `BRICKLAYERS ANYTIME`, a club noun in the surname slot, which
+`{Surname} ANYTIME` cannot emit. It was also **the widest member of its own set** — so it SET the
+certified worst case and the real widest producible form was never reached.
+
+> **An over-generated string is only harmless when it is not the maximum. While it IS the maximum it
+> hides exactly the under-generation the other direction is looking for — so the two directions
+> cannot be swept separately, and finding one does not clear the other.**
+
+Champions are retired: the sweep now GENERATES every form over the engine's closed pools
+(`SlateGenerator.Nouns` 20, `PlayerLast` 12), so a name added to either cannot be missed by a champion
+nobody re-picked. `LegRowLine0` 152.8 → **144.3, fits by 2.8** (batch 54's first arm: relief
+unnecessary, STANDS, no revert). `LegRowNeed0` 272.4 → **289.9, 40.9 over** — it was certified 17.5px
+better than it is.
+
+### THE PINS — their seeds and their preconditions
+
+**Three pins, and every assertion is preceded by a precondition, so none can pass by never running.**
+
+- **Cash-out (2 pins), no seed pin.** `DemoTicketPolicy` picks; waits on
+  `SitSpot.InteractStandSuppressed()`, which is the public signal that an offer is live and
+  acceptable. Preconditions asserted: `kb.eKey.isPressed`, and `_cashOutPreviewAmount > 0` — the
+  latter is what makes them falsifiers, since before T88 that field's setter had no caller and reads 0.
+- **Intervention M/R, seed `GOLDEN-W2`.** **Not searched for — reused from `CharmExpansionTests`,**
+  which pins the same seed and the same hand-built pair and records *"leg 0 (matchup 1, Home) dies;
+  leg 1 (matchup 0, Away) would win"*. Ticket is hand-built (`Pick(1,Home)`, `Pick(0,Away)`, stake 20)
+  for the capture harness's reason: `DemoTicketPolicy`'s picks are moneyline-only. **Both consumables
+  are GRANTED, and that is not convenience — the session suspends into a pending loss only when a
+  legal save is HELD** (Mulligan needs ≥2 active legs; Whistle covers any ticket). No save, no window,
+  on any seed.
+- **Batch mode needs `LetDevicesRunUnfocused()`.** It is never focused, and the Input System's
+  documented response to lost focus is `ResetDevice` on every device — so a held key is wiped between
+  frames without it. `InputSystem.AddDevice` lives in the RUNTIME assembly, not the test framework,
+  which is why a headless run can hold a key at all. The device is added per-test, never in a
+  `[SetUp]`: `PendingWindowBeat` declines immediately when `Keyboard.current == null`, and that is
+  what stops batch autoplay hanging on the pending window.
+
+### THREE INSTRUMENT LESSONS, all of them mine and all of them the same family
+
+1. **THE VACUOUS FILTER — a test asserting "nothing happened" passes when nothing was attempted.**
+   The first press pin went GREEN while the key was never down. S51's shape (green by recording
+   nothing), in the pin written to close a coverage hole. **Assert the precondition before the
+   property**, every time.
+2. **WHAT IS SHOWN IS THE PRECONDITION.** The M/R pin first waited on `HasPendingLoss`, which goes
+   true the instant the *session* suspends — but the theatre reaches `PendingWindowBeat` some frames
+   later, so the key hit a surface that had not drawn the prompt. **The instrument caught this one
+   rather than a human:** it failed with `text='<null>' promptEnabled=False` because the assertion
+   named what it needed. Engine state is not rendered state; a gesture acts on what is shown.
+3. **THE FACE COLUMN — `TMP_Text.font` names the PRIMARY asset, not the arm that renders.** A slot
+   built at `FontWeight.Bold` draws through the bold asset wired by `WireBold` while `font.name` still
+   reads the regular one. My new T74 face column therefore misreported, and **the DD's own batch-38
+   record was right where my instrument was wrong** ("condensed Bold 700 carries CashOut"). **Three of
+   the five survivors are Condensed Bold 700**: `CashOut`, `RiskPays`, `LegRowNeed0`. The sweep now
+   prints the resolved weight beside the face.
+
+Two smaller ones in the same family: a **hard-coded expected value goes stale and then reads as a
+DEFECT rather than as silence** (a pin of 1015.0 survived one copy change and reported the instrument
+broken); and a label doing two jobs — `no digits` printed both for a string with no figures and for
+one whose figures are already tabular, **hiding the very confirmation T89-B asks for**.
+
+### Instruments, all committed and re-runnable
+
+`SBR/TV/T88 prompt composition` **(new)** — the prompt's widths, the zone's height, the money
+control's pair in all three states. It **refuses to measure** if the copy in `TvSweatScreen.cs` stops
+matching (comment-stripped whole-file scan), and reproduces the sweep's own figure as a cross-check.
+`SBR/TV/T84 extent sweep` — now generates from the closed pools and prints face, resolved weight,
+tracking and tabular basis per row. Plus §0-PT's list, unchanged.
+
+### An operational trap worth one line
+
+**`Set-Location` to the repo root before every Unity invocation.** The PowerShell tool's cwd persists
+between calls, and a relative `-projectPath` from a subdirectory silently opens the wrong project —
+Unity then wrote `unity/` and `evidence/` trees plus `.meta` files INSIDE `Assets/SBR/Runtime/`.
+Harmless once found, invisible until `git status`.
+
+---
+
 ## 0-IP. THE INTERVENTION PROMPT — three correct rulings, one box 1.6x its width. 2026-08-12, seat rotating at 97%
 
 **Branch `0a2ef90`, pushed and remote-verified. Tree clean, Unity zero, main local.** Suites
