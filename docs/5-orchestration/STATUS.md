@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 206 (heartbeat).**
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 207 — FULL-WIDTH
+DISPATCH.** Batch 44 + R23 spec canon (6d0ee19). Fired on Allen's words:
+room re-seated + R23 capture contract (source-read precondition first,
+Route A/B pre-committed, V6 inventory rider); TV's four batch-44 items
+(traceability pass priority - under-generation unbounded, LegRowLine0's
+relief rests on an unconfirmed number; bracket retirement; Attract state
+answer; 99pct-vs-T16); mpregame phase D1 (theater question parked);
+SGP STEP-1 APPROVED by Allen → step 2 GO, pricing-presentation question
+docketed to the DD at the boundary as promised. Six seats live + working.
+
+*(prior stamp, cycle 206:)*
 markets-pregame mid-execution-plan (early re-derivations: today's
 moneyline survives draws as 'draw no bet' renamed; correct score at the
 ratified floor = 12-16 rows, 47.3x longest, inside the tail). DD writing
