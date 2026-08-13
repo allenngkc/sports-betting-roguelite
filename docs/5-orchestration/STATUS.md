@@ -1,6 +1,20 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 196.** Batch 41 canon
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 197 — THREE NEW LANES
+LIVE.** Allen's next-slices brief executed (e141eed → ec4c15b): worktrees
+created + chartered + registered + seated at Opus 5 max (per-terminal
+verified, the standing seat spec): **markets-pregame** (Lane 1 - full v1
+pre-game vocabulary, one campaign one re-baseline, plan-first),
+**sgp** (Lane 2 - same-game parlay, research-first, five gated steps),
+**research** (Lane 3 - compulsion-loop autopsies, docs-only, ALLEN-AS-DD
+governance with normal lead→orch→Allen routing per his recommit).
+Holds honored: in-play micro-markets, charms, WebGL, juice pack. TV's
+stats-tab phase QUEUED post-Phase-T-close. Meanwhile: TV fixing the dead
+backstop (sweep found it - a T-3 port casualty; compact column fits by
+3.4px through the live measurer); DD standing by for sweep numbers.
+Watcher v26 (five seats). markets-2 registry row marked retired.
+
+*(prior stamp, cycle 196:)* Batch 41 canon
 (7a7223e): T82 stays open (mechanism granted at the font layer, surface
 unchanged - TV's qualification adopted; the DD recorded its own defective
 close-condition under 1.5); WIRING GRANTED, sequenced after-sweep-not-
