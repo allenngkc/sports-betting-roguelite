@@ -1,6 +1,18 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-12, cycle 198.** All six lanes
+**Keeper-era heartbeat stamp: 2026-08-12, cycle 199.** Batches 40+42
+landed (5f8eac7, canon through 42): T74 magnitudes ruled with levers
+(span-then-size never copy; column outer width fixed); tracking clause
+in tv-design 4 (tracking marks a LABEL never a FACT; Label/Meta ratified
+as built; NEED 0 on doctrine, permanent); WIRING GATED on the two
+failures it would CREATE (LegRowLine0 relief + six-slot enumeration,
+sent together -> word immediate); RiskPays exemption REFUSED by
+construction with the losing argument recorded in full. TV briefed via
+file (send-length discipline). Elsewhere: markets-pregame plan at Allen's
+grill (R1-R4); sgp dispatches running; research deep dives running.
+NEED ALLEN: the four grill rulings; the literature-scope call.
+
+*(prior stamp, cycle 198:)* All six lanes
 moving: TV's final sweep table done (RiskPays 16.1→39.8 tabular;
 LegRowLine0 +3.4px today / -1.8px once wired - the dead-backstop box IS
 the wiring casualty, fix live on the wiring commit) - now enumerating the
