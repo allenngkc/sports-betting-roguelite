@@ -155,7 +155,10 @@ public class SkilledStrategy : IStrategy
             foreach (MarketOffer offer in m.Markets)
             {
                 MarketSelection selection = offer.Selection;
-                if (selection.Kind == MarketKind.AnytimeScorer) continue; // declared human-agency market
+                // Kinds the sharp cannot honestly de-vig — see CanPrice for why each is out. This
+                // is a skip, not a silent one: G7 requires every excluded kind to be named with a
+                // reason in the report, and the floor-truncated ones to carry measured evidence.
+                if (!CanPrice(selection.Kind)) continue;
                 // MONEYLINE-ONLY BOTS NOW SEE THE DRAW, and that is a deliberate call rather than
                 // an oversight — recorded here because it silently redefines what the banded
                 // reference arms measure (noshop is G2's stick and G3's reference; fixed is G5's).
@@ -631,8 +634,44 @@ public class SkilledStrategy : IStrategy
         MarketKind.TotalCorners => Pair(MarketSelection.TotalCorners(s.Line, true), MarketSelection.TotalCorners(s.Line, false)),
         MarketKind.TotalCards => Pair(MarketSelection.TotalCards(s.Line, true), MarketSelection.TotalCards(s.Line, false)),
         MarketKind.BothTeamsToScore => Pair(MarketSelection.BothTeamsToScore(true), MarketSelection.BothTeamsToScore(false)),
+
+        // ---- F_0.5.0 V1, two-way and therefore de-viggable ----
+        // The handicap's complement is the OTHER side at the NEGATED line: home −1.5 wins exactly
+        // when away +1.5 loses, because the goal margin is an integer and never lands on the half.
+        MarketKind.Handicap => Pair(
+            MarketSelection.Handicap(s.Choice == MarketChoice.Home ? Side.Home : Side.Away, s.Line),
+            MarketSelection.Handicap(s.Choice == MarketChoice.Home ? Side.Away : Side.Home, -s.Line)),
+        MarketKind.TeamTotalGoals => Pair(
+            MarketSelection.TeamTotalGoals(s.Team!.Value, s.Line, true),
+            MarketSelection.TeamTotalGoals(s.Team!.Value, s.Line, false)),
+        MarketKind.TeamTotalCorners => Pair(
+            MarketSelection.TeamTotalCorners(s.Team!.Value, s.Line, true),
+            MarketSelection.TeamTotalCorners(s.Team!.Value, s.Line, false)),
+        MarketKind.TeamTotalCards => Pair(
+            MarketSelection.TeamTotalCards(s.Team!.Value, s.Line, true),
+            MarketSelection.TeamTotalCards(s.Team!.Value, s.Line, false)),
+        MarketKind.TotalGoalsOddEven => Pair(
+            MarketSelection.TotalGoalsOddEven(true), MarketSelection.TotalGoalsOddEven(false)),
+
         _ => throw new ArgumentException($"Bots do not price {s.Kind}"),
     };
+
+    /// <summary>Which kinds the sharp can price at all. A kind may only appear here if its
+    /// <see cref="Siblings"/> set is a genuine PARTITION of the outcome space — de-vig normalizes
+    /// against that set, so a partial or overlapping one manufactures an edge out of thin air.
+    ///
+    /// Excluded, each for a structural reason and not for convenience:
+    /// **CorrectScore** and **PlayerMultiScorer** are boards truncated by a probability floor, so
+    /// their offered rows do not sum to the outcome space. **WinningMargin** is one-way and its
+    /// buckets omit the draw entirely (margin 0). **DoubleChance**'s three selections OVERLAP —
+    /// 1X and X2 both contain the draw — so normalizing them is not de-vig, it is double counting.
+    /// **AnytimeScorer** is the declared human-agency market.
+    ///
+    /// G7 requires each of these to carry a reason in the report, and the floor-truncated ones to
+    /// carry MEASURED evidence that a bot could have reached them (the M1/BTTS pattern).</summary>
+    private static bool CanPrice(MarketKind kind) => kind is not (
+        MarketKind.AnytimeScorer or MarketKind.PlayerMultiScorer or MarketKind.CorrectScore
+        or MarketKind.WinningMargin or MarketKind.DoubleChance);
 
     private static MarketSelection[] Pair(MarketSelection a, MarketSelection b) => new[] { a, b };
 

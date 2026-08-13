@@ -561,9 +561,48 @@ public sealed class GateData
                     : "NOT MEASURED REACHABLE: random placed 0 BTTS legs too — this exclusion is "
                       + "unproven and must not be trusted";
 
+            // F_0.5.0 V1. Reachability is MEASURED the same way M1 measured BTTS: the random bot
+            // prices nothing, so a market it places legs in is one the sharp DECLINED rather than
+            // one he was blocked from. An exclusion without that evidence is an assertion, and the
+            // whole point of G7 is that assertions are how coverage holes hide.
+            string Reach(MarketKind kind)
+            {
+                if (randomBot == null) return "unmeasured this run — needs the random bot in the batch";
+                int legs = randomBot.MarketExposure.TryGetValue(kind, out MarketExposure? rx) ? rx.LegsPlaced : 0;
+                return legs > 0
+                    ? $"measured reachable: random places {legs:N0} legs where skilled places 0, so it is DECLINED, not blocked"
+                    : "NOT MEASURED REACHABLE: random placed 0 legs too — this exclusion is unproven and must not be trusted";
+            }
+
             var botExcluded = new Dictionary<MarketKind, string>
             {
                 [MarketKind.AnytimeScorer] = "YES-only market, bots do not price it (declared policy)",
+                [MarketKind.PlayerMultiScorer] =
+                    "YES-only player market on a floor-truncated board — inherits the AnytimeScorer "
+                    + "human-agency policy, and its offered rows do not sum to the outcome space so "
+                    + "there is nothing to de-vig against (declared policy)",
+                [MarketKind.CorrectScore] =
+                    "the board is TRUNCATED at the ratified 2% probability floor, so the offered "
+                    + "scores are not an exhaustive outcome set; normalizing them would over-normalize "
+                    + $"and manufacture an edge out of the missing rows — {Reach(MarketKind.CorrectScore)}",
+                [MarketKind.WinningMargin] =
+                    "one-way buckets that deliberately omit the draw (margin 0), so the set is not a "
+                    + $"partition and de-vig has no denominator — {Reach(MarketKind.WinningMargin)}",
+                [MarketKind.DoubleChance] =
+                    "its three selections OVERLAP — 1X and X2 both contain the draw — so normalizing "
+                    + "the implied probabilities is double counting, not de-vig. Structural, and it "
+                    + $"does not expire at v2 pricing the way BTTS does — {Reach(MarketKind.DoubleChance)}",
+                [MarketKind.TotalGoalsOddEven] =
+                    "THE most near-even market on the board: measured across the latent box under "
+                    + "draws it prices odd 0.490–0.499 / even 0.501–0.510, i.e. odds 1.87–1.94 on "
+                    + "both sides, and NEITHER side reaches the 3.0 longshot threshold at any "
+                    + "sampled latent point (0 of 105). Under exact de-vig it therefore never "
+                    + "strictly wins a tie and no owned item can lift it, so a sharp correctly "
+                    + "declines it — the BTTS shape, and stronger. Worth recording WHY it is this "
+                    + "balanced: every draw carries an EVEN goal total (h+h), so the old no-draws "
+                    + "truncation was deleting even mass and had skewed parity to 64/36; restoring "
+                    + "draws restored it to ~50/50. Expires at v2 pricing, same as BTTS — "
+                    + $"{Reach(MarketKind.TotalGoalsOddEven)}",
                 [MarketKind.BothTeamsToScore] =
                     "near-even two-way market: under exact de-vig it never strictly wins a tie and "
                     + "its odds never clear the longshot threshold, so a sharp correctly declines it "

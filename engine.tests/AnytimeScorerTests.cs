@@ -151,6 +151,18 @@ public class AnytimeScorerTests
                 MarketKind.TotalCorners => (MarketSelection.TotalCorners(8.5, true), true),      // 9 corners, over 8.5
                 MarketKind.TotalCards => (MarketSelection.TotalCards(2.5, false), false),        // 3 cards, not under 2.5
                 MarketKind.AnytimeScorer => (MarketSelection.AnytimeScorer(0), true),            // away ace scored
+                // F_0.5.0 V1, all graded against the same 2-1 line: corners 5-4, cards 2-1,
+                // Home Hero scored BOTH home goals, Away Ace scored the away goal. The board
+                // indexes away first (1 away player), so index 1 is Home Hero.
+                MarketKind.DoubleChance => (MarketSelection.DoubleChance(MarketChoice.AwayOrDraw), false), // home won
+                MarketKind.Handicap => (MarketSelection.Handicap(Side.Home, -1.5), false),       // 2−1.5 = 0.5, not > 1
+                MarketKind.TeamTotalGoals => (MarketSelection.TeamTotalGoals(Side.Home, 1.5, true), true), // home 2
+                MarketKind.CorrectScore => (MarketSelection.CorrectScore(2, 1), true),           // exactly 2-1
+                MarketKind.WinningMargin => (MarketSelection.WinningMargin(1), true),            // won by one
+                MarketKind.TotalGoalsOddEven => (MarketSelection.TotalGoalsOddEven(true), true), // 3 goals, odd
+                MarketKind.TeamTotalCorners => (MarketSelection.TeamTotalCorners(Side.Home, 4.5, true), true), // 5
+                MarketKind.TeamTotalCards => (MarketSelection.TeamTotalCards(Side.Home, 1.5, true), true),     // 2
+                MarketKind.PlayerMultiScorer => (MarketSelection.PlayerMultiScorer(1), true),    // Home Hero got both
                 _ => throw new InvalidOperationException($"Unhandled {kind}; extend this test's fixture."),
             };
 

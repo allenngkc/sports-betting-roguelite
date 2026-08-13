@@ -23,13 +23,41 @@ public enum MarketKind
     TotalCorners,
     TotalCards,
     AnytimeScorer,
+
+    // ---- F_0.5.0 V1, the pre-game vocabulary. Every kind below grades as a predicate over the
+    // EXISTING MatchStatLine: no sampler change, no new RNG draw, no golden re-pin. That property
+    // is what makes this slice cheap and it must not be traded away without saying so out loud.
+    /// <summary>1X / X2 / 12. Dead under the no-draws constraint (1X was the moneyline exactly and
+    /// 12 priced at 1.000); alive since Allen lifted it 2026-08-12.</summary>
+    DoubleChance,
+    /// <summary>Goal handicap, ±1.5 ONLY. ±0.5 duplicates the 1X2 home price (the margin is never
+    /// 0 for the backed side to matter) and ±2.5 CRASHES — its favourite side reaches p 0.984
+    /// against the 0.95238 offerability ceiling, measured across the latent box.</summary>
+    Handicap,
+    TeamTotalGoals,
+    /// <summary>Capped at the ratified 2% probability floor (Allen 2026-08-12): 12–16 rows, longest
+    /// price 47.3×, which keeps it inside the 62.6× tail the economy is already gated on.</summary>
+    CorrectScore,
+    WinningMargin,
+    TotalGoalsOddEven,
+    TeamTotalCorners,
+    TeamTotalCards,
+    /// <summary>A listed player scoring 2+. Free: scorer attribution is already sampled.</summary>
+    PlayerMultiScorer,
 }
 
 /// <summary>The choice vocabulary is kept separate from team side because counting markets use
 /// Over/Under and BTTS uses Yes/No. <c>Draw</c> is moneyline-only — the market is 1X2 now, and it
 /// is the one non-two-way member of this enum, which is why every de-vig site had to stop asking
 /// for "the opposite" and start asking for the whole sibling set.</summary>
-public enum MarketChoice { Home, Away, Over, Under, Yes, No, Draw }
+public enum MarketChoice
+{
+    Home, Away, Over, Under, Yes, No, Draw,
+    // Double chance — named as unions rather than reusing Home/Away, because "1X" is not "Home"
+    // and a reader who assumes it is has a losing bet graded as a winner.
+    HomeOrDraw, AwayOrDraw, HomeOrAway,
+    Odd, Even,
+}
 
 public enum LegState { Pending, Won, Lost }
 
@@ -51,12 +79,28 @@ public readonly struct MarketSelection : IEquatable<MarketSelection>
     public MarketChoice Choice { get; }
     public int PlayerIndex { get; }
 
-    public MarketSelection(MarketKind kind, double line, MarketChoice choice, int playerIndex = -1)
+    /// <summary>Which team the market is scoped to — team totals (goals, corners, cards). Null for
+    /// every match-scoped market. A NAMED field rather than a sign on <see cref="Line"/> or a reuse
+    /// of <see cref="PlayerIndex"/>: S22 struck the packed display string on exactly this
+    /// principle, and a packed numeric field is the same defect wearing different clothes.</summary>
+    public Side? Team { get; }
+
+    /// <summary>Correct score, −1 when unused. Two named ints for the same reason as
+    /// <see cref="Team"/> — a future reader decoding <c>Line = 21.0</c> as "2-1" is the failure
+    /// this avoids.</summary>
+    public int ScoreHome { get; }
+    public int ScoreAway { get; }
+
+    public MarketSelection(MarketKind kind, double line, MarketChoice choice, int playerIndex = -1,
+        Side? team = null, int scoreHome = -1, int scoreAway = -1)
     {
         Kind = kind;
         Line = line;
         Choice = choice;
         PlayerIndex = playerIndex;
+        Team = team;
+        ScoreHome = scoreHome;
+        ScoreAway = scoreAway;
     }
 
     public MarketSelection(MarketKind kind, double line, Side side)
@@ -106,11 +150,61 @@ public readonly struct MarketSelection : IEquatable<MarketSelection>
     public static MarketSelection AnytimeScorer(int playerIndex)
         => new MarketSelection(MarketKind.AnytimeScorer, 0.0, MarketChoice.Yes, playerIndex);
 
+    // ---- F_0.5.0 V1 ----
+
+    public static MarketSelection DoubleChance(MarketChoice choice)
+        => choice is MarketChoice.HomeOrDraw or MarketChoice.AwayOrDraw or MarketChoice.HomeOrAway
+            ? new MarketSelection(MarketKind.DoubleChance, 0.0, choice)
+            : throw new ArgumentException($"Double chance takes HomeOrDraw/AwayOrDraw/HomeOrAway, got {choice}");
+
+    /// <summary>The handicap is signed and applied TO THE BACKED SIDE: home −1.5 must win by two,
+    /// away +1.5 may lose by one. Grading is <c>backed + line > other</c> in goals, which is the
+    /// same sentence in both directions and leaves no room for a sign convention to drift.</summary>
+    public static MarketSelection Handicap(Side backed, double line)
+        => new MarketSelection(MarketKind.Handicap, line,
+            backed == Side.Home ? MarketChoice.Home : MarketChoice.Away);
+
+    public static MarketSelection TeamTotalGoals(Side team, double line, bool over)
+        => new MarketSelection(MarketKind.TeamTotalGoals, line,
+            over ? MarketChoice.Over : MarketChoice.Under, -1, team);
+
+    public static MarketSelection TeamTotalCorners(Side team, double line, bool over)
+        => new MarketSelection(MarketKind.TeamTotalCorners, line,
+            over ? MarketChoice.Over : MarketChoice.Under, -1, team);
+
+    public static MarketSelection TeamTotalCards(Side team, double line, bool over)
+        => new MarketSelection(MarketKind.TeamTotalCards, line,
+            over ? MarketChoice.Over : MarketChoice.Under, -1, team);
+
+    public static MarketSelection CorrectScore(int homeGoals, int awayGoals)
+        => homeGoals >= 0 && awayGoals >= 0
+            ? new MarketSelection(MarketKind.CorrectScore, 0.0, MarketChoice.Yes, -1, null, homeGoals, awayGoals)
+            : throw new ArgumentOutOfRangeException(nameof(homeGoals), "correct score takes non-negative goals");
+
+    /// <summary>Winning margin bucket. <paramref name="margin"/> 1 and 2 are EXACT; the top bucket
+    /// is "that many OR MORE" so the buckets partition the space — a set of exact margins would
+    /// leave the tail unpriced and silently break exhaustiveness.</summary>
+    public static MarketSelection WinningMargin(int margin)
+        => margin >= 1
+            ? new MarketSelection(MarketKind.WinningMargin, margin, MarketChoice.Yes)
+            : throw new ArgumentOutOfRangeException(nameof(margin), "margin buckets start at 1");
+
+    public static MarketSelection TotalGoalsOddEven(bool odd)
+        => new MarketSelection(MarketKind.TotalGoalsOddEven, 0.0,
+            odd ? MarketChoice.Odd : MarketChoice.Even);
+
+    public static MarketSelection PlayerMultiScorer(int playerIndex, int goals = 2)
+        => goals >= 2
+            ? new MarketSelection(MarketKind.PlayerMultiScorer, goals, MarketChoice.Yes, playerIndex)
+            : throw new ArgumentOutOfRangeException(nameof(goals), "multi-scorer starts at 2+");
+
     public bool Equals(MarketSelection other)
         => Kind == other.Kind && Line.Equals(other.Line) && Choice == other.Choice
-            && PlayerIndex == other.PlayerIndex;
+            && PlayerIndex == other.PlayerIndex && Team == other.Team
+            && ScoreHome == other.ScoreHome && ScoreAway == other.ScoreAway;
     public override bool Equals(object? obj) => obj is MarketSelection other && Equals(other);
-    public override int GetHashCode() => HashCode.Combine((int)Kind, Line, (int)Choice, PlayerIndex);
+    public override int GetHashCode()
+        => HashCode.Combine((int)Kind, Line, (int)Choice, PlayerIndex, Team, ScoreHome, ScoreAway);
     public static bool operator ==(MarketSelection left, MarketSelection right) => left.Equals(right);
     public static bool operator !=(MarketSelection left, MarketSelection right) => !left.Equals(right);
 }

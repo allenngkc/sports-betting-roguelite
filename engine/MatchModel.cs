@@ -152,8 +152,71 @@ public static class MatchModel
         }
         // The scorer board is one-way YES-only. PlayerIndex is the stable board index: away
         // roster first, home roster second (see Matchup.PlayerAt).
-        for (int i = 0; i < matchup.Away.Players.Count + matchup.Home.Players.Count; i++)
+        int boardSize = matchup.Away.Players.Count + matchup.Home.Players.Count;
+        for (int i = 0; i < boardSize; i++)
             offers.Add(Offer(matchup, MarketSelection.AnytimeScorer(i), config));
+
+        // ---- F_0.5.0 V1 ----
+        offers.Add(Offer(matchup, MarketSelection.DoubleChance(MarketChoice.HomeOrDraw), config));
+        offers.Add(Offer(matchup, MarketSelection.DoubleChance(MarketChoice.AwayOrDraw), config));
+        offers.Add(Offer(matchup, MarketSelection.DoubleChance(MarketChoice.HomeOrAway), config));
+
+        // ±1.5 ONLY. ±0.5 duplicates the 1X2 home/away price and ±2.5 crashes Offer() at reachable
+        // seeds (favourite side p 0.984 against the 0.95238 ceiling) — both measured, §12.3.
+        foreach (double line in config.HandicapLines)
+        {
+            offers.Add(Offer(matchup, MarketSelection.Handicap(Side.Home, -line), config));
+            offers.Add(Offer(matchup, MarketSelection.Handicap(Side.Away, line), config));
+            offers.Add(Offer(matchup, MarketSelection.Handicap(Side.Away, -line), config));
+            offers.Add(Offer(matchup, MarketSelection.Handicap(Side.Home, line), config));
+        }
+
+        foreach (Side team in new[] { Side.Home, Side.Away })
+        {
+            foreach (double line in config.TeamGoalLines)
+            {
+                offers.Add(Offer(matchup, MarketSelection.TeamTotalGoals(team, line, true), config));
+                offers.Add(Offer(matchup, MarketSelection.TeamTotalGoals(team, line, false), config));
+            }
+            foreach (double line in config.TeamCornerLines)
+            {
+                offers.Add(Offer(matchup, MarketSelection.TeamTotalCorners(team, line, true), config));
+                offers.Add(Offer(matchup, MarketSelection.TeamTotalCorners(team, line, false), config));
+            }
+            foreach (double line in config.TeamCardLines)
+            {
+                offers.Add(Offer(matchup, MarketSelection.TeamTotalCards(team, line, true), config));
+                offers.Add(Offer(matchup, MarketSelection.TeamTotalCards(team, line, false), config));
+            }
+        }
+
+        // Correct score, capped at the RATIFIED probability floor (Allen 2026-08-12). The cap is
+        // load-bearing twice over: it keeps the row count readable (12–16), and it keeps the
+        // longest price (~47×) inside the tail the economy is already gated on. Without it the
+        // grid's own edge cells price past 190× and the vocabulary becomes an economy change.
+        for (int h = 0; h <= config.MaxGoalsGrid; h++)
+            for (int a = 0; a <= config.MaxGoalsGrid; a++)
+            {
+                var cs = MarketSelection.CorrectScore(h, a);
+                if (TrueProbability(matchup, cs) >= config.CorrectScoreFloor)
+                    offers.Add(Offer(matchup, cs, config));
+            }
+
+        for (int m = 1; m <= TopMarginBucket; m++)
+            offers.Add(Offer(matchup, MarketSelection.WinningMargin(m), config));
+
+        offers.Add(Offer(matchup, MarketSelection.TotalGoalsOddEven(true), config));
+        offers.Add(Offer(matchup, MarketSelection.TotalGoalsOddEven(false), config));
+
+        for (int i = 0; i < boardSize; i++)
+        {
+            var multi = MarketSelection.PlayerMultiScorer(i);
+            // A 2+ price for a fourth-choice defender runs to thousands and would dwarf every
+            // other payout on the board. Same floor discipline as the score grid.
+            if (TrueProbability(matchup, multi) >= config.CorrectScoreFloor)
+                offers.Add(Offer(matchup, multi, config));
+        }
+
         return offers;
     }
 
@@ -251,9 +314,127 @@ public static class MatchModel
                     team == Side.Home ? h : a));
                 return 1.0 - miss;
 
+            // ---- F_0.5.0 V1. Every one of these is an exact function of the SAME distributions
+            // that price the older markets and sample the stat line, so pricing and grading cannot
+            // diverge — the failure mode is killed structurally, not by test.
+
+            case MarketKind.DoubleChance:
+                return selection.Choice switch
+                {
+                    MarketChoice.HomeOrDraw => matchup.TrueProb(MatchResult.Home) + matchup.TrueProb(MatchResult.Draw),
+                    MarketChoice.AwayOrDraw => matchup.TrueProb(MatchResult.Away) + matchup.TrueProb(MatchResult.Draw),
+                    MarketChoice.HomeOrAway => 1.0 - matchup.TrueProb(MatchResult.Draw),
+                    _ => throw new ArgumentException($"Invalid double-chance choice {selection.Choice}"),
+                };
+
+            case MarketKind.Handicap:
+            {
+                RequireChoice(selection, MarketChoice.Home, MarketChoice.Away);
+                double line = selection.Line;
+                return selection.Choice == MarketChoice.Home
+                    ? ScoreProbability(matchup, (h, a) => h + line > a, config)
+                    : ScoreProbability(matchup, (h, a) => a + line > h, config);
+            }
+
+            case MarketKind.TeamTotalGoals:
+            {
+                RequireChoice(selection, MarketChoice.Over, MarketChoice.Under);
+                Side ttTeam = RequireTeam(selection);
+                double lineG = selection.Line;
+                double over = ScoreProbability(matchup,
+                    (h, a) => (ttTeam == Side.Home ? h : a) > lineG, config);
+                return selection.Choice == MarketChoice.Over ? over : 1.0 - over;
+            }
+
+            case MarketKind.CorrectScore:
+                return ScoreProbability(matchup,
+                    (h, a) => h == selection.ScoreHome && a == selection.ScoreAway, config);
+
+            case MarketKind.WinningMargin:
+            {
+                int bucket = (int)selection.Line;
+                // The top bucket is "or more" so the buckets partition the space (see the factory).
+                return ScoreProbability(matchup,
+                    (h, a) => bucket >= TopMarginBucket
+                        ? Math.Abs(h - a) >= bucket
+                        : Math.Abs(h - a) == bucket,
+                    config);
+            }
+
+            case MarketKind.TotalGoalsOddEven:
+            {
+                double odd = ScoreProbability(matchup, (h, a) => ((h + a) & 1) == 1, config);
+                return selection.Choice == MarketChoice.Odd ? odd
+                    : selection.Choice == MarketChoice.Even ? 1.0 - odd
+                    : throw new ArgumentException($"Odd/even takes Odd or Even, got {selection.Choice}");
+            }
+
+            case MarketKind.TeamTotalCorners:
+            case MarketKind.TeamTotalCards:
+            {
+                RequireChoice(selection, MarketChoice.Over, MarketChoice.Under);
+                Side t = RequireTeam(selection);
+                bool corners = selection.Kind == MarketKind.TeamTotalCorners;
+                (double[] raw, double total) = (corners, t) switch
+                {
+                    (true, Side.Home) => (matchup.Dist.HomeCornerRaw, matchup.Dist.HomeCornerTotal),
+                    (true, _) => (matchup.Dist.AwayCornerRaw, matchup.Dist.AwayCornerTotal),
+                    (false, Side.Home) => (matchup.Dist.HomeCardRaw, matchup.Dist.HomeCardTotal),
+                    (false, _) => (matchup.Dist.AwayCardRaw, matchup.Dist.AwayCardTotal),
+                };
+                double overCount = TeamCountProbability(raw, total, selection.Line);
+                return selection.Choice == MarketChoice.Over ? overCount : 1.0 - overCount;
+            }
+
+            case MarketKind.PlayerMultiScorer:
+            {
+                if (selection.Choice != MarketChoice.Yes)
+                    throw new ArgumentException("Multi-scorer is a YES-only market");
+                Player mp = matchup.PlayerAt(selection.PlayerIndex);
+                Side mteam = matchup.PlayerSide(selection.PlayerIndex);
+                IReadOnlyList<Player> mroster = mteam == Side.Home ? matchup.Home.Players : matchup.Away.Players;
+                double mtotal = 0.0;
+                foreach (Player p in mroster) mtotal += p.ScoringWeight;
+                if (mtotal <= 0.0) throw new InvalidOperationException("Scorer roster has no positive weights");
+                double w = mp.ScoringWeight / mtotal;
+                int need = (int)selection.Line;
+                // P(at least `need`) = 1 − P(0) − … − P(need−1), each term binomial in that team's
+                // goals — the same categorical weights the anytime price and the attribution use.
+                return 1.0 - ScoreExpectation(matchup, (h, a) =>
+                {
+                    int goals = mteam == Side.Home ? h : a;
+                    double below = 0.0;
+                    for (int k = 0; k < need; k++) below += Binomial(goals, k) * Math.Pow(w, k) * Math.Pow(1.0 - w, goals - k);
+                    return below;
+                });
+            }
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(selection));
         }
+    }
+
+    /// <summary>The margin bucket at which the criterion becomes "or more". Buckets 1..N−1 are
+    /// exact and N is the tail, so the set partitions the outcome space.</summary>
+    internal const int TopMarginBucket = 3;
+
+    private static Side RequireTeam(MarketSelection selection)
+        => selection.Team ?? throw new ArgumentException(
+            $"{selection.Kind} is a team-scoped market and carries no Team");
+
+    private static double Binomial(int n, int k)
+    {
+        if (k < 0 || k > n) return 0.0;
+        double c = 1.0;
+        for (int i = 0; i < k; i++) c = c * (n - i) / (i + 1);
+        return c;
+    }
+
+    private static double TeamCountProbability(double[] raw, double total, double line)
+    {
+        double p = 0.0;
+        for (int i = 0; i < raw.Length; i++) if (i > line) p += raw[i] / total;
+        return p;
     }
 
     /// <summary>Roster-blind grading for every <see cref="MarketKind"/> except AnytimeScorer.
@@ -275,11 +456,55 @@ public static class MatchModel
                 return Compare(line.HomeCorners + line.AwayCorners, selection.Line, selection.Choice);
             case MarketKind.TotalCards:
                 return Compare(line.HomeCards + line.AwayCards, selection.Line, selection.Choice);
+            case MarketKind.DoubleChance:
+                return selection.Choice switch
+                {
+                    MarketChoice.HomeOrDraw => line.Result != MatchResult.Away,
+                    MarketChoice.AwayOrDraw => line.Result != MatchResult.Home,
+                    MarketChoice.HomeOrAway => line.Result != MatchResult.Draw,
+                    _ => throw new ArgumentException($"Invalid double-chance choice {selection.Choice}"),
+                };
+
+            case MarketKind.Handicap:
+                // The same sentence as the price: backed + line > other.
+                return selection.Choice == MarketChoice.Home
+                    ? line.HomeGoals + selection.Line > line.AwayGoals
+                    : selection.Choice == MarketChoice.Away
+                        ? line.AwayGoals + selection.Line > line.HomeGoals
+                        : throw new ArgumentException($"Handicap takes Home or Away, got {selection.Choice}");
+
+            case MarketKind.TeamTotalGoals:
+                return Compare(RequireTeam(selection) == Side.Home ? line.HomeGoals : line.AwayGoals,
+                    selection.Line, selection.Choice);
+
+            case MarketKind.CorrectScore:
+                return line.HomeGoals == selection.ScoreHome && line.AwayGoals == selection.ScoreAway;
+
+            case MarketKind.WinningMargin:
+            {
+                int margin = Math.Abs(line.HomeGoals - line.AwayGoals);
+                int bucket = (int)selection.Line;
+                return bucket >= TopMarginBucket ? margin >= bucket : margin == bucket;
+            }
+
+            case MarketKind.TotalGoalsOddEven:
+                return (((line.HomeGoals + line.AwayGoals) & 1) == 1)
+                    == (selection.Choice == MarketChoice.Odd);
+
+            case MarketKind.TeamTotalCorners:
+                return Compare(RequireTeam(selection) == Side.Home ? line.HomeCorners : line.AwayCorners,
+                    selection.Line, selection.Choice);
+
+            case MarketKind.TeamTotalCards:
+                return Compare(RequireTeam(selection) == Side.Home ? line.HomeCards : line.AwayCards,
+                    selection.Line, selection.Choice);
+
             case MarketKind.AnytimeScorer:
+            case MarketKind.PlayerMultiScorer:
                 // Unreachable now that this overload is private: the only call site is the 3-arg
-                // overload's guard clause below, which never forwards AnytimeScorer here. Left in
+                // overload's guard clause below, which never forwards a player market here. Left in
                 // as a defensive invariant in case that guard is ever changed.
-                throw new ArgumentException("Anytime scorer grading requires matchup roster context");
+                throw new ArgumentException("Player-market grading requires matchup roster context");
             default:
                 throw new ArgumentOutOfRangeException(nameof(selection));
         }
@@ -287,15 +512,20 @@ public static class MatchModel
 
     public static bool Grades(Matchup matchup, MatchStatLine line, MarketSelection selection)
     {
-        if (selection.Kind != MarketKind.AnytimeScorer) return Grades(line, selection);
+        if (selection.Kind != MarketKind.AnytimeScorer && selection.Kind != MarketKind.PlayerMultiScorer)
+            return Grades(line, selection);
         if (selection.Choice != MarketChoice.Yes)
-            throw new ArgumentException("Anytime scorer is a YES-only market");
+            throw new ArgumentException("Player scorer markets are YES-only");
         Player player = matchup.PlayerAt(selection.PlayerIndex);
         IReadOnlyList<Player> scorers = matchup.PlayerSide(selection.PlayerIndex) == Side.Home
             ? line.HomeScorers : line.AwayScorers;
+        int scored = 0;
         foreach (Player scorer in scorers)
-            if (ReferenceEquals(scorer, player)) return true;
-        return false;
+            if (ReferenceEquals(scorer, player)) scored++;
+        // Anytime is the 1+ case of the same count, so both markets grade off one traversal and
+        // cannot disagree about whether a player scored.
+        int needed = selection.Kind == MarketKind.AnytimeScorer ? 1 : (int)selection.Line;
+        return scored >= needed;
     }
 
     /// <summary>Legacy single-string market label, one packed string per selection. Retained
@@ -395,6 +625,65 @@ public static class MatchModel
                 Player player = matchup.PlayerAt(selection.PlayerIndex);
                 string name = player.Name.ToUpperInvariant();
                 return new MarketFields("ANYTIME SCORER", name, $"{name} ANYTIME", fixture, RoleWord(player.Role));
+            }
+
+            // ---- F_0.5.0 V1. Wording is DS-neutral and deliberately unpolished: the engine emits
+            // fields and the surface composes (S22), and the vocabulary for these rows is Phase S /
+            // DD's call, not this lane's to invent.
+            case MarketKind.DoubleChance:
+            {
+                string dc = selection.Choice switch
+                {
+                    MarketChoice.HomeOrDraw => $"{matchup.Home.Name} OR DRAW",
+                    MarketChoice.AwayOrDraw => $"{matchup.Away.Name} OR DRAW",
+                    MarketChoice.HomeOrAway => "EITHER TEAM",
+                    _ => throw new ArgumentException($"Invalid double-chance choice {selection.Choice}"),
+                };
+                return new MarketFields("DOUBLE CHANCE", "", dc, fixture, "");
+            }
+
+            case MarketKind.Handicap:
+            {
+                RequireChoice(selection, MarketChoice.Home, MarketChoice.Away);
+                string hteam = selection.Choice == MarketChoice.Home ? matchup.Home.Name : matchup.Away.Name;
+                return new MarketFields("HANDICAP", hteam, $"{hteam} {selection.Line:+0.0;-0.0}", fixture, "");
+            }
+
+            case MarketKind.TeamTotalGoals:
+            case MarketKind.TeamTotalCorners:
+            case MarketKind.TeamTotalCards:
+            {
+                RequireChoice(selection, MarketChoice.Over, MarketChoice.Under);
+                Side t = RequireTeam(selection);
+                string tname = t == Side.Home ? matchup.Home.Name : matchup.Away.Name;
+                string noun = selection.Kind == MarketKind.TeamTotalGoals ? "GOALS"
+                    : selection.Kind == MarketKind.TeamTotalCorners ? "CORNERS" : "CARDS";
+                string ou = selection.Choice == MarketChoice.Over ? "OVER" : "UNDER";
+                return new MarketFields($"TEAM {noun}", tname,
+                    $"{tname} {ou} {selection.Line:0.0} {noun}", fixture, "");
+            }
+
+            case MarketKind.CorrectScore:
+                return new MarketFields("CORRECT SCORE", "",
+                    $"{selection.ScoreHome}-{selection.ScoreAway}", fixture, "");
+
+            case MarketKind.WinningMargin:
+            {
+                int b = (int)selection.Line;
+                return new MarketFields("WINNING MARGIN", "",
+                    b >= TopMarginBucket ? $"{b}+ GOALS" : $"{b} GOAL{(b == 1 ? "" : "S")}", fixture, "");
+            }
+
+            case MarketKind.TotalGoalsOddEven:
+                return new MarketFields("TOTAL GOALS", "",
+                    selection.Choice == MarketChoice.Odd ? "ODD" : "EVEN", fixture, "");
+
+            case MarketKind.PlayerMultiScorer:
+            {
+                Player mp = matchup.PlayerAt(selection.PlayerIndex);
+                string mname = mp.Name.ToUpperInvariant();
+                return new MarketFields($"{(int)selection.Line}+ GOALS", mname,
+                    $"{mname} {(int)selection.Line}+", fixture, RoleWord(mp.Role));
             }
 
             default:

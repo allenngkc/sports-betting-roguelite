@@ -70,8 +70,21 @@ public class StatLineTests
         run.PlaceTicket(new[] { new Pick(0, selections[0]) }, 10);
         run.LockRound();
 
+        // This test covers the F_0.4.0 kinds. The F_0.5.0 V1 kinds are covered by
+        // OfferabilityTests.Every_market_grades_consistently_with_the_score_it_is_priced_from,
+        // which re-derives each of them from the same baked line. The delegation is DECLARED here
+        // rather than left as a fallthrough: the old chain ended in a bare `: false`, so every
+        // kind added after it was silently asserted to lose — a wrong expectation that happened to
+        // pass while no such kind existed.
+        var coveredHere = new HashSet<MarketKind>
+        {
+            MarketKind.Moneyline, MarketKind.BothTeamsToScore, MarketKind.TotalGoals,
+            MarketKind.TotalCorners, MarketKind.TotalCards, MarketKind.AnytimeScorer,
+        };
+
         foreach (MarketSelection selection in selections)
         {
+            if (!coveredHere.Contains(selection.Kind)) continue;
             bool expected = selection.Kind == MarketKind.Moneyline
                 ? selection.Choice == (m.Result switch
                     {
