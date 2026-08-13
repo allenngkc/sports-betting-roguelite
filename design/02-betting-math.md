@@ -158,7 +158,11 @@ At `κ = 1` an independent combination prices *identically* to the legs multipli
 
 Both are needed, and the second does not subsume the first. Two repeats of a *long* leg stay comfortably above evens and so pass the price check while remaining a pure ripoff: double margin for identical risk. The duplicate rule catches those; the evens rule is the backstop for anything else that drifts above `p_joint > 1/(κ(1+Ω)^n)`.
 
-**A refusal must emit cause AND remedy, structurally** (S73-am4, `docs/design/surething-design.md` §3.3 — the owning doc). A refused combination is a *Blocked* state, and that row has always required both halves: naming what cannot happen is the cause, **naming which leg to drop is the remedy**. So a rejection is not an exception string — it carries the offending leg set and a droppable leg that makes the ticket valid. The surface stamps it; the model supplies the parts, as with `principal`.
+**A refusal must emit cause AND remedy, structurally** (S73-am4, `docs/design/surething-design.md` §3.3 — the owning doc). A refused combination is a *Blocked* state, and that row has always required both halves: naming what cannot happen is the cause, **naming which leg to drop is the remedy**. So a rejection is not an exception string — it carries the offending leg set and the drop that makes the ticket valid. The surface stamps it; the model supplies the parts, as with `principal`.
+
+**The remedy is a SET, not a leg — corrected 2026-08-13.** This first said "a droppable leg", singular. That is true at the shipped `κ = 1` and false above it: 84 impossible combinations have no single drop that both resolves the conflict *and* keeps the remainder above evens, and three-or-more repeats of a selection need more than one removal by construction. Measured over 1,961 refusals, every multi-leg remedy occurred at `κ = 8` and none at `κ = 1` — so the gate campaign moving the dial is what makes this live. A remedy always exists, since dropping to a single leg is always placeable.
+
+The cause is likewise **minimal**: the smallest leg set that still reaches `p = 0`. A two-leg conflict inside a four-leg ticket names two legs, not four. The joint-only-impossible triples name three, because no smaller true answer exists.
 
 Two things the same law fixes in place, both already true here: the engine **prices the individual leg and refuses only the combination**, so a refused leg stays reachable on its own; and a bet that cannot win is never purchasable, because a price is a factual claim about an outcome.
 

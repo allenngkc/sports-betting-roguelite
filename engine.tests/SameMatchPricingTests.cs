@@ -177,12 +177,13 @@ public class SameMatchPricingTests
     {
         var run = new Run("sgp-impossible", SweepConfig());
 
-        ArgumentException thrown = Assert.Throws<ArgumentException>(() => run.PlaceTicket(
+        TicketRefusedException thrown = Assert.Throws<TicketRefusedException>(() => run.PlaceTicket(
             new[] { new Pick(0, Side.Home), new Pick(0, Side.Away) }, 10));
         Assert.Contains("zero", thrown.Message);
+        Assert.Equal(RefusalKind.ImpossibleCombination, thrown.Refusal.Kind);
 
         // A disjoint band on the same draw is the same verdict from a different cause.
-        Assert.Throws<ArgumentException>(() => run.PlaceTicket(new[]
+        Assert.Throws<TicketRefusedException>(() => run.PlaceTicket(new[]
         {
             new Pick(0, MarketSelection.TotalGoals(2.5, true)),
             new Pick(0, MarketSelection.TotalGoals(1.5, false)),
@@ -223,8 +224,13 @@ public class SameMatchPricingTests
         _output.WriteLine("impossible only as a whole: "
             + string.Join(" + ", found!.Select(s => MatchModel.DisplayLabel(matchup, s))));
 
-        Assert.Throws<ArgumentException>(() => run.PlaceTicket(
+        TicketRefusedException thrown = Assert.Throws<TicketRefusedException>(() => run.PlaceTicket(
             found!.Select(s => new Pick(0, s)).ToArray(), 10));
+
+        // The MINIMAL cause is all three legs and it has to be: every sub-pair of this shape is
+        // possible, so there is no smaller true answer. Naming two of them would be a false claim.
+        Assert.Equal(RefusalKind.ImpossibleCombination, thrown.Refusal.Kind);
+        Assert.Equal(new[] { 0, 1, 2 }, thrown.Refusal.CauseLegs);
     }
 
     /// <summary>A possible same-match ticket prices at its exact joint. The joint is hand-computed
@@ -664,9 +670,16 @@ public class SameMatchPricingTests
             picks.Select(p => LegFor(run.CurrentSlate.Matchups[p.MatchupIndex], p.Selection)).ToList(),
             config.Overround, config.SgpMargin).Price, 10);
 
-        ArgumentException thrown = Assert.Throws<ArgumentException>(() => run.PlaceTicket(picks, 10));
+        TicketRefusedException thrown = Assert.Throws<TicketRefusedException>(() => run.PlaceTicket(picks, 10));
         Assert.Contains("may not appear twice", thrown.Message);
-        Assert.Empty(run.Tickets);
-        Assert.Equal(config.StartingBank, run.Bank);
+        Assert.Equal(RefusalKind.DuplicateSelection, thrown.Refusal.Kind);
+
+        // FOUR repeats have NO SINGLE-LEG REMEDY: drop one and three repeats are still a duplicate.
+        // The remedy is the set that actually works, and it is verified below rather than trusted.
+        Assert.Equal(new[] { 1, 2, 3 }, thrown.Refusal.RemedyLegs);
+        run.PlaceTicket(new[] { picks[0] }, 10);
+
+        Assert.Single(run.Tickets);
+        Assert.Equal(config.StartingBank - 10, run.Bank);
     }
 }

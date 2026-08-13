@@ -53,9 +53,13 @@ public class RunTests
         Assert.Throws<ArgumentException>(() => run.PlaceTicket(new[] { new Pick(0, Side.Home) }, 5));
         Assert.Throws<ArgumentException>(() => run.PlaceTicket(new[] { new Pick(0, Side.Home) }, 351));
         Assert.Throws<ArgumentException>(() => run.PlaceTicket(Array.Empty<Pick>(), 100));
-        Assert.Throws<ArgumentException>(
+        // Both of these are REFUSED COMBINATIONS rather than bad arguments, so they carry the
+        // structured cause and remedy (S73-am4). TicketRefusedException is an ArgumentException, so
+        // every caller that only catches one is unaffected; the narrower type is asserted because
+        // xUnit's Assert.Throws matches exactly and the refusal is the stronger claim.
+        Assert.Throws<TicketRefusedException>(
             () => run.PlaceTicket(new[] { new Pick(0, Side.Home), new Pick(0, Side.Away) }, 100));
-        Assert.Throws<ArgumentException>(
+        Assert.Throws<TicketRefusedException>(
             () => run.PlaceTicket(new[] { new Pick(1, Side.Home), new Pick(2, Side.Away), new Pick(1, Side.Away) }, 100));
     }
 

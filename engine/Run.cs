@@ -210,70 +210,40 @@ public sealed class Run
         if (modifier == TicketModifier.DoubleOrNothing && !OwnsConsumable("double_or_nothing"))
             throw new InvalidOperationException("No Double or Nothing Slip held");
 
-        var legs = picks
-            .Select(p =>
-            {
-                if (p.MatchupIndex < 0 || p.MatchupIndex >= CurrentSlate.Matchups.Count)
-                    throw new ArgumentException($"Matchup {p.MatchupIndex + 1} is off the slate");
-                Matchup matchup = CurrentSlate.Matchups[p.MatchupIndex];
-                return new Leg(matchup, p.Selection, matchup.Odds(p.Selection));
-            })
-            .ToList();
+        List<Leg> legs = LegsFor(picks);
 
-        // A SELECTION MAY NOT APPEAR TWICE (design/02 § *Impossible combinations are blocked, not
-        // priced*, ruled 2026-08-12). The joint is idempotent — P(A and A) = P(A), so a repeat adds no
-        // risk — while (1 + O)^n charges a full extra leg of margin for it. It is the degenerate case
-        // of Implies: a leg entails itself. Real books do not accept it either.
+        // A leg-targeted Profit Boost scales the TICKET's price by the factor it would have applied to
+        // the product, so the relic is worth exactly what it was worth before this feature. Read here,
+        // ahead of consumption, because the boosted figure is the contract the refusal check judges.
+        double boost = profitBoostLeg >= 0 ? RelicCatalog.ProfitBoostMult : 1.0;
+
+        // THE THREE VALIDITY RULES, AS ONE STRUCTURED VERDICT (design/02 § *Impossible combinations
+        // are blocked, not priced* and § *A refusal must emit cause AND remedy, structurally*; S73-am4,
+        // docs/design/surething-design.md §3.3 — the owning law).
         //
-        // SEPARATE from the sub-evens refusal below, and not subsumed by it: two repeats of a LONG leg
-        // stay comfortably above evens, so the price check passes while the ticket is still a pure
-        // ripoff — double margin for identical risk. The evens rule is the backstop for everything
-        // else; this rule is what catches those. Unreachable before F_0.6.0, because the old
-        // one-pick-per-matchup guard made it unconstructible.
+        // A refused combination is a Blocked state, and that state has always required both halves:
+        // what cannot happen is the cause, what to drop is the remedy. So the engine does not refuse
+        // with a sentence — SameMatchModel.Refuse returns the offending leg set and a verified drop
+        // set, and the exception is a carrier for them. The surface stamps the words; the model
+        // supplies the parts, exactly as it does for `principal`.
         //
-        // Runs before any consumable is spent (atomic legality, PLAN.md rev 5 §7) and cannot fire on a
-        // ticket with at most one leg per matchup, so the ordinary path never feels it.
-        for (int i = 0; i < legs.Count; i++)
-            for (int j = i + 1; j < legs.Count; j++)
-                if (ReferenceEquals(legs[i].Matchup, legs[j].Matchup)
-                    && legs[i].Selection == legs[j].Selection)
-                    throw new ArgumentException(
-                        $"Leg {j + 1} repeats leg {i + 1} ({legs[i].DisplayLabel}): a selection may not "
-                        + "appear twice on a ticket. The repeat adds no risk and costs a full extra leg "
-                        + "of margin.");
+        // Runs before any consumable is spent (atomic legality, PLAN.md rev 5 §7), and CANNOT FIRE ON
+        // A TICKET WITH AT MOST ONE LEG PER MATCHUP — Refuse leaves on its first line for those, so
+        // the ordinary path never feels this and stays bit-identical.
+        TicketRefusal? refusal =
+            SameMatchModel.Refuse(legs, Config.Overround, Config.SgpMargin, boost, profitBoostLeg);
+        if (refusal != null) throw new TicketRefusedException(refusal, legs);
 
         // SAME MATCH (F_0.6.0). Two legs on one matchup are correlated, so the product of their
         // offered odds is not this ticket's probability and cannot be its price. The joint model
         // prices it — and is entered ONLY when some matchup carries 2+ legs, so a ticket with at most
         // one leg per matchup keeps the pre-existing path below, verbatim and bit-for-bit.
+        //
+        // Runs AFTER the refusal, which is what makes SameMatchModel.NoLabelFallbacks mean what its
+        // own doc comment says — tickets SOLD at the naive product. A refused ticket is never sold.
         SameMatchPrice? sameMatch = SameMatchModel.IsSameMatch(legs)
             ? SameMatchModel.Price(legs, Config.Overround, Config.SgpMargin)
             : null;
-
-        // REPLACES the one-pick-per-matchup guard. Two legs on one matchup are now sellable; a
-        // combination that no outcome wins is not. Per design/02 this is a VALIDITY test rather than
-        // a price movement, so it is exempt from the no-label fallback and runs before any consumable
-        // is spent — atomic legality, PLAN.md rev 5 §7.
-        if (sameMatch != null && sameMatch.Impossible)
-            throw new ArgumentException(
-                "These legs cannot all win: the combination has probability zero and has no price");
-
-        // A leg-targeted Profit Boost scales the TICKET's price by the factor it would have applied to
-        // the product, so the relic is worth exactly what it was worth before this feature. Read here,
-        // ahead of consumption, because the boosted figure is the contract the next check judges.
-        double boost = profitBoostLeg >= 0 ? RelicCatalog.ProfitBoostMult : 1.0;
-
-        // A joint price can land at or below evens where a single leg's cannot: the board guarantees
-        // p < 1/(1+O) per leg, but p_ticket x (1+O)^n is not bounded below 1 by that — repeat or
-        // near-repeat legs on one high-probability market are the reachable case. OddsMath rejects
-        // decimals <= 1 everywhere downstream, so fail here with the reason, exactly as
-        // MatchModel.Offer does for a single leg, instead of surfacing as an arithmetic complaint.
-        // NOT a policy choice: such a ticket is unsellable either way. Whether the book should instead
-        // refuse repeat legs outright is a DESIGN question, open (design/02 does not cover it).
-        if (sameMatch != null && !sameMatch.NaiveFallback && sameMatch.Price * boost <= 1.0)
-            throw new ArgumentException(
-                $"This combination prices at {sameMatch.Price * boost:0.000} <= 1.0 and cannot be offered: "
-                + "its legs are close enough to a repeat that the joint carries no room for the margin");
 
         // The played Profit Boost rewrites the chosen leg's offered odds BEFORE vig is computed —
         // like every promo, it can legitimately drive the ticket's vig to zero or below.
@@ -351,6 +321,47 @@ public sealed class Run
         _compsAccrualRaw += stake * Config.CompsPerDollarStaked; // pools raw; commits once at lock
         _tickets.Add(ticket);
         return ticket;
+    }
+
+    /// <summary>The picks as legs, priced off the live slate. One construction shared by
+    /// <see cref="PlaceTicket"/> and <see cref="RefusalFor"/>, so a pre-checked slip and the placement
+    /// that follows it can never be judging different legs.</summary>
+    private List<Leg> LegsFor(IReadOnlyList<Pick> picks)
+        => picks
+            .Select(p =>
+            {
+                if (p.MatchupIndex < 0 || p.MatchupIndex >= CurrentSlate.Matchups.Count)
+                    throw new ArgumentException($"Matchup {p.MatchupIndex + 1} is off the slate");
+                Matchup matchup = CurrentSlate.Matchups[p.MatchupIndex];
+                return new Leg(matchup, p.Selection, matchup.Odds(p.Selection));
+            })
+            .ToList();
+
+    /// <summary>
+    /// Would this slip be refused, and why — null if it would be sold. THE PROGRAMMATIC ROUTE to the
+    /// same verdict <see cref="PlaceTicket"/> raises (S73-am4,
+    /// <c>docs/design/surething-design.md</c> §3.3): a surface that must stamp a Blocked control
+    /// before the player commits reads the cause and the remedy from here instead of provoking an
+    /// exception and reading its text.
+    ///
+    /// <para>The verdict is the same object <see cref="TicketRefusedException.Refusal"/> carries, from
+    /// the same call on the same legs — there is one refusal rule set, not a preview of one.</para>
+    ///
+    /// <para><b>Judges only the three combination rules.</b> Stake, bankroll, ticket count, held
+    /// consumables and phase are placement concerns and are not consulted, so this stays answerable
+    /// while a slip is still being built. It costs nothing on a ticket with at most one leg per
+    /// matchup, which cannot be refused by any of the three.</para></summary>
+    /// <param name="picks">The slip as it stands.</param>
+    /// <param name="profitBoostLeg">The leg a held Profit Boost would be played on, or −1 — it lifts
+    /// the price the sub-evens rule judges, so the answer depends on it.</param>
+    public TicketRefusal? RefusalFor(IReadOnlyList<Pick> picks, int profitBoostLeg = -1)
+    {
+        if (picks == null) throw new ArgumentNullException(nameof(picks));
+        if (picks.Count < 1 || picks.Count > Config.MaxLegs)
+            throw new ArgumentException($"Tickets take 1 to {Config.MaxLegs} legs, got {picks.Count}");
+
+        return SameMatchModel.Refuse(LegsFor(picks), Config.Overround, Config.SgpMargin,
+            profitBoostLeg >= 0 ? RelicCatalog.ProfitBoostMult : 1.0, profitBoostLeg);
     }
 
     /// <summary>Plays a held Bookie's Marker: this round's payment drops by the relief fraction.

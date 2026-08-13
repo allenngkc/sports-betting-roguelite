@@ -816,6 +816,93 @@ public sealed class SameMatchPrice
     }
 }
 
+/// <summary>Which validity rule refused a ticket — the three of them
+/// (<c>design/02-betting-math.md</c> § *Same-game tickets*, ruled 2026-08-12). Structured so a caller
+/// branches on the RULE rather than matching an English string.</summary>
+public enum RefusalKind
+{
+    /// <summary>p_ticket = 0. No outcome wins this combination, so it has no finite price, and a bet
+    /// that cannot win must never be purchasable.</summary>
+    ImpossibleCombination,
+
+    /// <summary>One selection appears more than once. The joint is idempotent — the repeat adds no
+    /// risk — while (1 + Ω)^n charges a full extra leg of margin for it.</summary>
+    DuplicateSelection,
+
+    /// <summary>The ticket prices at or below evens: pay one, win less than one.</summary>
+    SubEvens,
+}
+
+/// <summary>
+/// A refused combination, IN PARTS (S73-am4, <c>docs/design/surething-design.md</c> §3.3 — the owning
+/// law; <c>design/02-betting-math.md</c> § *A refusal must emit cause AND remedy, structurally*).
+///
+/// <para>A refused combination is a <i>Blocked</i> state, and that row has always required both
+/// halves: what cannot happen is the CAUSE, what to drop is the REMEDY. So a rejection is not an
+/// exception string — it carries the offending leg set and a droppable leg that makes the ticket
+/// valid. Same seam as <see cref="SameMatchPrice.Principal"/>: <b>the model emits structured data and
+/// never an English sentence</b>; presentation composes the words and keeps copy authority.</para>
+///
+/// <para>There is deliberately no display text and no <c>ToString</c> override on this type.</para>
+/// </summary>
+public sealed class TicketRefusal
+{
+    public RefusalKind Kind { get; }
+
+    /// <summary>THE CAUSE: the MINIMAL set of legs that conflict, as indices into the ticket's leg
+    /// list, ascending. Minimal by construction rather than by convenience — a cause naming four legs
+    /// where two conflict is a worse answer, so
+    /// <see cref="RefusalKind.ImpossibleCombination"/> searches subsets smallest-first for the
+    /// smallest one that still reaches zero. A duplicate names the repeated pair. A
+    /// <see cref="RefusalKind.SubEvens"/> refusal names every leg, because the price is a property of
+    /// the whole combination and no proper subset of it prices any worse.</summary>
+    public IReadOnlyList<int> CauseLegs { get; }
+
+    /// <summary>THE REMEDY: the legs to drop, as indices into the ticket's leg list, ascending.
+    ///
+    /// <para><b>Computed and verified, never guessed.</b> Every set here was checked by construction:
+    /// the remaining legs were run back through all three validity rules and came out placeable. The
+    /// search is smallest-first, so a one-leg remedy is emitted wherever one exists, and among equal
+    /// sizes it prefers dropping the legs added LAST — the surface refuses the second pick, not the
+    /// first.</para>
+    ///
+    /// <para><b>Usually one leg, and not always one.</b> Three or more repeats of a selection have no
+    /// single-leg remedy at all: drop one and the rest are still a duplicate. Reporting a leg whose
+    /// removal does not fix the ticket would be a remedy that lies, so the type carries a SET and the
+    /// common case is a set of one.</para>
+    ///
+    /// <para>Empty only if no removal whatever yields a placeable ticket. Not reachable on the
+    /// shipped board — dropping to a single leg always is placeable, since a lone leg takes the
+    /// ordinary path and the board guarantees it prices above evens — and left representable rather
+    /// than asserted away, so an engine that ever produces one says so instead of naming a leg that
+    /// does not help.</para></summary>
+    public IReadOnlyList<int> RemedyLegs { get; }
+
+    /// <summary>The model's own label for the conflict, when one covers exactly
+    /// <see cref="CauseLegs"/> — a <see cref="RelationKind.MutuallyExclusive"/> for an impossible
+    /// combination, the self-<see cref="RelationKind.Implies"/> for a duplicate. Null when the cause
+    /// spans a set the relation vocabulary does not name as a unit.</summary>
+    public Relation? CauseRelation { get; }
+
+    /// <summary>The price the ticket would have carried, boost included — the figure a
+    /// <see cref="RefusalKind.SubEvens"/> refusal is ABOUT. Exactly 0.0 for an impossible
+    /// combination, which has no price at all.</summary>
+    public double Price { get; }
+
+    /// <summary>Whether any removal fixes this ticket. See <see cref="RemedyLegs"/>.</summary>
+    public bool HasRemedy => RemedyLegs.Count > 0;
+
+    public TicketRefusal(RefusalKind kind, IReadOnlyList<int> causeLegs, IReadOnlyList<int> remedyLegs,
+        Relation? causeRelation, double price)
+    {
+        Kind = kind;
+        CauseLegs = causeLegs ?? throw new ArgumentNullException(nameof(causeLegs));
+        RemedyLegs = remedyLegs ?? throw new ArgumentNullException(nameof(remedyLegs));
+        CauseRelation = causeRelation;
+        Price = price;
+    }
+}
+
 /// <summary>
 /// Ticket-level pricing under the correlation model (<c>design/02-betting-math.md</c> § *Same-game
 /// tickets*, plan F_0.6.0 Phase 2). <see cref="JointModel"/> knows one matchup; this knows a ticket.
@@ -1044,6 +1131,219 @@ public static class SameMatchModel
         double price = 1.0 / (pTicket * margin * Math.Pow(1.0 + overround, legs.Count));
         return new SameMatchPrice(pTicket, price, relations, principal, naiveFallback: false,
             subsetPrices: Array.Empty<double>());
+    }
+
+    // ================================================================================ refusal
+    // The three validity rules, and the structured verdict they produce (S73-am4, owned by
+    // docs/design/surething-design.md §3.3; design/02-betting-math.md § *A refusal must emit cause AND
+    // remedy, structurally*). The model supplies the parts; the placing layer decides how to raise
+    // them and presentation composes the words.
+
+    /// <summary>
+    /// The validity verdict on a ticket: null if it may be sold, otherwise the refusal IN PARTS —
+    /// which legs conflict, and which to drop.
+    ///
+    /// <para><b>The three rules, in canon order.</b> A duplicate selection is refused as a duplicate
+    /// even when it would also price under evens: design/02 is explicit that "the second does not
+    /// subsume the first", since two repeats of a LONG leg clear evens comfortably and are still a
+    /// pure ripoff. Then the impossible combination, then the sub-evens backstop.</para>
+    ///
+    /// <para><b>A ticket with at most one leg per matchup leaves on the first line, untouched.</b>
+    /// None of the three rules can reach it — a duplicate needs one matchup twice, and the other two
+    /// judge a joint price that such a ticket does not have — so it exits before a single joint is
+    /// enumerated and its price, payout, void and settlement stay bit-identical.</para>
+    ///
+    /// <para><b>Does not count a no-label fallback.</b> <see cref="NoLabelFallbacks"/> means tickets
+    /// SOLD at the naive product, and a refused ticket is never sold; the counting call in
+    /// <c>Run.PlaceTicket</c> runs after this verdict clears.</para>
+    /// </summary>
+    /// <param name="legs">The ticket's legs, in ticket order.</param>
+    /// <param name="overround">Ω, the per-leg margin.</param>
+    /// <param name="margin">κ, the SAME MATCH margin dial.</param>
+    /// <param name="boost">The multiplier a leg-targeted Profit Boost puts on the ticket price, or
+    /// 1.0 for none. It scales the price the sub-evens rule judges, so a boosted ticket that clears
+    /// evens is not refused for failing to.</param>
+    /// <param name="boostLeg">Which leg carries that boost, or −1. A remedy that drops the boosted
+    /// leg drops the boost with it, exactly as it does on the void path.</param>
+    public static TicketRefusal? Refuse(IReadOnlyList<Leg> legs, double overround, double margin,
+        double boost = 1.0, int boostLeg = -1)
+    {
+        if (legs == null) throw new ArgumentNullException(nameof(legs));
+        if (legs.Count == 0) throw new ArgumentException("A ticket needs at least one leg", nameof(legs));
+
+        // THE INVARIANT'S GUARD — see the summary. Not an optimization.
+        if (!IsSameMatch(legs)) return null;
+
+        if (legs.Count > MaxSubsetLegs)
+            throw new ArgumentException(
+                $"A refusal search over {legs.Count} legs walks {1L << legs.Count} subsets; the model "
+                + $"searches up to {MaxSubsetLegs} legs (RunConfig.MaxLegs ships at 4)", nameof(legs));
+
+        int n = legs.Count;
+        int full = (1 << n) - 1;
+
+        SameMatchPrice priced = PriceCore(legs, overround, margin, countFallback: false);
+        double price = priced.Impossible ? 0.0 : priced.Price * BoostOn(full, boost, boostLeg);
+
+        RefusalKind kind;
+        int[] cause;
+
+        int repeatOf = FirstRepeat(legs, full, out int repeat);
+        if (repeatOf >= 0)
+        {
+            // The cause is the repeated selection, the remedy the repeat — but the remedy is still
+            // SEARCHED rather than assumed to be `repeat`, because three repeats of one selection are
+            // not fixed by dropping one of them.
+            kind = RefusalKind.DuplicateSelection;
+            cause = new[] { repeatOf, repeat };
+        }
+        else if (priced.Impossible)
+        {
+            kind = RefusalKind.ImpossibleCombination;
+            cause = MinimalConflict(legs, overround, margin);
+        }
+        else if (!priced.NaiveFallback && price <= 1.0)
+        {
+            // Every leg, and that is minimal here: dropping a leg raises the joint (weakly) and drops
+            // a factor of (1 + Ω) off the margin, so no proper subset of a sub-evens ticket is itself
+            // sub-evens for a reason this one is not. The whole combination IS the cause.
+            kind = RefusalKind.SubEvens;
+            cause = Indices(full);
+        }
+        else return null;
+
+        return new TicketRefusal(kind, cause,
+            MinimalRemedy(legs, overround, margin, boost, boostLeg),
+            RelationOver(priced.Relations, cause), price);
+    }
+
+    /// <summary>The first repeated selection in <paramref name="mask"/>, scanning in ticket order:
+    /// returns the index it repeats and sets <paramref name="repeat"/> to the repeat itself, or −1.</summary>
+    private static int FirstRepeat(IReadOnlyList<Leg> legs, int mask, out int repeat)
+    {
+        for (int i = 0; i < legs.Count; i++)
+        {
+            if ((mask & (1 << i)) == 0) continue;
+            for (int j = i + 1; j < legs.Count; j++)
+            {
+                if ((mask & (1 << j)) == 0) continue;
+                if (ReferenceEquals(legs[i].Matchup, legs[j].Matchup)
+                    && legs[i].Selection == legs[j].Selection)
+                {
+                    repeat = j;
+                    return i;
+                }
+            }
+        }
+        repeat = -1;
+        return -1;
+    }
+
+    /// <summary>The smallest set of legs that already reaches p = 0 — the minimal cause. Searched
+    /// smallest-first, so a two-leg conflict inside a four-leg ticket is named as two legs; a triple
+    /// that reaches zero only jointly (recon §6.2's 57 shapes, every sub-pair positive) is named as
+    /// all three, because there is no smaller true answer.
+    ///
+    /// <para>Ties inside a size are broken by taking the HIGHEST subset mask, which prefers the legs
+    /// added last — the same preference the remedy uses, so cause and remedy read as one verdict on a
+    /// ticket carrying two independent conflicts.</para></summary>
+    private static int[] MinimalConflict(IReadOnlyList<Leg> legs, double overround, double margin)
+    {
+        int n = legs.Count, full = (1 << n) - 1;
+        for (int size = 1; size <= n; size++)
+            for (int mask = full; mask >= 1; mask--)
+            {
+                if (PopCount(mask) != size) continue;
+                if (PriceCore(Survivors(legs, mask), overround, margin, countFallback: false).PTicket == 0.0)
+                    return Indices(mask);
+            }
+        return Indices(full); // unreachable: only asked when the whole ticket is already zero
+    }
+
+    /// <summary>The smallest set of legs whose removal leaves a ticket that ACTUALLY PLACES —
+    /// verified against all three rules, not inferred from the cause. Searched smallest-first so a
+    /// one-leg remedy wins wherever one exists; ties inside a size prefer dropping the legs added
+    /// last.
+    ///
+    /// <para>Empty only if nothing works, which the shipped board cannot produce: the search reaches
+    /// the one-leg remainders, and a lone leg is an ordinary ticket priced above evens by the board's
+    /// own guard.</para></summary>
+    private static int[] MinimalRemedy(IReadOnlyList<Leg> legs, double overround, double margin,
+        double boost, int boostLeg)
+    {
+        int n = legs.Count, full = (1 << n) - 1;
+        for (int size = 1; size < n; size++)
+            for (int drop = full; drop >= 1; drop--)
+            {
+                if (PopCount(drop) != size) continue;
+                if (Placeable(legs, full & ~drop, overround, margin, boost, boostLeg))
+                    return Indices(drop);
+            }
+        return Array.Empty<int>();
+    }
+
+    /// <summary>Whether the legs in <paramref name="keepMask"/> would survive all three validity
+    /// rules — the same tests <see cref="Refuse"/> applies, on the same prices, which is what makes a
+    /// remedy verified rather than guessed.</summary>
+    private static bool Placeable(IReadOnlyList<Leg> legs, int keepMask, double overround, double margin,
+        double boost, int boostLeg)
+    {
+        Leg[] kept = Survivors(legs, keepMask);
+        if (kept.Length == 0) return false; // a ticket takes at least one leg
+
+        // An ordinary remainder takes the untouched product path, where none of the three rules
+        // exists: no matchup twice, so no duplicate and no joint to judge. Its price is a product of
+        // board singles, each above evens by MatchModel.Offer's own guard.
+        if (!IsSameMatch(kept)) return true;
+
+        if (FirstRepeat(kept, (1 << kept.Length) - 1, out int _) >= 0) return false;
+
+        SameMatchPrice core = PriceCore(kept, overround, margin, countFallback: false);
+        if (core.Impossible) return false;
+        return core.NaiveFallback || core.Price * BoostOn(keepMask, boost, boostLeg) > 1.0;
+    }
+
+    /// <summary>A leg-targeted Profit Boost scales the ticket price only while its leg is on the
+    /// ticket — the same rule the survivor-subset table applies on a void.</summary>
+    private static double BoostOn(int mask, double boost, int boostLeg)
+        => boostLeg >= 0 && (mask & (1 << boostLeg)) != 0 ? boost : 1.0;
+
+    /// <summary>The model's own label for a set of legs, when one relation covers exactly that set.
+    /// Order-insensitive: a cause is a set, while <see cref="Relation.Legs"/> is ordered where
+    /// direction carries meaning.</summary>
+    private static Relation? RelationOver(IReadOnlyList<Relation> relations, int[] cause)
+    {
+        for (int r = 0; r < relations.Count; r++)
+        {
+            IReadOnlyList<int> on = relations[r].Legs;
+            if (on.Count != cause.Length) continue;
+
+            bool same = true;
+            for (int i = 0; i < cause.Length && same; i++)
+            {
+                same = false;
+                for (int j = 0; j < on.Count; j++) if (on[j] == cause[i]) { same = true; break; }
+            }
+            if (same) return relations[r];
+        }
+        return null;
+    }
+
+    private static int PopCount(int mask)
+    {
+        int count = 0;
+        for (; mask != 0; mask &= mask - 1) count++;
+        return count;
+    }
+
+    /// <summary>A bitmask as ascending leg indices — the shape every part of a
+    /// <see cref="TicketRefusal"/> is published in.</summary>
+    private static int[] Indices(int mask)
+    {
+        var indices = new int[PopCount(mask)];
+        for (int i = 0, k = 0; (mask >> i) != 0; i++)
+            if ((mask & (1 << i)) != 0) indices[k++] = i;
+        return indices;
     }
 
     /// <summary>The board's own product of leg odds — today's price, which is what the no-label

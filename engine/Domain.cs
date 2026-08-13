@@ -643,3 +643,74 @@ public sealed class Ticket
         }
     }
 }
+
+/// <summary>
+/// A ticket the book refuses to sell, raised by <c>Run.PlaceTicket</c> and carrying the refusal IN
+/// PARTS (S73-am4, <c>docs/design/surething-design.md</c> §3.3).
+///
+/// <para><b>Derives from <see cref="ArgumentException"/> deliberately.</b> All three refusals were
+/// plain <c>ArgumentException</c>s before this type existed and callers that only catch one — the
+/// console screens, the sim harness — keep working untouched. What is new is
+/// <see cref="Refusal"/>: a caller that wants to ACT on the refusal reads the structured cause and
+/// remedy off it instead of parsing <see cref="Exception.Message"/>. A caller that wants the verdict
+/// without an exception at all asks <c>Run.RefusalFor</c> first.</para>
+///
+/// <para><b>The message is composed HERE, not in the model.</b> The model emits structured data and
+/// never an English sentence; this text is a developer-facing and console-facing courtesy, built from
+/// the same parts a surface would compose properly. It is not the stamp the design law describes —
+/// that is presentation's, from <see cref="Refusal"/>.</para>
+/// </summary>
+public sealed class TicketRefusedException : ArgumentException
+{
+    public TicketRefusal Refusal { get; }
+
+    public TicketRefusedException(TicketRefusal refusal, IReadOnlyList<Leg> legs)
+        : base(Compose(refusal, legs))
+        => Refusal = refusal ?? throw new ArgumentNullException(nameof(refusal));
+
+    private static string Compose(TicketRefusal refusal, IReadOnlyList<Leg> legs)
+    {
+        if (refusal == null) throw new ArgumentNullException(nameof(refusal));
+        if (legs == null) throw new ArgumentNullException(nameof(legs));
+
+        string cause = refusal.Kind switch
+        {
+            RefusalKind.DuplicateSelection =>
+                $"Leg {refusal.CauseLegs[^1] + 1} repeats leg {refusal.CauseLegs[0] + 1} "
+                + $"({legs[refusal.CauseLegs[0]].DisplayLabel}): a selection may not appear twice on a "
+                + "ticket. The repeat adds no risk and costs a full extra leg of margin.",
+
+            RefusalKind.ImpossibleCombination =>
+                $"These legs cannot all win: {Name(refusal.CauseLegs, legs)} together carry probability "
+                + "zero, so the combination has no price.",
+
+            RefusalKind.SubEvens =>
+                $"This combination prices at {refusal.Price:0.000} <= 1.0 and cannot be offered: its "
+                + "legs are close enough to a repeat that the joint carries no room for the margin.",
+
+            _ => $"This combination is refused ({refusal.Kind}).",
+        };
+
+        // The remedy half. A refusal that named only the cause would be half the Blocked row.
+        string remedy = refusal.HasRemedy
+            ? $" Drop {Name(refusal.RemedyLegs, legs)} and the ticket prices."
+            : " No leg can be dropped to make this ticket priceable.";
+
+        return cause + remedy;
+    }
+
+    /// <summary>"leg 2 (OVER 2.5 GOALS)", or a list of them — one naming rule for both halves.</summary>
+    private static string Name(IReadOnlyList<int> which, IReadOnlyList<Leg> legs)
+    {
+        var parts = new string[which.Count];
+        for (int i = 0; i < which.Count; i++)
+            parts[i] = $"leg {which[i] + 1} ({legs[which[i]].DisplayLabel})";
+
+        return parts.Length switch
+        {
+            0 => "no leg",
+            1 => parts[0],
+            _ => string.Join(", ", parts, 0, parts.Length - 1) + " and " + parts[^1],
+        };
+    }
+}

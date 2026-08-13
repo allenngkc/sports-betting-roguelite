@@ -15,19 +15,23 @@
 
 1. **Research** — DONE, accepted 2026-08-12. Five docs in `docs/sgp/`.
 2. **Correlation model into `design/02-betting-math.md`** — DONE, accepted 2026-08-12.
-3. **Engine change lifting the one-pick-per-matchup guard** — IN PROGRESS (phases 1–2 landed,
-   phase 3 running).
+3. **Engine change lifting the one-pick-per-matchup guard** — **DONE 2026-08-13**, six phases
+   (1, 2, 3, 3b, 3c, 3d). Awaiting acceptance.
 4. **Gate re-validation on held-out seeds** — NOT STARTED. Note the campaign is **G1–G7**, not the
    charter's "six": G7 is market coverage, added after the charter was written.
 5. **Presentation** — NOT STARTED.
 
 ## 3. State
 
-**Landed on branch:** exact joint evaluator with S73 relation labels (`engine/JointModel.cs`, new);
-joint ticket pricing with the `κ` dial; the one-pick-per-matchup guard **replaced** by a
-`p_joint = 0` validity rejection; sub-evens refusal.
+**Landed on branch:** exact joint evaluator with S73 relation labels and a nominated `principal`
+(`engine/JointModel.cs`, new); joint ticket pricing with the `κ` dial (`RunConfig.SgpMargin`); the
+one-pick-per-matchup guard **replaced** by a `p_joint = 0` validity rejection; duplicate-leg ban;
+sub-evens refusal; void re-pricing off locked survivor-subset prices, including multi-void; a
+sub-evens replacement voids the ticket and refunds (`TicketState.Voided`); structured refusals
+carrying minimal cause and verified remedy.
 
-**Verification:** `dotnet test engine.tests` → **211 passing, 0 failed** (183 at branch start).
+**Verification:** `dotnet test engine.tests` → **239 passing, 0 failed** (183 at branch start).
+`dotnet build sim -c Release` and `dotnet build game-console` both clean.
 Joint evaluator agrees with `MatchModel.TrueProbability` to 2.442e-15 over 432,000 checks; zero
 correlated-but-unlabelable combinations over 151,200 pairs and 128,520 triples; the no-label
 fallback counter reads 0 across 21,528 priced same-match tickets.

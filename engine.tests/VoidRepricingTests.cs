@@ -909,9 +909,12 @@ public class VoidRepricingTests
         var repeated = MarketSelection.TotalGoals(2.5, true);
         Pick[] picks = { new Pick(0, repeated), new Pick(0, repeated) };
 
-        ArgumentException thrown = Assert.Throws<ArgumentException>(
+        TicketRefusedException thrown = Assert.Throws<TicketRefusedException>(
             () => run.PlaceTicket(picks, 10, profitBoostLeg: 0));
         Assert.Contains("may not appear twice", thrown.Message);
+        Assert.Equal(RefusalKind.DuplicateSelection, thrown.Refusal.Kind);
+        Assert.Equal(new[] { 0, 1 }, thrown.Refusal.CauseLegs);   // cause: the repeated selection
+        Assert.Equal(new[] { 1 }, thrown.Refusal.RemedyLegs);     // remedy: the repeat
 
         Assert.Empty(run.Tickets);
         Assert.Equal(config.StartingBank, run.Bank);
@@ -921,13 +924,16 @@ public class VoidRepricingTests
         Ticket ok = run.PlaceTicket(new[] { new Pick(0, repeated), new Pick(1, repeated) }, 10);
         Assert.Null(ok.SameMatch);
 
-        // A repeat buried inside a longer same-match ticket is caught too.
-        Assert.Throws<ArgumentException>(() => run.PlaceTicket(new[]
+        // A repeat buried inside a longer same-match ticket is caught too, and the cause names the
+        // repeat rather than the whole ticket — the corner leg is innocent and is not accused.
+        TicketRefusedException buried = Assert.Throws<TicketRefusedException>(() => run.PlaceTicket(new[]
         {
             new Pick(0, MarketSelection.TotalCorners(9.5, true)),
             new Pick(0, repeated),
             new Pick(0, repeated),
         }, 10));
+        Assert.Equal(new[] { 1, 2 }, buried.Refusal.CauseLegs);
+        Assert.Equal(new[] { 2 }, buried.Refusal.RemedyLegs);
     }
 
     /// <summary>
@@ -964,8 +970,13 @@ public class VoidRepricingTests
         Assert.True(priced.Price < single,
             "the repeat pays LESS than the single it duplicates — the ripoff, in one line");
 
-        Assert.Throws<ArgumentException>(() => run.PlaceTicket(
+        TicketRefusedException thrown = Assert.Throws<TicketRefusedException>(() => run.PlaceTicket(
             new[] { new Pick(0, longest), new Pick(0, longest) }, 10));
+
+        // Refused as a DUPLICATE, not as sub-evens — the price check had no objection at all, which
+        // is the whole point of keeping both rules.
+        Assert.Equal(RefusalKind.DuplicateSelection, thrown.Refusal.Kind);
+        Assert.True(thrown.Refusal.Price > 10.0);
     }
 
     /// <summary>The sub-evens refusal survives the duplicate ban and still fires on DISTINCT
@@ -984,10 +995,20 @@ public class VoidRepricingTests
             new Pick(0, MarketSelection.BothTeamsToScore(true)),
         };
 
-        ArgumentException thrown = Assert.Throws<ArgumentException>(() => run.PlaceTicket(picks, 10));
+        TicketRefusedException thrown = Assert.Throws<TicketRefusedException>(() => run.PlaceTicket(picks, 10));
         Assert.Contains("cannot be offered", thrown.Message);
+        Assert.Equal(RefusalKind.SubEvens, thrown.Refusal.Kind);
+        Assert.True(thrown.Refusal.Price <= 1.0);
+
+        // The cause is the whole combination — a price is a property of the ticket, and no proper
+        // subset of this one prices worse. The remedy is verified by placing it, right here.
+        Assert.Equal(new[] { 0, 1 }, thrown.Refusal.CauseLegs);
+        Assert.Equal(new[] { 1 }, thrown.Refusal.RemedyLegs);
         Assert.Empty(run.Tickets);
         Assert.Equal(config.StartingBank, run.Bank);
+
+        run.PlaceTicket(new[] { picks[0] }, 10);
+        Assert.Single(run.Tickets);
     }
 
     // =======================================================================================
