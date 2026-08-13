@@ -94,6 +94,8 @@ The prohibited implementation is `p_joint` collapsed to a bare scalar `ρ`: that
 
 Presentation composes the words; **the model never emits English.** That seam keeps copy authority with the Design Director and pricing authority here.
 
+**The two canon names (Allen, 2026-08-12).** The instrument is **SAME MATCH**. The mark that annotates the relationship is **THE HOUSE'S LINE**. These are names, not composed copy, so they are baked in wherever code needs them rather than left as placeholders — the same precedent as the DS-verbatim market names already carried in `MatchModel.MarketFields`. Sentences built *from* the relation vocabulary above remain presentation's to write.
+
 **The no-label fallback, stated precisely.** A ticket prices on its exact joint only if *every* correlated relation it carries resolves to a label. If any does not, the whole ticket prices at `Π p_i`. Partial per-relation application is not offered: a joint probability is not a product of pairwise adjustments and cannot be half-applied honestly.
 
 **One carve-out, and it is load-bearing.** The `p_joint = 0` check is a **validity test, not a price movement**, and is never subject to the fallback. Without this carve-out an unlabelable zero would fall through to the naive product and sell an impossible ticket — reintroducing exactly the defect this model exists to remove. Validity runs first; labelling governs pricing only.
