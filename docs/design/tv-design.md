@@ -213,6 +213,38 @@ constant string width (a score going 9 to 10 adds a character and widens, and th
 names its members** — the condensed Bold 700 asset carries `CashOut`, and an inventory that names two
 assets while missing a third ships a money control that still twitches.
 
+### Tracking — marks a label, never a fact
+
+*(Clause added 2026-08-12, T85-am2. This document had no tracking rule of any kind until now, which is
+why three values reached the surface without an owner. Its inventory is **incomplete** — see the
+bottom of this subsection.)*
+
+**Tracking marks a LABEL. It never marks a FACT.** A tracked label says *this is furniture, read past
+it*; tracking a fact spaces out the very thing the player is meant to read. The rule is the laptop's,
+already canon at `surething-design.md` §4.3 — *short uppercase labels are tracked, factual copy stays
+literal, and a label-plus-instruction is factual copy* — and it transfers because it is a rule about
+voice, not about a typeface.
+
+Ruled members:
+
+| slot | tracking | basis |
+|---|---|---|
+| `Label` | **.16 em** | label-class; ratified as built on frames |
+| `Meta` | **.10 em** | label-class, lighter value for a smaller and quieter slot; ratified as built |
+| `NEED` | **0** | **a fact, not a label** — the requirement statement is what has to happen for the player's money to land |
+
+`NEED` carried .02 em briefly and it was withdrawn twice over: procedurally, as a fourth variable
+inside an open verification pair (T85), and substantively, because tracking a requirement is tracking
+a fact. **It does not return when the pair closes.**
+
+**Exceptions take their own named token and are listed here.** A named exception with one member is
+still named (S70's shape).
+
+**The inventory is INCOMPLETE.** Six slots are pending string-set enumeration at the time of writing
+and are not yet listed. **Until a slot appears in the table above, its tracking value is not canon,
+and it does not become canon by having shipped.** This subsection states its own gap rather than
+implying the list is three (C18 §4.2).
+
 **No synthesised styling on this surface** (T73, T77). Weight comes from a real named instance of the
 family; slant is not used at all. A synthesised bold is a smear and a synthesised italic is a shear —
 neither is a letterform the family contains, and retiring them is what the TMP migration is *for*
