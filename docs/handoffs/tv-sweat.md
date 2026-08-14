@@ -11,7 +11,7 @@ discarded.
 
 ---
 
-## 0-T95. PHASE T IS DESIGN-VERIFIED · the crossfade's rect was stale and it was MINE · 2026-08-13
+## 0-T95. PHASE T IS DESIGN-VERIFIED · the crossfade's rect was stale and it was MINE · T95 SHOT · 2026-08-13
 
 **PHASE T IS DESIGN-VERIFIED (T89-cl, batch 63).** The migration is certified on its own variable,
 on the closing capture, against a bar pre-committed before the evidence existed. The closing set is
@@ -62,15 +62,39 @@ a floor on one of them is half a rule."* Territories now derive from a usable st
 the band's raw 715.0. `Matchup` starts at **−221.8, exactly 2.0px** right of the column edge; widest-
 scoreline clearance to the clock **31.3px**.
 
-### The T95 capture — granted, and being shot in this window
+### The T95 capture — SHOT AND STAGED, 159 frames across two entry points
 
-**OWED by T95: the three transition beats captured DELIBERATELY rather than incidentally** — goal,
-lead-change, leg-resolution. The rect is fixed and pinned; the frames are the proof.
-
-**Both entry points are needed and neither substitutes for the other:** `Capture_Batch22_…` carries
-the two frames the DD read the defect on (`t68am-accept-slot` frame008, lead-change;
-`t70am-live-pair` frame000, leg-resolution) **under identical filenames**, and only
+**Both entry points were needed and neither substitutes for the other:** `Capture_Batch22_…` carries
+the two frames the defect was read on — `t68am-accept-slot` **frame008** (lead-change) and
+`t70am-live-pair` **frame000** (leg-resolution) — **under identical filenames**, and only
 `Capture_SeatedSweat_NamedMoments` carries the **`goal`** moment.
+
+| set | result | frames |
+|---|---|---|
+| `batch22-payoff-and-live-pair/` | **Passed 1/1** | 66 · one seed, one boost |
+| `namedmoments-goal-five-seeds/` | **Passed 5/5** | 93 · five seeds, one boost |
+
+Staged at `dd-import/tv-t95-transitions-2026-08-13/`, two subdirectories because their pins differ,
+one README carrying the beat map, the before/after rect arithmetic and the non-claims.
+
+**All three beats covered:** lead-change (30), leg-resolution (4 + 38 across three moments), goal (40
+across all five seeds).
+
+### A DETACHED CAPTURE OUTLIVES THE SESSION THAT LAUNCHED IT — verify before re-running
+
+**A 403 killed the driving session mid-poll on the second run.** The capture did not die with it: it
+had been launched **detached** — the rule §4 wrote after three silent capture deaths — and it ran to
+completion on its own, writing its results XML (`Passed 5/5`) and logging `capture complete` for all
+five seeds.
+
+**The resumed seat verified that from the artifacts rather than re-running**, which saved a ~20-minute
+window. **The check is the results XML and the harness's own completion lines, not the frame count** —
+93 frames matching an earlier run is suggestive and is not proof.
+
+**And the dead-partial trap was live here:** the capture directory held a *previous* interrupted
+attempt's frames as well. The two runs are separated at **23:13:50** and were scoped by mtime on
+either side of it, so the passed set and the abandoned one were never mixed — §0-FR's recorded
+instrument failure, avoided rather than rediscovered.
 
 ### OPEN, none of it gating the verified phase
 
