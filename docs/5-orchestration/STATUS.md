@@ -1,7 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 248 — PHASE T IS
-DESIGN-VERIFIED.** The review note is canon (3dd54b5): the type stack's
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 249 (heartbeat).** Post-
+close hold: TV on T95's crossfade rect; sgp's HOLDOUT5 grinding; all
+else clean or with Allen (RF-18 word; canon proposals; the eventual
+column question).
+
+*(prior stamp, cycle 248 - PHASE T IS DESIGN-VERIFIED:)* The review note is canon (3dd54b5): the type stack's
 variable certified on the closing capture against the pre-committed bar;
 TV's closing set merged (a487e1e). Open before ship: T95 (crossfade
 rect - dispatched), the T74-proper column question (the ONE item that
