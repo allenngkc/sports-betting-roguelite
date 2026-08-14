@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 238 (heartbeat).** DD
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 239 — THE PHASE
+VERDICT: FIVE MET, ONE REFUSED.** Batch 60 canon (15c3450): the money
+control GRANTED on frames, the 3px signed, all parked pre-commitments
+discharged, digit rows re-certified - and the NEED truncation SURVIVED
+the fix pass. Phase T's last blocker is T90 (band furniture before
+statement; TV measures + proposes geometry, T91's numbers + T92's entry
+ride along). One more fix + re-read = Design-verified. RiskPays' fact
+floor exceeds the LOCKED column - reaches Allen in the deferred sizing
+pass, flagged early. Campaigns grinding; research briefs with Allen.
+
+*(prior stamp, cycle 238:)* DD
 reading the verdict frames; Campaign B and sgp's gauntlet grinding; TV
 standing by; research drafting canon proposals + RF-18 with Allen.
 
