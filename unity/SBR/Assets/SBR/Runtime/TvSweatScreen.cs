@@ -2527,11 +2527,24 @@ namespace SBR.Game
             // not the slashed form.
             _tTakeoverTitle.text = $"TICKET {director.SweatIndex + 1} OF {director.Run.Sweats.Count}";
 
+            // T92 (batch 60): the entries take G1's COMPACT forms, ONE PER ROW.
+            //
+            // Two things were wrong and only one of them was the composition. `DisplayLabel` is the
+            // ENGINE's concatenated label — `Yonkers Auditors ML — Yonkers Auditors v Reno Muskrats`
+            // — which names the team THREE times: T69's defect verbatim, and an engine label in a
+            // player-facing slot. Enumerated, one entry reaches 91 chars / 760.8px against a 655.0px
+            // box, so **the list ruling alone could not save it: a list of over-wide rows is still
+            // over-wide.** The row is long because its ENTRY is, not because it concatenates.
+            //
+            // `LegStatement` is G1's compact deck — the identity form, authored to a 143px budget and
+            // already measured and shipping on the leg row. No new authoring: this is the slot it was
+            // written for. The scorebug carries who is playing whom, which is what made dropping the
+            // fixture half legal in the first place.
             string legs = string.Empty;
             foreach (Leg leg in _ticket.Legs)
             {
-                if (legs.Length > 0) legs += "   ·   ";
-                legs += $"{leg.DisplayLabel} {OddsFormat.American(leg.OfferedOdds)}";
+                if (legs.Length > 0) legs += "\n";
+                legs += $"{LegStatement(leg)} {OddsFormat.American(leg.OfferedOdds)}";
             }
             _tTakeoverSub.text = legs;
 

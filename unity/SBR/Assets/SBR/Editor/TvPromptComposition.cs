@@ -335,11 +335,171 @@ namespace SBR.EditorTools
                 foreach (TMP_Text c in screen.GetComponentsInChildren<TMP_Text>(true))
                     if (c.gameObject.name == "TakeoverSub")
                     {
-                        const string Entry =
-                            "San Francisco Gravediggers ML — San Francisco Gravediggers v San Francisco Longhaulers -233";
-                        Row(c.rectTransform.rect.width, "list ROW (1 leg)", Entry, W(c, Entry));
+                        // T92 landed: the entries are G1's compact forms now. Width is answered by the
+                        // sweep; what is NOT answered is HEIGHT, and that is the trap this pass has
+                        // hit twice already — a composition ruled on width whose height was never
+                        // re-derived (C46-am, violated by its own author one batch after writing it).
+                        const string Entry = "GRAVEDIGGERS ML -233";
+                        Row(c.rectTransform.rect.width, "list ROW (compact)", Entry, W(c, Entry));
+                        float rowH = c.GetPreferredValues(Entry, Unconstrained, 0f).y;
+                        float boxH = c.rectTransform.rect.height;
+                        for (int legs = 2; legs <= 4; legs++)
+                        {
+                            float h = rowH * legs;
+                            Debug.Log($"[T88] TakeoverSub {legs} rows  {h,5:0.0}px vs box {boxH:0.0}px  " +
+                                      $"{(h > boxH ? $"OVERRUNS by {h - boxH:0.0}px" : $"fits, {boxH - h:0.0}px spare")}" +
+                                      $"{(legs == 4 ? "   <- MaxLegs" : "")}");
+                        }
                         break;
                     }
+
+                // ---- T90 / T91 (batch 60): the band's FURNITURE, and the gaps BETWEEN neighbours ---
+                //
+                // T90 owes "the NEED line's box, MomentumLabel's box, the shared band's dimensions,
+                // and whether the momentum tape renders in that band". T91 owes "the leg row's and the
+                // scorebug's element rects with their authored gaps". Both are geometry, and this seat
+                // has been told four times that geometry is ruled on evidence — so it is dumped rather
+                // than described.
+                //
+                // Everything is resolved into ONE space (the screen's own transform) via world
+                // corners, because the elements do not share a parent: MomentumLabel hangs off the
+                // tape, which hangs off an anchor panel pinned to the scorebug's foot, while the NEED
+                // line is a leg row child. Comparing anchoredPositions across those parents would be
+                // comparing numbers in three different frames.
+                // WORLD CORNERS DO NOT WORK HERE and the first cut of this block used them: on an
+                // inactive object with no Canvas layout pass, GetWorldCorners returns a degenerate
+                // point — every rect came back 0.0 wide at x≈1.2, and the gaps all read "touching".
+                // Those numbers were wrong in the direction that would have looked like a finding.
+                // `rect.size` IS valid (it is sizeDelta with fixed anchors, and it already produced
+                // every box width in this file); only the world transform is unresolved. So the
+                // position is accumulated up the parent chain instead, which needs no layout pass.
+                Debug.Log("[T88] --- T90/T91 GEOMETRY, accumulated up the parent chain (no layout pass needed) ---");
+                var boxes = new Dictionary<string, Rect>();
+                foreach (RectTransform rt in screen.GetComponentsInChildren<RectTransform>(true))
+                {
+                    string n = rt.gameObject.name;
+                    if (n != "LegRowNeed0" && n != "LegRowPrice0" && n != "LegRowState0" &&
+                        n != "LegRowLine0" && n != "MomentumLabel" && n != "MomentumTapeAnchor" &&
+                        n != "Matchup" && n != "Clock" && n != "TicketColumnZone") continue;
+
+                    Vector2 size = rt.rect.size;
+                    Vector2 bottomLeft = Vector2.zero;
+                    RectTransform cur = rt;
+                    Vector2 curSize = size;
+                    bool stretched = false;
+                    while (cur != null && cur.transform != screen.transform)
+                    {
+                        var parent = cur.parent as RectTransform;
+                        if (cur.anchorMin != cur.anchorMax) stretched = true;
+                        Vector2 parentSize = parent != null ? parent.rect.size : Vector2.zero;
+                        Vector2 anchorPt = new Vector2(cur.anchorMin.x * parentSize.x,
+                                                       cur.anchorMin.y * parentSize.y);
+                        Vector2 pivotPos = anchorPt + cur.anchoredPosition;
+                        bottomLeft += pivotPos - new Vector2(cur.pivot.x * curSize.x,
+                                                             cur.pivot.y * curSize.y);
+                        cur = parent;
+                        curSize = parentSize;
+                    }
+                    var r = new Rect(bottomLeft, size);
+                    boxes[n] = r;
+                    Debug.Log($"[T88] rect {n,-20} x {r.xMin,8:0.0} → {r.xMax,8:0.0}  ({r.width,6:0.0} wide)   " +
+                              $"y {r.yMin,8:0.0} → {r.yMax,8:0.0}  ({r.height,5:0.0} tall)" +
+                              $"{(stretched ? "   [STRETCHED ANCHORS — figure is approximate]" : "")}");
+                }
+
+                // A gap is only meaningful where the two also overlap on the other axis — two boxes
+                // side by side in x that never share a y band cannot collide, and reporting their
+                // x-gap as a clearance would be the third wrong quantity in a week.
+                void Gap(string a, string b, string note)
+                {
+                    if (!boxes.ContainsKey(a) || !boxes.ContainsKey(b)) { Debug.Log($"[T88] gap {a}|{b}: one side not built"); return; }
+                    Rect ra = boxes[a], rb = boxes[b];
+                    bool sameBand = ra.yMin < rb.yMax && rb.yMin < ra.yMax;
+                    float gap = rb.xMin >= ra.xMax ? rb.xMin - ra.xMax
+                              : ra.xMin >= rb.xMax ? ra.xMin - rb.xMax
+                              : -(Mathf.Min(ra.xMax, rb.xMax) - Mathf.Max(ra.xMin, rb.xMin));
+                    Debug.Log($"[T88] GAP {a} | {b}  x-gap {gap,7:0.0}px  share a y band: {sameBand}  " +
+                              $"{(gap < 0f && sameBand ? "*** OVERLAP ***" : gap <= 0f ? "touching/zero" : "clear")}  · {note}");
+                }
+                Gap("LegRowNeed0", "MomentumLabel", "T90: does the caption eat the fact's width?");
+
+                // TRUNCATION OR OCCLUSION? The frames read `ONE TEAM`, and the register calls it a
+                // truncation. Those are different defects with different remedies, and the geometry
+                // above admits a second explanation: `MomentumLabel` is RIGHT-pivoted, so its ink
+                // grows LEFTWARD out of a 96px box it no longer fits — straight across the NEED
+                // line's tail. If the authored string is inside its own box and simply has a caption
+                // printed over its end, then nothing is truncated and no span is needed.
+                //
+                // Deciding it takes two numbers: where the caption's ink starts, and how far the
+                // authored string reaches.
+                if (boxes.ContainsKey("LegRowNeed0") && boxes.ContainsKey("MomentumLabel"))
+                {
+                    TMP_Text need = null, label = null;
+                    foreach (TMP_Text c in screen.GetComponentsInChildren<TMP_Text>(true))
+                    {
+                        if (c.gameObject.name == "LegRowNeed0") need = c;
+                        else if (c.gameObject.name == "MomentumLabel") label = c;
+                    }
+                    if (need != null && label != null)
+                    {
+                        Rect nb = boxes["LegRowNeed0"], lb = boxes["MomentumLabel"];
+                        float labelInk = W(label, "MOMENTUM");
+                        // Right-pivoted: the ink's right edge is the box's right edge and it grows left.
+                        float inkStartX = lb.xMax - labelInk;
+                        float clearRun = inkStartX - nb.xMin;   // unobstructed run of the NEED line
+                        Debug.Log($"[T88] T90 OCCLUSION: 'MOMENTUM' ink {labelInk:0.0}px in a {lb.width:0.0}px box, " +
+                                  $"right-pivoted → ink spans x {inkStartX:0.0} → {lb.xMax:0.0}");
+                        Debug.Log($"[T88] T90 the NEED line starts at x {nb.xMin:0.0} and is CLEAR for " +
+                                  $"{clearRun:0.0}px before the caption's ink begins (box is {nb.width:0.0}px)");
+                        foreach (string s in new[] { "ONE TEAM BLANKED", "ONE TEAM SCORELESS", "ONE TEAM", "SPREADSHEETS TO WIN" })
+                        {
+                            float w = W(need, s);
+                            Debug.Log($"[T88] T90   '{s}' {w,6:0.0}px · box {(w > nb.width ? $"OVERRUNS by {w - nb.width:0.0}" : $"fits by {nb.width - w:0.0}")}" +
+                                      $" · caption {(w > clearRun ? $"OVERPRINTS its last {w - clearRun:0.0}px" : $"clear by {clearRun - w:0.0}px")}");
+                        }
+                    }
+                }
+                Gap("LegRowPrice0", "LegRowState0", "T91: price vs state — the frames read '-280NEXT'");
+                Gap("Matchup", "Clock", "T91: scorebug team vs clock — 'REGULATORS90'+1'");
+
+                // T91 is about CLEARANCE, so the box gap is the wrong quantity on its own: what
+                // collides is ink, and where the ink sits inside its box is the ALIGNMENT's doing.
+                // A right-aligned price ends at its box edge; a left-aligned one ends 6.8px earlier.
+                // Both boxes can clear while the inks touch, which is precisely the sub-class T91
+                // opened.
+                float InkLeft(TMP_Text t, Rect box, string s)
+                {
+                    float w = W(t, s);
+                    var a = t.alignment;
+                    bool right = a == TextAlignmentOptions.Right || a == TextAlignmentOptions.TopRight ||
+                                 a == TextAlignmentOptions.BottomRight || a == TextAlignmentOptions.MidlineRight ||
+                                 a == TextAlignmentOptions.CaplineRight;
+                    bool centre = a == TextAlignmentOptions.Center || a == TextAlignmentOptions.Top ||
+                                  a == TextAlignmentOptions.Bottom || a == TextAlignmentOptions.Midline ||
+                                  a == TextAlignmentOptions.Capline;
+                    if (right) return box.xMax - w;
+                    if (centre) return box.center.x - w * 0.5f;
+                    return box.xMin;
+                }
+                void InkGap(string an, string bn, string at, string bt, string note)
+                {
+                    TMP_Text ta = null, tb = null;
+                    foreach (TMP_Text c in screen.GetComponentsInChildren<TMP_Text>(true))
+                    {
+                        if (c.gameObject.name == an) ta = c;
+                        else if (c.gameObject.name == bn) tb = c;
+                    }
+                    if (ta == null || tb == null || !boxes.ContainsKey(an) || !boxes.ContainsKey(bn)) return;
+                    float aL = InkLeft(ta, boxes[an], at), aR = aL + W(ta, at);
+                    float bL = InkLeft(tb, boxes[bn], bt), bR = bL + W(tb, bt);
+                    float gap = bL - aR;
+                    Debug.Log($"[T88] INK {an}('{at}', {ta.alignment}) ends {aR:0.0} | " +
+                              $"{bn}('{bt}', {tb.alignment}) starts {bL:0.0}  →  CLEARANCE {gap,6:0.0}px  " +
+                              $"{(gap <= 0f ? "*** INK COLLIDES ***" : gap < 8f ? "reads as one token at distance" : "clear")}  · {note}");
+                }
+                InkGap("LegRowPrice0", "LegRowState0", "-280", "NEXT", "T91 leg row");
+                InkGap("Matchup", "Clock", "ZAMBONIS 0 — REGULATORS 1", "90'+2", "T91 scorebug");
+                Gap("TicketColumnZone", "MomentumLabel", "T90: does the caption cross the column edge?");
 
                 // ---- batch 56: `SHOT FROZEN` leaves the zone; the event strip is its optional home --
                 // "Not asserted to fit: measured before it lands." The strip carries ONE authored line

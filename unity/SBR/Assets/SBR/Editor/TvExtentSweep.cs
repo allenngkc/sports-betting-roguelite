@@ -192,10 +192,13 @@ namespace SBR.EditorTools
             // Both forms are swept: the JOINED string is what the slot renders today, and the SINGLE
             // ENTRY is what one row carries under T74-am3's list ruling — so the list's own row width
             // is answered here rather than after it is built.
-            ("TakeoverSub", "the deferral line + the leg list, ENUMERATED (was CONSTRUCTED)", new[]
+            // T92 (batch 60): the entries are G1's COMPACT forms now, one per row, so the swept set is
+            // the ROW — the engine's concatenated `DisplayLabel` is gone from this slot. The compact
+            // forms are the same deck LegRowLine0 sweeps, plus the American price.
+            ("TakeoverSub", "the deferral line + the leg list's ROWS, G1 compact forms (T92)", new[]
                 { "PAYMENT DEFERRED — YOUR BANK STANDS. THE NEXT ONE GROWS BY $1,200",
-                  "San Francisco Gravediggers ML — San Francisco Gravediggers v San Francisco Longhaulers -233",
-                  "San Francisco Gravediggers ML — San Francisco Gravediggers v San Francisco Longhaulers -233   ·   San Francisco Gravediggers ML — San Francisco Gravediggers v San Francisco Longhaulers -233   ·   San Francisco Gravediggers ML — San Francisco Gravediggers v San Francisco Longhaulers -233   ·   San Francisco Gravediggers ML — San Francisco Gravediggers v San Francisco Longhaulers -233" }),
+                  "GRAVEDIGGERS ML -233", "SPREADSHEETS ML +145", "PAVEMENT ANYTIME +459",
+                  "UNDER 10.5 CORNERS +240", "BTTS NO -176" }),
             ("Subtitle", "RenderIdle sub, plus the run-over line", new[]
                 { "FINAL BANK $12,340  —  NEW RUN AT THE LAPTOP",
                   "gear up at the laptop, then the next round" }),
