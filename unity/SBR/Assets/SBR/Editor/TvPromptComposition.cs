@@ -428,7 +428,8 @@ namespace SBR.EditorTools
                     string n = rt.gameObject.name;
                     if (n != "LegRowNeed0" && n != "LegRowPrice0" && n != "LegRowState0" &&
                         n != "LegRowLine0" && n != "MomentumLabel" && n != "MomentumTapeAnchor" &&
-                        n != "Matchup" && n != "Clock" && n != "TicketColumnZone") continue;
+                        n != "Matchup" && n != "Clock" && n != "TicketColumnZone" &&
+                        n != "Score") continue;   // T95: the punch overlay that must share Matchup's rect
 
                     Vector2 size = rt.rect.size;
                     Vector2 bottomLeft = Vector2.zero;
@@ -470,6 +471,22 @@ namespace SBR.EditorTools
                               $"{(gap < 0f && sameBand ? "*** OVERLAP ***" : gap <= 0f ? "touching/zero" : "clear")}  · {note}");
                 }
                 Gap("LegRowNeed0", "MomentumLabel", "T90: does the caption eat the fact's width?");
+
+                // T95 — THE CROSSFADE'S RECT. `Score` is the punch overlay and its own build comment
+                // states the invariant: "Same text, SAME RECT, same face as _tMatchup ... so
+                // superimposing it". Both are UpperCenter, so each centres its string in ITS OWN box —
+                // and two centred layers with different boxes do not superimpose, they offset by the
+                // difference of their centres. That is a doubled scoreline, and its magnitude is
+                // computable here rather than guessed from a frame.
+                if (boxes.ContainsKey("Matchup") && boxes.ContainsKey("Score"))
+                {
+                    Rect m = boxes["Matchup"], sc = boxes["Score"];
+                    float dCentre = sc.center.x - m.center.x;
+                    Debug.Log($"[T88] T95 Matchup box {m.width:0.0} centre {m.center.x:0.0} · " +
+                              $"Score box {sc.width:0.0} centre {sc.center.x:0.0}");
+                    Debug.Log($"[T88] T95 CENTRE DELTA {dCentre:0.0}px → two UpperCenter layers offset by " +
+                              $"exactly this. {(Mathf.Abs(dCentre) < 0.05f ? "SUPERIMPOSED — the invariant holds" : "*** THE LAYERS DO NOT SUPERIMPOSE ***")}");
+                }
 
                 // TRUNCATION OR OCCLUSION? The frames read `ONE TEAM`, and the register calls it a
                 // truncation. Those are different defects with different remedies, and the geometry

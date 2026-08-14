@@ -502,6 +502,45 @@ namespace SBR.Tests.EditMode
         /// SIDE-BY-SIDE, which costs no vertical space and may fit a 265px column. TV-14 and TV-15
         /// build from these numbers. It asserts only the thing that is not a judgement call — that
         /// the measurement happened in Encode Sans — and leaves the layout choice to the DD.</para></summary>
+        /// <summary>T95: the punch overlay and the scoreline must occupy THE SAME RECT.
+        ///
+        /// <para>`Score` is a brightness event on the same string — its own build comment says "Same
+        /// text, SAME RECT, same face as _tMatchup ... so superimposing it and boosting to L4 can only
+        /// make the existing scoreline brighter." Both are UpperCenter, so each centres its string in
+        /// ITS OWN box: two centred layers with different boxes do not superimpose, they offset by the
+        /// difference of their centres, and the scoreline renders as two copies.</para>
+        ///
+        /// <para><b>This is a defect that shipped.</b> T91-am re-bounded `Matchup` and the mirror was
+        /// not re-derived, so the boxes went 593.0 against 675.0 and the centres 92.7 against 133.7 —
+        /// a 41.0px doubled scoreline on every beat the punch fired, found by the DD on frames at
+        /// review distance and invisible to every instrument this surface had. The rects are shared by
+        /// construction now; this is the pin that says so, because a shared local is a convention and
+        /// an assertion is a contract.</para></summary>
+        [Test]
+        public void T95_the_punch_overlay_and_the_scoreline_share_one_rect()
+        {
+            var go = new GameObject("T95Rect");
+            try
+            {
+                var screen = BuildScreen(go);
+                TMP_Text matchup = FindChild<TMP_Text>(screen, "Matchup");
+                TMP_Text punch = FindChild<TMP_Text>(screen, "Score");
+                Assert.IsNotNull(matchup, "Matchup not found");
+                Assert.IsNotNull(punch, "Score (the punch overlay) not found");
+
+                Rect m = matchup.rectTransform.rect, p = punch.rectTransform.rect;
+                Assert.AreEqual(m.width, p.width, 0.01f,
+                    $"T95: the punch overlay's box is {p.width:0.0} against the scoreline's {m.width:0.0} — " +
+                    "two centred layers with different boxes render the scoreline twice");
+                Assert.AreEqual(m.height, p.height, 0.01f, "T95: the punch overlay's height must match too");
+                Assert.AreEqual(matchup.rectTransform.anchoredPosition.x, punch.rectTransform.anchoredPosition.x, 0.01f,
+                    "T95: same box, different position, is the same defect — the layers must superimpose");
+                Assert.AreEqual(matchup.alignment, punch.alignment,
+                    "T95: a shared rect only superimposes while the alignment is shared too");
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
         [Test]
         public void T15_measure_the_risk_pays_cell_in_the_production_face()
         {
