@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 255 (heartbeat).** Quiet
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 256.** TV's merge of main
+is in: the engine's draw vocabulary reached its branch, the 0-0 capture is
+unblocked. One INHERITED red found: the laptop's stake-figure margin pin
+(1.96px owned by M-04's 26px figure) grew to 4.748 - the pin was never
+re-sourced when M-04 landed; owning lane retired; TV proved its commits
+cannot reach it; routing decided after the shoot. Allen's word fired:
+SweatFlavor's draw arm now, then seed, harness, shoot.
+
+*(prior stamp, cycle 255:)* Quiet
 and healthy: TV mid-merge on the capture prerequisite; HOLDOUT5's process
 alive and grinding; DD standing by, verdicts pre-written.
 
