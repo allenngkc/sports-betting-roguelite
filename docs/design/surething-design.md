@@ -483,6 +483,42 @@ surface does not undo it: named `DRAW`, no team treatment, no team hue.
 
 **`1X2` never reaches him** — a code word for a market shape, which stays in the code.
 
+#### The composition (S74-am, 2026-08-14)
+
+A matchup is **not one row with two price cells**. It is **two stacked lines, one per side, with the
+price on the same line as the team it belongs to** — and **the price cell carries the OUTCOME word,
+not the team**: `AWAY −156`, never `NOTARIES −156`. The left column names **who**; the price cell names
+**which outcome**. **The board therefore already has the draw's grammatical slot, and nothing is
+invented.**
+
+```
+NO.  MATCHUP · SEASON RECORD          MONEYLINE       MORE
+01   NOTARIES   4-5                   AWAY  −156     ┐
+                                      DRAW  +240     │ MORE ›
+     FERRETS    5-4                   HOME  +127     ┘
+```
+
+- **`DRAW` goes in the price cell**, exactly where `AWAY` and `HOME` live. **Never in the matchup
+  column**, which names teams.
+- **The matchup column is empty on that line, and empty is the correct rendering of "neither".** This
+  is **not S24's dead cell** — S24 refused an *offer* slot with no offer; here the *subject* slot has no
+  subject. Naming anything there invents the third competitor `Side` refuses.
+- **The middle position is literal**: the draw's line sits physically between the two teams', attached
+  to neither, which is what the outcome is.
+- **No team treatment on that line** — no dot, no crest, no hue.
+- `MORE ›` spans the block, now three lines.
+
+**The block is three lines whether or not a given matchup prices a draw.** A block height that depends
+on the market is a zone resizing to content, which §2 forbids; an empty line is honest where a
+collapsing block is not.
+
+**A third line per block shows fewer matchups at once. That is not a deficit to yield against** — a
+third outcome is a product fact arriving, not a layout overflowing, and §2 binds: nothing that states a
+product fact is deleted to make a layout fit. **Reachability holds by a mechanism that already exists**
+— the interior list scrolls (S25-am) with S27's printed position rail.
+
+**`MONEYLINE` stands as the column header.** It names the market, not the number of outcomes.
+
 ### Settlement language does not change (C47)
 
 **The match has three outcomes; a bet has two.** Back the draw and it draws — **he won**. Back a team
