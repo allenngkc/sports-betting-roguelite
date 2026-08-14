@@ -1,7 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 237 — THE PHASE VERDICT
-DOCKET IS WITH THE DD.** TV's captures complete (after-frames pair +
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 238 (heartbeat).** DD
+reading the verdict frames; Campaign B and sgp's gauntlet grinding; TV
+standing by; research drafting canon proposals + RF-18 with Allen.
+
+*(prior stamp, cycle 237 - THE PHASE VERDICT DOCKET:)* TV's captures complete (after-frames pair +
 five-seed NEED set, pinned, honest READMEs) and the five open items
 routed - incl. the RiskPays fact floor (378.1 max vs 249.0: batch 59's
 second branch fires, T74-proper). The DD rules T89-A + E on the frames,
