@@ -41,14 +41,26 @@ namespace SBR.Game
 
         // ------------------------------------------------------------------ legs
 
-        /// <summary>The slip's moneyline side on this matchup, if the selected leg is moneyline.</summary>
+        /// <summary>The slip's moneyline TEAM on this matchup, if the selected leg backs a team.
+        ///
+        /// Returns null for a moneyline DRAW, and that is the ratified design rather than a
+        /// convenience: the draw is not a team, ever (DD batch 49). The old shape here was
+        /// <c>Choice == Home ? Home : Away</c>, which answered **Away** for the X of 1X2 — a
+        /// silently wrong team on a surface whose whole job is showing which side you backed.
+        /// Unreachable today only because no surface can yet build a draw pick; it goes live the
+        /// moment the board grows its third row, which is queued Phase S work.</summary>
         public Side? SideOn(int matchupIndex)
         {
             foreach (Pick p in _picks)
             {
                 if (p.MatchupIndex != matchupIndex) continue;
                 if (p.Selection.Kind != MarketKind.Moneyline) return null;
-                return p.Selection.Choice == MarketChoice.Home ? Side.Home : Side.Away;
+                return p.Selection.Choice switch
+                {
+                    MarketChoice.Home => Side.Home,
+                    MarketChoice.Away => Side.Away,
+                    _ => (Side?)null,
+                };
             }
             return null;
         }
