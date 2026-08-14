@@ -11,6 +11,130 @@ discarded.
 
 ---
 
+## 0-CC. THE CAPTURE CLOSE — batch 59 determined · both frame sets staged · 2026-08-13
+
+**Branch `6916d7c`, pushed and REMOTE-VERIFIED.** Tree clean, **Unity zero, lockfile clear, editor
+released.** One commit on top of §0-FP.
+
+**TOP LINE: there is no build work and no capture work left in this lane.** Phase T's evidence is
+staged. **Five items are open and every one is a DD call.** A fresh seat reads §0-PT for the phase's
+shape, §0-FP and this section for standing, and then waits.
+
+| suite | discovered | executed | passed | failed | skipped |
+|---|---|---|---|---|---|
+| EditMode | 250 | 250 | 249 | 0 | 1 ignored — G1's grant, held |
+| PlayMode | 94 | 94 | 88 | 0 | 6 by-design capture skips |
+
+Sweep: **5 of 23 overrunning** (the population grew — see the residual below).
+
+### Batch 59's two rulings, both DETERMINED
+
+**T74-am5 — `RiskPays` is ONE ROW, both ends anchored. BUILT.** `RiskPays` keeps its name and carries
+the RISK half — it is in the C8 protected set and a LayoutGrid test finds it by that name, the same
+reason the money figure kept `CashOut` — and a new `Pays` element takes the right-anchored half. The
+five-space spacer is gone; it was the thing being measured, not the content. Each half now fits alone
+(138.4 and 239.7 in 249.0).
+
+**BRANCH 2 fires on the pair, and the fact floor is not a tail case:**
+
+| | RISK + PAYS | vs 249.0 |
+|---|---|---|
+| bank $10,000 | 138.4 + 239.7 = **378.1** | over by 129.1 |
+| **typical** | 124.7 + 145.9 = **270.6** | **over by 21.6** |
+
+**The footer collides at ORDINARY values** — a $1,234 stake paying $12,340 is a plain 10× parlay. So
+this is T74 proper with a fact floor of **378.1px against a 249.0px row**, and it is not reachable only
+at the maximum. C49 stands; nothing here reopens abbreviation.
+
+**T84-am6 — the 3px lands in the control's own PADDING. BRANCH 1.** Measured on the face's own metrics
+rather than a mesh:
+
+```
+figure  ink 27.9px (cap 21.5 → descent -6.4) in a 34.0px rect — 6.1px spare
+status  ink 14.4px (cap 11.1 → descent -3.3) in an 18.0px rect — 3.6px spare
+```
+
+**The 3.0px was always a LINE-BOX figure** — `GetPreferredValues` returns the typographic line
+including leading. The ink never leaves either rect, so it never reaches the zone edge, let alone
+`TicketFooter` on the other side of it. **A magnitude, not a collision → signed C16 deviation: cost
+3.0px of vertical margin, expiry the deferred sizing pass. The phase proceeds.**
+
+### The two residuals — and one of them found a live defect
+
+**T89-B §4.2, DERIVED not asserted.** The report used to say "N of 20 swept" beside "48 slots exist",
+which invites exactly one wrong reading: that 28 slots go unexamined. The sweep now classifies every
+slot it can see and prints an unaccounted-for count **that must be zero**:
+
+```
+49 text slots · 23 swept · 25 the same construction at another row index
+· 1 declared unswept (BigAmount — it renders no string at all) · 0 UNACCOUNTED FOR
+```
+
+**Closing that gap found a defect.** Two of the three slots it named were trivially enumerable, so
+they were swept rather than excused — and **`MomentumLabel` is `MOMENTUM` at 106.4px in a 96.0px box.
+A CONSTANT WITH NO VARIABLE IN IT**, over budget, overflowing on every frame it has ever drawn,
+invisible because nobody had ever swept the slot. Same class G1 found twice. (`Leg` fits, 52.5/140.0.)
+
+**`TakeoverSub` HAS A BOUND** — "unbounded" was the payout maximum's error a second time. Enumerated
+over the same 648,000 offers (`engine.tests/TakeoverSubBoundTests`): longest entry 91 chars, joined
+worst case 385 chars = **3134.6px in a 655.0px box**. And **the list ruling does not reach it: one row
+alone is 760.8px, over by 105.8px.** The entry is the engine's concatenated Moneyline label — T69's
+"a fact named twice", still rendered raw here. **The remedy is the ENTRY, not the composition: a list
+of over-wide rows is still over-wide.**
+
+### The capture window — CLOSED, both sets staged
+
+Both launched **detached** and waited **in-turn** throughout (§4 rule 4), with graphics.
+
+| set | harness | result | frames |
+|---|---|---|---|
+| `tv-phase-t-afterframes-2026-08-13/` | `Capture_Batch22_StatementFit_And_PayoffBeats` | Passed 1/1 | 66 · 187.8 MB |
+| `tv-phase-t-afterframes-namedmoments-2026-08-13/` | `Capture_SeatedSweat_NamedMoments` | **Passed 5/5** | 93 · 245.9 MB |
+
+Both in `main-2/docs/design/dd-import/`, **directories not zips** (paths on disk; no transport cap),
+each with a README carrying pins, coverage and what is not claimed. **Pins asserted, not assumed** —
+the capture directory accumulates (254 PNGs live there), so each set is scoped by **mtime to its own
+window** and then pinned: one boost across both, one seed and one grammar and one scene per payoff
+beat, frames contiguous.
+
+**THE STRUCTURAL FACT WORTH CARRYING, because it reversed my own report mid-window:**
+
+> **The two harness entry points build DIFFERENT TICKETS.** Batch-22 is
+> **BothTeamsToScore(NO)** + moneyline + TotalGoals + AnytimeScorer. Named-moments is
+> **moneyline + moneyline + AnytimeScorer**.
+
+`ONE TEAM SCORELESS` / `ONE TEAM BLANKED` is the **BTTS-NO leg's** NEED line, so **the named-moments
+set cannot render it on any seed, at any moment, ever** — and the batch-22 set carries it by
+construction. I told the DD the opposite before checking the ticket, and corrected it in both READMEs
+rather than editing the wrong claim away.
+
+**A T89-A condition that is jointly unsatisfiable, stated rather than worked around:** it asks for the
+NEED line *"on the same seed AND ticket as the pair's own frames."* Same seed is met (batch-22 runs on
+`48151623`, the pair's first). **Same ticket cannot be met by any run of this harness**, because the
+string does not exist on the pair's ticket. Satisfying both would mean adding a BTTS-NO leg to the
+named-moments ticket — a change to the pair's own construction, and therefore the DD's call, not
+something to slip in under a capture window.
+
+### THE FIVE OPEN ITEMS — all DD calls
+
+1. **`RiskPays`' fact floor** — 378.1px max / **270.6px typical** against a 249.0px row (T74 proper).
+2. **The money control's 3px** — branch 1 determined; the **signed C16 deviation** is the DD's to sign.
+3. **`MomentumLabel`** — 10.4px over, a constant with no variable in it.
+4. **`TakeoverSub`'s entry** — the composition does not fix it; the engine's Moneyline label does.
+5. **The BTTS-leg question** above, if ticket identity is load-bearing for T89-A's comparison.
+
+### Two operational traps this window paid for
+
+- **Unity's working directory in batchmode is the PROJECT path, not the repo root.** Capture output
+  lands in `unity/SBR/artifacts/tv-sweat-capture`, and my first poll watched `<repo>/artifacts` and
+  reported `files=0` for a run that was writing frames the whole time. Liveness is artifact mtime —
+  of the *right* artifact.
+- **Capture pacing, measured:** ~5 minutes per seed at ship pacing; the five-seed set took ~24 minutes
+  wall. That is three polling calls, not one — size the window accordingly and never hand the turn
+  back against a live capture.
+
+---
+
 ## 0-FP. THE FIX PASS — batches 56/57/58 built · TWO COMPOSITION CALLS WITH THE DD · 2026-08-13
 
 **Branch `db5157f`, pushed and REMOTE-VERIFIED.** Tree clean, Unity zero. Two commits on top of
