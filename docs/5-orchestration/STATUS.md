@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 234 (heartbeat).** All
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 235.** Allen's FORMAT
+RULING on research: too concise - per game he wants the addicting
+elements, the fun core, a QUOTED concrete mechanic, and how WE apply it.
+Research seat recreated fresh (docs are the memory) and dispatched: one
+section per game, all fifteen, honest gaps stated where probes were too
+thin to quote. Watcher v30 (five seats). TV suites running toward the
+after-frames; Campaign B relaunch grinding; sgp step-4 sequence running.
+
+*(prior stamp, cycle 234:)* All
 threads grinding: TV on batch-59 fixes toward the after-frames; Campaign
 B relaunch mid-run; sgp's step-4 sequence (control table -> probe+G7 ->
 HOLDOUT4 -> table, kappa untouched). DD seated standing by. Research on
