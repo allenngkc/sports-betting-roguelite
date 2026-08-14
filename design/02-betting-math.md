@@ -29,7 +29,9 @@ Design law (Pillar 3): every relic/guru/event manipulates at least one of these,
 
 Designed 2026-08-12 (sgp lane, F_0.6.0) on measured evidence, not judgement: `docs/sgp/correlation-recon.md` (exact reconnaissance, verification gate at 2.554e-15 over 437,832 checks), `docs/sgp/model-candidates.md` (margin-method literature), `docs/sgp/research-sgp-pricing.md` (real-book practice).
 
-Two legs on one matchup are correlated, so `Π p_i` is not the ticket's probability. This is not a matter of accuracy. On the shipped board, **22 two-leg shapes and 57 further three-leg shapes have joint probability of exactly zero** — tickets with no winning outcome, which the naive product would sell at finite odds up to a mean decimal of 2070.70. That is why the one-leg-per-match guard exists, and lifting it requires everything below.
+Two legs on one matchup are correlated, so `Π p_i` is not the ticket's probability. This is not a matter of accuracy. On the shipped board, **355 two-leg shapes have joint probability of exactly zero** — tickets with no winning outcome, which the naive product would sell at finite odds. That is why the one-leg-per-match guard existed, and lifting it required everything below.
+
+*(Re-measured 2026-08-13 on the merged draws board, 77 selections per matchup. The pre-draws figures were 22 two-leg shapes and 57 three-leg shapes over 36 selections; the argument did not change, its scale did — see* The correlation ratio *below.)*
 
 ### The joint is computed, not modelled
 
@@ -70,7 +72,18 @@ p_CORNER = Σ_{c_h} Σ_{c_a} P(c_h) · P(c_a) · 1[corner predicates hold]
 ρ = p_joint / Π p_i
 ```
 
-`ρ` is a pure property of the joint distribution and is **independent of the overround**. Measured range on the shipped board: `[0, 3.11]` at two legs, `[0, 11.88]` at three, `[0, 14.82]` at four. At two legs, 51.4% of combinations are exactly independent (`ρ = 1`), 3.49% are impossible (`ρ = 0`), and 3.49% are logical implications where one leg strictly implies the other.
+`ρ` is a pure property of the joint distribution and is **independent of the overround**. Re-measured 2026-08-13 on the merged draws board (15 market kinds, 77 selections per matchup), against the pre-draws board it replaced:
+
+| | pre-draws (36 selections) | now (77 selections) |
+|---|---|---|
+| `ρ` range, 2 legs | `[0, 3.11]` | **`[0, 14.23]`** |
+| `ρ` range, 3 legs | `[0, 11.88]` | **`[0, 71.69]`** |
+| `ρ` range, 4 legs | `[0, 14.82]` | **`≥[0, 219.66]`** (sampled) |
+| impossible share (2 legs) | 3.49% | **12.13%** (355 shapes) |
+| implication share (2 legs) | 3.49% | **8.51%** (249 shapes) |
+| exactly independent (2 legs) | 51.4% | **42.65%** |
+
+**Read the direction, not just the numbers.** Roughly one two-leg combination in eight is now *impossible* rather than one in thirty, and the naive product's error at four legs reaches two orders of magnitude on correct-score-heavy tickets. Every argument in this section got stronger; none of them changed. The teaching rule's "he is right about half the time" is now 42.65% rather than 51.4% — still about half, but drifting, and worth re-checking whenever the board grows again.
 
 **`ρ` is a diagnostic, not an interface.** It is what the audit and the reconnaissance report. It is *not* what the model hands downstream — see the next section, where shipping it as a bare scalar is a named and prohibited failure.
 
@@ -89,11 +102,13 @@ The prohibited implementation is `p_joint` collapsed to a bare scalar `ρ`: that
 | `MutuallyExclusive` | `p_joint = 0` | these cannot both happen |
 | `Implies(a → b)` | `p_joint = min p_i`; one leg strictly entails another | b has already happened whenever a does |
 | `SharedScoreline(reinforcing \| opposing)` | two GOAL-family legs read the same scoreline | one makes the other likelier / less likely |
-| `SharedCount(family, sign)` | two legs of the same COUNT family read the same corner or card draw | one makes the other likelier / less likely |
+| `SharedCount(family, sign)` | two legs of the same COUNT family reading an **overlapping side** — the same corner or card draw | one makes the other likelier / less likely |
 | `ScorerOfSide(side)` | a scorer leg beside a leg on that team's goals | the same goals settle both |
 | `Independent` | legs drawn from different families | unrelated — no adjustment |
 
 **`SharedCount` was a hole in this table, found in build (2026-08-12) and ratified here.** The board ships three corner lines and three card lines, so a *band* — corners `OVER 8.5` with `UNDER 10.5` — is correlated, is not an implication, and is not impossible. It had no label, and under this section's own no-label fallback it would have priced at the naive product. Corner×corner `ρ` reaches 4.13, so that was a real leak, not a rounding-scale one. Six pair shapes per matchup.
+
+**`SharedCount` was NARROWED, not widened, 2026-08-13 — and the direction matters.** Team totals split each count family across two *independent* draws, so `HOME corners` beside `AWAY corners` is same-family yet exactly the product. Labelling that `SharedCount` would assert a correlation the model had just measured as absent, so the relation now requires an **overlapping side**, and such a pair takes `Independent`. The `Independent` row's gloss — "legs drawn from different families" — is consequently narrower than the board it describes; its *binding* half, "unrelated — no adjustment", is what governs. Flagged for the Design Director rather than smuggled, because it slightly widens what an unmarked pair can be.
 
 **Resolution rules, so classification is total and deterministic:**
 
@@ -168,7 +183,7 @@ Two things the same law fixes in place, both already true here: the engine **pri
 
 Logical implications (`p_joint = min p_i`, one leg strictly implying another) are **not** blocked, and this is now settled rather than open: the leg is legal, correctly priced, and added, with the fact stated in its own space. The player pays two legs of vig for one leg of risk — a bad bet, not a broken one. A house that stops him being stupid is not this product; one that tells him and lets him proceed is.
 
-Two of these shapes — `BTTS YES + Under 2.5`, and the implication `Under 2.5 ⊂ BTTS NO` — were artefacts of draws being unrepresentable, and **draws were greenlit 2026-08-12** (Lane 1). A 1–1 result restores both, so each leaves its set: the first becomes merely unlikely, the second stops being an implication at all. See *Pending: draws* below.
+Two of these shapes — `BTTS YES + Under 2.5`, and the implication `Under 2.5 ⊂ BTTS NO` — were artefacts of draws being unrepresentable. **Draws shipped, and both left their sets exactly as predicted** (verified 2026-08-13): `BTTS YES + Under 2.5` is now possible, and its joint is *exactly* `P(1–1)`; `Under 2.5 ⊂ BTTS NO` is no longer an implication but an opposing shared scoreline. The prediction was made in step 1 from the research alone, before either was implemented, and it held — which is the best evidence available that the model and the world agree.
 
 ### Void: re-price on the survivors
 
@@ -185,6 +200,8 @@ Void-replacement prices are **computed and locked at ticket lock**, never re-der
 **Multiple voids are supported — CLOSED 2026-08-12, reversing the earlier OPEN.** The original note deferred this because the one documented commercial mechanism covers a single void only. That reasoning does not transfer: books limit themselves for latency and volume reasons we do not have. Two Mulligan Slips on a three-leg ticket is an ordinary hand, and refusing it dead-ends real play. With `MaxLegs = 4` the complete set of survivor subsets is at most **15 prices per ticket**, computed once at lock — so price *every* subset, not just the single-void row.
 
 **A replacement at or below evens voids the ticket and returns the stake — CORRECTED 2026-08-12.** A replacement can price at or below evens, and placement-time refusal is unavailable by then because the ticket is already sold.
+
+**Superseded by the draws board, 2026-08-13:** the `≈1.3` threshold below was measured pre-draws. Draws made `BTTS YES` materially likelier and dragged the leg it entails with it, so sub-evens is now reachable sooner — at `κ = 2`, `OVER 1.5 + BTTS YES` prices at **0.962** and is refused. The exact new threshold is unmeasured; what is established is that it sits at or below 2, and that the rule still never fires at the shipped `κ = 1`.
 
 **The two rulings in this section interact, and stating them independently understated the threshold.** The `1.1181` figure first quoted here was measured against *one-leg* survivors — but the κ-drop below puts a lone survivor permanently above evens, since it is just the board's own single, which `MatchModel.Offer` already guarantees prices above 1.0. With that accounted for, the real threshold is **≈1.3**, and a sub-evens replacement now **requires a correlated group to survive**: a distinct-matchup remainder is a product of board singles and cannot go sub-evens at any `κ`. Still inside the range the gate campaign will explore, so the rule stands — but it fires later and more narrowly than first written.
 

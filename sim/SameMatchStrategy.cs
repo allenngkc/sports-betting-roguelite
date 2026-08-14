@@ -181,12 +181,12 @@ public sealed class SameMatchStrategy : IStrategy
             // SharedScoreline — two GOAL-family legs, NEITHER of which entails the other. The
             // moneyline beside BTTS is the pair that stays true to that on any board: a home win
             // does not require the away side to score, and both sides scoring does not pick a
-            // winner. The obvious alternative — OVER gHi beside BTTS — is NOT this shape on the
-            // board as it ships: with no draws, BTTS yes forces at least 2-1, which ENTAILS over
-            // 2.5, and the model correctly labels it Implies. (See the refusal probe, which leaves
-            // exactly that pair standing on purpose. Once Lane 1's draws land, 1-1 becomes legal and
-            // the same pair becomes a genuine SharedScoreline — which is why this catalogue names
-            // the pair whose label does not depend on that.)
+            // winner. The obvious alternative — OVER gHi beside BTTS — used to be Implies rather
+            // than this shape, because with no draws BTTS yes forced at least 2-1 and so entailed
+            // OVER 2.5. LANE 1'S DRAWS LANDED (2026-08-13): 1-1 is legal, so that pair is now a
+            // genuine SharedScoreline too — and this catalogue was written not to depend on which,
+            // which is why the merge cost it no edit. (See the refusal probe, which leaves exactly
+            // that pair standing on purpose.)
             case 3:
                 return new List<Pick>
                 {

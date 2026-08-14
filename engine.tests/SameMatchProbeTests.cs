@@ -300,6 +300,13 @@ public class SameMatchProbeTests
         while (true)
         {
             sb.Append($"R{run.Round} bank={run.Bank.ToString("F8")} ");
+
+            // The scripted policy backs two moneylines every round, and since draws landed those lose
+            // often enough to leave a bank that cannot fund the minimum stake while the run is still
+            // alive. Stopping here is part of the signature, not an escape from it: the bank is already
+            // written above, so a run that ends by attrition still renders to distinct bytes.
+            if (run.Bank < run.Config.MinStake) return sb.ToString();
+
             run.PlaceTicket(new[] { new Pick(0, Side.Home), new Pick(1, Side.Away) }, run.Config.MinStake);
             run.LockRound();
             run.FastForwardRound();
