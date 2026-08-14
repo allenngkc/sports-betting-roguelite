@@ -17,8 +17,11 @@
 2. **Correlation model into `design/02-betting-math.md`** — DONE, accepted 2026-08-12.
 3. **Engine change lifting the one-pick-per-matchup guard** — **DONE 2026-08-13**, six phases
    (1, 2, 3, 3b, 3c, 3d). Awaiting acceptance.
-4. **Gate re-validation on held-out seeds** — NOT STARTED. Note the campaign is **G1–G7**, not the
-   charter's "six": G7 is market coverage, added after the charter was written.
+4. **Gate re-validation on held-out seeds** — **DONE 2026-08-13. ALL 8 GATES PASS** on `HOLDOUT4-`
+   (fresh namespace, spent once; `HOLDOUT`…`HOLDOUT3` were already burned). The campaign is
+   **G1–G7 plus the new G7-SGP arm**, not the charter's "six". Artifacts:
+   `docs/sgp/gate-validation-HOLDOUT4.md` (validation) and `docs/sgp/gate-control-TUNE.md` (control,
+   pre-probe, which establishes that step 3 did not move the economy).
 5. **Presentation** — NOT STARTED.
 
 ## 3. State
