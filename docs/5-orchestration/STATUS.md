@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 246 (heartbeat).** The
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 247 (heartbeat).** The
+string is authored (batch 62, one deck string retired free); TV in the
+measure-build-capture sequence; sgp extending probes then the merged
+campaign. The phase closes on the capture + re-read.
+
+*(prior stamp, cycle 246:)* The
 phase's critical path is ONE STRING: the DD authoring G1-am6's moneyline
 NEED arm from TV's pool; the capture fires within the hour of it
 landing. TV built + handoff fresh + holding. Sgp's repair grinding.
