@@ -2,7 +2,8 @@
 
 **Lane:** research — compulsion-loop references · **Branch:** `research` · **Updated:** 2026-08-12
 **Read this first if you are a fresh seating.** Everything the lane knows is in files; nothing
-load-bearing lives only in a session.
+load-bearing lives only in a session. **Fastest way in: `19-per-game-cards.md`** — all fifteen titles in the
+reading format (addicting · fun · quoted mechanic · our application · gaps), format recorded in `01` §D.
 
 ## 1. Governance — get this right before anything else
 
@@ -22,7 +23,10 @@ Report telegraphic: Done / Next / Risk / Need-Allen. The Need-Allen line is load
 | `cb0166f` | `08`–`11` Tier-2 probes (Gambonanza, Luck be a Landlord, D&DG, Scritchy Scratchy), `12` probe-set findings, template updated with the rarity floor + frozen lexicon |
 | `89c9808` | `13` this state file, `14` the widened census + new cohort + RF-14/15/16 |
 | `117eefa` | `15` Insider Trading autopsy, `16` Nubby's Number Factory autopsy; `14`'s Insider Trading sentiment band corrected |
-| *(this commit)* | `17` probe set 2 — Slots & Daggers, Dungeon Clawler, Sol Cesto, Tharsis, Bills Must Be Paid; RF-17/18/19 |
+| `aab4a4b` | `17` probe set 2 — Slots & Daggers, Dungeon Clawler, Sol Cesto, Tharsis, Bills Must Be Paid; RF-17/18/19 |
+| `1d6cc2e` | `18` ruling brief — the retention bundle (RF-5/8/12/14) packaged as one decision for Allen |
+| `2c9a2e0` | `19` per-game cards — all fifteen titles in Allen's format; `01` §D records the format |
+| *(this commit)* | `20` ruling brief — RF-17, legibility at the point of commitment; a `19` ranking cell corrected |
 
 **The widened mandate is now fully discharged.** 15 titles studied: 4 Tier-1 autopsies + 4 Tier-2 probes +
 2 widened autopsies + 5 widened probes. Nothing is queued; the lane is idle pending Allen's rulings.
@@ -58,6 +62,16 @@ raw-blob class. Stage lane files **by explicit path only**; `git add -A` sweeps 
 **My current read:** RF-5, RF-8, RF-12 and RF-14 are **one decision, not four** — where retention comes
 from, given that neither tension nor comprehension supplies it. RF-3, RF-11 and RF-15 are **one decision**
 — what the product is, how long, at what price.
+
+**Two briefs are with Allen (2026-08-13), in this order:**
+1. `18-ruling-brief-retention.md` — RF-5/8/12/14 as one question, options **A/B/C/D**, lane recommends **B**
+   (name the retention layer, ladder into v1, hold steering for RF-17).
+2. `20-ruling-brief-legibility.md` — RF-17, options **A/B/C/D**, lane recommends **A** (adopt-wide: the law
+   covers the shop as well as the bet).
+
+**They interlock and the trap is real:** `18`=B hands steering to RF-17, so a narrow RF-17 (option B) hands
+it back and **steering ends up owned by nobody**. `20` §6 tables this against every branch. RF-17 = A is the
+lane's answer under all four.
 
 **RF-1 was granted** (add Buckshot Roulette). Allen has played **Balatro and CloverPit only**.
 
