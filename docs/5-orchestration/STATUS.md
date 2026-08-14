@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 243 (heartbeat).** The
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 244 — THE LAST RULINGS
+ARE IN (batch 61).** T90-am both levers + the column's side padding
+RULED (8px/2px keep-out); G1-am6 authoring reopens; T91-am accepted with
+the top band partitioned; T92-am height by content removal. TV builds
+the final set then THE CLOSING CAPTURE - the re-read that ends Phase T.
+The two draw items queued in the review note as confirmations. Sgp's
+repair agent grinding. Research items with Allen.
+
+*(prior stamp, cycle 243:)* The
 gift-streak dutch became a class sweep (fixed sites now fail loudly on
 reintroduction; the editor gate aborts-not-prints); count re-run
 finishing, lane closes and holds after. Sgp's merge-repair agent on the
