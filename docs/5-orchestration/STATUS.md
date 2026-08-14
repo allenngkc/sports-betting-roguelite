@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 259.** sgp MERGED and
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 260.** Step 5 opened on
+both halves: Allen ruled Option C (model to sgp, screen to surething-ui).
+The plan merged (261109c); sgp's model half P1-P3 running; surething-ui-2
+re-created and seated (Opus 5 max, term_bbedfdc6) on the screen half +
+the inherited margin-pin repair; watcher v32 armed (adds the new seat).
+TV still on the draw arm.
+
+*(prior stamp, cycle 259:)* sgp MERGED and
 pushed (34cfb57): HOLDOUT5 8/8, probe over all 15 kinds, joint model on
 the draws board, DLL ridden, handoff DLL-rule corrected. Allen's staged
 word fired: step 5 - the presentation PLAN, routed before building. Two
