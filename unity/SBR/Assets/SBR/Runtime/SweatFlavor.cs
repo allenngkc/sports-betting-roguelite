@@ -199,11 +199,41 @@ namespace SBR.Game
 
         /// <summary>Market legs (O/U, BTTS) have no picked TEAM — presentation anchors them on the
         /// home side; the market label carries the pick. Shared by every renderer so the anchor
-        /// can never disagree across surfaces. Moneyline legs answer with their real side.</summary>
+        /// can never disagree across surfaces. Moneyline legs answer with their real side.
+        ///
+        /// <para><b>A MONEYLINE DRAW HAS NO SIDE, and this returned AWAY for it.</b> Routed here by
+        /// name from the markets lane's class sweep (`a3d184c`: *"SweatFlavor:206 — draw counts as
+        /// away for flavour, ROUTED → tv-sweat"*), and it survived that sweep for the reason worth
+        /// recording: **it is in this surface's file, not theirs.** A cross-lane sweep scoped by
+        /// ownership misses exactly the code another lane owns.</para>
+        ///
+        /// <para><b>The defect was a fall-through, not a decision.</b> The old expression asked
+        /// `Choice == MarketChoice.Home` and let everything else be false — written when `Choice` on a
+        /// moneyline could only be Home or Away, so "not Home" meant Away. `MarketChoice.Draw` made
+        /// that inference wrong without touching the line: the third value silently inherited the
+        /// second one's branch. C46's shape in an expression rather than in a box.</para>
+        ///
+        /// <para><b>The fix is the rule this summary already states, applied to a case written before
+        /// draws existed:</b> a draw has no picked team, exactly like O/U and BTTS, so it takes the
+        /// same HOME anchor they do and the market label carries the pick. It is not new design — the
+        /// only new thing is that a third no-team case now exists.</para>
+        ///
+        /// <para><b>Deliberately NOT the null the markets lane used</b> (`BetslipModel.SideOn` returns
+        /// null for a draw and is pinned for it). That answers a different question: `SideOn` reports
+        /// WHICH SIDE YOU BACKED, where a draw's honest answer is "neither". This answers WHICH TEAM
+        /// THE PROSE ANCHORS ON, where every leg needs an answer and "neither" would leave the
+        /// flavour with no names. Same finding, two functions, two correct shapes.</para>
+        ///
+        /// <para><b>Routed, not authored:</b> whether the flavour's VOICE reads correctly on a
+        /// draw-backed leg — `{picked}`/`{other}` naming the home side while the pick is the draw — is
+        /// a copy question for the DD. The direction is unaffected either way: up/down comes from the
+        /// leg's own win-prob move, not from the name anchor.</para></summary>
         public static bool PickedHomeForPresentation(Leg leg)
             => leg.Selection.Kind == MarketKind.AnytimeScorer
                 ? leg.Matchup.PlayerSide(leg.Selection.PlayerIndex) == Side.Home
-                : leg.Selection.Kind != MarketKind.Moneyline || leg.Selection.Choice == MarketChoice.Home;
+                : leg.Selection.Kind != MarketKind.Moneyline
+                    || leg.Selection.Choice == MarketChoice.Home
+                    || leg.Selection.Choice == MarketChoice.Draw;
 
         /// <summary>The team's noun (last word of the "City Noun" name) - punchier for the ticker.</summary>
         public static string Short(string teamName)
