@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 258.** HOLDOUT5 IS IN:
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 259.** sgp MERGED and
+pushed (34cfb57): HOLDOUT5 8/8, probe over all 15 kinds, joint model on
+the draws board, DLL ridden, handoff DLL-rule corrected. Allen's staged
+word fired: step 5 - the presentation PLAN, routed before building. Two
+named follow-ups standing (conditional cash-out; Voided render arm). TV
+still on the draw arm.
+
+*(prior stamp, cycle 258:)* HOLDOUT5 IS IN:
 8/8 gates on merged main (G7-SGP exact - 106,568 same-match tickets placed
 and settled, 15/15 kinds, 0 no-label fallbacks, 34,752 refusals, 11,541
 voids re-priced). The campaign finished detached hours ago; found on the
