@@ -22,7 +22,8 @@ Report telegraphic: Done / Next / Risk / Need-Allen. The Need-Allen line is load
 | `cb0166f` | `08`–`11` Tier-2 probes (Gambonanza, Luck be a Landlord, D&DG, Scritchy Scratchy), `12` probe-set findings, template updated with the rarity floor + frozen lexicon |
 | `89c9808` | `13` this state file, `14` the widened census + new cohort + RF-14/15/16 |
 | `117eefa` | `15` Insider Trading autopsy, `16` Nubby's Number Factory autopsy; `14`'s Insider Trading sentiment band corrected |
-| *(this commit)* | `17` probe set 2 — Slots & Daggers, Dungeon Clawler, Sol Cesto, Tharsis, Bills Must Be Paid; RF-17/18/19 |
+| `aab4a4b` | `17` probe set 2 — Slots & Daggers, Dungeon Clawler, Sol Cesto, Tharsis, Bills Must Be Paid; RF-17/18/19 |
+| *(this commit)* | `18` ruling brief — the retention bundle (RF-5/8/12/14) packaged as one decision for Allen |
 
 **The widened mandate is now fully discharged.** 15 titles studied: 4 Tier-1 autopsies + 4 Tier-2 probes +
 2 widened autopsies + 5 widened probes. Nothing is queued; the lane is idle pending Allen's rulings.
@@ -58,6 +59,11 @@ raw-blob class. Stage lane files **by explicit path only**; `git add -A` sweeps 
 **My current read:** RF-5, RF-8, RF-12 and RF-14 are **one decision, not four** — where retention comes
 from, given that neither tension nor comprehension supplies it. RF-3, RF-11 and RF-15 are **one decision**
 — what the product is, how long, at what price.
+
+**Retention bundle is packaged and with Allen (2026-08-13):** `18-ruling-brief-retention.md` states the
+four as one question with options **A/B/C/D**; the lane recommends **B** (name the layer, ladder into v1,
+hold steering for RF-17). Pulled ahead of the per-game format rework at Allen's sequencing. **RF-17 is the
+natural follow-on and should be ruled next**, whichever way the bundle lands.
 
 **RF-1 was granted** (add Buckshot Roulette). Allen has played **Balatro and CloverPit only**.
 
