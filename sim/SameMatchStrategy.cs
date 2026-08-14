@@ -17,16 +17,29 @@ namespace SBR.Sim;
 /// G1–G6 never see it; it is its own batch, and a batch derives every seed from the prefix.</para>
 ///
 /// Policy — each betting window it spends its three ticket slots on:
-///   • T1 — a rotating 2-leg PAIR from the five-shape catalogue below, so the relation vocabulary is
-///     exercised rather than one case repeated. The rotation advances two shapes per round, so a run
-///     that dies at the usual round 4–5 has still walked all five.
-///   • T2 — a 3-leg COMPOSITE (a scorer, his side's moneyline, and the goals line all three read):
-///     several relations on one ticket, which is the only thing that exercises the model's
-///     <c>principal</c> ranking, and an 8-entry survivor-subset table instead of a 4-entry one.
-///   • T3 — a deliberately INVALID slip, alternating impossible / duplicate by round, placed through
+///   • T1 — a rotating 2-leg PAIR from the five-shape RELATION catalogue, so the relation vocabulary
+///     is exercised rather than one case repeated. The rotation advances two shapes per round, so a
+///     run that dies at the usual round 4–5 has still walked all five.
+///   • T2 — a rotating COMPOSITE from the six-entry MARKET-KIND catalogue: 3–4 legs the same match
+///     settles, several relations on one ticket (which is the only thing that exercises the model's
+///     <c>principal</c> ranking and an 8- or 16-entry survivor-subset table), and between them every
+///     shipped <see cref="MarketKind"/> on the board.
+///   • T3 — a deliberately INVALID slip, rotating over four causes, placed through
 ///     <c>PlaceTicket</c> so the thrown refusal is exercised as a surface would meet it — then
 ///     re-placed as the refusal's own REMEDY. The remedy set is chosen so what survives is itself a
 ///     same-match ticket, so the slot buys refusal coverage AND a placed ticket.
+///
+/// <para><b>The two catalogues are separate axes and are rotated differently, on purpose.</b> T1 asks
+/// "which RELATIONS did the model label", and five shapes fit inside the four-to-five rounds a run
+/// survives, so it walks them by round from a measured offset (see <c>Bet</c>). T2 asks "which
+/// MARKETS ever reached a joint", and fifteen kinds do not fit in five rounds however they are
+/// packed — a round-only walk would hand the late entries whatever a handful of round-6 survivors
+/// could afford. So T2 walks from a PER-RUN start drawn once off the bot's own generator: every
+/// entry gets an equal share of the batch's best-funded round instead of one entry getting round 1
+/// and another getting the tail. The earlier finding that a generator draw measured WORSE for T1
+/// still holds and is not contradicted: it evens the shapes out, which hurt when some shapes had a
+/// second source and one did not. Here evening out is the whole objective — most kinds have exactly
+/// one source, so an even split is the best split.</para>
 ///
 /// <para><b>The refusal path is live product behaviour and a campaign that never trips it has not
 /// covered it.</b> Both routes to the verdict are used, each where it reads better: T3 provokes the
@@ -34,6 +47,14 @@ namespace SBR.Sim;
 /// non-throwing <see cref="Run.RefusalFor"/> — a probe that tripped over an unintended refusal would
 /// silently lose the coverage it meant to have, so it asks first and counts anything it finds as
 /// UNEXPECTED (a defect signal, reported apart from the refusals it provoked on purpose).</para>
+///
+/// <para><b>It must place far more than it is refused.</b> T3 refuses exactly once per round and
+/// sells its remedy, so the balance is structurally three placed to one refused; the restrictive new
+/// kinds (a correct score pins the scoreline to one cell, a double chance overlaps the moneyline)
+/// are used in combinations that are consistent BY CONSTRUCTION rather than by luck — the correct
+/// score picks the moneyline, parity and BTTS legs that its own cell implies, and the double chance
+/// is paired with the result it contains. A catalogue that leaned on the refusal path for coverage
+/// would certify refusals and nothing else.</para>
 ///
 /// <para><b>Never cashes out</b> — Allen's ruling, not a preference. Same-match cash-out is still
 /// naive-priced (phase 4, deferred), so a cash-out would feed a known-wrong number into the
@@ -56,9 +77,18 @@ public sealed class SameMatchStrategy : IStrategy
     /// costs, not to win. It reserves the whole payment for the same reason.</summary>
     private const double StakeFraction = 0.04;
 
-    /// <summary>How many pair shapes the catalogue carries — one per relation kind the model can
-    /// label on a ticket it will actually sell (MutuallyExclusive is only ever a refusal).</summary>
+    /// <summary>How many pair shapes the RELATION catalogue carries — one per relation kind the model
+    /// can label on a ticket it will actually sell (MutuallyExclusive is only ever a refusal).</summary>
     private const int ShapeCount = 5;
+
+    /// <summary>How many composites the MARKET-KIND catalogue carries. Between them, and with T1 and
+    /// T3's remedies, every shipped <see cref="MarketKind"/> reaches a same-match ticket — which is
+    /// the fact G7-SGP's per-kind arm asserts, so this number is a consequence of that criterion and
+    /// not a free dial.</summary>
+    private const int CompositeCount = 6;
+
+    /// <summary>How many invalid-slip causes T3 rotates over.</summary>
+    private const int RefusalVariants = 4;
 
     public string Name => "samematch";
 
@@ -97,8 +127,8 @@ public sealed class SameMatchStrategy : IStrategy
         Matchup m2 = slate[(baseIndex + 1) % slate.Count];
         Matchup m3 = slate[(baseIndex + 2) % slate.Count];
 
-        // T1 — the rotating pair: two shapes forward per round, so the catalogue is WALKED, not
-        // sampled, and a run that reaches round 5 has seen all five.
+        // T1 — the rotating relation pair: two shapes forward per round, so the catalogue is WALKED,
+        // not sampled, and a run that reaches round 5 has seen all five.
         //
         // The +2 start is measured, not decorative. Rounds are not equally funded — the probe
         // reserves the payment, and by round 5 only a few percent of runs can still afford a third
@@ -108,12 +138,16 @@ public sealed class SameMatchStrategy : IStrategy
         // shape is also produced by the composite or by a refusal remedy, so a starved late round
         // costs those nothing. A draw off the bot's generator was tried instead and measured worse —
         // it evens the SHAPES out, which flattens the kinds that had a second source down toward the
-        // one that does not.
+        // one that does not. (T2 below takes the opposite decision for the opposite reason; the two
+        // catalogues answer different questions and the class comment sets out why.)
         int shape = ((run.Round - 1) * 2 + 2) % ShapeCount;
         budget = PlaceChecked(run, state, PairFor(shape, m1, run.Config), stake, budget);
 
-        // T2 — the composite: several relations on one ticket, so `principal` has a ranking to do.
-        budget = PlaceChecked(run, state, Composite(m2, run.Config), stake, budget);
+        // T2 — the rotating kind composite: several relations on one ticket, so `principal` has a
+        // ranking to do, and every market kind on the board reaches a joint across the batch.
+        if (state.SameMatchSweepStart < 0) state.SameMatchSweepStart = rng.NextInt(0, CompositeCount);
+        int entry = (state.SameMatchSweepStart + run.Round - 1) % CompositeCount;
+        budget = PlaceChecked(run, state, Composite(entry, m2, run.Config), stake, budget);
 
         // T3 — the refusal probe, then its own verified remedy.
         PlaceRefusalProbe(run, state, m3, stake, budget);
@@ -139,7 +173,7 @@ public sealed class SameMatchStrategy : IStrategy
         }
     }
 
-    // ---- the shape catalogue -------------------------------------------------------------------
+    // ---- the RELATION catalogue (T1) ------------------------------------------------------------
 
     /// <summary>One 2-leg slip per relation kind the model can label. Lines come from the config
     /// rather than from literals: a re-tune of GoalLines/CornerLines/CardLines otherwise leaves this
@@ -202,21 +236,130 @@ public sealed class SameMatchStrategy : IStrategy
         }
     }
 
-    /// <summary>A scorer, his side's moneyline, and the goals line — three legs the same goals
-    /// settle. Two ScorerOfSide relations and a SharedScoreline, so the model must NOMINATE one,
-    /// which is the only exercise the principal ranking gets in a campaign.</summary>
-    private static List<Pick>? Composite(Matchup m, RunConfig cfg)
+    // ---- the MARKET-KIND catalogue (T2) ---------------------------------------------------------
+
+    /// <summary>One composite per group of market kinds, each 3–4 legs the same match settles.
+    ///
+    /// <para><b>Every entry is consistent BY CONSTRUCTION, never by luck.</b> The restrictive kinds
+    /// are the point of the extension and also its trap: a correct score pins the scoreline to one
+    /// cell and a double chance overlaps the moneyline, so a catalogue that combined them naively
+    /// would be refused far more often than sold and the campaign would certify the refusal path
+    /// alone. So each entry DERIVES its siblings from the restrictive leg — the correct-score entry
+    /// reads its own cell for the result, the parity and whether both teams scored; the margin entry
+    /// picks a handicap and a double chance that both CONTAIN a one-goal home win. The pre-check in
+    /// <see cref="PlaceChecked"/> is the alarm on that reasoning, not a substitute for it.</para>
+    ///
+    /// <para>Selections that the board TRUNCATES — correct-score cells and 2+ scorer rows both sit
+    /// behind the ratified 2% probability floor — are read off <c>m.Markets</c> rather than
+    /// constructed, because <c>Matchup.Odds</c> throws on a selection that was never offered and the
+    /// truncation moves with the matchup's latents. Everything else is built from config lines, the
+    /// same discipline the relation catalogue uses.</para></summary>
+    private static List<Pick>? Composite(int entry, Matchup m, RunConfig cfg)
     {
-        if (cfg.GoalLines.Length < 1) return null;
-        MarketSelection? scorer = ShortestHomeScorer(m);
-        if (scorer is not { } s) return null;
         int i = m.Index;
-        return new List<Pick>
+        switch (entry)
         {
-            new Pick(i, s),
-            new Pick(i, MarketSelection.Moneyline(Side.Home)),
-            new Pick(i, MarketSelection.TotalGoals(cfg.GoalLines[0], true)),
-        };
+            // 0 — THE SCORER COMPOSITE (unchanged from the original catalogue): a scorer, his side's
+            // moneyline, and the goals line — three legs the same goals settle. Two ScorerOfSide
+            // relations and a SharedScoreline, so the model must NOMINATE one.
+            case 0:
+            {
+                if (cfg.GoalLines.Length < 1) return null;
+                MarketSelection? scorer = ShortestHomeScorer(m);
+                return scorer is not { } s
+                    ? null
+                    : new List<Pick>
+                    {
+                        new Pick(i, s),
+                        new Pick(i, MarketSelection.Moneyline(Side.Home)),
+                        new Pick(i, MarketSelection.TotalGoals(cfg.GoalLines[0], true)),
+                    };
+            }
+
+            // 1 — THE CORRECT SCORE, and the three things a single cell already decides: who won
+            // (which is where the DRAW reaches a same-match slip, since a level cell names it), the
+            // parity of the total, and whether both teams scored. Every one of those is an Implies
+            // off the score, so the slip is legal on any board and its price is the score's own.
+            case 1:
+            {
+                if (CorrectScoreRow(m, m.Index) is not { } row) return null;
+                int h = row.ScoreHome, a = row.ScoreAway;
+                MatchResult result = h > a ? MatchResult.Home : h < a ? MatchResult.Away : MatchResult.Draw;
+                return new List<Pick>
+                {
+                    new Pick(i, row),
+                    new Pick(i, MarketSelection.Moneyline(result)),
+                    new Pick(i, MarketSelection.TotalGoalsOddEven((h + a) % 2 == 1)),
+                    new Pick(i, MarketSelection.BothTeamsToScore(h > 0 && a > 0)),
+                };
+            }
+
+            // 2 — THE RESULT SPINE: a one-goal home win, said four ways. The double chance CONTAINS
+            // it (1X ⊇ 1), the away side's +line covers a one-goal loss, the margin bucket is exactly
+            // one, and the moneyline is the result itself. Heavy overlap is deliberate — these four
+            // kinds all read the same scoreline, which is precisely the correlation the joint exists
+            // to price, and the naive product would sell it at a large multiple of its worth.
+            case 2:
+            {
+                if (cfg.HandicapLines.Length < 1) return null;
+                return new List<Pick>
+                {
+                    new Pick(i, MarketSelection.DoubleChance(MarketChoice.HomeOrDraw)),
+                    new Pick(i, MarketSelection.Handicap(Side.Away, cfg.HandicapLines[0])),
+                    new Pick(i, MarketSelection.WinningMargin(1)),
+                    new Pick(i, MarketSelection.Moneyline(Side.Home)),
+                };
+            }
+
+            // 3 — THE COUNT SPINE: each count family read at both scopes, team and match. Two
+            // SharedCount relations (a team's corners inside the match total, the same for cards) and
+            // four cross-family Independents, which is the busiest relation set the probe builds.
+            case 3:
+            {
+                if (cfg.CornerLines.Length < 1 || cfg.CardLines.Length < 1
+                    || cfg.TeamCornerLines.Length < 1 || cfg.TeamCardLines.Length < 1) return null;
+                return new List<Pick>
+                {
+                    new Pick(i, MarketSelection.TeamTotalCorners(Side.Home, cfg.TeamCornerLines[0], true)),
+                    new Pick(i, MarketSelection.TotalCorners(cfg.CornerLines[^1], true)),
+                    new Pick(i, MarketSelection.TeamTotalCards(Side.Home, cfg.TeamCardLines[0], true)),
+                    new Pick(i, MarketSelection.TotalCards(cfg.CardLines[0], true)),
+                };
+            }
+
+            // 4 — THE MULTI SCORER, beside the two things his second goal already implies: he scored
+            // at all, and his side scored twice. The scorer legs are the only place PlayerMultiScorer
+            // can reach a joint, and its board is floor-truncated, so the row is read off the board
+            // and the whole entry stands down when the matchup offers none.
+            case 4:
+            {
+                if (cfg.TeamGoalLines.Length < 2) return null;
+                if (ShortestMultiScorer(m) is not { } multi) return null;
+                Side side = m.PlayerSide(multi.PlayerIndex);
+                return new List<Pick>
+                {
+                    new Pick(i, multi),
+                    new Pick(i, MarketSelection.AnytimeScorer(multi.PlayerIndex)),
+                    new Pick(i, MarketSelection.TeamTotalGoals(side, cfg.TeamGoalLines[1], true)),
+                    new Pick(i, MarketSelection.Moneyline(side)),
+                };
+            }
+
+            // 5 — THE TEAM GOALS SPINE: home 2+ and away 1+, which together entail both the BTTS yes
+            // and the OVER. TeamTotalGoals' second source, so the kind does not depend on the
+            // truncated multi-scorer board above it having a row on this matchup.
+            default:
+            {
+                if (cfg.TeamGoalLines.Length < 2 || cfg.GoalLines.Length < 2) return null;
+                return new List<Pick>
+                {
+                    new Pick(i, MarketSelection.TeamTotalGoals(Side.Home, cfg.TeamGoalLines[1], true)),
+                    new Pick(i, MarketSelection.TeamTotalGoals(Side.Away, cfg.TeamGoalLines[0], true)),
+                    new Pick(i, MarketSelection.BothTeamsToScore(true)),
+                    new Pick(i, MarketSelection.TotalGoals(cfg.GoalLines[1], true)),
+                };
+            }
+        }
     }
 
     /// <summary>The shortest-priced HOME scorer on the board, read off the offered odds — public
@@ -235,6 +378,45 @@ public sealed class SameMatchStrategy : IStrategy
             best = offer.Selection;
         }
         return best;
+    }
+
+    /// <summary>The shortest-priced 2+ scorer OFFERED on this matchup — the likeliest one, which is
+    /// also the one whose joint with his side's goals is worth the most to check. Null where the 2%
+    /// floor truncated the whole multi-scorer board, which is a real state of a low-scoring
+    /// matchup.</summary>
+    private static MarketSelection? ShortestMultiScorer(Matchup m)
+    {
+        MarketSelection? best = null;
+        double bestOdds = double.MaxValue;
+        foreach (MarketOffer offer in m.Markets)
+        {
+            if (offer.Selection.Kind != MarketKind.PlayerMultiScorer) continue;
+            if (offer.Odds >= bestOdds) continue;
+            bestOdds = offer.Odds;
+            best = offer.Selection;
+        }
+        return best;
+    }
+
+    /// <summary>One OFFERED correct-score cell, rotated by <paramref name="pick"/> so the campaign
+    /// does not spend every ticket on one scoreline — the rows differ in what they imply (a level
+    /// cell names the DRAW, a 0-0 names BTTS no), and a single row would cover one of those. Null
+    /// when the floor left the matchup no rows at all.</summary>
+    private static MarketSelection? CorrectScoreRow(Matchup m, int pick)
+    {
+        int count = 0;
+        foreach (MarketOffer offer in m.Markets)
+            if (offer.Selection.Kind == MarketKind.CorrectScore) count++;
+        if (count == 0) return null;
+
+        int wanted = ((pick % count) + count) % count;
+        int seen = 0;
+        foreach (MarketOffer offer in m.Markets)
+        {
+            if (offer.Selection.Kind != MarketKind.CorrectScore) continue;
+            if (seen++ == wanted) return offer.Selection;
+        }
+        return null;
     }
 
     // ---- placement -----------------------------------------------------------------------------
@@ -260,43 +442,30 @@ public sealed class SameMatchStrategy : IStrategy
         return budget - stake;
     }
 
-    /// <summary>The deliberately invalid slip, alternating the two refusal rules a κ = 1 board can
-    /// actually reach, then placing the refusal's own remedy.
+    /// <summary>The deliberately invalid slip, rotating over the causes a κ = 1 board can actually
+    /// reach, then placing the refusal's own remedy.
     ///
     /// <para>Goes through <see cref="Run.PlaceTicket"/> rather than the query: the thrown refusal is
     /// how a betslip meets this rule, and placement is atomic — nothing is spent and no ticket is
     /// added — so provoking it costs the probe nothing but the coverage it came for.</para>
     ///
-    /// <para>Both slips are built so that DROPPING THE LAST LEG leaves a same-match pair: the remedy
+    /// <para>Every slip is built so that DROPPING THE LAST LEG leaves a same-match pair: the remedy
     /// prefers the legs added last, so the corrected ticket is itself coverage rather than a
     /// consolation single. The remedy is applied as the engine reported it — indices into the leg
-    /// list, which is pick order — and never re-derived here. What survives is an OVER gHi + BTTS
-    /// pair (labelled Implies on the current draw-free board, SharedScoreline once draws land) and a
-    /// corners band; the exposure table reports what the model actually labelled, so neither claim
-    /// has to be maintained here.</para></summary>
+    /// list, which is pick order — and never re-derived here, so a remedy that named a different set
+    /// still places whatever the engine verified.</para>
+    ///
+    /// <para>Only two RULES are reachable (SubEvens needs κ ≳ 1.3), but a rule is not a cause: the
+    /// four variants trip ImpossibleCombination through three structurally different conflicts — a
+    /// scoreline that cannot hold two goal legs, a double chance that EXCLUDES the result beside it,
+    /// and a correct-score cell that fixes the total — plus the duplicate rule. The exposure table
+    /// reports what the model labelled, so no claim about which is made here.</para></summary>
     private static void PlaceRefusalProbe(Run run, BotState state, Matchup m, double stake,
         double budget)
     {
         if (budget < stake) return;
-        RunConfig cfg = run.Config;
-        if (cfg.GoalLines.Length < 2 || cfg.CornerLines.Length < 2) return;
-        int i = m.Index;
-
-        // Odd rounds: IMPOSSIBLE — BTTS yes needs two goals, UNDER the low line allows at most one.
-        // Even rounds: DUPLICATE — the same corner line twice, which the joint is idempotent over.
-        List<Pick> invalid = run.Round % 2 == 1
-            ? new List<Pick>
-            {
-                new Pick(i, MarketSelection.TotalGoals(cfg.GoalLines[1], true)),
-                new Pick(i, MarketSelection.BothTeamsToScore(true)),
-                new Pick(i, MarketSelection.TotalGoals(cfg.GoalLines[0], false)),
-            }
-            : new List<Pick>
-            {
-                new Pick(i, MarketSelection.TotalCorners(cfg.CornerLines[0], true)),
-                new Pick(i, MarketSelection.TotalCorners(cfg.CornerLines[^1], false)),
-                new Pick(i, MarketSelection.TotalCorners(cfg.CornerLines[0], true)),
-            };
+        List<Pick>? invalid = InvalidSlip(run.Round % RefusalVariants, m, run.Config);
+        if (invalid == null) return;
 
         TicketRefusal refusal;
         try
@@ -323,6 +492,69 @@ public sealed class SameMatchStrategy : IStrategy
         // rules. Placed directly, so a remedy that did not actually fix the ticket would surface as
         // an unhandled refusal here rather than being quietly swallowed by a second pre-check.
         run.PlaceTicket(remedied, stake);
+    }
+
+    /// <summary>The four invalid slips. Each is three legs whose LAST one is the offender, so the
+    /// verified remedy leaves a same-match pair — and each pair left standing carries kinds the rest
+    /// of the catalogue reaches thinly or not at all (a double chance beside corners; a correct score
+    /// beside the result it names).</summary>
+    private static List<Pick>? InvalidSlip(int variant, Matchup m, RunConfig cfg)
+    {
+        int i = m.Index;
+        switch (variant)
+        {
+            // IMPOSSIBLE, on the scoreline: BTTS yes needs two goals, UNDER the low line allows one.
+            case 1:
+                if (cfg.GoalLines.Length < 2) return null;
+                return new List<Pick>
+                {
+                    new Pick(i, MarketSelection.TotalGoals(cfg.GoalLines[1], true)),
+                    new Pick(i, MarketSelection.BothTeamsToScore(true)),
+                    new Pick(i, MarketSelection.TotalGoals(cfg.GoalLines[0], false)),
+                };
+
+            // DUPLICATE: the same corner line twice, which the joint is idempotent over.
+            case 2:
+                if (cfg.CornerLines.Length < 2) return null;
+                return new List<Pick>
+                {
+                    new Pick(i, MarketSelection.TotalCorners(cfg.CornerLines[0], true)),
+                    new Pick(i, MarketSelection.TotalCorners(cfg.CornerLines[^1], false)),
+                    new Pick(i, MarketSelection.TotalCorners(cfg.CornerLines[0], true)),
+                };
+
+            // IMPOSSIBLE, by EXCLUSION: 12 is precisely "not the draw", so the draw beside it wins on
+            // no outcome at all. This is the overlap double chance was expected to produce and the
+            // one refusal cause on the board that is a set-complement rather than an arithmetic
+            // conflict. The remedy leaves 12 beside a corners leg — a cross-family pair.
+            case 3:
+                if (cfg.CornerLines.Length < 1) return null;
+                return new List<Pick>
+                {
+                    new Pick(i, MarketSelection.DoubleChance(MarketChoice.HomeOrAway)),
+                    new Pick(i, MarketSelection.TotalCorners(cfg.CornerLines[0], true)),
+                    new Pick(i, MarketSelection.Moneyline(MatchResult.Draw)),
+                };
+
+            // IMPOSSIBLE, by a FIXED TOTAL: a correct-score cell settles the goal total exactly, so
+            // the goal line it falls the wrong side of can never come in with it. Chosen off the
+            // cell rather than assumed, so it holds for every row the floor leaves offered.
+            default:
+            {
+                if (cfg.GoalLines.Length < 1) return null;
+                if (CorrectScoreRow(m, m.Index) is not { } row) return null;
+                int total = row.ScoreHome + row.ScoreAway;
+                MatchResult result = row.ScoreHome > row.ScoreAway ? MatchResult.Home
+                    : row.ScoreHome < row.ScoreAway ? MatchResult.Away : MatchResult.Draw;
+                bool over = total < cfg.GoalLines[0]; // over the line the cell sits under, or vice versa
+                return new List<Pick>
+                {
+                    new Pick(i, row),
+                    new Pick(i, MarketSelection.Moneyline(result)),
+                    new Pick(i, MarketSelection.TotalGoals(cfg.GoalLines[0], over)),
+                };
+            }
+        }
     }
 
     private static bool Contains(IReadOnlyList<int> legs, int leg)

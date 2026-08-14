@@ -181,6 +181,157 @@ public class SameMatchProbeTests
     }
 
     // =======================================================================================
+    // MARKET-KIND ROLL-CALL — the probe's second catalogue, restated.
+    // =======================================================================================
+
+    /// <summary>The probe's MARKET-KIND catalogue, restated leg for leg: the six composites T2 rotates
+    /// over. Same restating discipline as the relation pairs above, and the same reason —
+    /// <c>engine.tests</c> cannot construct the probe.</summary>
+    private static List<MarketSelection[]> KindCatalogue(Run run, Matchup m)
+    {
+        RunConfig cfg = run.Config;
+        var entries = new List<MarketSelection[]>
+        {
+            // 0 — the scorer composite.
+            new[]
+            {
+                ShortestHomeScorer(m),
+                MarketSelection.Moneyline(Side.Home),
+                MarketSelection.TotalGoals(cfg.GoalLines[0], true),
+            },
+            // 2 — the result spine: a one-goal home win, said four ways.
+            new[]
+            {
+                MarketSelection.DoubleChance(MarketChoice.HomeOrDraw),
+                MarketSelection.Handicap(Side.Away, cfg.HandicapLines[0]),
+                MarketSelection.WinningMargin(1),
+                MarketSelection.Moneyline(Side.Home),
+            },
+            // 3 — the count spine: each count family at both scopes.
+            new[]
+            {
+                MarketSelection.TeamTotalCorners(Side.Home, cfg.TeamCornerLines[0], true),
+                MarketSelection.TotalCorners(cfg.CornerLines[^1], true),
+                MarketSelection.TeamTotalCards(Side.Home, cfg.TeamCardLines[0], true),
+                MarketSelection.TotalCards(cfg.CardLines[0], true),
+            },
+            // 5 — the team-goals spine: home 2+ and away 1+, which entail the BTTS and the OVER.
+            new[]
+            {
+                MarketSelection.TeamTotalGoals(Side.Home, cfg.TeamGoalLines[1], true),
+                MarketSelection.TeamTotalGoals(Side.Away, cfg.TeamGoalLines[0], true),
+                MarketSelection.BothTeamsToScore(true),
+                MarketSelection.TotalGoals(cfg.GoalLines[1], true),
+            },
+        };
+
+        // 1 — the correct score, and the three things one cell already decides.
+        MarketSelection row = CorrectScoreRow(m);
+        int h = row.ScoreHome, a = row.ScoreAway;
+        entries.Add(new[]
+        {
+            row,
+            MarketSelection.Moneyline(h > a ? MatchResult.Home : h < a ? MatchResult.Away : MatchResult.Draw),
+            MarketSelection.TotalGoalsOddEven((h + a) % 2 == 1),
+            MarketSelection.BothTeamsToScore(h > 0 && a > 0),
+        });
+
+        // 4 — the multi scorer beside what his second goal implies. Its board is floor-truncated, so
+        // the row is read off the matchup the caller chose for exactly that reason.
+        MarketSelection multi = ShortestMultiScorer(m)
+            ?? throw new InvalidOperationException("caller must pass a matchup that offers a 2+ scorer");
+        Side side = m.PlayerSide(multi.PlayerIndex);
+        entries.Add(new[]
+        {
+            multi,
+            MarketSelection.AnytimeScorer(multi.PlayerIndex),
+            MarketSelection.TeamTotalGoals(side, cfg.TeamGoalLines[1], true),
+            MarketSelection.Moneyline(side),
+        });
+
+        return entries;
+    }
+
+    /// <summary>
+    /// EVERY SHIPPED MARKET KIND REACHES A SAME-MATCH TICKET — the unit-speed twin of G7-SGP's
+    /// per-kind arm, and the tripwire the gap this catalogue was extended to close went through.
+    ///
+    /// <para>The board grew from six kinds to fifteen when the draws merge landed, and the probe kept
+    /// building tickets out of the original six. Nothing went red, because the campaign asserted that
+    /// same-match tickets were placed — never that the markets on them were the markets that shipped.
+    /// This test fails the moment a sixteenth kind is added, which is the point: the roll-call is
+    /// taken off <see cref="MarketKind"/> itself, so it cannot be satisfied by a catalogue that
+    /// stopped tracking the board.</para>
+    ///
+    /// <para>It also pins the two things that make the coverage real rather than nominal: every
+    /// composite PLACES (a slip the board refuses covers nothing, and the restrictive kinds — a
+    /// correct score pins one cell, a double chance overlaps the moneyline — are exactly the ones a
+    /// naive catalogue gets refused on), and none of them prices at the NO-LABEL FALLBACK, which is
+    /// the silent money leak G7-SGP's third half asserts zero of.</para>
+    /// </summary>
+    [Fact]
+    public void Catalogue_every_shipped_market_kind_reaches_a_same_match_ticket()
+    {
+        var run = new Run("sgp-probe-kinds", ProbeConfig());
+        Matchup m = run.CurrentSlate.Matchups.First(x => ShortestMultiScorer(x) != null);
+
+        var covered = new HashSet<MarketKind>();
+        var slips = new List<MarketSelection[]>(KindCatalogue(run, m));
+
+        // The relation catalogue and the refusal remedies are coverage too — the arm counts legs on
+        // placed tickets, not legs from one catalogue — so the roll-call is taken over everything the
+        // probe actually sells.
+        RunConfig cfg = run.Config;
+        slips.Add(new[]
+        {
+            MarketSelection.TotalCorners(cfg.CornerLines[0], true),
+            MarketSelection.TotalCards(cfg.CardLines[0], true),
+        });
+
+        foreach (MarketSelection[] slip in slips)
+        {
+            Pick[] picks = slip.Select(s => new Pick(m.Index, s)).ToArray();
+            Assert.Null(run.RefusalFor(picks));
+            Ticket ticket = run.PlaceTicket(picks, 100);
+            Assert.NotNull(ticket.SameMatch);
+            // A labelled price, not the product of the legs. The fallback is the +274% leak.
+            Assert.False(ticket.SameMatch!.NaiveFallback);
+            foreach (Leg leg in ticket.Legs) covered.Add(leg.Selection.Kind);
+        }
+
+        MarketKind[] missing = Enum.GetValues<MarketKind>().Where(k => !covered.Contains(k)).ToArray();
+        Assert.True(missing.Length == 0,
+            "market kinds the probe never puts in a same-match ticket: "
+            + string.Join(", ", missing));
+    }
+
+    /// <summary>The shortest-priced 2+ scorer offered, or null where the ratified 2% floor truncated
+    /// the whole multi-scorer board for this matchup — a real state, which is why the probe's entry
+    /// stands down on it rather than constructing a row the board never sold.</summary>
+    private static MarketSelection? ShortestMultiScorer(Matchup m)
+    {
+        MarketSelection? best = null;
+        double bestOdds = double.MaxValue;
+        foreach (MarketOffer offer in m.Markets)
+        {
+            if (offer.Selection.Kind != MarketKind.PlayerMultiScorer) continue;
+            if (offer.Odds >= bestOdds) continue;
+            bestOdds = offer.Odds;
+            best = offer.Selection;
+        }
+        return best;
+    }
+
+    /// <summary>The first offered correct-score cell — the probe rotates over them by matchup index;
+    /// what is pinned here is that a cell's own implications place, which holds for every row.</summary>
+    private static MarketSelection CorrectScoreRow(Matchup m)
+    {
+        MarketOffer? row = m.Markets.FirstOrDefault(o => o.Selection.Kind == MarketKind.CorrectScore);
+        Assert.NotNull(row);
+        return row!.Selection;
+    }
+
+    // =======================================================================================
     // REFUSAL — the invalid slips, and remedies that are spent rather than described.
     // =======================================================================================
 
@@ -238,6 +389,70 @@ public class SameMatchProbeTests
         Ticket remedied = run.PlaceTicket(Without(picks, ex.Refusal.RemedyLegs), 100);
         Relation r = Assert.Single(remedied.SameMatch!.Relations);
         Assert.Equal(RelationKind.SharedCount, r.Kind);
+    }
+
+    /// <summary>The EXCLUSION slip — the one refusal cause on the board that is a set complement
+    /// rather than an arithmetic conflict. "12" is precisely "not the draw", so the draw beside it
+    /// wins on no outcome whatever; this is the overlap double chance was expected to produce once it
+    /// joined the board, and it is unreachable without a three-way moneyline. The remedy drops the
+    /// last leg and leaves 12 beside a corners leg, so the slot still sells a same-match ticket.</summary>
+    [Fact]
+    public void Refusal_the_double_chance_exclusion_refuses_and_its_remedy_places()
+    {
+        var run = new Run("sgp-probe-exclusion", ProbeConfig());
+        RunConfig cfg = run.Config;
+        Pick[] picks =
+        {
+            new Pick(0, MarketSelection.DoubleChance(MarketChoice.HomeOrAway)),
+            new Pick(0, MarketSelection.TotalCorners(cfg.CornerLines[0], true)),
+            new Pick(0, MarketSelection.Moneyline(MatchResult.Draw)),
+        };
+
+        TicketRefusedException ex =
+            Assert.Throws<TicketRefusedException>(() => run.PlaceTicket(picks, 100));
+        Assert.Equal(RefusalKind.ImpossibleCombination, ex.Refusal.Kind);
+        // MINIMAL: the corners leg is innocent, and naming it would send a surface to block the wrong
+        // control. The two result legs are the whole conflict.
+        Assert.Equal(new[] { 0, 2 }, ex.Refusal.CauseLegs);
+        Assert.True(ex.Refusal.HasRemedy);
+        Assert.Empty(run.Tickets);
+
+        Ticket remedied = run.PlaceTicket(Without(picks, ex.Refusal.RemedyLegs), 100);
+        Assert.NotNull(remedied.SameMatch);
+    }
+
+    /// <summary>The FIXED-TOTAL slip. A correct-score cell settles the goal total exactly, so one side
+    /// of the lowest goal line can never come in with it — which side depends on the cell, so the
+    /// probe reads it off the row rather than assuming a scoreline. The remedy leaves the score
+    /// beside the result it names.</summary>
+    [Fact]
+    public void Refusal_the_correct_score_total_conflict_refuses_and_its_remedy_places()
+    {
+        var run = new Run("sgp-probe-fixedtotal", ProbeConfig());
+        RunConfig cfg = run.Config;
+        MarketSelection row = CorrectScoreRow(run.CurrentSlate.Matchups[0]);
+        int total = row.ScoreHome + row.ScoreAway;
+        MatchResult result = row.ScoreHome > row.ScoreAway ? MatchResult.Home
+            : row.ScoreHome < row.ScoreAway ? MatchResult.Away : MatchResult.Draw;
+        Pick[] picks =
+        {
+            new Pick(0, row),
+            new Pick(0, MarketSelection.Moneyline(result)),
+            new Pick(0, MarketSelection.TotalGoals(cfg.GoalLines[0], total < cfg.GoalLines[0])),
+        };
+
+        TicketRefusedException ex =
+            Assert.Throws<TicketRefusedException>(() => run.PlaceTicket(picks, 100));
+        Assert.Equal(RefusalKind.ImpossibleCombination, ex.Refusal.Kind);
+        Assert.Equal(new[] { 0, 2 }, ex.Refusal.CauseLegs);
+        Assert.Equal(new[] { 2 }, ex.Refusal.RemedyLegs);
+        Assert.Empty(run.Tickets);
+
+        Ticket remedied = run.PlaceTicket(Without(picks, ex.Refusal.RemedyLegs), 100);
+        Relation r = Assert.Single(remedied.SameMatch!.Relations);
+        // A cell entails its own result — the score is the implying leg, and it was picked first.
+        Assert.Equal(RelationKind.Implies, r.Kind);
+        Assert.Equal(new[] { 0, 1 }, r.Legs);
     }
 
     /// <summary>The sub-evens rule is the one the campaign CANNOT reach: at the shipped κ = 1 no

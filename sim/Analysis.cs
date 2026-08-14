@@ -674,22 +674,57 @@ public sealed class GateData
         // Relation-kind coverage is NOT gated here. It is reported as an exposure table, mirroring
         // G7's own note above: coverage is structural, while how thinly something is covered is a
         // reading you take from the table, not a verdict a gate can pronounce.
+        //
+        // MARKET-kind coverage IS gated, and the difference is not a taste. A relation is a property
+        // of the model's vocabulary and is fixed until the vocabulary changes; the MARKET list grows
+        // every time a lane ships one, and it grew from six kinds to fifteen while this probe's
+        // catalogue still built tickets out of the original six. The campaign went on certifying
+        // same-match pricing on a board that no longer existed, and nothing anywhere went red,
+        // because nothing was checking. This arm is that check: a new market either reaches a
+        // same-match ticket or it turns the campaign red until someone names it and says why.
         if (sameMatch != null)
         {
             bool placed = sameMatch.SameMatchPlaced > 0;
             bool settled = sameMatch.SameMatchSettled > 0;
             bool clean = noLabelFallbacks == 0;
 
-            string shortfall = placed && settled && clean
+            // Named exclusions, mirroring G7's bot-excluded list exactly: a kind that genuinely
+            // cannot reach a same-match ticket is listed HERE with its reason and surfaced as a note,
+            // never dropped from the roll-call. EMPTY as shipped — every one of the fifteen kinds is
+            // reachable and the probe's catalogue reaches it — and it is not dead code: it is the
+            // seam that keeps the next uncoverable market from being handled by weakening the
+            // criterion. Do NOT add a kind here because it currently reads zero legs; zero legs is
+            // what this arm is for.
+            var sgpExcluded = new Dictionary<MarketKind, string>();
+
+            var sgpUncovered = new List<MarketKind>();
+            foreach (MarketKind kind in Enum.GetValues(typeof(MarketKind)))
+            {
+                if (sgpExcluded.TryGetValue(kind, out string? why))
+                {
+                    g.Notes.Add($"SAME-MATCH-EXCLUDED: {Report.MarketName(kind)} — {why}");
+                    continue;
+                }
+                bool exercised = sameMatch.SameMatchKinds.TryGetValue(kind, out SameMatchKindExposure? e)
+                    && e.Legs > 0;
+                if (!exercised) sgpUncovered.Add(kind);
+            }
+            bool allKinds = sgpUncovered.Count == 0;
+
+            string shortfall = placed && settled && clean && allKinds
                 ? ""
-                : " — FAILED ON: " + string.Join(", ", Missing(placed, settled, clean));
+                : " — FAILED ON: " + string.Join(", ", Missing(placed, settled, clean, sgpUncovered));
 
             g.Add("G7-SGP", "same-match coverage: the SAME MATCH probe placed AND settled same-match "
-                + "tickets, and zero tickets were sold at the no-label naive-product fallback "
-                + "(a ticket shape is invisible to G7's MarketKind roll-call, and a silent fallback "
-                + "is a money leak worth up to +274% EV on an implication pair)",
-                placed && settled && clean,
+                + "tickets, EVERY shipped MarketKind reached a same-match ticket (or is on the named "
+                + "exclusion list with a reason), and zero tickets were sold at the no-label "
+                + "naive-product fallback (a ticket shape is invisible to G7's MarketKind roll-call; "
+                + "a market the probe never pairs is a joint nothing priced; and a silent fallback is "
+                + "a money leak worth up to +274% EV on an implication pair)",
+                placed && settled && clean && allKinds,
                 $"placed {sameMatch.SameMatchPlaced:N0}, settled {sameMatch.SameMatchSettled:N0}, "
+                + $"kinds covered {Enum.GetValues(typeof(MarketKind)).Length - sgpUncovered.Count - sgpExcluded.Count}"
+                + $"/{Enum.GetValues(typeof(MarketKind)).Length - sgpExcluded.Count}, "
                 + $"no-label fallbacks {noLabelFallbacks:N0}, refusals tripped "
                 + $"{sameMatch.SameMatchRefusals:N0}, voids re-priced {sameMatch.SameMatchVoids:N0}"
                 + shortfall,
@@ -823,11 +858,17 @@ public sealed class GateData
     /// one "did not cover" — "nothing was placed" and "everything was placed but a fallback fired"
     /// are different defects with different fixes, and a verdict that cannot tell them apart sends
     /// the reader back to the code to find out which one happened.</summary>
-    private static IEnumerable<string> Missing(bool placed, bool settled, bool clean)
+    private static IEnumerable<string> Missing(bool placed, bool settled, bool clean,
+        IReadOnlyList<MarketKind> uncoveredKinds)
     {
         if (!placed) yield return "no same-match ticket was placed";
         if (!settled) yield return "no same-match ticket settled";
         if (!clean) yield return "tickets were SOLD at the no-label naive product";
+        // Named, never counted: "3 kinds uncovered" sends the reader to the exposure table to find
+        // out which, and the whole point of this arm is that the answer arrives with the verdict.
+        if (uncoveredKinds.Count > 0)
+            yield return "never in a same-match ticket: "
+                + string.Join(", ", uncoveredKinds.Select(Report.MarketName));
     }
 
     private void Add(string id, string desc, bool pass, string actual, string resolution = "",
