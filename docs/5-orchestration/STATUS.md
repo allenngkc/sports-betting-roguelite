@@ -1,7 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 241 — THE PARLAY ENGINE
-IS ON MAIN.** All 8 gates pass on HOLDOUT4; 107,073 tickets, zero
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 242 — MAIN IS RED BY
+DESIGN.** The two shipped engines met: sgp's partition-mismatch defense
+threw loudly on the draws world (exactly as its design promised - no
+silent mispricing). Fix authorized on Allen's word (sgp's own file,
+small); then a FULL gate campaign on the merged 80-offers world before
+step 5 - the pre-draws 8/8 does not certify this world. Main goes green
+on the fix merge. Elsewhere: TV's T90 measurement, fixture re-run,
+research items with Allen (RF-18 word; canon proposals ratification).
+
+*(prior stamp, cycle 241:)* All 8 gates pass on HOLDOUT4; 107,073 tickets, zero
 no-label fallbacks; merged b3a1798 with the predicted collision hand-
 resolved. Step 5 (presentation) is GO on Allen's word - plan stops once,
 then runs. Remaining live: TV's T90 band measurement; mpregame's fixture
