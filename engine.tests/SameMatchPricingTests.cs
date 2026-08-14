@@ -309,9 +309,18 @@ public class SameMatchPricingTests
 
         Assert.NotNull(plain.SameMatch);
         Assert.NotNull(boosted.SameMatch);
+        // THE PRICE is exact — that is the gate, and the boost is applied to it as one multiplication.
         Assert.True(boosted.LockedPrice == plain.LockedPrice * RelicCatalog.ProfitBoostMult,
             $"boosted price {boosted.LockedPrice:R} != {plain.LockedPrice:R} x {RelicCatalog.ProfitBoostMult:R}");
-        Assert.True(boosted.PotentialPayout == plain.PotentialPayout * RelicCatalog.ProfitBoostMult);
+
+        // THE PAYOUT is exact to the last bit of multiplication ORDER, which is not the same claim.
+        // Ticket.PotentialPayout evaluates stake × price × multiplier left to right, so the boosted
+        // ticket computes s×(p×B)×m while this expectation computes (s×p×m)×B — the same product,
+        // re-associated, and IEEE double is not associative. Asserted at 1 part in 1e-15, one ulp-ish,
+        // rather than pretending the reordering is free.
+        double expectedPayout = plain.PotentialPayout * RelicCatalog.ProfitBoostMult;
+        Assert.True(Math.Abs(boosted.PotentialPayout - expectedPayout) <= 1e-15 * expectedPayout,
+            $"boosted payout {boosted.PotentialPayout:R} != {expectedPayout:R}");
         Assert.Empty(boostedRun.OwnedConsumables);
     }
 
@@ -472,9 +481,14 @@ public class SameMatchPricingTests
         var dialled = new Run("sgp-kappa", config);
         var plain = new Run("sgp-kappa", SweepConfig());
 
+        // OVER 2.5, not OVER 1.5. Draws made BTTS YES a materially likelier event — 1-1 counts now —
+        // and the pair it entails (OVER 1.5) went with it, so at κ = 2 that ticket prices at 0.962 and
+        // the sub-evens rule refuses it before this can measure anything. Canon says sub-evens is out
+        // of reach; it is out of reach at the SHIPPED κ = 1, and this is what it looks like when the
+        // gate campaign moves the dial.
         Pick[] picks =
         {
-            new Pick(0, MarketSelection.TotalGoals(1.5, true)),
+            new Pick(0, MarketSelection.TotalGoals(2.5, true)),
             new Pick(0, MarketSelection.BothTeamsToScore(true)),
         };
 

@@ -69,6 +69,10 @@ public sealed class BatchSummary
     public readonly Dictionary<RefusalKind, int> SameMatchRefusalKinds = new();
     public readonly Dictionary<RelationKind, SameMatchExposure> SameMatchRelations = new();
 
+    /// <summary>Per-MARKET-kind same-match exposure — G7-SGP's per-kind arm reads this one, and
+    /// section 0b prints it. Zero for every bot but the probe.</summary>
+    public readonly Dictionary<MarketKind, SameMatchKindExposure> SameMatchKinds = new();
+
     public static BatchSummary From(string name, RunResult[] results)
     {
         var s = new BatchSummary { Name = name, N = results.Length };
@@ -133,6 +137,13 @@ public sealed class BatchSummary
                 total.Relations += e.Relations;
                 total.Tickets += e.Tickets;
                 total.Principal += e.Principal;
+            }
+            foreach ((MarketKind kind, SameMatchKindExposure e) in rr.SameMatchKinds)
+            {
+                if (!s.SameMatchKinds.TryGetValue(kind, out SameMatchKindExposure? total))
+                    s.SameMatchKinds[kind] = total = new SameMatchKindExposure();
+                total.Legs += e.Legs;
+                total.Tickets += e.Tickets;
             }
 
             for (int r = 1; r <= 8; r++)

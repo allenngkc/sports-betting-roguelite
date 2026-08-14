@@ -88,6 +88,24 @@ public sealed class SameMatchExposure
     public int Principal;
 }
 
+/// <summary>Exposure for one MARKET KIND inside SAME MATCH tickets (F_0.6.0 step 4b). Separate from
+/// <see cref="MarketExposure"/>, which counts every leg a bot placed anywhere: a kind can be heavily
+/// exposed there and never once reach a same-match slip, and that difference is precisely the hole
+/// G7-SGP's per-kind arm exists to catch — the merged draws board shipped nine kinds the probe's
+/// catalogue had never heard of while every coverage number stayed green.
+///
+/// <para>Only legs that are actually IN a same-match group are counted: a ticket may mix matchups,
+/// and a leg alone on its own matchup is an ordinary parlay leg riding along, not evidence that the
+/// kind was ever priced against a correlated sibling.</para></summary>
+public sealed class SameMatchKindExposure
+{
+    /// <summary>Same-match legs of this kind placed.</summary>
+    public int Legs;
+
+    /// <summary>Placed same-match tickets carrying at least one leg of this kind.</summary>
+    public int Tickets;
+}
+
 /// <summary>Per-item event counters (PLAN.md rev 5 §16): offered / acquired / bought / sold /
 /// used. Conversion (offered → bought) feeds the dealt-hand starvation watch; the audit's
 /// exposure thresholds read Acquired and Used.</summary>
@@ -167,10 +185,21 @@ public sealed class RunResult
     /// <summary>Per-relation-kind exposure over the run's placed same-match tickets.</summary>
     public readonly Dictionary<RelationKind, SameMatchExposure> SameMatchRelations = new();
 
+    /// <summary>Per-MARKET-kind exposure over the run's placed same-match tickets — the roll-call
+    /// G7-SGP's per-kind arm reads. Same per-run-field discipline as everything above it.</summary>
+    public readonly Dictionary<MarketKind, SameMatchKindExposure> SameMatchKinds = new();
+
     public SameMatchExposure Relation(RelationKind kind)
     {
         if (!SameMatchRelations.TryGetValue(kind, out SameMatchExposure? e))
             SameMatchRelations[kind] = e = new SameMatchExposure();
+        return e;
+    }
+
+    public SameMatchKindExposure Kind(MarketKind kind)
+    {
+        if (!SameMatchKinds.TryGetValue(kind, out SameMatchKindExposure? e))
+            SameMatchKinds[kind] = e = new SameMatchKindExposure();
         return e;
     }
 

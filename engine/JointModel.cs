@@ -1,6 +1,6 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Threading;
 
 namespace SBR.Engine;
@@ -48,7 +48,13 @@ public enum RelationKind
     /// same corner or card draw. <see cref="Relation.Family"/> carries which.</summary>
     SharedCount,
 
-    /// <summary>Legs drawn from different families — unrelated, no adjustment.</summary>
+    /// <summary>Legs that read different draws — unrelated, no adjustment.
+    ///
+    /// <para>Canon's gloss on this row reads "legs drawn from different families", which was exact
+    /// while every count market was a MATCH total. F_0.5.0's team totals split each count family
+    /// across its two independent draws, so HOME corners beside AWAY corners is same-family and still
+    /// exactly the product. The binding half of the canon row — "unrelated, no adjustment" — is what
+    /// this member means, and it is what that pair is.</para></summary>
     Independent,
 }
 
@@ -76,8 +82,10 @@ public readonly struct Relation : IEquatable<Relation>
 
     public RelationSign Sign { get; }
 
-    /// <summary>The family the relation lives in; null for a cross-family
-    /// <see cref="RelationKind.Independent"/> or a ticket-level exclusion spanning families.</summary>
+    /// <summary>The family the relation lives in; null for an
+    /// <see cref="RelationKind.Independent"/> pair — whether it is independent because the legs sit in
+    /// different families or because they read different DRAWS of one count family — and null for a
+    /// ticket-level exclusion spanning families.</summary>
     public SelectionFamily? Family { get; }
 
     /// <summary>Set only on <see cref="RelationKind.ScorerOfSide"/>.</summary>
@@ -269,17 +277,59 @@ public static class JointModel
         _ => NotPrincipal,
     };
 
-    /// <summary>Which draw a selection reads. GOAL is the only family holding more than one market
-    /// kind, which is why it is the only one needing the scoreline enumeration.</summary>
+    /// <summary>
+    /// Which of the three sampled draws a selection reads.
+    ///
+    /// <para><b>This switch is the ONLY per-kind knowledge this model keeps</b>, and it is knowledge
+    /// the grader cannot supply: <c>MatchModel.Grades</c> answers "did this selection win", never
+    /// "which draw did it read". Everything else about a market kind — the predicate itself — is
+    /// delegated to <see cref="MatchModel.Grades(Matchup, MatchStatLine, MarketSelection)"/>, so
+    /// adding a kind here is one line rather than a new predicate arm that can disagree with
+    /// settlement.</para>
+    ///
+    /// <para>An unmapped kind THROWS rather than defaulting to a family. Guessing Goal for a card
+    /// market would price a ticket off the wrong draw and never fail a test; F_0.5.0's nine new kinds
+    /// arrived through exactly this arm, and the throw is what turned that into a red build instead of
+    /// a silently mispriced board.</para></summary>
     public static SelectionFamily FamilyOf(MarketSelection selection) => selection.Kind switch
     {
         MarketKind.Moneyline => SelectionFamily.Goal,
         MarketKind.TotalGoals => SelectionFamily.Goal,
         MarketKind.BothTeamsToScore => SelectionFamily.Goal,
         MarketKind.AnytimeScorer => SelectionFamily.Goal,
+        MarketKind.DoubleChance => SelectionFamily.Goal,
+        MarketKind.Handicap => SelectionFamily.Goal,
+        MarketKind.TeamTotalGoals => SelectionFamily.Goal,
+        MarketKind.CorrectScore => SelectionFamily.Goal,
+        MarketKind.WinningMargin => SelectionFamily.Goal,
+        MarketKind.TotalGoalsOddEven => SelectionFamily.Goal,
+        MarketKind.PlayerMultiScorer => SelectionFamily.Goal,
         MarketKind.TotalCorners => SelectionFamily.Corner,
+        MarketKind.TeamTotalCorners => SelectionFamily.Corner,
         MarketKind.TotalCards => SelectionFamily.Card,
+        MarketKind.TeamTotalCards => SelectionFamily.Card,
         _ => throw new ArgumentOutOfRangeException(nameof(selection), selection.Kind, "Unfamilied market kind"),
+    };
+
+    /// <summary>Whether a kind is settled by scorer ATTRIBUTION rather than by a predicate over the
+    /// stat line. These two are the only kinds the joint cannot hand to <c>MatchModel.Grades</c>: the
+    /// grader reads <c>MatchStatLine.HomeScorers</c>, which a synthetic scoreline cell does not carry,
+    /// and would answer "did not score" for every cell. They are priced by
+    /// <see cref="ScorerTerm"/> instead, which is the exact multinomial the attribution samples.</summary>
+    internal static bool IsPlayerMarket(MarketKind kind)
+        => kind == MarketKind.AnytimeScorer || kind == MarketKind.PlayerMultiScorer;
+
+    /// <summary>Which SIDES of a count family's two independent draws a selection reads: a match
+    /// total reads both, a team total reads one. Two count legs whose side sets are disjoint read
+    /// different draws and are genuinely independent — see <see cref="Classify"/>.</summary>
+    private static (bool home, bool away) CountSidesOf(MarketSelection selection) => selection.Kind switch
+    {
+        MarketKind.TotalCorners or MarketKind.TotalCards => (true, true),
+        MarketKind.TeamTotalCorners or MarketKind.TeamTotalCards =>
+            (selection.Team ?? throw new ArgumentException($"{selection.Kind} carries no Team")) == Side.Home
+                ? (true, false)
+                : (false, true),
+        _ => throw new ArgumentOutOfRangeException(nameof(selection), selection.Kind, "Not a counting market"),
     };
 
     // ---------------------------------------------------------------------------------------
@@ -297,10 +347,12 @@ public static class JointModel
         double p = 1.0;
         if (split.HasGoal) p *= GoalFamily(matchup, split);
         if (split.Corner.Count > 0)
-            p *= CountFamily(matchup.Dist.HomeCornerRaw, matchup.Dist.HomeCornerTotal,
+            p *= CountFamily(matchup, SelectionFamily.Corner,
+                matchup.Dist.HomeCornerRaw, matchup.Dist.HomeCornerTotal,
                 matchup.Dist.AwayCornerRaw, matchup.Dist.AwayCornerTotal, split.Corner);
         if (split.Card.Count > 0)
-            p *= CountFamily(matchup.Dist.HomeCardRaw, matchup.Dist.HomeCardTotal,
+            p *= CountFamily(matchup, SelectionFamily.Card,
+                matchup.Dist.HomeCardRaw, matchup.Dist.HomeCardTotal,
                 matchup.Dist.AwayCardRaw, matchup.Dist.AwayCardTotal, split.Card);
         return p;
     }
@@ -308,37 +360,42 @@ public static class JointModel
     /// <summary>
     /// p_GOAL = SUM over w in W of P(w) * SUM over (h,a) of P(h,a|w) * 1[goal predicates] * PROD_t Q_t(g_t).
     ///
-    /// <para>The outer sum runs over the model's outcome partition W, discovered from what the model
-    /// exposes rather than written as a home/away pair — see <see cref="DiscoverPartition"/>. The
-    /// inner sum mirrors <c>MatchModel.ScoreProbability</c>'s shape and order exactly.</para>
+    /// <para>The outer sum runs over the model's outcome partition W — the <see cref="MatchResult"/>
+    /// enum, in <c>MatchModel.Classes</c>' order — and the inner sum mirrors
+    /// <c>MatchModel.ScoreProbability</c>'s shape and order exactly, which is what makes a single-leg
+    /// joint bit-identical to the engine's own price rather than merely close to it.</para>
     /// </summary>
     private static double GoalFamily(Matchup matchup, Split split)
     {
         double[] weights = ClassWeights(matchup);
         MatchDistributions dist = matchup.Dist;
 
-        double[]? home = split.HomeScorers.Count > 0
-            ? NormalizedWeights(matchup, Side.Home, split.HomeScorers) : null;
-        double[]? away = split.AwayScorers.Count > 0
-            ? NormalizedWeights(matchup, Side.Away, split.AwayScorers) : null;
+        int maxGoals = matchup.ModelConfig.MaxGoalsGrid;
+        double[]? home = split.HomeScorers.Count > 0 ? ScorerTerms(matchup, Side.Home, split.HomeScorers, maxGoals) : null;
+        double[]? away = split.AwayScorers.Count > 0 ? ScorerTerms(matchup, Side.Away, split.AwayScorers, maxGoals) : null;
+
+        List<MarketSelection> predicates = split.GoalPredicates;
+        MatchStatLine[] cells = predicates.Count > 0 ? Cells.Goals(maxGoals) : Cells.None;
+        int stride = maxGoals + 1;
 
         double sum = 0.0;
         for (int c = 0; c < Partition.Length; c++)
         {
             double weight = weights[c];
-            IReadOnlyList<MatchModel.ScoreOutcome> scores = Partition[c].Scores(dist);
+            IReadOnlyList<MatchModel.ScoreOutcome> scores = ScoresOf(dist, Partition[c]);
             for (int s = 0; s < scores.Count; s++)
             {
                 MatchModel.ScoreOutcome x = scores[s];
-                if (!PredicatesHold(split.GoalPredicates, x.HomeGoals, x.AwayGoals)) continue;
+                if (predicates.Count > 0
+                    && !AllGrade(matchup, predicates, cells[x.HomeGoals * stride + x.AwayGoals])) continue;
 
                 double q = 1.0;
                 if (home != null)
                 {
-                    q *= ScorerTerm(home, x.HomeGoals);
+                    q *= home[x.HomeGoals];
                     if (q == 0.0) continue;
                 }
-                if (away != null) q *= ScorerTerm(away, x.AwayGoals);
+                if (away != null) q *= away[x.AwayGoals];
 
                 sum += weight * x.Probability * q;
             }
@@ -346,23 +403,53 @@ public static class JointModel
         return sum;
     }
 
+    /// <summary>Q_t(g) for every reachable goal count on one team, evaluated once per count instead of
+    /// once per scoreline cell. Purely a hoist — the term is a function of g alone — but the grid holds
+    /// several cells per goal count and the inclusion-exclusion runs <c>Math.Pow</c> per subset, which
+    /// made it the model's hot spot under the gates' triple sweep.</summary>
+    private static double[] ScorerTerms(Matchup matchup, Side side, List<ScorerLeg> backed, int maxGoals)
+    {
+        (double[] weights, int[] needs) = NormalizedWeights(matchup, side, backed);
+        var terms = new double[maxGoals + 1];
+        for (int g = 0; g <= maxGoals; g++) terms[g] = ScorerTerm(weights, needs, g);
+        return terms;
+    }
+
     /// <summary>
-    /// Inclusion-exclusion over the k backed players on one team, against that team's g goals:
-    /// Q_t(g) = SUM over S subset of {1..k} of (-1)^|S| * (1 - SUM_{i in S} w_i)^g, and 0 when g &lt; k.
+    /// The exact multinomial term for the k backed players on one team against that team's g goals:
+    /// P(player i scores at least n_i, for every i). Goals are attributed independently from the
+    /// roster-normalized weights, so the count vector is Multinomial(g; w), and the term is written as
+    /// inclusion-exclusion over the events "player i falls SHORT of n_i":
     ///
-    /// <para><b>The g &lt; k guard is normative, not an optimization</b> (design doc, verbatim). The
-    /// sum cancels to ~1e-17 rather than 0 in IEEE double, which turns a structurally impossible
-    /// ticket — two players both scoring inside one goal — into a vanishingly small POSITIVE
-    /// probability that passes every zero check. Twelve impossible triple shapes were misclassified
-    /// exactly this way before the guard existed.</para>
+    /// <code>
+    /// Q_t(g) = 0                                                       if g &lt; SUM_i n_i
+    /// Q_t(g) = SUM over S subset of {1..k} of (-1)^|S| * P(X_i &lt; n_i for every i in S)
+    /// </code>
+    ///
+    /// <para><b>Anytime is the n_i = 1 case and is untouched by the generalization.</b> With every
+    /// threshold at 1, "falls short" is "does not score", the inner probability collapses to
+    /// <c>(1 - SUM_{i in S} w_i)^g</c>, and this reduces to the design doc's formula term for term and
+    /// bit for bit. The 2+ case is a genuinely different combinatorial object — "at least n" is not a
+    /// union of "scores" events — so the short-fall probability is enumerated exactly over the count
+    /// vectors below rather than approximated.</para>
+    ///
+    /// <para><b>The g &lt; SUM n_i guard is normative, not an optimization</b> (design doc, verbatim,
+    /// where it reads g &lt; k for the all-ones case). The sum cancels to ~1e-17 rather than 0 in IEEE
+    /// double, which turns a structurally impossible ticket — two players both scoring inside one goal,
+    /// or one player scoring twice inside one goal — into a vanishingly small POSITIVE probability that
+    /// passes every zero check. Twelve impossible triple shapes were misclassified exactly this way
+    /// before the guard existed.</para>
     /// </summary>
-    private static double ScorerTerm(double[] weights, int goals)
+    private static double ScorerTerm(double[] weights, int[] needs, int goals)
     {
         int k = weights.Length;
-        if (goals < k) return 0.0;
+        int required = 0;
+        for (int i = 0; i < k; i++) required += needs[i];
+        if (goals < required) return 0.0;
         if (k > 24) throw new ArgumentOutOfRangeException(nameof(weights), k,
             "Inclusion-exclusion is exponential in the backed-player count");
 
+        Span<int> members = stackalloc int[k];
         double sum = 0.0;
         int subsets = 1 << k;
         for (int mask = 0; mask < subsets; mask++)
@@ -370,84 +457,140 @@ public static class JointModel
             double excluded = 0.0;
             int bits = 0;
             for (int i = 0; i < k; i++)
-                if ((mask & (1 << i)) != 0) { excluded += weights[i]; bits++; }
+                if ((mask & (1 << i)) != 0) { excluded += weights[i]; members[bits++] = i; }
 
             // Roster-normalized weights sum to 1, so the remainder is non-negative in exact
             // arithmetic; the clamp only absorbs the ~1e-16 undershoot of a whole-roster subset.
             double rest = 1.0 - excluded;
             if (rest < 0.0) rest = 0.0;
 
-            double term = Math.Pow(rest, goals);
+            double term = ShortFall(weights, needs, members.Slice(0, bits), 0, goals, 1.0, 1.0, rest);
             sum += (bits & 1) == 0 ? term : -term;
         }
         return sum;
     }
 
-    /// <summary>p_COUNT = SUM_{c_h} SUM_{c_a} P(c_h) * P(c_a) * 1[every predicate in the family
-    /// holds]. Mirrors <c>MatchModel.CountTotalProbability</c>'s loop order exactly.</summary>
-    private static double CountFamily(double[] homeRaw, double homeTotal,
-        double[] awayRaw, double awayTotal, List<MarketSelection> legs)
+    /// <summary>P(every player in <paramref name="members"/> scores strictly fewer than his threshold),
+    /// summed over the count vectors that satisfy it. The multinomial coefficient is built down the
+    /// recursion as <c>C(g, c_1) * C(g - c_1, c_2) * ...</c>, and the lumped "everyone else" category
+    /// carries <paramref name="rest"/>.
+    ///
+    /// <para>When every threshold is 1 the only vector is all-zero, and this returns
+    /// <c>1.0 * 1.0 * Math.Pow(rest, goals)</c> — the anytime term, unchanged in the last bit.</para></summary>
+    private static double ShortFall(double[] weights, int[] needs, ReadOnlySpan<int> members, int at,
+        int remaining, double coefficient, double weightProduct, double rest)
     {
+        if (at == members.Length) return coefficient * weightProduct * Math.Pow(rest, remaining);
+
+        int i = members[at];
+        double sum = 0.0;
+        for (int c = 0; c < needs[i] && c <= remaining; c++)
+            sum += ShortFall(weights, needs, members, at + 1, remaining - c,
+                coefficient * Binomial(remaining, c), weightProduct * Math.Pow(weights[i], c), rest);
+        return sum;
+    }
+
+    /// <summary>Mirrors <c>MatchModel.Binomial</c>, which is private to that class. Same loop, so the
+    /// multi-scorer coefficient here and the one the engine prices a single 2+ leg with agree.</summary>
+    private static double Binomial(int n, int k)
+    {
+        if (k < 0 || k > n) return 0.0;
+        double c = 1.0;
+        for (int i = 0; i < k; i++) c = c * (n - i) / (i + 1);
+        return c;
+    }
+
+    /// <summary>p_COUNT = SUM_{c_h} SUM_{c_a} P(c_h) * P(c_a) * 1[every predicate in the family
+    /// holds]. Mirrors <c>MatchModel.CountTotalProbability</c>'s loop order exactly.
+    ///
+    /// <para>The two axes are kept separate rather than summed into a total, because a TEAM total
+    /// reads ONE of them. The grid is unchanged — the two draws were always independent and always
+    /// enumerated as a product — and a match-total leg still grades on <c>h + a</c>, through
+    /// <c>MatchModel.Grades</c> rather than a restatement of it.</para></summary>
+    private static double CountFamily(Matchup matchup, SelectionFamily family,
+        double[] homeRaw, double homeTotal, double[] awayRaw, double awayTotal,
+        List<MarketSelection> legs)
+    {
+        MatchStatLine[] cells = Cells.Counts(family, homeRaw.Length - 1, awayRaw.Length - 1);
+        int stride = awayRaw.Length;
+
         double p = 0.0;
         for (int h = 0; h < homeRaw.Length; h++)
             for (int a = 0; a < awayRaw.Length; a++)
-                if (CountPredicatesHold(legs, h + a))
+                if (AllGrade(matchup, legs, cells[h * stride + a]))
                     p += (homeRaw[h] / homeTotal) * (awayRaw[a] / awayTotal);
         return p;
     }
 
     // ---------------------------------------------------------------------------------------
-    // Predicates.  These mirror MatchModel.Grades, so a ticket prices on exactly the outcomes
-    // that would settle it.
+    // Predicates.  There are none here any more: a ticket prices on exactly the outcomes that
+    // would SETTLE it because it asks the settlement grader, MatchModel.Grades, cell by cell.
+    // Restating the predicates was the "JointModel forgot a market" bug class, and F_0.5.0's nine
+    // new kinds are what collected on it.
     // ---------------------------------------------------------------------------------------
 
-    private static bool PredicatesHold(List<MarketSelection> legs, int homeGoals, int awayGoals)
-    {
-        for (int i = 0; i < legs.Count; i++)
-            if (!GoalPredicateHolds(legs[i], homeGoals, awayGoals)) return false;
-        return true;
-    }
-
-    private static bool GoalPredicateHolds(MarketSelection selection, int homeGoals, int awayGoals)
-    {
-        switch (selection.Kind)
-        {
-            case MarketKind.Moneyline:
-                RequireChoice(selection, MarketChoice.Home, MarketChoice.Away);
-                return selection.Choice == MarketChoice.Home ? homeGoals > awayGoals : awayGoals > homeGoals;
-
-            case MarketKind.TotalGoals:
-                RequireChoice(selection, MarketChoice.Over, MarketChoice.Under);
-                return selection.Choice == MarketChoice.Over
-                    ? homeGoals + awayGoals > selection.Line
-                    : homeGoals + awayGoals < selection.Line;
-
-            case MarketKind.BothTeamsToScore:
-                RequireChoice(selection, MarketChoice.Yes, MarketChoice.No);
-                return (homeGoals >= 1 && awayGoals >= 1) == (selection.Choice == MarketChoice.Yes);
-
-            default:
-                throw new ArgumentOutOfRangeException(nameof(selection), selection.Kind,
-                    "Not a scoreline-predicate market");
-        }
-    }
-
-    private static bool CountPredicatesHold(List<MarketSelection> legs, int total)
+    /// <summary>Whether every leg in one family grades on one synthetic cell of that family's grid.
+    ///
+    /// <para><b>The cell carries only its own family's fields</b> (a goal cell has zero corners and
+    /// zero cards), which is sound because every non-player kind's grader reads exactly one family's
+    /// fields — verified selection by selection in <c>MatchModel.Grades</c>, and pinned by
+    /// <c>JointModelTests.Grades_reads_only_its_own_familys_fields</c>. Routing a leg to the wrong
+    /// family would therefore grade it against zeros, so <see cref="FamilyOf"/> is the single router
+    /// and <see cref="SplitFamilies"/> the single caller.</para></summary>
+    private static bool AllGrade(Matchup matchup, List<MarketSelection> legs, MatchStatLine cell)
     {
         for (int i = 0; i < legs.Count; i++)
         {
             MarketSelection leg = legs[i];
-            RequireChoice(leg, MarketChoice.Over, MarketChoice.Under);
-            bool holds = leg.Choice == MarketChoice.Over ? total > leg.Line : total < leg.Line;
-            if (!holds) return false;
+            // A scorer leg reaching here would grade against an EMPTY attribution and silently
+            // answer "did not score" for every cell. It is priced by ScorerTerm instead.
+            if (IsPlayerMarket(leg.Kind))
+                throw new ArgumentException(
+                    $"{leg.Kind} is settled by scorer attribution and cannot grade on a synthetic cell");
+            if (!MatchModel.Grades(matchup, cell, leg)) return false;
         }
         return true;
     }
 
-    private static void RequireChoice(MarketSelection selection, MarketChoice first, MarketChoice second)
+    /// <summary>
+    /// The synthetic stat lines the joint grades against: one immutable cell per grid coordinate,
+    /// built once per grid size and shared.
+    ///
+    /// <para>They depend on the GRID, never on the matchup — cell (2,1) of the goal grid is 2-1
+    /// whatever the latents are — so caching them is a memo of immutable values, not engine state a
+    /// preceding workload could perturb. It is here because the gates evaluate the joint hundreds of
+    /// millions of times: the corner grid alone is 21x21 cells per evaluation, and allocating those
+    /// per call dominated everything else the model does.</para></summary>
+    private static class Cells
     {
-        if (selection.Choice != first && selection.Choice != second)
-            throw new ArgumentException($"Invalid choice {selection.Choice} for {selection.Kind}");
+        public static readonly MatchStatLine[] None = Array.Empty<MatchStatLine>();
+
+        private static readonly ConcurrentDictionary<(int family, int home, int away), MatchStatLine[]> Grids
+            = new ConcurrentDictionary<(int, int, int), MatchStatLine[]>();
+
+        /// <summary>The scoreline grid, indexed <c>h * (max + 1) + a</c>.</summary>
+        public static MatchStatLine[] Goals(int maxGoals) => Grid(SelectionFamily.Goal, maxGoals, maxGoals);
+
+        /// <summary>A counting grid, indexed <c>h * (maxAway + 1) + a</c>.</summary>
+        public static MatchStatLine[] Counts(SelectionFamily family, int maxHome, int maxAway)
+            => Grid(family, maxHome, maxAway);
+
+        private static MatchStatLine[] Grid(SelectionFamily family, int maxHome, int maxAway)
+            => Grids.GetOrAdd(((int)family, maxHome, maxAway), key =>
+            {
+                var (f, mh, ma) = key;
+                var cells = new MatchStatLine[(mh + 1) * (ma + 1)];
+                for (int h = 0; h <= mh; h++)
+                    for (int a = 0; a <= ma; a++)
+                        cells[h * (ma + 1) + a] = (SelectionFamily)f switch
+                        {
+                            SelectionFamily.Goal => new MatchStatLine(h, a, 0, 0, 0, 0),
+                            SelectionFamily.Corner => new MatchStatLine(0, 0, h, a, 0, 0),
+                            SelectionFamily.Card => new MatchStatLine(0, 0, 0, 0, h, a),
+                            _ => throw new ArgumentOutOfRangeException(nameof(family)),
+                        };
+                return cells;
+            });
     }
 
     // ---------------------------------------------------------------------------------------
@@ -491,7 +634,22 @@ public static class JointModel
             : RelationSign.None;
 
         if (fi != SelectionFamily.Goal)
-            return new Relation(RelationKind.SharedCount, legs, sign, fi, null, strength, correlated);
+        {
+            // SAME FAMILY IS NOT THE SAME DRAW, since F_0.5.0's team totals. A count family holds two
+            // independent draws (home count, away count); HOME corners beside AWAY corners share the
+            // family and nothing else, and their joint is the product to the last bits. Labelling that
+            // SharedCount would state "one makes the other likelier" about a pair where it does not —
+            // the model asserting a correlation it has just measured as absent. It is Independent,
+            // which is what the vocabulary's own sentence for that row says ("unrelated — no
+            // adjustment"); canon's gloss on that row reads "different families" and is now narrower
+            // than the board, flagged for the Design Director rather than fixed here.
+            (bool hi, bool ai) = CountSidesOf(selections[i]);
+            (bool hj, bool aj) = CountSidesOf(selections[j]);
+            return (hi && hj) || (ai && aj)
+                ? new Relation(RelationKind.SharedCount, legs, sign, fi, null, strength, correlated)
+                : new Relation(RelationKind.Independent, legs, RelationSign.None, null, null,
+                    strength, correlated);
+        }
 
         Side? side = SharedScorerSide(matchup, selections[i], selections[j]);
         return side.HasValue
@@ -514,8 +672,9 @@ public static class JointModel
     /// shared scoreline (they are conditionally independent given it), which is the label they get.</summary>
     private static Side? SharedScorerSide(Matchup matchup, MarketSelection a, MarketSelection b)
     {
-        bool scorerA = a.Kind == MarketKind.AnytimeScorer;
-        bool scorerB = b.Kind == MarketKind.AnytimeScorer;
+        // 2+ is a scorer leg for this purpose exactly as 1+ is — the same attributed goals settle it.
+        bool scorerA = IsPlayerMarket(a.Kind);
+        bool scorerB = IsPlayerMarket(b.Kind);
         if (!scorerA && !scorerB) return null;
         if (scorerA && scorerB)
         {
@@ -536,11 +695,20 @@ public static class JointModel
     // Splitting selections into families.
     // ---------------------------------------------------------------------------------------
 
+    /// <summary>One backed player and the number of goals the ticket needs from him: 1 for anytime,
+    /// <c>Line</c> for a 2+ market. Two legs on one player collapse to the STRONGER threshold, which
+    /// is what their intersection is.</summary>
+    private struct ScorerLeg
+    {
+        public int PlayerIndex;
+        public int Needs;
+    }
+
     private sealed class Split
     {
         public readonly List<MarketSelection> GoalPredicates = new List<MarketSelection>();
-        public readonly List<int> HomeScorers = new List<int>();
-        public readonly List<int> AwayScorers = new List<int>();
+        public readonly List<ScorerLeg> HomeScorers = new List<ScorerLeg>();
+        public readonly List<ScorerLeg> AwayScorers = new List<ScorerLeg>();
         public readonly List<MarketSelection> Corner = new List<MarketSelection>();
         public readonly List<MarketSelection> Card = new List<MarketSelection>();
 
@@ -548,9 +716,10 @@ public static class JointModel
     }
 
     /// <summary>Scorer legs carry matchup-board indices (away roster first, then home), so the side
-    /// split needs the matchup. Duplicate scorer legs are deduped here: backing one player twice is
-    /// the same event, P(A and A) = P(A). Left undeduped it would inflate k and the g &lt; k guard
-    /// would call a perfectly ordinary ticket impossible.</summary>
+    /// split needs the matchup. Repeated scorer legs on one player are merged here at the HIGHEST
+    /// threshold, because "scores 1+ AND scores 2+" is "scores 2+": backing one player twice is one
+    /// event. Left unmerged it would inflate the required goal count and the shortfall guard would
+    /// call a perfectly ordinary ticket impossible.</summary>
     private static Split SplitFamilies(Matchup matchup, IReadOnlyList<MarketSelection> selections)
     {
         var split = new Split();
@@ -566,141 +735,131 @@ public static class JointModel
                     split.Card.Add(selection);
                     break;
                 default:
-                    if (selection.Kind == MarketKind.AnytimeScorer)
-                    {
-                        if (selection.Choice != MarketChoice.Yes)
-                            throw new ArgumentException("Anytime scorer is a YES-only market");
-                        if (selection.Line != 0.0) throw new ArgumentException("Anytime scorer has no line");
-                        List<int> side = matchup.PlayerSide(selection.PlayerIndex) == Side.Home
-                            ? split.HomeScorers : split.AwayScorers;
-                        if (!side.Contains(selection.PlayerIndex)) side.Add(selection.PlayerIndex);
-                    }
+                    if (IsPlayerMarket(selection.Kind))
+                        AddScorer(matchup, split, selection);
                     else
-                    {
                         split.GoalPredicates.Add(selection);
-                    }
                     break;
             }
         }
         return split;
     }
 
-    private static double[] NormalizedWeights(Matchup matchup, Side side, List<int> boardIndices)
+    private static void AddScorer(Matchup matchup, Split split, MarketSelection selection)
+    {
+        if (selection.Choice != MarketChoice.Yes)
+            throw new ArgumentException($"{selection.Kind} is a YES-only market");
+
+        int needs;
+        if (selection.Kind == MarketKind.AnytimeScorer)
+        {
+            if (selection.Line != 0.0) throw new ArgumentException("Anytime scorer has no line");
+            needs = 1;
+        }
+        else
+        {
+            needs = (int)selection.Line;
+            if (needs < 2 || needs != selection.Line)
+                throw new ArgumentException($"Multi-scorer needs a whole goal count of 2 or more, got {selection.Line}");
+        }
+
+        List<ScorerLeg> side = matchup.PlayerSide(selection.PlayerIndex) == Side.Home
+            ? split.HomeScorers : split.AwayScorers;
+        for (int i = 0; i < side.Count; i++)
+            if (side[i].PlayerIndex == selection.PlayerIndex)
+            {
+                if (needs > side[i].Needs) side[i] = new ScorerLeg { PlayerIndex = selection.PlayerIndex, Needs = needs };
+                return;
+            }
+        side.Add(new ScorerLeg { PlayerIndex = selection.PlayerIndex, Needs = needs });
+    }
+
+    private static (double[] weights, int[] needs) NormalizedWeights(Matchup matchup, Side side,
+        List<ScorerLeg> backed)
     {
         IReadOnlyList<Player> roster = side == Side.Home ? matchup.Home.Players : matchup.Away.Players;
         double total = 0.0;
         foreach (Player player in roster) total += player.ScoringWeight;
         if (total <= 0.0) throw new InvalidOperationException("Scorer roster has no positive weights");
 
-        var weights = new double[boardIndices.Count];
-        for (int i = 0; i < boardIndices.Count; i++)
-            weights[i] = matchup.PlayerAt(boardIndices[i]).ScoringWeight / total;
-        return weights;
+        var weights = new double[backed.Count];
+        var needs = new int[backed.Count];
+        for (int i = 0; i < backed.Count; i++)
+        {
+            weights[i] = matchup.PlayerAt(backed[i].PlayerIndex).ScoringWeight / total;
+            needs[i] = backed[i].Needs;
+        }
+        return (weights, needs);
     }
 
     // ---------------------------------------------------------------------------------------
     // The outcome partition W.
     // ---------------------------------------------------------------------------------------
 
-    /// <summary>One outcome class of the model's partition W: the score list it carries and how its
-    /// unconditional weight is read off a matchup.</summary>
-    private sealed class OutcomeClass
-    {
-        public string Name = "";
-        public Func<MatchDistributions, IReadOnlyList<MatchModel.ScoreOutcome>> Scores = null!;
+    /// <summary>
+    /// W, the model's outcome partition: the <see cref="MatchResult"/> enum, in the order
+    /// <c>MatchModel.Classes</c> yields it. The design doc's instruction is verbatim — "Write that sum
+    /// over W, never over a hard-coded pair of branches" — and W is the engine's own three-valued
+    /// result vocabulary, so this IS that sum, written in the engine's words.
+    ///
+    /// <para><b>The order is load-bearing.</b> <c>MatchModel.ScoreProbability</c> accumulates
+    /// Home, Draw, Away; matching it is what makes a single-leg joint bit-identical to the engine's
+    /// own price rather than agreeing to fifteen places. Reordering these silently changes the last
+    /// bits of every same-match price.</para>
+    ///
+    /// <para><b>This replaced a reflection-based discovery of W</b> (F_0.6.0 Phase 1), which read the
+    /// score lists off <see cref="MatchDistributions"/> by shape and their weights off a
+    /// <c>Matchup.True&lt;Class&gt;Prob</c> naming convention, with one class left implicit as the
+    /// residual. Lane 1 landed draws with three score lists and the weights exposed as a METHOD,
+    /// <see cref="Matchup.TrueProb(MatchResult)"/>, so the convention found no weights, two classes
+    /// went residual, and the type initializer threw — taking every same-match path with it. The
+    /// explicit form has no naming convention to break, no residual to be ambiguous about, and reads
+    /// the weights from the one accessor the engine actually publishes.</para></summary>
+    private static readonly MatchResult[] Partition =
+        { MatchResult.Home, MatchResult.Draw, MatchResult.Away };
 
-        /// <summary>Null for the residual class, whose weight is 1 minus every explicit weight.</summary>
-        public Func<Matchup, double>? Weight;
-    }
+    private static IReadOnlyList<MatchModel.ScoreOutcome> ScoresOf(MatchDistributions dist, MatchResult result)
+        => result switch
+        {
+            MatchResult.Home => dist.HomeWinScores,
+            MatchResult.Draw => dist.DrawScores,
+            MatchResult.Away => dist.AwayWinScores,
+            _ => throw new ArgumentOutOfRangeException(nameof(result)),
+        };
 
-    private static readonly OutcomeClass[] Partition = DiscoverPartition();
+    /// <summary>Absolute tolerance on "the outcome partition sums to 1". Three unconditional 1X2
+    /// probabilities close to ~1e-16, so this is four orders of margin over the floating-point noise
+    /// and still far tighter than any real partition defect.</summary>
+    public const double PartitionTolerance = 1e-12;
 
     /// <summary>
-    /// Derives W from what the model exposes, so a third outcome class costs nothing.
+    /// P(w) for every class of W, with the closure check that the partition is a partition.
     ///
-    /// <para>The engine constructs P(h,a) as SUM over w in W of P(w) * P(h,a|w). Today W is
-    /// {home, away}; Lane 1 is adding draws, making it {home, draw, away}. The design doc's
-    /// instruction is verbatim: "Write that sum over W, never over a hard-coded pair of branches."</para>
-    ///
-    /// <para>The score lists are discovered by shape — every <c>IReadOnlyList&lt;ScoreOutcome&gt;</c>
-    /// property on <see cref="MatchDistributions"/>, in declaration order. The weights are discovered
-    /// by the model's own naming convention: a class named X takes <c>Matchup.TrueXProb</c> if that
-    /// property exists, and exactly one class must have no such property — it is the residual, and
-    /// gets one minus the rest. Today that reproduces <c>TrueHomeProb</c> and
-    /// <c>1.0 - TrueHomeProb</c> bit-for-bit. Add <c>DrawScores</c> + <c>TrueDrawProb</c> and this
-    /// picks up three classes with no edit here; add a score list with no matching probability and
-    /// it throws at type-load rather than silently pricing a partition that no longer sums to 1.</para>
+    /// <para><b>The loud failure is deliberate and is the reason this file has survived two model
+    /// changes.</b> A partition that no longer sums to 1 prices every goal-family ticket on the board
+    /// wrong, by an amount no test asserts and no player can see. Refusing to price it is the correct
+    /// answer; pricing it anyway is a silent, board-wide mispricing. What CHANGED after F_0.5.0 is
+    /// where the failure lands: this throws per matchup, at pricing time, so a defect costs the
+    /// same-match path rather than the type initializer taking the whole engine down with it.</para>
     /// </summary>
-    private static OutcomeClass[] DiscoverPartition()
-    {
-        Type listType = typeof(IReadOnlyList<MatchModel.ScoreOutcome>);
-        var properties = new List<PropertyInfo>();
-        foreach (PropertyInfo property in typeof(MatchDistributions)
-                     .GetProperties(BindingFlags.Public | BindingFlags.Instance))
-            if (property.PropertyType == listType && property.GetMethod != null)
-                properties.Add(property);
-
-        if (properties.Count == 0)
-            throw new InvalidOperationException(
-                "MatchDistributions exposes no scoreline lists — the goal-family joint has no outcome partition");
-
-        // Declaration order, so the summation order matches MatchModel.ScoreProbability's.
-        properties.Sort((x, y) => x.MetadataToken.CompareTo(y.MetadataToken));
-
-        var classes = new List<OutcomeClass>(properties.Count);
-        int residuals = 0;
-        foreach (PropertyInfo property in properties)
-        {
-            string name = property.Name;
-            if (name.EndsWith("Scores", StringComparison.Ordinal))
-                name = name.Substring(0, name.Length - "Scores".Length);
-            if (name.EndsWith("Win", StringComparison.Ordinal))
-                name = name.Substring(0, name.Length - "Win".Length);
-
-            PropertyInfo? weightProperty = typeof(Matchup).GetProperty(
-                "True" + name + "Prob", BindingFlags.Public | BindingFlags.Instance);
-            Func<Matchup, double>? weight = null;
-            if (weightProperty != null && weightProperty.PropertyType == typeof(double)
-                && weightProperty.GetMethod != null)
-                weight = (Func<Matchup, double>)weightProperty.GetMethod.CreateDelegate(typeof(Func<Matchup, double>));
-            else
-                residuals++;
-
-            classes.Add(new OutcomeClass
-            {
-                Name = name,
-                Scores = (Func<MatchDistributions, IReadOnlyList<MatchModel.ScoreOutcome>>)
-                    property.GetMethod!.CreateDelegate(typeof(Func<MatchDistributions, IReadOnlyList<MatchModel.ScoreOutcome>>)),
-                Weight = weight,
-            });
-        }
-
-        if (residuals != 1)
-            throw new InvalidOperationException(
-                $"The outcome partition needs exactly one residual class, found {residuals}. Every class "
-                + "except one must expose its unconditional weight as Matchup.True<Class>Prob.");
-
-        return classes.ToArray();
-    }
-
     private static double[] ClassWeights(Matchup matchup)
     {
         var weights = new double[Partition.Length];
-        double explicitSum = 0.0;
-        int residual = -1;
+        double sum = 0.0;
         for (int i = 0; i < Partition.Length; i++)
         {
-            Func<Matchup, double>? read = Partition[i].Weight;
-            if (read == null) { residual = i; continue; }
-            weights[i] = read(matchup);
-            explicitSum += weights[i];
-        }
-        weights[residual] = 1.0 - explicitSum;
-
-        for (int i = 0; i < weights.Length; i++)
-            if (weights[i] < -1e-12)
+            weights[i] = matchup.TrueProb(Partition[i]);
+            sum += weights[i];
+            if (weights[i] < -PartitionTolerance)
                 throw new InvalidOperationException(
-                    $"Outcome class {Partition[i].Name} carries negative weight {weights[i]:R} — the partition does not sum to 1");
+                    $"Outcome class {Partition[i]} carries negative weight {weights[i]:R} — "
+                    + "the outcome partition is not a partition");
+        }
+
+        if (Math.Abs(sum - 1.0) > PartitionTolerance)
+            throw new InvalidOperationException(
+                $"The outcome partition sums to {sum:R}, not 1 (classes: {string.Join(", ", Partition)}). "
+                + "Every goal-family price on this matchup would be wrong, so the model refuses to produce one.");
         return weights;
     }
 }

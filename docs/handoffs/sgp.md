@@ -17,7 +17,12 @@
 2. **Correlation model into `design/02-betting-math.md`** — DONE, accepted 2026-08-12.
 3. **Engine change lifting the one-pick-per-matchup guard** — **DONE 2026-08-13**, six phases
    (1, 2, 3, 3b, 3c, 3d). Awaiting acceptance.
-4. **Gate re-validation on held-out seeds** — **DONE 2026-08-13. ALL 8 GATES PASS** on `HOLDOUT4-`
+4. **Gate re-validation on held-out seeds** — **DONE. Re-validated on the merged draws board
+   2026-08-14: `HOLDOUT5-`, ALL 8 GATES PASS, 8 verdicts.** G7-SGP exact: 106,568 same-match tickets
+   placed AND settled, **15/15 market kinds** reached a same-match ticket, **zero** no-label
+   fallbacks. Artifact `docs/sgp/gate-merged-HOLDOUT5.md`. This supersedes the pre-draws campaign
+   below, which certified a board that no longer exists.
+   *(Superseded, retained for the audit trail:)* ALL 8 GATES PASS on `HOLDOUT4-`
    (fresh namespace, spent once; `HOLDOUT`…`HOLDOUT3` were already burned). The campaign is
    **G1–G7 plus the new G7-SGP arm**, not the charter's "six". Artifacts:
    `docs/sgp/gate-validation-HOLDOUT4.md` (validation) and `docs/sgp/gate-control-TUNE.md` (control,
@@ -85,5 +90,14 @@ ranges, and the independent share all need re-measuring once draws land. The met
   orchestrator. The open DD question is `docs/sgp/dd-question-same-game-pricing.md` (relayed;
   amended after relay as canon landed).
 - Report telegraphic, result-first: Done / Next / Risk / Need.
-- **Inherited trap, live:** `dotnet` builds copy `SBR.Engine.dll` into the Unity tree and dirty a
-  tracked LFS asset. Restore with checkout after every build; never commit it.
+- **The Unity plugin DLL — corrected 2026-08-14, the inherited rule was under-specified.**
+  `dotnet` builds copy `SBR.Engine.dll` into `unity/SBR/Assets/Plugins/SBR/`. The rule this lane
+  inherited said "restore with checkout, never commit it", and that is right only for lanes that
+  dirty it *spuriously* without changing engine source. **An engine lane must COMMIT the rebuilt
+  DLL**, or Unity runs against a stale engine — the file is LFS-tracked precisely so this is
+  workable, and it rode along with `DRAWS`, `the full v1 pre-game vocabulary`, and
+  `correct score reads one joint cell`. Build Release before the final commit, since that is what
+  ships.
+- **`unity/SBR/Assets/TutorialInfo/Icons/URP.png` is genuinely phantom** — it shows modified
+  permanently, is untouched since the original scaffold commit, and is never committed. Restore it
+  with checkout and stage by explicit path so it cannot ride along.

@@ -291,6 +291,41 @@ public static class RunPlayer
         for (int k = 0; k < carried.Length; k++)
             if (carried[k]) result.Relation((RelationKind)k).Tickets++;
         if (sm.Principal is { } principal) result.Relation(principal.Kind).Principal++;
+
+        RecordSameMatchKinds(result, ticket);
+    }
+
+    /// <summary>Which MARKET KINDS this same-match ticket actually put in a group (F_0.6.0 step 4b) —
+    /// the per-kind roll-call G7-SGP's second arm reads.
+    ///
+    /// <para>A leg counts only when its matchup carries at least TWO legs on this ticket. That is the
+    /// same test the engine applies to decide the ticket is same-match at all
+    /// (<c>SameMatchModel.IsSameMatch</c>), applied per matchup rather than per ticket: a ticket that
+    /// pairs two goal legs on match 1 and hangs a lone corners leg on match 2 has priced the goal
+    /// kinds jointly and the corners kind independently, and crediting corners with same-match
+    /// coverage there would certify a joint the model never computed.</para>
+    ///
+    /// <para>Counted off the ticket's own legs rather than off <c>SameMatch.Relations</c>: a group of
+    /// two identical-family legs yields one relation over two legs, and the arm asks which KINDS
+    /// reached a group, not how many labels came back.</para></summary>
+    private static void RecordSameMatchKinds(RunResult result, Ticket ticket)
+    {
+        var legsPerMatchup = new Dictionary<int, int>();
+        foreach (Leg leg in ticket.Legs)
+        {
+            int index = leg.Matchup.Index;
+            legsPerMatchup[index] = legsPerMatchup.TryGetValue(index, out int n) ? n + 1 : 1;
+        }
+
+        var carried = new bool[Enum.GetValues<MarketKind>().Length];
+        foreach (Leg leg in ticket.Legs)
+        {
+            if (legsPerMatchup[leg.Matchup.Index] < 2) continue;
+            result.Kind(leg.Selection.Kind).Legs++;
+            carried[(int)leg.Selection.Kind] = true;
+        }
+        for (int k = 0; k < carried.Length; k++)
+            if (carried[k]) result.Kind((MarketKind)k).Tickets++;
     }
 
     private static void RecordMarketRealization(RoundMetrics rm, IReadOnlyList<Ticket> tickets)

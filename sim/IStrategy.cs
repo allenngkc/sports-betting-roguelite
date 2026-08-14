@@ -38,6 +38,19 @@ public sealed class BotState
     /// SubEvens appearing (unreachable at κ = 1) or one rule never firing at all.</summary>
     public readonly Dictionary<RefusalKind, int> SameMatchRefusalKinds = new();
 
+    /// <summary>Where this run starts its walk through the probe's MARKET-KIND catalogue, drawn once
+    /// from the bot's own per-run generator (−1 = not yet drawn). It lives here rather than on the
+    /// strategy for the same reason the counters above do: the strategy object is a stateless
+    /// singleton shared across a parallel batch, so a rotation cursor on it would be a data race AND
+    /// would make one run's catalogue position depend on how many other runs had already bet.
+    ///
+    /// <para>Why a per-run start and not the round-only walk T1 uses: fifteen market kinds do not fit
+    /// in the four-to-five rounds a run survives, so a round-only walk would give the late entries
+    /// only the tail of the batch. See <see cref="SameMatchStrategy"/>'s class comment — the two
+    /// catalogues rotate differently on purpose, and the earlier finding against a generator draw was
+    /// about the RELATION catalogue, where it is still the rule.</para></summary>
+    public int SameMatchSweepStart = -1;
+
     public void NewRound()
     {
         HomeProbEst.Clear();

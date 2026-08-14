@@ -179,6 +179,44 @@ public static class Report
         else
             sb.AppendLine("Every relation kind the model can label was priced at least once.");
         sb.AppendLine();
+
+        SameMatchKindTable(sb, probe);
+    }
+
+    /// <summary>WHICH MARKETS ever reached a joint — the per-kind half of the same-match reading, and
+    /// the one G7-SGP's second arm turns into a verdict.
+    ///
+    /// <para>This exists because section 2's market exposure cannot answer it. That table counts every
+    /// leg a bot placed anywhere, so a kind can read thousands of legs there and never once have been
+    /// priced against a correlated sibling — which is exactly what happened when the merged draws
+    /// board landed nine kinds the probe's catalogue had never heard of while every coverage number
+    /// in the report stayed green. A kind missing HERE is a market the campaign certified nothing
+    /// about.</para>
+    ///
+    /// <para>Rows are printed for every shipped kind including the zeros, unlike the relation table
+    /// above which lists its absences in prose: a fifteen-row roll-call is short enough to read
+    /// whole, and a zero is the single most important cell in it.</para></summary>
+    private static void SameMatchKindTable(StringBuilder sb, BatchSummary probe)
+    {
+        sb.AppendLine("| Market kind | Same-match legs | Tickets carrying it |");
+        sb.AppendLine("|---|---:|---:|");
+        var uncovered = new List<string>();
+        foreach (MarketKind kind in Enum.GetValues<MarketKind>())
+        {
+            probe.SameMatchKinds.TryGetValue(kind, out SameMatchKindExposure? e);
+            int legs = e?.Legs ?? 0;
+            if (legs == 0) uncovered.Add(MarketName(kind));
+            sb.AppendLine($"| {MarketName(kind)} | {legs:N0} | {(e?.Tickets ?? 0):N0} |");
+        }
+        sb.AppendLine();
+        sb.AppendLine(uncovered.Count == 0
+            ? "Every shipped market kind reached a same-match ticket. Legs are counted only where the "
+              + "matchup carried at least two of the ticket's legs, so a kind's number here is joint "
+              + "pricing it actually went through, not a leg riding along on someone else's parlay."
+            : $"NOT IN ANY SAME-MATCH TICKET: {string.Join(", ", uncovered)}. G7-SGP's per-kind arm "
+              + "is the verdict on that list — a kind is either exercised or named on the arm's "
+              + "exclusion list with a reason.");
+        sb.AppendLine();
     }
 
     // ---- header ----
