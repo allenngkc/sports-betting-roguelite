@@ -1,7 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 244 — THE LAST RULINGS
-ARE IN (batch 61).** T90-am both levers + the column's side padding
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 245 (heartbeat).** TV
+building the final ruled set; sgp's merge-repair grinding; all else
+holding or with Allen. Quiet is healthy.
+
+*(prior stamp, cycle 244 - THE LAST RULINGS:)* T90-am both levers + the column's side padding
 RULED (8px/2px keep-out); G1-am6 authoring reopens; T91-am accepted with
 the top band partitioned; T92-am height by content removal. TV builds
 the final set then THE CLOSING CAPTURE - the re-read that ends Phase T.
