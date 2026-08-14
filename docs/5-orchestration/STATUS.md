@@ -1,7 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 242 — MAIN IS RED BY
-DESIGN.** The two shipped engines met: sgp's partition-mismatch defense
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 243 (heartbeat).** The
+gift-streak dutch became a class sweep (fixed sites now fail loudly on
+reintroduction; the editor gate aborts-not-prints); count re-run
+finishing, lane closes and holds after. Sgp's merge-repair agent on the
+15-market joint. TV's T90 measurement. Research items with Allen (RF-18
+word; canon proposals). Main red pending the sgp fix, by design.
+
+*(prior stamp, cycle 242:)* The two shipped engines met: sgp's partition-mismatch defense
 threw loudly on the draws world (exactly as its design promised - no
 silent mispricing). Fix authorized on Allen's word (sgp's own file,
 small); then a FULL gate campaign on the merged 80-offers world before
