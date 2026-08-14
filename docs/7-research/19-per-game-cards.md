@@ -240,7 +240,8 @@ which is the half of the price question that actually decides `07-business-and-r
 ### 9 — Insider Trading · 2026-02-18 · $12.89 · 632 all-language Very Positive (80.4%)†
 
 **Addicting elements.** Weak exactly where SBR's canon predicts strength. `addiction` **6.7% — 9th of the
-eleven titles then measured** — against `luck_vs_skill` **30.5% (1st)** and `onboard` friction **11.4% (1st)**.
+eleven titles then measured** — against `luck_vs_skill` **30.5%** (`15` ranks this 1st of eleven; across the
+full fifteen it is **2nd**, behind Tharsis's 38.8%) and `onboard` friction **11.4%, 1st across the fifteen**.
 Median 3.5h; 29% under two hours.
 
 **Fun core.** Not being right — blowing yourself up legibly. Both top positives are self-inflicted
@@ -363,8 +364,8 @@ has not tried to build one.
 
 ### 14 — Tharsis · 2016-01-11 · $14.99 · 2,511 all-language Mostly Positive (70.1%)†
 
-**Addicting elements.** None worth the name — the lowest-rated title in the study, `too_hard` **13.0% (1st)**
-and `depth_thin` **24.0% (1st)**.
+**Addicting elements.** None worth the name — the lowest-rated title in the study, with `luck_vs_skill`
+**38.8%, `too_hard` 13.0% and `depth_thin` 24.0% — all three the highest ever measured.**
 
 **Fun core.** Dread, genuinely produced: `dread_tension` **6.0%, the highest ever measured — above Buckshot
 Roulette's 2.2%**. **Tharsis is not failing to produce tension. It produces the most tension in the study and
