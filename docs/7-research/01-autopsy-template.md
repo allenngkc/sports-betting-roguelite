@@ -268,3 +268,16 @@ build and sale cohorts; say so in §8 every time.
   you believe and why. Do not average them.
 - **A finding that contradicts SBR canon goes in §6 CONFLICT with an `RF#`, and nowhere else.** This lane
   never edits `docs/design/**` or `design/**`. Proposals route lead → orchestrator → Allen.
+
+## D. The per-game card (Allen, 2026-08-13) — the reading format
+
+The autopsy above is the *working* form. The **card** is the reading form, and every studied title carries
+one in `19-per-game-cards.md`: **addicting elements · fun core · quoted mechanic · our application**, then
+honest gaps. Any new title gets a card in `19` in the same commit as its autopsy or probe.
+
+- **Addicting and fun are separate fields and must not be merged.** Keeping them apart is what makes the
+  set legible — see `19` §4, and RF-8/RF-14 for the finding it encodes.
+- **Quoted mechanic means verbatim** — store copy, a review, or an achievement name, attributed. Where no
+  verbatim names the mechanic, say the mechanic is *measured, not quoted*, and give the funnel numbers.
+- **Sentiment carries its provenance in the card**: † for an all-language store rating, unmarked for a
+  recent-English corpus. Never rank across the two (`C44`; the `14` → `15` correction is the live example).

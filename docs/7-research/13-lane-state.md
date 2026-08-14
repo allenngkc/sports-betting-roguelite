@@ -2,7 +2,8 @@
 
 **Lane:** research — compulsion-loop references · **Branch:** `research` · **Updated:** 2026-08-12
 **Read this first if you are a fresh seating.** Everything the lane knows is in files; nothing
-load-bearing lives only in a session.
+load-bearing lives only in a session. **Fastest way in: `19-per-game-cards.md`** — all fifteen titles in the
+reading format (addicting · fun · quoted mechanic · our application · gaps), format recorded in `01` §D.
 
 ## 1. Governance — get this right before anything else
 
@@ -23,7 +24,8 @@ Report telegraphic: Done / Next / Risk / Need-Allen. The Need-Allen line is load
 | `89c9808` | `13` this state file, `14` the widened census + new cohort + RF-14/15/16 |
 | `117eefa` | `15` Insider Trading autopsy, `16` Nubby's Number Factory autopsy; `14`'s Insider Trading sentiment band corrected |
 | `aab4a4b` | `17` probe set 2 — Slots & Daggers, Dungeon Clawler, Sol Cesto, Tharsis, Bills Must Be Paid; RF-17/18/19 |
-| *(this commit)* | `18` ruling brief — the retention bundle (RF-5/8/12/14) packaged as one decision for Allen |
+| `1d6cc2e` | `18` ruling brief — the retention bundle (RF-5/8/12/14) packaged as one decision for Allen |
+| *(this commit)* | `19` per-game cards — all fifteen titles in Allen's format; `01` §D records the format |
 
 **The widened mandate is now fully discharged.** 15 titles studied: 4 Tier-1 autopsies + 4 Tier-2 probes +
 2 widened autopsies + 5 widened probes. Nothing is queued; the lane is idle pending Allen's rulings.
