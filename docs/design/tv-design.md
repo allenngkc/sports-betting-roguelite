@@ -585,6 +585,17 @@ to end on, and both obvious treatments are already banned:
 strip states the fact at its own L2 tier (T66); the legs resolve to their words. **The theatre
 reports. It does not editorialise about a quiet ending.**
 
+**This reaches 0–0, and no separate beat is authored for it (T87-am).** Every mechanism above is
+goal-independent: the scoreline holds a value it already holds, the strip states a fact that needs no
+goal, the legs resolve, and **T65's settlement glow fires on settlement, not on a goal.** **Nothing
+here may be narrowed to exclude a goalless match** — that is the case a narrowing would quietly drop.
+
+**What 0–0 changes is the risk, not the rule.** The *rendering nothing* failure mode above is at its
+maximum, and only there: in a 1–1 the surface has punched and the room has moved, so the ending arrives
+against a match that visibly happened; **in a 0–0 nothing has punched all match.** The standing check
+is therefore **is the stated ending legible as a resolution** — not *is it loud*, which is banned —
+**because the one state this surface must never be mistaken for is idle.**
+
 **A draw is quiet for the room and LOUD for one ticket.** A draw-backer has won, and his leg lands
 like any other winning leg. **The absence of a goal is not the absence of his result** — and the worst
 outcome available here is a surface that conflates *no goal* with *no result* and drains the one
