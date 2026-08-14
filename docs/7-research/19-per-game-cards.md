@@ -378,8 +378,8 @@ is liked least.**
 Set against Buckshot: same high-dread random resolution, and the only variable is agency inside it — worth
 **~22 points of sentiment** (92.2% vs 70.1%). `04-the-sweat.md`'s mid-sweat agency ladder has been PROPOSED and
 unratified since 2026-07-07; on this evidence it is the difference between the two titles, not a nicety.
-Separately: Tharsis's 28.8% win rate is the **closest any reference comes to SBR's ruled 5–8% band**, and it is
-the worst-received title in the study (feeds **RF-4**).
+Separately: Tharsis's 28.8% win rate is the **closest any reference comes to SBR's ruled band** (4.5–8%
+since 2026-08-08), and it is the worst-received title in the study (feeds **RF-4**).
 
 **Gaps.** A 2016 title read through a 2026 recent-English corpus (n=400): a decade of genre drift sits between
 it and the rest of the cohort. "Nothing aged" is an inference from the complaint mix, not a longitudinal

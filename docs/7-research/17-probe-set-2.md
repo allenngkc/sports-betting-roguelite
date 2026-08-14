@@ -201,10 +201,17 @@ luck-complaint rate (38.8%), highest too-hard rate (13.0%) — and the study's h
 **Tharsis is not failing to produce tension. It produces the most tension in the study and is liked least.**
 
 **What the research argues.** SBR's sweat is a resolution phase the player watches. The cash-out is
-currently the *only* agency inside it, and `04`'s agency ladder is still unratified after thirteen months.
+currently the *only* agency inside it, and `04`'s agency ladder is still unratified.
 **On this evidence, the agency ladder is not a nice-to-have — it is the difference between Buckshot and
 Tharsis.** This binds tightly to **RF-7**: the cash-out must sometimes be wrong to take, or the one piece
 of agency inside the sweat is a formality.
+
+> **Two corrections, 2026-08-13, mine — see `22` §3.** (1) "unratified after thirteen months" was wrong;
+> the ladder is dated 2026-07-07, which is **five weeks**, and the error inflated the urgency argument.
+> (2) **The Buckshot/Tharsis line over-claims.** Tharsis has *zero* decisions inside its resolution; SBR's
+> Band 1 ships *one*, live throughout, per `04`'s anti-boredom invariant. The evidence supports "the count
+> must not be zero," not "the ladder is the difference." Ruling brief is `22`, and it recommends against
+> the reading this paragraph implies.
 
 **Ruling requested.** Ratify a mid-sweat agency ladder for v1 scope, or state explicitly that the cash-out
 is the whole ladder and accept RF-7 as its load-bearing constraint.

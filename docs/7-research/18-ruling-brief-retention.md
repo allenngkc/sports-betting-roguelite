@@ -32,8 +32,9 @@ the two systems RF-5 and RF-12 are about. Rule the four together or the answer i
 under the bounded-p doctrine (`10-economy-rework.md` §E). Both retentive systems are, today, outside v1 or
 outside the player's reach. Neither omission looks deliberate; they read as side effects.
 
-**One sharp adjacency.** SBR's ruled 5–8% win band sits about where the references put their *optional top
-rung* (Balatro Gold Stake 12.1%, CloverPit Ascension 9.1%) — with nothing below it. A ladder gives the base
+**One sharp adjacency.** SBR's ruled win band — **4.5–8%** since 2026-08-08; this brief originally cited the
+superseded 5–8% — sits about where the references put their *optional top rung* (Balatro Gold Stake 12.1%,
+CloverPit Ascension 9.1%), with nothing below it. A ladder gives the base
 game somewhere lower to sit. (Full ruling on the band is RF-4, not this brief.)
 
 ---
