@@ -84,21 +84,29 @@ Unchanged from T89, and nothing here settles any of it:
 
 ## Open before ship — the grant is not a clearance
 
-| item | what | priority |
+*(Updated batch 64 — the before-ship list is closed.)*
+
+| item | what | state |
 |---|---|---|
-| **T95** | **The scoreline renders two offset overprinted copies on score-change beats and is not legible.** Steady-state frames are clean. | **Before ship.** The most-watched element on the surface, at the moment it matters most. |
-| **T91-am2** | The widest scoreline now sits tight against the ticket column — the floor was set on one side only, and is now ruled on both. | Before ship |
-| **G1-am8** | The scorer arm's rung 2 authored: `{SURNAME} SCORES`. Bare `TO SCORE` retired. Measurement owed. | Next build |
+| **T95** | The scoreline doubling on score-change beats | **CLOSED** — confirmed fixed on frames, on a true matched beat and two goal beats. It reads as one string. |
+| **T91-am2** | The clearance floor set on one side of the column edge only | **CLOSED** — both sides now hold; the widest scoreline clears the clock and no longer crowds the leg row |
+| **G1-am8** | The scorer arm's rung 2, `{SURNAME} SCORES` | Next build — measurement across the twelve surnames, then its rendered read |
 | **T92-am** | The deferral line's 10.9px | Next build |
 | **T94** | The column and the scorebug describe different legs at once | After the phase, on frames |
 | **T74** | `RiskPays`' fact floor — **378.1px against a 249.0px row**, colliding at ordinary values | Deferred pass; **reaches Allen**, since it exceeds a locked dimension |
 
-**On T95 this seat says plainly what it cannot say:** whether it is new. The refused set's frame at the
-same index is a clean single, **but that run had diverged to a different match state and was not on a
-score change** — not a matched comparison, so its cleanliness is not evidence of absence. **A regression
-is a plausible reading, not a demonstrated one.** The first thing to check is whether the crossfade's
-second layer holds a rect from before T91-am re-bounded that box — **because if so, this seat's own
-ruling caused it.**
+**Nothing on the before-ship list remains open.**
+
+**T95's cause, settled:** the punch overlay and the scoreline were required to share one rect — an
+invariant stated only in a code comment. T91-am re-bounded one of them and the other stayed where it
+was, by exactly the 41.0px that ruling shifted. **The ruling was sound; the dependency was invisible.**
+That produced the phase's last two laws — **C50** (frame identity is not beat identity) and **C51** (a
+cross-element invariant is an assertion or it does not exist).
+
+**And one thing this seat owed is now paid:** `REGULATORS WIN` — rung 2 of the ladder authored at
+G1-am7 — has been **seen rendered** and reads as a requirement, not a result. It is contradicted twice
+on the same screen by the line beneath it and the scoreline above. **Ratified against the string, not
+against a description of it.**
 
 ---
 
