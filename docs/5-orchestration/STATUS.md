@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 245 (heartbeat).** TV
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 246 (heartbeat).** The
+phase's critical path is ONE STRING: the DD authoring G1-am6's moneyline
+NEED arm from TV's pool; the capture fires within the hour of it
+landing. TV built + handoff fresh + holding. Sgp's repair grinding.
+Research items with Allen.
+
+*(prior stamp, cycle 245:)* TV
 building the final ruled set; sgp's merge-repair grinding; all else
 holding or with Allen. Quiet is healthy.
 
