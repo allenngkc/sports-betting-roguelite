@@ -26,7 +26,8 @@ Report telegraphic: Done / Next / Risk / Need-Allen. The Need-Allen line is load
 | `aab4a4b` | `17` probe set 2 — Slots & Daggers, Dungeon Clawler, Sol Cesto, Tharsis, Bills Must Be Paid; RF-17/18/19 |
 | `1d6cc2e` | `18` ruling brief — the retention bundle (RF-5/8/12/14) packaged as one decision for Allen |
 | `2c9a2e0` | `19` per-game cards — all fifteen titles in Allen's format; `01` §D records the format |
-| *(this commit)* | `20` ruling brief — RF-17, legibility at the point of commitment; a `19` ranking cell corrected |
+| `62f2d30` | `20` ruling brief — RF-17, legibility at the point of commitment; a `19` ranking cell corrected |
+| *(this commit)* | `21` canon-change proposals for the ratified pair (retention B + RF-17 A); the 5–8% → 4.5–8% band citation fixed in `13`, `18`, `19` |
 
 **The widened mandate is now fully discharged.** 15 titles studied: 4 Tier-1 autopsies + 4 Tier-2 probes +
 2 widened autopsies + 5 widened probes. Nothing is queued; the lane is idle pending Allen's rulings.
@@ -63,15 +64,15 @@ raw-blob class. Stage lane files **by explicit path only**; `git add -A` sweeps 
 from, given that neither tension nor comprehension supplies it. RF-3, RF-11 and RF-15 are **one decision**
 — what the product is, how long, at what price.
 
-**Two briefs are with Allen (2026-08-13), in this order:**
-1. `18-ruling-brief-retention.md` — RF-5/8/12/14 as one question, options **A/B/C/D**, lane recommends **B**
-   (name the retention layer, ladder into v1, hold steering for RF-17).
-2. `20-ruling-brief-legibility.md` — RF-17, options **A/B/C/D**, lane recommends **A** (adopt-wide: the law
-   covers the shop as well as the bet).
+**RULED by Allen 2026-08-13 — retention = B, RF-17 = A.** Briefs are `18` and `20`; the ruled pair closes
+**RF-5, RF-8, RF-12 (absorbed), RF-14, RF-17**. Canon-change proposals are drafted in
+`21-canon-change-proposals.md` and routed to the orchestrator — CP-1/2/4/5 executable, CP-3 blocked on
+RF-4 (the base-game band question the ruling did **not** settle), CP-6 a routing note because the surface
+half touches DD-owned files this lane may not docket.
 
-**They interlock and the trap is real:** `18`=B hands steering to RF-17, so a narrow RF-17 (option B) hands
-it back and **steering ends up owned by nobody**. `20` §6 tables this against every branch. RF-17 = A is the
-lane's answer under all four.
+**Two things found in canon while drafting `21`, both narrowing the work:** `design/11` already computes
+the shop's dilution rate (*"a specific passive shows ~27% of visits"*), and **Ask for the Manager is
+already the reroll RF-12 asked for**. The strongest unruled item is now **RF-18**.
 
 **RF-1 was granted** (add Buckshot Roulette). Allen has played **Balatro and CloverPit only**.
 
@@ -113,8 +114,9 @@ strike any family whose pattern term is in the game's own title or is its core v
 - **Ladder rung count does not predict retention** — LbaL's 20 rungs, 10.4h vs Balatro's 4 rungs, 25.1h.
 - **Parlay (the direct competitor) is still unreleased**, no demo, verified 2026-08-12. Its store copy
   matches SBR canon on six of seven structural elements.
-- **SBR's ruled 5–8% win band sits where the references put their optional top rung** (Balatro Gold
-  12.1%, CloverPit Ascension 9.1%), with nothing below it.
+- **SBR's ruled win band sits where the references put their optional top rung** (Balatro Gold
+  12.1%, CloverPit Ascension 9.1%), with nothing below it. **The band is 4.5–8%**, not the 5–8% this
+  lane cited through `18`–`20`; `10-economy-rework.md` §F marks 5–8% superseded on 2026-08-08.
 
 ## 7. Two errors this lane has made, so they are not repeated
 
