@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 247 (heartbeat).** The
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 248 — PHASE T IS
+DESIGN-VERIFIED.** The review note is canon (3dd54b5): the type stack's
+variable certified on the closing capture against the pre-committed bar;
+TV's closing set merged (a487e1e). Open before ship: T95 (crossfade
+rect - dispatched), the T74-proper column question (the ONE item that
+reaches Allen - a fact floor vs a locked dimension), the scorer-arm
+authoring. G1-am7's build found THREE ladders modelling rung 2. Sgp's
+HOLDOUT5 campaign grinding. Research items with Allen.
+
+*(prior stamp, cycle 247:)* The
 string is authored (batch 62, one deck string retired free); TV in the
 measure-build-capture sequence; sgp extending probes then the merged
 campaign. The phase closes on the capture + re-read.
