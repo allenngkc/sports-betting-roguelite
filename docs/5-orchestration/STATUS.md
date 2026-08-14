@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 231.** Batch 59 canon
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 232 (post-restart
+recovery).** Orca+session restarted; disk verified NOTHING LOST (main at
+cycle-231 tip, tree clean; TV's batch-59 turn died pre-commit; Campaign
+B's detached process dead - report-or-relaunch determination with the
+resumed lane; sgp branch unchanged). Four seats recreated + seeded (TV
+resume, mpregame B-check, sgp 3d resume, DD fresh at canon-through-59);
+watcher v29 + heartbeat re-armed FIRST per 6c. Research + room stay down
+(recreate on demand).
+
+*(prior stamp, cycle 231:)* Batch 59 canon
 (69929d9): both final composition calls ruled - RiskPays collapses to
 one row with both ends anchored (the height problem dissolves with the
 authored gap); the 3px lands as signed-deviation-or-leading-fix per
