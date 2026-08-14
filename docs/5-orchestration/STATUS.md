@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 235.** Allen's FORMAT
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 236 (heartbeat).**
+Retention brief in front of Allen (one word: A/B/C/D, lane recommends B
+- ladder into v1, steering held for RF-17); RF-17 brief being written in
+the same shape; per-game rework running around them. TV's after-frames
+shot + five-seed NEED capture running; Campaign B relaunch grinding;
+sgp's probe+G7 stage under the standing continue-through. Push to origin
+pending (network resets) - retrying this cycle.
+
+*(prior stamp, cycle 235:)* Allen's FORMAT
 RULING on research: too concise - per game he wants the addicting
 elements, the fun core, a QUOTED concrete mechanic, and how WE apply it.
 Research seat recreated fresh (docs are the memory) and dispatched: one
