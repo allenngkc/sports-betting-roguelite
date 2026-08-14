@@ -35,6 +35,7 @@ public static class Report
     {
         var sb = new StringBuilder();
         GatesSection(sb, gates);
+        SameMatchSection(sb, batches);
         Survival(sb, batches);
         MarketExposure(sb, batches);
         ItemAudit(sb, audit);
@@ -104,6 +105,82 @@ public static class Report
         sb.AppendLine();
     }
 
+    // ---- 0b. SAME MATCH relation exposure ----
+
+    /// <summary>The relation-kind exposure table G7's SGP arm points at (F_0.6.0 step 4).
+    ///
+    /// <para><b>Informational, deliberately.</b> It mirrors G7's own stated split: whether a thing is
+    /// covered is STRUCTURAL and belongs in a gate, while how THINLY it is covered is a reading, and
+    /// a reading is a table. A relation seen once is covered — and covered once is worth knowing,
+    /// which is exactly what a pass/fail cannot say.</para>
+    ///
+    /// <para>Kinds are the model's own vocabulary, printed verbatim rather than through a display
+    /// map: these names are structured data the engine emits, and a second spelling of them here is
+    /// a thing that can drift away from the enum it describes.</para></summary>
+    private static void SameMatchSection(StringBuilder sb, IReadOnlyList<BatchSummary> batches)
+    {
+        BatchSummary? probe = null;
+        foreach (BatchSummary b in batches)
+            if (b.SameMatchPlaced > 0 || b.SameMatchRefusals > 0)
+            {
+                probe = b;
+                break;
+            }
+        if (probe == null) return; // no bot built a same-match ticket in this run — nothing to read
+
+        sb.AppendLine("## 0b. SAME MATCH exposure (informational — NOT a gate)");
+        sb.AppendLine();
+        sb.AppendLine($"From the `{probe.Name}` batch. Whether the feature is covered is G7-SGP's "
+            + "verdict; how thinly each relation is covered is this table's, and the two are "
+            + "deliberately different instruments.");
+        sb.AppendLine();
+        sb.AppendLine($"Tickets placed: **{probe.SameMatchPlaced:N0}** · settled: "
+            + $"**{probe.SameMatchSettled:N0}** · legs voided and re-priced: "
+            + $"**{probe.SameMatchVoids:N0}** · refusals tripped: **{probe.SameMatchRefusals:N0}**"
+            + (probe.SameMatchUnexpectedRefusals > 0
+                ? $" · ⚑ unexpected refusals: **{probe.SameMatchUnexpectedRefusals:N0}**"
+                : ""));
+        sb.AppendLine();
+        sb.AppendLine("| Relation | Relations priced | Tickets carrying it | Times principal |");
+        sb.AppendLine("|---|---:|---:|---:|");
+
+        var unexercised = new List<string>();
+        foreach (RelationKind kind in Enum.GetValues<RelationKind>())
+        {
+            probe.SameMatchRelations.TryGetValue(kind, out SameMatchExposure? e);
+            if (e == null || e.Relations == 0)
+            {
+                unexercised.Add(kind.ToString());
+                continue;
+            }
+            sb.AppendLine($"| {kind} | {e.Relations:N0} | {e.Tickets:N0} | {e.Principal:N0} |");
+        }
+        sb.AppendLine();
+
+        // The refusal rules are exposure too, and they belong beside the relations rather than in
+        // the gate table: a rule that never fired is a hole of exactly the same kind as a relation
+        // that was never priced. SubEvens is expected to read zero at the shipped κ = 1 — the price
+        // it judges cannot get that low — and that absence is a statement, so it is printed.
+        var rules = new List<string>();
+        foreach (RefusalKind kind in Enum.GetValues<RefusalKind>())
+            rules.Add($"{kind} × "
+                + (probe.SameMatchRefusalKinds.TryGetValue(kind, out int n) ? n : 0).ToString("N0", Inv));
+        sb.AppendLine($"Refusal rules exercised: {string.Join(" · ", rules)}. "
+            + $"{RefusalKind.SubEvens} reads zero at the shipped κ = 1 by construction — the "
+            + "sub-evens price and its full-ticket refund need κ ≳ 1.3, so that path stays "
+            + "unit-test-only in this campaign.");
+        sb.AppendLine();
+        if (unexercised.Count > 0)
+            sb.AppendLine($"Not exercised: {string.Join(", ", unexercised)}. "
+                + $"{RelationKind.MutuallyExclusive} can never appear here by construction — it is "
+                + "the label on a combination the engine REFUSES, so it is never on a placed ticket; "
+                + "the refusal counters above are where it is read. Any other name in this line is a "
+                + "real hole in the probe's catalogue.");
+        else
+            sb.AppendLine("Every relation kind the model can label was priced at least once.");
+        sb.AppendLine();
+    }
+
     // ---- header ----
 
     private static string Header(CliOptions opt, string date, double wallSeconds, RunConfig cfg,
@@ -118,7 +195,12 @@ public static class Report
             ? Math.Pow(cfg.Payments[^1] / cfg.Payments[0], 1.0 / (cfg.Payments.Length - 1))
             : 1.0;
         sb.AppendLine($"- Config: bank {Money(cfg.StartingBank)}, PAYMENTS [{Payments(cfg)}] (avg ×{meanRamp.ToString("F2", Inv)}), "
-            + $"overround {Pct(cfg.Overround * 100)}, cash-out margin {Pct(cfg.CashOutMargin * 100)}, "
+            + $"overround {Pct(cfg.Overround * 100)}, "
+            // The SAME MATCH margin dial travels with the artifact (F_0.6.0 step 4). A campaign that
+            // validates a dial without recording where the dial was set cannot be read later as
+            // having validated anything in particular.
+            + $"SGP margin κ {cfg.SgpMargin.ToString("0.0##", Inv)}, "
+            + $"cash-out margin {Pct(cfg.CashOutMargin * 100)}, "
             + $"totem juice {Pct(cfg.TotemJuiceRate * 100)}, "
             + $"min stake {Money(cfg.MinStake)}, max stake {Pct(cfg.MaxStakeFraction * 100)} of bank, "
             + $"{cfg.MatchupsPerSlate} matchups/round, {cfg.MaxTicketsPerRound} tickets/round, "

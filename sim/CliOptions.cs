@@ -27,6 +27,15 @@ public sealed class CliOptions
 
     public static readonly string[] AllStrategies = { "naive", "random", "skilled", "noshop", "martyr" };
 
+    /// <summary>What <c>--strategy</c> ACCEPTS, which is deliberately wider than what "all" runs.
+    /// The samematch probe is a coverage instrument for G7's SGP arm, not one of the economy bots
+    /// the default report compares — adding it to <see cref="AllStrategies"/> would put it in every
+    /// default batch and in <c>--verify</c>, changing runs that have nothing to do with it. It is
+    /// selectable so it can be smoke-tested on its own, and the gate campaign names it explicitly
+    /// (Program's gates roster, alongside the archetype bots, which are reachable the same way).</summary>
+    public static readonly string[] SelectableStrategies =
+        { "naive", "random", "skilled", "noshop", "martyr", "samematch", "chalk", "hoarder", "ironhands" };
+
     public IReadOnlyList<string> SelectedStrategies =>
         Strategy == "all" ? AllStrategies : new[] { Strategy };
 
@@ -46,8 +55,12 @@ public sealed class CliOptions
                     break;
                 case "--strategy":
                     if (!TryTake(args, ref i, out options.Strategy!, out error)) return false;
-                    if (options.Strategy != "all" && Array.IndexOf(AllStrategies, options.Strategy) < 0)
-                    { error = $"--strategy must be naive|random|skilled|noshop|martyr|all, got '{options.Strategy}'"; return false; }
+                    if (options.Strategy != "all" && Array.IndexOf(SelectableStrategies, options.Strategy) < 0)
+                    {
+                        error = $"--strategy must be all|{string.Join("|", SelectableStrategies)}, "
+                            + $"got '{options.Strategy}'";
+                        return false;
+                    }
                     break;
                 case "--gates":
                     options.Gates = true;

@@ -61,7 +61,13 @@ public enum MarketChoice
 
 public enum LegState { Pending, Won, Lost }
 
-public enum TicketState { Open, Won, Lost, CashedOut }
+/// <summary>A ticket's terminal state. <c>Voided</c> (F_0.6.0) is neither a win nor a loss: a void
+/// re-priced the ticket to at or below evens, so the ticket voids IN FULL and the stake is returned
+/// unconditionally (<c>design/02-betting-math.md</c> § *Void: re-price on the survivors*, CORRECTED
+/// 2026-08-12). It is a distinct state rather than a flavour of Lost because every consumer that
+/// counts losses — the Bad Beat Jar, the Scar, the run's own tally — would otherwise book a refund as
+/// a bust.</summary>
+public enum TicketState { Open, Won, Lost, CashedOut, Voided }
 
 /// <summary>A ticket's final, ticket-local grading of one leg — what OnLegResolved carries
 /// after any pending-loss window has closed (charm expansion, PLAN.md rev 5).</summary>
@@ -690,7 +696,11 @@ public sealed class Ticket
     /// cash-out offers.</summary>
     public TicketModifier Modifier { get; internal set; } = TicketModifier.None;
 
-    /// <summary>Free Bet's exactly-once latch, set by the terminal-realization ledger.</summary>
+    /// <summary>The STAKE-RETURN latch — exactly-once, set by the terminal-realization ledger. Two
+    /// things reach it: a Lost Free Bet ticket, and (F_0.6.0) a ticket that
+    /// <see cref="VoidedInFull"/>. One latch rather than two because they must never both pay: the
+    /// stake comes back once or not at all, and a ticket that voids in full is never
+    /// <see cref="TicketState.Lost"/>, so a Free Bet on it refunds the same single stake.</summary>
     public bool Refunded { get; internal set; }
 
     /// <summary>Scar Tissue bookkeeping (design/10 B): the stacks this ticket's bust would add,
@@ -699,11 +709,50 @@ public sealed class Ticket
     internal double ScarStacksIfBust { get; set; }
     internal bool ScarCarrier { get; set; }
 
-    public Ticket(IReadOnlyList<Leg> legs, double stake, double vigPaid)
+    /// <summary>The ticket's contract price in decimal odds, locked at placement — every promo and
+    /// relic that rewrote the price before lock is already in it. For an ordinary ticket this is the
+    /// placement-time product of the legs' offered odds; for a SAME MATCH ticket it is the joint
+    /// price, which is NOT that product.</summary>
+    public double LockedPrice { get; }
+
+    /// <summary>The correlation model's output for this ticket, non-null exactly when some matchup on
+    /// it carries two or more legs (F_0.6.0). Carries the joint probability, the relation labels and
+    /// the one relation a slip states. Null on every ordinary ticket, and that null is what routes
+    /// <see cref="PotentialPayout"/> down the untouched pre-F_0.6.0 path.</summary>
+    public SameMatchPrice? SameMatch { get; }
+
+    /// <summary>
+    /// The CONTRACT price this ticket re-prices to for EVERY survivor subset
+    /// (<c>design/02-betting-math.md</c> § *Void: re-price on the survivors*), indexed by survivor
+    /// bitmask: bit <c>i</c> set means leg <c>i</c> survives. Locked at placement and never re-derived
+    /// at settlement, which is what keeps settlement deterministic and independent of when — and how
+    /// often — a void is discovered.
+    ///
+    /// <para>This is <see cref="SameMatchPrice.SubsetPrices"/> after the placing layer's own
+    /// adjustments — the same relationship <see cref="LockedPrice"/> has to
+    /// <see cref="SameMatchPrice.Price"/> — so it is the number to settle on, not the model's raw
+    /// figure.</para>
+    ///
+    /// <para>EMPTY on an ordinary ticket, and that emptiness is load-bearing: such a ticket has no
+    /// locked price to replace. It re-multiplies its surviving legs at read time exactly as it did
+    /// before F_0.6.0, for any number of voids.</para></summary>
+    public IReadOnlyList<double> LockedSubsetPrices { get; }
+
+    /// <summary>The single-void row of <see cref="LockedSubsetPrices"/> — <c>LockedVoidPrices[v]</c> is
+    /// the contract price when leg <c>v</c>, and only leg <c>v</c>, voids. A view over the subset
+    /// table, so the two can never disagree.</summary>
+    public IReadOnlyList<double> LockedVoidPrices { get; }
+
+    public Ticket(IReadOnlyList<Leg> legs, double stake, double vigPaid, double lockedPrice,
+        SameMatchPrice? sameMatch = null, IReadOnlyList<double>? lockedSubsetPrices = null)
     {
         Legs = legs;
         Stake = stake;
         VigPaid = vigPaid;
+        LockedPrice = lockedPrice;
+        SameMatch = sameMatch;
+        LockedSubsetPrices = lockedSubsetPrices ?? Array.Empty<double>();
+        LockedVoidPrices = SameMatchPrice.SingleVoidRow(LockedSubsetPrices);
     }
 
     /// <summary>Legs that still count toward the ticket: voided (mulligan'd) legs are excluded.</summary>
@@ -725,7 +774,198 @@ public sealed class Ticket
         }
     }
 
-    /// <summary>Payout on a win: stake × product of the active legs' offered odds (voided legs drop out),
-    /// scaled by any relic payout multiplier.</summary>
-    public double PotentialPayout => Stake * OddsMath.ParlayDecimal(ActiveLegs.Select(l => l.OfferedOdds).ToList()) * PayoutMultiplier;
+    /// <summary>Payout on a win: stake × the ticket's price × any relic payout multiplier.
+    ///
+    /// <para><b>The ordinary path is preserved verbatim, and that is the whole safety story.</b> A
+    /// ticket with at most one leg per matchup carries no <see cref="SameMatch"/> block and still
+    /// multiplies its ACTIVE legs' offered odds at read time — the same expression in the same order,
+    /// so a voided leg drops out and the number is bit-identical to before F_0.6.0. Routing it through
+    /// <see cref="LockedPrice"/> instead would agree algebraically and could still differ in the last
+    /// bits, and the golden seeds and the whole gate baseline sit downstream of those bits.</para>
+    ///
+    /// <para>A SAME MATCH ticket reads its locked joint price: the product of its legs' odds is not
+    /// its price, so re-multiplying them would be wrong rather than merely imprecise. On a void it
+    /// reads the replacement price locked for that scenario at placement — see
+    /// <see cref="SameMatchContractPrice"/>.</para>
+    ///
+    /// <para><b>Zero once the ticket <see cref="VoidedInFull"/>.</b> Such a ticket has no payout at
+    /// all: it returns the stake, and a refund is not a payout (canon 2026-08-12), so it must not be
+    /// reachable through this expression — where <see cref="PayoutMultiplier"/> and Double or Nothing
+    /// would act on it and turn a void into a profit. The stake comes back down the run's stake-return
+    /// ledger instead, raw, and a zero here is the fail-safe: any caller that still credited this would
+    /// credit nothing rather than a phantom sub-evens payout.</para></summary>
+    public double PotentialPayout => VoidedInFull
+        ? 0.0
+        : SameMatch == null
+            ? Stake * OddsMath.ParlayDecimal(ActiveLegs.Select(l => l.OfferedOdds).ToList()) * PayoutMultiplier
+            : Stake * SameMatchContractPrice * PayoutMultiplier;
+
+    /// <summary>The SURVIVOR bitmask over <see cref="Legs"/>: bit <c>i</c> set means leg <c>i</c> is
+    /// not voided. The index into <see cref="LockedSubsetPrices"/>.</summary>
+    private int SurvivorMask()
+    {
+        int mask = 0;
+        for (int i = 0; i < Legs.Count; i++)
+            if (!Legs[i].IsVoided) mask |= 1 << i;
+        return mask;
+    }
+
+    /// <summary>
+    /// A void has re-priced this ticket to AT OR BELOW EVENS, so the ticket voids IN FULL and the stake
+    /// is returned unconditionally (<c>design/02-betting-math.md</c> § *Void: re-price on the
+    /// survivors*, CORRECTED 2026-08-12).
+    ///
+    /// <para><b>This replaces the price floor, it does not sit beside it.</b> The superseded rule
+    /// floored the contract price at 1.0 and justified that as the outcome the full-void camp of real
+    /// books produces — which it is not. A live ticket priced at 1.0 returns the stake only IF IT WINS
+    /// and still loses everything if it does not: strictly worse for the player than the full void it
+    /// claimed to imitate, and the absurd contract <i>win and receive nothing</i>. The outcome no
+    /// longer depends on whether the surviving legs win.</para>
+    ///
+    /// <para>Reachable for real. Placement refuses a sub-evens ticket, but a void re-prices a ticket
+    /// that is ALREADY SOLD and refusal is unavailable by then; the tightest replacement on the shipped
+    /// board is ~1.118 at κ = 1, so any κ past that — inside the range the gate campaign explores —
+    /// produces one.</para>
+    ///
+    /// <para>Read off <see cref="LockedSubsetPrices"/> rather than the model's raw table, so a Profit
+    /// Boost that travelled with a surviving leg counts: what matters is the price the ticket would
+    /// actually settle on. Structurally false for an ordinary ticket (no locked replacement exists) and
+    /// for an unvoided one (placement already refused it if it were sub-evens), which is what keeps the
+    /// at-most-one-leg-per-matchup path untouched.</para></summary>
+    public bool VoidedInFull
+    {
+        get
+        {
+            if (SameMatch == null) return false;
+            int survivors = SurvivorMask();
+            if (survivors == (1 << Legs.Count) - 1) return false; // nothing voided
+            if (survivors == 0 || survivors >= LockedSubsetPrices.Count) return false;
+            return LockedSubsetPrices[survivors] <= 1.0;
+        }
+    }
+
+    /// <summary>
+    /// A SAME MATCH ticket's contract price given the voids that have actually happened
+    /// (<c>design/02-betting-math.md</c> § *Void: re-price on the survivors*). Dropping the voided
+    /// leg's factor out of a product is wrong under a joint price and is what no real book does; the
+    /// ticket re-prices against the SURVIVORS' joint, at the figure locked for that scenario when the
+    /// ticket locked.
+    ///
+    /// <para><b>Any number of voids (canon CLOSED 2026-08-12).</b> The survivors are a bitmask and the
+    /// replacement is a table lookup, so a second and third void are the same operation as the first —
+    /// no rule is composed at settlement, and every price this ticket can ever show was locked at
+    /// placement.</para>
+    ///
+    /// <para><b>No floor — the sub-evens case is not priced at all.</b> The superseded rule floored
+    /// this at 1.0; canon CORRECTED that 2026-08-12, because a live ticket priced at 1.0 returns the
+    /// stake only if it WINS. A replacement at or below evens now voids the ticket in full and returns
+    /// the stake unconditionally: see <see cref="VoidedInFull"/>. This property therefore reports the
+    /// raw locked replacement even when that is at or below evens — it is the figure that DECIDES the
+    /// void, and no money is ever computed from it, because a ticket that voids in full has a
+    /// <see cref="PotentialPayout"/> of zero and never settles Won or Lost.</para>
+    ///
+    /// <para>The no-void case returns <see cref="LockedPrice"/> directly rather than through the table.
+    /// The full-mask entry holds the same number to the bit; reading the field is simply the shorter
+    /// proof that an unvoided ticket's price is untouched by any of this.</para></summary>
+    public double SameMatchContractPrice
+    {
+        get
+        {
+            if (SameMatch == null)
+                throw new InvalidOperationException(
+                    "This ticket has no SAME MATCH price; an ordinary ticket re-multiplies its active legs");
+
+            int survivors = SurvivorMask();
+
+            if (survivors == (1 << Legs.Count) - 1) return LockedPrice; // nothing voided
+
+            if (survivors == 0)
+                throw new InvalidOperationException(
+                    "Every leg of this SAME MATCH ticket is voided; there is no event left to price "
+                    + "(a Mulligan needs two active legs, so the engine never voids the last one)");
+
+            if (survivors >= LockedSubsetPrices.Count)
+                throw new InvalidOperationException(
+                    "No void-replacement price was locked for this ticket — it cannot re-price on a void");
+
+            double replacement = LockedSubsetPrices[survivors];
+            if (!(replacement > 0.0) || double.IsInfinity(replacement))
+                throw new InvalidOperationException(
+                    $"The locked replacement price for survivor set 0x{survivors:X} is {replacement:R}, "
+                    + "not a price");
+
+            return replacement;
+        }
+    }
+}
+
+/// <summary>
+/// A ticket the book refuses to sell, raised by <c>Run.PlaceTicket</c> and carrying the refusal IN
+/// PARTS (S73-am4, <c>docs/design/surething-design.md</c> §3.3).
+///
+/// <para><b>Derives from <see cref="ArgumentException"/> deliberately.</b> All three refusals were
+/// plain <c>ArgumentException</c>s before this type existed and callers that only catch one — the
+/// console screens, the sim harness — keep working untouched. What is new is
+/// <see cref="Refusal"/>: a caller that wants to ACT on the refusal reads the structured cause and
+/// remedy off it instead of parsing <see cref="Exception.Message"/>. A caller that wants the verdict
+/// without an exception at all asks <c>Run.RefusalFor</c> first.</para>
+///
+/// <para><b>The message is composed HERE, not in the model.</b> The model emits structured data and
+/// never an English sentence; this text is a developer-facing and console-facing courtesy, built from
+/// the same parts a surface would compose properly. It is not the stamp the design law describes —
+/// that is presentation's, from <see cref="Refusal"/>.</para>
+/// </summary>
+public sealed class TicketRefusedException : ArgumentException
+{
+    public TicketRefusal Refusal { get; }
+
+    public TicketRefusedException(TicketRefusal refusal, IReadOnlyList<Leg> legs)
+        : base(Compose(refusal, legs))
+        => Refusal = refusal ?? throw new ArgumentNullException(nameof(refusal));
+
+    private static string Compose(TicketRefusal refusal, IReadOnlyList<Leg> legs)
+    {
+        if (refusal == null) throw new ArgumentNullException(nameof(refusal));
+        if (legs == null) throw new ArgumentNullException(nameof(legs));
+
+        string cause = refusal.Kind switch
+        {
+            RefusalKind.DuplicateSelection =>
+                $"Leg {refusal.CauseLegs[^1] + 1} repeats leg {refusal.CauseLegs[0] + 1} "
+                + $"({legs[refusal.CauseLegs[0]].DisplayLabel}): a selection may not appear twice on a "
+                + "ticket. The repeat adds no risk and costs a full extra leg of margin.",
+
+            RefusalKind.ImpossibleCombination =>
+                $"These legs cannot all win: {Name(refusal.CauseLegs, legs)} together carry probability "
+                + "zero, so the combination has no price.",
+
+            RefusalKind.SubEvens =>
+                $"This combination prices at {refusal.Price:0.000} <= 1.0 and cannot be offered: its "
+                + "legs are close enough to a repeat that the joint carries no room for the margin.",
+
+            _ => $"This combination is refused ({refusal.Kind}).",
+        };
+
+        // The remedy half. A refusal that named only the cause would be half the Blocked row.
+        string remedy = refusal.HasRemedy
+            ? $" Drop {Name(refusal.RemedyLegs, legs)} and the ticket prices."
+            : " No leg can be dropped to make this ticket priceable.";
+
+        return cause + remedy;
+    }
+
+    /// <summary>"leg 2 (OVER 2.5 GOALS)", or a list of them — one naming rule for both halves.</summary>
+    private static string Name(IReadOnlyList<int> which, IReadOnlyList<Leg> legs)
+    {
+        var parts = new string[which.Count];
+        for (int i = 0; i < which.Count; i++)
+            parts[i] = $"leg {which[i] + 1} ({legs[which[i]].DisplayLabel})";
+
+        return parts.Length switch
+        {
+            0 => "no leg",
+            1 => parts[0],
+            _ => string.Join(", ", parts, 0, parts.Length - 1) + " and " + parts[^1],
+        };
+    }
 }

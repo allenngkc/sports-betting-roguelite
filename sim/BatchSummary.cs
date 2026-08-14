@@ -58,6 +58,17 @@ public sealed class BatchSummary
     /// <summary>Batch-total market exposure. Scorer rows remain zero by declared bot policy.</summary>
     public readonly Dictionary<MarketKind, MarketExposure> MarketExposure = new();
 
+    // ---- SAME MATCH coverage (F_0.6.0 step 4) — reduced from the per-run fields, in run-index
+    // order, exactly like every other aggregate on this type. Zero for every bot but the probe.
+
+    public long SameMatchPlaced;
+    public long SameMatchSettled;
+    public long SameMatchVoids;
+    public long SameMatchRefusals;
+    public long SameMatchUnexpectedRefusals;
+    public readonly Dictionary<RefusalKind, int> SameMatchRefusalKinds = new();
+    public readonly Dictionary<RelationKind, SameMatchExposure> SameMatchRelations = new();
+
     public static BatchSummary From(string name, RunResult[] results)
     {
         var s = new BatchSummary { Name = name, N = results.Length };
@@ -106,6 +117,23 @@ public sealed class BatchSummary
             scarBurns += rr.ScarBurns;
             gifts += rr.GiftsReceived;
             maxScarSum += rr.MaxScarStacks;
+
+            s.SameMatchPlaced += rr.SameMatchPlaced;
+            s.SameMatchSettled += rr.SameMatchSettled;
+            s.SameMatchVoids += rr.SameMatchVoids;
+            s.SameMatchRefusals += rr.SameMatchRefusals;
+            s.SameMatchUnexpectedRefusals += rr.SameMatchUnexpectedRefusals;
+            foreach ((RefusalKind kind, int n) in rr.SameMatchRefusalKinds)
+                s.SameMatchRefusalKinds[kind] =
+                    s.SameMatchRefusalKinds.TryGetValue(kind, out int had) ? had + n : n;
+            foreach ((RelationKind kind, SameMatchExposure e) in rr.SameMatchRelations)
+            {
+                if (!s.SameMatchRelations.TryGetValue(kind, out SameMatchExposure? total))
+                    s.SameMatchRelations[kind] = total = new SameMatchExposure();
+                total.Relations += e.Relations;
+                total.Tickets += e.Tickets;
+                total.Principal += e.Principal;
+            }
 
             for (int r = 1; r <= 8; r++)
                 if (rr.DeathRound >= r) s.AliveEntering[r]++;

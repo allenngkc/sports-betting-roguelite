@@ -32,6 +32,7 @@ public static class Harness
         "skilled" => new SkilledStrategy(),
         "noshop" => new NoShopStrategy(),
         "martyr" => new MartyrStrategy(),
+        "samematch" => new SameMatchStrategy(),
         "chalk" => new ChalkGrinderStrategy(),
         "hoarder" => new VipHoarderStrategy(),
         "ironhands" => new IronHandsStrategy(),

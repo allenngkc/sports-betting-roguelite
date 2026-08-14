@@ -18,6 +18,26 @@ public sealed class BotState
     /// need to be coerced through Side.</summary>
     public readonly Dictionary<(int Matchup, MarketSelection Selection), double> MarketProbEst = new();
 
+    // ---- SAME MATCH refusal telemetry (F_0.6.0 step 4) ----
+    //
+    // A refusal is the one same-match fact the harness CANNOT observe for itself: it happens inside
+    // the bot's betting window, leaves no ticket behind, and the strategy object is a stateless
+    // singleton shared across every run in a parallel batch — so a counter on the bot would be a data
+    // race. This per-run scratch is the seam, and RunPlayer copies it onto the RunResult at run end,
+    // which keeps the harness's own discipline: per-run fields, reduced afterwards, never a
+    // process-wide counter. Deliberately NOT cleared by NewRound — these are run-scoped totals.
+
+    /// <summary>Refusals the bot provoked ON PURPOSE (the samematch probe's invalid slip).</summary>
+    public int SameMatchRefusals;
+
+    /// <summary>Refusals a bot met on a slip it expected to be legal. Counted apart because it is a
+    /// defect signal — it must never hide inside the number G7's SGP arm wants to be positive.</summary>
+    public int SameMatchUnexpectedRefusals;
+
+    /// <summary>Which rule refused, both kinds of refusal together — the breakdown is what shows a
+    /// SubEvens appearing (unreachable at κ = 1) or one rule never firing at all.</summary>
+    public readonly Dictionary<RefusalKind, int> SameMatchRefusalKinds = new();
+
     public void NewRound()
     {
         HomeProbEst.Clear();

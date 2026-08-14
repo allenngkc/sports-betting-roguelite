@@ -20,6 +20,15 @@ public sealed class RunConfig
 
     public double Overround { get; set; } = 0.05;
     public double CashOutMargin { get; set; } = 0.08;
+
+    /// <summary>κ, the SAME MATCH margin dial (F_0.6.0, design/02 § *Same-game tickets*): the extra
+    /// margin charged on a ticket priced off its exact joint, on top of the per-leg (1 + Ω)^n that
+    /// every parlay already pays. At the default 1.0 a same-game ticket is EV-identical to an
+    /// independent parlay of the same leg count, so no arbitrage exists between the two products —
+    /// correlation changes the odds shown and never the house edge. Tuned by the gate campaign
+    /// (F_0.6.0 step 4); must stay ≥ 1.0 for the house edge to hold.</summary>
+    public double SgpMargin { get; set; } = 1.0;
+
     public double MinStake { get; set; } = 10;
 
     /// <summary>Cap on a single ticket's stake as a fraction of the current bank. 1.0 = uncapped (all-in
