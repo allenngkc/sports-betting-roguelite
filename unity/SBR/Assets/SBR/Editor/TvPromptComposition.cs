@@ -498,7 +498,23 @@ namespace SBR.EditorTools
                               $"{(gap <= 0f ? "*** INK COLLIDES ***" : gap < 8f ? "reads as one token at distance" : "clear")}  · {note}");
                 }
                 InkGap("LegRowPrice0", "LegRowState0", "-280", "NEXT", "T91 leg row");
+                InkGap("LegRowPrice0", "LegRowState0", "+1200", "NEXT", "T91 leg row, WIDEST price");
                 InkGap("Matchup", "Clock", "ZAMBONIS 0 — REGULATORS 1", "90'+2", "T91 scorebug");
+                // The scoreline is CENTRED, so a wider one grows toward the clock from the middle.
+                // The frames were read on one scoreline; the sweep's widest is the one that decides.
+                InkGap("Matchup", "Clock", "BRICKLAYERS 0 — MIDDLEMEN 0", "90'+2", "T91 scorebug, WIDEST scoreline");
+
+                // T90: would SHORTENING the caption be enough? Its BOX overlaps the NEED line by
+                // 88.0px whatever the string does, so a shorter word only moves the ink's left edge
+                // right — it cannot move the box. Worth stating, because the ruling offers
+                // "shortened, re-placed, or dropped" as three routes and one of them is not a route.
+                if (boxes.ContainsKey("LegRowNeed0") && boxes.ContainsKey("MomentumLabel"))
+                {
+                    Rect nb = boxes["LegRowNeed0"], lb = boxes["MomentumLabel"];
+                    Debug.Log($"[T88] T90 IF SHORTENED: even a zero-width caption leaves its BOX overlapping " +
+                              $"the NEED line by {nb.xMax - lb.xMin:0.0}px — the box is placed, not sized, by the " +
+                              $"string. Shortening moves ink only; the overlap is positional.");
+                }
                 Gap("TicketColumnZone", "MomentumLabel", "T90: does the caption cross the column edge?");
 
                 // ---- batch 56: `SHOT FROZEN` leaves the zone; the event strip is its optional home --
