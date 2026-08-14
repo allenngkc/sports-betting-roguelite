@@ -359,9 +359,14 @@ public sealed class GateData
     /// <summary><paramref name="randomBot"/> is not judged by any gate — it is the CONTROL. G7's
     /// M1 exclusion needs evidence that a market the sharp declines is one he could have taken, and
     /// the blind bot is the only thing in the campaign that answers that.</summary>
+    /// <param name="sameMatch">The SAME MATCH probe's batch (F_0.6.0 step 4) — G7's SGP arm. Null
+    /// outside the full campaign, which is the only mode that runs the probe.</param>
+    /// <param name="noLabelFallbacks">Campaign-wide count of tickets SOLD at the no-label naive
+    /// product, read off the engine's process-wide counter after every batch. Passed in rather than
+    /// read here so the reading is taken once, at a stated point, by the caller that scoped it.</param>
     public static GateData Evaluate(BatchSummary? naive, BatchSummary? skilled, BatchSummary? noshop,
         BatchSummary? martyr, BatchSummary? martyrWorst, AuditData? audit, ComboData? combos,
-        BatchSummary? randomBot = null)
+        BatchSummary? randomBot = null, BatchSummary? sameMatch = null, long noLabelFallbacks = 0)
     {
         var g = new GateData();
 
@@ -575,6 +580,54 @@ public sealed class GateData
                 "exact — a leg count is not a sample; no resolution limit");
         }
 
+        // G7's SGP ARM (F_0.6.0 step 4). G7 above keys on MarketKind, and a SAME MATCH ticket is a
+        // ticket SHAPE rather than a market — its legs are ordinary Total Goals / BTTS / Scorer rows,
+        // so no MarketKind column can ever show one. Without its own criterion the campaign would
+        // report full market coverage while the whole joint-pricing feature went unexercised, which
+        // is the silent skip G7 exists to prevent, arriving through the one door G7 cannot watch.
+        //
+        // Two facts, both structural, both pass/fail:
+        //   • the probe PLACED and SETTLED same-match tickets — placement alone would certify the
+        //     pricing path while leaving void, grading and payout untouched;
+        //   • ZERO tickets were sold at the no-label naive-product fallback. A silent fallback sells
+        //     a correlated ticket at the product of its legs — worth up to +274% EV to the player on
+        //     an implication pair — and canon requires it COUNTED AND SURFACED by the campaign, not
+        //     logged. This is the line that discharges that obligation.
+        //
+        // Relation-kind coverage is NOT gated here. It is reported as an exposure table, mirroring
+        // G7's own note above: coverage is structural, while how thinly something is covered is a
+        // reading you take from the table, not a verdict a gate can pronounce.
+        if (sameMatch != null)
+        {
+            bool placed = sameMatch.SameMatchPlaced > 0;
+            bool settled = sameMatch.SameMatchSettled > 0;
+            bool clean = noLabelFallbacks == 0;
+
+            string shortfall = placed && settled && clean
+                ? ""
+                : " — FAILED ON: " + string.Join(", ", Missing(placed, settled, clean));
+
+            g.Add("G7-SGP", "same-match coverage: the SAME MATCH probe placed AND settled same-match "
+                + "tickets, and zero tickets were sold at the no-label naive-product fallback "
+                + "(a ticket shape is invisible to G7's MarketKind roll-call, and a silent fallback "
+                + "is a money leak worth up to +274% EV on an implication pair)",
+                placed && settled && clean,
+                $"placed {sameMatch.SameMatchPlaced:N0}, settled {sameMatch.SameMatchSettled:N0}, "
+                + $"no-label fallbacks {noLabelFallbacks:N0}, refusals tripped "
+                + $"{sameMatch.SameMatchRefusals:N0}, voids re-priced {sameMatch.SameMatchVoids:N0}"
+                + shortfall,
+                // Same structural argument as G7's: a ticket was either sold or it was not.
+                "exact — a ticket count is not a sample; no resolution limit");
+
+            // The probe's own catalogue being refused is a DEFECT signal, not coverage, and it is
+            // deliberately not folded into the arm's verdict — it is surfaced where an exclusion
+            // note is surfaced, so it cannot hide inside a number the arm wants to be positive.
+            if (sameMatch.SameMatchUnexpectedRefusals > 0)
+                g.Notes.Add($"SAME MATCH: {sameMatch.SameMatchUnexpectedRefusals:N0} UNEXPECTED "
+                    + "refusals — the probe built slips the board would not sell. Its catalogue or "
+                    + "κ has moved; the relation exposure section is short by that much.");
+        }
+
         if (audit != null)
         {
             // Statistical control (rev 5 §15): paired-seed CIs, Bonferroni z across the whole
@@ -687,6 +740,17 @@ public sealed class GateData
         // Beasley-Springer-Moro-ish approximation for the upper tail.
         double t = Math.Sqrt(-2.0 * Math.Log(1.0 - p));
         return t - (2.30753 + 0.27061 * t) / (1.0 + 0.99229 * t + 0.04481 * t * t);
+    }
+
+    /// <summary>Which halves of G7's SGP arm failed. Named individually rather than collapsed into
+    /// one "did not cover" — "nothing was placed" and "everything was placed but a fallback fired"
+    /// are different defects with different fixes, and a verdict that cannot tell them apart sends
+    /// the reader back to the code to find out which one happened.</summary>
+    private static IEnumerable<string> Missing(bool placed, bool settled, bool clean)
+    {
+        if (!placed) yield return "no same-match ticket was placed";
+        if (!settled) yield return "no same-match ticket settled";
+        if (!clean) yield return "tickets were SOLD at the no-label naive product";
     }
 
     private void Add(string id, string desc, bool pass, string actual, string resolution = "",

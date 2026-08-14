@@ -77,6 +77,7 @@ public static class RunPlayer
                 rm.TicketEvsAtLock.Add(Metrics.TrueTicketEvAtLock(t));
                 rm.TicketPassiveEvsAtLock.Add(Metrics.TruePassiveOnlyEvAtLock(t));
                 RecordMarketPlacement(rm, t);
+                RecordSameMatchPlacement(result, t);
             }
 
             run.LockRound();
@@ -94,6 +95,12 @@ public static class RunPlayer
 
             double scarBefore = run.ScarStacks;
             run.Settle();
+            // Settled is read here and not at placement: the sweat has finished, so every ticket
+            // carries its terminal state, and Settle does not clear the round's ticket list (ExitShop
+            // does) — which keeps the count right on the round a run dies in, where the loop breaks
+            // before any shop runs.
+            foreach (Ticket t in run.Tickets)
+                if (t.SameMatch != null && t.State != TicketState.Open) result.SameMatchSettled++;
             result.MaxScarStacks = Math.Max(result.MaxScarStacks, run.ScarStacks);
             if (scarBefore > 0 && run.ScarStacks == 0) result.ScarBurns++; // carrier realized this round
 
@@ -155,6 +162,14 @@ public static class RunPlayer
             run.ExitShop();
         }
 
+        // The one same-match fact the harness cannot observe for itself (see BotState's note): a
+        // refusal leaves no ticket behind. Copied off the per-run scratch, so it reduces like every
+        // other per-run field instead of becoming a second process-wide counter.
+        result.SameMatchRefusals = state.SameMatchRefusals;
+        result.SameMatchUnexpectedRefusals = state.SameMatchUnexpectedRefusals;
+        foreach ((RefusalKind kind, int n) in state.SameMatchRefusalKinds)
+            result.SameMatchRefusalKinds[kind] = n;
+
         result.FinalBank = run.Bank;
         foreach (RelicDefinition d in run.OwnedRelics)
             result.RelicsAtDeath.Add(d.Id);
@@ -189,6 +204,9 @@ public static class RunPlayer
                         run.PlayMulliganSlip(session);
                         rm.MulligansPlayed++;
                         result.Events("mulligan_slip").Used++;
+                        // A void on a SAME MATCH ticket is a re-price onto the survivors' locked
+                        // subset price — the path step 3 added, and the only one a real run reaches.
+                        if (ticket.SameMatch != null) result.SameMatchVoids++;
                         continue;
                     }
                     if (action == PendingLossAction.Whistle && run.OwnsConsumable("refs_whistle"))
@@ -249,6 +267,29 @@ public static class RunPlayer
             exposure.LegsPlaced++;
             exposure.Stake += stakePerLeg;
         }
+    }
+
+    /// <summary>SAME MATCH exposure at PLACEMENT (F_0.6.0): the relations a ticket carries are a
+    /// property of the slip, fixed when it is priced, so they are recorded here rather than at
+    /// settlement — a voided leg does not un-price the relation the campaign sold.
+    ///
+    /// <para>Kinds are walked in enum order off a fixed-size flag array rather than a set, so the
+    /// per-ticket "carried this kind" pass has one deterministic order. The totals would be equal
+    /// either way; a stated order is cheaper than a reader having to prove that.</para></summary>
+    private static void RecordSameMatchPlacement(RunResult result, Ticket ticket)
+    {
+        if (ticket.SameMatch is not { } sm) return;
+        result.SameMatchPlaced++;
+
+        var carried = new bool[Enum.GetValues<RelationKind>().Length];
+        foreach (Relation r in sm.Relations)
+        {
+            result.Relation(r.Kind).Relations++;
+            carried[(int)r.Kind] = true;
+        }
+        for (int k = 0; k < carried.Length; k++)
+            if (carried[k]) result.Relation((RelationKind)k).Tickets++;
+        if (sm.Principal is { } principal) result.Relation(principal.Kind).Principal++;
     }
 
     private static void RecordMarketRealization(RoundMetrics rm, IReadOnlyList<Ticket> tickets)

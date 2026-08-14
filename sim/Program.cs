@@ -15,7 +15,7 @@ namespace SBR.Sim;
 /// (--scorer-ev, sim/ScorerCalibration.cs) is bot-independent — no strategy ever prices Anytime
 /// Scorer, so it runs standalone instead of joining a strategy batch.
 ///
-///   dotnet run --project sim -- [--runs N] [--strategy naive|random|skilled|noshop|martyr|all]
+///   dotnet run --project sim -- [--runs N] [--strategy naive|random|skilled|noshop|martyr|samematch|all]
 ///       [--seed-prefix STR] [--audit] [--combos N] [--gates] [--grid] [--scorer-ev]
 ///       [--report PATH] [--verify]
 /// </summary>
@@ -60,9 +60,19 @@ internal static class Program
         var byName = new Dictionary<string, BatchSummary>();
         long totalRuns = 0;
 
+        // The no-label fallback counter is process-wide by design (see SameMatchModel), so the number
+        // G7's SGP arm asserts is zero on has to be scoped to THIS campaign rather than to whatever
+        // the process did before it. Zeroed here, read once after every batch has run.
+        SameMatchModel.ResetNoLabelFallbacks();
+
+        // The gates roster: the gate bots, the archetype telemetry, and the SAME MATCH probe (added
+        // F_0.6.0 step 4). The probe is its own batch and G1–G6 never read it — every batch derives
+        // its seeds from the prefix and runs share no mutable state, so adding one cannot move
+        // another's numbers.
         IEnumerable<string> strategyNames = opt.Gates
-            ? new[] { "naive", "random", "skilled", "noshop", "martyr", "chalk", "hoarder", "ironhands" }
-            : opt.SelectedStrategies; // gates roster: the gate bots + archetype telemetry
+            ? new[] { "naive", "random", "skilled", "noshop", "martyr", "chalk", "hoarder",
+                "ironhands", "samematch" }
+            : opt.SelectedStrategies;
 
         foreach (string name in strategyNames)
         {
@@ -111,7 +121,10 @@ internal static class Program
             gates = GateData.Evaluate(
                 byName.GetValueOrDefault("naive"), byName.GetValueOrDefault("skilled"),
                 byName.GetValueOrDefault("noshop"), byName.GetValueOrDefault("martyr"),
-                martyrWorst, audit, combos, byName.GetValueOrDefault("random"));
+                martyrWorst, audit, combos, byName.GetValueOrDefault("random"),
+                // Read AFTER every batch, audit and combo run: the counter is campaign-wide, and a
+                // fallback fired anywhere in the campaign is a ticket sold at the naive product.
+                byName.GetValueOrDefault("samematch"), SameMatchModel.NoLabelFallbacks);
         }
 
         sw.Stop();
@@ -264,7 +277,9 @@ internal static class Program
         "usage: dotnet run --project sim -- [options]\n" +
         "  --runs N              runs per strategy batch (default 10000; --gates holds a ruled\n" +
         "                        FLOOR of 10000 and warns below it)\n" +
-        "  --strategy S          naive | random | skilled | noshop | martyr | all (default all)\n" +
+        "  --strategy S          naive | random | skilled | noshop | martyr | samematch | chalk |\n" +
+        "                        hoarder | ironhands | all (default all; \"all\" is the five economy\n" +
+        "                        bots — the rest are selectable for smoke runs and named by --gates)\n" +
         "  --seed-prefix STR     run i uses engine seed \"{STR}-{i}\" (default SIM)\n" +
         "  --audit               the six-item power audit (each granted free to skilled)\n" +
         "  --combos N            pairwise passive combo scan, N runs per pair\n" +
