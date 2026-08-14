@@ -11,6 +11,143 @@ discarded.
 
 ---
 
+## 0-PV. THE PHASE VERDICT — five conditions MET, one REFUSED · T90 is the last blocker · 2026-08-13
+
+**Branch `f343df3`, pushed and REMOTE-VERIFIED.** Tree clean, Unity zero, editor released. Two commits
+on top of §0-CC.
+
+**TOP LINE: Phase T is NOT Design-verified, and it waits on ONE thing — the NEED line rendering its
+authored form complete on frames (T90).** Everything else T89 named is met. **C31 binds both ways and
+the DD said so plainly: that is the whole remaining list.** T91/T92/T93 are new items opened on these
+frames and **none of them withholds the grant** — they are the next docket.
+
+| suite | discovered | executed | passed | failed | skipped |
+|---|---|---|---|---|---|
+| EditMode | 250 | 250 | 249 | 0 | 1 ignored — G1's grant, held |
+| PlayMode | 94 | 94 | 88 | 0 | 6 by-design capture skips |
+
+Sweep: **5 of 23 overrunning, 0 unaccounted for.**
+
+### What the verdict settled
+
+**GRANTED on frames:** the money control (A-b) — `CASH OUT $131OLD E`, the collision T63/T68/T68-am/T71
+chased across four batches, **is gone and structurally cannot recur**; the two-row composition was
+judged better than the span would have been. **SIGNED:** the 3px, branch 1, C16 deviation (cost 3.0px
+of vertical margin, expiry the deferred sizing pass) — *"the question was never the 3px, it was INK
+versus LINE BOX."* **DISCHARGED:** all three parked pre-commitments — `CashOutStatus` stays Regular
+(the row split did the work a face swap was being considered for), `Clock` corroborated, `G1-am4`'s
+digit rows re-certified. **B/C/D/F all MET.**
+
+**REFUSED:** A(a), the NEED line. On the after-set it renders **`ONE TEAM`**. T89-A pre-committed this
+refusal in advance — *"frames showing a tidy truncation are not frames showing a fix"* — and the DD
+held itself to C31 rather than softening a condition on seeing the evidence.
+
+### A SCOPING ERROR OF MINE, corrected by the DD, and the direction matters
+
+I reported T89-A's *"same seed **and** ticket as the pair's own frames"* as **jointly unsatisfiable**,
+on the premise that the pair was the named-moments capture. **The pair is the UNION of BOTH entry
+points** — 85 named-moments frames + 66 batch-22 frames = T83's own 151 — and the pair's README says
+so. So the batch-22 after-set is the same entry point, seed, ticket, scene, grammar, moment and frame
+index as **66 of the pair's 151 frames**, and the before half of that very frame renders
+`ONE TEAM BLANKED`. **The condition was met exactly as written; I under-claimed my own coverage.**
+
+**Adding a BTTS-NO leg to the named-moments ticket is REFUSED** — it would change the pair's own
+construction after the pair is shot, voiding the instrument. **Nothing is owed.** Recorded as a
+scoping error rather than a fidelity failure: the dangerous version is claiming a condition met that
+is not, and this was its mirror.
+
+**Also corrected upward, and it is the DD's own (§1.5):** `LegRowNeed0` was routed into T74 — a pass
+T89 explicitly defers out of the phase — which put a closing condition inside a deferred pass. **It
+comes OUT of T74's table.** T84's distinction governs: a span change is not a size-authority question.
+
+### T90 — what I measured, and TWO corrections to the ruling's premises
+
+| element | x | width |
+|---|---|---|
+| `TicketColumnZone` | −488.8 → −223.8 | 265.0 |
+| `LegRowNeed0` | −480.8 → −231.8 | 249.0 |
+| `MomentumLabel` | −319.8 → −223.8 | 96.0 |
+
+`MomentumLabel` sits **entirely inside the ticket column**, overlapping the NEED line by **88.0px of
+box** in a shared y band. It is **right-pivoted**, so its 10.4px overrun spills **left, further into
+the column** — the NEED line is clear for only **150.6px of its 249.0px box**. The tape itself is not
+in the band; only its caption is.
+
+**TWO DEFECTS AT ONCE:** `ONE TEAM BLANKED` is **252.5px, over its box by 3.5**, so the word-boundary
+backstop drops `BLANKED` and ships `ONE TEAM` (130.1px) — **the only form that also clears the
+caption**. It is truncated *and* its tail would have been overprinted anyway.
+
+1. **"Shortened" is not one of the three routes.** The overlap is **positional** — the box is placed,
+   not sized, by its string — so a zero-width caption leaves all 88.0px. Only re-placing or dropping
+   works, and the cheapest-looking option was the one that does not exist.
+2. **The ≥40.9px threshold does not decompose as written.** Retiring the caption recovers **98.4px of
+   CLEAR RUN and 0px of BOX**, because NEED already spans the column's full usable width. **The 3.5px
+   survives the furniture change.** Both levers are needed; both are available.
+
+**PROPOSED (composition explicitly the DD's):** drop `MomentumLabel`; widen `LegRowNeed0` 249.0 →
+261.0 inside the column's own 8px padding — needs +3.5, has +16, outer width unmoved (T46/R30).
+
+**THE RESIDUAL, flagged before a capture window rather than after it:** `SPREADSHEETS TO WIN` is
+**289.9px — 24.9 past even the full 265.0 column**, and seed `48151623`'s frames carry `SPREADSHEETS`,
+so the pair's own ticket probably shows the moneyline arm truncated on the row above. **Under G1-am,
+the span route demonstrably failing is the stated condition that reopens authoring — for that arm
+only.** Routed, not authored.
+
+### T91 — measured, and worse than the frames showed
+
+| pair | box gap | INK clearance |
+|---|---|---|
+| price → state | 6.0 clear | **1.3px** |
+| scoreline → clock | 130.0 overlap | 2.5px read seed · **−13.7px on the widest scoreline** |
+
+**Both are ALIGNMENT failures, and the box gap is the wrong quantity.** The leg row's clearance does
+not move with the price (`-280` and `+1200` both 1.3) because right alignment pins the ink to the box
+edge — **the binding element is `NEXT` overrunning its own 38.0px box leftward.** Lever: grow
+`LegRowState0` 38.0 → 46.0 rightward into padding; retires its 4.7px overrun in the same move.
+
+**The scorebug is not a pure clearance fix:** bounding `Matchup` at the clock's edge gives 545.0px
+against a 583.3px widest — 38.3 too small. Numbers supplied, composition routed.
+
+### T92 — BUILT. Width solved, height routed
+
+`TakeoverSub`'s entries take G1's compact forms, one per row — `LegStatement` is the deck, no new
+authoring. **One row 760.8 → 204.6px; the slot's overrun 2479.6 → 10.9px** — and the remaining 10.9 is
+a **different string**, the deferral line at 665.9.
+
+**Height is a call and I did not invent one:** 2 rows fit (45.0/60.0), 3 over by 7.5, 4 (`MaxLegs`)
+over by 30.0. **A cap of 2 legs plus a count row is 3 rows, which also overruns** — the cap that fits
+is 1 leg + a count, which is not a list.
+
+### THE INSTRUMENT TRAP THIS SECTION PAID FOR
+
+**`GetWorldCorners` is degenerate on an inactive canvas.** The first cut of the geometry block used it
+and reported **every rect 0.0px wide at x≈1.2, with every gap "touching"** — numbers that would have
+read as a finding. `rect.size` IS valid (it is sizeDelta with fixed anchors, and it had already
+produced every box width in the file); only the world transform is unresolved without a layout pass.
+**Positions must be accumulated up the parent chain.** Every width in this section cross-checks against
+the sweep, which is how the bad numbers were caught.
+
+**And T93 adopted a standard that started here:** *print an UNACCOUNTED-FOR count, and it must be
+zero* — C18 §4.1 built into the instrument rather than promised by it.
+
+### QUEUED BEHIND THE PHASE CLOSE — routed in from the markets lane, no action taken
+
+**`SweatFlavor` renders a DRAW as AWAY flavour** — a two-way assumption living in this surface's code.
+Routed here (Allen's word) because **it survived the markets lane's own class sweep for the reason
+that matters: it is in TV's file, not theirs.** A cross-lane sweep scoped by ownership misses exactly
+the code another lane owns, which is the same shape as a sweep scoped by a list rather than by the
+population.
+
+**It joins this lane's queue AFTER Phase T closes. Nothing is owed now and nothing was investigated.**
+
+**Likely site, from a read already in hand this window and NOT verified against the defect:**
+`SweatFlavor.PickedHomeForPresentation` resolves to
+`leg.Selection.Kind != MarketKind.Moneyline || leg.Selection.Choice == MarketChoice.Home` — a
+Home/not-Home predicate with no third arm, so a Draw selection would fall to the away branch. Treat
+that as a pointer for whoever picks it up, not as a diagnosis.
+
+---
+
 ## 0-CC. THE CAPTURE CLOSE — batch 59 determined · both frame sets staged · 2026-08-13
 
 **Branch `6916d7c`, pushed and REMOTE-VERIFIED.** Tree clean, **Unity zero, lockfile clear, editor
