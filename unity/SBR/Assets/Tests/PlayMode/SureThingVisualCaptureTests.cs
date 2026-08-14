@@ -359,13 +359,26 @@ namespace SBR.Tests.PlayMode
             Assert.AreEqual(maxLegs, laptop.Slip.Picks.Count,
                 "the captured state must actually be a full slip");
 
-            // Renumbered 09 → 11: main's rewards sequence already owns 07/08/09
-            // ("09-rewards-affordable") and 10 is the populated ledger, so this appends rather than
-            // colliding. NOTE FOR ANYONE FOLLOWING A REFERENCE: the S51 filing
-            // (dd-import/markets-26px-residual.md) and the frames already in evidence/ name this
-            // state "09-margin-max-legs-staged-receipt" — same state, earlier number.
+            // ONE STATE, THREE NUMBERS — read this before following any reference to it.
+            //   09  the original, and still what the S51 filing (dd-import/markets-26px-residual.md),
+            //       the batch-10 register entry and every frame already in evidence/ call it.
+            //   11  the first renumber, which cleared a genuine 09/09 collision with
+            //       "09-rewards-affordable" — and then collided again: the migration branch carries
+            //       "11-desktop", which is register-cited (S47/S56, owning doc §5.2) and cannot move.
+            //       That renumber relocated the collision instead of resolving it.
+            //   16  here. Free on every branch; 01–15 are all taken and every one of 10, 11, 12 and
+            //       13 is cited somewhere, so nothing below this could be shifted to make room.
+            //
+            // 16 is a free SLOT, not a reading position: this is a betting-surface state and belongs
+            // conceptually beside 03/04, not after the verdict screens. Nothing in the harness reads
+            // the ordinal as an order, so the cost is a reader's expectation, and that is the cheaper
+            // of the two costs available — the other was a set with two 11s in it.
+            //
+            // If a third collision ever forces this again: the numbers are load-bearing for citation
+            // and worthless for sequence, and the fix is to stop encoding order in them, not to keep
+            // hunting for free integers.
             yield return CaptureState(laptop, outputDirectory, runPrefix,
-                "11-margin-max-legs-staged-receipt", capturedPaths);
+                "16-margin-max-legs-staged-receipt", capturedPaths);
 
             Assert.AreEqual(2, capturedPaths.Count, "one state must emit paired captures");
             foreach (string path in capturedPaths)

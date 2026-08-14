@@ -1774,6 +1774,18 @@ namespace SBR
                 return;
 
             _frames++;
+
+            // Pin on the FIRST play frame, shoot on the eighth. Deliberately not the same
+            // callback: StartNewRun rebuilds the board, and Update() does not tick between two
+            // statements of one editor callback, so pinning and shooting together would capture
+            // whatever the UI looked like BEFORE the new slate was built. That exact mistake -
+            // a whole run driven inside one update callback - is on this file's record already.
+            if (_frames == 1)
+            {
+                PinRoomSlate();
+                return;
+            }
+
             if (_frames < WarmupFrames)
                 return;
 
@@ -1795,6 +1807,226 @@ namespace SBR
             }
 
             EditorApplication.Exit(code);
+        }
+
+        private const string SettleArmedKey = "SBR.RoomViewCapture.SettleArmed";
+        private static int _settleFrames;
+
+        /// <summary>
+        /// R23 settlement-cast spec, ROUTE B — the frame-locked control pair.
+        ///
+        /// WHY ROUTE B AND NOT R23's RULED RECIPE. The spec's own precondition asks whether
+        /// RoomSettlementGlow() is independent of TvLight. It is not: its body is one line,
+        /// `tvLight?.Flash(roomSettlementWarm, roomSettlementIntensity)`. R23 disables lights named
+        /// "TvLight", so the ruled recipe would switch off the subject and the capture would show no
+        /// cast — a null C37 forbids, because with the subject off success could not have appeared
+        /// however the code behaved. So: panel LIVE in both halves, glow differing, nothing else.
+        ///
+        /// HOW "NOTHING ELSE" IS ACHIEVED. Both halves are rendered inside ONE editor callback.
+        /// Update() does not run between two statements of one callback — the fact that cost this
+        /// file a cycle when it was unwanted — and here it is exactly what is wanted: no clock, no
+        /// ticker, no animation advances between the halves. A pair shot as two runs would carry
+        /// R43's measured residue (<=5/255, largest on the panel, which is where the subject sits).
+        ///
+        /// WHY SETTING THE LIGHT IS FAITHFUL AND NOT A SIMULATION. TvLight.Update() at _flash01 = 1
+        /// reduces to `color = Lerp(rest, flash, 1) = _flashColor` and
+        /// `intensity = Lerp(restI, flashI, 1) = _flashIntensity`, with no other term — T64's flicker
+        /// multiplier is gone and its own comment says so. So the ON half sets pointLight to exactly
+        /// the state the shipping code sets at the flash's peak, and restores it after. Calling
+        /// Flash() instead would need a tick to take effect, and the tick is the thing that must not
+        /// happen.
+        ///
+        /// Both halves get an identical WarmRender first: a control pair earns nothing if the two
+        /// halves are treated differently.
+        ///
+        ///   Unity.exe -batchmode -projectPath (project)
+        ///             -executeMethod SBR.RoomViewCapture.CaptureSettlementPair -outDir (abs path)
+        /// </summary>
+        public static void CaptureSettlementPair()
+        {
+            string outDir = OutDirFromArgs();
+            Directory.CreateDirectory(outDir);
+            SessionState.SetString(OutDirKey, outDir);
+            SessionState.SetBool(SettleArmedKey, true);
+            EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            EditorApplication.EnterPlaymode();
+        }
+
+        [InitializeOnLoadMethod]
+        private static void RehookSettle()
+        {
+            if (SessionState.GetBool(SettleArmedKey, false))
+                EditorApplication.update += OnSettleUpdate;
+        }
+
+        private static void OnSettleUpdate()
+        {
+            if (!EditorApplication.isPlaying)
+                return;
+
+            _settleFrames++;
+            if (_settleFrames == 1)
+            {
+                PinRoomSlate();
+                return;
+            }
+            if (_settleFrames < WarmupFrames)
+                return;
+
+            EditorApplication.update -= OnSettleUpdate;
+            SessionState.SetBool(SettleArmedKey, false);
+
+            int code = 0;
+            try
+            {
+                string outDir = SessionState.GetString(OutDirKey, string.Empty);
+                if (string.IsNullOrEmpty(outDir))
+                    throw new InvalidOperationException("output directory lost across domain reload");
+                ShootSettlementPair(outDir);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[Settle] capture failed: {e}");
+                code = 1;
+            }
+
+            EditorApplication.Exit(code);
+        }
+
+        private static void ShootSettlementPair(string outDir)
+        {
+            Camera cam = FindPlayerCamera();
+            var controller = UnityEngine.Object.FindAnyObjectByType<FirstPersonController>();
+            if (controller != null)
+                controller.enabled = false;
+
+            var tv = UnityEngine.Object.FindAnyObjectByType<SBR.Game.TvSweatScreen>();
+            if (tv == null)
+                throw new InvalidOperationException(
+                    "no TvSweatScreen - the settlement glow's owner is absent, so there is nothing " +
+                    "to measure and a frame would be a null the spec forbids (C37).");
+
+            SBR.Game.TvLight tvl = tv.tvLight;
+            if (tvl == null || tvl.pointLight == null)
+                throw new InvalidOperationException(
+                    "TvLight or its pointLight is absent - the SUBJECT of this measurement does not " +
+                    "exist in the scene. Refusing to shoot rather than producing an off-half pair.");
+
+            Light pl = tvl.pointLight;
+            Color restColor = pl.color;
+            float restIntensity = pl.intensity;
+            Color flashColor = tv.roomSettlementWarm;
+            float flashIntensity = Mathf.Max(0f, tv.roomSettlementIntensity);
+
+            Debug.Log($"[Settle] OFF half: pointLight color={restColor} intensity={restIntensity:F4}");
+            Debug.Log($"[Settle] ON  half: pointLight color={flashColor} intensity={flashIntensity:F4}" +
+                      "  (TvLight.Update at _flash01=1, verbatim)");
+
+            // §3 wants BOTH BAND ANCHORS and the subject measured in one frame by one converter.
+            // Neither anchor is a surface that can be boxed: the lid's emissive face sits behind the
+            // SureThing canvas (S63-am3's finding — the cue was unphotographable for exactly this
+            // reason) and the key tube is not in the standing frustum. Both anchors are
+            // CONTRIBUTIONS, which is how batch 13 measured them in the first place.
+            //
+            // A contribution needs its own on/off pair. So this shoots FOUR halves in one callback —
+            // still frame-locked, still one animation state — and each contribution is a linear
+            // difference against the same BASE:
+            //     glow = GLOW - BASE      lid = BASE - NOLID      key = BASE - NOKEY
+            // That is Route B's own method applied three times rather than once, not a third route.
+            var laptop = UnityEngine.Object.FindAnyObjectByType<SBR.Game.LaptopScreen>();
+            Renderer lid = laptop != null ? laptop.lidRenderer : null;
+            Light key = null;
+            foreach (Light l in UnityEngine.Object
+                         .FindObjectsByType<Light>(FindObjectsInactive.Include))
+                if (l.name == "FluorescentKey") key = l;
+
+            Debug.Log($"[Settle] anchors present? lid renderer={(lid != null)} keyLight={(key != null)}");
+
+            var lidBlock = new MaterialPropertyBlock();
+            bool lidSaved = false;
+            bool keyWasEnabled = key != null && key.enabled;
+
+            void ShootSet(string prefix)
+            {
+                WarmRender(cam);
+                foreach (Pose p in RatifiedPoses())
+                    Shoot(cam, outDir, prefix + p.File, p.Eye, p.Rot, p.Fov);
+            }
+
+            try
+            {
+                ShootSet("BASE-");
+
+                // (1) the SUBJECT: only TvLight changes
+                pl.color = flashColor;
+                pl.intensity = flashIntensity;
+                ShootSet("GLOW-");
+                pl.color = restColor;
+                pl.intensity = restIntensity;
+
+                // (2) anchor LOW: only the lid's emission changes
+                if (lid != null)
+                {
+                    lid.GetPropertyBlock(lidBlock);
+                    lidSaved = true;
+                    var off = new MaterialPropertyBlock();
+                    lid.GetPropertyBlock(off);
+                    off.SetColor("_EmissionColor", Color.black);
+                    lid.SetPropertyBlock(off);
+                    ShootSet("NOLID-");
+                    lid.SetPropertyBlock(lidBlock);
+                }
+
+                // (3) anchor HIGH: only the fluorescent key changes
+                if (key != null)
+                {
+                    key.enabled = false;
+                    ShootSet("NOKEY-");
+                    key.enabled = keyWasEnabled;
+                }
+            }
+            finally
+            {
+                pl.color = restColor;
+                pl.intensity = restIntensity;
+                if (lid != null && lidSaved) lid.SetPropertyBlock(lidBlock);
+                if (key != null) key.enabled = keyWasEnabled;
+            }
+        }
+
+        /// <summary>The room set's pinned slate. Mirrors PhoneSeed one entry point over.</summary>
+        private const string RoomSeed = "ROOMREF01";
+
+        /// <summary>
+        /// C34, extended from the phone path to the room poses: pin the slate and ASSERT it
+        /// before anything is shot.
+        ///
+        /// Why this was missing and why it mattered. CaptureAll shot whatever run Play Mode
+        /// happened to land in, so the laptop's board carried an unpinned deal - different team
+        /// names, different season records, in different places. SureThing traced a slate gap to
+        /// exactly this: a season record sits immediately after the team name, so its x tracks the
+        /// name's length and no fixed measurement box survives a re-deal. The phone path pinned
+        /// from the start (PhoneSeed); the room poses never did, which is why their slates diverged.
+        ///
+        /// Assert, do not merely request. StartNewRun could silently no-op or be overridden and the
+        /// frames would look perfectly plausible - an unpinned set is not a set, and its content
+        /// findings are unreproducible in a way nothing downstream can detect.
+        /// </summary>
+        private static void PinRoomSlate()
+        {
+            var director = UnityEngine.Object.FindAnyObjectByType<SBR.Game.RunDirector>();
+            if (director == null)
+                throw new InvalidOperationException(
+                    "no RunDirector - the room's slate cannot be pinned, so this set would not be " +
+                    "reproducible (C34). Refusing to shoot rather than shipping an unpinned set.");
+
+            director.StartNewRun(RoomSeed);
+            string actual = director.Run?.Rng.RunSeed ?? "<none>";
+            if (actual != RoomSeed)
+                throw new InvalidOperationException(
+                    $"slate not pinned: asked {RoomSeed}, run reports {actual}. An unpinned set is " +
+                    "not a set (C34) and every box cut against it would be a fallback, not a method.");
+            Debug.Log($"[RoomViewCapture] slate PINNED and asserted: {actual}");
         }
 
         /// <summary>One ratified review pose: the eye, the look, the field of view.</summary>

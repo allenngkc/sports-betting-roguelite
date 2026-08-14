@@ -7,6 +7,11 @@
 
 **Owning document** under C9's two-tier authority · **Status:** RATIFIED — Allen 2026-08-07
 **Canonical home:** `main-2/docs/design/tv-design.md` · **Revised:** Design Director, 2026-08-08 (batch 19)
+**Amended:** Design Director, 2026-08-11 (batch 32 — TV Phase T). Touches §4 (the face split, all 23
+slots, and the no-synthesised-styling law), §4.1 (order vs fit), §6.2 (the VOID matrix rule), §9 (gate
+V9) and §10 (item 5, and four open rows). Those clauses transcribe **T72–T78 + C43**, authored
+2026-08-11; the register transcription ran in parallel, so the tables are the authority if the two ever
+read differently (C22).
 **Companion:** `docs/design/constitution.md` (authority and evidence)
 **Siblings:** `docs/design/room-design.md` (R13) · `docs/design/surething-design.md` (C26-am)
 
@@ -182,16 +187,187 @@ explicit.
 **Tabular numerals are mandatory.** Scores, clocks, money and counts all change in place; non-tabular
 figures make the whole surface twitch on every tick.
 
+**How they are obtained — the atlas carries them, because the runtime cannot ask for them** (T82,
+2026-08-12, measured three ways at `cb84278`). T11 was right and is vindicated at the file level:
+`tnum` is present in the GSUB of both faces, and the tabular figures are genuinely drawn. They are
+nonetheless unreachable at runtime — TextMeshPro's `OTL_FeatureTag` declares only `kern`, `liga`,
+`mark` and `mkmk`, and no rich-text tag or component property exposes a `tnum`. **The default digit
+set both faces ship is proportional** at 0.242 em (Regular) and 0.244 em (Condensed), widest `0` and
+narrowest `1` in every face at every size, which is **46–93 px of spread across ten digits** at the
+sizes this surface renders numbers. The laptop's S29 escape does not exist here: Archivo Narrow's
+digits are equal-advance by construction, so a face assignment satisfied that mandate without a
+feature, and **both TV faces are proportional** — no face assignment on this surface can make the
+mandate true.
+
+So the mandate is delivered **at the font asset, not at the slot and not at runtime**: the atlas is
+built from the font's own tabular glyphs, with the substitution resolved at generation time and
+U+0030–0039 mapped to the tabular glyph indices. These are the figures the type designer drew. A
+forced uniform advance (`<mspace>`) is **not** an acceptable substitute — it imposes a metric the
+family does not contain, which is this section's *no synthesised styling* rule in the spacing
+channel, and it hits letters in mixed strings such as `CASH OUT $183`.
+
+Two standing consequences. **Digits alone satisfy the mandate** — digits are the characters that
+change, so `$`, `:` and separators need nothing; the requirement is equal advance *among digits*, not
+constant string width (a score going 9 to 10 adds a character and widens, and that is layout).
+**Every generated asset that any figure slot renders on takes the tabular set, and the inventory
+names its members.** The surface generates **four** TMP assets, all from the derived
+`EncodeSans-Tabular.ttf` as their single source face:
+
+| asset | instance | weight | carries |
+|---|---|---|---|
+| `EncodeSans SDF` | Regular | 400 | `Attract`, `LegRowState0`, `TakeoverSub`, `Flavor` |
+| `EncodeSans Bold SDF` | Bold | 700 | the roman's bold arm, via `WireBold` |
+| `EncodeSansCondensed SDF` | Condensed Regular | 400 | the condensed primary |
+| `EncodeSansCondensed Bold SDF` | Condensed **Bold 700** | 700 | **`CashOut`, `RiskPays`, `LegRowNeed0`** |
+
+*(Corrected 2026-08-13, T75-am5. This clause previously reasoned about "a third" asset and the
+register's T75-am says the surface generates **exactly three** — it generates four. Naming a subset is
+the defect the inventory rule exists to prevent, so the members are listed rather than counted.)*
+
+**Read the resolved WEIGHT, never `TMP_Text.font` alone.** `font` names the *primary* asset, so a slot
+built at `FontWeight.Bold` renders through the bold arm while `font.name` still reads the regular one —
+which mis-attributed all three Condensed Bold 700 sites once already. The sweep now prints `w700`
+beside the face so the misreading cannot recur.
+
+### Tracking — marks a label, never a fact
+
+*(Clause added 2026-08-12, T85-am2. This document had no tracking rule of any kind until now, which is
+why three values reached the surface without an owner. Its inventory is **incomplete** — see the
+bottom of this subsection.)*
+
+**Tracking marks a LABEL. It never marks a FACT.** A tracked label says *this is furniture, read past
+it*; tracking a fact spaces out the very thing the player is meant to read. The rule is the laptop's,
+already canon at `surething-design.md` §4.3 — *short uppercase labels are tracked, factual copy stays
+literal, and a label-plus-instruction is factual copy* — and it transfers because it is a rule about
+voice, not about a typeface.
+
+Ruled members:
+
+| slot | tracking | basis |
+|---|---|---|
+| `Label` | **.16 em** | label-class; ratified as built on frames |
+| `Meta` | **.10 em** | label-class, lighter value for a smaller and quieter slot; ratified as built |
+| `NEED` | **0** | **a fact, not a label** — the requirement statement is what has to happen for the player's money to land |
+| `TakeoverTitle` | **0** | carries money and leg facts |
+| `TakeoverSub` | **0** | carries money and leg facts |
+| `Subtitle` | **0** | carries money and leg facts |
+| `Consolation` | **0** | **authored voice is COPY, not furniture** — a written line is read, not scanned past; if it must sit apart, T77's remedy is size, value or position |
+
+**Classify a slot against its STRINGS, not its name.** A slot's name describes its position; only its
+strings reveal its voice. S68 is the case that earned this line — a tracking value applied by class to
+strings whose class turned out to be different from what the slot suggested.
+
+`NEED` carried .02 em briefly and it was withdrawn twice over: procedurally, as a fourth variable
+inside an open verification pair (T85), and substantively, because tracking a requirement is tracking
+a fact. **It does not return when the pair closes.**
+
+**Exceptions take their own named token and are listed here.** A named exception with one member is
+still named (S70's shape).
+
+| `InterventionPrompt` | **0** | instruction form, and it carries a figure |
+| `Attract` | **0** | three of its four strings are sentences, one of them an instruction |
+
+**Every slot not named above is 0 — by rule, not by default.** Tracking on this surface is **opt-in
+and named**: silence in this table is a ruling, not a gap. §4 names 23 slot types and nine appear
+here, so the other fourteen are ruled to 0 rather than left to default — which is the state T75 caught
+across half the surface's type and the reason this clause is written as a total rule with named
+exceptions rather than as an inventory forever chasing its members.
+
+*(Clause CLOSED 2026-08-12, T85-am4, on the completed string-set enumeration. It no longer states a
+gap because it no longer has one.)*
+
+**No synthesised styling on this surface** (T73, T77). Weight comes from a real named instance of the
+family; slant is not used at all. A synthesised bold is a smear and a synthesised italic is a shear —
+neither is a letterform the family contains, and retiring them is what the TMP migration is *for*
+(C15). Encode Sans carries **Condensed Bold at `wght=700 wdth=75`** in the file already committed, so
+real weight costs no asset and no licence decision. The family has **no italic on any axis**, so an
+italic here would mean a second family for one slot, against §4's *one hand, different jobs*.
+
+**Every slot's face is ruled, none defaults.** The split below is the whole surface — 23 slot types.
+Before T75 the canon named 10 of them and the other 13 rendered regular by *defaulting*, which is an
+inventory that does not name its members (C18).
+
+**Condensed** — the ticket column and the money control:
+
+| slot | weight | canon role |
+|---|---|---|
+| `LegRowLine{i}` | **Bold 700** | compact statement |
+| `LegRowPrice{i}` | Regular | price |
+| `LegRowNeed{i}` | **Bold 700** | NEED |
+| `LegRowProgress{i}` | Regular | progress |
+| `RiskPays` | **Bold 700** | risk / pays |
+| `CashOut` | **Bold 700** | cash-out figure |
+
+**Regular — canon-named:**
+
+| slot | weight | canon role |
+|---|---|---|
+| `LegRowState{i}` | Regular | state chip |
+| `Flavor` | Bold | event line |
+| `Score` | Bold | SCORE figures |
+| `Matchup` | Bold | **splits into name / score / name spans (T72)** |
+
+**Regular — ruled at T75**, not defaulted: `TicketHeader`, `Leg`, `Clock`, `CashOutStatus`,
+`Attract`, `TakeoverTitle`, `TakeoverSub`, `Subtitle`, `BigAmount`, `Consolation`,
+`InterventionPrompt`, `Chrome`, and `MomentumLabel` (which cited canon already).
+
+Three of those carry conditions:
+
+- **`Clock` and `BigAmount` are named by the tabular mandate above** — a clock and a money figure both
+  change in place. Regular is the face the mandate wants, so the default confirms rather than
+  conflicts. *(Verification clause corrected 2026-08-12, T75-am3: it read "verified tabular on the
+  built face, **per slot**, on frames", and both halves of that are now known wrong. The property
+  lives on the **font asset**, not the slot — T75-am — and on the shipped stack no slot and no face
+  can be tabular at all, so a per-slot frame check could never have returned a pass. `Clock` stays
+  Regular; the tabular property arrives with the atlas above, never with a face swap. The frame
+  evidence is corroboration, and the acceptance test is the harness's clock string: within a set of
+  equal-character-count strings in this right-anchored slot, the left ink edge is invariant iff the
+  digits are tabular.)* A figure slot ruled by default and never checked for `tnum` is S29's defect,
+  and S29 is why nobody assumes this twice — the check was right to demand, and what it found is
+  T82.
+- **`CashOutStatus` sits inside the money control** (§6.1, six states) beside a figure that is
+  condensed and Bold 700. Its face is shown on the Phase T pair with the disposition pre-committed:
+  reads as two voices inside one control → it moves to condensed; reads as label-and-figure → regular
+  stands.
+- **`Consolation`** loses its italic and renders regular (T77). If that line needs to sit apart from
+  its neighbours, size, value or position carry it — never a letterform the family does not have.
+
+**The scoreline is three spans, not one string** (T72). Canon puts team names on condensed and SCORE
+figures on regular, and a single `Text` cannot hold both. Ruling the whole line condensed would move
+the surface's largest element off its ruled face and put the most-changing figures on a figure set
+nobody has measured; ruling it regular would render team names two ways depending on where they
+appear, which is S60's defect. The three-span shape already exists on this surface — TV-14 used it for
+the compact leg row.
+
 ### 4.1 Hierarchy
 
 **The score is the largest element on the surface at all times. Nothing outgrows it, cash-out
-included.** Ratios are the law (score 1.00 · cash-out 0.70 · team 0.55 · clock 0.50 · need 0.50 ·
-progress 0.40 · risk 0.40 · event 0.36 · leg 0.34 · label 0.22).
+included.** That sentence is the law, and it is a **ranking**.
 
-Column px, re-derived for the corrected 26–28% column (T20): **NEED 28px** unchanged, **live progress
-23→19px**, **resolved and pending rows 19→15px** — *live rows are display, resolved rows are index*.
+**The ratio line and the px line are two instruments answering different questions, and neither is a
+size authority** (T74).
+
+- **Ratios encode ORDER** — score 1.00 · cash-out 0.70 · team 0.55 · clock 0.50 · need 0.50 ·
+  progress 0.40 · risk 0.40 · event 0.36 · leg 0.34 · label 0.22. What binds is the ordering they
+  describe: **score > cash-out > team ≈ clock ≈ need > risk > event > progress ≈ leg > label.** It is
+  asserted **against the composition**, never as ten per-element size checks — C33(b), *a per-element
+  value check cannot see a ranking*, on the size axis instead of the brightness axis.
+- **Px encode FIT** — what a 26–28% column and a legibility floor actually produce. Shipped and
+  re-derived at T20: **NEED 28px**, **live progress 23→19px**, **resolved and pending rows 19→15px**
+  — *live rows are display, resolved rows are index*.
+
+The two do not reconcile: no single base satisfies the ratios, and the implied score-size runs 36 →
+68. Read literally against a 36px score the ratios would give label 7.9px and a ticket column shrunk
+past legibility. **That is why neither table governs sizing on its own, and why §10.5 stays
+quarantined rather than being resolved by picking a winner.**
+
+**The reconciliation is owed and deferred, deliberately.** Re-authoring this surface's type scale is a
+sizing pass with its own frames. It is not a font-stack swap and does not ride inside one (C43).
+
 **Authored strings do not bend to stale measurements** (T24-am: every measurement predating the
-production face was re-taken; the deficit dissolved at `64ccf53`).
+production face was re-taken; the deficit dissolved at `64ccf53`). Where a weight or face change makes
+a string overrun, the remedy is the size or the span — **never the copy**; §8's authored forms exist
+so truncation is never reached.
 
 ---
 
@@ -229,6 +405,23 @@ Re-deriving a grid constant **once at design time** is legal; a runtime resize i
 an information hierarchy for three tenths of a pixel** (T51) — the stacked label-above-value stays.
 
 **A locked band is not headroom** (R30).
+
+**A fixed box carries an unstated assumption about the face it was sized against** (C46, T84). Because
+this grid fixes widths rather than deriving them from content, **every reserved box silently claims
+that the longest string it can hold fits, in the face it was sized against** — and a change of face,
+weight, tracking or figure set invalidates every one of those claims at once, because nothing in the
+box refers to the face it assumed.
+
+Two consequences, both paid for in Phase T:
+
+- **After any change to type metrics, sweep the POPULATION, not the suspects.** The set at risk is
+  *every fixed box*. Phase T's three defects — a truncation, a collision and a solo clipping — issued
+  from one assumption in three unrelated boxes, and were found by eye in two of nine moments before
+  the structural reading found the class.
+- **Test the longest RENDERABLE form, not the current content.** A box passes on what is in it today
+  and fails on the string nobody captured. **Every tested string is traceable to a call site, in both
+  directions** — a generator that can invent an unrenderable string can equally miss a real one, and
+  only the second failure is invisible in the frames.
 
 ---
 
@@ -284,6 +477,33 @@ Never a bloom change (sealed) and never dimming the band.
 — commit is an act on the laptop. The bounded fallback is a second key during the hold. **No timer, no
 auto-commit.** Copy is `CASH OUT $183` and **`HOLD E`**; `[E]` is retired.
 
+**The gesture is not local to this slot — it governs every irreversible spend on this surface**
+(T88, C48). The theatre *may* carry a commit: T22's fallback is exactly that shape, and a frozen-moment
+mechanic earns it, because a frozen shot that requires walking to the laptop is not a frozen shot.
+What the theatre may **not** do is take money on one frame of input.
+
+- **Every spending option takes the fallback gesture, unchanged.** Hold previews — and **the preview
+  shows what the option does AND what it costs** (T86-am: the basis for a decision is an offer, not an
+  opinion). Release abandons, always. A second key during the hold commits. **A press does not
+  commit.**
+- **A declining option is not a spend and does not take the gesture.** Where the option costs nothing
+  and is already what happens if the player does nothing, a single press is proportionate.
+  **The weight of the gesture matches the weight of the act.**
+
+**A control's copy IS its input contract** (C48). Where a label names a gesture, that gesture is what
+the input implements — **the label is not a description of the control, it is the contract the player
+acts on.** A label naming a *safety property* the input does not provide is the most dangerous copy a
+control can carry, because it is relied upon precisely when the player is careless, and the reliance
+is invisible until it costs him.
+
+**Founding case, recorded because the repair direction is the non-obvious half:** the intervention
+prompt printed `HOLD` over a `wasPressedThisFrame` input that committed an irreversible spend on the
+first frame — no preview, no abandon path, on a surface the player is *watching* rather than
+operating. **Where copy and input disagree on a money control, the INPUT is corrected to match the
+COPY — never the copy to match the input.** Relabelling ships an honest description of an unsafe
+control, which is worse than either half alone. **If the gesture cannot land, the control does not
+ship.**
+
 ### 6.2 Leg rows
 
 One row per leg in **ticket order**, brightness carrying the state. Rows are pushed, never reordered.
@@ -296,6 +516,16 @@ phase off one shared clock**. `LIVE` is the only pulse on the surface.
 backed team — `ATLANTA MIDDLEMEN ML · v TULSA STARTUPS`, never `Atlanta Middlemen ML — Atlanta
 Middlemen v Tulsa Startups`. Statements are **re-authored against a call-site-recorded measurement**
 and never wrap: a row that wraps to three lines is a string exceeding a fixed slot, which §5.1 forbids.
+
+**The VOID mark is a drawn matrix rule, not a text strikethrough** (T76). Canon asks for a row *struck
+through on the matrix*, and those are different objects: a strikethrough is a property of a string, a
+matrix rule is a mark the board makes across a cell — the institution striking a line through a row,
+which is this surface's whole register. The laptop rules its analogue the same way (the oxide strike is
+the house's mark, drawn — S3, S15-am). TMP makes a native strikethrough *available*; that does not make
+it correct. It is content-derived geometry by construction, which §6 forbids, and a fixed-width rule is
+also the only one whose length does not move when the face changes. The rule's width is set against the
+column: it does not move under a face migration, and if a later sizing pass changes the column it
+re-derives with it once, at design time.
 
 ### 6.3 Risk and pays
 
@@ -339,6 +569,47 @@ Appears only once the stage and active-leg card have **cleared**. No score, cloc
 suspended label or prior offer survives into it. Round settlement may reuse the treatment but must
 never resemble an active leg or a live cash-out offer.
 
+### 6.8 The drawn match
+
+*(Added 2026-08-12, T87 / C47, on the draws work — the moneyline is now three-way.)*
+
+**The final beat is the whistle, not a verdict — and not nothing either.** A drawn match has no goal
+to end on, and both obvious treatments are already banned:
+
+- **Manufacturing a climax** is celebration (T35, T40) — a flourish spends the ration on a moment that
+  did not earn it.
+- **Rendering nothing** makes a resolution draw as an *absence*, which reads as a bug and teaches a
+  false rule.
+
+**The beat is the match ending level, STATED.** The scoreline holds at its level value; the event
+strip states the fact at its own L2 tier (T66); the legs resolve to their words. **The theatre
+reports. It does not editorialise about a quiet ending.**
+
+**This reaches 0–0, and no separate beat is authored for it (T87-am).** Every mechanism above is
+goal-independent: the scoreline holds a value it already holds, the strip states a fact that needs no
+goal, the legs resolve, and **T65's settlement glow fires on settlement, not on a goal.** **Nothing
+here may be narrowed to exclude a goalless match** — that is the case a narrowing would quietly drop.
+
+**What 0–0 changes is the risk, not the rule.** The *rendering nothing* failure mode above is at its
+maximum, and only there: in a 1–1 the surface has punched and the room has moved, so the ending arrives
+against a match that visibly happened; **in a 0–0 nothing has punched all match.** The standing check
+is therefore **is the stated ending legible as a resolution** — not *is it loud*, which is banned —
+**because the one state this surface must never be mistaken for is idle.**
+
+**A draw is quiet for the room and LOUD for one ticket.** A draw-backer has won, and his leg lands
+like any other winning leg. **The absence of a goal is not the absence of his result** — and the worst
+outcome available here is a surface that conflates *no goal* with *no result* and drains the one
+player whose ticket just came in. The settlement machinery already handles this: the room's settlement
+glow fires **on settlement, not on a goal** (T65), so a drawn match is already a first-class
+settlement moment. **Nothing existing may be narrowed to exclude it.**
+
+**Result language needs no third word** (C47). **The match has three outcomes; a bet has two.** Back
+the draw and it draws — **you won**. Back a team and it draws — **you lost**. The state enum is
+unchanged and needs nothing added; **inventing a `DREW` leg state would model the match inside the
+bet's vocabulary**, the same category error the engine already refuses by keeping `Side` two-valued.
+A market that *returns the stake* on a draw is a **VOID**, which the enum already carries — a
+different market's rule, never a third result.
+
 ---
 
 ## 7. Motion
@@ -377,6 +648,13 @@ in the copy deck (`tv-g1-authored-leg-statements-2026-08-08.md`, G1): **NEED sta
 the compact statement states the identity**, clubs are named by their distinctive word and players by
 surname, and every form that can overflow has its shorter line authored rather than truncated.
 
+**The draw's forms are authored and live with the rest** (S74, 2026-08-12): **NEED** `LEVEL AT FULL
+TIME`, **progress** `LEVEL` / `NOT LEVEL`, **compact** `DRAW`. Nothing was invented — `LEVEL` is
+already this surface's word for a tied scoreline (T62). The moneyline's other forms assume a team
+(`MIDDLEMEN ML`) and a draw leg has none, which is why it needed its own pair rather than inheriting.
+**`1X2` is industry jargon and never reaches the player** — the surface composes and the role prints
+as a word.
+
 **NEED and the progress line beneath it are one authored pair** (T70): requirement above, state below,
 **no term repeated across the two.** `LANYARD TO SCORE` over `WAITING FOR LANYARD` named the player
 twice — T69's defect turned vertical. Truncation on a word
@@ -387,6 +665,25 @@ governs, and truncation only guarantees the failure is not ugly.
 **The TV never instructs the player to bet** (T27). Idle prints **`ROUND n OF 8 · BOARD OPEN`** in
 `--tv-fact`, and the bar carries no hue. *"PLACE YOUR BETS"* was celebratory exhortation in a retired
 hue at L4 — banned on all three counts.
+
+**The bracketed-key form is retired surface-wide** (T22, T86). `[E]` went and the slot prints
+`HOLD E`; the same applies to **every** key-bound affordance — `[M] MULLIGAN` and its siblings take the
+same form. The reasoning was never local to the cash-out gesture: **a bracketed key is game-UI
+convention, and this surface is maintained industrial equipment** (§1).
+
+**The theatre prints facts and offers. It does not print opinions** (T16, T23, T32, T86-am). **A price
+is an offer** — the house stands behind it and the player transacts against it. **A probability is the
+house's opinion**, with nothing attached: he can take or leave a price, but he can only agree or
+disagree with an opinion, and this surface does not ask him to. That is why the win-probability
+numeral, the backed-player numeral and the 10px numeral all went, and it is one rule rather than three
+deletions that happened to rhyme. **Where a decision needs a basis, print the COST** — `SEND TO
+REVIEW — $40` is a decision; `SEND TO REVIEW (99%)` is an instruction wearing a number.
+
+**No engine term ever reaches a player-facing slot** (T31, R38, T87). The engine reasons with
+partitions the player has no concept of — *decisive* means *not a draw* inside the engine and means
+nothing to a man watching a scoreline. Beat selection may read such a flag internally; **what is
+refused is the word reaching a slot.** Fourth instance of a rig string in a player slot, and the
+cheapest class of defect to prevent.
 
 The strip stays **neutral even when the event helps or hurts**; money semantics live on the leg rows
 and the cash-out slot.
@@ -407,11 +704,24 @@ Real gates, per C9. Each states its instrument and, per C18 §4.2, **what it can
 | V3 | No retired hue anywhere — verbatim constant match | `LooksLikeRetiredRed`-class scan over four surfaces | near-misses; the guard missed `#FF4038` by 0.00098 |
 | V4 | No zone resizes to content; stage clips to its region | per-frame edge assertion | z-order and overdraw between correctly-sized zones |
 | V5 | Display state == input state on the cash-out slot | one-value read + T43 same-frame test | whether the rendered field agrees with the flag |
-| V6 | **Room re-tint stays inside the room's palette** | room-region hue/sat/luma across an event burst | the panel's own content |
+| V6 | **Room re-tint stays inside the room's palette** — **checked against the value's OWN FIXTURE FAMILY, never against one room-wide band** (V6-am3) | room-region hue in **CIELAB via the room's shared `linear_to_lab`** — the converter is shared and **never forked** (C20) | **a value belonging to NO fixture family** — it is not gate-able by a family bound and is ruled at the DD seat against the property |
 | V7 | Variation reads as variation at review distance | rendered frames, five seeds, named manifest | anything asserted from signature diversity (T19) |
+| V9 | **The §4.1 size ORDER holds on the built surface** (T74) | rendered size per slot, compared as a **ranking** against the composition — not ten per-element checks (C33(b)) | **whether any individual size is right.** The order holding says nothing about fit, legibility, or whether a slot's px is the value it should have — that is the deferred sizing pass, not this gate |
 
 Every invocation reports its **executed case count** and exits non-zero on zero cases (C29). Every
 measurement is reported **with its scope and its resolution** attached (C25, C32).
+
+**Any gate carrying a numeric bound runs its own founding values through itself once, and records the
+result beside the bound** (C44). It costs one run, needs no frames, and it is the only check in this
+family that catches a **disjoint** band rather than a merely loose one — a shifted band still passes
+its founding values; a disjoint one cannot. **V6 is this clause's founding case and the first place it
+was not applied:** the band it policed carried an upper anchor that its own key tube missed by more
+than the band was wide, and four batches were spent before a measurement said so.
+
+**A bound is defended by the reasoning that groups its members, never by how tightly they happen to
+cluster** (V6-am3). Clustering is evidence a grouping *might* exist; it is never the grouping's
+justification. Every wrong turn on the room band — a phantom top, a lights-versus-screens carve, three
+cross-population comparisons — came from **treating proximity as membership**.
 
 ---
 
@@ -430,8 +740,11 @@ measurement is reported **with its scope and its resolution** attached (C25, C32
    reconciliation, not a new ruling: T49-cl is later, explicit and sealed, and the current capture set
    is `boost1.4`. C3's other clauses stand.
 5. **The two DESIGN.md/VISUAL-DESIGN.md type tables disagree** — relative ratios versus reference px
-   cannot both hold. Ratios are the law; the px table is one provisional instantiation, and it
-   predates the column narrowing to 26–28%.
+   cannot both hold. The px table is one provisional instantiation, and it predates the column
+   narrowing to 26–28%. **T74 resolves how to read them without resolving the sizes**: the ratios
+   govern order, the px govern fit, neither is a size authority, and §4.1 now carries that split. The
+   quarantine stands — the px table is still not ratified, and promoting it is the deferred sizing
+   pass's business, not this document's.
 
 **Open items:**
 
@@ -446,7 +759,10 @@ measurement is reported **with its scope and its resolution** attached (C25, C32
 | **T25.2–25.7** seated-sweat findings | TV's queue |
 | **C2** light spill colour into the room — shipped green tolerated, target cold white-grey | Interim, Allen |
 | **C6** PRD §14.1 carries deprecated `08` colour law | Documentation conflict |
-| **C15** TMP migration | **Phase L merged to main (`5903750`)**; Phase T scheduled, orchestrator-side |
+| **C15** TMP migration | **Phase L merged to main (`5903750`)**. **Phase T ruled at batch 32** (T72–T78): it is a **face** migration and **preserves rendered size** at every product-fact slot — the bar Phase L was granted on. Tokenising a raw integer at its identical value is a no-op on the frame and is in scope; changing one is not (8 of 23 slots carry raw ints today) |
+| **T78** which instance the surface actually renders | **Open on the before-set.** The file's default instance is Condensed Thin (`wght=100 wdth=75`) — measured, not disputed. The inference that the surface therefore *renders* it is **refused**: existing frames at `7ab60b8` show the non-bold slots at a solid regular-class weight, and weight 100 at 19–28px is a hairline. The **width axis is not settled** and this seat offers no read on it. Both dispositions pre-committed in batch 32 before the frames land |
+| **The sizing pass** | **Owed, deferred by ruling** (T74/C43). The ratio and px tables reconcile in a pass with its own frames, after T78 names the face — never inside the migration, because a pair spanning two variables cannot attribute a difference to either |
+| **`FONTS.md` + `tools/ttf_faces.py`** | Both state Unity's default-instance render behaviour as fact; it is an inference and is contradicted by frames. Label it as an inference in both (C40). The tool's measured output is untouched and stays |
 
 **Closed and verified end to end:** T41 (stage capped), T48 (grade black point), T49 (bloom 1.4,
 sealed), T58 (goal flash neutral), T6 (scene grammar), T50 (face in situ), **T63** (band's HDR material

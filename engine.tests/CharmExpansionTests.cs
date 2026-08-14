@@ -313,9 +313,12 @@ public class CharmExpansionTests
         run.PlaceTicket(Picks((0, Side.Home)), 10, modifier: TicketModifier.FreeBet);
         run.LockRound(); run.FastForwardRound(); run.Settle(); run.ExitShop();
 
-        // R2: a dutch pair on matchup 0 — one side ALWAYS wins, so this round can never
-        // qualify no matter what the fresh slate rolled.
+        // R2: a dutch on matchup 0 covering EVERY outcome — one ticket ALWAYS wins, so this round
+        // can never qualify no matter what the fresh slate rolled. The draw ticket is not padding:
+        // under 1X2 (D1, 2026-08-12) a home/away pair leaves the draw uncovered, and on a drawn
+        // match BOTH tickets lose — which made this round qualify and banked a second jar wind.
         Ticket r2 = run.PlaceTicket(Picks((0, Side.Home)), 10);
+        run.PlaceTicket(new[] { new Pick(0, MarketSelection.MoneylineDraw()) }, 10);
         run.PlaceTicket(Picks((0, Side.Away)), 10);
         run.LockRound();
         Assert.Equal(1.10, r2.PayoutMultiplier, 10); // +10pp banked from R1 only (tuned)
@@ -422,10 +425,15 @@ public class CharmExpansionTests
         var run = new Run("GOLDEN-W2", EasyPayments(10, 10));
         run.GrantRelic(Def("compd_suite"));
 
-        run.PlaceTicket(Picks((0, Side.Away), (1, Side.Away), (4, Side.Away), (5, Side.Away)), 40);
+        // Leg set re-selected for the draws universe (D1, 2026-08-12): matchup 4 now finishes a
+        // DRAW on this seed, so the old (4, Away) leg lost and the ticket never reached the win
+        // this test exists to price. Matchup 3 (Home) replaces it — same seed, same four-leg
+        // shape, all four winning again. GOLDEN-W2 now reads m0 Away, m1 Away, m2 Draw, m3 Home,
+        // m4 Draw, m5 Away.
+        run.PlaceTicket(Picks((0, Side.Away), (1, Side.Away), (3, Side.Home), (5, Side.Away)), 40);
         run.LockRound();
         double afterLock = run.Comps; // accrual committed (4.8)
-        run.FastForwardRound();       // all four win (F_0.4.0 universe) → +8 comps at realize
+        run.FastForwardRound();       // all four win → +8 comps at realize
         Assert.Equal(afterLock + 8.0, run.Comps, 10);
     }
 
@@ -629,7 +637,7 @@ public class CharmExpansionTests
 
         Assert.Equal(expectRescue ? TicketState.Won : TicketState.Lost, whistled.State);
         Assert.Equal(TicketState.Lost, bystander.State); // the shared result never bent
-        Assert.Equal(Side.Away, whistled.Legs[0].Matchup.Result);
+        Assert.Equal(MatchResult.Away, whistled.Legs[0].Matchup.Result);
     }
 
     // ---------------------------------------------------------------- determinism

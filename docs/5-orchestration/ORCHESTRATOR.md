@@ -147,7 +147,10 @@ One cycle:
    logs. Criteria met → advance the phase and dispatch the next task (§3a). Not
    met → send it back with the gap named.
 3. Merge a branch that passes the clean-merge checklist (STUDIO.md); queue any
-   other merge for Allen.
+   other merge for Allen. **Re-affirmed by Allen 2026-08-10 ("I should not
+   need to order this. Please be auto on these stuff"): checklist-passing
+   merges and routine re-verification calls are the orchestrator's to execute
+   unprompted. Queueing one for Allen's word is the defect, not the caution.**
 4. Log every autonomous decision in `STATUS.md` under **Autonomous decisions
    (Allen veto window)**: the decision, evidence checked, and the reversal path.
 5. Heartbeat-stamp the cycle in `STATUS.md`. Between cycles block on
@@ -208,6 +211,59 @@ commands. That is handholding wearing a status report.
   while every other lane keeps moving. Never block the loop on a question
   dialog — take the charter/board default where one exists, otherwise park the
   question in Need Allen and continue.
+
+### 6c. The keeper (Allen, 2026-08-10)
+
+A dumb Windows scheduled task ("SBR Studio Keeper", `tools/keeper/studio-keeper.ps1`,
+every 15 min, log beside it) watches exactly one fact: `STATUS.md` mtime. Stale
+>45 min → it pokes an idle orchestrator seat; no seat found → it boots a fresh
+one with a §3-style prompt (2 h cooldown). It contains no model and makes no
+decisions. It exists because ~25 of Allen's messages were "continue" prods after
+compactions and Orca restarts silently killed the loop.
+
+- The `STATUS.md` heartbeat stamp is load-bearing: stamp it **every** cycle —
+  an unstamped healthy loop will get pointlessly poked.
+- A message prefixed `keeper heartbeat:` or `keeper:` may arrive concatenated
+  with text already sitting in the composer. Anything *preceding* the prefix is
+  Allen's UNSENT draft — treat it as not delivered; confirm with him before
+  acting on it.
+- On a keeper reseat prompt: verify no other orchestrator seat is active
+  (`orca terminal list` + a fresh read of `STATUS.md`) before taking the seat;
+  stand down if one is.
+- After any context compaction or session resume, treat it as a fresh wake:
+  re-arm monitors and the heartbeat FIRST — compaction kills background waits
+  silently; that is exactly how the "continue" prods were born.
+- **Studio-wide Orca restart** (keeper detects zero main-2 terminals and
+  reseats immediately, no 45-min wait): this is NOT the single-seat
+  "lead terminal is gone" stop condition — do not ping Allen and wait. Revive
+  every missing lead and DD seat yourself:
+  `orca terminal create --worktree path:<wt> --command "claude --continue --dangerously-skip-permissions"`
+  (worktree-scoped, so `--continue` is unambiguous everywhere except `main-2`;
+  main-2 seats boot fresh from their charters instead). Then re-arm watchers
+  and resume the loop. Allen never clicks per-worktree Resume again.
+
+### 6d. Errored turns and push reporting (Allen, 2026-08-10)
+
+Two defects from the 403 incident (an auth blip killed the turn that was
+answering Allen; he had to re-ask, and he only ever hears state when he asks):
+
+**A dead turn's debts survive it.** An API/auth error (403, /login, overload)
+kills a turn silently — including whatever it was answering. First action on
+the next successful wake: read the recent scrollback above the error; anything
+Allen asked that went unanswered gets answered NOW, unprompted. Allen never has
+to repeat a question because a turn died.
+
+**Reports are pushed, not pulled.** Allen asking "what's the state" should be
+optional, never the trigger. Send a push notification (plus the board line in
+this terminal) unprompted when:
+
+- his gated queue goes empty → nonempty — rulings, walkthroughs, or playtest
+  asks are now waiting on him;
+- a wave closes — the board goes fully quiet, or everything left is his;
+- an incident was auto-recovered (seat death, auth blip, Orca restart).
+
+Between those pushes, silence means "running fine" — and the keeper's watch is
+what keeps that silence honest.
 
 Stop the loop and ping Allen (push notification or a waiting message) instead of
 continuing when:

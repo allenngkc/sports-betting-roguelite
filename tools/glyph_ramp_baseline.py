@@ -22,6 +22,7 @@ hold, Part B's numbers are not worth recording and this tool says so.
     python tools/glyph_ramp_baseline.py [--report PATH]
 """
 import argparse
+import json
 import statistics
 import sys
 from pathlib import Path
@@ -186,15 +187,83 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--report", help="tee the run to a file (C11/C17)")
-    ap.add_argument("--authored-stroke", type=float, metavar="PX",
-                    help="the face's own stroke metric at the shipped point size, in "
-                         "SCREEN px at this view. S2-am2-am makes this the denominator "
-                         "for any ACROSS-TIME comparison: a constant cannot be inflated "
-                         "by the glyph-merging artefact that inflates a measured stroke, "
-                         "so the quantity stays monotonic in blur while keeping clause "
-                         "2's meaning. Within one frame the measured stroke is correct "
-                         "and is always reported.")
+    ap.add_argument("--authored-stroke", metavar="GROUP=PX[,GROUP=PX...]",
+                    help="PER-GROUP authored stroke in frame px at this view, e.g. "
+                         "\"season records=1.94,row numbers 01-06=2.03\". S2-am2-am makes "
+                         "this the denominator for any ACROSS-TIME comparison: a constant "
+                         "cannot be inflated by the glyph-merging artefact that inflates a "
+                         "measured stroke. A SINGLE pooled number is REFUSED -- the groups "
+                         "are different faces at different sizes (Archivo 400 13px vs "
+                         "Archivo Narrow 400 15px), and pooling them is the error the "
+                         "recipe's 2a forbids, one level up. Within one frame the measured "
+                         "stroke is correct and is always reported.")
+    ap.add_argument("--laptop-frame", metavar="PATH",
+                    help="measure this laptop frame instead of the built-in r9a-refresh "
+                         "one. ADDED BY THE SURETHING SEAT, 2026-08-10, and deliberately "
+                         "an override rather than an edit to SURFACES: the built-in path "
+                         "is room's COMMITTED baseline set, and a re-shoot that wrote over "
+                         "it would destroy the very comparand it is measured against. The "
+                         "default is unchanged, so room's own runs behave exactly as "
+                         "before. Boxes are NOT auto-adjusted — if the layout moved, "
+                         "re-cut and eye-confirm them (C27) or this silently measures the "
+                         "wrong pixels.")
+    ap.add_argument("--smallest-json", metavar="PATH",
+                    help="replace the SMALLEST boxes from a JSON file of "
+                         "{group: [[x0,y0,x1,y1], ...]}. ADDED BY THE SURETHING SEAT, "
+                         "2026-08-10, for the same reason as --laptop-frame: the built-in "
+                         "boxes are eye-confirmed against ROOM'S frame and are correct "
+                         "there. They are NOT correct on a re-shoot, because the season "
+                         "record's x depends on the team name beside it and the harness "
+                         "renders a live, unpinned slate — so a different deal moves the "
+                         "records and leaves the boxes measuring team names, empty ground, "
+                         "or half a glyph. The row-number column survives a re-deal because "
+                         "its x is fixed. Whatever is passed here must be eye-confirmed on "
+                         "the frame it will be used on (C27); nothing about this flag makes "
+                         "that unnecessary.")
     args = ap.parse_args()
+
+    # RESOLVED MERGE, 2026-08-10. Room's per-group --authored-stroke SUPERSEDES the
+    # single float that stood here; this seat's --laptop-frame/--smallest-json overrides
+    # are kept beside it. ORDER IS LOAD-BEARING and is the one thing the textual merge
+    # could not get right: --authored-stroke validates its GROUP names against SMALLEST,
+    # and --smallest-json REPLACES SMALLEST. Applying the overrides first means a re-cut
+    # box set is validated against itself; the other order validates against the built-in
+    # names and would reject a legitimate group -- or accept a stale one.
+
+    if args.laptop_frame:
+        # .resolve() matters: the PROVENANCE block does frame.relative_to(repo root),
+        # which raises on a relative path. Passing "artifacts/..." on the command line
+        # therefore crashed the run AFTER Part B had already printed - the numbers
+        # looked complete and the report file was never written.
+        SURFACES[0]["frame"] = Path(args.laptop_frame).resolve()
+    if args.smallest_json:
+        SMALLEST.clear()
+        SMALLEST.update({k: [tuple(b) for b in v]
+                         for k, v in json.loads(Path(args.smallest_json).read_text()).items()})
+
+
+    authored = {}
+    if args.authored_stroke:
+        raw = args.authored_stroke.strip()
+        if "=" not in raw:
+            ap.error(
+                "--authored-stroke needs PER-GROUP values, not one pooled number. The "
+                "groups are different faces at different point sizes, so a single value "
+                "is wrong for at least one of them and would print two plausible numbers "
+                "without failing. Expected: "
+                + ",".join(f'"{k}=<px>"' for k in SMALLEST))
+        for part in raw.split(","):
+            if "=" not in part:
+                ap.error(f"--authored-stroke: '{part.strip()}' is not GROUP=PX")
+            k, v = part.rsplit("=", 1)
+            k = k.strip()
+            if k not in SMALLEST:
+                ap.error(f"--authored-stroke: unknown group '{k}'. Known: "
+                         + ", ".join(SMALLEST))
+            try:
+                authored[k] = float(v)
+            except ValueError:
+                ap.error(f"--authored-stroke: '{v}' is not a number for group '{k}'")
 
     lines = []
 
@@ -322,17 +391,26 @@ def main():
         note = f"{resid:.3f} px" if resid > 0 else "AT/BELOW floor"
         out(f"  {name:>20s} {len(boxes):>6d} {len(ramps):>6d} {sm:>8.3f} "
             f"{rm:>7.3f} {rm / sm:>7.3f} {note:>12s}")
-        if args.authored_stroke:
-            out(f"  {'':>20s} S2-am2-am, across-time form: ramp / AUTHORED stroke "
-                f"({args.authored_stroke:.3f} px) = "
-                f"{rm / args.authored_stroke:.3f}")
-    if not args.authored_stroke:
+        if name in authored:
+            a = authored[name]
+            out(f"  {'':>20s} S2-am2-am across-time form: ramp / AUTHORED stroke "
+                f"({a:.3f} px) = {rm / a:.3f}")
+        elif authored:
+            out(f"  {'':>20s} *** no authored stroke supplied for this group -- across-time "
+                f"form NOT computed ***")
+    if not authored:
         out("")
         out("  NOTE: --authored-stroke was not supplied, so only the WITHIN-FRAME form")
         out("  is reported above. Per S2-am2-am that form is correct for comparing")
         out("  elements inside this frame and is NOT valid across time. Supply the")
-        out("  face's authored stroke at the shipped point size, in screen px at this")
-        out("  view, to get the regression-safe number.")
+        out("  per-group authored strokes in frame px at this view to get the")
+        out("  regression-safe number.")
+    elif len(authored) < len(SMALLEST):
+        out("")
+        out(f"  *** PARTIAL: {len(authored)} of {len(SMALLEST)} groups carry an authored")
+        out("  stroke. The groups without one have no across-time number this run, and")
+        out("  the one that does must NOT be quoted for the others -- different face,")
+        out("  different size, different stroke. ***")
     out("")
     out("  Saturation check: Part A shows the ratio compressing above sigma ~1, where")
     out("  the measured ramp reaches ~3.2 px. Both groups above sit well below that,")

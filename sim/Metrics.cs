@@ -54,6 +54,12 @@ public sealed class RoundMetrics
 public sealed class MarketExposure
 {
     public int LegsPlaced;
+    /// <summary>Moneyline only: how many of <see cref="LegsPlaced"/> backed the DRAW. Exposure is
+    /// keyed by MarketKind, and the draw is a CHOICE inside the moneyline rather than a kind of its
+    /// own — so without this counter the newest market on the board would be invisible, folded into
+    /// the Moneyline row, and no report could say whether a bot ever touched it. G7's doctrine is
+    /// that a coverage question must be readable in every report, not reconstructed later.</summary>
+    public int DrawLegs;
     public double Stake;
     public double RealizedNet;
     /// <summary>Sum of per-leg unit returns ((odds−1) on a win, −1 on a loss), unweighted by
@@ -61,6 +67,25 @@ public sealed class MarketExposure
     /// monster tickets dominate it; THIS one converges to −vig under fair pricing and is the
     /// sanity statistic (F_0.4.0 P5 review).</summary>
     public double RealizedNetUnit;
+}
+
+/// <summary>Exposure for one SAME MATCH relation kind (F_0.6.0). Counted three ways because they
+/// answer three different questions: how many labelled pairs the campaign priced, how many tickets
+/// carried the kind at all, and how often it was the one relation the slip would have STATED.
+///
+/// <para>Deliberately no stake column. A ticket carries several relations at once, so splitting its
+/// stake among them would invent an attribution the model does not make — unlike
+/// <see cref="MarketExposure"/>, where a leg belongs to exactly one market.</para></summary>
+public sealed class SameMatchExposure
+{
+    /// <summary>Relation instances (leg pairs) of this kind on placed tickets.</summary>
+    public int Relations;
+
+    /// <summary>Placed tickets carrying at least one relation of this kind.</summary>
+    public int Tickets;
+
+    /// <summary>Times this kind was the ticket's PRINCIPAL relation — the one the slip states.</summary>
+    public int Principal;
 }
 
 /// <summary>Per-item event counters (PLAN.md rev 5 §16): offered / acquired / bought / sold /
@@ -112,6 +137,42 @@ public sealed class RunResult
 
     /// <summary>Final visible effect state (ratchet stacks, streaks) at run end, keyed by id.</summary>
     public readonly Dictionary<string, double> FinalEffectStates = new();
+
+    // ---- SAME MATCH coverage (F_0.6.0 step 4, what G7's SGP arm is evaluated on) ----
+    //
+    // PER-RUN FIELDS, REDUCED AFTERWARDS — the discipline Harness.cs states at the top of the file.
+    // RunBatch fills a pre-sized results[i] under Parallel.For and every aggregate is reduced
+    // sequentially from that array, so a same-match total must live here and be summed in
+    // BatchSummary, NOT in a second process-wide counter. (SameMatchModel.NoLabelFallbacks IS
+    // process-wide, and is interlocked and correct — but it reads as one campaign-level number,
+    // which is the right shape for a zero-assertion and the wrong one for per-bot attribution.)
+
+    /// <summary>Same-match tickets placed this run (a ticket whose legs share a matchup).</summary>
+    public int SameMatchPlaced;
+
+    /// <summary>Same-match tickets that reached a terminal state — won, lost, voided or cashed out.
+    /// Placed and settled are separate facts: a ticket can be sold and never graded.</summary>
+    public int SameMatchSettled;
+
+    /// <summary>Legs voided out of a same-match ticket by a Mulligan — every one of these is a live
+    /// re-price onto the survivors' locked subset price, the path step 3 added.</summary>
+    public int SameMatchVoids;
+
+    /// <summary>Refusals the bot provoked on purpose, and refusals it met unexpectedly (a defect
+    /// signal), copied off the BotState at run end — see the seam's note there.</summary>
+    public int SameMatchRefusals;
+    public int SameMatchUnexpectedRefusals;
+    public readonly Dictionary<RefusalKind, int> SameMatchRefusalKinds = new();
+
+    /// <summary>Per-relation-kind exposure over the run's placed same-match tickets.</summary>
+    public readonly Dictionary<RelationKind, SameMatchExposure> SameMatchRelations = new();
+
+    public SameMatchExposure Relation(RelationKind kind)
+    {
+        if (!SameMatchRelations.TryGetValue(kind, out SameMatchExposure? e))
+            SameMatchRelations[kind] = e = new SameMatchExposure();
+        return e;
+    }
 
     public ItemEvents Events(string id)
     {

@@ -1,4 +1,794 @@
-# Studio Status — 2026-08-09 (header refreshed every cycle per Allen)
+# Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
+
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 253.** Batch 65 landed
+(6b98c93): DRAW row buildable now; 0-0 full-time capture owed (C11).
+Both queued to TV after its current set. sgp grinding HOLDOUT5.
+
+*(prior stamp, cycle 252:)* T95 CLOSED - the
+before-ship list is EMPTY (batch 64, 53b9d4a). Allen's draft fired to the
+DD: the two draw confirmations now, board row first. TV building the next
+set (scorer rung-2, the 10.9, then T94). sgp's HOLDOUT5 still grinding.
+
+*(prior stamp, cycle 251:)* T95's
+transition frames with the DD (its crossfade read = the last before-ship
+check); sgp's HOLDOUT5 grinding; TV standing by; research words with
+Allen. Quiet is healthy.
+
+*(prior stamp, cycle 250:)* TV's seat died
+on a 403 mid-T95-capture (entry point one PASSED, 66 frames); recovered:
+seat recreated + seeded to resume the second entry point (window still
+granted), a stray half-created tv terminal closed, watcher v31. Sgp's
+HOLDOUT5 grinding. Research items with Allen.
+
+*(prior stamp, cycle 249:)* Post-
+close hold: TV on T95's crossfade rect; sgp's HOLDOUT5 grinding; all
+else clean or with Allen (RF-18 word; canon proposals; the eventual
+column question).
+
+*(prior stamp, cycle 248 - PHASE T IS DESIGN-VERIFIED:)* The review note is canon (3dd54b5): the type stack's
+variable certified on the closing capture against the pre-committed bar;
+TV's closing set merged (a487e1e). Open before ship: T95 (crossfade
+rect - dispatched), the T74-proper column question (the ONE item that
+reaches Allen - a fact floor vs a locked dimension), the scorer-arm
+authoring. G1-am7's build found THREE ladders modelling rung 2. Sgp's
+HOLDOUT5 campaign grinding. Research items with Allen.
+
+*(prior stamp, cycle 247:)* The
+string is authored (batch 62, one deck string retired free); TV in the
+measure-build-capture sequence; sgp extending probes then the merged
+campaign. The phase closes on the capture + re-read.
+
+*(prior stamp, cycle 246:)* The
+phase's critical path is ONE STRING: the DD authoring G1-am6's moneyline
+NEED arm from TV's pool; the capture fires within the hour of it
+landing. TV built + handoff fresh + holding. Sgp's repair grinding.
+Research items with Allen.
+
+*(prior stamp, cycle 245:)* TV
+building the final ruled set; sgp's merge-repair grinding; all else
+holding or with Allen. Quiet is healthy.
+
+*(prior stamp, cycle 244 - THE LAST RULINGS:)* T90-am both levers + the column's side padding
+RULED (8px/2px keep-out); G1-am6 authoring reopens; T91-am accepted with
+the top band partitioned; T92-am height by content removal. TV builds
+the final set then THE CLOSING CAPTURE - the re-read that ends Phase T.
+The two draw items queued in the review note as confirmations. Sgp's
+repair agent grinding. Research items with Allen.
+
+*(prior stamp, cycle 243:)* The
+gift-streak dutch became a class sweep (fixed sites now fail loudly on
+reintroduction; the editor gate aborts-not-prints); count re-run
+finishing, lane closes and holds after. Sgp's merge-repair agent on the
+15-market joint. TV's T90 measurement. Research items with Allen (RF-18
+word; canon proposals). Main red pending the sgp fix, by design.
+
+*(prior stamp, cycle 242:)* The two shipped engines met: sgp's partition-mismatch defense
+threw loudly on the draws world (exactly as its design promised - no
+silent mispricing). Fix authorized on Allen's word (sgp's own file,
+small); then a FULL gate campaign on the merged 80-offers world before
+step 5 - the pre-draws 8/8 does not certify this world. Main goes green
+on the fix merge. Elsewhere: TV's T90 measurement, fixture re-run,
+research items with Allen (RF-18 word; canon proposals ratification).
+
+*(prior stamp, cycle 241:)* All 8 gates pass on HOLDOUT4; 107,073 tickets, zero
+no-label fallbacks; merged b3a1798 with the predicted collision hand-
+resolved. Step 5 (presentation) is GO on Allen's word - plan stops once,
+then runs. Remaining live: TV's T90 band measurement; mpregame's fixture
+verification; research's canon proposals + RF-18 with Allen.
+
+*(prior stamp, cycle 240:)*
+Campaign B merged GREEN (7/7 gates, vocabulary shipped, 5932884);
+mpregame's fixture verification granted. TV on the T90 band measurement.
+Sgp's final isolation run in flight. Research briefs with Allen (RF-18 +
+trigger). Quiet is healthy.
+
+*(prior stamp, cycle 239:)* Batch 60 canon (15c3450): the money
+control GRANTED on frames, the 3px signed, all parked pre-commitments
+discharged, digit rows re-certified - and the NEED truncation SURVIVED
+the fix pass. Phase T's last blocker is T90 (band furniture before
+statement; TV measures + proposes geometry, T91's numbers + T92's entry
+ride along). One more fix + re-read = Design-verified. RiskPays' fact
+floor exceeds the LOCKED column - reaches Allen in the deferred sizing
+pass, flagged early. Campaigns grinding; research briefs with Allen.
+
+*(prior stamp, cycle 238:)* DD
+reading the verdict frames; Campaign B and sgp's gauntlet grinding; TV
+standing by; research drafting canon proposals + RF-18 with Allen.
+
+*(prior stamp, cycle 237 - THE PHASE VERDICT DOCKET:)* TV's captures complete (after-frames pair +
+five-seed NEED set, pinned, honest READMEs) and the five open items
+routed - incl. the RiskPays fact floor (378.1 max vs 249.0: batch 59's
+second branch fires, T74-proper). The DD rules T89-A + E on the frames,
+then the review note CLOSES PHASE T. Allen's research rulings landed
+(retention B, RF-17 A - canon proposals drafting; RF-18 brief awaiting
+his word + trigger). Campaigns grinding. Fifteen-game format doc on main.
+
+*(prior stamp, cycle 236:)*
+Retention brief in front of Allen (one word: A/B/C/D, lane recommends B
+- ladder into v1, steering held for RF-17); RF-17 brief being written in
+the same shape; per-game rework running around them. TV's after-frames
+shot + five-seed NEED capture running; Campaign B relaunch grinding;
+sgp's probe+G7 stage under the standing continue-through. Push to origin
+pending (network resets) - retrying this cycle.
+
+*(prior stamp, cycle 235:)* Allen's FORMAT
+RULING on research: too concise - per game he wants the addicting
+elements, the fun core, a QUOTED concrete mechanic, and how WE apply it.
+Research seat recreated fresh (docs are the memory) and dispatched: one
+section per game, all fifteen, honest gaps stated where probes were too
+thin to quote. Watcher v30 (five seats). TV suites running toward the
+after-frames; Campaign B relaunch grinding; sgp step-4 sequence running.
+
+*(prior stamp, cycle 234:)* All
+threads grinding: TV on batch-59 fixes toward the after-frames; Campaign
+B relaunch mid-run; sgp's step-4 sequence (control table -> probe+G7 ->
+HOLDOUT4 -> table, kappa untouched). DD seated standing by. Research on
+Allen.
+
+*(prior stamp, cycle 233:)* SGP step 3
+ACCEPTED by Allen - step 4 GO (gate campaign, held-out seeds, G7's SGP
+arm). The lane's step-3 close: six phases, eleven gaps ruled, three
+self-corrections; TicketState.Voided's missing render arm routed (no
+surface renders VOID - stake returned). TV resuming batch-59 fixes;
+mpregame determining Campaign B's fate; DD seating.
+
+*(prior stamp, cycle 232:)* Orca+session restarted; disk verified NOTHING LOST (main at
+cycle-231 tip, tree clean; TV's batch-59 turn died pre-commit; Campaign
+B's detached process dead - report-or-relaunch determination with the
+resumed lane; sgp branch unchanged). Four seats recreated + seeded (TV
+resume, mpregame B-check, sgp 3d resume, DD fresh at canon-through-59);
+watcher v29 + heartbeat re-armed FIRST per 6c. Research + room stay down
+(recreate on demand).
+
+*(prior stamp, cycle 231:)* Batch 59 canon
+(69929d9): both final composition calls ruled - RiskPays collapses to
+one row with both ends anchored (the height problem dissolves with the
+authored gap); the 3px lands as signed-deviation-or-leading-fix per
+where it falls. TV applies both + two residuals, then THE AFTER-FRAMES
+(window pre-granted). The phase's remaining path: after-frames -> E's
+re-reads -> the review note. Campaign B mid-run; sgp 3d; research on
+Allen.
+
+*(prior stamp, cycle 230 - MAIN IS PUSHED:)*
+origin/main 7ff558d → 69c89f7 on Allen's ask (the local-only hold died
+with the storage question he answered): merged + shipped - TV's fix-pass
+era (ead5430), draws + the full v1 vocabulary (54291b4), research Tier-2
+(69c89f7); 18 LFS objects 41MB clean; DLL verified identical. SGP's
+engine work held until step 3 completes. STANDING: main pushes with each
+merge sweep from here. TV standing by on the two composition rulings;
+Campaign B mid-run.
+
+*(prior stamp, cycle 229:)* TV's fix pass
+COMMITTED (f84d431 + db5157f, suites green, payout maximum enumerated
+real). TWO composition calls to the DD - the LAST build items before the
+after-frames: RiskPays height (branch-2 span re-derivation, over by 20)
+and the money control's two-row 3px. TV pushing + handoff. Campaign B
+~35min (its own runtime claim tests at ~45). Sgp 3d. Research on Allen.
+
+*(prior stamp, cycle 228:)* Batch
+58 landed (T82 CLOSES - the tabular arc fully done; digits-alone mandate
+folded to the doc). TV's fix pass near-complete: payout-maximum
+enumeration + RiskPays sizing running on Allen's word, one four-element
+option held for routing. Campaign B grinding (heartbeats clean). Sgp 3d.
+Research on Allen.
+
+*(prior stamp, cycle 227:)*
+Campaign B RUNNING (the chain executed itself: V1 done, B fired
+pre-authorized, scored table on land). Batch 57 landed (abbreviation
+refused both branches; the box sizes against the payout maximum). TV
+building the fix pass; DD accounting T89 for Allen; sgp 3d deep.
+
+*(prior stamp, cycle 226:)* The closing set ruled: C48's own defect caught
+inside the fix by the listed-set section built for it; the zone does not
+grow (SHOT FROZEN leaves); ENTER is THE studio commit key (standing);
+TV's derived rule named standing (the gesture acts on what is shown);
+Attract one-compliant-two-violations with replacements. TV building the
+pass. DD onto the money-abbreviation ruling (Allen's word). Chain: V1
+implementing then Campaign B; sgp 3d deep; research on Allen.
+
+*(prior stamp, cycle 225:)* All
+three working lanes deep in turns: mpregame on V1 (5m+), TV on the M/R
+pin hunt (13m+), sgp's 3d structured-refusals agent at 16m+. Room, DD
+clean; research on Allen. Quiet is healthy.
+
+*(prior stamp, cycle 224 - G5 GREEN, THE CHAIN RUNS:)* A2 completed at ~its comparable's wall
+time - the kill order was held on evidence (live heartbeats tracking A's
+34.3 actual) and converted to a 40-min tripwire that never fired; the
+run finished green about a minute past where the kill would have landed.
+V1 implementing, Campaign B fires behind it unattended, report on fire.
+TV hunting the M/R pin seed; sgp 3c-3d; research on Allen.
+
+*(prior stamp, cycle 223:)* A2
+(G5 exemplar re-run) ~24 min in, heartbeats clean; Allen's chained order
+delivered: on a green G5, Campaign B fires immediately, pre-authorized -
+on a miss, hold and report. TV on gesture pins; sgp 3c-3d; research on
+Allen. Quiet is healthy.
+
+*(prior stamp, cycle 222:)* The draws re-baseline scored
+against all 15 predictions: reference bots unmoved (the D2 risk did not
+bite), wall-time missed honestly (4th, not blamed on draws), and G5's
+exemplar pair HALVED under draws to within instrument resolution of the
+floor - escalation computed useless (18.5k runs still too blunt).
+Allen's call fired: exemplar moves to Longshot Photo + House Key
+(+2.87pp at 8.1x error, STRONGER under draws), floor unchanged, G5
+re-running. Campaign B (the vocabulary) unblocked on green. Elsewhere:
+sgp 3c-3d, TV deliverables, research on Allen.
+
+*(prior stamp, cycle 221:)* Board
+reported to Allen in full. Campaign A past 30 min (its author's own
+wall-time prediction being tested live); sgp 3c finishing; TV on its
+deliverables; room + DD clean; research on Allen. Quiet is healthy.
+
+*(prior stamp, cycle 220:)* Both owning docs
+now carry today's rulings. The laptop fold (760581c, unqueued and right)
+CAUGHT A CONFLICT: batch 46's refusal treatment contradicted the doc's
+standing Blocked-state row - owning doc wins (S73-am4): refusals take
+STAMP with cause-AND-remedy copy; correction relayed to sgp mid-build.
+Lesson canon: a ruling that never meets the owning document never meets
+its own surface's existing law. Campaign A ~22min (heartbeats clean);
+sgp 3c; TV deliverables; research holds.
+
+*(prior stamp, cycle 219:)* The DD's accounting (Allen-read) exposed my relay
+gap - headlines where the seat needed TABLES; fixed: TV dispatched five
+deliverables with table-and-traceability-pass-first ordering (the pass
+guards LegRowLine0's landed relief against the generator that invented
+PEND). Room closed its arc: practice edit + bytes drop done, SitSpot
+answer delivered (PRESS not release - the hazard is the mirror; press-
+poll bypasses Hold) - merged c8525d1, room clean-holding. TV builds the
+gesture against the press-path. Campaign A still grinding; sgp 3b;
+research holds for Allen.
+
+*(prior stamp, cycle 218:)* All
+working: campaign A's shell still running (mpregame); the DD composing
+its Phase T blockers accounting on Allen's ask; TV 4+ min into the
+gesture build; sgp 3b; research holding. Quiet is healthy.
+
+*(prior stamp, cycle 217 - T65 CLOSES:)* The four-batch arc ends on the property, not a number: the glow
+answers settlement in the room's own warmth (33-38 degrees from the TV
+green that motivated the finding); the element was its own fixture,
+member of no family; C40's converse ruled; per-fixture-family bounds
+(V6-am3); room's correction adopted in full and credited - its line
+promoted to standing law (a bound is defended by the reasoning that
+groups its members, never by clustering). Room executing the approved
+practice edit + bytes drop. In flight: TV's gesture build (SitSpot
+answer pending from room), sgp 3b, campaign A, research holding for
+Allen's rulings pass.
+
+*(prior stamp, cycle 216:)* Four kinds of object, not one population: the
+screens' 83-85 stands (tight by construction); the key tube is the
+room's LIGHT and the settlement subject's true class; ~92's origin
+found (a citation, never a measurement); batch 51's own comparison
+corrected (authored-vs-rendered - the subject neither conforms nor
+fails; both readings void). Route B ruled the correct primary in
+retrospect. Room dispatched two likely-no-window items (spread in
+degrees; delta from the existing four-half frames, checked before any
+booking). All else grinding.
+
+*(prior stamp, cycle 215:)* TV's C48 pass
+widened on Allen's yes (cash-out HOLD E rides; the shared Interact/
+SitSpot boundary is room's contract - both lanes wired through me).
+Research's WIDENED MANDATE DISCHARGED: 15 titles studied; the whole
+ruling queue bundled for Allen in docs/7-research/13-lane-state.md
+(Retention / Product shape / The sweat / standalone + play answers) -
+lane holding on his word. Band derivation running at room. Campaign A
+still grinding. SGP phase 3.
+
+*(prior stamp, cycle 214:)* Batch 51 canon (4bca23d): the ~92 anchor withdrawn on
+room's find (underived since batch 13; the DD's own misread of the
+10.7-degree miss recorded with its evidence trail - two errors one
+cause, C44's subject one batch after writing C44); 101.4 NOT installed
+(C41 bars the third repeat); the band re-derives ONCE - dispatched to
+room on Allen's word (members named, the lights-vs-lit-objects fork to
+be decided by derivation, C44 practice beside the bound). V6's bounds
+void with the top; T65's subject unadjudicated but its VIOLATION stands
+under every candidate; batch 36's credit restored; R40 closed on MD5
+identity. Elsewhere: campaign A grinding, sgp phase 3, TV's C48 fix,
+research autopsies+probes.
+
+*(prior stamp, cycle 213:)* Dense stretch:
+batch 50 canon (c9ceb77 - T22 ruled, label-is-the-contract; C48 LAW: the
+INPUT is corrected to match the copy, never the reverse - the hold-gate
+fix is TV's). Room's R23 pair: DISPOSITION 3 fired honestly (anchors do
+not separate; the band's own upper anchor may be wrong - underived ~92
+vs computed/rendered ~101-103 agreeing) - merged 38c44da, the band's-top
+adjudication with the DD. TV seat chaos resolved: the timed-out create
+had spawned TWO copies of the exhausted session - all four stale
+terminals closed, ONE fresh seat created (no --continue - the handoff is
+the rotation instrument), seeded with the C48 fix mandate. Watcher v28.
+Allen approvals fired: same-match-holds-to-settlement (sgp phase 3),
+research's five probes + two autopsies. Campaign A still grinding.
+
+*(prior stamp, cycle 212:)* Three
+staged orders fired: room's Route B window GRANTED (coupling answer came
+back coupled; Unity verified zero; frame-locked pair per the spec's
+pre-commitments); TV's (99%) copy fix (offer-not-opinion form, sweep-
+routed); campaign A grinding (~20 min). Watcher gap FIXED: room's
+re-seated handle was unwatched in v26 - v27 armed on all six seats.
+Research idle at 263k tokens pending Allen's rulings (RF number, mapping,
+play questions). SGP phase 2 running.
+
+*(prior stamp, cycle 211:)* Batch 49 canon
+(8a8e7a6): the three draw questions ruled - the draw is not a team
+(engine's refusal ratified as design); three-offer board with DRAW in
+the middle; the final beat is the match ENDING LEVEL, STATED; a draw is
+quiet for the room and loud for one ticket (T65's glow already correct);
+'decisive' never prints (the named risk, guarded at both lanes). Both
+consumer lanes relayed. DD standing by. Register 279 rows.
+
+*(prior stamp, cycle 210:)* Batch 48 canon
+(e729235): the names locked with their authoring boundary - THE MARK IS
+DRAWN, NOT CAPTIONED (the toner sentence teaches the relation once per
+slip; the name lives in rules copy and first encounter only). SGP
+notified with the specific wrong-guess named. Board: sgp phase 1
+running; TV orienting; room source-reading; mpregame D1; research
+probes. Open with Allen: RF number, mapping proposals, play questions,
+literature scope.
+
+*(prior stamp, cycle 209:)* Batches 46+47
+canon (4917dc7): THE PRINCIPLE - the theatre prints facts and offers,
+never opinions (unifies three prior deletions); (99%) goes, print-the-
+cost is the constructive half; T22 commit-boundary question to TV. The
+owed shared-canon edit EXECUTED at integration (238238d - the dead
+exploit framing replaced; exploit lives in relics now). Allen named
+both: the instrument is SAME MATCH, the mark is THE HOUSE'S LINE -
+recorded, both lanes notified. Honest book YES recorded. SGP: step 2
+approved, step 3 GO, cash-out-after-gates approved. TV seat ROTATED
+(98pct), fresh seat seeded with the copy fixes + T22 question. RF number
+still open with Allen; research package + play questions likewise.
+
+*(prior stamp, cycle 208:)* Batch 45 canon (2c6a40d): a same-game ticket is
+ITS OWN INSTRUMENT - no product-with-adjustment ever rendered (the nerf
+reading is manufactured by the comparison); the relationship marked in
+OXIDE as an annotation ('legs the house has marked pay less' - learnable
+without formula); step 2's binding dial constraint: the model emits a
+RELATION LABEL, and unlabelable correlation does NOT move the price.
+Step 2 unblocked draws-aware. Cross-lane draws notice wired to sgp + DD.
+NEED ALLEN: (1) the oxide mark's NAME; (2) the honest-book call - DD
+recommends YES on the design argument. Plus standing: RF number, research
+package, literature scope.
+
+*(prior stamp, cycle 207:)* Batch 44 + R23 spec canon (6d0ee19). Fired on Allen's words:
+room re-seated + R23 capture contract (source-read precondition first,
+Route A/B pre-committed, V6 inventory rider); TV's four batch-44 items
+(traceability pass priority - under-generation unbounded, LegRowLine0's
+relief rests on an unconfirmed number; bracket retirement; Attract state
+answer; 99pct-vs-T16); mpregame phase D1 (theater question parked);
+SGP STEP-1 APPROVED by Allen → step 2 GO, pricing-presentation question
+docketed to the DD at the boundary as promised. Six seats live + working.
+
+*(prior stamp, cycle 206:)*
+markets-pregame mid-execution-plan (early re-derivations: today's
+moneyline survives draws as 'draw no bet' renamed; correct score at the
+ratified floor = 12-16 rows, 47.3x longest, inside the tail). DD writing
+batch 44 (two-slot ruling + clause close). Research holds the unfired
+RF-12 draft pending Allen's number. TV standing by post-push.
+
+*(prior stamp, cycle 205:)* The no-draws-in-v1 constraint FALLS on Allen's word:
+draws first, then the unfreeze wave re-evaluated under draws-exist
+(double chance revives), correct score ships with its draw column (the
+fiction question dissolved), the 2% floor RATIFIED. markets-pregame's
+costing becomes the execution plan; campaign structure proposal owed
+within the one-campaign-one-re-baseline doctrine. Grill R1-R4 resolved
+by supersession. TV pushed, standing by; DD ruling the last two slots.
+
+*(prior stamp, cycle 204:)* T-6 done: stale notes closed (both false), FONTS.md
+carries the face story + re-derivation recipe. TV's three answers routed
+to the DD: InterventionPrompt = instruction-form with a figure; Attract =
+four authored-voice sites; PEND = THE QUESTION HAS NO SUBJECT (TV
+invented the string - the 6px row measured an impossible string, sweep
+artifact self-caught); probe data written-before-crash, corroborated
+twice - no doubt. TV pushing on Allen's word. Remaining to phase close:
+DD closes the tracking clause + rules the six overruns and the money
+collision (T74/T84) -> fix pass -> final verification -> merge. Also in
+flight: draws costing (mpregame), DD's housing-cast desk setup, Tier-2
+probes. SGP step-1 merged (bbd67e6, 78pct headline).
+
+*(prior stamp, cycle 203:)* TV's re-measure: every wired value at or under
+its predicted bound - the screen never understated, its one design
+requirement; pre-existing overruns hold ship-not-wiring; the money
+collision worsened as predicted (no new collision); verify-the-verifier
+lesson recorded. T-6 (finish) STARTED on Allen's word. Batch 43 canon
+(2e95753): three tracking values ratified, Consolation takes 0 on the
+label-vs-COPY split, two slots held on their strings (pre-committed both
+ways), PEND authored-vs-clipped pre-committed, probe data-intact
+condition set. TV owes three cheap answers with T-6. RF-12 still held on
+Allen's number.
+
+*(prior stamp, cycle 202:)* TV
+13+ min into the wiring turn; DD mid-ratification with an API retry in
+progress (1/10, watching); Tier-2 probes running. HELD: 'RF-12 granted'
+- no RF-12 exists (IDs run RF-1..RF-9); asked Allen for the intended
+number, likeliest RF-2 (the parked literature probe) or an RF-3..9
+mapping proposal. NEED ALLEN: the RF number, grill R1-R4, the research
+package.
+
+*(prior stamp, cycle 201:)* TV's two gate conditions arrived together
+(LegRowLine0 relief + full enumeration); Allen gave the wiring word
+directly - TV wiring now (one constant, regenerate, re-measure). Six
+tracking values proposed under the doctrine, with the DD for
+ratification. RiskPays reasoning accepted as recorded, no exemption
+proposed. Research lane's first package MERGED (410524c): four autopsies
+with corpus numbers, the SBR mapping proposal, and play questions keyed
+to Allen's titles - all his docket now. Carried non-gating: chip PEND
+overrun; sweep-probe exit crash x2 (post-phase). NEED ALLEN: grill R1-R4,
+literature scope, research mapping + play questions.
+
+*(prior stamp, cycle 200:)* Sweep
+clean: TV on its two closing conditions; sgp's D3 recon deep (14m+);
+research diving; DD + mpregame standing by on rulings (DD: enumeration;
+Allen: grill R1-R4 + literature scope). Two hundred cycles on this seat.
+
+*(prior stamp, cycle 199:)* Batches 40+42
+landed (5f8eac7, canon through 42): T74 magnitudes ruled with levers
+(span-then-size never copy; column outer width fixed); tracking clause
+in tv-design 4 (tracking marks a LABEL never a FACT; Label/Meta ratified
+as built; NEED 0 on doctrine, permanent); WIRING GATED on the two
+failures it would CREATE (LegRowLine0 relief + six-slot enumeration,
+sent together -> word immediate); RiskPays exemption REFUSED by
+construction with the losing argument recorded in full. TV briefed via
+file (send-length discipline). Elsewhere: markets-pregame plan at Allen's
+grill (R1-R4); sgp dispatches running; research deep dives running.
+NEED ALLEN: the four grill rulings; the literature-scope call.
+
+*(prior stamp, cycle 198:)* All six lanes
+moving: TV's final sweep table done (RiskPays 16.1→39.8 tabular;
+LegRowLine0 +3.4px today / -1.8px once wired - the dead-backstop box IS
+the wiring casualty, fix live on the wiring commit) - now enumerating the
+unswept six; DD ruling T74 magnitudes + tracking clause on the table;
+sgp research RUNNING (D3 approved by Allen - numbers-only divergence
+measurement; pricing-vs-perception queued as a DD question at step-2);
+research lane list APPROVED + Buckshot Roulette added, Allen played
+Balatro/CloverPit (weighting known), deep dives running; markets-pregame
+reading in. NEED ALLEN (parked): slot-machine literature (Schuell,
+near-miss/LDW) in research scope - yes/no.
+
+*(prior stamp, cycle 197:)* Allen's next-slices brief executed (e141eed → ec4c15b): worktrees
+created + chartered + registered + seated at Opus 5 max (per-terminal
+verified, the standing seat spec): **markets-pregame** (Lane 1 - full v1
+pre-game vocabulary, one campaign one re-baseline, plan-first),
+**sgp** (Lane 2 - same-game parlay, research-first, five gated steps),
+**research** (Lane 3 - compulsion-loop autopsies, docs-only, ALLEN-AS-DD
+governance with normal lead→orch→Allen routing per his recommit).
+Holds honored: in-play micro-markets, charms, WebGL, juice pack. TV's
+stats-tab phase QUEUED post-Phase-T-close. Meanwhile: TV fixing the dead
+backstop (sweep found it - a T-3 port casualty; compact column fits by
+3.4px through the live measurer); DD standing by for sweep numbers.
+Watcher v26 (five seats). markets-2 registry row marked retired.
+
+*(prior stamp, cycle 196:)* Batch 41 canon
+(7a7223e): T82 stays open (mechanism granted at the font layer, surface
+unchanged - TV's qualification adopted; the DD recorded its own defective
+close-condition under 1.5); WIRING GRANTED, sequenced after-sweep-not-
+mid-sweep; TV's population reframe adopted as the sweep definition and
+founded C46 (a fixed box carries an unstated face assumption). BINDING
+condition relayed into the running sweep: digit worst-cases compute
+against TABULAR metrics - proportional-metric digit rows are void.
+Tracking-0 survivors + tracking clause remain the DD's next docket on
+the sweep numbers.
+
+*(prior stamp, cycle 195:)* TV
+9+ min into the remedy sequence (tracking-0 re-measure first, per the
+ruled order). DD standing by for the re-measure results. All else quiet.
+
+*(prior stamp, cycle 194 - PHASE T VERDICT: GRANTED, NOT SHIPPED:)* Batch 39 canon (c057fcc): the pair caught two
+live rendered defects (NEED truncation dropping the operative word; the
+money control collision) - constitution 3.5's fourth instance, first via
+a face; both fixable, neither a direction change; the lane's work called
+good. Pair valid 130/151 (21 grammar-mismatch exclusions, R23-am).
+T85: T-5's tracking was a fourth, separable, UNRULED variable (~10px of
+the overrun) - remedy order RULED: tracking-0 re-measure FIRST, no layout
+changes before it. T82 survived its own falsifier. Dispatched to TV in
+the ruled order on Allen's word. ALLEN'S LINE: Phase T is held short of
+shipping on two fixable defects - the instrument you paid for caught
+them before a player ever could.
+
+*(prior stamp, cycle 193:)* Both
+seats working in parallel: TV 4+ min into T82 (tabular atlas build), DD
+4+ min into the pair verdict. Nothing stalled.
+
+*(prior stamp, cycle 192 - PAIR COMPLETE, FREEZE LIFTED:)* After-set staged (151 paired frames, 9
+moments, seed-matched to the before-set; 8 unpaired scorer-leg frames;
+TV tree cb84278, window closed clean). T80's freeze on C2/T9/T10/T61/T82
+LIFTS with the shot - announced to all seats; the parked Phase-3 items
+are schedulable again. TV starts T82 (generator-resolves-tnum mechanism,
+endorsed on its own C34 argument). The DD holds the PHASE VERDICT docket:
+the pair, with G1 re-cert + T75-am2 clock strings riding it. Phase T's
+close is the verdict + T-6 finish + the merge.
+
+*(prior stamp, cycle 191:)* Batch 38 canon
+(bb23b11): T82 - the tabular mandate STANDS, 'cannot' reclassified
+expensive-not-impossible (C16), option (a) granted with mechanism the
+lane's; mspace and mandate-amendment refused (fallback pre-committed).
+DD's arithmetic re-check corroborated the finding HARDER (uniform
+instance scale, 4-figure constant per face). Freeze +T82 (no practical
+cost); Clock stays Regular (T75-am3, both DD pre-commitment branches
+recorded defective 1.5); G1-am2 provisional-for-digits; C45 law. ALLEN
+NOTE (the one line the DD asked for): the font choice you ratified was
+made on the tabular criterion, and this ruling PRESERVES it - the mandate
+held. TV mid-after-set; ruling relayed, T82 sequenced after the pair.
+
+*(prior stamp, cycle 190 - THE STAND-DOWN MYSTERY RESOLVED:)* The 'DD seat' recreated
+at cycle 189 with `claude --continue` in main-2 resumed THIS orchestrator
+session (exit screen named this session's ID). The twin woke with cycles
+100-189 in context, saw the incumbent sweeping, sincerely applied 6c with
+the roles inverted, sent the orchestrator-to-orchestrator stand-down, and
+exited. The incumbent verified against observable state and refused -
+correctly. **Standing lesson: NEVER `claude --continue` in main-2 for the
+DD; the DD charter's fresh-seat prompt is the only seating.** Twin
+terminal closed; proper fresh DD seated (canon through 37 briefed);
+watcher v25. TV 25+ min into the after-set re-shoot, healthy. Freeze
+holds.
+
+*(prior stamp, cycle 189:)* Orca+session restarted MID-AFTER-SET: the window died but
+T-5's commit survived on disk (8350256 - 'tracking lands, tabular
+CANNOT, and the measurement says why' - a finding against the owning
+doc's mandatory-tnum clause, routing to the DD ahead of the pair). Stale
+lockfile cleared at proc 0; TV + DD seats recreated with --continue,
+effort max, both seeded (TV: tabular paragraph + re-shoot; DD: expect
+the finding). Room stays down (recreate on demand, nothing pending).
+Watcher v24 + heartbeat re-armed FIRST per 6c. Freeze still holds -
+lifts only when the after-set is actually shot.
+
+*(prior stamp, cycle 188:)* T-4
+and T-5 both closed clean (sizes tokenised no-rescale; tracking + tnum
+in; TV self-caught the TypeTeam over-retirement - restored on Allen's
+word; digit-probe crash logged as post-phase follow-up). AFTER-SET
+SHOOTING NOW - the phase's closing capture, carrying G1 re-cert +
+T75-am2 clock strings. Freeze lifts on its report. DD standing by for
+the pair verdict.
+
+*(prior stamp, cycle 187:)* Room's
+anchor amendment merged (6e6bccf), room converged clean. TV on T-4. DD
+standing by for the after-set. Freeze holds.
+
+*(prior stamp, cycle 186:)* Batch 37 canon
+(65e6a49): V6 ruled, C44 law, T65-am2 corrects batch 36's authored-hue
+figure - BOTH lanes nudged directly before anyone touched the stale
+constant (the DD's own recommendation, executed same cycle). Three
+broken register rows repaired; 268 rows verified well-formed. DD queue
+EMPTY - standing by for the after-set. TV on T-4; room clean-holding.
+Freeze holds.
+
+*(prior stamp, cycle 185:)* API instability
+hit both active seats in one stretch: TV's T-4 turn died on connection
+loss (nudged, resuming with verify-disk-first); the DD 403'd mid-batch-37
+but recovered on a prod (transient, unlike TV's persistent 403
+yesterday). Batch 36 landed 8731ba6 (T65-am on correct-space deltas).
+In flight: TV's T-4, DD's batch 37 (V6 + row repairs + its own T65
+correction). T-3 done: canon face wired, two drifts caught and kept out.
+Freeze holds.
+
+*(prior stamp, cycle 184:)* T-3
+resumed 6+ min in (canon face wiring); DD 6+ min into T65. Both working,
+nothing stalled, freeze holds.
+
+*(prior stamp, cycle 183 - T-3 UNHELD:)*
+Batch 35 canon (5546e8f): T81 rules the migration LANDS THE CANON FACE -
+renderer+face are one variable on this surface, option 1 was never the
+conservative arm; C43 applied, not bent. G1-am: fit grant void,
+re-certifies on the after-set (re-measurement, not re-authoring). T78-am:
+the DD softened its own refusal argument under 1.5. Second Phone-table
+placement fix (C43's founding defect recurring - G1/C25/C26 resited). TV
+resuming T-3 with the canon face; DD onto T65 then V6. Freeze holds.
+
+*(prior stamp, cycle 182:)* The V6 arc
+concluded and merged (9ab2cfe): gate computes HSV, band references were
+Lab-derived, verdicts NEAR-INVERTED for the band's question - every
+historical V6 in-band verdict suspect; room's conversion recommendation
+docketed to the DD (third in queue). DD deep in its three-item queue
+(collision ruling first, T-3 held on it; then T65 value; then V6). Room
+converged clean-holding; TV holding with the parity probe preserved.
+Freeze holds.
+
+*(prior stamp, cycle 181:)* C43's first real
+collision routed to the DD: the legacy face was never canon-correct, so
+renderer-only migration means shipping a knowingly-wrong face through a
+shot set (option 1) vs renderer+face as one coarser variable (option 2,
+TV's lean) - T-3 HELD on the ruling. Room's T65 measurement merged
+(fd11364): settlement cast measured in the correct space; V6 gate-space
+catch (HSV-pass vs CIELAB-fail = bounding nothing) routed to TV as
+held-work desk item; provisional value queued to the DD behind the
+collision. Freeze holds; room converging.
+
+*(prior stamp, cycle 180:)* T-3
+running (TV 22+ min in, type-parity batch check live); room 9+ min into
+the T65 measurement; DD re-seated post-batches-33/34 (reading in). C43
+row moved to Cross-surface + authoring clause (5a9669a) - the
+misplacement recorded as the AUTHORING seat's error under 1.5, new
+standing practice: batches name destination tables. Freeze holds.
+
+*(prior stamp, cycle 179 - T80 FREEZE IN FORCE:)* Batch 34 landed (39b0090): before-set ACCEPTED as half-
+instrument; **STANDING FREEZE C2/T9/T10/T61 until the after-set ships** -
+ground-movers void the pair (C43 admits no partial pair); enforced at
+dispatch level, notified to both active lanes, nothing scheduled touches
+the four, NO milestone-order change needed (Allen informed, no decision
+owed). T75-am2: clock string owed per frame in the after-set; the DD's
+bloom-confounded read returned unadjudicated rather than forced. T65
+settlement measurement dispatched to room (joint with TV, desk work).
+T-3 running. Register 265 rows, TV 86.
+
+*(prior stamp, cycle 178:)* Batch 33 landed
+(1835f12): T75-am (BigAmount owes assignment+assertion, not a frame) and
+T79 opened - the dormant element holds a LIVE seat in C3's invariant set
+(gate green on an unexercisable member), NOT ruled, sequenced after Phase
+T by C43's first live application. TV's BEFORE-set staged (9 moment
+groups incl. the five late adds, single-variable pre-committed in its own
+README, shot at 233bf7a suites-green) and docketed to the DD as baseline
+characterization. T-3 (mechanical migration) STARTED on Allen's word.
+
+*(prior stamp, cycle 177:)* DD
+re-seated at the batch boundary (263 rows, arithmetic coherent with the
+253+10 added; 1.1 table accurate - first seating needing no correction).
+TV 38+ min into T-1b/T-2 (PlayMode run live in its window). tv-design
+amendments landed 808c371. All quiet otherwise.
+
+*(prior stamp, cycle 176:)* Batch 32 landed
+AND transcribed same-cycle (6b6eb6c + 71f0802, canon through 32): Phase
+T's seven gaps ruled (T72-T78) + C43 law (a migration moves one
+variable). T78's headline: the docket's Thin-rendering inference REFUSED
+on existing frames by C42's own shape - the before-set now answers a
+better-posed question. DD authoring tv-design.md amendments (Allen's
+staged order, fired); TV holds the lease mid T-1b/T-2 with the rulings
+relayed. Room holding; markets/surething retired.
+
+*(prior stamp, cycle 175:)* Validation GREEN on 42d3f5a (pass 9): engine 183/183, EditMode
+250/250, PlayMode 90→84/0/6 exact baseline, DLL checkout-restored + 75
+types loaded, single-instance held. Markets' stranded 15 commits are
+certified; the lane is closed end to end (worktree already retired).
+Sentis churn cleared per 7a. Editor FREE — TV's T-2 window available on
+its T-1 report. G1 collision fixed free (re-key to T72-T76 ordered
+pre-staging; DD confirmed). In flight: TV's T-1 + docket staging.
+
+*(prior stamp, cycle 174:)* Phase T rolling:
+TV's inventory landed (6-stage plan, SemiBold trap ranked top risk, a
+MISSING bold-condensed face found, ratio-law conflict flagged not
+decided); T-1 started on Allen's word; G1-G5 gap docket staging for a
+fresh DD seat (created, seating now). Worktrees RETIRED on Allen's order:
+surething-ui + markets-2 deleted (branches survive; pinned baseline
+evidence preserved first at f8b7b54 under a scoped LFS rule);
+room-refinement KEPT until Phase T closes (active shooting lane). Orca
+blipped mid-removal, recovered, seats survived. Markets-merge validation
+still running (holds editor); TV's T-2 window queued behind it.
+
+*(prior stamp, cycle 173:)* Allen's go on Phase T: TV seat
+recreated, chartered via orchestrator-brief (inventory-first, Phase L's
+shape, design gaps route to DD). Merge audit on Allen's ask found
+markets-2 15 commits UNMERGED (incl. the M-04/M-05 stake-figure fix,
+ead9396, recorded 'done' but never merged) — merged `42d3f5a`, DLL bytes
+identical, canonical validation agent running on the merged tree (holds
+the editor lease). TV/SureThing/room branches verified 0-ahead. Watcher
+v22 (room+tv). Allen's queue: view the fresh set.
+
+*(prior stamp, cycle 172:)* Quiet
+hold: tree clean, room clean-holding, all other seats vacant by design.
+Allen's queue: view the fresh set; Phase T go-word.
+
+*(prior stamp, cycle 171 — FRESH-FRAMES WAVE CLOSED:)* The replacement set is on main at `bd182f7`: three surfaces,
+both seeds pinned AND asserted, phone frames MD5-identical across runs,
+both surfaces eye-confirmed populated. Stored as LFS under a set-scoped
+rule (11 objects, 32MB, objects pushed) — the first evidence set stored
+per the new-rule-going-forward direction; room superseded its own
+don't-store reasoning in place. Old blurry sets deleted `7487481`; TV
+pushed 1e539a9 on Allen's word. Room converging then clean-hold. ALLEN'S
+QUEUE: look at the fresh frames — docs/design/dd-import/
+fresh-reference-set-2026-08-11/. Phase T awaits his go.
+
+*(prior stamp, cycle 170:)* (1) Old raw playtest frames DELETED (`7487481` -
+findings all transcribed, history retains, no rewrite); fresh pinned
+reference shoot DISPATCHED to a recreated room seat (three surfaces,
+ROOMREF01/PHONEREF01 asserted, staged to dd-import/fresh-reference-set-
+2026-08-11, editor leased). (2) TV's de-flake pushed on Allen's word:
+origin/tv-sweat = 1e539a9. (3) Phase T elaborated to Allen - awaiting
+his go. Watcher v21 armed (room). Heartbeat live.
+
+*(prior stamp, cycle 169:)*
+Quiet hold continues: tree clean, no new intake, no seat activity.
+
+*(prior stamp, cycle 168:)*
+Quiet hold continues: tree clean, no new intake, no seat activity.
+
+*(prior stamp, cycle 167:)*
+Quiet hold continues: tree clean, no new frames in intake, no seat
+activity. Allen's three items stand.
+
+*(prior stamp, cycle 166:)*
+Quiet hold verified: main unchanged, tree clean, no seat activity, no
+work pending. Open items remain Allen's three (frames, push word,
+Phase T).
+
+*(prior stamp, cycle 165:)*
+Orca + session restarted AFTER the wave closed - nothing in flight was
+lost (main at d71a0f7 verified from disk, tree clean). All five agent
+seats died with the restart; posture: RECREATE ON DEMAND - the board is
+quiet, no lane has work, and idle seats burn quota. Census notes: two
+stale DD-era sessions idle in main-2 (batch-29 and batch-31 vintage,
+nothing owed, left alone; next DD seating creates fresh); one stale
+tv-sweat session. Heartbeat re-armed; lead watcher deliberately NOT
+armed until seats exist. Keeper satisfied by this stamp.
+
+*(prior stamp, cycle 164:)*
+**Cycle 164 — THE BOARD IS
+QUIET.** Counts re-established on the final tree: EditMode 250/250,
+PlayMode 90→84/0/6, exercising TV's seed-pin including the test that
+started the arc; SureThing's qualification discharged, merged `8c8748c`.
+Every lane clean-holding; every arc closed (flood, baseline, de-flake);
+canon through batch 31. Open with Allen only: new playtest frames when he
+takes them; TV's 1e539a9 push on his word; Phase T stays deferred.
+Wave-close push sent per 6d.
+
+*(prior stamp, cycle 163:)* THE DE-FLAKE ARC
+CLOSED: TV's pinned-seed table 30/30 clean (XML-verified; vs 3/30 at ship
+pacing - the wait was unsatisfiable, not slow), full suite 90/84/0/6
+matches baseline, fix merged `3fe7e12`. TV's diagnostic lesson on the
+record: a constant in every failure signature is content, not timing.
+Editor released; SureThing's suite re-establishment FIRED (last open
+item). TV's 1e539a9 unpushed - branch pushes stay on Allen's word.
+Background-kill note for future campaigns: foreground batches ran clean
+throughout. Wave-close push to Allen on SureThing's counts.
+
+*(prior stamp, cycle 162:)*
+TV 28+ min into its foreground pinned-seed batches (proc-zero lockfile
+guard inline per run) - healthy grind, no report yet. All else quiet.
+
+*(prior stamp, cycle 161:)*
+TV: option-1 table honest-failed (3/30 - the wait was unsatisfiable, not
+slow; content not timing); real fix = pinned seed 48151623 per the
+harness's own scar comment; campaign now running as FOREGROUND batches of
+four after its session's background-task kills. Nothing commits until a
+clean table. SureThing still armed on the close. All else quiet.
+
+*(prior stamp, cycle 160:)*
+TV campaign still mid-run (ship pacing, expected). No other movement;
+SureThing armed on the close. Quiet is healthy.
+
+*(prior stamp, cycle 159:)*
+TV's option-1 revalidation campaign running (~35 min at ship pacing;
+fresh run directory per campaign after the accumulation trap's third
+bite; commit only on a clean full table - the last campaign was green for
+three runs before failing on the fourth). SureThing armed on the close.
+6d adopted: dead-turn debts + pushed reports. All else quiet.
+
+*(prior stamp, cycle 158:)* TV's seat hit a
+403 auth failure mid-campaign (session-level - the other four seats never
+lost auth); recovered: seat recreated with --continue, effort max, stale
+lockfile cleared at proc zero, campaign relaunch seeded (partial table on
+disk counts if per-run XMLs complete), watcher v20 armed on the new
+handle. DriveCashOutTween fix stays uncommitted pending the repeats'
+verdict, as the lead ruled for itself.
+
+*(prior stamp, cycle 157:)* TV's
+validated 30-run campaign in progress (~34 min; run-1 executed 2/2 gate
+passed, two harness guards added after the vacuous-filter catch). All
+other lanes clean-holding; SureThing's suites queued on the close.
+
+*(prior stamp, cycle 156:)*
+TV's ×30 repeat table still running (single instance held, ~30 sequential
+Unity launches take time by design). SureThing's suite re-establishment
+queued on its close — one early "window closed" draft held against
+observable state (Unity 2, no table). All other lanes clean-holding.
+
+*(prior stamp, cycle 155:)* Room's recipe
+amendment merged (`92c7232` — validity precondition explicit; its session
+hit ECONNRESET retries mid-commit but the commit landed on disk first,
+verified from git). TV's repeat-run window live (baseline running, ×30
+harness ready — 0/0-on-typo guard). SureThing clean-holding on batch 31's
+structure. DD standing by.
+
+*(prior stamp, cycle 154:)* Loop state:
+watcher v19 + heartbeat armed. **The baseline arc closed (batches 30+31,
+canon through 31):** room's rig GRANTED deterministic (R43 — the unpinned
+arm recognized as the positive control certifying the null); SureThing's
+pinned re-shoot ruled — fa93238 RETIRED (unpinned, batch 30's reason),
+the ~0.037 bound REPLACED by structure (row numbers = across-time
+baseline, authored form, moved 0.0002 across deals; season records were
+the instrument outside its validity); C42 law (in-frame invariant over
+size bound); the DD recorded its own branch-1 defect (§1.5 — retroactive
+pinning, two guesses filed as one pre-commitment). Merges through
+`0e77557`/`5bc6cec`; batch 31 at `58ff808`+`cace46b`. In flight: TV's
+PlayMode repeat-run window (de-flake confirmation); room's one-line
+recipe amendment (validity precondition explicit). SureThing clean-holds
+on the new baseline structure; phone number flagged never-compare-across-
+seeds. DD standing by.
 
 **THE ROUND IS ON MAIN AND THE MERGED TREE IS CERTIFIED GREEN** — Allen's
 "if everything is done lets merge" executed as three clean no-ff merges,
@@ -59,6 +849,106 @@ decision · evidence checked · reversal path.
   says stop.
 - Heartbeat: watchers armed on TV (TVS-H02 investigation) and SureThing (next
   cycle) with Unity-process checks; 25-minute fallback heartbeat running.
+- 2026-08-10 cycle 152 · **ALLEN'S FOUR-LANE ORDER EXECUTED; AUTONOMY
+  CORRECTION CHARTERED; SUITE COUNTS RE-ESTABLISHED WITH ONE FLAKE
+  ROUTED** — Allen: "I should not need to order this. Please be auto" →
+  §6.3 re-affirmed in ORCHESTRATOR.md; executed immediately: TV's branch
+  merged (`c6f2910` — fr_measure.py in tools/ with pin+count asserts) and
+  SureThing's merged (`4dfb053` — S2-am3 reports + handoffs), both
+  fast-path (docs/tools only), tree clean. SureThing re-established the
+  merged tree's counts: EditMode 250/250; PlayMode failed ONCE
+  (WaitUntil on DebugCashOutAnimating, TvSweatScreenTests.cs:201 — a
+  catch-in-flight race), discriminator on a byte-identical tree passed
+  84+6 matching studio validation — labeled per its own pre-commitment
+  "did not reproduce in one re-run", routed to TV as a hardening item
+  (poll the state machine, not the animation flag). The tempting cause
+  (flood strike) was retired by measurement before suspicion could stick.
+  Room dispatched: fresh determinism pair on the pinned rig (ROOMREF01
+  live), autonomous-verify class per Allen. DD: Allen CONFIRMED the
+  seating corrections (landed b3c8765 + b9ea968). **Evidence-storage
+  call ANSWERED in direction: Allen deletes his old raw playtest frames
+  and takes new ones** — no history rewrite ordered; fresh playtest
+  evidence incoming, intake ready at dd-import. DD seated at 253 rows.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | tv-sweat | hardening the WaitUntil race | commit + report | lead |
+  | surething-ui | merging main 4dfb053, then clean-hold | confirm state | lead |
+  | room | fresh determinism pair, editor leased | verdict + window close | lead |
+  | markets-2 | clean-hold | none | — |
+  | DD | standing by | next docket: room's pair or Allen's new frames | DD |
+  | Allen | deleting old playtest frames, shooting new | frames arrive → staged to DD | Allen |
+  | **Need Allen** | — (storage call answered) | — | — |
+- 2026-08-10 cycle 151 · **THE FLOOD ARC CLOSED END TO END; ORCA RESTART
+  RECOVERED, ALL WORK LANDED FIRST** — batch 29 verdict: T68-am+T71
+  GRANTED·CLOSED on the DD's independent frame reads (ink moved 0.0000 at
+  the old flood peak vs 0.3200 before; wash deleted not dimmed, three-way
+  confirmed; punch intact both beats, reproduced at the DD seat). C41
+  canon same day (constitution §4.6, `aad6178`): a prediction from a
+  contaminated frame is a floor, not a target — founding case batch 27's
+  own pre-verified-fix claim, recorded as the DD seat's error twice under
+  §1.5. Batch 29 transcribed (`cb5120f`, canon through 29). Slate-pinning
+  ruled method-not-reporting; room amended the recipe (merged `1b4aa8d`),
+  then extended CaptureAll's seed-pin to room poses AND caught its own
+  instrument flag failing the ruling (single-float would have silently
+  pooled 1.94/2.03 — now per-group), merged `904f987`. TV promoted
+  fr_measure.py to tools/ with the pin assert C34 actually asks for
+  (`1911b47`), fixing two of its own bugs en route; _dimOverlay already
+  discharged in source; 30-of-30 confirmed with the leak path named.
+  SureThing: both suites green on converged `cebe39d`, handoff refreshed
+  with the ~0.037 caveat + studio-count labels, merged main `0d866da`.
+  **Orca restarted at cycle end** — all five seats died AFTER their
+  commits landed (disk verified); recovery: five seats recreated
+  (leads --continue, DD fresh per charter), effort max all, watcher v19
+  armed on new handles, Unity zero. Lost only: room's R9-A verdict
+  REPORT (runs' outputs on disk — re-verification dispatched).
+  Allen staged-rulings fired this cycle: C41 approval, flag check, tool
+  promotion, push order, handoff refreshes, merge orders, recipe handoff.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | tv-sweat (resumed) | verifying push of 1911b47 | push if unlanded + frame028 disposition | lead |
+  | surething-ui (resumed) | merging main 904f987 | clean-hold; next shoot unblocked (pinned slate live) | lead |
+  | room (resumed) | re-verifying R9-A runs from disk | report verdict + determinism | lead |
+  | markets-2 (resumed) | confirming texture-phantom class | clean-hold | lead |
+  | DD (fresh seat) | seating, row-count confirm | stand by for next batch | DD |
+  | Editor | free (Unity 0 verified) | — | orchestrator |
+  | **Need Allen** | evidence-in-git policy (unchanged) | call | Allen |
+- 2026-08-10 cycle 150 · **BOTH MEASUREMENT ARCS DELIVERED; TV'S SEAT
+  ROTATED; THE DD READS THE FLOOD FRAMES** — TV's window results certified
+  by its own explanation of the out-of-band contrast (the 6.47/6.58
+  pre-commitment was a FLOOR computed from the cleanest pre-removal frame;
+  landing above it is what full removal looks like — relayed to the DD,
+  who had flagged it and requested exactly that). TV handoff `5d794c6`
+  pushed/remote-verified, seat rotated at 99% context: fresh Opus 5 seat
+  seeded on a refreshed orchestrator-brief, old terminal closed, watcher
+  re-armed as v18 on the new handle. **Slash-command sends go via
+  PowerShell only** — Bash/MSYS path-mangles them (ate one /clear and one
+  /effort max this stretch; both caught on verify-read and re-sent). DD's
+  authored-stroke ruling landed `2c7ceeb`: season records 1.94 / row
+  numbers 2.03 frame px, per-group never pooled, pose-bound; the
+  variable-font SemiBold-default trap (S29's shape) caught by its own
+  two-group coherence check. SureThing's S2-am3 arc complete at
+  `fa93238`: C37 instrument gate passed, all boxes eye-confirmed (stock
+  record boxes re-cut — unpinned slate moves record x with team names;
+  consequence docketed to the DD as a recipe call: pin the slate or
+  per-frame boxes), across-time baseline: **the flood removal did not
+  move the surface's floor** (authored 1.115→1.152 / 1.243→1.246,
+  measured flat). Allen's staged rulings all fired same-cycle: rig's
+  boxes as targets, new dated directory, eye-confirm→within-frame,
+  reports+boxes only (frames stay on disk per open storage policy), push
+  it, rotate, merge-main+suites, go-ahead on the flood verdict. DD queue:
+  flood verdict (reading frames now), then S2-am3 record + slate call.
+
+  | Lane | State | Next action | Who acts |
+  |---|---|---|---|
+  | tv-sweat (fresh seat) | orienting on brief | stand by for flood verdict | lead |
+  | surething-ui | merging main + both suites | report SHA + counts | lead |
+  | room | holding 6917a64 per Allen | — | — |
+  | markets-2 | clean | none | — |
+  | DD terminal | reading flood frames | verdict → then S2-am3 docket | DD |
+  | Editor | free (both windows closed clean) | — | orchestrator |
+  | **Need Allen** | evidence-in-git policy (unchanged) | call | Allen |
 - 2026-08-09 cycle 149 · **POST-ROUND CONVERGENCE + THE FONT LANDMINE
   DEFUSED; DD RE-SEATED; TV'S CAPTURE WINDOW LIVE** — all lanes converged
   on new main (TV/SureThing/room at 1d6eb35, ff, zero conflicts). Room

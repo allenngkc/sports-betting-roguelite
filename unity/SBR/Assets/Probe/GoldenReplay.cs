@@ -19,32 +19,45 @@ namespace SBR.Probe
     public static class GoldenReplay
     {
         public const string Seed = "GOLDEN-W2";
-        public const double ExpectedBank = 452.559054816409;
+
+        // RE-PINNED for draws (F_0.5.0 D1, Allen 2026-08-12), mirroring engine.tests/GoldenSeedTests.cs
+        // exactly — these values ARE the engine's, read off the same scripted round through the same
+        // DLL, so the two fixtures cannot disagree unless the DLL is stale.
+        //
+        // *** NOT VERIFIED IN UNITY. *** No editor lease was held for D1, and Unity asmdef code is
+        // invisible to `dotnet build`, so this file has been re-pinned but not RUN. Treat the first
+        // Unity EditMode run after D1 as the verification step, not as a regression report. Leaving
+        // the old pins here would have guaranteed a red suite; re-pinning them from verified engine
+        // values makes the tree self-consistent, which is the most this seat can honestly do
+        // without the lease.
+        public const double ExpectedBank = 488.27599673829775;
 
         // (LegIndex, Step, Type, Tag) for every one of the 14 events, in fast-forward order.
+        // The COUNT is still 14: the draw ruling kept the sampler's six-draw contract, so this is a
+        // value re-pin, not a structural one.
         public static readonly (int leg, int step, DramaEventType type, TensionTag tag)[] ExpectedEvents =
         {
-            (0, 1, DramaEventType.BigPlay,  TensionTag.Swing),
+            (0, 1, DramaEventType.BigPlay, TensionTag.LeadChange),
             (0, 2, DramaEventType.LegFinal, TensionTag.Decisive),
-            (1, 1, DramaEventType.Score, TensionTag.Swing),
+            (1, 1, DramaEventType.Score, TensionTag.Calm),
             (1, 2, DramaEventType.BigPlay, TensionTag.Swing),
-            (1, 3, DramaEventType.Score, TensionTag.Swing),
+            (1, 3, DramaEventType.Momentum, TensionTag.Calm),
             (1, 4, DramaEventType.LegFinal, TensionTag.Decisive),
-            (0, 1, DramaEventType.Momentum, TensionTag.LeadChange),
-            (0, 2, DramaEventType.Momentum, TensionTag.LeadChange),
+            (0, 1, DramaEventType.Score, TensionTag.Calm),
+            (0, 2, DramaEventType.Momentum, TensionTag.Calm),
             (0, 3, DramaEventType.Momentum, TensionTag.Calm),
-            (0, 4, DramaEventType.Score,    TensionTag.LeadChange),
+            (0, 4, DramaEventType.BigPlay, TensionTag.LeadChange),
             (0, 5, DramaEventType.Momentum, TensionTag.Calm),
-            (0, 6, DramaEventType.Score,    TensionTag.Swing),
-            (0, 7, DramaEventType.Score,    TensionTag.Swing),
+            (0, 6, DramaEventType.BigPlay, TensionTag.Swing),
+            (0, 7, DramaEventType.BigPlay, TensionTag.Swing),
             (0, 8, DramaEventType.LegFinal, TensionTag.Decisive),
         };
 
         // WinProbAfter (6 dp) for the first ten events.
         public static readonly double[] ExpectedFirstTenWinProb =
         {
-            0.803542, 1.000000, 0.363411, 0.144328, 0.030000,
-            0.000000, 0.523784, 0.484132, 0.493316, 0.636125,
+            0.735459, 1.000000, 0.262228, 0.076872, 0.030000,
+            0.000000, 0.418843, 0.394183, 0.418359, 0.576159,
         };
 
         /// <summary>The scripted GOLDEN-W2 round: a 3-leg parlay + a single, locked and ready to sweat.</summary>

@@ -189,8 +189,6 @@ public sealed class Run
             throw new InvalidOperationException($"Max {Config.MaxTicketsPerRound} tickets per round");
         if (picks.Count < 1 || picks.Count > Config.MaxLegs)
             throw new ArgumentException($"Tickets take 1 to {Config.MaxLegs} legs, got {picks.Count}");
-        if (picks.Select(p => p.MatchupIndex).Distinct().Count() != picks.Count)
-            throw new ArgumentException("A ticket cannot have two legs on the same matchup");
         if (stake < Config.MinStake)
             throw new ArgumentException($"Minimum stake is {Config.MinStake}, got {stake}");
 
@@ -212,15 +210,40 @@ public sealed class Run
         if (modifier == TicketModifier.DoubleOrNothing && !OwnsConsumable("double_or_nothing"))
             throw new InvalidOperationException("No Double or Nothing Slip held");
 
-        var legs = picks
-            .Select(p =>
-            {
-                if (p.MatchupIndex < 0 || p.MatchupIndex >= CurrentSlate.Matchups.Count)
-                    throw new ArgumentException($"Matchup {p.MatchupIndex + 1} is off the slate");
-                Matchup matchup = CurrentSlate.Matchups[p.MatchupIndex];
-                return new Leg(matchup, p.Selection, matchup.Odds(p.Selection));
-            })
-            .ToList();
+        List<Leg> legs = LegsFor(picks);
+
+        // A leg-targeted Profit Boost scales the TICKET's price by the factor it would have applied to
+        // the product, so the relic is worth exactly what it was worth before this feature. Read here,
+        // ahead of consumption, because the boosted figure is the contract the refusal check judges.
+        double boost = profitBoostLeg >= 0 ? RelicCatalog.ProfitBoostMult : 1.0;
+
+        // THE THREE VALIDITY RULES, AS ONE STRUCTURED VERDICT (design/02 § *Impossible combinations
+        // are blocked, not priced* and § *A refusal must emit cause AND remedy, structurally*; S73-am4,
+        // docs/design/surething-design.md §3.3 — the owning law).
+        //
+        // A refused combination is a Blocked state, and that state has always required both halves:
+        // what cannot happen is the cause, what to drop is the remedy. So the engine does not refuse
+        // with a sentence — SameMatchModel.Refuse returns the offending leg set and a verified drop
+        // set, and the exception is a carrier for them. The surface stamps the words; the model
+        // supplies the parts, exactly as it does for `principal`.
+        //
+        // Runs before any consumable is spent (atomic legality, PLAN.md rev 5 §7), and CANNOT FIRE ON
+        // A TICKET WITH AT MOST ONE LEG PER MATCHUP — Refuse leaves on its first line for those, so
+        // the ordinary path never feels this and stays bit-identical.
+        TicketRefusal? refusal =
+            SameMatchModel.Refuse(legs, Config.Overround, Config.SgpMargin, boost, profitBoostLeg);
+        if (refusal != null) throw new TicketRefusedException(refusal, legs);
+
+        // SAME MATCH (F_0.6.0). Two legs on one matchup are correlated, so the product of their
+        // offered odds is not this ticket's probability and cannot be its price. The joint model
+        // prices it — and is entered ONLY when some matchup carries 2+ legs, so a ticket with at most
+        // one leg per matchup keeps the pre-existing path below, verbatim and bit-for-bit.
+        //
+        // Runs AFTER the refusal, which is what makes SameMatchModel.NoLabelFallbacks mean what its
+        // own doc comment says — tickets SOLD at the naive product. A refused ticket is never sold.
+        SameMatchPrice? sameMatch = SameMatchModel.IsSameMatch(legs)
+            ? SameMatchModel.Price(legs, Config.Overround, Config.SgpMargin)
+            : null;
 
         // The played Profit Boost rewrites the chosen leg's offered odds BEFORE vig is computed —
         // like every promo, it can legitimately drive the ticket's vig to zero or below.
@@ -230,9 +253,55 @@ public sealed class Run
             ConsumeConsumable("profit_boost");
         }
 
-        double offered = OddsMath.ParlayDecimal(legs.Select(l => l.OfferedOdds).ToList());
-        double fair = OddsMath.FairDecimal(OddsMath.ParlayProb(legs.Select(l => l.TrueProb).ToList()));
-        var ticket = new Ticket(legs, stake, OddsMath.VigPaid(stake, offered, fair))
+        // Under the no-label fallback the price does not move at all: it is literally today's
+        // expression, boosted leg included.
+        double offered = sameMatch == null || sameMatch.NaiveFallback
+            ? OddsMath.ParlayDecimal(legs.Select(l => l.OfferedOdds).ToList())
+            : sameMatch.Price * boost;
+
+        // Vig accounting: fair is 1/p_ticket wherever the exact joint is known — including under the
+        // fallback, where the joint is still correct and only the PRICE was held back. That makes a
+        // fired fallback show up as anomalous vig in the gate campaign, on top of its counter.
+        double fair = sameMatch == null
+            ? OddsMath.FairDecimal(OddsMath.ParlayProb(legs.Select(l => l.TrueProb).ToList()))
+            : OddsMath.FairDecimal(sameMatch.PTicket);
+
+        // VOID RE-PRICING, LOCKED HERE (design/02 § *Void: re-price on the survivors*). One contract
+        // price per SURVIVOR SUBSET — every scenario the ticket can ever be voided down to, not just
+        // the single-void row — frozen at ticket lock and never re-derived at settlement. That is what
+        // makes settlement deterministic and independent of when, and how often, a void is discovered;
+        // multiple voids are canon as of 2026-08-12 and cost 15 prices at MaxLegs = 4.
+        // An ordinary ticket gets none: it re-multiplies its surviving legs at read time, verbatim.
+        IReadOnlyList<double> subsetPrices = Array.Empty<double>();
+        if (sameMatch != null)
+        {
+            int full = (1 << legs.Count) - 1;
+            var locked = new double[full + 1];
+            for (int mask = 1; mask <= full; mask++)
+            {
+                if (sameMatch.NaiveFallback)
+                {
+                    // "Where the model finds correlation it cannot label, the price does not move" —
+                    // on void too. Literally today's expression, evaluated over the survivors.
+                    var survivors = new List<double>(legs.Count);
+                    for (int i = 0; i < legs.Count; i++)
+                        if ((mask & (1 << i)) != 0) survivors.Add(legs[i].OfferedOdds);
+                    locked[mask] = OddsMath.ParlayDecimal(survivors);
+                }
+                else
+                {
+                    // A leg-targeted Profit Boost travels with its leg, exactly as it does on the
+                    // ordinary path: there the boosted odds are simply in or out of the product. Boost
+                    // every scenario in which that leg SURVIVES, and none in which it is struck out.
+                    bool boostSurvives = profitBoostLeg >= 0 && (mask & (1 << profitBoostLeg)) != 0;
+                    locked[mask] = sameMatch.SubsetPrices[mask] * (boostSurvives ? boost : 1.0);
+                }
+            }
+            subsetPrices = locked;
+        }
+
+        var ticket = new Ticket(legs, stake, OddsMath.VigPaid(stake, offered, fair), offered, sameMatch,
+            subsetPrices)
         {
             Id = $"{Round}.{_tickets.Count}",
         };
@@ -252,6 +321,47 @@ public sealed class Run
         _compsAccrualRaw += stake * Config.CompsPerDollarStaked; // pools raw; commits once at lock
         _tickets.Add(ticket);
         return ticket;
+    }
+
+    /// <summary>The picks as legs, priced off the live slate. One construction shared by
+    /// <see cref="PlaceTicket"/> and <see cref="RefusalFor"/>, so a pre-checked slip and the placement
+    /// that follows it can never be judging different legs.</summary>
+    private List<Leg> LegsFor(IReadOnlyList<Pick> picks)
+        => picks
+            .Select(p =>
+            {
+                if (p.MatchupIndex < 0 || p.MatchupIndex >= CurrentSlate.Matchups.Count)
+                    throw new ArgumentException($"Matchup {p.MatchupIndex + 1} is off the slate");
+                Matchup matchup = CurrentSlate.Matchups[p.MatchupIndex];
+                return new Leg(matchup, p.Selection, matchup.Odds(p.Selection));
+            })
+            .ToList();
+
+    /// <summary>
+    /// Would this slip be refused, and why — null if it would be sold. THE PROGRAMMATIC ROUTE to the
+    /// same verdict <see cref="PlaceTicket"/> raises (S73-am4,
+    /// <c>docs/design/surething-design.md</c> §3.3): a surface that must stamp a Blocked control
+    /// before the player commits reads the cause and the remedy from here instead of provoking an
+    /// exception and reading its text.
+    ///
+    /// <para>The verdict is the same object <see cref="TicketRefusedException.Refusal"/> carries, from
+    /// the same call on the same legs — there is one refusal rule set, not a preview of one.</para>
+    ///
+    /// <para><b>Judges only the three combination rules.</b> Stake, bankroll, ticket count, held
+    /// consumables and phase are placement concerns and are not consulted, so this stays answerable
+    /// while a slip is still being built. It costs nothing on a ticket with at most one leg per
+    /// matchup, which cannot be refused by any of the three.</para></summary>
+    /// <param name="picks">The slip as it stands.</param>
+    /// <param name="profitBoostLeg">The leg a held Profit Boost would be played on, or −1 — it lifts
+    /// the price the sub-evens rule judges, so the answer depends on it.</param>
+    public TicketRefusal? RefusalFor(IReadOnlyList<Pick> picks, int profitBoostLeg = -1)
+    {
+        if (picks == null) throw new ArgumentNullException(nameof(picks));
+        if (picks.Count < 1 || picks.Count > Config.MaxLegs)
+            throw new ArgumentException($"Tickets take 1 to {Config.MaxLegs} legs, got {picks.Count}");
+
+        return SameMatchModel.Refuse(LegsFor(picks), Config.Overround, Config.SgpMargin,
+            profitBoostLeg >= 0 ? RelicCatalog.ProfitBoostMult : 1.0, profitBoostLeg);
     }
 
     /// <summary>Plays a held Bookie's Marker: this round's payment drops by the relief fraction.
@@ -318,12 +428,55 @@ public sealed class Run
             throw new InvalidOperationException("No dead leg is awaiting a Mulligan Slip");
         if (!OwnsConsumable("mulligan_slip"))
             throw new InvalidOperationException("No Mulligan Slip held");
+        RequireLiveTicket(session);
 
+        // No cap on how many legs of one ticket may void (design/02 § *Void: re-price on the
+        // survivors*, CLOSED 2026-08-12). A SAME MATCH ticket re-prices onto the locked price for
+        // whatever survivor set is left — every subset was priced at placement, so the second and third
+        // void are the same table lookup as the first. An ordinary ticket drops each voided leg out of
+        // its product, as it always has. SweatSession.CanMulliganPendingLoss is the only limit that
+        // remains: a Mulligan needs two active legs, so the last one never voids.
         ConsumeConsumable("mulligan_slip");
         session.ResolvePendingLossAsMulligan();
         // The designed post-lock toggle (PLAN.md rev 5 §2): a void can strip the ticket's last
         // qualifying longshot leg — only the photo factor re-evaluates.
         _effects.RefreshPhotoFactor(session.TicketRef);
+
+        // THE SUB-EVENS VOID (design/02 § *Void: re-price on the survivors*, CORRECTED 2026-08-12).
+        // If this void re-priced the ticket to at or below evens, the ticket VOIDS IN FULL: it stops
+        // being a live contract here and the stake is returned unconditionally by the stake-return
+        // ledger in FinishSweat. The superseded rule floored the price at 1.0 and left the ticket
+        // live, which returned the stake only if the survivors WON — worse for the player than the
+        // full void it claimed to imitate. Realized at the moment of the void, not at settlement, so
+        // the outcome cannot depend on how the rest of the sweat runs: the state change alone closes
+        // the cash-out window (SweatSession requires an Open ticket) and takes the ticket out of
+        // FinishSweat's Won/Lost decision.
+        MarkVoidedInFull(session.TicketRef);
+    }
+
+    /// <summary>A ticket that already voided in full is terminal: it is neither won nor lost and the
+    /// stake is already owed back, so a save spent on it could not change anything. Refuse before the
+    /// consumable is spent rather than burning it for nothing.</summary>
+    private static void RequireLiveTicket(SweatSession session)
+    {
+        if (session.TicketRef.State == TicketState.Voided)
+            throw new InvalidOperationException(
+                "This ticket has already voided in full — a void re-priced it to at or below evens and "
+                + "its stake is returned; no save can change that");
+    }
+
+    /// <summary>Moves a ticket to <see cref="TicketState.Voided"/> the moment a void re-prices it to at
+    /// or below evens. Idempotent, and a no-op for every ticket that has not (an ordinary ticket can
+    /// never reach it — it carries no locked replacement price at all).</summary>
+    private static void MarkVoidedInFull(Ticket ticket)
+    {
+        // Never over a ticket that has already realized value. Unreachable today — a cash-out needs an
+        // Open ticket and the void closes that window the instant it lands, and the Won assignment runs
+        // after this — but if it ever were reachable, the refund would be credited ON TOP of money the
+        // player already banked. Fail towards the payment that actually happened.
+        if (ticket.State == TicketState.Won || ticket.State == TicketState.CashedOut) return;
+
+        if (ticket.VoidedInFull) ticket.State = TicketState.Voided;
     }
 
     /// <summary>Plays a held Ref's Whistle on the session's pending dead leg: the leg's GRADING
@@ -338,6 +491,7 @@ public sealed class Run
             throw new InvalidOperationException("No dead leg is awaiting a Ref's Whistle");
         if (!OwnsConsumable("refs_whistle"))
             throw new InvalidOperationException("No Ref's Whistle held");
+        RequireLiveTicket(session);
 
         ConsumeConsumable("refs_whistle");
         Pcg32 roll = Rng.Derive(Round, session.TicketRef.Id, session.PendingDeadLegIndex, "whistle", 0);
@@ -361,7 +515,14 @@ public sealed class Run
 
         foreach (Ticket ticket in _tickets)
         {
-            if (ticket.State != TicketState.Open) continue; // CashedOut or dead-leg Lost: already settled
+            // Belt and braces: PlayMulliganSlip already moved a sub-evens re-price to Voided the moment
+            // it happened, and nothing else in the engine voids a leg. Re-asserting it HERE, ahead of
+            // the Won/Lost decision, is what makes "the outcome does not depend on whether the
+            // surviving legs win" a structural property of settlement rather than a promise kept by one
+            // call site.
+            MarkVoidedInFull(ticket);
+
+            if (ticket.State != TicketState.Open) continue; // CashedOut, Voided, or dead-leg Lost
 
             if (ticket.GradesWon)
             {
@@ -376,13 +537,29 @@ public sealed class Run
             }
         }
 
-        // Terminal-realization ledger: every Lost Free Bet ticket refunds its stake, once.
-        // The loss still happened everywhere it matters (scar fed, jar counts it).
+        // Terminal-realization ledger — THE STAKE-RETURN PATH. Two things reach it, and both return
+        // exactly the stake: raw, once, and untouched by PayoutMultiplier or any ticket modifier.
+        //
+        //   * a Lost Free Bet ticket. The loss still happened everywhere it matters (scar fed, jar
+        //     counts it) — the refund is the modifier's contract on top.
+        //   * a ticket that VOIDED IN FULL (F_0.6.0): a void re-priced it to at or below evens, so the
+        //     ticket voids and the stake comes back UNCONDITIONALLY — it never graded, so whether the
+        //     survivors would have won is not consulted.
+        //
+        // A refund is not a payout, which is why it is credited here as `Bank += Stake` rather than
+        // through `Stake × price × PayoutMultiplier`: otherwise a Double or Nothing ticket would turn
+        // a void into a profit, and a void is not something a player should ever want. The two clauses
+        // share the one `Refunded` latch and are mutually exclusive by state — a ticket that voids in
+        // full is never Lost — so a Free Bet that voids gets its single stake back, not two.
         foreach (Ticket ticket in _tickets)
         {
-            if (ticket.State == TicketState.Lost
-                && ticket.Modifier == TicketModifier.FreeBet
-                && !ticket.Refunded)
+            if (ticket.Refunded) continue;
+
+            bool voidRefund = ticket.State == TicketState.Voided;
+            bool freeBetRefund = ticket.State == TicketState.Lost
+                && ticket.Modifier == TicketModifier.FreeBet;
+
+            if (voidRefund || freeBetRefund)
             {
                 ticket.Refunded = true;
                 Bank += ticket.Stake;
@@ -404,7 +581,24 @@ public sealed class Run
 
     private void CreditBank(double amount) => Bank += amount;
 
-    private void HandleBust(Ticket ticket) => _effects.OnBust(ticket);
+    /// <summary>The bust seam, handed to every <see cref="SweatSession"/> and used by
+    /// <see cref="FinishSweat"/>.
+    ///
+    /// <para>A ticket that VOIDED IN FULL cannot bust. Its outcome stopped depending on the surviving
+    /// legs the moment the void re-priced it under evens, so a later dead leg is not a loss — it is
+    /// noise on a contract that is already settled at the stake. The session still calls in (it sets
+    /// Lost and reports the bust before this runs, and SweatSession is not F_0.6.0's to change), so the
+    /// state is restored here and the bust chain — Scar growth, the Bad Beat Jar's all-lost round — is
+    /// not fed a loss that did not happen.</para></summary>
+    private void HandleBust(Ticket ticket)
+    {
+        if (ticket.VoidedInFull)
+        {
+            MarkVoidedInFull(ticket);
+            return;
+        }
+        _effects.OnBust(ticket);
+    }
 
     /// <summary>
     /// The payment settle (design/10): the round's payment is DEDUCTED. Meet it and the run

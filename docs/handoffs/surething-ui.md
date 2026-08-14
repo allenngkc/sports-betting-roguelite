@@ -1,16 +1,26 @@
 # SureThing UI — re-seat state
 
-**STATUS 2026-08-09 · `3320a40` on `surething-ui` · 14 ahead of main, 0 BEHIND · tree clean (`artifacts/` untracked, as always)**
+**STATUS 2026-08-10 · converged at `cace46b`, IDENTICAL to main · tree clean (`artifacts/` and both S2-am2 frame sets untracked, deliberately)**
 
 ### Verifiable state
 
-- **Suites: EditMode 78/78 · PlayMode 58/58.** Baseline every later comparison against **78/58**.
-  **PlayMode moved 57 → 58** at `af0c42c` — the S71 margin-empty-state gate. **A run reporting 57 means
-  that gate did not execute**, and the wrapper's count is what tells you.
-- **Verified at `1d5a2df`** (the S71 gate rebuild), and **nothing under `unity/` has changed since** —
-  `3320a40` is a docs-only merge. So the figures above describe this tree exactly and no re-run is owed.
-  Check it the same way rather than trusting this line: `git diff --stat 1d5a2df HEAD -- unity/`.
-- **Branch is 14 AHEAD and 0 BEHIND.** Read those two counts separately —
+- **⚠ THE SUITE FIGURES ARE NOW STUDIO-WIDE, NOT THIS SURFACE'S. Read that before comparing anything.**
+  **EditMode 250/250 · PlayMode 90 discovered → 84 passed, 0 failed, 6 skipped**, run by this seat on
+  the converged tree at `d5ff7f8`, both through the C29 wrapper. **Code has moved under `unity/` since**
+  (TV hardened `TvSweatScreenTests` in place, **0 tests added**, so the counts are expected
+  unchanged) — **expected is not verified. Re-establish before quoting them again.**
+- **The six skips are BY DESIGN.** A run reporting **90 executed** is as much a discrepancy as a
+  failure and a much quieter one. Check the skip count, not just the pass count.
+- **What changed is the denominator, not this surface.** This seat's own suites were **78/78 and
+  58/58** — the figures a filtered run of this surface should still report, with **PlayMode 57 → 58**
+  at `af0c42c` (the S71 gate; a 57 means that gate did not execute). The 89-commit convergence brought
+  every lane's tests into this tree, so 250 and 90 are **every lane together** and 78/58 are subsets of
+  them. **Nothing on this surface moved.** Reading a green 250 as covering something specific is the
+  category error to avoid, and it now applies to this seat's own tree rather than only to the studio's.
+- **Branch is CONVERGED — 0 ahead, 0 behind at the fast-forward.** It was fast-forwarded deliberately
+  rather than merged: HEAD was already an ancestor of main (this seat's work landed at `23f9da6`), so a
+  `--no-ff` merge commit would have invented a sibling of main instead of becoming it. Read the counts
+  separately —
   `git rev-list --count main..HEAD` is ahead, `HEAD..main` is behind. An earlier version of this file
   printed "12 ahead and 3 BEHIND" with the labels **swapped**, off a single
   `--left-right --count main...HEAD` whose output is *behind* then *ahead*. Do not trust a remembered
@@ -87,6 +97,72 @@ Read §4bb-C13 for the trail, but read it as history. **What survives and must n
 The joint read is at `main-2/docs/design/dd-import/blur-pipeline-read-2026-08-08.md` — Part 1 mine,
 Part 2 room's, Part 3 the closing.
 
+### The S2-am2 baseline — RE-SHOT UNDER THE PIN. `fa93238` is RETIRED.
+
+**Current baseline: `5e9588b`**, shot on `2026-08-10-s2am2-pinned/focused-laptop-desk.png` with the
+slate **pinned and asserted** (`ROOMREF01`, both in the log). Boxes were the **pinned set, not the
+fallback set** — the recipe requires the report to say which, and it does.
+
+| group | ramp | **across-time form** (÷ authored) | measured form | verdict |
+|---|---|---|---|---|
+| season records | 2.187 px | **1.127** (÷ 1.94) | 0.798 | **reads: yes** |
+| row numbers `01`–`06` | 2.529 px | **1.246** (÷ 2.03) | 0.789 | **reads: yes** |
+
+**The unit is "1.127 and it reads", never the number alone.** The two forms are different quantities
+and are **never compared to each other**. Values hold **only at the ratified acceptance view**
+(focused-laptop-desk, 0.52 m along the lid normal, 30°); any other pose rescales them.
+
+**Why the old one retired, and it was mechanical rather than a judgement.** Batch 30 pre-committed
+both dispositions before the frames existed: reproduce → `fa93238` stands, else → `fa93238` retires
+and the re-shoot becomes the baseline. Season records went 1.152 → **1.127**, so the values were not
+reproduced and **branch 2 applied**. **No reconciliation of the old numbers was attempted**, as ruled.
+The retired figures were 1.152 / 1.246 on `2026-08-10-s2am2-postflood` — recorded only so nobody
+re-derives them wondering where they went.
+
+**The same-frame control is the part to keep.** Across two different deals, one view, one instrument:
+
+- **row numbers moved 0.000** — identical on *every* figure (166 stems, stroke 3.206, ramp 2.529,
+  ratio 0.789). That group is **slate-independent**: fixed digits at a fixed x.
+- **season records moved 0.025** — that group is **slate-dependent**.
+
+So the delta is **deal-to-deal variation, isolated, with a control proving it is not instrument
+drift.** That is also why branch 1 was never satisfiable against the old comparand.
+
+**THE BOUND IS REPLACED, NOT TIGHTENED — RULED, batch 31 (S2-am2-am4).** Branch 2 is confirmed and
+the retirement stands. The ~0.037 bound is gone; a **structure** replaces it, and the two halves are
+different instruments that must not be swapped:
+
+| purpose | instrument | scope |
+|---|---|---|
+| **across-time baseline** | **row numbers, AUTHORED form** — deal-invariant (moved **0.0002** across two deals) | compare over time |
+| **within-frame legibility** | **both groups, MEASURED form** | **one frame only**, never across time |
+
+**The 0.025 is an observation and is never promoted.** It is deal variation on a slate-dependent
+group; it is not a bound, not a tolerance, and not a threshold anything may be tested against.
+
+**Precision note on this seat's own claim.** This file previously said the row numbers moved `0.000`
+and were "identical on every figure". That was true **at the tool's reported precision** (3 decimals);
+the DD resolved it finer at **0.0002**. Their figure is the one to cite — "identical" was a display
+artefact, not a measurement, and the distinction is exactly what an across-time baseline lives on.
+
+**⚠ THE PHONE NUMBER IS NOT AN ACROSS-TIME BASELINE.** `0.567` is **deal-dependent with no invariant
+subgroup** — it has no row-number equivalent to anchor it. **Never compare it across time at another
+seed.** It is passed through by this seat, not owned by it.
+
+**Part A is endorsed as the standard** — "the C37 characterization this instrument never had". Worth
+knowing *why*: it reported the result that **complicated its own headline**, showing ramp ÷ measured
+stroke is not monotonic in blur. An instrument that only ever flatters its own number is not
+characterized.
+
+**The pin makes boxes stable, not automatically correct.** They were re-cut against `ROOMREF01` and
+eye-confirmed (C27) — all three sets: the twelve records, the row-number column, and the Part A/B
+header band that gates C37. **This should be the last re-cut needed**; a future run on `ROOMREF01`
+should reproduce these boxes and these numbers, so **later drift is a real change rather than a
+re-deal**.
+
+**Frames stay on disk, untracked** — for both shoots. Evidence storage in git is an open general
+question with Allen and neither shoot pre-empts it. Reports and boxes are committed.
+
 ### Open items
 
 1. **No SureThing BUILD item is open.** Two things are in flight that are not builds:
@@ -133,8 +209,30 @@ Part 2 room's, Part 3 the closing.
    holds the only frames of `16-margin-max-legs-staged-receipt` — **this tree cannot regenerate them**,
    because it still carries `11-`.
 
-### The three standing traps
+### The standing traps
 
+*(Not "the three" any more. The count was in this heading and went stale the moment a fourth arrived —
+the same defect as the `(gitignored)` line below, in the heading rather than the body.)*
+
+- **CLEARED 2026-08-10 — the TV-font LFS hazard. History, not a live trap.** Kept because the
+  *recovery* is not obvious and the class can recur on any path where a raw blob sits under an `lfs`
+  attribute.
+  **What it was:** `Tv/Fonts/EncodeSans.ttf` and `EncodeSansCondensed.ttf` were raw TTF blobs in HEAD
+  under an `lfs` attribute with **no LFS object behind them**, so they showed permanently modified in
+  every worktree and the clean filter would have written a pointer to nothing — `git add -A` or
+  `commit -a` would have converted real fonts into **dangling pointers**. TV renormalised them at
+  `d97e9e4`; verified afterwards, the blob is now a 131-byte pointer with its object present.
+  **Neither `checkout` NOR `reset --hard` can clear that state** while it exists — the clean filter
+  regenerates the mismatch on every comparison — so `git merge` refuses with *"Please commit your
+  changes or stash them"*, and committing is the one forbidden act. **The way through is to neutralise
+  the filter for a single command rather than change any repo state:**
+  `git -c filter.lfs.process= -c filter.lfs.clean=cat -c filter.lfs.smudge=cat -c filter.lfs.required=false merge --no-ff main`
+  **That has one side effect which must be undone immediately:** with smudge off, incoming pointers
+  land on disk as pointer TEXT, so the working tree carries 131-byte "fonts" until **`git lfs
+  checkout`** restores them. A font that loads as nothing is a quiet failure.
+  It also breaks `git merge --abort` (*"Entry … not uptodate"*); `git reset --hard HEAD` clears the
+  index and costs nothing **provided this seat's own work is committed first** — the reason to commit
+  before merging rather than after.
 - **`artifacts/` is NOT git-ignored.** A bare `git add -A` sweeps ~100 PNGs. Stage explicitly, always.
   Verify rather than trust: `git check-ignore -v artifacts/surething-ui` matches nothing.
   **This file told two seats the opposite** — §5 read "(gitignored)" until 2026-08-09, cancelling the
@@ -188,9 +286,9 @@ Part 2 room's, Part 3 the closing.
 - **The kit is at `docs/design/design-system/`, not `ui_kits/`** — those paths are relative to that root. **Read it before calling anything unspecified**; this surface has now twice concluded a screen was unspecced when it was not.
 - **Two traps still live in this tree:** `artifacts/` is no longer git-ignored (a bare `git add -A` sweeps ~100 PNGs), and two capture states share the number `09` (markets' test, needs their nod).
 
-**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-09, after C13 closed, the
-font-asset re-verification, batch 21, the strays collection, S71's gate rebuild and S72's clean sweep.
-**HEAD:** `3320a40` · **Branch:** `surething-ui` · 14 ahead of main, 0 behind · working tree clean.
+**Written:** 2026-08-01, at a session hygiene clear. **Last updated:** 2026-08-10, after batch 31 replaced the ~0.037 bound with the across-time /
+within-frame structure. **HEAD:** `cace46b` · **Branch:** `surething-ui` · converged, identical to
+main · working tree clean (both S2-am2 frame sets and `artifacts/` are untracked on purpose).
 
 **Read the re-seat block at the top of this file first.** Everything below it is the accumulated
 record and some of it describes states that have since closed — where that is true the section says

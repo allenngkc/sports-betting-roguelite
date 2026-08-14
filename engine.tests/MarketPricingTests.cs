@@ -12,10 +12,33 @@ public class MarketPricingTests
         var run = new Run("MARKET-BOARD");
         Matchup m = run.CurrentSlate.Matchups[0];
 
-        // Phase 4 adds one YES-only scorer offer for every listed outfield player, not a
-        // magic board-size constant. The old Phase 1 board remains the 22 two-way offers.
-        Assert.Equal(22 + m.Home.Players.Count + m.Away.Players.Count, m.Markets.Count);
-        Assert.Equal(2, m.Markets.Count(x => x.Selection.Kind == MarketKind.Moneyline));
+        // NO MAGIC BOARD-SIZE CONSTANT. Two of the V1 boards are enumerated under a probability
+        // floor (correct score, player 2+), so their row counts legitimately vary per matchup —
+        // pinning a total would make an honest model change look like a regression. The fixed
+        // kinds are asserted exactly; the floored ones are asserted on their FLOOR instead.
+        Assert.Equal(3, m.Markets.Count(x => x.Selection.Kind == MarketKind.Moneyline));
+        Assert.Equal(1, m.Markets.Count(x => x.Selection.Choice == MarketChoice.Draw));
+        Assert.Equal(3, m.Markets.Count(x => x.Selection.Kind == MarketKind.DoubleChance));
+        Assert.Equal(4, m.Markets.Count(x => x.Selection.Kind == MarketKind.Handicap));
+        Assert.Equal(8, m.Markets.Count(x => x.Selection.Kind == MarketKind.TeamTotalGoals));
+        Assert.Equal(4, m.Markets.Count(x => x.Selection.Kind == MarketKind.TeamTotalCorners));
+        Assert.Equal(4, m.Markets.Count(x => x.Selection.Kind == MarketKind.TeamTotalCards));
+        Assert.Equal(3, m.Markets.Count(x => x.Selection.Kind == MarketKind.WinningMargin));
+        Assert.Equal(2, m.Markets.Count(x => x.Selection.Kind == MarketKind.TotalGoalsOddEven));
+
+        // The handicap ladder is ±1.5 only, and that is a CRASH boundary rather than a taste:
+        // ±2.5's favourite side reaches p 0.984 against the 0.95238 ceiling at reachable seeds.
+        Assert.All(m.Markets.Where(x => x.Selection.Kind == MarketKind.Handicap),
+            x => Assert.Equal(1.5, Math.Abs(x.Selection.Line)));
+
+        // Every floored offer must actually clear its floor — the cap is what keeps the longest
+        // price inside the tail the economy is already gated on.
+        var floored = m.Markets.Where(x => x.Selection.Kind is MarketKind.CorrectScore
+            or MarketKind.PlayerMultiScorer).ToArray();
+        Assert.NotEmpty(floored);
+        Assert.All(floored, x => Assert.True(x.TrueProb >= new RunConfig().CorrectScoreFloor,
+            $"{x.Selection.Kind} {x.Selection.ScoreHome}-{x.Selection.ScoreAway} priced at "
+            + $"{x.TrueProb:P2}, under the ratified floor"));
         Assert.Equal(2, m.Markets.Count(x => x.Selection.Kind == MarketKind.BothTeamsToScore));
         Assert.Equal(6, m.Markets.Count(x => x.Selection.Kind == MarketKind.TotalGoals));
         Assert.Equal(6, m.Markets.Count(x => x.Selection.Kind == MarketKind.TotalCorners));

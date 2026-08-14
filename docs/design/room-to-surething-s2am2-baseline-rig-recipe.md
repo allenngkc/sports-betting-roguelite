@@ -23,13 +23,17 @@ catch.
 
 **Batch 26's ratified pairing, which your re-shoot is compared against:**
 
-| element group | ramp ÷ stroke | reads? |
-|---|---|---|
-| season records (smallest product facts) | **0.775** | **yes** |
-| row numbers `01`–`06` | **0.789** | **yes** |
-| price figures (bundle's headline) | 0.482 | yes |
+| element group | ramp ÷ stroke | reads? | comparable across deals? |
+|---|---|---|---|
+| **row numbers `01`–`06`** | **0.789** | **yes** | **YES — this is the across-time baseline** |
+| season records (smallest product facts) | 0.775 | yes | **no** — within-frame only (§2a-i) |
+| price figures (bundle's headline) | 0.482 | yes | not the floor's type |
 
 **Record the verdict with the number or the number is not usable.** *0.789-and-it-reads* is the unit.
+
+**Compare the row numbers across shoots. Do not compare the season records across shoots** — batch 31
+replaced the ~0.037 bound for exactly that reason, and §2a-i says why in full. All three numbers
+remain valid *within* batch 26's frame.
 
 ## 1. Shoot the frame
 
@@ -76,20 +80,70 @@ Part A characterizes the instrument, Part B records the two-surface baseline, Pa
 smallest product facts. **Part A runs first and gates the rest** — if the instrument stops tracking a
 known kernel within 15%, Part B does not run (C37).
 
-### 2a. The boxes are in the tool, and they must be re-cut for a changed layout
+### 2a. PIN THE SLATE. The boxes are downstream of it
+
+**Amended · DD batch 29.** **The baseline shoot pins its slate. Re-cutting boxes per frame is the
+fallback, not the method.**
+
+**The mechanism, which SureThing hit and this recipe originally missed:** a season record sits
+*immediately after* the team name, so **its x tracks the name's length**. `MIDDLEMEN 5-4` and
+`GRAVEDIGGERS 5-4` put the record in different places. **No fixed record box survives a re-deal** —
+and it will not fail loudly when it stops surviving one. It will land on the wall behind the digits,
+or on half a glyph, and return a number.
+
+So: **pin the deal before shooting.** Same slate, same strings, same positions, and the boxes below
+stay valid shoot after shoot — which is the whole point of a baseline that a future reading can be
+worse than.
+
+> This recipe already carried the right rule in §3 — *"if the surface is content-dependent, pin and
+> assert the seed before shooting"* — but filed it under **reporting**, as something to state after
+> the fact. It is not a reporting clause. It is the shoot's method, and it belongs here, before the
+> boxes. C34 filed one step too late is C34 not applied.
+
+**Fallback, when the slate genuinely cannot be pinned:** re-cut every box against that frame and
+eye-confirm each one (C27). Treat it as a one-frame measurement, not as a baseline — an unpinned
+number cannot be compared to a later one, because you cannot tell a softness change from a re-deal.
 
 `SMALLEST` in `glyph_ramp_baseline.py` holds 12 season-record boxes and one row-number column, in
-frame pixels. **If the flood removal moves the board, these boxes are wrong and will silently measure
-the wrong thing.** Re-cut them and **eye-confirm each one** (C27).
+frame pixels, **cut against the batch-26 frame and correct for it**. They are not a template. **If
+the flood removal moves the board, or the deal differs, they are wrong and will silently measure the
+wrong thing.**
 
-Two of mine needed re-cutting on the first pass: one clipped a glyph, one caught a sliver of the team
-name behind the digits. **Neither failed loudly** — a clipped stem just quietly biases the median
+Two of mine needed re-cutting even on their own frame: one clipped a glyph, one caught a sliver of the
+team name behind the digits. **Neither failed loudly** — a clipped stem just quietly biases the median
 — which is why C27 is eye-confirmation and not a variance threshold. Crop them, look at them, then
 measure.
 
 **Do not pool the small type with larger type.** The ramp is fixed in screen px and the stroke scales
 with size, so including team names or price figures inflates the denominator and flatters the result.
 That is exactly how the hunt's headline 0.482 came to be quoted for a floor it did not describe.
+
+### 2a-i. THE INSTRUMENT'S VALIDITY PRECONDITION — state it, do not derive it
+
+**Amended · batch 31.** **`ramp ÷ stroke` is only meaningful against an IDENTICAL STRING at an
+IDENTICAL SIZE.** Outside that, the comparison is not weak — it is undefined.
+
+This was derivable from Part A's characterization and was never written down, which is the whole
+problem: **a lane that baselines a deal-dependent group makes no visible mistake at the time.** The
+boxes are eye-confirmed, the stems are plentiful, the sd/mean is clean, the number is plausible and
+lands next to the last one. Nothing anywhere goes red. The error only surfaces later, as a "change"
+that is really two different strings measured under one label.
+
+**Consequence, ruled (batch 31) — the ~0.037 bound is REPLACED:**
+
+| group | across deals | why |
+|---|---|---|
+| **row numbers `01`–`06`** | **THE across-time baseline** | the string is identical in every deal, at a fixed size and position — the precondition holds by construction |
+| season records (`5-4`, `9-0`, …) | **within-frame only** | the string itself changes with the deal, *and* its x tracks the team name beside it. Comparing it across deals was the instrument read outside its validity |
+
+**Season records are not demoted as a measurement.** Within one frame they remain the smallest
+product fact and the honest worst case, and batch 26's 0.775-and-it-reads stands as that. What they
+cannot be is a *time series*.
+
+**Pinning the slate does not rescue them.** §2a's pin makes two shoots of the **same** deal
+comparable; it does nothing for two shoots of **different** deals, which is what any re-seed or
+content change produces. Pin *and* precondition are separate requirements and neither implies the
+other.
 
 ### 2b. Which denominator — this is the amended part, so read it
 
@@ -126,7 +180,10 @@ provenance, and whether the authored-stroke form was used. `--report` tees the w
 pass it every time. C11 wants the evidence, C17 wants it retained, C25 wants its scope attached.
 
 **Reproducibility (C34):** the frame is not byte-reproducible, so state the run, the commit and the
-pose rather than a hash. If the surface is content-dependent, pin and assert the seed before shooting.
+pose rather than a hash. **State the slate you pinned and assert it before shooting** — see §2a, where
+that requirement now lives, because it governs the shoot and not merely the write-up. Record whether
+the boxes were the pinned-slate set or a per-frame fallback cut; a reader cannot tell the two apart
+from the numbers, and only one of them is comparable to a later shoot.
 
 ## 4. What is NOT asked
 

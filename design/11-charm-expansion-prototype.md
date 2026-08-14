@@ -68,6 +68,9 @@ Gift pool: all 7, uniform (the Marker as a pity gift is the bookie's best line).
 
 - All six gates on the 22-item catalog; the audit runs with paired-seed CIs (Bonferroni),
   declared exposure thresholds (UNDEREXPOSED blocks), and within-kind dominance contrasts.
+- **G3 re-banded again by Allen (2026-08-08): median death ≥5, win 4.5–8%** — the floor moved down
+  0.5pp because the economy sits at 5.4–5.5% and the gate could not adjudicate its own reading
+  against a 5.0% edge. See `DECISIONS.md`. The 2026-07-15 band it supersedes, recorded as issued:
 - **G3 re-banded by Allen (2026-07-15): median death ≥5, win 5–8%.** The dealt hand adds build
   variance BY DESIGN — the half without an early income engine dies at the R5 cliff; that
   spread is the roguelite shape. (Median ≥6 was jointly unreachable with the naive/noshop

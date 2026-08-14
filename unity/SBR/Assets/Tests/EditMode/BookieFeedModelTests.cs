@@ -119,6 +119,16 @@ namespace SBR.Tests.EditMode
         {
             // The engine grants gifts internally; drive a real dutch-book cold streak (the
             // guaranteed-vig-loss script from the engine tests).
+            //
+            // ALL THREE OUTCOMES ARE BACKED, and the draw ticket is not padding. The script's
+            // guarantee was never about the seed — it is about COVERING THE OUTCOME SPACE, so that
+            // whatever happens returns ~100 against ~105 staked. Backing home and away alone used
+            // to be complete; since the moneyline became 1X2 (F_0.5.0 D1, Allen 2026-08-12) that
+            // pair covers only ~0.772 of the implied probability, the stakes fall to ~77, and the
+            // "guaranteed loss" quietly turns a ~20 PROFIT — so no cold streak forms and no gift
+            // is ever drawn. The engine-side copy of this script was fixed in D1; this one could
+            // not be, because Unity asmdef code is invisible to `dotnet build` and only an editor
+            // run can see it. That is precisely what this lease surfaced.
             var run = new Run("CRED-GIFT",
                 new RunConfig { Payments = new double[] { 10, 10, 10, 10 }, StartingBank = 500 });
             var m = new BookieFeedModel();
@@ -128,6 +138,8 @@ namespace SBR.Tests.EditMode
             {
                 Matchup match = run.CurrentSlate.Matchups[0];
                 run.PlaceTicket(new[] { new Pick(0, Side.Home) }, System.Math.Floor(100 / match.HomeOdds));
+                run.PlaceTicket(new[] { new Pick(0, MarketSelection.MoneylineDraw()) },
+                    System.Math.Floor(100 / match.DrawOdds));
                 run.PlaceTicket(new[] { new Pick(0, Side.Away) }, System.Math.Floor(100 / match.AwayOdds));
                 run.LockRound();
                 run.FastForwardRound();

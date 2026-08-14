@@ -33,6 +33,34 @@ namespace SBR.Tests.EditMode
             Assert.AreEqual(0, slip.Picks.Count);
         }
 
+        /// <summary>THE DRAW IS NOT A TEAM (DD batch 49), pinned on the surface that asks the
+        /// question. This is a check that STOPS rather than prints: the old shape returned Away for
+        /// a moneyline draw, which is a silently wrong team on a slip whose job is showing what you
+        /// backed. It is unreachable today only because no surface can build a draw pick yet, so
+        /// without this test the defect would ship dormant and wake up during Phase S.
+        ///
+        /// Found by sweeping the population after the gift-streak dutch, rather than by waiting for
+        /// the next one to fail (C46).</summary>
+        [Test]
+        public void A_moneyline_draw_has_no_side_and_never_reports_away()
+        {
+            var run = new Run("SLIP-DRAW", Bank500());
+            var slip = new BetslipModel(run);
+
+            slip.Toggle(0, MarketSelection.MoneylineDraw());
+
+            Assert.AreEqual(1, slip.Picks.Count, "the draw is a real, backable selection");
+            Assert.AreEqual(MarketChoice.Draw, slip.SelectionOn(0)!.Value.Choice);
+            Assert.IsNull(slip.SideOn(0), "a draw has no team — reporting Away here is the defect");
+
+            // And the team sides still answer, so the null is specific to the draw rather than a
+            // blanket refusal that would break the two rows the surface already renders.
+            slip.Toggle(1, Side.Home);
+            Assert.AreEqual(Side.Home, slip.SideOn(1));
+            slip.Toggle(2, Side.Away);
+            Assert.AreEqual(Side.Away, slip.SideOn(2));
+        }
+
         [Test]
         public void Toggle_caps_new_legs_at_max_but_still_switches_existing()
         {

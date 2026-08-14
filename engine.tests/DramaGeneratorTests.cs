@@ -219,9 +219,12 @@ public class DramaGeneratorTests
     [Fact]
     public void Near_miss_dips_a_winning_leg_to_a_late_scare()
     {
-        // Seed SC-99 (re-scanned for the F_0.2.0 M-T1 budgets): leg 0 (matchup 0, Away) is Won
-        // and carries an authored scare-dip <= 0.25.
-        var (ticket, paths) = BuildPaths("SC-99", new[] { new Pick(0, Side.Away), new Pick(2, Side.Away) });
+        // Seed SC-104 — RE-SCANNED for draws (D1, 2026-08-12), the same practice that put SC-99
+        // here for the F_0.2.0 M-T1 budgets. SC-99's matchup 0 now finishes a DRAW, so its leg 0
+        // loses and the fixture no longer exercises what this test is about (a scare dip on a
+        // WINNING leg). The scan required both properties, not just the win: leg 0 Won AND a late
+        // NearMiss beat <= 0.25. SC-104, SC-112 and SC-124 all qualify; SC-104 is the first.
+        var (ticket, paths) = BuildPaths("SC-104", new[] { new Pick(0, Side.Away), new Pick(2, Side.Away) });
         IReadOnlyList<DramaEvent> firstLeg = paths[0];
         Assert.Equal(LegState.Won, ticket.Legs[0].State);
 

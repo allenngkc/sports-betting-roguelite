@@ -134,6 +134,9 @@ the native exponential underneath (design/09 §3b).
 Sim round 1 (sim-report-2.md) surfaced five rulings; Allen's calls:
 1. **Naive band accepted as found** (dies R5, 0.0% wins — "no one would really play naively").
 2. **Skilled win target: 5–8% per run** (final-product realism) — G3 re-banded.
+   **SUPERSEDED 2026-08-08 — the floor moves to 4.5%; the band is now 4.5–8%** (Allen). The
+   economy reads 5.4–5.5%, which sat 0.4–0.5pp above the old floor and left G3 unable to
+   separate its reading from its own edge at any campaign size. See `DECISIONS.md`.
 3. **SECOND CURRENCY ADOPTED — "COMPS"**: items are bought with comps, earned by WAGERING
    VOLUME (like a real book's loyalty program — the satire writes itself: chasing comps is
    −EV cash, exactly like real VIP programs). This also fixes round 1's discovered flaws in one

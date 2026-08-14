@@ -1,0 +1,82 @@
+S2-am2 TWO-SURFACE BASELINE -- ramp / stroke at the acceptance view
+==============================================================================
+
+PART A -- C37 characterization, on real glyphs, known Gaussian kernels.
+A baseline through an uncharacterized instrument inherits its bias forever.
+Blur applied with a 24 px margin so the box never sees the image border.
+A Gaussian of sd s gives a 10-90% ramp of 2*1.2816*s; blurs are expected
+to add in QUADRATURE against the frame's own ramp r0.
+
+  unblurred ramp r0 = 1.923 px   (stems 250, stroke 2.709 px)
+
+   sigma   added  predicted  measured    error   stroke   ratio
+                            <-- the ramp tracks -->   <-- the denominator -->
+    0.40   1.025      2.179     2.232    +2.4%    2.885   0.774
+    0.60   1.538      2.462     2.488    +1.0%    3.625   0.686
+    0.80   2.050      2.811     2.795    -0.6%    4.799   0.583
+    1.00   2.563      3.204     3.212    +0.2%    4.922   0.653
+    1.40   3.588      4.071     3.848    -5.5%    5.685   0.677
+    2.00   5.126      5.475     4.893   -10.6%   21.344   0.229
+
+  Recovery below sigma 1.0: worst error +2.4%  (arms 4)
+  -> tracks known kernels; the baseline may be recorded.
+
+  THE DENOMINATOR IS NOT SAFE, and this is the characterization's real result.
+    stroke under blur: 2.88 -> 3.63 -> 4.80 -> 4.92 -> 5.68 -> 21.34   (monotonic rising)
+    ratio  under blur: 0.774 -> 0.686 -> 0.583 -> 0.653 -> 0.677 -> 0.229   (NOT MONOTONIC)
+    The ramp rises with the kernel exactly as predicted. The stroke rises
+    FASTER over part of the range, because blur merges adjacent glyphs and
+    the falling 50% crossing that ends a stroke runs on into the next gap.
+    So ramp/stroke FALLS while the surface gets softer, then collapses once
+    the glyphs join. **A larger ratio does not mean a softer surface, and a
+    smaller one does not mean a sharper surface, on dense text.** Report the
+    RAMP for a regression; the ratio is only meaningful against an identical
+    string at an identical size, which is the comparison S2-am2 actually asks
+    for -- same surface, same view, over time.
+
+PART B -- the baseline. One number per surface, for regressions to regress from.
+
+   surface  stems  stroke px   ramp px  ramp/stroke
+    laptop    250      2.709     1.923        0.710
+     phone   1254      4.249     2.409        0.567
+
+PROVENANCE -- each number is only as good as the frame under it
+  laptop: artifacts\room-visual-pass\2026-08-10-s2am2-postflood\focused-laptop-desk.png
+    pose    focused-laptop-desk, 0.52 m along the lid normal, 30 deg
+    box     (730, 364, 1430, 428)  (eye-confirmed, C27)
+    content MONEYLINE / MORE / RECORD -- grey uppercase on the dark panel
+  phone: artifacts\room-visual-pass\phone-reference\msgs-03\phone-focused.png
+    pose    phone-focused, 0.315 m along the screen normal, 30 deg
+    box     (1030, 812, 1380, 925)  (eye-confirmed, C27)
+    content BOOKIE header + two message lines -- white ink on the bubble
+
+SCOPE (C25). Both frames are HARNESS captures through RenderTexture, not
+Game-view grabs, so neither inherits the 'Low Resolution Aspect Ratios'
+resample that C38-cl closed on. Each number is ONE box on ONE frame of one
+pinned run; it is a baseline, not a distribution. The phone frame is seed
+PHONEREF01 at msgs-03 -- another seed yields different copy, so a future
+comparison must pin the same seed or compare the ratio only.
+
+PART C -- ramp/stroke on the SMALLEST product fact (register batch 25)
+
+  Instrument's own ramp on a synthetic PERFECT step edge: 0.800 px (60 edges)
+  The floor batch 25 asks to subtract is 1.680 px -- 2.1x larger.
+  So 1.680 is NOT the measuring method's artefact; it is the BUILD's own
+  screen-space ramp (C38's '~1.6 px', real and ruled a characteristic).
+  Subtracting it therefore yields blur ABOVE the known floor, which is the
+  right quantity for a regression -- but it is not an instrument correction,
+  and a residual near zero means 'at the floor', not 'sharp'.
+
+         element group  boxes  stems   stroke    ramp   ratio  above floor
+     row numbers 01-06      1    166    3.206   2.529   0.789     1.890 px
+                       S2-am2-am, across-time form: ramp / AUTHORED stroke (2.030 px) = 1.246
+
+  Saturation check: Part A shows the ratio compressing above sigma ~1, where
+  the measured ramp reaches ~3.2 px. Both groups above sit well below that,
+  so neither number is taken from the saturated part of the range.
+
+  READ THIS BEFORE RANKING THE TWO RATIOS. Part A established that
+  ramp/stroke is NOT monotonic in blur, so the group with the higher ratio
+  is not thereby 'softer'. Within one frame at one view the ratios are
+  comparable as a fraction-of-stroke-in-transition, which is what S2-am's
+  clause 2 is about; they are NOT comparable across blur levels.

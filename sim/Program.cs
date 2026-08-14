@@ -10,12 +10,12 @@ namespace SBR.Sim;
 /// <summary>
 /// The /sim Monte Carlo harness: plays N seeded runs per strategy bot and emits the markdown
 /// balance report. The economy rework (PLAN.md 2026-07-13) added the GATE CAMPAIGN (--gates:
-/// G1–G6 + item flags, the milestone's acceptance criteria) and the payment-curve GRID (--grid:
+/// G1–G7 + item flags, the milestone's acceptance criteria) and the payment-curve GRID (--grid:
 /// growth × P1 cells, gates-lite per cell — how the curve gets chosen). SCORER CALIBRATION
 /// (--scorer-ev, sim/ScorerCalibration.cs) is bot-independent — no strategy ever prices Anytime
 /// Scorer, so it runs standalone instead of joining a strategy batch.
 ///
-///   dotnet run --project sim -- [--runs N] [--strategy naive|random|skilled|noshop|martyr|all]
+///   dotnet run --project sim -- [--runs N] [--strategy naive|random|skilled|noshop|martyr|samematch|all]
 ///       [--seed-prefix STR] [--audit] [--combos N] [--gates] [--grid] [--scorer-ev]
 ///       [--report PATH] [--verify]
 /// </summary>
@@ -29,6 +29,20 @@ internal static class Program
             Console.Error.WriteLine(Usage);
             return error == "help" ? 0 : 2;
         }
+
+        // The G6 defect was never the tool's default — a bare --gates already ran 10,000, which
+        // measures ±0.65pp. It was the campaign being invoked at --runs 1000 by hand, all
+        // session, which is a thing no code path objected to. Allen's floor keeps that same 10,000
+        // and changes its STATUS: it was an unremarked default that anyone could undercut in
+        // silence, and it is now a ruled floor that says so out loud when undercut. The value did
+        // not need fixing; the silence did. Not fatal — a fast --gates smoke is legitimate, it
+        // just is not the campaign.
+        if (opt.Gates && opt.RunsExplicit && opt.Runs < GateData.CampaignRuns)
+            Console.Error.WriteLine(
+                $"warning: --gates at --runs {opt.Runs:N0} is BELOW the ruled campaign size of "
+                + $"{GateData.CampaignRuns:N0} (Allen 2026-08-07). G6's resolution is a function of n; "
+                + "under the ruled size it cannot reliably fail. Each gate states its own resolution "
+                + "— read that column before treating this run as a campaign result.");
 
         var cfg = new RunConfig(); // rework defaults — the sim reports on these, never mutates them
 
@@ -46,9 +60,19 @@ internal static class Program
         var byName = new Dictionary<string, BatchSummary>();
         long totalRuns = 0;
 
+        // The no-label fallback counter is process-wide by design (see SameMatchModel), so the number
+        // G7's SGP arm asserts is zero on has to be scoped to THIS campaign rather than to whatever
+        // the process did before it. Zeroed here, read once after every batch has run.
+        SameMatchModel.ResetNoLabelFallbacks();
+
+        // The gates roster: the gate bots, the archetype telemetry, and the SAME MATCH probe (added
+        // F_0.6.0 step 4). The probe is its own batch and G1–G6 never read it — every batch derives
+        // its seeds from the prefix and runs share no mutable state, so adding one cannot move
+        // another's numbers.
         IEnumerable<string> strategyNames = opt.Gates
-            ? new[] { "naive", "random", "skilled", "noshop", "martyr", "chalk", "hoarder", "ironhands" }
-            : opt.SelectedStrategies; // gates roster: the gate bots + archetype telemetry
+            ? new[] { "naive", "random", "skilled", "noshop", "martyr", "chalk", "hoarder",
+                "ironhands", "samematch" }
+            : opt.SelectedStrategies;
 
         foreach (string name in strategyNames)
         {
@@ -97,7 +121,10 @@ internal static class Program
             gates = GateData.Evaluate(
                 byName.GetValueOrDefault("naive"), byName.GetValueOrDefault("skilled"),
                 byName.GetValueOrDefault("noshop"), byName.GetValueOrDefault("martyr"),
-                martyrWorst, audit, combos, byName.GetValueOrDefault("random"));
+                martyrWorst, audit, combos, byName.GetValueOrDefault("random"),
+                // Read AFTER every batch, audit and combo run: the counter is campaign-wide, and a
+                // fallback fired anywhere in the campaign is a ticket sold at the naive product.
+                byName.GetValueOrDefault("samematch"), SameMatchModel.NoLabelFallbacks);
         }
 
         sw.Stop();
@@ -112,7 +139,11 @@ internal static class Program
             Console.Error.WriteLine($"[wrote {opt.ReportPath}]");
         }
         // Campaign exit contract (rev 5): DONE requires every gate AND a clean flag sheet —
-        // UNDEREXPOSED and item flags block exactly like a failed gate.
+        // UNDEREXPOSED and item flags block exactly like a failed gate. An UNADJUDICATED gate
+        // deliberately does NOT block: Allen ruled a re-run at GateData.EscalationRuns, not a
+        // failure (2026-08-07). It is carried by the report banner instead, which stops saying
+        // "ALL GATES PASS" while one is live — so the exit code stays honest about what it means
+        // (no gate failed) without a green 0 standing in for a verdict nobody reached.
         return gates != null && (!gates.AllPass || gates.ItemFlags.Count > 0) ? 1 : 0;
     }
 
@@ -128,7 +159,9 @@ internal static class Program
         double[] lates = { 1.75, 1.90 };
         int rounds = new RunConfig().Payments.Length;
 
-        Console.WriteLine($"# payment-curve grid — {opt.Runs:N0} runs/bot/cell, bots: naive, skilled, noshop");
+        // Same C34 line as the campaign header: the grid is seed-pinned and now says so.
+        Console.WriteLine($"# payment-curve grid — {opt.Runs:N0} runs/bot/cell, bots: naive, "
+            + $"skilled, noshop, seed \"{opt.SeedPrefix}-{{i}}\" (pinned)");
         Console.WriteLine();
         Console.WriteLine("| bank | P1 | early | late | P8 | G1 naive | G2 noshop | G3 skilled | G4 EV cross | verdict |");
         Console.WriteLine("|---|---|---|---|---|---|---|---|---|---|");
@@ -169,7 +202,8 @@ internal static class Program
         }
 
         Console.WriteLine();
-        Console.WriteLine("Run the full campaign on a CANDIDATE cell: set RunConfig.Payments, then `--gates --runs 10000`.");
+        Console.WriteLine($"Run the full campaign on a CANDIDATE cell: set RunConfig.Payments, then "
+            + $"`--gates` (ruled n = {GateData.CampaignRuns:N0}).");
         return 0;
     }
 
@@ -241,12 +275,17 @@ internal static class Program
 
     private const string Usage =
         "usage: dotnet run --project sim -- [options]\n" +
-        "  --runs N              runs per strategy batch (default 10000)\n" +
-        "  --strategy S          naive | random | skilled | noshop | martyr | all (default all)\n" +
+        "  --runs N              runs per strategy batch (default 10000; --gates holds a ruled\n" +
+        "                        FLOOR of 10000 and warns below it)\n" +
+        "  --strategy S          naive | random | skilled | noshop | martyr | samematch | chalk |\n" +
+        "                        hoarder | ironhands | all (default all; \"all\" is the five economy\n" +
+        "                        bots — the rest are selectable for smoke runs and named by --gates)\n" +
         "  --seed-prefix STR     run i uses engine seed \"{STR}-{i}\" (default SIM)\n" +
         "  --audit               the six-item power audit (each granted free to skilled)\n" +
         "  --combos N            pairwise passive combo scan, N runs per pair\n" +
-        "  --gates               the FULL gate campaign: G1-G6 + item flags (implies audit+combos)\n" +
+        "  --gates               the FULL gate campaign: G1-G7 + item flags (implies audit+combos);\n" +
+        "                        runs at n=10000 (Allen 2026-08-07 — the ruled floor; G6 resolves\n" +
+        "                        +/-0.65pp there, and a near-line reading escalates to 18500)\n" +
         "  --grid                the payment-curve grid (growth x P1), gates-lite per cell\n" +
         "  --scorer-ev           bot-independent AnytimeScorer calibration report (own mode; ignores --strategy)\n" +
         "  --report PATH         also write the markdown report to PATH\n" +

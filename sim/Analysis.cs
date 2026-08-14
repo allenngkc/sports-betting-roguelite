@@ -114,7 +114,7 @@ public sealed class AuditData
 }
 
 /// <summary>Pairwise passive combo scan: synergy excess over the sum of solo win-rate deltas.
-/// With 3 passives this is 3 pairs — and the Multiplier+Scar pair is gate G5's superadditivity
+/// With 3 passives this is 3 pairs — and the exemplar pair is gate G5's superadditivity
 /// evidence (composition through the shared PayoutMultiplier product).</summary>
 public sealed class ComboData
 {
@@ -123,12 +123,52 @@ public sealed class ComboData
     public readonly Dictionary<string, double> SoloWonPct = new();
     public readonly List<Pair> Pairs = new();
 
+    /// <summary>Per-run win flags for the four arms the synergy excess is built from. Kept because
+    /// the excess's ERROR cannot be computed from the four percentages alone — the arms share a
+    /// seed prefix, so run i is the same dealt hand in all four, and the noise that cancels is only
+    /// visible per run (Allen 2026-08-08: measure the error before setting the threshold).</summary>
+    public bool[] BaselineWonFlags = Array.Empty<bool>();
+    public readonly Dictionary<string, bool[]> SoloWonFlags = new();
+
     public sealed class Pair
     {
         public string IdA = "";
         public string IdB = "";
         public double PairWonPct;
         public double SynergyExcess;
+
+        /// <summary>Two standard errors on <see cref="SynergyExcess"/>, in pp, paired by seed.
+        /// NaN when fewer than two runs make a variance meaningless.</summary>
+        public double SynergyExcessTwoSePp = double.NaN;
+    }
+
+    /// <summary>Paired-seed 2 SE of the synergy excess, in percentage points.
+    ///
+    /// The excess is <c>pair − soloA − soloB + baseline</c> and all four arms run on the SAME seed
+    /// prefix, so run i is the same dealt hand in each and most of the run-to-run noise cancels
+    /// INSIDE the combination. Differencing per seed and taking the variance of the difference is
+    /// therefore the honest instrument; treating the four rates as independent would inflate the
+    /// error and make G5 look blinder than it is. This is what rev 5 §15 already does for the
+    /// two-arm audit (<see cref="AuditData.PairedSePp"/>) — the same idea over four arms.
+    ///
+    /// What it cannot see (C25): this is the error of the MEASUREMENT, not of the design claim. A
+    /// synergy that is real, tiny and reliably positive would show a small excess with a small
+    /// error and pass — which is exactly why the size worth requiring is a separate question, and
+    /// Allen's.</summary>
+    public static double PairedSynergyTwoSePp(bool[] pair, bool[] soloA, bool[] soloB, bool[] baseline)
+    {
+        int n = Math.Min(Math.Min(pair.Length, soloA.Length), Math.Min(soloB.Length, baseline.Length));
+        if (n < 2) return double.NaN;
+
+        double D(int i) => (pair[i] ? 1 : 0) - (soloA[i] ? 1 : 0) - (soloB[i] ? 1 : 0)
+            + (baseline[i] ? 1 : 0);
+
+        double mean = 0.0;
+        for (int i = 0; i < n; i++) mean += D(i);
+        mean /= n;
+        double ss = 0.0;
+        for (int i = 0; i < n; i++) { double d = D(i) - mean; ss += d * d; }
+        return 2.0 * 100.0 * Math.Sqrt(ss / (n - 1) / n);
     }
 
     public Pair? Find(string a, string b)
@@ -144,15 +184,22 @@ public sealed class ComboData
         // ownership-changes-behavior confound, so pair-vs-solo deltas read pure composition.
         // The baseline is recomputed with the same bot for a like-for-like comparison.
         var strat = new FixedDisciplineStrategy();
-        double fixedBaseline = BatchSummary.From("f",
-            Harness.RunBatch(strat, runs, seedPrefix, cfg)).WonPct;
-        var data = new ComboData { RunsPerConfig = runs, BaselineWonPct = fixedBaseline };
+        BatchSummary baseSummary = BatchSummary.From("f", Harness.RunBatch(strat, runs, seedPrefix, cfg));
+        double fixedBaseline = baseSummary.WonPct;
+        var data = new ComboData
+        {
+            RunsPerConfig = runs,
+            BaselineWonPct = fixedBaseline,
+            BaselineWonFlags = baseSummary.WonFlags,
+        };
         IReadOnlyList<RelicDefinition> all = RelicCatalog.All;
 
         foreach (RelicDefinition def in all)
         {
             RunResult[] r = Harness.RunBatch(strat, runs, seedPrefix, cfg, new[] { def.Id });
-            data.SoloWonPct[def.Id] = BatchSummary.From("s", r).WonPct;
+            BatchSummary s = BatchSummary.From("s", r);
+            data.SoloWonPct[def.Id] = s.WonPct;
+            data.SoloWonFlags[def.Id] = s.WonFlags;
         }
 
         for (int i = 0; i < all.Count; i++)
@@ -160,11 +207,17 @@ public sealed class ComboData
         {
             string a = all[i].Id, b = all[j].Id;
             RunResult[] r = Harness.RunBatch(strat, runs, seedPrefix, cfg, new[] { a, b });
-            double pairWon = BatchSummary.From("s", r).WonPct;
+            BatchSummary ps = BatchSummary.From("s", r);
+            double pairWon = ps.WonPct;
             double soloDeltaA = data.SoloWonPct[a] - fixedBaseline;
             double soloDeltaB = data.SoloWonPct[b] - fixedBaseline;
             double excess = (pairWon - fixedBaseline) - (soloDeltaA + soloDeltaB);
-            data.Pairs.Add(new Pair { IdA = a, IdB = b, PairWonPct = pairWon, SynergyExcess = excess });
+            data.Pairs.Add(new Pair
+            {
+                IdA = a, IdB = b, PairWonPct = pairWon, SynergyExcess = excess,
+                SynergyExcessTwoSePp = PairedSynergyTwoSePp(
+                    ps.WonFlags, data.SoloWonFlags[a], data.SoloWonFlags[b], data.BaselineWonFlags),
+            });
         }
 
         data.Pairs.Sort((x, y) => y.SynergyExcess.CompareTo(x.SynergyExcess));
@@ -190,7 +243,51 @@ public sealed class GateData
         /// structural rather than statistical (a coverage list either names a market or it does
         /// not; there is no sampling error in that).</summary>
         public string Resolution = "";
+
+        /// <summary>C28's shape applied to one gate. A reading whose criterion edge falls INSIDE
+        /// its own 95% interval cannot reject "the true value sits exactly on the line", so its
+        /// verdict — whichever way it fell — is not a verdict. It is not a pass and not a fail; it
+        /// is a re-run at <see cref="EscalationRuns"/>, the path Allen recorded on 2026-08-07.
+        /// Reported, never inferred: the report drops "ALL GATES PASS" while one of these is live.
+        /// It does NOT change the campaign's exit contract — Allen ruled a re-run, not a failure —
+        /// so the banner is what carries it, and the banner is what a human reads.</summary>
+        public bool Adjudicated = true;
     }
+
+    /// <summary>The gate campaign's ruled sample size — Allen, 2026-08-07, on the G6 defect.
+    /// G6 compares TWO measured rates, so its resolution is their combined 2 SE: **±2.15pp at
+    /// n=1,000 against a 2pp band**. Its tolerance was narrower than its own noise, which is why it
+    /// passed all session while being unable to fail for the thing it exists to catch. Resolution
+    /// scales as 1/√n, so ±1.00pp costs 1,000 × (2.15/1.00)² ≈ 4,600 runs. That was the first half
+    /// of the ruling and it was verified at 4,600: predicted ±1.00pp, MEASURED ±0.97pp.
+    ///
+    /// **The floor is 10,000 — Allen's second call, same day, after the escalation settled.** It is
+    /// not a bigger guess than 4,600; it is the value a bare `--gates` had all along. The defect was
+    /// never the default: it was this seat typing `--runs 1000` by hand, all session, with no code
+    /// path objecting. Restoring 10,000 as a RULED floor rather than an unremarked default is what
+    /// stops that recurring, and it buys resolution rather than spending it — G6 lands **±0.65pp,
+    /// a 3.1× band** (measured 2026-08-08, not scaled: an arithmetic 2.15/√10 predicts ±0.68pp and
+    /// 2.9×, which this comment carried until the floor was actually run), comfortably past the
+    /// ±1.00pp the ruling asked for.
+    ///
+    /// Note what 3.1× still does not buy: it is under 4×, so a reading that lands near its line is
+    /// still not adjudicated here and still escalates. The two-rung structure survives the floor
+    /// change — 10,000 makes the gate able to FAIL, <see cref="EscalationRuns"/> makes it able to
+    /// ADJUDICATE. Cost at 10,000 is UNMEASURED at the time of writing; measured neighbours are
+    /// 10.4 and 13.3 min at 4,600 and 58.6 min at 18,500, and after three failed attempts to
+    /// predict this machine's wall clock from a formula, the honest entry is the two measurements
+    /// either side and no interpolation between them.</summary>
+    public const int CampaignRuns = 10000;
+
+    /// <summary>Allen's recorded escalation, same ruling: any near-line result re-runs here.
+    /// 1,000 × (2.15/0.50)² ≈ 18,500 gives ±0.50pp, which puts the 2pp band at exactly 4×
+    /// resolution — the threshold at which <see cref="BandVerdict"/> stops qualifying a reading.
+    /// The two rungs are not arbitrary and are worth keeping in that order: 4,600 makes the gate
+    /// able to FAIL, 18,500 makes it able to ADJUDICATE its own band — both confirmed on 2026-08-07:
+    /// ±0.48pp measured, 2pp band at 4.1×, G3 and G6 both adjudicating. Cost: **58.6 min measured**
+    /// (2,812,000 total runs). That is the wall time, not a formula — a "~42–54 min" range derived
+    /// here from two 4,600 samples under-predicted it by 9–40%, so quote measurements.</summary>
+    public const int EscalationRuns = 18500;
 
     /// <summary>Two standard errors on a percentage, the smallest move a proportion measured over
     /// <paramref name="n"/> runs can be trusted to show. Reported, never used to widen a verdict:
@@ -204,13 +301,53 @@ public sealed class GateData
     }
 
     /// <summary>C32's second half — a gate whose acceptance band is not comfortably wider than its
-    /// own resolution cannot adjudicate, and must say so rather than reporting a clean PASS.</summary>
-    private static string BandVerdict(double bandWidthPp, double twoSePp)
-        => double.IsNaN(twoSePp) || twoSePp <= 0.0 ? ""
-            : bandWidthPp >= 4.0 * twoSePp
-                ? $"±{twoSePp:0.00}pp (2 SE) — band {bandWidthPp:0.#}pp is {bandWidthPp / twoSePp:0.#}× resolution"
-                : $"±{twoSePp:0.00}pp (2 SE) — **band {bandWidthPp:0.#}pp is only {bandWidthPp / twoSePp:0.#}× resolution; "
-                  + "this gate cannot reliably fail for a drift smaller than its own noise — widen the band or raise --runs**";
+    /// own resolution cannot adjudicate, and must say so rather than reporting a clean PASS.
+    ///
+    /// Three tiers, and the two thresholds are exactly the two rungs of Allen's 2026-08-07 ruling:
+    ///   ≥4× — the reading resolves the whole band; a verdict anywhere inside it is trustworthy.
+    ///   ≥2× — the gate CAN fail: a true breach one resolution past the edge reads as a breach.
+    ///          It still cannot separate a reading that sits closer to the edge than that.
+    ///   &lt;2× — what G6 was at n=1,000: unable to fail for the drift it exists to catch.
+    ///
+    /// <paramref name="distanceToEdgePp"/> is THIS reading's distance from the nearest criterion
+    /// edge — the second half of the honest answer, because a band wide enough in general says
+    /// nothing about a reading that happens to land on the line. NaN where a gate has no banded
+    /// edge to be near.</summary>
+    private static string BandVerdict(double bandWidthPp, double twoSePp,
+        double distanceToEdgePp = double.NaN)
+    {
+        if (double.IsNaN(twoSePp) || twoSePp <= 0.0) return "";
+        double ratio = bandWidthPp / twoSePp;
+        string head = $"±{twoSePp:0.00}pp (2 SE) — band {bandWidthPp:0.#}pp is {ratio:0.0}× resolution";
+
+        // The band tier and this reading's position are two different facts and both are reported.
+        // They are not alternatives: the weakest tier is exactly where a reading is most likely to
+        // be sitting on its own line, so returning early on the tier — as this did until the first
+        // smoke run showed the count claiming an unadjudicated gate the column never named — hides
+        // the near-line case precisely where it matters most.
+        string reach =
+            ratio < 2.0
+                ? "; **this gate cannot reliably fail for a drift smaller than its own noise — "
+                  + "widen the band or raise --runs**"
+                : ratio >= 4.0
+                    ? "; resolves its whole band"
+                    : $"; fails reliably on a breach ≥{twoSePp:0.00}pp past the edge, no closer";
+
+        string nearLine = Adjudicates(twoSePp, distanceToEdgePp)
+            ? ""
+            : $"; **NOT ADJUDICATED — this reading sits {distanceToEdgePp:0.00}pp from the edge, "
+              + $"inside its own resolution; re-run at `--runs {EscalationRuns}`**";
+
+        return head + reach + nearLine;
+    }
+
+    /// <summary>Whether a reading is far enough from its criterion edge to have produced a verdict.
+    /// A reading whose edge falls inside its own 95% interval cannot reject "the true value is
+    /// exactly on the line" — so it decided nothing, whichever side it fell. The remedy is not a
+    /// wider band or a softer claim: it is Allen's <see cref="EscalationRuns"/> re-run, named in
+    /// the gate's own cell so the escalation cannot be skipped by not noticing it.</summary>
+    private static bool Adjudicates(double twoSePp, double distanceToEdgePp)
+        => double.IsNaN(distanceToEdgePp) || double.IsNaN(twoSePp) || distanceToEdgePp > twoSePp;
 
     public readonly List<Gate> Gates = new();
     public readonly List<string> ItemFlags = new();
@@ -222,9 +359,14 @@ public sealed class GateData
     /// <summary><paramref name="randomBot"/> is not judged by any gate — it is the CONTROL. G7's
     /// M1 exclusion needs evidence that a market the sharp declines is one he could have taken, and
     /// the blind bot is the only thing in the campaign that answers that.</summary>
+    /// <param name="sameMatch">The SAME MATCH probe's batch (F_0.6.0 step 4) — G7's SGP arm. Null
+    /// outside the full campaign, which is the only mode that runs the probe.</param>
+    /// <param name="noLabelFallbacks">Campaign-wide count of tickets SOLD at the no-label naive
+    /// product, read off the engine's process-wide counter after every batch. Passed in rather than
+    /// read here so the reading is taken once, at a stated point, by the caller that scoped it.</param>
     public static GateData Evaluate(BatchSummary? naive, BatchSummary? skilled, BatchSummary? noshop,
         BatchSummary? martyr, BatchSummary? martyrWorst, AuditData? audit, ComboData? combos,
-        BatchSummary? randomBot = null)
+        BatchSummary? randomBot = null, BatchSummary? sameMatch = null, long noLabelFallbacks = 0)
     {
         var g = new GateData();
 
@@ -240,16 +382,30 @@ public sealed class GateData
                 $"median {noshop.MedianDeath:0.#}, won {noshop.WonPct:F1}%");
 
         if (skilled != null)
-            g.Add("G3", "skilled + items wins: median death ≥5, win 5–8% (re-banded by Allen "
-                + "2026-07-15 — the dealt hand's build variance is the roguelite shape)",
-                skilled.MedianDeath >= 5.0 && skilled.WonPct >= 5.0 && skilled.WonPct <= 8.0,
-                $"median {skilled.MedianDeath:0.#}, won {skilled.WonPct:F1}%",
-                // C32 was promoted from THIS gate: a 3pp band (5–8%) adjudicated by an instrument
-                // whose own 2 SE at the campaign's default --runs is ~1.5pp. Arm B is the worked
-                // example — a 0.8pp "movement" at n=1000 vanished at n=10,000, having been noise on
-                // both sides, including in the before-arm. State the resolution beside the verdict
-                // so nobody reads a one-point drift as a finding, or misses a real one.
-                BandVerdict(3.0, TwoSePp(skilled.WonPct, skilled.N)));
+        {
+            // C32 was promoted from THIS gate: a 3pp band (5–8%) adjudicated by an instrument
+            // whose own 2 SE at the OLD default --runs was ~1.5pp. Arm B is the worked example —
+            // a 0.8pp "movement" at n=1000 vanished at n=10,000, having been noise on both sides,
+            // including in the before-arm. State the resolution beside the verdict so nobody reads
+            // a one-point drift as a finding, or misses a real one.
+            // The band and the width handed to BandVerdict are ONE fact and are declared once.
+            // They were two literals — 5.0/8.0 in the criterion and a bare 3.0 in the resolution
+            // call — which is a re-band away from a gate quoting a width it no longer has.
+            const double floor = 4.5, ceiling = 8.0;
+            const double width = ceiling - floor;
+            double se = TwoSePp(skilled.WonPct, skilled.N);
+            double edge = Math.Abs(Math.Min(skilled.WonPct - floor, ceiling - skilled.WonPct));
+            g.Add("G3", $"skilled + items wins: median death ≥5, win {floor:0.#}–{ceiling:0.#}% "
+                + "(re-banded by Allen 2026-08-08 from 5–8%: the economy reads 5.4–5.5%, only "
+                + "0.4–0.5pp above the old floor, so the gate could not separate its own reading "
+                + "from its own edge — three campaigns at 4,600 / 10,000 / 18,500 established that "
+                + "no sample size fixes a gap that small. Prior band Allen 2026-07-15 — the dealt "
+                + "hand's build variance is the roguelite shape)",
+                skilled.MedianDeath >= 5.0 && skilled.WonPct >= floor && skilled.WonPct <= ceiling,
+                $"median {skilled.MedianDeath:0.#}, won {skilled.WonPct:F1}% ({edge:0.0}pp from the "
+                + "nearest band edge)",
+                BandVerdict(width, se, edge), Adjudicates(se, edge));
+        }
 
         if (skilled != null)
         {
@@ -261,26 +417,127 @@ public sealed class GateData
 
         if (combos != null && audit != null)
         {
-            ComboData.Pair? pair = combos.Find(RelicCatalog.MultiplierId, RelicCatalog.ScarTissueId);
-            if (pair != null)
-                g.Add("G5", "composition superadditive: Multiplier+Scar pair Δwin > sum of solo Δwins",
-                    pair.SynergyExcess > 0.0,
-                    $"synergy excess {pair.SynergyExcess:+0.0;-0.0}pp");
+            // EXEMPLAR MOVED — Allen 2026-08-08. G5 certified the composition pillar on
+            // Multiplier + Scar Tissue, whose synergy measured **+0.1pp against ±0.06pp**: real,
+            // but the weakest loop in the table and ~30× smaller than the strongest. The pillar
+            // now certifies on real magnitude. The exemplar and its threshold were both set AFTER
+            // the error was measured, which is the order Allen imposed on this gate and the first
+            // time in this family it was followed — G6 and G3 were each set where their instrument
+            // could not read them, and each cost campaigns to discover it.
+            // EXEMPLAR MOVED AGAIN — Allen 2026-08-12, on Campaign A (the draws re-baseline).
+            // Multiplier + House Key fell +2.96pp → +1.22pp under draws. The SYNERGY stayed real
+            // (5.4× its own error, still classed superadditive) but the 1.0pp floor ended up 0.22pp
+            // under the reading against ±0.23pp resolution, so the gate could no longer separate
+            // "clears the floor" from "sits on it". Escalation was computed and REFUSED: at 18,500
+            // the resolution only reaches ~±0.17pp for a ~0.22pp clearance — ~1.3×, still under the
+            // 2× tier at which a gate can reliably fail, so a 58-minute run would have bought no
+            // verdict. Lowering the floor was named and not taken: it would move the report's own
+            // marginal/superadditive taxonomy to fit a reading.
+            //
+            // Longshot Larry's Photo + House Key STRENGTHENED under draws (+2.67pp → +2.87pp) and
+            // clears the unchanged floor by 1.87pp at ~5.3× resolution. THE FLOOR IS UNCHANGED at
+            // 1.0pp — only the exemplar moved.
+            //
+            // Prior exemplars, kept beneath rather than overwritten (the standing form):
+            //   2026-08-08 Allen — Multiplier + House Key (was Multiplier + Scar Tissue, +0.1pp
+            //   against ±0.06pp: real, but the weakest loop in the table).
+            const string exemplarA = "longshot_photo", exemplarB = "house_key";
+
+            // Threshold 1.0pp, and deliberately NOT a fresh invention: it is the line the report's
+            // own taxonomy already draws between "marginal" and "superadditive". Against the new
+            // exemplar's ±0.34pp it sits ~3× the error, so the gate can actually fail for the thing
+            // it exists to catch. `> 0` would now be trivially satisfied by a +2.96pp reading and
+            // would certify the pillar on any positive noise the day the exemplar drifts.
+            const double minExcessPp = 1.0;
+
+            ComboData.Pair? pair = combos.Find(exemplarA, exemplarB);
+            if (pair == null)
+            {
+                // A missing exemplar must never be a missing GATE. Find() returns null on a typo or
+                // a catalog rename, and the old shape simply skipped G5 — the campaign would report
+                // six gates where seven were intended and pass, which is the vacuous-green failure
+                // this lane has now found eleven times. It fails loudly instead.
+                g.Add("G5", "composition superadditive: exemplar pair Δwin ≥ threshold",
+                    false,
+                    $"EXEMPLAR PAIR NOT FOUND in the combo scan ('{exemplarA}' + '{exemplarB}') — "
+                    + "renamed or mis-keyed relic id; the gate cannot run and is failing rather "
+                    + "than silently absenting itself",
+                    "not applicable — the gate did not run");
+            }
+            else
+            {
+                // C32 for a gate with no BAND. The criterion is a ONE-SIDED floor — a minimum with
+                // no ceiling — so there is still no width to divide the error by and BandVerdict
+                // must not be called; quoting a ratio would invent a band this gate does not have,
+                // the same class of error as quoting a stale one. What is honest here is the error,
+                // the clearance over the floor, and what that clearance is worth in error units.
+                // Allen 2026-08-08, on the lead's escalation: measure the error FIRST, then set the
+                // minimum with the resolution known — the two gates before this one (G6, G3) were
+                // both set where their instruments could not read them, and each cost campaigns.
+                double se = pair.SynergyExcessTwoSePp;
+                double clearance = Math.Abs(pair.SynergyExcess - minExcessPp);
+                // A zero variance here is DEGENERACY, not precision, and printing "±0.00pp" would
+                // read as the most precise instrument in the campaign while carrying no signal at
+                // all. It means the four arms never disagreed on a single run — the items changed
+                // no outcome anywhere in the batch. Found by the first smoke at n=400; the failure
+                // mode is the one this whole lane exists to catch, arriving inside the fix for it.
+                string resolution = double.IsNaN(se)
+                    ? "unmeasured — needs ≥2 paired runs"
+                    : se <= 0.0
+                        ? "**±0.00pp is degeneracy, not precision** — every paired run produced an "
+                          + "identical combination, so the four arms never once disagreed on a "
+                          + "single run. That is an absence of signal; raise --runs until the arms "
+                          + "separate, and read nothing off this gate until they do."
+                        : $"±{se:0.00}pp (2 SE, paired seeds) — one-sided floor at "
+                          + $"{minExcessPp:0.#}pp, so no band width to state; this reading clears it "
+                          + $"by {pair.SynergyExcess - minExcessPp:+0.00;-0.00}pp, "
+                          + (clearance > se
+                              ? $"{clearance / se:0.0}× resolution"
+                              : "**INSIDE its own resolution — NOT ADJUDICATED**");
+
+                g.Add("G5", "composition superadditive: the exemplar pair's synergy excess ≥ "
+                    + $"{minExcessPp:0.#}pp (exemplar moved by Allen 2026-08-12 to Longshot Larry's "
+                    + "Photo + House Key on the draws re-baseline: the prior exemplar, The "
+                    + "Multiplier + House Key, fell +2.96pp → +1.22pp under draws — its synergy "
+                    + "still real at 5.4× its own error, but the floor ended up inside the reading's "
+                    + "resolution and the gate stopped adjudicating. Escalation to 18,500 was "
+                    + "computed to buy ~1.3× and REFUSED. THE FLOOR IS UNCHANGED at 1.0pp — it is "
+                    + "the report's own marginal/superadditive line, set AFTER the error was "
+                    + "measured, and moving it to fit a reading was the alternative not taken. "
+                    + "Prior exemplar Allen 2026-08-08, itself moved from Multiplier + Scar Tissue "
+                    + "at +0.1pp against ±0.06pp — real, but the weakest loop in the table)",
+                    pair.SynergyExcess >= minExcessPp,
+                    $"synergy excess {pair.SynergyExcess:+0.0;-0.0}pp",
+                    resolution,
+                    // A one-sided floor makes the distance-to-edge |reading − floor|. A zero or
+                    // absent error adjudicates nothing, whichever side the reading fell.
+                    se > 0.0 && Adjudicates(se, clearance));
+            }
         }
 
         // G6 (rev 5 §17): the WORST-CASE granted batch gates (Scar + Jar granted, Free Bet
         // refilled every round); the organic martyr is telemetry beside it.
         BatchSummary? guard = martyrWorst ?? martyr;
         if (guard != null && skilled != null)
+        {
+            // C32: this gate compares TWO measured rates, so its resolution is the combined error
+            // of both, not either alone — a margin inside that is not a margin. This is why G6 is
+            // WORSE than G3, the gate C32 was promoted from, and why it is the gate whose n Allen
+            // ruled: the same run count buys it roughly √2 less resolution than a single-rate gate
+            // (exactly √2 only where the two rates are equal — measured 1.34× vs the guard's own
+            // error and 1.50× vs skilled's at n=1,000, which is the range, not the constant).
+            double se = Math.Sqrt(
+                Math.Pow(TwoSePp(guard.WonPct, guard.N), 2)
+                + Math.Pow(TwoSePp(skilled.WonPct, skilled.N), 2));
+            double margin = guard.WonPct - skilled.WonPct;
+            double edge = Math.Abs(margin - 2.0);
             g.Add("G6", "martyr guard (worst case granted): loss-farming win ≤ skilled +2pp",
                 guard.WonPct <= skilled.WonPct + 2.0,
                 $"{guard.Name} {guard.WonPct:F1}% vs skilled {skilled.WonPct:F1}%"
-                + (martyrWorst != null && martyr != null ? $" (organic martyr {martyr.WonPct:F1}%)" : ""),
-                // C32: this gate compares TWO measured rates, so its resolution is the combined
-                // error of both, not either alone — a margin inside that is not a margin.
-                BandVerdict(2.0, Math.Sqrt(
-                    Math.Pow(TwoSePp(guard.WonPct, guard.N), 2)
-                    + Math.Pow(TwoSePp(skilled.WonPct, skilled.N), 2))));
+                + (martyrWorst != null && martyr != null ? $" (organic martyr {martyr.WonPct:F1}%)" : "")
+                + $" — margin {margin:+0.0;-0.0}pp, {edge:0.0}pp from the +2pp line",
+                BandVerdict(2.0, se, edge), Adjudicates(se, edge));
+        }
 
         // G7 (market coverage): every shipped MarketKind must be either exercised by the
         // skilled bot (LegsPlaced > 0) or on the named bot-excluded list below, with a reason —
@@ -309,14 +566,70 @@ public sealed class GateData
                     : "NOT MEASURED REACHABLE: random placed 0 BTTS legs too — this exclusion is "
                       + "unproven and must not be trusted";
 
+            // F_0.5.0 V1. Reachability is MEASURED the same way M1 measured BTTS: the random bot
+            // prices nothing, so a market it places legs in is one the sharp DECLINED rather than
+            // one he was blocked from. An exclusion without that evidence is an assertion, and the
+            // whole point of G7 is that assertions are how coverage holes hide.
+            string Reach(MarketKind kind)
+            {
+                if (randomBot == null) return "unmeasured this run — needs the random bot in the batch";
+                int legs = randomBot.MarketExposure.TryGetValue(kind, out MarketExposure? rx) ? rx.LegsPlaced : 0;
+                return legs > 0
+                    ? $"measured reachable: random places {legs:N0} legs where skilled places 0, so it is DECLINED, not blocked"
+                    : "NOT MEASURED REACHABLE: random placed 0 legs too — this exclusion is unproven and must not be trusted";
+            }
+
             var botExcluded = new Dictionary<MarketKind, string>
             {
                 [MarketKind.AnytimeScorer] = "YES-only market, bots do not price it (declared policy)",
+                [MarketKind.PlayerMultiScorer] =
+                    "YES-only player market on a floor-truncated board — inherits the AnytimeScorer "
+                    + "human-agency policy, and its offered rows do not sum to the outcome space so "
+                    + "there is nothing to de-vig against (declared policy)",
+                [MarketKind.CorrectScore] =
+                    "the board is TRUNCATED at the ratified 2% probability floor, so the offered "
+                    + "scores are not an exhaustive outcome set; normalizing them would over-normalize "
+                    + $"and manufacture an edge out of the missing rows — {Reach(MarketKind.CorrectScore)}",
+                [MarketKind.WinningMargin] =
+                    "one-way buckets that deliberately omit the draw (margin 0), so the set is not a "
+                    + $"partition and de-vig has no denominator — {Reach(MarketKind.WinningMargin)}",
+                [MarketKind.DoubleChance] =
+                    "its three selections OVERLAP — 1X and X2 both contain the draw — so normalizing "
+                    + "the implied probabilities is double counting, not de-vig. Structural, and it "
+                    + $"does not expire at v2 pricing the way BTTS does — {Reach(MarketKind.DoubleChance)}",
+                [MarketKind.TotalGoalsOddEven] =
+                    "THE most near-even market on the board: measured across the latent box under "
+                    + "draws it prices odd 0.490–0.499 / even 0.501–0.510, i.e. odds 1.87–1.94 on "
+                    + "both sides, and NEITHER side reaches the 3.0 longshot threshold at any "
+                    + "sampled latent point (0 of 105). Under exact de-vig it therefore never "
+                    + "strictly wins a tie and no owned item can lift it, so a sharp correctly "
+                    + "declines it — the BTTS shape, and stronger. Worth recording WHY it is this "
+                    + "balanced: every draw carries an EVEN goal total (h+h), so the old no-draws "
+                    + "truncation was deleting even mass and had skewed parity to 64/36; restoring "
+                    + "draws restored it to ~50/50. Expires at v2 pricing, same as BTTS — "
+                    + $"{Reach(MarketKind.TotalGoalsOddEven)}",
                 [MarketKind.BothTeamsToScore] =
                     "near-even two-way market: under exact de-vig it never strictly wins a tie and "
                     + "its odds never clear the longshot threshold, so a sharp correctly declines it "
                     + $"(M1, expires at v2 pricing) — {bttsEvidence}",
             };
+
+            // The 1X2 split, reported because a leg count per KIND cannot answer it. The draw is a
+            // CHOICE inside the moneyline (D1, Allen 2026-08-12), so "Moneyline: 3,724 legs" is
+            // true whether the bot took the draw 3,724 times or never. G7 exists to stop a market
+            // being invisibly untouched, and the newest market on the board is exactly the one that
+            // would hide here. This is telemetry, not a criterion: what the right draw share IS is
+            // Campaign A's reading and then Allen's, and inventing a band for it now would be the
+            // "threshold set before the instrument was measured" mistake this campaign keeps paying
+            // for.
+            if (skilled.MarketExposure.TryGetValue(MarketKind.Moneyline, out MarketExposure? ml))
+            {
+                g.Notes.Add(ml.LegsPlaced == 0
+                    ? "1X2 SPLIT: skilled placed no moneyline legs at all this run"
+                    : $"1X2 SPLIT: skilled placed {ml.DrawLegs:N0} DRAW legs of {ml.LegsPlaced:N0} "
+                      + $"moneyline legs ({100.0 * ml.DrawLegs / ml.LegsPlaced:F1}%) — telemetry for "
+                      + "the draws re-baseline, not a gate criterion");
+            }
 
             var uncovered = new List<MarketKind>();
             foreach (MarketKind kind in Enum.GetValues(typeof(MarketKind)))
@@ -342,6 +655,54 @@ public sealed class GateData
                 // Its exposure is a different matter: a market covered by a handful of legs is
                 // covered, but thinly, and the exposure table is where that is read.
                 "exact — a leg count is not a sample; no resolution limit");
+        }
+
+        // G7's SGP ARM (F_0.6.0 step 4). G7 above keys on MarketKind, and a SAME MATCH ticket is a
+        // ticket SHAPE rather than a market — its legs are ordinary Total Goals / BTTS / Scorer rows,
+        // so no MarketKind column can ever show one. Without its own criterion the campaign would
+        // report full market coverage while the whole joint-pricing feature went unexercised, which
+        // is the silent skip G7 exists to prevent, arriving through the one door G7 cannot watch.
+        //
+        // Two facts, both structural, both pass/fail:
+        //   • the probe PLACED and SETTLED same-match tickets — placement alone would certify the
+        //     pricing path while leaving void, grading and payout untouched;
+        //   • ZERO tickets were sold at the no-label naive-product fallback. A silent fallback sells
+        //     a correlated ticket at the product of its legs — worth up to +274% EV to the player on
+        //     an implication pair — and canon requires it COUNTED AND SURFACED by the campaign, not
+        //     logged. This is the line that discharges that obligation.
+        //
+        // Relation-kind coverage is NOT gated here. It is reported as an exposure table, mirroring
+        // G7's own note above: coverage is structural, while how thinly something is covered is a
+        // reading you take from the table, not a verdict a gate can pronounce.
+        if (sameMatch != null)
+        {
+            bool placed = sameMatch.SameMatchPlaced > 0;
+            bool settled = sameMatch.SameMatchSettled > 0;
+            bool clean = noLabelFallbacks == 0;
+
+            string shortfall = placed && settled && clean
+                ? ""
+                : " — FAILED ON: " + string.Join(", ", Missing(placed, settled, clean));
+
+            g.Add("G7-SGP", "same-match coverage: the SAME MATCH probe placed AND settled same-match "
+                + "tickets, and zero tickets were sold at the no-label naive-product fallback "
+                + "(a ticket shape is invisible to G7's MarketKind roll-call, and a silent fallback "
+                + "is a money leak worth up to +274% EV on an implication pair)",
+                placed && settled && clean,
+                $"placed {sameMatch.SameMatchPlaced:N0}, settled {sameMatch.SameMatchSettled:N0}, "
+                + $"no-label fallbacks {noLabelFallbacks:N0}, refusals tripped "
+                + $"{sameMatch.SameMatchRefusals:N0}, voids re-priced {sameMatch.SameMatchVoids:N0}"
+                + shortfall,
+                // Same structural argument as G7's: a ticket was either sold or it was not.
+                "exact — a ticket count is not a sample; no resolution limit");
+
+            // The probe's own catalogue being refused is a DEFECT signal, not coverage, and it is
+            // deliberately not folded into the arm's verdict — it is surfaced where an exclusion
+            // note is surfaced, so it cannot hide inside a number the arm wants to be positive.
+            if (sameMatch.SameMatchUnexpectedRefusals > 0)
+                g.Notes.Add($"SAME MATCH: {sameMatch.SameMatchUnexpectedRefusals:N0} UNEXPECTED "
+                    + "refusals — the probe built slips the board would not sell. Its catalogue or "
+                    + "κ has moved; the relation exposure section is short by that much.");
         }
 
         if (audit != null)
@@ -458,9 +819,24 @@ public sealed class GateData
         return t - (2.30753 + 0.27061 * t) / (1.0 + 0.99229 * t + 0.04481 * t * t);
     }
 
-    private void Add(string id, string desc, bool pass, string actual, string resolution = "")
+    /// <summary>Which halves of G7's SGP arm failed. Named individually rather than collapsed into
+    /// one "did not cover" — "nothing was placed" and "everything was placed but a fallback fired"
+    /// are different defects with different fixes, and a verdict that cannot tell them apart sends
+    /// the reader back to the code to find out which one happened.</summary>
+    private static IEnumerable<string> Missing(bool placed, bool settled, bool clean)
+    {
+        if (!placed) yield return "no same-match ticket was placed";
+        if (!settled) yield return "no same-match ticket settled";
+        if (!clean) yield return "tickets were SOLD at the no-label naive product";
+    }
+
+    private void Add(string id, string desc, bool pass, string actual, string resolution = "",
+        bool adjudicated = true)
         => Gates.Add(new Gate
-        { Id = id, Description = desc, Pass = pass, Actual = actual, Resolution = resolution });
+        {
+            Id = id, Description = desc, Pass = pass, Actual = actual, Resolution = resolution,
+            Adjudicated = adjudicated,
+        });
 
     public bool AllPass
     {
@@ -468,6 +844,20 @@ public sealed class GateData
         {
             foreach (Gate gate in Gates) if (!gate.Pass) return false;
             return Gates.Count > 0;
+        }
+    }
+
+    /// <summary>How many gates actually produced a verdict (C28: coverage is reported, never
+    /// inferred — "no FAIL" is not "all passed"). Differs from <see cref="AllPass"/> on purpose:
+    /// a gate can pass and still have decided nothing, which is the state Allen's escalation
+    /// re-run exists to resolve.</summary>
+    public int AdjudicatedCount
+    {
+        get
+        {
+            int n = 0;
+            foreach (Gate gate in Gates) if (gate.Adjudicated) n++;
+            return n;
         }
     }
 }
