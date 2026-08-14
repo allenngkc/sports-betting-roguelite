@@ -79,6 +79,49 @@ namespace SBR.EditorTools
             "Gasket", "Pylon", "Ketchup", "Lanyard", "Racket", "Stapler",
         };
 
+        /// <summary>A LADDER's next rung, or null where the slot has none.
+        ///
+        /// <para>G1-am7 authored the moneyline NEED arm as two rungs selected BY MEASUREMENT —
+        /// <c>{CLUB} TO WIN</c> where it fits, <c>{CLUB} WIN</c> for the five clubs where it does not
+        /// — and <c>FitOrFallback</c> is what chooses. So <c>SPREADSHEETS TO WIN</c> at 289.9px is a
+        /// form the surface CAN COMPOSE and can never DRAW.</para>
+        ///
+        /// <para><b>Sweeping it flat would report a false overrun</b>, and it is the same error as
+        /// sweeping `BRICKLAYERS ANYTIME` — certifying a box against a string that cannot reach it —
+        /// arriving from the opposite direction. The sweep's contract is the longest RENDERABLE form,
+        /// and with a measured ladder the renderable form is whichever rung the measurement picks.
+        /// Derived here rather than hard-coded as "these five use rung 2", because a hard-coded split
+        /// goes stale the moment the box or the face moves, which this lane has already paid for
+        /// once.</para>
+        /// <para><b>The moneyline arm is not the only ladder, and modelling one exposed the other.</b>
+        /// With `{CLUB} TO WIN` laddered, the slot's widest became `ONE TEAM SCORELESS` at 272.4 —
+        /// which is ALSO a rung: `ActiveLegCopy` gives it `needFallback: "ONE TEAM BLANKED"`, authored
+        /// complete for exactly this. The false overrun simply moved one arm over, which is what a
+        /// ladder-blind sweep does to every laddered arm it has.</para>
+        ///
+        /// <para><b>THREE arms are ladders, and the first two versions of this table said otherwise.</b>
+        /// I wrote here that the scorer arm need not be modelled "because no surname form reaches the
+        /// box at all" — and the very next run falsified it: `PAVEMENT TO SCORE` is 264.9px against
+        /// the 261.0px column. Each time a ladder was modelled the false overrun moved one arm over,
+        /// which is what a ladder-blind sweep does to every laddered arm it has. All three are
+        /// transcribed from `ActiveLegCopy`'s construction sites now, not inferred.</para>
+        ///
+        /// <para><b>Flagged upward, not fixed here:</b> the scorer arm's rung 2 is the BARE form
+        /// `TO SCORE`, which names no player — the same property G1-am7 just retired bare `TO WIN`
+        /// for, one arm over, and for the same reason (T94's desync). It is not a gate failure: the
+        /// gate is that the TRUNCATION BACKSTOP does not fire, and an authored fallback rendering
+        /// complete is the ladder working — T89-A's own example, `ONE TEAM BLANKED`, is exactly
+        /// that. Routed as a finding; authoring the scorer arm is the DD's and G1-am7 scoped itself
+        /// to the moneyline.</para></summary>
+        private static string LadderFallback(string slot, string s)
+        {
+            if (slot != "LegRowNeed0") return null;
+            if (s.EndsWith(" TO WIN")) return s.Substring(0, s.Length - 7) + " WIN";   // G1-am7
+            if (s == "ONE TEAM SCORELESS") return "ONE TEAM BLANKED";                  // G1, authored
+            if (s.EndsWith(" TO SCORE")) return "TO SCORE";                            // G1, authored
+            return null;
+        }
+
         /// <summary>Every member of a closed pool through one authored format, upper-cased the way the
         /// surface upper-cases it. Generating beats picking: the sweep then re-derives its own worst
         /// case whenever a pool grows.</summary>
@@ -105,10 +148,14 @@ namespace SBR.EditorTools
             // vocabulary and one NEED never emits (its moneyline form is `{CLUB} TO WIN`). Both
             // generated arms are now generated. The authored constants and the two fallbacks are
             // verbatim from ActiveLegCopy's construction sites.
-            ("LegRowNeed0", "G1's NEED deck: two arms generated over the closed pools, constants verbatim",
+            // G1-am7 (batch 62): the moneyline arm is a TWO-RUNG ladder, so BOTH rungs are swept —
+            // rung 1 `{CLUB} TO WIN` for the 15 that fit, rung 2 `{CLUB} WIN` for the other five.
+            // Bare `TO WIN` is RETIRED and deliberately absent: it must not be reachable on a
+            // moneyline leg (T94's desync), so sweeping it would certify a string the surface may
+            // never render — the over-generation half of the traceability pass, one arm over.
+            ("LegRowNeed0", "G1's NEED deck over the closed pools; the moneyline arm is a LADDER (see LadderFallback)",
                 And(From(ClubNouns, "{0} TO WIN"), From(Surnames, "{0} TO SCORE"), new[]
-                { "ONE TEAM SCORELESS", "ONE TEAM BLANKED", "BOTH TEAMS SCORE", "NOT YET",
-                  "TO WIN", "TO SCORE" })),
+                { "ONE TEAM SCORELESS", "ONE TEAM BLANKED", "BOTH TEAMS SCORE", "NOT YET", "TO SCORE" })),
             // CORRECTED by the traceability pass, in BOTH directions. The old set was
             // {UNDER 10.5 CORNERS, UNDER 10.5 CNRS, LANYARD TO SCORE, BOTH TEAMS SCORE, MIDDLEMEN ML}.
             // Two of those — LANYARD TO SCORE and BOTH TEAMS SCORE — are forms LegStatement does NOT
@@ -139,10 +186,28 @@ namespace SBR.EditorTools
             // is the commit, so the word says so. Added with the wiring rather than after it.
             ("CashOutStatus", "§6.1 status words — all three states of CashOutStatusWord()",
                 new[] { "UPDATING", "HOLD E", "ENTER TO CASH OUT" }),
-            // CORRECTED: the separator is FIVE spaces in the format string, not three, and
-            // PotentialPayout is parlay-multiplied so its magnitude has no ceiling here.
-            ("RiskPays", "the format string at :2299 — payout magnitude UNBOUNDED", new[]
-                { "RISK $1,234     PAYS $12,340", "RISK $50     PAYS $450" }),
+            // T74-am5 (batch 59): the footer is ONE ROW with BOTH ENDS ANCHORED, so the five-space
+            // spacer that was being measured no longer exists and each half is swept on its own.
+            //
+            // "UNBOUNDED" is retired here, and it was the wrong word: `PotentialPayout` is
+            // parlay-multiplied but MaxLegs is finite, so it was UN-ENUMERATED. Enumerated in
+            // `engine.tests/PayoutMaximumTests` over 648,000 priced offers — max single-leg odds
+            // 52.0359, so the parlay term is 52.0359^4 = 7,331,837.65 x stake. The stake ceiling is
+            // the BANK (MaxStakeFraction 1.0), which is run state, so the longest form is stated per
+            // bank assumption: $73,318,376,502 at a bank of $10,000 is eleven digits, and eleven
+            // digits is what the row holds.
+            ("RiskPays", "the footer's LEFT half; stake-bounded", new[]
+                { "RISK $13,639", "RISK $1,234", "RISK $50" }),
+            ("Pays", "the footer's RIGHT half; parlay term 7,331,837.65 x stake — see PayoutMaximumTests", new[]
+                { "PAYS $73,318,376,502", "PAYS $7,331,837,650", "PAYS $12,340" }),
+            // Added when the POPULATION line below named them: the sweep's own §4.2 statement found
+            // three slots that were neither swept nor a sibling row index, and two of them are
+            // trivially enumerable. Closing the gap beats excusing it — a named gap is still a gap.
+            ("Leg", "the scorebug's leg counter, bounded by MaxLegs (4)", new[]
+                { "LEG 4/4", "LEG 1/4", "LEG 1/1" }),
+            // `MomentumLabel` is GONE (T90-am/T93, batch 61) — dropped, not shortened, because its
+            // overlap with the NEED line was positional. The slot no longer exists to sweep, and the
+            // population line below will simply stop counting it.
             ("Matchup", "scoreline, generated team names", new[]
                 { "ZAMBONIS 0 — REGULATORS 1", "BRICKLAYERS 0 — MIDDLEMEN 0", "STARTUPS 1 — PLUMBERS 2" }),
             ("Score", "the punch overlay mirrors Matchup", new[] { "ZAMBONIS 0 — REGULATORS 1" }),
@@ -163,9 +228,27 @@ namespace SBR.EditorTools
                 { "ROUND 10 OF 12 · BOARD OPEN", "SIT TO WATCH THE SWEAT", "BOARD CLOSED", "SHOP OPEN" }),
             ("TakeoverTitle", "3 assignment sites (a fourth clears it)", new[]
                 { "SHORT — $12,340 AGAINST $20,000", "TICKET 1 OF 2", "PAYMENT MADE" }),
-            ("TakeoverSub", "the deferral line, plus the leg list — CONSTRUCTED, see note", new[]
-                { "PAYMENT DEFERRED — YOUR BANK STANDS. THE NEXT ONE GROWS BY $1,200",
-                  "LANYARD TO SCORE ANYTIME +450   ·   BOTH TEAMS TO SCORE -110   ·   UNDER 10.5 CORNERS +240" }),
+            // T89-B: "CONSTRUCTED" is RETIRED. This slot was carried as having no bounded worst case
+            // at all, and that was the payout maximum's error a second time — un-enumerated is not
+            // unbounded. `engine.tests/TakeoverSubBoundTests` enumerates it over the same 648,000
+            // offers: the longest single entry is 91 chars, and the joined worst case at MaxLegs 4
+            // with `   ·   ` separators is 385 chars.
+            //
+            // The longest entry is a MONEYLINE label, and that is not incidental — it is the engine's
+            // concatenated form, `{CLUB} ML — {HOME} v {AWAY}`, which T69 ruled against on the leg row
+            // as "a fact named twice". This slot still renders it raw.
+            //
+            // Both forms are swept: the JOINED string is what the slot renders today, and the SINGLE
+            // ENTRY is what one row carries under T74-am3's list ruling — so the list's own row width
+            // is answered here rather than after it is built.
+            // T92 (batch 60): the entries are G1's COMPACT forms now, one per row, so the swept set is
+            // the ROW — the engine's concatenated `DisplayLabel` is gone from this slot. The compact
+            // forms are the same deck LegRowLine0 sweeps, plus the American price.
+            // T92-am (batch 61): the leg list LEFT this slot — it restated a list the ticket column
+            // already carries permanently. What remains is the deferral line, which was always the
+            // widest string here once the list's over-wide entry was replaced.
+            ("TakeoverSub", "the deferral line — the leg list left at T92-am", new[]
+                { "PAYMENT DEFERRED — YOUR BANK STANDS. THE NEXT ONE GROWS BY $1,200" }),
             ("Subtitle", "RenderIdle sub, plus the run-over line", new[]
                 { "FINAL BANK $12,340  —  NEW RUN AT THE LAPTOP",
                   "gear up at the laptop, then the next round" }),
@@ -194,7 +277,15 @@ namespace SBR.EditorTools
         /// the leg row. Its length is not bounded by anything readable on this surface, so its entry
         /// is a CONSTRUCTED three-leg worst case, not an enumeration. A longer ticket or a longer
         /// fixture makes it longer, and this sweep cannot say by how much.</para></summary>
-        private static readonly string[] Unswept = { };
+        private static readonly string[] Unswept =
+        {
+            // DELIBERATELY excluded, and it is the only one. `_tBigAmount` is built, cleared on reset
+            // and NEVER GIVEN CONTENT — both payoff figures moved into the cash-out slot at T68-am/T71
+            // and nothing has requested it since. It renders no string, so it has no longest
+            // renderable form to sweep. Named here rather than silently skipped, because "renders
+            // nothing" and "was overlooked" are indistinguishable from a count alone.
+            "BigAmount",
+        };
 
         [MenuItem("SBR/TV/T84 extent sweep")]
         public static void Sweep()
@@ -240,9 +331,25 @@ namespace SBR.EditorTools
 
                     float worst = float.MinValue, worstTab = float.MinValue;
                     string worstS = "", worstTabS = "";
-                    foreach (string s in strings)
+                    int laddered = 0;
+                    foreach (string composed in strings)
                     {
+                        // LADDER SELECTION, applied before measurement so the sweep tests what the
+                        // surface will DRAW rather than what it can compose. A rung that overruns is
+                        // never rendered — FitOrFallback picks the next one — so measuring it would
+                        // certify the box against a string it can never receive.
+                        string s = composed;
                         float w = t.GetPreferredValues(s, Unconstrained, 0f).x;
+                        if (w > box)
+                        {
+                            string next = LadderFallback(slot, s);
+                            if (next != null)
+                            {
+                                s = next;
+                                w = t.GetPreferredValues(s, Unconstrained, 0f).x;
+                                laddered++;
+                            }
+                        }
                         if (w > worst) { worst = w; worstS = s; }
                         float tab = w;
                         foreach (char c in s)
@@ -275,6 +382,7 @@ namespace SBR.EditorTools
                               $"[face '{t.font?.name}' w{(int)t.fontWeight} style {t.fontStyle} " +
                               $"tracking {t.characterSpacing / 100f:0.000}em type {t.fontSize:0.#}px]  " +
                               $"{(over ? $"OVERRUNS by {worstTab - box:0.0}px" : $"fits, {box - worstTab:0.0}px spare")}  " +
+                              $"{(laddered > 0 ? $"[{laddered} forms took the ladder's next rung] " : "")}" +
                               $"· set: {source}");
                 }
 
@@ -294,6 +402,42 @@ namespace SBR.EditorTools
                     Debug.Log($"[T84] {s,-16} UNSWEPT — longest renderable form not enumerable from here");
 
                 Debug.Log($"[T84] slots overrunning their fixed box: {overrunning} of {Cases.Length} swept");
+
+                // T89-B §4.2 — WHAT THE SWEPT COUNT IS A COUNT OF, computed rather than asserted.
+                //
+                // The report has been saying "N of 20 swept" beside "48 text slots exist", and those
+                // two numbers invite exactly one wrong reading: that 28 slots go unexamined. They do
+                // not — the leg row is built six times from one construction, so its five elements
+                // appear at six indices and the sweep covers index 0. Saying so in prose would be a
+                // claim; this derives it, and NAMES anything that is neither swept nor a sibling,
+                // which is the only part that could hide a gap.
+                var sweptNames = new HashSet<string>();
+                foreach ((string slot, string _, string[] __) in Cases) sweptNames.Add(slot);
+
+                var declared = new HashSet<string>(Unswept);
+                var siblings = new List<string>();
+                var excluded = new List<string>();
+                var uncovered = new List<string>();
+                foreach (string name in all.Keys)
+                {
+                    if (sweptNames.Contains(name)) continue;
+                    if (declared.Contains(name)) { excluded.Add(name); continue; }
+                    // `LegRowNeed3` is `LegRowNeed0`'s construction at another index: strip the
+                    // trailing digits and ask whether index 0 of the same family is swept.
+                    string stem = name.TrimEnd('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
+                    if (stem.Length < name.Length && sweptNames.Contains(stem + "0")) siblings.Add(name);
+                    else uncovered.Add(name);
+                }
+                uncovered.Sort();
+                excluded.Sort();
+
+                Debug.Log($"[T84] POPULATION: {all.Count} text slots exist · {Cases.Length} swept · " +
+                          $"{siblings.Count} the same construction at another row index (covered by index 0) · " +
+                          $"{excluded.Count} declared unswept · {uncovered.Count} unaccounted for");
+                if (excluded.Count > 0)
+                    Debug.Log($"[T84] DECLARED UNSWEPT (renders no string): {string.Join(", ", excluded)}");
+                if (uncovered.Count > 0)
+                    Debug.Log($"[T84] UNACCOUNTED FOR — this number must be 0: {string.Join(", ", uncovered)}");
             }
             finally { Object.DestroyImmediate(go); }
         }

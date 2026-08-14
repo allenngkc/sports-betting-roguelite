@@ -30,10 +30,9 @@ namespace SBR.Game
         // mirrored here as a named constant with its source cited because a C# const cannot import
         // a CSS custom property (handoff §4A).
         private const int LabelSize = 15;
-        private const float LabelWidth = 96f;
-        private const float LabelGap = 10f;
-
-        private TMP_Text _label;
+        // T90-am/T93: the caption is dropped, so its geometry and its field go with it rather than
+        // lingering as the kind of corpse `_wonFlood` became. `LabelWidth` was the 96.0px box the
+        // 106.4px string never fit; `LabelGap` placed that box inside the ticket column.
 
         private readonly List<Row> _rows = new List<Row>();
         private RectTransform _rect;
@@ -120,29 +119,28 @@ namespace SBR.Game
             //
             // Regular face and --tv-context, not condensed: canon marks the tape's own chrome
             // regular (TvMomentumTape.jsx:23) and only the dense numeric slots condensed.
-            if (labelFont != null)
-            {
-                var labelGo = new GameObject("MomentumLabel", typeof(RectTransform), typeof(TextMeshProUGUI));
-                labelGo.transform.SetParent(tape.transform, false);
-                var label = labelGo.GetComponent<TextMeshProUGUI>();
-                label.font = labelFont;
-                label.fontSize = LabelSize;
-                // --tv-track-label, .16em, in TMP's hundredths of an em (TvMomentumTape.jsx:26).
-                // Reachable for the first time now the label is a TMP component; UI.Text had no
-                // tracking at all, so this read at 0 for its whole life.
-                label.characterSpacing = 16f;
-                label.text = "MOMENTUM";
-                label.color = Neutral(NeutralContext, TierL2);
-                label.alignment = TextAlignmentOptions.Left;
-                label.raycastTarget = false;
-                label.enableWordWrapping = false; // was HorizontalWrapMode.Overflow: never wrap
-                var lrt = label.rectTransform;
-                lrt.anchorMin = lrt.anchorMax = new Vector2(0f, 0.5f);
-                lrt.pivot = new Vector2(1f, 0.5f);           // sits to the LEFT of the bars
-                lrt.sizeDelta = new Vector2(LabelWidth, RowHeight + RowGap);
-                lrt.anchoredPosition = new Vector2(-LabelGap, 0f);
-                tape._label = label;
-            }
+            // T90-am / T93 (batch 61): THE CAPTION IS DROPPED, and it is not a tidy-up.
+            //
+            // `MOMENTUM` was 106.4px of ink in a 96.0px box — a CONSTANT with no variable in it, over
+            // budget on every frame it has ever drawn, and invisible until the sweep was made to
+            // account for every slot rather than every slot someone had listed. The purest instance
+            // of C46: not a string that grew, but a fixed caption that never fit.
+            //
+            // Worse than its own overrun: the box is RIGHT-pivoted and sits to the LEFT of the bars,
+            // so it hung entirely inside the ticket column, overlapping `LegRowNeed0` by 88.0px and
+            // overprinting the last 101.9px of the surface's most factual string. Its 10.4px overrun
+            // spilled LEFT, deeper into the column, not out into the scorebug.
+            //
+            // Shortening it was offered as a route and is not one: the overlap is POSITIONAL — the box
+            // is placed, not sized, by its string — so a zero-width caption leaves all 88.0px. Only
+            // dropping or re-placing removes it.
+            //
+            // Dropped rather than re-placed because T28/T52 already gave momentum its own 28px strip,
+            // and A STRIP THAT IS LEGIBLE DOES NOT ADDITIONALLY NEED A WORD. A band that truncates its
+            // requirement statement to protect its caption has its priority inverted.
+            //
+            // `labelFont` stays in the signature: it is the caller's contract and re-placing the
+            // caption right of the column edge is a live option the DD left open.
 
             tape.Show(false);
             return tape;

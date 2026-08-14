@@ -230,9 +230,33 @@ namespace SBR.Game
             string live = l.RevealedGoalsFor > l.RevealedGoalsAgainst ? $"LEADING {score}"
                 : l.RevealedGoalsFor < l.RevealedGoalsAgainst ? $"TRAILING {score}"
                 : $"LEVEL {score}";
-            // Fallback for an unlucky club — `GRAVEDIGGERS TO WIN` is 19 and over budget.
+            // G1-am7 (batch 62): a TWO-RUNG LADDER, and the surface picks between the rungs BY
+            // MEASUREMENT — `FitOrFallback`, never by truncating.
+            //
+            //   rung 1  `{CLUB} TO WIN`   fits the 261.0px column for 15 of the 20 clubs
+            //   rung 2  `{CLUB} WIN`      carries the other five
+            //
+            // BARE `TO WIN` IS RETIRED as this arm's fallback and must not be reachable on a moneyline
+            // leg. It was the cheap answer and it is not available: the column's live row advances to
+            // leg N+1 the instant leg N resolves while the scorebug holds leg N's fixture until the
+            // next leg stages (T94), so for the whole won/dead beat a bare form would name no side at
+            // all — and the backed-side marker it would have leaned on is pointing at a different
+            // fixture. The club has to be named.
+            //
+            // `{CLUB} WIN` rather than anything shorter: abbreviating the noun is refused (it is
+            // ALREADY the club's short form — the compact rows print `MUSKRATS ML`, not
+            // `Tulsa Muskrats` — so there is nothing left to shorten without coining), HOME/AWAY binds
+            // to the fixture on screen and fails in exactly the window it is needed, and `{CLUB} ML`
+            // states a market rather than a requirement.
+            //
+            // It is the slot's own register: the deck is terse declarative — `ONE TEAM BLANKED`,
+            // `ONE TEAM SCORELESS` are subject + required state — and every noun in the pool is
+            // plural, so `SPREADSHEETS WIN` is that same shape and grammatical.
+            //
+            // MEASURED, all twenty against 261.0: rung 2 overruns for NONE of them. The widest form
+            // actually reached is `SPREADSHEETS WIN` at 249.5px, 11.5px spare.
             return new ActiveLegCopy(need, live, isTeamMarket: true, identity: team,
-                                     needFallback: "TO WIN");
+                                     needFallback: $"{club} WIN");
         }
 
         // ------------------------------------------------------------------------- total goals
