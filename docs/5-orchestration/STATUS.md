@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 252.** T95 CLOSED - the
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 253.** Batch 65 landed
+(6b98c93): DRAW row buildable now; 0-0 full-time capture owed (C11).
+Both queued to TV after its current set. sgp grinding HOLDOUT5.
+
+*(prior stamp, cycle 252:)* T95 CLOSED - the
 before-ship list is EMPTY (batch 64, 53b9d4a). Allen's draft fired to the
 DD: the two draw confirmations now, board row first. TV building the next
 set (scorer rung-2, the 10.9, then T94). sgp's HOLDOUT5 still grinding.
