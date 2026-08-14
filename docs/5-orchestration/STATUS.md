@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 256.** TV's merge of main
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 257 (heartbeat).** Quiet:
+TV working the draw arm; two dotnet processes alive (TV's build + the
+campaign); DD standing by.
+
+*(prior stamp, cycle 256:)* TV's merge of main
 is in: the engine's draw vocabulary reached its branch, the 0-0 capture is
 unblocked. One INHERITED red found: the laptop's stake-figure margin pin
 (1.96px owned by M-04's 26px figure) grew to 4.748 - the pin was never
