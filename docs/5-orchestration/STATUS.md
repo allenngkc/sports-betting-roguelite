@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 254.** TV's scorer ladder
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 255 (heartbeat).** Quiet
+and healthy: TV mid-merge on the capture prerequisite; HOLDOUT5's process
+alive and grinding; DD standing by, verdicts pre-written.
+
+*(prior stamp, cycle 254:)* TV's scorer ladder
 done (rung 2 clears, bare TO SCORE retired; suites green). The 0-0 capture
 grew a prerequisite: TV's branch predates draws, and merging main activates
 the SweatFlavor draw-as-away defect in the capture's own path. Allen's
