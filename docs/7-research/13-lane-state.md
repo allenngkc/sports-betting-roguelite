@@ -27,7 +27,8 @@ Report telegraphic: Done / Next / Risk / Need-Allen. The Need-Allen line is load
 | `1d6cc2e` | `18` ruling brief — the retention bundle (RF-5/8/12/14) packaged as one decision for Allen |
 | `2c9a2e0` | `19` per-game cards — all fifteen titles in Allen's format; `01` §D records the format |
 | `62f2d30` | `20` ruling brief — RF-17, legibility at the point of commitment; a `19` ranking cell corrected |
-| *(this commit)* | `21` canon-change proposals for the ratified pair (retention B + RF-17 A); the 5–8% → 4.5–8% band citation fixed in `13`, `18`, `19` |
+| `ac229f5` | `21` canon-change proposals for the ratified pair (retention B + RF-17 A); the 5–8% → 4.5–8% band citation fixed in `13`, `18`, `19` |
+| *(this commit)* | `22` ruling brief — RF-18, agency inside the sweat; two corrections to `17`'s RF-18 |
 
 **The widened mandate is now fully discharged.** 15 titles studied: 4 Tier-1 autopsies + 4 Tier-2 probes +
 2 widened autopsies + 5 widened probes. Nothing is queued; the lane is idle pending Allen's rulings.
@@ -124,3 +125,10 @@ strike any family whose pattern term is in the game's own title or is its core v
    a chess roguelike. **Read the store copy before proposing a title.**
 2. **Lexicon drift.** I changed regex patterns between the Tier-1 and Tier-2 pulls, contaminating two
    cells. Fixed by freezing §B2. **The instrument may not move between the halves of a comparison.**
+3. **Proposing against canon I had only partly read (2026-08-13).** RF-18 called `04`'s agency ladder
+   "the difference between Buckshot and Tharsis" and "unratified after thirteen months." `04` in fact
+   carries the ladder fully designed in three bands, an explicit *"engine cost: near zero"*, a no-QTE
+   rule, a deliberate v0 isolation with an evaluation trigger — and the date is five weeks old, not
+   thirteen months. RF-7's "not specified anywhere I can find" was also answered in the same file
+   (*"live fair value minus margin"*). **Read the whole target file before writing the proposal against
+   it**, not just the section the finding points at. Corrected in `17`; consequences in `22` §3 and §6.
