@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 260.** Step 5 opened on
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 261 (heartbeat).** All
+three building lanes busy: TV's draw arm; sgp's P1-P3 agent ~10 min in;
+surething-ui deep in the margin-pin diagnosis (notes it diverging from
+the handoff's account - report pending). DD standing by.
+
+*(prior stamp, cycle 260:)* Step 5 opened on
 both halves: Allen ruled Option C (model to sgp, screen to surething-ui).
 The plan merged (261109c); sgp's model half P1-P3 running; surething-ui-2
 re-created and seated (Opus 5 max, term_bbedfdc6) on the screen half +
