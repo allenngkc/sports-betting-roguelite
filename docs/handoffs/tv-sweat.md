@@ -11,6 +11,79 @@ discarded.
 
 ---
 
+## 0-T95. PHASE T IS DESIGN-VERIFIED · the crossfade's rect was stale and it was MINE · 2026-08-13
+
+**PHASE T IS DESIGN-VERIFIED (T89-cl, batch 63).** The migration is certified on its own variable,
+on the closing capture, against a bar pre-committed before the evidence existed. The closing set is
+**merged to main at `a487e1e`**; the T95 fix followed at **`c1bee90`**.
+
+**Branch `c1bee90`, pushed and remote-verified.** Suites: **EditMode 251/251 executed, 250 passed, 0
+failed, 1 ignored** (+1 — the new T95 pin) · **PlayMode 94/94 executed, 88 passed, 0 failed, 6 skips.**
+
+### T95 — the rect finding, and the attribution belongs here
+
+The DD read a **doubled, illegible scoreline** on score-change beats and offered the cheapest
+hypothesis: *"if the second layer holds a stale rect, this seat's own partition ruling is the cause."*
+
+**Measured:**
+
+```
+Matchup   box 593.0   centre  92.7
+Score     box 675.0   centre 133.7      CENTRE DELTA 41.0px
+```
+
+`Score` is the punch overlay and **its own build comment states the invariant verbatim** — *"Same
+text, SAME RECT, same face as `_tMatchup` … so superimposing it."* Both are `UpperCenter`, so each
+centres its string in **its own** box, and **two centred layers with different boxes do not
+superimpose — they offset by the difference of their centres.**
+
+**41.0px is exactly this lane's own `scoreCentreShift` from T91-am.** So: **the ruling was sound and
+the implementation was not.** T91-am moved `Matchup`; the mirror was never re-derived, which §3.5
+obliges — with the file warning about it in prose at the exact site. **New, a regression, and mine.**
+
+**Fixed by CONSTRUCTION** — one position, one size, both layers, hoisted into shared locals. The same
+remedy T68 needed for an ink with five authors and T62 for one value with two repaint schedules.
+Measured after: **centre delta 0.0px, superimposed.**
+
+**PINNED:** `T95_the_punch_overlay_and_the_scoreline_share_one_rect` asserts width, height, position
+and alignment. **A shared local is a convention; an assertion is a contract** — and this defect was
+invisible to every instrument this surface has, caught only at review distance on frames. It fails
+against the broken state by construction (593 vs 675 on the first assert); not re-run against a
+reverted tree.
+
+> **THE TRANSFERABLE RULE: when a ruling moves a box, every layer that mirrors it moves too — and the
+> mirror is found by grepping for the rect, not by remembering.** Two elements agreeing by convention
+> is a defect waiting for the next ruling.
+
+### T91-am2, folded in the same pass
+
+**The 2px ink floor applies to BOTH sides of the ticket column's edge** — *"an edge has two sides and
+a floor on one of them is half a rule."* Territories now derive from a usable stage of **711.0**, not
+the band's raw 715.0. `Matchup` starts at **−221.8, exactly 2.0px** right of the column edge; widest-
+scoreline clearance to the clock **31.3px**.
+
+### The T95 capture — granted, and being shot in this window
+
+**OWED by T95: the three transition beats captured DELIBERATELY rather than incidentally** — goal,
+lead-change, leg-resolution. The rect is fixed and pinned; the frames are the proof.
+
+**Both entry points are needed and neither substitutes for the other:** `Capture_Batch22_…` carries
+the two frames the DD read the defect on (`t68am-accept-slot` frame008, lead-change;
+`t70am-live-pair` frame000, leg-resolution) **under identical filenames**, and only
+`Capture_SeatedSweat_NamedMoments` carries the **`goal`** moment.
+
+### OPEN, none of it gating the verified phase
+
+| item | where |
+|---|---|
+| **`RiskPays`' fact floor** — 378.1 max / 270.6 typical vs a **locked** 249.0 column. **The one item that reaches Allen**, because it exceeds a locked dimension | T74-am6 / batch 63 |
+| `CashOut`'s `MARKET SUSPENDED`, 26.7px | T74's table |
+| bare `TO SCORE` names no player — the ladder working, not a backstop firing | routed batch 62 |
+| **T94** — column and scorebug describing different legs | batch 62 |
+| `SweatFlavor` renders a DRAW as AWAY flavour | markets lane, queued |
+
+---
+
 ## 0-CL. THE CLOSING CAPTURE — shot and staged · the phase awaits the DD's re-read · 2026-08-13
 
 **Branch `5dadc24`, pushed and REMOTE-VERIFIED. Tree clean, Unity ZERO, no lockfile — the granted
