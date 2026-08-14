@@ -977,6 +977,9 @@ namespace SBR.Game
         // between a flagged consequence and the kind of corpse `_wonFlood` became.
         private TMP_Text _tMatchup, _tLeg, _tClock, _tFlavor, _tCashOut, _tChrome, _tAttract, _tBigAmount, _tConsolation;
         private TMP_Text _tTicketHeader, _tRiskPays, _tInterventionPrompt, _tTakeoverTitle, _tTakeoverSub, _tSubtitle;
+        /// <summary>T74-am5: the footer's right-anchored half. `_tRiskPays` keeps its name and carries
+        /// RISK; this carries PAYS. Two elements, one row, no authored gap between them.</summary>
+        private TMP_Text _tPays;
         // TV-03/TV-04: the cash-out slot is three things, not one — an actionable FIELD, the money
         // figure, and a status word at label scale beside it.
         private Image _cashOutField;
@@ -2352,6 +2355,7 @@ namespace SBR.Game
                 _tTicketHeader.text = string.Empty;
                 for (int i = 0; i < _legRow.Length; i++) ClearLegRow(i);
                 _tRiskPays.text = string.Empty;
+                if (_tPays != null) _tPays.text = string.Empty;
                 return;
             }
 
@@ -2469,7 +2473,10 @@ namespace SBR.Game
             }
 
             // §7: "Risk and pays sit at the foot in gold at L2."
-            _tRiskPays.text = $"RISK ${Money(_ticket.Stake)}     PAYS ${Money(_ticket.PotentialPayout)}";
+            // T74-am5: two ends of one row. The five-space spacer is GONE — it was the thing being
+            // measured, not the content, and anchoring retired it.
+            _tRiskPays.text = $"RISK ${Money(_ticket.Stake)}";
+            if (_tPays != null) _tPays.text = $"PAYS ${Money(_ticket.PotentialPayout)}";
         }
 
         /// <summary>TV-14: sets a compact row's price and state chip together.
@@ -4011,7 +4018,8 @@ namespace SBR.Game
             "LegRowNeed0", "LegRowNeed1", "LegRowNeed2",
             "LegRowNeed3", "LegRowNeed4", "LegRowNeed5", // each live leg's NEED line
             "CashOut",          // the cash-out state
-            "RiskPays",         // C8: joins the protected set
+            "RiskPays",         // C8: joins the protected set — now the RISK half (see BuildTicketColumn)
+            "Pays",             // T74-am5: the right-anchored half, same class, same protection
         };
 
         private void BuildTicketColumn(Transform root, LayoutGrid grid)
@@ -4119,10 +4127,34 @@ namespace SBR.Game
             }
 
             // §7: "Risk and pays sit at the foot in gold at L2."
+            // T74-am5 (batch 59): ONE ROW, BOTH ENDS ANCHORED. The two-row form is withdrawn — batch
+            // 57 ruled separate rows AND "label left, figure right-anchored", and the second makes
+            // the first unnecessary.
+            //
+            // `RISK $1,234     PAYS $12,340` measured 296.5 as one concatenated string WITH AUTHORED
+            // SPACING IN THE MIDDLE. Anchor RISK to the left edge and PAYS to the right and the
+            // authored gap ceases to exist: the slack lives between them, where it costs nothing, and
+            // the binding constraint stops being 296.5 and becomes RISK's ink + PAYS's ink. The 40px
+            // footer's height problem dissolves rather than being paid for — no band grows, no size
+            // moves, no deviation signs.
+            //
+            // PAYS stays right-anchored for T82's reason as well as this one: against the tabular set
+            // it then grows leftward in exact digit-width steps, so the clearance to RISK is
+            // predictable rather than content-dependent.
+            //
+            // THE NAME `RiskPays` IS KEPT for the left half, and deliberately: it is in the C8
+            // protected set and a LayoutGrid test finds it by that name. Same reasoning the money
+            // figure's own name was kept under — a rename here would be a second change riding a
+            // composition fix.
             _tRiskPays = MakeText(root, "RiskPays", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 AnchorTopLeft(grid.TicketFooter, 8f, 8f),
                 new Vector2(grid.TicketFooter.width - 16f, grid.TicketFooter.height - 8f), TypeRisk,
                 TextAnchor.UpperLeft, goldL2, FontStyle.Normal, Face.Condensed, FontWeight.Bold); // TvRiskPays.jsx:14
+
+            _tPays = MakeText(root, "Pays", new Vector2(0f, 1f), new Vector2(1f, 1f),
+                AnchorTopLeft(grid.TicketFooter, 8f, 8f) + new Vector2(grid.TicketFooter.width - 16f, 0f),
+                new Vector2(grid.TicketFooter.width - 16f, grid.TicketFooter.height - 8f), TypeRisk,
+                TextAnchor.UpperRight, goldL2, FontStyle.Normal, Face.Condensed, FontWeight.Bold);
         }
 
         private void BuildScoreBug(Transform root, LayoutGrid grid)

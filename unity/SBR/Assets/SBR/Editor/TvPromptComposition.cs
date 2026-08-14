@@ -275,6 +275,69 @@ namespace SBR.EditorTools
                                      "PAYS $733,183,765,022",   // bank $100,000
                                  })
                             Row(c.rectTransform.rect.width, "pays MAX        ", s, W(c, s));
+                        // T74-am5 (batch 59): ONE ROW, BOTH ENDS ANCHORED. The authored five-space
+                        // spacer is gone, so the binding constraint is RISK's ink + PAYS's ink. The
+                        // ruling pre-commits both ways on this one number.
+                        Debug.Log("[T88] --- RiskPays ONE ROW, both ends anchored (T74-am5) ---");
+                        float box249 = c.rectTransform.rect.width;
+                        foreach ((string bank, string risk, string pays) in new[]
+                                 {
+                                     ("$1,000",   "RISK $1,000",   "PAYS $7,331,837,650"),
+                                     ("$10,000",  "RISK $10,000",  "PAYS $73,318,376,502"),
+                                     ("typical",  "RISK $1,234",   "PAYS $12,340"),
+                                 })
+                        {
+                            float a = W(c, risk), b = W(c, pays), sum = a + b;
+                            Debug.Log($"[T88] anchored pair @ bank {bank,-8} '{risk}' {a:0.0} + '{pays}' {b:0.0} = {sum:0.0}px  " +
+                                      $"{(sum > box249 ? $"FACT FLOOR EXCEEDS the row by {sum - box249:0.0}px" : $"FITS, {box249 - sum:0.0}px of unauthored gap")}");
+                        }
+                        break;
+                    }
+
+                // ---- T84-am6 (batch 59): does the money control's 3px land on a NEIGHBOUR? ---------
+                //
+                // "A box overrunning into its own margin is a magnitude. A box overrunning onto its
+                // neighbour is a collision." The 3.0px is a LINE-BOX figure — GetPreferredValues
+                // returns the typographic line including leading, not the ink. What decides the branch
+                // is whether the INK leaves the rect, so the ink is derived from the face's own
+                // metrics (cap line to descent, scaled to the slot's size) rather than from a mesh,
+                // which an inactive probe object cannot produce.
+                //
+                // The neighbour is real and adjacent: LayoutGrid puts TicketFooter at
+                // `bottomY - TicketFooterHeight` and CashOut at `bottomY`, so they share an edge with
+                // no gutter between them.
+                if (fig != null && status != null)
+                {
+                    Debug.Log("[T88] --- where the 3px lands (T84-am6) ---");
+                    foreach ((TMP_Text slot, string label, float rectH) in new[]
+                             {
+                                 (fig, "figure (29px, rect 34)", 34f),
+                                 (status, "status (15px, rect 18)", 18f),
+                             })
+                    {
+                        var fi = slot.font.faceInfo;   // UnityEngine.TextCore.FaceInfo
+                        float scale = slot.fontSize / fi.pointSize;
+                        float inkTop = fi.capLine * scale;
+                        float inkBottom = fi.descentLine * scale;   // negative, below the baseline
+                        float ink = inkTop - inkBottom;
+                        float lineBox = slot.GetPreferredValues("CASHED OUT $1,240", Unconstrained, 0f).y;
+                        Debug.Log($"[T88] {label}  ink {ink:0.0}px (cap {inkTop:0.0} to descent {inkBottom:0.0})  " +
+                                  $"line box {lineBox:0.0}px  rect {rectH:0.0}px  → ink " +
+                                  $"{(ink > rectH ? $"LEAVES the rect by {ink - rectH:0.0}px — COLLISION" : $"fits with {rectH - ink:0.0}px to spare — the overrun is LEADING, in the control's own padding")}");
+                    }
+                }
+
+                // ---- does the LIST ruling actually save TakeoverSub? ------------------------------
+                // T74-am3 ruled it a list, one leg per row. A list's row carries ONE entry, so the
+                // question the sweep's joined figure cannot answer is whether a single entry fits the
+                // row — and if it does not, the list ruling is not the remedy and the slot needs a
+                // bound on the ENTRY, which is the engine's concatenated Moneyline label (T69).
+                foreach (TMP_Text c in screen.GetComponentsInChildren<TMP_Text>(true))
+                    if (c.gameObject.name == "TakeoverSub")
+                    {
+                        const string Entry =
+                            "San Francisco Gravediggers ML — San Francisco Gravediggers v San Francisco Longhaulers -233";
+                        Row(c.rectTransform.rect.width, "list ROW (1 leg)", Entry, W(c, Entry));
                         break;
                     }
 

@@ -139,10 +139,26 @@ namespace SBR.EditorTools
             // is the commit, so the word says so. Added with the wiring rather than after it.
             ("CashOutStatus", "§6.1 status words — all three states of CashOutStatusWord()",
                 new[] { "UPDATING", "HOLD E", "ENTER TO CASH OUT" }),
-            // CORRECTED: the separator is FIVE spaces in the format string, not three, and
-            // PotentialPayout is parlay-multiplied so its magnitude has no ceiling here.
-            ("RiskPays", "the format string at :2299 — payout magnitude UNBOUNDED", new[]
-                { "RISK $1,234     PAYS $12,340", "RISK $50     PAYS $450" }),
+            // T74-am5 (batch 59): the footer is ONE ROW with BOTH ENDS ANCHORED, so the five-space
+            // spacer that was being measured no longer exists and each half is swept on its own.
+            //
+            // "UNBOUNDED" is retired here, and it was the wrong word: `PotentialPayout` is
+            // parlay-multiplied but MaxLegs is finite, so it was UN-ENUMERATED. Enumerated in
+            // `engine.tests/PayoutMaximumTests` over 648,000 priced offers — max single-leg odds
+            // 52.0359, so the parlay term is 52.0359^4 = 7,331,837.65 x stake. The stake ceiling is
+            // the BANK (MaxStakeFraction 1.0), which is run state, so the longest form is stated per
+            // bank assumption: $73,318,376,502 at a bank of $10,000 is eleven digits, and eleven
+            // digits is what the row holds.
+            ("RiskPays", "the footer's LEFT half; stake-bounded", new[]
+                { "RISK $13,639", "RISK $1,234", "RISK $50" }),
+            ("Pays", "the footer's RIGHT half; parlay term 7,331,837.65 x stake — see PayoutMaximumTests", new[]
+                { "PAYS $73,318,376,502", "PAYS $7,331,837,650", "PAYS $12,340" }),
+            // Added when the POPULATION line below named them: the sweep's own §4.2 statement found
+            // three slots that were neither swept nor a sibling row index, and two of them are
+            // trivially enumerable. Closing the gap beats excusing it — a named gap is still a gap.
+            ("Leg", "the scorebug's leg counter, bounded by MaxLegs (4)", new[]
+                { "LEG 4/4", "LEG 1/4", "LEG 1/1" }),
+            ("MomentumLabel", "MomentumTape:134 — one constant, its whole string set", new[] { "MOMENTUM" }),
             ("Matchup", "scoreline, generated team names", new[]
                 { "ZAMBONIS 0 — REGULATORS 1", "BRICKLAYERS 0 — MIDDLEMEN 0", "STARTUPS 1 — PLUMBERS 2" }),
             ("Score", "the punch overlay mirrors Matchup", new[] { "ZAMBONIS 0 — REGULATORS 1" }),
@@ -163,9 +179,23 @@ namespace SBR.EditorTools
                 { "ROUND 10 OF 12 · BOARD OPEN", "SIT TO WATCH THE SWEAT", "BOARD CLOSED", "SHOP OPEN" }),
             ("TakeoverTitle", "3 assignment sites (a fourth clears it)", new[]
                 { "SHORT — $12,340 AGAINST $20,000", "TICKET 1 OF 2", "PAYMENT MADE" }),
-            ("TakeoverSub", "the deferral line, plus the leg list — CONSTRUCTED, see note", new[]
+            // T89-B: "CONSTRUCTED" is RETIRED. This slot was carried as having no bounded worst case
+            // at all, and that was the payout maximum's error a second time — un-enumerated is not
+            // unbounded. `engine.tests/TakeoverSubBoundTests` enumerates it over the same 648,000
+            // offers: the longest single entry is 91 chars, and the joined worst case at MaxLegs 4
+            // with `   ·   ` separators is 385 chars.
+            //
+            // The longest entry is a MONEYLINE label, and that is not incidental — it is the engine's
+            // concatenated form, `{CLUB} ML — {HOME} v {AWAY}`, which T69 ruled against on the leg row
+            // as "a fact named twice". This slot still renders it raw.
+            //
+            // Both forms are swept: the JOINED string is what the slot renders today, and the SINGLE
+            // ENTRY is what one row carries under T74-am3's list ruling — so the list's own row width
+            // is answered here rather than after it is built.
+            ("TakeoverSub", "the deferral line + the leg list, ENUMERATED (was CONSTRUCTED)", new[]
                 { "PAYMENT DEFERRED — YOUR BANK STANDS. THE NEXT ONE GROWS BY $1,200",
-                  "LANYARD TO SCORE ANYTIME +450   ·   BOTH TEAMS TO SCORE -110   ·   UNDER 10.5 CORNERS +240" }),
+                  "San Francisco Gravediggers ML — San Francisco Gravediggers v San Francisco Longhaulers -233",
+                  "San Francisco Gravediggers ML — San Francisco Gravediggers v San Francisco Longhaulers -233   ·   San Francisco Gravediggers ML — San Francisco Gravediggers v San Francisco Longhaulers -233   ·   San Francisco Gravediggers ML — San Francisco Gravediggers v San Francisco Longhaulers -233   ·   San Francisco Gravediggers ML — San Francisco Gravediggers v San Francisco Longhaulers -233" }),
             ("Subtitle", "RenderIdle sub, plus the run-over line", new[]
                 { "FINAL BANK $12,340  —  NEW RUN AT THE LAPTOP",
                   "gear up at the laptop, then the next round" }),
@@ -194,7 +224,15 @@ namespace SBR.EditorTools
         /// the leg row. Its length is not bounded by anything readable on this surface, so its entry
         /// is a CONSTRUCTED three-leg worst case, not an enumeration. A longer ticket or a longer
         /// fixture makes it longer, and this sweep cannot say by how much.</para></summary>
-        private static readonly string[] Unswept = { };
+        private static readonly string[] Unswept =
+        {
+            // DELIBERATELY excluded, and it is the only one. `_tBigAmount` is built, cleared on reset
+            // and NEVER GIVEN CONTENT — both payoff figures moved into the cash-out slot at T68-am/T71
+            // and nothing has requested it since. It renders no string, so it has no longest
+            // renderable form to sweep. Named here rather than silently skipped, because "renders
+            // nothing" and "was overlooked" are indistinguishable from a count alone.
+            "BigAmount",
+        };
 
         [MenuItem("SBR/TV/T84 extent sweep")]
         public static void Sweep()
@@ -294,6 +332,42 @@ namespace SBR.EditorTools
                     Debug.Log($"[T84] {s,-16} UNSWEPT — longest renderable form not enumerable from here");
 
                 Debug.Log($"[T84] slots overrunning their fixed box: {overrunning} of {Cases.Length} swept");
+
+                // T89-B §4.2 — WHAT THE SWEPT COUNT IS A COUNT OF, computed rather than asserted.
+                //
+                // The report has been saying "N of 20 swept" beside "48 text slots exist", and those
+                // two numbers invite exactly one wrong reading: that 28 slots go unexamined. They do
+                // not — the leg row is built six times from one construction, so its five elements
+                // appear at six indices and the sweep covers index 0. Saying so in prose would be a
+                // claim; this derives it, and NAMES anything that is neither swept nor a sibling,
+                // which is the only part that could hide a gap.
+                var sweptNames = new HashSet<string>();
+                foreach ((string slot, string _, string[] __) in Cases) sweptNames.Add(slot);
+
+                var declared = new HashSet<string>(Unswept);
+                var siblings = new List<string>();
+                var excluded = new List<string>();
+                var uncovered = new List<string>();
+                foreach (string name in all.Keys)
+                {
+                    if (sweptNames.Contains(name)) continue;
+                    if (declared.Contains(name)) { excluded.Add(name); continue; }
+                    // `LegRowNeed3` is `LegRowNeed0`'s construction at another index: strip the
+                    // trailing digits and ask whether index 0 of the same family is swept.
+                    string stem = name.TrimEnd('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
+                    if (stem.Length < name.Length && sweptNames.Contains(stem + "0")) siblings.Add(name);
+                    else uncovered.Add(name);
+                }
+                uncovered.Sort();
+                excluded.Sort();
+
+                Debug.Log($"[T84] POPULATION: {all.Count} text slots exist · {Cases.Length} swept · " +
+                          $"{siblings.Count} the same construction at another row index (covered by index 0) · " +
+                          $"{excluded.Count} declared unswept · {uncovered.Count} unaccounted for");
+                if (excluded.Count > 0)
+                    Debug.Log($"[T84] DECLARED UNSWEPT (renders no string): {string.Join(", ", excluded)}");
+                if (uncovered.Count > 0)
+                    Debug.Log($"[T84] UNACCOUNTED FOR — this number must be 0: {string.Join(", ", uncovered)}");
             }
             finally { Object.DestroyImmediate(go); }
         }
