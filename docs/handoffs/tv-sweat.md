@@ -11,6 +11,99 @@ discarded.
 
 ---
 
+## 0-CL. THE CLOSING CAPTURE — shot and staged · the phase awaits the DD's re-read · 2026-08-13
+
+**Branch `5dadc24`, pushed and REMOTE-VERIFIED. Tree clean, Unity ZERO, no lockfile — the granted
+window is SPENT, on one pass, as ruled.**
+
+**TOP LINE: every ruling through batch 62 is built, measured and shot. Nothing in this lane is open
+that gates Phase T.** The phase now waits on **one thing: the DD's re-read against T89** of
+`dd-import/tv-phase-t-closing-2026-08-13/`. A fresh seat reads §0-PV for the verdict's shape, this
+section for standing, and waits.
+
+| suite | discovered | executed | passed | failed | skipped |
+|---|---|---|---|---|---|
+| EditMode | 250 | 250 | 249 | 0 | 1 ignored — G1's grant, held |
+| PlayMode | 94 | 94 | 88 | 0 | 6 by-design capture skips |
+
+**Sweep: overrunning 1 of 22 · 48 slots · 0 unaccounted for.** The one survivor is `CashOut`'s
+`MARKET SUSPENDED` (26.7px), on T74's table by name and **not part of T89's gate**.
+
+### G1-am7 — the moneyline ladder, measured BEFORE it was built
+
+The DD explicitly declined to assert rung 2 (§2.5/C41): the arithmetic suggested *"somewhere near
+247px"* and called that **a direction of travel, not a number to land on**. Measured, all twenty
+against the 261.0px column:
+
+> **RUNG 2 OVERRUNS FOR 0 OF 20.** Widest form actually reached: **`SPREADSHEETS WIN` 249.5px, 11.5px
+> spare.** Rung 1 overruns for 5, so exactly those five fall to rung 2.
+
+**Pre-commitment 1 fired: the ladder is final and nothing returned to the DD.** Built as
+`needFallback: $"{club} WIN"`; bare `TO WIN` is retired and now unreachable on this arm, which is the
+point — T94's desync means a bare form would name no side during the very window that made naming
+necessary.
+
+### THE INSTRUMENT LESSON THAT CAME WITH IT — and it is the durable part
+
+**A ladder-blind sweep certifies boxes against strings the surface can COMPOSE and can never DRAW.**
+`SPREADSHEETS TO WIN` at 289.9px is never rendered — `FitOrFallback` picks the next rung — so
+measuring it is the `BRICKLAYERS ANYTIME` error **arriving from the opposite direction**: not a string
+that cannot exist, but one that exists and cannot reach the box.
+
+The sweep applies **ladder selection before measurement** now, derived rather than hard-coded as
+"these five use rung 2" — a hard-coded split goes stale the moment the box or the face moves, which
+this lane has already paid for once.
+
+**AND MODELLING ONE LADDER EXPOSED THE OTHERS. Each time a rung was modelled the false overrun moved
+one arm over:**
+
+```
+moneyline laddered  ->  widest became `ONE TEAM SCORELESS` 272.4   (also a ladder)
+BTTS laddered       ->  widest became `PAVEMENT TO SCORE`  264.9   (also a ladder)
+scorer laddered     ->  widest is `ONE TEAM BLANKED` 252.5 — FITS by 8.5
+```
+
+**THREE arms of the NEED deck are ladders, not one.** I had written in that very table that the
+scorer arm need not be modelled *"because no surname form reaches the box at all"* — **the next run
+falsified it.** Corrected in place; all three are transcribed from `ActiveLegCopy`'s construction
+sites rather than inferred.
+
+### The capture
+
+`Capture_Batch22_StatementFit_And_PayoffBeats`, with graphics, launched **detached** and waited
+**in-turn**. **Passed 1 of 1 · 66 frames · 189.7 MB**, staged as a directory with a README.
+
+**One capture, five fixes — no separate verification pass**, per T90-am's own economics: a
+verification window that is not the closing window spends a capture to learn what the closing capture
+reports anyway.
+
+**THE DECISIVE FRAME IS IN IT UNDER THE IDENTICAL FILENAME** —
+`…scene002__grammar-LegFinalWon__moment-t70am-live-pair__frame000.png`, the frame T89-am read the
+refusal on. Before: `ONE TEAM BLANKED`. Refused set: `ONE TEAM`. **This set: `ONE TEAM BLANKED`,
+complete and unobstructed.** Same entry point, seed, ticket, scene, grammar, moment and frame index as
+66 of the pair's 151 frames — identical, not analogous.
+
+Pins asserted: one seed (`48151623`), one boost (1.4), one scene and one grammar per payoff beat,
+mtime-scoped against a directory holding 254 PNGs.
+
+### THE GATE, as T90-am ruled it
+
+**The property, not the string: the truncation backstop fires on NOTHING in the NEED line.** Measured
+across the whole deck over the closed pools — every arm's widest *rendered* form fits 261.0, the
+widest being `ONE TEAM BLANKED` at 252.5.
+
+### OPEN, and NONE of it gates the phase
+
+| item | where |
+|---|---|
+| **bare `TO SCORE`** — the scorer arm's rung 2 names no player, the same property G1-am7 retired bare `TO WIN` for, one arm over, same T94 reason. **Not a gate failure: the gate is that the TRUNCATION BACKSTOP does not fire, and an authored fallback rendering complete is the ladder working** — T89-A's own example is exactly that. Authoring it is the DD's; G1-am7 scoped itself to the moneyline | routed batch 62 |
+| `CashOut`'s `MARKET SUSPENDED`, 26.7px | T74's table |
+| `RiskPays`' fact floor, 378.1 max / 270.6 typical vs 249.0 | T74-am6 |
+| **T94** — the column and scorebug describing different legs; its won/dead beats are ON these frames (`t70am-live-pair` LegFinalWon, `t71-win-tally-slot` LegFinalLost), owed after the close | batch 62 |
+| `SweatFlavor` renders a DRAW as AWAY flavour | markets lane, queued behind the close |
+
+---
+
 ## 0-BU. BUILT, NOT CAPTURED — the phase waits on ONE authored string · 2026-08-13
 
 **Branch `43896ac`, pushed and REMOTE-VERIFIED. Tree clean. Unity ZERO, no lockfile — the granted
