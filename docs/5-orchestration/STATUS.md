@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 253.** Batch 65 landed
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 254.** TV's scorer ladder
+done (rung 2 clears, bare TO SCORE retired; suites green). The 0-0 capture
+grew a prerequisite: TV's branch predates draws, and merging main activates
+the SweatFlavor draw-as-away defect in the capture's own path. Allen's
+staged word fired: merge main in, fix the draw arm, then shoot. DD standing
+by with three pre-written verdicts. sgp grinding HOLDOUT5.
+
+*(prior stamp, cycle 253:)* Batch 65 landed
 (6b98c93): DRAW row buildable now; 0-0 full-time capture owed (C11).
 Both queued to TV after its current set. sgp grinding HOLDOUT5.
 
