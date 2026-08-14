@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 249 (heartbeat).** Post-
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 250.** TV's seat died
+on a 403 mid-T95-capture (entry point one PASSED, 66 frames); recovered:
+seat recreated + seeded to resume the second entry point (window still
+granted), a stray half-created tv terminal closed, watcher v31. Sgp's
+HOLDOUT5 grinding. Research items with Allen.
+
+*(prior stamp, cycle 249:)* Post-
 close hold: TV on T95's crossfade rect; sgp's HOLDOUT5 grinding; all
 else clean or with Allen (RF-18 word; canon proposals; the eventual
 column question).
