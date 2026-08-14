@@ -1,7 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 232 (post-restart
-recovery).** Orca+session restarted; disk verified NOTHING LOST (main at
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 233.** SGP step 3
+ACCEPTED by Allen - step 4 GO (gate campaign, held-out seeds, G7's SGP
+arm). The lane's step-3 close: six phases, eleven gaps ruled, three
+self-corrections; TicketState.Voided's missing render arm routed (no
+surface renders VOID - stake returned). TV resuming batch-59 fixes;
+mpregame determining Campaign B's fate; DD seating.
+
+*(prior stamp, cycle 232:)* Orca+session restarted; disk verified NOTHING LOST (main at
 cycle-231 tip, tree clean; TV's batch-59 turn died pre-commit; Campaign
 B's detached process dead - report-or-relaunch determination with the
 resumed lane; sgp branch unchanged). Four seats recreated + seeded (TV
