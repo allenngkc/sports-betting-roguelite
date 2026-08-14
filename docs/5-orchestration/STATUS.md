@@ -1,7 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 239 — THE PHASE
-VERDICT: FIVE MET, ONE REFUSED.** Batch 60 canon (15c3450): the money
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 240 (heartbeat).**
+Campaign B merged GREEN (7/7 gates, vocabulary shipped, 5932884);
+mpregame's fixture verification granted. TV on the T90 band measurement.
+Sgp's final isolation run in flight. Research briefs with Allen (RF-18 +
+trigger). Quiet is healthy.
+
+*(prior stamp, cycle 239:)* Batch 60 canon (15c3450): the money
 control GRANTED on frames, the 3px signed, all parked pre-commitments
 discharged, digit rows re-certified - and the NEED truncation SURVIVED
 the fix pass. Phase T's last blocker is T90 (band furniture before
