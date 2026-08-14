@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 251 (heartbeat).** T95's
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 252.** T95 CLOSED - the
+before-ship list is EMPTY (batch 64, 53b9d4a). Allen's draft fired to the
+DD: the two draw confirmations now, board row first. TV building the next
+set (scorer rung-2, the 10.9, then T94). sgp's HOLDOUT5 still grinding.
+
+*(prior stamp, cycle 251:)* T95's
 transition frames with the DD (its crossfade read = the last before-ship
 check); sgp's HOLDOUT5 grinding; TV standing by; research words with
 Allen. Quiet is healthy.
