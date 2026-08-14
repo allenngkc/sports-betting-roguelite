@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 240 (heartbeat).**
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 241 — THE PARLAY ENGINE
+IS ON MAIN.** All 8 gates pass on HOLDOUT4; 107,073 tickets, zero
+no-label fallbacks; merged b3a1798 with the predicted collision hand-
+resolved. Step 5 (presentation) is GO on Allen's word - plan stops once,
+then runs. Remaining live: TV's T90 band measurement; mpregame's fixture
+verification; research's canon proposals + RF-18 with Allen.
+
+*(prior stamp, cycle 240:)*
 Campaign B merged GREEN (7/7 gates, vocabulary shipped, 5932884);
 mpregame's fixture verification granted. TV on the T90 band measurement.
 Sgp's final isolation run in flight. Research briefs with Allen (RF-18 +
