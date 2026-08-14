@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 236 (heartbeat).**
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 237 — THE PHASE VERDICT
+DOCKET IS WITH THE DD.** TV's captures complete (after-frames pair +
+five-seed NEED set, pinned, honest READMEs) and the five open items
+routed - incl. the RiskPays fact floor (378.1 max vs 249.0: batch 59's
+second branch fires, T74-proper). The DD rules T89-A + E on the frames,
+then the review note CLOSES PHASE T. Allen's research rulings landed
+(retention B, RF-17 A - canon proposals drafting; RF-18 brief awaiting
+his word + trigger). Campaigns grinding. Fifteen-game format doc on main.
+
+*(prior stamp, cycle 236:)*
 Retention brief in front of Allen (one word: A/B/C/D, lane recommends B
 - ladder into v1, steering held for RF-17); RF-17 brief being written in
 the same shape; per-game rework running around them. TV's after-frames
