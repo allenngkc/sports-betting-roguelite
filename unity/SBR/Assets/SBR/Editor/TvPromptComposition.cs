@@ -371,17 +371,33 @@ namespace SBR.EditorTools
                             "FERRETS", "OVERHEADS", "GRAVEDIGGERS", "NOTARIES", "MUSKRATS", "ZAMBONIS",
                             "LOOPHOLES", "REFUNDS",
                         };
-                        var over = new List<string>();
+                        // G1-am7 (batch 62): a TWO-RUNG ladder, selected by measurement.
+                        //   rung 1  {CLUB} TO WIN   — fits 261.0, 15 of 20
+                        //   rung 2  {CLUB} WIN      — the other five
+                        // Bare `TO WIN` is RETIRED as this arm's fallback: it must not be reachable on
+                        // a moneyline leg, because the column/scorebug desync (T94) means it would name
+                        // no side during the very window that made naming necessary.
+                        //
+                        // The DD did NOT assert rung 2's widths (§2.5/C41) — the arithmetic suggested
+                        // "somewhere near 247px" and called that a direction of travel, not a number to
+                        // land on. This measures all twenty.
+                        int over1 = 0, over2 = 0, needsRung2 = 0;
+                        float worst2 = 0f; string worst2S = "";
                         foreach (string noun in pool)
                         {
-                            string s = noun + " TO WIN";
-                            float wpx = W(c, s);
-                            if (wpx > box) over.Add($"{s} {wpx:0.0}");
-                            Debug.Log($"[T88] pool {s,-26} {wpx,6:0.0}px  " +
-                                      $"{(wpx > box ? $"OVERRUNS by {wpx - box:0.0}" : $"fits by {box - wpx:0.0}")}");
+                            string r1 = noun + " TO WIN", r2 = noun + " WIN";
+                            float w1 = W(c, r1), w2 = W(c, r2);
+                            bool r1Fits = w1 <= box, r2Fits = w2 <= box;
+                            if (!r1Fits) { over1++; needsRung2++; }
+                            if (!r2Fits) over2++;
+                            if (!r1Fits && w2 > worst2) { worst2 = w2; worst2S = r2; }
+                            Debug.Log($"[T88] pool {r1,-26} {w1,6:0.0}px {(r1Fits ? "fits " : "OVER ")}" +
+                                      $"│ rung2 {r2,-22} {w2,6:0.0}px {(r2Fits ? $"fits by {box - w2:0.0}" : $"OVERRUNS by {w2 - box:0.0}")}");
                         }
-                        Debug.Log($"[T88] G1-am6 SUMMARY: {over.Count} of {pool.Length} clubs overrun the " +
-                                  $"{box:0.0}px box. The authored short form `TO WIN` is {W(c, "TO WIN"):0.0}px.");
+                        Debug.Log($"[T88] G1-am7 LADDER against {box:0.0}px: rung 1 overruns for {over1} of {pool.Length} " +
+                                  $"(so {needsRung2} clubs fall to rung 2) · RUNG 2 OVERRUNS FOR {over2} of {pool.Length}");
+                        Debug.Log($"[T88] G1-am7 the widest rung-2 form actually REACHED is '{worst2S}' at {worst2:0.0}px " +
+                                  $"({box - worst2:0.0}px spare) — this is the number the pre-commitment turns on");
                         break;
                     }
 

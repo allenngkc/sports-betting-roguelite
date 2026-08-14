@@ -79,6 +79,49 @@ namespace SBR.EditorTools
             "Gasket", "Pylon", "Ketchup", "Lanyard", "Racket", "Stapler",
         };
 
+        /// <summary>A LADDER's next rung, or null where the slot has none.
+        ///
+        /// <para>G1-am7 authored the moneyline NEED arm as two rungs selected BY MEASUREMENT —
+        /// <c>{CLUB} TO WIN</c> where it fits, <c>{CLUB} WIN</c> for the five clubs where it does not
+        /// — and <c>FitOrFallback</c> is what chooses. So <c>SPREADSHEETS TO WIN</c> at 289.9px is a
+        /// form the surface CAN COMPOSE and can never DRAW.</para>
+        ///
+        /// <para><b>Sweeping it flat would report a false overrun</b>, and it is the same error as
+        /// sweeping `BRICKLAYERS ANYTIME` — certifying a box against a string that cannot reach it —
+        /// arriving from the opposite direction. The sweep's contract is the longest RENDERABLE form,
+        /// and with a measured ladder the renderable form is whichever rung the measurement picks.
+        /// Derived here rather than hard-coded as "these five use rung 2", because a hard-coded split
+        /// goes stale the moment the box or the face moves, which this lane has already paid for
+        /// once.</para>
+        /// <para><b>The moneyline arm is not the only ladder, and modelling one exposed the other.</b>
+        /// With `{CLUB} TO WIN` laddered, the slot's widest became `ONE TEAM SCORELESS` at 272.4 —
+        /// which is ALSO a rung: `ActiveLegCopy` gives it `needFallback: "ONE TEAM BLANKED"`, authored
+        /// complete for exactly this. The false overrun simply moved one arm over, which is what a
+        /// ladder-blind sweep does to every laddered arm it has.</para>
+        ///
+        /// <para><b>THREE arms are ladders, and the first two versions of this table said otherwise.</b>
+        /// I wrote here that the scorer arm need not be modelled "because no surname form reaches the
+        /// box at all" — and the very next run falsified it: `PAVEMENT TO SCORE` is 264.9px against
+        /// the 261.0px column. Each time a ladder was modelled the false overrun moved one arm over,
+        /// which is what a ladder-blind sweep does to every laddered arm it has. All three are
+        /// transcribed from `ActiveLegCopy`'s construction sites now, not inferred.</para>
+        ///
+        /// <para><b>Flagged upward, not fixed here:</b> the scorer arm's rung 2 is the BARE form
+        /// `TO SCORE`, which names no player — the same property G1-am7 just retired bare `TO WIN`
+        /// for, one arm over, and for the same reason (T94's desync). It is not a gate failure: the
+        /// gate is that the TRUNCATION BACKSTOP does not fire, and an authored fallback rendering
+        /// complete is the ladder working — T89-A's own example, `ONE TEAM BLANKED`, is exactly
+        /// that. Routed as a finding; authoring the scorer arm is the DD's and G1-am7 scoped itself
+        /// to the moneyline.</para></summary>
+        private static string LadderFallback(string slot, string s)
+        {
+            if (slot != "LegRowNeed0") return null;
+            if (s.EndsWith(" TO WIN")) return s.Substring(0, s.Length - 7) + " WIN";   // G1-am7
+            if (s == "ONE TEAM SCORELESS") return "ONE TEAM BLANKED";                  // G1, authored
+            if (s.EndsWith(" TO SCORE")) return "TO SCORE";                            // G1, authored
+            return null;
+        }
+
         /// <summary>Every member of a closed pool through one authored format, upper-cased the way the
         /// surface upper-cases it. Generating beats picking: the sweep then re-derives its own worst
         /// case whenever a pool grows.</summary>
@@ -105,10 +148,14 @@ namespace SBR.EditorTools
             // vocabulary and one NEED never emits (its moneyline form is `{CLUB} TO WIN`). Both
             // generated arms are now generated. The authored constants and the two fallbacks are
             // verbatim from ActiveLegCopy's construction sites.
-            ("LegRowNeed0", "G1's NEED deck: two arms generated over the closed pools, constants verbatim",
+            // G1-am7 (batch 62): the moneyline arm is a TWO-RUNG ladder, so BOTH rungs are swept —
+            // rung 1 `{CLUB} TO WIN` for the 15 that fit, rung 2 `{CLUB} WIN` for the other five.
+            // Bare `TO WIN` is RETIRED and deliberately absent: it must not be reachable on a
+            // moneyline leg (T94's desync), so sweeping it would certify a string the surface may
+            // never render — the over-generation half of the traceability pass, one arm over.
+            ("LegRowNeed0", "G1's NEED deck over the closed pools; the moneyline arm is a LADDER (see LadderFallback)",
                 And(From(ClubNouns, "{0} TO WIN"), From(Surnames, "{0} TO SCORE"), new[]
-                { "ONE TEAM SCORELESS", "ONE TEAM BLANKED", "BOTH TEAMS SCORE", "NOT YET",
-                  "TO WIN", "TO SCORE" })),
+                { "ONE TEAM SCORELESS", "ONE TEAM BLANKED", "BOTH TEAMS SCORE", "NOT YET", "TO SCORE" })),
             // CORRECTED by the traceability pass, in BOTH directions. The old set was
             // {UNDER 10.5 CORNERS, UNDER 10.5 CNRS, LANYARD TO SCORE, BOTH TEAMS SCORE, MIDDLEMEN ML}.
             // Two of those — LANYARD TO SCORE and BOTH TEAMS SCORE — are forms LegStatement does NOT
@@ -284,9 +331,25 @@ namespace SBR.EditorTools
 
                     float worst = float.MinValue, worstTab = float.MinValue;
                     string worstS = "", worstTabS = "";
-                    foreach (string s in strings)
+                    int laddered = 0;
+                    foreach (string composed in strings)
                     {
+                        // LADDER SELECTION, applied before measurement so the sweep tests what the
+                        // surface will DRAW rather than what it can compose. A rung that overruns is
+                        // never rendered — FitOrFallback picks the next one — so measuring it would
+                        // certify the box against a string it can never receive.
+                        string s = composed;
                         float w = t.GetPreferredValues(s, Unconstrained, 0f).x;
+                        if (w > box)
+                        {
+                            string next = LadderFallback(slot, s);
+                            if (next != null)
+                            {
+                                s = next;
+                                w = t.GetPreferredValues(s, Unconstrained, 0f).x;
+                                laddered++;
+                            }
+                        }
                         if (w > worst) { worst = w; worstS = s; }
                         float tab = w;
                         foreach (char c in s)
@@ -319,6 +382,7 @@ namespace SBR.EditorTools
                               $"[face '{t.font?.name}' w{(int)t.fontWeight} style {t.fontStyle} " +
                               $"tracking {t.characterSpacing / 100f:0.000}em type {t.fontSize:0.#}px]  " +
                               $"{(over ? $"OVERRUNS by {worstTab - box:0.0}px" : $"fits, {box - worstTab:0.0}px spare")}  " +
+                              $"{(laddered > 0 ? $"[{laddered} forms took the ladder's next rung] " : "")}" +
                               $"· set: {source}");
                 }
 
