@@ -353,6 +353,55 @@ namespace SBR.EditorTools
                         break;
                     }
 
+                // ---- G1-am8: the SCORER arm's rung 2, measured across all twelve surnames ---------
+                //
+                // Ruled: rung 1 `{SURNAME} TO SCORE`, rung 2 `{SURNAME} SCORES`, bare `TO SCORE`
+                // RETIRED and unreachable. The rung-2 rule generalises across both arms — drop the
+                // infinitive marker and conjugate to the subject: clubs are plural and take WIN, a
+                // surname is singular and takes SCORES.
+                //
+                // NOT measured at the DD seat (§2.5/C41): `PAVEMENT TO SCORE` is 264.9 against 261.0
+                // and dropping `TO ` while adding the conjugating `S` "should return more than that on
+                // the arithmetic" — a direction of travel, not a number to land on. This is the number.
+                foreach (TMP_Text c in screen.GetComponentsInChildren<TMP_Text>(true))
+                    if (c.gameObject.name == "LegRowNeed0")
+                    {
+                        float box = c.rectTransform.rect.width;
+                        Debug.Log($"[T88] --- G1-am8 SCORER LADDER against the {box:0.0}px box ---");
+                        var surnames = new[]
+                        {
+                            "LEDGER", "CINDER", "MUFFIN", "PAVEMENT", "COUPON", "WOBBLE",
+                            "GASKET", "PYLON", "KETCHUP", "LANYARD", "RACKET", "STAPLER",
+                        };
+                        int sOver1 = 0, sOver2 = 0; float sWorst2 = 0f; string sWorst2S = "";
+                        foreach (string n2 in surnames)
+                        {
+                            string r1 = n2 + " TO SCORE", r2 = n2 + " SCORES";
+                            float w1 = W(c, r1), w2 = W(c, r2);
+                            if (w1 > box) sOver1++;
+                            if (w2 > box) sOver2++;
+                            if (w2 > sWorst2) { sWorst2 = w2; sWorst2S = r2; }
+                            Debug.Log($"[T88] scorer {r1,-22} {w1,6:0.0}px {(w1 <= box ? "fits " : "OVER ")}" +
+                                      $"│ rung2 {r2,-20} {w2,6:0.0}px {(w2 <= box ? $"fits by {box - w2:0.0}" : $"OVERRUNS by {w2 - box:0.0}")}");
+                        }
+                        Debug.Log($"[T88] G1-am8: rung 1 overruns for {sOver1} of {surnames.Length} · " +
+                                  $"RUNG 2 OVERRUNS FOR {sOver2} of {surnames.Length} · widest rung 2 " +
+                                  $"'{sWorst2S}' {sWorst2:0.0}px ({box - sWorst2:0.0}px spare) · " +
+                                  $"bare 'TO SCORE' was {W(c, "TO SCORE"):0.0}px and is RETIRED");
+                        break;
+                    }
+
+                // ---- T92-am: the deferral line's 10.9px, and whether the panel admits the widening --
+                foreach (TMP_Text c in screen.GetComponentsInChildren<TMP_Text>(true))
+                    if (c.gameObject.name == "TakeoverSub")
+                    {
+                        const string Deferral = "PAYMENT DEFERRED — YOUR BANK STANDS. THE NEXT ONE GROWS BY $1,200";
+                        float boxW = c.rectTransform.rect.width;
+                        Debug.Log($"[T88] --- T92-am: TakeoverSub box {boxW:0.0}px (was 655.0) ---");
+                        Row(boxW, "deferral line   ", Deferral, W(c, Deferral));
+                        break;
+                    }
+
                 // ---- G1-am6: THE POOL, measured, for the moneyline NEED arm's authoring -----------
                 //
                 // "Send the pool and it is authored on sight." The pool is `SlateGenerator.Nouns`, a
