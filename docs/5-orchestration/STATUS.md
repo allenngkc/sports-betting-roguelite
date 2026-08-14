@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-13, cycle 233.** SGP step 3
+**Keeper-era heartbeat stamp: 2026-08-13, cycle 234 (heartbeat).** All
+threads grinding: TV on batch-59 fixes toward the after-frames; Campaign
+B relaunch mid-run; sgp's step-4 sequence (control table -> probe+G7 ->
+HOLDOUT4 -> table, kappa untouched). DD seated standing by. Research on
+Allen.
+
+*(prior stamp, cycle 233:)* SGP step 3
 ACCEPTED by Allen - step 4 GO (gate campaign, held-out seeds, G7's SGP
 arm). The lane's step-3 close: six phases, eleven gaps ruled, three
 self-corrections; TicketState.Voided's missing render arm routed (no
