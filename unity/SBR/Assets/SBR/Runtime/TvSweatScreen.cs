@@ -4243,19 +4243,47 @@ namespace SBR.Game
             // position, and the clock keeps its right-anchored constant ink edge (T75-am2).
             const float ClockTerritory = 80f;   // holds 69.5 with margin
             const float BandInkFloor = 2f;      // the same keep-out T90-am ruled for the column
-            float scoreTerritory = sb.width - 40f - ClockTerritory - BandInkFloor;
-            // Centre the scoreline in ITS territory, not the band's: the territory is short of the
-            // band's right end by the clock's share, so its centre sits left of the band's by half of
-            // what the clock and the floor take.
-            float scoreCentreShift = -(ClockTerritory + BandInkFloor) * 0.5f;
+            const float ClockRightPad = 10f;    // the clock's own right anchor, unchanged (T75-am2)
+
+            // T91-am2 (batch 63): THE 2px FLOOR APPLIES TO BOTH SIDES OF THE COLUMN'S EDGE. T91-am
+            // bounded the scoreline against the clock and left it flush against the ticket column —
+            // "an edge has two sides and a floor on one of them is half a rule". So the usable stage
+            // is 711.0, not 715.0, and the territories are derived from that rather than from the
+            // band's raw width.
+            float stageUsableL = BandInkFloor;
+            float clockTerritoryL = sb.width - ClockRightPad - ClockTerritory;
+            float scoreTerritoryL = stageUsableL;
+            float scoreTerritoryR = clockTerritoryL - BandInkFloor;
+            float scoreTerritory = scoreTerritoryR - scoreTerritoryL;
+            // Centre the scoreline in ITS OWN territory, not the band's.
+            float scoreCentreShift = (scoreTerritoryL + scoreTerritoryR) * 0.5f - sb.width * 0.5f;
+
+            // T95 — THE PUNCH OVERLAY SHARES THIS RECT, and it is hoisted so it cannot drift again.
+            //
+            // `Score` mirrors `Matchup` — its own build comment says so in as many words: "Same text,
+            // SAME RECT, same face as _tMatchup ... so superimposing it and boosting to L4 can only
+            // make the existing scoreline brighter." Both are UpperCenter, so each centres its string
+            // in ITS OWN box, and two centred layers with different boxes DO NOT SUPERIMPOSE — they
+            // offset by the difference of their centres.
+            //
+            // T91-am moved `Matchup` and I did not re-derive the mirror: measured, the boxes were
+            // 593.0 against 675.0 and the centres 92.7 against 133.7, so the scoreline rendered as
+            // TWO COPIES 41.0px APART on every beat the punch fired. That is exactly the doubling
+            // read on the closing frames, its magnitude is exactly this seat's own `scoreCentreShift`,
+            // and §3.5 obliged re-deriving everything depending on that box's centre.
+            //
+            // Fixed by CONSTRUCTION rather than by copying the number across: one position, one size,
+            // both layers. The same remedy T68 needed when an ink had five authors and T62 needed when
+            // one value had two repaint schedules.
+            Vector2 scorePos = AnchorTopCenter(sb, 8f) + new Vector2(scoreCentreShift, 0f);
+            Vector2 scoreSize = new Vector2(scoreTerritory, sb.height - MomentumTapeHeight);
 
             _tClock = MakeText(sbRoot, "Clock", new Vector2(0f, 1f), new Vector2(1f, 1f),
                 AnchorTopRight(sb, 10f, 8f), new Vector2(ClockTerritory, Mathf.Ceil(TypeClock * LineBox)),
                 TypeClock, TextAnchor.UpperRight, flavorColor);
             // §4 Fact: "Score, clock, live leg names, market lines" — cold white at L3.
             _tMatchup = MakeText(sbRoot, "Matchup", new Vector2(0f, 1f), new Vector2(0.5f, 1f),
-                AnchorTopCenter(sb, 8f) + new Vector2(scoreCentreShift, 0f),
-                new Vector2(scoreTerritory, sb.height - MomentumTapeHeight), TypeScore,
+                scorePos, scoreSize, TypeScore,
                 TextAnchor.UpperCenter, flavorColor, FontStyle.Bold);
 
             // C3 (Design Director ruling): "the score at a goal" joins the HDR-eligible set.
@@ -4279,8 +4307,11 @@ namespace SBR.Game
             // channel. Same text, same rect, same face as _tMatchup, in the SAME cold white — so
             // superimposing it and boosting to L4 can only make the existing scoreline brighter, and
             // releasing it settles back. There is no hue to change, by construction.
+            // T95: `scorePos`/`scoreSize` are the SAME values `_tMatchup` was built from, deliberately
+            // shared rather than restated — the invariant this comment asserts is now enforced by the
+            // construction instead of by two call sites agreeing.
             _tScoreFlash = MakeText(sbRoot, "Score", new Vector2(0f, 1f), new Vector2(0.5f, 1f),
-                AnchorTopCenter(sb, 8f), new Vector2(sb.width - 40f, sb.height - MomentumTapeHeight), TypeScore,
+                scorePos, scoreSize, TypeScore,
                 TextAnchor.UpperCenter, flavorColor, FontStyle.Bold);
             _tScoreFlash.enabled = false;
             _scoreHdrMat = MakeHdrMaterial();
