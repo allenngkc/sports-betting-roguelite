@@ -353,6 +353,38 @@ namespace SBR.EditorTools
                         break;
                     }
 
+                // ---- G1-am6: THE POOL, measured, for the moneyline NEED arm's authoring -----------
+                //
+                // "Send the pool and it is authored on sight." The pool is `SlateGenerator.Nouns`, a
+                // CLOSED list of 20, and the arm is `{CLUB} TO WIN`. Sent as WIDTHS rather than as
+                // words because character count is not extent — the longest word is not necessarily
+                // the widest form, and this lane retired picked champions for exactly that reason.
+                foreach (TMP_Text c in screen.GetComponentsInChildren<TMP_Text>(true))
+                    if (c.gameObject.name == "LegRowNeed0")
+                    {
+                        float box = c.rectTransform.rect.width;
+                        Debug.Log($"[T88] --- G1-am6 POOL: every `{{CLUB}} TO WIN` against the {box:0.0}px box ---");
+                        var pool = new[]
+                        {
+                            "YAMS", "STARTUPS", "BRICKLAYERS", "LONGHAULERS", "MALLARDS", "SPREADSHEETS",
+                            "TURNIPS", "MIDDLEMEN", "REGULATORS", "PLUMBERS", "MEATBALLS", "AUDITORS",
+                            "FERRETS", "OVERHEADS", "GRAVEDIGGERS", "NOTARIES", "MUSKRATS", "ZAMBONIS",
+                            "LOOPHOLES", "REFUNDS",
+                        };
+                        var over = new List<string>();
+                        foreach (string noun in pool)
+                        {
+                            string s = noun + " TO WIN";
+                            float wpx = W(c, s);
+                            if (wpx > box) over.Add($"{s} {wpx:0.0}");
+                            Debug.Log($"[T88] pool {s,-26} {wpx,6:0.0}px  " +
+                                      $"{(wpx > box ? $"OVERRUNS by {wpx - box:0.0}" : $"fits by {box - wpx:0.0}")}");
+                        }
+                        Debug.Log($"[T88] G1-am6 SUMMARY: {over.Count} of {pool.Length} clubs overrun the " +
+                                  $"{box:0.0}px box. The authored short form `TO WIN` is {W(c, "TO WIN"):0.0}px.");
+                        break;
+                    }
+
                 // ---- T90 / T91 (batch 60): the band's FURNITURE, and the gaps BETWEEN neighbours ---
                 //
                 // T90 owes "the NEED line's box, MomentumLabel's box, the shared band's dimensions,

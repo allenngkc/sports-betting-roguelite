@@ -158,7 +158,9 @@ namespace SBR.EditorTools
             // trivially enumerable. Closing the gap beats excusing it — a named gap is still a gap.
             ("Leg", "the scorebug's leg counter, bounded by MaxLegs (4)", new[]
                 { "LEG 4/4", "LEG 1/4", "LEG 1/1" }),
-            ("MomentumLabel", "MomentumTape:134 — one constant, its whole string set", new[] { "MOMENTUM" }),
+            // `MomentumLabel` is GONE (T90-am/T93, batch 61) — dropped, not shortened, because its
+            // overlap with the NEED line was positional. The slot no longer exists to sweep, and the
+            // population line below will simply stop counting it.
             ("Matchup", "scoreline, generated team names", new[]
                 { "ZAMBONIS 0 — REGULATORS 1", "BRICKLAYERS 0 — MIDDLEMEN 0", "STARTUPS 1 — PLUMBERS 2" }),
             ("Score", "the punch overlay mirrors Matchup", new[] { "ZAMBONIS 0 — REGULATORS 1" }),
@@ -195,10 +197,11 @@ namespace SBR.EditorTools
             // T92 (batch 60): the entries are G1's COMPACT forms now, one per row, so the swept set is
             // the ROW — the engine's concatenated `DisplayLabel` is gone from this slot. The compact
             // forms are the same deck LegRowLine0 sweeps, plus the American price.
-            ("TakeoverSub", "the deferral line + the leg list's ROWS, G1 compact forms (T92)", new[]
-                { "PAYMENT DEFERRED — YOUR BANK STANDS. THE NEXT ONE GROWS BY $1,200",
-                  "GRAVEDIGGERS ML -233", "SPREADSHEETS ML +145", "PAVEMENT ANYTIME +459",
-                  "UNDER 10.5 CORNERS +240", "BTTS NO -176" }),
+            // T92-am (batch 61): the leg list LEFT this slot — it restated a list the ticket column
+            // already carries permanently. What remains is the deferral line, which was always the
+            // widest string here once the list's over-wide entry was replaced.
+            ("TakeoverSub", "the deferral line — the leg list left at T92-am", new[]
+                { "PAYMENT DEFERRED — YOUR BANK STANDS. THE NEXT ONE GROWS BY $1,200" }),
             ("Subtitle", "RenderIdle sub, plus the run-over line", new[]
                 { "FINAL BANK $12,340  —  NEW RUN AT THE LAPTOP",
                   "gear up at the laptop, then the next round" }),

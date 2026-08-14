@@ -2540,13 +2540,27 @@ namespace SBR.Game
             // already measured and shipping on the leg row. No new authoring: this is the slot it was
             // written for. The scorebug carries who is playing whom, which is what made dropping the
             // fixture half legal in the first place.
-            string legs = string.Empty;
-            foreach (Leg leg in _ticket.Legs)
-            {
-                if (legs.Length > 0) legs += "\n";
-                legs += $"{LegStatement(leg)} {OddsFormat.American(leg.OfferedOdds)}";
-            }
-            _tTakeoverSub.text = legs;
+            // T92-am (batch 61): THE LEG LIST LEAVES THIS SLOT. It is a restatement.
+            //
+            // The takeover renders while the ticket column is showing the same legs, SIMULTANEOUSLY —
+            // `ResetForNewSession` runs `RenderPregame` before this card draws, so the column is
+            // already populated, and the frames show both at once. T69/T70's class and S37/S58's: the
+            // same fact named twice, one panel over.
+            //
+            // The takeover's job is the ticket's IDENTITY and its MONEY, and both are already here and
+            // unaffected — `TICKET 1 OF 1` above and `$87 TO WIN $686` below.
+            //
+            // THE HEIGHT PROBLEM DISSOLVES rather than being paid for. The cap route was closed by
+            // C19's own arithmetic (2 rows fit, 3 overrun, so a 2-leg cap plus its count row is 3 rows
+            // and a cap that cannot print its own count is the hidden offer C19 forbids). No cap, no
+            // rows, no box growth, no deviation.
+            //
+            // Checked against the pre-commitment rather than assumed: if this card could render while
+            // the column was NOT showing those legs the list would be load-bearing. It cannot — the
+            // column is rendered on the path into this card.
+            //
+            // The SLOT survives; only its leg-list use goes. The deferral line still writes here.
+            _tTakeoverSub.text = string.Empty;
 
             SetEventStrip(flavorColor);
             _tFlavor.text = $"${Money(_ticket.Stake)} TO WIN ${Money(_ticket.PotentialPayout)}";
@@ -3912,7 +3926,13 @@ namespace SBR.Game
                 AnchorCenter(grid.Stage) + new Vector2(0f, 40f), new Vector2(grid.Stage.width - 60f, 60f), TypeTakeoverTitle,
                 TextAnchor.MiddleCenter, flavorColor, FontStyle.Bold);
             _tTakeoverSub = MakeText(root, "TakeoverSub", new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
-                AnchorCenter(grid.Stage) + new Vector2(0f, -20f), new Vector2(grid.Stage.width - 60f, 60f), TypeTakeoverSub,
+                // T92-am: the slot widens to hold its LONGEST RENDERABLE FORM. With the leg list gone
+                // the widest string is the deferral line — `PAYMENT DEFERRED — YOUR BANK STANDS. THE
+                // NEXT ONE GROWS BY $1,200` at 665.9px — which overran the old 655.0px box by 10.9.
+                // Refused in the ruling and not attempted here: trimming the copy (§4/T24-am),
+                // abbreviating the $1,200 (C49 — money the player can lose), and shrinking the type
+                // (§8 — copy never shrinks). 20px of the panel's 30px side margin buys it.
+                AnchorCenter(grid.Stage) + new Vector2(0f, -20f), new Vector2(grid.Stage.width - 20f, 60f), TypeTakeoverSub,
                 TextAnchor.MiddleCenter, contextGrey);
 
             // Subtitle line reused ONLY by the idle/run-over screens (non-sweat states); never
@@ -4094,8 +4114,24 @@ namespace SBR.Game
                 // where there were -1.8. The chip's own 6px overrun is untouched and unrelated: it
                 // carries no digits, so the wiring cannot move it, and it holds the ship rather than
                 // the wiring.
-                const float chipW = 38f, priceW = 52f, gap = 6f;
-                float stmtW = lineW - chipW - priceW - gap * 2f;
+                // T90-am (batch 61): THE TICKET COLUMN'S SIDE PADDING IS A RULED VALUE — 8px nominal,
+                // and NO element's ink comes within 2px of the column edge. It stopped being informal
+                // the moment two independent fixes proposed to spend the same allowance on different
+                // rows of one column, which is C46's disease exactly: an implicit contract nobody
+                // wrote down, invalidated by whoever spends it last. Both fixes below size against
+                // this floor, and a third consumer is ruled against it rather than discovering it is
+                // gone.
+                const float ColumnInkFloor = 2f;
+
+                // T91-am: the state chip grows rightward TO THE FLOOR, NOT PAST IT — 38 → 44, right
+                // edge at the floor. The lever was never the gap and never the price: right alignment
+                // pins the price's ink to its own box edge, so the clearance did not move with the
+                // price at all (−280 and +1200 both left 1.3px). What bled was `NEXT` at 42.7px
+                // overrunning a 38.0px box LEFTWARD. At 44.0 it sits inside its own box and the
+                // existing 6.0px box gap becomes 7.3px of real ink clearance — and this retires the
+                // slot's own 4.7px overrun in the same move.
+                const float chipW = 44f, priceW = 52f, gap = 6f;
+                float stmtW = lineW - 38f - priceW - gap * 2f;   // the statement keeps its 147px span
 
                 TMP_Text line = MakeText(root, $"LegRowLine{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     AnchorTopLeft(row, 8f, 4f), new Vector2(stmtW, compactH), TypeEyebrow,
@@ -4109,11 +4145,18 @@ namespace SBR.Game
                     FontStyle.Normal, Face.Condensed, tracking: TvTrack.Meta); // TvLegRow.jsx:62 — --tv-context, its own tier
 
                 TMP_Text state = MakeText(root, $"LegRowState{i}", new Vector2(0f, 1f), new Vector2(1f, 1f),
-                    AnchorTopLeft(row, 8f + lineW, 4f), new Vector2(chipW, compactH), TypeEyebrow,
+                    AnchorTopLeft(row, grid.TicketColumn.width - ColumnInkFloor, 4f),
+                    new Vector2(chipW, compactH), TypeEyebrow,
                     TextAnchor.UpperRight, structureGrey, tracking: TvTrack.Meta); // TvLegRow.jsx:27-31 — regular face, min 38px
                 // Live form: the authored NEED statement, then the revealed progress beneath it.
+                //
+                // T90-am: 249 → 261, taking 6px of the column's 8px side padding on each side and
+                // stopping at the ruled 2px ink floor. `ONE TEAM BLANKED` is 252.5px, so it renders
+                // complete with 8.5px spare and the word-boundary backstop no longer fires on it. The
+                // column's OUTER width does not move (T46, R30) — this spends padding, not span.
                 TMP_Text need = MakeText(root, $"LegRowNeed{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    AnchorTopLeft(row, 8f, 4f), new Vector2(lineW, needH), TypeNeed,
+                    AnchorTopLeft(row, ColumnInkFloor, 4f),
+                    new Vector2(grid.TicketColumn.width - ColumnInkFloor * 2f, needH), TypeNeed,
                     TextAnchor.UpperLeft, flavorColor, FontStyle.Normal, Face.Condensed,
                     FontWeight.Bold, TvTrack.Name); // inherits TvLegRow.jsx:35, tracked per :78
                 TMP_Text progress = MakeText(root, $"LegRowProgress{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
@@ -4185,12 +4228,34 @@ namespace SBR.Game
                 AnchorTopLeft(sb, 10f, 8f), new Vector2(140f, Mathf.Ceil(TypeEyebrow * LineBox)),
                 TypeEyebrow, TextAnchor.UpperLeft, structureGrey);
             // §7: "Clock remains fixed at the right edge."
+            // T91-am (batch 61): THE TOP BAND IS PARTITIONED. The scoreline's territory and the
+            // clock's are DISJOINT, each sized to its OWN longest renderable form, and the scoreline
+            // centres within its own territory rather than across its neighbour's.
+            //
+            // Before this, `Matchup` was centred in a 675.0px box that overlapped the clock's box by
+            // 130.0px. On the read seed that left 2.5px of ink clearance; on the sweep's WIDEST
+            // scoreline, `BRICKLAYERS 0 — MIDDLEMEN 0`, the inks COLLIDE BY 13.7px. A box that reaches
+            // into a neighbour's territory is not a layout, it is a bet on the content — C46's shape,
+            // and the reason a near-miss on one frame was actually an overprint.
+            //
+            // The clock's longest renderable form is `90'+2` at 69.5px, well inside the 127.7px the
+            // partition arithmetic allows, so disposition 1 fires: both boxes bind, nothing moves
+            // position, and the clock keeps its right-anchored constant ink edge (T75-am2).
+            const float ClockTerritory = 80f;   // holds 69.5 with margin
+            const float BandInkFloor = 2f;      // the same keep-out T90-am ruled for the column
+            float scoreTerritory = sb.width - 40f - ClockTerritory - BandInkFloor;
+            // Centre the scoreline in ITS territory, not the band's: the territory is short of the
+            // band's right end by the clock's share, so its centre sits left of the band's by half of
+            // what the clock and the floor take.
+            float scoreCentreShift = -(ClockTerritory + BandInkFloor) * 0.5f;
+
             _tClock = MakeText(sbRoot, "Clock", new Vector2(0f, 1f), new Vector2(1f, 1f),
-                AnchorTopRight(sb, 10f, 8f), new Vector2(140f, Mathf.Ceil(TypeClock * LineBox)),
+                AnchorTopRight(sb, 10f, 8f), new Vector2(ClockTerritory, Mathf.Ceil(TypeClock * LineBox)),
                 TypeClock, TextAnchor.UpperRight, flavorColor);
             // §4 Fact: "Score, clock, live leg names, market lines" — cold white at L3.
             _tMatchup = MakeText(sbRoot, "Matchup", new Vector2(0f, 1f), new Vector2(0.5f, 1f),
-                AnchorTopCenter(sb, 8f), new Vector2(sb.width - 40f, sb.height - MomentumTapeHeight), TypeScore,
+                AnchorTopCenter(sb, 8f) + new Vector2(scoreCentreShift, 0f),
+                new Vector2(scoreTerritory, sb.height - MomentumTapeHeight), TypeScore,
                 TextAnchor.UpperCenter, flavorColor, FontStyle.Bold);
 
             // C3 (Design Director ruling): "the score at a goal" joins the HDR-eligible set.
