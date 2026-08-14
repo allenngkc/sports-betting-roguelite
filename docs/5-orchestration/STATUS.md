@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 257 (heartbeat).** Quiet:
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 258.** HOLDOUT5 IS IN:
+8/8 gates on merged main (G7-SGP exact - 106,568 same-match tickets placed
+and settled, 15/15 kinds, 0 no-label fallbacks, 34,752 refusals, 11,541
+voids re-priced). The campaign finished detached hours ago; found on the
+heartbeat sweep. sgp seat tapped to wrap its branch; merge on its report,
+then step 5 (presentation) is GO per Allen's standing word. TV still on
+the draw arm.
+
+*(prior stamp, cycle 257:)* Quiet:
 TV working the draw arm; two dotnet processes alive (TV's build + the
 campaign); DD standing by.
 
