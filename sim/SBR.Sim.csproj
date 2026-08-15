@@ -7,6 +7,34 @@
     <Nullable>enable</Nullable>
     <RootNamespace>SBR.Sim</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
+
+    <!--
+      SERVER GC, SHIPPED AS THE DEFAULT (Allen's ruling, 2026-08-15).
+
+      Measured on the 22-core box, one 2,000-run batch, Release: 3.3 s at 16 workers under server GC
+      against 5.4 s under the default workstation GC, for +24 MB peak. The sim is an embarrassingly
+      parallel allocator-bound workload — every run builds its own object graph and drops it — which
+      is precisely the shape workstation GC serves worst: one collection heap shared by every worker
+      makes allocation a contention point, and the campaign's wall time is mostly threads queueing
+      for it. Server GC gives each core its own heap and collects them in parallel.
+
+      WHY THE PROJECT FILE AND NOT AN ENVIRONMENT VARIABLE. This property is compiled into
+      SBR.Sim.runtimeconfig.json beside the binary, so the setting travels with the build to every
+      machine and every shell. `DOTNET_gcServer=1` would deliver the same speed only for whoever
+      remembered to export it; an 85-minute campaign that is 60% slower because a variable was
+      missing from one terminal is a configuration bug that looks like a hardware problem. A
+      campaign's cost should be a property of the artifact, not of the operator.
+
+      The env var still WINS over this setting when it is set explicitly, which is deliberate and is
+      what the GC-identity proof uses: DOTNET_gcServer=0 runs the workstation arm off this same
+      build. GC mode is recorded in the report header (see WorkerPolicy.Describe) so an artifact
+      always names the mode it was produced under.
+
+      NOTHING BELOW THE HEADER MOVES. Proven, not assumed: report bodies at 1 and 16 workers, under
+      workstation and server GC, are byte-identical by SHA-256 — GC mode is a scheduling and memory
+      concern, and the harness reduces every aggregate sequentially from a pre-sized array.
+    -->
+    <ServerGarbageCollection>true</ServerGarbageCollection>
   </PropertyGroup>
 
   <ItemGroup>

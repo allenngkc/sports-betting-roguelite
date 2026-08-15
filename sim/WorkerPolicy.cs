@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
@@ -33,17 +34,27 @@ namespace SBR.Sim;
 ///   • COOLING (5–10 min since input): cores/2. The windows in the brief leave a band between
 ///     "just typed" and "definitely gone"; stepping through it beats picking a side, because both
 ///     mistakes are cheap here and neither is worth a stall.
-///   • IDLE (no input for <see cref="IdleWindow"/>): cores − 2. The two reserved cores are not
-///     superstition — they are what keeps the shell, the editor and the OS answering if Allen comes
-///     back mid-batch, which is the moment the cap exists to protect.
+///   • IDLE (no input for <see cref="IdleWindow"/>): min(cores − 2, 16). The two reserved cores are
+///     not superstition — they are what keeps the shell, the editor and the OS answering if Allen
+///     comes back mid-batch, which is the moment the cap exists to protect. The 16 is measured; see
+///     below.
 ///
-/// MEASURED, AND NOT ACTED ON. cores − 2 is Allen's ruled idle number, and it is left alone — but it
-/// is NOT this machine's fastest. Measured on the 22-core box, one 2,000-run batch, Release:
-/// wall bottoms out at 16 workers and REGRESSES above it (skilled 3.11 s at 16 → 4.28 s at 22 with
-/// server GC; 5.65 s → 6.58 s with the default workstation GC), while CPU burned keeps climbing —
-/// the extra threads spend their time in the allocator, not on runs. So the ruled idle tier of 20
-/// is roughly a third slower than the knee at ~16, and `--workers 16` beats auto-idle today. That is
-/// a number to re-rule, not a number to quietly change here.
+/// THE 16 IS EMPIRICAL, AND IT IS RULED ONLY FOR THE IDLE TIER. Measured on the 22-core box, one
+/// 2,000-run batch, Release: wall bottoms out at 16 workers and REGRESSES above it (skilled 3.11 s
+/// at 16 → 4.28 s at 22 with server GC; 5.65 s → 6.58 s with the default workstation GC), while CPU
+/// burned keeps climbing — the extra threads spend their time queueing in the allocator, not on
+/// runs. An uncapped cores − 2 was therefore ~35% slower here than the knee. Allen ruled the ceiling
+/// on 2026-08-15; it is a measurement of THIS hardware, not a law.
+///
+/// OPEN QUESTION — DO NOT ANSWER IT BY GENERALISING. Whether ACTIVE and COOLING want the same
+/// ceiling is UNMEASURED AND UNRULED. It cannot be observed on this box: at 22 cores they resolve to
+/// 5 and 11, both already under 16, so the cap would be dead code here. On a 64-core machine cooling
+/// would ask for 32 and active for exactly 16, and the cooling tier is where the question first
+/// becomes real. Do not assume the same 16 transfers: contention scales with heap and core topology,
+/// and under server GC (now the shipped default — see SBR.Sim.csproj) each core gets its own heap,
+/// so the knee that produced this number may itself move on bigger hardware. The honest way to
+/// settle it is to measure the knee on the box in question and have it ruled — not to copy 16 down
+/// from a line written about a 22-core desktop.
 ///
 /// NON-WINDOWS. The idle probe is a user32 P/Invoke and there is no portable equivalent. Off
 /// Windows the class never calls it (<see cref="OperatingSystem.IsWindows"/> guard) and reports the
@@ -59,9 +70,24 @@ public static class WorkerPolicy
     public static readonly TimeSpan ActiveWindow = TimeSpan.FromMinutes(5);
     public static readonly TimeSpan IdleWindow = TimeSpan.FromMinutes(10);
 
+    /// <summary>
+    /// The empirical ceiling on useful concurrency for THIS workload on THIS box — the knee where
+    /// added workers start queueing in the allocator instead of running runs, measured, not guessed
+    /// (see the class note for the numbers). Applied to <see cref="IdleWorkers"/> ONLY: that is the
+    /// tier Allen ruled, and the only tier that reaches it at 22 cores.
+    /// </summary>
+    private const int MeasuredKnee = 16;
+
+    // ACTIVE and COOLING are deliberately UNCAPPED. Not an oversight and not a pending TODO: on this
+    // hardware they resolve to 5 and 11, so a ceiling would never bind, and no one has measured
+    // whether the knee is even in the same place on a machine large enough for them to exceed it.
+    // See the class note's OPEN QUESTION before adding MeasuredKnee to either of these.
     public static int ActiveWorkers => Math.Max(1, Cores / 4);
     public static int CoolingWorkers => Math.Max(1, Cores / 2);
-    public static int IdleWorkers => Math.Max(1, Cores - 2);
+
+    /// <summary>Ruled: min(cores − 2, 16). Still derived from <see cref="Cores"/>, so a small box
+    /// scales down rather than inheriting a desktop's number.</summary>
+    public static int IdleWorkers => Math.Max(1, Math.Min(Cores - 2, MeasuredKnee));
 
     private static int _manual;              // 0 = auto; else the --workers override
     private static int _min = int.MaxValue;
@@ -137,7 +163,7 @@ public static class WorkerPolicy
     public static string Describe()
     {
         if (_batches == 0)
-            return $"unused (no batches ran); {Cores} logical cores";
+            return $"unused (no batches ran); {Cores} logical cores; {GcMode}";
 
         string span = _min == _max
             ? _min.ToString(CultureInfo.InvariantCulture)
@@ -148,8 +174,20 @@ public static class WorkerPolicy
                 ? $"auto — {_lastReason}"
                 : $"auto, re-checked per batch over {_batches.ToString("N0", CultureInfo.InvariantCulture)} "
                   + $"batches; last {_lastReason}";
-        return $"{span} ({how}); {Cores.ToString(CultureInfo.InvariantCulture)} logical cores";
+        return $"{span} ({how}); {Cores.ToString(CultureInfo.InvariantCulture)} logical cores; {GcMode}";
     }
+
+    /// <summary>
+    /// Which collector this process actually got, observed at runtime rather than inferred from the
+    /// project file. It is recorded in the header for the same reason the worker count is: server GC
+    /// is the shipped default (SBR.Sim.csproj) but an explicit DOTNET_gcServer beats the
+    /// runtimeconfig, so the setting a reader can see in source is not proof of the setting a report
+    /// was produced under. This line closes that gap — and it is what makes the GC half of the
+    /// byte-identity proof checkable: two headers naming DIFFERENT collectors above one identical
+    /// body is the whole claim, and neither half of it is legible if the mode goes unrecorded.
+    /// Header-only, like the worker count — never in Body().
+    /// </summary>
+    public static string GcMode => GCSettings.IsServerGC ? "server GC" : "workstation GC";
 
     /// <summary>Time since the last keyboard/mouse input, or null when the machine cannot be asked
     /// (non-Windows, or the call failed). Null means "treat as idle" — see the class note.</summary>
