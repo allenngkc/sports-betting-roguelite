@@ -456,6 +456,25 @@ namespace SBR.Game
         /// <summary>Test/debug hook: force the seated state (simulates sitting / looking away) without the
         /// couch. Normal play drives this through SitSpot.SeatedChanged.</summary>
         public void ForceSeated(bool seated) => SetSeated(seated);
+        /// <summary>Test/debug hooks for §8.8's stats panel, in the shape this surface already uses
+        /// for <see cref="ForceSeated"/> and <see cref="DebugCashOutAnimating"/>. The panel's
+        /// contract is a freeze, a z-order and an unrevealed mark, and none of the three is
+        /// observable from outside the sweat without these.
+        ///
+        /// <para><see cref="DebugSeatedDeltaTime"/> exposes the freeze at its SINGLE AUTHORITY rather
+        /// than sampling one of its consequences: every frozen channel §8.8 lists reads this one
+        /// expression, so asserting it is asserting all of them, and a pin on (say) the cash-out
+        /// tween alone would leave the other ten unasserted.</para></summary>
+        public void ForceStatsPanel(bool open) => SetStatsPanel(open);
+        public bool DebugStatsPanelOpen => _statsOpen;
+        public float DebugSeatedDeltaTime => SeatedDeltaTime;
+        public Transform DebugStatsPanel => _statsPanel;
+        public TMP_Text DebugInterventionPrompt => _tInterventionPrompt;
+        public string DebugStatsRow(int i)
+            => _tStatsLabel == null || i < 0 || i >= _tStatsLabel.Length
+                ? null
+                : $"{_tStatsLabel[i].text}|{_tStatsA[i].text}|{_tStatsB[i].text}";
+        public string DebugStatsUnrevealedMark => StatsUnrevealed;
         /// <summary>Test/debug hook (TVS-H01 regression): true while the cash-out amount is mid-tween
         /// (AnimateCashOut running). Reads _cashOutTweening, not _cashOutAnimation directly — the
         /// Coroutine handle isn't assigned until StartCoroutine returns, one instant after the
