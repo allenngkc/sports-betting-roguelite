@@ -2603,13 +2603,32 @@ harmless that time. The procedure below closes it.
 4. `git checkout --` the three build side-effect files; confirm `git status` shows only intended
    changes before committing.
 
-**Current baselines — measured 2026-08-09, batches 16–19 (§0-BW):** engine **160/160** ·
-EditMode **247/247** · PlayMode **70 executed: 65 passed, 0 failed, 5 `[Explicit]` skips**.
+**Current baselines — measured 2026-08-15, batch 70:** engine **260 total: 205 passed, 55 FAILED —
+every one INHERITED** · EditMode **255 discovered / 255 executed / 254 passed / 0 failed / 1
+ignored** (G1's grant, held) · PlayMode **95 / 95 / 87 passed / 1 FAILED — INHERITED / 7 by-design
+capture skips**.
 
-*(Superseded: `220c5ec`'s 160 / 129 / 44. EditMode grew 129 → 222 on the main merge, → 224 (batch 9),
-→ 228 (T61/T62), → 237 (batches 13+14). PlayMode reads 70 rather than 44 because the suite now
-includes SureThing's and the `[Explicit]` capture seeds — **run it WITH graphics or SureThing's
-three capture tests fail environmentally and look like regressions**.)*
+**TWO OF THESE SUITES ARE EXPECTED RED AND NEITHER IS THIS LANE'S.** This branch is **59 behind
+`origin/main`** and both failures are already fixed up there. Same class, same remedy: **the next
+merge from main, not a repair here.**
+
+| suite | the failure | why it is not ours |
+|---|---|---|
+| **engine, 55 of 260** | one `TypeInitializationException` repeated — `JointModel`'s static ctor throws *"the outcome partition needs exactly one residual class, found 2"* | **main already carries the fix**: `c82aefe`, *"repair the joint model for the merged draws board … 270/270 green (was 55 failing)"* — which names this exact count. Measured with this lane's own change stashed: **identical 55/205/260**, so it predates it |
+| **PlayMode, 1 of 95** | `SureThingEntryTests.Working_margin_contains_its_content_at_the_legal_maximum_leg_count` — `4.74798583984375` against a signed 4.56 | **measured against a SUPERSEDED test.** The surething-ui lane's repair merged to main *after* this branch's last main merge, so this tree still runs the old price-dependent pin |
+
+> **A STALE BASELINE TURNS AN INHERITED RED INTO A DIAGNOSIS.** The engine line here read
+> **160/160** from 2026-08-09 until batch 70 — taken *before* the main merge that brought the joint
+> model in at all — so the first seat to run `dotnet test engine.tests` after that merge meets 55
+> failures against a baseline claiming zero, with nothing to tell it the number is simply old.
+> **Re-measure a baseline in the window that finds it wrong, and record the DISPOSITION beside the
+> number rather than the number alone.**
+
+*(Superseded: `220c5ec`'s 160 / 129 / 44, then 2026-08-09's 160 / 247 / 70. EditMode grew 129 → 222
+on the main merge and has moved with the batches since — 224 (batch 9), 228 (T61/T62), 237 (batches
+13+14), 247, 250, 251 (T95), 254, 255 (T98's pin). PlayMode reads 95 rather than 44 because the
+suite now includes SureThing's and the `[Explicit]` capture seeds — **run it WITH graphics or
+SureThing's three capture tests fail environmentally and look like regressions**.)*
 
 **Known flake — do not mistake it for a regression.** `TvSweatScreenTests` fails
 `never observed the cash-out amount mid-tween (waited 20s)` on load-heavy runs; logged in
