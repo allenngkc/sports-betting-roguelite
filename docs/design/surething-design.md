@@ -139,7 +139,53 @@ depending on how many legs were marked — the most consequential control in the
 bet more. The flow region above it is bounded by MaxLegs = 4 and the reserved height is re-derived in
 the same commit as any change to that cap.
 
-The margin **does not scroll**. Interior market lists do (S25-am), with S27's rail.
+The margin **does not scroll** — **until S83 lands, which retires this clause in one direction only.**
+Interior market lists already do (S25-am), with S27's rail.
+
+#### S83 — the three zones (specced 2026-08-15, sequenced AFTER option A)
+
+**Allen ruled the budget deficit A now / C before the additive gesture / B in reserve (S82).** C is
+this: **the margin becomes three zones, and only the middle one scrolls.**
+
+| zone | contents | behaviour |
+|---|---|---|
+| **1 · HEAD** | `MY MARKS · n SELECTIONS · m STAGED` | **fixed** |
+| **2 · THE SLIP** | leg rows · THE HOUSE'S LINE · the relation statement · the `COMBINED`/`SAME MATCH` price row · the modifiers row | **scrolls** |
+| **3 · THE COMMIT** | `STAKE` + figure · chips · nudges · `POTENTIAL PAYOUT` + figure + wax band · **PLACE · LOCK · SKIP** | **anchored, reserved** |
+
+**Zone 1 takes the board's own grammar**: a column head is not a row of the list beneath it, so it
+does not travel with it. **A count that scrolls away from the things it counts is a head that has
+become a row.**
+
+**Zone 3 is why this is safe. The two figures the commit is about — what he stakes and what he would
+win — never leave the screen**, because a payout below the fold while PLACE is pressable is exactly
+*a cost he cannot see at the point of spending* (S17, S73). **The stake block is not split**: M-05
+put the figure above its own controls because the figure is the fact, and a scroll boundary between
+them would undo that ruling to save pixels the zone does not need.
+
+**`ActionBandReservedHeight` grows to hold zone 3. T47 is EXTENDED, not weakened** — the rule was
+always that the flow and the action band can never meet, and **PLACE, LOCK and SKIP do not move by a
+pixel.**
+
+**THE HOUSE'S LINE moves into the scrolling content.** It is drawn from `legRowY` and spurred to its
+own members; **a mark that holds still while its rows scroll points at rows it has nothing to do
+with**, which is the defect §3.1's spurs exist to prevent.
+
+**The scroll rests at the top**, one behaviour with the board. **S27's rail appears whenever content
+exceeds the viewport and reports proportionally.** **A 1px dead-band keeps S51's known 0.10px kit
+residue from ever engaging a scroll.**
+
+**Anchoring changes WHICH content scrolls, never HOW MUCH** — the overflow is the same ~70px the
+budget was ever over by — **which is why the split is argued on meaning rather than on arithmetic.**
+**All its numbers are provisional on A**, and the viewport is derived once from the factored flow
+measurement. **It lands after A and not beside it**: at four legs alone the flow measures 370.10
+against 370, and **a scrollbar that appears for a tenth of a pixel is worse than no scrollbar.**
+
+**The invariant changes with it: REACHABILITY replaces containment.** The content container's height
+must equal the measured content depth (the rail's honesty is entirely that), nothing may be drawn
+outside its bounds, the zones may not overlap, **and the two-sided slack bound is knowingly retired
+for zone 2 — a scrolling region has no slack to bound — surviving only where the height is fixed by
+construction.**
 
 ### 2.2 Control sizes — exact
 
