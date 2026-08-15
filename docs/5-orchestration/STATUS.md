@@ -1,6 +1,18 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 261 (heartbeat).** All
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 262 (INCIDENT RECOVERY).**
+Orca restart killed every lead terminal. Disk verified before reseating:
+TV's draw-arm fix COMMITTED (ada9a84) with the capture harness mid-edit;
+sgp's P1-P3 uncommitted in BetslipModel.cs (its background agent died -
+told to re-verify from disk); surething-ui's pin work started. All three
+seats resumed via --continue at max effort with disk-state recovery taps;
+stale UnityLockfile cleared at proc 0; a stale ancient main-2 session
+closed. DD and research re-seating DEFERRED: DD's three dispositions are
+already canon (batch 65) so a fresh seat rules on frame arrival; research
+waits on Allen's two words. Watcher v33 (bf7fauvp3), heartbeat re-armed
+(bjk4ew4vs).
+
+*(prior stamp, cycle 261:)* All
 three building lanes busy: TV's draw arm; sgp's P1-P3 agent ~10 min in;
 surething-ui deep in the margin-pin diagnosis (notes it diverging from
 the handoff's account - report pending). DD standing by.
