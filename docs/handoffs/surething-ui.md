@@ -135,12 +135,195 @@ falsehoods in the ledger (`:2475-2489`):
 A voided ticket does reach the ledger — `:2197`/`:2201` collect on `State != Open` — so this is
 rendered today, not merely unreachable.
 
-**Starting here** while P1's screen half waits on the model.
+**DONE and green (`658b685`).** All three fixed in the settled ledger. The word is `VOID` — not
+invented, since C47 rules that a market returning the stake *is* a VOID and `LegStateWord` already
+prints it for a voided leg. The value is `ticket.Stake`, never `PotentialPayout` (zero for a ticket
+voided in full — it would print `$0` for a ticket that cost the player nothing). The ink needed no
+ruling: S65 already holds a VOID leg at toner-2, it is not wax because a refund is not a winning,
+and it does not dim to toner-3 because a returned stake is a fact, not an absence.
 
-### Design-facing, routed, NOT self-ruled
+S41's em dash is **kept, not spent** — it still prints for the one case it was ruled for, a
+cash-out with no retained figure. What was removed is a case that was never an absence.
 
-S51's expiry condition is met — its owner is identified. The 4.00px is a real excursion past T47's
-reservation: the wax highlight hangs 4px below the payout figure's box, and that box's bottom is
-flush with the flow budget. Whether the fix is to lift the payout block, shorten the band's 34px
-drop, or rule that a decorative underline is not flow content is a Design call. To the DD through
-the orchestrator.
+Word factored to `OldSlipsApp.LedgerTicketStateWord` per S43, and the new test drives it over
+`Enum.GetValues` rather than spot-checking VOID — the defect was a fallthrough that would swallow
+*any* state added after the branch was written. PlayMode 95/95 · 89 passed · 0 failed.
+
+**Stated, not claimed:** the RETURNED cell and total are not asserted. A `Voided` ticket cannot be
+built from the test assembly (`Ticket.State` is `internal set`) and the only path to it is a
+same-match ticket whose survivors re-price at or below evens. Recorded as a T53 blind spot; covered
+when that is reachable.
+
+**Out of this lane, named:** the TV's `RevealedTicketState` mirror has no `Voided` member
+(`TvSweatScreen.cs` is tv-sweat's file); `game-console` is a dead prototype (T44);
+`sim/RunPlayer.ScoreSwings` is not a screen.
+
+### main merged — P1's screen half is now unblocked
+
+Merged `main` at `abe6501` (carries sgp's model half `ee4fa03`, and my own unit 1 which main had
+already taken at `957b8d6`). No conflicts. Both suites re-verified green on the merged tree, against
+sgp's rebuilt `SBR.Engine.dll` — which this lane took via the merge and did **not** rebuild, per the
+non-engine-lane rule.
+
+The model now offers `AddLeg`, `RemoveLeg(legIndex)`, `RemoveSelection`, `LegIndicesOn(matchupIndex)`,
+`LegCountOn`, `Contains`, `IsSameMatch`, and a structured `Refusal`. `CombinedOdds` is now just
+`TicketOdds` off the engine, so the product-of-legs figure S73 forbids is gone from the model.
+
+**Three screen rules binding on the P1 work (from sgp's testing, via the orchestrator):**
+
+1. **Spend the WHOLE remedy set.** Remedies run up to three legs at the shipped `κ`; the stamp copy
+   is plural in the first cut, never singular.
+2. **Remove high index to low.** Removing low-first reindexes the legs above it mid-loop.
+3. **`SideOn`/`SelectionOn` answer only the FIRST leg on a matchup.** Every same-match group must go
+   through the leg-addressed accessors — this is exactly what makes the seven surveyed sites wrong,
+   not merely incomplete.
+
+### DD batches 66–67 (canon `c467df3`) — two of three landed (`5e7af3a`)
+
+**S51 CLOSED — the band moved.** All three seating options I routed were refused; the DD ruled it a
+kit-fidelity gap. `PayoutFigure.jsx` sets the band `bottom:-2px` against a 31px × 1.1 = 34.1px line
+box, so the kit's band bottom is 36.1px below the figure's top and the build had 40px. **The band
+moves, the block does not.** Written from the kit's tokens, not as a literal 30.1.
+
+Pin **re-sourced once** per the ruling and still derived: **0.10px** = the kit's 36.10 against a
+build box of 36.00. The tenth is written out, not rounded to zero, so it reads as the box-height
+difference rather than drift. Held first run and across four boots.
+
+**S75 replaced my tilt bound.** A transformed mark reserves its TRANSFORMED extent, so the tilt is
+held to T47's 6px separation rather than a 3.0px number I picked. This is what earned the fix:
+before, `4.00 + 0.0087·w` crossed 6px at `w > 229px`, reachable because money never abbreviates and
+same-game lengthens the figure. After, it needs a 677px band in a 324px panel.
+
+**S76 — VOID's binding negatives now have gates.** The row already matched the approved vocabulary;
+what was missing is that the negatives were true only by construction. `LedgerTicketStateInk` and
+`LedgerShowsDeadStrike` are factored (S65's reason) and asserted over the enum: never the oxide
+strike, never DEAD's toner-3, never `Dim`'s .55, never wax.
+
+**S41 — corrected toward the DD.** I had written it was "kept, not spent." For this row it is
+**spent**: the dash is a binding negative. It still prints for the cash-out with a genuinely unknown
+retained figure — that case was not before the DD.
+
+**Owed, named, not built:**
+- S75's design-time clearance constant: sweep the population (C46), take the widest renderable money
+  string, pin the clearance as a CONSTANT. The gate still reads the band width at runtime, so it
+  proves the boundary for *this boot's* string only. Recorded in the test's blind-spot list.
+- The VOID row's third element, the entry **rubbed out** — the DD marks that treatment a candidate
+  pending frames.
+
+### P3 — BUILT (`2bbd722`). Copy is to canon; the FIT IS NOT, and the numbers are below
+
+The surface was printing the model's machine token verbatim: a refused same-match slip stamped
+`REFUSED:IMPOSSIBLECOMBINATION` on the PLACE control. `PlaceBlocker` returns that token *so that*
+printing it is loud. Closed.
+
+Composition is `SportsbookApp.RefusalStamp` — two authored cause forms by arity, a separate cause
+for duplicates and for sub-evens, a conjunctive remedy spending the whole set, no banned connective,
+removal order withheld. Legs are named by `MarginLegSubject`, **factored out of the margin leg row**
+so the stamp and the row cannot drift apart.
+
+#### The DD's numbers — measured on the real board, three independent boots
+
+| | |
+|---|---|
+| control | **288.0 × 17px**, one line, no wrap |
+| typical 2-leg refusal | **412–469px — 143–163%** of the control |
+| worst renderable stamp | **1583–1722px — 5.5–6.0×, SIX LINES** at this width |
+
+**The common case already overflows by half.** The worst case is a three-leg cause plus a three-leg
+remedy, which occur at the shipped `κ`.
+
+Nothing is truncated and fit is **not** asserted — sizing is the DD's call ("size the control for it
+or author a shorter form"), and a truncated remedy is an unverified remedy, so the gate must not
+quietly become a truncation test. It asserts only what is mine: the token never reaches the control,
+no banned connective, the whole remedy set named, ≥13px, nothing ellipsised.
+
+**Sizing is not free, and this is the part worth the DD's attention:** six lines at 13px is ~102px
+against the PLACE band's current 44px. `PlaceBandH` feeds `ActionBandReservedHeight`, which feeds
+`MarginFlowBudget` — growing the control shrinks the flow budget the margin invariant measures. A
+control sized for the worst stamp would take ~58px out of a 370px budget that currently clears by
+0.10px.
+
+#### Second finding — a disjunction *inside a leg name*
+
+The widest leg name on every board measured is of the form **`San Francisco Regulators OR DRAW`**
+(the draws double-chance vocabulary). A remedy naming it reads:
+
+> DROP TURNIPS AND TUSCALOOSA LONGHAULERS OR DRAW TO PLACE
+
+which satisfies the letter of S73-am5's ban — the connective is `AND` — and defeats the reason for
+it, because the reader cannot see where the leg name ends. **Reported, not ruled:** renaming a
+market is copy.
+
+It also had to be handled inside the gate. The banned-connective check runs against the stamp with
+leg names **masked out**; checking the raw string would go red on whichever boot put a double chance
+in a remedy, and would read as a copy violation rather than the flake it is.
+
+#### P3 is HELD (Allen, 2026-08-14) — `SportsbookApp.StampComposedRefusal`, default OFF
+
+Correct copy that overflows should not ship while sizing is with the DD. **The hold costs nothing
+reachable:** a refusal only fires on a matchup with 2+ legs, and `Toggle` still REPLACES — the
+additive gesture is a design decision nobody has made — so no player can build a same-match slip
+through this surface. The held path is reachable only via the model's `AddLeg`, i.e. from tests.
+
+**The P3 gate turns it ON deliberately** so the composition stays exercised rather than rotting into
+dead code behind a false constant, and **asserts the default is OFF** so releasing it is a decision
+rather than a drift. Cleared in a fixture `TearDown`, not at the end of the test that sets it — a
+mid-body failure would otherwise release it for everything after.
+
+### P4 — THE HOUSE'S LINE. BUILT and green (`7d06881`)
+
+Where two picks are priced as related, the house marks the connection **in its own ink** (§3.1, S73)
+— he picks in biro, the house marks in Stamp — drawn in the margin's left gutter, between the sheet
+divider and the check column.
+
+**DRAWN, NOT CAPTIONED**, and that negative is the gate's load-bearing half: it sweeps every text
+node in the margin and fails if `HOUSE'S LINE` or `SGP` appears anywhere. §3.1: the name is what the
+thing is *called*, never a tag on every occurrence.
+
+**Spine plus a spur per member row.** The spurs are not ornament — slip order is insertion order, so
+a connected pair can straddle a leg on a different match, and a bare spanning stroke would mark a row
+it has nothing to do with.
+
+Also gated: **one leg on each of two matchups draws NO mark.** A mark where there is no connection
+teaches the opposite of the rule it exists to teach ("unmarked legs multiply; marked legs pay less").
+
+**Geometry is a CANDIDATE, not canon.** §3.1 rules the ink, the connection and the absence of a
+caption — implemented. Stroke weight and spur length want frames, as the VOID rub-out does.
+
+The margin invariant still holds with the marks in the flow: they sit in the leg-row band, well above
+the payout, so the deepest element is unchanged.
+
+### P5 — the statement. NEXT, and what it needs
+
+`SameMatchPricing.principal` is the nominated relation; **do not pick from the list** — choosing which
+relation moved the price is a pricing claim only the model can make. The kinds that can reach a
+placed slip are `Implies`, `SharedScoreline(sign)`, `SharedCount(family, sign)` and
+`ScorerOfSide(side)` — `Independent` is never principal and `MutuallyExclusive` is a refusal.
+
+So P5 needs **four authored sentences**, one per kind, in toner, once per slip, stating what the legs
+*share* — never a formula, never a coefficient, never an English string from the engine. Canon gives
+the constraints but not the sentences. **Lengthening is not remarked**, and the implication case is
+*stated, not blocked*.
+
+### Ruling (3) — remedy copy. The canon P3 was built to
+
+Recorded here so it is not re-derived. From S73-am5 (canon `c467df3`):
+
+- **The remedy is CONJUNCTIVE and authored PLURAL in both halves.** Removing only the first element
+  leaves the slip refused, so it is a **set to remove, not a menu to choose from**. Remedies of up
+  to **three legs** occur at the shipped `κ = 1` across 645 refusals.
+- **`or` / `either` / `one of` / `any of` are BANNED in a remedy.** English's natural form for a
+  list of fixes is disjunctive and the model's truth is not.
+- **A remedy that names a fix which does not fix it is worse than no remedy** — S73-am4 requires a
+  *verified* remedy.
+- **The cause breaks too.** `… cannot both land` is two-valued; three or more legs take an authored
+  `… cannot all land`. **Two authored forms chosen by arity, never one template with a substituted
+  word.**
+- **A duplicate and an impossibility take ONE treatment and TWO causes** — §3.3 wants a *literal*
+  reason, and one vague sentence covering both is what that word exists to prevent.
+- **Legs are named by the exact string on their own row**, so he never translates against the rows
+  in front of him.
+- **Fit is measured, not estimated** (C46): the population is the 645 refusals and the longest
+  renderable remedy is computable today. **A truncated remedy is an unverified remedy** — size the
+  control for it or author a shorter form.
+- **Removal order never reaches the player.** High-to-low is an implementation constraint only.

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
 using SBR.Engine;
@@ -483,6 +484,371 @@ namespace SBR.Tests.PlayMode
             return count;
         }
 
+        /// <summary>P3's stamp, end to end, on a REAL refused same-match slip — and the C46 fit
+        /// measurement the DD asked for in numbers rather than in estimate.
+        ///
+        /// <para>The model returns the machine token <c>"refused:&lt;Kind&gt;"</c> from PlaceBlocker
+        /// precisely so that printing it is loud, and the surface printed it verbatim until P3. The
+        /// first assertion here is that the token never reaches the control.</para></summary>
+        [UnityTest, Order(9)]
+        public IEnumerator Refused_combination_stamps_cause_and_remedy_and_never_the_models_token()
+        {
+            // The hold is RELEASED (S77 answered the sizing question by changing the stamp's shape),
+            // so this gate no longer drives a flag — it asserts the wiring is live.
+            Assert.IsTrue(SportsbookApp.StampComposedRefusal,
+                "the refusal stamp's hold was released when S77 landed");
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            Run run = laptop.director.Run;
+            BetslipModel slip = laptop.Slip;
+
+            // Build a genuinely refused same-match slip through the model's own additive API.
+            // Searched rather than hard-coded: which pair conflicts is a property of the board, and
+            // the board is re-priced on every boot (RunDirector.seed is blank).
+            bool found = false;
+            Matchup matchup = run.CurrentSlate.Matchups[0];
+            var offers = new List<MarketSelection>();
+            foreach (MarketOffer offer in matchup.Markets) offers.Add(offer.Selection);
+            for (int a = 0; a < offers.Count && !found; a++)
+                for (int b = a + 1; b < offers.Count && !found; b++)
+                {
+                    slip.Clear();
+                    if (!slip.AddLeg(0, offers[a])) continue;
+                    if (!slip.AddLeg(0, offers[b])) continue;
+                    if (slip.Refusal != null) found = true;
+                }
+            Assert.IsTrue(found,
+                "no two selections on matchup 0 refuse — this gate needs a real refusal to measure, "
+                + "and a board that cannot produce one has changed in a way P3 depends on");
+
+            yield return WaitForRebuild();
+            Transform margin = Required(App(laptop), "WorkingMargin");
+            // Two nodes, not one wrapping node (S77 option 2): cause above, remedy below, so the
+            // break lands between them by construction rather than wherever a fitter puts it.
+            var reason = Required(Required(margin, "Place"), "PlaceReason").GetComponent<TMP_Text>();
+            var remedyLine = Required(Required(margin, "Place"), "PlaceRemedy").GetComponent<TMP_Text>();
+            string stamp = reason.text + " " + remedyLine.text;
+
+            Assert.IsFalse(stamp.Contains("REFUSED:"),
+                $"the model's machine token reached the control: \"{stamp}\". PlaceBlocker returns "
+                + "\"refused:<Kind>\" so this is loud rather than a plausible sentence the model had "
+                + "no authority to write — the surface must branch on Refusal and stamp the parts");
+
+            // S73-am5's banned list, checked against the stamp's own CONNECTIVES rather than against
+            // the raw string. The distinction is not pedantic: the draws vocabulary names a double
+            // chance "TUSCALOOSA LONGHAULERS OR DRAW", so a leg NAME can contain "OR" without the
+            // remedy being disjunctive. Testing the raw string would go red on whichever boot puts a
+            // double chance in a remedy — a flake that reads as a copy violation.
+            string skeleton = stamp;
+            foreach (Pick pick in slip.Picks)
+                skeleton = skeleton.Replace(
+                    SportsbookApp.MarginLegSubject(run.CurrentSlate.Matchups[pick.MatchupIndex],
+                        pick.Selection).ToUpperInvariant(), "<LEG>");
+            foreach (string banned in new[] { " OR ", "EITHER", "ONE OF", "ANY OF" })
+                Assert.IsFalse(skeleton.Contains(banned),
+                    $"\"{banned.Trim()}\" is banned in a remedy — the remedy is a SET to remove, and "
+                    + $"menu-shaped copy fails when followed. Stamp: \"{stamp}\"");
+
+            // Cause AND remedy, both — §3.3's row has always required both halves.
+            // The remedy's verb is the surface's own: the control on each row says RUB OUT, so the
+            // instruction and the thing that performs it are the same word (S77's no-translation
+            // goal, one step further than matching strings).
+            Assert.IsTrue(stamp.Contains("RUB OUT") || stamp.Contains("NO LEG CAN BE RUBBED OUT"),
+                $"the stamp states no remedy: \"{stamp}\"");
+
+            // S77: NO LEG IS NAMED IN THE STAMP. The stamp states the act and its arity; the legs it
+            // refers to are MARKED on their own rows. So the assertion inverts — a name appearing
+            // here is the defect now, not its absence.
+            TicketRefusal refusal = slip.Refusal;
+            for (int i = 0; i < slip.Picks.Count; i++)
+            {
+                string name = SportsbookApp.MarginLegSubject(
+                    run.CurrentSlate.Matchups[slip.Picks[i].MatchupIndex],
+                    slip.Picks[i].Selection).ToUpperInvariant();
+                if (name.Length < 3) continue;   // a name too short to distinguish from a stray word
+                Assert.IsFalse(stamp.Contains(name),
+                    $"leg {i} (\"{name}\") is NAMED in the stamp: \"{stamp}\". S77 puts the names in "
+                    + "the flow as marks — three names in a 296x44 control is unbounded and the "
+                    + "instruction is not");
+            }
+
+            // ...and the whole remedy set IS marked, in the house's ink, on the control that performs
+            // the act the stamp names. A surface that marks RemedyLegs[0] alone leaves the slip
+            // refused after the mark is spent.
+            Transform marginNow = Required(App(laptop), "WorkingMargin");
+            foreach (int legIndex in refusal.RemedyLegs)
+            {
+                var label = Required(Required(marginNow, "Remove" + legIndex), "Label")
+                    .GetComponent<TMP_Text>();
+                Assert.AreEqual(LaptopOs.MoneyBad, label.color,
+                    $"remedy leg {legIndex} is not marked — the stamp points at marks it did not "
+                    + "make, which is worse than naming them");
+            }
+            for (int i = 0; i < slip.Picks.Count; i++)
+            {
+                if (refusal.RemedyLegs.Contains(i)) continue;
+                var label = Required(Required(marginNow, "Remove" + i), "Label").GetComponent<TMP_Text>();
+                Assert.AreNotEqual(LaptopOs.MoneyBad, label.color,
+                    $"leg {i} is marked but is not in the remedy — the arity in the stamp would then "
+                    + "disagree with the marks he can count");
+            }
+
+            // ---- C46 FIT — NOW AN ASSERTION, because S77 made the population FINITE.
+            //
+            // The first build measured leg-name-bearing compositions and could only report: the
+            // worst case was 1583-1722px against a 288px box, six lines, and unbounded in principle
+            // because it scaled with whatever the board named a team. Taking the names out collapses
+            // it to arity-keyed forms, and MaxLegs = 4 bounds the arity — so the whole population is
+            // enumerable here, exactly, and every member of it can be required to fit.
+            //
+            // This is the difference S77 bought, and it is why the gate stopped being a report.
+            float box = ((RectTransform)reason.transform).rect.width;
+            float worst = 0f;
+            string worstText = "";
+            foreach (RefusalKind kind in Enum.GetValues(typeof(RefusalKind)))
+                for (int causeArity = 2; causeArity <= run.Config.MaxLegs; causeArity++)
+                    for (int remedyArity = 0; remedyArity < run.Config.MaxLegs; remedyArity++)
+                    {
+                        var probe = new TicketRefusal(kind, Enumerable.Range(0, causeArity).ToArray(),
+                            Enumerable.Range(0, remedyArity).ToArray(), null, 0.0);
+                        foreach (string line in new[]
+                                 { SportsbookApp.RefusalCause(probe), SportsbookApp.RefusalRemedy(probe) })
+                        {
+                            float w = LaptopUi.MeasureWidth(reason.font, line.ToUpperInvariant(), 13,
+                                LaptopTrack.StampReason);
+                            if (w > worst) { worst = w; worstText = line; }
+                        }
+                    }
+
+            UnityEngine.Debug.Log($"[P3-FIT] control {box:F1}px/line · widest of the whole authored "
+                + $"population {worst:F1}px ({worst / box:P0}) — \"{worstText}\" · this refusal: "
+                + $"\"{reason.text}\" / \"{remedyLine.text}\"");
+
+            Assert.Less(worst, box,
+                $"the widest authored line does not fit: \"{worstText}\" at {worst:F1}px in a "
+                + $"{box:F1}px box. S77's order is (1) a shorter authored form, (2) two lines inside "
+                + "the existing 44px box — already taken — and (3) only then geometry, which goes to "
+                + "Allen with the flow-budget cost stated. Never truncation, and never smaller type");
+            Assert.Greater(reason.fontSize, 12.9f, "the cause line holds the >=13px floor");
+            Assert.Greater(remedyLine.fontSize, 12.9f, "the remedy line holds it too");
+            Assert.IsFalse(stamp.Contains("…"),
+                $"the stamp was ellipsised: \"{stamp}\". A truncated remedy is an unverified remedy");
+        }
+
+        /// <summary>EVIDENCE, not verification — the DD's two measurements for the S77 forms, run by
+        /// filter only so it does not lengthen routine suites (the TvSweatCaptureHarness pattern).
+        ///
+        /// <para>Emits (1) every authored form against the PLACE control's own 296 × 44 box, at both
+        /// the shipped 13px and the 17px S77's analysis quoted, and (2) the ARITY DISTRIBUTION of
+        /// real refusals swept off the live board — which is what says which forms actually fire
+        /// rather than merely exist.</para></summary>
+        [UnityTest, Order(20), Explicit("Evidence for the DD: S77 form widths + refusal arity "
+            + "distribution. Sweeps the board and is slow; run by filter only.")]
+        public IEnumerator Evidence_S77_form_widths_and_refusal_arity_distribution()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            Run run = laptop.director.Run;
+            BetslipModel slip = laptop.Slip;
+
+            // A rendered stamp node, purely to borrow the production font asset.
+            slip.Clear();
+            slip.AddLeg(0, MarketSelection.Moneyline(Side.Away));
+            yield return WaitForRebuild();
+            var probeText = Required(Required(Required(App(laptop), "WorkingMargin"), "Place"), "Label")
+                .GetComponent<TMP_Text>();
+            TMP_FontAsset font = probeText.font;
+
+            // ---- (1) THE FORMS, against the CONTROL's box rather than the reason node's.
+            const float controlWidth = 296f;   // PLACE control, S77's own frame of reference
+            UnityEngine.Debug.Log("[S77-FORMS] form | 13px | 17px | vs 296px control");
+            var seen = new HashSet<string>();
+            foreach (RefusalKind kind in Enum.GetValues(typeof(RefusalKind)))
+                for (int causeArity = 2; causeArity <= run.Config.MaxLegs; causeArity++)
+                    for (int remedyArity = 0; remedyArity < run.Config.MaxLegs; remedyArity++)
+                    {
+                        var probe = new TicketRefusal(kind, Enumerable.Range(0, causeArity).ToArray(),
+                            Enumerable.Range(0, remedyArity).ToArray(), null, 0.0);
+                        foreach (string line in new[]
+                                 { SportsbookApp.RefusalCause(probe), SportsbookApp.RefusalRemedy(probe) })
+                        {
+                            if (!seen.Add(line)) continue;
+                            float w13 = LaptopUi.MeasureWidth(font, line, 13, LaptopTrack.StampReason);
+                            float w17 = LaptopUi.MeasureWidth(font, line, 17, LaptopTrack.StampReason);
+                            UnityEngine.Debug.Log($"[S77-FORMS] \"{line}\" | {w13:F1} | {w17:F1} | "
+                                + $"{w13 / controlWidth:P0} / {w17 / controlWidth:P0}");
+                        }
+                    }
+
+            // ---- (2) THE ARITY DISTRIBUTION, swept off the live board.
+            // All PAIRS on every matchup, plus all TRIPLES on matchup 0. Pairs are where duplicates
+            // and two-leg impossibilities live; triples are what produce the plural remedies the
+            // copy had to be authored for. Coverage is stated rather than implied — see the summary
+            // line, which reports the combinations examined as well as the refusals found.
+            var byKind = new Dictionary<string, int>();
+            var causeArityCount = new Dictionary<int, int>();
+            var remedyArityCount = new Dictionary<int, int>();
+            int examined = 0, refused = 0;
+
+            void Record(TicketRefusal r)
+            {
+                refused++;
+                string k = r.Kind.ToString();
+                byKind[k] = byKind.TryGetValue(k, out int c) ? c + 1 : 1;
+                causeArityCount[r.CauseLegs.Count] =
+                    causeArityCount.TryGetValue(r.CauseLegs.Count, out int a) ? a + 1 : 1;
+                remedyArityCount[r.RemedyLegs.Count] =
+                    remedyArityCount.TryGetValue(r.RemedyLegs.Count, out int b) ? b + 1 : 1;
+            }
+
+            for (int m = 0; m < run.CurrentSlate.Matchups.Count; m++)
+            {
+                var offers = new List<MarketSelection>();
+                foreach (MarketOffer offer in run.CurrentSlate.Matchups[m].Markets)
+                    offers.Add(offer.Selection);
+                for (int a = 0; a < offers.Count; a++)
+                    for (int b = a; b < offers.Count; b++)   // b == a covers the DUPLICATE arm
+                    {
+                        examined++;
+                        TicketRefusal r = run.RefusalFor(new[]
+                            { new Pick(m, offers[a]), new Pick(m, offers[b]) });
+                        if (r != null) Record(r);
+                    }
+            }
+
+            var m0 = new List<MarketSelection>();
+            foreach (MarketOffer offer in run.CurrentSlate.Matchups[0].Markets) m0.Add(offer.Selection);
+            for (int a = 0; a < m0.Count; a++)
+                for (int b = a; b < m0.Count; b++)
+                    for (int c = b; c < m0.Count; c++)
+                    {
+                        examined++;
+                        TicketRefusal r = run.RefusalFor(new[]
+                            { new Pick(0, m0[a]), new Pick(0, m0[b]), new Pick(0, m0[c]) });
+                        if (r != null) Record(r);
+                    }
+
+            UnityEngine.Debug.Log($"[S77-ARITY] examined {examined} combinations "
+                + $"({run.CurrentSlate.Matchups.Count} matchups, all pairs; matchup 0, all triples) "
+                + $"-> {refused} refusals");
+            foreach (KeyValuePair<string, int> kv in byKind)
+                UnityEngine.Debug.Log($"[S77-ARITY] kind {kv.Key}: {kv.Value} "
+                    + $"({(double)kv.Value / refused:P1})");
+            foreach (int n in causeArityCount.Keys.OrderBy(x => x))
+                UnityEngine.Debug.Log($"[S77-ARITY] cause arity {n}: {causeArityCount[n]} "
+                    + $"({(double)causeArityCount[n] / refused:P1})");
+            foreach (int n in remedyArityCount.Keys.OrderBy(x => x))
+                UnityEngine.Debug.Log($"[S77-ARITY] remedy arity {n}: {remedyArityCount[n]} "
+                    + $"({(double)remedyArityCount[n] / refused:P1}) -> form: "
+                    + $"\"{SportsbookApp.RefusalRemedy(new TicketRefusal(RefusalKind.ImpossibleCombination, new[] { 0, 1 }, Enumerable.Range(0, n).ToArray(), null, 0.0))}\"");
+
+            // ---- (3) WHICH RELATIONS THE MODEL ACTUALLY EMITS AS PRINCIPAL.
+            // P5 states ONE relation per slip, composed from `principal`. A sentence for a relation
+            // the model never nominates is copy that can never render, so the four drafts are only
+            // shippable against this list. Two matchups' worth of pairs — enough to enumerate the
+            // KINDS, which is what the drafts are keyed to.
+            var principals = new Dictionary<string, int>();
+            int sameMatchSlips = 0, nullPrincipal = 0;
+            for (int m = 0; m < Mathf.Min(2, run.CurrentSlate.Matchups.Count); m++)
+            {
+                var offers = new List<MarketSelection>();
+                foreach (MarketOffer offer in run.CurrentSlate.Matchups[m].Markets)
+                    offers.Add(offer.Selection);
+                for (int a = 0; a < offers.Count; a++)
+                    for (int b = a + 1; b < offers.Count; b++)
+                    {
+                        slip.Clear();
+                        if (!slip.AddLeg(m, offers[a])) continue;
+                        if (!slip.AddLeg(m, offers[b])) continue;
+                        if (slip.Refusal != null) continue;      // refused slips never reach P5
+                        SameMatchPrice priced = slip.SameMatchPricing;
+                        if (priced == null) continue;
+                        sameMatchSlips++;
+                        if (priced.Principal == null) { nullPrincipal++; continue; }
+                        Relation p = priced.Principal.Value;
+                        string key = p.Kind.ToString()
+                            + (p.Sign != RelationSign.None ? $"/{p.Sign}" : "")
+                            + (p.Family != null ? $"/{p.Family}" : "")
+                            + (p.ScorerSide != null ? $"/{p.ScorerSide}" : "");
+                        principals[key] = principals.TryGetValue(key, out int pc) ? pc + 1 : 1;
+                    }
+            }
+            UnityEngine.Debug.Log($"[S77-PRINCIPAL] {sameMatchSlips} placeable same-match slips "
+                + $"(2 matchups, all pairs) · {nullPrincipal} with NO statable relation "
+                + $"({(sameMatchSlips == 0 ? 0 : (double)nullPrincipal / sameMatchSlips):P1})");
+            foreach (KeyValuePair<string, int> kv in principals.OrderByDescending(x => x.Value))
+                UnityEngine.Debug.Log($"[S77-PRINCIPAL] {kv.Key}: {kv.Value} "
+                    + $"({(double)kv.Value / sameMatchSlips:P1})");
+
+            Assert.Greater(refused, 0, "the sweep found no refusals — the board changed shape");
+        }
+
+        /// <summary>P4 — THE HOUSE'S LINE. Where two picks share a match the house marks the
+        /// connection in its OWN ink, and marks nothing where there is no connection.
+        ///
+        /// <para>The negative is the load-bearing half: §3.1 says the mark is DRAWN, NOT CAPTIONED,
+        /// and that the instrument's name never becomes a tag beside every occurrence. So this gate
+        /// fails if the words reach the margin at all.</para></summary>
+        [UnityTest, Order(9)]
+        public IEnumerator House_line_marks_connected_picks_in_the_houses_ink_and_never_captions_them()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            Run run = laptop.director.Run;
+            BetslipModel slip = laptop.Slip;
+
+            // One leg on each of two different matchups: no connection, so no mark.
+            slip.Clear();
+            Assert.IsTrue(slip.AddLeg(0, MarketSelection.Moneyline(Side.Away)));
+            Assert.IsTrue(slip.AddLeg(1, MarketSelection.Moneyline(Side.Away)));
+            yield return WaitForRebuild();
+            Transform margin = Required(App(laptop), "WorkingMargin");
+            Assert.IsFalse(slip.IsSameMatch, "two matchups, one leg each, is not a same-match slip");
+            Assert.IsNull(Find(margin, "HouseLine0"),
+                "the house marked a connection between legs on different matches");
+
+            // Now a second leg on the FIRST matchup — a real connection. Searched, because which
+            // second selection is addable is a property of the board and the board is re-priced
+            // every boot.
+            bool connected = false;
+            foreach (MarketOffer offer in run.CurrentSlate.Matchups[0].Markets)
+            {
+                if (slip.Contains(0, offer.Selection)) continue;
+                if (!slip.AddLeg(0, offer.Selection)) continue;
+                connected = true;
+                break;
+            }
+            Assert.IsTrue(connected, "no second selection on matchup 0 could be added");
+            yield return WaitForRebuild();
+            margin = Required(App(laptop), "WorkingMargin");
+
+            Assert.IsTrue(slip.IsSameMatch, "two legs on one matchup IS a same-match slip");
+            Assert.AreEqual(2, slip.LegCountOn(0), "matchup 0 must carry the connected pair");
+            var spine = Required(margin, "HouseLine0").GetComponent<Image>();
+            Assert.AreEqual(LaptopOs.MoneyBad, spine.color,
+                "§3.1: the house marks in Stamp — he picks in biro, the house marks in its own ink");
+
+            // A spur per member, so the mark says WHICH rows it is about. Slip order is insertion
+            // order, so a connected pair can straddle an unrelated leg and a bare spanning stroke
+            // would mark a row it has nothing to do with.
+            IReadOnlyList<int> connectedLegs = slip.LegIndicesOn(0);
+            for (int m = 0; m < connectedLegs.Count; m++)
+                Assert.IsNotNull(Find(margin, $"HouseLineSpur0_{m}"),
+                    $"connected leg {connectedLegs[m]} carries no spur");
+
+            // DRAWN, NOT CAPTIONED. The name is what the thing is called, never a tag on every
+            // occurrence — "the house does not narrate its own presence on his document" (S44).
+            foreach (TMP_Text text in margin.GetComponentsInChildren<TMP_Text>(true))
+            {
+                string upper = (text.text ?? "").ToUpperInvariant();
+                Assert.IsFalse(upper.Contains("HOUSE'S LINE"),
+                    $"the mark was captioned in \"{text.name}\": \"{text.text}\"");
+                Assert.IsFalse(upper.Contains("SGP"),
+                    $"SGP is industry jargon and never reaches him — found in \"{text.name}\"");
+            }
+        }
+
+
         [Test, Order(8)]
         public void TicketStateWord_and_LegStateWord_never_cross_contaminate_their_vocabularies()
         {
@@ -783,63 +1149,69 @@ namespace SBR.Tests.PlayMode
             // between (ead9396 re-sourced it and is the last such change; af0c42c and 45cb958 are
             // comment-only and empty-state-only here). Nothing moved. The money did.
             //
-            // So the repair is not a new number. Re-sourcing to 4.748px would go green on one boot
-            // and red on the next, which is the flake this pin has actually been carrying since it
-            // was written. Both terms are now separated and each is held to what it can honestly be
-            // held to: the structural part DERIVED and pinned two-sided, the tilt bounded.
+            // So the repair was not a new number. Both terms were separated and each held to what it
+            // can honestly be held to: the structural part DERIVED and pinned two-sided, the tilt
+            // held to a clearance rather than a value.
             //
             // The reservation is not slackened and no element is excluded — the ruling forbids both,
             // because either would have gone green while a real overrun continued. The wax highlight
             // is still measured; what is no longer counted as an overrun is the part of its depth
             // that is a rotation rather than a position.
             //
-            // Still asserted as an EQUALITY so the structural pin is two-sided: it fails if the
-            // excursion grows and it fails if it shrinks. A silent improvement is not a win — it
-            // means someone moved the payout block, and they close this entry rather than quietly
-            // going green.
+            // **S51 IS CLOSED (DD batch 66, 2026-08-14), AND THE STRUCTURAL PART IS FIXED.** The DD
+            // refused all three seating options I routed and ruled the 4.00px a KIT-FIDELITY gap
+            // instead: `PayoutFigure.jsx` places the band `bottom:-2px` against a line box of
+            // `--st-size-payout` 31px x `--st-lh-fig` 1.1 = 34.1px, so the kit's band bottom sits
+            // 36.1px below the figure's top and this build had it at 40px. One cause, two symptoms —
+            // the frame read the band as a detached rule under the figure rather than the
+            // highlighter behind it. THE BAND MOVED; the payout block did not.
             //
-            // WHAT IS STILL OWED, AND NOT DECIDED HERE: the 4.00px is a real excursion past T47's
-            // reservation, now explained rather than mysterious. Whether the fix is to lift the
-            // payout block clear of the budget, to shorten the band's 34px drop, or to rule that a
-            // decorative underline is not flow content, is a DESIGN call on a design-ruled surface.
-            // Routed to the Design Director through the orchestrator; NOT self-ruled here, and no
-            // production pixel is touched by this commit.
+            // RE-SOURCED ONCE, as the ruling directs, and derived rather than measured:
             //
-            // The excursion is DERIVED, not measured, so it needs no re-sourcing when a face, a
-            // board, or a price changes:
+            //   the payout figure's box is 36.00px tall and its bottom lands exactly on the budget
+            //   (-370px). The band's bottom now sits at the kit's 36.10px below that box's top.
             //
-            //   the payout figure's box is 36px tall and its bottom lands exactly on the budget
-            //   (-370px); the wax highlight is laid 34px below that box's TOP and is 6px deep, so
-            //   the band's own bottom sits 40px below the box top — 4px past the box, and therefore
-            //   4px past the reservation.
+            //   0.10px  = 36.10 - 36.00, the kit's 2px overshoot against a 34.1px line box, laid
+            //             against a build box that is 36px rather than 34.1px.
             //
-            //   4.00px  the wax highlight band hanging below the payout figure it underlines.
-            //
-            // This holds for any payout string and any slate, which the old number did not.
-            const float structuralOverrunPx = 4.00f;
+            // The DD's "closes at zero" is that tenth of a pixel — the 3.9px the band moved against
+            // the 4.00px that was there. It is written out rather than rounded away so the next
+            // reader knows the residue is the box-height difference and not drift.
+            const float structuralOverrunPx = 0.10f;
             const float structuralTolerancePx = 0.05f;
-            // The tilt has no fixed value — it is sin(0.5°) x the band's width and the band is sized
-            // from the payout figure's MEASURED width, so it moves with the money on the screen.
-            // Bounded rather than pinned: a band wider than the 324px panel is a real defect, a band
-            // that tracks a longer price is not. 3.0px == a 344px band at the ruled 0.5°.
-            const float maxTiltPx = 3.0f;
             float overrunPx = -SportsbookApp.MarginFlowBudget - flowBottom;
             float structuralPx = -SportsbookApp.MarginFlowBudget - flowBottomUntilted;
 
-            Assert.LessOrEqual(deepestTiltPx, maxTiltPx,
-                $"the flow's deepest element ({deepestName}) is tilted {deepestTiltPx:F2}px past its "
-                + $"own unrotated bottom, over the {maxTiltPx:F1}px bound. At the ruled 0.5° that is "
-                + "a band wider than the panel it sits in — the wax highlight is sized from the "
-                + "payout figure's measured width, so this means the figure itself ran away.");
+            // S75 (DD batch 66): "a hand-laid mark reserves with the figure it marks", and "where the
+            // mark is transformed, the reserved extent is the TRANSFORMED extent". So the tilt is not
+            // bounded by a number I picked — it is held to the boundary it must actually clear:
+            // T47's 6px separation between the flow region and the anchored action band, the `+ 6f`
+            // inside SportsbookApp.ActionBandReservedHeight.
+            //
+            // This is what earned the band its pixels. Before the move the total was
+            // 4.00 + 0.0087*w, which crosses 6px at w > 229px — reachable, because money never
+            // abbreviates (C49) and same-game parlays lengthen the figure. After it, the same
+            // arithmetic needs a 677px band inside a 324px panel. The check is kept anyway: it is
+            // the invariant, not the margin of safety, and it now holds for every renderable string.
+            const float actionBandPadPx = 6f;
+            Assert.Less(overrunPx, actionBandPadPx,
+                $"the flow's deepest element ({deepestName}) reaches {overrunPx:F2}px past its "
+                + $"reservation, into T47's {actionBandPadPx:F0}px separation from the action band "
+                + $"({structuralPx:F2}px structural + {deepestTiltPx:F2}px tilt). S75: a transformed "
+                + "mark reserves its TRANSFORMED extent, and the tilt term is the band's width times "
+                + "sin(0.5°) — so this fires when the payout figure grows, which is exactly the "
+                + "collision the band move was ruled to close.");
             Assert.AreEqual(structuralOverrunPx, structuralPx, structuralTolerancePx,
                 $"the margin flow's STRUCTURAL overrun moved: measured {structuralPx:F2}px against "
                 + $"the derived {structuralOverrunPx:F2}px. Deepest flow element {deepestName} at "
                 + $"{flowBottom:F2}px ({deepestTiltPx:F2}px of that is its own tilt, leaving "
                 + $"{flowBottomUntilted:F2}px), raw overrun {overrunPx:F2}px, budget "
                 + $"-{SportsbookApp.MarginFlowBudget:F0}px, action band reserves "
-                + $"{SportsbookApp.ActionBandReservedHeight:F0}px. The 4.00px is the wax highlight "
-                + "hanging below the payout figure's box, whose bottom is flush with the budget. If "
-                + "it GREW, something entered the margin flow: staged receipts live in the 700px "
+                + $"{SportsbookApp.ActionBandReservedHeight:F0}px. The 0.10px is the kit's band "
+                + "bottom (36.10px below the payout figure's top) against a build box of 36.00px, "
+                + "whose bottom is flush with the budget. If it went back to ~4.00, the wax band has "
+                + "been moved off the kit's `bottom:-2px` and S51 has been reopened. If it GREW "
+                + "otherwise, something entered the margin flow: staged receipts live in the 700px "
                 + "sheet and must never re-enter it (both-screens kit amendment, DD 2026-08-04). If "
                 + "a RULED size changed, re-derive at this call site with the new arithmetic written "
                 + "out — never shrink a figure to fit the pin.");
@@ -856,8 +1228,14 @@ namespace SBR.Tests.PlayMode
             //    board-frozen state, whose copy differs.
             //  · a tilt that is a genuine layout defect rather than a rotation. The structural pin
             //    subtracts every flow element's own rotation before measuring depth, so a band that
-            //    was tilted BY MISTAKE reads as no overrun at all — only the loose 3.0px bound above
-            //    catches that, and only once it is wider than the panel.
+            //    was tilted BY MISTAKE reads as no structural overrun — only the T47 clearance check
+            //    above catches it, and only once the total reaches 6px.
+            //  · S75's design-time clearance constant. The ruling asks for the population swept
+            //    (C46), the widest renderable money string taken, and the clearance pinned as a
+            //    CONSTANT — "a zone that moves with the string is not legal". This gate still reads
+            //    the band's width at runtime, so it proves the boundary holds for the string this
+            //    boot happened to price, not for the widest one that exists. OWED, and cheap now
+            //    that the band move put ~677px of headroom between the two.
             //  · which slate it ran on. `RunDirector.seed` is blank in the Room scene, so the board,
             //    the prices and therefore every money string differ on every boot. That is why the
             //    pin is derived rather than measured; it also means this gate has never tested one

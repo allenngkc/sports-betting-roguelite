@@ -798,6 +798,32 @@ namespace SBR.Game
         /// margin's fixed 530px panel.</summary>
         internal const float MarginFlowBudget = 530f - ActionBandReservedHeight;
 
+        /// <summary>Gutter x and stroke weight for <c>THE HOUSE'S LINE</c>. The gutter is the strip
+        /// between the 2px sheet divider at x=0 and the leg rows' own left pad at x=14 — the margin
+        /// of the margin, which is where an annotating hand has room to write.</summary>
+        private const float HouseLineX = 7f;
+        private const float HouseLineWeight = 2f;
+        private const float HouseLineSpur = 5f;
+
+        /// <summary>One connected group's mark: a spine down the gutter with a spur at each member
+        /// row. See the call site for why the spurs are load-bearing rather than ornamental.</summary>
+        private static void DrawHouseLine(RectTransform panel, int markIndex, List<int> members,
+            List<float> legRowY)
+        {
+            // The identity line of a leg row is 20px tall from the row's own top (see LegCheck/Leg).
+            const float legIdentityHeight = 20f;
+            float top = legRowY[members[0]];
+            float bottom = legRowY[members[^1]] - legIdentityHeight;
+            LaptopUi.MakePanel(panel, "HouseLine" + markIndex, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(HouseLineX, top), new Vector2(HouseLineWeight, top - bottom),
+                LaptopOs.MoneyBad);
+            for (int m = 0; m < members.Count; m++)
+                LaptopUi.MakePanel(panel, $"HouseLineSpur{markIndex}_{m}", new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(HouseLineX, legRowY[members[m]] - legIdentityHeight / 2f),
+                    new Vector2(HouseLineSpur, HouseLineWeight), LaptopOs.MoneyBad);
+        }
+
         private void BuildSlip(Run run, BetslipModel slip, bool boardFrozen)
         {
             RectTransform panel = LaptopUi.MakePanel(_root, "Slip", new Vector2(1f, 1f), new Vector2(1f, 1f),
@@ -888,8 +914,17 @@ namespace SBR.Game
                     LaptopOs.TonerSecondary, "CIRCLE A PRICE TO START A TICKET.", _font);
                 y -= 60f;
             }
+            // P4 needs each leg's own row position to mark the connected ones, and the cursor below
+            // is consumed by the loop, so the rows are recorded as they are drawn.
+            var legRowY = new List<float>(slip.Picks.Count);
+            // S77: the legs a refusal's remedy refers to are marked in the flow rather than named in
+            // the stamp. Read once here — the model caches its pricing, but the loop runs per leg.
+            HashSet<int> refusalMarks = null;
+            if (StampComposedRefusal && slip.Refusal != null && slip.Refusal.HasRemedy)
+                refusalMarks = new HashSet<int>(slip.Refusal.RemedyLegs);
             for (int i = 0; i < slip.Picks.Count; i++)
             {
+                legRowY.Add(y);
                 Pick pick = slip.Picks[i];
                 Matchup matchup = run.CurrentSlate.Matchups[pick.MatchupIndex];
                 MatchModel.MarketFields fields = MatchModel.Fields(matchup, pick.Selection);
@@ -903,12 +938,7 @@ namespace SBR.Game
                 // every market but Moneyline/AnytimeScorer backs the match itself, not one subject.
                 // Team names are shortened the same way CompactLegLabel/the board already do; a
                 // moneyline pick never repeats the picked team's own full name.
-                string away = LaptopUi.TeamShort(matchup.Away);
-                string home = LaptopUi.TeamShort(matchup.Home);
-                bool subjectIsHome = fields.Subject == matchup.Home.Name;
-                bool subjectIsAway = !subjectIsHome && fields.Subject == matchup.Away.Name;
-                string subjectRaw = subjectIsHome ? home : subjectIsAway ? away : fields.Subject;
-                string subject = string.IsNullOrEmpty(subjectRaw) ? fields.Line : subjectRaw;
+                string subject = MarginLegSubject(matchup, pick.Selection);
                 string price = OddsFormat.American(matchup.Odds(pick.Selection));
                 // ENTRY is the matchup's own FORM board position — same "(index+1):00" the board's
                 // Number badge already prints (BuildMatchupCard) — not a per-selection identity.
@@ -950,7 +980,10 @@ namespace SBR.Game
                 LaptopUi.MakePanel(panel, "LegRule" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(14f, y - 34f), new Vector2(headerRight, 1f), LaptopOs.Rule);
 
-                int matchupIndex = pick.MatchupIndex;
+                // LEG-ADDRESSED, not matchup-keyed. This called Remove(matchupIndex), which drops
+                // THE leg on a matchup — with two legs on one match it cannot address one of them,
+                // and would take both. One of the seven sites the same-match survey found.
+                int legIndexForRemoval = i;
                 if (run.OwnsConsumable("profit_boost"))
                 {
                     bool boosted = slip.BoostLeg == i;
@@ -963,9 +996,17 @@ namespace SBR.Game
                 // RUB OUT stays 60x32 — S50 §3 keeps it at size deliberately, because a mis-click
                 // here costs money. Vertically centred against the identity/market pair rather than
                 // pinned to the first baseline, per S50 §2.
+                // S77's mark. Where the slip is refused, the legs the remedy refers to are marked on
+                // their own rows — and the mark is THIS control, in the house's ink. The stamp says
+                // "RUB OUT THE MARKED LEG"; the control that performs it is the thing lit, so the
+                // instruction and its target are the same object rather than two strings to match.
+                // Stamp is the house acting on the document (§3.1); a lit RUB OUT is exactly that.
+                bool markedForRemoval = refusalMarks != null && refusalMarks.Contains(i);
                 LaptopUi.MakeButton(panel, "Remove" + i, "RUB OUT", new Vector2(1f, 1f), new Vector2(1f, 1f),
-                    new Vector2(-12f, y + 1.5f), new Vector2(60f, 32f), 13, LaptopOs.Ink, LaptopOs.Muted,
-                    () => { slip.Remove(matchupIndex); _lockArmed = false; _invalidate(); }, _fontCond);
+                    new Vector2(-12f, y + 1.5f), new Vector2(60f, 32f), 13, LaptopOs.Ink,
+                    markedForRemoval ? LaptopOs.MoneyBad : LaptopOs.Muted,
+                    () => { slip.RemoveLeg(legIndexForRemoval); _lockArmed = false; _invalidate(); },
+                    _fontCond);
                 // S50 §2: the leg row takes S39's one-baseline discipline — a margin leg is the same
                 // kind of object as a settled record (identity, price, market, state) and has no
                 // business carrying a different vertical grammar. The yield comes from SPACING, which
@@ -973,6 +1014,41 @@ namespace SBR.Game
                 // baselines close from 22px to 20px apart and the rule from 38 to 34, taking the step
                 // 42 -> 35. Nothing that states a product fact was deleted to make the layout fit.
                 y -= LegRowPitch;
+            }
+
+            // P4 — THE HOUSE'S LINE (§3.1, S73). Where two of his picks are priced as related, the
+            // house marks the connection between them IN ITS OWN INK: he picks in biro, the house
+            // marks in Stamp. Drawn in the margin's own left gutter, between the sheet divider and
+            // the check column, because that is where a hand annotating a document would put it.
+            //
+            // DRAWN, NOT CAPTIONED — no label, no name, no tag beside it. §3.1 is explicit that the
+            // name is what the thing is CALLED (rules copy, the ledger, a first explanation) and
+            // never a caption on every occurrence: "a mark that needs a caption every time is a mark
+            // that is not working, and the house does not narrate its own presence on his document".
+            //
+            // The spine spans the group's first row to its last, and each MEMBER row takes its own
+            // spur. The spurs are not decoration: slip order is insertion order, so two legs on one
+            // match can sit either side of a leg on a different match, and a bare spanning stroke
+            // would mark a row it has nothing to do with. The spurs say which rows the line is about.
+            //
+            // GEOMETRY IS A CANDIDATE, not canon — §3.1 rules the ink, the connection and the
+            // absence of a caption, which is what is implemented here; the stroke weight and the
+            // spur length want frames, exactly as the VOID row's rub-out does.
+            if (slip.Picks.Count > 1)
+            {
+                var groups = new Dictionary<int, List<int>>();
+                for (int i = 0; i < slip.Picks.Count; i++)
+                {
+                    if (!groups.TryGetValue(slip.Picks[i].MatchupIndex, out List<int> members))
+                        groups[slip.Picks[i].MatchupIndex] = members = new List<int>();
+                    members.Add(i);
+                }
+                int markIndex = 0;
+                foreach (KeyValuePair<int, List<int>> group in groups)
+                {
+                    if (group.Value.Count < 2) continue;   // one leg on a match is not a connection
+                    DrawHouseLine(panel, markIndex++, group.Value, legRowY);
+                }
             }
 
             // E-07 ruling: staged ticket receipts no longer render here. The 324px margin has no
@@ -1076,8 +1152,21 @@ namespace SBR.Game
             // right overshoot, not the ring's symmetric +8. Created after the text, then the text is
             // moved back to the top of the sibling order so it still draws over the band.
             float highlightWidth = Mathf.Max(40f, payout.preferredWidth) + 8f;
+            // S51 CLOSED — KIT FIDELITY (DD batch 66, 2026-08-14). The band sat 40px below the
+            // figure's top (a 34px drop plus its own 6px), and PayoutFigure.jsx puts it at 36.1:
+            // `bottom:-2px` against a line box of `--st-size-payout` 31px x `--st-lh-fig` 1.1.
+            // That 3.9px WAS the structural overrun past T47's reservation — one cause, two
+            // symptoms, since the frame also read the band as a detached rule under the figure
+            // rather than the highlighter behind it that this comment describes.
+            //
+            // THE BAND MOVES, THE BLOCK DOES NOT — the DD refused all three seating options, and
+            // "never shrink the figure to fit" still stands. Derived from the kit's own tokens
+            // rather than written as 30.1 so the arithmetic is checkable against the source.
+            const float payoutLineBoxPx = 31f * 1.1f;                          // --st-size-payout x --st-lh-fig
+            const float bandBottomBelowFigureTop = payoutLineBoxPx + 2f;       // the kit's bottom:-2px => 36.1
+            float bandTopOffset = bandBottomBelowFigureTop - LaptopOs.WaxHighlightHeight;
             RectTransform highlight = LaptopUi.MakePanel(panel, "PayoutHighlight", new Vector2(0f, 1f),
-                new Vector2(0f, 1f), new Vector2(14f - 3f, y - 34f),
+                new Vector2(0f, 1f), new Vector2(14f - 3f, y - bandTopOffset),
                 new Vector2(highlightWidth, LaptopOs.WaxHighlightHeight), LaptopOs.MoneyGold);
             highlight.GetComponent<Image>().color = new Color(LaptopOs.MoneyGold.r, LaptopOs.MoneyGold.g,
                 LaptopOs.MoneyGold.b, LaptopOs.WaxHighlightOpacity);
@@ -1086,6 +1175,27 @@ namespace SBR.Game
             y -= 40f;
 
             string blocker = slip.PlaceBlocker;
+            // P3 (F_0.6.0 step 5). A refused COMBINATION is the one blocker no single string can
+            // carry, so the model returns the machine token "refused:<Kind>" and requires the surface
+            // to branch on `Refusal` and stamp the parts. Printing that token is a bug the model made
+            // loud on purpose — and it was the live behaviour here until this branch existed, since
+            // the line below upper-cases whatever `PlaceBlocker` returned.
+            //
+            // Legs are named with MarginLegSubject — the same call the rows above render — so the
+            // instruction reads against the rows in front of him rather than needing translation
+            // (S73-am5).
+            //
+            // HELD behind StampComposedRefusal while the sizing call is with the DD — see that
+            // property. With the hold on, this control keeps its pre-P3 behaviour, which for a
+            // refusal is the model's token; that is unreachable in play, because `Toggle` still
+            // replaces and no additive gesture exists yet.
+            TicketRefusal refusal = StampComposedRefusal ? slip.Refusal : null;
+            string refusalRemedy = null;
+            if (refusal != null)
+            {
+                blocker = RefusalCause(refusal);
+                refusalRemedy = RefusalRemedy(refusal);
+            }
             // MERGE (markets-2 × main, 2026-08-05): both intents kept, because they are orthogonal.
             //
             // From main — S18: a wax primary action is field + wax-ink + a 2px wax-deep edge, and
@@ -1119,10 +1229,26 @@ namespace SBR.Game
                 var placeLabelRect = (RectTransform)placeRect.Find("Label");
                 placeLabelRect.anchorMin = placeLabelRect.anchorMax = new Vector2(.5f, 1f);
                 placeLabelRect.pivot = new Vector2(.5f, 1f);
-                placeLabelRect.sizeDelta = new Vector2(296f, 26f);
+                // S77 option (2), taken: two lines INSIDE the existing 44px box at 13px — "a real
+                // option, not a last resort". The control does not grow, because every pixel of
+                // control height comes 1:1 out of MarginFlowBudget and S51 has just shown that budget
+                // is already overhung: a copy problem is not paid for out of a geometry budget that
+                // is already over. The label yields 26px -> 16px instead; 16 + 13 + 13 + pad = 44.
+                //
+                // Two NODES rather than one wrapping node, so the break lands between cause and
+                // remedy by construction rather than wherever the fitter happens to put it. Cause
+                // above, remedy below — the order §3.3 states them in.
+                bool twoLine = refusalRemedy != null;
+                placeLabelRect.sizeDelta = new Vector2(296f, twoLine ? 16f : 26f);
                 placeLabelRect.anchoredPosition = Vector2.zero;
+                if (twoLine)
+                    LaptopUi.MakeText(placeRect, "PlaceRemedy", new Vector2(.5f, 0f), new Vector2(.5f, 0f),
+                        new Vector2(0f, 1f), new Vector2(288f, 14f), 13, TextAnchor.MiddleCenter,
+                        LaptopOs.MoneyBad, refusalRemedy.ToUpperInvariant(), _font,
+                        LaptopTrack.StampReason).enableWordWrapping = false;
                 LaptopUi.MakeText(placeRect, "PlaceReason", new Vector2(.5f, 0f), new Vector2(.5f, 0f),
-                    new Vector2(0f, 1f), new Vector2(288f, 17f), 13, TextAnchor.MiddleCenter,
+                    new Vector2(0f, twoLine ? 15f : 1f), new Vector2(288f, twoLine ? 14f : 17f), 13,
+                    TextAnchor.MiddleCenter,
                     // S68: `.04em`, StampReason.jsx's own value. A blocked reason states a cause and
                     // a remedy (T47, owning doc §6) and is read as a sentence, not scanned as a
                     // label — which is why it takes the smallest tracking on the surface.
@@ -1383,6 +1509,127 @@ namespace SBR.Game
         /// rather than switching on MarketKind. Internal so the PlayMode fixture can assert against
         /// the exact same production formula rather than a hand-kept duplicate that could quietly
         /// drift out of sync.</summary>
+        /// <summary>The identity a margin leg row prints on its own first line — the string the
+        /// player is looking at when the stamp names a leg.
+        ///
+        /// <para>Factored out of BuildSlip so the refusal stamp names legs with the SAME function the
+        /// row renders, rather than a second copy of the expression. S73-am5 requires legs to be
+        /// named "by the exact string on their own row, so he never has to translate an instruction
+        /// against the rows in front of him" — a duplicated expression makes that true by coincidence
+        /// and only until one of the two is edited. One function, two call sites, cannot drift.</para>
+        ///
+        /// <para>Not <see cref="CompactLegLabel"/>: that carries a fixture tail ("— HAWKS v RIVETS")
+        /// which the margin row does not print, so naming a leg by it would be naming it by a string
+        /// that is not on the row.</para></summary>
+        /// <summary>**RELEASED 2026-08-14** — the hold this carried is over, and it is left as a
+        /// constant `true` for one revision so the history is legible rather than silently deleted.
+        ///
+        /// <para>The first build of the stamp NAMED its legs and overflowed: 412–469px against a
+        /// 288px box in the common case, 5.5–6.0× in the worst, six lines, and unbounded in principle
+        /// because it scaled with whatever the board called a team. Allen held the wiring rather than
+        /// ship a visibly overflowing control while the question was with the DD.</para>
+        ///
+        /// <para>S77 answered it by changing the SHAPE, not the size: the stamp states the act and
+        /// its arity, and the legs are marked in the flow. That collapsed the population to
+        /// arity-keyed forms which `MaxLegs = 4` bounds — so the gate that could only REPORT a
+        /// measurement now ASSERTS one, over the whole population, exactly.</para></summary>
+        internal const bool StampComposedRefusal = true;
+
+        /// <summary>The Blocked control's stamped literal reason for a refused COMBINATION — cause
+        /// and remedy, per §3.3's own row and S73-am4/am5. Composed here because the model emits
+        /// parts and never English; `TicketRefusedException`'s message is a developer courtesy and
+        /// says so itself.
+        ///
+        /// <para><b>The cause is N-VALUED and the forms are AUTHORED, not templated.</b> S73-am5:
+        /// "two authored forms chosen by arity, never one template with a substituted word." Three
+        /// legs can be jointly impossible with every pair among them fine, so "cannot both win" is
+        /// not merely awkward at three — it is false. The two-leg and three-or-more sentences are
+        /// written out separately below rather than switching a word inside one string.</para>
+        ///
+        /// <para><b>A duplicate and an impossibility take ONE treatment and TWO causes.</b> §3.3
+        /// requires a *literal* reason, and one sentence vague enough to cover both is exactly what
+        /// that word exists to prevent.</para>
+        ///
+        /// <para><b>The remedy is CONJUNCTIVE and spends the WHOLE set.</b> Remedies of up to three
+        /// legs occur at the shipped κ across 645 refusals; dropping one element of a three-leg
+        /// remedy leaves the slip refused, so a menu-shaped remedy would fail when followed — and
+        /// S73-am4 requires a *verified* one. Every one of those 645 remedies placed successfully
+        /// after being spent, so "TO PLACE" is a guarantee rather than a hope.</para>
+        ///
+        /// <para><b>NO LEG IS NAMED HERE (S77, 2026-08-14).</b> The first build of this named them,
+        /// and it overflowed: three names inside a 296×44 control is unbounded in the worst case and
+        /// the instruction is not. The DD ruled neither sizing nor shortening — the names do not
+        /// belong in the stamp at all. **The stamp states the act and its arity; the legs it refers
+        /// to are MARKED on their own rows in the flow directly above.** That is T69/T70's principle
+        /// one control over: the subject is already on screen, so do not reprint it, and pointing at
+        /// a referent serves the no-translation goal better than matching strings does.
+        ///
+        /// The check that makes it safe, and it passes: the flow is bounded by MaxLegs = 4 in a 370px
+        /// region and does not scroll, so every marked row is on screen whenever the stamp is. It
+        /// also dissolves the leg-name disjunction this lane reported — "TUSCALOOSA LONGHAULERS OR
+        /// DRAW" cannot read as a menu inside a remedy that never says it.</para>
+        ///
+        /// <para><b>Removal order never reaches the player</b> (S73-am5). High-to-low is an
+        /// implementation constraint of the caller, not part of the instruction.</para></summary>
+        internal static string RefusalCause(TicketRefusal refusal)
+        {
+            int n = refusal.CauseLegs.Count;
+            switch (refusal.Kind)
+            {
+                // AUTHORED PER ARITY, not one template with a numeral pushed into it. MaxLegs = 4
+                // bounds the domain at two, three and four, so every form can be written out — which
+                // is what makes S73-am5's "never one template with a substituted word" satisfiable
+                // rather than merely aspired to. The both/all split is the load-bearing one: at three
+                // legs the claim changes, since no pair among them need conflict.
+                case RefusalKind.ImpossibleCombination when n <= 2: return "THESE TWO CANNOT BOTH WIN.";
+                case RefusalKind.ImpossibleCombination when n == 3: return "THESE THREE CANNOT ALL WIN.";
+                case RefusalKind.ImpossibleCombination: return "THESE FOUR CANNOT ALL WIN.";
+
+                // A duplicate is NOT an impossibility and takes its own cause (§3.3 wants a literal
+                // reason; one sentence covering both is what that word exists to prevent). The repeat
+                // can win — it adds no risk while costing a full extra leg of margin.
+                case RefusalKind.DuplicateSelection when n <= 2: return "THIS PICK IS HERE TWICE.";
+                case RefusalKind.DuplicateSelection when n == 3: return "THIS PICK IS HERE THREE TIMES.";
+                case RefusalKind.DuplicateSelection: return "THIS PICK IS HERE FOUR TIMES.";
+
+                // The third cause. Sub-evens is about the PRICE and not about any leg — which is why
+                // its CauseLegs names every leg: no proper subset prices any worse. No arity, because
+                // the arity is not what is wrong.
+                case RefusalKind.SubEvens: return "THIS PAYS LESS THAN IT COSTS.";
+                default: return "THIS COMBINATION IS REFUSED.";
+            }
+        }
+
+        /// <summary>The remedy half — the ACT and its ARITY, pointing at marks rather than naming
+        /// legs (S77). The verb is the surface's own: the control on each row says `RUB OUT`, so the
+        /// instruction and the thing that performs it are the same word.</summary>
+        internal static string RefusalRemedy(TicketRefusal refusal)
+        {
+            switch (refusal.RemedyLegs.Count)
+            {
+                case 0: return "NO RUB OUT FIXES THIS SLIP.";
+                case 1: return "RUB OUT THE MARKED LEG TO PLACE.";
+                // Conjunctive and arity-keyed. "BOTH" and "ALL THREE" are the whole set by
+                // construction — there is no reading of either that spends less than all of it.
+                // The plurals say MARKS rather than MARKED LEGS to hold the ≥13px line inside 288px:
+                // S77's own order puts "a shorter authored form" first and geometry last, and the
+                // longer plural forms measured 304px in a 288px box.
+                case 2: return "RUB OUT BOTH MARKS TO PLACE.";
+                default: return "RUB OUT ALL THREE MARKS TO PLACE.";
+            }
+        }
+
+        internal static string MarginLegSubject(Matchup matchup, MarketSelection selection)
+        {
+            MatchModel.MarketFields fields = MatchModel.Fields(matchup, selection);
+            string away = LaptopUi.TeamShort(matchup.Away);
+            string home = LaptopUi.TeamShort(matchup.Home);
+            bool subjectIsHome = fields.Subject == matchup.Home.Name;
+            bool subjectIsAway = !subjectIsHome && fields.Subject == matchup.Away.Name;
+            string subjectRaw = subjectIsHome ? home : subjectIsAway ? away : fields.Subject;
+            return string.IsNullOrEmpty(subjectRaw) ? fields.Line : subjectRaw;
+        }
+
         internal static string CompactLegLabel(Matchup matchup, MarketSelection selection)
         {
             MatchModel.MarketFields fields = MatchModel.Fields(matchup, selection);
@@ -2259,6 +2506,15 @@ namespace SBR.Game
                 // the total, and its own cell carries the absence (BuildLedgerTicket).
                 else if (ticket.State == TicketState.CashedOut && ticket.CashedOutFor.HasValue)
                     knownReturned += ticket.CashedOutFor.Value;
+                // VOID (F_0.6.0 step 5): the returned stake joins the sum, by S41's own test — it is
+                // a KNOWN return, and only genuinely unknowable amounts contribute nothing.
+                //
+                // This is the money half of the void arm and it was the worst of the three: the
+                // stake already counted in `settledStake` above while the refund counted nowhere, so
+                // a refunded ticket read on the totals row as a ticket the player had simply lost.
+                // The record's own cell was merely wrong; this line was wrong ABOUT MONEY.
+                else if (ticket.State == TicketState.Voided)
+                    knownReturned += ticket.Stake;
             }
             LaptopUi.FinishScrollBody(scrollHost, scrollRect, content, -y, ledgerViewportHeight);
             if (settled.Count == 0)
@@ -2454,6 +2710,53 @@ namespace SBR.Game
             : leg.RescuedWon || leg.State == LegState.Won ? "WON"
             : leg.State == LegState.Lost ? "LOST" : "PENDING";
 
+        /// <summary>The SETTLED record's terminal word, over the engine's own <see cref="TicketState"/>
+        /// — not <see cref="SportsbookApp.TicketStateWord"/>, which reads the TV's revealed mirror
+        /// and owns RIDING.
+        ///
+        /// <para><b>VOID is the arm this exists to close (F_0.6.0 step 5).</b> Every branch here used
+        /// to fall through to "OPEN", so a ticket that had settled and been refunded printed as though
+        /// it were still live. A voided ticket reaches this list — the ledger collects on
+        /// <c>State != Open</c> — so that was rendered, not unreachable.</para>
+        ///
+        /// <para>The word is VOID and is not invented here twice: C47 rules that a market returning
+        /// the stake "is a VOID, which the enum already carries", and <see cref="LegStateWord"/>
+        /// already prints exactly that for a voided LEG. A ticket takes its legs' vocabulary.</para>
+        ///
+        /// <para>Factored out for S43's reason, which applies here more strongly than it did there:
+        /// "the render path must handle it rather than treat it as dead code". Nothing in this engine
+        /// drives a laptop ticket to Voided without a same-match slip, so the branch is reachable by
+        /// test long before it is reachable by play.</para></summary>
+        internal static string LedgerTicketStateWord(TicketState state) => state == TicketState.Won ? "WON"
+            : state == TicketState.Lost ? "LOST"
+            : state == TicketState.CashedOut ? "CASHED OUT"
+            : state == TicketState.Voided ? "VOID" : "OPEN";
+
+        /// <summary>The record's terminal ink. Factored alongside the word for the same reason S65
+        /// factored <see cref="SportsbookApp.LegStateInk"/>: an inline ternary whose final `else`
+        /// covers two states cannot state which of them it meant, and that is exactly how PENDING
+        /// once shipped wearing VOID's tone.
+        ///
+        /// <para><b>VOID's toner-2 is one of S76's binding negatives, not a fallthrough.</b> The DD
+        /// ruled VOID a third TERMINAL STATE rather than a third result (batch 67, approved by
+        /// Allen): it is never drained to DEAD's `.55` and never takes DEAD's own toner-3. Wax is
+        /// refused for the opposite reason — wax is money the player CAME AWAY WITH, and a refund is
+        /// being made whole, not coming out ahead. Toner-2 is the weight of a fact that is neither.
+        /// </para></summary>
+        internal static Color LedgerTicketStateInk(TicketState state) =>
+            state == TicketState.Won || state == TicketState.CashedOut ? LaptopOs.MoneyGold
+            : state == TicketState.Lost ? LaptopOs.Muted
+            : LaptopOs.TonerSecondary;
+
+        /// <summary>Whether the record wears the oxide strike drawn ACROSS its word.
+        ///
+        /// <para><b>S76's other binding negative: a VOID never takes it.</b> The strike is what DEAD
+        /// means here — S15 put the oxide in the strike alone and never in a glyph fill — and a void
+        /// is not a loss. Written as its own predicate rather than an inline `== Lost` so the rule
+        /// has something to be asserted against, and so a later state cannot be added to the strike
+        /// by widening a condition nobody re-read.</para></summary>
+        internal static bool LedgerShowsDeadStrike(TicketState state) => state == TicketState.Lost;
+
         // S27: every scrolling body reserves the rail's own 4px on the right, whether or not the
         // rail ends up drawn (LaptopUi.RailReserve) — settled-ticket rows now live inside one
         // (OldSlipsApp.Render), so their own full-width elements (the row panel, and every
@@ -2472,9 +2775,7 @@ namespace SBR.Game
             // specifically: this list spans rounds, so it is what makes two rows tell themselves
             // apart, and it is read from the TICKET's round rather than the screen's current one.
             string identity = LaptopUi.TicketIdentity(ticket.Id, round, index, withRound: true);
-            string state = ticket.State == TicketState.Won ? "WON"
-                : ticket.State == TicketState.Lost ? "LOST"
-                : ticket.State == TicketState.CashedOut ? "CASHED OUT" : "OPEN";
+            string state = LedgerTicketStateWord(ticket.State);
             // S41: S36's designed absence expires here. Engine retention landed (`9e55d0d`, on this
             // tree since the merge), so `Ticket.CashedOutFor` carries the figure and it PRINTS —
             // never the em dash that stood in for it, and never the fabricated $0 that S36 refused.
@@ -2482,8 +2783,24 @@ namespace SBR.Game
             // The em dash survives for exactly one case: a record whose amount is genuinely
             // unknowable (`CashedOutFor` null). That is still an absence and still prints honest.
             // S41 puts it in the record's own cell and nowhere else — see the RETURNED total.
+            //
+            // VOID (F_0.6.0 step 5): the stake, printed. This case used to reach the em dash, and the
+            // dash was the wrong token for it in S41's own terms — the dash means an amount that is
+            // GENUINELY UNKNOWABLE, and a voided ticket's return is exactly known. The engine states
+            // it outright: a ticket that voids in full "returns the stake unconditionally" and has a
+            // PotentialPayout of zero (Domain.cs, VoidedInFull). So the stake is read here, never
+            // PotentialPayout, which would print $0 for a ticket that cost the player nothing.
+            //
+            // The DD put this more strongly than I had (batch 67, approved by Allen): **S41 EXPIRED
+            // the em dash here** — the VOID row is "the word + the stake printed as a KNOWN sum",
+            // and the dash is a binding negative, not a case I happened to reassign. I had written
+            // that S41 was "kept, not spent"; the ruling is that for this row it is spent.
+            //
+            // The dash still prints for the cash-out whose retained figure is genuinely unknown.
+            // That case was not before the DD and is left exactly as S41 left it.
             string returnedValue = ticket.State == TicketState.Won ? LaptopUi.Money(ticket.PotentialPayout)
                 : ticket.State == TicketState.Lost ? LaptopUi.Money(0)
+                : ticket.State == TicketState.Voided ? LaptopUi.Money(ticket.Stake)
                 : ticket.State == TicketState.CashedOut && ticket.CashedOutFor.HasValue
                     ? LaptopUi.Money(ticket.CashedOutFor.Value)
                     : "—";
@@ -2499,10 +2816,18 @@ namespace SBR.Game
             // every cashed-out row. A retained cash-out amount is money the player actually got
             // back, so it takes wax with its word, exactly as WON's payout does. Only the
             // unknowable case still recedes to toner-3 — the absence dims, the fact does not.
-            Color stateColor = ticket.State == TicketState.Won || ticket.State == TicketState.CashedOut
-                ? LaptopOs.MoneyGold
-                : ticket.State == TicketState.Lost ? LaptopOs.Muted : LaptopOs.TonerSecondary;
-            bool lost = ticket.State == TicketState.Lost;
+            // VOID takes --toner-2 for BOTH cells, and takes it deliberately rather than by falling
+            // through to it. Two rulings meet here and agree:
+            //  · S65 already ruled a VOID leg stays --toner-2 and must not be dragged down with
+            //    PENDING. A voided ticket is the same fact at ticket scale, so it reads the same.
+            //  · it is not wax. Wax is money the player CAME AWAY WITH — S41 gave it to a retained
+            //    cash-out on exactly that ground. A refund is not a winning: C47 and the engine both
+            //    call a void neither a win nor a loss, and paying it in wax would stage being made
+            //    whole as though it were coming out ahead.
+            // Nor does it dim to --toner-3: a returned stake is a fact, and S41's line is that the
+            // absence dims, the fact does not. Same weight as its word, which is what toner-2 is.
+            Color stateColor = LedgerTicketStateInk(ticket.State);
+            bool lost = LedgerShowsDeadStrike(ticket.State);
             bool unknowableReturn =
                 ticket.State == TicketState.CashedOut && !ticket.CashedOutFor.HasValue;
             Color returnedColor = lost || unknowableReturn ? LaptopOs.Muted : stateColor;

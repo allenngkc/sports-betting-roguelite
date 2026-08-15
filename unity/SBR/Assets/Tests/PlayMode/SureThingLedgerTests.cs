@@ -15,6 +15,85 @@ namespace SBR.Tests.PlayMode
 {
     public class SureThingLedgerTests
     {
+        /// <summary>The void arm's contract (F_0.6.0 step 5). The ledger's terminal word used to be
+        /// an inline ternary whose final `else` returned "OPEN", so <c>TicketState.Voided</c> — a
+        /// settled, refunded ticket — printed as though it were still live. It reached this list;
+        /// the ledger collects on <c>State != Open</c>.
+        ///
+        /// <para>Driven over <c>Enum.GetValues</c> rather than spot-checking VOID, because the defect
+        /// was never about VOID specifically: it was a fallthrough that would swallow any state added
+        /// after the branch was written. A sixth member gets the same failure this one did.</para></summary>
+        [Test, Order(0)]
+        public void Ledger_terminal_word_names_every_settled_state_and_only_Open_says_OPEN()
+        {
+            foreach (TicketState state in Enum.GetValues(typeof(TicketState)))
+            {
+                string word = OldSlipsApp.LedgerTicketStateWord(state);
+                Assert.IsNotEmpty(word, $"{state} must have a word");
+                if (state != TicketState.Open)
+                    Assert.AreNotEqual("OPEN", word,
+                        $"{state} is a SETTLED state and must not print OPEN — that is the "
+                        + "fallthrough the void arm closed, and it reads as still-live to the player");
+            }
+
+            Assert.AreEqual("VOID", OldSlipsApp.LedgerTicketStateWord(TicketState.Voided),
+                "C47: a market that returns the stake is a VOID, and LegStateWord already prints "
+                + "exactly that for a voided leg — a ticket takes its legs' vocabulary");
+            Assert.AreEqual("OPEN", OldSlipsApp.LedgerTicketStateWord(TicketState.Open));
+            Assert.AreEqual("WON", OldSlipsApp.LedgerTicketStateWord(TicketState.Won));
+            Assert.AreEqual("LOST", OldSlipsApp.LedgerTicketStateWord(TicketState.Lost));
+            Assert.AreEqual("CASHED OUT", OldSlipsApp.LedgerTicketStateWord(TicketState.CashedOut));
+
+            // S23's separation, extended to this function: RIDING is the TV mirror's word for a live
+            // ticket and this list holds none, so it must never appear here whatever the state.
+            foreach (TicketState state in Enum.GetValues(typeof(TicketState)))
+                Assert.AreNotEqual("RIDING", OldSlipsApp.LedgerTicketStateWord(state),
+                    $"the settled ledger must never say RIDING (checked for {state})");
+        }
+
+        /// <summary>S76's binding negatives (DD batch 67, approved by Allen). VOID is a third
+        /// TERMINAL STATE, not a third result — so it must not borrow DEAD's treatment in either
+        /// channel, and it must not borrow WON's either.
+        ///
+        /// <para>Asserted against predicates rather than a rendered row because a Voided ticket
+        /// cannot be constructed from this assembly; the predicates are what the row reads, so the
+        /// rule has something to fail against either way.</para></summary>
+        [Test, Order(0)]
+        public void Void_takes_neither_the_oxide_strike_nor_DEADs_ink_nor_WONs_wax()
+        {
+            Assert.IsFalse(OldSlipsApp.LedgerShowsDeadStrike(TicketState.Voided),
+                "S76: never the oxide strike. The strike is what DEAD means on this row (S15 put the "
+                + "oxide in the strike alone) and a void is not a loss");
+            Assert.IsTrue(OldSlipsApp.LedgerShowsDeadStrike(TicketState.Lost),
+                "the strike must still mark the state it belongs to, or the negative above is vacuous");
+            foreach (TicketState state in Enum.GetValues(typeof(TicketState)))
+                if (state != TicketState.Lost)
+                    Assert.IsFalse(OldSlipsApp.LedgerShowsDeadStrike(state),
+                        $"only LOST wears the strike (checked for {state})");
+
+            Assert.AreEqual(LaptopOs.TonerSecondary, OldSlipsApp.LedgerTicketStateInk(TicketState.Voided),
+                "S76: VOID is --toner-2, the weight of a fact that is neither a win nor a loss");
+            Assert.AreNotEqual(LaptopOs.Muted, OldSlipsApp.LedgerTicketStateInk(TicketState.Voided),
+                "S76: never drained to DEAD's tone — a void is a terminal state, not a losing one");
+            Assert.AreNotEqual(LaptopOs.MoneyGold, OldSlipsApp.LedgerTicketStateInk(TicketState.Voided),
+                "and never wax: wax is money the player CAME AWAY WITH, and a refund is being made "
+                + "whole rather than coming out ahead");
+
+            // The alpha channel carries the other half of "never drained to DEAD's .55" — LaptopOs.Dim
+            // is that value, and nothing on this row may hand it to a void.
+            Assert.AreEqual(1f, OldSlipsApp.LedgerTicketStateInk(TicketState.Voided).a, 0.001f,
+                "S76: a VOID is not dimmed — LaptopOs.Dim's .55 is DEAD's, and it stays DEAD's");
+        }
+
+        // WHAT THIS GATE CANNOT SEE (T53): the RETURNED cell and the RETURNED total for a voided
+        // ticket. Both were changed with the word — the cell prints the stake instead of S41's em
+        // dash, and the total adds that stake, which it previously omitted while still counting the
+        // stake in STAKE, so a refunded ticket read on the totals row as one the player had lost.
+        // Neither is asserted here because a Voided ticket cannot be constructed from this assembly:
+        // `Ticket.State` is `internal set`, and the only path that reaches Voided is a same-match
+        // ticket whose survivors re-price at or below evens — which needs the leg-addressed slip that
+        // arrives with sgp's model. Covered when that lands, not claimed before it.
+
         [UnityTest, Order(1)]
         public IEnumerator Ledger_is_empty_until_a_truthful_current_run_ticket_settles()
         {
