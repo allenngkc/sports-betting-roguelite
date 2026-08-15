@@ -826,17 +826,38 @@ Constraints, all of them load-bearing:
   transition, and pending-window timer all hold. Closing the panel resumes from that state with no
   catch-up. The player can never miss a payoff by reading their stats, and the panel cannot be used
   to buy thinking time on a cash-out decision, because the offer is frozen too.
-- **Cash-out interaction.** While the panel is open, the cash-out offer keeps moving. The panel may
-  not obscure the cash-out state, and the input contract must not repeat `TVS-H01`: the key that
-  opens and closes this panel must not be swallowed by, or swallow, the cash-out or stand controls.
+- **Cash-out interaction.** The panel may not obscure the cash-out state, and the input contract must
+  not repeat `TVS-H01`: the key that opens and closes this panel must not be swallowed by, or
+  swallow, the cash-out or stand controls.
+
+  **STRUCK (Allen, 2026-08-15): "While the panel is open, the cash-out offer keeps moving."** It
+  contradicted the freeze constraint directly above it, which says in terms that the panel *cannot be
+  used to buy thinking time on a cash-out decision, **because the offer is frozen too***. Both could
+  not stand. **TIME STOPS — the freeze clause is the one ruled, dated and attributed (Allen,
+  2026-07-25), and it governs: opening the panel freezes the cash-out offer with everything else.**
+  The struck sentence carried no attribution and is dead. *Recorded rather than deleted silently: a
+  build reading only the surviving text would never learn that the other reading was considered and
+  refused.*
 - **Formation display** overlaps §7.7's backed-player locator. One identity model serves both; the
   panel's formation view and the stage's numbered dot must agree.
 
-**Still open — one ruling needed before Phase 3:** is the panel available during a
-pending-intervention window, or suppressed there? The freeze ruling above makes availability
-defensible, since opening it cannot run down the intervention timer. Recommendation: allow it, and
-keep the intervention overlay visible on top of the panel so the player never loses the choice they
-are being asked to make.
+**RULED (Allen, 2026-08-15) — the panel CAN open during a pending-intervention window.** The
+collision is **allowed**, and the UI carries the cost rather than the player: **the intervention
+overlay stays on top of the panel, and the pending decision is never out of sight.** The
+recommendation this line used to carry is now the ruling.
+
+*(The question it answered, kept because it is the reason the constraint above exists: is the panel
+available during a pending-intervention window, or suppressed there? Availability was defensible
+because the freeze means opening it cannot run down the intervention timer.)*
+
+**RULED (Allen, 2026-08-15) — the tab SHIPS WITH THREE ROWS.** Corners per team, cards per team, and
+the revealed match state are sourced today and ship now. **Formation and player stats do not ship and
+are not stubbed** — the engine has no formation concept and `Player` carries only
+`Name`/`Role`/`ScoringWeight`, where `ScoringWeight` is hidden generator truth and therefore the very
+leak this section calls blocker-class. They follow when the engine exposes them, and **commissioning
+that is the orchestrator's to route** — this phase does not wait on it. *A `—` placeholder was
+deliberately NOT used for those two: this section's `—` means "revealed later", and a dash for a fact
+the engine cannot ever produce would promise a row that is not coming.*
 
 ### 8.10 Held cash-out preview (Allen, 2026-07-26)
 
