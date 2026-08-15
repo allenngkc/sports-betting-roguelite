@@ -99,6 +99,44 @@ resolve failed (`IPC stream failed to read`) because a stale `Temp/UnityLockfile
 killed editor. No compile error, nothing to do with the change. Clearing the stale lockfile with no
 Unity process alive fixed it on the retry.
 
+### Unit 2 — survey done. The plan's open risk is CONFIRMED, and it is bigger than the model
+
+The step-5 plan flags: *"The interaction model may reach past the slip. If the board also assumes
+one selection per match, P1 grows. Not yet surveyed."* **It does.** Seven sites, four shapes, all
+confined to `SportsbookApp.cs` — no other surface calls the matchup-keyed accessors.
+
+1. **Marked-state is asked in the singular** — `SelectionOn(matchup.Index)` at `:243`, `:244`
+   (lobby moneyline pair) and `:685` (detail offer rows). It asks *what is the pick on this match*.
+   With two legs on one match, at most one can ever draw as marked.
+2. **The interaction replaces** — `Toggle(matchup.Index, …)` at `:271`, `:275`, `:760`.
+3. **RUB OUT addresses a matchup, not a leg** — `Remove(matchupIndex)` at `:968`. With two legs on
+   one match it cannot remove one of them. (The plan predicted this for the model; the margin calls
+   it too.)
+4. **The rule is DRAWN, and becomes a lie** — `:687` computes a `replacement` state and `:745`/
+   `:761-768` render it as a `⇄` glyph prefixed to the price plus a 2px underline, on every *other*
+   offer in a match once one is picked. That affordance tells the player the second pick will
+   replace the first. Once same-match tickets exist it is false, and it is copy, not plumbing.
+
+So the screen half of P1 is real work and it is **blocked on sgp's model P1** — it cannot be
+written until the model addresses legs rather than matchups. Sequencing through the orchestrator.
+
+### Unit 2 — the void arm (P6) is the one screen phase that is NOT blocked
+
+`TicketState.Voided` appears on **no surface at all** — every render site is a Won/Lost/CashedOut
+chain with a fallback else. It needs nothing from `BetslipModel`, and sgp's void re-pricing already
+landed, so this is startable now. It is also not merely missing; the fall-through prints two
+falsehoods in the ledger (`:2475-2489`):
+
+- the state word falls to **`"OPEN"`** — a settled, refunded ticket reads as still live;
+- the returned value falls to **`"—"`**, which S41 reserves for an amount that is *genuinely
+  unknowable*. A voided ticket's return is exactly known: the stake. So the dash is false here and
+  it spends a ruled token on the wrong case.
+
+A voided ticket does reach the ledger — `:2197`/`:2201` collect on `State != Open` — so this is
+rendered today, not merely unreachable.
+
+**Starting here** while P1's screen half waits on the model.
+
 ### Design-facing, routed, NOT self-ruled
 
 S51's expiry condition is met — its owner is identified. The 4.00px is a real excursion past T47's
