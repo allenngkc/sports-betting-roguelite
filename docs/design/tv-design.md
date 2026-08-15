@@ -669,6 +669,21 @@ that simply yields to the grade yields before it is ever seen.
 shared slot must say which yields and for how long** — this section did not, and that is why the
 first build of it could not be verified.
 
+**ALL THREE DESIGN-VERIFIED 2026-08-15 (batch 70)** on the reshot 128-frame set, measured at the DD
+seat: `THE MATCH ENDS LEVEL` holds frames **000–050** and `LEG 1 — WON` lands at **051** — 1.02
+sim-seconds, matching `drawnEndingHoldDuration`; **no goal sentence in any of the 128 frames**; and
+the mid-match shot carries the live **NEED** `LEVEL AT FULL TIME` over **`LEVEL`** on a `0 — 0` at
+`30'`.
+
+**Three defects in this one slot have now had three different mechanisms, and they are stated together
+because each has its own remedy:**
+
+1. **A beat's TYPE does not license its words** (T97) — remedy is the guard.
+2. **A beat's STAGED intent is not its RESOLVED content** — the guard's first build gated on
+   `spec.Goal.HasValue` (what the scene staged) where the law says *contains*; it now gates on
+   `Commits`. **The law's wording is what caught it.**
+3. **A beat's CUE is not its COPY** (T98) — a tag may drive timing and staging without earning a word.
+
 ---
 
 ## 7. Motion
@@ -747,6 +762,17 @@ is an offer** — the house stands behind it and the player transacts against it
 house's opinion**, with nothing attached: he can take or leave a price, but he can only agree or
 disagree with an opinion, and this surface does not ask him to. That is why the win-probability
 numeral, the backed-player numeral and the 10px numeral all went, and it is one rule rather than three
+
+**And it reaches the probability's WORDS, not only its digits** (T98, 2026-08-15). `— LEAD CHANGE` was
+appended to any line on `TensionTag.LeadChange`, which `DramaGenerator.cs:116` sets on the win
+probability **crossing 0.5** — not on the scoreline. **The event is real; the word is the deleted
+numeral's MEANING without its digits**, and on a 0–0 it also reads as a scoreline event the match
+never had. **The word comes off; the TAG stays** — it drives staging and pacing, and **a tag may drive
+timing without earning a word.** **Nothing he can act on is lost:** the cash-out price already prices
+off `WinProbAfter`, **so the crossing is visible as the offer moving through its own midpoint — the
+offer is this surface's permitted expression of a probability.** If a SCORELINE lead change ever earns
+a word it is licensed by the scoreline and takes its own tag; it likely never needs one, since the
+scorebug already changes on a single frame (T38)
 deletions that happened to rhyme. **Where a decision needs a basis, print the COST** — `SEND TO
 REVIEW — $40` is a decision; `SEND TO REVIEW (99%)` is an instruction wearing a number.
 
