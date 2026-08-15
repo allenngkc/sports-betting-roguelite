@@ -11,6 +11,86 @@ discarded.
 
 ---
 
+## 0-B68. THE DRAW'S ROW, THE STRIP'S GOAL GUARD, THE DRAWN MATCH'S LINE — all three verified in one set · 2026-08-14
+
+**Branch `1be8140`, pushed and remote-verified. Tree clean, Unity zero.** Batch 68's three rulings are
+built and shot; the set is docked and **awaiting the DD's acceptance list**, which it applies to the
+frames directly. A supplemental shot comes back here only if a criterion needs one.
+
+| suite | discovered | executed | passed | failed | skipped |
+|---|---|---|---|---|---|
+| EditMode | 254 | 254 | 253 | 0 | 1 ignored — G1's grant, held |
+| PlayMode | 95 | 95 | 88 | 0 | 7 by-design (the goalless capture joined them) |
+
+**The laptop margin pin inherited from main is GREEN again** — the surething-ui lane's work on its
+window, **not this lane's**. §0-DR's inherited-failure row is closed by them, not by us.
+
+### Three rulings, two touches, one capture — Passed, 120 frames, all at `MALLARDS 0 — MIDDLEMEN 0` `FT`
+
+**T96 — the draw is its OWN row.** Compact `DRAW`; live NEED `LEVEL AT FULL TIME` over
+`LEVEL`/`NOT LEVEL`, with `LEVEL AT FT` as the authored shorter line. `Identity` is the MARKET PICK,
+not a team — **a draw ticket has no backed side**, which is what let both tickets print `MIDDLEMEN ML`
+with opposite grades.
+
+> **A COPY RULING LANDS IN THE DECK OR IT HAS NOT LANDED** (the DD's own, and the reusable half). S74
+> authored the draw's forms, the owning doc carried them, and the build still shipped a defect —
+> because the deck sat between the doc and the build and nobody amended it. **The build was faithful
+> to the artifact it was told to read.**
+
+**T97 — the second instance of one law**, built as the guard that already existed one market family
+over: **a beat's WORDS are licensed by what the RESOLVED SCENE CONTAINS, never by the beat's TYPE
+LABEL alone.** The count families got this at F_0.4.0 P3 r2; the goal families never did, so a beat
+typed `Score` or `BigPlay` printed a goal sentence whether or not a goal was staged. `NearMiss` is
+excluded because its overrides were already right — they assert no goal and are used exactly where
+none occurred, which is the model this copies.
+
+**T87-am — `THE MATCH ENDS LEVEL`** at the whistle of a drawn match. A decided match ends ON a goal so
+its final beat's line IS its ending; **a drawn match ends on nothing**, so the last line is stale by
+construction. Read from the **revealed ledger**, never the locked `StatLine` — at the whistle they
+agree, which is why the honest source costs nothing.
+
+### THE SWEEP, and it is encoded as DATA rather than left in prose
+
+All twelve strings of the four goal-asserting arrays. **Nine assert a goal; three assert only a
+dangerous move** — matching the DD's own enumeration.
+
+| array | asserts a goal | danger only |
+|---|---|---|
+| `ScoreUp` | **3/3** | — |
+| `ScoreDown` | **3/3** — incl. `on the board`, the line that shipped over the 0–0 | — |
+| `BigUp` | **2/3** — *…and finish*, *…and score* | *counter at full sprint* |
+| `BigDown` | **1/3** — *walk it in* | *go the length of the pitch*, *rip through on the break* |
+
+Recorded in code as `BigUpAssertsGoal` / `BigDownAssertsGoal`. **The three danger-only lines stay
+REACHABLE** — the ruling's scope is "the parts that finish", and a big play that did not finish is
+still a big play. **Kept as a parallel table rather than by reordering**, because a line is chosen
+positionally by step and reordering would silently change which sentence an existing seed prints.
+
+**Diagnosed as asked: a FRESH MIS-SELECTION, not a stale carry.** The line is chosen per beat from the
+type's own array; nothing cached it.
+
+### A THIRD FIXED-WINDOW TRAP — this time in a TEST, not an instrument
+
+`T69_the_row_statement_is_re_authored_against_its_column` scanned `Substring(at, 2200)`. T96's draw row
+added a dozen lines to `LegStatement` and pushed `{club} ML` past 2200, so **the assertion failed while
+the string it asserts sat exactly where it belongs.**
+
+> **A scan that stops covering its target reports the absence of its own window as a defect in the
+> code.** Re-pointed at the method's next sibling — a real end marker, never a character count. Third
+> instance in this lane; the rule has earned its place.
+
+### OPEN — unchanged, none of it this lane's to start
+
+| item | state |
+|---|---|
+| The docked 0–0 set | with the DD, acceptance list applied to the frames directly |
+| **The board's DRAW row** (S74-am) | HELD for Allen's word |
+| **T94** — column and scorebug describing different legs | HELD for the DD's read |
+| **`RiskPays`' fact floor** — 378.1 vs a LOCKED 249.0 column | **Allen's item** (exceeds a locked dimension) |
+| `CashOut`'s `MARKET SUSPENDED`, 26.7px | T74's table |
+
+---
+
 ## 0-DR. POST-PHASE: main merged · the draw arm fixed · THE 0–0 SET SHOT AND DOCKED · 2026-08-14
 
 **Branch `b3b5820`, pushed and remote-verified. Tree clean. Unity ZERO — and the editor window is
