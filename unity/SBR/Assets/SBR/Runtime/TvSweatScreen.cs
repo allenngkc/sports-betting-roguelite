@@ -262,6 +262,20 @@ namespace SBR.Game
         [Tooltip("Silence after a dead ticket dims before the consolation line speaks.")]
         public float ticketDeadSilenceDuration = 0.8f;
         public float ticketDeadConsolationDuration = 1.0f;
+
+        /// <summary>T87-am2: the MINIMUM HOLD the drawn match's closing line takes before the leg's
+        /// grade may displace it.
+        ///
+        /// <para>Batch 68 ruled the line *"holds until the leg's own grade displaces it"* and that
+        /// assumed a window exists. On a won draw-backer it does not — the match's ending and the
+        /// leg's resolution are the SAME INSTANT, so a line that yields to the grade yields before it
+        /// is ever seen. `scene001` had `LEG 1 — WON` up at frame 000, the whistle itself.</para>
+        ///
+        /// <para>MATCHED to <see cref="ticketDeadConsolationDuration"/> rather than invented, on the
+        /// ruling's own instruction: it is the same kind of thing — a statement the player must read
+        /// before the beat moves on — and `scene002` already carried 0.62 sim-seconds of dead window
+        /// by accident. This makes the gap explicit and gives it a floor.</para></summary>
+        public float drawnEndingHoldDuration = 1.0f;
         public float cashOutFloodDuration = 0.8f;
         // T40 (batch 27): `winFloodDuration` is REMOVED with the flood it timed — removed, not
         // zeroed, so a serialized value in Room.unity cannot resurrect it. WinBeat's own pacing is
@@ -1512,6 +1526,32 @@ namespace SBR.Game
                         ? SweatFlavor.GoalLine(spec.Goal.Value.ForPicked, leg, evt.Step)
                         : SweatFlavor.NeutralLine(evt, leg, _lastBeatUp);
 
+                // T97 (batch 68) — THE SECOND INSTANCE OF ONE LAW, and the guard above is the first:
+                //
+                //   A beat's WORDS are licensed by what the RESOLVED SCENE CONTAINS, never by the
+                //   beat's TYPE LABEL alone.
+                //
+                // The count families got this guard at F_0.4.0 P3 r2 — "corner/booking words would
+                // be a lie there". The GOAL families never did, so a beat typed Score or BigPlay
+                // printed a goal sentence whether or not the scene staged a goal. On a goalless
+                // match that shipped `{other} on the board; the slip flinches.` over a 0–0 FT
+                // scorebug: the strip asserting a goal the match never contained.
+                //
+                // NearMiss is excluded because its overrides are already right — they assert no goal
+                // and are used precisely where none occurred, which is the model this copies.
+                bool goalWords = (evt.Type == DramaEventType.Score || evt.Type == DramaEventType.BigPlay)
+                    && evt.Tag != TensionTag.NearMiss;
+                // `HasValue` was the WRONG QUANTITY and the trace proved it: `T97 guard goal=True`
+                // fired on every Score beat of a match that finished 0–0. A scene STAGES a goal and
+                // then resolves it — `Commits` false is the chalk-off that prints `VAR — NO GOAL` —
+                // so `HasValue` is the beat's INTENT while `Commits` is what the scene CONTAINS.
+                // The law says the words are licensed by what the RESOLVED SCENE contains, and this
+                // is the difference between reading the law and implementing it.
+                bool goalScene = spec.Goal.HasValue && spec.Goal.Value.Commits;
+                if (goalWords && !goalScene)
+                    _pendingFlavor = SweatFlavor.NoGoalLine(evt, leg, _lastBeatUp);
+                if (goalWords) TraceFlavor($"T97 guard commits={goalScene}", _pendingFlavor);
+
                 // Market suspension is for DANGEROUS scenes only (playtest #13 — blanket
                 // suspension left almost no window to cash out): goal chances and near-misses
                 // suspend until their reveal, exactly like a real book on a dangerous attack;
@@ -1648,6 +1688,32 @@ namespace SBR.Game
             RevealedView.SetProbability(_probTarget);
             RevealedView.ResolveLeg(evt.LegIndex, grade);
             _tape?.ResolveLeg(evt.LegIndex, grade); // T16: collapses the strip to its resolution cap
+
+            // T87-am2 — THE DRAWN MATCH'S LINE, WRITTEN HERE AND HELD, and the trace is why it moved.
+            //
+            // The batch-68 build set it on the LegFinal beat's `flavor` and let RenderEvent stash it
+            // to `_pendingFlavor`. Instrumenting every strip write proved that stash IS NEVER LANDED:
+            // `RevealBeatChrome` — the only thing that lands it — lives inside TheaterBeat's
+            // `evt.Type != LegFinal` branch, so on the whistle the trace reads
+            //
+            //     RenderEvent stash LegFinal  <- 'THE MATCH ENDS LEVEL'
+            //     grade WON                   <- 'LEG 1 — WON'
+            //
+            // with no LAND between them. The line was correct, reachable and never displayed. The DD
+            // hypothesised the grade won a race; the fact is there was no race — nothing ever wrote
+            // the line to the strip at all.
+            //
+            // So it is written DIRECTLY here, ahead of the grade beats below, and HELD: the grade may
+            // not land inside the hold, and a statement replaced on its own entrance frame was never
+            // made. `_ledger` is the REVEALED score, never the locked StatLine.
+            if (_ledger.Picked == _ledger.Opponent)
+            {
+                SetEventStrip(flavorColor);
+                _tFlavor.text = "THE MATCH ENDS LEVEL";
+                TraceFlavor("T87-am2 drawn ending", _tFlavor.text);
+                _flavorScale = 1.12f;
+                yield return ScaledWait(drawnEndingHoldDuration);
+            }
 
             _resolvedThrough = evt.LegIndex + 1;
             UpdateTicketColumn(evt.LegIndex + 1);
@@ -2267,6 +2333,12 @@ namespace SBR.Game
             {
                 case MarketKind.Moneyline:
                 {
+                    // T96: a draw ticket has no backed side, so it takes the deck's own DRAW row
+                    // rather than a team's. Routed here rather than inside the describer because
+                    // this is the site that knows the selection.
+                    if (leg.Selection.Choice == MarketChoice.Draw)
+                        return SweatActiveLegModel.Describe(
+                            SweatActiveLegModel.ActiveLegInput.MoneylineDraw(_ledger.Picked, _ledger.Opponent));
                     bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
                     string team = SweatFlavor.Short(pickedHome ? leg.Matchup.Home.Name : leg.Matchup.Away.Name);
                     return SweatActiveLegModel.Describe(
@@ -2758,6 +2830,27 @@ namespace SBR.Game
                 _prevProb = leg.TrueProb; // pre-event anchor for this leg's first beat
             }
             string flavor = SweatFlavor.For(evt, leg, _prevProb);
+
+            // T87-am (batch 68) — THE DRAWN MATCH'S CLOSING LINE.
+            //
+            // A DECIDED match ends ON a goal, so its final beat's line IS its ending and the strip is
+            // already correct. A DRAWN match ends on nothing, so the last beat's line is stale by
+            // construction — there is no closing event to speak. The strip's silence at a draw is
+            // STRUCTURAL, which is why it is the only result that needs an authored ending.
+            //
+            // `FULL TIME — LEVEL` was the obvious form and is REFUSED: the scorebug prints `FT` in
+            // the clock slot directly above, so it would state one fact twice, one slot apart. The
+            // strip's job is to say what the score and clock cannot.
+            //
+            // Nothing here is 0–0-specific, deliberately: `THE MATCH ENDS LEVEL` is true at 0–0 and
+            // at 2–2, and a goalless-only line would be exactly the narrowing T87 §6.8 forbids.
+            //
+            // LEVEL is read from the REVEALED ledger, never from the locked StatLine — §4.1's rule
+            // that presentation reads revealed facts. At the whistle the two agree, which is why the
+            // honest source costs nothing here.
+            if (evt.Type == DramaEventType.LegFinal && _ledger.Picked == _ledger.Opponent)
+                flavor = "THE MATCH ENDS LEVEL";
+
             _prevProb = evt.WinProbAfter;
 
             // The stage speaks the same beat (model owns the direction rule — one authority).
@@ -2774,6 +2867,7 @@ namespace SBR.Game
                 // (RevealBeatChrome / FinalSlam), never before the pitch has shown the story.
                 _pendingProb = (float)evt.WinProbAfter;
                 _pendingFlavor = flavor;
+                TraceFlavor($"RenderEvent stash {evt.Type}", flavor);
 
                 if (evt.LegIndex != _stageLeg || _stageBeatCount != evt.TotalSteps)
                     BeginStageLeg(evt.LegIndex, leg, evt.TotalSteps);
@@ -2800,6 +2894,29 @@ namespace SBR.Game
         /// <summary>The beat's payoff moment on the stage: NOW the chrome may speak — the
         /// flavor line lands, the clock ticks, the market re-opens at the fresh price. Fired by
         /// the scene's onReveal (goal / save / scene end).</summary>
+        /// <summary>T97/T87-am2's owed diagnostic: log every write to the event strip with its CALL
+        /// SITE, so the write order across a beat is a FACT rather than a hypothesis.
+        ///
+        /// <para>The DD asked for exactly this and could not run it — *"this seat cannot execute the
+        /// code and does not claim the ordering as fact."* The strip has several writers and the
+        /// authored ones are not obviously last; two rulings landed in one slot and the frames said
+        /// the wrong writer won. Reasoning about the order was what produced a wrong hypothesis, so
+        /// this stops reasoning and records it.</para>
+        ///
+        /// <para>Off by default and set only by the capture harness, so production logs nothing.</para></summary>
+        public static bool TraceFlavorWrites;
+
+        /// <summary>PRD §9 diagnostic: the event strip's current line, so a capture frame can carry
+        /// its own strip text in the harness log. T87-am2 is verifiable only as "the line was VISIBLE,
+        /// for multiple frames, BEFORE the grade" — a claim about frames that the frames themselves
+        /// should be able to answer without a second instrument.</summary>
+        public string DebugFlavorText => _tFlavor != null ? _tFlavor.text : string.Empty;
+
+        private static void TraceFlavor(string site, string value)
+        {
+            if (TraceFlavorWrites) Debug.Log($"[FLAVOR] {site,-28} <- '{value}'");
+        }
+
         private void RevealBeatChrome()
         {
             // T16: the tape's dot lands HERE, at the beat's reveal — not at RenderEvent — so
@@ -2816,6 +2933,7 @@ namespace SBR.Game
             RevealedView.SetClock(_tClock.text);
             SetEventStrip(flavorColor);
             _tFlavor.text = _pendingFlavor;
+            TraceFlavor("RevealBeatChrome LAND", _pendingFlavor);
             _flavorScale = 1.12f;
             ReopenMarket();
         }
@@ -3098,6 +3216,19 @@ namespace SBR.Game
             switch (sel.Kind)
             {
                 case MarketKind.Moneyline:
+                    // T96 (batch 68): THE DRAW IS ITS OWN ROW, and it must never borrow a team's.
+                    //
+                    // This branch was a two-way `pickedHome ? Home : Away` because THAT IS WHAT THE
+                    // COPY DECK SAID — one Moneyline row, two-way, no draw case. The deck predates
+                    // S74's draw authoring by four days and was never amended, so a draw ticket
+                    // printed `MIDDLEMEN ML`: a team pick, on a ticket that backed neither team.
+                    // Both tickets in the goalless set printed the same string with opposite grades.
+                    //
+                    // The deck now carries the row (`DRAW`, compact; `LEVEL AT FULL TIME`, NEED), and
+                    // the build takes it from there. The reusable half: A COPY RULING LANDS IN THE
+                    // DECK OR IT HAS NOT LANDED — S74 was ruled, folded into the owning doc, and
+                    // still shipped a defect, because the deck sat between the doc and the build.
+                    if (sel.Choice == MarketChoice.Draw) return "DRAW";
                     // Clubs by their distinctive word, city dropped — the convention T69 shipped.
                     bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
                     string club = SweatFlavor.Short(
@@ -3266,6 +3397,7 @@ namespace SBR.Game
             // TV-32: em dash, the system's own dash.
             SetEventStrip(flavorColor); // raw ink — the helper applies L2, so this is not double-tiered
             _tFlavor.text = $"LEG {k} — WON";
+            TraceFlavor("grade WON", _tFlavor.text);
             // T65: the two lines that used to sit here — `EmissionFlash(gold)` and
             // `tvLight.Flash(gold, 3.0f)` — are GONE, and the comment that licensed them
             // ("those are the TV being a lit object in a room, not the canvas painting itself
@@ -3302,6 +3434,7 @@ namespace SBR.Game
             // "Loss is still darkness ... the old green/red money language stays retired").
             SetEventStrip(contextGrey); // raw ink — the helper applies L2, so this is not double-tiered
             _tFlavor.text = $"LEG {k} — DEAD"; // TV-32: em dash, the system's own dash
+            TraceFlavor("grade DEAD", _tFlavor.text);
             _emissRest = deadDark;
             EmissionFlash(deadDark);
             tvLight?.SetRest(deadDark, 0.08f);

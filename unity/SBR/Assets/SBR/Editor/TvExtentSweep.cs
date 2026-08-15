@@ -106,19 +106,19 @@ namespace SBR.EditorTools
         /// which is what a ladder-blind sweep does to every laddered arm it has. All three are
         /// transcribed from `ActiveLegCopy`'s construction sites now, not inferred.</para>
         ///
-        /// <para><b>Flagged upward, not fixed here:</b> the scorer arm's rung 2 is the BARE form
-        /// `TO SCORE`, which names no player — the same property G1-am7 just retired bare `TO WIN`
-        /// for, one arm over, and for the same reason (T94's desync). It is not a gate failure: the
-        /// gate is that the TRUNCATION BACKSTOP does not fire, and an authored fallback rendering
-        /// complete is the ladder working — T89-A's own example, `ONE TEAM BLANKED`, is exactly
-        /// that. Routed as a finding; authoring the scorer arm is the DD's and G1-am7 scoped itself
-        /// to the moneyline.</para></summary>
+        /// <para><b>The scorer arm's bare rung was routed and is now RULED (G1-am8).</b> It was
+        /// `TO SCORE`, which names no player — the property G1-am7 retired bare `TO WIN` for, and
+        /// worse here, because the backed-side marker renders only on moneyline legs so a scorer leg
+        /// has no marker at all. Rung 2 is `{SURNAME} SCORES`. **One rule across both arms: drop the
+        /// infinitive marker and conjugate to the subject** — clubs are plural and take `WIN`, a
+        /// surname is singular and takes `SCORES`.</para></summary>
         private static string LadderFallback(string slot, string s)
         {
             if (slot != "LegRowNeed0") return null;
-            if (s.EndsWith(" TO WIN")) return s.Substring(0, s.Length - 7) + " WIN";   // G1-am7
-            if (s == "ONE TEAM SCORELESS") return "ONE TEAM BLANKED";                  // G1, authored
-            if (s.EndsWith(" TO SCORE")) return "TO SCORE";                            // G1, authored
+            if (s.EndsWith(" TO WIN")) return s.Substring(0, s.Length - 7) + " WIN";       // G1-am7
+            if (s == "ONE TEAM SCORELESS") return "ONE TEAM BLANKED";                      // G1, authored
+            if (s.EndsWith(" TO SCORE")) return s.Substring(0, s.Length - 9) + " SCORES";  // G1-am8
+            if (s == "LEVEL AT FULL TIME") return "LEVEL AT FT";                           // T96, authored
             return null;
         }
 
@@ -155,7 +155,13 @@ namespace SBR.EditorTools
             // never render — the over-generation half of the traceability pass, one arm over.
             ("LegRowNeed0", "G1's NEED deck over the closed pools; the moneyline arm is a LADDER (see LadderFallback)",
                 And(From(ClubNouns, "{0} TO WIN"), From(Surnames, "{0} TO SCORE"), new[]
-                { "ONE TEAM SCORELESS", "ONE TEAM BLANKED", "BOTH TEAMS SCORE", "NOT YET", "TO SCORE" })),
+                { "ONE TEAM SCORELESS", "ONE TEAM BLANKED", "BOTH TEAMS SCORE", "NOT YET",
+                  // T96 (batch 68): the DRAW's own row, from the amended deck. `LEVEL AT FULL TIME`
+                  // is 18 chars at the NEED budget and carries `LEVEL AT FT` as its authored shorter
+                  // line — the same ladder shape as ONE TEAM SCORELESS / ONE TEAM BLANKED.
+                  "LEVEL AT FULL TIME", "LEVEL AT FT" })),
+            // `TO SCORE` is GONE from the set with G1-am8: bare is retired on the scorer arm and must
+            // not be reachable, so sweeping it would certify a string the surface may never render.
             // CORRECTED by the traceability pass, in BOTH directions. The old set was
             // {UNDER 10.5 CORNERS, UNDER 10.5 CNRS, LANYARD TO SCORE, BOTH TEAMS SCORE, MIDDLEMEN ML}.
             // Two of those — LANYARD TO SCORE and BOTH TEAMS SCORE — are forms LegStatement does NOT

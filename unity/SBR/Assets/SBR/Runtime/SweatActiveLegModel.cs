@@ -109,6 +109,13 @@ namespace SBR.Game
                 => new ActiveLegInput(MarketKind.Moneyline, MarketChoice.Home, 0.0, backedTeamName, null,
                     revealedGoalsFor, revealedGoalsAgainst, 0, 0, false);
 
+            /// <summary>T96: the DRAW is its own row and carries no backed team — the whole defect
+            /// was a draw ticket borrowing a team's string. `Choice` is what tells the describer
+            /// which row to render, so it is the one thing this factory must not default.</summary>
+            public static ActiveLegInput MoneylineDraw(int revealedGoalsFor, int revealedGoalsAgainst)
+                => new ActiveLegInput(MarketKind.Moneyline, MarketChoice.Draw, 0.0, null, null,
+                    revealedGoalsFor, revealedGoalsAgainst, 0, 0, false);
+
             public static ActiveLegInput TotalGoals(bool over, double line, int revealedGoalsFor, int revealedGoalsAgainst)
                 => new ActiveLegInput(MarketKind.TotalGoals, over ? MarketChoice.Over : MarketChoice.Under, line,
                     null, null, revealedGoalsFor, revealedGoalsAgainst, 0, 0, false);
@@ -225,8 +232,31 @@ namespace SBR.Game
             // callers read, and shortening it here would narrow a fact to solve a layout problem.
             string team = (l.BackedTeamName ?? string.Empty).ToUpperInvariant();
             string club = SweatFlavor.Short(l.BackedTeamName ?? string.Empty).ToUpperInvariant();
-            string need = $"{club} TO WIN";
             string score = $"{l.RevealedGoalsFor}{Dash}{l.RevealedGoalsAgainst}";
+
+            // T96 (batch 68): THE DRAW'S OWN ROW, from the amended deck — NEED `LEVEL AT FULL TIME`
+            // over progress `LEVEL` / `NOT LEVEL` (S74), with `LEVEL AT FT` as the authored shorter
+            // line. `FT` is this surface's own clock token rather than jargon, and the pair is the
+            // same shape as `ONE TEAM SCORELESS` / `ONE TEAM BLANKED`: an 18-char NEED at the budget,
+            // carrying a complete fallback rather than a truncation.
+            //
+            // T70-am ruled the repeated word NO BREACH: `LEVEL` above `LEVEL` is a binary state
+            // answering its own requirement in the requirement's word, which is the progress line
+            // doing its only job. T70 governs redundant IDENTIFICATION — a NAME printed twice — and
+            // forcing a different word below would put a second name on one thing, breaking the
+            // one-name-per-thing convention. The cure would be the worse defect.
+            //
+            // `Identity` is the MARKET PICK, not a team: a draw ticket has no backed side, and that
+            // is the whole finding this row exists to fix.
+            if (l.Choice == MarketChoice.Draw)
+            {
+                bool level = l.RevealedGoalsFor == l.RevealedGoalsAgainst;
+                return new ActiveLegCopy("LEVEL AT FULL TIME", level ? "LEVEL" : "NOT LEVEL",
+                                         isTeamMarket: false, identity: MarketPick,
+                                         needFallback: "LEVEL AT FT");
+            }
+
+            string need = $"{club} TO WIN";
             string live = l.RevealedGoalsFor > l.RevealedGoalsAgainst ? $"LEADING {score}"
                 : l.RevealedGoalsFor < l.RevealedGoalsAgainst ? $"TRAILING {score}"
                 : $"LEVEL {score}";
@@ -349,8 +379,29 @@ namespace SBR.Game
             // same thing. That is T69's defect (a fact named twice in one statement) reproduced
             // vertically instead of horizontally. The player is named ONCE, by NEED directly above.
             string live = l.ScorerRevealed ? "SCORED" : "NOT YET";
+            // G1-am8 (batch 63): the SAME two-rung ladder as the moneyline arm, chosen by measurement.
+            //
+            //   rung 1  `{SURNAME} TO SCORE`
+            //   rung 2  `{SURNAME} SCORES`
+            //
+            // BARE `TO SCORE` IS RETIRED and must not be reachable on a scorer leg. It named no
+            // player — the exact property G1-am7 retired bare `TO WIN` for — and it is WORSE here:
+            // the backed-side marker renders only on MONEYLINE legs, so a scorer leg has no marker at
+            // all and nothing else on the surface names the player. G1's own pair-defect ruling makes
+            // it decisive: the progress line reads `NOT YET`/`SCORED` precisely BECAUSE the surname is
+            // named once, by the NEED line above it. Retire the surname here and it is named nowhere.
+            //
+            // THE RUNG-2 RULE IS ONE RULE ACROSS BOTH ARMS: drop the infinitive marker and conjugate
+            // to the subject. Clubs are plural and take `WIN`; a surname is singular and takes
+            // `SCORES`. No new vocabulary, and it keeps the deck's terse-declarative register —
+            // subject + required state, like `ONE TEAM BLANKED`.
+            //
+            // MEASURED, all twelve surnames against 261.0: rung 2 overruns for NONE. Only
+            // `PAVEMENT TO SCORE` (264.9) falls to rung 2, and `PAVEMENT SCORES` is 238.4px with
+            // 22.6px spare. The retired bare form was 119.8px — it always fit, and fitting was never
+            // the problem with it.
             return new ActiveLegCopy(need, live, isTeamMarket: false, identity: MarketPick,
-                                     needFallback: "TO SCORE");
+                                     needFallback: $"{Surname(l.BackedPlayerName).ToUpperInvariant()} SCORES");
         }
 
         /// <summary>G1's player-naming convention: surname, uppercase. Exposed because the TV's

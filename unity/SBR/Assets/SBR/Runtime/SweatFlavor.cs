@@ -41,11 +41,27 @@ namespace SBR.Game
                 // console twin already used it, so this file was the odd one out.
                 return up ? "off the bar and away." : "…cleared off the line. it's slipping away.";
 
-            string line = Base(e.Type, up, picked, other, e.Step);
-            // T44: em dash. TV-32 set this convention and T39's scan did not carry it here — it swept
-            // for second person and hype only, so every ASCII sentence dash in this file survived it.
-            if (e.Tag == TensionTag.LeadChange) line += " — LEAD CHANGE";
-            return line;
+            // T98 (batch 70) — `— LEAD CHANGE` WAS APPENDED HERE ON TensionTag.LeadChange, AND THE
+            // WORD IS BANNED. The tag is real and this was NOT T97's law a third time:
+            // DramaGenerator assigns it on the WIN PROBABILITY crossing 0.5, never on the scoreline,
+            // so nothing phantom happened and T97's guard would have suppressed a REAL fact — the
+            // wrong remedy reached through the wrong diagnosis. It comes off because §8 stands: the
+            // theatre prints facts and offers, never opinions. A price is an offer the player
+            // transacts against; a probability is the house's opinion, and a line announcing that it
+            // crossed 50% is the deleted win-prob numeral's MEANING without its digits. The fact is
+            // not lost — the cash-out price prices off WinProbAfter, so the crossing is already
+            // visible AS AN OFFER, the price moving through its own midpoint.
+            //
+            // A TAG MAY DRIVE TIMING AND STAGING WITHOUT EARNING A WORD. The tag itself is untouched
+            // and correct at TheaterChoreographer's #9 turnover intro and TvSweatScreen's
+            // leadChangeMs; both are pinned by TheaterChoreographerTests'
+            // Overlays_modify_playback_but_never_choose_the_template. If a SCORELINE lead change is
+            // ever ruled to earn a word it takes its own tag and its own authored word, never this.
+            //
+            // ONE FIX, TWO DEFECTS: the suffix appended UPPERCASE to a sentence-case line, against
+            // §8's one casing, one dash. T44/TV-32's em-dash convention is unaffected — it is marked
+            // at the authored lines that carry a dash of their own.
+            return Base(e.Type, up, picked, other, e.Step);
         }
 
         /// <summary>The broadcast clock, soccer-shaped (F_0.2.0 M-T3): a 90-minute match clock
@@ -149,6 +165,49 @@ namespace SBR.Game
         /// <summary>Ordinary-play line for a count-market beat whose resolved scene carries no
         /// count event (a zero batch fell through) — corner/booking words would be a lie there
         /// (Sol, F_0.4.0 P3 r2). Plain possession language, direction from the beat.</summary>
+        /// <summary>T97's sweep, recorded AS DATA rather than as prose in a commit message — which
+        /// member of each big-play family ASSERTS A GOAL, and which asserts only a dangerous move.
+        ///
+        /// <para>The DD asked for the four goal-asserting arrays swept string by string. `ScoreUp`
+        /// and `ScoreDown` are goal-asserting in every member, so they have no table here: with no
+        /// goal in the resolved scene there is nothing in them that may be spoken. `BigUp` and
+        /// `BigDown` are MIXED, and the ruling's scope is "the parts of BigUp/BigDown that finish" —
+        /// so the parts that do not finish stay reachable, because they remain true of a dangerous
+        /// move that produced no goal.</para>
+        ///
+        /// <para>Kept as a parallel table rather than by reordering the arrays: the line for a step
+        /// is chosen positionally, so reordering would silently change which sentence an existing
+        /// seed prints. This encodes the audit without moving anything.</para></summary>
+        private static readonly bool[] BigUpAssertsGoal = { true, true, false };
+        private static readonly bool[] BigDownAssertsGoal = { false, false, true };
+
+        /// <summary>T97: the line for a beat whose RESOLVED SCENE CARRIES NO GOAL.
+        ///
+        /// <para>A big play that did not finish is still a big play, so it keeps its own authored
+        /// voice — the members that assert only a dangerous move. Everything else falls to the
+        /// neutral possession line, which is the remedy the ruling names and the one
+        /// <see cref="NeutralLine"/> has always provided for the count families.</para></summary>
+        public static string NoGoalLine(DramaEvent e, Leg leg, bool up)
+        {
+            string[] family = e.Type == DramaEventType.BigPlay ? (up ? BigUp : BigDown) : null;
+            bool[] assertsGoal = e.Type == DramaEventType.BigPlay
+                ? (up ? BigUpAssertsGoal : BigDownAssertsGoal) : null;
+            if (family == null) return NeutralLine(e, leg, up);
+
+            // Walk from the step's own position so the choice stays deterministic and still varies
+            // by beat, landing on the first member that does not claim a goal.
+            for (int i = 0; i < family.Length; i++)
+            {
+                int idx = (e.Step + i) % family.Length;
+                if (assertsGoal[idx]) continue;
+                bool pickedHome = PickedHomeForPresentation(leg);
+                return family[idx]
+                    .Replace("{picked}", Short(pickedHome ? leg.Matchup.Home.Name : leg.Matchup.Away.Name))
+                    .Replace("{other}", Short(pickedHome ? leg.Matchup.Away.Name : leg.Matchup.Home.Name));
+            }
+            return NeutralLine(e, leg, up);
+        }
+
         public static string NeutralLine(DramaEvent e, Leg leg, bool up)
         {
             bool pickedHome = PickedHomeForPresentation(leg);
@@ -199,11 +258,41 @@ namespace SBR.Game
 
         /// <summary>Market legs (O/U, BTTS) have no picked TEAM — presentation anchors them on the
         /// home side; the market label carries the pick. Shared by every renderer so the anchor
-        /// can never disagree across surfaces. Moneyline legs answer with their real side.</summary>
+        /// can never disagree across surfaces. Moneyline legs answer with their real side.
+        ///
+        /// <para><b>A MONEYLINE DRAW HAS NO SIDE, and this returned AWAY for it.</b> Routed here by
+        /// name from the markets lane's class sweep (`a3d184c`: *"SweatFlavor:206 — draw counts as
+        /// away for flavour, ROUTED → tv-sweat"*), and it survived that sweep for the reason worth
+        /// recording: **it is in this surface's file, not theirs.** A cross-lane sweep scoped by
+        /// ownership misses exactly the code another lane owns.</para>
+        ///
+        /// <para><b>The defect was a fall-through, not a decision.</b> The old expression asked
+        /// `Choice == MarketChoice.Home` and let everything else be false — written when `Choice` on a
+        /// moneyline could only be Home or Away, so "not Home" meant Away. `MarketChoice.Draw` made
+        /// that inference wrong without touching the line: the third value silently inherited the
+        /// second one's branch. C46's shape in an expression rather than in a box.</para>
+        ///
+        /// <para><b>The fix is the rule this summary already states, applied to a case written before
+        /// draws existed:</b> a draw has no picked team, exactly like O/U and BTTS, so it takes the
+        /// same HOME anchor they do and the market label carries the pick. It is not new design — the
+        /// only new thing is that a third no-team case now exists.</para>
+        ///
+        /// <para><b>Deliberately NOT the null the markets lane used</b> (`BetslipModel.SideOn` returns
+        /// null for a draw and is pinned for it). That answers a different question: `SideOn` reports
+        /// WHICH SIDE YOU BACKED, where a draw's honest answer is "neither". This answers WHICH TEAM
+        /// THE PROSE ANCHORS ON, where every leg needs an answer and "neither" would leave the
+        /// flavour with no names. Same finding, two functions, two correct shapes.</para>
+        ///
+        /// <para><b>Routed, not authored:</b> whether the flavour's VOICE reads correctly on a
+        /// draw-backed leg — `{picked}`/`{other}` naming the home side while the pick is the draw — is
+        /// a copy question for the DD. The direction is unaffected either way: up/down comes from the
+        /// leg's own win-prob move, not from the name anchor.</para></summary>
         public static bool PickedHomeForPresentation(Leg leg)
             => leg.Selection.Kind == MarketKind.AnytimeScorer
                 ? leg.Matchup.PlayerSide(leg.Selection.PlayerIndex) == Side.Home
-                : leg.Selection.Kind != MarketKind.Moneyline || leg.Selection.Choice == MarketChoice.Home;
+                : leg.Selection.Kind != MarketKind.Moneyline
+                    || leg.Selection.Choice == MarketChoice.Home
+                    || leg.Selection.Choice == MarketChoice.Draw;
 
         /// <summary>The team's noun (last word of the "City Noun" name) - punchier for the ticker.</summary>
         public static string Short(string teamName)

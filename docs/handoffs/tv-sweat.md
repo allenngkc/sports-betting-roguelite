@@ -11,6 +11,392 @@ discarded.
 
 ---
 
+## 0-B69. THE HOLD, THE GUARD'S REAL GATE, AND THE DIAGNOSTIC THAT SETTLED BOTH · SEAT ROTATES HERE · 2026-08-15
+
+**Branch `3652418`, pushed and remote-verified. Tree clean, Unity zero.** **This seat is at context
+exhaustion and stands down on this commit — the next seat starts here.**
+
+| suite | discovered | executed | passed | failed | skipped |
+|---|---|---|---|---|---|
+| EditMode | 254 | 254 | 253 | 0 | 1 ignored — G1's grant, held |
+| PlayMode | 95 | 95 | 87 | **1 — inherited, EXPECTED, not ours** | 7 by-design |
+
+### THE LAPTOP PIN IS EXPECTED RED — and read this before "fixing" it
+
+`SureThingEntryTests.Working_margin_contains_its_content_at_the_legal_maximum_leg_count` fails at
+`4.74798583984375` vs a signed 4.56. **It is measured against a SUPERSEDED test.** The surething-ui
+lane's repair merged to main **after** this branch's last main merge, so this tree still runs the old
+price-dependent pin. **Expected red. Not this lane's. No action** — it clears on the next merge from
+main.
+
+*Recorded because this seat got it wrong twice in one day:* first reported green (a single anomalous
+run), then corrected to "deterministically red and unexplained". **Both were wrong about the cause.**
+The value is stable because the test is stale, not because anything regressed.
+
+### Batch 69 — both fixes, and the diagnostic that made them facts
+
+The DD asked for every strip write logged with its call site across a `LegFinal` beat and said plainly
+*"this seat cannot execute the code and does not claim the ordering as fact."* **It was run.**
+`TvSweatScreen.TraceFlavorWrites` (off by default, set only by the harness) is left in place for the
+next question of this shape.
+
+**BOTH STANDING HYPOTHESES WERE WRONG IN THE SAME DIRECTION — they assumed a race.**
+
+**1. `THE MATCH ENDS LEVEL` was never written to the strip at all.**
+
+```
+RenderEvent stash LegFinal  <- 'THE MATCH ENDS LEVEL'
+grade WON                   <- 'LEG 1 — WON'
+```
+
+**No LAND between them.** `RevealBeatChrome` — the only thing that lands `_pendingFlavor` — lives
+inside `TheaterBeat`'s `evt.Type != LegFinal` branch, **so on the whistle the stash is simply
+dropped.** The line was correct, reachable and never displayed; there was no race to lose. Now written
+**directly** in `FinalSlam` and **held** for `drawnEndingHoldDuration` (1.0f, matched to
+`ticketDeadConsolationDuration` as ruled) before the grade beats run.
+
+**2. The guard was gating on the wrong quantity, and that half was this seat's.** The trace read
+`T97 guard goal=True` on **every** `Score` beat of a match that finished 0–0.
+
+> **`spec.Goal.HasValue` is the beat's STAGED INTENT. `spec.Goal.Value.Commits` is what the scene
+> RESOLVES INTO** — `Commits == false` is the chalk-off that prints `VAR — NO GOAL`. The law says the
+> words are licensed by what the resolved scene CONTAINS; the first build implemented *what it
+> staged*. **Reading a law and implementing it are different acts.**
+
+### The set evidences itself now
+
+Every captured frame logs the **strip text** beside score and clock, because T87-am2 is verifiable
+only as *"visible, for multiple frames, before the grade"* — a claim about frames that the frames
+should answer without a second instrument. Across **128 frames the strip holds exactly three states**:
+
+| frames | strip |
+|---|---|
+| **111** | **`THE MATCH ENDS LEVEL`** |
+| 9 | `LEG 1 — WON` |
+| 8 | the mid-match shot |
+
+The line holds frame 000 → ~050 of each ending at `clock='FT'`; the grade appears only in the last
+handful. **No goal sentence in 128 frames.** The supplemental mid-match shot (`clock='30'`, 0–0)
+carries T96's live NEED clause — the clause the previous README asserted while every frame was settled.
+
+### ROUTED to the DD, not fixed
+
+**`— LEAD CHANGE` renders over a `0 — 0` scorebug on 8 frames** (`TensionTag.LeadChange`,
+`SweatFlavor.cs:47`, appended to any line). It asserts a change of lead the match never had —
+**plausibly T97's law a third time** — *unless* it means a WIN-PROBABILITY lead change, which is a real
+betting fact and legitimately reportable. **Two readings, two different remedies**, and the strip's
+words are the DD's. Frames: `goalless-draw-backer-live-need__frame000`–`007`.
+
+### OPEN — none of it this lane's to start
+
+| item | state |
+|---|---|
+| The docked set (128 frames) | with the DD |
+| `— LEAD CHANGE` over 0–0 | routed, awaiting the DD's reading |
+| **The board's DRAW row** (S74-am) | HELD for Allen's word |
+| **T94** — column and scorebug describing different legs | HELD for the DD's read |
+| **`RiskPays`' fact floor** — 378.1 vs a LOCKED 249.0 column | **Allen's item** |
+| `CashOut`'s `MARKET SUSPENDED`, 26.7px | T74's table |
+| The laptop pin | **superseded test — clears on the next main merge** |
+
+### FOR THE NEXT SEAT — the operational facts that cost this one the most
+
+1. **`Time.captureDeltaTime` ties SIM time to RENDERED frames.** A capture burst spaced in REALTIME
+   advances the match by however many frames the host rendered. **Frame-contiguous (interval 0) is the
+   control.** This produced four passing captures of the wrong beat.
+2. **`Ticket.State` does not leave `Open` until ROUND settlement — after ALL sweats.**
+3. **A pick addresses `Matchup.Index`, not the slate position.**
+4. **`DemoTicketPolicy`'s stake sizes ONE bet against the whole bank.**
+5. **Scan to a real end marker, never a character count** — a 2200-char window silently stopped
+   covering its target when a comment grew above it. Third instance in this lane.
+6. **`ProjectSettings.asset` is integration-only Unity boot churn** — revert it by explicit checkout,
+   never commit it.
+
+---
+
+## 0-B68. THE DRAW'S ROW, THE STRIP'S GOAL GUARD, THE DRAWN MATCH'S LINE — all three verified in one set · 2026-08-14
+
+**Branch `1be8140`, pushed and remote-verified. Tree clean, Unity zero.** Batch 68's three rulings are
+built and shot; the set is docked and **awaiting the DD's acceptance list**, which it applies to the
+frames directly. A supplemental shot comes back here only if a criterion needs one.
+
+| suite | discovered | executed | passed | failed | skipped |
+|---|---|---|---|---|---|
+| EditMode | 254 | 254 | 253 | 0 | 1 ignored — G1's grant, held |
+| PlayMode | 95 | 95 | 88 | 0 | 7 by-design (the goalless capture joined them) |
+
+**The laptop margin pin inherited from main is GREEN again** — the surething-ui lane's work on its
+window, **not this lane's**. §0-DR's inherited-failure row is closed by them, not by us.
+
+### Three rulings, two touches, one capture — Passed, 120 frames, all at `MALLARDS 0 — MIDDLEMEN 0` `FT`
+
+**T96 — the draw is its OWN row.** Compact `DRAW`; live NEED `LEVEL AT FULL TIME` over
+`LEVEL`/`NOT LEVEL`, with `LEVEL AT FT` as the authored shorter line. `Identity` is the MARKET PICK,
+not a team — **a draw ticket has no backed side**, which is what let both tickets print `MIDDLEMEN ML`
+with opposite grades.
+
+> **A COPY RULING LANDS IN THE DECK OR IT HAS NOT LANDED** (the DD's own, and the reusable half). S74
+> authored the draw's forms, the owning doc carried them, and the build still shipped a defect —
+> because the deck sat between the doc and the build and nobody amended it. **The build was faithful
+> to the artifact it was told to read.**
+
+**T97 — the second instance of one law**, built as the guard that already existed one market family
+over: **a beat's WORDS are licensed by what the RESOLVED SCENE CONTAINS, never by the beat's TYPE
+LABEL alone.** The count families got this at F_0.4.0 P3 r2; the goal families never did, so a beat
+typed `Score` or `BigPlay` printed a goal sentence whether or not a goal was staged. `NearMiss` is
+excluded because its overrides were already right — they assert no goal and are used exactly where
+none occurred, which is the model this copies.
+
+**T87-am — `THE MATCH ENDS LEVEL`** at the whistle of a drawn match. A decided match ends ON a goal so
+its final beat's line IS its ending; **a drawn match ends on nothing**, so the last line is stale by
+construction. Read from the **revealed ledger**, never the locked `StatLine` — at the whistle they
+agree, which is why the honest source costs nothing.
+
+### THE SWEEP, and it is encoded as DATA rather than left in prose
+
+All twelve strings of the four goal-asserting arrays. **Nine assert a goal; three assert only a
+dangerous move** — matching the DD's own enumeration.
+
+| array | asserts a goal | danger only |
+|---|---|---|
+| `ScoreUp` | **3/3** | — |
+| `ScoreDown` | **3/3** — incl. `on the board`, the line that shipped over the 0–0 | — |
+| `BigUp` | **2/3** — *…and finish*, *…and score* | *counter at full sprint* |
+| `BigDown` | **1/3** — *walk it in* | *go the length of the pitch*, *rip through on the break* |
+
+Recorded in code as `BigUpAssertsGoal` / `BigDownAssertsGoal`. **The three danger-only lines stay
+REACHABLE** — the ruling's scope is "the parts that finish", and a big play that did not finish is
+still a big play. **Kept as a parallel table rather than by reordering**, because a line is chosen
+positionally by step and reordering would silently change which sentence an existing seed prints.
+
+**Diagnosed as asked: a FRESH MIS-SELECTION, not a stale carry.** The line is chosen per beat from the
+type's own array; nothing cached it.
+
+### A THIRD FIXED-WINDOW TRAP — this time in a TEST, not an instrument
+
+`T69_the_row_statement_is_re_authored_against_its_column` scanned `Substring(at, 2200)`. T96's draw row
+added a dozen lines to `LegStatement` and pushed `{club} ML` past 2200, so **the assertion failed while
+the string it asserts sat exactly where it belongs.**
+
+> **A scan that stops covering its target reports the absence of its own window as a defect in the
+> code.** Re-pointed at the method's next sibling — a real end marker, never a character count. Third
+> instance in this lane; the rule has earned its place.
+
+### OPEN — unchanged, none of it this lane's to start
+
+| item | state |
+|---|---|
+| The docked 0–0 set | with the DD, acceptance list applied to the frames directly |
+| **The board's DRAW row** (S74-am) | HELD for Allen's word |
+| **T94** — column and scorebug describing different legs | HELD for the DD's read |
+| **`RiskPays`' fact floor** — 378.1 vs a LOCKED 249.0 column | **Allen's item** (exceeds a locked dimension) |
+| `CashOut`'s `MARKET SUSPENDED`, 26.7px | T74's table |
+
+---
+
+## 0-DR. POST-PHASE: main merged · the draw arm fixed · THE 0–0 SET SHOT AND DOCKED · 2026-08-14
+
+**Branch `b3b5820`, pushed and remote-verified. Tree clean. Unity ZERO — and the editor window is
+RELEASED to the surething-ui lane** for its pin verification, so this lane takes no editor work until
+it comes back.
+
+**TOP LINE: the post-phase unit is complete.** `origin/main` is merged, `SweatFlavor`'s draw arm is
+fixed and pinned, G1-am8's scorer ladder is built, and T87-am's goalless set is docked. **The DRAW row
+and T94 HOLD** pending the re-seated DD's read of the docked set and Allen's word.
+
+| suite | discovered | executed | passed | failed | skipped |
+|---|---|---|---|---|---|
+| EditMode | 254 | 254 | 253 | 0 | 1 ignored — G1's grant, held |
+| PlayMode | 94 | 94 | 87 | **1 INHERITED** | 6 |
+
+Sweep: **1 of 22 overrunning** (`MARKET SUSPENDED`, T74's table) · 48 slots · 0 unaccounted for.
+
+### The merge — 295 commits, and the TV surface did not move
+
+`TvSweatScreen.cs`, `SweatFlavor.cs`, `SweatActiveLegModel.cs`, `TvExtentSweep.cs` and every TV test
+came through **untouched** — this lane's work was already in main, so it merged with itself. Verified
+by measurement (sweep identical, EditMode green), not by inspection.
+
+**ONE INHERITED FAILURE, and it is not this lane's.**
+`SureThingEntryTests.Working_margin_contains_its_content_at_the_legal_maximum_leg_count` — the LAPTOP
+surface, 4.748px against a signed 4.56px. **Reachability argument, accepted by the orchestrator:** this
+branch's three commits touched five files and **none of them can reach the laptop's margin flow.** The
+flow changed on main via `ead9396` (*"the stake figure leads its own block"*, M-04/M-05) and the test's
+own message names the owner — *"1.96px OWNED (M-04's 26px stake figure)"*. **Do not touch it**; the
+owning lane is retired and its routing is Allen's after the shoot.
+
+### `SweatFlavor`'s draw arm — a fall-through, not a decision (`ada9a84`)
+
+Routed here **by name** from the markets lane's class sweep (`a3d184c`: *"SweatFlavor:206 — draw counts
+as away for flavour, ROUTED → tv-sweat"*). **It survived that sweep because it lives in this surface's
+file, not theirs** — a cross-lane sweep scoped by OWNERSHIP misses exactly the code another lane owns.
+
+The anchor asked `Choice == Home` and let everything else be false. Correct while a moneyline could
+only be Home or Away; **`MarketChoice.Draw` made the inference wrong without the line being touched.**
+The fix is the rule the function already stated: a leg with no picked TEAM anchors home and lets the
+market label carry the pick, exactly as O/U and BTTS always have.
+
+**Deliberately NOT the null the markets lane used.** `BetslipModel.SideOn` returns null for a draw and
+is pinned for it — that answers *which side you backed*, where "neither" is honest. This answers *which
+team the prose anchors on*, where every leg needs an answer. **One finding, two functions, two correct
+shapes.**
+
+*Routed, not authored:* whether the flavour's VOICE reads right on a draw-backed leg is the DD's.
+
+### G1-am8 + T92-am (`7ca92ca`)
+
+Scorer ladder built: rung 2 `{SURNAME} SCORES`, **0 of 12 overrunning**, widest `PAVEMENT SCORES` 238.4
+with 22.6 spare; bare `TO SCORE` retired. **The existing EditMode pin caught the contract change and
+moved with it deliberately.** T92-am's 10.9 was **already closed** by the batch-61 widening — measured,
+not assumed: box 695.0, deferral line 665.9, fits by 29.1.
+
+### T87-am — the 0–0 set (`b3b5820`), docked at `dd-import/tv-goalless-draw-2026-08-14`
+
+**`Atlanta Middlemen 0 – 0 Scranton Mallards`, seed `GOALLESS-5`. Passed, 120 frames, and EVERY ONE
+reads `MALLARDS 0 — MIDDLEMEN 0` at `clock='FT'`** — 60 contiguous frames per ending.
+
+| set | ticket | outcome |
+|---|---|---|
+| `goalless-draw-backer-ending` | the DRAW | **WINS** on a match where nothing happened |
+| `goalless-team-backer-ending` | Home | **LOSES** to the same 0–0 |
+
+**Captured and docked — no read offered.** The three dispositions are pre-committed at the DD seat.
+
+The seed was **found, not hoped for**: `engine.tests/GoallessDrawSeedTests` searched 400 seeds through
+the same path the capture takes and found eight goalless matches (draws 28 of 114). `LockRound`
+resolves every game whether bet or not, so **the tickets are placed onto a result that already exists
+rather than steering it** — and the 0–0 is asserted at lock so a drifted seed fails loudly.
+
+### FOUR RUNS PASSED WHILE SHOWING THE WRONG BEAT — the durable part of this section
+
+Each was diagnosed rather than guessed, and each was a real defect. **A passing capture is not a
+capture of the thing.**
+
+1. **A pick addresses `Matchup.Index`, NOT the slate position.** The draw ticket graded against a
+   different fixture and came back *LOST on a 0–0*.
+2. **`DemoTicketPolicy`'s stake sizes ONE bet against the whole bank**, so a second ticket does not
+   fit. The symptom is silent: the sweat loop simply has nothing to advance to.
+3. **`Ticket.State` does not leave `Open` until ROUND settlement — after ALL sweats.** Waiting on it
+   captures a screen already cleared to Shop. The diagnostic said so exactly:
+   `SweatIndex=1 phase=Shop session=null`.
+4. **`Time.captureDeltaTime` ties SIM time to RENDERED frames, so a burst spaced in REALTIME advances
+   the match by however many frames the host happened to render.** At 0.12s spacing an "ending" read
+   `FT`, then `PRE`, `11'`, `30'`, `55'`, `74'` — four frames of the whistle and then the whole NEXT
+   match. **Frame-contiguous (interval 0) is the control**, and 60 frames is 1.2 sim-seconds.
+
+> **Both tickets sat on the same matchup, so the replay looked superficially plausible.** That is
+> C50's shape — frames labelled with a beat they do not show — and it is why the 48 frames from the
+> previous attempt were DELETED rather than staged.
+
+### OPEN — all held, none of it this lane's to start
+
+| item | state |
+|---|---|
+| **The board's DRAW row** (S74-am) — ruled buildable, waits on nothing | HELD for Allen's word |
+| **T94** — column and scorebug describing different legs; its beats are on the closing frames | HELD for the DD's read |
+| **`RiskPays`' fact floor** — 378.1 max / 270.6 typical vs a LOCKED 249.0 column | **Allen's item** — it exceeds a locked dimension |
+| `CashOut`'s `MARKET SUSPENDED`, 26.7px | T74's table |
+| The laptop's margin pin | inherited from main; not this lane's |
+
+---
+
+## 0-T95. PHASE T IS DESIGN-VERIFIED · the crossfade's rect was stale and it was MINE · T95 SHOT · 2026-08-13
+
+**PHASE T IS DESIGN-VERIFIED (T89-cl, batch 63).** The migration is certified on its own variable,
+on the closing capture, against a bar pre-committed before the evidence existed. The closing set is
+**merged to main at `a487e1e`**; the T95 fix followed at **`c1bee90`**.
+
+**Branch `c1bee90`, pushed and remote-verified.** Suites: **EditMode 251/251 executed, 250 passed, 0
+failed, 1 ignored** (+1 — the new T95 pin) · **PlayMode 94/94 executed, 88 passed, 0 failed, 6 skips.**
+
+### T95 — the rect finding, and the attribution belongs here
+
+The DD read a **doubled, illegible scoreline** on score-change beats and offered the cheapest
+hypothesis: *"if the second layer holds a stale rect, this seat's own partition ruling is the cause."*
+
+**Measured:**
+
+```
+Matchup   box 593.0   centre  92.7
+Score     box 675.0   centre 133.7      CENTRE DELTA 41.0px
+```
+
+`Score` is the punch overlay and **its own build comment states the invariant verbatim** — *"Same
+text, SAME RECT, same face as `_tMatchup` … so superimposing it."* Both are `UpperCenter`, so each
+centres its string in **its own** box, and **two centred layers with different boxes do not
+superimpose — they offset by the difference of their centres.**
+
+**41.0px is exactly this lane's own `scoreCentreShift` from T91-am.** So: **the ruling was sound and
+the implementation was not.** T91-am moved `Matchup`; the mirror was never re-derived, which §3.5
+obliges — with the file warning about it in prose at the exact site. **New, a regression, and mine.**
+
+**Fixed by CONSTRUCTION** — one position, one size, both layers, hoisted into shared locals. The same
+remedy T68 needed for an ink with five authors and T62 for one value with two repaint schedules.
+Measured after: **centre delta 0.0px, superimposed.**
+
+**PINNED:** `T95_the_punch_overlay_and_the_scoreline_share_one_rect` asserts width, height, position
+and alignment. **A shared local is a convention; an assertion is a contract** — and this defect was
+invisible to every instrument this surface has, caught only at review distance on frames. It fails
+against the broken state by construction (593 vs 675 on the first assert); not re-run against a
+reverted tree.
+
+> **THE TRANSFERABLE RULE: when a ruling moves a box, every layer that mirrors it moves too — and the
+> mirror is found by grepping for the rect, not by remembering.** Two elements agreeing by convention
+> is a defect waiting for the next ruling.
+
+### T91-am2, folded in the same pass
+
+**The 2px ink floor applies to BOTH sides of the ticket column's edge** — *"an edge has two sides and
+a floor on one of them is half a rule."* Territories now derive from a usable stage of **711.0**, not
+the band's raw 715.0. `Matchup` starts at **−221.8, exactly 2.0px** right of the column edge; widest-
+scoreline clearance to the clock **31.3px**.
+
+### The T95 capture — SHOT AND STAGED, 159 frames across two entry points
+
+**Both entry points were needed and neither substitutes for the other:** `Capture_Batch22_…` carries
+the two frames the defect was read on — `t68am-accept-slot` **frame008** (lead-change) and
+`t70am-live-pair` **frame000** (leg-resolution) — **under identical filenames**, and only
+`Capture_SeatedSweat_NamedMoments` carries the **`goal`** moment.
+
+| set | result | frames |
+|---|---|---|
+| `batch22-payoff-and-live-pair/` | **Passed 1/1** | 66 · one seed, one boost |
+| `namedmoments-goal-five-seeds/` | **Passed 5/5** | 93 · five seeds, one boost |
+
+Staged at `dd-import/tv-t95-transitions-2026-08-13/`, two subdirectories because their pins differ,
+one README carrying the beat map, the before/after rect arithmetic and the non-claims.
+
+**All three beats covered:** lead-change (30), leg-resolution (4 + 38 across three moments), goal (40
+across all five seeds).
+
+### A DETACHED CAPTURE OUTLIVES THE SESSION THAT LAUNCHED IT — verify before re-running
+
+**A 403 killed the driving session mid-poll on the second run.** The capture did not die with it: it
+had been launched **detached** — the rule §4 wrote after three silent capture deaths — and it ran to
+completion on its own, writing its results XML (`Passed 5/5`) and logging `capture complete` for all
+five seeds.
+
+**The resumed seat verified that from the artifacts rather than re-running**, which saved a ~20-minute
+window. **The check is the results XML and the harness's own completion lines, not the frame count** —
+93 frames matching an earlier run is suggestive and is not proof.
+
+**And the dead-partial trap was live here:** the capture directory held a *previous* interrupted
+attempt's frames as well. The two runs are separated at **23:13:50** and were scoped by mtime on
+either side of it, so the passed set and the abandoned one were never mixed — §0-FR's recorded
+instrument failure, avoided rather than rediscovered.
+
+### OPEN, none of it gating the verified phase
+
+| item | where |
+|---|---|
+| **`RiskPays`' fact floor** — 378.1 max / 270.6 typical vs a **locked** 249.0 column. **The one item that reaches Allen**, because it exceeds a locked dimension | T74-am6 / batch 63 |
+| `CashOut`'s `MARKET SUSPENDED`, 26.7px | T74's table |
+| bare `TO SCORE` names no player — the ladder working, not a backstop firing | routed batch 62 |
+| **T94** — column and scorebug describing different legs | batch 62 |
+| `SweatFlavor` renders a DRAW as AWAY flavour | markets lane, queued |
+
+---
+
 ## 0-CL. THE CLOSING CAPTURE — shot and staged · the phase awaits the DD's re-read · 2026-08-13
 
 **Branch `5dadc24`, pushed and REMOTE-VERIFIED. Tree clean, Unity ZERO, no lockfile — the granted
@@ -2217,13 +2603,32 @@ harmless that time. The procedure below closes it.
 4. `git checkout --` the three build side-effect files; confirm `git status` shows only intended
    changes before committing.
 
-**Current baselines — measured 2026-08-09, batches 16–19 (§0-BW):** engine **160/160** ·
-EditMode **247/247** · PlayMode **70 executed: 65 passed, 0 failed, 5 `[Explicit]` skips**.
+**Current baselines — measured 2026-08-15, batch 70:** engine **260 total: 205 passed, 55 FAILED —
+every one INHERITED** · EditMode **255 discovered / 255 executed / 254 passed / 0 failed / 1
+ignored** (G1's grant, held) · PlayMode **95 / 95 / 87 passed / 1 FAILED — INHERITED / 7 by-design
+capture skips**.
 
-*(Superseded: `220c5ec`'s 160 / 129 / 44. EditMode grew 129 → 222 on the main merge, → 224 (batch 9),
-→ 228 (T61/T62), → 237 (batches 13+14). PlayMode reads 70 rather than 44 because the suite now
-includes SureThing's and the `[Explicit]` capture seeds — **run it WITH graphics or SureThing's
-three capture tests fail environmentally and look like regressions**.)*
+**TWO OF THESE SUITES ARE EXPECTED RED AND NEITHER IS THIS LANE'S.** This branch is **59 behind
+`origin/main`** and both failures are already fixed up there. Same class, same remedy: **the next
+merge from main, not a repair here.**
+
+| suite | the failure | why it is not ours |
+|---|---|---|
+| **engine, 55 of 260** | one `TypeInitializationException` repeated — `JointModel`'s static ctor throws *"the outcome partition needs exactly one residual class, found 2"* | **main already carries the fix**: `c82aefe`, *"repair the joint model for the merged draws board … 270/270 green (was 55 failing)"* — which names this exact count. Measured with this lane's own change stashed: **identical 55/205/260**, so it predates it |
+| **PlayMode, 1 of 95** | `SureThingEntryTests.Working_margin_contains_its_content_at_the_legal_maximum_leg_count` — `4.74798583984375` against a signed 4.56 | **measured against a SUPERSEDED test.** The surething-ui lane's repair merged to main *after* this branch's last main merge, so this tree still runs the old price-dependent pin |
+
+> **A STALE BASELINE TURNS AN INHERITED RED INTO A DIAGNOSIS.** The engine line here read
+> **160/160** from 2026-08-09 until batch 70 — taken *before* the main merge that brought the joint
+> model in at all — so the first seat to run `dotnet test engine.tests` after that merge meets 55
+> failures against a baseline claiming zero, with nothing to tell it the number is simply old.
+> **Re-measure a baseline in the window that finds it wrong, and record the DISPOSITION beside the
+> number rather than the number alone.**
+
+*(Superseded: `220c5ec`'s 160 / 129 / 44, then 2026-08-09's 160 / 247 / 70. EditMode grew 129 → 222
+on the main merge and has moved with the batches since — 224 (batch 9), 228 (T61/T62), 237 (batches
+13+14), 247, 250, 251 (T95), 254, 255 (T98's pin). PlayMode reads 95 rather than 44 because the
+suite now includes SureThing's and the `[Explicit]` capture seeds — **run it WITH graphics or
+SureThing's three capture tests fail environmentally and look like regressions**.)*
 
 **Known flake — do not mistake it for a regression.** `TvSweatScreenTests` fails
 `never observed the cash-out amount mid-tween (waited 20s)` on load-heavy runs; logged in

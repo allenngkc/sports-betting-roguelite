@@ -631,6 +631,193 @@ namespace SBR.Tests.PlayMode
         /// Logs the RevealedView's own display state alongside each frame - factual telemetry, not
         /// a legibility judgment, so a reviewer can cross-check the PNG against what the TV's own
         /// causal mirror says it was showing at that instant.</summary>
+        /// <summary>T87-am: THE SCORELESS DRAW, to full time, with BOTH tickets resolving.
+        ///
+        /// <para>T87 ruled the drawn beat is the match <b>ending level, stated</b>, and every mechanism
+        /// it names is goal-independent — so none is absent at 0–0. What 0–0 changes is the RISK: the
+        /// surface has not punched all match, so a quiet ending arrives against a quiet match, and
+        /// <b>the one state it must never be mistaken for is idle.</b></para>
+        ///
+        /// <para><b>And a draw is quiet for the room and LOUD for one ticket.</b> The draw-backer has
+        /// won, on a match where nothing happened. That is why both tickets are in one set: the loud
+        /// half and the quiet half have to be readable side by side, on the same settlement moment.</para>
+        ///
+        /// <para><b>No 0–0 full-time frame existed in evidence</b> — the `LEVEL 0–0` readings on hand
+        /// were mid-match (11', 32'), the progress line doing its job and saying nothing about the
+        /// ending. C11 binds: a claim about how the ending reads is made against a rendered frame of
+        /// the ending.</para>
+        ///
+        /// <para><b>The seed is found, not hoped for.</b> `engine.tests/GoallessDrawSeedTests` searched
+        /// 400 seeds through the same path this takes (`new Run(seed)`, default config, exactly what
+        /// `RunDirector.StartNewRun` builds) and found eight goalless matches; `GOALLESS-5` matchup 0
+        /// is `Atlanta Middlemen 0 – 0 Scranton Mallards`. `LockRound` resolves every game on the
+        /// slate whether it was bet or not — <i>"outcomes for a seed are identical no matter what the
+        /// player wagered"</i> — so the tickets are placed onto a result that already exists rather
+        /// than steering it.</para>
+        ///
+        /// <para><b>Capture and dock — the read is NOT made here.</b> Three dispositions are
+        /// pre-committed at the DD seat and this harness deliberately asserts nothing about how the
+        /// ending looks; its assertions are plumbing only, as everywhere else in this file.</para></summary>
+        [Explicit("T87-am evidence capture: the goalless draw to full time, both tickets. Run by filter only.")]
+        [Timeout(1500000)]
+        [UnityTest]
+        public IEnumerator Capture_GoallessDraw_BothTicketsToFullTime()
+        {
+            _seed = "GOALLESS-5";
+            s_sceneIndex = 0;
+            Directory.CreateDirectory(OutputDir);
+
+            TheaterStage.PresentationSeedOverride = StableSeed(_seed);
+            Time.captureDeltaTime = 1f / 50f;
+            // T97/T87-am2: the DD asked for every strip write logged with its call site across a
+            // LegFinal beat and could not run it. This run answers it.
+            TvSweatScreen.TraceFlavorWrites = true;
+
+            yield return LoadRoom();
+
+            var director = Object.FindAnyObjectByType<RunDirector>();
+            var screen = Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing - run SBR.GrayboxRoomBuilder.Build first.");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+
+            Camera cam = Camera.main;
+            Assert.IsNotNull(cam, "MainCamera (PlayerCamera) missing - cannot capture without it");
+
+            screen.TimeScaleOverride = 1f;      // ship pacing — the ending's rhythm is the subject
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntilOrFail(() => director.Run != null,
+                Time.realtimeSinceStartup + 10f, "director never started a run");
+
+            director.StartNewRun(_seed);
+            Run run = director.Run;
+            Assert.AreEqual(Phase.Betting, run.Phase, "a fresh run opens in Betting");
+
+            // Matchup 0 is the one the seed search found goalless. TWO tickets on it, so the sweat
+            // plays them serially and both endings land in one set:
+            //   ticket 1 — the DRAW.  It WINS on a match where nothing happened.
+            //   ticket 2 — a TEAM.    It LOSES to the same 0-0.
+            Matchup m = run.CurrentSlate.Matchups[0];
+            Assert.IsNotNull(m, "the goalless matchup is missing from this slate");
+
+            // A PICK ADDRESSES `Matchup.Index`, NOT THE SLATE POSITION, and the first cut of this
+            // used the position. They are not guaranteed to coincide, and the harness's other tickets
+            // have always used `.Index` for exactly that reason — a pick on the wrong matchup grades
+            // against the wrong match, which is how a ticket that backed a 0-0 draw came back LOST.
+            int goalless = m.Index;
+
+            // A MODEST, EXPLICIT STAKE rather than DemoTicketPolicy's — its formula sizes ONE bet
+            // against the whole bank, and two of them do not both fit a 350 opening bank. The first
+            // run of this capture placed one ticket where it meant to place two, and the symptom was
+            // silent: the sweat loop simply had nothing to advance to.
+            const double Stake = 25.0;
+            run.PlaceTicket(new List<Pick> { new Pick(goalless, MarketSelection.MoneylineDraw()) }, Stake);
+            run.PlaceTicket(new List<Pick> { new Pick(goalless, Side.Home) }, Stake);
+            director.LockRound();
+
+            // TWO tickets is the whole point of the set — the loud half and the quiet half on one
+            // settlement. Asserted so "only one sweat played" can never again look like a timeout.
+            Assert.AreEqual(2, run.Tickets.Count, "both tickets must be placed — the set needs both halves");
+            Assert.AreEqual(2, run.Sweats.Count, "each ticket gets its own sweat");
+
+            // The result is the seed's, not this harness's — asserted so a drifted seed fails loudly
+            // here rather than producing a set that quietly shows the wrong ending.
+            Assert.IsNotNull(m.StatLine, "the match did not resolve at lock");
+            Assert.AreEqual(0, m.StatLine.HomeGoals, $"seed '{_seed}' matchup {goalless} is no longer goalless");
+            Assert.AreEqual(0, m.StatLine.AwayGoals, $"seed '{_seed}' matchup {goalless} is no longer goalless");
+            Assert.AreEqual(MatchResult.Draw, m.StatLine.Result, "the goalless match must resolve as a draw");
+
+            // The tickets landed on the match this test asserted about — checked, because the whole
+            // set is worthless if they graded against a different fixture.
+            foreach (Ticket placed in run.Tickets)
+                Assert.AreEqual(goalless, placed.Legs[0].Matchup.Index,
+                    "a ticket was placed on a different matchup than the goalless one");
+
+            couch.OnInteract(null);
+            yield return WaitUntilOrFail(() => SitSpot.Active != null,
+                Time.realtimeSinceStartup + 15f, "player never sat down");
+
+            // CAPTURE EVERY FULL TIME AS IT HAPPENS, rather than waiting for each sweat to start.
+            //
+            // The per-sweat wait was the wrong shape and cost several runs: the round races on once a
+            // session completes, so by the time a predicate about sweat N+1 was evaluated the phase
+            // had already reached Shop. Watching the CLOCK instead means the trigger is the thing the
+            // set is about, and the sweat index is read AT the moment rather than waited for.
+            //
+            // ONE BURST PER ENDING, contiguous from the whistle. The settle beat is short — shorter
+            // than a 12-frame burst at 0.2s — so splitting "full-time" from "settlement" put the
+            // second burst on the next sweat's replay at 38'. Both tickets sit on the same matchup, so
+            // that replay looks superficially plausible, which is exactly what makes a mistimed burst
+            // dangerous. The frames are named for the ENDING and read in frame-index order, which is
+            // this harness's own stated convention.
+            // THE SUPPLEMENTAL SHOT (batch 69): the docked set asserted T96's LIVE NEED clause —
+            // `LEVEL AT FULL TIME` over `LEVEL` — while all 120 frames were SETTLED, so the clause
+            // had no frame behind it. Any mid-match frame of a draw-backed leg carries it, and the
+            // draw-backer's sweat is the first one, so it costs no extra window.
+            float midDeadline = Time.realtimeSinceStartup + 300f;
+            yield return WaitUntilOrFail(
+                () => MinuteOf(screen.RevealedView.ClockText) >= 30 || director.Run.Phase != Phase.Sweat,
+                midDeadline,
+                $"the draw-backer's leg never reached a mid-match minute · clock='{screen.RevealedView.ClockText}'");
+            if (director.Run.Phase == Phase.Sweat)
+                yield return CaptureBurst(screen, cam, "goalless-draw-backer-live-need", 8, 0f);
+
+            int endingsCaptured = 0;
+            float runDeadline = Time.realtimeSinceStartup + 900f;
+            while (endingsCaptured < 2 && director.Run.Phase == Phase.Sweat)
+            {
+                yield return WaitUntilOrFail(
+                    () => screen.RevealedView.ClockText == "FT" || director.Run.Phase != Phase.Sweat,
+                    runDeadline,
+                    $"ending {endingsCaptured} never reached full time · " +
+                    $"SweatIndex={director.SweatIndex} phase={director.Run?.Phase} clock='{screen.RevealedView.ClockText}'");
+                if (director.Run.Phase != Phase.Sweat) break;
+
+                int idx = director.SweatIndex;
+                string label = idx == 0 ? "draw-backer" : "team-backer";
+                Ticket at = director.CurrentTicket;
+                // FRAME-CONTIGUOUS (interval 0), and that is the whole trick here.
+                //
+                // `Time.captureDeltaTime` ties SIM time to RENDERED frames — 0.02s each — so a burst
+                // spaced by REALTIME advances the match by however many frames the host happened to
+                // render in that wall-clock gap. At 0.12s spacing the draw-backer's "ending" read
+                // FT, then PRE, 11', 30', 55', 74': four frames of the actual whistle and then the
+                // whole of the NEXT match. Both tickets sit on the same matchup, so that replay
+                // looks superficially plausible — the same trap C50 was promoted for.
+                //
+                // At interval 0 each capture is one rendered frame, so 60 frames is 1.2 SIM-seconds
+                // of contiguous coverage from the whistle forward, and the clock in each frame's own
+                // log line says exactly which beat it is rather than the label claiming it.
+                yield return CaptureBurst(screen, cam, $"goalless-{label}-ending", 60, 0f);
+                Debug.Log($"[TvSweatCaptureHarness] ending {endingsCaptured}: sweat {idx} ({label}) " +
+                          $"ticket state '{(at == null ? "null" : at.State.ToString())}' " +
+                          $"— it leaves Open at ROUND settlement, not at its own sweat's end");
+                endingsCaptured++;
+
+                // Let this whistle pass so the next FT is a new one rather than the same one again.
+                yield return WaitUntilOrFail(
+                    () => screen.RevealedView.ClockText != "FT" || director.Run.Phase != Phase.Sweat,
+                    runDeadline, "the clock never left FT");
+            }
+
+            Assert.AreEqual(2, endingsCaptured,
+                "both endings must be in the set — the loud half and the quiet half are the point");
+
+
+            Debug.Log($"[TvSweatCaptureHarness] seed={_seed} goalless capture complete -> {OutputDir}");
+        }
+
+        /// <summary>The match minute a clock string is showing, or -1 for the non-minute states
+        /// (`PRE`, `FT`, `90'+2`). Deliberately narrow: it exists to say "we are mid-match", so a
+        /// stoppage or a terminal clock answering -1 is the correct answer, not a parse failure.</summary>
+        private static int MinuteOf(string clock)
+        {
+            if (string.IsNullOrEmpty(clock) || !clock.EndsWith("'")) return -1;
+            return int.TryParse(clock.Substring(0, clock.Length - 1), out int m) ? m : -1;
+        }
+
         private static IEnumerator CaptureBurst(TvSweatScreen screen, Camera cam, string momentName,
             int frameCount, float intervalSeconds)
         {
@@ -652,8 +839,13 @@ namespace SBR.Tests.PlayMode
                               $"__moment-{momentName}__frame{i:000}.png";
                 string path = Path.Combine(OutputDir, file);
                 CaptureCamera(cam, path, CaptureWidth, CaptureHeight);
+                // The STRIP TEXT rides in the per-frame line (batch 69): T87-am2 is verifiable only as
+                // "the line was visible, for multiple frames, before the grade", and a set whose whole
+                // claim is about what the strip said should be able to answer that from its own log
+                // rather than from a second instrument.
                 Debug.Log($"[TvSweatCaptureHarness] {file} :: score='{screen.RevealedView.ScoreText}' " +
-                    $"clock='{screen.RevealedView.ClockText}' suspended={screen.RevealedView.MarketSuspended}");
+                    $"clock='{screen.RevealedView.ClockText}' suspended={screen.RevealedView.MarketSuspended} " +
+                    $"strip='{screen.DebugFlavorText}'");
 
                 if (i < frameCount - 1)
                 {

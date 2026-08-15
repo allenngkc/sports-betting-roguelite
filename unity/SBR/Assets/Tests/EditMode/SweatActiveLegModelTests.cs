@@ -76,9 +76,19 @@ namespace SBR.Tests.EditMode
             // G1 re-authored: players are named by SURNAME — the convention the progress line
             // already used. This is the T69 case itself: "RICO LANYARD TO SCORE" is the string that
             // rendered as "RICO LANYARD TO".
+            // G1-am8 (batch 63): the fallback is rung 2 of a two-rung ladder, NOT the bare form.
+            // `TO SCORE` named no player — and worse on this arm than on the moneyline one, because
+            // the backed-side marker renders only on moneyline legs, so a scorer leg has no marker at
+            // all and nothing else on the surface names him. G1's pair-defect ruling is what makes it
+            // decisive: the progress line reads NOT YET/SCORED precisely BECAUSE the surname is named
+            // once, by this line. Retire the surname here and it is named nowhere.
+            //
+            // This assertion caught the change when the ruling landed, which is the point of pinning
+            // a fallback: the contract moved, so the pin moves with it — deliberately, not silently.
             ActiveLegCopy copy = Describe(ActiveLegInput.AnytimeScorer("Harry Kane", false));
             Assert.AreEqual("KANE TO SCORE", copy.Need);
-            Assert.AreEqual("TO SCORE", copy.NeedFallback);
+            Assert.AreEqual("KANE SCORES", copy.NeedFallback,
+                "G1-am8: rung 2 conjugates to the subject and keeps the surname — bare `TO SCORE` is retired");
         }
 
         // ------------------------------------------------------------------------- 2. LIVE progress: zero, mid, at-the-line
