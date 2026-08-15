@@ -118,6 +118,7 @@ namespace SBR.EditorTools
             if (s.EndsWith(" TO WIN")) return s.Substring(0, s.Length - 7) + " WIN";       // G1-am7
             if (s == "ONE TEAM SCORELESS") return "ONE TEAM BLANKED";                      // G1, authored
             if (s.EndsWith(" TO SCORE")) return s.Substring(0, s.Length - 9) + " SCORES";  // G1-am8
+            if (s == "LEVEL AT FULL TIME") return "LEVEL AT FT";                           // T96, authored
             return null;
         }
 
@@ -154,7 +155,11 @@ namespace SBR.EditorTools
             // never render — the over-generation half of the traceability pass, one arm over.
             ("LegRowNeed0", "G1's NEED deck over the closed pools; the moneyline arm is a LADDER (see LadderFallback)",
                 And(From(ClubNouns, "{0} TO WIN"), From(Surnames, "{0} TO SCORE"), new[]
-                { "ONE TEAM SCORELESS", "ONE TEAM BLANKED", "BOTH TEAMS SCORE", "NOT YET" })),
+                { "ONE TEAM SCORELESS", "ONE TEAM BLANKED", "BOTH TEAMS SCORE", "NOT YET",
+                  // T96 (batch 68): the DRAW's own row, from the amended deck. `LEVEL AT FULL TIME`
+                  // is 18 chars at the NEED budget and carries `LEVEL AT FT` as its authored shorter
+                  // line — the same ladder shape as ONE TEAM SCORELESS / ONE TEAM BLANKED.
+                  "LEVEL AT FULL TIME", "LEVEL AT FT" })),
             // `TO SCORE` is GONE from the set with G1-am8: bare is retired on the scorer arm and must
             // not be reachable, so sweeping it would certify a string the surface may never render.
             // CORRECTED by the traceability pass, in BOTH directions. The old set was

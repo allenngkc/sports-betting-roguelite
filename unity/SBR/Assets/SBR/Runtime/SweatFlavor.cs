@@ -149,6 +149,49 @@ namespace SBR.Game
         /// <summary>Ordinary-play line for a count-market beat whose resolved scene carries no
         /// count event (a zero batch fell through) — corner/booking words would be a lie there
         /// (Sol, F_0.4.0 P3 r2). Plain possession language, direction from the beat.</summary>
+        /// <summary>T97's sweep, recorded AS DATA rather than as prose in a commit message — which
+        /// member of each big-play family ASSERTS A GOAL, and which asserts only a dangerous move.
+        ///
+        /// <para>The DD asked for the four goal-asserting arrays swept string by string. `ScoreUp`
+        /// and `ScoreDown` are goal-asserting in every member, so they have no table here: with no
+        /// goal in the resolved scene there is nothing in them that may be spoken. `BigUp` and
+        /// `BigDown` are MIXED, and the ruling's scope is "the parts of BigUp/BigDown that finish" —
+        /// so the parts that do not finish stay reachable, because they remain true of a dangerous
+        /// move that produced no goal.</para>
+        ///
+        /// <para>Kept as a parallel table rather than by reordering the arrays: the line for a step
+        /// is chosen positionally, so reordering would silently change which sentence an existing
+        /// seed prints. This encodes the audit without moving anything.</para></summary>
+        private static readonly bool[] BigUpAssertsGoal = { true, true, false };
+        private static readonly bool[] BigDownAssertsGoal = { false, false, true };
+
+        /// <summary>T97: the line for a beat whose RESOLVED SCENE CARRIES NO GOAL.
+        ///
+        /// <para>A big play that did not finish is still a big play, so it keeps its own authored
+        /// voice — the members that assert only a dangerous move. Everything else falls to the
+        /// neutral possession line, which is the remedy the ruling names and the one
+        /// <see cref="NeutralLine"/> has always provided for the count families.</para></summary>
+        public static string NoGoalLine(DramaEvent e, Leg leg, bool up)
+        {
+            string[] family = e.Type == DramaEventType.BigPlay ? (up ? BigUp : BigDown) : null;
+            bool[] assertsGoal = e.Type == DramaEventType.BigPlay
+                ? (up ? BigUpAssertsGoal : BigDownAssertsGoal) : null;
+            if (family == null) return NeutralLine(e, leg, up);
+
+            // Walk from the step's own position so the choice stays deterministic and still varies
+            // by beat, landing on the first member that does not claim a goal.
+            for (int i = 0; i < family.Length; i++)
+            {
+                int idx = (e.Step + i) % family.Length;
+                if (assertsGoal[idx]) continue;
+                bool pickedHome = PickedHomeForPresentation(leg);
+                return family[idx]
+                    .Replace("{picked}", Short(pickedHome ? leg.Matchup.Home.Name : leg.Matchup.Away.Name))
+                    .Replace("{other}", Short(pickedHome ? leg.Matchup.Away.Name : leg.Matchup.Home.Name));
+            }
+            return NeutralLine(e, leg, up);
+        }
+
         public static string NeutralLine(DramaEvent e, Leg leg, bool up)
         {
             bool pickedHome = PickedHomeForPresentation(leg);

@@ -2205,7 +2205,15 @@ namespace SBR.Tests.EditMode
 
             int at = src.IndexOf("private string LegStatement(", System.StringComparison.Ordinal);
             Assert.Greater(at, -1, "LegStatement not found — re-point this scan rather than deleting it.");
-            string body = src.Substring(at, System.Math.Min(2200, src.Length - at));
+            // SCANNED TO A REAL END MARKER, NEVER A CHARACTER COUNT — and this is the third time this
+            // lane has paid for that. The window was `Substring(at, 2200)`; T96's draw row added a
+            // dozen lines of reasoning to LegStatement and pushed `{club} ML` past 2200, so the
+            // assertion failed while the string it asserts was still exactly where it belongs. A scan
+            // that silently stops covering its target reports the absence of its own window as a
+            // defect in the code. The method's next sibling is the honest boundary.
+            int end = src.IndexOf("\n        private ", at + 1, System.StringComparison.Ordinal);
+            if (end < 0) end = src.Length;
+            string body = src.Substring(at, end - at);
             // G1 superseded T69's interim form: the compact statement states IDENTITY, and the
             // fixture is dropped entirely because the scorebug already carries it. `{CLUB} ML`.
             Assert.IsTrue(body.Contains("{club} ML"),

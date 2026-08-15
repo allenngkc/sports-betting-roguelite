@@ -1512,6 +1512,24 @@ namespace SBR.Game
                         ? SweatFlavor.GoalLine(spec.Goal.Value.ForPicked, leg, evt.Step)
                         : SweatFlavor.NeutralLine(evt, leg, _lastBeatUp);
 
+                // T97 (batch 68) — THE SECOND INSTANCE OF ONE LAW, and the guard above is the first:
+                //
+                //   A beat's WORDS are licensed by what the RESOLVED SCENE CONTAINS, never by the
+                //   beat's TYPE LABEL alone.
+                //
+                // The count families got this guard at F_0.4.0 P3 r2 — "corner/booking words would
+                // be a lie there". The GOAL families never did, so a beat typed Score or BigPlay
+                // printed a goal sentence whether or not the scene staged a goal. On a goalless
+                // match that shipped `{other} on the board; the slip flinches.` over a 0–0 FT
+                // scorebug: the strip asserting a goal the match never contained.
+                //
+                // NearMiss is excluded because its overrides are already right — they assert no goal
+                // and are used precisely where none occurred, which is the model this copies.
+                bool goalWords = (evt.Type == DramaEventType.Score || evt.Type == DramaEventType.BigPlay)
+                    && evt.Tag != TensionTag.NearMiss;
+                if (goalWords && !spec.Goal.HasValue)
+                    _pendingFlavor = SweatFlavor.NoGoalLine(evt, leg, _lastBeatUp);
+
                 // Market suspension is for DANGEROUS scenes only (playtest #13 — blanket
                 // suspension left almost no window to cash out): goal chances and near-misses
                 // suspend until their reveal, exactly like a real book on a dangerous attack;
@@ -2267,6 +2285,12 @@ namespace SBR.Game
             {
                 case MarketKind.Moneyline:
                 {
+                    // T96: a draw ticket has no backed side, so it takes the deck's own DRAW row
+                    // rather than a team's. Routed here rather than inside the describer because
+                    // this is the site that knows the selection.
+                    if (leg.Selection.Choice == MarketChoice.Draw)
+                        return SweatActiveLegModel.Describe(
+                            SweatActiveLegModel.ActiveLegInput.MoneylineDraw(_ledger.Picked, _ledger.Opponent));
                     bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
                     string team = SweatFlavor.Short(pickedHome ? leg.Matchup.Home.Name : leg.Matchup.Away.Name);
                     return SweatActiveLegModel.Describe(
@@ -2758,6 +2782,27 @@ namespace SBR.Game
                 _prevProb = leg.TrueProb; // pre-event anchor for this leg's first beat
             }
             string flavor = SweatFlavor.For(evt, leg, _prevProb);
+
+            // T87-am (batch 68) — THE DRAWN MATCH'S CLOSING LINE.
+            //
+            // A DECIDED match ends ON a goal, so its final beat's line IS its ending and the strip is
+            // already correct. A DRAWN match ends on nothing, so the last beat's line is stale by
+            // construction — there is no closing event to speak. The strip's silence at a draw is
+            // STRUCTURAL, which is why it is the only result that needs an authored ending.
+            //
+            // `FULL TIME — LEVEL` was the obvious form and is REFUSED: the scorebug prints `FT` in
+            // the clock slot directly above, so it would state one fact twice, one slot apart. The
+            // strip's job is to say what the score and clock cannot.
+            //
+            // Nothing here is 0–0-specific, deliberately: `THE MATCH ENDS LEVEL` is true at 0–0 and
+            // at 2–2, and a goalless-only line would be exactly the narrowing T87 §6.8 forbids.
+            //
+            // LEVEL is read from the REVEALED ledger, never from the locked StatLine — §4.1's rule
+            // that presentation reads revealed facts. At the whistle the two agree, which is why the
+            // honest source costs nothing here.
+            if (evt.Type == DramaEventType.LegFinal && _ledger.Picked == _ledger.Opponent)
+                flavor = "THE MATCH ENDS LEVEL";
+
             _prevProb = evt.WinProbAfter;
 
             // The stage speaks the same beat (model owns the direction rule — one authority).
@@ -3098,6 +3143,19 @@ namespace SBR.Game
             switch (sel.Kind)
             {
                 case MarketKind.Moneyline:
+                    // T96 (batch 68): THE DRAW IS ITS OWN ROW, and it must never borrow a team's.
+                    //
+                    // This branch was a two-way `pickedHome ? Home : Away` because THAT IS WHAT THE
+                    // COPY DECK SAID — one Moneyline row, two-way, no draw case. The deck predates
+                    // S74's draw authoring by four days and was never amended, so a draw ticket
+                    // printed `MIDDLEMEN ML`: a team pick, on a ticket that backed neither team.
+                    // Both tickets in the goalless set printed the same string with opposite grades.
+                    //
+                    // The deck now carries the row (`DRAW`, compact; `LEVEL AT FULL TIME`, NEED), and
+                    // the build takes it from there. The reusable half: A COPY RULING LANDS IN THE
+                    // DECK OR IT HAS NOT LANDED — S74 was ruled, folded into the owning doc, and
+                    // still shipped a defect, because the deck sat between the doc and the build.
+                    if (sel.Choice == MarketChoice.Draw) return "DRAW";
                     // Clubs by their distinctive word, city dropped — the convention T69 shipped.
                     bool pickedHome = SweatFlavor.PickedHomeForPresentation(leg);
                     string club = SweatFlavor.Short(

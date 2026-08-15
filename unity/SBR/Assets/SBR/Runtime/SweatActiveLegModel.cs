@@ -109,6 +109,13 @@ namespace SBR.Game
                 => new ActiveLegInput(MarketKind.Moneyline, MarketChoice.Home, 0.0, backedTeamName, null,
                     revealedGoalsFor, revealedGoalsAgainst, 0, 0, false);
 
+            /// <summary>T96: the DRAW is its own row and carries no backed team — the whole defect
+            /// was a draw ticket borrowing a team's string. `Choice` is what tells the describer
+            /// which row to render, so it is the one thing this factory must not default.</summary>
+            public static ActiveLegInput MoneylineDraw(int revealedGoalsFor, int revealedGoalsAgainst)
+                => new ActiveLegInput(MarketKind.Moneyline, MarketChoice.Draw, 0.0, null, null,
+                    revealedGoalsFor, revealedGoalsAgainst, 0, 0, false);
+
             public static ActiveLegInput TotalGoals(bool over, double line, int revealedGoalsFor, int revealedGoalsAgainst)
                 => new ActiveLegInput(MarketKind.TotalGoals, over ? MarketChoice.Over : MarketChoice.Under, line,
                     null, null, revealedGoalsFor, revealedGoalsAgainst, 0, 0, false);
@@ -225,8 +232,31 @@ namespace SBR.Game
             // callers read, and shortening it here would narrow a fact to solve a layout problem.
             string team = (l.BackedTeamName ?? string.Empty).ToUpperInvariant();
             string club = SweatFlavor.Short(l.BackedTeamName ?? string.Empty).ToUpperInvariant();
-            string need = $"{club} TO WIN";
             string score = $"{l.RevealedGoalsFor}{Dash}{l.RevealedGoalsAgainst}";
+
+            // T96 (batch 68): THE DRAW'S OWN ROW, from the amended deck — NEED `LEVEL AT FULL TIME`
+            // over progress `LEVEL` / `NOT LEVEL` (S74), with `LEVEL AT FT` as the authored shorter
+            // line. `FT` is this surface's own clock token rather than jargon, and the pair is the
+            // same shape as `ONE TEAM SCORELESS` / `ONE TEAM BLANKED`: an 18-char NEED at the budget,
+            // carrying a complete fallback rather than a truncation.
+            //
+            // T70-am ruled the repeated word NO BREACH: `LEVEL` above `LEVEL` is a binary state
+            // answering its own requirement in the requirement's word, which is the progress line
+            // doing its only job. T70 governs redundant IDENTIFICATION — a NAME printed twice — and
+            // forcing a different word below would put a second name on one thing, breaking the
+            // one-name-per-thing convention. The cure would be the worse defect.
+            //
+            // `Identity` is the MARKET PICK, not a team: a draw ticket has no backed side, and that
+            // is the whole finding this row exists to fix.
+            if (l.Choice == MarketChoice.Draw)
+            {
+                bool level = l.RevealedGoalsFor == l.RevealedGoalsAgainst;
+                return new ActiveLegCopy("LEVEL AT FULL TIME", level ? "LEVEL" : "NOT LEVEL",
+                                         isTeamMarket: false, identity: MarketPick,
+                                         needFallback: "LEVEL AT FT");
+            }
+
+            string need = $"{club} TO WIN";
             string live = l.RevealedGoalsFor > l.RevealedGoalsAgainst ? $"LEADING {score}"
                 : l.RevealedGoalsFor < l.RevealedGoalsAgainst ? $"TRAILING {score}"
                 : $"LEVEL {score}";
