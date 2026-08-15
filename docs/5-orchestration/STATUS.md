@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 293.** PHASE 4 MERGED on
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 294 (heartbeat).** Quiet
+and healthy: TV building the panel mechanism, su on re-shot-then-A with
+the per-block order, DD holding on Allen's word (both waits close), sgp
+standing by clean. With Allen: only the research words.
+
+*(prior stamp, cycle 293:)* PHASE 4 MERGED on
 Allen's word (49ceec5): conditional cash-out gate-validated on HOLDOUT6
 via the parallel path - 8/8, economy moved by nothing detectable, zero
 no-label fallbacks across 106,205 tickets, 25,108 cashed out across all
