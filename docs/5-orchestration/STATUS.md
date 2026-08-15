@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 292.** ALLEN RULED the
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 293.** PHASE 4 MERGED on
+Allen's word (49ceec5): conditional cash-out gate-validated on HOLDOUT6
+via the parallel path - 8/8, economy moved by nothing detectable, zero
+no-label fallbacks across 106,205 tickets, 25,108 cashed out across all
+three sweat positions; campaign cost CUT TO A THIRD (speed-brief item 2
+closed). Batch 78 (the C spec) landed + pushed with Allen's approval.
+sgp stands by - its remaining halves live with other owners. su: re-shot
+then A; TV: panel mechanism; DD holding.
+
+*(prior stamp, cycle 292:)* ALLEN RULED the
 70px (S82): the DD's sequence adopted - A now (tighten spacing vs the
 34.10px live break, measured), C before the gesture (scrolling flow,
 anchored action band), B in reserve returning to Allen with numbers if
