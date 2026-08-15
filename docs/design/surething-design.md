@@ -97,6 +97,29 @@ Design-verified masthead changes only by closing a conformance gap, never by red
 budget, and this is the same trade. **A deficit that survives the yield order below returns to the
 DD seat and then to Allen — it does not become a donation from chrome.**
 
+**THE BUDGET IS PRICED** (S80-am2 / S82, 2026-08-15, measured over eight flows). Against the 370px
+`MarginFlowBudget`: **4 legs alone 370.10** · **4 + a held consumable 404.10 (+34.10)** · **4 + the
+relation statement 406.10 (+36.10)** · **4 + both 440.10 (+70.10, the worst case)**. Three legs with
+a consumable fits by 0.9px. **The consumable row is a single 34px advance however many are held**, so
+the space is legs × {row absent, present} × statement — **eight flows, not twelve.**
+
+**TWO BILLS, TWO DEADLINES, and this is the part that must not be collapsed.** **34.10px is LIVE
+TODAY** — four legs across distinct matchups plus one held consumable, pure run state at the ordinary
+cap, **a defect on screen now with nothing to do with the sentence.** **36.00px is the statement's
+and is unreachable in play** until the additive gesture ships, because `Toggle` still replaces and a
+same-match slip cannot be built. **Pricing them as one 70px bill is what makes the problem look
+unsolvable.**
+
+**`RelationStatementHeight = 30` is confirmed and closed** — the longest approved sentence renders
+two lines at 28.3px preferred against the 30px slot.
+
+**The reservation is provisioned for the MEASURED WORST CASE, and the spec names no number**: the
+worst case is a consequence of the composition, not a fact about geometry. **The invariant BUILDS
+that state** — a bound written against the worst case fires on a correct build if the gate keeps
+building the base, and **a gate that builds one state cannot bound a state space.** **Where a gate
+and its exploratory sweep measure the same quantity they share ONE measurement, or the sweep is
+decoration.**
+
 **Yield order for any layout deficit: spacing, then repetition, then nothing** (S50). Nothing that
 states a product fact is deleted to make a layout fit, and no hierarchy is reordered for a shortfall
 (T51). A deficit that survives that list returns to the DD seat.
