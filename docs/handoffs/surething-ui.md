@@ -53,3 +53,94 @@ screen. **Plan:** F_0.6.0 step 5.
   commit it either.)
 - Report telegraphic, result-first: Done / Next / Risk / Need. The final text of a report is the
   deliverable — no bare register codes to Allen; plain words.
+
+## 5. Lane state
+
+### Unit 1 — margin-pin repair: GREEN (`3dd93df`), verified 2026-08-14
+
+**The handoff's diagnosis in §2.2 is wrong and is superseded.** It says the pin "was never
+re-sourced when M-04 landed." It was: `ead9396` moved it 2.6 → 4.56 in the same commit that landed
+M-04, and that value is on main. Re-sourcing it again would not have held.
+
+The pin's quantity is `4.00px structural + sin(0.5°) × the wax highlight's width`. The band is
+sized from the payout figure's *measured* width, and `RunDirector.seed` is blank in `Room.unity`,
+so every boot prices a different board and renders a different money string. The pin was a function
+of how much money was on the screen; 4.563 ↔ a 56.5px figure, 4.748 ↔ a 77.7px one. Draws supplied
+the extra glyphs. Nothing entered the flow — no commit touched its layout in between.
+
+The earlier acquittal of the highlight computed the band's **height** term (0.21px). Rotation is
+about the top-left **pivot**, so the term that matters scales with **width**.
+
+Repair: structural part DERIVED from the layout literals and pinned two-sided at 4.00 ± 0.05 (needs
+no re-sourcing ever again); tilt bounded at 3.0px rather than pinned. Reservation untouched, no
+element excluded. Test file only — no production pixel moved.
+
+**Verified** (Unity window granted after TV released, 2026-08-14). The derived 4.00 held on the
+first run — it was never measured.
+
+- Margin invariant green on **four independent boots** — the class run plus three single-test runs.
+  Each boot rolls its own seed, so each measured a different board, a different payout figure and
+  therefore a different band width. That repetition IS the evidence: the old pin passed and failed
+  on the same code depending on the price.
+- **PlayMode 94/94 executed · 88 passed · 0 failed · 6 skipped.** All six skips are the TV lane's
+  capture harness, marked run-by-filter-only. Pre-existing.
+- **EditMode 252/252 executed · 251 passed · 0 failed · 1 skipped.** The skip is TV's void fit grant
+  pending re-certification. Pre-existing.
+- Engine/dotnet suite deliberately NOT run: this change touches one Unity test file and no engine
+  source, so it cannot move that suite, and building would dirty the tracked `SBR.Engine.dll` for
+  nothing. Stated rather than silently omitted.
+- Churn from the runs reverted by explicit path: `ProjectSettings.asset` (Unity dropped
+  `SENTIS_ANALYTICS_ENABLED` from the Standalone defines on boot — integration-only file, never a
+  slice's to move) and the TMP `LiberationSans SDF - Fallback` atlas. Tree carries only the phantom
+  `URP.png`.
+
+**Run trap, hit and worth keeping:** the first invocation died with no results file — Unity's package
+resolve failed (`IPC stream failed to read`) because a stale `Temp/UnityLockfile` survived the
+killed editor. No compile error, nothing to do with the change. Clearing the stale lockfile with no
+Unity process alive fixed it on the retry.
+
+### Unit 2 — survey done. The plan's open risk is CONFIRMED, and it is bigger than the model
+
+The step-5 plan flags: *"The interaction model may reach past the slip. If the board also assumes
+one selection per match, P1 grows. Not yet surveyed."* **It does.** Seven sites, four shapes, all
+confined to `SportsbookApp.cs` — no other surface calls the matchup-keyed accessors.
+
+1. **Marked-state is asked in the singular** — `SelectionOn(matchup.Index)` at `:243`, `:244`
+   (lobby moneyline pair) and `:685` (detail offer rows). It asks *what is the pick on this match*.
+   With two legs on one match, at most one can ever draw as marked.
+2. **The interaction replaces** — `Toggle(matchup.Index, …)` at `:271`, `:275`, `:760`.
+3. **RUB OUT addresses a matchup, not a leg** — `Remove(matchupIndex)` at `:968`. With two legs on
+   one match it cannot remove one of them. (The plan predicted this for the model; the margin calls
+   it too.)
+4. **The rule is DRAWN, and becomes a lie** — `:687` computes a `replacement` state and `:745`/
+   `:761-768` render it as a `⇄` glyph prefixed to the price plus a 2px underline, on every *other*
+   offer in a match once one is picked. That affordance tells the player the second pick will
+   replace the first. Once same-match tickets exist it is false, and it is copy, not plumbing.
+
+So the screen half of P1 is real work and it is **blocked on sgp's model P1** — it cannot be
+written until the model addresses legs rather than matchups. Sequencing through the orchestrator.
+
+### Unit 2 — the void arm (P6) is the one screen phase that is NOT blocked
+
+`TicketState.Voided` appears on **no surface at all** — every render site is a Won/Lost/CashedOut
+chain with a fallback else. It needs nothing from `BetslipModel`, and sgp's void re-pricing already
+landed, so this is startable now. It is also not merely missing; the fall-through prints two
+falsehoods in the ledger (`:2475-2489`):
+
+- the state word falls to **`"OPEN"`** — a settled, refunded ticket reads as still live;
+- the returned value falls to **`"—"`**, which S41 reserves for an amount that is *genuinely
+  unknowable*. A voided ticket's return is exactly known: the stake. So the dash is false here and
+  it spends a ruled token on the wrong case.
+
+A voided ticket does reach the ledger — `:2197`/`:2201` collect on `State != Open` — so this is
+rendered today, not merely unreachable.
+
+**Starting here** while P1's screen half waits on the model.
+
+### Design-facing, routed, NOT self-ruled
+
+S51's expiry condition is met — its owner is identified. The 4.00px is a real excursion past T47's
+reservation: the wax highlight hangs 4px below the payout figure's box, and that box's bottom is
+flush with the flow budget. Whether the fix is to lift the payout block, shorten the band's 34px
+drop, or rule that a decorative underline is not flow content is a Design call. To the DD through
+the orchestrator.
