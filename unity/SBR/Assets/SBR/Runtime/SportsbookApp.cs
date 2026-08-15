@@ -801,6 +801,27 @@ namespace SBR.Game
         /// <summary>Gutter x and stroke weight for <c>THE HOUSE'S LINE</c>. The gutter is the strip
         /// between the 2px sheet divider at x=0 and the leg rows' own left pad at x=14 — the margin
         /// of the margin, which is where an annotating hand has room to write.</summary>
+        /// <summary>P5's slot: two 13px lines. The family's longest member does not fit one line in
+        /// the 296px content column, and the copy is ruled (S78) — so the slot is authored around the
+        /// approved sentence rather than the sentence cut to fit an unspecified box.</summary>
+        internal const float RelationStatementHeight = 30f;
+
+        /// <summary>**A HOLD on two of the seven approved sentences, and not S79's silence.** The
+        /// `ScorerOfSide` pair is copy the DD approved; it is withheld because measuring the
+        /// population found the sentence reads against the WRONG club rather than merely an
+        /// unnamed one — a scorer row names the player, so the only club on screen is the other
+        /// team's. See <see cref="RelationStatement"/> for the measured examples.
+        ///
+        /// <para>Released when the mark carries the side (the DD's pre-committed disposition 2).
+        /// Left as a constant so the withholding is legible and deliberate rather than a branch
+        /// nobody notices, and gated so it cannot be flipped without the gate being read.</para>
+        ///
+        /// <para>`static readonly` rather than `const` deliberately: a `const false` makes the guard
+        /// below compile-time provable, so the held sentence becomes unreachable code and the
+        /// compiler refuses it. The copy is approved and stays compiled — only its route to the
+        /// screen is closed.</para></summary>
+        internal static readonly bool StateScorerOfSideRelation = false;
+
         private const float HouseLineX = 7f;
         private const float HouseLineWeight = 2f;
         private const float HouseLineSpur = 5f;
@@ -1049,6 +1070,27 @@ namespace SBR.Game
                     if (group.Value.Count < 2) continue;   // one leg on a match is not a connection
                     DrawHouseLine(panel, markIndex++, group.Value, legRowY);
                 }
+            }
+
+            // P5 — THE STATEMENT (S78). One relation per slip, in toner, composed from `principal`.
+            // Never a formula, never a coefficient, never an English string from the engine — the
+            // model emits parts and this composes the sentence.
+            //
+            // TWO LINES, because the family's longest member does not fit one at 13px and the copy is
+            // ruled: `THE SAME TEAM'S GOALS SETTLE THESE OPPOSITE WAYS.` measures past the 296px
+            // content column. The slot is authored around the approved copy rather than the copy
+            // being cut to a slot that was never specified — the owning doc gives this statement
+            // "toner, once per slip" and no box.
+            //
+            // Lengthening is NOT remarked (§8): this states the relation and never that the price
+            // moved in his favour.
+            string relationStatement = RelationStatement(slip.SameMatchPricing, slip.Picks);
+            if (relationStatement != null)
+            {
+                LaptopUi.MakeText(panel, "RelationStatement", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(14f, y - 4f), new Vector2(headerRight, RelationStatementHeight), 13,
+                    TextAnchor.UpperLeft, LaptopOs.White, relationStatement, _font);
+                y -= RelationStatementHeight + 6f;
             }
 
             // E-07 ruling: staged ticket receipts no longer render here. The 324px margin has no
@@ -1586,6 +1628,103 @@ namespace SBR.Game
         ///
         /// <para><b>Removal order never reaches the player</b> (S73-am5). High-to-low is an
         /// implementation constraint of the caller, not part of the instruction.</para></summary>
+        /// <summary>P5 — the slip's ONE relation statement, composed from `principal` (S78, batch 71).
+        /// Toner, once per slip, stating what the legs SHARE. Null when nothing is statable.
+        ///
+        /// <para><b>The seven are a FAMILY and are not to be re-authored apart</b> (S78). The shape
+        /// is not a template applied to save effort — the shape IS the claim: every one of these
+        /// relations is literally *one shared thing settles both legs*, so the sentences differ
+        /// exactly where the relations differ and are identical exactly where they are identical.
+        /// After the first encounter he reads only the DIFFERENCE; four idioms would make him
+        /// re-parse a whole sentence to learn something he already knows.</para>
+        ///
+        /// <para><b>Sign is carried</b> — reinforcing and opposing are opposite claims about the same
+        /// shared thing, and one sentence per relation would state one of them falsely about the
+        /// other. Seven sentences for four relations is the honest count.</para>
+        ///
+        /// <para><b>`ScorerSide` is deliberately NOT spoken</b> (S78, confirmed). Naming the team
+        /// would be a name where the rubric asks for the relation, and the team is on both rows in
+        /// front of him — S77's *mark, don't name* and T69/T70's *the subject is already on screen*.
+        /// Where the two rows do not visibly share a club the sentence is under-determined; that case
+        /// is reported by the evidence harness, and its remedy is at the MARK, never in this
+        /// sentence.</para>
+        ///
+        /// <para><b>Null principal states NOTHING, and that is ruled correct</b> (S79). A null
+        /// principal means the price did not move, so there is no cost to disclose — the statement
+        /// exists to explain a price that shortened, and where nothing shortened nothing is owed. A
+        /// high blank rate is what a correctly-behaving model looks like from the surface; a
+        /// statement is never authored to fill it.</para></summary>
+        internal static string RelationStatement(SameMatchPrice pricing, IReadOnlyList<Pick> picks)
+        {
+            if (pricing?.Principal == null) return null;
+            Relation p = pricing.Principal.Value;
+            bool opposing = p.Sign == RelationSign.Opposing;
+            switch (p.Kind)
+            {
+                // S78: NOT the drafted "ONE OF THESE ALREADY COVERS THE OTHER" — that was refused as
+                // a regression. §3.3 already authors this situation (a legal-but-pointless leg is NOT
+                // a Blocked state and does not take Stamp; the machine states the fact in toner) and
+                // these are ONE statement, not two — two code paths would have shipped two toner
+                // sentences for one fact.
+                //
+                // The draft dropped the COST, which is the whole reason the statement exists: S17 is
+                // about him being quietly charged for a leg that cannot lose. And it withheld WHICH
+                // leg — right everywhere else in this batch, wrong here, because here the naming is
+                // the actionable part. He may choose to rub that leg out.
+                //
+                // Said by POSITION, not by name. `Relation.Legs` is ordered by MEANING — Legs[0]
+                // implies Legs[1], so Legs[1] is the leg that adds nothing — and that order is NOT
+                // slip order, so the ordinal is derived from where the two legs actually sit on the
+                // slip rather than from the relation's own array. Two authored forms, one per case.
+                case RelationKind.Implies when p.Legs.Count >= 2 && p.Legs[1] > p.Legs[0]:
+                    return "THE SECOND ADDS NOTHING; THE FIRST ALREADY COVERS IT.";
+                case RelationKind.Implies:
+                    return "THE FIRST ADDS NOTHING; THE SECOND ALREADY COVERS IT.";
+
+                // GOALS / CORNERS / CARDS — a clean triple of countable match events, and that
+                // parallelism is what makes the family read as one. `SCORELINE` was considered and
+                // refused for breaking it.
+                case RelationKind.SharedScoreline:
+                    return opposing ? "THE SAME GOALS SETTLE THESE OPPOSITE WAYS."
+                        : "THE SAME GOALS SETTLE BOTH.";
+                // HELD — and this is NOT S79's ruled silence, which is the absence of a thing to
+                // explain. Here there IS something to state and it is withheld, because measurement
+                // found the case worse than the one the DD pre-committed a disposition for.
+                //
+                // S78 anticipated: where the two marked rows do not visibly share a club, the
+                // sentence is UNDER-DETERMINED and he must already know which club the player plays
+                // for. Measured over 1,712 ScorerOfSide slips, the two rows share the club in ZERO —
+                // and the examples say why it is not merely under-determined:
+                //
+                //     rows "MIDDLEMEN" + "LANCE MUFFIN", and the sentence's team is BRICKLAYERS.
+                //
+                // A scorer row names the PLAYER and never his club, so the only club on screen is
+                // the OTHER one. "The same team's goals" would be read against the one team it does
+                // not mean. That is not an absent referent, it is a wrong one, and a sentence that
+                // reads against the wrong club has stopped stating the relation.
+                //
+                // The DD's disposition (2) already rules the direction — the remedy is at the MARK,
+                // which can carry the side, and NEVER by naming the team in the sentence — but the
+                // treatment is a design call and the finding exceeds what was ruled on. Held rather
+                // than shipped, and reported.
+                case RelationKind.ScorerOfSide when !StateScorerOfSideRelation: return null;
+                case RelationKind.ScorerOfSide:
+                    return opposing ? "THE SAME TEAM'S GOALS SETTLE THESE OPPOSITE WAYS."
+                        : "THE SAME TEAM'S GOALS SETTLE BOTH.";
+                case RelationKind.SharedCount when p.Family == SelectionFamily.Corner:
+                    return opposing ? "THE SAME CORNERS SETTLE THESE OPPOSITE WAYS."
+                        : "THE SAME CORNERS SETTLE BOTH.";
+                case RelationKind.SharedCount when p.Family == SelectionFamily.Card:
+                    return opposing ? "THE SAME CARDS SETTLE THESE OPPOSITE WAYS."
+                        : "THE SAME CARDS SETTLE BOTH.";
+
+                // MutuallyExclusive is a refusal and Independent is nothing to state; neither is ever
+                // nominated as principal. Silence rather than a manufactured sentence if that ever
+                // changes — S79's rule is that a statement is never authored to fill a blank.
+                default: return null;
+            }
+        }
+
         internal static string RefusalCause(TicketRefusal refusal)
         {
             int n = refusal.CauseLegs.Count;
@@ -1622,7 +1761,16 @@ namespace SBR.Game
         {
             switch (refusal.RemedyLegs.Count)
             {
-                case 0: return "NO RUB OUT FIXES THIS SLIP.";
+                // S77-am: the previous line here read "NO RUB OUT FIXES THIS SLIP." and was refused
+                // as a CAUSE-SHAPED string in the remedy slot — it told him only that the thing he
+                // was about to try would not work and left him no act at all. "A refusal that closes
+                // every door is the one case where he most needs to be told which door is open."
+                //
+                // The act is named in the word the ACTUAL control uses. There is no clear-all
+                // control on this slip — the only removal control is the per-row RUB OUT — so the
+                // act is rubbing out every leg, and this is bound to the control that exists rather
+                // than to a CLEAR button that does not.
+                case 0: return "RUB OUT EVERY LEG AND START OVER.";
                 case 1: return "RUB OUT THE MARKED LEG TO PLACE.";
                 // Conjunctive and arity-keyed. "BOTH" and "ALL THREE" are the whole set by
                 // construction — there is no reading of either that spends less than all of it.

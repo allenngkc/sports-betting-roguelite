@@ -635,6 +635,75 @@ namespace SBR.Tests.PlayMode
                 $"the stamp was ellipsised: \"{stamp}\". A truncated remedy is an unverified remedy");
         }
 
+        /// <summary>P5 — the relation statement (S78/S79). The family, the ruled silence, and the
+        /// one held pair.</summary>
+        [Test, Order(8)]
+        public void Relation_statement_is_a_family_states_nothing_when_nothing_is_statable()
+        {
+            var empty = new List<Pick>();
+
+            // The family: the sentences differ exactly where the relations differ and are identical
+            // exactly where the relations are identical. That is what makes them a family rather
+            // than templating, and it is why they must not be re-authored apart (S78).
+            Assert.AreEqual("THE SAME GOALS SETTLE BOTH.", SportsbookApp.RelationStatement(
+                MakePricing(RelationKind.SharedScoreline, RelationSign.Reinforcing,
+                    SelectionFamily.Goal, null), empty));
+            Assert.AreEqual("THE SAME CORNERS SETTLE BOTH.", SportsbookApp.RelationStatement(
+                MakePricing(RelationKind.SharedCount, RelationSign.Reinforcing,
+                    SelectionFamily.Corner, null), empty));
+            Assert.AreEqual("THE SAME CARDS SETTLE THESE OPPOSITE WAYS.", SportsbookApp.RelationStatement(
+                MakePricing(RelationKind.SharedCount, RelationSign.Opposing,
+                    SelectionFamily.Card, null), empty));
+
+            // Sign is carried. Reinforcing and opposing are OPPOSITE claims about the same shared
+            // thing, so one sentence for both would state one of them falsely about the other.
+            Assert.AreNotEqual(
+                SportsbookApp.RelationStatement(MakePricing(RelationKind.SharedScoreline,
+                    RelationSign.Reinforcing, SelectionFamily.Goal, null), empty),
+                SportsbookApp.RelationStatement(MakePricing(RelationKind.SharedScoreline,
+                    RelationSign.Opposing, SelectionFamily.Goal, null), empty));
+
+            // The implication statement carries the COST and says WHICH leg — S78 refused the
+            // drafted "ONE OF THESE ALREADY COVERS THE OTHER" for dropping both.
+            string implies = SportsbookApp.RelationStatement(
+                MakePricing(RelationKind.Implies, RelationSign.Reinforcing, SelectionFamily.Goal, null),
+                empty);
+            StringAssert.Contains("ADDS NOTHING", implies,
+                "the statement exists because he would otherwise be quietly charged for a leg that "
+                + "cannot lose (S17) — the cost is the part he can act on");
+            Assert.IsTrue(implies.Contains("FIRST") && implies.Contains("SECOND"),
+                $"the statement must say WHICH leg adds nothing: \"{implies}\"");
+
+            // S79: a null principal states NOTHING, and that is ruled CORRECT — the price did not
+            // move, so there is no cost to disclose. A statement is never authored to fill it.
+            Assert.IsNull(SportsbookApp.RelationStatement(null, empty),
+                "no pricing is no statement");
+
+            // THE HELD PAIR — measured misdirection, not S79 silence. Asserted as held so releasing
+            // it is deliberate and so this is never mistaken for the ruled blank.
+            Assert.IsFalse(SportsbookApp.StateScorerOfSideRelation,
+                "the ScorerOfSide pair is held until the mark carries the side");
+            Assert.IsNull(SportsbookApp.RelationStatement(
+                MakePricing(RelationKind.ScorerOfSide, RelationSign.Reinforcing,
+                    SelectionFamily.Goal, Side.Home), empty),
+                "a scorer row names the PLAYER, so the only club on screen is the other team's — "
+                + "the sentence would read against the club it does not mean");
+
+            // Lengthening is not remarked, and no formula reaches the face (§8).
+            foreach (RelationKind k in Enum.GetValues(typeof(RelationKind)))
+                foreach (RelationSign sg in Enum.GetValues(typeof(RelationSign)))
+                {
+                    string s = SportsbookApp.RelationStatement(
+                        MakePricing(k, sg, SelectionFamily.Goal, Side.Home), empty);
+                    if (s == null) continue;
+                    foreach (string banned in new[] { "%", "BETTER", "VALUE", "BOOST", "DISCOUNT",
+                             "PARLAY", "SGP", "CORRELAT" })
+                        Assert.IsFalse(s.ToUpperInvariant().Contains(banned),
+                            $"\"{banned}\" reaches the face in \"{s}\" — the statement states the "
+                            + "relation, never the apparatus and never that the price moved his way");
+                }
+        }
+
         /// <summary>EVIDENCE, not verification — the DD's two measurements for the S77 forms, run by
         /// filter only so it does not lengthen routine suites (the TvSweatCaptureHarness pattern).
         ///
@@ -780,7 +849,100 @@ namespace SBR.Tests.PlayMode
                 UnityEngine.Debug.Log($"[S77-PRINCIPAL] {kv.Key}: {kv.Value} "
                     + $"({(double)kv.Value / sameMatchSlips:P1})");
 
+            // ---- (4) S78's OWED MEASUREMENT: the seven sentences against their actual slot.
+            // "Approval above is of the copy; fit is not asserted and never is at this seat."
+            // The slot is the margin's 296px content column at 13px, two lines — so the budget a
+            // sentence is measured against is 2 x 296, and S77-am's 80% headroom rule applies to it
+            // for the same reason it applies to the stamp: ~20% is what absorbs a face that measures
+            // wider than the one it was sized against (C46).
+            const float column = 296f;
+            const float statementBudget = column * 2f;
+            UnityEngine.Debug.Log("[S78-FIT] sentence | 13px | vs 2x296 budget | lines");
+            var sentences = new List<string>();
+            foreach (RelationKind k in new[] { RelationKind.SharedScoreline, RelationKind.ScorerOfSide })
+                foreach (RelationSign sg in new[] { RelationSign.Reinforcing, RelationSign.Opposing })
+                    sentences.Add(SportsbookApp.RelationStatement(
+                        MakePricing(k, sg, SelectionFamily.Goal, Side.Home), slip.Picks));
+            foreach (SelectionFamily fam in new[] { SelectionFamily.Corner, SelectionFamily.Card })
+                foreach (RelationSign sg in new[] { RelationSign.Reinforcing, RelationSign.Opposing })
+                    sentences.Add(SportsbookApp.RelationStatement(
+                        MakePricing(RelationKind.SharedCount, sg, fam, null), slip.Picks));
+            sentences.Add(SportsbookApp.RelationStatement(
+                MakePricing(RelationKind.Implies, RelationSign.Reinforcing, SelectionFamily.Goal, null),
+                slip.Picks));
+
+            float worstSentence = 0f;
+            string worstSentenceText = "";
+            foreach (string s in sentences.Where(x => x != null).Distinct())
+            {
+                float w = LaptopUi.MeasureWidth(font, s, 13, 0f);
+                if (w > worstSentence) { worstSentence = w; worstSentenceText = s; }
+                UnityEngine.Debug.Log($"[S78-FIT] \"{s}\" | {w:F1} | {w / statementBudget:P0} | "
+                    + $"{Mathf.CeilToInt(w / column)}");
+            }
+            UnityEngine.Debug.Log($"[S78-FIT] WIDEST \"{worstSentenceText}\" {worstSentence:F1}px = "
+                + $"{worstSentence / statementBudget:P0} of the 2-line budget "
+                + $"(S77-am's rule: under 80%)");
+
+            // ---- (5) THE FLOW COST. P5 adds a slot to a region T47 reserves and S51 has just shown
+            // is already flush. Measured rather than assumed, because the margin invariant fills
+            // MaxLegs across DIFFERENT matchups and so never renders a statement at all.
+            UnityEngine.Debug.Log($"[S78-FLOW] statement slot {SportsbookApp.RelationStatementHeight:F0}px"
+                + $" + 6px separation = {SportsbookApp.RelationStatementHeight + 6f:F0}px added to a "
+                + $"{SportsbookApp.MarginFlowBudget:F0}px flow budget that currently clears by 0.10px "
+                + "at MaxLegs. A same-match slip AT MaxLegs therefore overruns T47's 6px pad by "
+                + $"{SportsbookApp.RelationStatementHeight + 6f - 6f:F0}px. Geometry, and it goes to "
+                + "Allen with the cost stated (S77's step 3), not taken here.");
+
+            // ---- (6) S78's OWED REPORT: is `THE SAME TEAM'S GOALS` under-determined?
+            // The case the DD named rather than discovered: where the two marked rows do NOT visibly
+            // share a club name, the sentence alone does not say which team.
+            int scorerSlips = 0, sharedClub = 0;
+            for (int m = 0; m < Mathf.Min(2, run.CurrentSlate.Matchups.Count); m++)
+            {
+                Matchup mu = run.CurrentSlate.Matchups[m];
+                var offers = new List<MarketSelection>();
+                foreach (MarketOffer offer in mu.Markets) offers.Add(offer.Selection);
+                for (int a = 0; a < offers.Count; a++)
+                    for (int b = a + 1; b < offers.Count; b++)
+                    {
+                        slip.Clear();
+                        if (!slip.AddLeg(m, offers[a])) continue;
+                        if (!slip.AddLeg(m, offers[b])) continue;
+                        if (slip.Refusal != null) continue;
+                        SameMatchPrice pr = slip.SameMatchPricing;
+                        if (pr?.Principal == null) continue;
+                        if (pr.Principal.Value.Kind != RelationKind.ScorerOfSide) continue;
+                        scorerSlips++;
+                        // Do the two rows he is looking at name the same club?
+                        string r0 = SportsbookApp.MarginLegSubject(mu, slip.Picks[0].Selection);
+                        string r1 = SportsbookApp.MarginLegSubject(mu, slip.Picks[1].Selection);
+                        string club = LaptopUi.TeamShort(
+                            pr.Principal.Value.ScorerSide == Side.Home ? mu.Home : mu.Away);
+                        if (r0.ToUpperInvariant().Contains(club.ToUpperInvariant())
+                            && r1.ToUpperInvariant().Contains(club.ToUpperInvariant())) sharedClub++;
+                        else if (scorerSlips <= 5)
+                            UnityEngine.Debug.Log($"[S78-SCORER] example: rows \"{r0}\" + \"{r1}\" · "
+                                + $"the sentence's team is {club} · named on neither row");
+                    }
+            }
+            UnityEngine.Debug.Log($"[S78-SCORER] {scorerSlips} ScorerOfSide slips · both rows name the "
+                + $"shared club in {sharedClub} "
+                + $"({(scorerSlips == 0 ? 0 : (double)sharedClub / scorerSlips):P1}) · "
+                + $"UNDER-DETERMINED in {scorerSlips - sharedClub} "
+                + $"({(scorerSlips == 0 ? 0 : (double)(scorerSlips - sharedClub) / scorerSlips):P1})");
+
             Assert.Greater(refused, 0, "the sweep found no refusals — the board changed shape");
+        }
+
+        /// <summary>A `SameMatchPrice` carrying one nominated relation, so the approved sentences can
+        /// be measured without hunting the board for a slip that happens to emit each one.</summary>
+        private static SameMatchPrice MakePricing(RelationKind kind, RelationSign sign,
+            SelectionFamily family, Side? scorerSide)
+        {
+            var relation = new Relation(kind, new[] { 0, 1 }, sign, family, scorerSide);
+            return new SameMatchPrice(0.25, 4.0, new[] { relation }, relation, false,
+                new double[] { 0, 0, 0, 4.0 });
         }
 
         /// <summary>P4 — THE HOUSE'S LINE. Where two picks share a match the house marks the
