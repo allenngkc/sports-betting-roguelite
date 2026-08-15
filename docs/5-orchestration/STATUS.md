@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 277.** Batch 71 landed
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 278.** T98 done and
+remote-verified (d20c67f) - Allen extended the sweep to the console's
+dead-prototype twin; merge follows. su's slot measurement surfaced the
+P5 FLOW COST - +36px against a 0.10px clearance, ~30px pad overrun at
+MaxLegs, invisible to the existing invariant - TO ALLEN per his staged
+word. DD holding + mark-treatment docketed. HOLDOUT6 grinding.
+
+*(prior stamp, cycle 277:)* Batch 71 landed
 (05782eb): seven sentences approved as copy (family, not idioms), S77
 forms 9/11, 13px ratified with a durable face-budget rule; re-authoring
 + slot measurement routed to su (stand-by superseded). sgp's conditional
