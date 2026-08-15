@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 296.** ALLEN RULED B:
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 297 (heartbeat).** Quiet:
+su building the scroll with batch 80's boundary rules queued in; TV on
+the strip answer + panel pins; DD idle between rulings. With Allen:
+research words, TAB when convenient.
+
+*(prior stamp, cycle 296:)* ALLEN RULED B:
 NOT TAKEN - the nudge row stays; C moves FORWARD instead: su builds the
 scrolling flow region now against batch 78 sized on post-A numbers.
 Batch 79 landed (f11b0e4): scorebug overlay stands on the freeze
