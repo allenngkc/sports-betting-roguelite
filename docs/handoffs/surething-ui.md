@@ -53,3 +53,35 @@ screen. **Plan:** F_0.6.0 step 5.
   commit it either.)
 - Report telegraphic, result-first: Done / Next / Risk / Need. The final text of a report is the
   deliverable — no bare register codes to Allen; plain words.
+
+## 5. Lane state
+
+### Unit 1 — margin-pin repair: WRITTEN, COMMITTED (`3dd93df`), NOT YET VERIFIED
+
+**The handoff's diagnosis in §2.2 is wrong and is superseded.** It says the pin "was never
+re-sourced when M-04 landed." It was: `ead9396` moved it 2.6 → 4.56 in the same commit that landed
+M-04, and that value is on main. Re-sourcing it again would not have held.
+
+The pin's quantity is `4.00px structural + sin(0.5°) × the wax highlight's width`. The band is
+sized from the payout figure's *measured* width, and `RunDirector.seed` is blank in `Room.unity`,
+so every boot prices a different board and renders a different money string. The pin was a function
+of how much money was on the screen; 4.563 ↔ a 56.5px figure, 4.748 ↔ a 77.7px one. Draws supplied
+the extra glyphs. Nothing entered the flow — no commit touched its layout in between.
+
+The earlier acquittal of the highlight computed the band's **height** term (0.21px). Rotation is
+about the top-left **pivot**, so the term that matters scales with **width**.
+
+Repair: structural part DERIVED from the layout literals and pinned two-sided at 4.00 ± 0.05 (needs
+no re-sourcing ever again); tilt bounded at 3.0px rather than pinned. Reservation untouched, no
+element excluded. Test file only — no production pixel moved.
+
+**Owed:** one Unity window to confirm green. If 4.00 is off, the failure message prints the full
+decomposition, so one window corrects it.
+
+### Design-facing, routed, NOT self-ruled
+
+S51's expiry condition is met — its owner is identified. The 4.00px is a real excursion past T47's
+reservation: the wax highlight hangs 4px below the payout figure's box, and that box's bottom is
+flush with the flow budget. Whether the fix is to lift the payout block, shorten the band's 34px
+drop, or rule that a decorative underline is not flow content is a Design call. To the DD through
+the orchestrator.
