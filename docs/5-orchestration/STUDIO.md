@@ -48,7 +48,7 @@ reverted.
 | `main-2` | `main` | Orchestrator seat | Integration |
 | `surething-ui` | `surething-ui` | Claude (Opus 5) | Retired 2026-08-13 — Phase L merged and Design-verified; worktree deleted on Allen's order; baseline evidence preserved under `docs/design/evidence-of-record/` |
 | `surething-ui-2` | `surething-ui-2` | Claude (Opus 5) | Active (re-seated 2026-08-14 — the SCREEN half of same-game step 5 under Allen's Option C split, plus the inherited laptop margin-pin repair; handoff `docs/handoffs/surething-ui.md`) |
-| `room-refinement` | `room-refinement` | Claude (Opus 5) | Active |
+| `room-refinement` | `room-refinement` | Claude (Opus 5) | Retired 2026-08-14 — room arc closed cycle 219, fully merged, zero commits ahead; worktree deleted on Allen's order (T65 closed by V6, no room dependency remained) |
 | `tv-sweat` | `slice/tv-sweat-refinement` | Claude (Opus 5) | Active |
 | `markets-2` | `markets-2` | Claude (Opus 5) | Retired 2026-08-11 — fully merged (42d3f5a, validated); worktree deleted on Allen's order |
 | `markets-pregame` | `markets-pregame` | Claude (Opus 5) | Active (seated 2026-08-12; Lane 1 of `next-slices-2026-08-12.md` — full v1 pre-game vocabulary, one campaign one re-baseline) |

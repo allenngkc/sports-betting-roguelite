@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 267.** Batch 68 landed +
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 268.** room-refinement
+RETIRED and deleted on Allen's order - verified first: zero commits ahead
+of main, clean tree, arc closed at cycle 219, no pending dependency (T65
+closed by V6). Registry updated. Four lanes building unchanged.
+
+*(prior stamp, cycle 267:)* Batch 68 landed +
 sgp's conjunctive-remedy canon merged (fb3fb43; a bloated frame-sweep
 commit was caught local and re-cut canon-only). All four staged words
 fired: TV builds the strip slot (T97 guard + THE MATCH ENDS LEVEL) + the
