@@ -1001,6 +1001,38 @@ namespace SBR.Tests.PlayMode
                         }
                     }
 
+            // ---- (1b) `DRAW {price}` JOINS THE C46 POPULATION (S74-am's own closing line: "DRAW and
+            // its price are new strings in the canon face; they measure against their cells like
+            // everything else and join the sweep's population under C46"). Measured off the RENDERED
+            // control — its own font, size, tracking and cell width — rather than against numbers
+            // copied out of the call site, because a cell's assumption about its face is exactly what
+            // C46 says goes unstated.
+            Transform drawNode = Find(Required(App(laptop), "Matchup0"), "DrawOdds");
+            if (drawNode != null)
+            {
+                var drawLabel = Required(drawNode, "Label").GetComponent<TMP_Text>();
+                float cell = ((RectTransform)drawNode).rect.width;
+                int size = Mathf.RoundToInt(drawLabel.fontSize);
+                float worstDraw = 0f; string worstDrawText = "";
+                foreach (Matchup mu in run.CurrentSlate.Matchups)
+                {
+                    if (mu.DrawOdds <= 1.0) continue;
+                    string s = $"DRAW  {OddsFormat.American(mu.DrawOdds)}";
+                    float w = LaptopUi.MeasureWidth(drawLabel.font, s, size, LaptopTrack.Names);
+                    if (w > worstDraw) { worstDraw = w; worstDrawText = s; }
+                }
+                // The board's own draws are a sample, not the population. The cell must also hold the
+                // widest string the FORMAT can produce — five digits and a sign is the ceiling.
+                string formatCeiling = "DRAW  +10000";
+                float ceilingWidth = LaptopUi.MeasureWidth(drawLabel.font, formatCeiling, size,
+                    LaptopTrack.Names);
+                UnityEngine.Debug.Log($"[S74-FIT] cell {cell:F0}px at {size}px · widest ON THIS BOARD "
+                    + $"\"{worstDrawText}\" {worstDraw:F1}px ({worstDraw / cell:P0}) · FORMAT CEILING "
+                    + $"\"{formatCeiling}\" {ceilingWidth:F1}px ({ceilingWidth / cell:P0}) · "
+                    + $"AWAY/HOME comparable \"AWAY  -341\" "
+                    + $"{LaptopUi.MeasureWidth(drawLabel.font, "AWAY  -341", size, LaptopTrack.Names):F1}px");
+            }
+
             // ---- (2) THE ARITY DISTRIBUTION, swept off the live board.
             // All PAIRS on every matchup, plus all TRIPLES on matchup 0. Pairs are where duplicates
             // and two-leg impossibilities live; triples are what produce the plural remedies the
