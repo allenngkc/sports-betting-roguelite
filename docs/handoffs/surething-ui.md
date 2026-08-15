@@ -178,10 +178,57 @@ The model now offers `AddLeg`, `RemoveLeg(legIndex)`, `RemoveSelection`, `LegInd
    through the leg-addressed accessors — this is exactly what makes the seven surveyed sites wrong,
    not merely incomplete.
 
-### Design-facing, routed, NOT self-ruled
+### DD batches 66–67 (canon `c467df3`) — two of three landed (`5e7af3a`)
 
-S51's expiry condition is met — its owner is identified. The 4.00px is a real excursion past T47's
-reservation: the wax highlight hangs 4px below the payout figure's box, and that box's bottom is
-flush with the flow budget. Whether the fix is to lift the payout block, shorten the band's 34px
-drop, or rule that a decorative underline is not flow content is a Design call. To the DD through
-the orchestrator.
+**S51 CLOSED — the band moved.** All three seating options I routed were refused; the DD ruled it a
+kit-fidelity gap. `PayoutFigure.jsx` sets the band `bottom:-2px` against a 31px × 1.1 = 34.1px line
+box, so the kit's band bottom is 36.1px below the figure's top and the build had 40px. **The band
+moves, the block does not.** Written from the kit's tokens, not as a literal 30.1.
+
+Pin **re-sourced once** per the ruling and still derived: **0.10px** = the kit's 36.10 against a
+build box of 36.00. The tenth is written out, not rounded to zero, so it reads as the box-height
+difference rather than drift. Held first run and across four boots.
+
+**S75 replaced my tilt bound.** A transformed mark reserves its TRANSFORMED extent, so the tilt is
+held to T47's 6px separation rather than a 3.0px number I picked. This is what earned the fix:
+before, `4.00 + 0.0087·w` crossed 6px at `w > 229px`, reachable because money never abbreviates and
+same-game lengthens the figure. After, it needs a 677px band in a 324px panel.
+
+**S76 — VOID's binding negatives now have gates.** The row already matched the approved vocabulary;
+what was missing is that the negatives were true only by construction. `LedgerTicketStateInk` and
+`LedgerShowsDeadStrike` are factored (S65's reason) and asserted over the enum: never the oxide
+strike, never DEAD's toner-3, never `Dim`'s .55, never wax.
+
+**S41 — corrected toward the DD.** I had written it was "kept, not spent." For this row it is
+**spent**: the dash is a binding negative. It still prints for the cash-out with a genuinely unknown
+retained figure — that case was not before the DD.
+
+**Owed, named, not built:**
+- S75's design-time clearance constant: sweep the population (C46), take the widest renderable money
+  string, pin the clearance as a CONSTANT. The gate still reads the band width at runtime, so it
+  proves the boundary for *this boot's* string only. Recorded in the test's blind-spot list.
+- The VOID row's third element, the entry **rubbed out** — the DD marks that treatment a candidate
+  pending frames.
+
+### Ruling (3) — remedy copy. BINDING on the P3 stamp, which is not built yet
+
+Recorded here so it is not re-derived. From S73-am5 (canon `c467df3`):
+
+- **The remedy is CONJUNCTIVE and authored PLURAL in both halves.** Removing only the first element
+  leaves the slip refused, so it is a **set to remove, not a menu to choose from**. Remedies of up
+  to **three legs** occur at the shipped `κ = 1` across 645 refusals.
+- **`or` / `either` / `one of` / `any of` are BANNED in a remedy.** English's natural form for a
+  list of fixes is disjunctive and the model's truth is not.
+- **A remedy that names a fix which does not fix it is worse than no remedy** — S73-am4 requires a
+  *verified* remedy.
+- **The cause breaks too.** `… cannot both land` is two-valued; three or more legs take an authored
+  `… cannot all land`. **Two authored forms chosen by arity, never one template with a substituted
+  word.**
+- **A duplicate and an impossibility take ONE treatment and TWO causes** — §3.3 wants a *literal*
+  reason, and one vague sentence covering both is what that word exists to prevent.
+- **Legs are named by the exact string on their own row**, so he never translates against the rows
+  in front of him.
+- **Fit is measured, not estimated** (C46): the population is the 645 refusals and the longest
+  renderable remedy is computable today. **A truncated remedy is an unverified remedy** — size the
+  control for it or author a shorter form.
+- **Removal order never reaches the player.** High-to-low is an implementation constraint only.
