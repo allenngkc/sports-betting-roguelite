@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 272.** Batch 69 landed +
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 273.** Allen's word:
+the DD's sentence rubric sent AHEAD to su (six clauses + the S73
+emitted-relation listing, so copy and coverage rule in one pass). TV
+mid-build on the hold; sgp's probe-coverage check grinding; su drafting.
+
+*(prior stamp, cycle 272:)* Batch 69 landed +
 TV's strip slot MERGED (258ee84). Allen's three words fired: sgp takes
 the P=1 carve-out (a certainty never quotes below its worth - the drama
 re-weight's one knowably-wrong case) then HOLDOUT6; TV builds the ruled
