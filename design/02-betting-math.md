@@ -175,7 +175,16 @@ Both are needed, and the second does not subsume the first. Two repeats of a *lo
 
 **A refusal must emit cause AND remedy, structurally** (S73-am4, `docs/design/surething-design.md` §3.3 — the owning doc). A refused combination is a *Blocked* state, and that row has always required both halves: naming what cannot happen is the cause, **naming which leg to drop is the remedy**. So a rejection is not an exception string — it carries the offending leg set and the drop that makes the ticket valid. The surface stamps it; the model supplies the parts, as with `principal`.
 
-**The remedy is a SET, not a leg — corrected 2026-08-13.** This first said "a droppable leg", singular. That is true at the shipped `κ = 1` and false above it: 84 impossible combinations have no single drop that both resolves the conflict *and* keeps the remainder above evens, and three-or-more repeats of a selection need more than one removal by construction. Measured over 1,961 refusals, every multi-leg remedy occurred at `κ = 8` and none at `κ = 1` — so the gate campaign moving the dial is what makes this live. A remedy always exists, since dropping to a single leg is always placeable.
+**The remedy is a SET, not a leg — corrected 2026-08-13, and the correction understated it 2026-08-14.** This first said "a droppable leg", singular. The first correction said multi-leg remedies appear only above the shipped `κ = 1`, measured over 1,961 refusals on the pre-draws board.
+
+**That is no longer true. On the merged 15-market board, remedies of up to THREE legs occur at `κ = 1`** — for both `DuplicateSelection` and `ImpossibleCombination`, measured over 645 refusals, every one of which carried a remedy that placed after being spent. The board growing from 36 to 77 selections is what did it: conflicts and repeats now stack deeper than a single drop can clear. So the plural remedy is a **present requirement, not a contingency riding on the margin dial.**
+
+Two consequences that bind any consumer:
+
+- **A surface that reads the first element of the remedy leaves the slip still refused.** The whole set must be spent.
+- **Remove high index to low.** Removing an earlier leg first shifts the indices of the later ones.
+
+A remedy always exists, since dropping to a single leg is always placeable.
 
 The cause is likewise **minimal**: the smallest leg set that still reaches `p = 0`. A two-leg conflict inside a four-leg ticket names two legs, not four. The joint-only-impossible triples name three, because no smaller true answer exists.
 

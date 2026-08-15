@@ -102,8 +102,17 @@ Lengthening is **not** remarked.
 - **Ownership is blocking.** P1–P3 cannot start until the split is ruled.
 - **The interaction model may reach past the slip.** If the board also assumes one selection per
   match, P1 grows. Not yet surveyed — the survey is the first task once ownership lands.
-- **Plural remedy.** At `κ = 1` every refusal has a one-leg fix; above it, 84 combinations need two.
-  The stamp copy must not assume the singular. Flagged to the DD; rides κ's first move.
+- **Plural remedy — LIVE NOW, not a contingency (corrected 2026-08-14).** The earlier reading was
+  that `κ = 1` always has a one-leg fix and only a raised dial needs more. Measurement on the merged
+  15-market board says otherwise: **remedies of up to three legs occur at the shipped `κ = 1`**,
+  across 645 refusals. The stamp copy must handle a plural remedy today. Two rules bind the screen:
+  spending only the first element leaves the slip refused, and the set must be removed **high index
+  to low** or earlier removals shift later indices. Both are pinned by assertion.
+- **`SideOn`/`SelectionOn` are order-dependent on a same-match group.** They answer for the *first*
+  leg on that matchup in slip order and stop — so `SideOn` returns null when a moneyline leg is on
+  the slip but sits second behind, say, a totals leg. The same two legs in the other order answer
+  differently. Pinned by test as the contract rather than left to be discovered; the screen needs
+  leg-addressed accessors for a same-match group, not the matchup-keyed ones.
 - **Unity lease.** One editor instance across all worktrees, TV has priority. P4–P6 need scheduling,
   P1–P3 do not.
 - **`game-console` is a dead prototype** (T44) — out of scope except as a named follow-up.

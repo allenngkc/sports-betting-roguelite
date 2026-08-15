@@ -1,6 +1,52 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 259.** sgp MERGED and
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 265.** TWO MERGES
+(ee4fa03, 957b8d6): sgp's P1-P3 model half (slip constructible,
+bit-identity, structured refusals, 291 tests) and surething-ui's pin
+repair (green on four boots, main's inherited red CLOSED) + survey.
+sgp's plural-remedy correction relayed to DD and screen lane as binding
+first-cut rules. Allen's void-arm GO fired - su holds the lease; sgp's
+P4-P6 queue behind it. DD mid-read on the 0-0 frames, docket +3 items.
+
+*(prior stamp, cycle 264:)* Three
+seats deep in work (sgp P1-P3, su pin verification in Unity, DD reading
+the 0-0 frames); TV standing by on Allen's staged word, fired.
+
+*(prior stamp, cycle 263:)* THE 0-0 SET IS
+SHOT AND DOCKED (tv-goalless-draw-2026-08-14; four defective runs
+diagnosed, their 48 frames deleted not staged - C50's shape). TV standing
+by post-handoff-update; Unity lease moved TV->surething-ui for the pin
+verification (procs 0 confirmed); su's diagnosis overturned the handoff
+account - the pin measured per-boot screen content, repair derives the
+fixed 4.00px from layout arithmetic. Fresh DD seated (term_f94b5c9d) on
+the frames + su's 4px-overhang question. sgp's P1-P3 agent grinding.
+Watcher v34 (b4isq6xgl).
+
+*(prior stamp, cycle 262:)*
+Orca restart killed every lead terminal. Disk verified before reseating:
+TV's draw-arm fix COMMITTED (ada9a84) with the capture harness mid-edit;
+sgp's P1-P3 uncommitted in BetslipModel.cs (its background agent died -
+told to re-verify from disk); surething-ui's pin work started. All three
+seats resumed via --continue at max effort with disk-state recovery taps;
+stale UnityLockfile cleared at proc 0; a stale ancient main-2 session
+closed. DD and research re-seating DEFERRED: DD's three dispositions are
+already canon (batch 65) so a fresh seat rules on frame arrival; research
+waits on Allen's two words. Watcher v33 (bf7fauvp3), heartbeat re-armed
+(bjk4ew4vs).
+
+*(prior stamp, cycle 261:)* All
+three building lanes busy: TV's draw arm; sgp's P1-P3 agent ~10 min in;
+surething-ui deep in the margin-pin diagnosis (notes it diverging from
+the handoff's account - report pending). DD standing by.
+
+*(prior stamp, cycle 260:)* Step 5 opened on
+both halves: Allen ruled Option C (model to sgp, screen to surething-ui).
+The plan merged (261109c); sgp's model half P1-P3 running; surething-ui-2
+re-created and seated (Opus 5 max, term_bbedfdc6) on the screen half +
+the inherited margin-pin repair; watcher v32 armed (adds the new seat).
+TV still on the draw arm.
+
+*(prior stamp, cycle 259:)* sgp MERGED and
 pushed (34cfb57): HOLDOUT5 8/8, probe over all 15 kinds, joint model on
 the draws board, DLL ridden, handoff DLL-rule corrected. Allen's staged
 word fired: step 5 - the presentation PLAN, routed before building. Two
