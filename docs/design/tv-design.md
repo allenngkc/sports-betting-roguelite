@@ -650,6 +650,25 @@ construction.** That is why the strip's silence at a draw is a gap rather than a
 goal families were simply never given the same override.** Sol's F_0.4.0 P3 r2 finding, one noun
 changed.
 
+**THE LINE TAKES A MINIMUM HOLD** (batch 69, correcting this section's own under-specification).
+Batch 68 said the line *"holds until the leg's grade displaces it"* — **which assumed a window
+exists, and on a won draw-backer it does not**: frames show `LEG 1 — WON` already up at **frame 000,
+the whistle itself.** **The match ending and the leg's resolution are the same instant**, so a line
+that simply yields to the grade yields before it is ever seen.
+
+- **The line holds for a stated minimum before the leg's grade may displace it.**
+- **The grade never lands on the same frame as the line** — a statement replaced on its own entrance
+  frame was never made.
+- **The hold is a NAMED constant, not a literal**, taking `ticketDeadConsolationDuration` as its
+  precedent — the same kind of thing, a statement the player must read before the beat moves on.
+  **Match it rather than invent a number.**
+- **It is verifiable on frames by construction: the line must be VISIBLE, for multiple frames, BEFORE
+  the grade appears.**
+
+**Two statements sharing one slot is a sequencing question, and a ruling that authors copy into a
+shared slot must say which yields and for how long** — this section did not, and that is why the
+first build of it could not be verified.
+
 ---
 
 ## 7. Motion
