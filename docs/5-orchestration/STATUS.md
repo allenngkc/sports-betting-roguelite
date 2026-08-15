@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 299.** ALLEN CALLED THE
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 300.** Three seats
+working (TV panel shoot prep, su gesture build, sgp corner answer), DD
+ledger at two captures + one asked question. Batch 82 landed (S84 closed
+on 4.2058). With Allen: research words + TAB.
+
+*(prior stamp, cycle 299:)* ALLEN CALLED THE
 GESTURE: su builds the additive second pick now (sticks not replaces,
 leg-addressed board sites, the replace-glyph comes off, RUB OUT takes a
 leg) - the DD's scroll verification runs in parallel and folds in before
