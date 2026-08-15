@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 271 (heartbeat).** All
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 272.** Batch 69 landed +
+TV's strip slot MERGED (258ee84). Allen's three words fired: sgp takes
+the P=1 carve-out (a certainty never quotes below its worth - the drama
+re-weight's one knowably-wrong case) then HOLDOUT6; TV builds the ruled
+minimum-hold write-order + owes one mid-match supplemental shot covering
+all three outstanding items; su drafts the four relation sentences for
+the DD's word and rebuilds the stamp to S77's arity shape (overflow
+dissolves, wiring unflags after).
+
+*(prior stamp, cycle 271:)* All
 four seats mid-work (TV handoff, DD acceptance read, su P4/P5, sgp
 cash-out suite). Quiet is healthy.
 
