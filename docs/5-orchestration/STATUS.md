@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 300.** Three seats
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 301.** THE ADDITIVE
+GESTURE IS BUILT AND MERGED (6fd3944) - a second pick sticks, the
+replace promise is off, suites 107/255 green: a player can now build a
+same-game ticket on screen END TO END. The scroll capture docked with it
+(S83's verification with the DD); one new DD item - the fifth-pick dead
+click at the cap. Remaining: DD's two capture reads + TV's panel shoot.
+
+*(prior stamp, cycle 300:)* Three seats
 working (TV panel shoot prep, su gesture build, sgp corner answer), DD
 ledger at two captures + one asked question. Batch 82 landed (S84 closed
 on 4.2058). With Allen: research words + TAB.
