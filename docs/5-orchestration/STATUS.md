@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 294 (heartbeat).** Quiet
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 295.** Dominoes: su's A
+merged (0666a51) - recovery 10.00px of the estimated 20-34, so the B
+call goes to ALLEN with the table (live break +24.10 today; worst +60.10
+so C still builds); the re-shot DRAW block docked in the same merge - DD
+running checks 2/5. TV's panel mechanism BUILT (freeze, TVS-H01 key
+contract, overlay-on-top); Allen's pin order fired (freeze, z-order,
+unrevealed mark); scorebug-overlap docketed to DD; TAB ratification
+with Allen when convenient.
+
+*(prior stamp, cycle 294:)* Quiet
 and healthy: TV building the panel mechanism, su on re-shot-then-A with
 the per-block order, DD holding on Allen's word (both waits close), sgp
 standing by clean. With Allen: only the research words.
