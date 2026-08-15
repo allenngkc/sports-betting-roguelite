@@ -388,6 +388,65 @@ namespace SBR.Tests.PlayMode
             }
         }
 
+        /// <summary>S83's scroll, on the state that ACTUALLY SCROLLS (DD batch 81).
+        ///
+        /// <para><b>Four legs plus a held consumable.</b> A non-scrolling capture proves nothing
+        /// about a scroll, and four legs ALONE does not scroll — measured, it is 168.0 of content
+        /// into a 177.9 viewport and clears by 9.9px. The modifiers row is the 34px that puts it
+        /// over: 202.0 into 177.9, scrolling by 24.1px. That row is gated on pure RUN state, so the
+        /// capture grants the consumable rather than hoping for one.</para>
+        ///
+        /// <para>Seeded on the same pin as the max-legs frame, so the board underneath is the board
+        /// that set is already read against.</para></summary>
+        [UnityTest]
+        public IEnumerator Capture_the_working_margin_where_the_slip_actually_scrolls()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            yield return PinRun(laptop, SeedMaxLegs);
+            Run run = laptop.director.Run;
+
+            ConsumableDefinition freeBet = null;
+            foreach (ConsumableDefinition c in RelicCatalog.Consumables)
+                if (c.Id == "free_bet") { freeBet = c; break; }
+            Assert.IsNotNull(freeBet, "free_bet must exist in the catalog for this state to be built");
+            run.GrantConsumable(freeBet);
+
+            int maxLegs = run.Config.MaxLegs;
+            for (int i = 0; i < maxLegs; i++)
+            {
+                Invoke(Required(Required(App(laptop), "Matchup" + i), "AwayOdds"));
+                yield return WaitForRebuild();
+            }
+            Assert.AreEqual(maxLegs, laptop.Slip.Picks.Count, "the captured state must be a full slip");
+
+            // The frame is only worth docking if it IS the scrolling state, so that is asserted
+            // rather than assumed — a capture that silently caught the non-scrolling case would be
+            // exactly the evidence the DD said proves nothing.
+            Transform margin = Required(App(laptop), "WorkingMargin");
+            var scroll = Required(margin, "SlipScroll").GetComponent<ScrollRect>();
+            Assert.IsTrue(scroll.vertical,
+                "this capture exists to show the scroll engaged; it is not engaged in this state");
+            Assert.IsNotNull(Find(Required(margin, "SlipScroll"), "RailTrack"),
+                "S27's printed rail must be drawn when the body scrolls");
+
+            string outputDirectory = Path.GetFullPath(Path.Combine(
+                Application.dataPath, "..", "..", "..", "artifacts", "surething-ui"));
+            Directory.CreateDirectory(outputDirectory);
+            string runPrefix = DateTime.UtcNow.ToString(
+                "yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture);
+            var capturedPaths = new List<string>();
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "17-margin-scrolling-four-legs-consumable", capturedPaths);
+
+            Assert.AreEqual(2, capturedPaths.Count, "one state must emit paired captures");
+            foreach (string path in capturedPaths)
+            {
+                Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
+                Assert.Greater(new FileInfo(path).Length, 0L, $"capture is empty: {path}");
+            }
+        }
+
         [UnityTest]
         public IEnumerator Capture_four_more_truthful_surething_states_as_flat_and_angled_pngs()
         {

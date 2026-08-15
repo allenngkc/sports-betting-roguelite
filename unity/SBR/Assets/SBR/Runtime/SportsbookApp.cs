@@ -262,13 +262,13 @@ namespace SBR.Game
         {
             RectTransform card = LaptopUi.MakePanel(parent, "Matchup" + matchup.Index, new Vector2(0f, 1f),
                 new Vector2(0f, 1f), position, new Vector2(700f, MatchupCardPitch), LaptopOs.Surface);
-            bool awaySelected = slip.SelectionOn(matchup.Index) == MarketSelection.Moneyline(Side.Away);
-            bool homeSelected = slip.SelectionOn(matchup.Index) == MarketSelection.Moneyline(Side.Home);
+            bool awaySelected = slip.Contains(matchup.Index, MarketSelection.Moneyline(Side.Away));
+            bool homeSelected = slip.Contains(matchup.Index, MarketSelection.Moneyline(Side.Home));
             // S74-am: the draw is a third markable outcome on this block, so every place that asked
             // "away or home" is now a three-way question. Swept together rather than one site at a
             // time — a marked draw that lit no wash and drew no ring would be a selection the board
             // renders as unselected, which is the state lie T43 cost this studio a batch over.
-            bool drawSelected = slip.SelectionOn(matchup.Index) == MarketSelection.MoneylineDraw();
+            bool drawSelected = slip.Contains(matchup.Index, MarketSelection.MoneylineDraw());
             // The wash behind a form entry he has marked (palette-surething.css --marked-wash).
             // Added first, before any text/buttons, so it sits behind them; sized to fill the whole
             // card so it is trivially contained within it.
@@ -302,7 +302,7 @@ namespace SBR.Game
                 // the token's own comment reads "team names, prices, masthead". The previous commit's
                 // premise (a button label is an action label) is wrong for exactly this class, and
                 // the kit is what says so.
-                frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Away)); _invalidate(); }, _fontCond, !frozen, LaptopTrack.Names);
+                frozen ? null : () => { PickOffer(slip, matchup.Index, MarketSelection.Moneyline(Side.Away)); }, _fontCond, !frozen, LaptopTrack.Names);
             // S74-am — THE DRAW GOES IN THE PRICE CELL, in the slot HOME used to hold.
             // The price cell is the one that names the OUTCOME, never the matchup column, which
             // names TEAMS: the board already reads `AWAY −156` rather than `NOTARIES −156`, so the
@@ -330,14 +330,14 @@ namespace SBR.Game
                 LaptopUi.MakeButton(card, "DrawOdds", $"DRAW  {OddsFormat.American(matchup.DrawOdds)}",
                     new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, DrawCellY), new Vector2(112f, 32f), 19,
                     LaptopOs.Ink, frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
-                    frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.MoneylineDraw()); _invalidate(); }, _fontCond, !frozen, LaptopTrack.Names);
+                    frozen ? null : () => { PickOffer(slip, matchup.Index, MarketSelection.MoneylineDraw()); }, _fontCond, !frozen, LaptopTrack.Names);
             // HOME sits one line pitch below the draw. It is the only thing that moved when the draw
             // landed: AWAY does not shift at all and the card's bottom slack is unchanged, which is
             // what makes the re-derived pitch above a pure insertion rather than a re-layout.
             LaptopUi.MakeButton(card, "HomeOdds", $"HOME  {OddsFormat.American(matchup.HomeOdds)}",
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, HomeCellY), new Vector2(112f, 32f), 19,
                 LaptopOs.Ink, frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
-                frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Home)); _invalidate(); }, _fontCond, !frozen, LaptopTrack.Names);
+                frozen ? null : () => { PickOffer(slip, matchup.Index, MarketSelection.Moneyline(Side.Home)); }, _fontCond, !frozen, LaptopTrack.Names);
             if (awaySelected || homeSelected || drawSelected)
             {
                 Sprite ring = ResolvePriceRing(matchup.Index);
@@ -753,9 +753,17 @@ namespace SBR.Game
             const float priceCellHeight = 32f;
             const float priceCellY = -(OfferRowHeight - priceCellHeight) / 2f; // vertical centre of the row.
 
-            MarketSelection? existing = slip.SelectionOn(matchup.Index);
-            bool selected = existing.HasValue && existing.Value == selection;
-            bool replacement = existing.HasValue && !selected;
+            // THE REPLACE AFFORDANCE IS GONE, and it had to go with the gesture rather than after it.
+            //
+            // This asked `SelectionOn(matchup.Index)` — the FIRST leg on the match — and derived a
+            // `replacement` state from it: every other offer on a match you had picked drew a `⇄`
+            // before its price and a 2px underline beneath it, promising the player that his next
+            // pick would REPLACE this one. The promise is now false. A second pick sticks.
+            //
+            // It is not merely stale copy either: `SelectionOn` answers for the first leg in slip
+            // order and stops, so on a same-match slip the affordance was about to start marking
+            // offers against whichever leg happened to be added first.
+            bool selected = slip.Contains(matchup.Index, selection);
             string key = selection.Kind + selection.Choice.ToString()
                 + selection.Line.ToString(CultureInfo.InvariantCulture) + selection.PlayerIndex;
 
@@ -822,21 +830,13 @@ namespace SBR.Game
             // zero-alpha Image still raycasts, so the control keeps its hit area.
             // The figure stays --toner when picked; only the ring is biro (E-13, as on the label).
             LaptopUi.MakeButton(offer, "Market" + key,
-                replacement ? "⇄  " + price : price, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                price, new Vector2(0f, 1f), new Vector2(0f, 1f),
                 Vector2.zero, new Vector2(priceCellWidth, priceCellHeight), 19, new Color(0f, 0f, 0f, 0f),
                 frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
                 // `.03` for the same reason as the moneyline buttons: MarketOffer.jsx sets
                 // --st-track-name on the price cell. This is the interior-list price and the two
                 // must match — one is the same object one screen deeper.
-                frozen ? null : () => { slip.Toggle(matchup.Index, selection); _invalidate(); }, _fontCond, !frozen, LaptopTrack.Names);
-            if (replacement)
-            {
-                RectTransform hint = LaptopUi.MakePanel(offer, "ReplacementHint",
-                    new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, -(priceCellHeight - 1f)),
-                    new Vector2(priceCellWidth, 2f), new Color(0f, 0f, 0f, 0f));
-                LaptopUi.MakePanel(hint, "ReplacementUnderline" + key, Vector2.zero, Vector2.zero,
-                    Vector2.zero, new Vector2(priceCellWidth, 2f), LaptopOs.TonerSecondary);
-            }
+                frozen ? null : () => { PickOffer(slip, matchup.Index, selection); }, _fontCond, !frozen, LaptopTrack.Names);
 
             // S27 ruling: the printed row rule (kit: screens.jsx:64, 1px --rule-soft).
             LaptopUi.MakeRule(row, "OfferRowRule" + offerIndex, new Vector2(0f, 0f), new Vector2(0f, 0f),
@@ -1927,6 +1927,34 @@ namespace SBR.Game
                 case 2: return "RUB OUT BOTH MARKS TO PLACE.";
                 default: return "RUB OUT ALL THREE MARKS TO PLACE.";
             }
+        }
+
+        /// <summary>THE ADDITIVE GESTURE — a pick STICKS.
+        ///
+        /// <para>Clicking an offer adds it; clicking the same offer again takes it off; and a second
+        /// market on a match no longer replaces the first. That last clause is the whole change: the
+        /// slip has been leg-addressed since sgp's model half merged, and this is the surface finally
+        /// spending that capability.</para>
+        ///
+        /// <para><b>Composed here rather than by changing `Toggle`.</b> `BetslipModel` belongs to the
+        /// sgp lane and `Toggle`'s replace behaviour is pinned by its tests — deliberately, so that
+        /// changing the gesture is a decision someone makes rather than a regression someone
+        /// discovers. So the gesture is built from the leg-addressed API at the surface that owns it:
+        /// `Contains` to ask, `RemoveSelection` to take off, `AddLeg` to put on.</para>
+        ///
+        /// <para><b>One function, four call sites</b> — the two moneylines, the draw, and every
+        /// market offer on the detail screen. The survey that found those sites found them wrong in
+        /// four different ways because each had its own copy of the question; there is now one
+        /// answer for them to share.</para>
+        ///
+        /// <para><b>`MaxLegs` still binds and `AddLeg` returns false at the cap.</b> A pick refused
+        /// for the cap currently does nothing visible — see the report; no treatment is ruled for it
+        /// and none is invented here.</para></summary>
+        private void PickOffer(BetslipModel slip, int matchupIndex, MarketSelection selection)
+        {
+            if (slip.Contains(matchupIndex, selection)) slip.RemoveSelection(matchupIndex, selection);
+            else slip.AddLeg(matchupIndex, selection);
+            _invalidate();
         }
 
         internal static string MarginLegSubject(Matchup matchup, MarketSelection selection)

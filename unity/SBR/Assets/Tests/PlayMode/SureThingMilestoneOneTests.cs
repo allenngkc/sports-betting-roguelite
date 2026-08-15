@@ -74,10 +74,25 @@ namespace SBR.Tests.PlayMode
             yield return WaitForRebuild();
             Assert.AreEqual(MarketSelection.Moneyline(Side.Away), laptop.Slip.SelectionOn(0));
 
+            // RE-AUTHORED for the additive gesture. This asserted that HOME REPLACED AWAY and that
+            // the slip kept one leg per matchup. Both are now false by ruling: a second pick on a
+            // match STICKS. The board is leg-addressed, so the two moneylines coexist — and the
+            // engine refuses that combination at PLACE (they cannot both win), which is exactly the
+            // Blocked state P3 stamps rather than something the board silently prevents.
             Invoke(Required(Required(App(laptop), "Matchup0"), "HomeOdds"));
             yield return WaitForRebuild();
-            Assert.AreEqual(1, laptop.Slip.Picks.Count, "replacement must keep one leg per matchup");
-            Assert.AreEqual(MarketSelection.Moneyline(Side.Home), laptop.Slip.SelectionOn(0));
+            Assert.AreEqual(2, laptop.Slip.Picks.Count, "the second pick on a match sticks");
+            Assert.AreEqual(2, laptop.Slip.LegCountOn(0), "both legs sit on matchup 0");
+            Assert.IsTrue(laptop.Slip.Contains(0, MarketSelection.Moneyline(Side.Away)),
+                "the first pick survives the second");
+            Assert.IsTrue(laptop.Slip.Contains(0, MarketSelection.Moneyline(Side.Home)));
+
+            // Clicking a marked offer takes THAT leg off, rather than the match's only leg.
+            Invoke(Required(Required(App(laptop), "Matchup0"), "HomeOdds"));
+            yield return WaitForRebuild();
+            Assert.AreEqual(1, laptop.Slip.Picks.Count, "clicking a marked offer takes it off");
+            Assert.IsTrue(laptop.Slip.Contains(0, MarketSelection.Moneyline(Side.Away)),
+                "and takes off the one that was clicked, not the one that was not");
 
             Invoke(Required(Required(App(laptop), "WorkingMargin"), "Remove0"));
             yield return WaitForRebuild();
