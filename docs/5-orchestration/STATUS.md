@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 282.** su's P5 MERGED
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 283.** ALLEN RULED the
+flow cost: PAY THE PIXELS - the reservation grows ~36px, the sentence
+always fits, wording untouched. DD specs the exact move (it gates the
+additive gesture - the feature's last screen step); su implements to
+spec. TV mid-DRAW-row; sgp profiling.
+
+*(prior stamp, cycle 282:)* su's P5 MERGED
 (433cd44): statement built and green, refused forms re-authored, pair
 released, slot gated on screen. Key reframe: the flow cost is real but
 UNREACHABLE in play (Toggle still replaces) - Allen's call gates the
