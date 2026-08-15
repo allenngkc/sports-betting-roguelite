@@ -175,22 +175,32 @@ with**, which is the defect §3.1's spurs exist to prevent.
 exceeds the viewport and reports proportionally.** **A 1px dead-band keeps S51's known 0.10px kit
 residue from ever engaging a scroll.**
 
-**THE SEAMS, and they are not the same treatment.** **The commit seam (zone 2 → zone 3) takes 6px,
-on T47's own reasoning** — T47 exists to keep the flow and the anchored band from ever meeting, and
-**under C its `+ 6f` has become an internal gap inside zone 3, between the payout and PLACE: the seam
-it was ruled to protect moved up and nothing moved with it.** **Zone 2 clips at its viewport and
-never draws into that pad or under zone 3** — a pad behind an opaque block is not a pad, it is a
-hidden overlap. **The head seam (zone 1 → zone 2) takes nothing**, because `BoardTitle` is a fixed
+**THE SEAMS, and they are not the same treatment.** **The commit seam (zone 2 → zone 3) is a
+separation of INK, not of rects** (S83-am3, corrected by the build). T47 exists to keep the flow and
+the anchored band from ever meeting — **but T47's band meets its neighbour as ink, because `PLACE`
+fills its rect to the edge, and reserved ground is the only separation available there.** **Zone 3's
+top element is the STAKE row, whose label and figure sit in 30px boxes inside a 34px advance under
+M-05's baseline anchoring, so the ink starts well below the rect's top and a clipped leg row does not
+abut a glyph.** **So no ground is reserved — but the clearance is MEASURED AND GATED at ≥6px, never
+assumed**, because it currently rests on a text anchor chosen to align two baselines and would vanish
+silently if that anchor ever changed. **Zone 2 clips at its viewport and never draws under zone 3** —
+content hidden behind an opaque block is not separated from it, it is overlapping it. **The head seam (zone 1 → zone 2) takes nothing**, because `BoardTitle` is a fixed
 column head and `BoardBody` clips immediately beneath it with no pad at all: **a column head and a
 dense control block are not the same kind of neighbour, and what governs a seam is what sits BELOW
 it rather than whether the content moves.**
 
-**Viewport: `530 − head 40 − reserve 316 − seam 6 = 168`.** **Four legs alone measures 168 —
-exactly flush, and still no scroll** — while a held consumable, the sentence, or both scroll by
-**34, 36 and 70**: exactly the two bills and their sum. **The scroll IS the overrun, neither more nor
-less, which is what shows the zone split neither created nor absorbed a pixel.** **Flush is tight and
-is named as tight: the dead-band is load-bearing rather than defensive, and the gate pins the
-four-legs-alone state explicitly.**
+**Viewport, as built and re-derived: `CommitZoneReserved` is `160 → +36.1 → +16 → +32 → +34 → +34
+= 312.1`, so `SlipViewportHeight = 530 − 40 − 312.1 = 177.9`.** **Four legs alone measures 168.0 and
+CLEARS by 9.9** — so the ordinary slip does not scroll and the 1px dead-band is not load-bearing.
+A held consumable, the sentence, or both scroll by **24.1, 26.1 and 60.1**: **the old overruns to the
+tenth. The scroll IS the overrun, neither more nor less, which is what shows the zone split neither
+created nor absorbed a pixel.** **The boundary state is pinned explicitly anyway — it is the tightest
+non-scrolling state and the one that will move first.**
+
+*(An earlier fold gave the viewport as 168 from a hand sum that costed the payout block at its cursor
+advance rather than at the kit derivation S51 closed on — the same 3.9px, from the same seat, one
+batch after establishing it. The viewport is derived from the factored measurement; hand arithmetic
+beside it is a second source for one quantity.)*
 
 **Anchoring changes WHICH content scrolls, never HOW MUCH** — the overflow is the same ~70px the
 budget was ever over by — **which is why the split is argued on meaning rather than on arithmetic.**
