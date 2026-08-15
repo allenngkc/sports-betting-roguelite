@@ -558,9 +558,20 @@ the family read as one** — `SCORELINE` was considered and refused for breaking
 
 **`ScorerSide` is carried by the model and is NOT spoken.** Naming the team would be a name where the
 rubric asks for the relation, and **the team is on both rows in front of him** — the same reasoning as
-S77's *mark, don't name*. **Where two marked rows do not visibly share a club name the remedy is at the
-MARK, which can carry the side — never by naming the team in the sentence**, because a sentence that
-names a team has stopped stating the relation.
+S77's *mark, don't name*.
+
+**And no mark treatment is owed for it** (S78-am, 2026-08-15 — an earlier disposition sending this to
+the mark is **withdrawn as misconceived**). **The statement's job is to explain the PRICE, not to
+identify the teams**, and *the same team's goals settle both* discharges that completely: two legs
+riding on one team's scoring, therefore correlated, therefore shorter than multiplying. **Which club
+it is changes nothing about why the price moved.** **The decisive fact is that HE CHOSE BOTH LEGS** —
+Biro is this surface's ink for *anything he chose*, so **he cannot be uninformed about which picks he
+just made.** The mark could not have carried it in any case: **the mark is DRAWN, not CAPTIONED** and
+already means one thing, **a side-tinted line is barred by S2**, the ink table forbids a fourth ink,
+and a shape variation is a code he must learn (S56's class). **Where the relation runs through the club
+the visible row does not name, he may read *the same team's* as the club he can see — weighed and
+ACCEPTED**: it does not affect the decision (the legs pull against each other, which the sentence
+states), and `ONE TEAM'S …` would break the family's shared opening for a low-stakes sub-case.
 
 **Fit is not asserted.** The seven measure against their slot like everything else and join the
 sweep's population under C46.
