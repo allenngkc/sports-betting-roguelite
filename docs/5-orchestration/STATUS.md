@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 298.** THE SCROLL IS
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 299.** ALLEN CALLED THE
+GESTURE: su builds the additive second pick now (sticks not replaces,
+leg-addressed board sites, the replace-glyph comes off, RUB OUT takes a
+leg) - the DD's scroll verification runs in parallel and folds in before
+merge. This is the feature's last screen step. TV on the panel shoot.
+
+*(prior stamp, cycle 298:)* THE SCROLL IS
 BUILT and merged (0b9aecc): three zones, scroll only where needed,
 commit controls pinned outside the scrolling body, reachability
 invariant in, suites 106/255 green - THE ADDITIVE GESTURE IS UNBLOCKED
