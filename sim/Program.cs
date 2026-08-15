@@ -17,7 +17,7 @@ namespace SBR.Sim;
 ///
 ///   dotnet run --project sim -- [--runs N] [--strategy naive|random|skilled|noshop|martyr|samematch|all]
 ///       [--seed-prefix STR] [--audit] [--combos N] [--gates] [--grid] [--scorer-ev]
-///       [--report PATH] [--verify]
+///       [--report PATH] [--verify] [--workers N]
 /// </summary>
 internal static class Program
 {
@@ -43,6 +43,10 @@ internal static class Program
                 + $"{GateData.CampaignRuns:N0} (Allen 2026-08-07). G6's resolution is a function of n; "
                 + "under the ruled size it cannot reliably fail. Each gate states its own resolution "
                 + "— read that column before treating this run as a campaign result.");
+
+        // Set before any mode runs, so --workers governs --gates, --grid, --verify and a plain batch
+        // alike. Absent the flag the policy auto-scales and re-checks per batch (see WorkerPolicy).
+        if (opt.Workers > 0) WorkerPolicy.SetManual(opt.Workers);
 
         var cfg = new RunConfig(); // rework defaults — the sim reports on these, never mutates them
 
@@ -289,5 +293,9 @@ internal static class Program
         "  --grid                the payment-curve grid (growth x P1), gates-lite per cell\n" +
         "  --scorer-ev           bot-independent AnytimeScorer calibration report (own mode; ignores --strategy)\n" +
         "  --report PATH         also write the markdown report to PATH\n" +
-        "  --verify              determinism self-check (200 runs twice), then exit\n";
+        "  --verify              determinism self-check (200 runs twice), then exit\n" +
+        "  --workers N           cap concurrent runs per batch (N >= 1). Overrides the auto policy,\n" +
+        "                        which scales on how long the machine has been idle and re-checks at\n" +
+        "                        every batch boundary. The count is recorded in the report header;\n" +
+        "                        it is a scheduling knob and moves no number in the report body.\n";
 }

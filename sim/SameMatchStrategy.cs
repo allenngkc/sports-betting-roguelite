@@ -56,9 +56,16 @@ namespace SBR.Sim;
 /// is paired with the result it contains. A catalogue that leaned on the refusal path for coverage
 /// would certify refusals and nothing else.</para>
 ///
-/// <para><b>Never cashes out</b> — Allen's ruling, not a preference. Same-match cash-out is still
-/// naive-priced (phase 4, deferred), so a cash-out would feed a known-wrong number into the
-/// campaign. <see cref="ControlsSweat"/> stays true only so the pending-loss window is offered.</para>
+/// <para><b>It cashes out — and it used not to.</b> The standing ruling was NEVER: same-match
+/// cash-out was naive-priced (it ran the ordinary product expression over correlated legs), so a
+/// cash-out would have fed a known-wrong number into the campaign the probe exists to inform. That
+/// ruling was conditional on the defect, and <b>F_0.6.0 PHASE 4 REPAIRED THE PRICE</b> — a same-match
+/// quote is now <c>payout × P(L ∧ U | S) × (liveProb / P(L | S))</c> off the same joint evaluator the
+/// ticket was sold at, with the certainty carve-out on top (<c>SweatSession.ConditionalWinProb</c>,
+/// <c>SameMatchCashOutTests</c>). The reason has expired, so the coverage gap closes: a campaign that
+/// never takes a same-match cash-out leaves the newest priced path in the lane proven by unit tests
+/// alone, which is precisely the hole this bot exists to fill for every other same-match path.
+/// <see cref="ShouldCashOut"/> carries the policy and the balance it holds.</para>
 ///
 /// <para><b>Shops for Mulligan Slips and takes them.</b> Void re-pricing is the riskiest path step 3
 /// added and is otherwise proven only by unit tests; a probe that never voids leaves it unexercised
@@ -92,15 +99,109 @@ public sealed class SameMatchStrategy : IStrategy
 
     public string Name => "samematch";
 
-    /// <summary>True only so the pending-loss window is offered — <see cref="ShouldCashOut"/> is a
-    /// constant false. A bot that opts out of sweat control is never asked about a dying leg, and the
-    /// Mulligan is the whole point of this one.</summary>
+    /// <summary>Both windows the sweat offers: the pending-loss one (where the Mulligan lands) and the
+    /// cash-out one. A bot that opts out of sweat control is never asked about either.</summary>
     public bool ControlsSweat => true;
 
-    /// <summary>NEVER — Allen's ruling. Same-match cash-out is naive-priced until phase 4, so taking
-    /// one would put a known-wrong number into the campaign the probe exists to inform.</summary>
+    /// <summary>How many ticket slots share one cash-out mark: exactly ONE of the round's three
+    /// tickets is marked and the other two ride to settlement. A marked slot only fires if the ticket
+    /// lives to its position, so the realised cash-out rate is lower again; see
+    /// <see cref="ShouldCashOut"/> for why the balance is set from the settlement side.</summary>
+    private const int MarkedSlotCycle = 3;
+
+    /// <summary>The period of the POSITION walk, deliberately co-prime-ish with
+    /// <see cref="MarkedSlotCycle"/> — at equal periods the two walks lock and the position becomes a
+    /// pure function of the slot, which starves whichever position lands on a slot that cannot host
+    /// it. Measured, not reasoned: at period 6 with a stride-2 slot walk the probe took 5,689
+    /// cash-outs and NOT ONE of them was mid-sweat, because the only ticket with a mid position — the
+    /// 3-to-4-leg composite — drew that mark solely in round 6, which almost no run reaches.</summary>
+    private const int PositionCycle = 4;
+
+    /// <summary>
+    /// The cash-out policy — <b>coverage, not judgement</b>. This bot has no opinion about whether a
+    /// quote is worth taking; the skilled bot's EV rule is the instrument for that and G1–G6 are where
+    /// it is read. What this one owes the campaign is that the same-match cash-out path is REACHED,
+    /// and reached at the places where the conditional's shape actually differs.
+    ///
+    /// <para><b>The balance is set from the settlement side.</b> A probe that cashed out of everything
+    /// would cover cash-out and stop covering settlement, void re-pricing and the pending-loss window
+    /// — three paths it is the only bot that covers — so cash-out gets the minority share. Two ticket
+    /// slots in every <see cref="CashOutCycle"/> are MARKED, the other four ride to settlement; and
+    /// because a marked slot only fires if the ticket lives to its position, the realised rate is
+    /// lower again. The settled/cashed-out split is printed in report section 0b, which is where that
+    /// balance is checked rather than assumed.</para>
+    ///
+    /// <para><b>Three positions, because one would be a single point on a curve.</b> The conditional
+    /// is a different object at each: with nothing settled the quote is the ticket's own locked joint
+    /// (the re-weight is 1); mid-sweat it is a genuine ratio of two joints over different leg sets;
+    /// on the last leg the numerator and denominator share a leg set, so the quote walks to the full
+    /// payout — and that is also the position where the certainty carve-out can fire, since a settled
+    /// leg entailing the live one leaves <c>P(L | S) = 1</c>. EARLY and LATE are named in the marking;
+    /// MID is what a LATE mark degrades to on a ticket whose last leg is never reached.</para>
+    ///
+    /// <para><b>Marked by a pure function of the ticket, never by a draw off <paramref name="rng"/>.</b>
+    /// That generator is the same per-run stream the probe's MARKET-KIND catalogue start is drawn from
+    /// and that <c>Shop</c> spends; drawing here would shift every later draw and silently re-cut the
+    /// coverage rotations this bot exists to walk. The key is built from the round and the ticket's
+    /// slot only — both stable, both already deterministic per seed.</para>
+    ///
+    /// <para>Ordinary tickets are left alone. The probe places none by construction, and the guard is
+    /// here so a future catalogue entry that produced one could not quietly route this bot into the
+    /// product path — which is not the path it was extended to cover.</para>
+    /// </summary>
     public bool ShouldCashOut(Run run, Ticket ticket, SweatSession session, DramaEvent evt,
-        double offer, double bankNow, double target, BotState state, Pcg32 rng) => false;
+        double offer, double bankNow, double target, BotState state, Pcg32 rng)
+    {
+        if (ticket.SameMatch == null) return false;
+
+        // A leg boundary is not a quoting position: the cursor has moved but the next event will
+        // re-seed the live number, so the quote here is the previous leg's tail. Every other bot
+        // skips it for the same reason and the probe keeps the convention.
+        if (evt.Type == DramaEventType.LegFinal) return false;
+
+        int slot = SlotOf(run, ticket);
+        if (slot < 0) return false;
+
+        // WHICH slot is marked walks the three slots with the round, so no shape is permanently the
+        // one that cashes out; exactly one of the round's three tickets is marked.
+        if ((run.Round + slot * 2) % MarkedSlotCycle != 0) return false;
+
+        int cursor = evt.LegIndex;
+        int lastLeg = ticket.Legs.Count - 1;
+
+        // WHERE the marked ticket cashes out walks on its own period, so the two walks do not lock.
+        // The allocation that falls out is the one worth having: rounds 1 and 2 — the only rounds
+        // every run reaches — draw MID and LATE, which are the positions that need a ticket to
+        // survive, while EARLY, which always fires, takes the starved later rounds.
+        int position = run.Round % PositionCycle;
+        if (position == 1 && ticket.Legs.Count < 3)
+            position = 2; // no mid position exists on a 2-leg ticket; take the last leg instead
+
+        return position switch
+        {
+            // MID — a leg settled and a leg still pending, so the conditional is a genuine ratio over
+            // two different leg sets, and the only position where it is.
+            1 => cursor >= 1 && cursor < lastLeg,
+            // LATE — the last leg, where numerator and denominator share a leg set, the quote walks
+            // to the full payout, and a settled leg that entails the live one makes the certainty
+            // carve-out reachable. Fires only on tickets that survive that far, which is the point.
+            2 => cursor == lastLeg,
+            // EARLY — nothing has settled yet: the quote is the ticket's own locked joint, moved only
+            // by how far the live number has drifted from the marginal it was sold at.
+            _ => cursor == 0,
+        };
+    }
+
+    /// <summary>Which of the round's ticket slots this ticket is, by reference — the ticket list is
+    /// the round's, in placement order, so the slot is T1 / T2 / T3-remedy. −1 if it is not in the
+    /// current round's list, which cannot happen from inside its own sweat but is not worth
+    /// assuming.</summary>
+    private static int SlotOf(Run run, Ticket ticket)
+    {
+        for (int i = 0; i < run.Tickets.Count; i++)
+            if (ReferenceEquals(run.Tickets[i], ticket)) return i;
+        return -1;
+    }
 
     /// <summary>Mulligan or decline, explicitly — the interface default would also fire a gifted
     /// Ref's Whistle, and a whistle re-rolls a grading instead of voiding a leg. The void is the
