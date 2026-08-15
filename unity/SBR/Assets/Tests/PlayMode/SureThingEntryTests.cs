@@ -716,6 +716,12 @@ namespace SBR.Tests.PlayMode
             // T47's reservation, checked directly rather than inferred from the absence of overlap:
             // the flow region must fit its budget, and the anchored band must actually be anchored.
             float flowBottom = float.MaxValue;
+            // The same depth with each element's OWN local rotation taken out — see TiltDepth and
+            // the pin below. Nothing is excluded from either figure; the second one just declines to
+            // read a tilt as an overrun.
+            float flowBottomUntilted = float.MaxValue;
+            string deepestName = "(nothing measured)";
+            float deepestTiltPx = 0f;
             foreach (Graphic graphic in margin.GetComponentsInChildren<Graphic>(true))
             {
                 var rect = graphic.rectTransform;
@@ -739,58 +745,104 @@ namespace SBR.Tests.PlayMode
                 bool coversWholePanel = LocalTop(rect, margin) >= marginTop - epsilonPx
                     && LocalBottom(rect, margin) <= marginBottom + epsilonPx;
                 if (coversWholePanel) continue;
-                flowBottom = Mathf.Min(flowBottom, LocalBottom(rect, margin));
+                float bottom = LocalBottom(rect, margin);
+                flowBottom = Mathf.Min(flowBottom, bottom);
+                float tilt = TiltDepth(rect);
+                if (bottom + tilt < flowBottomUntilted)
+                {
+                    flowBottomUntilted = bottom + tilt;
+                    deepestName = PathOf(rect, margin);
+                    deepestTiltPx = tilt;
+                }
             }
-            // S51 — SIGNED, EXPIRING DEVIATION (DD 2026-08-04). The flow's lowest element sits 2.6px
-            // outside its reservation with a staged receipt at MaxLegs. Named cost: one UN-OWNED
-            // 2.6px excursion in the margin's reserved region. Expiry: when the owner of the 2.6px
-            // is identified — at which point it is FIXED, not re-signed.
+            // S51 — SIGNED, EXPIRING DEVIATION (DD 2026-08-04): the flow's lowest element sits
+            // outside its reservation with a staged receipt at MaxLegs, cost recorded as one
+            // UN-OWNED excursion, expiring "when the owner is identified — at which point it is
+            // FIXED, not re-signed."
             //
-            // This is RECORDED here, deliberately, rather than made to disappear. The reservation is
-            // not slackened and no element is excluded from the measurement: the ruling forbids both,
-            // because either would have gone green while the real overrun continued. The wax
-            // highlight was the lead's candidate and the frames falsified it — it measures 23–24px,
-            // and at 0.5° a 24px band grows 0.21px, twelve times too small. Excluding it would have
-            // been the fortnight's fifth vacuous gate.
+            // THE OWNER IS IDENTIFIED (2026-08-14). It is the WAX HIGHLIGHT — the tilted amber band
+            // laid behind the payout figure — and the earlier acquittal was arithmetic, not
+            // evidence. The note this replaces read: "the wax highlight was the lead's candidate and
+            // the frames falsified it — it measures 23–24px, and at 0.5° a 24px band grows 0.21px,
+            // twelve times too small." That computes the band's HEIGHT times sin(0.5°). The band
+            // rotates about its PIVOT, which SportsbookApp sets to the top-left corner, so the
+            // corner that goes lowest is the bottom-RIGHT one and it drops by the band's WIDTH times
+            // sin(0.5°) — and the width is `Mathf.Max(40f, payout.preferredWidth) + 8f`, i.e. the
+            // payout figure's own measured width. Two terms were being confused for one, and the
+            // smaller was tested.
             //
-            // Asserted as an EQUALITY so the pin is two-sided: this fails if the overrun grows, and
-            // it also fails if it shrinks. A silent improvement is not a win here — it means someone
-            // changed the thing nobody has identified, and the register entry must be closed by
-            // whoever did it rather than quietly going green.
-            // RE-SOURCED 2026-08-08 against the current build, per T24-am: a measurement taken
-            // before the production face is stale, and this pin was set when the stake figure was
-            // 16px roman. M-04 lands it at the kit's `--st-size-stake` 26px condensed, which is a
-            // RULED size, not a drift — so the number moves and the reason is written here rather
-            // than the figure being shrunk to protect the old pin. Allen, via the orchestrator:
-            // re-source at the call site, never shrink a figure to fit.
+            // That is why this pin could not hold a number. The excursion is
             //
-            // The pin is now a SUM of two parts, and they are not the same kind of thing:
+            //     4.00px structural  +  sin(0.5°) x the wax band's width
             //
-            //   2.600px  UN-OWNED  — S51's original excursion, still unexplained, still expiring
-            //                        when its owner is identified (then FIXED, not re-signed).
-            //   1.963px  OWNED     — M-04's figure growing 16px → 26px. Measured, attributable,
-            //                        and the honest price of 1:1 on this row.
-            //   ------
-            //   4.563px  measured on the frame at 20260809-002525-948.
+            // and the second term is not a constant: `RunDirector.seed` is blank in the Room scene,
+            // so every boot rolls a fresh seed, every seed prices the board differently, and the
+            // payout figure is a different string of a different width each time. The pin read
+            // 4.563px on the frame at 20260809-002525-948 and 4.748px when TV measured it after
+            // draws landed — a 0.185px move with NO commit touching the margin flow's layout in
+            // between (ead9396 re-sourced it and is the last such change; af0c42c and 45cb958 are
+            // comment-only and empty-state-only here). Nothing moved. The money did.
             //
-            // Recording the split is the point. A single bigger number would read as "the mystery
-            // grew", and it did not — the mystery is the same 2.6px it always was, now carrying a
-            // known, ruled cost on top of it. Whoever closes S51 subtracts 2.6 from this pin, not
-            // all of it.
-            const float signedOverrunPx = 4.56f;
-            const float signedOverrunTolerancePx = 0.15f;
+            // So the repair is not a new number. Re-sourcing to 4.748px would go green on one boot
+            // and red on the next, which is the flake this pin has actually been carrying since it
+            // was written. Both terms are now separated and each is held to what it can honestly be
+            // held to: the structural part DERIVED and pinned two-sided, the tilt bounded.
+            //
+            // The reservation is not slackened and no element is excluded — the ruling forbids both,
+            // because either would have gone green while a real overrun continued. The wax highlight
+            // is still measured; what is no longer counted as an overrun is the part of its depth
+            // that is a rotation rather than a position.
+            //
+            // Still asserted as an EQUALITY so the structural pin is two-sided: it fails if the
+            // excursion grows and it fails if it shrinks. A silent improvement is not a win — it
+            // means someone moved the payout block, and they close this entry rather than quietly
+            // going green.
+            //
+            // WHAT IS STILL OWED, AND NOT DECIDED HERE: the 4.00px is a real excursion past T47's
+            // reservation, now explained rather than mysterious. Whether the fix is to lift the
+            // payout block clear of the budget, to shorten the band's 34px drop, or to rule that a
+            // decorative underline is not flow content, is a DESIGN call on a design-ruled surface.
+            // Routed to the Design Director through the orchestrator; NOT self-ruled here, and no
+            // production pixel is touched by this commit.
+            //
+            // The excursion is DERIVED, not measured, so it needs no re-sourcing when a face, a
+            // board, or a price changes:
+            //
+            //   the payout figure's box is 36px tall and its bottom lands exactly on the budget
+            //   (-370px); the wax highlight is laid 34px below that box's TOP and is 6px deep, so
+            //   the band's own bottom sits 40px below the box top — 4px past the box, and therefore
+            //   4px past the reservation.
+            //
+            //   4.00px  the wax highlight band hanging below the payout figure it underlines.
+            //
+            // This holds for any payout string and any slate, which the old number did not.
+            const float structuralOverrunPx = 4.00f;
+            const float structuralTolerancePx = 0.05f;
+            // The tilt has no fixed value — it is sin(0.5°) x the band's width and the band is sized
+            // from the payout figure's MEASURED width, so it moves with the money on the screen.
+            // Bounded rather than pinned: a band wider than the 324px panel is a real defect, a band
+            // that tracks a longer price is not. 3.0px == a 344px band at the ruled 0.5°.
+            const float maxTiltPx = 3.0f;
             float overrunPx = -SportsbookApp.MarginFlowBudget - flowBottom;
-            Assert.AreEqual(signedOverrunPx, overrunPx, signedOverrunTolerancePx,
-                $"the margin flow's overrun moved: measured {overrunPx:F2}px against the signed "
-                + $"{signedOverrunPx:F2}px (S51). Lowest flow element {flowBottom:F1}px, budget "
+            float structuralPx = -SportsbookApp.MarginFlowBudget - flowBottomUntilted;
+
+            Assert.LessOrEqual(deepestTiltPx, maxTiltPx,
+                $"the flow's deepest element ({deepestName}) is tilted {deepestTiltPx:F2}px past its "
+                + $"own unrotated bottom, over the {maxTiltPx:F1}px bound. At the ruled 0.5° that is "
+                + "a band wider than the panel it sits in — the wax highlight is sized from the "
+                + "payout figure's measured width, so this means the figure itself ran away.");
+            Assert.AreEqual(structuralOverrunPx, structuralPx, structuralTolerancePx,
+                $"the margin flow's STRUCTURAL overrun moved: measured {structuralPx:F2}px against "
+                + $"the derived {structuralOverrunPx:F2}px. Deepest flow element {deepestName} at "
+                + $"{flowBottom:F2}px ({deepestTiltPx:F2}px of that is its own tilt, leaving "
+                + $"{flowBottomUntilted:F2}px), raw overrun {overrunPx:F2}px, budget "
                 + $"-{SportsbookApp.MarginFlowBudget:F0}px, action band reserves "
-                + $"{SportsbookApp.ActionBandReservedHeight:F0}px. This pin is 2.60px UN-OWNED "
-                + "(S51) + 1.96px OWNED (M-04's 26px stake figure). If it SHRANK by ~2.6px, S51's "
-                + "owner has been found — fix it, close S51, and re-source this to the owned part "
-                + "alone rather than re-signing. If it GREW, something entered the margin flow: "
-                + "staged receipts live in the 700px sheet and must never re-enter it (both-screens "
-                + "kit amendment, DD 2026-08-04). If a RULED size changed again, re-source at this "
-                + "call site with the new split written out — never shrink a figure to fit the pin.");
+                + $"{SportsbookApp.ActionBandReservedHeight:F0}px. The 4.00px is the wax highlight "
+                + "hanging below the payout figure's box, whose bottom is flush with the budget. If "
+                + "it GREW, something entered the margin flow: staged receipts live in the 700px "
+                + "sheet and must never re-enter it (both-screens kit amendment, DD 2026-08-04). If "
+                + "a RULED size changed, re-derive at this call site with the new arithmetic written "
+                + "out — never shrink a figure to fit the pin.");
 
             // T53 — every gate states what it cannot see. THIS ONE CANNOT SEE:
             //  · rendered glyphs. It measures RectTransforms, so text bleeding outside its own rect
@@ -802,6 +854,15 @@ namespace SBR.Tests.PlayMode
             //  · any leg count other than MaxLegs. It now exercises a full slip ON TOP OF a staged
             //    receipt (S50's named consequence), but not multiple staged receipts, and not the
             //    board-frozen state, whose copy differs.
+            //  · a tilt that is a genuine layout defect rather than a rotation. The structural pin
+            //    subtracts every flow element's own rotation before measuring depth, so a band that
+            //    was tilted BY MISTAKE reads as no overrun at all — only the loose 3.0px bound above
+            //    catches that, and only once it is wider than the panel.
+            //  · which slate it ran on. `RunDirector.seed` is blank in the Room scene, so the board,
+            //    the prices and therefore every money string differ on every boot. That is why the
+            //    pin is derived rather than measured; it also means this gate has never tested one
+            //    fixed set of numbers, and a defect that needs a particular price to appear will
+            //    show up here as a flake rather than a failure.
             //  · the REWARDS and MY BETS passive margins, which have their own content.
         }
 
@@ -821,6 +882,33 @@ namespace SBR.Tests.PlayMode
             var corners = new Vector3[4];
             rect.GetWorldCorners(corners);
             return basis.InverseTransformPoint(corners[3]).y;
+        }
+
+        /// <summary>How much deeper <paramref name="rect"/>'s own local z-rotation puts the corner
+        /// <see cref="LocalBottom"/> reads than that corner would sit unrotated. Positive when the
+        /// rotation pushes it DOWN.
+        ///
+        /// This exists because the margin's deepest flow element is a TILTED one — the wax highlight
+        /// behind the payout figure — and a tilt is not a position. Rotation is about the PIVOT, not
+        /// the centre, so for the wax band (pivot top-left, 0.5° clockwise) the term scales with the
+        /// band's WIDTH, and the band is sized from the payout figure's measured width. Reading that
+        /// as an overrun makes the margin's budget check a function of how much money is on the
+        /// screen, which is what it had silently become.
+        ///
+        /// Closed-form rather than a re-measure, and general in pivot and angle: `rect.rect` is
+        /// pivot-relative, so the corner in question is `(xMax, yMin)` and rotating it about the
+        /// origin is the whole transform. Assumes no rotation is contributed by the chain BETWEEN
+        /// the element and the basis — true on this panel, where every flow element is a direct
+        /// child of the margin, and loud rather than silent if that ever stops holding, since the
+        /// structural pin below is a two-sided equality.</summary>
+        private static float TiltDepth(RectTransform rect)
+        {
+            float deg = Mathf.DeltaAngle(0f, rect.localEulerAngles.z);
+            if (Mathf.Abs(deg) < 1e-4f) return 0f;
+            float rad = deg * Mathf.Deg2Rad;
+            Rect r = rect.rect;
+            float rotatedY = r.xMax * Mathf.Sin(rad) + r.yMin * Mathf.Cos(rad);
+            return r.yMin - rotatedY;
         }
 
         /// <summary>The leg's subject — the first token after the "N. " index, e.g. "LONGHAULERS".
