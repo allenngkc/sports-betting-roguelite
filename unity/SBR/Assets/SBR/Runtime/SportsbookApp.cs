@@ -987,7 +987,11 @@ namespace SBR.Game
             // screen's, and nothing restates either), and the markets C14 audit already carried it
             // as invented (M-09). This was never an open question — an unexecuted ruling is not a
             // pending one.
-            float y = -44f;
+            // S82 option A, harvest 1 of 3 — the header's own gap, 8px measured down to 4px.
+            // The header's content ends at −36 (the 2px rule under a 24px title) and the first leg
+            // opened at −44. S50's standing order is spacing first, and 4px still separates the rule
+            // from the row beneath it. Measured, not guessed: this gap read 8.0px on the tree.
+            float y = -40f;
             if (slip.Picks.Count == 0)
             {
                 // S71: names the STATE, not the owner. This read "YOUR MARGIN IS CLEAR" — someone
@@ -1182,7 +1186,11 @@ namespace SBR.Game
             // room for up to MaxTicketsPerRound of them above the anchored action band (T47) — they
             // now render in the ENTRY sheet's own scrolling body instead (BuildScrollingBody), which
             // is where the kit puts them (screens.jsx:49-58, "PLACED THIS ROUND").
-            y -= 4f;
+            //
+            // S82 option A, harvest 2 of 3 — the bare 4px that stood here is GONE. The spec named it
+            // by line: a gap with no derivation, left behind when the receipts it used to separate
+            // moved out to the sheet. The leg list's last row already ends in its own 1px rule, so
+            // the COMBINED row below it is separated by a ruled edge rather than by air.
             // B1-3/M-03 ruling (load-bearing under S28): MarginRow.jsx is a label/value pair with
             // its own 1px --rule bottom rule, not one joined "COMBINED {odds}" string in one face
             // and one colour — S28 names this the exact failure that leaves label and fact
@@ -1286,7 +1294,10 @@ namespace SBR.Game
             LaptopUi.MakeText(panel, "PayoutLabel", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, y), new Vector2(300f, 16f), 13, TextAnchor.UpperLeft, LaptopOs.Muted,
                 "POTENTIAL PAYOUT", _font);
-            y -= 18f;
+            // S82 option A, harvest 3 of 3 — 18px advance for a 16px box, measured as 2.0px of air.
+            // The label's own box already carries ~3px around its 13px glyphs, so the figure below it
+            // is still separated by whitespace rather than by an advance.
+            y -= 16f;
             TMP_Text payout = LaptopUi.MakeText(panel, "Payout", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, y), new Vector2(300f, 36f), 31, TextAnchor.UpperLeft, LaptopOs.MoneyGold, $"{LaptopUi.Money(slip.ToWin)}", _fontCond);
             // Hand-laid wax highlight behind the one loud figure (palette-surething.css
             // --wax-highlight-*): a thin amber band, tilted, sized from the figure's own measured
