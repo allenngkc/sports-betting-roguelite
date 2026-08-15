@@ -293,7 +293,69 @@ caption — implemented. Stroke weight and spur length want frames, as the VOID 
 The margin invariant still holds with the marks in the flow: they sit in the leg-row band, well above
 the payout, so the deepest element is unchanged.
 
-### P5 — the statement. NEXT, and what it needs
+### P4 is COMPLETE — the mark (`7d06881`) and the instrument name (`16047df`)
+
+`SAME MATCH` now names the instrument on the slip's price row. **That placement is forced, not
+aesthetic:** canon rules a same-match ticket "its own instrument — never a parlay with an
+adjustment", and `COMBINED` names the price as a combination arrived at by *multiplying*. On a
+same-match slip that label was not silent about the instrument — it was **wrong** about it. The
+figure beside it is already the engine's joint price, so the label was the last thing on that row
+still describing a parlay.
+
+Gated both ways: same-match reads `SAME MATCH`, untracked; an ordinary parlay keeps `COMBINED`,
+because legs on different matches genuinely do multiply.
+
+### P3's flag — RELEASED, and merged. Flagging a possible stale instruction
+
+The orchestrator's 2026-08-15 relay says "the wiring stays flagged". It is **not** flagged: the
+previous relay said *"Unflag the wiring once the stamp is rebuilt to that shape"*, S77's rebuild
+did exactly that, and it is merged to main (`26d7baf`). `StampComposedRefusal` is a `const true`.
+Reading that line as stale rather than as an instruction to undo merged, DD-sanctioned work —
+**say so if it was meant literally and it goes back behind a hold in one commit.**
+
+### P5 — the statement. DRAFTED, with the DD (`docs/design/dd-question-p5-relation-statements.md`)
+
+Seven sentences across the four relations the model actually nominates. Not four: every relation
+but `Implies` is emitted in **both signs**, and reinforcing/opposing are opposite claims about the
+same shared thing, so one sentence per relation would state one falsely about the other.
+
+Measured coverage that decides them, off 6,109 placeable same-match slips: `Implies`/Reinforcing
+10.6%, `SharedScoreline` both signs 14.4%, `ScorerOfSide` both signs both sides 27.1%,
+`SharedCount` Corner+Card both signs 1.8% — and **46.1% with no statable relation at all**, which is
+canon working and is asked to be ruled correct before it reads as a gap.
+
+Batch 70 (`26d7baf`) is TV-only and does not touch these; the word is still owed.
+
+### P5 — BUILT and green (`3436337`, `9d7839c`). All seven sentences ship
+
+Composed from `principal`, toner, once per slip, sign carried, family preserved. Both refused forms
+re-authored: the remedy names an act in the word the control actually uses (there is no clear-all
+control, only per-row RUB OUT), and the implication statement carries the cost and says which leg,
+**by position** — `Relation.Legs` is ordered by meaning, not slip order.
+
+Slot measured (S78's owed item): widest sentence **331.7px = 56%** of the two-line budget at 13px;
+seven of nine fit one line, two need two. All inside S77-am's 80% rule.
+
+**The `ScorerOfSide` pair released by batch 72 and ships as approved.** I held it for one cycle on a
+measurement and the DD ruled it ships; the hold constant is gone rather than flipped. **The finding
+is recorded at `RelationStatement`'s call site**, where a later reader meets the sentence: over
+1,712 slips the two marked rows named the shared club in **zero**, and a scorer row names the
+*player*, so the only club on screen is the other team's. That is the evidence trail, not a dissent
+still running. The club-name report is withdrawn and its sweep is not re-run.
+
+### Standing, with Allen: the P5 flow cost
+
+~36px added to a budget that clears by 0.10px at MaxLegs → **~30px overrun of T47's pad** on a
+same-match slip at MaxLegs. Invisible to the margin invariant, which fills MaxLegs across *different*
+matchups and so never renders a statement.
+
+**Not reducible by sizing to the common case.** Seven of nine sentences fit one line, so a
+content-sized slot would cost 15px — and §2 forbids exactly that (a fixed grid constant is legal, a
+zone resizing to content is not). Anyone weighing this is weighing 36px, not "36px sometimes".
+
+Unreachable in play today: `Toggle` still replaces, so no player can build a same-match slip.
+
+### P5 — what it needs once the copy is ruled
 
 `SameMatchPricing.principal` is the nominated relation; **do not pick from the list** — choosing which
 relation moved the price is a pricing claim only the model can make. The kinds that can reach a
