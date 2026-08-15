@@ -280,6 +280,13 @@ public static class Report
             + $"min stake {Money(cfg.MinStake)}, max stake {Pct(cfg.MaxStakeFraction * 100)} of bank, "
             + $"{cfg.MatchupsPerSlate} matchups/round, {cfg.MaxTicketsPerRound} tickets/round, "
             + $"{cfg.RelicSlots} relic + {cfg.ConsumableSlots} consumable slots");
+        // Beside the config dials on purpose. This report's Seed line claims the body reproduces
+        // byte-for-byte; the worker count is the other half of the conditions that claim was made
+        // under. An artifact asserting worker-count independence that never records the count it
+        // ran at cannot be checked later by anyone, which makes the assertion unfalsifiable rather
+        // than true. Header-only by construction — never in Body(), so --verify still has nothing
+        // machine-dependent to diff.
+        sb.AppendLine($"- Workers: {WorkerPolicy.Describe()}");
         sb.AppendLine($"- Strategies: {string.Join(", ", Names(batches))}");
         // C34 (batch 14): evidence that cannot be reproduced is not a set — a flow pins its seed
         // AND asserts it. This campaign was always pinned by construction, but until this line the

@@ -18,6 +18,10 @@ public sealed class CliOptions
     public string? ReportPath;
     public bool Verify;
 
+    /// <summary>0 = auto-scale from machine idle (see WorkerPolicy); else the manual override,
+    /// which WINS over auto by ruling. The determinism proof depends on being able to pin 1.</summary>
+    public int Workers;
+
     /// <summary>True when --runs was given explicitly. The gate campaign's n is RULED, not a
     /// caller's default (Allen 2026-08-07): G6's resolution is a function of n, and at the old
     /// n=1,000 the gate could not fail. A bare --gates therefore runs at GateData.CampaignRuns and
@@ -80,6 +84,10 @@ public sealed class CliOptions
                 case "--combos":
                     if (!TryTakeInt(args, ref i, out options.Combos, out error)) return false;
                     if (options.Combos < 1) { error = "--combos must be ≥ 1"; return false; }
+                    break;
+                case "--workers":
+                    if (!TryTakeInt(args, ref i, out options.Workers, out error)) return false;
+                    if (options.Workers < 1) { error = "--workers must be ≥ 1"; return false; }
                     break;
                 case "--report":
                     if (!TryTake(args, ref i, out options.ReportPath!, out error)) return false;
