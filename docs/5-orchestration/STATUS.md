@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 289.** Two proofs in one
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 290.** Batch 77 landed
+(ccd347e): the reservation spec splits the 70px into TWO BILLS (34.10px
+broken today; 36.00px gated on the gesture) with four options priced;
+DD recommends A now / C before the gesture / B in reserve; consumable
+gating reclassified correctness-fix. WITH ALLEN: that one word (S82),
+the three stats-tab rulings, two research words. Re-shot block + the
+parallel HOLDOUT6 campaign in flight.
+
+*(prior stamp, cycle 289:)* Two proofs in one
 sweep: sgp's PARALLEL PATH PROVEN (byte-identical body across collectors,
 1.74x on the proof campaign; HOLDOUT6 riding it now) and su's STATE SWEEP
 merged (172fee4; second bill real and live, both suites fully green on
