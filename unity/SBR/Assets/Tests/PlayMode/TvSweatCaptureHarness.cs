@@ -669,6 +669,9 @@ namespace SBR.Tests.PlayMode
 
             TheaterStage.PresentationSeedOverride = StableSeed(_seed);
             Time.captureDeltaTime = 1f / 50f;
+            // T97/T87-am2: the DD asked for every strip write logged with its call site across a
+            // LegFinal beat and could not run it. This run answers it.
+            TvSweatScreen.TraceFlavorWrites = true;
 
             yield return LoadRoom();
 
@@ -749,6 +752,18 @@ namespace SBR.Tests.PlayMode
             // that replay looks superficially plausible, which is exactly what makes a mistimed burst
             // dangerous. The frames are named for the ENDING and read in frame-index order, which is
             // this harness's own stated convention.
+            // THE SUPPLEMENTAL SHOT (batch 69): the docked set asserted T96's LIVE NEED clause —
+            // `LEVEL AT FULL TIME` over `LEVEL` — while all 120 frames were SETTLED, so the clause
+            // had no frame behind it. Any mid-match frame of a draw-backed leg carries it, and the
+            // draw-backer's sweat is the first one, so it costs no extra window.
+            float midDeadline = Time.realtimeSinceStartup + 300f;
+            yield return WaitUntilOrFail(
+                () => MinuteOf(screen.RevealedView.ClockText) >= 30 || director.Run.Phase != Phase.Sweat,
+                midDeadline,
+                $"the draw-backer's leg never reached a mid-match minute · clock='{screen.RevealedView.ClockText}'");
+            if (director.Run.Phase == Phase.Sweat)
+                yield return CaptureBurst(screen, cam, "goalless-draw-backer-live-need", 8, 0f);
+
             int endingsCaptured = 0;
             float runDeadline = Time.realtimeSinceStartup + 900f;
             while (endingsCaptured < 2 && director.Run.Phase == Phase.Sweat)
@@ -794,6 +809,15 @@ namespace SBR.Tests.PlayMode
             Debug.Log($"[TvSweatCaptureHarness] seed={_seed} goalless capture complete -> {OutputDir}");
         }
 
+        /// <summary>The match minute a clock string is showing, or -1 for the non-minute states
+        /// (`PRE`, `FT`, `90'+2`). Deliberately narrow: it exists to say "we are mid-match", so a
+        /// stoppage or a terminal clock answering -1 is the correct answer, not a parse failure.</summary>
+        private static int MinuteOf(string clock)
+        {
+            if (string.IsNullOrEmpty(clock) || !clock.EndsWith("'")) return -1;
+            return int.TryParse(clock.Substring(0, clock.Length - 1), out int m) ? m : -1;
+        }
+
         private static IEnumerator CaptureBurst(TvSweatScreen screen, Camera cam, string momentName,
             int frameCount, float intervalSeconds)
         {
@@ -815,8 +839,13 @@ namespace SBR.Tests.PlayMode
                               $"__moment-{momentName}__frame{i:000}.png";
                 string path = Path.Combine(OutputDir, file);
                 CaptureCamera(cam, path, CaptureWidth, CaptureHeight);
+                // The STRIP TEXT rides in the per-frame line (batch 69): T87-am2 is verifiable only as
+                // "the line was visible, for multiple frames, before the grade", and a set whose whole
+                // claim is about what the strip said should be able to answer that from its own log
+                // rather than from a second instrument.
                 Debug.Log($"[TvSweatCaptureHarness] {file} :: score='{screen.RevealedView.ScoreText}' " +
-                    $"clock='{screen.RevealedView.ClockText}' suspended={screen.RevealedView.MarketSuspended}");
+                    $"clock='{screen.RevealedView.ClockText}' suspended={screen.RevealedView.MarketSuspended} " +
+                    $"strip='{screen.DebugFlavorText}'");
 
                 if (i < frameCount - 1)
                 {
