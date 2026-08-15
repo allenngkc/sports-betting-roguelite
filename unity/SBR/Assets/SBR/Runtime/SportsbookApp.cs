@@ -869,6 +869,40 @@ namespace SBR.Game
         /// margin's fixed 530px panel.</summary>
         internal const float MarginFlowBudget = 530f - ActionBandReservedHeight;
 
+        // ------------------------------------------------------------------ S83: the margin's three zones
+        //
+        // ZONE 1 HEAD (fixed) · ZONE 2 THE SLIP (scrolls) · ZONE 3 THE COMMIT (anchored, reserved).
+        //
+        // The split is derived rather than chosen. Zone 1 is the board's own grammar one screen over
+        // — `MY MARKS · n SELECTIONS` is a column head for the legs under it, and a count that
+        // scrolls away from the things it counts is a head that has become a row. Zone 3 answers the
+        // objection the spec raised against its own option: the payout can otherwise sit below the
+        // fold while he presses PLACE, which is the exact defect S17/S73 exist to prevent — a cost he
+        // cannot see at the point of spending. So the two figures the commit is about, what he stakes
+        // and what he would win, are anchored WITH the controls that commit them. The stake block is
+        // not split across the boundary either: M-05 put the figure first because the figure is the
+        // fact, and separating a figure from its own controls to save pixels would undo that.
+        //
+        // T47 IS EXTENDED, NOT WEAKENED. The rule was always that the flow region and the action band
+        // can never meet; the band now contains everything the commit depends on. PLACE, LOCK and
+        // SKIP do not move by a pixel — every constant below builds UP from
+        // `ActionBandReservedHeight` rather than moving it.
+        internal const float SlipHeadHeightPx = 40f;                                // zone 1
+        private const float SlipHeadHeight = SlipHeadHeightPx;
+        // Zone 3, measured up from the panel's floor. The band's own drop is the kit's
+        // (`--st-size-payout` 31 x `--st-lh-fig` 1.1, plus its `bottom:-2px`) — the same derivation
+        // S51 closed on, reused here rather than restated as a number.
+        private const float CommitPayoutTop = ActionBandReservedHeight + (31f * 1.1f + 2f);
+        private const float CommitPayoutLabelTop = CommitPayoutTop + 16f;
+        private const float CommitNudgeTop = CommitPayoutLabelTop + 32f;
+        private const float CommitChipTop = CommitNudgeTop + 34f;
+        /// <summary>Zone 3's full reservation, measured up from the panel floor: the action band plus
+        /// the stake and payout blocks that commit depends on.</summary>
+        internal const float CommitZoneReserved = CommitChipTop + 34f;
+        /// <summary>Zone 2's viewport — what is left once the head and the commit are reserved.
+        /// DERIVED, never chosen, and it is the one number C is sized by.</summary>
+        internal const float SlipViewportHeight = 530f - SlipHeadHeight - CommitZoneReserved;
+
         /// <summary>The three outcome cells' y in a matchup card, and the one derivation among them.
         ///
         /// <para><b>`DrawCellY` is COMPUTED, and that is the point.</b> S74 rules the draw's middle
@@ -991,7 +1025,17 @@ namespace SBR.Game
             // The header's content ends at −36 (the 2px rule under a 24px title) and the first leg
             // opened at −44. S50's standing order is spacing first, and 4px still separates the rule
             // from the row beneath it. Measured, not guessed: this gap read 8.0px on the tree.
-            float y = -40f;
+            //
+            // S83 — ZONE 2 OPENS HERE. Everything from this point to the COMMIT block is built into
+            // a scrolling body rather than onto the panel: the leg rows, THE HOUSE'S LINE, the
+            // relation statement, the price row and the modifiers row. The cursor is now LOCAL to
+            // that content, so it starts at 0 rather than at the head's height.
+            RectTransform slipBody = LaptopUi.MakeScrollBody(panel, "SlipScroll",
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, -SlipHeadHeight),
+                new Vector2(324f, SlipViewportHeight), out RectTransform slipHost,
+                out ScrollRect slipScroll);
+            RectTransform flow = slipBody;
+            float y = 0f;
             if (slip.Picks.Count == 0)
             {
                 // S71: names the STATE, not the owner. This read "YOUR MARGIN IS CLEAR" — someone
@@ -1002,7 +1046,7 @@ namespace SBR.Game
                 //
                 // The ownership does not need saying: the header states it and the column is drawn
                 // in the ink that means "what he chose".
-                LaptopUi.MakeText(panel, "Empty", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                LaptopUi.MakeText(flow, "Empty", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(14f, y), new Vector2(300f, 26f), 13, TextAnchor.UpperLeft, LaptopOs.Muted,
                     "NO MARKS ON THIS SHEET", _font);
                 // S71-am3 (DD 2026-08-09, batch 28): member 1 takes the KIT'S PAIR. The kit authors
@@ -1019,7 +1063,7 @@ namespace SBR.Game
                 //
                 // The stop is S72-p: this is a sentence, and sentences take one. The statement above
                 // is a fragment and correctly does not.
-                LaptopUi.MakeText(panel, "EmptyRemedy", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                LaptopUi.MakeText(flow, "EmptyRemedy", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(14f, y - 30f), new Vector2(300f, 26f), 13, TextAnchor.UpperLeft,
                     LaptopOs.TonerSecondary, "CIRCLE A PRICE TO START A TICKET.", _font);
                 y -= 60f;
@@ -1063,31 +1107,31 @@ namespace SBR.Game
 
                 // Line 1: biro check, team/subject (condensed, toner), price (condensed, toner,
                 // right-flushed in its own cell so it stays flush regardless of team width).
-                LaptopUi.MakeText(panel, "LegCheck" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                LaptopUi.MakeText(flow, "LegCheck" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(14f, y), new Vector2(checkBoxWidth, 20f), 15, TextAnchor.UpperLeft,
                     LaptopOs.Accent, "✓", _font);
                 // Named "Leg" + i (not e.g. "LegTeam") — SureThingEntryTests' entry-persistence
                 // snapshot looks up "Leg0" by that exact name; this is the closest surviving analog
                 // to the old single joined-string node, so the lookup still resolves.
-                LaptopUi.MakeText(panel, "Leg" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                LaptopUi.MakeText(flow, "Leg" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(contentX, y), new Vector2(teamWidth, 20f), 16, TextAnchor.UpperLeft,
                     LaptopOs.White, subject, _fontCond)
                     .enableWordWrapping = false;
-                LaptopUi.MakeText(panel, "LegPrice" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                LaptopUi.MakeText(flow, "LegPrice" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(priceX, y), new Vector2(priceWidth, 20f), 16, TextAnchor.UpperRight,
                     LaptopOs.White, price, _fontCond, LaptopTrack.Names);
 
                 // Line 2: "{market} · ENTRY {entry}" — roman, fact floor, --toner-3. Indented to the
                 // content column past the check (kit: the check sits outside the flex column that
                 // holds both lines), not the row's own left edge.
-                LaptopUi.MakeText(panel, "LegDetail" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                LaptopUi.MakeText(flow, "LegDetail" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(contentX, y - 20f), new Vector2(rowRight - contentX, 15f), 13,
                     TextAnchor.UpperLeft, LaptopOs.Muted, $"{fields.Market} · ENTRY {entry}", _font);
 
                 // 1px --rule bottom rule (M-02), spanning the FULL row including the RUB OUT column
                 // (kit: the border sits on the outer flex row, check+content+button together) — the
                 // shared LaptopUi.MakeRule is hardcoded to --rule-soft and cannot be reused here.
-                LaptopUi.MakePanel(panel, "LegRule" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                LaptopUi.MakePanel(flow, "LegRule" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(14f, y - 34f), new Vector2(headerRight, 1f), LaptopOs.Rule);
 
                 // LEG-ADDRESSED, not matchup-keyed. This called Remove(matchupIndex), which drops
@@ -1098,7 +1142,7 @@ namespace SBR.Game
                 {
                     bool boosted = slip.BoostLeg == i;
                     int legIndex = i;
-                    LaptopUi.MakeButton(panel, "Boost" + i, boosted ? "BOOST ✓" : "BOOST",
+                    LaptopUi.MakeButton(flow, "Boost" + i, boosted ? "BOOST ✓" : "BOOST",
                         new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-76f, y + 5f),
                         new Vector2(58f, 24f), 13, boosted ? LaptopOs.MoneyGold : LaptopOs.SurfaceRaised,
                         LaptopOs.White, () => { slip.ToggleBoost(legIndex); _invalidate(); }, _font);
@@ -1112,7 +1156,7 @@ namespace SBR.Game
                 // instruction and its target are the same object rather than two strings to match.
                 // Stamp is the house acting on the document (§3.1); a lit RUB OUT is exactly that.
                 bool markedForRemoval = refusalMarks != null && refusalMarks.Contains(i);
-                LaptopUi.MakeButton(panel, "Remove" + i, "RUB OUT", new Vector2(1f, 1f), new Vector2(1f, 1f),
+                LaptopUi.MakeButton(flow, "Remove" + i, "RUB OUT", new Vector2(1f, 1f), new Vector2(1f, 1f),
                     new Vector2(-12f, y + 1.5f), new Vector2(60f, 32f), 13, LaptopOs.Ink,
                     markedForRemoval ? LaptopOs.MoneyBad : LaptopOs.Muted,
                     () => { slip.RemoveLeg(legIndexForRemoval); _lockArmed = false; _invalidate(); },
@@ -1157,7 +1201,7 @@ namespace SBR.Game
                 foreach (KeyValuePair<int, List<int>> group in groups)
                 {
                     if (group.Value.Count < 2) continue;   // one leg on a match is not a connection
-                    DrawHouseLine(panel, markIndex++, group.Value, legRowY);
+                    DrawHouseLine(flow, markIndex++, group.Value, legRowY);
                 }
             }
 
@@ -1176,7 +1220,7 @@ namespace SBR.Game
             string relationStatement = RelationStatement(slip.SameMatchPricing, slip.Picks);
             if (relationStatement != null)
             {
-                LaptopUi.MakeText(panel, "RelationStatement", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                LaptopUi.MakeText(flow, "RelationStatement", new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(14f, y - 4f), new Vector2(headerRight, RelationStatementHeight), 13,
                     TextAnchor.UpperLeft, LaptopOs.White, relationStatement, _font);
                 y -= RelationStatementHeight + 6f;
@@ -1213,13 +1257,13 @@ namespace SBR.Game
             // Untracked, per the plan — the market vocabulary's own treatment, not a badge's.
             // And not beside THE HOUSE'S LINE: §3.1's "drawn, not captioned" governs the MARK, and
             // naming the instrument on the slip's own price row is not captioning the mark.
-            LaptopUi.MakeText(panel, "CombinedLabel", new Vector2(0f, 1f), new Vector2(0f, 1f),
+            LaptopUi.MakeText(flow, "CombinedLabel", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, y), new Vector2(120f, 18f), 13, TextAnchor.UpperLeft, LaptopOs.Muted,
                 slip.IsSameMatch ? "SAME MATCH" : "COMBINED", _font);
-            LaptopUi.MakeText(panel, "Combined", new Vector2(0f, 1f), new Vector2(0f, 1f),
+            LaptopUi.MakeText(flow, "Combined", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, y), new Vector2(headerRight, 22f), 18, TextAnchor.UpperRight, LaptopOs.White,
                 slip.Picks.Count > 0 ? OddsFormat.American(slip.CombinedOdds) : "—", _fontCond);
-            LaptopUi.MakePanel(panel, "CombinedRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
+            LaptopUi.MakePanel(flow, "CombinedRule", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, y - 24f), new Vector2(headerRight, 1f), LaptopOs.Rule);
             y -= 28f;
 
@@ -1228,9 +1272,9 @@ namespace SBR.Game
             if (freeHeld || donHeld)
             {
                 if (freeHeld)
-                    MakeModifier(panel, "FREE BET", TicketModifier.FreeBet, slip, 14f, y);
+                    MakeModifier(flow, "FREE BET", TicketModifier.FreeBet, slip, 14f, y);
                 if (donHeld)
-                    MakeModifier(panel, "DOUBLE OR NOTHING", TicketModifier.DoubleOrNothing, slip,
+                    MakeModifier(flow, "DOUBLE OR NOTHING", TicketModifier.DoubleOrNothing, slip,
                         freeHeld ? 148f : 14f, y);
                 y -= 34f;
             }
@@ -1254,6 +1298,21 @@ namespace SBR.Game
             // what the kit's `alignItems:"baseline"` asks for; top-anchoring two boxes 13px apart in
             // size would not. The value node keeps the name "Stake" — SureThingEntryTests reads that
             // node by name across a destination switch.
+            // S83 — ZONE 2 CLOSES. The rail is drawn only when the content actually exceeds the
+            // viewport (LaptopUi.FinishScrollBody), which is the spec's "scroll only when genuinely
+            // needed" — and after option A the ordinary compositions no longer exceed it, so the
+            // scroll engages where it is needed rather than always being slightly engaged. A
+            // scrollbar that appears for a tenth of a pixel is worse than no scrollbar.
+            //
+            // The scroll rests at the TOP: one mechanism and one behaviour with the board (S25-am /
+            // S27's printed rail), and the head names what is under it.
+            LaptopUi.FinishScrollBody(slipHost, slipScroll, flow, -y, SlipViewportHeight);
+
+            // S83 — ZONE 3 OPENS. The commit block is ANCHORED and RESERVED: its cursor is a fixed
+            // height above the panel's floor rather than an accumulation of everything above it, so
+            // nothing in zone 2 can move it. That is the whole point — the two figures the commit is
+            // about are on screen whenever PLACE is.
+            y = -(530f - CommitZoneReserved);
             TMP_Text stakeLabel = LaptopUi.MakeText(panel, "StakeLabel", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, y), new Vector2(120f, 30f), 13, TextAnchor.LowerLeft, LaptopOs.Muted,
                 "STAKE", _font, 0.12f);

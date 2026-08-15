@@ -635,6 +635,78 @@ namespace SBR.Tests.PlayMode
                 $"the stamp was ellipsised: \"{stamp}\". A truncated remedy is an unverified remedy");
         }
 
+        /// <summary>S83's zones — the two checks DD batch 80 ordered, and the reachability the
+        /// invariant moved to.
+        ///
+        /// <para><b>1. The split neither creates nor absorbs a pixel.</b> The parts sum to the whole.
+        /// A zone split that quietly gained or lost height would show up as a layout that "almost"
+        /// works, which is the hardest kind to find later.</para>
+        ///
+        /// <para><b>2. FLUSH IS TIGHT.</b> The state sitting exactly on its boundary is the one worth
+        /// pinning, so four legs alone — the ordinary full slip, no consumable, no statement — is
+        /// pinned explicitly against the viewport with its clearance stated.</para></summary>
+        [UnityTest, Order(9)]
+        public IEnumerator Slip_zones_sum_to_the_panel_and_the_boundary_state_is_pinned()
+        {
+            // 1 — THE SUM. Pure arithmetic over the shipped constants, so it fails at compile-to-run
+            // rather than waiting for a frame.
+            Assert.AreEqual(530f,
+                SportsbookApp.SlipHeadHeightPx + SportsbookApp.SlipViewportHeight
+                    + SportsbookApp.CommitZoneReserved, 0.001f,
+                "the three zones must sum to the 530px panel — a split that creates or absorbs a "
+                + "pixel is a layout that almost works");
+
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            Run run = laptop.director.Run;
+            BetslipModel slip = laptop.Slip;
+            int maxLegs = run.Config.MaxLegs;
+
+            // 2 — THE BOUNDARY STATE: four legs alone, which is the ordinary full slip.
+            slip.Clear();
+            yield return WaitForRebuild();
+            for (int i = 0; i < maxLegs; i++) slip.AddLeg(i, MarketSelection.Moneyline(Side.Away));
+            yield return WaitForRebuild();
+
+            Transform margin = Required(App(laptop), "WorkingMargin");
+            var host = Required(margin, "SlipScroll");
+            var scroll = host.GetComponent<ScrollRect>();
+            Assert.IsNotNull(scroll, "zone 2 is a scrolling body");
+            var content = (RectTransform)Required(Required(host, "Viewport"), "Content");
+            float contentHeight = content.rect.height;
+            float clearance = SportsbookApp.SlipViewportHeight - contentHeight;
+
+            UnityEngine.Debug.Log($"[S83-ZONES] head {SportsbookApp.SlipHeadHeightPx:F1} + viewport "
+                + $"{SportsbookApp.SlipViewportHeight:F1} + commit {SportsbookApp.CommitZoneReserved:F1}"
+                + $" = 530 · {maxLegs} legs alone: content {contentHeight:F1} into viewport "
+                + $"{SportsbookApp.SlipViewportHeight:F1}, clearance {clearance:F1}px, "
+                + $"scrolls {scroll.vertical}");
+
+            Assert.IsFalse(scroll.vertical,
+                $"four legs alone must NOT scroll — content {contentHeight:F1} against a "
+                + $"{SportsbookApp.SlipViewportHeight:F1} viewport. A scrollbar on the ordinary full "
+                + "slip is the 'always slightly broken' state option A was harvested to prevent");
+            Assert.GreaterOrEqual(clearance, 0f,
+                $"the boundary state overflows its viewport by {-clearance:F1}px");
+
+            // 3 — REACHABILITY, which is what the invariant became. Containment was the old question
+            // and it no longer means anything for a zone that scrolls: what matters is that every
+            // leg can be brought into view, and that the commit zone is never what has to move.
+            slip.Clear();
+            yield return WaitForRebuild();
+            for (int i = 0; i < maxLegs; i++) slip.AddLeg(i, MarketSelection.Moneyline(Side.Away));
+            yield return WaitForRebuild();
+            margin = Required(App(laptop), "WorkingMargin");
+            foreach (string anchored in new[] { "StakeLabel", "Stake", "PayoutLabel", "Payout", "Place" })
+            {
+                var rt = (RectTransform)Required(margin, anchored);
+                Assert.IsNull(rt.GetComponentInParent<ScrollRect>(),
+                    $"{anchored} is inside the scrolling body — the commit zone is ANCHORED, and a "
+                    + "payout that can scroll below the fold while he presses PLACE is the cost he "
+                    + "cannot see at the point of spending (S17/S73)");
+            }
+        }
+
         /// <summary>S74's middle position, measured rather than asserted. The draw's line sits
         /// physically between the two teams' — so the gap above it and the gap below it are the
         /// same, and the shipped −43 made them 35 and 38.
@@ -912,22 +984,38 @@ namespace SBR.Tests.PlayMode
                         float overrun = -budget - d.BottomUntilted;
                         float depthPx = -d.BottomUntilted;
 
-                        if (overrun > worstOverrun)
+                        // POST-C the question changed. Depth against the old budget no longer means
+                        // anything for zone 3, which is anchored — what matters is whether zone 2's
+                        // content fits its viewport, and if not, that it SCROLLS rather than spills.
+                        var host = Find(margin, "SlipScroll");
+                        var sc = host != null ? host.GetComponent<ScrollRect>() : null;
+                        var contentRect = host != null
+                            ? (RectTransform)Required(Required(host, "Viewport"), "Content") : null;
+                        float ch = contentRect != null ? contentRect.rect.height : 0f;
+                        float clear = SportsbookApp.SlipViewportHeight - ch;
+                        UnityEngine.Debug.Log($"[S80-SWEEP] {legs} | {modLabels[mi]} | "
+                            + $"{(statementOnScreen ? "present" : "absent")} | zone2 {ch:F1} into "
+                            + $"{SportsbookApp.SlipViewportHeight:F1} | "
+                            + $"{(clear >= 0 ? "clears " : "scrolls ")}{Mathf.Abs(clear):F1} | "
+                            + $"scrolls {(sc != null && sc.vertical)} | deepest {d.DeepestName} "
+                            + $"{d.BottomUntilted:F2}");
+
+                        // Tracked on the POST-C question. The old overrun metric is now always 0.00 —
+                        // zone 3 is anchored, so nothing can push it past its reservation — and
+                        // reporting that as a "worst case" would read as a defect where the fix is.
+                        if (-clear > worstOverrun)
                         {
-                            worstOverrun = overrun;
+                            worstOverrun = -clear;
                             worstCase = $"{legs} legs, consumables {modLabels[mi]}, statement "
                                 + $"{(statementOnScreen ? "present" : "absent")}";
                         }
-                        UnityEngine.Debug.Log($"[S80-SWEEP] {legs} | {modLabels[mi]} | "
-                            + $"{(statementOnScreen ? "present" : "absent")} | "
-                            + $"{d.BottomUntilted:F2} | {depthPx:F2} | "
-                            + $"{(overrun > 0 ? "+" : "")}{overrun:F2} | deepest {d.DeepestName}");
                     }
             }
 
-            UnityEngine.Debug.Log($"[S80-SWEEP] WORST: {worstCase} -> "
-                + $"{(worstOverrun > 0 ? "+" : "")}{worstOverrun:F2}px against a {budget:F0}px budget"
-                + (worstOverrun > 0 ? " — OVER" : " — fits"));
+            UnityEngine.Debug.Log($"[S80-SWEEP] DEEPEST SCROLL: {worstCase} -> "
+                + (worstOverrun > 0
+                    ? $"{worstOverrun:F2}px of zone 2 below the fold, reachable by scrolling"
+                    : $"nothing scrolls; the deepest state still clears by {-worstOverrun:F2}px"));
 
             // ---- S80 §1: the statement's own height. The constant is derived from the LONGEST
             // sentence's measured height, and "if the face measures wider and it reaches three lines,
@@ -1608,20 +1696,24 @@ namespace SBR.Tests.PlayMode
             // The DD's "closes at zero" is that tenth of a pixel — the 3.9px the band moved against
             // the 4.00px that was there. It is written out rather than rounded away so the next
             // reader knows the residue is the box-height difference and not drift.
-            // RE-SOURCED for S82 option A (2026-08-15), and the SIGN FLIPPED — this is the first time
-            // the margin flow has CLEARED its reservation rather than overrun it.
+            // RE-SOURCED for S83 (option C), and the MEANING changed with it.
             //
-            //   +0.10  before A: the kit's 36.10px band bottom against a 36.00px box (S51).
-            //   −10.00 A's harvest, measured per block: the header's 8px gap halved to 4 (−4), the
-            //          bare undervied 4px after the leg list deleted (−4), and the payout label's
-            //          18px advance on a 16px box (−2).
-            //   ──────
-            //   −9.90  measured. The ordinary composition now fits, with 9.90px to spare.
+            // The number this once tracked was an ACCUMULATION — everything above the payout, summed.
+            // It is now a RESERVATION: zone 3 is anchored a fixed height above the panel's floor, so
+            // its deepest element lands on the budget line by construction and no amount of zone 2
+            // content can move it.
             //
-            // This does NOT close the live bill: four legs plus a held consumable is still +24.10
-            // over, because A recovered 10.00 of the 34.10 it was aimed at. That is S82's
-            // disposition (2) and it is Allen's call, not this gate's.
-            const float structuralOverrunPx = -9.90f;
+            //   CommitPayoutTop  = ActionBandReservedHeight + (31 x 1.1 + 2)   the kit's own band drop
+            //   band bottom      = ActionBandReservedHeight                     = 160 from the floor
+            //   budget line      = 530 - 160                                    = 370 from the top
+            //   ────────
+            //   0.00  flush, and flush BY DERIVATION rather than by luck.
+            //
+            // FLUSH IS TIGHT, NOT COMFORTABLE (DD batch 80). Zero clearance means this pin is the
+            // only thing standing between the wax band and T47's 6px pad, so it stays a two-sided
+            // equality at a tight tolerance: it fails if the band drops into the pad AND it fails if
+            // it lifts off, because a lift means someone changed a derivation without saying so.
+            const float structuralOverrunPx = 0.00f;
             const float structuralTolerancePx = 0.05f;
             float overrunPx = -SportsbookApp.MarginFlowBudget - flowBottom;
             float structuralPx = -SportsbookApp.MarginFlowBudget - flowBottomUntilted;
@@ -1651,15 +1743,13 @@ namespace SBR.Tests.PlayMode
                 + $"{flowBottom:F2}px ({deepestTiltPx:F2}px of that is its own tilt, leaving "
                 + $"{flowBottomUntilted:F2}px), raw overrun {overrunPx:F2}px, budget "
                 + $"-{SportsbookApp.MarginFlowBudget:F0}px, action band reserves "
-                + $"{SportsbookApp.ActionBandReservedHeight:F0}px. NEGATIVE IS CLEARANCE: −9.90 is "
-                + "the kit's 36.10px band bottom against a 36.00px box (+0.10, S51) less A's "
-                + "measured 10.00px harvest (header gap 4, the bare post-leg 4, payout label 2). If "
-                + "it went back to ~+0.10 the harvest was reverted; if to ~+4.00 the wax band came "
-                + "off the kit's `bottom:-2px` and S51 has been reopened. If it GREW "
-                + "otherwise, something entered the margin flow: staged receipts live in the 700px "
-                + "sheet and must never re-enter it (both-screens kit amendment, DD 2026-08-04). If "
-                + "a RULED size changed, re-derive at this call site with the new arithmetic written "
-                + "out — never shrink a figure to fit the pin.");
+                + $"{SportsbookApp.ActionBandReservedHeight:F0}px. Zero is FLUSH and flush is TIGHT: "
+                + "zone 3 is anchored so the wax band's bottom lands exactly on the reservation, with "
+                + "T47's 6px pad and nothing else between it and PLACE. POSITIVE means the band has "
+                + "dropped INTO that pad. NEGATIVE means a derivation moved without saying so — most "
+                + "likely the kit's band drop or one of the commit-zone constants. Either way "
+                + "re-derive at the call site with the new arithmetic written out, and never shrink a "
+                + "figure to fit the pin.");
 
             // T53 — every gate states what it cannot see. THIS ONE CANNOT SEE:
             //  · rendered glyphs. It measures RectTransforms, so text bleeding outside its own rect
