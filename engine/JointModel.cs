@@ -338,7 +338,15 @@ public static class JointModel
 
     /// <summary>The scalar joint. Private by design (S73) — callers get it only alongside its
     /// relation labels, via <see cref="JointProbability"/>.</summary>
-    private static double Probability(Matchup matchup, IReadOnlyList<MarketSelection> selections)
+    /// <summary>The joint probability ALONE — no relation classification, no principal nomination.
+    /// <para>Internal rather than private because the conditional cash-out quote is a ratio of three
+    /// joints and needs none of the labelling. Routing it through
+    /// <see cref="JointProbability(Matchup, IReadOnlyList{MarketSelection})"/> instead cost a marginal
+    /// per leg plus a joint per PAIR plus a <c>Classify</c> per pair — 11 enumerations for a four-leg
+    /// group where one was wanted — three times per leg boundary, with the labels discarded at the
+    /// call site. That is what turned a gate campaign into a four-CPU-hour crawl (F_0.6.0, profiled
+    /// 2026-08-15). Labels are for slips; quotes want the number.</para></summary>
+    internal static double Probability(Matchup matchup, IReadOnlyList<MarketSelection> selections)
     {
         Split split = SplitFamilies(matchup, selections);
 
@@ -1163,7 +1171,10 @@ public static class SameMatchModel
             List<int> members = groups[g];
             var selections = new MarketSelection[members.Count];
             for (int i = 0; i < members.Count; i++) selections[i] = legs[members[i]].Selection;
-            pJoint *= JointModel.JointProbability(matchups[g], selections).pJoint;
+            // Probability, not JointProbability: this is a quote, not a slip. See Probability's own
+            // note — asking for the labelled form here and discarding the labels is what made the
+            // cash-out path an order of magnitude more expensive than the number it needed.
+            pJoint *= JointModel.Probability(matchups[g], selections);
         }
         return pJoint;
     }

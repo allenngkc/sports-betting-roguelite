@@ -85,6 +85,31 @@ Two candidate rules, and this needs ratification rather than a lead's quiet choi
 Recommend **1**. It is writable, it keeps the quote consistent with what the player sees ticking, and
 its EV remains auditable — which is the standing law that decides whether a mechanic is designed yet.
 
+## Profiled and fixed, 2026-08-15 — the first HOLDOUT6 attempt was killed
+
+The campaign ran four CPU-hours, grew to 1,950 MB and slowed to ~0.2 cores without finishing. The
+cause was in this phase's own code, not in the campaign.
+
+**The quote asked for the labelled joint and threw the labels away.** `JointProbabilityOf` routed
+through `JointProbability`, which eagerly computes the joint, **every leg's marginal**, **every
+pairwise joint** and a `Classify` per pair — 11 enumerations for a four-leg group where one was
+wanted — allocating fresh lists and arrays each time. Called three times per leg boundary, with
+every label discarded at the call site. That is both the CPU burn and the allocation churn behind the
+memory growth.
+
+Fixed by routing quotes to the probability-only path. **Behaviour is identical** — the labelled form
+derives its number from the same function — so all 305 tests pass unchanged. Measured after:
+`--strategy samematch --runs 2000` costs **10.4s wall / 64.3s CPU**, i.e. ~52s wall at the ruled
+floor of 10,000.
+
+**The rule this leaves behind:** labels are for slips, quotes want the number. Anything on a
+per-event or per-boundary path should take `Probability`, never `JointProbability`.
+
+**`HOLDOUT6` is NOT burned by the killed run** — no report file was ever written and stdout was zero
+bytes, so no gate verdict from those seeds was ever observed. Holdout integrity is about the held-out
+set not informing decisions; nothing could, because no output existed. Profiling for speed cannot
+leak gate outcomes either. Relaunched on HOLDOUT6.
+
 ## Cost and risks
 
 - **Engine-local**, `SweatSession` + the joint model's conditioning entry point. No Unity, no lease.
