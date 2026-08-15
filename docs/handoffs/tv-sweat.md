@@ -11,6 +11,109 @@ discarded.
 
 ---
 
+## 0-B69. THE HOLD, THE GUARD'S REAL GATE, AND THE DIAGNOSTIC THAT SETTLED BOTH · SEAT ROTATES HERE · 2026-08-15
+
+**Branch `3652418`, pushed and remote-verified. Tree clean, Unity zero.** **This seat is at context
+exhaustion and stands down on this commit — the next seat starts here.**
+
+| suite | discovered | executed | passed | failed | skipped |
+|---|---|---|---|---|---|
+| EditMode | 254 | 254 | 253 | 0 | 1 ignored — G1's grant, held |
+| PlayMode | 95 | 95 | 87 | **1 — inherited, EXPECTED, not ours** | 7 by-design |
+
+### THE LAPTOP PIN IS EXPECTED RED — and read this before "fixing" it
+
+`SureThingEntryTests.Working_margin_contains_its_content_at_the_legal_maximum_leg_count` fails at
+`4.74798583984375` vs a signed 4.56. **It is measured against a SUPERSEDED test.** The surething-ui
+lane's repair merged to main **after** this branch's last main merge, so this tree still runs the old
+price-dependent pin. **Expected red. Not this lane's. No action** — it clears on the next merge from
+main.
+
+*Recorded because this seat got it wrong twice in one day:* first reported green (a single anomalous
+run), then corrected to "deterministically red and unexplained". **Both were wrong about the cause.**
+The value is stable because the test is stale, not because anything regressed.
+
+### Batch 69 — both fixes, and the diagnostic that made them facts
+
+The DD asked for every strip write logged with its call site across a `LegFinal` beat and said plainly
+*"this seat cannot execute the code and does not claim the ordering as fact."* **It was run.**
+`TvSweatScreen.TraceFlavorWrites` (off by default, set only by the harness) is left in place for the
+next question of this shape.
+
+**BOTH STANDING HYPOTHESES WERE WRONG IN THE SAME DIRECTION — they assumed a race.**
+
+**1. `THE MATCH ENDS LEVEL` was never written to the strip at all.**
+
+```
+RenderEvent stash LegFinal  <- 'THE MATCH ENDS LEVEL'
+grade WON                   <- 'LEG 1 — WON'
+```
+
+**No LAND between them.** `RevealBeatChrome` — the only thing that lands `_pendingFlavor` — lives
+inside `TheaterBeat`'s `evt.Type != LegFinal` branch, **so on the whistle the stash is simply
+dropped.** The line was correct, reachable and never displayed; there was no race to lose. Now written
+**directly** in `FinalSlam` and **held** for `drawnEndingHoldDuration` (1.0f, matched to
+`ticketDeadConsolationDuration` as ruled) before the grade beats run.
+
+**2. The guard was gating on the wrong quantity, and that half was this seat's.** The trace read
+`T97 guard goal=True` on **every** `Score` beat of a match that finished 0–0.
+
+> **`spec.Goal.HasValue` is the beat's STAGED INTENT. `spec.Goal.Value.Commits` is what the scene
+> RESOLVES INTO** — `Commits == false` is the chalk-off that prints `VAR — NO GOAL`. The law says the
+> words are licensed by what the resolved scene CONTAINS; the first build implemented *what it
+> staged*. **Reading a law and implementing it are different acts.**
+
+### The set evidences itself now
+
+Every captured frame logs the **strip text** beside score and clock, because T87-am2 is verifiable
+only as *"visible, for multiple frames, before the grade"* — a claim about frames that the frames
+should answer without a second instrument. Across **128 frames the strip holds exactly three states**:
+
+| frames | strip |
+|---|---|
+| **111** | **`THE MATCH ENDS LEVEL`** |
+| 9 | `LEG 1 — WON` |
+| 8 | the mid-match shot |
+
+The line holds frame 000 → ~050 of each ending at `clock='FT'`; the grade appears only in the last
+handful. **No goal sentence in 128 frames.** The supplemental mid-match shot (`clock='30'`, 0–0)
+carries T96's live NEED clause — the clause the previous README asserted while every frame was settled.
+
+### ROUTED to the DD, not fixed
+
+**`— LEAD CHANGE` renders over a `0 — 0` scorebug on 8 frames** (`TensionTag.LeadChange`,
+`SweatFlavor.cs:47`, appended to any line). It asserts a change of lead the match never had —
+**plausibly T97's law a third time** — *unless* it means a WIN-PROBABILITY lead change, which is a real
+betting fact and legitimately reportable. **Two readings, two different remedies**, and the strip's
+words are the DD's. Frames: `goalless-draw-backer-live-need__frame000`–`007`.
+
+### OPEN — none of it this lane's to start
+
+| item | state |
+|---|---|
+| The docked set (128 frames) | with the DD |
+| `— LEAD CHANGE` over 0–0 | routed, awaiting the DD's reading |
+| **The board's DRAW row** (S74-am) | HELD for Allen's word |
+| **T94** — column and scorebug describing different legs | HELD for the DD's read |
+| **`RiskPays`' fact floor** — 378.1 vs a LOCKED 249.0 column | **Allen's item** |
+| `CashOut`'s `MARKET SUSPENDED`, 26.7px | T74's table |
+| The laptop pin | **superseded test — clears on the next main merge** |
+
+### FOR THE NEXT SEAT — the operational facts that cost this one the most
+
+1. **`Time.captureDeltaTime` ties SIM time to RENDERED frames.** A capture burst spaced in REALTIME
+   advances the match by however many frames the host rendered. **Frame-contiguous (interval 0) is the
+   control.** This produced four passing captures of the wrong beat.
+2. **`Ticket.State` does not leave `Open` until ROUND settlement — after ALL sweats.**
+3. **A pick addresses `Matchup.Index`, not the slate position.**
+4. **`DemoTicketPolicy`'s stake sizes ONE bet against the whole bank.**
+5. **Scan to a real end marker, never a character count** — a 2200-char window silently stopped
+   covering its target when a comment grew above it. Third instance in this lane.
+6. **`ProjectSettings.asset` is integration-only Unity boot churn** — revert it by explicit checkout,
+   never commit it.
+
+---
+
 ## 0-B68. THE DRAW'S ROW, THE STRIP'S GOAL GUARD, THE DRAWN MATCH'S LINE — all three verified in one set · 2026-08-14
 
 **Branch `1be8140`, pushed and remote-verified. Tree clean, Unity zero.** Batch 68's three rulings are
