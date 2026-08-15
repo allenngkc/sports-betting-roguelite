@@ -218,6 +218,21 @@ PlaceBandH 44 + 6 = 160`, so `MarginFlowBudget = 530 − 160 = 370` — **every 
 comes 1:1 out of the flow budget**, and **S51 has just shown that budget is already overhung.**
 **A copy problem is not paid for out of a geometry budget that is already over.**
 
+**13px IS RATIFIED, AND THE REASON IS HEADROOM** (S77-am, 2026-08-15, measured). At 17px the widest
+authored form measures **295.1px in a 296px control — nine tenths of a pixel** — and the second widest
+288.2px. At 13px the widest is **225.7px, 76%**. **13px is not merely the floor being respected; it is
+the only one of the two with headroom, and headroom is what stops the next authored form from
+reopening this.** **RULED: every future stamp form is measured at 13px against 296px and stays under
+80%.** **C46 is why there is a budget at all** — a fixed box carries an unstated assumption about the
+face it was sized against, and ~20% is what absorbs a face that measures wider. **A form over 80% is
+re-authored, never accommodated.**
+
+**A REMEDY NAMES AN ACT.** Where no removal fixes the slip, the remedy names **the act that does** —
+clearing and starting again — in the actual control's own word. **A remedy slot filled with a
+cause-shaped string** (*no rub out fixes this slip*) tells him only that what he was about to try will
+not work and **leaves him with no act at all**; a refusal that closes every door is the one case where
+he most needs to be told which door is open.
+
 **Nothing else yields**: `≥13px` is the cross-surface product-fact floor; **cause AND remedy** is
 S73-am4; truncation is refused (*a truncated remedy is an unverified remedy*); shrinking type is
 refused (§8). **If the authored forms still miss, the order is (1) a shorter authored form, (2) two
@@ -241,6 +256,17 @@ contains it.* Silence there would let him be quietly charged for a leg that cann
 cost he cannot see at the point of spending (S17). **Blocking it is refused** — a redundant leg is a
 legal bet, and **a house that prevents him from being stupid is not this product; a house that tells
 him and lets him do it anyway is.**
+
+**THIS AND THE `Implies` RELATION STATEMENT ARE ONE STATEMENT, NOT TWO** (S78, 2026-08-15). The model
+emits `RelationKind.Implies` as a principal on 10.6% of placeable same-match slips, and it fires on
+**this same situation** — one pick contains the other. Both are toner, both are once per slip, and
+**two code paths would otherwise ship two toner sentences for one fact** — T69/T70's defect in a third
+place. **The statement above governs, because it carries the COST.** A statement of the entailment
+alone (*one of these already covers the other*) states the structure and **omits the consequence**,
+and the consequence is the only part he can act on — S17's *quietly charged for a leg that cannot
+lose* is the whole reason this line exists. **The single authored line states that the leg adds
+nothing AND which leg it is**; withholding which is right for every other relation and wrong here,
+because here the naming is the actionable part.
 
 ---
 
@@ -507,6 +533,46 @@ he is right about half the time; the mark is what tells him about the other half
 toner, once per slip. **The pricing model must therefore emit a nameable relation, not only a
 coefficient: where a correlation cannot be labelled, the price does not move.** A price that shortens
 for a reason the surface cannot state is a cost he cannot see at the point of spending (S17).
+
+**THE AUTHORED SENTENCES** (S78, 2026-08-15 — approved against the model's emitted `principal` over
+6,109 placeable same-match slips). **Four relations, seven sentences: sign is not decoration**, and
+reinforcing and opposing are opposite claims about the same shared thing, so one sentence per relation
+would state one of them falsely about the other.
+
+| relation | reinforcing | opposing |
+|---|---|---|
+| `SharedScoreline` | `THE SAME GOALS SETTLE BOTH.` | `THE SAME GOALS SETTLE THESE OPPOSITE WAYS.` |
+| `ScorerOfSide` | `THE SAME TEAM'S GOALS SETTLE BOTH.` | `THE SAME TEAM'S GOALS SETTLE THESE OPPOSITE WAYS.` |
+| `SharedCount` · corner | `THE SAME CORNERS SETTLE BOTH.` | `THE SAME CORNERS SETTLE THESE OPPOSITE WAYS.` |
+| `SharedCount` · card | `THE SAME CARDS SETTLE BOTH.` | `THE SAME CARDS SETTLE THESE OPPOSITE WAYS.` |
+
+**These are a FAMILY, deliberately, and are never re-authored apart.** The shape is not a template
+applied to save effort — **the shape IS the claim**: every one of these relations is *one shared thing
+settles both legs*, and the sentences differ **exactly where the relations differ** and are identical
+**exactly where the relations are identical**. **That is what distinguishes a family from templating:
+the variation tracks the meaning.** The payoff is his — canon already fixes his model as one idea
+(*unmarked legs multiply; marked legs pay less*), so **after the first encounter he reads only the
+DIFFERENCE**; four idioms would make him re-parse a whole sentence to learn what he already knows.
+**`GOALS / CORNERS / CARDS` is a triple of countable match events and that parallelism is what makes
+the family read as one** — `SCORELINE` was considered and refused for breaking it.
+
+**`ScorerSide` is carried by the model and is NOT spoken.** Naming the team would be a name where the
+rubric asks for the relation, and **the team is on both rows in front of him** — the same reasoning as
+S77's *mark, don't name*. **Where two marked rows do not visibly share a club name the remedy is at the
+MARK, which can carry the side — never by naming the team in the sentence**, because a sentence that
+names a team has stopped stating the relation.
+
+**Fit is not asserted.** The seven measure against their slot like everything else and join the
+sweep's population under C46.
+
+**THE SILENCE IS CORRECT AND IS NOT A GAP TO FILL** (S79). **46.1% of placeable same-match slips emit
+no statable relation**, and that is this rule working rather than failing: **a null principal means
+the price did NOT move, so there is no cost to disclose because nothing was taken.** The statement
+exists to explain a price that shortened; **where nothing shortened, nothing is owed — the silence is
+not an absence of copy, it is the absence of a thing to explain.** **A high blank rate is what a
+correctly-behaving model looks like from the surface**: if every slip carried a statement, the model
+would be labelling relations it cannot name, which is the precise failure this rule forbids. **No
+statement is ever authored to fill it, and no review reopens it on the strength of the number alone.**
 
 **The lengthening is not remarked.** No badge, no "better value", no flag. A product congratulating
 itself for charging less is exhortation, and nothing ever claimed the price was a product.
