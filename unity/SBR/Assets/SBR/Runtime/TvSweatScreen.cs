@@ -475,6 +475,12 @@ namespace SBR.Game
                 ? null
                 : $"{_tStatsLabel[i].text}|{_tStatsA[i].text}|{_tStatsB[i].text}";
         public string DebugStatsUnrevealedMark => StatsUnrevealed;
+        /// <summary>The REVEALED goals, for the capture harness's one binding condition (T99): the
+        /// panel must not be shot over a 0–0, because a covered scorebug carrying no information
+        /// cannot fail any reading of it. Read from the revealed ledger, never the locked StatLine —
+        /// the harness must wait for a fact the player can actually see.</summary>
+        public int DebugRevealedPicked => _ledger != null ? _ledger.Picked : 0;
+        public int DebugRevealedOpponent => _ledger != null ? _ledger.Opponent : 0;
         /// <summary>Test/debug hook (TVS-H01 regression): true while the cash-out amount is mid-tween
         /// (AnimateCashOut running). Reads _cashOutTweening, not _cashOutAnimation directly — the
         /// Coroutine handle isn't assigned until StartCoroutine returns, one instant after the
@@ -1947,7 +1953,18 @@ namespace SBR.Game
             if (!_clockTicking || _stage == null) return;
             if (!_seated || !_stage.ScenePlaying || _stage.SuspendedAtShot) return;
             int before = Mathf.FloorToInt(_clockShownMin);
-            _clockShownMin = Mathf.Min(_clockTargetMin, _clockShownMin + _clockRate * Time.deltaTime);
+            // THE CLOCK READS THE FREEZE AUTHORITY, not a second predicate that means the same thing
+            // today. It used `Time.deltaTime`, and the `!_seated` guard above is what actually froze
+            // it on stand-up — two expressions of one rule, agreeing by convention. So when §8.8's
+            // panel added a THIRD freeze condition, the clock did not get it: the capture shot the
+            // panel over a frozen scoreline with the MINUTE TICKING 18' -> 21' behind it, which is
+            // precisely the "covered fact that CAN move is lost" case T99's licence does not reach.
+            //
+            // Found on frames, not by reading: the pin asserted SeatedDeltaTime, and SeatedDeltaTime
+            // was correct — a channel that never read it is invisible to a pin on it. T95's rule,
+            // earned again: when a ruling adds a condition, every mirror of it moves too, and the
+            // mirrors are found by grepping for the quantity rather than by remembering.
+            _clockShownMin = Mathf.Min(_clockTargetMin, _clockShownMin + _clockRate * SeatedDeltaTime);
             if (_clockShownMin >= _clockTargetMin) _clockTicking = false;
             if (Mathf.FloorToInt(_clockShownMin) != before) RenderClockMinute();
         }
@@ -3681,6 +3698,24 @@ namespace SBR.Game
         ///
         /// <para>Two freezes agreeing by convention is the defect T95 caught one surface over. This
         /// is the same remedy: one authority, so they cannot disagree.</para></summary>
+        /// <para><b>T99's STANDING CONDITION (batch 79) — AND THIS IS THE LINE IT GOVERNS.</b> The
+        /// stats panel is permitted to cover the SCOREBUG band <b>for as long as time is frozen while
+        /// it is open</b>. A covered fact that cannot move is deferred; a covered fact that CAN move
+        /// is lost. <b>If the match is ever allowed to run behind this panel, the scorebug must
+        /// survive the overlay.</b></para>
+        ///
+        /// <para>The DD wrote it as a standing condition rather than a one-time approval because the
+        /// danger is a later change that looks unrelated — <i>"let the match play while he reads the
+        /// stats"</i> is a plausible improvement that would silently void the ruling. <b>Deleting
+        /// <c>!_statsOpen</c> from this expression IS that change.</b> It is written here because
+        /// here is where it would be made.</para>
+        ///
+        /// <para>And the licence is the freeze ALONE. The panel's GOALS row is not the justification:
+        /// a statistic is not a result — the scorebug's score is the match's standing, where a GOALS
+        /// row is one measure among its siblings. Arguing from the row would make the panel a
+        /// REPLACEMENT for the scorebug, and a replacement owes the score in its own form, the clock,
+        /// and T38's single-frame change. The panel does none of that and is not asked to. Nothing is
+        /// lost because the match is not moving, not because the score is printed twice.</para></summary>
         private float SeatedDeltaTime => _seated && !_statsOpen ? Time.deltaTime : 0f;
 
         private Leg _statsLeg;
