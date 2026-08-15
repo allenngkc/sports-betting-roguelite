@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 276.** Batch 70 landed;
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 277.** Batch 71 landed
+(05782eb): seven sentences approved as copy (family, not idioms), S77
+forms 9/11, 13px ratified with a durable face-budget rule; re-authoring
++ slot measurement routed to su (stand-by superseded). sgp's conditional
+standing order re-confirmed; HOLDOUT6 still grinding. TV mid-T98.
+
+*(prior stamp, cycle 276:)* Batch 70 landed;
 TV's hold + su's drafts BOTH merged (26d7baf). LEAD CHANGE ruled: word
 off, tag stays, the crossing lives in the offer's midpoint. TV ROTATED
 fresh on the handoff (term_cb057c33, watcher v35) - first unit T98's
