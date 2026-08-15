@@ -56,7 +56,7 @@ screen. **Plan:** F_0.6.0 step 5.
 
 ## 5. Lane state
 
-### Unit 1 — margin-pin repair: WRITTEN, COMMITTED (`3dd93df`), NOT YET VERIFIED
+### Unit 1 — margin-pin repair: GREEN (`3dd93df`), verified 2026-08-14
 
 **The handoff's diagnosis in §2.2 is wrong and is superseded.** It says the pin "was never
 re-sourced when M-04 landed." It was: `ead9396` moved it 2.6 → 4.56 in the same commit that landed
@@ -75,8 +75,29 @@ Repair: structural part DERIVED from the layout literals and pinned two-sided at
 no re-sourcing ever again); tilt bounded at 3.0px rather than pinned. Reservation untouched, no
 element excluded. Test file only — no production pixel moved.
 
-**Owed:** one Unity window to confirm green. If 4.00 is off, the failure message prints the full
-decomposition, so one window corrects it.
+**Verified** (Unity window granted after TV released, 2026-08-14). The derived 4.00 held on the
+first run — it was never measured.
+
+- Margin invariant green on **four independent boots** — the class run plus three single-test runs.
+  Each boot rolls its own seed, so each measured a different board, a different payout figure and
+  therefore a different band width. That repetition IS the evidence: the old pin passed and failed
+  on the same code depending on the price.
+- **PlayMode 94/94 executed · 88 passed · 0 failed · 6 skipped.** All six skips are the TV lane's
+  capture harness, marked run-by-filter-only. Pre-existing.
+- **EditMode 252/252 executed · 251 passed · 0 failed · 1 skipped.** The skip is TV's void fit grant
+  pending re-certification. Pre-existing.
+- Engine/dotnet suite deliberately NOT run: this change touches one Unity test file and no engine
+  source, so it cannot move that suite, and building would dirty the tracked `SBR.Engine.dll` for
+  nothing. Stated rather than silently omitted.
+- Churn from the runs reverted by explicit path: `ProjectSettings.asset` (Unity dropped
+  `SENTIS_ANALYTICS_ENABLED` from the Standalone defines on boot — integration-only file, never a
+  slice's to move) and the TMP `LiberationSans SDF - Fallback` atlas. Tree carries only the phantom
+  `URP.png`.
+
+**Run trap, hit and worth keeping:** the first invocation died with no results file — Unity's package
+resolve failed (`IPC stream failed to read`) because a stale `Temp/UnityLockfile` survived the
+killed editor. No compile error, nothing to do with the change. Clearing the stale lockfile with no
+Unity process alive fixed it on the retry.
 
 ### Design-facing, routed, NOT self-ruled
 
