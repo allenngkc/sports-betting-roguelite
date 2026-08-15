@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 295.** Dominoes: su's A
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 296.** ALLEN RULED B:
+NOT TAKEN - the nudge row stays; C moves FORWARD instead: su builds the
+scrolling flow region now against batch 78 sized on post-A numbers.
+Batch 79 landed (f11b0e4): scorebug overlay stands on the freeze
+argument alone; panel capture ordered NOT at 0-0; TV answers the
+event-strip question before shooting. DRAW checks closed on the re-shot.
+With Allen: research words + TAB ratification when convenient.
+
+*(prior stamp, cycle 295:)* Dominoes: su's A
 merged (0666a51) - recovery 10.00px of the estimated 20-34, so the B
 call goes to ALLEN with the table (live break +24.10 today; worst +60.10
 so C still builds); the re-shot DRAW block docked in the same merge - DD
