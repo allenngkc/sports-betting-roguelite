@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 279.** Batch 72 landed
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 280.** CORRECTION + two
+fires: TV's hold/T98/baseline commits actually landed only NOW (755deb8)
+- the seat works on slice/tv-sweat-refinement and my cycle-275/276
+merges hit a stale same-named tv-sweat branch (now deleted); the 26d7baf
+merge message overstates its content - the register narrative is right,
+the git history note lives here. Allen's kill FIRED on the HOLDOUT6
+campaign (~4 CPU-hours, sgp suspects its own Phase 4 hot loop - profile,
+fix, re-run at the ruled floor; HOLDOUT7 question flagged). TV's next
+unit: the board's DRAW row (merge main first), stats-tab if already
+built. DD holding; su unblocked minus Allen's flow-cost call.
+
+*(prior stamp, cycle 279:)* Batch 72 landed
 (7a65cc7): the DD withdrew its own mark pre-commit - the held pair
 releases with NO build; sentences stand as approved; ScorerSide report
 withdrawn. TV amends its handoff baseline (engine 260/55-inherited) as a
