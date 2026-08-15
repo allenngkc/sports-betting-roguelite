@@ -25,7 +25,9 @@ reverted.
 - **Worktree leads — Claude (Opus 5, max effort), one per active worktree.**
   Opus 5 max is the standing seat spec (Allen, 2026-08-01; re-affirmed for all
   new seats 2026-08-12) — whoever seats a lead sets `/model opus` + `/effort max`
-  as part of seating, every time.
+  as part of seating, every time. Fast mode for leads is approved in principle
+  (Allen, 2026-08-15) but NOT yet in the spec — pending confirmation it works on
+  the Max plan without usage credits; see speed-brief-2026-08-15.md item 1.
   Own the local plan, file ownership, delegation, review, verification, commits, and
   the integration handoff. Implement approved design specs; they make essentially no
   design decisions. Contract lives at `docs/handoffs/<worktree>.md` (root
