@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 288 (heartbeat).** All
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 289.** Two proofs in one
+sweep: sgp's PARALLEL PATH PROVEN (byte-identical body across collectors,
+1.74x on the proof campaign; HOLDOUT6 riding it now) and su's STATE SWEEP
+merged (172fee4; second bill real and live, both suites fully green on
+the merged tree). The -44.5 midpoint folded as a derivation. su shoots
+the re-shot block (closes DD checks 2/5); DD finalizes the reservation
+spec with options for the NEW Allen item: a 34px shortfall between the
+worst case and the masthead's ceiling.
+
+*(prior stamp, cycle 288:)* All
 four seats working: TV on the C46 width measurement (fired on Allen's
 word; its THREE stats-tab rulings are with Allen - freeze-vs-moving,
 intervention window, three-fifths); su on the state sweep; DD on the
