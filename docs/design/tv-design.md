@@ -629,6 +629,27 @@ amendments:**
 - **The draw leg printed as `MIDDLEMEN ML`** (T96) — the exact string §8 names as what a draw leg
   must not inherit. **An unimplemented ruling, not a new one.**
 
+**AUTHORED 2026-08-14 (batch 68), discharging the owed statement above — the drawn match's ending
+line is `THE MATCH ENDS LEVEL`.** It fires at the whistle of a **drawn** match into the event strip
+at L2 and holds until the leg's grade displaces it; **the existing window is not shortened to make
+room for it.**
+
+**`FULL TIME — LEVEL` was the obvious form and is REFUSED**: the scorebug prints `FT` one slot above,
+and **stating the same fact twice one slot apart is §8's duplication rule with a different
+neighbour.** The line takes the shape of this surface's own beat statements (`THE BOARD IS SET`,
+`THE TOTEM BURNS`) and their casing — **every authored line in the strip is caps.**
+
+**It is the DRAWN match's line, not the goalless one.** True at 0–0 and at 2–2 alike; **a
+goalless-only line would be exactly the narrowing this section forbids**, making 0–0 a special case
+again. **Only a draw needs one, and the reason is structural: a decided match ends ON a goal, so its
+final beat's line IS its ending — a drawn match ends on nothing, so the last beat's line is stale by
+construction.** That is why the strip's silence at a draw is a gap rather than an accident.
+
+**And the strip's words are licensed by the RESOLVED SCENE, never by the beat's type alone** (T97) —
+`NeutralLine` already stands in where a count-market beat's scene carries no count event, and **the
+goal families were simply never given the same override.** Sol's F_0.4.0 P3 r2 finding, one noun
+changed.
+
 ---
 
 ## 7. Motion
@@ -674,9 +695,21 @@ already this surface's word for a tied scoreline (T62). The moneyline's other fo
 **`1X2` is industry jargon and never reaches the player** — the surface composes and the role prints
 as a word.
 
+**They live there as of 2026-08-14 and did not before** (T96, batch 68). S74 authored them on
+2026-08-12; **the G1 deck was written 2026-08-08 and was never amended**, so it carried a single
+two-way `| Moneyline | {CLUB} TO WIN | {CLUB} ML |` row and **zero occurrences of the word "draw"** —
+which is precisely what the build built. **The sentence above was false against the very file it
+points builders at**, and the deck is amended now. **A copy ruling lands in the deck or it has not
+landed** — folding it into this document was not enough, and that is the reusable half of T96.
+
 **NEED and the progress line beneath it are one authored pair** (T70): requirement above, state below,
 **no term repeated across the two.** `LANYARD TO SCORE` over `WAITING FOR LANYARD` named the player
-twice — T69's defect turned vertical. Truncation on a word
+twice — T69's defect turned vertical. **That rule governs the SUBJECT, not the predicate** (T70-am,
+2026-08-14): both its example and T69's are **a name printed twice**, and **a binary state answering
+its own requirement in the requirement's own word is the progress line doing its only job**, not
+redundant identification. **S74's `LEVEL AT FULL TIME` over `LEVEL` therefore stands** — forcing a
+different word below would put a second name on one thing and break the one-name-per-thing convention
+T62 established, so the cure would be the worse defect. Truncation on a word
 boundary is the structural backstop against broken glyphs — **it is not the remedy**, and shipped copy
 should never reach it: a clean cut still ends on a dangling word. §5.1's *re-authored, never truncated*
 governs, and truncation only guarantees the failure is not ugly.
