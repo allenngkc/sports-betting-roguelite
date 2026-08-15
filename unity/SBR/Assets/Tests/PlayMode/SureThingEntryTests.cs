@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
 using SBR.Engine;
@@ -492,14 +493,10 @@ namespace SBR.Tests.PlayMode
         [UnityTest, Order(9)]
         public IEnumerator Refused_combination_stamps_cause_and_remedy_and_never_the_models_token()
         {
-            // The composed stamp is HELD (Allen, 2026-08-14) until the DD rules its sizing — it is
-            // correct copy that overflows its control. Asserted OFF by default before anything else,
-            // so releasing the hold is a decision someone makes rather than a line that drifts, and
-            // then driven ON for this gate so the composition stays exercised instead of rotting
-            // into dead code behind a false constant.
-            Assert.IsFalse(SportsbookApp.StampComposedRefusal,
-                "the refusal stamp is held pending the DD's sizing call and must default OFF");
-            SportsbookApp.StampComposedRefusal = true;   // cleared in TearDown, on every path
+            // The hold is RELEASED (S77 answered the sizing question by changing the stamp's shape),
+            // so this gate no longer drives a flag — it asserts the wiring is live.
+            Assert.IsTrue(SportsbookApp.StampComposedRefusal,
+                "the refusal stamp's hold was released when S77 landed");
             yield return Boot();
             LaptopScreen laptop = Laptop();
             Run run = laptop.director.Run;
@@ -526,8 +523,11 @@ namespace SBR.Tests.PlayMode
 
             yield return WaitForRebuild();
             Transform margin = Required(App(laptop), "WorkingMargin");
+            // Two nodes, not one wrapping node (S77 option 2): cause above, remedy below, so the
+            // break lands between them by construction rather than wherever a fitter puts it.
             var reason = Required(Required(margin, "Place"), "PlaceReason").GetComponent<TMP_Text>();
-            string stamp = reason.text;
+            var remedyLine = Required(Required(margin, "Place"), "PlaceRemedy").GetComponent<TMP_Text>();
+            string stamp = reason.text + " " + remedyLine.text;
 
             Assert.IsFalse(stamp.Contains("REFUSED:"),
                 $"the model's machine token reached the control: \"{stamp}\". PlaceBlocker returns "
@@ -550,65 +550,87 @@ namespace SBR.Tests.PlayMode
                     + $"menu-shaped copy fails when followed. Stamp: \"{stamp}\"");
 
             // Cause AND remedy, both — §3.3's row has always required both halves.
-            Assert.IsTrue(stamp.Contains("DROP ") || stamp.Contains("NO LEG CAN BE DROPPED"),
+            // The remedy's verb is the surface's own: the control on each row says RUB OUT, so the
+            // instruction and the thing that performs it are the same word (S77's no-translation
+            // goal, one step further than matching strings).
+            Assert.IsTrue(stamp.Contains("RUB OUT") || stamp.Contains("NO LEG CAN BE RUBBED OUT"),
                 $"the stamp states no remedy: \"{stamp}\"");
-            Assert.Greater(reason.fontSize, 12.9f, "§3.3: a stamped literal reason is >= 13px");
 
-            // The whole remedy set is spent — the count of named legs matches RemedyLegs exactly.
-            // A surface that spends RemedyLegs[0] leaves the slip refused.
+            // S77: NO LEG IS NAMED IN THE STAMP. The stamp states the act and its arity; the legs it
+            // refers to are MARKED on their own rows. So the assertion inverts — a name appearing
+            // here is the defect now, not its absence.
             TicketRefusal refusal = slip.Refusal;
-            foreach (int legIndex in refusal.RemedyLegs)
+            for (int i = 0; i < slip.Picks.Count; i++)
             {
                 string name = SportsbookApp.MarginLegSubject(
-                    run.CurrentSlate.Matchups[slip.Picks[legIndex].MatchupIndex],
-                    slip.Picks[legIndex].Selection);
-                Assert.IsTrue(stamp.Contains(name),
-                    $"remedy leg {legIndex} (\"{name}\") is not named in the stamp: \"{stamp}\". The "
-                    + "whole set is spent or the remedy lies");
+                    run.CurrentSlate.Matchups[slip.Picks[i].MatchupIndex],
+                    slip.Picks[i].Selection).ToUpperInvariant();
+                if (name.Length < 3) continue;   // a name too short to distinguish from a stray word
+                Assert.IsFalse(stamp.Contains(name),
+                    $"leg {i} (\"{name}\") is NAMED in the stamp: \"{stamp}\". S77 puts the names in "
+                    + "the flow as marks — three names in a 296x44 control is unbounded and the "
+                    + "instruction is not");
             }
 
-            // ---- C46 FIT, MEASURED. Reported on every run, pass or fail, so the number exists.
-            var rect = (RectTransform)reason.transform;
-            float box = rect.rect.width;
-            float actual = reason.preferredWidth;
+            // ...and the whole remedy set IS marked, in the house's ink, on the control that performs
+            // the act the stamp names. A surface that marks RemedyLegs[0] alone leaves the slip
+            // refused after the mark is spent.
+            Transform marginNow = Required(App(laptop), "WorkingMargin");
+            foreach (int legIndex in refusal.RemedyLegs)
+            {
+                var label = Required(Required(marginNow, "Remove" + legIndex), "Label")
+                    .GetComponent<TMP_Text>();
+                Assert.AreEqual(LaptopOs.MoneyBad, label.color,
+                    $"remedy leg {legIndex} is not marked — the stamp points at marks it did not "
+                    + "make, which is worse than naming them");
+            }
+            for (int i = 0; i < slip.Picks.Count; i++)
+            {
+                if (refusal.RemedyLegs.Contains(i)) continue;
+                var label = Required(Required(marginNow, "Remove" + i), "Label").GetComponent<TMP_Text>();
+                Assert.AreNotEqual(LaptopOs.MoneyBad, label.color,
+                    $"leg {i} is marked but is not in the remedy — the arity in the stamp would then "
+                    + "disagree with the marks he can count");
+            }
 
-            // The worst case is not this refusal — it is the widest renderable one. Sweep the whole
-            // slate for the longest leg name, then compose the longest authored form around it:
-            // a three-leg cause and a three-leg remedy, which occur at the shipped margin.
-            string widest = "";
-            foreach (Matchup m in run.CurrentSlate.Matchups)
-                foreach (MarketOffer offer in m.Markets)
-                {
-                    string name = SportsbookApp.MarginLegSubject(m, offer.Selection);
-                    if (LaptopUi.MeasureWidth(reason.font, name, 13, LaptopTrack.StampReason)
-                        > LaptopUi.MeasureWidth(reason.font, widest, 13, LaptopTrack.StampReason))
-                        widest = name;
-                }
-            string worst = $"{widest}, {widest} AND {widest} CANNOT ALL WIN. "
-                + $"DROP {widest}, {widest} AND {widest} TO PLACE.";
-            float worstWidth = LaptopUi.MeasureWidth(reason.font, worst, 13, LaptopTrack.StampReason);
+            // ---- C46 FIT — NOW AN ASSERTION, because S77 made the population FINITE.
+            //
+            // The first build measured leg-name-bearing compositions and could only report: the
+            // worst case was 1583-1722px against a 288px box, six lines, and unbounded in principle
+            // because it scaled with whatever the board named a team. Taking the names out collapses
+            // it to arity-keyed forms, and MaxLegs = 4 bounds the arity — so the whole population is
+            // enumerable here, exactly, and every member of it can be required to fit.
+            //
+            // This is the difference S77 bought, and it is why the gate stopped being a report.
+            float box = ((RectTransform)reason.transform).rect.width;
+            float worst = 0f;
+            string worstText = "";
+            foreach (RefusalKind kind in Enum.GetValues(typeof(RefusalKind)))
+                for (int causeArity = 2; causeArity <= run.Config.MaxLegs; causeArity++)
+                    for (int remedyArity = 0; remedyArity < run.Config.MaxLegs; remedyArity++)
+                    {
+                        var probe = new TicketRefusal(kind, Enumerable.Range(0, causeArity).ToArray(),
+                            Enumerable.Range(0, remedyArity).ToArray(), null, 0.0);
+                        foreach (string line in new[]
+                                 { SportsbookApp.RefusalCause(probe), SportsbookApp.RefusalRemedy(probe) })
+                        {
+                            float w = LaptopUi.MeasureWidth(reason.font, line.ToUpperInvariant(), 13,
+                                LaptopTrack.StampReason);
+                            if (w > worst) { worst = w; worstText = line; }
+                        }
+                    }
 
-            UnityEngine.Debug.Log($"[P3-FIT] control {box:F1}px · this refusal {actual:F1}px "
-                + $"({actual / box:P0}) · widest leg name \"{widest}\" · worst renderable stamp "
-                + $"{worstWidth:F1}px ({worstWidth / box:F1}x the control) · lines needed at this "
-                + $"width {Mathf.CeilToInt(worstWidth / box)} · stamp: \"{stamp}\"");
+            UnityEngine.Debug.Log($"[P3-FIT] control {box:F1}px/line · widest of the whole authored "
+                + $"population {worst:F1}px ({worst / box:P0}) — \"{worstText}\" · this refusal: "
+                + $"\"{reason.text}\" / \"{remedyLine.text}\"");
 
-            // Second finding for the DD, found by the sweep rather than by reading the copy: the
-            // draws double-chance vocabulary puts a DISJUNCTION INSIDE A LEG NAME. "DROP TURNIPS AND
-            // TUSCALOOSA LONGHAULERS OR DRAW TO PLACE" is a conjunctive remedy whose reader cannot
-            // see where the leg name ends. It satisfies the letter of the ban — the connective is
-            // "AND" — and defeats the reason for it. Reported, not ruled: renaming a market is
-            // copy, and copy is the DD's.
-            if (widest.ToUpperInvariant().Contains(" OR "))
-                UnityEngine.Debug.Log("[P3-FIT] NAME-DISJUNCTION: the widest leg name carries its own "
-                    + $"\"OR\" (\"{widest}\"). A remedy naming it reads as a menu while being a set. "
-                    + "S73-am5's ban is on the remedy's connective; this is inside a name and slips "
-                    + "under it.");
-
-            // NOT asserted: that the stamp fits. It does not, and the sizing call is the DD's — "size
-            // the control for it or author a shorter form", and a truncated remedy is an unverified
-            // remedy (S73-am5), so this gate must not quietly become a truncation test. The numbers
-            // above are what goes to the DD. What IS asserted is that nothing was truncated:
+            Assert.Less(worst, box,
+                $"the widest authored line does not fit: \"{worstText}\" at {worst:F1}px in a "
+                + $"{box:F1}px box. S77's order is (1) a shorter authored form, (2) two lines inside "
+                + "the existing 44px box — already taken — and (3) only then geometry, which goes to "
+                + "Allen with the flow-budget cost stated. Never truncation, and never smaller type");
+            Assert.Greater(reason.fontSize, 12.9f, "the cause line holds the >=13px floor");
+            Assert.Greater(remedyLine.fontSize, 12.9f, "the remedy line holds it too");
             Assert.IsFalse(stamp.Contains("…"),
                 $"the stamp was ellipsised: \"{stamp}\". A truncated remedy is an unverified remedy");
         }
@@ -678,12 +700,6 @@ namespace SBR.Tests.PlayMode
             }
         }
 
-        /// <summary>The refusal-stamp hold is cleared after EVERY test in this fixture, not at the
-        /// end of the one that sets it. A test that fails mid-body would otherwise leave the hold
-        /// released for everything after it, and the whole point of a hold is that releasing it is
-        /// deliberate.</summary>
-        [TearDown]
-        public void ClearRefusalStampHold() => SportsbookApp.StampComposedRefusal = false;
 
         [Test, Order(8)]
         public void TicketStateWord_and_LegStateWord_never_cross_contaminate_their_vocabularies()

@@ -917,6 +917,11 @@ namespace SBR.Game
             // P4 needs each leg's own row position to mark the connected ones, and the cursor below
             // is consumed by the loop, so the rows are recorded as they are drawn.
             var legRowY = new List<float>(slip.Picks.Count);
+            // S77: the legs a refusal's remedy refers to are marked in the flow rather than named in
+            // the stamp. Read once here — the model caches its pricing, but the loop runs per leg.
+            HashSet<int> refusalMarks = null;
+            if (StampComposedRefusal && slip.Refusal != null && slip.Refusal.HasRemedy)
+                refusalMarks = new HashSet<int>(slip.Refusal.RemedyLegs);
             for (int i = 0; i < slip.Picks.Count; i++)
             {
                 legRowY.Add(y);
@@ -975,7 +980,10 @@ namespace SBR.Game
                 LaptopUi.MakePanel(panel, "LegRule" + i, new Vector2(0f, 1f), new Vector2(0f, 1f),
                     new Vector2(14f, y - 34f), new Vector2(headerRight, 1f), LaptopOs.Rule);
 
-                int matchupIndex = pick.MatchupIndex;
+                // LEG-ADDRESSED, not matchup-keyed. This called Remove(matchupIndex), which drops
+                // THE leg on a matchup — with two legs on one match it cannot address one of them,
+                // and would take both. One of the seven sites the same-match survey found.
+                int legIndexForRemoval = i;
                 if (run.OwnsConsumable("profit_boost"))
                 {
                     bool boosted = slip.BoostLeg == i;
@@ -988,9 +996,17 @@ namespace SBR.Game
                 // RUB OUT stays 60x32 — S50 §3 keeps it at size deliberately, because a mis-click
                 // here costs money. Vertically centred against the identity/market pair rather than
                 // pinned to the first baseline, per S50 §2.
+                // S77's mark. Where the slip is refused, the legs the remedy refers to are marked on
+                // their own rows — and the mark is THIS control, in the house's ink. The stamp says
+                // "RUB OUT THE MARKED LEG"; the control that performs it is the thing lit, so the
+                // instruction and its target are the same object rather than two strings to match.
+                // Stamp is the house acting on the document (§3.1); a lit RUB OUT is exactly that.
+                bool markedForRemoval = refusalMarks != null && refusalMarks.Contains(i);
                 LaptopUi.MakeButton(panel, "Remove" + i, "RUB OUT", new Vector2(1f, 1f), new Vector2(1f, 1f),
-                    new Vector2(-12f, y + 1.5f), new Vector2(60f, 32f), 13, LaptopOs.Ink, LaptopOs.Muted,
-                    () => { slip.Remove(matchupIndex); _lockArmed = false; _invalidate(); }, _fontCond);
+                    new Vector2(-12f, y + 1.5f), new Vector2(60f, 32f), 13, LaptopOs.Ink,
+                    markedForRemoval ? LaptopOs.MoneyBad : LaptopOs.Muted,
+                    () => { slip.RemoveLeg(legIndexForRemoval); _lockArmed = false; _invalidate(); },
+                    _fontCond);
                 // S50 §2: the leg row takes S39's one-baseline discipline — a margin leg is the same
                 // kind of object as a settled record (identity, price, market, state) and has no
                 // business carrying a different vertical grammar. The yield comes from SPACING, which
@@ -1173,11 +1189,12 @@ namespace SBR.Game
             // property. With the hold on, this control keeps its pre-P3 behaviour, which for a
             // refusal is the model's token; that is unreachable in play, because `Toggle` still
             // replaces and no additive gesture exists yet.
-            TicketRefusal refusal = slip.Refusal;
-            if (refusal != null && StampComposedRefusal)
+            TicketRefusal refusal = StampComposedRefusal ? slip.Refusal : null;
+            string refusalRemedy = null;
+            if (refusal != null)
             {
-                blocker = RefusalStamp(refusal, NameLegs(run, slip, refusal.CauseLegs),
-                    NameLegs(run, slip, refusal.RemedyLegs));
+                blocker = RefusalCause(refusal);
+                refusalRemedy = RefusalRemedy(refusal);
             }
             // MERGE (markets-2 × main, 2026-08-05): both intents kept, because they are orthogonal.
             //
@@ -1212,10 +1229,26 @@ namespace SBR.Game
                 var placeLabelRect = (RectTransform)placeRect.Find("Label");
                 placeLabelRect.anchorMin = placeLabelRect.anchorMax = new Vector2(.5f, 1f);
                 placeLabelRect.pivot = new Vector2(.5f, 1f);
-                placeLabelRect.sizeDelta = new Vector2(296f, 26f);
+                // S77 option (2), taken: two lines INSIDE the existing 44px box at 13px — "a real
+                // option, not a last resort". The control does not grow, because every pixel of
+                // control height comes 1:1 out of MarginFlowBudget and S51 has just shown that budget
+                // is already overhung: a copy problem is not paid for out of a geometry budget that
+                // is already over. The label yields 26px -> 16px instead; 16 + 13 + 13 + pad = 44.
+                //
+                // Two NODES rather than one wrapping node, so the break lands between cause and
+                // remedy by construction rather than wherever the fitter happens to put it. Cause
+                // above, remedy below — the order §3.3 states them in.
+                bool twoLine = refusalRemedy != null;
+                placeLabelRect.sizeDelta = new Vector2(296f, twoLine ? 16f : 26f);
                 placeLabelRect.anchoredPosition = Vector2.zero;
+                if (twoLine)
+                    LaptopUi.MakeText(placeRect, "PlaceRemedy", new Vector2(.5f, 0f), new Vector2(.5f, 0f),
+                        new Vector2(0f, 1f), new Vector2(288f, 14f), 13, TextAnchor.MiddleCenter,
+                        LaptopOs.MoneyBad, refusalRemedy.ToUpperInvariant(), _font,
+                        LaptopTrack.StampReason).enableWordWrapping = false;
                 LaptopUi.MakeText(placeRect, "PlaceReason", new Vector2(.5f, 0f), new Vector2(.5f, 0f),
-                    new Vector2(0f, 1f), new Vector2(288f, 17f), 13, TextAnchor.MiddleCenter,
+                    new Vector2(0f, twoLine ? 15f : 1f), new Vector2(288f, twoLine ? 14f : 17f), 13,
+                    TextAnchor.MiddleCenter,
                     // S68: `.04em`, StampReason.jsx's own value. A blocked reason states a cause and
                     // a remedy (T47, owning doc §6) and is read as a sentence, not scanned as a
                     // label — which is why it takes the smallest tracking on the surface.
@@ -1488,45 +1521,19 @@ namespace SBR.Game
         /// <para>Not <see cref="CompactLegLabel"/>: that carries a fixture tail ("— HAWKS v RIVETS")
         /// which the margin row does not print, so naming a leg by it would be naming it by a string
         /// that is not on the row.</para></summary>
-        /// <summary>**A HOLD, not a feature flag** (Allen, 2026-08-14). The composed refusal stamp is
-        /// correct copy that does not fit its control: measured on the real board, a typical two-leg
-        /// refusal renders 412–469px against a 288px box, and the worst renderable stamp is 5.5–6.0×
-        /// it — six lines. Rather than ship a visibly overflowing control while the sizing call is
-        /// with the DD, the composition is held here.
+        /// <summary>**RELEASED 2026-08-14** — the hold this carried is over, and it is left as a
+        /// constant `true` for one revision so the history is legible rather than silently deleted.
         ///
-        /// <para><b>What this costs today: nothing reachable.</b> A refusal can only fire on a matchup
-        /// carrying two or more legs, and `Toggle` still REPLACES — the additive gesture is a design
-        /// decision that has not been made, so no player can build a same-match slip through this
-        /// surface yet. The held path is reachable only through the model's own `AddLeg`, which is to
-        /// say from tests.</para>
+        /// <para>The first build of the stamp NAMED its legs and overflowed: 412–469px against a
+        /// 288px box in the common case, 5.5–6.0× in the worst, six lines, and unbounded in principle
+        /// because it scaled with whatever the board called a team. Allen held the wiring rather than
+        /// ship a visibly overflowing control while the question was with the DD.</para>
         ///
-        /// <para><b>Turned ON by the P3 gate</b>, deliberately, so the composition stays exercised
-        /// rather than rotting into dead code behind a false constant — the failure mode this kind of
-        /// hold usually has. The gate also asserts the DEFAULT is off, so releasing it is a decision
-        /// someone makes rather than a line that drifts.</para>
-        ///
-        /// <para><b>Released when</b> the DD rules the stamp's sizing. The coupling that ruling needs
-        /// in view: six lines at 13px is ~102px against the PLACE band's 44px, and `PlaceBandH` feeds
-        /// `ActionBandReservedHeight` feeds <see cref="MarginFlowBudget"/> — so sizing the control and
-        /// keeping the margin invariant are one decision, not two.</para></summary>
-        internal static bool StampComposedRefusal { get; set; }
-
-        /// <summary>Joins named legs for a stamp. **`and`, never `or`** — S73-am5 bans `or`,
-        /// `either`, `one of` and `any of` from a remedy outright, because English's natural form for
-        /// a list of fixes is disjunctive and the model's truth is not.</summary>
-        private static string JoinLegs(IReadOnlyList<string> names)
-        {
-            if (names.Count == 0) return string.Empty;
-            if (names.Count == 1) return names[0];
-            if (names.Count == 2) return $"{names[0]} AND {names[1]}";
-            var sb = new System.Text.StringBuilder();
-            for (int i = 0; i < names.Count - 1; i++)
-            {
-                if (i > 0) sb.Append(", ");
-                sb.Append(names[i]);
-            }
-            return sb.Append(" AND ").Append(names[^1]).ToString();
-        }
+        /// <para>S77 answered it by changing the SHAPE, not the size: the stamp states the act and
+        /// its arity, and the legs are marked in the flow. That collapsed the population to
+        /// arity-keyed forms which `MaxLegs = 4` bounds — so the gate that could only REPORT a
+        /// measurement now ASSERTS one, over the whole population, exactly.</para></summary>
+        internal const bool StampComposedRefusal = true;
 
         /// <summary>The Blocked control's stamped literal reason for a refused COMBINATION — cause
         /// and remedy, per §3.3's own row and S73-am4/am5. Composed here because the model emits
@@ -1549,57 +1556,67 @@ namespace SBR.Game
         /// S73-am4 requires a *verified* one. Every one of those 645 remedies placed successfully
         /// after being spent, so "TO PLACE" is a guarantee rather than a hope.</para>
         ///
+        /// <para><b>NO LEG IS NAMED HERE (S77, 2026-08-14).</b> The first build of this named them,
+        /// and it overflowed: three names inside a 296×44 control is unbounded in the worst case and
+        /// the instruction is not. The DD ruled neither sizing nor shortening — the names do not
+        /// belong in the stamp at all. **The stamp states the act and its arity; the legs it refers
+        /// to are MARKED on their own rows in the flow directly above.** That is T69/T70's principle
+        /// one control over: the subject is already on screen, so do not reprint it, and pointing at
+        /// a referent serves the no-translation goal better than matching strings does.
+        ///
+        /// The check that makes it safe, and it passes: the flow is bounded by MaxLegs = 4 in a 370px
+        /// region and does not scroll, so every marked row is on screen whenever the stamp is. It
+        /// also dissolves the leg-name disjunction this lane reported — "TUSCALOOSA LONGHAULERS OR
+        /// DRAW" cannot read as a menu inside a remedy that never says it.</para>
+        ///
         /// <para><b>Removal order never reaches the player</b> (S73-am5). High-to-low is an
         /// implementation constraint of the caller, not part of the instruction.</para></summary>
-        internal static string RefusalStamp(TicketRefusal refusal, IReadOnlyList<string> causeNames,
-            IReadOnlyList<string> remedyNames)
+        internal static string RefusalCause(TicketRefusal refusal)
         {
-            string cause;
+            int n = refusal.CauseLegs.Count;
             switch (refusal.Kind)
             {
-                case RefusalKind.ImpossibleCombination when causeNames.Count <= 2:
-                    // AUTHORED FORM 1 of 2 — exactly two legs.
-                    cause = $"{JoinLegs(causeNames)} CANNOT BOTH WIN.";
-                    break;
-                case RefusalKind.ImpossibleCombination:
-                    // AUTHORED FORM 2 of 2 — three or more. A separate sentence, not form 1 with a
-                    // word swapped: at three legs the claim itself changes, since no pair need conflict.
-                    cause = $"{JoinLegs(causeNames)} CANNOT ALL WIN.";
-                    break;
-                case RefusalKind.DuplicateSelection:
-                    // The duplicate's own cause. It is not an impossibility — the repeat CAN win; it
-                    // adds no risk while costing a full extra leg of margin.
-                    cause = $"{causeNames[^1]} IS ALREADY ON THIS SLIP.";
-                    break;
-                case RefusalKind.SubEvens:
-                    // The sub-evens cause is about the PRICE, not about any leg, which is why its
-                    // CauseLegs names every leg: no proper subset prices any worse.
-                    cause = "THIS TICKET WOULD PAY LESS THAN IT COSTS.";
-                    break;
-                default:
-                    cause = "THIS COMBINATION IS REFUSED.";
-                    break;
-            }
+                // AUTHORED PER ARITY, not one template with a numeral pushed into it. MaxLegs = 4
+                // bounds the domain at two, three and four, so every form can be written out — which
+                // is what makes S73-am5's "never one template with a substituted word" satisfiable
+                // rather than merely aspired to. The both/all split is the load-bearing one: at three
+                // legs the claim changes, since no pair among them need conflict.
+                case RefusalKind.ImpossibleCombination when n <= 2: return "THESE TWO CANNOT BOTH WIN.";
+                case RefusalKind.ImpossibleCombination when n == 3: return "THESE THREE CANNOT ALL WIN.";
+                case RefusalKind.ImpossibleCombination: return "THESE FOUR CANNOT ALL WIN.";
 
-            string remedy = remedyNames.Count > 0
-                ? $" DROP {JoinLegs(remedyNames)} TO PLACE."
-                : " NO LEG CAN BE DROPPED TO MAKE THIS PLACEABLE.";
-            return cause + remedy;
+                // A duplicate is NOT an impossibility and takes its own cause (§3.3 wants a literal
+                // reason; one sentence covering both is what that word exists to prevent). The repeat
+                // can win — it adds no risk while costing a full extra leg of margin.
+                case RefusalKind.DuplicateSelection when n <= 2: return "THIS PICK IS HERE TWICE.";
+                case RefusalKind.DuplicateSelection when n == 3: return "THIS PICK IS HERE THREE TIMES.";
+                case RefusalKind.DuplicateSelection: return "THIS PICK IS HERE FOUR TIMES.";
+
+                // The third cause. Sub-evens is about the PRICE and not about any leg — which is why
+                // its CauseLegs names every leg: no proper subset prices any worse. No arity, because
+                // the arity is not what is wrong.
+                case RefusalKind.SubEvens: return "THIS PAYS LESS THAN IT COSTS.";
+                default: return "THIS COMBINATION IS REFUSED.";
+            }
         }
 
-        /// <summary>Leg indices from a <see cref="TicketRefusal"/> to the strings their own margin
-        /// rows print. Indices are into the slip's leg list, which is <see cref="BetslipModel.Picks"/>
-        /// in the same order the rows are drawn.</summary>
-        private static IReadOnlyList<string> NameLegs(Run run, BetslipModel slip, IReadOnlyList<int> legIndices)
+        /// <summary>The remedy half — the ACT and its ARITY, pointing at marks rather than naming
+        /// legs (S77). The verb is the surface's own: the control on each row says `RUB OUT`, so the
+        /// instruction and the thing that performs it are the same word.</summary>
+        internal static string RefusalRemedy(TicketRefusal refusal)
         {
-            var names = new List<string>(legIndices.Count);
-            foreach (int legIndex in legIndices)
+            switch (refusal.RemedyLegs.Count)
             {
-                if (legIndex < 0 || legIndex >= slip.Picks.Count) continue;
-                Pick pick = slip.Picks[legIndex];
-                names.Add(MarginLegSubject(run.CurrentSlate.Matchups[pick.MatchupIndex], pick.Selection));
+                case 0: return "NO RUB OUT FIXES THIS SLIP.";
+                case 1: return "RUB OUT THE MARKED LEG TO PLACE.";
+                // Conjunctive and arity-keyed. "BOTH" and "ALL THREE" are the whole set by
+                // construction — there is no reading of either that spends less than all of it.
+                // The plurals say MARKS rather than MARKED LEGS to hold the ≥13px line inside 288px:
+                // S77's own order puts "a shorter authored form" first and geometry last, and the
+                // longer plural forms measured 304px in a 288px box.
+                case 2: return "RUB OUT BOTH MARKS TO PLACE.";
+                default: return "RUB OUT ALL THREE MARKS TO PLACE.";
             }
-            return names;
         }
 
         internal static string MarginLegSubject(Matchup matchup, MarketSelection selection)
