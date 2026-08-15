@@ -78,6 +78,25 @@ the house's brand — the wordmark is drawn in biro, and biro is only ever what 
 the tray draws little and carries the entire personal-machine register. A proposal to grow into a band
 **cites the band by name**.
 
+**THE RELATION STATEMENT'S PIXELS — NO BAND CAN PAY** (S80 as amended by S80-am, 2026-08-15, on
+Allen's *pay the pixels* ruling). **The action band is not the donor, and this is arithmetic**: its
+160 carries three ruled control heights (130) plus 24px of separation plus the 6px pad, so absorbing
+36 would put `SkipBandY` at −20, below the panel floor. **Rail and tray are BARRED** — pixel-identical
+chrome across destinations (S48, S52) — and **tabs cannot yield 36** with `--st-tab-h 27` inside 38.
+**And the masthead — the one band batch 73 cited — cannot pay either, before any judgement is
+applied: its 68 IS its content.** `FormMasthead` carries two stacked text lines occupying 48px
+(`Brand` 26px, `Run` "ROUND n OF m" 13px, `Figures` BANK/TARGET/TICKETS 21px alongside), between an
+8px top pad and an 8px clear above the 2px rule. **Spacing yields ~8px; deleting the round-number
+subline yields ~22 and costs S37's once-on-the-surface fact; a one-line masthead yields ~26. 36 is
+unreachable.** **S50 already refused this trade on this budget** — it cited the locked
+`34+38+68+530+34=704` as the reason *there is no unused screen on this surface*, and the masthead's
+68 is a term in that sum; its granted remedy took all 44px out of the FLOW. **R30 is a bar, not a
+door: citing a band by name is the minimum to be heard, never the argument that wins.** **And a
+Design-verified masthead changes only by closing a conformance gap, never by redesign** (Allen,
+2026-08-08). **The 6px pad survives**: S51 refused paying a content cost out of the separation
+budget, and this is the same trade. **A deficit that survives the yield order below returns to the
+DD seat and then to Allen — it does not become a donation from chrome.**
+
 **Yield order for any layout deficit: spacing, then repetition, then nothing** (S50). Nothing that
 states a product fact is deleted to make a layout fit, and no hierarchy is reordered for a shortfall
 (T51). A deficit that survives that list returns to the DD seat.
