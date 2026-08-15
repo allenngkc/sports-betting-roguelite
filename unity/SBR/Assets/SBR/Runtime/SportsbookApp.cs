@@ -186,7 +186,29 @@ namespace SBR.Game
         /// same change that removed a duplicate elsewhere. Folded on Allen's instruction
         /// (2026-08-03). A row height read by a mask, a rail and a layout is exactly the kind of
         /// number that must not be written down more than once.</summary>
-        private const float MatchupCardPitch = 78f;
+        /// <para><b>S74-am (batch 65) RE-DERIVED THIS: 78 → 116, because the block is now THREE
+        /// lines.</b> A fixed grid constant re-derived ONCE AT DESIGN TIME is explicitly legal
+        /// (§2, T51, S40); a zone resizing to content at runtime is not — so the block is 116px
+        /// whether or not a given matchup prices a draw, and a match with no draw price renders that
+        /// line EMPTY rather than collapsing the block. That is the ruling's pre-commitment (2), and
+        /// a ragged board whose block height depends on the market is the thing §2 forbids.</para>
+        ///
+        /// <para><b>The derivation, measured rather than estimated.</b> The block's line pitch is
+        /// 38px — it is the gap between the two <see cref="TeamLine"/> calls (−6 and −44), not a
+        /// number invented here. One more line is one more pitch: <b>78 + 38 = 116</b>. Every
+        /// existing relationship is preserved by construction because the AWAY line does not move at
+        /// all, the DRAW takes the position HOME used to hold, and HOME moves down exactly one
+        /// pitch — so the 3px of slack between the last price cell and the card's rule is the same
+        /// 3px it was at 78 (81 + 32 = 113 against 116, as 43 + 32 = 75 was against 78).</para>
+        ///
+        /// <para><b>The visible count, which S74-am left OWED and eyeballed as "about four".</b> The
+        /// list area is <c>530 − 26</c> = <b>504px</b> (BoardBody, title strip excluded). 504/78 =
+        /// 6.46 → <b>six blocks today</b>; 504/116 = 4.34 → <b>four</b>. The measurement agrees with
+        /// the DD's read off the frame. C19 is not breached: the list SCROLLS (S25-am) with S27's
+        /// printed position rail, so every priced offer stays reachable by a mechanism that already
+        /// exists, and §2's yield order is NOT invoked — a third outcome is a product fact arriving,
+        /// not a layout overflowing.</para></summary>
+        private const float MatchupCardPitch = 116f;
 
         private void BuildLobby(Run run, BetslipModel slip, bool boardFrozen)
         {
@@ -242,10 +264,15 @@ namespace SBR.Game
                 new Vector2(0f, 1f), position, new Vector2(700f, MatchupCardPitch), LaptopOs.Surface);
             bool awaySelected = slip.SelectionOn(matchup.Index) == MarketSelection.Moneyline(Side.Away);
             bool homeSelected = slip.SelectionOn(matchup.Index) == MarketSelection.Moneyline(Side.Home);
+            // S74-am: the draw is a third markable outcome on this block, so every place that asked
+            // "away or home" is now a three-way question. Swept together rather than one site at a
+            // time — a marked draw that lit no wash and drew no ring would be a selection the board
+            // renders as unselected, which is the state lie T43 cost this studio a batch over.
+            bool drawSelected = slip.SelectionOn(matchup.Index) == MarketSelection.MoneylineDraw();
             // The wash behind a form entry he has marked (palette-surething.css --marked-wash).
             // Added first, before any text/buttons, so it sits behind them; sized to fill the whole
             // card so it is trivially contained within it.
-            if (awaySelected || homeSelected)
+            if (awaySelected || homeSelected || drawSelected)
                 LaptopUi.MakeMarkedWash(card, "MarkedWash");
             LaptopUi.MakeText(card, "Number", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, -10f), new Vector2(30f, 56f), 15, TextAnchor.UpperLeft, LaptopOs.Muted, (matchup.Index + 1).ToString("00"), _fontCond);
             // A record belongs to the name it follows, so it is set on the same line, 9px after it —
@@ -258,7 +285,14 @@ namespace SBR.Game
             // cannot express "immediately after", because the name's width varies per team, so each
             // record is positioned off its own name's measured width instead.
             TeamLine(card, "Away", LaptopUi.TeamShort(matchup.Away), matchup.Away.Record, -6f);
-            TeamLine(card, "Home", LaptopUi.TeamShort(matchup.Home), matchup.Home.Record, -44f);
+            // S74-am — THE MATCHUP COLUMN IS EMPTY ON THE DRAW'S LINE (−44), and the absence of a
+            // TeamLine call here is the ruling, not an omission. Empty is the CORRECT rendering of
+            // "neither". This is NOT S24's dead cell: S24 refused an offer slot with no OFFER; here
+            // the SUBJECT slot has no subject, because the draw has no team. Naming anything there
+            // would invent the third competitor `Side` exists to refuse. No team treatment either —
+            // no dot, no crest, no hue (T2 gives muted blue and pink to the two SIDES, and a draw
+            // has no side).
+            TeamLine(card, "Home", LaptopUi.TeamShort(matchup.Home), matchup.Home.Record, -82f);
 
             LaptopUi.MakeButton(card, "AwayOdds", $"AWAY  {OddsFormat.American(matchup.AwayOdds)}",
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, -8f), new Vector2(112f, 32f), 19,
@@ -269,11 +303,34 @@ namespace SBR.Game
                 // premise (a button label is an action label) is wrong for exactly this class, and
                 // the kit is what says so.
                 frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Away)); _invalidate(); }, _fontCond, !frozen, LaptopTrack.Names);
+            // S74-am — THE DRAW GOES IN THE PRICE CELL, at −43, exactly the slot HOME used to hold.
+            // The price cell is the one that names the OUTCOME, never the matchup column, which
+            // names TEAMS: the board already reads `AWAY −156` rather than `NOTARIES −156`, so the
+            // draw's grammatical slot was already here and NOTHING IS INVENTED. Its line sits
+            // physically between the two teams' lines, attached to neither, which is exactly what
+            // the outcome is — S74 ruled the middle position is meaning rather than borrowed
+            // convention, and in this layout it is meaning you can see.
+            //
+            // WHICH PRE-COMMITMENT FIRES, traced rather than assumed. `DrawOdds` is set by SLATE
+            // GENERATION (SlateGenerator.cs:91) once the latents are known — the 1X2 triple cannot
+            // be priced before the distributions exist — and by NEITHER Matchup constructor. So on
+            // any generated board every matchup prices a draw and pre-commitment (1) fires: three
+            // lines, uniform, closed with no further ruling. A hand-built matchup carries DrawOdds 0
+            // and takes pre-commitment (2)'s empty line. THE BLOCK IS THREE LINES EITHER WAY — the
+            // height is a design-time constant, never a response to what this matchup priced.
+            if (matchup.DrawOdds > 1.0)
+                LaptopUi.MakeButton(card, "DrawOdds", $"DRAW  {OddsFormat.American(matchup.DrawOdds)}",
+                    new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, -43f), new Vector2(112f, 32f), 19,
+                    LaptopOs.Ink, frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
+                    frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.MoneylineDraw()); _invalidate(); }, _fontCond, !frozen, LaptopTrack.Names);
+            // HOME moves down exactly one 38px line pitch (−43 → −81). It is the only thing that
+            // moves: AWAY does not shift at all and the card's bottom slack is unchanged, which is
+            // what makes the re-derived pitch above a pure insertion rather than a re-layout.
             LaptopUi.MakeButton(card, "HomeOdds", $"HOME  {OddsFormat.American(matchup.HomeOdds)}",
-                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, -43f), new Vector2(112f, 32f), 19,
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, -81f), new Vector2(112f, 32f), 19,
                 LaptopOs.Ink, frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
                 frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Home)); _invalidate(); }, _fontCond, !frozen, LaptopTrack.Names);
-            if (awaySelected || homeSelected)
+            if (awaySelected || homeSelected || drawSelected)
             {
                 Sprite ring = ResolvePriceRing(matchup.Index);
                 if (ring != null)
@@ -283,7 +340,11 @@ namespace SBR.Game
                     // "AWAY  -341" label needs the room. Overshoot the ring 8px past every edge of
                     // the REAL cell so the pen stroke frames the price instead of crossing it.
                     const float overshoot = 8f;
-                    Vector2 cellPosition = new Vector2(462f, awaySelected ? -8f : -43f);
+                    // Three outcomes, three cell positions — and the ternary is written against the
+                    // SAME constants the three MakeButton calls use, so a cell that moves cannot
+                    // leave its ring behind at the old y. That divergence is the shape T95 caught on
+                    // the TV: two elements agreeing by convention rather than by construction.
+                    Vector2 cellPosition = new Vector2(462f, awaySelected ? -8f : drawSelected ? -43f : -81f);
                     Vector2 cellSize = new Vector2(112f, 32f);
                     RectTransform ink = LaptopUi.MakePanel(card, "BiroRing", new Vector2(0f, 1f), new Vector2(0f, 1f),
                         cellPosition + new Vector2(-overshoot, overshoot),
@@ -519,7 +580,8 @@ namespace SBR.Game
         ///
         /// <paramref name="rowHeight"/> defaults to <see cref="OfferRowHeight"/> so those three
         /// existing callers are unchanged in behaviour. Allen ruling (2026-08-03): BuildLobby is now
-        /// a fourth caller, passing its own 78px card pitch (<see cref="MatchupCardPitch"/>) — the
+        /// a fourth caller, passing its own card pitch (<see cref="MatchupCardPitch"/>, 116px since
+        /// S74-am put a third line in the block — named by the constant here, never by a literal) — the
         /// lobby's staged-receipt slack problem is solved by reusing this one scrolling-body
         /// implementation rather than forking a second one, so its row geometry has to be a
         /// parameter instead of the ENTRY-only constant this used to hardcode.
