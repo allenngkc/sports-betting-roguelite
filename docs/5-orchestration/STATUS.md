@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 297 (heartbeat).** Quiet:
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 298.** THE SCROLL IS
+BUILT and merged (0b9aecc): three zones, scroll only where needed,
+commit controls pinned outside the scrolling body, reachability
+invariant in, suites 106/255 green - THE ADDITIVE GESTURE IS UNBLOCKED
+pending the DD's verification (docketed). TV merging main for batch 79's
+verbatim checks, then the panel shoot. With Allen: research words + TAB.
+
+*(prior stamp, cycle 297:)* Quiet:
 su building the scroll with batch 80's boundary rules queued in; TV on
 the strip answer + panel pins; DD idle between rulings. With Allen:
 research words, TAB when convenient.
