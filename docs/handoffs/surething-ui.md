@@ -210,7 +210,55 @@ retained figure — that case was not before the DD.
 - The VOID row's third element, the entry **rubbed out** — the DD marks that treatment a candidate
   pending frames.
 
-### Ruling (3) — remedy copy. BINDING on the P3 stamp, which is not built yet
+### P3 — BUILT (`2bbd722`). Copy is to canon; the FIT IS NOT, and the numbers are below
+
+The surface was printing the model's machine token verbatim: a refused same-match slip stamped
+`REFUSED:IMPOSSIBLECOMBINATION` on the PLACE control. `PlaceBlocker` returns that token *so that*
+printing it is loud. Closed.
+
+Composition is `SportsbookApp.RefusalStamp` — two authored cause forms by arity, a separate cause
+for duplicates and for sub-evens, a conjunctive remedy spending the whole set, no banned connective,
+removal order withheld. Legs are named by `MarginLegSubject`, **factored out of the margin leg row**
+so the stamp and the row cannot drift apart.
+
+#### The DD's numbers — measured on the real board, three independent boots
+
+| | |
+|---|---|
+| control | **288.0 × 17px**, one line, no wrap |
+| typical 2-leg refusal | **412–469px — 143–163%** of the control |
+| worst renderable stamp | **1583–1722px — 5.5–6.0×, SIX LINES** at this width |
+
+**The common case already overflows by half.** The worst case is a three-leg cause plus a three-leg
+remedy, which occur at the shipped `κ`.
+
+Nothing is truncated and fit is **not** asserted — sizing is the DD's call ("size the control for it
+or author a shorter form"), and a truncated remedy is an unverified remedy, so the gate must not
+quietly become a truncation test. It asserts only what is mine: the token never reaches the control,
+no banned connective, the whole remedy set named, ≥13px, nothing ellipsised.
+
+**Sizing is not free, and this is the part worth the DD's attention:** six lines at 13px is ~102px
+against the PLACE band's current 44px. `PlaceBandH` feeds `ActionBandReservedHeight`, which feeds
+`MarginFlowBudget` — growing the control shrinks the flow budget the margin invariant measures. A
+control sized for the worst stamp would take ~58px out of a 370px budget that currently clears by
+0.10px.
+
+#### Second finding — a disjunction *inside a leg name*
+
+The widest leg name on every board measured is of the form **`San Francisco Regulators OR DRAW`**
+(the draws double-chance vocabulary). A remedy naming it reads:
+
+> DROP TURNIPS AND TUSCALOOSA LONGHAULERS OR DRAW TO PLACE
+
+which satisfies the letter of S73-am5's ban — the connective is `AND` — and defeats the reason for
+it, because the reader cannot see where the leg name ends. **Reported, not ruled:** renaming a
+market is copy.
+
+It also had to be handled inside the gate. The banned-connective check runs against the stamp with
+leg names **masked out**; checking the raw string would go red on whichever boot put a double chance
+in a remedy, and would read as a copy violation rather than the flake it is.
+
+### Ruling (3) — remedy copy. The canon P3 was built to
 
 Recorded here so it is not re-derived. From S73-am5 (canon `c467df3`):
 
