@@ -200,8 +200,32 @@ one template with a substituted word.** **A duplicate and an impossibility take 
 causes** — §3.3 requires a *literal* reason, and one vague sentence covering both is what that word
 exists to prevent.
 
-**Legs are named in a remedy by the exact string on their own row**, so he never has to translate an
-instruction against the rows in front of him. **Fit is measured, not estimated: the population is the
+**The stamp states the ACT and its ARITY; the legs are MARKED in the flow, never named in the stamp**
+(S77, 2026-08-14 — the built stamp overflowed its control). **The overflow is caused by leg NAMES, and
+the names do not belong there**: up to three names inside the PLACE control's `296 × 44` at 17px is
+unbounded in the worst case, and **the instruction is not.** So the stamp carries the act and how
+many, and **the legs it refers to are marked on their own rows in the flow directly above.**
+
+**This is T69/T70's principle one control over — the subject is already on screen, so do not reprint
+it.** Marking serves the no-translation goal *better* than matching strings, because the referent is
+pointed at rather than merely worded alike. **The check that makes it safe, and it passes: the flow is
+bounded by MaxLegs = 4 in a 370px region and does not scroll, so every marked row is on screen
+whenever the stamp is.** A mark that could scroll out of view would fail this and the rule would not
+stand. **The mark vocabulary already exists** — biro ring, oxide, the `RUB OUT` control on each row.
+
+**THE CONTROL DOES NOT GROW, and the coupling is why.** `ActionBandReservedHeight = PlaceBandY 110 +
+PlaceBandH 44 + 6 = 160`, so `MarginFlowBudget = 530 − 160 = 370` — **every pixel of control height
+comes 1:1 out of the flow budget**, and **S51 has just shown that budget is already overhung.**
+**A copy problem is not paid for out of a geometry budget that is already over.**
+
+**Nothing else yields**: `≥13px` is the cross-surface product-fact floor; **cause AND remedy** is
+S73-am4; truncation is refused (*a truncated remedy is an unverified remedy*); shrinking type is
+refused (§8). **If the authored forms still miss, the order is (1) a shorter authored form, (2) two
+lines inside the existing 44px box at ≥13px — a real option, not a last resort — and (3) only then
+geometry, which comes to Allen with the flow-budget cost stated.**
+
+**Where a remedy does name a leg, it uses the exact string on that leg's own row**, so he never has to
+translate an instruction against the rows in front of him. **Fit is measured, not estimated: the population is the
 645 refusals and the longest renderable remedy is computable today** (C46). If it does not fit, the
 control is sized for it or a shorter form is **authored** — **a truncated remedy is an unverified
 remedy.** Removal order is an implementation constraint and **never reaches the player**.

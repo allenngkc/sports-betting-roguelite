@@ -1,6 +1,30 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 267.** Batch 68 landed +
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 271 (heartbeat).** All
+four seats mid-work (TV handoff, DD acceptance read, su P4/P5, sgp
+cash-out suite). Quiet is healthy.
+
+*(prior stamp, cycle 270:)* TV's strip slot +
+DRAW row BUILT, shot and docked (suites 254/95 green, tree clean) - merge
+follows its handoff commit; DD applying the acceptance list to the docked
+frames (state-corrected: already shot) + the stamp-sizing docket; su's
+stamp renders cause+remedy but overflows - wiring flagged off until the
+sizing ruling, P4/P5 proceeding; sgp deep in the cash-out build's suite
+run. Allen's three staged words all fired.
+
+*(prior stamp, cycle 269:)* sgp's cash-out
+scoping ruled CHEAP: conditioning pending legs on settled legs is EXACT
+(the sweat resolves one leg at a time) - the joint enumeration with
+constraints, engine-local, no lease. Allen approved the drama-ratio
+re-weight; build fired (HOLDOUT6 revalidation + margin-vs-kappa tuning
+ride along). DD holding for TV's capture per Allen. TV + su mid-build.
+
+*(prior stamp, cycle 268:)* room-refinement
+RETIRED and deleted on Allen's order - verified first: zero commits ahead
+of main, clean tree, arc closed at cycle 219, no pending dependency (T65
+closed by V6). Registry updated. Four lanes building unchanged.
+
+*(prior stamp, cycle 267:)* Batch 68 landed +
 sgp's conjunctive-remedy canon merged (fb3fb43; a bloated frame-sweep
 commit was caught local and re-cut canon-only). All four staged words
 fired: TV builds the strip slot (T97 guard + THE MATCH ENDS LEVEL) + the
