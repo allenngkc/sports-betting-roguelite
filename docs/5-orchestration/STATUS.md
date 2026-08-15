@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 268.** room-refinement
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 269.** sgp's cash-out
+scoping ruled CHEAP: conditioning pending legs on settled legs is EXACT
+(the sweat resolves one leg at a time) - the joint enumeration with
+constraints, engine-local, no lease. Allen approved the drama-ratio
+re-weight; build fired (HOLDOUT6 revalidation + margin-vs-kappa tuning
+ride along). DD holding for TV's capture per Allen. TV + su mid-build.
+
+*(prior stamp, cycle 268:)* room-refinement
 RETIRED and deleted on Allen's order - verified first: zero commits ahead
 of main, clean tree, arc closed at cycle 219, no pending dependency (T65
 closed by V6). Registry updated. Four lanes building unchanged.
