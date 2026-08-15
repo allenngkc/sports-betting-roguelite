@@ -326,6 +326,35 @@ canon working and is asked to be ruled correct before it reads as a gap.
 
 Batch 70 (`26d7baf`) is TV-only and does not touch these; the word is still owed.
 
+### P5 — BUILT and green (`3436337`, `9d7839c`). All seven sentences ship
+
+Composed from `principal`, toner, once per slip, sign carried, family preserved. Both refused forms
+re-authored: the remedy names an act in the word the control actually uses (there is no clear-all
+control, only per-row RUB OUT), and the implication statement carries the cost and says which leg,
+**by position** — `Relation.Legs` is ordered by meaning, not slip order.
+
+Slot measured (S78's owed item): widest sentence **331.7px = 56%** of the two-line budget at 13px;
+seven of nine fit one line, two need two. All inside S77-am's 80% rule.
+
+**The `ScorerOfSide` pair released by batch 72 and ships as approved.** I held it for one cycle on a
+measurement and the DD ruled it ships; the hold constant is gone rather than flipped. **The finding
+is recorded at `RelationStatement`'s call site**, where a later reader meets the sentence: over
+1,712 slips the two marked rows named the shared club in **zero**, and a scorer row names the
+*player*, so the only club on screen is the other team's. That is the evidence trail, not a dissent
+still running. The club-name report is withdrawn and its sweep is not re-run.
+
+### Standing, with Allen: the P5 flow cost
+
+~36px added to a budget that clears by 0.10px at MaxLegs → **~30px overrun of T47's pad** on a
+same-match slip at MaxLegs. Invisible to the margin invariant, which fills MaxLegs across *different*
+matchups and so never renders a statement.
+
+**Not reducible by sizing to the common case.** Seven of nine sentences fit one line, so a
+content-sized slot would cost 15px — and §2 forbids exactly that (a fixed grid constant is legal, a
+zone resizing to content is not). Anyone weighing this is weighing 36px, not "36px sometimes".
+
+Unreachable in play today: `Toggle` still replaces, so no player can build a same-match slip.
+
 ### P5 — what it needs once the copy is ruled
 
 `SameMatchPricing.principal` is the nominated relation; **do not pick from the list** — choosing which
