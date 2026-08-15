@@ -51,7 +51,8 @@ needs to re-establish who is playing whom. That is what makes 143px workable at 
 
 | MarketKind | **NEED** (live) | **compact** (all other states) |
 |---|---|---|
-| Moneyline | `{CLUB} TO WIN` | `{CLUB} ML` |
+| Moneyline · Home/Away | `{CLUB} TO WIN` | `{CLUB} ML` |
+| **Moneyline · Draw** | **`LEVEL AT FULL TIME`** | **`DRAW`** |
 | TotalGoals · Over | `OVER {L:0.0} GOALS` | `OVER {L:0.0} GOALS` |
 | TotalGoals · Under | `UNDER {L:0.0} GOALS` | `UNDER {L:0.0} GOALS` |
 | BTTS · Yes | `BOTH TEAMS SCORE` | `BTTS YES` |
@@ -59,6 +60,34 @@ needs to re-establish who is playing whom. That is what makes 143px workable at 
 | TotalCorners | `{OVER\|UNDER} {L:0.0} CORNERS` | `{OVER\|UNDER} {L:0.0} CORNERS` |
 | TotalCards | `{OVER\|UNDER} {L:0.0} CARDS` | `{OVER\|UNDER} {L:0.0} CARDS` |
 | AnytimeScorer | `{SURNAME} TO SCORE` | `{SURNAME} ANYTIME` |
+
+### AMENDED 2026-08-14 (batch 68) — the draw's row, and why its absence shipped a defect
+
+**This deck was written 2026-08-08. S74 authored the draw's forms on 2026-08-12 and this table was
+never amended.** `tv-design.md` §8 has since said the draw's forms *"are authored and live with the
+rest"* — **against this file that sentence was false**, and it is true only as of this amendment.
+
+**That absence is the whole cause of T96.** The build's `LegStatement()` Moneyline branch is a
+two-way `pickedHome ? Home : Away` — **which is exactly what the row above it said**. The surface was
+faithful to the deck; **the deck was the defect**, and it is a DD-owned file, so this is the fix
+rather than a request for one.
+
+**The forms are S74's, unchanged and not re-opened here:** NEED `LEVEL AT FULL TIME`, **compact
+`DRAW`**, progress `LEVEL` / `NOT LEVEL`. Nothing is invented — `LEVEL` is already this surface's word
+for a tied scoreline (T62). **`1X2` never reaches the player** (S74).
+
+**The progress pair does NOT breach T70** (T70-am, this batch): T70's *no term repeated across the
+two* governs the **SUBJECT**, not the predicate — its own example is `LANYARD TO SCORE` over
+`WAITING FOR LANYARD`, a **name** printed twice, *"T69's defect turned vertical"*, and T69 is the
+backed team printed twice. **A binary state answering its own requirement in the requirement's word is
+not redundant identification — it is the progress line doing its job.** Avoiding `LEVEL` below would
+force a second word for one thing and break the one-name-per-thing convention T62 established.
+
+**`DRAW` is the shortest compact form in this deck** — 4 chars against a ~19-char budget. **No
+fallback is needed and none is authored**, which is the honest entry rather than a defensive one.
+
+**`LEVEL AT FULL TIME` is 18 chars and sits AT the NEED budget**, exactly where `ONE TEAM SCORELESS`
+sits. §4 governs: **measure it, and take the authored fallback if it misses.**
 
 ### What changed, and why
 
@@ -83,6 +112,7 @@ overflow on an unlucky variable gets its shorter line authored now, so truncatio
 | `{SURNAME} TO SCORE` | a long surname | **`TO SCORE`** |
 | `ONE TEAM SCORELESS` | if 18 measures over at 28px Bold | **`ONE TEAM BLANKED`** |
 | `{OVER\|UNDER} {L:0.0} CORNERS` | `UNDER 10.5 CORNERS` is 18 | **`{OVER\|UNDER} {L:0.0} CNRS`** — *last resort; prefer the full word* |
+| `LEVEL AT FULL TIME` | 18 at the budget, same class as `ONE TEAM SCORELESS` | **`LEVEL AT FT`** — `FT` is **this surface's own clock token**, printed in the scorebug, not jargon (added batch 68) |
 
 **`TO WIN` and `TO SCORE` are complete, not truncated.** The backed side is already marked in the
 scorebug and the leg's own row is the subject — the sentence has a subject, it is just not repeated.

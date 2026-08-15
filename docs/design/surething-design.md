@@ -170,6 +170,7 @@ Every state carries a mark, glyph, word, border or position change as well as it
 | Blocked | muted label + stamped literal reason ≥13px, cause **and** remedy, inside the control |
 | GREEN | the word + wax figure + ring re-inked in wax |
 | DEAD | the word in `--toner-3` + the oxide strike across it + the row drained to .55 |
+| VOID | the word + the stake printed as a KNOWN sum + the entry rubbed out — **never the oxide strike, never drained to DEAD's .55** (S76; treatment is a candidate pending frames) |
 
 Measured on `05-my-bets-green-dead`: DEAD glyph rows at (110,106,95), strike rows at (181,74,59).
 **Only the strike is oxide** (S15-am). Leg sub-rows carry **no per-outcome hue** at all (S35c, S40).
@@ -183,6 +184,27 @@ prices the leg and refuses only the *combination*.
 
 Cause and remedy, both, because this row has always required both: *these two cannot both land* names
 the cause; what to drop names the remedy.
+
+**The remedy is CONJUNCTIVE and both halves are authored for the PLURAL** (S73-am5, 2026-08-14, on
+sgp's measurement: **remedies of up to three legs occur at the shipped `κ = 1`**, across 645 refusals,
+for duplicates and impossible combinations both). **Removing only the first element leaves the slip
+refused**, so the remedy is a set to remove, not a menu to choose from. **`or` / `either` / `one of` /
+`any of` are BANNED in a remedy** — English's natural form for a list of fixes is disjunctive and the
+model's truth is not, so the idiomatic phrasing is the wrong one. **A remedy that names a fix which
+does not fix it is worse than no remedy**: S73-am4 requires a *verified* remedy, and a failing
+instruction at the point of spending is S17's own subject.
+
+**The cause is plural too, and has no honest degradation.** `… cannot both land` is two-valued;
+three or more legs take an authored `… cannot all land`. **Two authored forms chosen by arity, never
+one template with a substituted word.** **A duplicate and an impossibility take ONE treatment and TWO
+causes** — §3.3 requires a *literal* reason, and one vague sentence covering both is what that word
+exists to prevent.
+
+**Legs are named in a remedy by the exact string on their own row**, so he never has to translate an
+instruction against the rows in front of him. **Fit is measured, not estimated: the population is the
+645 refusals and the longest renderable remedy is computable today** (C46). If it does not fit, the
+control is sized for it or a shorter form is **authored** — **a truncated remedy is an unverified
+remedy.** Removal order is an implementation constraint and **never reaches the player**.
 
 **A bet that cannot win must never be purchasable.** A price is a factual claim about an outcome, and
 selling a finite price on an impossible event is the product lying in the one place it has promised
@@ -525,3 +547,47 @@ product fact is deleted to make a layout fit. **Reachability holds by a mechanis
 and it draws — **he lost**. **No third result word, no new state, no new column.** Inventing a `DREW`
 state would model the match inside the bet's vocabulary. A market that returns the stake on a draw is
 a **VOID**, which the enum already carries.
+
+---
+
+## Amendment — 2026-08-14 (batch 66: S51 CLOSED, S75 — the hand-laid mark)
+
+### S51 is closed. The wax highlight was the owner after all.
+
+**The 4px was never a mystery and never a composition question — it is a KIT-FIDELITY gap.**
+`PayoutFigure.jsx` places the band `bottom:-2px` against a line box of `--st-size-payout` 31px ×
+`--st-lh-fig` 1.1 = 34.1px, so **the kit's band bottom sits 36.1px below the figure's top, inside
+the figure's own box.** The build places it at 40px. **The 3.9px difference is the 4.00px structural
+overrun**, and the horizontal `−3 / +5` overshoot already matches the kit exactly.
+
+**The frame shows the same thing without the arithmetic:** the band reads as a **detached rule under
+the figure**, not the highlighter behind it that its own source comment describes. **One cause, two
+symptoms, one fix — place the band per the kit.** The overrun then closes at zero with **no payout
+block moved, no reservation slackened and no element excluded.**
+
+**The earlier acquittal was arithmetically wrong**: it computed the band's HEIGHT term (24px ×
+sin 0.5° = 0.21px). **A rotation about a top-left pivot descends by `w·sin θ` — a WIDTH term.** The
+band is sized from the payout figure's measured width and `RunDirector.seed` is blank in
+`Room.unity`, so **the pin was a function of how much money was on screen and could never have held
+a constant** (4.563 ↔ a 56.5px figure, 4.748 ↔ a 77.7px one; the draws supplied the extra glyphs).
+
+**Why it earned pixels now:** the overhang eats the 6px pad above the anchored action stack rather
+than colliding with it — **but `4.00 + 0.0087·w > 6` at `w > 229px`, money never abbreviates (C49),
+and same-game parlays are in flight.** It is a latent collision that the work in the lane is pushing
+toward T47's boundary. **Never shrink the figure to fit** — standing, and still refused.
+
+### S75 — a hand-laid mark reserves with the figure it marks
+
+**A decorative mark that belongs to a figure — highlight, underline, rub-out, ring — is flow
+content.** It is measured with its figure, **never excluded from a reservation**, and **its own
+extent is what must clear the boundary, not the type's box.** Wax is money (S3): the band marks the
+loudest figure on the surface by intent and keeps its highlight even at `$0`, because the highlight
+marks the slot. **A mark this surface rules as meaning is not chrome.**
+
+**Where the mark is transformed, the reserved extent is the TRANSFORMED extent** — and for a
+rotation about a corner that is a **width** term.
+
+**Bound it at design time, never at runtime.** A mark sized from measured text makes the reservation
+a function of content, which §2 forbids. **Sweep the population (C46), take the widest renderable
+money string, and pin the clearance as a constant** — a fixed grid constant re-derived once at design
+time is legal; a zone that moves with the string is not.

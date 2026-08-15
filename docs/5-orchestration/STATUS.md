@@ -1,6 +1,23 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 265.** TWO MERGES
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 267.** Batch 68 landed +
+sgp's conjunctive-remedy canon merged (fb3fb43; a bloated frame-sweep
+commit was caught local and re-cut canon-only). All four staged words
+fired: TV builds the strip slot (T97 guard + THE MATCH ENDS LEVEL) + the
+deck's DRAW row + the four-array sweep, one capture verifies; sgp scopes
+conditional cash-out as a plan; su builds the P3 stamp measured against
+the 645 refusals; DD acked. Board fully loaded, all four lanes building.
+
+*(prior stamp, cycle 266:)* DD batches 66-67
+LANDED (c467df3): the 0-0 ending READS AS A RESOLUTION - T87's ruled half
+confirmed on frames; defects T96 (MIDDLEMEN ML on both tickets, opposite
+grades) + T97 (goal-line string over 0-0 FT) rule together next with the
+owed full-time line; 4px = kit-fidelity gap, move the band (36.1px), pin
+re-sourced once after; VOID row approved by Allen - third terminal state,
+stake printed, never oxide/em-dash; conjunctive-remedy ruling routed to
+both step-5 lanes. TV standing by for the T96/T97 ruling.
+
+*(prior stamp, cycle 265:)* TWO MERGES
 (ee4fa03, 957b8d6): sgp's P1-P3 model half (slip constructible,
 bit-identity, structured refusals, 291 tests) and surething-ui's pin
 repair (green on four boots, main's inherited red CLOSED) + survey.
