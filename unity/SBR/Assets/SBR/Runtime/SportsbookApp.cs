@@ -803,24 +803,20 @@ namespace SBR.Game
         /// of the margin, which is where an annotating hand has room to write.</summary>
         /// <summary>P5's slot: two 13px lines. The family's longest member does not fit one line in
         /// the 296px content column, and the copy is ruled (S78) — so the slot is authored around the
-        /// approved sentence rather than the sentence cut to fit an unspecified box.</summary>
+        /// approved sentence rather than the sentence cut to fit an unspecified box.
+        ///
+        /// <para><b>TWO LINES ALWAYS, and this is the part that matters to the flow-cost decision.</b>
+        /// Seven of the nine sentences fit ONE line — measured — so a slot that sized itself to the
+        /// sentence would cost 15px instead of 30 in most cases. **§2 forbids exactly that**: a fixed
+        /// grid constant re-derived once at design time is legal, a zone resizing in response to
+        /// content is not, and the draws block was already held to this rule ("an empty line is
+        /// honest where a collapsing block is not").
+        ///
+        /// So the flow cost of this statement is NOT reducible by sizing to the common case. Anyone
+        /// weighing the ~36px against T47's budget is weighing 36px, not "36px sometimes".</para>
+        /// </summary>
         internal const float RelationStatementHeight = 30f;
 
-        /// <summary>**A HOLD on two of the seven approved sentences, and not S79's silence.** The
-        /// `ScorerOfSide` pair is copy the DD approved; it is withheld because measuring the
-        /// population found the sentence reads against the WRONG club rather than merely an
-        /// unnamed one — a scorer row names the player, so the only club on screen is the other
-        /// team's. See <see cref="RelationStatement"/> for the measured examples.
-        ///
-        /// <para>Released when the mark carries the side (the DD's pre-committed disposition 2).
-        /// Left as a constant so the withholding is legible and deliberate rather than a branch
-        /// nobody notices, and gated so it cannot be flipped without the gate being read.</para>
-        ///
-        /// <para>`static readonly` rather than `const` deliberately: a `const false` makes the guard
-        /// below compile-time provable, so the held sentence becomes unreachable code and the
-        /// compiler refuses it. The copy is approved and stays compiled — only its route to the
-        /// screen is closed.</para></summary>
-        internal static readonly bool StateScorerOfSideRelation = false;
 
         private const float HouseLineX = 7f;
         private const float HouseLineWeight = 2f;
@@ -1687,27 +1683,19 @@ namespace SBR.Game
                 case RelationKind.SharedScoreline:
                     return opposing ? "THE SAME GOALS SETTLE THESE OPPOSITE WAYS."
                         : "THE SAME GOALS SETTLE BOTH.";
-                // HELD — and this is NOT S79's ruled silence, which is the absence of a thing to
-                // explain. Here there IS something to state and it is withheld, because measurement
-                // found the case worse than the one the DD pre-committed a disposition for.
+                // RELEASED by DD batch 72 — shipped exactly as approved, with no mark, after the
+                // mark-treatment pre-commit was withdrawn by its author.
                 //
-                // S78 anticipated: where the two marked rows do not visibly share a club, the
-                // sentence is UNDER-DETERMINED and he must already know which club the player plays
-                // for. Measured over 1,712 ScorerOfSide slips, the two rows share the club in ZERO —
-                // and the examples say why it is not merely under-determined:
+                // THE MEASUREMENT THAT WAS RAISED AGAINST IT IS RECORDED HERE RATHER THAN DELETED,
+                // because it is the kind of thing a later reader will otherwise re-derive from
+                // scratch. Over 1,712 ScorerOfSide slips the two marked rows named the shared club
+                // in ZERO of them, and the failure is not the under-determination S78 anticipated:
                 //
                 //     rows "MIDDLEMEN" + "LANCE MUFFIN", and the sentence's team is BRICKLAYERS.
                 //
                 // A scorer row names the PLAYER and never his club, so the only club on screen is
-                // the OTHER one. "The same team's goals" would be read against the one team it does
-                // not mean. That is not an absent referent, it is a wrong one, and a sentence that
-                // reads against the wrong club has stopped stating the relation.
-                //
-                // The DD's disposition (2) already rules the direction — the remedy is at the MARK,
-                // which can carry the side, and NEVER by naming the team in the sentence — but the
-                // treatment is a design call and the finding exceeds what was ruled on. Held rather
-                // than shipped, and reported.
-                case RelationKind.ScorerOfSide when !StateScorerOfSideRelation: return null;
+                // the OTHER team's. The seat that owns this copy has ruled it ships; this note is
+                // the evidence trail, not a dissent still running.
                 case RelationKind.ScorerOfSide:
                     return opposing ? "THE SAME TEAM'S GOALS SETTLE THESE OPPOSITE WAYS."
                         : "THE SAME TEAM'S GOALS SETTLE BOTH.";
