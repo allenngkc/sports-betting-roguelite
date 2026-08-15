@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 262 (INCIDENT RECOVERY).**
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 263.** THE 0-0 SET IS
+SHOT AND DOCKED (tv-goalless-draw-2026-08-14; four defective runs
+diagnosed, their 48 frames deleted not staged - C50's shape). TV standing
+by post-handoff-update; Unity lease moved TV->surething-ui for the pin
+verification (procs 0 confirmed); su's diagnosis overturned the handoff
+account - the pin measured per-boot screen content, repair derives the
+fixed 4.00px from layout arithmetic. Fresh DD seated (term_f94b5c9d) on
+the frames + su's 4px-overhang question. sgp's P1-P3 agent grinding.
+Watcher v34 (b4isq6xgl).
+
+*(prior stamp, cycle 262:)*
 Orca restart killed every lead terminal. Disk verified before reseating:
 TV's draw-arm fix COMMITTED (ada9a84) with the capture harness mid-edit;
 sgp's P1-P3 uncommitted in BetslipModel.cs (its background agent died -
