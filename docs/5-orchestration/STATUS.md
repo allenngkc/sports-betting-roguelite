@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 283.** ALLEN RULED the
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 284.** SPEED BRIEF
+executed: (1) fast mode STOOD DOWN on all seats by Allen's final word -
+official docs confirm /fast bills pay-as-you-go credits only, never Max
+plan usage; credits not enabled; no seat toggles. (2) Sim-harness
+parallelization COMMISSIONED to sgp (determinism proof, idle-aware
+scaling, --workers override; rides after the profile fix). (3) Time
+audit delivered: time-audit-2026-08-15.md - the finding: half the
+calendar is overnight halt, and the merged-main holdout table sat unread
+19h in one; campaigns are bucket two and item 2 attacks them.
+
+*(prior stamp, cycle 283:)* ALLEN RULED the
 flow cost: PAY THE PIXELS - the reservation grows ~36px, the sentence
 always fits, wording untouched. DD specs the exact move (it gates the
 additive gesture - the feature's last screen step); su implements to
