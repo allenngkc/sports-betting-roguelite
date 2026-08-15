@@ -492,6 +492,14 @@ namespace SBR.Tests.PlayMode
         [UnityTest, Order(9)]
         public IEnumerator Refused_combination_stamps_cause_and_remedy_and_never_the_models_token()
         {
+            // The composed stamp is HELD (Allen, 2026-08-14) until the DD rules its sizing — it is
+            // correct copy that overflows its control. Asserted OFF by default before anything else,
+            // so releasing the hold is a decision someone makes rather than a line that drifts, and
+            // then driven ON for this gate so the composition stays exercised instead of rotting
+            // into dead code behind a false constant.
+            Assert.IsFalse(SportsbookApp.StampComposedRefusal,
+                "the refusal stamp is held pending the DD's sizing call and must default OFF");
+            SportsbookApp.StampComposedRefusal = true;   // cleared in TearDown, on every path
             yield return Boot();
             LaptopScreen laptop = Laptop();
             Run run = laptop.director.Run;
@@ -604,6 +612,78 @@ namespace SBR.Tests.PlayMode
             Assert.IsFalse(stamp.Contains("…"),
                 $"the stamp was ellipsised: \"{stamp}\". A truncated remedy is an unverified remedy");
         }
+
+        /// <summary>P4 — THE HOUSE'S LINE. Where two picks share a match the house marks the
+        /// connection in its OWN ink, and marks nothing where there is no connection.
+        ///
+        /// <para>The negative is the load-bearing half: §3.1 says the mark is DRAWN, NOT CAPTIONED,
+        /// and that the instrument's name never becomes a tag beside every occurrence. So this gate
+        /// fails if the words reach the margin at all.</para></summary>
+        [UnityTest, Order(9)]
+        public IEnumerator House_line_marks_connected_picks_in_the_houses_ink_and_never_captions_them()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            Run run = laptop.director.Run;
+            BetslipModel slip = laptop.Slip;
+
+            // One leg on each of two different matchups: no connection, so no mark.
+            slip.Clear();
+            Assert.IsTrue(slip.AddLeg(0, MarketSelection.Moneyline(Side.Away)));
+            Assert.IsTrue(slip.AddLeg(1, MarketSelection.Moneyline(Side.Away)));
+            yield return WaitForRebuild();
+            Transform margin = Required(App(laptop), "WorkingMargin");
+            Assert.IsFalse(slip.IsSameMatch, "two matchups, one leg each, is not a same-match slip");
+            Assert.IsNull(Find(margin, "HouseLine0"),
+                "the house marked a connection between legs on different matches");
+
+            // Now a second leg on the FIRST matchup — a real connection. Searched, because which
+            // second selection is addable is a property of the board and the board is re-priced
+            // every boot.
+            bool connected = false;
+            foreach (MarketOffer offer in run.CurrentSlate.Matchups[0].Markets)
+            {
+                if (slip.Contains(0, offer.Selection)) continue;
+                if (!slip.AddLeg(0, offer.Selection)) continue;
+                connected = true;
+                break;
+            }
+            Assert.IsTrue(connected, "no second selection on matchup 0 could be added");
+            yield return WaitForRebuild();
+            margin = Required(App(laptop), "WorkingMargin");
+
+            Assert.IsTrue(slip.IsSameMatch, "two legs on one matchup IS a same-match slip");
+            Assert.AreEqual(2, slip.LegCountOn(0), "matchup 0 must carry the connected pair");
+            var spine = Required(margin, "HouseLine0").GetComponent<Image>();
+            Assert.AreEqual(LaptopOs.MoneyBad, spine.color,
+                "§3.1: the house marks in Stamp — he picks in biro, the house marks in its own ink");
+
+            // A spur per member, so the mark says WHICH rows it is about. Slip order is insertion
+            // order, so a connected pair can straddle an unrelated leg and a bare spanning stroke
+            // would mark a row it has nothing to do with.
+            IReadOnlyList<int> connectedLegs = slip.LegIndicesOn(0);
+            for (int m = 0; m < connectedLegs.Count; m++)
+                Assert.IsNotNull(Find(margin, $"HouseLineSpur0_{m}"),
+                    $"connected leg {connectedLegs[m]} carries no spur");
+
+            // DRAWN, NOT CAPTIONED. The name is what the thing is called, never a tag on every
+            // occurrence — "the house does not narrate its own presence on his document" (S44).
+            foreach (TMP_Text text in margin.GetComponentsInChildren<TMP_Text>(true))
+            {
+                string upper = (text.text ?? "").ToUpperInvariant();
+                Assert.IsFalse(upper.Contains("HOUSE'S LINE"),
+                    $"the mark was captioned in \"{text.name}\": \"{text.text}\"");
+                Assert.IsFalse(upper.Contains("SGP"),
+                    $"SGP is industry jargon and never reaches him — found in \"{text.name}\"");
+            }
+        }
+
+        /// <summary>The refusal-stamp hold is cleared after EVERY test in this fixture, not at the
+        /// end of the one that sets it. A test that fails mid-body would otherwise leave the hold
+        /// released for everything after it, and the whole point of a hold is that releasing it is
+        /// deliberate.</summary>
+        [TearDown]
+        public void ClearRefusalStampHold() => SportsbookApp.StampComposedRefusal = false;
 
         [Test, Order(8)]
         public void TicketStateWord_and_LegStateWord_never_cross_contaminate_their_vocabularies()

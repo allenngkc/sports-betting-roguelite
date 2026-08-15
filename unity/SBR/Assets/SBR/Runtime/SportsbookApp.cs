@@ -798,6 +798,32 @@ namespace SBR.Game
         /// margin's fixed 530px panel.</summary>
         internal const float MarginFlowBudget = 530f - ActionBandReservedHeight;
 
+        /// <summary>Gutter x and stroke weight for <c>THE HOUSE'S LINE</c>. The gutter is the strip
+        /// between the 2px sheet divider at x=0 and the leg rows' own left pad at x=14 — the margin
+        /// of the margin, which is where an annotating hand has room to write.</summary>
+        private const float HouseLineX = 7f;
+        private const float HouseLineWeight = 2f;
+        private const float HouseLineSpur = 5f;
+
+        /// <summary>One connected group's mark: a spine down the gutter with a spur at each member
+        /// row. See the call site for why the spurs are load-bearing rather than ornamental.</summary>
+        private static void DrawHouseLine(RectTransform panel, int markIndex, List<int> members,
+            List<float> legRowY)
+        {
+            // The identity line of a leg row is 20px tall from the row's own top (see LegCheck/Leg).
+            const float legIdentityHeight = 20f;
+            float top = legRowY[members[0]];
+            float bottom = legRowY[members[^1]] - legIdentityHeight;
+            LaptopUi.MakePanel(panel, "HouseLine" + markIndex, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(HouseLineX, top), new Vector2(HouseLineWeight, top - bottom),
+                LaptopOs.MoneyBad);
+            for (int m = 0; m < members.Count; m++)
+                LaptopUi.MakePanel(panel, $"HouseLineSpur{markIndex}_{m}", new Vector2(0f, 1f),
+                    new Vector2(0f, 1f),
+                    new Vector2(HouseLineX, legRowY[members[m]] - legIdentityHeight / 2f),
+                    new Vector2(HouseLineSpur, HouseLineWeight), LaptopOs.MoneyBad);
+        }
+
         private void BuildSlip(Run run, BetslipModel slip, bool boardFrozen)
         {
             RectTransform panel = LaptopUi.MakePanel(_root, "Slip", new Vector2(1f, 1f), new Vector2(1f, 1f),
@@ -888,8 +914,12 @@ namespace SBR.Game
                     LaptopOs.TonerSecondary, "CIRCLE A PRICE TO START A TICKET.", _font);
                 y -= 60f;
             }
+            // P4 needs each leg's own row position to mark the connected ones, and the cursor below
+            // is consumed by the loop, so the rows are recorded as they are drawn.
+            var legRowY = new List<float>(slip.Picks.Count);
             for (int i = 0; i < slip.Picks.Count; i++)
             {
+                legRowY.Add(y);
                 Pick pick = slip.Picks[i];
                 Matchup matchup = run.CurrentSlate.Matchups[pick.MatchupIndex];
                 MatchModel.MarketFields fields = MatchModel.Fields(matchup, pick.Selection);
@@ -968,6 +998,41 @@ namespace SBR.Game
                 // baselines close from 22px to 20px apart and the rule from 38 to 34, taking the step
                 // 42 -> 35. Nothing that states a product fact was deleted to make the layout fit.
                 y -= LegRowPitch;
+            }
+
+            // P4 — THE HOUSE'S LINE (§3.1, S73). Where two of his picks are priced as related, the
+            // house marks the connection between them IN ITS OWN INK: he picks in biro, the house
+            // marks in Stamp. Drawn in the margin's own left gutter, between the sheet divider and
+            // the check column, because that is where a hand annotating a document would put it.
+            //
+            // DRAWN, NOT CAPTIONED — no label, no name, no tag beside it. §3.1 is explicit that the
+            // name is what the thing is CALLED (rules copy, the ledger, a first explanation) and
+            // never a caption on every occurrence: "a mark that needs a caption every time is a mark
+            // that is not working, and the house does not narrate its own presence on his document".
+            //
+            // The spine spans the group's first row to its last, and each MEMBER row takes its own
+            // spur. The spurs are not decoration: slip order is insertion order, so two legs on one
+            // match can sit either side of a leg on a different match, and a bare spanning stroke
+            // would mark a row it has nothing to do with. The spurs say which rows the line is about.
+            //
+            // GEOMETRY IS A CANDIDATE, not canon — §3.1 rules the ink, the connection and the
+            // absence of a caption, which is what is implemented here; the stroke weight and the
+            // spur length want frames, exactly as the VOID row's rub-out does.
+            if (slip.Picks.Count > 1)
+            {
+                var groups = new Dictionary<int, List<int>>();
+                for (int i = 0; i < slip.Picks.Count; i++)
+                {
+                    if (!groups.TryGetValue(slip.Picks[i].MatchupIndex, out List<int> members))
+                        groups[slip.Picks[i].MatchupIndex] = members = new List<int>();
+                    members.Add(i);
+                }
+                int markIndex = 0;
+                foreach (KeyValuePair<int, List<int>> group in groups)
+                {
+                    if (group.Value.Count < 2) continue;   // one leg on a match is not a connection
+                    DrawHouseLine(panel, markIndex++, group.Value, legRowY);
+                }
             }
 
             // E-07 ruling: staged ticket receipts no longer render here. The 324px margin has no
@@ -1103,8 +1168,13 @@ namespace SBR.Game
             // Legs are named with MarginLegSubject — the same call the rows above render — so the
             // instruction reads against the rows in front of him rather than needing translation
             // (S73-am5).
+            //
+            // HELD behind StampComposedRefusal while the sizing call is with the DD — see that
+            // property. With the hold on, this control keeps its pre-P3 behaviour, which for a
+            // refusal is the model's token; that is unreachable in play, because `Toggle` still
+            // replaces and no additive gesture exists yet.
             TicketRefusal refusal = slip.Refusal;
-            if (refusal != null)
+            if (refusal != null && StampComposedRefusal)
             {
                 blocker = RefusalStamp(refusal, NameLegs(run, slip, refusal.CauseLegs),
                     NameLegs(run, slip, refusal.RemedyLegs));
@@ -1418,6 +1488,29 @@ namespace SBR.Game
         /// <para>Not <see cref="CompactLegLabel"/>: that carries a fixture tail ("— HAWKS v RIVETS")
         /// which the margin row does not print, so naming a leg by it would be naming it by a string
         /// that is not on the row.</para></summary>
+        /// <summary>**A HOLD, not a feature flag** (Allen, 2026-08-14). The composed refusal stamp is
+        /// correct copy that does not fit its control: measured on the real board, a typical two-leg
+        /// refusal renders 412–469px against a 288px box, and the worst renderable stamp is 5.5–6.0×
+        /// it — six lines. Rather than ship a visibly overflowing control while the sizing call is
+        /// with the DD, the composition is held here.
+        ///
+        /// <para><b>What this costs today: nothing reachable.</b> A refusal can only fire on a matchup
+        /// carrying two or more legs, and `Toggle` still REPLACES — the additive gesture is a design
+        /// decision that has not been made, so no player can build a same-match slip through this
+        /// surface yet. The held path is reachable only through the model's own `AddLeg`, which is to
+        /// say from tests.</para>
+        ///
+        /// <para><b>Turned ON by the P3 gate</b>, deliberately, so the composition stays exercised
+        /// rather than rotting into dead code behind a false constant — the failure mode this kind of
+        /// hold usually has. The gate also asserts the DEFAULT is off, so releasing it is a decision
+        /// someone makes rather than a line that drifts.</para>
+        ///
+        /// <para><b>Released when</b> the DD rules the stamp's sizing. The coupling that ruling needs
+        /// in view: six lines at 13px is ~102px against the PLACE band's 44px, and `PlaceBandH` feeds
+        /// `ActionBandReservedHeight` feeds <see cref="MarginFlowBudget"/> — so sizing the control and
+        /// keeping the margin invariant are one decision, not two.</para></summary>
+        internal static bool StampComposedRefusal { get; set; }
+
         /// <summary>Joins named legs for a stamp. **`and`, never `or`** — S73-am5 bans `or`,
         /// `either`, `one of` and `any of` from a remedy outright, because English's natural form for
         /// a list of fixes is disjunctive and the model's truth is not.</summary>
