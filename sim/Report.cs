@@ -135,12 +135,14 @@ public static class Report
             + "deliberately different instruments.");
         sb.AppendLine();
         sb.AppendLine($"Tickets placed: **{probe.SameMatchPlaced:N0}** · settled: "
-            + $"**{probe.SameMatchSettled:N0}** · legs voided and re-priced: "
-            + $"**{probe.SameMatchVoids:N0}** · refusals tripped: **{probe.SameMatchRefusals:N0}**"
+            + $"**{probe.SameMatchSettled:N0}** · cashed out: **{probe.SameMatchCashedOut:N0}** · "
+            + $"legs voided and re-priced: **{probe.SameMatchVoids:N0}** · refusals tripped: "
+            + $"**{probe.SameMatchRefusals:N0}**"
             + (probe.SameMatchUnexpectedRefusals > 0
                 ? $" · ⚑ unexpected refusals: **{probe.SameMatchUnexpectedRefusals:N0}**"
                 : ""));
         sb.AppendLine();
+        CashOutLine(sb, probe);
         sb.AppendLine("| Relation | Relations priced | Tickets carrying it | Times principal |");
         sb.AppendLine("|---|---:|---:|---:|");
 
@@ -181,6 +183,41 @@ public static class Report
         sb.AppendLine();
 
         SameMatchKindTable(sb, probe);
+    }
+
+    /// <summary>WHERE IN THE SWEAT the probe's cash-outs landed (F_0.6.0 phase 4 follow-on).
+    ///
+    /// <para>A bare cash-out count would say the path was reached and nothing about whether the
+    /// campaign covered its SHAPE. The conditional quote is a different object at each position: with
+    /// nothing settled it is the ticket's own locked joint; mid-sweat it is a ratio over two different
+    /// leg sets; on the last leg numerator and denominator share a leg set and the quote walks to the
+    /// full payout, which is also the only position where the certainty carve-out can fire. So the
+    /// count is broken out by position, and the settled/cashed balance is printed beside it — a probe
+    /// that cashed out of everything would have stopped covering settlement, voids and refusals, and
+    /// this line is where that is caught rather than assumed.</para></summary>
+    private static void CashOutLine(StringBuilder sb, BatchSummary probe)
+    {
+        long cashed = probe.SameMatchCashedOut;
+        long decided = probe.SameMatchSettled + cashed;
+        if (decided == 0) return;
+
+        if (cashed == 0)
+        {
+            sb.AppendLine("⚑ **No same-match ticket was cashed out.** The conditional cash-out path "
+                + "(phase 4) is unexercised end to end in this campaign — it is proven by unit tests "
+                + "alone, which is the hole this probe exists to close.");
+            sb.AppendLine();
+            return;
+        }
+
+        long mid = cashed - probe.SameMatchCashOutsEarly - probe.SameMatchCashOutsLate;
+        sb.AppendLine($"Of the **{decided:N0}** same-match tickets that reached an outcome, "
+            + $"**{probe.SameMatchSettled / (double)decided:P1}** were graded and "
+            + $"**{cashed / (double)decided:P1}** were cashed out "
+            + $"(**{probe.SameMatchCashOutCredit:N0}** banked). Cash-outs by position in the sweat: "
+            + $"**{probe.SameMatchCashOutsEarly:N0}** with nothing settled · **{mid:N0}** mid-sweat · "
+            + $"**{probe.SameMatchCashOutsLate:N0}** on the last leg.");
+        sb.AppendLine();
     }
 
     /// <summary>WHICH MARKETS ever reached a joint — the per-kind half of the same-match reading, and

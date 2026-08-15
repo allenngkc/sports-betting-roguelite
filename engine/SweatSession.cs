@@ -385,6 +385,27 @@ public sealed class SweatSession
     /// correlated conditional so the quote agrees with what is on screen, while keeping the
     /// correlation structure that multiplying the two raw numbers would have destroyed.</para>
     ///
+    /// <para><b>THE CERTAINTY CARVE-OUT</b> (Allen, 2026-08-14 — a ruling on this rule's one visible
+    /// consequence). When the settled legs ENTAIL the live one — a settled OVER 3.5 beside a live
+    /// OVER 2.5 — <c>P(L | S)</c> is 1 while <c>liveProb</c> is the board's unconditional marginal
+    /// and is not. The ratio is then <c>liveProb</c> itself, and the quote is scaled DOWN on a leg
+    /// that cannot lose: the house would be offering less than the ticket is demonstrably worth.
+    /// The ruling is that <b>a certainty never quotes below its worth</b> — at <c>P(L | S) = 1</c>
+    /// the re-weight is dropped and the quote is the pure conditional <c>payout × P(L ∧ U | S)</c>.
+    /// Everything else re-weights exactly as ratified; this is a carve-out at the boundary, not a
+    /// softening of the rule.</para>
+    ///
+    /// <para><b>Why a tolerance and why THIS one.</b> <c>== 1.0</c> would be the wrong test: both
+    /// halves of <c>condLive</c> come out of the joint evaluator, whose own marginals carry tens of
+    /// ulp of slack against the board (see the goal-family note above and the diagnostic in
+    /// <c>SameMatchCashOutTests</c>), so a true entailment can land a few ulp under 1. But the
+    /// carve-out must not widen into an approximation of itself either — a leg at 0.999 is a
+    /// near-certainty and MUST still re-weight, because that is the ratified rule. <see
+    /// cref="CertaintySlack"/> is set at <c>1e-12</c>: roughly four thousand ulp at 1.0, which
+    /// comfortably covers evaluator slack measured in tens, and roughly nine orders of magnitude
+    /// below any probability the board can express — so nothing that is merely LIKELY can reach it.
+    /// It selects entailment, and only entailment.</para>
+    ///
     /// <para><b>Anchors.</b> Nothing settled: <c>p_joint(S)</c> is the empty conjunction 1.0, so the
     /// numerator is the whole ticket's joint — the very number the ticket was SOLD at, bit for bit —
     /// and <c>P(L | S)</c> is the live leg's own marginal, which the sweat also seeds
@@ -424,9 +445,16 @@ public sealed class SweatSession
 
         double condLive = _pSettledLive / _pSettled;
         if (!(condLive > 0.0)) return condAll;
+        if (condLive >= 1.0 - CertaintySlack) return condAll; // the certainty carve-out
 
         return condAll * (_liveProb / condLive);
     }
+
+    /// <summary>How far under 1.0 <c>P(L | S)</c> may land and still be read as an ENTAILMENT rather
+    /// than a near-certainty — the carve-out's threshold, argued in <see cref="ConditionalWinProb"/>.
+    /// Wide enough to swallow the joint evaluator's own ulp-scale slack, and far too narrow for any
+    /// probability the board can express to fall inside it.</summary>
+    private const double CertaintySlack = 1e-12;
 
     /// <summary>Recomputes the three joints the conditional is a ratio of, if a leg boundary has moved
     /// since the last quote. The leg sets are built in TICKET ORDER, which is what makes

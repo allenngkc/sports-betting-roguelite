@@ -687,6 +687,11 @@ public sealed class GateData
             bool placed = sameMatch.SameMatchPlaced > 0;
             bool settled = sameMatch.SameMatchSettled > 0;
             bool clean = noLabelFallbacks == 0;
+            // Gated, not merely reported (F_0.6.0 phase 4): same-match cash-out prices off the
+            // conditional joint, and the probe held every ticket to settlement until that price
+            // existed. If it ever stops cashing out, the campaign silently returns to covering a
+            // path it no longer exercises — which is the failure this arm was built to make loud.
+            bool cashedOut = sameMatch.SameMatchCashedOut > 0;
 
             // Named exclusions, mirroring G7's bot-excluded list exactly: a kind that genuinely
             // cannot reach a same-match ticket is listed HERE with its reason and surfaced as a note,
@@ -711,22 +716,29 @@ public sealed class GateData
             }
             bool allKinds = sgpUncovered.Count == 0;
 
-            string shortfall = placed && settled && clean && allKinds
+            string shortfall = placed && settled && clean && allKinds && cashedOut
                 ? ""
-                : " — FAILED ON: " + string.Join(", ", Missing(placed, settled, clean, sgpUncovered));
+                : " — FAILED ON: "
+                  + string.Join(", ", Missing(placed, settled, clean, cashedOut, sgpUncovered));
 
             g.Add("G7-SGP", "same-match coverage: the SAME MATCH probe placed AND settled same-match "
                 + "tickets, EVERY shipped MarketKind reached a same-match ticket (or is on the named "
                 + "exclusion list with a reason), and zero tickets were sold at the no-label "
                 + "naive-product fallback (a ticket shape is invisible to G7's MarketKind roll-call; "
                 + "a market the probe never pairs is a joint nothing priced; and a silent fallback is "
-                + "a money leak worth up to +274% EV on an implication pair)",
-                placed && settled && clean && allKinds,
+                + "a money leak worth up to +274% EV on an implication pair), AND same-match tickets "
+                + "were cashed out (the conditional quote is live product code and a campaign that "
+                + "never quotes it is not covering it)",
+                placed && settled && clean && allKinds && cashedOut,
                 $"placed {sameMatch.SameMatchPlaced:N0}, settled {sameMatch.SameMatchSettled:N0}, "
                 + $"kinds covered {Enum.GetValues(typeof(MarketKind)).Length - sgpUncovered.Count - sgpExcluded.Count}"
                 + $"/{Enum.GetValues(typeof(MarketKind)).Length - sgpExcluded.Count}, "
                 + $"no-label fallbacks {noLabelFallbacks:N0}, refusals tripped "
-                + $"{sameMatch.SameMatchRefusals:N0}, voids re-priced {sameMatch.SameMatchVoids:N0}"
+                + $"{sameMatch.SameMatchRefusals:N0}, voids re-priced {sameMatch.SameMatchVoids:N0}, "
+                + $"cashed out {sameMatch.SameMatchCashedOut:N0} "
+                + $"({sameMatch.SameMatchCashOutsEarly:N0} early / "
+                + $"{sameMatch.SameMatchCashedOut - sameMatch.SameMatchCashOutsEarly - sameMatch.SameMatchCashOutsLate:N0}"
+                + $" mid / {sameMatch.SameMatchCashOutsLate:N0} last-leg)"
                 + shortfall,
                 // Same structural argument as G7's: a ticket was either sold or it was not.
                 "exact — a ticket count is not a sample; no resolution limit");
@@ -738,6 +750,20 @@ public sealed class GateData
                 g.Notes.Add($"SAME MATCH: {sameMatch.SameMatchUnexpectedRefusals:N0} UNEXPECTED "
                     + "refusals — the probe built slips the board would not sell. Its catalogue or "
                     + "κ has moved; the relation exposure section is short by that much.");
+
+            // CASH-OUT COVERAGE is REPORTED, not gated — deliberately, and the boundary is the same
+            // one this arm already draws. The arm's own criteria are facts about the FEATURE (a shape
+            // was sold, a market reached a joint, no ticket took the silent fallback); whether the
+            // probe's own policy fired is a fact about the INSTRUMENT, and turning the campaign red
+            // for it would be the arm judging its own bot. It is a hole worth seeing all the same:
+            // the conditional quote (phase 4) is the newest priced path in the lane, and zero
+            // cash-outs means it is proven by unit tests alone. Surfaced as a note, and the
+            // settled/cashed balance is printed in report section 0b.
+            if (sameMatch.SameMatchCashedOut == 0)
+                g.Notes.Add("SAME MATCH: ZERO cash-outs taken — the conditional same-match cash-out "
+                    + "path went unexercised end to end. The probe's policy fires on marked ticket "
+                    + "slots only, so a shorter campaign can legitimately read low, but zero means "
+                    + "the policy never reached a live quote at all.");
         }
 
         if (audit != null)
@@ -858,12 +884,13 @@ public sealed class GateData
     /// one "did not cover" — "nothing was placed" and "everything was placed but a fallback fired"
     /// are different defects with different fixes, and a verdict that cannot tell them apart sends
     /// the reader back to the code to find out which one happened.</summary>
-    private static IEnumerable<string> Missing(bool placed, bool settled, bool clean,
+    private static IEnumerable<string> Missing(bool placed, bool settled, bool clean, bool cashedOut,
         IReadOnlyList<MarketKind> uncoveredKinds)
     {
         if (!placed) yield return "no same-match ticket was placed";
         if (!settled) yield return "no same-match ticket settled";
         if (!clean) yield return "tickets were SOLD at the no-label naive product";
+        if (!cashedOut) yield return "no same-match ticket was cashed out (the conditional quote is unexercised)";
         // Named, never counted: "3 kinds uncovered" sends the reader to the exposure table to find
         // out which, and the whole point of this arm is that the answer arrives with the verdict.
         if (uncoveredKinds.Count > 0)

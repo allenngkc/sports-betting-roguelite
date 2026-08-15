@@ -168,9 +168,31 @@ public sealed class RunResult
     /// <summary>Same-match tickets placed this run (a ticket whose legs share a matchup).</summary>
     public int SameMatchPlaced;
 
-    /// <summary>Same-match tickets that reached a terminal state — won, lost, voided or cashed out.
-    /// Placed and settled are separate facts: a ticket can be sold and never graded.</summary>
+    /// <summary>Same-match tickets GRADED — won, lost or voided. Placed and settled are separate
+    /// facts: a ticket can be sold and never graded.
+    ///
+    /// <para><b>Cashed-out tickets are NOT counted here</b> (F_0.6.0 phase 4 follow-on). They used to
+    /// be, harmlessly, because the probe never cashed out and the two sets could not overlap. Now that
+    /// it does, "settled" and "cashed out" are disjoint outcomes of the same population and counting a
+    /// cash-out as a settlement would let the settlement volume G7-SGP's arm reads be propped up by
+    /// tickets that were never graded at all.</para></summary>
     public int SameMatchSettled;
+
+    /// <summary>Same-match tickets the bot CASHED OUT of — the conditional-quote path (phase 4), and
+    /// its only end-to-end exercise in a campaign.</summary>
+    public int SameMatchCashedOut;
+
+    /// <summary>Of those, the ones taken with NOTHING settled yet — the position where the quote is
+    /// the ticket's own locked joint.</summary>
+    public int SameMatchCashOutsEarly;
+
+    /// <summary>Of those, the ones taken on the LAST leg — where the conditional collapses onto the
+    /// live leg's own set and the certainty carve-out is reachable. The remainder are mid-sweat.</summary>
+    public int SameMatchCashOutsLate;
+
+    /// <summary>Money banked out of same-match tickets, so the split can be read in credit as well as
+    /// in ticket counts.</summary>
+    public double SameMatchCashOutCredit;
 
     /// <summary>Legs voided out of a same-match ticket by a Mulligan — every one of these is a live
     /// re-price onto the survivors' locked subset price, the path step 3 added.</summary>

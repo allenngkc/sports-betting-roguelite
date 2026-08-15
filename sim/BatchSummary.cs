@@ -62,7 +62,18 @@ public sealed class BatchSummary
     // order, exactly like every other aggregate on this type. Zero for every bot but the probe.
 
     public long SameMatchPlaced;
+
+    /// <summary>GRADED same-match tickets — disjoint from <see cref="SameMatchCashedOut"/> since the
+    /// probe took a cash-out policy (F_0.6.0 phase 4 follow-on).</summary>
     public long SameMatchSettled;
+
+    /// <summary>Same-match tickets cashed out, and where in the sweat the quote was taken. Mid-sweat
+    /// cash-outs are the remainder: cashed − early − late.</summary>
+    public long SameMatchCashedOut;
+    public long SameMatchCashOutsEarly;
+    public long SameMatchCashOutsLate;
+    public double SameMatchCashOutCredit;
+
     public long SameMatchVoids;
     public long SameMatchRefusals;
     public long SameMatchUnexpectedRefusals;
@@ -124,6 +135,10 @@ public sealed class BatchSummary
 
             s.SameMatchPlaced += rr.SameMatchPlaced;
             s.SameMatchSettled += rr.SameMatchSettled;
+            s.SameMatchCashedOut += rr.SameMatchCashedOut;
+            s.SameMatchCashOutsEarly += rr.SameMatchCashOutsEarly;
+            s.SameMatchCashOutsLate += rr.SameMatchCashOutsLate;
+            s.SameMatchCashOutCredit += rr.SameMatchCashOutCredit;
             s.SameMatchVoids += rr.SameMatchVoids;
             s.SameMatchRefusals += rr.SameMatchRefusals;
             s.SameMatchUnexpectedRefusals += rr.SameMatchUnexpectedRefusals;

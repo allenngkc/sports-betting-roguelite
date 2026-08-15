@@ -114,7 +114,15 @@ public class SameMatchCashOutTests
         return (settled, settledLive, active);
     }
 
-    /// <summary>The scope doc's rule, transcribed: <c>P(L ∧ U | S) × ( liveProb / P(L | S) )</c>.</summary>
+    /// <summary>How far under 1.0 <c>P(L | S)</c> may land and still be an ENTAILMENT — transcribed
+    /// from the ruling, and deliberately re-stated here rather than read off the engine's own
+    /// constant, so a widened threshold in the engine fails this file instead of moving with it.</summary>
+    private const double CertaintySlack = 1e-12;
+
+    /// <summary>The scope doc's rule, transcribed: <c>P(L ∧ U | S) × ( liveProb / P(L | S) )</c> —
+    /// with the CERTAINTY CARVE-OUT (Allen, 2026-08-14): when the settled legs entail the live leg,
+    /// <c>P(L | S)</c> is 1, and the re-weight is dropped rather than scaling a leg that cannot lose
+    /// down by its unconditional marginal. See <c>Gate6_*</c>.</summary>
     private static double ConditionalWinProb(Ticket ticket, int currentLeg, double liveProb)
     {
         (List<Leg> settled, List<Leg> settledLive, List<Leg> active) = Sets(ticket, currentLeg);
@@ -122,7 +130,24 @@ public class SameMatchCashOutTests
         double pSettled = SameMatchModel.JointProbabilityOf(settled);
         double condAll = SameMatchModel.JointProbabilityOf(active) / pSettled;
         double condLive = SameMatchModel.JointProbabilityOf(settledLive) / pSettled;
+        if (condLive >= 1.0 - CertaintySlack) return condAll;
         return condAll * (liveProb / condLive);
+    }
+
+    /// <summary><c>P(L | S)</c> alone — the quantity the carve-out keys on.</summary>
+    private static double LiveConditional(Ticket ticket, int currentLeg)
+    {
+        (List<Leg> settled, List<Leg> settledLive, List<Leg> _) = Sets(ticket, currentLeg);
+        return SameMatchModel.JointProbabilityOf(settledLive)
+            / SameMatchModel.JointProbabilityOf(settled);
+    }
+
+    /// <summary><c>P(L ∧ U | S)</c> alone — the PURE conditional, unweighted.</summary>
+    private static double PureConditional(Ticket ticket, int currentLeg)
+    {
+        (List<Leg> settled, List<Leg> _, List<Leg> active) = Sets(ticket, currentLeg);
+        return SameMatchModel.JointProbabilityOf(active)
+            / SameMatchModel.JointProbabilityOf(settled);
     }
 
     private static double JointFair(Ticket ticket, int currentLeg, double liveProb)
@@ -620,15 +645,25 @@ public class SameMatchCashOutTests
 
     /// <summary>
     /// The quote can never exceed the payout, structurally: adding the pending legs' constraints can
-    /// only lower a joint, so <c>P(L ∧ U | S) ≤ P(L | S)</c> and the conditional win probability is at
-    /// most <c>liveProb &lt; 1</c>. Also the reachability proof for the two guards in
-    /// <c>ConditionalWinProb</c> — both denominators are joints over subsets of a ticket that placed,
-    /// so neither can be zero, and the sweep confirms it on the shipped board.
+    /// only lower a joint, so <c>P(L ∧ U | S) ≤ P(L | S)</c>. Also the reachability proof for the two
+    /// guards in <c>ConditionalWinProb</c> — both denominators are joints over subsets of a ticket
+    /// that placed, so neither can be zero, and the sweep confirms it on the shipped board.
+    ///
+    /// <para><b>The bound is stated in TWO branches since the certainty carve-out</b> (Allen,
+    /// 2026-08-14), because the carve-out is exactly a ruling about which bound applies. On the
+    /// re-weighted branch the ratified <c>p_win ≤ liveProb</c> still holds and is asserted as strictly
+    /// as before. On the carved-out branch it deliberately does NOT: <c>p_win</c> is the pure
+    /// conditional, which is the point — the old bound was the mechanism by which a leg that could not
+    /// lose was quoted below its worth. What survives on BOTH branches, and is the bound that actually
+    /// protects money, is <c>p_win ≤ 1</c>, i.e. the quote never exceeds the payout. It reaches the
+    /// payout exactly when every remaining leg is entailed by a settled one, and there it is not a
+    /// leak: all legs on a matchup grade off ONE sampled <c>MatchStatLine</c>, so an entailed leg
+    /// cannot then grade Lost, and settlement would have paid the same payout anyway.</para>
     /// </summary>
     [Fact]
     public void Gate2_the_conditional_is_bounded_by_the_live_number_and_never_divides_by_zero()
     {
-        long checks = 0;
+        long checks = 0, reWeighted = 0, carvedOut = 0, atTheFullPayout = 0;
         double maxRatio = 0.0, minDenominator = double.MaxValue;
 
         for (int seed = 0; seed < 40; seed++)
@@ -648,20 +683,42 @@ public class SameMatchCashOutTests
                     double pSettledLive = SameMatchModel.JointProbabilityOf(settledLive);
                     Assert.True(pSettled > 0.0, "p_joint(S) reached zero on a sold ticket");
                     Assert.True(pSettledLive > 0.0, "p_joint(S ∪ L) reached zero on a sold ticket");
-                    minDenominator = Math.Min(minDenominator, pSettledLive / pSettled);
+                    double condLive = pSettledLive / pSettled;
+                    minDenominator = Math.Min(minDenominator, condLive);
 
                     double pWin = q.Fair / ticket.PotentialPayout;
-                    Assert.True(pWin <= q.LiveProb + 1e-12, $"p_win {pWin:R} exceeded liveProb {q.LiveProb:R}");
-                    Assert.True(q.Fair < ticket.PotentialPayout);
-                    maxRatio = Math.Max(maxRatio, pWin / q.LiveProb);
+
+                    // The bound that holds on both branches, and the one that protects money.
+                    Assert.True(pWin <= 1.0 + 1e-12, $"p_win {pWin:R} exceeded 1");
+                    Assert.True(q.Fair <= ticket.PotentialPayout,
+                        $"a quote of {q.Fair:R} exceeded the payout {ticket.PotentialPayout:R}");
+                    if (q.Fair == ticket.PotentialPayout) atTheFullPayout++;
+
+                    if (condLive < 1.0 - CertaintySlack)
+                    {
+                        // The ratified branch: unchanged, and asserted exactly as it was.
+                        Assert.True(pWin <= q.LiveProb + 1e-12,
+                            $"p_win {pWin:R} exceeded liveProb {q.LiveProb:R}");
+                        maxRatio = Math.Max(maxRatio, pWin / q.LiveProb);
+                        reWeighted++;
+                    }
+                    else
+                    {
+                        // The carved-out branch: p_win is the pure conditional, bounded by P(L|S).
+                        Assert.True(pWin <= condLive + 1e-12,
+                            $"p_win {pWin:R} exceeded P(L|S) {condLive:R} on a certainty");
+                        carvedOut++;
+                    }
                     checks++;
                 }
             }
         }
 
-        _output.WriteLine($"Gate 2 bound: {checks} quotes; max p_win/liveProb {maxRatio:F12}; "
-            + $"smallest P(L|S) seen {minDenominator:R}.");
+        _output.WriteLine($"Gate 2 bound: {checks} quotes ({reWeighted} re-weighted, {carvedOut} "
+            + $"carved out as certainties, {atTheFullPayout} at the full payout); max p_win/liveProb "
+            + $"on the re-weighted branch {maxRatio:F12}; smallest P(L|S) seen {minDenominator:R}.");
         Assert.True(checks >= 500);
+        Assert.True(reWeighted >= 500, $"only {reWeighted} quotes took the re-weighted branch");
         Assert.True(maxRatio <= 1.0 + 1e-12);
     }
 
@@ -679,7 +736,7 @@ public class SameMatchCashOutTests
     [Fact]
     public void Gate3_the_free_bet_refund_uses_the_conditional_not_the_product()
     {
-        long tickets = 0, quotes = 0;
+        long tickets = 0, quotes = 0, certainties = 0;
         double worstAgainstOldRule = 0.0;
 
         for (int seed = 0; seed < 40; seed++)
@@ -719,7 +776,15 @@ public class SameMatchCashOutTests
 
                     // The engine's own gap between the two quotes IS the refund it applied.
                     Assert.Equal(refund, b[q].Fair - a[q].Fair, 9);
-                    Assert.True(refund > 0.0, "a refund term went negative");
+
+                    // NEVER NEGATIVE — that was the original worry, and it still holds. Since the
+                    // certainty carve-out (Allen, 2026-08-14) the refund CAN be exactly zero: when
+                    // every remaining leg is entailed by a settled one, p_win is 1 and a refund that
+                    // fires only on a loss is worth nothing, because the ticket cannot lose. Counted
+                    // rather than excluded, so the state is visible in the log.
+                    Assert.True(refund >= 0.0, $"a refund term went negative: {refund:R}");
+                    if (pWin >= 1.0 - CertaintySlack) certainties++;
+                    else Assert.True(refund > 0.0, $"a live ticket's refund was worthless: {refund:R}");
 
                     // ...and it is NOT the superseded product rule.
                     double oldPAll = OldProductWinProb(freeTicket, b[q].CurrentLeg, b[q].LiveProb);
@@ -731,8 +796,10 @@ public class SameMatchCashOutTests
             }
         }
 
-        _output.WriteLine($"Gate 3: {quotes} Free Bet quotes over {tickets} SAME MATCH tickets; "
-            + $"largest divergence from the old product refund {worstAgainstOldRule:P2} of stake.");
+        _output.WriteLine($"Gate 3: {quotes} Free Bet quotes over {tickets} SAME MATCH tickets "
+            + $"({certainties} of them on a ticket that had become a certainty, where the refund is "
+            + $"correctly worth zero); largest divergence from the old product refund "
+            + $"{worstAgainstOldRule:P2} of stake.");
         Assert.True(tickets >= 40, $"only {tickets} Free Bet tickets");
         Assert.True(worstAgainstOldRule > 0.01,
             $"the conditional refund never diverged from the product one by more than {worstAgainstOldRule:P4}");
@@ -995,9 +1062,13 @@ public class SameMatchCashOutTests
                             if (quotes == 0 && seed == 0) firstOffer = q.Offer;
                             quotes++;
 
-                            // THE DEGENERACY QUESTION, asserted rather than merely tabulated.
-                            Assert.True(q.Offer < ticket.PotentialPayout,
-                                $"κ={kappa} margin={margin}: a quote of {q.Offer:R} reached the "
+                            // THE DEGENERACY QUESTION, asserted rather than merely tabulated. The
+                            // payout is a ceiling, not a strict one: since the certainty carve-out a
+                            // ticket whose remaining legs are all entailed quotes exactly its payout,
+                            // and at margin 0 the offer is the fair value. Above it would be a leak;
+                            // at it is the ticket's own worth (see Gate 2's bound note).
+                            Assert.True(q.Offer <= ticket.PotentialPayout,
+                                $"κ={kappa} margin={margin}: a quote of {q.Offer:R} exceeded the "
                                 + $"payout {ticket.PotentialPayout:R}");
                             Assert.True(q.Offer > 0.0 && !double.IsNaN(q.Offer)
                                 && !double.IsInfinity(q.Offer),
@@ -1028,5 +1099,201 @@ public class SameMatchCashOutTests
             _output.WriteLine(string.Format(CultureInfo.InvariantCulture,
                 "{0,5:F2} | {1,12} | {2:F12}", kappa, soldAt[kappa],
                 offerAtKappa[kappa] * kappa / baseline));
+    }
+
+    // =======================================================================================
+    // EXIT GATE 6 — THE CERTAINTY CARVE-OUT (Allen, 2026-08-14).
+    // =======================================================================================
+
+    /// <summary>An ENTAILMENT ticket, built so the carve-out is reached by construction rather than
+    /// hunted for: OVER gHi settles first and entails the live OVER gLo (the same nested pair the
+    /// probe's <c>Implies</c> shape uses), with a cross-family corners leg left PENDING so the pure
+    /// conditional is a real number below 1 and the assertion is not trivially satisfied by a
+    /// last-leg ticket quoting its whole payout.</summary>
+    private static void PlaceEntailment(Run run, int matchupIndex)
+    {
+        RunConfig cfg = run.Config;
+        double gLo = cfg.GoalLines[0], gHi = cfg.GoalLines[^1], cLo = cfg.CornerLines[0];
+        var picks = new List<Pick>
+        {
+            new Pick(matchupIndex, MarketSelection.TotalGoals(gHi, true)),
+            new Pick(matchupIndex, MarketSelection.TotalGoals(gLo, true)),
+            new Pick(matchupIndex, MarketSelection.TotalCorners(cLo, true)),
+        };
+        if (run.RefusalFor(picks) != null) return;
+        run.PlaceTicket(picks, 10);
+    }
+
+    /// <summary>The rule WITHOUT the carve-out — what the quote would have been before the ruling.
+    /// Kept as its own transcription so the two tests below assert against different numbers.</summary>
+    private static double ReWeightedFair(Ticket ticket, int currentLeg, double liveProb)
+    {
+        double condAll = PureConditional(ticket, currentLeg);
+        double pWin = condAll * (liveProb / LiveConditional(ticket, currentLeg));
+        double fair = ticket.PotentialPayout * pWin;
+        if (ticket.Modifier == TicketModifier.FreeBet && !ticket.Refunded)
+            fair += (1.0 - pWin) * ticket.Stake;
+        return fair;
+    }
+
+    /// <summary>
+    /// A CERTAINTY NEVER QUOTES BELOW ITS WORTH (Allen, 2026-08-14). When the settled legs entail the
+    /// leg in progress, <c>P(L | S)</c> is 1 while <c>liveProb</c> is the board's unconditional
+    /// marginal and is not — so the ratified re-weight would scale the quote DOWN on a leg that
+    /// cannot lose. The ruling drops the re-weight there: the quote is the pure conditional
+    /// <c>payout × P(L ∧ U | S)</c>.
+    ///
+    /// <para>Asserted on a REAL implication pair driven through the real sweat, and asserted three
+    /// ways at once: the entailment is a precondition checked rather than assumed
+    /// (<c>P(L | S) ≥ 1 − 1e-12</c>); the quote equals the pure conditional to the BIT; and it is
+    /// strictly ABOVE what the re-weight would have produced, so the test would fail if the carve-out
+    /// were removed rather than merely tolerate it.</para>
+    /// </summary>
+    [Fact]
+    public void Gate6_a_settled_leg_that_entails_the_live_one_quotes_the_pure_conditional()
+    {
+        int tickets = 0, reachedTheCarveOut = 0, exactComparisons = 0;
+        double smallestLive = 1.0, largestGap = 0.0;
+
+        for (int seed = 0; seed < 400; seed++)
+        {
+            var run = new Run($"sgp-cashout-entail-{seed}", SweepConfig());
+            PlaceEntailment(run, seed % run.CurrentSlate.Matchups.Count);
+            if (run.Tickets.Count == 0) continue;
+            run.LockRound();
+
+            Ticket ticket = run.Tickets[0];
+            Assert.NotNull(ticket.SameMatch); // the population's precondition
+            tickets++;
+
+            SweatSession session = run.Sweats[0];
+            int currentLeg = 0;
+            double liveProb = ticket.Legs[0].TrueProb;
+
+            while (true)
+            {
+                // Only leg 1 is the entailed one: at leg 0 nothing has settled, and at leg 2 the
+                // live leg is the independent corners leg, whose conditional is nowhere near 1.
+                if (currentLeg == 1 && session.CashOutFair() is { } fair)
+                {
+                    double condLive = LiveConditional(ticket, currentLeg);
+                    Assert.True(condLive >= 1.0 - CertaintySlack,
+                        $"seed {seed}: OVER {ticket.Legs[0].Selection.Line} was supposed to entail "
+                        + $"OVER {ticket.Legs[1].Selection.Line}, but P(L|S) = {condLive:R}");
+
+                    double expected = ticket.PotentialPayout * PureConditional(ticket, currentLeg);
+                    Assert.True(expected == fair,
+                        $"seed {seed} leg {currentLeg}: the certainty quoted {fair:R}, not the pure "
+                        + $"conditional {expected:R}");
+                    exactComparisons++;
+
+                    // …and the carve-out is LOAD-BEARING: the ratified re-weight would have been
+                    // strictly cheaper, which is the whole reason Allen ruled on it.
+                    double scaled = ReWeightedFair(ticket, currentLeg, liveProb);
+                    if (liveProb < 1.0 - 1e-9)
+                    {
+                        Assert.True(fair > scaled,
+                            $"seed {seed}: the re-weight would not have moved the quote "
+                            + $"({fair:R} vs {scaled:R}) — this population no longer tests anything");
+                        reachedTheCarveOut++;
+                        smallestLive = Math.Min(smallestLive, liveProb);
+                        largestGap = Math.Max(largestGap, (fair - scaled) / fair);
+                    }
+                }
+
+                if (!session.MoveNext(out DramaEvent? e)) break;
+                liveProb = e!.WinProbAfter;
+                if (e.Type != DramaEventType.LegFinal) continue;
+                if (session.RevealedLegState(e.LegIndex) != LegState.Won) break;
+                currentLeg++;
+                if (session.IsComplete) break;
+                liveProb = ticket.Legs[currentLeg].TrueProb;
+            }
+        }
+
+        _output.WriteLine($"Gate 6: {tickets} entailment tickets sold; {exactComparisons} quotes taken "
+            + $"on the entailed leg, {reachedTheCarveOut} of them with a live number strictly below 1 "
+            + $"(smallest {smallestLive:F6}); the re-weight would have cut the quote by up to "
+            + $"{largestGap * 100:F2}%.");
+
+        Assert.True(tickets >= 50, $"only {tickets} entailment tickets sold");
+        Assert.True(reachedTheCarveOut >= 50,
+            $"only {reachedTheCarveOut} quotes actually exercised the carve-out");
+        Assert.True(largestGap > 0.05,
+            $"the carve-out only moved the quote by {largestGap * 100:F4}% at most — too small to "
+            + "distinguish it from float noise");
+    }
+
+    /// <summary>
+    /// THE CARVE-OUT CANNOT WIDEN. A leg that is merely near-certain ON SCREEN — <c>liveProb</c>
+    /// walked up near 1 by the drama — is not an entailment: its <c>P(L | S)</c> is the evaluator's
+    /// conditional marginal and is nowhere near 1, so the ratified re-weight must still apply in
+    /// full. Swept over the same SAME MATCH population Gate 2 uses, asserting with <c>==</c> against
+    /// the UN-carved rule at every quote whose <c>P(L | S)</c> sits below the threshold, and
+    /// requiring that a meaningful number of those quotes had a near-certain live number — otherwise
+    /// the sweep would pass without ever having posed the question.
+    /// </summary>
+    [Fact]
+    public void Gate6_a_near_certain_live_number_is_not_a_certainty_and_still_re_weights()
+    {
+        long reWeighted = 0, nearCertainOnScreen = 0;
+        double highestLive = 0.0, highestCondLiveBelowThreshold = 0.0;
+
+        for (int seed = 0; seed < 90; seed++)
+        {
+            var run = new Run($"sgp-cashout-nearcertain-{seed}", SweepConfig());
+            PlaceSameMatch(run, seed, shapes: 6);
+            if (run.Tickets.Count == 0) continue;
+            run.LockRound();
+
+            for (int i = 0; i < run.Sweats.Count; i++)
+            {
+                Ticket ticket = run.Tickets[i];
+                if (ticket.SameMatch == null) continue;
+
+                SweatSession session = run.Sweats[i];
+                int currentLeg = 0;
+                double liveProb = ticket.Legs[0].TrueProb;
+
+                while (true)
+                {
+                    if (session.CashOutFair() is { } fair)
+                    {
+                        double condLive = LiveConditional(ticket, currentLeg);
+                        if (condLive < 1.0 - CertaintySlack)
+                        {
+                            Assert.True(ReWeightedFair(ticket, currentLeg, liveProb) == fair,
+                                $"seed {seed} ticket {i} leg {currentLeg}: P(L|S) = {condLive:R} is "
+                                + "not a certainty, but the quote dropped the re-weight");
+                            reWeighted++;
+                            highestCondLiveBelowThreshold =
+                                Math.Max(highestCondLiveBelowThreshold, condLive);
+                            if (liveProb >= 0.9)
+                            {
+                                nearCertainOnScreen++;
+                                highestLive = Math.Max(highestLive, liveProb);
+                            }
+                        }
+                    }
+
+                    if (!session.MoveNext(out DramaEvent? e)) break;
+                    liveProb = e!.WinProbAfter;
+                    if (e.Type != DramaEventType.LegFinal) continue;
+                    if (session.RevealedLegState(e.LegIndex) != LegState.Won) break;
+                    currentLeg++;
+                    if (session.IsComplete) break;
+                    liveProb = ticket.Legs[currentLeg].TrueProb;
+                }
+            }
+        }
+
+        _output.WriteLine($"Gate 6 (widening): {reWeighted} quotes re-weighted with P(L|S) < 1 "
+            + $"(highest such P(L|S) {highestCondLiveBelowThreshold:R}); {nearCertainOnScreen} of them "
+            + $"with a near-certain live number ≥ 0.9 (highest {highestLive:F9}).");
+
+        Assert.True(reWeighted >= 1000, $"only {reWeighted} re-weighted quotes swept");
+        Assert.True(nearCertainOnScreen >= 20,
+            $"only {nearCertainOnScreen} quotes had a near-certain live number — the sweep never "
+            + "posed the question the carve-out could widen into");
     }
 }
