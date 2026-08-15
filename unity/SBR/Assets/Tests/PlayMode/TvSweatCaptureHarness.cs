@@ -660,6 +660,114 @@ namespace SBR.Tests.PlayMode
         /// ending looks; its assertions are plumbing only, as everywhere else in this file.</para></summary>
         [Explicit("T87-am evidence capture: the goalless draw to full time, both tickets. Run by filter only.")]
         [Timeout(1500000)]
+        /// <summary>T99 (batch 79) — THE STATS PANEL OVER A NON-LEVEL SCOREBUG.
+        ///
+        /// <para><b>The one binding condition is a refusal to shoot at 0–0</b>: a stats panel over a
+        /// goalless scorebug proves nothing, because the covered scorebug is carrying no information
+        /// and so no reading of it can fail. This waits for a REVEALED non-level score with at least
+        /// one goal and <b>fails loudly rather than shooting the wrong thing</b> — the shape the
+        /// goalless set used when it asserted its 0–0 at lock.</para>
+        ///
+        /// <para><b>Three bursts, because check 4 is a COMPARISON, not a state.</b> "On close the
+        /// scorebug returns with its values unchanged" cannot be read off a single set: it needs the
+        /// band before, the panel over it, and the band after. The closed bursts bracket the open
+        /// one, so the frames answer it without a second instrument — and the harness asserts the
+        /// same equality, so a drift that the eye might forgive still fails the run.</para>
+        ///
+        /// <para><b>Frame-contiguous (interval 0) is the control.</b> `Time.captureDeltaTime` ties
+        /// SIM time to RENDERED frames, so a burst spaced in realtime advances the match by however
+        /// many frames the host happened to render — which produced four passing captures of the
+        /// wrong beat in this lane. It also matters more than usual here: the panel's whole claim is
+        /// that time is STOPPED, and a set that let the match move between frames would be arguing
+        /// against itself.</para></summary>
+        // [Explicit] is on the CLASS — every capture entry point here is filter-only already, and a
+        // second one on the method is a compile error rather than emphasis.
+        [UnityTest]
+        public IEnumerator Capture_StatsPanel_OverANonLevelScorebug()
+        {
+            _seed = "STATS-1";
+            s_sceneIndex = 0;
+            Directory.CreateDirectory(OutputDir);
+
+            TheaterStage.PresentationSeedOverride = StableSeed(_seed);
+            Time.captureDeltaTime = 1f / 50f;
+
+            yield return LoadRoom();
+
+            var director = Object.FindAnyObjectByType<RunDirector>();
+            var screen = Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing - run SBR.GrayboxRoomBuilder.Build first.");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+
+            Camera cam = Camera.main;
+            Assert.IsNotNull(cam, "MainCamera (PlayerCamera) missing - cannot capture without it");
+
+            screen.TimeScaleOverride = 1f;   // ship pacing
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntilOrFail(() => director.Run != null,
+                Time.realtimeSinceStartup + 10f, "director never started a run");
+
+            director.StartNewRun(_seed);
+            Run run = director.Run;
+            Assert.AreEqual(Phase.Betting, run.Phase, "a fresh run opens in Betting");
+
+            (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run);
+            run.PlaceTicket(picks, stake);
+            director.LockRound();
+            Assert.AreEqual(Phase.Sweat, run.Phase);
+
+            couch.OnInteract(null);
+            yield return WaitUntilOrFail(() => SitSpot.Active != null,
+                Time.realtimeSinceStartup + 15f, "player never sat down");
+
+            // THE BINDING CONDITION. Not "a goal happened" - a NON-LEVEL REVEALED score, which is the
+            // fact the covered band would be carrying.
+            yield return WaitUntilOrFail(
+                () => screen.DebugRevealedPicked != screen.DebugRevealedOpponent
+                      && screen.DebugRevealedPicked + screen.DebugRevealedOpponent > 0,
+                Time.realtimeSinceStartup + 300f,
+                "the sweat never revealed a NON-LEVEL scoreline with at least one goal. T99 forbids "
+                + "shooting this at 0-0, so this is a RE-SEED, never a reason to shoot anyway.");
+
+            int pickedAtOpen = screen.DebugRevealedPicked;
+            int oppAtOpen = screen.DebugRevealedOpponent;
+            Debug.Log($"[TvSweatCaptureHarness] T99 condition met: revealed {pickedAtOpen}-{oppAtOpen} "
+                + $"score='{screen.RevealedView.ScoreText}' clock='{screen.RevealedView.ClockText}'");
+            Assert.IsFalse(screen.DebugStatsPanelOpen, "precondition: the panel starts closed");
+
+            yield return CaptureBurst(screen, cam, "statspanel-closed-before", 20, 0f);
+
+            screen.ForceStatsPanel(true);
+            yield return null;
+            Assert.IsTrue(screen.DebugStatsPanelOpen, "the panel did not open - nothing below is the shot");
+            string clockAtOpen = screen.RevealedView.ClockText;
+            yield return CaptureBurst(screen, cam, "statspanel-open", 30, 0f);
+
+            // THE CLOCK, ASSERTED ACROSS THE OPEN BURST - and this assertion exists because the first
+            // run of this capture FAILED it silently. The panel froze the score and the minute ticked
+            // 18' -> 21' behind it: the clock advanced on Time.deltaTime while the freeze authority
+            // said stop. A covered fact that CAN move is LOST, so the set would have claimed a freeze
+            // its own per-frame log disproved. The frames caught what the pin could not, because a
+            // channel that never reads the authority is invisible to a pin on the authority.
+            Assert.AreEqual(clockAtOpen, screen.RevealedView.ClockText,
+                "T99: the match clock must not advance behind the panel. If this fires, a channel has "
+                + "stopped reading SeatedDeltaTime - find it by grepping the quantity, not by memory.");
+
+            screen.ForceStatsPanel(false);
+            yield return null;
+            yield return CaptureBurst(screen, cam, "statspanel-closed-after", 20, 0f);
+
+            // CHECK 4, asserted as well as photographed. The frames are what the DD reads; this is
+            // what stops a drift the eye would forgive from riding out in a passing capture.
+            Assert.AreEqual(pickedAtOpen, screen.DebugRevealedPicked,
+                "T99 check 4: the freeze - the revealed score must be unchanged across the overlay");
+            Assert.AreEqual(oppAtOpen, screen.DebugRevealedOpponent,
+                "T99 check 4: the freeze - the revealed score must be unchanged across the overlay");
+        }
+
         [UnityTest]
         public IEnumerator Capture_GoallessDraw_BothTicketsToFullTime()
         {

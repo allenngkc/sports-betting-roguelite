@@ -907,6 +907,168 @@ namespace SBR.Tests.PlayMode
             method.Invoke(screen, null);
         }
 
+        // ---- PRD §8.8 — the stats panel's three contracts, pinned.
+        //
+        // The suites already prove the panel causes no REGRESSION. These prove the panel's own
+        // promises, which is a different claim: an unasserted pin is a comment (C34.1).
+
+        private TvSweatScreen _statsScreen;
+
+        /// <summary>Seats the player into a live sweat and opens the panel, asserting the
+        /// precondition on the way. The panel mirrors whichever leg the scorebug is showing, so
+        /// until a beat has rendered it has no leg and every assertion downstream would pass by
+        /// measuring nothing — S51's shape, and exactly how this lane's first press pin went green
+        /// while the key was never down.</summary>
+        private IEnumerator OpenStatsPanelOnALiveLeg()
+        {
+            yield return LoadRoom();
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+            var screen = UnityEngine.Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = UnityEngine.Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+
+            screen.TimeScaleOverride = 0.0001f;
+            couch.transitionDuration = 0.01f;
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+
+            Run run = director.Run;
+            (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run);
+            run.PlaceTicket(picks, stake);
+            director.LockRound();
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+
+            // Seated AND running is the state the freeze pin needs to be able to observe a change.
+            yield return WaitUntil(() => screen.DebugSeatedDeltaTime > 0f, 20f,
+                "the screen never became seated-and-running");
+            for (int i = 0; i < 30; i++) yield return null; // let the first beat render a scorebug
+
+            screen.ForceStatsPanel(true);
+            Assert.IsNotNull(screen.DebugStatsRow(0),
+                "the panel rendered no rows — it never had a leg, so nothing below is proven");
+            _statsScreen = screen;
+        }
+
+        /// <summary>TIME STOPS (Allen, 2026-08-15). Asserted at the SINGLE AUTHORITY rather than on
+        /// one of its consequences: every channel §8.8 enumerates — cursor, scene step, ball, actors,
+        /// clock, probability, cash-out animation and OFFER, callout, resolution, transition and the
+        /// pending-window timer — reads this one expression, so pinning it pins all of them. A pin on
+        /// the cash-out tween alone would leave the other ten unasserted.</summary>
+        [UnityTest]
+        public IEnumerator Stats_panel_opening_stops_time_at_its_single_authority()
+        {
+            yield return OpenStatsPanelOnALiveLeg();
+            TvSweatScreen screen = _statsScreen;
+
+            screen.ForceStatsPanel(false);
+            yield return null;
+            Assert.Greater(screen.DebugSeatedDeltaTime, 0f,
+                "PRECONDITION: seated with the panel CLOSED, the clock must be running — without "
+                + "this the assertion below passes on a surface that was already frozen");
+
+            screen.ForceStatsPanel(true);
+            yield return null;
+            Assert.AreEqual(0f, screen.DebugSeatedDeltaTime, 1e-6f,
+                "TIME STOPS: opening the panel freezes SeatedDeltaTime, including the cash-out "
+                + "OFFER — which is why the panel cannot be used to buy thinking time on a money "
+                + "decision. The contradicting PRD clause was struck for this ruling.");
+        }
+
+        /// <summary>THE COLLISION IS ALLOWED, so the overlay carries the cost (Allen, 2026-08-15):
+        /// the panel may open during a pending-intervention window, and the pending decision is
+        /// never out of sight.</summary>
+        [UnityTest]
+        public IEnumerator Stats_panel_never_covers_the_intervention_overlay()
+        {
+            yield return OpenStatsPanelOnALiveLeg();
+            TvSweatScreen screen = _statsScreen;
+
+            var prompt = screen.DebugInterventionPrompt;
+            Transform panel = screen.DebugStatsPanel;
+            Assert.IsNotNull(prompt, "no InterventionPrompt element");
+            Assert.IsNotNull(panel, "no StatsPanel element");
+            Assert.AreSame(panel.parent, prompt.transform.parent,
+                "a sibling index only orders SIBLINGS. If these ever stop sharing a parent this pin "
+                + "is measuring nothing and must be re-derived, never deleted");
+
+            // WHAT IS SHOWN IS THE PRECONDITION (§0-GC): the raise keys on the prompt being ENABLED,
+            // so the test puts the RENDERED state in place rather than the engine state behind it.
+            prompt.enabled = true;
+            screen.ForceStatsPanel(false);
+            screen.ForceStatsPanel(true);
+            yield return null;
+
+            Assert.Greater(prompt.transform.GetSiblingIndex(), panel.GetSiblingIndex(),
+                "the intervention overlay must stay ON TOP of the panel — the collision is permitted "
+                + "precisely because the decision he is being asked to make stays visible");
+        }
+
+        /// <summary>THE EVENT STRIP IS NOT COVERED, and the DD's question (batch 79) is answered by
+        /// GEOMETRY rather than by inspection.
+        ///
+        /// <para>The concern is exact and it is the right one: a timed statement that FIRES and then
+        /// HOLDS behind an opaque panel was never ruled, because <b>a held statement is not static
+        /// even when the clock is</b> — the freeze argument that defers the scorebug does not reach
+        /// it. It does not arise here. The panel spans <c>y 0 → bottomY</c>; the whole BOTTOM ROW
+        /// begins at <c>bottomY</c> — <c>CashOut</c> on the left, <c>EventStrip</c> on the right —
+        /// so the panel stops exactly where the strip starts.</para>
+        ///
+        /// <para>Asserted rather than argued, and asserted as NON-OVERLAP rather than as a pair of
+        /// remembered constants, so a grid change that moved either one into the other fails here
+        /// instead of on a frame.</para></summary>
+        [UnityTest]
+        public IEnumerator Stats_panel_covers_neither_the_event_strip_nor_the_cash_out_row()
+        {
+            yield return OpenStatsPanelOnALiveLeg();
+            TvSweatScreen screen = _statsScreen;
+
+            var panel = screen.DebugStatsPanel as RectTransform;
+            var strip = FindChildComponent<RectTransform>(screen, "EventStripZone");
+            Assert.IsNotNull(panel, "no StatsPanel element");
+            Assert.IsNotNull(strip, "no EventStripZone element — re-point this pin, never delete it");
+
+            // Top-left anchored, y running DOWN the canvas: a zone occupies [-y, -y + height].
+            float panelTop = -panel.anchoredPosition.y;
+            float panelBottom = panelTop + panel.rect.height;
+            float stripTop = -strip.anchoredPosition.y;
+
+            Assert.LessOrEqual(panelBottom, stripTop + 0.01f,
+                $"the panel (bottom {panelBottom}) must stop at or above the event strip (top "
+                + $"{stripTop}). A statement that fires and then HOLDS behind an opaque panel is not "
+                + "deferred by the freeze the way a static fact is — that is the one case the "
+                + "scorebug's own argument does not cover.");
+        }
+
+        /// <summary>THE UNREVEALED MARK. §8.8: a stat not causally revealed is absent or shown as the
+        /// mark, NEVER as its true final value — "a leak here is a blocker, not a polish item". The
+        /// row still prints, so the gap is VISIBLE rather than hidden (Allen, 2026-08-15).</summary>
+        [UnityTest]
+        public IEnumerator Stats_panel_marks_corners_and_cards_unrevealed_off_a_count_leg()
+        {
+            yield return OpenStatsPanelOnALiveLeg();
+            TvSweatScreen screen = _statsScreen;
+            string mark = screen.DebugStatsUnrevealedMark;
+
+            // DemoTicketPolicy picks MONEYLINE only, so no count ledger exists on this leg and
+            // neither count has been revealed at all.
+            Assert.AreEqual($"CORNERS|{mark}|{mark}", screen.DebugStatsRow(1),
+                "corners are unrevealed off a corners leg, and the row still prints");
+            Assert.AreEqual($"CARDS|{mark}|{mark}", screen.DebugStatsRow(2),
+                "cards are unrevealed off a cards leg, and the row still prints");
+
+            // NON-VACUITY: a build that marked EVERY row would satisfy both assertions above. The
+            // goals row IS revealed and must carry figures, or this test proves only that the panel
+            // says nothing.
+            string goals = screen.DebugStatsRow(0);
+            StringAssert.StartsWith("GOALS|", goals);
+            StringAssert.DoesNotContain(mark, goals,
+                "the GOALS row is revealed-ledger data and must never carry the unrevealed mark — "
+                + "if it does, the panel is marking everything and the two assertions above are "
+                + "passing on silence");
+        }
+
         private static T FindChildComponent<T>(TvSweatScreen screen, string childName) where T : Component
         {
             foreach (T c in screen.GetComponentsInChildren<T>(true))

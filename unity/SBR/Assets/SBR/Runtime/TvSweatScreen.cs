@@ -456,6 +456,31 @@ namespace SBR.Game
         /// <summary>Test/debug hook: force the seated state (simulates sitting / looking away) without the
         /// couch. Normal play drives this through SitSpot.SeatedChanged.</summary>
         public void ForceSeated(bool seated) => SetSeated(seated);
+        /// <summary>Test/debug hooks for §8.8's stats panel, in the shape this surface already uses
+        /// for <see cref="ForceSeated"/> and <see cref="DebugCashOutAnimating"/>. The panel's
+        /// contract is a freeze, a z-order and an unrevealed mark, and none of the three is
+        /// observable from outside the sweat without these.
+        ///
+        /// <para><see cref="DebugSeatedDeltaTime"/> exposes the freeze at its SINGLE AUTHORITY rather
+        /// than sampling one of its consequences: every frozen channel §8.8 lists reads this one
+        /// expression, so asserting it is asserting all of them, and a pin on (say) the cash-out
+        /// tween alone would leave the other ten unasserted.</para></summary>
+        public void ForceStatsPanel(bool open) => SetStatsPanel(open);
+        public bool DebugStatsPanelOpen => _statsOpen;
+        public float DebugSeatedDeltaTime => SeatedDeltaTime;
+        public Transform DebugStatsPanel => _statsPanel;
+        public TMP_Text DebugInterventionPrompt => _tInterventionPrompt;
+        public string DebugStatsRow(int i)
+            => _tStatsLabel == null || i < 0 || i >= _tStatsLabel.Length
+                ? null
+                : $"{_tStatsLabel[i].text}|{_tStatsA[i].text}|{_tStatsB[i].text}";
+        public string DebugStatsUnrevealedMark => StatsUnrevealed;
+        /// <summary>The REVEALED goals, for the capture harness's one binding condition (T99): the
+        /// panel must not be shot over a 0–0, because a covered scorebug carrying no information
+        /// cannot fail any reading of it. Read from the revealed ledger, never the locked StatLine —
+        /// the harness must wait for a fact the player can actually see.</summary>
+        public int DebugRevealedPicked => _ledger != null ? _ledger.Picked : 0;
+        public int DebugRevealedOpponent => _ledger != null ? _ledger.Opponent : 0;
         /// <summary>Test/debug hook (TVS-H01 regression): true while the cash-out amount is mid-tween
         /// (AnimateCashOut running). Reads _cashOutTweening, not _cashOutAnimation directly — the
         /// Coroutine handle isn't assigned until StartCoroutine returns, one instant after the
@@ -991,6 +1016,30 @@ namespace SBR.Game
         // between a flagged consequence and the kind of corpse `_wonFlood` became.
         private TMP_Text _tMatchup, _tLeg, _tClock, _tFlavor, _tCashOut, _tChrome, _tAttract, _tBigAmount, _tConsolation;
         private TMP_Text _tTicketHeader, _tRiskPays, _tInterventionPrompt, _tTakeoverTitle, _tTakeoverSub, _tSubtitle;
+
+        /// <summary>PRD §8.8's match stats panel — the ONE new mid-sweat verb §3 authorises.
+        /// <see cref="SeatedDeltaTime"/> reads <c>_statsOpen</c>, which is what stops time.</summary>
+        private bool _statsOpen;
+        private RectTransform _statsPanel;
+        private TMP_Text _tStatsTitle;
+        private TMP_Text[] _tStatsLabel, _tStatsA, _tStatsB;
+
+        /// <summary>Three rows ship (Allen, 2026-08-15). Formation and player stats are NOT stubbed —
+        /// the engine has neither, and a placeholder would promise a row that is not coming.</summary>
+        private const int StatsRowSlots = 3;
+
+        /// <summary>THE UNREVEALED MARK. §8.8: a stat that has not been causally revealed is absent
+        /// or shown as this, NEVER as its true final value — "a leak here is a blocker, not a polish
+        /// item". It is what corners and cards read off a count leg, and that gap is deliberately
+        /// VISIBLE rather than hidden (Allen, 2026-08-15).</summary>
+        private const string StatsUnrevealed = "—";
+
+        /// <summary>UNRATIFIED — this seat's pick, flagged exactly as T88 flagged `ENTER`. It is
+        /// bound to nothing on this surface or in the room's asset, and it is the genre's own
+        /// scoreboard key. §8.8 requires only that it neither swallows nor is swallowed by the
+        /// cash-out or stand controls (TVS-H01's shape); a distinct key satisfies that by
+        /// construction, and the pin asserts it rather than trusting it.</summary>
+        private const string StatsKeyWord = "TAB";
         /// <summary>T74-am5: the footer's right-anchored half. `_tRiskPays` keeps its name and carries
         /// RISK; this carries PAYS. Two elements, one row, no authored gap between them.</summary>
         private TMP_Text _tPays;
@@ -1904,7 +1953,18 @@ namespace SBR.Game
             if (!_clockTicking || _stage == null) return;
             if (!_seated || !_stage.ScenePlaying || _stage.SuspendedAtShot) return;
             int before = Mathf.FloorToInt(_clockShownMin);
-            _clockShownMin = Mathf.Min(_clockTargetMin, _clockShownMin + _clockRate * Time.deltaTime);
+            // THE CLOCK READS THE FREEZE AUTHORITY, not a second predicate that means the same thing
+            // today. It used `Time.deltaTime`, and the `!_seated` guard above is what actually froze
+            // it on stand-up — two expressions of one rule, agreeing by convention. So when §8.8's
+            // panel added a THIRD freeze condition, the clock did not get it: the capture shot the
+            // panel over a frozen scoreline with the MINUTE TICKING 18' -> 21' behind it, which is
+            // precisely the "covered fact that CAN move is lost" case T99's licence does not reach.
+            //
+            // Found on frames, not by reading: the pin asserted SeatedDeltaTime, and SeatedDeltaTime
+            // was correct — a channel that never read it is invisible to a pin on it. T95's rule,
+            // earned again: when a ruling adds a condition, every mirror of it moves too, and the
+            // mirrors are found by grepping for the quantity rather than by remembering.
+            _clockShownMin = Mathf.Min(_clockTargetMin, _clockShownMin + _clockRate * SeatedDeltaTime);
             if (_clockShownMin >= _clockTargetMin) _clockTicking = false;
             if (Mathf.FloorToInt(_clockShownMin) != before) RenderClockMinute();
         }
@@ -2007,6 +2067,11 @@ namespace SBR.Game
             _tInterventionPrompt.enabled = true;
             _tInterventionPrompt.color = new Color(gold.r, gold.g, gold.b, 1f);
             _tInterventionPrompt.text = offers;
+            // The window can OPEN while the panel is already up, not only the other way round, so the
+            // z-order is re-asserted from BOTH directions. Raising only on panel-open would put the
+            // prompt behind it on exactly the path where the player is being asked to decide — and
+            // "the pending decision is never out of sight" is the ruling, not the happy path.
+            RaiseStatsChrome();
 
             // Which spending option is being previewed: "M", "R", or null. NEVER "N" — T88(c) rules
             // the decline out of the gesture entirely.
@@ -2291,11 +2356,20 @@ namespace SBR.Game
         {
             UpdateScorebug(leg);
             UpdateTicketColumn(_liveLegIndexShown);
+            // T62'S RULE, AND THE STATS PANEL IS ITS THIRD MIRROR. One ledger advance, every mirror
+            // of it repainted in the same call — T62 existed because the column and the scorebug read
+            // the same revealed value on two different repaint schedules and disagreed for a whole
+            // beat. A panel that can be open across a goal is exactly that defect's next host.
+            RenderStatsPanel();
         }
 
         private void UpdateScorebug(Leg leg)
         {
             if (_tMatchup == null) return;
+            // The panel mirrors whatever leg the SCOREBUG is showing, so the two can never name
+            // different fixtures. Captured here rather than in a second place for the same reason
+            // T62 gave: one authority, or the mirrors drift.
+            _statsLeg = leg;
             // T42/T32.1: the scorebug fetched both team RGBs here and, since the hue came off the
             // names, used neither. A live handle to a hue in the one zone canon forbids it in is how
             // the violation returns — retired with the rule, not left "harmless".
@@ -3610,10 +3684,131 @@ namespace SBR.Game
         /// through this gate (or through _seatedClock for Time.time reads) instead of Unity's clock
         /// directly, so one flag freezes all of them and sitting back down resumes with no catch-up.
         /// </summary>
-        private float SeatedDeltaTime => _seated ? Time.deltaTime : 0f;
+        /// <summary>§4.4's freeze, and PRD §8.8's — ONE expression, so the stats panel inherits the
+        /// whole freeze contract instead of re-implementing any of it.
+        ///
+        /// <para><b>TIME STOPS (Allen, 2026-08-15).</b> §8.8 enumerates what must hold while the
+        /// panel is open — event cursor, scene step, ball, actors, clock, probability animation,
+        /// <b>cash-out animation AND OFFER</b>, callout lifetime, resolution effect, transition and
+        /// the pending-window timer. Standing already freezes every one of them and TVS-H02 pins it,
+        /// so the panel is <b>one added term here</b> rather than a second freeze that would have to
+        /// be kept in step with the first. The contradicting clause — "while the panel is open the
+        /// cash-out offer keeps moving" — was STRUCK from the PRD in the same pass: the panel cannot
+        /// be used to buy thinking time on a money decision, because the offer is frozen too.</para>
+        ///
+        /// <para>Two freezes agreeing by convention is the defect T95 caught one surface over. This
+        /// is the same remedy: one authority, so they cannot disagree.</para></summary>
+        /// <para><b>T99's STANDING CONDITION (batch 79) — AND THIS IS THE LINE IT GOVERNS.</b> The
+        /// stats panel is permitted to cover the SCOREBUG band <b>for as long as time is frozen while
+        /// it is open</b>. A covered fact that cannot move is deferred; a covered fact that CAN move
+        /// is lost. <b>If the match is ever allowed to run behind this panel, the scorebug must
+        /// survive the overlay.</b></para>
+        ///
+        /// <para>The DD wrote it as a standing condition rather than a one-time approval because the
+        /// danger is a later change that looks unrelated — <i>"let the match play while he reads the
+        /// stats"</i> is a plausible improvement that would silently void the ruling. <b>Deleting
+        /// <c>!_statsOpen</c> from this expression IS that change.</b> It is written here because
+        /// here is where it would be made.</para>
+        ///
+        /// <para>And the licence is the freeze ALONE. The panel's GOALS row is not the justification:
+        /// a statistic is not a result — the scorebug's score is the match's standing, where a GOALS
+        /// row is one measure among its siblings. Arguing from the row would make the panel a
+        /// REPLACEMENT for the scorebug, and a replacement owes the score in its own form, the clock,
+        /// and T38's single-frame change. The panel does none of that and is not asked to. Nothing is
+        /// lost because the match is not moving, not because the score is printed twice.</para></summary>
+        private float SeatedDeltaTime => _seated && !_statsOpen ? Time.deltaTime : 0f;
+
+        private Leg _statsLeg;
+
+        /// <summary>§8.8's open/close. Opening renders first and raises the chrome after, so the
+        /// panel never appears for a frame carrying the previous leg's numbers.</summary>
+        private void SetStatsPanel(bool open)
+        {
+            if (_statsPanel == null || _statsOpen == open) return;
+            _statsOpen = open;
+            _statsPanel.gameObject.SetActive(open);
+            if (!open) return;
+            RenderStatsPanel();
+            RaiseStatsChrome();
+        }
+
+        /// <summary>THE COLLISION RULING, BUILT RATHER THAN ARRANGED (Allen, 2026-08-15): the panel
+        /// may open during a pending-intervention window, and the intervention overlay stays on top
+        /// with the pending decision never out of sight.
+        ///
+        /// <para>Done by explicit sibling order at the moment of showing, NOT by relying on the order
+        /// the two happen to be built in. Build order is a convention, and two elements agreeing by
+        /// convention is the defect T95 caught — there, a ruling moved one box and its mirror was
+        /// never re-derived. Here the panel is raised above the column and the stage, and then the
+        /// prompt is raised above the panel, every time either is shown.</para></summary>
+        private void RaiseStatsChrome()
+        {
+            if (!_statsOpen || _statsPanel == null) return;
+            _statsPanel.SetAsLastSibling();
+            if (_tInterventionPrompt != null && _tInterventionPrompt.enabled)
+                _tInterventionPrompt.transform.SetAsLastSibling();
+        }
+
+        /// <summary>§8.8's three shipped rows, all REVEALED-LEDGER values.
+        ///
+        /// <para><b>The leak this panel exists to avoid is one property away.</b> `CountLedger`
+        /// exposes `TargetHome`/`TargetAway`/`TargetTotal` — the LOCKED endpoint, the match's true
+        /// final count — right beside `Home`/`Away`, the revealed running totals. This reads
+        /// `Home`/`Away` and must never read the other three: §8.8 calls a leak here a blocker, not a
+        /// polish item, and the two pairs are one character apart at the call site.</para>
+        ///
+        /// <para><b>Why corners and cards are usually the unrevealed mark.</b> `_countLedger` is null
+        /// unless the LIVE LEG is a TotalCorners or TotalCards leg, and when it exists it is
+        /// configured for exactly ONE of them — so on a moneyline, BTTS or scorer leg neither count
+        /// has been revealed at all. The row still prints, carrying <see cref="StatsUnrevealed"/>:
+        /// the gap is deliberately VISIBLE rather than hidden (Allen, 2026-08-15), and the ruled row
+        /// grammar keeps.</para></summary>
+        private void RenderStatsPanel()
+        {
+            if (!_statsOpen || _statsPanel == null || _statsLeg == null) return;
+
+            Matchup m = _statsLeg.Matchup;
+            _tStatsTitle.text = "MATCH STATS";
+            _tStatsTeamA.text = SweatFlavor.Short(m.Home.Name);
+            _tStatsTeamB.text = SweatFlavor.Short(m.Away.Name);
+
+            // The score ledger counts PICKED/OPPONENT; the count ledger counts HOME/AWAY. The panel
+            // is about the MATCH, so home/away is the honest axis and the goals are mapped onto it
+            // through the anchor both surfaces already share.
+            bool pickedHome = SweatFlavor.PickedHomeForPresentation(_statsLeg);
+            int goalsHome = pickedHome ? _ledger.Picked : _ledger.Opponent;
+            int goalsAway = pickedHome ? _ledger.Opponent : _ledger.Picked;
+            SetStatsRow(0, "GOALS", goalsHome.ToString(), goalsAway.ToString());
+
+            MarketKind kind = _statsLeg.Selection.Kind;
+            bool corners = _countLedger != null && kind == MarketKind.TotalCorners;
+            bool cards = _countLedger != null && kind == MarketKind.TotalCards;
+            SetStatsRow(1, "CORNERS",
+                corners ? _countLedger.Home.ToString() : StatsUnrevealed,
+                corners ? _countLedger.Away.ToString() : StatsUnrevealed);
+            SetStatsRow(2, "CARDS",
+                cards ? _countLedger.Home.ToString() : StatsUnrevealed,
+                cards ? _countLedger.Away.ToString() : StatsUnrevealed);
+        }
+
+        private void SetStatsRow(int i, string label, string a, string b)
+        {
+            if (_tStatsLabel == null || i >= _tStatsLabel.Length) return;
+            _tStatsLabel[i].text = label;
+            _tStatsA[i].text = a;
+            _tStatsB[i].text = b;
+        }
 
         private void Update()
         {
+            // §8.8's verb, and the ONLY new mid-sweat verb §3 authorises. Its own key, so it can
+            // neither swallow nor be swallowed by the cash-out or stand controls — TVS-H01's shape,
+            // satisfied by construction rather than by a guard. Seated only: a panel opened from the
+            // couch is the only place this verb exists.
+            Keyboard statsKeys = Keyboard.current;
+            if (_seated && statsKeys != null && statsKeys.tabKey.wasPressedThisFrame)
+                SetStatsPanel(!_statsOpen);
+
             _seatedClock += SeatedDeltaTime; // TVS-H02: frozen substitute for Time.time while standing
 
             RefreshChrome();
@@ -4040,6 +4235,7 @@ namespace SBR.Game
 
             BuildHairlines(root, grid);
             BuildTicketColumn(root, grid);
+            BuildStatsPanel(root, grid);
             BuildScoreBug(root, grid);
             BuildEventStrip(root, grid);
             BuildCashOutZone(root, grid);
@@ -4187,6 +4383,73 @@ namespace SBR.Game
             "RiskPays",         // C8: joins the protected set — now the RISK half (see BuildTicketColumn)
             "Pays",             // T74-am5: the right-anchored half, same class, same protection
         };
+
+        private TMP_Text _tStatsTeamA, _tStatsTeamB;
+
+        /// <summary>PRD §8.8's match stats panel — built once, hidden, and shown by
+        /// <see cref="SetStatsPanel"/>. §6 forbids geometry derived from content, so every rect here
+        /// is fixed and read from the grid.
+        ///
+        /// <para><b>THE RECT IS WHY §8.8's HARD PROHIBITION CANNOT BE BREACHED.</b> The panel spans
+        /// the ticket column and the stage, from the column's HEAD (y = 0 — that is what "opens from
+        /// the head of the ticket column" means) down to <c>bottomY</c>. `CashOut` is
+        /// <c>Rect(0, bottomY, ticketW, BottomRowHeight)</c>: it BEGINS exactly where this ENDS. So
+        /// *"the panel may not obscure the cash-out state"* holds <b>by construction, not by
+        /// care</b> — and because both rects are read from the same <see cref="LayoutGrid"/>, a
+        /// future grid change moves them together instead of silently bringing them into
+        /// contact.</para>
+        ///
+        /// <para><b>It does cover the SCOREBUG band</b>, which DESIGN's "over the ticket column and
+        /// stage" does not name — the two zones cannot be spanned by one rect without it. Flagged
+        /// rather than decided: time is frozen and the panel's own GOALS row carries the score, so
+        /// nothing is lost, but whether the scorebug should survive the overlay is the DD's.</para>
+        ///
+        /// <para>The ground is <see cref="screenBg"/> at full alpha. The token is the surface's own
+        /// ground and is unchanged in hue; only its 0.86 alpha is dropped, because a stats panel that
+        /// lets the frozen pitch through is not readable. No new colour is introduced.</para></summary>
+        private void BuildStatsPanel(Transform root, LayoutGrid grid)
+        {
+            var area = new Rect(0f, 0f, grid.Stage.xMax, grid.TicketColumn.height);
+            _statsPanel = MakePanel(root, "StatsPanel", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                AnchorTopLeft(area), new Vector2(area.width, area.height),
+                new Color(screenBg.r, screenBg.g, screenBg.b, 1f)).rectTransform;
+
+            const float pad = 32f;
+            const float labelW = 300f, valueW = 150f;
+            float colA = area.width * 0.46f, colB = area.width * 0.68f;
+
+            _tStatsTitle = MakeText(_statsPanel, "StatsTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(pad, -pad), new Vector2(labelW, 34f), TypeProgress,
+                TextAnchor.UpperLeft, flavorColor, tracking: TvTrack.Label);
+
+            // The two team columns carry the hues, which is DESIGN's "per-team rows use team hues"
+            // expressed on the axis this composition actually has. T2's muted pair, unchanged.
+            _tStatsTeamA = MakeText(_statsPanel, "StatsTeamA", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(colA, -pad), new Vector2(valueW, 34f), TypeEyebrow,
+                TextAnchor.UpperLeft, teamHueA, tracking: TvTrack.Label);
+            _tStatsTeamB = MakeText(_statsPanel, "StatsTeamB", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(colB, -pad), new Vector2(valueW, 34f), TypeEyebrow,
+                TextAnchor.UpperLeft, teamHueB, tracking: TvTrack.Label);
+
+            _tStatsLabel = new TMP_Text[StatsRowSlots];
+            _tStatsA = new TMP_Text[StatsRowSlots];
+            _tStatsB = new TMP_Text[StatsRowSlots];
+            for (int i = 0; i < StatsRowSlots; i++)
+            {
+                float y = -(pad + 56f + i * 46f);
+                _tStatsLabel[i] = MakeText(_statsPanel, $"StatsLabel{i}", new Vector2(0f, 1f),
+                    new Vector2(0f, 1f), new Vector2(pad, y), new Vector2(labelW, 34f), TypeEyebrow,
+                    TextAnchor.UpperLeft, flavorColor, tracking: TvTrack.Label);
+                _tStatsA[i] = MakeText(_statsPanel, $"StatsA{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(colA, y), new Vector2(valueW, 34f), TypeProgress,
+                    TextAnchor.UpperLeft, flavorColor);
+                _tStatsB[i] = MakeText(_statsPanel, $"StatsB{i}", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                    new Vector2(colB, y), new Vector2(valueW, 34f), TypeProgress,
+                    TextAnchor.UpperLeft, flavorColor);
+            }
+
+            _statsPanel.gameObject.SetActive(false);
+        }
 
         private void BuildTicketColumn(Transform root, LayoutGrid grid)
         {

@@ -1337,6 +1337,95 @@ namespace SBR.Tests.PlayMode
             Assert.Greater(refused, 0, "the sweep found no refusals — the board changed shape");
         }
 
+        /// <summary>C46 / S74-am2 — THE DRAW PRICE CELL'S WIDTHS. Reported as WIDTHS, never as a
+        /// verdict: this seat asserts no fit, exactly as S74's own closing line requires.
+        ///
+        /// <para>S74-am2 named the obligation precisely and it is narrow because the cell was sized
+        /// against a sibling: the 112px came from `AWAY` + two spaces + a four-character price, and
+        /// `DRAW  {odds}` is the same shape, face, size, tracking and separator. So there are exactly
+        /// two questions — <b>(1)</b> does the WORD `DRAW` measure wider than `AWAY`/`HOME`, and
+        /// <b>(2)</b> does the draw's odds population produce a longer numeral than the moneyline
+        /// population does.</para>
+        ///
+        /// <para><b>The font is borrowed from the PRICE CELL ITSELF</b>, not from a node that merely
+        /// looks similar. `TMP_Text.font` names the PRIMARY asset and not the arm that renders — a
+        /// slot built at another weight draws through a different asset while `font.name` still reads
+        /// the first. Measuring the wrong arm is how a sweep certifies a box against a face it never
+        /// draws with.</para>
+        ///
+        /// <para><b>Scope (C25), stated rather than implied.</b> `MeasureWidth` sees ADVANCES only —
+        /// no kerning pairs, no ligatures, no font features — which is the surface's own definition
+        /// of measured width and the one its truncation already behaves by. And the odds population
+        /// is a SAMPLE over generated slates, not an enumeration: `DrawOdds` is deterministic per
+        /// seed (`SlateGenerator.cs:91`), but the seed space is not enumerable, so the widest numeral
+        /// below is the widest OBSERVED and the coverage is printed beside it.</para></summary>
+        [UnityTest, Order(21), Explicit("Evidence for the DD: C46 widths for the board's DRAW price "
+            + "cell. Sweeps the generated odds population; run by filter only.")]
+        public IEnumerator Evidence_C46_the_draw_price_cell_against_its_112px_box()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+
+            TMP_Text priceCell = Required(Required(App(laptop), "Matchup0"), "AwayOdds")
+                .GetComponentInChildren<TMP_Text>();
+            TMP_FontAsset font = priceCell.font;
+            const int size = 19;
+            const float track = LaptopTrack.Names;
+            const float cell = 112f;
+            UnityEngine.Debug.Log($"[C46] face={font.name} size={size} track={track} cell={cell}px "
+                + "(font borrowed from the rendered AwayOdds cell, not from a lookalike node)");
+
+            // ---- QUESTION 1: the WORD, all three siblings, same face and tracking.
+            foreach (string word in new[] { "AWAY", "HOME", "DRAW" })
+                UnityEngine.Debug.Log($"[C46-WORD] {word} | "
+                    + $"{LaptopUi.MeasureWidth(font, word, size, track):F2}px");
+
+            // ---- QUESTION 2: the odds POPULATION, swept off generated slates.
+            const int seedCount = 400;
+            var widestLabel = new Dictionary<string, string> { ["AWAY"] = "", ["HOME"] = "", ["DRAW"] = "" };
+            var widestPx = new Dictionary<string, float> { ["AWAY"] = 0f, ["HOME"] = 0f, ["DRAW"] = 0f };
+            int matchupsSwept = 0;
+
+            void Consider(string word, double odds)
+            {
+                string label = $"{word}  {OddsFormat.American(odds)}";
+                float w = LaptopUi.MeasureWidth(font, label, size, track);
+                if (w <= widestPx[word]) return;
+                widestPx[word] = w;
+                widestLabel[word] = label;
+            }
+
+            for (int s = 0; s < seedCount; s++)
+            {
+                var probe = new Run($"C46-{s}");
+                foreach (Matchup m in probe.CurrentSlate.Matchups)
+                {
+                    matchupsSwept++;
+                    Consider("AWAY", m.AwayOdds);
+                    Consider("HOME", m.HomeOdds);
+                    Consider("DRAW", m.DrawOdds);
+                }
+            }
+
+            UnityEngine.Debug.Log($"[C46-POP] coverage: {seedCount} seeds x "
+                + $"{matchupsSwept / (float)seedCount:F0} matchups = {matchupsSwept} matchups, "
+                + $"{matchupsSwept * 3} labels measured");
+            foreach (string word in new[] { "AWAY", "HOME", "DRAW" })
+                UnityEngine.Debug.Log($"[C46-POP] widest {word} | \"{widestLabel[word]}\" | "
+                    + $"{widestPx[word]:F2}px | clearance {cell - widestPx[word]:F2}px");
+
+            // The comparison the ruling asks for, stated as arithmetic and not as a fit claim: the
+            // draw's clearance beside the smaller of the two siblings it shares the cell with.
+            float siblingFloor = Mathf.Min(cell - widestPx["AWAY"], cell - widestPx["HOME"]);
+            UnityEngine.Debug.Log($"[C46-RESULT] draw clearance {cell - widestPx["DRAW"]:F2}px vs "
+                + $"sibling floor {siblingFloor:F2}px | delta "
+                + $"{(cell - widestPx["DRAW"]) - siblingFloor:F2}px");
+
+            // A precondition, not a verdict: a sweep that measured nothing must not read as clearance.
+            Assert.Greater(matchupsSwept, 0, "the population sweep measured no matchups");
+            Assert.Greater(widestPx["DRAW"], 0f, "no DRAW label was measured — DrawOdds never priced");
+        }
+
         /// <summary>A `SameMatchPrice` carrying one nominated relation, so the approved sentences can
         /// be measured without hunting the board for a slip that happens to emit each one.</summary>
         private static SameMatchPrice MakePricing(RelationKind kind, RelationSign sign,
