@@ -8,7 +8,16 @@ leg's odds after pricing; they are not something the board emits.
 
 > **4.2058** (decimal) — the longest draw price the engine can put on the board.
 
-Its opposite end, for the shape of the thing: **3.3527**. That is the whole range.
+And the opposite corner, which the same sweep already held:
+
+> **3.3527** (decimal) — the shortest draw price the engine can put on the board.
+
+That is the whole range, both ends measured, no second run.
+
+**The two ends differ in kind, and it matters for how each should be read.** 4.2058 sits at the
+*high* end of `goalTempo`, which `NextDouble()` being `[0, 1)` means the box approaches but never
+reaches — so it is a **supremum**. 3.3527 sits at the *low* end of `goalTempo` and the *interior* of
+`p`, both reachable — so it is a price the board can **actually print**.
 
 ## Method
 
