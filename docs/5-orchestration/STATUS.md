@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 270.** TV's strip slot +
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 271 (heartbeat).** All
+four seats mid-work (TV handoff, DD acceptance read, su P4/P5, sgp
+cash-out suite). Quiet is healthy.
+
+*(prior stamp, cycle 270:)* TV's strip slot +
 DRAW row BUILT, shot and docked (suites 254/95 green, tree clean) - merge
 follows its handoff commit; DD applying the acceptance list to the docked
 frames (state-corrected: already shot) + the stamp-sizing docket; su's
