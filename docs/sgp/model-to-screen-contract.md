@@ -64,6 +64,16 @@ set. The stamp copy has to read naturally for one leg *and* for several.
 **Trap 2 — remove high index to low.** Removing an earlier leg first shifts the indices of the later
 ones.
 
+**The stamp copy is CONJUNCTIVE — DD ruling, batches 66–67.** Both halves state the whole set as one
+instruction. A remedy must read *drop all of these*, never *drop any of these*: a menu-shaped remedy
+fails when followed, because dropping one element of a three-leg remedy leaves the slip refused. And
+the cause is **N-valued** — "cannot both land" is wrong, since three legs can be jointly impossible
+with every pair among them fine. The sentence is *these cannot all win*.
+
+The engine's own composed text already conforms — its leg lists join with "and", never "or", and the
+impossible cause reads "These legs cannot all win". Verified 2026-08-14; no disjunctive phrasing
+exists in any refusal-facing string.
+
 Every one of those 645 remedies placed successfully after being spent, so a spent remedy is a
 guarantee, not a suggestion.
 
