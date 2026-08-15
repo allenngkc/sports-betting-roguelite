@@ -258,6 +258,53 @@ It also had to be handled inside the gate. The banned-connective check runs agai
 leg names **masked out**; checking the raw string would go red on whichever boot put a double chance
 in a remedy, and would read as a copy violation rather than the flake it is.
 
+#### P3 is HELD (Allen, 2026-08-14) — `SportsbookApp.StampComposedRefusal`, default OFF
+
+Correct copy that overflows should not ship while sizing is with the DD. **The hold costs nothing
+reachable:** a refusal only fires on a matchup with 2+ legs, and `Toggle` still REPLACES — the
+additive gesture is a design decision nobody has made — so no player can build a same-match slip
+through this surface. The held path is reachable only via the model's `AddLeg`, i.e. from tests.
+
+**The P3 gate turns it ON deliberately** so the composition stays exercised rather than rotting into
+dead code behind a false constant, and **asserts the default is OFF** so releasing it is a decision
+rather than a drift. Cleared in a fixture `TearDown`, not at the end of the test that sets it — a
+mid-body failure would otherwise release it for everything after.
+
+### P4 — THE HOUSE'S LINE. BUILT and green (`7d06881`)
+
+Where two picks are priced as related, the house marks the connection **in its own ink** (§3.1, S73)
+— he picks in biro, the house marks in Stamp — drawn in the margin's left gutter, between the sheet
+divider and the check column.
+
+**DRAWN, NOT CAPTIONED**, and that negative is the gate's load-bearing half: it sweeps every text
+node in the margin and fails if `HOUSE'S LINE` or `SGP` appears anywhere. §3.1: the name is what the
+thing is *called*, never a tag on every occurrence.
+
+**Spine plus a spur per member row.** The spurs are not ornament — slip order is insertion order, so
+a connected pair can straddle a leg on a different match, and a bare spanning stroke would mark a row
+it has nothing to do with.
+
+Also gated: **one leg on each of two matchups draws NO mark.** A mark where there is no connection
+teaches the opposite of the rule it exists to teach ("unmarked legs multiply; marked legs pay less").
+
+**Geometry is a CANDIDATE, not canon.** §3.1 rules the ink, the connection and the absence of a
+caption — implemented. Stroke weight and spur length want frames, as the VOID rub-out does.
+
+The margin invariant still holds with the marks in the flow: they sit in the leg-row band, well above
+the payout, so the deepest element is unchanged.
+
+### P5 — the statement. NEXT, and what it needs
+
+`SameMatchPricing.principal` is the nominated relation; **do not pick from the list** — choosing which
+relation moved the price is a pricing claim only the model can make. The kinds that can reach a
+placed slip are `Implies`, `SharedScoreline(sign)`, `SharedCount(family, sign)` and
+`ScorerOfSide(side)` — `Independent` is never principal and `MutuallyExclusive` is a refusal.
+
+So P5 needs **four authored sentences**, one per kind, in toner, once per slip, stating what the legs
+*share* — never a formula, never a coefficient, never an English string from the engine. Canon gives
+the constraints but not the sentences. **Lengthening is not remarked**, and the implication case is
+*stated, not blocked*.
+
 ### Ruling (3) — remedy copy. The canon P3 was built to
 
 Recorded here so it is not re-derived. From S73-am5 (canon `c467df3`):
