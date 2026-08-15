@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 280.** CORRECTION + two
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 281.** FAST-MODE TRIAL
+(Allen-approved, TV seat only): BLOCKED at the toggle - /fast requires
+usage credits, currently OFF account-wide; enabling them (/usage-credits)
+is a billing switch beyond the one seat, so it goes back to Allen rather
+than being flipped here. Dialog cancelled clean; TV's DRAW-row work
+undisturbed. When credits are on, the toggle is one /fast in that
+terminal; pace-vs-burn watch starts then. All other seats stay normal.
+
+*(prior stamp, cycle 280:)* CORRECTION + two
 fires: TV's hold/T98/baseline commits actually landed only NOW (755deb8)
 - the seat works on slice/tv-sweat-refinement and my cycle-275/276
 merges hit a stale same-named tv-sweat branch (now deleted); the 26d7baf
