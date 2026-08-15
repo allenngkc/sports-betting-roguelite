@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 301.** THE ADDITIVE
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 302.** TV's panel set
+docked and merged (a8c4eb2) - and the shoot CAUGHT A REAL BUG: the clock
+was not actually frozen until this capture forced the fix (both suites
+re-run green). The DD runs its four T99 checks; batch 84's dead-click
+rule landed earlier; su shooting the MaxLegs frame. Open with Allen:
+research words + TAB ratification.
+
+*(prior stamp, cycle 301:)* THE ADDITIVE
 GESTURE IS BUILT AND MERGED (6fd3944) - a second pick sticks, the
 replace promise is off, suites 107/255 green: a player can now build a
 same-game ticket on screen END TO END. The scroll capture docked with it
