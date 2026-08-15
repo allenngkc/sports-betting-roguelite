@@ -22,4 +22,21 @@
     <ProjectReference Include="..\engine\SBR.Engine.csproj" />
   </ItemGroup>
 
+  <!--
+    BETSLIPMODEL BY SOURCE INCLUDE (F_0.6.0 step 5).
+
+    The file says of itself that it is "pure C#, no Unity", and it is: its only usings are System*
+    and SBR.Engine. So it compiles here, and the slip's model half — leg-addressed construction, the
+    engine ticket price, the structured refusal — is verified headlessly with `dotnet test` instead
+    of on trust. Unity's EditMode runner needs an editor lease this lane does not hold; the whole
+    point of keeping the model Unity-free was that it would not need one.
+
+    Nothing about how Unity compiles the file changes: it stays in its own assembly, owned there, and
+    is merely read a second time from here. It must therefore stay free of UnityEngine references —
+    if that ever stops being true, this line stops building and says so.
+  -->
+  <ItemGroup>
+    <Compile Include="..\unity\SBR\Assets\SBR\Runtime\BetslipModel.cs" />
+  </ItemGroup>
+
 </Project>
