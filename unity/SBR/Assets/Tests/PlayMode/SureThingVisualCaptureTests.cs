@@ -388,6 +388,76 @@ namespace SBR.Tests.PlayMode
             }
         }
 
+        /// <summary>THE BOARD AT THE CAP, under the additive gesture (DD batch 84).
+        ///
+        /// <para><b>The state the dead-click treatment has to be authored against.</b> Before the
+        /// gesture this could not arise: a second pick on a match REPLACED the first, so the slip
+        /// could always take the click. Now a pick STICKS, `MaxLegs` binds, and every unmarked offer
+        /// on the board is a click that does nothing — silently.</para>
+        ///
+        /// <para>The frame is the whole point, so the capture ASSERTS THE DEAD CLICK rather than
+        /// assuming it: it fills to the cap, clicks an unmarked offer, and proves the slip did not
+        /// move. A frame of a board that could still take a pick would be authored against the wrong
+        /// state.</para>
+        ///
+        /// <para>Two things the ruled general rule says this frame is NOT allowed to be read as
+        /// already solving: a refusal knowable before the act must show BEFORE it, and S2 bars
+        /// reusing the board-frozen dim to say it. Neither is built here — this seat authors no
+        /// treatment.</para></summary>
+        [UnityTest]
+        public IEnumerator Capture_the_board_at_the_leg_cap_where_every_further_pick_is_a_dead_click()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            yield return PinRun(laptop, SeedMaxLegs);
+            Run run = laptop.director.Run;
+            int maxLegs = run.Config.MaxLegs;
+
+            for (int i = 0; i < maxLegs; i++)
+            {
+                Invoke(Required(Required(App(laptop), "Matchup" + i), "AwayOdds"));
+                yield return WaitForRebuild();
+            }
+            Assert.AreEqual(maxLegs, laptop.Slip.Picks.Count, "the board must be at the cap");
+
+            // THE DEAD CLICK, PROVEN. A fifth matchup's price is picked and the slip does not move —
+            // no leg, no refusal, no stamp, nothing. That silence is what the treatment is for.
+            Assert.Greater(run.CurrentSlate.Matchups.Count, maxLegs,
+                "this frame needs an unpicked matchup left on the board to click");
+            Invoke(Required(Required(App(laptop), "Matchup" + maxLegs), "AwayOdds"));
+            yield return WaitForRebuild();
+            Assert.AreEqual(maxLegs, laptop.Slip.Picks.Count,
+                "the click past the cap must do nothing — if it added a leg, MaxLegs is not binding "
+                + "and this capture is of a state that does not exist");
+            Assert.IsFalse(laptop.Slip.Contains(maxLegs, MarketSelection.Moneyline(Side.Away)),
+                "and it must not have landed on the slip by another route");
+
+            // A SECOND pick on an already-marked match is dead for the same reason at the cap, and
+            // that one is new to the gesture: before it, this click replaced rather than added.
+            Invoke(Required(Required(App(laptop), "Matchup0"), "HomeOdds"));
+            yield return WaitForRebuild();
+            Assert.AreEqual(maxLegs, laptop.Slip.Picks.Count,
+                "a second market on a marked match is dead at the cap too");
+            Assert.IsTrue(laptop.Slip.Contains(0, MarketSelection.Moneyline(Side.Away)),
+                "and the pick already there is untouched by the refused click");
+
+            string outputDirectory = Path.GetFullPath(Path.Combine(
+                Application.dataPath, "..", "..", "..", "artifacts", "surething-ui"));
+            Directory.CreateDirectory(outputDirectory);
+            string runPrefix = DateTime.UtcNow.ToString(
+                "yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture);
+            var capturedPaths = new List<string>();
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "18-board-at-the-leg-cap", capturedPaths);
+
+            Assert.AreEqual(2, capturedPaths.Count, "one state must emit paired captures");
+            foreach (string path in capturedPaths)
+            {
+                Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
+                Assert.Greater(new FileInfo(path).Length, 0L, $"capture is empty: {path}");
+            }
+        }
+
         /// <summary>S83's scroll, on the state that ACTUALLY SCROLLS (DD batch 81).
         ///
         /// <para><b>Four legs plus a held consumable.</b> A non-scrolling capture proves nothing
