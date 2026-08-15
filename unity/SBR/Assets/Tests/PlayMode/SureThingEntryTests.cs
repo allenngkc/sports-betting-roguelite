@@ -635,6 +635,154 @@ namespace SBR.Tests.PlayMode
                 $"the stamp was ellipsised: \"{stamp}\". A truncated remedy is an unverified remedy");
         }
 
+        /// <summary>EVIDENCE, not verification — the DD's two measurements for the S77 forms, run by
+        /// filter only so it does not lengthen routine suites (the TvSweatCaptureHarness pattern).
+        ///
+        /// <para>Emits (1) every authored form against the PLACE control's own 296 × 44 box, at both
+        /// the shipped 13px and the 17px S77's analysis quoted, and (2) the ARITY DISTRIBUTION of
+        /// real refusals swept off the live board — which is what says which forms actually fire
+        /// rather than merely exist.</para></summary>
+        [UnityTest, Order(20), Explicit("Evidence for the DD: S77 form widths + refusal arity "
+            + "distribution. Sweeps the board and is slow; run by filter only.")]
+        public IEnumerator Evidence_S77_form_widths_and_refusal_arity_distribution()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            Run run = laptop.director.Run;
+            BetslipModel slip = laptop.Slip;
+
+            // A rendered stamp node, purely to borrow the production font asset.
+            slip.Clear();
+            slip.AddLeg(0, MarketSelection.Moneyline(Side.Away));
+            yield return WaitForRebuild();
+            var probeText = Required(Required(Required(App(laptop), "WorkingMargin"), "Place"), "Label")
+                .GetComponent<TMP_Text>();
+            TMP_FontAsset font = probeText.font;
+
+            // ---- (1) THE FORMS, against the CONTROL's box rather than the reason node's.
+            const float controlWidth = 296f;   // PLACE control, S77's own frame of reference
+            UnityEngine.Debug.Log("[S77-FORMS] form | 13px | 17px | vs 296px control");
+            var seen = new HashSet<string>();
+            foreach (RefusalKind kind in Enum.GetValues(typeof(RefusalKind)))
+                for (int causeArity = 2; causeArity <= run.Config.MaxLegs; causeArity++)
+                    for (int remedyArity = 0; remedyArity < run.Config.MaxLegs; remedyArity++)
+                    {
+                        var probe = new TicketRefusal(kind, Enumerable.Range(0, causeArity).ToArray(),
+                            Enumerable.Range(0, remedyArity).ToArray(), null, 0.0);
+                        foreach (string line in new[]
+                                 { SportsbookApp.RefusalCause(probe), SportsbookApp.RefusalRemedy(probe) })
+                        {
+                            if (!seen.Add(line)) continue;
+                            float w13 = LaptopUi.MeasureWidth(font, line, 13, LaptopTrack.StampReason);
+                            float w17 = LaptopUi.MeasureWidth(font, line, 17, LaptopTrack.StampReason);
+                            UnityEngine.Debug.Log($"[S77-FORMS] \"{line}\" | {w13:F1} | {w17:F1} | "
+                                + $"{w13 / controlWidth:P0} / {w17 / controlWidth:P0}");
+                        }
+                    }
+
+            // ---- (2) THE ARITY DISTRIBUTION, swept off the live board.
+            // All PAIRS on every matchup, plus all TRIPLES on matchup 0. Pairs are where duplicates
+            // and two-leg impossibilities live; triples are what produce the plural remedies the
+            // copy had to be authored for. Coverage is stated rather than implied — see the summary
+            // line, which reports the combinations examined as well as the refusals found.
+            var byKind = new Dictionary<string, int>();
+            var causeArityCount = new Dictionary<int, int>();
+            var remedyArityCount = new Dictionary<int, int>();
+            int examined = 0, refused = 0;
+
+            void Record(TicketRefusal r)
+            {
+                refused++;
+                string k = r.Kind.ToString();
+                byKind[k] = byKind.TryGetValue(k, out int c) ? c + 1 : 1;
+                causeArityCount[r.CauseLegs.Count] =
+                    causeArityCount.TryGetValue(r.CauseLegs.Count, out int a) ? a + 1 : 1;
+                remedyArityCount[r.RemedyLegs.Count] =
+                    remedyArityCount.TryGetValue(r.RemedyLegs.Count, out int b) ? b + 1 : 1;
+            }
+
+            for (int m = 0; m < run.CurrentSlate.Matchups.Count; m++)
+            {
+                var offers = new List<MarketSelection>();
+                foreach (MarketOffer offer in run.CurrentSlate.Matchups[m].Markets)
+                    offers.Add(offer.Selection);
+                for (int a = 0; a < offers.Count; a++)
+                    for (int b = a; b < offers.Count; b++)   // b == a covers the DUPLICATE arm
+                    {
+                        examined++;
+                        TicketRefusal r = run.RefusalFor(new[]
+                            { new Pick(m, offers[a]), new Pick(m, offers[b]) });
+                        if (r != null) Record(r);
+                    }
+            }
+
+            var m0 = new List<MarketSelection>();
+            foreach (MarketOffer offer in run.CurrentSlate.Matchups[0].Markets) m0.Add(offer.Selection);
+            for (int a = 0; a < m0.Count; a++)
+                for (int b = a; b < m0.Count; b++)
+                    for (int c = b; c < m0.Count; c++)
+                    {
+                        examined++;
+                        TicketRefusal r = run.RefusalFor(new[]
+                            { new Pick(0, m0[a]), new Pick(0, m0[b]), new Pick(0, m0[c]) });
+                        if (r != null) Record(r);
+                    }
+
+            UnityEngine.Debug.Log($"[S77-ARITY] examined {examined} combinations "
+                + $"({run.CurrentSlate.Matchups.Count} matchups, all pairs; matchup 0, all triples) "
+                + $"-> {refused} refusals");
+            foreach (KeyValuePair<string, int> kv in byKind)
+                UnityEngine.Debug.Log($"[S77-ARITY] kind {kv.Key}: {kv.Value} "
+                    + $"({(double)kv.Value / refused:P1})");
+            foreach (int n in causeArityCount.Keys.OrderBy(x => x))
+                UnityEngine.Debug.Log($"[S77-ARITY] cause arity {n}: {causeArityCount[n]} "
+                    + $"({(double)causeArityCount[n] / refused:P1})");
+            foreach (int n in remedyArityCount.Keys.OrderBy(x => x))
+                UnityEngine.Debug.Log($"[S77-ARITY] remedy arity {n}: {remedyArityCount[n]} "
+                    + $"({(double)remedyArityCount[n] / refused:P1}) -> form: "
+                    + $"\"{SportsbookApp.RefusalRemedy(new TicketRefusal(RefusalKind.ImpossibleCombination, new[] { 0, 1 }, Enumerable.Range(0, n).ToArray(), null, 0.0))}\"");
+
+            // ---- (3) WHICH RELATIONS THE MODEL ACTUALLY EMITS AS PRINCIPAL.
+            // P5 states ONE relation per slip, composed from `principal`. A sentence for a relation
+            // the model never nominates is copy that can never render, so the four drafts are only
+            // shippable against this list. Two matchups' worth of pairs — enough to enumerate the
+            // KINDS, which is what the drafts are keyed to.
+            var principals = new Dictionary<string, int>();
+            int sameMatchSlips = 0, nullPrincipal = 0;
+            for (int m = 0; m < Mathf.Min(2, run.CurrentSlate.Matchups.Count); m++)
+            {
+                var offers = new List<MarketSelection>();
+                foreach (MarketOffer offer in run.CurrentSlate.Matchups[m].Markets)
+                    offers.Add(offer.Selection);
+                for (int a = 0; a < offers.Count; a++)
+                    for (int b = a + 1; b < offers.Count; b++)
+                    {
+                        slip.Clear();
+                        if (!slip.AddLeg(m, offers[a])) continue;
+                        if (!slip.AddLeg(m, offers[b])) continue;
+                        if (slip.Refusal != null) continue;      // refused slips never reach P5
+                        SameMatchPrice priced = slip.SameMatchPricing;
+                        if (priced == null) continue;
+                        sameMatchSlips++;
+                        if (priced.Principal == null) { nullPrincipal++; continue; }
+                        Relation p = priced.Principal.Value;
+                        string key = p.Kind.ToString()
+                            + (p.Sign != RelationSign.None ? $"/{p.Sign}" : "")
+                            + (p.Family != null ? $"/{p.Family}" : "")
+                            + (p.ScorerSide != null ? $"/{p.ScorerSide}" : "");
+                        principals[key] = principals.TryGetValue(key, out int pc) ? pc + 1 : 1;
+                    }
+            }
+            UnityEngine.Debug.Log($"[S77-PRINCIPAL] {sameMatchSlips} placeable same-match slips "
+                + $"(2 matchups, all pairs) · {nullPrincipal} with NO statable relation "
+                + $"({(sameMatchSlips == 0 ? 0 : (double)nullPrincipal / sameMatchSlips):P1})");
+            foreach (KeyValuePair<string, int> kv in principals.OrderByDescending(x => x.Value))
+                UnityEngine.Debug.Log($"[S77-PRINCIPAL] {kv.Key}: {kv.Value} "
+                    + $"({(double)kv.Value / sameMatchSlips:P1})");
+
+            Assert.Greater(refused, 0, "the sweep found no refusals — the board changed shape");
+        }
+
         /// <summary>P4 — THE HOUSE'S LINE. Where two picks share a match the house marks the
         /// connection in its OWN ink, and marks nothing where there is no connection.
         ///
