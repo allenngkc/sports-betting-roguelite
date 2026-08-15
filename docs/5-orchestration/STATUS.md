@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 263.** THE 0-0 SET IS
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 264 (heartbeat).** Three
+seats deep in work (sgp P1-P3, su pin verification in Unity, DD reading
+the 0-0 frames); TV standing by on Allen's staged word, fired.
+
+*(prior stamp, cycle 263:)* THE 0-0 SET IS
 SHOT AND DOCKED (tv-goalless-draw-2026-08-14; four defective runs
 diagnosed, their 48 frames deleted not staged - C50's shape). TV standing
 by post-handoff-update; Unity lease moved TV->surething-ui for the pin
