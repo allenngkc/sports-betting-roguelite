@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 266.** DD batches 66-67
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 267.** Batch 68 landed +
+sgp's conjunctive-remedy canon merged (fb3fb43; a bloated frame-sweep
+commit was caught local and re-cut canon-only). All four staged words
+fired: TV builds the strip slot (T97 guard + THE MATCH ENDS LEVEL) + the
+deck's DRAW row + the four-array sweep, one capture verifies; sgp scopes
+conditional cash-out as a plan; su builds the P3 stamp measured against
+the 645 refusals; DD acked. Board fully loaded, all four lanes building.
+
+*(prior stamp, cycle 266:)* DD batches 66-67
 LANDED (c467df3): the 0-0 ending READS AS A RESOLUTION - T87's ruled half
 confirmed on frames; defects T96 (MIDDLEMEN ML on both tickets, opposite
 grades) + T97 (goal-line string over 0-0 FT) rule together next with the
