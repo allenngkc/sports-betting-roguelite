@@ -72,8 +72,12 @@ namespace SBR.Tests.PlayMode
             }
         }
 
+        /// <summary>RE-AUTHORED for the additive gesture. This test used to assert that a second
+        /// market on a match REPLACED the first, and that the surface promised as much with a `⇄`
+        /// and an underline. Both are now false by ruling, so the assertions are inverted rather
+        /// than deleted: the promise must be gone, and the second pick must stick.</summary>
         [UnityTest, Order(2)]
-        public IEnumerator Entry_replacement_stays_selectable_and_wide_ink_is_deterministic_across_rebuilds()
+        public IEnumerator Entry_second_pick_on_a_match_sticks_and_wide_ink_is_deterministic_across_rebuilds()
         {
             yield return Boot();
             LaptopScreen laptop = Laptop();
@@ -83,9 +87,9 @@ namespace SBR.Tests.PlayMode
             Invoke(firstOffer.transform);
             yield return WaitForRebuild();
 
-            MarketSelection? original = laptop.Slip.SelectionOn(0);
-            Assert.IsTrue(original.HasValue, "the ENTRY offer must write through to BetslipModel");
-            Assert.AreEqual(1, laptop.Slip.Picks.Count);
+            Assert.AreEqual(1, laptop.Slip.Picks.Count,
+                "the ENTRY offer must write through to BetslipModel");
+            MarketSelection original = laptop.Slip.Picks[0].Selection;
 
             Image firstRing = WideRing(App(laptop));
             Assert.IsNotNull(firstRing.sprite, "WideBiroRing sprite missing");
@@ -101,19 +105,38 @@ namespace SBR.Tests.PlayMode
             Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTabBTTS"));
             yield return WaitForRebuild();
             Transform bttsBody = Required(App(laptop), "MarketBody");
-            Button replacement = FirstNamedButton(bttsBody, "MarketBothTeamsToScore");
-            Assert.IsTrue(replacement.interactable, "same-match replacement must remain selectable");
-            StringAssert.Contains("⇄", TextOf(replacement.transform));
-            Assert.IsNotNull(FindPrefix(bttsBody, "ReplacementUnderline"),
-                "replacement offer needs its named underline");
+            Button second = FirstNamedButton(bttsBody, "MarketBothTeamsToScore");
+            Assert.IsTrue(second.interactable, "a second market on the same match stays selectable");
 
-            Invoke(replacement.transform);
+            // THE PROMISE IS GONE. Both of these used to be asserted PRESENT here. A `⇄` and its
+            // underline told him the next pick would replace this one, and a second pick now sticks —
+            // so the affordance had to come off with the gesture, not after it.
+            StringAssert.DoesNotContain("⇄", TextOf(second.transform),
+                "the swap glyph promises a replacement that no longer happens");
+            Assert.IsNull(FindPrefix(bttsBody, "ReplacementUnderline"),
+                "the replacement underline promises the same thing and goes with it");
+
+            Invoke(second.transform);
             yield return WaitForRebuild();
-            MarketSelection? replaced = laptop.Slip.SelectionOn(0);
-            Assert.IsTrue(replaced.HasValue);
-            Assert.AreNotEqual(original.Value, replaced.Value);
-            Assert.AreEqual(1, laptop.Slip.Picks.Count,
-                "replacement must retain the one-leg-per-matchup invariant");
+            Assert.AreEqual(2, laptop.Slip.Picks.Count,
+                "THE SECOND PICK STICKS — this is the additive gesture, and it is the whole change");
+            Assert.AreEqual(2, laptop.Slip.LegCountOn(0), "both legs are on the one matchup");
+            Assert.IsTrue(laptop.Slip.Contains(0, original),
+                "the FIRST pick survives — it used to be silently replaced by this click");
+            Assert.IsTrue(laptop.Slip.IsSameMatch, "two legs on one match is a same-match slip");
+
+            // And it toggles off: clicking the same offer again takes it back off rather than
+            // stacking a duplicate, which the model would refuse as a DuplicateSelection anyway.
+            Invoke(FirstNamedButton(Required(App(laptop), "MarketBody"), "MarketBothTeamsToScore")
+                .transform);
+            yield return WaitForRebuild();
+            Assert.AreEqual(1, laptop.Slip.Picks.Count, "clicking a marked offer takes it off");
+            Assert.IsTrue(laptop.Slip.Contains(0, original), "and takes off the RIGHT one");
+
+            // Put it back, so the ink assertion below runs against the same two-leg state as before.
+            Invoke(FirstNamedButton(Required(App(laptop), "MarketBody"), "MarketBothTeamsToScore")
+                .transform);
+            yield return WaitForRebuild();
             Assert.AreEqual(variant, WideRing(App(laptop)).sprite.name,
                 "same matchup must retain its deterministic wide-ink variant");
 
