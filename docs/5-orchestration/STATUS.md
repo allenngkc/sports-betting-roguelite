@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 278.** T98 done and
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 279.** Batch 72 landed
+(7a65cc7): the DD withdrew its own mark pre-commit - the held pair
+releases with NO build; sentences stand as approved; ScorerSide report
+withdrawn. TV amends its handoff baseline (engine 260/55-inherited) as a
+third commit, then a three-commit merge. Allen's flow-cost call OPEN.
+HOLDOUT6 grinding.
+
+*(prior stamp, cycle 278:)* T98 done and
 remote-verified (d20c67f) - Allen extended the sweep to the console's
 dead-prototype twin; merge follows. su's slot measurement surfaced the
 P5 FLOW COST - +36px against a 0.10px clearance, ~30px pad overrun at
