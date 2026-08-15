@@ -661,6 +661,50 @@ product fact is deleted to make a layout fit. **Reachability holds by a mechanis
 
 **`MONEYLINE` stands as the column header.** It names the market, not the number of outcomes.
 
+#### The middle position is a MEASUREMENT, not a slot (S74-am3, 2026-08-15, read on the frame)
+
+**The draw's price cell is CENTRED IN THE SPAN ITS TWO SIBLINGS DEFINE** — `AWAY` and `HOME` are each
+pinned by their own team line and neither moves, so the span is fixed and the draw takes its middle:
+**`DrawOdds` at `−44.5f`** (or `−44f` where half-pixels are barred). **As first built it sat at `−43f`,
+and the frame measured the gap above it at 3px against 6px below — proximity grouping AWAY+DRAW
+against HOME, which is the opposite of what *attached to neither* means.**
+
+**THE TRAP, recorded because it generalises: this board's two columns run on different pitches.** The
+team lines step 38px; the price cells step 35px. **With two items each the 3px divergence is
+invisible — inserting a THIRD item is what makes two rhythms disagree on screen.** **Where a
+composition inserts into one of two parallel columns, the insertion takes ITS OWN column's rhythm,
+and the middle of a span is derived from the span, never inherited from the neighbour column.**
+
+**`MORE ›` now shares the draw's centre line** — at three lines the block's centre is a row, where at
+two it was whitespace. **Accepted rather than nudged:** `MORE` is a **column head** on the board's own
+header, so the control takes its scope from its column and not from the row it aligns with; it is
+plainly a different object (74px against 112, raised chrome, a chevron, one per block); and **an
+unexplained offset would be worse than a coincidence with a reason.** **Re-read if the block's line
+count changes again.**
+
+#### The board scrolls, by decision (S81, ALLEN 2026-08-15)
+
+**THE SCROLLING BOARD STAYS — slate holds at six, no pitch change, price face untouched.** The
+board **never truncated a matchup before the third line and now always truncates two**: six 78px
+blocks fitted the 504px list with 36px spare, so **the scroll existed for staged receipts, not for
+matchups.** **There was no geometric escape to weigh** — six blocks need an 84px pitch and three
+price cells are 96px before any pad, so six-visible is unreachable at the price face under every
+layout; the choice was a scrolling board or a shorter slate, never two layouts. **He took the
+scrolling board.**
+
+**What that accepts, recorded so it is not re-litigated as a defect: four blocks complete, one
+partial, one below the fold — and a partial block renders a market as ONE of its three offers.**
+That is the accepted cost, not an oversight. **The FORM board is no longer a board the whole slate
+fits on.**
+
+**The affordance is verified, not assumed** (S81-am). A permanent scroll makes S27's position rail
+load-bearing on every FORM frame, where before it governed staged receipts only. Measured on frame:
+**thumb 365px against a predicted 365px, track = the list area exactly, flush to scroll-top —
+proportional to the pixel.** **Sufficient on two independent channels, neither colour-dependent and
+neither built for this: the rail, and the cut block's own missing bottom rule — a card that ends
+without its rule reads as continuing.** **`MatchupsPerSlate`, `MatchupCardPitch` and the 19px price
+face are all fixed by this ruling; §8's no-shrinking-type stands.**
+
 ### Settlement language does not change (C47)
 
 **The match has three outcomes; a bet has two.** Back the draw and it draws — **he won**. Back a team
