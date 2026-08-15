@@ -51,6 +51,40 @@ namespace SBR.Tests.PlayMode
                     $"the settled ledger must never say RIDING (checked for {state})");
         }
 
+        /// <summary>S76's binding negatives (DD batch 67, approved by Allen). VOID is a third
+        /// TERMINAL STATE, not a third result — so it must not borrow DEAD's treatment in either
+        /// channel, and it must not borrow WON's either.
+        ///
+        /// <para>Asserted against predicates rather than a rendered row because a Voided ticket
+        /// cannot be constructed from this assembly; the predicates are what the row reads, so the
+        /// rule has something to fail against either way.</para></summary>
+        [Test, Order(0)]
+        public void Void_takes_neither_the_oxide_strike_nor_DEADs_ink_nor_WONs_wax()
+        {
+            Assert.IsFalse(OldSlipsApp.LedgerShowsDeadStrike(TicketState.Voided),
+                "S76: never the oxide strike. The strike is what DEAD means on this row (S15 put the "
+                + "oxide in the strike alone) and a void is not a loss");
+            Assert.IsTrue(OldSlipsApp.LedgerShowsDeadStrike(TicketState.Lost),
+                "the strike must still mark the state it belongs to, or the negative above is vacuous");
+            foreach (TicketState state in Enum.GetValues(typeof(TicketState)))
+                if (state != TicketState.Lost)
+                    Assert.IsFalse(OldSlipsApp.LedgerShowsDeadStrike(state),
+                        $"only LOST wears the strike (checked for {state})");
+
+            Assert.AreEqual(LaptopOs.TonerSecondary, OldSlipsApp.LedgerTicketStateInk(TicketState.Voided),
+                "S76: VOID is --toner-2, the weight of a fact that is neither a win nor a loss");
+            Assert.AreNotEqual(LaptopOs.Muted, OldSlipsApp.LedgerTicketStateInk(TicketState.Voided),
+                "S76: never drained to DEAD's tone — a void is a terminal state, not a losing one");
+            Assert.AreNotEqual(LaptopOs.MoneyGold, OldSlipsApp.LedgerTicketStateInk(TicketState.Voided),
+                "and never wax: wax is money the player CAME AWAY WITH, and a refund is being made "
+                + "whole rather than coming out ahead");
+
+            // The alpha channel carries the other half of "never drained to DEAD's .55" — LaptopOs.Dim
+            // is that value, and nothing on this row may hand it to a void.
+            Assert.AreEqual(1f, OldSlipsApp.LedgerTicketStateInk(TicketState.Voided).a, 0.001f,
+                "S76: a VOID is not dimmed — LaptopOs.Dim's .55 is DEAD's, and it stays DEAD's");
+        }
+
         // WHAT THIS GATE CANNOT SEE (T53): the RETURNED cell and the RETURNED total for a voided
         // ticket. Both were changed with the word — the cell prints the stake instead of S41's em
         // dash, and the total adds that stake, which it previously omitted while still counting the

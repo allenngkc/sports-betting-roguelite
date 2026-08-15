@@ -783,63 +783,69 @@ namespace SBR.Tests.PlayMode
             // between (ead9396 re-sourced it and is the last such change; af0c42c and 45cb958 are
             // comment-only and empty-state-only here). Nothing moved. The money did.
             //
-            // So the repair is not a new number. Re-sourcing to 4.748px would go green on one boot
-            // and red on the next, which is the flake this pin has actually been carrying since it
-            // was written. Both terms are now separated and each is held to what it can honestly be
-            // held to: the structural part DERIVED and pinned two-sided, the tilt bounded.
+            // So the repair was not a new number. Both terms were separated and each held to what it
+            // can honestly be held to: the structural part DERIVED and pinned two-sided, the tilt
+            // held to a clearance rather than a value.
             //
             // The reservation is not slackened and no element is excluded — the ruling forbids both,
             // because either would have gone green while a real overrun continued. The wax highlight
             // is still measured; what is no longer counted as an overrun is the part of its depth
             // that is a rotation rather than a position.
             //
-            // Still asserted as an EQUALITY so the structural pin is two-sided: it fails if the
-            // excursion grows and it fails if it shrinks. A silent improvement is not a win — it
-            // means someone moved the payout block, and they close this entry rather than quietly
-            // going green.
+            // **S51 IS CLOSED (DD batch 66, 2026-08-14), AND THE STRUCTURAL PART IS FIXED.** The DD
+            // refused all three seating options I routed and ruled the 4.00px a KIT-FIDELITY gap
+            // instead: `PayoutFigure.jsx` places the band `bottom:-2px` against a line box of
+            // `--st-size-payout` 31px x `--st-lh-fig` 1.1 = 34.1px, so the kit's band bottom sits
+            // 36.1px below the figure's top and this build had it at 40px. One cause, two symptoms —
+            // the frame read the band as a detached rule under the figure rather than the
+            // highlighter behind it. THE BAND MOVED; the payout block did not.
             //
-            // WHAT IS STILL OWED, AND NOT DECIDED HERE: the 4.00px is a real excursion past T47's
-            // reservation, now explained rather than mysterious. Whether the fix is to lift the
-            // payout block clear of the budget, to shorten the band's 34px drop, or to rule that a
-            // decorative underline is not flow content, is a DESIGN call on a design-ruled surface.
-            // Routed to the Design Director through the orchestrator; NOT self-ruled here, and no
-            // production pixel is touched by this commit.
+            // RE-SOURCED ONCE, as the ruling directs, and derived rather than measured:
             //
-            // The excursion is DERIVED, not measured, so it needs no re-sourcing when a face, a
-            // board, or a price changes:
+            //   the payout figure's box is 36.00px tall and its bottom lands exactly on the budget
+            //   (-370px). The band's bottom now sits at the kit's 36.10px below that box's top.
             //
-            //   the payout figure's box is 36px tall and its bottom lands exactly on the budget
-            //   (-370px); the wax highlight is laid 34px below that box's TOP and is 6px deep, so
-            //   the band's own bottom sits 40px below the box top — 4px past the box, and therefore
-            //   4px past the reservation.
+            //   0.10px  = 36.10 - 36.00, the kit's 2px overshoot against a 34.1px line box, laid
+            //             against a build box that is 36px rather than 34.1px.
             //
-            //   4.00px  the wax highlight band hanging below the payout figure it underlines.
-            //
-            // This holds for any payout string and any slate, which the old number did not.
-            const float structuralOverrunPx = 4.00f;
+            // The DD's "closes at zero" is that tenth of a pixel — the 3.9px the band moved against
+            // the 4.00px that was there. It is written out rather than rounded away so the next
+            // reader knows the residue is the box-height difference and not drift.
+            const float structuralOverrunPx = 0.10f;
             const float structuralTolerancePx = 0.05f;
-            // The tilt has no fixed value — it is sin(0.5°) x the band's width and the band is sized
-            // from the payout figure's MEASURED width, so it moves with the money on the screen.
-            // Bounded rather than pinned: a band wider than the 324px panel is a real defect, a band
-            // that tracks a longer price is not. 3.0px == a 344px band at the ruled 0.5°.
-            const float maxTiltPx = 3.0f;
             float overrunPx = -SportsbookApp.MarginFlowBudget - flowBottom;
             float structuralPx = -SportsbookApp.MarginFlowBudget - flowBottomUntilted;
 
-            Assert.LessOrEqual(deepestTiltPx, maxTiltPx,
-                $"the flow's deepest element ({deepestName}) is tilted {deepestTiltPx:F2}px past its "
-                + $"own unrotated bottom, over the {maxTiltPx:F1}px bound. At the ruled 0.5° that is "
-                + "a band wider than the panel it sits in — the wax highlight is sized from the "
-                + "payout figure's measured width, so this means the figure itself ran away.");
+            // S75 (DD batch 66): "a hand-laid mark reserves with the figure it marks", and "where the
+            // mark is transformed, the reserved extent is the TRANSFORMED extent". So the tilt is not
+            // bounded by a number I picked — it is held to the boundary it must actually clear:
+            // T47's 6px separation between the flow region and the anchored action band, the `+ 6f`
+            // inside SportsbookApp.ActionBandReservedHeight.
+            //
+            // This is what earned the band its pixels. Before the move the total was
+            // 4.00 + 0.0087*w, which crosses 6px at w > 229px — reachable, because money never
+            // abbreviates (C49) and same-game parlays lengthen the figure. After it, the same
+            // arithmetic needs a 677px band inside a 324px panel. The check is kept anyway: it is
+            // the invariant, not the margin of safety, and it now holds for every renderable string.
+            const float actionBandPadPx = 6f;
+            Assert.Less(overrunPx, actionBandPadPx,
+                $"the flow's deepest element ({deepestName}) reaches {overrunPx:F2}px past its "
+                + $"reservation, into T47's {actionBandPadPx:F0}px separation from the action band "
+                + $"({structuralPx:F2}px structural + {deepestTiltPx:F2}px tilt). S75: a transformed "
+                + "mark reserves its TRANSFORMED extent, and the tilt term is the band's width times "
+                + "sin(0.5°) — so this fires when the payout figure grows, which is exactly the "
+                + "collision the band move was ruled to close.");
             Assert.AreEqual(structuralOverrunPx, structuralPx, structuralTolerancePx,
                 $"the margin flow's STRUCTURAL overrun moved: measured {structuralPx:F2}px against "
                 + $"the derived {structuralOverrunPx:F2}px. Deepest flow element {deepestName} at "
                 + $"{flowBottom:F2}px ({deepestTiltPx:F2}px of that is its own tilt, leaving "
                 + $"{flowBottomUntilted:F2}px), raw overrun {overrunPx:F2}px, budget "
                 + $"-{SportsbookApp.MarginFlowBudget:F0}px, action band reserves "
-                + $"{SportsbookApp.ActionBandReservedHeight:F0}px. The 4.00px is the wax highlight "
-                + "hanging below the payout figure's box, whose bottom is flush with the budget. If "
-                + "it GREW, something entered the margin flow: staged receipts live in the 700px "
+                + $"{SportsbookApp.ActionBandReservedHeight:F0}px. The 0.10px is the kit's band "
+                + "bottom (36.10px below the payout figure's top) against a build box of 36.00px, "
+                + "whose bottom is flush with the budget. If it went back to ~4.00, the wax band has "
+                + "been moved off the kit's `bottom:-2px` and S51 has been reopened. If it GREW "
+                + "otherwise, something entered the margin flow: staged receipts live in the 700px "
                 + "sheet and must never re-enter it (both-screens kit amendment, DD 2026-08-04). If "
                 + "a RULED size changed, re-derive at this call site with the new arithmetic written "
                 + "out — never shrink a figure to fit the pin.");
@@ -856,8 +862,14 @@ namespace SBR.Tests.PlayMode
             //    board-frozen state, whose copy differs.
             //  · a tilt that is a genuine layout defect rather than a rotation. The structural pin
             //    subtracts every flow element's own rotation before measuring depth, so a band that
-            //    was tilted BY MISTAKE reads as no overrun at all — only the loose 3.0px bound above
-            //    catches that, and only once it is wider than the panel.
+            //    was tilted BY MISTAKE reads as no structural overrun — only the T47 clearance check
+            //    above catches it, and only once the total reaches 6px.
+            //  · S75's design-time clearance constant. The ruling asks for the population swept
+            //    (C46), the widest renderable money string taken, and the clearance pinned as a
+            //    CONSTANT — "a zone that moves with the string is not legal". This gate still reads
+            //    the band's width at runtime, so it proves the boundary holds for the string this
+            //    boot happened to price, not for the widest one that exists. OWED, and cheap now
+            //    that the band move put ~677px of headroom between the two.
             //  · which slate it ran on. `RunDirector.seed` is blank in the Room scene, so the board,
             //    the prices and therefore every money string differ on every boot. That is why the
             //    pin is derived rather than measured; it also means this gate has never tested one

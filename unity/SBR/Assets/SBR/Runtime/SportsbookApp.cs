@@ -1076,8 +1076,21 @@ namespace SBR.Game
             // right overshoot, not the ring's symmetric +8. Created after the text, then the text is
             // moved back to the top of the sibling order so it still draws over the band.
             float highlightWidth = Mathf.Max(40f, payout.preferredWidth) + 8f;
+            // S51 CLOSED — KIT FIDELITY (DD batch 66, 2026-08-14). The band sat 40px below the
+            // figure's top (a 34px drop plus its own 6px), and PayoutFigure.jsx puts it at 36.1:
+            // `bottom:-2px` against a line box of `--st-size-payout` 31px x `--st-lh-fig` 1.1.
+            // That 3.9px WAS the structural overrun past T47's reservation — one cause, two
+            // symptoms, since the frame also read the band as a detached rule under the figure
+            // rather than the highlighter behind it that this comment describes.
+            //
+            // THE BAND MOVES, THE BLOCK DOES NOT — the DD refused all three seating options, and
+            // "never shrink the figure to fit" still stands. Derived from the kit's own tokens
+            // rather than written as 30.1 so the arithmetic is checkable against the source.
+            const float payoutLineBoxPx = 31f * 1.1f;                          // --st-size-payout x --st-lh-fig
+            const float bandBottomBelowFigureTop = payoutLineBoxPx + 2f;       // the kit's bottom:-2px => 36.1
+            float bandTopOffset = bandBottomBelowFigureTop - LaptopOs.WaxHighlightHeight;
             RectTransform highlight = LaptopUi.MakePanel(panel, "PayoutHighlight", new Vector2(0f, 1f),
-                new Vector2(0f, 1f), new Vector2(14f - 3f, y - 34f),
+                new Vector2(0f, 1f), new Vector2(14f - 3f, y - bandTopOffset),
                 new Vector2(highlightWidth, LaptopOs.WaxHighlightHeight), LaptopOs.MoneyGold);
             highlight.GetComponent<Image>().color = new Color(LaptopOs.MoneyGold.r, LaptopOs.MoneyGold.g,
                 LaptopOs.MoneyGold.b, LaptopOs.WaxHighlightOpacity);
@@ -2485,6 +2498,31 @@ namespace SBR.Game
             : state == TicketState.CashedOut ? "CASHED OUT"
             : state == TicketState.Voided ? "VOID" : "OPEN";
 
+        /// <summary>The record's terminal ink. Factored alongside the word for the same reason S65
+        /// factored <see cref="SportsbookApp.LegStateInk"/>: an inline ternary whose final `else`
+        /// covers two states cannot state which of them it meant, and that is exactly how PENDING
+        /// once shipped wearing VOID's tone.
+        ///
+        /// <para><b>VOID's toner-2 is one of S76's binding negatives, not a fallthrough.</b> The DD
+        /// ruled VOID a third TERMINAL STATE rather than a third result (batch 67, approved by
+        /// Allen): it is never drained to DEAD's `.55` and never takes DEAD's own toner-3. Wax is
+        /// refused for the opposite reason — wax is money the player CAME AWAY WITH, and a refund is
+        /// being made whole, not coming out ahead. Toner-2 is the weight of a fact that is neither.
+        /// </para></summary>
+        internal static Color LedgerTicketStateInk(TicketState state) =>
+            state == TicketState.Won || state == TicketState.CashedOut ? LaptopOs.MoneyGold
+            : state == TicketState.Lost ? LaptopOs.Muted
+            : LaptopOs.TonerSecondary;
+
+        /// <summary>Whether the record wears the oxide strike drawn ACROSS its word.
+        ///
+        /// <para><b>S76's other binding negative: a VOID never takes it.</b> The strike is what DEAD
+        /// means here — S15 put the oxide in the strike alone and never in a glyph fill — and a void
+        /// is not a loss. Written as its own predicate rather than an inline `== Lost` so the rule
+        /// has something to be asserted against, and so a later state cannot be added to the strike
+        /// by widening a condition nobody re-read.</para></summary>
+        internal static bool LedgerShowsDeadStrike(TicketState state) => state == TicketState.Lost;
+
         // S27: every scrolling body reserves the rail's own 4px on the right, whether or not the
         // rail ends up drawn (LaptopUi.RailReserve) — settled-ticket rows now live inside one
         // (OldSlipsApp.Render), so their own full-width elements (the row panel, and every
@@ -2519,9 +2557,13 @@ namespace SBR.Game
             // PotentialPayout of zero (Domain.cs, VoidedInFull). So the stake is read here, never
             // PotentialPayout, which would print $0 for a ticket that cost the player nothing.
             //
-            // S41's rule is kept, not spent: "the absence dims, the fact does not." The dash still
-            // prints for the one case it was ruled for — a cash-out whose retained figure is unknown.
-            // This removes a case that was never an absence; it does not widen the dash's meaning.
+            // The DD put this more strongly than I had (batch 67, approved by Allen): **S41 EXPIRED
+            // the em dash here** — the VOID row is "the word + the stake printed as a KNOWN sum",
+            // and the dash is a binding negative, not a case I happened to reassign. I had written
+            // that S41 was "kept, not spent"; the ruling is that for this row it is spent.
+            //
+            // The dash still prints for the cash-out whose retained figure is genuinely unknown.
+            // That case was not before the DD and is left exactly as S41 left it.
             string returnedValue = ticket.State == TicketState.Won ? LaptopUi.Money(ticket.PotentialPayout)
                 : ticket.State == TicketState.Lost ? LaptopUi.Money(0)
                 : ticket.State == TicketState.Voided ? LaptopUi.Money(ticket.Stake)
@@ -2550,10 +2592,8 @@ namespace SBR.Game
             //    whole as though it were coming out ahead.
             // Nor does it dim to --toner-3: a returned stake is a fact, and S41's line is that the
             // absence dims, the fact does not. Same weight as its word, which is what toner-2 is.
-            Color stateColor = ticket.State == TicketState.Won || ticket.State == TicketState.CashedOut
-                ? LaptopOs.MoneyGold
-                : ticket.State == TicketState.Lost ? LaptopOs.Muted : LaptopOs.TonerSecondary;
-            bool lost = ticket.State == TicketState.Lost;
+            Color stateColor = LedgerTicketStateInk(ticket.State);
+            bool lost = LedgerShowsDeadStrike(ticket.State);
             bool unknowableReturn =
                 ticket.State == TicketState.CashedOut && !ticket.CashedOutFor.HasValue;
             Color returnedColor = lost || unknowableReturn ? LaptopOs.Muted : stateColor;
