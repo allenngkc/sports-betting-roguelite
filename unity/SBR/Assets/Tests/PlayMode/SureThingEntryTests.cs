@@ -806,6 +806,9 @@ namespace SBR.Tests.PlayMode
             Assert.IsFalse(slip.IsSameMatch, "two matchups, one leg each, is not a same-match slip");
             Assert.IsNull(Find(margin, "HouseLine0"),
                 "the house marked a connection between legs on different matches");
+            Assert.AreEqual("COMBINED", TextOf(Required(margin, "CombinedLabel")),
+                "an ordinary parlay keeps COMBINED — the instrument name is not a decoration to "
+                + "sprinkle on every slip, and legs on different matches DO multiply");
 
             // Now a second leg on the FIRST matchup — a real connection. Searched, because which
             // second selection is addable is a property of the board and the board is re-priced
@@ -835,6 +838,16 @@ namespace SBR.Tests.PlayMode
             for (int m = 0; m < connectedLegs.Count; m++)
                 Assert.IsNotNull(Find(margin, $"HouseLineSpur0_{m}"),
                     $"connected leg {connectedLegs[m]} carries no spur");
+
+            // P4's other half: the INSTRUMENT is named, on the slip's own price row. `COMBINED`
+            // names a price arrived at by multiplying, which §454 forbids for this ticket — it is
+            // "its own instrument, never a parlay with an adjustment" — so on a same-match slip that
+            // label was not silent about the instrument, it was wrong about it.
+            var priceLabel = Required(margin, "CombinedLabel").GetComponent<TMP_Text>();
+            Assert.AreEqual("SAME MATCH", priceLabel.text,
+                "a same-match slip names its instrument on the price row");
+            Assert.AreEqual(0f, priceLabel.characterSpacing, 0.001f,
+                "the instrument name is UNTRACKED — the market vocabulary's treatment, not a badge's");
 
             // DRAWN, NOT CAPTIONED. The name is what the thing is called, never a tag on every
             // occurrence — "the house does not narrate its own presence on his document" (S44).

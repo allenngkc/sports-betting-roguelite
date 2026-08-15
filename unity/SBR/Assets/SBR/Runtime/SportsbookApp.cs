@@ -1063,9 +1063,24 @@ namespace SBR.Game
             // across the full row width (kit: value gets marginLeft:auto); label stays roman,
             // --toner-3. "Combined" (not e.g. "CombinedValue") is kept on the value node because
             // SureThingMilestoneOneTests' contract-floor test looks this node up by that name.
+            // P4's other half — THE INSTRUMENT IS NAMED. `SAME MATCH` is the instrument's name
+            // (Allen, 2026-08-12), uppercase like the rest of the market vocabulary: a role printed
+            // as a word, a fact rather than a brand. `SGP` is industry jargon and never reaches him.
+            //
+            // It lands on THIS label rather than beside the mark, and the choice is forced rather
+            // than aesthetic. §454 rules that a same-match ticket is "its own instrument — never a
+            // parlay with an adjustment", and `COMBINED` names the price as a combination arrived at
+            // by multiplying, which is precisely the reading canon forbids for this ticket. The
+            // label was not merely silent about the instrument; on a same-match slip it was WRONG.
+            // The figure beside it is already the engine's joint price rather than a product, so the
+            // label was the last thing on this row still describing a parlay.
+            //
+            // Untracked, per the plan — the market vocabulary's own treatment, not a badge's.
+            // And not beside THE HOUSE'S LINE: §3.1's "drawn, not captioned" governs the MARK, and
+            // naming the instrument on the slip's own price row is not captioning the mark.
             LaptopUi.MakeText(panel, "CombinedLabel", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, y), new Vector2(120f, 18f), 13, TextAnchor.UpperLeft, LaptopOs.Muted,
-                "COMBINED", _font);
+                slip.IsSameMatch ? "SAME MATCH" : "COMBINED", _font);
             LaptopUi.MakeText(panel, "Combined", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, y), new Vector2(headerRight, 22f), 18, TextAnchor.UpperRight, LaptopOs.White,
                 slip.Picks.Count > 0 ? OddsFormat.American(slip.CombinedOdds) : "—", _fontCond);
