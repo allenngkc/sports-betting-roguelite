@@ -192,6 +192,58 @@ namespace SBR.Tests.PlayMode
             Assert.AreEqual(variant, rebuiltImage.sprite.name, "stake rebuild must preserve matchup-index ink variant");
         }
 
+        /// <summary>S74-am (batch 65) — THE BOARD'S DRAW ROW. The draw takes its own line, between
+        /// the two teams, with the word in the PRICE CELL and the matchup column EMPTY.
+        ///
+        /// <para>Every assertion here is a clause of the ruling, and the two that matter most are
+        /// the ones a later change would break silently: that the draw's line sits <b>physically
+        /// between</b> the two teams (S74 ruled the middle position is meaning, not borrowed
+        /// convention, so its y-order IS the ruling), and that the matchup column stays <b>empty</b>
+        /// — naming anything there would invent the third competitor `Side` exists to refuse, and it
+        /// is the one clause whose correct implementation is the ABSENCE of a call.</para>
+        ///
+        /// <para>Named controls only, never builder order or child indexes, per this file's own
+        /// contract.</para></summary>
+        [UnityTest]
+        public IEnumerator Form_board_prices_the_draw_on_its_own_line_between_the_two_teams()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            Transform card = Required(App(laptop), "Matchup0");
+
+            // The block is THREE LINES — a design-time constant, never a response to what this
+            // matchup priced (§2: a zone resizing to content at runtime is forbidden).
+            AssertRect(card as RectTransform, 700f, 116f, "three-line matchup block");
+
+            Transform draw = Required(card, "DrawOdds");
+            StringAssert.StartsWith("DRAW", TextOf(draw),
+                "S74-am: the outcome word belongs in the PRICE CELL, which is the cell that names " +
+                "WHICH OUTCOME — the board already reads `AWAY -156`, not `NOTARIES -156`");
+
+            // THE MIDDLE POSITION IS LITERAL. Higher on screen is a less negative y.
+            float awayY = (Required(card, "AwayOdds") as RectTransform).anchoredPosition.y;
+            float drawY = (draw as RectTransform).anchoredPosition.y;
+            float homeY = (Required(card, "HomeOdds") as RectTransform).anchoredPosition.y;
+            Assert.Less(drawY, awayY, "the draw's line must sit below AWAY");
+            Assert.Less(homeY, drawY, "the draw's line must sit above HOME - it is BETWEEN the two, " +
+                "attached to neither, which is exactly what the outcome is");
+
+            // THE MATCHUP COLUMN IS EMPTY ON THAT LINE, and empty is the correct rendering of
+            // "neither". TeamLine builds `Team{side}` + `Record{side}`; the draw has neither because
+            // it has no team. This is not S24's dead cell - S24 refused an offer slot with no OFFER,
+            // where here the SUBJECT slot has no subject.
+            Assert.IsNotNull(Find(card, "TeamAway"), "the two teams still name themselves");
+            Assert.IsNotNull(Find(card, "TeamHome"), "the two teams still name themselves");
+            Assert.IsNull(Find(card, "TeamDraw"),
+                "S74-am: naming a team on the draw's line invents the third competitor `Side` refuses");
+            Assert.IsNull(Find(card, "RecordDraw"),
+                "a draw has no season record because it has no team");
+
+            // MORE spans the block unchanged - it is centre-anchored, so a third line must not have
+            // needed it re-placed. Asserted because "unchanged" is a claim, not an observation.
+            Assert.IsNotNull(Required(card, "Details"), "MORE spans the block, now three lines");
+        }
+
         private static IEnumerator Boot()
         {
             AsyncOperation load = SceneManager.LoadSceneAsync("Room", LoadSceneMode.Single);
