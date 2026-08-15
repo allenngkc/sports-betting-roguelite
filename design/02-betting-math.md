@@ -99,7 +99,7 @@ The prohibited implementation is `p_joint` collapsed to a bare scalar `ρ`: that
 
 | Relation | Arises when | The sentence it must support |
 |---|---|---|
-| `MutuallyExclusive` | `p_joint = 0` | these cannot both happen |
+| `MutuallyExclusive` | `p_joint = 0` | these legs cannot **all** win |
 | `Implies(a → b)` | `p_joint = min p_i`; one leg strictly entails another | b has already happened whenever a does |
 | `SharedScoreline(reinforcing \| opposing)` | two GOAL-family legs read the same scoreline | one makes the other likelier / less likely |
 | `SharedCount(family, sign)` | two legs of the same COUNT family reading an **overlapping side** — the same corner or card draw | one makes the other likelier / less likely |
@@ -185,6 +185,13 @@ Two consequences that bind any consumer:
 - **Remove high index to low.** Removing an earlier leg first shifts the indices of the later ones.
 
 A remedy always exists, since dropping to a single leg is always placeable.
+
+**The remedy is CONJUNCTIVE, and the cause is N-valued — DD ruling, batches 66–67 (c467df3).** Both halves of a Blocked row must state the whole set as one instruction:
+
+- **"or" / "one of" / a menu is banned in a remedy.** A remedy offering a choice fails when followed: dropping one element of a three-leg remedy leaves the slip still refused. It is *drop all of these*, never *drop any of these*.
+- **A cause may name more than two legs, so two-valued phrasing is wrong.** "These cannot both land" breaks the moment three legs are jointly impossible with every pair among them fine — which this model produces, and which is why ticket-level exclusion exists at all. The sentence to support is *these cannot all win*.
+
+This binds the model's emitted parts and any copy composed from them.
 
 The cause is likewise **minimal**: the smallest leg set that still reaches `p = 0`. A two-leg conflict inside a four-leg ticket names two legs, not four. The joint-only-impossible triples name three, because no smaller true answer exists.
 
