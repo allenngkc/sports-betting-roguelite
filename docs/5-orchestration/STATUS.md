@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 273.** Allen's word:
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 274.** sgp's carve-out +
+cash-out probe landed at 305 green - HOLDOUT6 running detached, table on
+arrival (Allen's standing word re-fired). su's turn died on an API error
+mid-measurement - tapped to continue from disk. TV mid-build on the hold.
+
+*(prior stamp, cycle 273:)* Allen's word:
 the DD's sentence rubric sent AHEAD to su (six clauses + the S73
 emitted-relation listing, so copy and coverage rule in one pass). TV
 mid-build on the hold; sgp's probe-coverage check grinding; su drafting.
