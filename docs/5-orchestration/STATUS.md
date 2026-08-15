@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 290.** Batch 77 landed
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 291.** ALLEN RULED the
+stats tab, all three: (1) TIME STOPS - the 07-25 freeze clause stands,
+the moving-offer clause struck; (2) the panel OPENS during a pending
+intervention - collision allowed, UI designed carefully, overlay on top
+(with Allen's morale word relayed to the lead); (3) SHIP THREE ROWS -
+the two engine-fed rows follow on a routed engine commission (mine to
+route; queued for sgp after its campaign). TV builds. Still with Allen:
+the 70px word (S82) + two research words.
+
+*(prior stamp, cycle 290:)* Batch 77 landed
 (ccd347e): the reservation spec splits the 70px into TWO BILLS (34.10px
 broken today; 36.00px gated on the gesture) with four options priced;
 DD recommends A now / C before the gesture / B in reserve; consumable
