@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-14, cycle 264 (heartbeat).** Three
+**Keeper-era heartbeat stamp: 2026-08-14, cycle 265.** TWO MERGES
+(ee4fa03, 957b8d6): sgp's P1-P3 model half (slip constructible,
+bit-identity, structured refusals, 291 tests) and surething-ui's pin
+repair (green on four boots, main's inherited red CLOSED) + survey.
+sgp's plural-remedy correction relayed to DD and screen lane as binding
+first-cut rules. Allen's void-arm GO fired - su holds the lease; sgp's
+P4-P6 queue behind it. DD mid-read on the 0-0 frames, docket +3 items.
+
+*(prior stamp, cycle 264:)* Three
 seats deep in work (sgp P1-P3, su pin verification in Unity, DD reading
 the 0-0 frames); TV standing by on Allen's staged word, fired.
 
