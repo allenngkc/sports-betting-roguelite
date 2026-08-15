@@ -64,9 +64,21 @@ internal static class EventText
             // superlative and a prediction in six words. Its own pair was already the right voice.
             return Prefix(leg) + (up ? "off the bar and away." : "…cleared off the line. it's slipping away.");
 
-        string line = Base(e.Type, up, picked, other, e.Step);
-        if (e.Tag == TensionTag.LeadChange) line += " — LEAD CHANGE";
-        return Prefix(leg) + line;
+        // T98 (batch 70) — `— LEAD CHANGE` WAS APPENDED HERE AND THE WORD IS BANNED. Ruled on the
+        // TV surface (SweatFlavor.For, this file's descendant) and swept here on Allen's call, the
+        // same way T44 was: this file is the byte-for-byte ancestor, so leaving the twin would keep
+        // the ruling's own quoted string alive in a project that still builds.
+        //
+        // The tag is REAL — DramaGenerator assigns it on the WIN PROBABILITY crossing 0.5, never on
+        // the scoreline — so this is not a phantom-event guard. It comes off because a probability
+        // is the house's OPINION where a price is an offer, and a line announcing the probability
+        // crossed 50% is the deleted win-prob numeral's meaning without its digits.
+        //
+        // A TAG MAY DRIVE TIMING AND STAGING WITHOUT EARNING A WORD: SweatRenderer's
+        // `TensionTag.LeadChange => 800` pacing is the twin of the TV's leadChangeMs and is
+        // untouched and correct. Removing the suffix also closes the second defect — it appended
+        // UPPERCASE to a sentence-case line, against the one-casing-one-dash rule.
+        return Prefix(leg) + Base(e.Type, up, picked, other, e.Step);
     }
 
     private static string Prefix(Leg leg)
