@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 287.** TV's DRAW row +
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 288 (heartbeat).** All
+four seats working: TV on the C46 width measurement (fired on Allen's
+word; its THREE stats-tab rulings are with Allen - freeze-vs-moving,
+intervention window, three-fifths); su on the state sweep; DD on the
+DRAW-frame checks; sgp verifying the proof hash. Waiting on Allen: the
+three stats-tab rulings, the scrolling-board read, two research words.
+
+*(prior stamp, cycle 287:)* TV's DRAW row +
 dock MERGED (a24e0a1); batches 73-74 landed (4a82a3c). The pixel spec
 found TWO BILLS: the sentence's 36px stands, but a consumable row costs
 34px on run state alone (over budget TODAY, invisible to the margin
