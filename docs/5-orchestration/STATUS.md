@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 285 (INCIDENT RECOVERY).**
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 286.** The fresh DD's
+seating prompt TRUNCATED (only the tail landed) - caught on sweep, docket
+re-delivered as a file (dd-docket-2026-08-15.md). Allen's two words fired:
+TV docks the lobby frame + README (merge rides after); su stands by with
+two routed items (merge-main-before-push ordering vs TV's SportsbookApp
+crossing at 243-300; the DRAW price string joins its C46 sweep). sgp deep
+in parallelization (GC-mode memory comparison).
+
+*(prior stamp, cycle 285:)*
 Second Orca restart of the window killed all seats; disk verified first
 and the work SURVIVED: TV's DRAW row committed (5724aa1, S74-am - its
 own line between the two teams, column empty); sgp's profile fix
