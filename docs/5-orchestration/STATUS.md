@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 284.** SPEED BRIEF
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 285 (INCIDENT RECOVERY).**
+Second Orca restart of the window killed all seats; disk verified first
+and the work SURVIVED: TV's DRAW row committed (5724aa1, S74-am - its
+own line between the two teams, column empty); sgp's profile fix
+committed (4ea6838 - the cash-out path ran 11 enumerations where 1 was
+wanted, 305 tests unchanged; DLL commit + parallelization + HOLDOUT7
+question tapped). Three leads resumed via --continue at max; DD seated
+FRESH with the pixel-spec docket (Allen's pay-the-pixels ruling) + the
+DRAW-row read pending TV's evidence. Stale ghost session closed again.
+Monitors: heartbeat bzsbi3pgt, watcher v36 bg0iw8sv6.
+
+*(prior stamp, cycle 284:)* SPEED BRIEF
 executed: (1) fast mode STOOD DOWN on all seats by Allen's final word -
 official docs confirm /fast bills pay-as-you-go credits only, never Max
 plan usage; credits not enabled; no seat toggles. (2) Sim-harness
