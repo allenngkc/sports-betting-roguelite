@@ -52,8 +52,19 @@ with `payout = stake × the ticket's locked price` (void-adjusted via the surviv
 already built in step 3). The conditional is the same enumeration the joint model already runs, with
 the settled legs' results added as constraints — no new machinery, no new sample space.
 
-Sanity anchors from canon survive unchanged: nothing settled → `fair = P(win) × payout`; everything
-settled → `fair = payout`. Ordinary tickets must keep their **exact** current figure — the same
+Sanity anchors from canon: nothing settled → `fair = P(win) × payout`; everything settled →
+`fair = payout`.
+
+**Both anchors needed correcting once built (2026-08-14).** The first holds to **1.5e-14 relative,
+not to the bit** — a single-selection enumeration is *close* to `MatchModel`'s board price, not
+bit-identical, and the code comment that claimed otherwise has been corrected (132 of 244 legs
+disagree by up to ~70 ulp, worst on `PlayerMultiScorer`). The claim that *is* exact, and the one the
+same-match path rests on, is `p_joint(all legs) == SameMatch.PTicket`, asserted with `==`.
+
+The second anchor is **unreachable inside `SweatSession`**: the session completes and cash-out goes
+unavailable before "everything settled" can be quoted. It survives at `OddsMath` level, already
+pinned. The session-level form is `fair = payout × liveProb` with only the last leg left, walking to
+the payout as that leg closes. Ordinary tickets must keep their **exact** current figure — the same
 bit-identity discipline that governed step 3 and P2, enforced by keeping the existing path verbatim
 rather than recomputing it.
 
