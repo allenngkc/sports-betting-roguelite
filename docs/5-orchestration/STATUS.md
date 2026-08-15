@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 274.** sgp's carve-out +
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 275.** TV's hold BUILT
+and shot with margin (line 000-050, grade last frames, no goal sentence
+in 128; mid-match NEED shot in) at 3652418 - but the seat is at 100pct
+context: handoff update then ROTATION. LEAD CHANGE over 0-0 routed to
+the DD (scoreline lie vs win-prob fact - two readings, two remedies).
+TV's pin-red is against the superseded test (predates su's repair) - not
+real. ProjectSettings churn ordered reverted before merge. sgp standing
+order confirmed; HOLDOUT6 grinding; su measuring post-recovery.
+
+*(prior stamp, cycle 274:)* sgp's carve-out +
 cash-out probe landed at 305 green - HOLDOUT6 running detached, table on
 arrival (Allen's standing word re-fired). su's turn died on an API error
 mid-measurement - tapped to continue from disk. TV mid-build on the hold.
