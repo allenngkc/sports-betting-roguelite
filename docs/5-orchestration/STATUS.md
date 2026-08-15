@@ -1,6 +1,57 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 286.** The fresh DD's
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 292.** ALLEN RULED the
+70px (S82): the DD's sequence adopted - A now (tighten spacing vs the
+34.10px live break, measured), C before the gesture (scrolling flow,
+anchored action band), B in reserve returning to Allen with numbers if
+A falls short. Also ruled: the stats tab ships three rows with the
+unrevealed mark on corners/cards off a count leg. su: re-shot block
+first, then A. TV building the panel mechanism. HOLDOUT6 grinding.
+With Allen: only the two research words.
+
+*(prior stamp, cycle 291:)* ALLEN RULED the
+stats tab, all three: (1) TIME STOPS - the 07-25 freeze clause stands,
+the moving-offer clause struck; (2) the panel OPENS during a pending
+intervention - collision allowed, UI designed carefully, overlay on top
+(with Allen's morale word relayed to the lead); (3) SHIP THREE ROWS -
+the two engine-fed rows follow on a routed engine commission (mine to
+route; queued for sgp after its campaign). TV builds. Still with Allen:
+the 70px word (S82) + two research words.
+
+*(prior stamp, cycle 290:)* Batch 77 landed
+(ccd347e): the reservation spec splits the 70px into TWO BILLS (34.10px
+broken today; 36.00px gated on the gesture) with four options priced;
+DD recommends A now / C before the gesture / B in reserve; consumable
+gating reclassified correctness-fix. WITH ALLEN: that one word (S82),
+the three stats-tab rulings, two research words. Re-shot block + the
+parallel HOLDOUT6 campaign in flight.
+
+*(prior stamp, cycle 289:)* Two proofs in one
+sweep: sgp's PARALLEL PATH PROVEN (byte-identical body across collectors,
+1.74x on the proof campaign; HOLDOUT6 riding it now) and su's STATE SWEEP
+merged (172fee4; second bill real and live, both suites fully green on
+the merged tree). The -44.5 midpoint folded as a derivation. su shoots
+the re-shot block (closes DD checks 2/5); DD finalizes the reservation
+spec with options for the NEW Allen item: a 34px shortfall between the
+worst case and the masthead's ceiling.
+
+*(prior stamp, cycle 288:)* All
+four seats working: TV on the C46 width measurement (fired on Allen's
+word; its THREE stats-tab rulings are with Allen - freeze-vs-moving,
+intervention window, three-fifths); su on the state sweep; DD on the
+DRAW-frame checks; sgp verifying the proof hash. Waiting on Allen: the
+three stats-tab rulings, the scrolling-board read, two research words.
+
+*(prior stamp, cycle 287:)* TV's DRAW row +
+dock MERGED (a24e0a1); batches 73-74 landed (4a82a3c). The pixel spec
+found TWO BILLS: the sentence's 36px stands, but a consumable row costs
+34px on run state alone (over budget TODAY, invisible to the margin
+check) - NO geometry until su's state sweep prices the full budget. TV
+opens the stats-tab phase (merge main first). TWO ALLEN QUESTIONS OPEN:
+the board-density read (card pitch 78 to 116, six visible dropped to
+four, the board scrolls) and nothing else new. sgp's proof grinding.
+
+*(prior stamp, cycle 286:)* The fresh DD's
 seating prompt TRUNCATED (only the tail landed) - caught on sweep, docket
 re-delivered as a file (dd-docket-2026-08-15.md). Allen's two words fired:
 TV docks the lobby frame + README (merge rides after); su stands by with
