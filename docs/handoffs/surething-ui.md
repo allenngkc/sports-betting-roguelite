@@ -135,7 +135,48 @@ falsehoods in the ledger (`:2475-2489`):
 A voided ticket does reach the ledger — `:2197`/`:2201` collect on `State != Open` — so this is
 rendered today, not merely unreachable.
 
-**Starting here** while P1's screen half waits on the model.
+**DONE and green (`658b685`).** All three fixed in the settled ledger. The word is `VOID` — not
+invented, since C47 rules that a market returning the stake *is* a VOID and `LegStateWord` already
+prints it for a voided leg. The value is `ticket.Stake`, never `PotentialPayout` (zero for a ticket
+voided in full — it would print `$0` for a ticket that cost the player nothing). The ink needed no
+ruling: S65 already holds a VOID leg at toner-2, it is not wax because a refund is not a winning,
+and it does not dim to toner-3 because a returned stake is a fact, not an absence.
+
+S41's em dash is **kept, not spent** — it still prints for the one case it was ruled for, a
+cash-out with no retained figure. What was removed is a case that was never an absence.
+
+Word factored to `OldSlipsApp.LedgerTicketStateWord` per S43, and the new test drives it over
+`Enum.GetValues` rather than spot-checking VOID — the defect was a fallthrough that would swallow
+*any* state added after the branch was written. PlayMode 95/95 · 89 passed · 0 failed.
+
+**Stated, not claimed:** the RETURNED cell and total are not asserted. A `Voided` ticket cannot be
+built from the test assembly (`Ticket.State` is `internal set`) and the only path to it is a
+same-match ticket whose survivors re-price at or below evens. Recorded as a T53 blind spot; covered
+when that is reachable.
+
+**Out of this lane, named:** the TV's `RevealedTicketState` mirror has no `Voided` member
+(`TvSweatScreen.cs` is tv-sweat's file); `game-console` is a dead prototype (T44);
+`sim/RunPlayer.ScoreSwings` is not a screen.
+
+### main merged — P1's screen half is now unblocked
+
+Merged `main` at `abe6501` (carries sgp's model half `ee4fa03`, and my own unit 1 which main had
+already taken at `957b8d6`). No conflicts. Both suites re-verified green on the merged tree, against
+sgp's rebuilt `SBR.Engine.dll` — which this lane took via the merge and did **not** rebuild, per the
+non-engine-lane rule.
+
+The model now offers `AddLeg`, `RemoveLeg(legIndex)`, `RemoveSelection`, `LegIndicesOn(matchupIndex)`,
+`LegCountOn`, `Contains`, `IsSameMatch`, and a structured `Refusal`. `CombinedOdds` is now just
+`TicketOdds` off the engine, so the product-of-legs figure S73 forbids is gone from the model.
+
+**Three screen rules binding on the P1 work (from sgp's testing, via the orchestrator):**
+
+1. **Spend the WHOLE remedy set.** Remedies run up to three legs at the shipped `κ`; the stamp copy
+   is plural in the first cut, never singular.
+2. **Remove high index to low.** Removing low-first reindexes the legs above it mid-loop.
+3. **`SideOn`/`SelectionOn` answer only the FIRST leg on a matchup.** Every same-match group must go
+   through the leg-addressed accessors — this is exactly what makes the seven surveyed sites wrong,
+   not merely incomplete.
 
 ### Design-facing, routed, NOT self-ruled
 
