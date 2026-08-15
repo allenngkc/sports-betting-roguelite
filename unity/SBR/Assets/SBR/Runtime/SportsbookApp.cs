@@ -2259,6 +2259,15 @@ namespace SBR.Game
                 // the total, and its own cell carries the absence (BuildLedgerTicket).
                 else if (ticket.State == TicketState.CashedOut && ticket.CashedOutFor.HasValue)
                     knownReturned += ticket.CashedOutFor.Value;
+                // VOID (F_0.6.0 step 5): the returned stake joins the sum, by S41's own test — it is
+                // a KNOWN return, and only genuinely unknowable amounts contribute nothing.
+                //
+                // This is the money half of the void arm and it was the worst of the three: the
+                // stake already counted in `settledStake` above while the refund counted nowhere, so
+                // a refunded ticket read on the totals row as a ticket the player had simply lost.
+                // The record's own cell was merely wrong; this line was wrong ABOUT MONEY.
+                else if (ticket.State == TicketState.Voided)
+                    knownReturned += ticket.Stake;
             }
             LaptopUi.FinishScrollBody(scrollHost, scrollRect, content, -y, ledgerViewportHeight);
             if (settled.Count == 0)
@@ -2454,6 +2463,28 @@ namespace SBR.Game
             : leg.RescuedWon || leg.State == LegState.Won ? "WON"
             : leg.State == LegState.Lost ? "LOST" : "PENDING";
 
+        /// <summary>The SETTLED record's terminal word, over the engine's own <see cref="TicketState"/>
+        /// — not <see cref="SportsbookApp.TicketStateWord"/>, which reads the TV's revealed mirror
+        /// and owns RIDING.
+        ///
+        /// <para><b>VOID is the arm this exists to close (F_0.6.0 step 5).</b> Every branch here used
+        /// to fall through to "OPEN", so a ticket that had settled and been refunded printed as though
+        /// it were still live. A voided ticket reaches this list — the ledger collects on
+        /// <c>State != Open</c> — so that was rendered, not unreachable.</para>
+        ///
+        /// <para>The word is VOID and is not invented here twice: C47 rules that a market returning
+        /// the stake "is a VOID, which the enum already carries", and <see cref="LegStateWord"/>
+        /// already prints exactly that for a voided LEG. A ticket takes its legs' vocabulary.</para>
+        ///
+        /// <para>Factored out for S43's reason, which applies here more strongly than it did there:
+        /// "the render path must handle it rather than treat it as dead code". Nothing in this engine
+        /// drives a laptop ticket to Voided without a same-match slip, so the branch is reachable by
+        /// test long before it is reachable by play.</para></summary>
+        internal static string LedgerTicketStateWord(TicketState state) => state == TicketState.Won ? "WON"
+            : state == TicketState.Lost ? "LOST"
+            : state == TicketState.CashedOut ? "CASHED OUT"
+            : state == TicketState.Voided ? "VOID" : "OPEN";
+
         // S27: every scrolling body reserves the rail's own 4px on the right, whether or not the
         // rail ends up drawn (LaptopUi.RailReserve) — settled-ticket rows now live inside one
         // (OldSlipsApp.Render), so their own full-width elements (the row panel, and every
@@ -2472,9 +2503,7 @@ namespace SBR.Game
             // specifically: this list spans rounds, so it is what makes two rows tell themselves
             // apart, and it is read from the TICKET's round rather than the screen's current one.
             string identity = LaptopUi.TicketIdentity(ticket.Id, round, index, withRound: true);
-            string state = ticket.State == TicketState.Won ? "WON"
-                : ticket.State == TicketState.Lost ? "LOST"
-                : ticket.State == TicketState.CashedOut ? "CASHED OUT" : "OPEN";
+            string state = LedgerTicketStateWord(ticket.State);
             // S41: S36's designed absence expires here. Engine retention landed (`9e55d0d`, on this
             // tree since the merge), so `Ticket.CashedOutFor` carries the figure and it PRINTS —
             // never the em dash that stood in for it, and never the fabricated $0 that S36 refused.
@@ -2482,8 +2511,20 @@ namespace SBR.Game
             // The em dash survives for exactly one case: a record whose amount is genuinely
             // unknowable (`CashedOutFor` null). That is still an absence and still prints honest.
             // S41 puts it in the record's own cell and nowhere else — see the RETURNED total.
+            //
+            // VOID (F_0.6.0 step 5): the stake, printed. This case used to reach the em dash, and the
+            // dash was the wrong token for it in S41's own terms — the dash means an amount that is
+            // GENUINELY UNKNOWABLE, and a voided ticket's return is exactly known. The engine states
+            // it outright: a ticket that voids in full "returns the stake unconditionally" and has a
+            // PotentialPayout of zero (Domain.cs, VoidedInFull). So the stake is read here, never
+            // PotentialPayout, which would print $0 for a ticket that cost the player nothing.
+            //
+            // S41's rule is kept, not spent: "the absence dims, the fact does not." The dash still
+            // prints for the one case it was ruled for — a cash-out whose retained figure is unknown.
+            // This removes a case that was never an absence; it does not widen the dash's meaning.
             string returnedValue = ticket.State == TicketState.Won ? LaptopUi.Money(ticket.PotentialPayout)
                 : ticket.State == TicketState.Lost ? LaptopUi.Money(0)
+                : ticket.State == TicketState.Voided ? LaptopUi.Money(ticket.Stake)
                 : ticket.State == TicketState.CashedOut && ticket.CashedOutFor.HasValue
                     ? LaptopUi.Money(ticket.CashedOutFor.Value)
                     : "—";
@@ -2499,6 +2540,16 @@ namespace SBR.Game
             // every cashed-out row. A retained cash-out amount is money the player actually got
             // back, so it takes wax with its word, exactly as WON's payout does. Only the
             // unknowable case still recedes to toner-3 — the absence dims, the fact does not.
+            // VOID takes --toner-2 for BOTH cells, and takes it deliberately rather than by falling
+            // through to it. Two rulings meet here and agree:
+            //  · S65 already ruled a VOID leg stays --toner-2 and must not be dragged down with
+            //    PENDING. A voided ticket is the same fact at ticket scale, so it reads the same.
+            //  · it is not wax. Wax is money the player CAME AWAY WITH — S41 gave it to a retained
+            //    cash-out on exactly that ground. A refund is not a winning: C47 and the engine both
+            //    call a void neither a win nor a loss, and paying it in wax would stage being made
+            //    whole as though it were coming out ahead.
+            // Nor does it dim to --toner-3: a returned stake is a fact, and S41's line is that the
+            // absence dims, the fact does not. Same weight as its word, which is what toner-2 is.
             Color stateColor = ticket.State == TicketState.Won || ticket.State == TicketState.CashedOut
                 ? LaptopOs.MoneyGold
                 : ticket.State == TicketState.Lost ? LaptopOs.Muted : LaptopOs.TonerSecondary;
