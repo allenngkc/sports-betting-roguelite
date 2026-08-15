@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 291.** ALLEN RULED the
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 292.** ALLEN RULED the
+70px (S82): the DD's sequence adopted - A now (tighten spacing vs the
+34.10px live break, measured), C before the gesture (scrolling flow,
+anchored action band), B in reserve returning to Allen with numbers if
+A falls short. Also ruled: the stats tab ships three rows with the
+unrevealed mark on corners/cards off a count leg. su: re-shot block
+first, then A. TV building the panel mechanism. HOLDOUT6 grinding.
+With Allen: only the two research words.
+
+*(prior stamp, cycle 291:)* ALLEN RULED the
 stats tab, all three: (1) TIME STOPS - the 07-25 freeze clause stands,
 the moving-offer clause struck; (2) the panel OPENS during a pending
 intervention - collision allowed, UI designed carefully, overlay on top
