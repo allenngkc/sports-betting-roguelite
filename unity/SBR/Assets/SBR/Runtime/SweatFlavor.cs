@@ -41,11 +41,27 @@ namespace SBR.Game
                 // console twin already used it, so this file was the odd one out.
                 return up ? "off the bar and away." : "…cleared off the line. it's slipping away.";
 
-            string line = Base(e.Type, up, picked, other, e.Step);
-            // T44: em dash. TV-32 set this convention and T39's scan did not carry it here — it swept
-            // for second person and hype only, so every ASCII sentence dash in this file survived it.
-            if (e.Tag == TensionTag.LeadChange) line += " — LEAD CHANGE";
-            return line;
+            // T98 (batch 70) — `— LEAD CHANGE` WAS APPENDED HERE ON TensionTag.LeadChange, AND THE
+            // WORD IS BANNED. The tag is real and this was NOT T97's law a third time:
+            // DramaGenerator assigns it on the WIN PROBABILITY crossing 0.5, never on the scoreline,
+            // so nothing phantom happened and T97's guard would have suppressed a REAL fact — the
+            // wrong remedy reached through the wrong diagnosis. It comes off because §8 stands: the
+            // theatre prints facts and offers, never opinions. A price is an offer the player
+            // transacts against; a probability is the house's opinion, and a line announcing that it
+            // crossed 50% is the deleted win-prob numeral's MEANING without its digits. The fact is
+            // not lost — the cash-out price prices off WinProbAfter, so the crossing is already
+            // visible AS AN OFFER, the price moving through its own midpoint.
+            //
+            // A TAG MAY DRIVE TIMING AND STAGING WITHOUT EARNING A WORD. The tag itself is untouched
+            // and correct at TheaterChoreographer's #9 turnover intro and TvSweatScreen's
+            // leadChangeMs; both are pinned by TheaterChoreographerTests'
+            // Overlays_modify_playback_but_never_choose_the_template. If a SCORELINE lead change is
+            // ever ruled to earn a word it takes its own tag and its own authored word, never this.
+            //
+            // ONE FIX, TWO DEFECTS: the suffix appended UPPERCASE to a sentence-case line, against
+            // §8's one casing, one dash. T44/TV-32's em-dash convention is unaffected — it is marked
+            // at the authored lines that carry a dash of their own.
+            return Base(e.Type, up, picked, other, e.Step);
         }
 
         /// <summary>The broadcast clock, soccer-shaped (F_0.2.0 M-T3): a 90-minute match clock
