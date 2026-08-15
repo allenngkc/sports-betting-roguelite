@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 302.** TV's panel set
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 303 (heartbeat).** Quiet:
+su shooting the MaxLegs frame, DD mid-read on T99's four checks, TV and
+sgp standing by. With Allen: research words + TAB.
+
+*(prior stamp, cycle 302:)* TV's panel set
 docked and merged (a8c4eb2) - and the shoot CAUGHT A REAL BUG: the clock
 was not actually frozen until this capture forced the fix (both suites
 re-run green). The DD runs its four T99 checks; batch 84's dead-click
