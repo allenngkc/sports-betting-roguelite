@@ -903,12 +903,7 @@ namespace SBR.Game
                 // every market but Moneyline/AnytimeScorer backs the match itself, not one subject.
                 // Team names are shortened the same way CompactLegLabel/the board already do; a
                 // moneyline pick never repeats the picked team's own full name.
-                string away = LaptopUi.TeamShort(matchup.Away);
-                string home = LaptopUi.TeamShort(matchup.Home);
-                bool subjectIsHome = fields.Subject == matchup.Home.Name;
-                bool subjectIsAway = !subjectIsHome && fields.Subject == matchup.Away.Name;
-                string subjectRaw = subjectIsHome ? home : subjectIsAway ? away : fields.Subject;
-                string subject = string.IsNullOrEmpty(subjectRaw) ? fields.Line : subjectRaw;
+                string subject = MarginLegSubject(matchup, pick.Selection);
                 string price = OddsFormat.American(matchup.Odds(pick.Selection));
                 // ENTRY is the matchup's own FORM board position — same "(index+1):00" the board's
                 // Number badge already prints (BuildMatchupCard) — not a per-selection identity.
@@ -1099,6 +1094,21 @@ namespace SBR.Game
             y -= 40f;
 
             string blocker = slip.PlaceBlocker;
+            // P3 (F_0.6.0 step 5). A refused COMBINATION is the one blocker no single string can
+            // carry, so the model returns the machine token "refused:<Kind>" and requires the surface
+            // to branch on `Refusal` and stamp the parts. Printing that token is a bug the model made
+            // loud on purpose — and it was the live behaviour here until this branch existed, since
+            // the line below upper-cases whatever `PlaceBlocker` returned.
+            //
+            // Legs are named with MarginLegSubject — the same call the rows above render — so the
+            // instruction reads against the rows in front of him rather than needing translation
+            // (S73-am5).
+            TicketRefusal refusal = slip.Refusal;
+            if (refusal != null)
+            {
+                blocker = RefusalStamp(refusal, NameLegs(run, slip, refusal.CauseLegs),
+                    NameLegs(run, slip, refusal.RemedyLegs));
+            }
             // MERGE (markets-2 × main, 2026-08-05): both intents kept, because they are orthogonal.
             //
             // From main — S18: a wax primary action is field + wax-ink + a 2px wax-deep edge, and
@@ -1396,6 +1406,120 @@ namespace SBR.Game
         /// rather than switching on MarketKind. Internal so the PlayMode fixture can assert against
         /// the exact same production formula rather than a hand-kept duplicate that could quietly
         /// drift out of sync.</summary>
+        /// <summary>The identity a margin leg row prints on its own first line — the string the
+        /// player is looking at when the stamp names a leg.
+        ///
+        /// <para>Factored out of BuildSlip so the refusal stamp names legs with the SAME function the
+        /// row renders, rather than a second copy of the expression. S73-am5 requires legs to be
+        /// named "by the exact string on their own row, so he never has to translate an instruction
+        /// against the rows in front of him" — a duplicated expression makes that true by coincidence
+        /// and only until one of the two is edited. One function, two call sites, cannot drift.</para>
+        ///
+        /// <para>Not <see cref="CompactLegLabel"/>: that carries a fixture tail ("— HAWKS v RIVETS")
+        /// which the margin row does not print, so naming a leg by it would be naming it by a string
+        /// that is not on the row.</para></summary>
+        /// <summary>Joins named legs for a stamp. **`and`, never `or`** — S73-am5 bans `or`,
+        /// `either`, `one of` and `any of` from a remedy outright, because English's natural form for
+        /// a list of fixes is disjunctive and the model's truth is not.</summary>
+        private static string JoinLegs(IReadOnlyList<string> names)
+        {
+            if (names.Count == 0) return string.Empty;
+            if (names.Count == 1) return names[0];
+            if (names.Count == 2) return $"{names[0]} AND {names[1]}";
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < names.Count - 1; i++)
+            {
+                if (i > 0) sb.Append(", ");
+                sb.Append(names[i]);
+            }
+            return sb.Append(" AND ").Append(names[^1]).ToString();
+        }
+
+        /// <summary>The Blocked control's stamped literal reason for a refused COMBINATION — cause
+        /// and remedy, per §3.3's own row and S73-am4/am5. Composed here because the model emits
+        /// parts and never English; `TicketRefusedException`'s message is a developer courtesy and
+        /// says so itself.
+        ///
+        /// <para><b>The cause is N-VALUED and the forms are AUTHORED, not templated.</b> S73-am5:
+        /// "two authored forms chosen by arity, never one template with a substituted word." Three
+        /// legs can be jointly impossible with every pair among them fine, so "cannot both win" is
+        /// not merely awkward at three — it is false. The two-leg and three-or-more sentences are
+        /// written out separately below rather than switching a word inside one string.</para>
+        ///
+        /// <para><b>A duplicate and an impossibility take ONE treatment and TWO causes.</b> §3.3
+        /// requires a *literal* reason, and one sentence vague enough to cover both is exactly what
+        /// that word exists to prevent.</para>
+        ///
+        /// <para><b>The remedy is CONJUNCTIVE and spends the WHOLE set.</b> Remedies of up to three
+        /// legs occur at the shipped κ across 645 refusals; dropping one element of a three-leg
+        /// remedy leaves the slip refused, so a menu-shaped remedy would fail when followed — and
+        /// S73-am4 requires a *verified* one. Every one of those 645 remedies placed successfully
+        /// after being spent, so "TO PLACE" is a guarantee rather than a hope.</para>
+        ///
+        /// <para><b>Removal order never reaches the player</b> (S73-am5). High-to-low is an
+        /// implementation constraint of the caller, not part of the instruction.</para></summary>
+        internal static string RefusalStamp(TicketRefusal refusal, IReadOnlyList<string> causeNames,
+            IReadOnlyList<string> remedyNames)
+        {
+            string cause;
+            switch (refusal.Kind)
+            {
+                case RefusalKind.ImpossibleCombination when causeNames.Count <= 2:
+                    // AUTHORED FORM 1 of 2 — exactly two legs.
+                    cause = $"{JoinLegs(causeNames)} CANNOT BOTH WIN.";
+                    break;
+                case RefusalKind.ImpossibleCombination:
+                    // AUTHORED FORM 2 of 2 — three or more. A separate sentence, not form 1 with a
+                    // word swapped: at three legs the claim itself changes, since no pair need conflict.
+                    cause = $"{JoinLegs(causeNames)} CANNOT ALL WIN.";
+                    break;
+                case RefusalKind.DuplicateSelection:
+                    // The duplicate's own cause. It is not an impossibility — the repeat CAN win; it
+                    // adds no risk while costing a full extra leg of margin.
+                    cause = $"{causeNames[^1]} IS ALREADY ON THIS SLIP.";
+                    break;
+                case RefusalKind.SubEvens:
+                    // The sub-evens cause is about the PRICE, not about any leg, which is why its
+                    // CauseLegs names every leg: no proper subset prices any worse.
+                    cause = "THIS TICKET WOULD PAY LESS THAN IT COSTS.";
+                    break;
+                default:
+                    cause = "THIS COMBINATION IS REFUSED.";
+                    break;
+            }
+
+            string remedy = remedyNames.Count > 0
+                ? $" DROP {JoinLegs(remedyNames)} TO PLACE."
+                : " NO LEG CAN BE DROPPED TO MAKE THIS PLACEABLE.";
+            return cause + remedy;
+        }
+
+        /// <summary>Leg indices from a <see cref="TicketRefusal"/> to the strings their own margin
+        /// rows print. Indices are into the slip's leg list, which is <see cref="BetslipModel.Picks"/>
+        /// in the same order the rows are drawn.</summary>
+        private static IReadOnlyList<string> NameLegs(Run run, BetslipModel slip, IReadOnlyList<int> legIndices)
+        {
+            var names = new List<string>(legIndices.Count);
+            foreach (int legIndex in legIndices)
+            {
+                if (legIndex < 0 || legIndex >= slip.Picks.Count) continue;
+                Pick pick = slip.Picks[legIndex];
+                names.Add(MarginLegSubject(run.CurrentSlate.Matchups[pick.MatchupIndex], pick.Selection));
+            }
+            return names;
+        }
+
+        internal static string MarginLegSubject(Matchup matchup, MarketSelection selection)
+        {
+            MatchModel.MarketFields fields = MatchModel.Fields(matchup, selection);
+            string away = LaptopUi.TeamShort(matchup.Away);
+            string home = LaptopUi.TeamShort(matchup.Home);
+            bool subjectIsHome = fields.Subject == matchup.Home.Name;
+            bool subjectIsAway = !subjectIsHome && fields.Subject == matchup.Away.Name;
+            string subjectRaw = subjectIsHome ? home : subjectIsAway ? away : fields.Subject;
+            return string.IsNullOrEmpty(subjectRaw) ? fields.Line : subjectRaw;
+        }
+
         internal static string CompactLegLabel(Matchup matchup, MarketSelection selection)
         {
             MatchModel.MarketFields fields = MatchModel.Fields(matchup, selection);

@@ -483,6 +483,128 @@ namespace SBR.Tests.PlayMode
             return count;
         }
 
+        /// <summary>P3's stamp, end to end, on a REAL refused same-match slip — and the C46 fit
+        /// measurement the DD asked for in numbers rather than in estimate.
+        ///
+        /// <para>The model returns the machine token <c>"refused:&lt;Kind&gt;"</c> from PlaceBlocker
+        /// precisely so that printing it is loud, and the surface printed it verbatim until P3. The
+        /// first assertion here is that the token never reaches the control.</para></summary>
+        [UnityTest, Order(9)]
+        public IEnumerator Refused_combination_stamps_cause_and_remedy_and_never_the_models_token()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            Run run = laptop.director.Run;
+            BetslipModel slip = laptop.Slip;
+
+            // Build a genuinely refused same-match slip through the model's own additive API.
+            // Searched rather than hard-coded: which pair conflicts is a property of the board, and
+            // the board is re-priced on every boot (RunDirector.seed is blank).
+            bool found = false;
+            Matchup matchup = run.CurrentSlate.Matchups[0];
+            var offers = new List<MarketSelection>();
+            foreach (MarketOffer offer in matchup.Markets) offers.Add(offer.Selection);
+            for (int a = 0; a < offers.Count && !found; a++)
+                for (int b = a + 1; b < offers.Count && !found; b++)
+                {
+                    slip.Clear();
+                    if (!slip.AddLeg(0, offers[a])) continue;
+                    if (!slip.AddLeg(0, offers[b])) continue;
+                    if (slip.Refusal != null) found = true;
+                }
+            Assert.IsTrue(found,
+                "no two selections on matchup 0 refuse — this gate needs a real refusal to measure, "
+                + "and a board that cannot produce one has changed in a way P3 depends on");
+
+            yield return WaitForRebuild();
+            Transform margin = Required(App(laptop), "WorkingMargin");
+            var reason = Required(Required(margin, "Place"), "PlaceReason").GetComponent<TMP_Text>();
+            string stamp = reason.text;
+
+            Assert.IsFalse(stamp.Contains("REFUSED:"),
+                $"the model's machine token reached the control: \"{stamp}\". PlaceBlocker returns "
+                + "\"refused:<Kind>\" so this is loud rather than a plausible sentence the model had "
+                + "no authority to write — the surface must branch on Refusal and stamp the parts");
+
+            // S73-am5's banned list, checked against the stamp's own CONNECTIVES rather than against
+            // the raw string. The distinction is not pedantic: the draws vocabulary names a double
+            // chance "TUSCALOOSA LONGHAULERS OR DRAW", so a leg NAME can contain "OR" without the
+            // remedy being disjunctive. Testing the raw string would go red on whichever boot puts a
+            // double chance in a remedy — a flake that reads as a copy violation.
+            string skeleton = stamp;
+            foreach (Pick pick in slip.Picks)
+                skeleton = skeleton.Replace(
+                    SportsbookApp.MarginLegSubject(run.CurrentSlate.Matchups[pick.MatchupIndex],
+                        pick.Selection).ToUpperInvariant(), "<LEG>");
+            foreach (string banned in new[] { " OR ", "EITHER", "ONE OF", "ANY OF" })
+                Assert.IsFalse(skeleton.Contains(banned),
+                    $"\"{banned.Trim()}\" is banned in a remedy — the remedy is a SET to remove, and "
+                    + $"menu-shaped copy fails when followed. Stamp: \"{stamp}\"");
+
+            // Cause AND remedy, both — §3.3's row has always required both halves.
+            Assert.IsTrue(stamp.Contains("DROP ") || stamp.Contains("NO LEG CAN BE DROPPED"),
+                $"the stamp states no remedy: \"{stamp}\"");
+            Assert.Greater(reason.fontSize, 12.9f, "§3.3: a stamped literal reason is >= 13px");
+
+            // The whole remedy set is spent — the count of named legs matches RemedyLegs exactly.
+            // A surface that spends RemedyLegs[0] leaves the slip refused.
+            TicketRefusal refusal = slip.Refusal;
+            foreach (int legIndex in refusal.RemedyLegs)
+            {
+                string name = SportsbookApp.MarginLegSubject(
+                    run.CurrentSlate.Matchups[slip.Picks[legIndex].MatchupIndex],
+                    slip.Picks[legIndex].Selection);
+                Assert.IsTrue(stamp.Contains(name),
+                    $"remedy leg {legIndex} (\"{name}\") is not named in the stamp: \"{stamp}\". The "
+                    + "whole set is spent or the remedy lies");
+            }
+
+            // ---- C46 FIT, MEASURED. Reported on every run, pass or fail, so the number exists.
+            var rect = (RectTransform)reason.transform;
+            float box = rect.rect.width;
+            float actual = reason.preferredWidth;
+
+            // The worst case is not this refusal — it is the widest renderable one. Sweep the whole
+            // slate for the longest leg name, then compose the longest authored form around it:
+            // a three-leg cause and a three-leg remedy, which occur at the shipped margin.
+            string widest = "";
+            foreach (Matchup m in run.CurrentSlate.Matchups)
+                foreach (MarketOffer offer in m.Markets)
+                {
+                    string name = SportsbookApp.MarginLegSubject(m, offer.Selection);
+                    if (LaptopUi.MeasureWidth(reason.font, name, 13, LaptopTrack.StampReason)
+                        > LaptopUi.MeasureWidth(reason.font, widest, 13, LaptopTrack.StampReason))
+                        widest = name;
+                }
+            string worst = $"{widest}, {widest} AND {widest} CANNOT ALL WIN. "
+                + $"DROP {widest}, {widest} AND {widest} TO PLACE.";
+            float worstWidth = LaptopUi.MeasureWidth(reason.font, worst, 13, LaptopTrack.StampReason);
+
+            UnityEngine.Debug.Log($"[P3-FIT] control {box:F1}px · this refusal {actual:F1}px "
+                + $"({actual / box:P0}) · widest leg name \"{widest}\" · worst renderable stamp "
+                + $"{worstWidth:F1}px ({worstWidth / box:F1}x the control) · lines needed at this "
+                + $"width {Mathf.CeilToInt(worstWidth / box)} · stamp: \"{stamp}\"");
+
+            // Second finding for the DD, found by the sweep rather than by reading the copy: the
+            // draws double-chance vocabulary puts a DISJUNCTION INSIDE A LEG NAME. "DROP TURNIPS AND
+            // TUSCALOOSA LONGHAULERS OR DRAW TO PLACE" is a conjunctive remedy whose reader cannot
+            // see where the leg name ends. It satisfies the letter of the ban — the connective is
+            // "AND" — and defeats the reason for it. Reported, not ruled: renaming a market is
+            // copy, and copy is the DD's.
+            if (widest.ToUpperInvariant().Contains(" OR "))
+                UnityEngine.Debug.Log("[P3-FIT] NAME-DISJUNCTION: the widest leg name carries its own "
+                    + $"\"OR\" (\"{widest}\"). A remedy naming it reads as a menu while being a set. "
+                    + "S73-am5's ban is on the remedy's connective; this is inside a name and slips "
+                    + "under it.");
+
+            // NOT asserted: that the stamp fits. It does not, and the sizing call is the DD's — "size
+            // the control for it or author a shorter form", and a truncated remedy is an unverified
+            // remedy (S73-am5), so this gate must not quietly become a truncation test. The numbers
+            // above are what goes to the DD. What IS asserted is that nothing was truncated:
+            Assert.IsFalse(stamp.Contains("…"),
+                $"the stamp was ellipsised: \"{stamp}\". A truncated remedy is an unverified remedy");
+        }
+
         [Test, Order(8)]
         public void TicketStateWord_and_LegStateWord_never_cross_contaminate_their_vocabularies()
         {
