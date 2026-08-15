@@ -11,6 +11,112 @@ discarded.
 
 ---
 
+## 0-DR. POST-PHASE: main merged · the draw arm fixed · THE 0–0 SET SHOT AND DOCKED · 2026-08-14
+
+**Branch `b3b5820`, pushed and remote-verified. Tree clean. Unity ZERO — and the editor window is
+RELEASED to the surething-ui lane** for its pin verification, so this lane takes no editor work until
+it comes back.
+
+**TOP LINE: the post-phase unit is complete.** `origin/main` is merged, `SweatFlavor`'s draw arm is
+fixed and pinned, G1-am8's scorer ladder is built, and T87-am's goalless set is docked. **The DRAW row
+and T94 HOLD** pending the re-seated DD's read of the docked set and Allen's word.
+
+| suite | discovered | executed | passed | failed | skipped |
+|---|---|---|---|---|---|
+| EditMode | 254 | 254 | 253 | 0 | 1 ignored — G1's grant, held |
+| PlayMode | 94 | 94 | 87 | **1 INHERITED** | 6 |
+
+Sweep: **1 of 22 overrunning** (`MARKET SUSPENDED`, T74's table) · 48 slots · 0 unaccounted for.
+
+### The merge — 295 commits, and the TV surface did not move
+
+`TvSweatScreen.cs`, `SweatFlavor.cs`, `SweatActiveLegModel.cs`, `TvExtentSweep.cs` and every TV test
+came through **untouched** — this lane's work was already in main, so it merged with itself. Verified
+by measurement (sweep identical, EditMode green), not by inspection.
+
+**ONE INHERITED FAILURE, and it is not this lane's.**
+`SureThingEntryTests.Working_margin_contains_its_content_at_the_legal_maximum_leg_count` — the LAPTOP
+surface, 4.748px against a signed 4.56px. **Reachability argument, accepted by the orchestrator:** this
+branch's three commits touched five files and **none of them can reach the laptop's margin flow.** The
+flow changed on main via `ead9396` (*"the stake figure leads its own block"*, M-04/M-05) and the test's
+own message names the owner — *"1.96px OWNED (M-04's 26px stake figure)"*. **Do not touch it**; the
+owning lane is retired and its routing is Allen's after the shoot.
+
+### `SweatFlavor`'s draw arm — a fall-through, not a decision (`ada9a84`)
+
+Routed here **by name** from the markets lane's class sweep (`a3d184c`: *"SweatFlavor:206 — draw counts
+as away for flavour, ROUTED → tv-sweat"*). **It survived that sweep because it lives in this surface's
+file, not theirs** — a cross-lane sweep scoped by OWNERSHIP misses exactly the code another lane owns.
+
+The anchor asked `Choice == Home` and let everything else be false. Correct while a moneyline could
+only be Home or Away; **`MarketChoice.Draw` made the inference wrong without the line being touched.**
+The fix is the rule the function already stated: a leg with no picked TEAM anchors home and lets the
+market label carry the pick, exactly as O/U and BTTS always have.
+
+**Deliberately NOT the null the markets lane used.** `BetslipModel.SideOn` returns null for a draw and
+is pinned for it — that answers *which side you backed*, where "neither" is honest. This answers *which
+team the prose anchors on*, where every leg needs an answer. **One finding, two functions, two correct
+shapes.**
+
+*Routed, not authored:* whether the flavour's VOICE reads right on a draw-backed leg is the DD's.
+
+### G1-am8 + T92-am (`7ca92ca`)
+
+Scorer ladder built: rung 2 `{SURNAME} SCORES`, **0 of 12 overrunning**, widest `PAVEMENT SCORES` 238.4
+with 22.6 spare; bare `TO SCORE` retired. **The existing EditMode pin caught the contract change and
+moved with it deliberately.** T92-am's 10.9 was **already closed** by the batch-61 widening — measured,
+not assumed: box 695.0, deferral line 665.9, fits by 29.1.
+
+### T87-am — the 0–0 set (`b3b5820`), docked at `dd-import/tv-goalless-draw-2026-08-14`
+
+**`Atlanta Middlemen 0 – 0 Scranton Mallards`, seed `GOALLESS-5`. Passed, 120 frames, and EVERY ONE
+reads `MALLARDS 0 — MIDDLEMEN 0` at `clock='FT'`** — 60 contiguous frames per ending.
+
+| set | ticket | outcome |
+|---|---|---|
+| `goalless-draw-backer-ending` | the DRAW | **WINS** on a match where nothing happened |
+| `goalless-team-backer-ending` | Home | **LOSES** to the same 0–0 |
+
+**Captured and docked — no read offered.** The three dispositions are pre-committed at the DD seat.
+
+The seed was **found, not hoped for**: `engine.tests/GoallessDrawSeedTests` searched 400 seeds through
+the same path the capture takes and found eight goalless matches (draws 28 of 114). `LockRound`
+resolves every game whether bet or not, so **the tickets are placed onto a result that already exists
+rather than steering it** — and the 0–0 is asserted at lock so a drifted seed fails loudly.
+
+### FOUR RUNS PASSED WHILE SHOWING THE WRONG BEAT — the durable part of this section
+
+Each was diagnosed rather than guessed, and each was a real defect. **A passing capture is not a
+capture of the thing.**
+
+1. **A pick addresses `Matchup.Index`, NOT the slate position.** The draw ticket graded against a
+   different fixture and came back *LOST on a 0–0*.
+2. **`DemoTicketPolicy`'s stake sizes ONE bet against the whole bank**, so a second ticket does not
+   fit. The symptom is silent: the sweat loop simply has nothing to advance to.
+3. **`Ticket.State` does not leave `Open` until ROUND settlement — after ALL sweats.** Waiting on it
+   captures a screen already cleared to Shop. The diagnostic said so exactly:
+   `SweatIndex=1 phase=Shop session=null`.
+4. **`Time.captureDeltaTime` ties SIM time to RENDERED frames, so a burst spaced in REALTIME advances
+   the match by however many frames the host happened to render.** At 0.12s spacing an "ending" read
+   `FT`, then `PRE`, `11'`, `30'`, `55'`, `74'` — four frames of the whistle and then the whole NEXT
+   match. **Frame-contiguous (interval 0) is the control**, and 60 frames is 1.2 sim-seconds.
+
+> **Both tickets sat on the same matchup, so the replay looked superficially plausible.** That is
+> C50's shape — frames labelled with a beat they do not show — and it is why the 48 frames from the
+> previous attempt were DELETED rather than staged.
+
+### OPEN — all held, none of it this lane's to start
+
+| item | state |
+|---|---|
+| **The board's DRAW row** (S74-am) — ruled buildable, waits on nothing | HELD for Allen's word |
+| **T94** — column and scorebug describing different legs; its beats are on the closing frames | HELD for the DD's read |
+| **`RiskPays`' fact floor** — 378.1 max / 270.6 typical vs a LOCKED 249.0 column | **Allen's item** — it exceeds a locked dimension |
+| `CashOut`'s `MARKET SUSPENDED`, 26.7px | T74's table |
+| The laptop's margin pin | inherited from main; not this lane's |
+
+---
+
 ## 0-T95. PHASE T IS DESIGN-VERIFIED · the crossfade's rect was stale and it was MINE · T95 SHOT · 2026-08-13
 
 **PHASE T IS DESIGN-VERIFIED (T89-cl, batch 63).** The migration is certified on its own variable,
