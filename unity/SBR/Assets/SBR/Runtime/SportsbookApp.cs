@@ -295,7 +295,7 @@ namespace SBR.Game
             TeamLine(card, "Home", LaptopUi.TeamShort(matchup.Home), matchup.Home.Record, -82f);
 
             LaptopUi.MakeButton(card, "AwayOdds", $"AWAY  {OddsFormat.American(matchup.AwayOdds)}",
-                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, -8f), new Vector2(112f, 32f), 19,
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, AwayCellY), new Vector2(112f, 32f), 19,
                 LaptopOs.Ink, frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
                 // C15/S28: `.03`, NOT MakeButton's `.14` action default. A price control is a price
                 // first — `PriceCell.jsx` and `MarketOffer.jsx` both set `--st-track-name` on it, and
@@ -303,7 +303,7 @@ namespace SBR.Game
                 // premise (a button label is an action label) is wrong for exactly this class, and
                 // the kit is what says so.
                 frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Away)); _invalidate(); }, _fontCond, !frozen, LaptopTrack.Names);
-            // S74-am — THE DRAW GOES IN THE PRICE CELL, at −43, exactly the slot HOME used to hold.
+            // S74-am — THE DRAW GOES IN THE PRICE CELL, in the slot HOME used to hold.
             // The price cell is the one that names the OUTCOME, never the matchup column, which
             // names TEAMS: the board already reads `AWAY −156` rather than `NOTARIES −156`, so the
             // draw's grammatical slot was already here and NOTHING IS INVENTED. Its line sits
@@ -318,16 +318,24 @@ namespace SBR.Game
             // lines, uniform, closed with no further ruling. A hand-built matchup carries DrawOdds 0
             // and takes pre-commitment (2)'s empty line. THE BLOCK IS THREE LINES EITHER WAY — the
             // height is a design-time constant, never a response to what this matchup priced.
+            //
+            // THE MIDDLE IS NOW DERIVED, NOT WRITTEN (DD, DRAW-frame read 2026-08-15: −43 → −44.5).
+            // S74 rules the middle position as MEANING — "the draw's line sits physically between
+            // the two teams', attached to neither" — and at −43 it was not the middle: 35px below
+            // AWAY and 38px above HOME, centred by intent and not by measurement. The frame read it.
+            // `DrawCellY` is the midpoint of the two team cells and is COMPUTED from them, so the
+            // claim the design makes is true by construction and cannot drift again if either team
+            // line moves.
             if (matchup.DrawOdds > 1.0)
                 LaptopUi.MakeButton(card, "DrawOdds", $"DRAW  {OddsFormat.American(matchup.DrawOdds)}",
-                    new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, -43f), new Vector2(112f, 32f), 19,
+                    new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, DrawCellY), new Vector2(112f, 32f), 19,
                     LaptopOs.Ink, frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
                     frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.MoneylineDraw()); _invalidate(); }, _fontCond, !frozen, LaptopTrack.Names);
-            // HOME moves down exactly one 38px line pitch (−43 → −81). It is the only thing that
-            // moves: AWAY does not shift at all and the card's bottom slack is unchanged, which is
+            // HOME sits one line pitch below the draw. It is the only thing that moved when the draw
+            // landed: AWAY does not shift at all and the card's bottom slack is unchanged, which is
             // what makes the re-derived pitch above a pure insertion rather than a re-layout.
             LaptopUi.MakeButton(card, "HomeOdds", $"HOME  {OddsFormat.American(matchup.HomeOdds)}",
-                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, -81f), new Vector2(112f, 32f), 19,
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, HomeCellY), new Vector2(112f, 32f), 19,
                 LaptopOs.Ink, frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
                 frozen ? null : () => { slip.Toggle(matchup.Index, MarketSelection.Moneyline(Side.Home)); _invalidate(); }, _fontCond, !frozen, LaptopTrack.Names);
             if (awaySelected || homeSelected || drawSelected)
@@ -344,7 +352,8 @@ namespace SBR.Game
                     // SAME constants the three MakeButton calls use, so a cell that moves cannot
                     // leave its ring behind at the old y. That divergence is the shape T95 caught on
                     // the TV: two elements agreeing by convention rather than by construction.
-                    Vector2 cellPosition = new Vector2(462f, awaySelected ? -8f : drawSelected ? -43f : -81f);
+                    Vector2 cellPosition = new Vector2(462f,
+                        awaySelected ? AwayCellY : drawSelected ? DrawCellY : HomeCellY);
                     Vector2 cellSize = new Vector2(112f, 32f);
                     RectTransform ink = LaptopUi.MakePanel(card, "BiroRing", new Vector2(0f, 1f), new Vector2(0f, 1f),
                         cellPosition + new Vector2(-overshoot, overshoot),
@@ -860,6 +869,24 @@ namespace SBR.Game
         /// margin's fixed 530px panel.</summary>
         internal const float MarginFlowBudget = 530f - ActionBandReservedHeight;
 
+        /// <summary>The three outcome cells' y in a matchup card, and the one derivation among them.
+        ///
+        /// <para><b>`DrawCellY` is COMPUTED, and that is the point.</b> S74 rules the draw's middle
+        /// position as MEANING — its line sits physically between the two teams', attached to
+        /// neither — and the shipped literal `−43` was not the middle: 35px below AWAY and 38px above
+        /// HOME. The DD's DRAW-frame read caught it and moved it to −44.5, which is exactly
+        /// `(−8 + −81) / 2`. Written as the midpoint rather than as that number so the design's own
+        /// claim holds by construction, and so a future move of either team line carries the draw
+        /// with it instead of stranding it.</para>
+        ///
+        /// <para>All four sites read these: the three `MakeButton` calls and the biro ring's own
+        /// ternary. The ring's comment already named the hazard — "two elements agreeing by
+        /// convention rather than by construction" — and a literal moved in one place and not the
+        /// other is precisely that.</para></summary>
+        private const float AwayCellY = -8f;
+        private const float HomeCellY = -81f;
+        private const float DrawCellY = (AwayCellY + HomeCellY) / 2f;   // −44.5
+
         /// <summary>Gutter x and stroke weight for <c>THE HOUSE'S LINE</c>. The gutter is the strip
         /// between the 2px sheet divider at x=0 and the leg rows' own left pad at x=14 — the margin
         /// of the margin, which is where an annotating hand has room to write.</summary>
@@ -960,7 +987,11 @@ namespace SBR.Game
             // screen's, and nothing restates either), and the markets C14 audit already carried it
             // as invented (M-09). This was never an open question — an unexecuted ruling is not a
             // pending one.
-            float y = -44f;
+            // S82 option A, harvest 1 of 3 — the header's own gap, 8px measured down to 4px.
+            // The header's content ends at −36 (the 2px rule under a 24px title) and the first leg
+            // opened at −44. S50's standing order is spacing first, and 4px still separates the rule
+            // from the row beneath it. Measured, not guessed: this gap read 8.0px on the tree.
+            float y = -40f;
             if (slip.Picks.Count == 0)
             {
                 // S71: names the STATE, not the owner. This read "YOUR MARGIN IS CLEAR" — someone
@@ -1155,7 +1186,11 @@ namespace SBR.Game
             // room for up to MaxTicketsPerRound of them above the anchored action band (T47) — they
             // now render in the ENTRY sheet's own scrolling body instead (BuildScrollingBody), which
             // is where the kit puts them (screens.jsx:49-58, "PLACED THIS ROUND").
-            y -= 4f;
+            //
+            // S82 option A, harvest 2 of 3 — the bare 4px that stood here is GONE. The spec named it
+            // by line: a gap with no derivation, left behind when the receipts it used to separate
+            // moved out to the sheet. The leg list's last row already ends in its own 1px rule, so
+            // the COMBINED row below it is separated by a ruled edge rather than by air.
             // B1-3/M-03 ruling (load-bearing under S28): MarginRow.jsx is a label/value pair with
             // its own 1px --rule bottom rule, not one joined "COMBINED {odds}" string in one face
             // and one colour — S28 names this the exact failure that leaves label and fact
@@ -1259,7 +1294,10 @@ namespace SBR.Game
             LaptopUi.MakeText(panel, "PayoutLabel", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, y), new Vector2(300f, 16f), 13, TextAnchor.UpperLeft, LaptopOs.Muted,
                 "POTENTIAL PAYOUT", _font);
-            y -= 18f;
+            // S82 option A, harvest 3 of 3 — 18px advance for a 16px box, measured as 2.0px of air.
+            // The label's own box already carries ~3px around its 13px glyphs, so the figure below it
+            // is still separated by whitespace rather than by an advance.
+            y -= 16f;
             TMP_Text payout = LaptopUi.MakeText(panel, "Payout", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(14f, y), new Vector2(300f, 36f), 31, TextAnchor.UpperLeft, LaptopOs.MoneyGold, $"{LaptopUi.Money(slip.ToWin)}", _fontCond);
             // Hand-laid wax highlight behind the one loud figure (palette-surething.css
             // --wax-highlight-*): a thin amber band, tilted, sized from the figure's own measured

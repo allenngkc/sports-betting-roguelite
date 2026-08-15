@@ -97,6 +97,29 @@ Design-verified masthead changes only by closing a conformance gap, never by red
 budget, and this is the same trade. **A deficit that survives the yield order below returns to the
 DD seat and then to Allen — it does not become a donation from chrome.**
 
+**THE BUDGET IS PRICED** (S80-am2 / S82, 2026-08-15, measured over eight flows). Against the 370px
+`MarginFlowBudget`: **4 legs alone 370.10** · **4 + a held consumable 404.10 (+34.10)** · **4 + the
+relation statement 406.10 (+36.10)** · **4 + both 440.10 (+70.10, the worst case)**. Three legs with
+a consumable fits by 0.9px. **The consumable row is a single 34px advance however many are held**, so
+the space is legs × {row absent, present} × statement — **eight flows, not twelve.**
+
+**TWO BILLS, TWO DEADLINES, and this is the part that must not be collapsed.** **34.10px is LIVE
+TODAY** — four legs across distinct matchups plus one held consumable, pure run state at the ordinary
+cap, **a defect on screen now with nothing to do with the sentence.** **36.00px is the statement's
+and is unreachable in play** until the additive gesture ships, because `Toggle` still replaces and a
+same-match slip cannot be built. **Pricing them as one 70px bill is what makes the problem look
+unsolvable.**
+
+**`RelationStatementHeight = 30` is confirmed and closed** — the longest approved sentence renders
+two lines at 28.3px preferred against the 30px slot.
+
+**The reservation is provisioned for the MEASURED WORST CASE, and the spec names no number**: the
+worst case is a consequence of the composition, not a fact about geometry. **The invariant BUILDS
+that state** — a bound written against the worst case fires on a correct build if the gate keeps
+building the base, and **a gate that builds one state cannot bound a state space.** **Where a gate
+and its exploratory sweep measure the same quantity they share ONE measurement, or the sweep is
+decoration.**
+
 **Yield order for any layout deficit: spacing, then repetition, then nothing** (S50). Nothing that
 states a product fact is deleted to make a layout fit, and no hierarchy is reordered for a shortfall
 (T51). A deficit that survives that list returns to the DD seat.
@@ -116,7 +139,70 @@ depending on how many legs were marked — the most consequential control in the
 bet more. The flow region above it is bounded by MaxLegs = 4 and the reserved height is re-derived in
 the same commit as any change to that cap.
 
-The margin **does not scroll**. Interior market lists do (S25-am), with S27's rail.
+The margin **does not scroll** — **until S83 lands, which retires this clause in one direction only.**
+Interior market lists already do (S25-am), with S27's rail.
+
+#### S83 — the three zones (specced 2026-08-15, sequenced AFTER option A)
+
+**Allen ruled the budget deficit A now / C before the additive gesture / B in reserve (S82).** C is
+this: **the margin becomes three zones, and only the middle one scrolls.**
+
+| zone | contents | behaviour |
+|---|---|---|
+| **1 · HEAD** | `MY MARKS · n SELECTIONS · m STAGED` | **fixed** |
+| **2 · THE SLIP** | leg rows · THE HOUSE'S LINE · the relation statement · the `COMBINED`/`SAME MATCH` price row · the modifiers row | **scrolls** |
+| **3 · THE COMMIT** | `STAKE` + figure · chips · nudges · `POTENTIAL PAYOUT` + figure + wax band · **PLACE · LOCK · SKIP** | **anchored, reserved** |
+
+**Zone 1 takes the board's own grammar**: a column head is not a row of the list beneath it, so it
+does not travel with it. **A count that scrolls away from the things it counts is a head that has
+become a row.**
+
+**Zone 3 is why this is safe. The two figures the commit is about — what he stakes and what he would
+win — never leave the screen**, because a payout below the fold while PLACE is pressable is exactly
+*a cost he cannot see at the point of spending* (S17, S73). **The stake block is not split**: M-05
+put the figure above its own controls because the figure is the fact, and a scroll boundary between
+them would undo that ruling to save pixels the zone does not need.
+
+**`ActionBandReservedHeight` grows to hold zone 3. T47 is EXTENDED, not weakened** — the rule was
+always that the flow and the action band can never meet, and **PLACE, LOCK and SKIP do not move by a
+pixel.**
+
+**THE HOUSE'S LINE moves into the scrolling content.** It is drawn from `legRowY` and spurred to its
+own members; **a mark that holds still while its rows scroll points at rows it has nothing to do
+with**, which is the defect §3.1's spurs exist to prevent.
+
+**The scroll rests at the top**, one behaviour with the board. **S27's rail appears whenever content
+exceeds the viewport and reports proportionally.** **A 1px dead-band keeps S51's known 0.10px kit
+residue from ever engaging a scroll.**
+
+**THE SEAMS, and they are not the same treatment.** **The commit seam (zone 2 → zone 3) takes 6px,
+on T47's own reasoning** — T47 exists to keep the flow and the anchored band from ever meeting, and
+**under C its `+ 6f` has become an internal gap inside zone 3, between the payout and PLACE: the seam
+it was ruled to protect moved up and nothing moved with it.** **Zone 2 clips at its viewport and
+never draws into that pad or under zone 3** — a pad behind an opaque block is not a pad, it is a
+hidden overlap. **The head seam (zone 1 → zone 2) takes nothing**, because `BoardTitle` is a fixed
+column head and `BoardBody` clips immediately beneath it with no pad at all: **a column head and a
+dense control block are not the same kind of neighbour, and what governs a seam is what sits BELOW
+it rather than whether the content moves.**
+
+**Viewport: `530 − head 40 − reserve 316 − seam 6 = 168`.** **Four legs alone measures 168 —
+exactly flush, and still no scroll** — while a held consumable, the sentence, or both scroll by
+**34, 36 and 70**: exactly the two bills and their sum. **The scroll IS the overrun, neither more nor
+less, which is what shows the zone split neither created nor absorbed a pixel.** **Flush is tight and
+is named as tight: the dead-band is load-bearing rather than defensive, and the gate pins the
+four-legs-alone state explicitly.**
+
+**Anchoring changes WHICH content scrolls, never HOW MUCH** — the overflow is the same ~70px the
+budget was ever over by — **which is why the split is argued on meaning rather than on arithmetic.**
+**All its numbers are provisional on A**, and the viewport is derived once from the factored flow
+measurement. **It lands after A and not beside it**: at four legs alone the flow measures 370.10
+against 370, and **a scrollbar that appears for a tenth of a pixel is worse than no scrollbar.**
+
+**The invariant changes with it: REACHABILITY replaces containment.** The content container's height
+must equal the measured content depth (the rail's honesty is entirely that), nothing may be drawn
+outside its bounds, the zones may not overlap, **and the two-sided slack bound is knowingly retired
+for zone 2 — a scrolling region has no slack to bound — surviving only where the height is fixed by
+construction.**
 
 ### 2.2 Control sizes — exact
 
@@ -660,6 +746,50 @@ product fact is deleted to make a layout fit. **Reachability holds by a mechanis
 — the interior list scrolls (S25-am) with S27's printed position rail.
 
 **`MONEYLINE` stands as the column header.** It names the market, not the number of outcomes.
+
+#### The middle position is a MEASUREMENT, not a slot (S74-am3, 2026-08-15, read on the frame)
+
+**The draw's price cell is CENTRED IN THE SPAN ITS TWO SIBLINGS DEFINE** — `AWAY` and `HOME` are each
+pinned by their own team line and neither moves, so the span is fixed and the draw takes its middle:
+**`DrawOdds` at `−44.5f`** (or `−44f` where half-pixels are barred). **As first built it sat at `−43f`,
+and the frame measured the gap above it at 3px against 6px below — proximity grouping AWAY+DRAW
+against HOME, which is the opposite of what *attached to neither* means.**
+
+**THE TRAP, recorded because it generalises: this board's two columns run on different pitches.** The
+team lines step 38px; the price cells step 35px. **With two items each the 3px divergence is
+invisible — inserting a THIRD item is what makes two rhythms disagree on screen.** **Where a
+composition inserts into one of two parallel columns, the insertion takes ITS OWN column's rhythm,
+and the middle of a span is derived from the span, never inherited from the neighbour column.**
+
+**`MORE ›` now shares the draw's centre line** — at three lines the block's centre is a row, where at
+two it was whitespace. **Accepted rather than nudged:** `MORE` is a **column head** on the board's own
+header, so the control takes its scope from its column and not from the row it aligns with; it is
+plainly a different object (74px against 112, raised chrome, a chevron, one per block); and **an
+unexplained offset would be worse than a coincidence with a reason.** **Re-read if the block's line
+count changes again.**
+
+#### The board scrolls, by decision (S81, ALLEN 2026-08-15)
+
+**THE SCROLLING BOARD STAYS — slate holds at six, no pitch change, price face untouched.** The
+board **never truncated a matchup before the third line and now always truncates two**: six 78px
+blocks fitted the 504px list with 36px spare, so **the scroll existed for staged receipts, not for
+matchups.** **There was no geometric escape to weigh** — six blocks need an 84px pitch and three
+price cells are 96px before any pad, so six-visible is unreachable at the price face under every
+layout; the choice was a scrolling board or a shorter slate, never two layouts. **He took the
+scrolling board.**
+
+**What that accepts, recorded so it is not re-litigated as a defect: four blocks complete, one
+partial, one below the fold — and a partial block renders a market as ONE of its three offers.**
+That is the accepted cost, not an oversight. **The FORM board is no longer a board the whole slate
+fits on.**
+
+**The affordance is verified, not assumed** (S81-am). A permanent scroll makes S27's position rail
+load-bearing on every FORM frame, where before it governed staged receipts only. Measured on frame:
+**thumb 365px against a predicted 365px, track = the list area exactly, flush to scroll-top —
+proportional to the pixel.** **Sufficient on two independent channels, neither colour-dependent and
+neither built for this: the rail, and the cut block's own missing bottom rule — a card that ends
+without its rule reads as continuing.** **`MatchupsPerSlate`, `MatchupCardPitch` and the 19px price
+face are all fixed by this ruling; §8's no-shrinking-type stands.**
 
 ### Settlement language does not change (C47)
 

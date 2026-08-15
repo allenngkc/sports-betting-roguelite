@@ -338,7 +338,15 @@ public static class JointModel
 
     /// <summary>The scalar joint. Private by design (S73) — callers get it only alongside its
     /// relation labels, via <see cref="JointProbability"/>.</summary>
-    private static double Probability(Matchup matchup, IReadOnlyList<MarketSelection> selections)
+    /// <summary>The joint probability ALONE — no relation classification, no principal nomination.
+    /// <para>Internal rather than private because the conditional cash-out quote is a ratio of three
+    /// joints and needs none of the labelling. Routing it through
+    /// <see cref="JointProbability(Matchup, IReadOnlyList{MarketSelection})"/> instead cost a marginal
+    /// per leg plus a joint per PAIR plus a <c>Classify</c> per pair — 11 enumerations for a four-leg
+    /// group where one was wanted — three times per leg boundary, with the labels discarded at the
+    /// call site. That is what turned a gate campaign into a four-CPU-hour crawl (F_0.6.0, profiled
+    /// 2026-08-15). Labels are for slips; quotes want the number.</para></summary>
+    internal static double Probability(Matchup matchup, IReadOnlyList<MarketSelection> selections)
     {
         Split split = SplitFamilies(matchup, selections);
 
@@ -362,8 +370,16 @@ public static class JointModel
     ///
     /// <para>The outer sum runs over the model's outcome partition W — the <see cref="MatchResult"/>
     /// enum, in <c>MatchModel.Classes</c>' order — and the inner sum mirrors
-    /// <c>MatchModel.ScoreProbability</c>'s shape and order exactly, which is what makes a single-leg
-    /// joint bit-identical to the engine's own price rather than merely close to it.</para>
+    /// <c>MatchModel.ScoreProbability</c>'s shape and order exactly, which is what keeps a single-leg
+    /// joint as close to the engine's own price as double arithmetic allows.</para>
+    ///
+    /// <para><b>That is close, not bit-identical — measured, and this note used to overclaim it.</b>
+    /// 132 of 244 board legs disagree in the last bits: ~70 ulp on <c>PlayerMultiScorer</c>, 38 on
+    /// <c>AnytimeScorer</c>, 26 on <c>TotalCorners</c>; <c>CorrectScore</c>, <c>Handicap</c> and
+    /// <c>WinningMargin</c> are exact. Agreement is ~1.5e-14 relative, comfortably inside the 1e-12
+    /// verification gate, and a pinned diagnostic test carries the per-kind table. The claim that
+    /// <em>is</em> exact, and the one the same-match path actually rests on, is
+    /// <c>p_joint(all legs) == SameMatch.PTicket</c> — asserted with <c>==</c>.</para>
     /// </summary>
     private static double GoalFamily(Matchup matchup, Split split)
     {
@@ -1118,6 +1134,51 @@ public static class SameMatchModel
         return false;
     }
 
+    /// <summary>
+    /// The exact joint probability that EVERY leg in <paramref name="legs"/> wins: the product, over
+    /// matchups in first-appearance order, of each matchup group's enumerated joint. Legs on different
+    /// matchups are independent, which is what makes the product legitimate — the same factorisation
+    /// <see cref="Price"/> uses, through the same grouping, in the same order.
+    ///
+    /// <para><b>Why this is public.</b> A locked price is not the only question asked of the joint. The
+    /// sweat's cash-out needs <c>P(the rest win | the settled legs won)</c>, and under the sweat's
+    /// one-leg-at-a-time resolution that conditional is exactly a RATIO OF TWO OF THESE — no new sample
+    /// space and no new machinery, which is the whole reason F_0.6.0 Phase 4 is engine-local. This is
+    /// the numerator and the denominator both; <see cref="SweatSession"/> divides.</para>
+    ///
+    /// <para><b>The empty set is 1.0</b> — the empty conjunction, and the value that makes an unstarted
+    /// sweat's conditional collapse to the unconditional joint exactly rather than nearly.</para>
+    ///
+    /// <para>A one-leg group returns that selection's marginal. That marginal agrees with
+    /// <c>MatchModel</c>'s own price to ~1.5e-14 relative — **not** to the bit; see
+    /// <see cref="JointModel"/>'s goal-family note for the per-kind ulp table. Both sides of a
+    /// conditional must therefore come from THIS evaluator: reading the denominator off
+    /// <see cref="Leg.TrueProb"/> instead would mix two arithmetics and the ratio would stop being a
+    /// conditional.</para>
+    ///
+    /// <para>Voided legs are NOT filtered here: which legs are on the ticket is the caller's question,
+    /// not the model's. The caller passes the set it means.</para></summary>
+    public static double JointProbabilityOf(IReadOnlyList<Leg> legs)
+    {
+        if (legs == null) throw new ArgumentNullException(nameof(legs));
+        if (legs.Count == 0) return 1.0;
+
+        (List<Matchup> matchups, List<List<int>> groups) = GroupByMatchup(legs);
+
+        double pJoint = 1.0;
+        for (int g = 0; g < groups.Count; g++)
+        {
+            List<int> members = groups[g];
+            var selections = new MarketSelection[members.Count];
+            for (int i = 0; i < members.Count; i++) selections[i] = legs[members[i]].Selection;
+            // Probability, not JointProbability: this is a quote, not a slip. See Probability's own
+            // note — asking for the labelled form here and discarding the labels is what made the
+            // cash-out path an order of magnitude more expensive than the number it needed.
+            pJoint *= JointModel.Probability(matchups[g], selections);
+        }
+        return pJoint;
+    }
+
     /// <summary>The most legs this model will build a survivor-subset table for. The table is
     /// <c>2^n</c> entries, so the bound is on the exponent, not on taste: at the shipped
     /// <see cref="RunConfig.MaxLegs"/> of 4 a ticket costs 15 live prices, and 12 leaves an order of
@@ -1221,24 +1282,7 @@ public static class SameMatchModel
         if (margin <= 0.0 || double.IsNaN(margin) || double.IsInfinity(margin))
             throw new ArgumentException($"The SAME MATCH margin dial must be > 0, got {margin}", nameof(margin));
 
-        // First-appearance grouping, by matchup identity. Deliberately not a hash-ordered group-by:
-        // the multiplication order — and therefore the last bits of the price — must be a function of
-        // the ticket alone, reproducible from a seed on any run.
-        var matchups = new List<Matchup>();
-        var groups = new List<List<int>>();
-        for (int i = 0; i < legs.Count; i++)
-        {
-            int group = -1;
-            for (int m = 0; m < matchups.Count; m++)
-                if (ReferenceEquals(matchups[m], legs[i].Matchup)) { group = m; break; }
-            if (group < 0)
-            {
-                matchups.Add(legs[i].Matchup);
-                groups.Add(new List<int>());
-                group = groups.Count - 1;
-            }
-            groups[group].Add(i);
-        }
+        (List<Matchup> matchups, List<List<int>> groups) = GroupByMatchup(legs);
 
         double pTicket = 1.0;
         var relations = new List<Relation>();
@@ -1290,6 +1334,34 @@ public static class SameMatchModel
         double price = 1.0 / (pTicket * margin * Math.Pow(1.0 + overround, legs.Count));
         return new SameMatchPrice(pTicket, price, relations, principal, naiveFallback: false,
             subsetPrices: Array.Empty<double>());
+    }
+
+    /// <summary>First-appearance grouping of a leg list by matchup identity, returning the matchups in
+    /// the order they first appear and, for each, the leg indices it holds.
+    ///
+    /// <para>Deliberately not a hash-ordered group-by: the multiplication order — and therefore the
+    /// last bits of every price derived from it — must be a function of the ticket alone, reproducible
+    /// from a seed on any run. Shared by <see cref="PriceCore"/> and
+    /// <see cref="JointProbabilityOf"/> so a locked price and a cash-out conditional can never disagree
+    /// about which legs share a match or in which order their joints multiply.</para></summary>
+    private static (List<Matchup> matchups, List<List<int>> groups) GroupByMatchup(IReadOnlyList<Leg> legs)
+    {
+        var matchups = new List<Matchup>();
+        var groups = new List<List<int>>();
+        for (int i = 0; i < legs.Count; i++)
+        {
+            int group = -1;
+            for (int m = 0; m < matchups.Count; m++)
+                if (ReferenceEquals(matchups[m], legs[i].Matchup)) { group = m; break; }
+            if (group < 0)
+            {
+                matchups.Add(legs[i].Matchup);
+                groups.Add(new List<int>());
+                group = groups.Count - 1;
+            }
+            groups[group].Add(i);
+        }
+        return (matchups, groups);
     }
 
     // ================================================================================ refusal

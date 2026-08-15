@@ -635,6 +635,46 @@ namespace SBR.Tests.PlayMode
                 $"the stamp was ellipsised: \"{stamp}\". A truncated remedy is an unverified remedy");
         }
 
+        /// <summary>S74's middle position, measured rather than asserted. The draw's line sits
+        /// physically between the two teams' — so the gap above it and the gap below it are the
+        /// same, and the shipped −43 made them 35 and 38.
+        ///
+        /// <para>Measured off the RENDERED cells, not off the constants, so this fails if a literal
+        /// creeps back into one of the four sites that place them.</para></summary>
+        [UnityTest, Order(9)]
+        public IEnumerator Draw_price_cell_sits_exactly_between_the_two_team_cells()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            Transform card = Required(App(laptop), "Matchup0");
+            var away = (RectTransform)Required(card, "AwayOdds");
+            var home = (RectTransform)Required(card, "HomeOdds");
+            Transform drawNode = Find(card, "DrawOdds");
+            Assert.IsNotNull(drawNode,
+                "a generated board prices a draw on every matchup (SlateGenerator), so the row must "
+                + "be here — if it is not, the board stopped being a 1X2 board");
+            var draw = (RectTransform)drawNode;
+
+            var basis = (RectTransform)card;
+            float gapAbove = LocalTop(away, basis) - LocalTop(draw, basis);
+            float gapBelow = LocalTop(draw, basis) - LocalTop(home, basis);
+            Assert.AreEqual(gapAbove, gapBelow, 0.05f,
+                $"the draw is not in the middle: {gapAbove:F2}px below AWAY, {gapBelow:F2}px above "
+                + "HOME. S74 rules the middle position as MEANING, so it is the midpoint by "
+                + "construction — if these differ, a literal has been written where the derivation was");
+
+            // And the ring follows the cell. The ring's own comment names this hazard: two elements
+            // agreeing by convention rather than by construction is what T95 caught on the TV.
+            Invoke(Required(card, "DrawOdds"));
+            yield return WaitForRebuild();
+            card = Required(App(laptop), "Matchup0");
+            var ring = Find(card, "BiroRing") as RectTransform;
+            Assert.IsNotNull(ring, "picking the draw must ink its price cell");
+            var drawAfter = (RectTransform)Required(card, "DrawOdds");
+            Assert.AreEqual(LocalTop(drawAfter, (RectTransform)card), LocalTop(ring, (RectTransform)card),
+                12f, "the ring was left behind at the cell's old y");
+        }
+
         /// <summary>P5 on the SCREEN — the composer is tested next door; this is the slot. Toner,
         /// once per slip, present exactly when something is statable and absent when nothing is.</summary>
         [UnityTest, Order(9)]
@@ -780,6 +820,181 @@ namespace SBR.Tests.PlayMode
                 }
         }
 
+        /// <summary>S80's OWED STATE SWEEP — the margin flow measured across the compositional
+        /// states, before any geometry moves.
+        ///
+        /// <para><b>Why it exists, stated plainly: the MaxLegs invariant builds ONE state.</b> It
+        /// fills the cap across distinct matchups with no consumable held, so it has never seen the
+        /// modifiers row — 34px gated on pure RUN state — nor a relation statement. My own blind-spot
+        /// list named the sentence and never the consumables, which is exactly the gap the DD found.
+        /// A gate that measures one point of a state space cannot report the worst case of it.</para>
+        ///
+        /// <para>Filter-only: it rebuilds the surface dozens of times.</para></summary>
+        [UnityTest, Order(21), Explicit("S80 evidence: margin flow across legs x consumables x "
+            + "statement. Rebuilds the surface dozens of times; run by filter only.")]
+        public IEnumerator Evidence_S80_margin_flow_across_compositional_states()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            Run run = laptop.director.Run;
+            BetslipModel slip = laptop.Slip;
+            int maxLegs = run.Config.MaxLegs;
+
+            // A same-match pair the model nominates a statable principal for — the "statement
+            // present" arm needs one, and 46.1% of same-match pairs correctly state nothing (S79).
+            MarketSelection stateA = default, stateB = default;
+            bool haveStatable = false;
+            var offers = run.CurrentSlate.Matchups[0].Markets;
+            for (int a = 0; a < offers.Count && !haveStatable; a++)
+                for (int b = a + 1; b < offers.Count; b++)
+                {
+                    slip.Clear();
+                    if (!slip.AddLeg(0, offers[a].Selection)) continue;
+                    if (!slip.AddLeg(0, offers[b].Selection)) continue;
+                    if (slip.Refusal != null) continue;
+                    if (SportsbookApp.RelationStatement(slip.SameMatchPricing, slip.Picks) == null)
+                        continue;
+                    stateA = offers[a].Selection; stateB = offers[b].Selection; haveStatable = true;
+                    break;
+                }
+            Assert.IsTrue(haveStatable, "no statable same-match pair on matchup 0");
+
+            float budget = SportsbookApp.MarginFlowBudget;
+            UnityEngine.Debug.Log($"[S80-SWEEP] budget {budget:F0}px · legs | consumables | statement "
+                + "| flowBottom | flow depth | vs budget");
+
+            // Consumables are append-only on Run (GrantConsumable), so the sweep walks them upward:
+            // none -> one -> both. Nothing here removes one, which keeps the run honest rather than
+            // reaching for a setter that does not exist.
+            string[] modLabels = { "none", "one", "both" };
+            string[] modGrants = { null, "free_bet", "double_or_nothing" };
+            float worstOverrun = float.MinValue;
+            string worstCase = "";
+
+            for (int mi = 0; mi < modLabels.Length; mi++)
+            {
+                if (modGrants[mi] != null)
+                {
+                    ConsumableDefinition def = null;
+                    foreach (ConsumableDefinition c in RelicCatalog.Consumables)
+                        if (c.Id == modGrants[mi]) { def = c; break; }
+                    Assert.IsNotNull(def, $"consumable '{modGrants[mi]}' is not in the catalog");
+                    run.GrantConsumable(def);
+                }
+
+                for (int legs = 1; legs <= maxLegs; legs++)
+                    foreach (bool withStatement in new[] { false, true })
+                    {
+                        if (withStatement && legs < 2) continue;   // a statement needs a pair
+
+                        slip.Clear();
+                        yield return WaitForRebuild();   // force a signature change before rebuilding
+
+                        bool built = true;
+                        if (withStatement)
+                        {
+                            built &= slip.AddLeg(0, stateA);
+                            built &= slip.AddLeg(0, stateB);
+                            for (int extra = 0; extra < legs - 2 && built; extra++)
+                                built &= slip.AddLeg(extra + 1, MarketSelection.Moneyline(Side.Away));
+                        }
+                        else
+                        {
+                            for (int i = 0; i < legs && built; i++)
+                                built &= slip.AddLeg(i, MarketSelection.Moneyline(Side.Away));
+                        }
+                        if (!built || slip.Picks.Count != legs) continue;
+                        yield return WaitForRebuild();
+
+                        var margin = Required(App(laptop), "WorkingMargin") as RectTransform;
+                        FlowDepth d = MeasureFlowDepth(margin);
+                        bool statementOnScreen = Find(margin, "RelationStatement") != null;
+                        float overrun = -budget - d.BottomUntilted;
+                        float depthPx = -d.BottomUntilted;
+
+                        if (overrun > worstOverrun)
+                        {
+                            worstOverrun = overrun;
+                            worstCase = $"{legs} legs, consumables {modLabels[mi]}, statement "
+                                + $"{(statementOnScreen ? "present" : "absent")}";
+                        }
+                        UnityEngine.Debug.Log($"[S80-SWEEP] {legs} | {modLabels[mi]} | "
+                            + $"{(statementOnScreen ? "present" : "absent")} | "
+                            + $"{d.BottomUntilted:F2} | {depthPx:F2} | "
+                            + $"{(overrun > 0 ? "+" : "")}{overrun:F2} | deepest {d.DeepestName}");
+                    }
+            }
+
+            UnityEngine.Debug.Log($"[S80-SWEEP] WORST: {worstCase} -> "
+                + $"{(worstOverrun > 0 ? "+" : "")}{worstOverrun:F2}px against a {budget:F0}px budget"
+                + (worstOverrun > 0 ? " — OVER" : " — fits"));
+
+            // ---- S80 §1: the statement's own height. The constant is derived from the LONGEST
+            // sentence's measured height, and "if the face measures wider and it reaches three lines,
+            // 30 is wrong and the whole reservation moves."
+            slip.Clear();
+            yield return WaitForRebuild();
+            slip.AddLeg(0, stateA); slip.AddLeg(0, stateB);
+            yield return WaitForRebuild();
+            var statementNode = Find(Required(App(laptop), "WorkingMargin"), "RelationStatement");
+            if (statementNode != null)
+            {
+                var t = statementNode.GetComponent<TMP_Text>();
+                string longest = "THE SAME TEAM'S GOALS SETTLE THESE OPPOSITE WAYS.";
+                string was = t.text;
+                t.text = longest;
+                t.ForceMeshUpdate();
+                UnityEngine.Debug.Log($"[S80-BOX] longest sentence \"{longest}\" in a "
+                    + $"{((RectTransform)t.transform).rect.width:F0}px box: {t.textInfo.lineCount} "
+                    + $"lines, preferred height {t.preferredHeight:F1}px, against the "
+                    + $"{SportsbookApp.RelationStatementHeight:F0}px slot — "
+                    + (t.preferredHeight <= SportsbookApp.RelationStatementHeight
+                        ? "30 STANDS" : "30 IS WRONG, the reservation moves"));
+                t.text = was;
+            }
+
+            // ---- A's MEASUREMENT PASS (S82). The spec harvests "the slack between each block's box
+            // and its advance", and an advance is not the same thing as air: what can actually be
+            // taken is the GAP between one block's rendered bottom and the next block's rendered top.
+            // Measured off the tree so a box that draws taller than its rect, or a block whose
+            // advance is consumed by something invisible, cannot be mistaken for slack.
+            slip.Clear();
+            yield return WaitForRebuild();
+            for (int i = 0; i < maxLegs; i++) slip.AddLeg(i, MarketSelection.Moneyline(Side.Away));
+            yield return WaitForRebuild();
+            var flowMargin = Required(App(laptop), "WorkingMargin") as RectTransform;
+
+            var bands = new List<(string Name, float Top, float Bottom)>();
+            foreach (Graphic g in flowMargin.GetComponentsInChildren<Graphic>(true))
+            {
+                var rect = g.rectTransform;
+                if (rect == flowMargin) continue;
+                if (rect.GetComponentInParent<Button>() != null) continue;
+                float top = LocalTop(rect, flowMargin), bot = LocalBottom(rect, flowMargin);
+                if (top >= LocalTop(flowMargin, flowMargin) - 0.5f
+                    && bot <= LocalBottom(flowMargin, flowMargin) + 0.5f) continue;   // ground
+                bands.Add((rect.name, top, bot));
+            }
+            bands.Sort((x, y2) => y2.Top.CompareTo(x.Top));
+            // NAMED, because it is load-bearing: this runs AFTER the sweep granted its consumables,
+            // and Run has no ungrant. So the state measured is MaxLegs + the modifiers row — which
+            // is the LIVE DEFECT state, and therefore the right one to harvest from. Gaps that only
+            // exist without the modifiers row would not be worth taking.
+            UnityEngine.Debug.Log($"[S82-A] state: {maxLegs} legs, modifiers row PRESENT, no statement");
+            UnityEngine.Debug.Log("[S82-A] element | top | bottom | gap above "
+                + "(buttons excluded, so chip/nudge rows show as one wide gap)");
+            float prevBottom = 0f;
+            for (int i = 0; i < bands.Count; i++)
+            {
+                float gap = prevBottom - bands[i].Top;
+                UnityEngine.Debug.Log($"[S82-A] {bands[i].Name} | {bands[i].Top:F1} | "
+                    + $"{bands[i].Bottom:F1} | {(i == 0 ? 0f : gap):F1}");
+                prevBottom = Mathf.Min(prevBottom, bands[i].Bottom);
+            }
+
+            Assert.Greater(slip.Picks.Count, 0, "the sweep must have built at least one state");
+        }
+
         /// <summary>EVIDENCE, not verification — the DD's two measurements for the S77 forms, run by
         /// filter only so it does not lengthen routine suites (the TvSweatCaptureHarness pattern).
         ///
@@ -824,6 +1039,38 @@ namespace SBR.Tests.PlayMode
                                 + $"{w13 / controlWidth:P0} / {w17 / controlWidth:P0}");
                         }
                     }
+
+            // ---- (1b) `DRAW {price}` JOINS THE C46 POPULATION (S74-am's own closing line: "DRAW and
+            // its price are new strings in the canon face; they measure against their cells like
+            // everything else and join the sweep's population under C46"). Measured off the RENDERED
+            // control — its own font, size, tracking and cell width — rather than against numbers
+            // copied out of the call site, because a cell's assumption about its face is exactly what
+            // C46 says goes unstated.
+            Transform drawNode = Find(Required(App(laptop), "Matchup0"), "DrawOdds");
+            if (drawNode != null)
+            {
+                var drawLabel = Required(drawNode, "Label").GetComponent<TMP_Text>();
+                float cell = ((RectTransform)drawNode).rect.width;
+                int size = Mathf.RoundToInt(drawLabel.fontSize);
+                float worstDraw = 0f; string worstDrawText = "";
+                foreach (Matchup mu in run.CurrentSlate.Matchups)
+                {
+                    if (mu.DrawOdds <= 1.0) continue;
+                    string s = $"DRAW  {OddsFormat.American(mu.DrawOdds)}";
+                    float w = LaptopUi.MeasureWidth(drawLabel.font, s, size, LaptopTrack.Names);
+                    if (w > worstDraw) { worstDraw = w; worstDrawText = s; }
+                }
+                // The board's own draws are a sample, not the population. The cell must also hold the
+                // widest string the FORMAT can produce — five digits and a sign is the ceiling.
+                string formatCeiling = "DRAW  +10000";
+                float ceilingWidth = LaptopUi.MeasureWidth(drawLabel.font, formatCeiling, size,
+                    LaptopTrack.Names);
+                UnityEngine.Debug.Log($"[S74-FIT] cell {cell:F0}px at {size}px · widest ON THIS BOARD "
+                    + $"\"{worstDrawText}\" {worstDraw:F1}px ({worstDraw / cell:P0}) · FORMAT CEILING "
+                    + $"\"{formatCeiling}\" {ceilingWidth:F1}px ({ceilingWidth / cell:P0}) · "
+                    + $"AWAY/HOME comparable \"AWAY  -341\" "
+                    + $"{LaptopUi.MeasureWidth(drawLabel.font, "AWAY  -341", size, LaptopTrack.Names):F1}px");
+            }
 
             // ---- (2) THE ARITY DISTRIBUTION, swept off the live board.
             // All PAIRS on every matchup, plus all TRIPLES on matchup 0. Pairs are where duplicates
@@ -1389,46 +1636,11 @@ namespace SBR.Tests.PlayMode
 
             // T47's reservation, checked directly rather than inferred from the absence of overlap:
             // the flow region must fit its budget, and the anchored band must actually be anchored.
-            float flowBottom = float.MaxValue;
-            // The same depth with each element's OWN local rotation taken out — see TiltDepth and
-            // the pin below. Nothing is excluded from either figure; the second one just declines to
-            // read a tilt as an overrun.
-            float flowBottomUntilted = float.MaxValue;
-            string deepestName = "(nothing measured)";
-            float deepestTiltPx = 0f;
-            foreach (Graphic graphic in margin.GetComponentsInChildren<Graphic>(true))
-            {
-                var rect = graphic.rectTransform;
-                if (rect == margin) continue;
-                // Anything parented into an action control belongs to the band, not the flow.
-                if (rect.GetComponentInParent<Button>() != null) continue;
-                // The ruled-paper ground (S34) is the panel's SUBSTRATE, not flow content: it is a
-                // stretch-fill Graphic spanning the full 530px by design, so counting it reports the
-                // panel's own height as the flow's depth and the budget check can never pass. Caught
-                // by this assertion firing at exactly -530.0px — the panel's bottom edge, not a
-                // coincidence. Excluded by stretch, not by name, so any future full-bleed ground is
-                // excluded too.
-                // Excluded by MEASURED COVERAGE, not by anchoring and not by name. The first
-                // version of this test excluded "anchor-stretched" graphics — and the very next
-                // change to the ground (main's CanvasRenderer/explicit-size fix, which had to stop
-                // anchor-stretching because a stretched rect reads zero on this imperatively-built
-                // canvas) made the predicate stop matching the one thing it existed to skip. The
-                // assertion then reported the panel's own height, -530.0px, as the flow's depth.
-                // A ground is a thing that covers the whole panel; that is what is tested here, so
-                // it holds however the ground happens to be anchored.
-                bool coversWholePanel = LocalTop(rect, margin) >= marginTop - epsilonPx
-                    && LocalBottom(rect, margin) <= marginBottom + epsilonPx;
-                if (coversWholePanel) continue;
-                float bottom = LocalBottom(rect, margin);
-                flowBottom = Mathf.Min(flowBottom, bottom);
-                float tilt = TiltDepth(rect);
-                if (bottom + tilt < flowBottomUntilted)
-                {
-                    flowBottomUntilted = bottom + tilt;
-                    deepestName = PathOf(rect, margin);
-                    deepestTiltPx = tilt;
-                }
-            }
+            FlowDepth depth = MeasureFlowDepth(margin);
+            float flowBottom = depth.Bottom;
+            float flowBottomUntilted = depth.BottomUntilted;
+            string deepestName = depth.DeepestName;
+            float deepestTiltPx = depth.DeepestTiltPx;
             // S51 — SIGNED, EXPIRING DEVIATION (DD 2026-08-04): the flow's lowest element sits
             // outside its reservation with a staged receipt at MaxLegs, cost recorded as one
             // UN-OWNED excursion, expiring "when the owner is identified — at which point it is
@@ -1485,7 +1697,20 @@ namespace SBR.Tests.PlayMode
             // The DD's "closes at zero" is that tenth of a pixel — the 3.9px the band moved against
             // the 4.00px that was there. It is written out rather than rounded away so the next
             // reader knows the residue is the box-height difference and not drift.
-            const float structuralOverrunPx = 0.10f;
+            // RE-SOURCED for S82 option A (2026-08-15), and the SIGN FLIPPED — this is the first time
+            // the margin flow has CLEARED its reservation rather than overrun it.
+            //
+            //   +0.10  before A: the kit's 36.10px band bottom against a 36.00px box (S51).
+            //   −10.00 A's harvest, measured per block: the header's 8px gap halved to 4 (−4), the
+            //          bare undervied 4px after the leg list deleted (−4), and the payout label's
+            //          18px advance on a 16px box (−2).
+            //   ──────
+            //   −9.90  measured. The ordinary composition now fits, with 9.90px to spare.
+            //
+            // This does NOT close the live bill: four legs plus a held consumable is still +24.10
+            // over, because A recovered 10.00 of the 34.10 it was aimed at. That is S82's
+            // disposition (2) and it is Allen's call, not this gate's.
+            const float structuralOverrunPx = -9.90f;
             const float structuralTolerancePx = 0.05f;
             float overrunPx = -SportsbookApp.MarginFlowBudget - flowBottom;
             float structuralPx = -SportsbookApp.MarginFlowBudget - flowBottomUntilted;
@@ -1515,10 +1740,11 @@ namespace SBR.Tests.PlayMode
                 + $"{flowBottom:F2}px ({deepestTiltPx:F2}px of that is its own tilt, leaving "
                 + $"{flowBottomUntilted:F2}px), raw overrun {overrunPx:F2}px, budget "
                 + $"-{SportsbookApp.MarginFlowBudget:F0}px, action band reserves "
-                + $"{SportsbookApp.ActionBandReservedHeight:F0}px. The 0.10px is the kit's band "
-                + "bottom (36.10px below the payout figure's top) against a build box of 36.00px, "
-                + "whose bottom is flush with the budget. If it went back to ~4.00, the wax band has "
-                + "been moved off the kit's `bottom:-2px` and S51 has been reopened. If it GREW "
+                + $"{SportsbookApp.ActionBandReservedHeight:F0}px. NEGATIVE IS CLEARANCE: −9.90 is "
+                + "the kit's 36.10px band bottom against a 36.00px box (+0.10, S51) less A's "
+                + "measured 10.00px harvest (header gap 4, the bare post-leg 4, payout label 2). If "
+                + "it went back to ~+0.10 the harvest was reverted; if to ~+4.00 the wax band came "
+                + "off the kit's `bottom:-2px` and S51 has been reopened. If it GREW "
                 + "otherwise, something entered the margin flow: staged receipts live in the 700px "
                 + "sheet and must never re-enter it (both-screens kit amendment, DD 2026-08-04). If "
                 + "a RULED size changed, re-derive at this call site with the new arithmetic written "
@@ -1561,6 +1787,57 @@ namespace SBR.Tests.PlayMode
             var corners = new Vector3[4];
             rect.GetWorldCorners(corners);
             return basis.InverseTransformPoint(corners[1]).y;
+        }
+
+        /// <summary>How deep the margin's FLOW region reaches, and which element got there.</summary>
+        private readonly struct FlowDepth
+        {
+            public readonly float Bottom;            // lowest measured corner, tilt included
+            public readonly float BottomUntilted;    // the same with each element's own rotation out
+            public readonly string DeepestName;
+            public readonly float DeepestTiltPx;
+            public FlowDepth(float bottom, float untilted, string name, float tilt)
+            { Bottom = bottom; BottomUntilted = untilted; DeepestName = name; DeepestTiltPx = tilt; }
+        }
+
+        /// <summary>The margin flow's depth, in the panel's own local pixels.
+        ///
+        /// <para>Factored out so the MaxLegs invariant and S80's state sweep measure with ONE
+        /// function. Two copies of this would let the sweep's numbers and the pin's number drift,
+        /// and the whole point of the sweep is that its figures are comparable to the pin's.</para>
+        ///
+        /// <para>Exclusions are unchanged and are the ruled ones: anything parented into an action
+        /// control belongs to the anchored band rather than the flow, and a ground that covers the
+        /// whole panel is SUBSTRATE — excluded by measured coverage, never by name and never by
+        /// anchoring, because the first version of this predicate keyed on anchoring and stopped
+        /// matching the one thing it existed to skip the very next time the ground changed.</para>
+        /// </summary>
+        private static FlowDepth MeasureFlowDepth(RectTransform margin)
+        {
+            const float epsilonPx = 0.5f;
+            float marginTop = LocalTop(margin, margin);
+            float marginBottom = LocalBottom(margin, margin);
+            float bottom = float.MaxValue, untilted = float.MaxValue, deepestTilt = 0f;
+            string deepest = "(nothing measured)";
+            foreach (Graphic graphic in margin.GetComponentsInChildren<Graphic>(true))
+            {
+                var rect = graphic.rectTransform;
+                if (rect == margin) continue;
+                if (rect.GetComponentInParent<Button>() != null) continue;
+                bool coversWholePanel = LocalTop(rect, margin) >= marginTop - epsilonPx
+                    && LocalBottom(rect, margin) <= marginBottom + epsilonPx;
+                if (coversWholePanel) continue;
+                float b = LocalBottom(rect, margin);
+                bottom = Mathf.Min(bottom, b);
+                float tilt = TiltDepth(rect);
+                if (b + tilt < untilted)
+                {
+                    untilted = b + tilt;
+                    deepest = PathOf(rect, margin);
+                    deepestTilt = tilt;
+                }
+            }
+            return new FlowDepth(bottom, untilted, deepest, deepestTilt);
         }
 
         private static float LocalBottom(RectTransform rect, RectTransform basis)

@@ -99,8 +99,13 @@ public static class RunPlayer
             // carries its terminal state, and Settle does not clear the round's ticket list (ExitShop
             // does) — which keeps the count right on the round a run dies in, where the loop breaks
             // before any shop runs.
+            // CashedOut is excluded deliberately: since the probe took a cash-out policy (F_0.6.0
+            // phase 4 follow-on) the two are disjoint outcomes of one population, and a settlement
+            // count that quietly absorbed cash-outs would let G7-SGP's settled arm be satisfied by
+            // tickets nothing ever graded. Cash-outs are counted at the point they are taken.
             foreach (Ticket t in run.Tickets)
-                if (t.SameMatch != null && t.State != TicketState.Open) result.SameMatchSettled++;
+                if (t.SameMatch != null && t.State != TicketState.Open
+                    && t.State != TicketState.CashedOut) result.SameMatchSettled++;
             result.MaxScarStacks = Math.Max(result.MaxScarStacks, run.ScarStacks);
             if (scarBefore > 0 && run.ScarStacks == 0) result.ScarBurns++; // carrier realized this round
 
@@ -233,6 +238,19 @@ public static class RunPlayer
                     rm.CashOutsCount++;
                     rm.CashOutsTotal += o;
                     cashoutByTicket[i] = o;
+
+                    // WHERE in the sweat the quote was taken, recorded here because it is the only
+                    // place that still knows: once the session completes the cursor is gone. The
+                    // conditional is a different object at each position (see SameMatchStrategy),
+                    // so a bare cash-out count would not show whether the campaign covered the
+                    // shape of the curve or one point on it.
+                    if (ticket.SameMatch != null)
+                    {
+                        result.SameMatchCashedOut++;
+                        result.SameMatchCashOutCredit += o;
+                        if (evt!.LegIndex == 0) result.SameMatchCashOutsEarly++;
+                        else if (evt.LegIndex == ticket.Legs.Count - 1) result.SameMatchCashOutsLate++;
+                    }
                     break;
                 }
             }

@@ -59,6 +59,16 @@ public sealed class SweatSession
     private double? _heldFair;          // offer hold: frozen fair value
     private int _holdEventsLeft;        // offer hold: events the hold survives
 
+    // The conditional-joint cache (F_0.6.0 Phase 4), used only on a SAME MATCH ticket. All three
+    // joints are functions of WHICH legs are on the ticket and HOW MANY have settled, so they move
+    // only at a leg boundary — never on an ordinary event. Invalidated in AdvanceOrComplete, the one
+    // funnel through which the current leg advances and a mulligan's void or a whistle's repair
+    // reaches the leg set.
+    private bool _jointsValid;
+    private double _pSettled;      // p_joint(S)        — the settled (therefore WON) legs
+    private double _pSettledLive;  // p_joint(S u L)    — plus the leg in progress
+    private double _pActive;       // p_joint(S u L u U)— plus every leg still pending
+
     /// <param name="creditBank">The bank seam: adds the given amount to the run's bank (cash-out).</param>
     /// <param name="effects">Owned passives; notified on bust (scar feeds) and realize (scar burns).</param>
     /// <param name="mulliganAvailable">Whether a Mulligan Slip is currently held (a mulligan save
@@ -248,6 +258,7 @@ public sealed class SweatSession
     {
         _currentLeg++;
         _cursorInLeg = 0;
+        _jointsValid = false; // a leg settled (or was voided/repaired on the way here)
         if (_currentLeg >= _paths.Count)
             _complete = true; // every leg settled; ticket stays Open for Run.FinishSweat
         else
@@ -264,12 +275,19 @@ public sealed class SweatSession
 
     /// <summary>
     /// Fair cash-out value: the ticket's EXPECTED TERMINAL CREDIT in its current live state
-    /// (PLAN.md rev 5 §2 — one contract-payoff evaluator), or null when unavailable.
-    /// Win side: stake × Π(offered odds of settled-Won legs) × (p_live × o) of the current leg
-    ///   × Π(trueProb × o) of legs not yet started, voided legs dropped, × the payout product.
-    /// Loss side: a locked Free Bet adds (1 − p_all) × stake — the refund is contract, and
-    /// design/02 requires the quote to price the FULL remaining payoff function. Under an offer
+    /// (PLAN.md rev 5 §2 — one contract-payoff evaluator), or null when unavailable. Under an offer
     /// hold, the held value is returned instead while the hold lasts.
+    ///
+    /// <para><b>Two paths, and which one a ticket takes is decided by its structure, not by a
+    /// tolerance.</b> A ticket with at most one leg per matchup carries no
+    /// <see cref="Ticket.SameMatch"/> block and prices exactly as it did before F_0.6.0. A SAME MATCH
+    /// ticket's surviving legs are correlated and its price is a locked joint rather than a product of
+    /// legs, so it prices off the conditional joint instead — see <see cref="JointCashOutFair"/>.</para>
+    ///
+    /// <para>Loss side, on both paths: a locked Free Bet adds <c>(1 − p_win) × stake</c> — the refund
+    /// is contract, and design/02 requires the quote to price the FULL remaining payoff function. Each
+    /// path uses ITS OWN <c>p_win</c>, which is the whole point: under a joint, the product of the
+    /// remaining legs' marginals is not the probability this ticket still wins.</para>
     /// </summary>
     public double? CashOutFair()
     {
@@ -278,7 +296,19 @@ public sealed class SweatSession
         return RawCashOutFair();
     }
 
+    /// <summary>THE INVARIANT'S GUARD, and it is structural rather than arithmetic: an ordinary ticket
+    /// leaves on the first line and runs the pre-F_0.6.0 expression VERBATIM. The same discipline that
+    /// protects <see cref="Ticket.PotentialPayout"/> and <c>SameMatchModel.Refuse</c>, for the same
+    /// reason — an algebraically equal rewrite could still differ in the last bits, and the golden
+    /// seeds and the whole gate baseline sit downstream of those bits.</summary>
     private double RawCashOutFair()
+        => _ticket.SameMatch == null ? ProductCashOutFair() : JointCashOutFair();
+
+    /// <summary>The untouched product path, for a ticket with at most one leg per matchup.
+    /// Win side: stake × Π(offered odds of settled-Won legs) × (p_live × o) of the current leg
+    ///   × Π(trueProb × o) of legs not yet started, voided legs dropped, × the payout product.
+    /// Loss side: a locked Free Bet adds (1 − Π p) × stake.</summary>
+    private double ProductCashOutFair()
     {
         double resolvedOddsProduct = 1.0;
         for (int j = 0; j < _currentLeg; j++)
@@ -302,6 +332,154 @@ public sealed class SweatSession
         }
 
         return winSide;
+    }
+
+    /// <summary>
+    /// A SAME MATCH ticket's fair value: <c>payout × P(the ticket still wins | what has settled)</c>
+    /// (<c>design/02-betting-math.md</c> § *Same-game cash-out*, F_0.6.0 Phase 4).
+    ///
+    /// <para><b>The payout is READ, never re-derived.</b> <see cref="Ticket.PotentialPayout"/> is
+    /// stake × the ticket's locked price × the payout multiplier, void-adjusted through the
+    /// survivor-subset table locked at placement. Re-pricing the survivors here would be a second
+    /// source of truth for the one number settlement already owns, and the two would eventually
+    /// disagree.</para>
+    ///
+    /// <para><b>The loss-side refund uses the same conditional.</b> Free Bet's refund fires exactly
+    /// when the ticket does NOT win, so it must be <c>(1 − p_win) × stake</c> for the SAME
+    /// <c>p_win</c> the win side is multiplied by; the product of the remaining legs' marginals is
+    /// not that number on a correlated ticket.</para>
+    /// </summary>
+    private double JointCashOutFair()
+    {
+        double payout = _ticket.PotentialPayout;
+        double pWin = ConditionalWinProb();
+
+        double fair = payout * pWin;
+
+        if (_ticket.Modifier == TicketModifier.FreeBet && !_ticket.Refunded)
+            fair += (1.0 - pWin) * _ticket.Stake;
+
+        return fair;
+    }
+
+    /// <summary>
+    /// <c>P(L ∧ U | S) × ( liveProb / P(L | S) )</c> — the probability a SAME MATCH ticket still wins,
+    /// given that its settled legs won, re-weighted to agree with the number on screen.
+    ///
+    /// <para><b>The conditional is exact, not an approximation.</b> The sweat resolves ONE leg at a
+    /// time (a drama path per leg, one <c>_currentLeg</c> cursor), so every leg before the cursor has
+    /// a settled outcome and conditioning on it is a restriction of the sample space rather than a
+    /// model of one. Cash-out is only offered while the ticket is undecided, so every settled leg has
+    /// WON — the constraint is simply that their predicates hold. (A whistle-rescued leg grades Won
+    /// for THIS ticket whatever the shared match says, and is conditioned on as won: the quote prices
+    /// the ticket's contract, and its payout reads the same repair.) Both conditionals are a RATIO OF
+    /// TWO JOINTS the existing evaluator already computes, so no new sample space and no new machinery
+    /// is introduced; legs on different matchups factorise out of numerator and denominator exactly as
+    /// they do at placement. (Simultaneous live legs are a PRESENTATION gap, scoped with
+    /// <c>tv-sweat</c>, and cannot change this: under sequential resolution there is only ever one
+    /// leg in flight.)</para>
+    ///
+    /// <para><b>The trailing factor is the approved drama re-weight</b> (Allen, 2026-08-14).
+    /// <c>liveProb</c> is the drama-generated number the player is watching tick;
+    /// <c>P(L | S)</c> is that same leg's own conditional marginal. Their ratio re-weights the
+    /// correlated conditional so the quote agrees with what is on screen, while keeping the
+    /// correlation structure that multiplying the two raw numbers would have destroyed.</para>
+    ///
+    /// <para><b>THE CERTAINTY CARVE-OUT</b> (Allen, 2026-08-14 — a ruling on this rule's one visible
+    /// consequence). When the settled legs ENTAIL the live one — a settled OVER 3.5 beside a live
+    /// OVER 2.5 — <c>P(L | S)</c> is 1 while <c>liveProb</c> is the board's unconditional marginal
+    /// and is not. The ratio is then <c>liveProb</c> itself, and the quote is scaled DOWN on a leg
+    /// that cannot lose: the house would be offering less than the ticket is demonstrably worth.
+    /// The ruling is that <b>a certainty never quotes below its worth</b> — at <c>P(L | S) = 1</c>
+    /// the re-weight is dropped and the quote is the pure conditional <c>payout × P(L ∧ U | S)</c>.
+    /// Everything else re-weights exactly as ratified; this is a carve-out at the boundary, not a
+    /// softening of the rule.</para>
+    ///
+    /// <para><b>Why a tolerance and why THIS one.</b> <c>== 1.0</c> would be the wrong test: both
+    /// halves of <c>condLive</c> come out of the joint evaluator, whose own marginals carry tens of
+    /// ulp of slack against the board (see the goal-family note above and the diagnostic in
+    /// <c>SameMatchCashOutTests</c>), so a true entailment can land a few ulp under 1. But the
+    /// carve-out must not widen into an approximation of itself either — a leg at 0.999 is a
+    /// near-certainty and MUST still re-weight, because that is the ratified rule. <see
+    /// cref="CertaintySlack"/> is set at <c>1e-12</c>: roughly four thousand ulp at 1.0, which
+    /// comfortably covers evaluator slack measured in tens, and roughly nine orders of magnitude
+    /// below any probability the board can express — so nothing that is merely LIKELY can reach it.
+    /// It selects entailment, and only entailment.</para>
+    ///
+    /// <para><b>Anchors.</b> Nothing settled: <c>p_joint(S)</c> is the empty conjunction 1.0, so the
+    /// numerator is the whole ticket's joint — the very number the ticket was SOLD at, bit for bit —
+    /// and <c>P(L | S)</c> is the live leg's own marginal, which the sweat also seeds
+    /// <c>_liveProb</c> from, so the re-weight is 1.0 and the quote is <c>payout × p_ticket</c>. Only
+    /// the last leg left: numerator and denominator of <c>P(L ∧ U | S)</c> and <c>P(L | S)</c> are the
+    /// same leg set, so the quote is <c>payout × liveProb</c> and walks to the full payout as that leg
+    /// closes out.</para>
+    ///
+    /// <para><b>Both anchors land within a few ulp rather than on the bit, and the reason is
+    /// upstream.</b> The sweat seeds <c>_liveProb</c> from <see cref="Leg.TrueProb"/> — the BOARD's
+    /// marginal — while <c>P(L | S)</c> comes from the joint evaluator. <see cref="JointModel"/>'s
+    /// goal-family note claims a single-selection enumeration reproduces the board price to the bit;
+    /// measured, it does not, for the scorer markets and several count markets (up to ~70 ulp on
+    /// <c>PlayerMultiScorer</c> — see <c>SameMatchCashOutTests</c>' diagnostic). Reading the live leg's
+    /// denominator off <see cref="Leg.TrueProb"/> to force the anchor is the wrong fix: <c>P(L | S)</c>
+    /// must come from the same evaluator as <c>P(L ∧ U | S)</c> or their ratio is not a
+    /// conditional.</para>
+    ///
+    /// <para><b>Bounded by construction.</b> Adding U's constraints can only lower a joint, so
+    /// <c>P(L ∧ U | S) ≤ P(L | S)</c> and the result is at most <c>liveProb</c> — the quote can never
+    /// exceed the payout, and the Free Bet refund term can never go negative.</para>
+    ///
+    /// <para><b>The two guards are unreachable on a sold ticket, and are here anyway.</b> Both
+    /// denominators are joints over SUBSETS of the ticket's active legs, and a subset's joint is
+    /// weakly greater than the whole ticket's, which placement already refused at zero
+    /// (<c>RefusalKind.ImpossibleCombination</c>). If either ever did reach zero the quote degrades
+    /// downward — an unusable history prices the ticket at nothing rather than at NaN, and an
+    /// unusable live marginal drops the re-weight rather than dividing by zero — because a cash-out
+    /// that silently returns infinity is a money printer.</para>
+    /// </summary>
+    private double ConditionalWinProb()
+    {
+        EnsureJoints();
+
+        if (!(_pSettled > 0.0)) return 0.0;
+        double condAll = _pActive / _pSettled;
+
+        double condLive = _pSettledLive / _pSettled;
+        if (!(condLive > 0.0)) return condAll;
+        if (condLive >= 1.0 - CertaintySlack) return condAll; // the certainty carve-out
+
+        return condAll * (_liveProb / condLive);
+    }
+
+    /// <summary>How far under 1.0 <c>P(L | S)</c> may land and still be read as an ENTAILMENT rather
+    /// than a near-certainty — the carve-out's threshold, argued in <see cref="ConditionalWinProb"/>.
+    /// Wide enough to swallow the joint evaluator's own ulp-scale slack, and far too narrow for any
+    /// probability the board can express to fall inside it.</summary>
+    private const double CertaintySlack = 1e-12;
+
+    /// <summary>Recomputes the three joints the conditional is a ratio of, if a leg boundary has moved
+    /// since the last quote. The leg sets are built in TICKET ORDER, which is what makes
+    /// <c>p_joint(active)</c> on an unvoided ticket the same number, to the bit, as the
+    /// <c>SameMatchPrice.PTicket</c> it was sold at.</summary>
+    private void EnsureJoints()
+    {
+        if (_jointsValid) return;
+
+        var settled = new List<Leg>(_currentLeg);
+        for (int j = 0; j < _currentLeg; j++)
+            if (!_ticket.Legs[j].IsVoided) settled.Add(_ticket.Legs[j]);
+
+        // The leg under the cursor is never a voided one: a mulligan voids the leg the cursor is on
+        // and AdvanceOrComplete moves past it in the same call.
+        var settledLive = new List<Leg>(settled) { _ticket.Legs[_currentLeg] };
+
+        var active = new List<Leg>(settledLive);
+        for (int j = _currentLeg + 1; j < _ticket.Legs.Count; j++)
+            if (!_ticket.Legs[j].IsVoided) active.Add(_ticket.Legs[j]);
+
+        _pSettled = SameMatchModel.JointProbabilityOf(settled);
+        _pSettledLive = SameMatchModel.JointProbabilityOf(settledLive);
+        _pActive = SameMatchModel.JointProbabilityOf(active);
+        _jointsValid = true;
     }
 
     /// <summary>The offered cash-out — fair × (1 − margin) × the quote scale (Golden Parachute
