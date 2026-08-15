@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 281.** FAST-MODE TRIAL
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 282.** su's P5 MERGED
+(433cd44): statement built and green, refused forms re-authored, pair
+released, slot gated on screen. Key reframe: the flow cost is real but
+UNREACHABLE in play (Toggle still replaces) - Allen's call gates the
+additive GESTURE, not P5. su idle, needs only that call. TV mid-DRAW-row;
+sgp profiling; DD holding. Fast-mode trial still blocked on the
+usage-credits switch (Allen's).
+
+*(prior stamp, cycle 281:)* FAST-MODE TRIAL
 (Allen-approved, TV seat only): BLOCKED at the toggle - /fast requires
 usage credits, currently OFF account-wide; enabling them (/usage-credits)
 is a billing switch beyond the one seat, so it goes back to Allen rather
