@@ -2,15 +2,14 @@
 
 Recorded by the studio-architect session. Orchestrator executes all three.
 
-## 1. Fast mode on ALL leads (conditional on plan support)
+## 1. Fast mode — STAND DOWN (resolved 2026-08-15, same day)
 
-Allen approves fast mode for every lead seat — but he is on the Max plan and
-suspects `/fast` may require pay-as-you-go usage credits. **Verify before
-rolling out:** toggle `/fast` in ONE lead terminal. If it activates cleanly,
-enable it on all lead seats (DD and orchestrator stay normal speed) and add
-`/fast` to the STUDIO.md seat spec so reseats inherit it. If Claude Code
-reports it needs extra-usage credits or is unavailable on this plan, stand
-down, leave the spec unchanged, and tell Allen what it said.
+Allen's suspicion was confirmed against the official docs: fast mode never
+draws from a Max plan's included usage — it bills pay-as-you-go usage
+credits only ($10/$50 per MTok), and requires credits to be enabled on
+claude.ai first. Allen has not enabled usage credits. Do NOT toggle `/fast`
+on any seat; the seat spec stays `/model opus` + `/effort max`. Revisit only
+if Allen explicitly enables usage credits and orders it.
 
 ## 2. Sim-harness parallelization (commissioned)
 
