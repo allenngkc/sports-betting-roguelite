@@ -953,6 +953,45 @@ namespace SBR.Tests.PlayMode
                 t.text = was;
             }
 
+            // ---- A's MEASUREMENT PASS (S82). The spec harvests "the slack between each block's box
+            // and its advance", and an advance is not the same thing as air: what can actually be
+            // taken is the GAP between one block's rendered bottom and the next block's rendered top.
+            // Measured off the tree so a box that draws taller than its rect, or a block whose
+            // advance is consumed by something invisible, cannot be mistaken for slack.
+            slip.Clear();
+            yield return WaitForRebuild();
+            for (int i = 0; i < maxLegs; i++) slip.AddLeg(i, MarketSelection.Moneyline(Side.Away));
+            yield return WaitForRebuild();
+            var flowMargin = Required(App(laptop), "WorkingMargin") as RectTransform;
+
+            var bands = new List<(string Name, float Top, float Bottom)>();
+            foreach (Graphic g in flowMargin.GetComponentsInChildren<Graphic>(true))
+            {
+                var rect = g.rectTransform;
+                if (rect == flowMargin) continue;
+                if (rect.GetComponentInParent<Button>() != null) continue;
+                float top = LocalTop(rect, flowMargin), bot = LocalBottom(rect, flowMargin);
+                if (top >= LocalTop(flowMargin, flowMargin) - 0.5f
+                    && bot <= LocalBottom(flowMargin, flowMargin) + 0.5f) continue;   // ground
+                bands.Add((rect.name, top, bot));
+            }
+            bands.Sort((x, y2) => y2.Top.CompareTo(x.Top));
+            // NAMED, because it is load-bearing: this runs AFTER the sweep granted its consumables,
+            // and Run has no ungrant. So the state measured is MaxLegs + the modifiers row — which
+            // is the LIVE DEFECT state, and therefore the right one to harvest from. Gaps that only
+            // exist without the modifiers row would not be worth taking.
+            UnityEngine.Debug.Log($"[S82-A] state: {maxLegs} legs, modifiers row PRESENT, no statement");
+            UnityEngine.Debug.Log("[S82-A] element | top | bottom | gap above "
+                + "(buttons excluded, so chip/nudge rows show as one wide gap)");
+            float prevBottom = 0f;
+            for (int i = 0; i < bands.Count; i++)
+            {
+                float gap = prevBottom - bands[i].Top;
+                UnityEngine.Debug.Log($"[S82-A] {bands[i].Name} | {bands[i].Top:F1} | "
+                    + $"{bands[i].Bottom:F1} | {(i == 0 ? 0f : gap):F1}");
+                prevBottom = Mathf.Min(prevBottom, bands[i].Bottom);
+            }
+
             Assert.Greater(slip.Picks.Count, 0, "the sweep must have built at least one state");
         }
 
@@ -1000,6 +1039,38 @@ namespace SBR.Tests.PlayMode
                                 + $"{w13 / controlWidth:P0} / {w17 / controlWidth:P0}");
                         }
                     }
+
+            // ---- (1b) `DRAW {price}` JOINS THE C46 POPULATION (S74-am's own closing line: "DRAW and
+            // its price are new strings in the canon face; they measure against their cells like
+            // everything else and join the sweep's population under C46"). Measured off the RENDERED
+            // control — its own font, size, tracking and cell width — rather than against numbers
+            // copied out of the call site, because a cell's assumption about its face is exactly what
+            // C46 says goes unstated.
+            Transform drawNode = Find(Required(App(laptop), "Matchup0"), "DrawOdds");
+            if (drawNode != null)
+            {
+                var drawLabel = Required(drawNode, "Label").GetComponent<TMP_Text>();
+                float cell = ((RectTransform)drawNode).rect.width;
+                int size = Mathf.RoundToInt(drawLabel.fontSize);
+                float worstDraw = 0f; string worstDrawText = "";
+                foreach (Matchup mu in run.CurrentSlate.Matchups)
+                {
+                    if (mu.DrawOdds <= 1.0) continue;
+                    string s = $"DRAW  {OddsFormat.American(mu.DrawOdds)}";
+                    float w = LaptopUi.MeasureWidth(drawLabel.font, s, size, LaptopTrack.Names);
+                    if (w > worstDraw) { worstDraw = w; worstDrawText = s; }
+                }
+                // The board's own draws are a sample, not the population. The cell must also hold the
+                // widest string the FORMAT can produce — five digits and a sign is the ceiling.
+                string formatCeiling = "DRAW  +10000";
+                float ceilingWidth = LaptopUi.MeasureWidth(drawLabel.font, formatCeiling, size,
+                    LaptopTrack.Names);
+                UnityEngine.Debug.Log($"[S74-FIT] cell {cell:F0}px at {size}px · widest ON THIS BOARD "
+                    + $"\"{worstDrawText}\" {worstDraw:F1}px ({worstDraw / cell:P0}) · FORMAT CEILING "
+                    + $"\"{formatCeiling}\" {ceilingWidth:F1}px ({ceilingWidth / cell:P0}) · "
+                    + $"AWAY/HOME comparable \"AWAY  -341\" "
+                    + $"{LaptopUi.MeasureWidth(drawLabel.font, "AWAY  -341", size, LaptopTrack.Names):F1}px");
+            }
 
             // ---- (2) THE ARITY DISTRIBUTION, swept off the live board.
             // All PAIRS on every matchup, plus all TRIPLES on matchup 0. Pairs are where duplicates
@@ -1537,7 +1608,20 @@ namespace SBR.Tests.PlayMode
             // The DD's "closes at zero" is that tenth of a pixel — the 3.9px the band moved against
             // the 4.00px that was there. It is written out rather than rounded away so the next
             // reader knows the residue is the box-height difference and not drift.
-            const float structuralOverrunPx = 0.10f;
+            // RE-SOURCED for S82 option A (2026-08-15), and the SIGN FLIPPED — this is the first time
+            // the margin flow has CLEARED its reservation rather than overrun it.
+            //
+            //   +0.10  before A: the kit's 36.10px band bottom against a 36.00px box (S51).
+            //   −10.00 A's harvest, measured per block: the header's 8px gap halved to 4 (−4), the
+            //          bare undervied 4px after the leg list deleted (−4), and the payout label's
+            //          18px advance on a 16px box (−2).
+            //   ──────
+            //   −9.90  measured. The ordinary composition now fits, with 9.90px to spare.
+            //
+            // This does NOT close the live bill: four legs plus a held consumable is still +24.10
+            // over, because A recovered 10.00 of the 34.10 it was aimed at. That is S82's
+            // disposition (2) and it is Allen's call, not this gate's.
+            const float structuralOverrunPx = -9.90f;
             const float structuralTolerancePx = 0.05f;
             float overrunPx = -SportsbookApp.MarginFlowBudget - flowBottom;
             float structuralPx = -SportsbookApp.MarginFlowBudget - flowBottomUntilted;
@@ -1567,10 +1651,11 @@ namespace SBR.Tests.PlayMode
                 + $"{flowBottom:F2}px ({deepestTiltPx:F2}px of that is its own tilt, leaving "
                 + $"{flowBottomUntilted:F2}px), raw overrun {overrunPx:F2}px, budget "
                 + $"-{SportsbookApp.MarginFlowBudget:F0}px, action band reserves "
-                + $"{SportsbookApp.ActionBandReservedHeight:F0}px. The 0.10px is the kit's band "
-                + "bottom (36.10px below the payout figure's top) against a build box of 36.00px, "
-                + "whose bottom is flush with the budget. If it went back to ~4.00, the wax band has "
-                + "been moved off the kit's `bottom:-2px` and S51 has been reopened. If it GREW "
+                + $"{SportsbookApp.ActionBandReservedHeight:F0}px. NEGATIVE IS CLEARANCE: −9.90 is "
+                + "the kit's 36.10px band bottom against a 36.00px box (+0.10, S51) less A's "
+                + "measured 10.00px harvest (header gap 4, the bare post-leg 4, payout label 2). If "
+                + "it went back to ~+0.10 the harvest was reverted; if to ~+4.00 the wax band came "
+                + "off the kit's `bottom:-2px` and S51 has been reopened. If it GREW "
                 + "otherwise, something entered the margin flow: staged receipts live in the 700px "
                 + "sheet and must never re-enter it (both-screens kit amendment, DD 2026-08-04). If "
                 + "a RULED size changed, re-derive at this call site with the new arithmetic written "
