@@ -610,6 +610,25 @@ bet's vocabulary**, the same category error the engine already refuses by keepin
 A market that *returns the stake* on a draw is a **VOID**, which the enum already carries — a
 different market's rule, never a third result.
 
+**VERIFIED ON FRAMES, 2026-08-14 (T87-am, batch 66)** — `dd-import/tv-goalless-draw-2026-08-14/`,
+a 0–0 to full time with a draw-backing and a team-backing ticket on one settlement. **The beat
+holds and this section needs no amendment.** The ending is legible as a resolution in both halves
+(the standing check above): the draw-backer's leg lands at full treatment — one `WinBeat()` path,
+no goal conditioning anywhere in it — and **T65's settlement glow fires on the goalless
+settlement**, measured at +7.64 mean lift across 76.7% of the room. **Neither half reads as idle.**
+
+**Two defects were found in mechanisms this section relies on, and they are repairs, not
+amendments:**
+
+- **The event strip never states the fact.** Across all 120 frames it carries the LEG's grade and
+  never the MATCH's ending. The ending survives on the settlement machinery and the scorebug's
+  `FT` alone. **The L2 statement this section assigns the strip is OWED** (T87-am) — never a
+  flourish.
+- **The strip carried a goal line INTO the goalless full time** (T97) — `ScoreDown` copy over a
+  `0 — 0 · FT` scorebug, in the same frame, for 31 of 60 frames. C50's shape.
+- **The draw leg printed as `MIDDLEMEN ML`** (T96) — the exact string §8 names as what a draw leg
+  must not inherit. **An unimplemented ruling, not a new one.**
+
 ---
 
 ## 7. Motion
@@ -753,7 +772,9 @@ cross-population comparisons — came from **treating proximity as membership**.
 | **T70** AnytimeScorer progress line repeats NEED's surname | Ruled batch 18; **built with the G1 deck** (`41d5cbe`) |
 | **T68-am / T71** `accepted` and `WinBeat` into the slot | Ruled batch 19; **building — one commit, not two** |
 | **SureThing blur on the laptop** | R22 walk finding; hunt live, C13's first-capture defect |
-| **T65** settlement re-tint value (hue 88.0°, intensity 0.9) | Upper bound — owed a settlement capture |
+| **T65** settlement re-tint value (hue 88.0°, intensity 0.9) | **Open — and NOT closable by an in-room capture** (batch 66). The settlement capture arrived (`tv-goalless-draw-2026-08-14`) and the glow is confirmed firing on a goalless settlement, but the room's measured hue **tracks distance from the panel** (19.1° near-TV → 31.5° at the far corner, one frame): `EmissionFlash(goldL4)` fires on the same frame in `WinBeat()` and its spill is the confound. **Closed by V6's printed hue / the R23 `RoomViewCapture` path, which reads `roomSettlementWarm` directly — never by another room capture** |
+| **T96** the draw leg prints as a team bet | **Ruled batch 66 — a repair, not a design call.** `LegStatement()`'s Moneyline branch is a two-way `pickedHome ? Home : Away`, so a `MarketChoice.Draw` leg renders `MIDDLEMEN ML`. §8 already authored the compact form as `DRAW` and names the failing string verbatim. On frames both tickets carried the same label with opposite grades |
+| **T97** the strip carried a goal into a goalless full time | **Ruled batch 66 — a defect.** `EventText.ScoreDown` copy over a `0 — 0 · FT` scorebug, same frame, 31 of 60. **Land it with T87-am's owed L2 full-time statement — one slot, one repair, or the strip gets touched twice** |
 | **T9** `chromeCyan` retired-hue debt | Phase 3 |
 | **T10** two hardcoded emission rest values, one below the black floor | Phase 3 |
 | **T25.2–25.7** seated-sweat findings | TV's queue |
