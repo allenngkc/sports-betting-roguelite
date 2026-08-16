@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 323 (heartbeat).** TV
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 324 (heartbeat).** TV's
+closing agent grinding (COUNTS title + the single-count frame + baseline
+re-run); dock-commit-redate follows its numbers. All else standing by.
+With Allen: the research words.
+
+*(prior stamp, cycle 323:)* TV
 writes its phase handoff section on Allen's word while the DD runs the
 four-item closing read. All else standing by. With Allen: research words.
 
