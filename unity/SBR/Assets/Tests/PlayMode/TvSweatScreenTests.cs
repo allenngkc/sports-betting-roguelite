@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using NUnit.Framework;
 using SBR.Engine;
@@ -1434,6 +1435,69 @@ namespace SBR.Tests.PlayMode
                 + $"{maxInkFraction:0.00} max-ink-fraction limit of {limit:0.0}px. The club pool grew "
                 + "past the box: RE-DERIVE labelW/valueW in BuildStatsPanel from this new widest under "
                 + "MaxInkFraction — never shorten the string to fit.");
+        }
+
+        /// <summary>PIN for the batchmode-cwd trap (tv-sweat-refinement lane). <c>TvSweatCaptureHarness</c>'s
+        /// output directory used to be <c>Path.Combine(Directory.GetCurrentDirectory(), ...)</c> —
+        /// LAUNCHER-DEPENDENT, because Unity's batchmode cwd happens to be the project path
+        /// (unity/SBR) today but is not guaranteed to be. This lane already paid for that once: a
+        /// poll watched &lt;repo&gt;/artifacts and reported files=0 for a run that was writing frames
+        /// the whole time, one level down at unity/SBR/artifacts/tv-sweat-capture. The harness now
+        /// anchors to <see cref="Application.dataPath"/> instead, which does not move with cwd.
+        ///
+        /// <para>Not in <c>TvSweatCaptureHarness.cs</c> itself — every entry point in that class is
+        /// either <c>[Explicit]</c> or disposable evidence infrastructure by its own class doc
+        /// ("DELETE THIS FILE"), so a pin placed there would not reliably gate. This reads the
+        /// harness's OWN resolved value via its <c>internal</c> <see cref="TvSweatCaptureHarness.OutputDir"/>
+        /// getter — never a second copy of the derivation — so a regression in the harness's formula
+        /// fails HERE rather than passing a self-referential check.</para>
+        ///
+        /// <para><c>[Test]</c>, not <c>[UnityTest]</c>: fully synchronous, so the temporary
+        /// <c>Directory.SetCurrentDirectory</c> swap below has no yield point where another
+        /// coroutine could observe the mutated cwd, and it is restored in <c>finally</c> even if an
+        /// assertion throws.</para></summary>
+        [Test]
+        public void TvSweatCaptureHarness_output_directory_is_anchored_to_dataPath_not_cwd()
+        {
+            // Independently derived expected path — NOT the harness's own "Application.dataPath +
+            // .." combine, so an off-by-one in the harness's relative-segment count would still be
+            // caught here rather than agreeing with itself.
+            string sbrProjectRoot = Directory.GetParent(Application.dataPath).FullName;
+            string expected = Path.GetFullPath(Path.Combine(sbrProjectRoot, "artifacts", "tv-sweat-capture"));
+
+            string resolved = TvSweatCaptureHarness.OutputDir;
+
+            Assert.AreEqual(expected, resolved,
+                "TvSweatCaptureHarness.OutputDir drifted from Application.dataPath's parent + "
+                + "artifacts/tv-sweat-capture — the deliberately-claimed evidence location where "
+                + "1,300+ frames already live.");
+
+            Assert.IsTrue(resolved.StartsWith(sbrProjectRoot, StringComparison.Ordinal),
+                $"'{resolved}' is not rooted at Application.dataPath's parent ('{sbrProjectRoot}')");
+
+            string normalized = resolved.Replace('\\', '/');
+            Assert.IsTrue(normalized.EndsWith("unity/SBR/artifacts/tv-sweat-capture", StringComparison.Ordinal),
+                $"'{resolved}' does not end with the claimed unity/SBR/artifacts/tv-sweat-capture segments");
+
+            // THE REGRESSION THIS PIN EXISTS FOR: OutputDir must never read
+            // Directory.GetCurrentDirectory() again. Proven directly, not just inferred from the
+            // dataPath-rooted check above — flip cwd to an unrelated directory and confirm the
+            // resolved value does not move.
+            string originalCwd = Directory.GetCurrentDirectory();
+            try
+            {
+                Directory.SetCurrentDirectory(Path.GetTempPath());
+                Assert.AreEqual(expected, TvSweatCaptureHarness.OutputDir,
+                    "OutputDir moved when Directory.GetCurrentDirectory() changed — it must be "
+                    + "anchored to Application.dataPath only. Unity's batchmode cwd happens to be the "
+                    + "project path today; a launcher that starts Unity from elsewhere must not "
+                    + "silently redirect where frames land (this lane already lost a poll to exactly "
+                    + "that).");
+            }
+            finally
+            {
+                Directory.SetCurrentDirectory(originalCwd);
+            }
         }
 
         private static T FindChildComponent<T>(TvSweatScreen screen, string childName) where T : Component

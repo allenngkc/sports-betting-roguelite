@@ -221,8 +221,29 @@ namespace SBR.Tests.PlayMode
         // Leg 2 (0-based) of the fixed ticket built below is always the AnytimeScorer leg.
         private const int ScorerLegIndex = 2;
 
-        private static string OutputDir =>
-            Path.Combine(Directory.GetCurrentDirectory(), "artifacts", "tv-sweat-capture");
+        // ANCHORED TO Application.dataPath, NOT Directory.GetCurrentDirectory(). The process's
+        // working directory is not a stable base for an output path — Unity's batchmode cwd
+        // happens to be the project path (unity/SBR) TODAY, but that is a property of how this
+        // particular launcher invokes Unity, not a guarantee; a run launched with a different cwd
+        // would silently write frames somewhere else. This lane already paid for that once: a poll
+        // watched <repo>/artifacts and reported files=0 for a run that was writing frames the whole
+        // time — they were landing one level down, at unity/SBR/artifacts/tv-sweat-capture, purely
+        // because that run's cwd happened to be the project path.
+        //
+        // unity/SBR/artifacts/tv-sweat-capture is a DELIBERATE CLAIM of this location, not an
+        // accident of cwd: 1,300+ frames and every docked evidence set already live here, so the
+        // destination is kept exactly where it has always been rather than re-pointed. It is only
+        // the DEPENDENCY on cwd that is being killed.
+        //
+        // Application.dataPath is <repo>/unity/SBR/Assets, so ONE level up ("..") lands at
+        // <repo>/unity/SBR — NOT three levels, which is what SureThingVisualCaptureTests.cs uses to
+        // reach the repo ROOT for artifacts/surething-ui. That harness needs to climb one level
+        // further out than this one does; copying its "..", "..", ".." blindly would land this
+        // harness's frames at <repo>/artifacts/tv-sweat-capture, one directory short of every
+        // existing frame. Pinned in TvSweatScreenTests.cs (this class is disposable, opt-in
+        // evidence infrastructure — the pin lives where it actually runs).
+        internal static string OutputDir =>
+            Path.GetFullPath(Path.Combine(Application.dataPath, "..", "artifacts", "tv-sweat-capture"));
 
         /// <summary>OPT-IN ONLY — <c>[Explicit]</c> is load-bearing, not tidiness.
         ///
