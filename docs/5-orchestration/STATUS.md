@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 349 (heartbeat).** Board
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 350 (heartbeat).** Still
+quiet - four seats idle-by-completion, no drafts, nothing in flight.
+With Allen: the research words.
+
+*(prior stamp, cycle 349:)* Board
 fully quiet: four seats idle-by-completion, register repair landed
 (5d5e54c), everything merged and pushed. With Allen: the research words.
 
