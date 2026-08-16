@@ -45,3 +45,13 @@ his word. A proposal that contradicts canon is doing its job; write it fearlessl
 First action: verify the three titles, propose the reference list (the named three + your
 close-neighbor candidates with one-line reasons), and the autopsy template. Route that to
 the orchestrator for Allen before the deep dives.
+
+## Deviation notice on record (delegation, 2026-08-15 - reaches the NEXT seat at seating)
+
+The delegation audit read this lane at 0 spawns across 154 calls with 54 hands-on edits despite the lane's fan-out mandate (4-day audit, 2026-08-15). Delegation is contract
+(STUDIO.md sub-agents bullet, 496bc4d): the lead plans, dispatches, reviews and
+integrates; sustained solo grunt work is a recorded deviation. The batching
+pattern, named: small items are not an exemption - bundle related small items
+into ONE bounded Sonnet dispatch (six string fixes = one agent carrying all
+six, with per-item evidence, allowed/forbidden files, and an exit gate).
+Audited daily by `python tools/delegation-audit.py`.
