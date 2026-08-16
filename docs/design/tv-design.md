@@ -555,9 +555,27 @@ deleted — sub-floor by construction, and this surface has no glyph vocabulary.
 
 ### 6.6 Stats panel
 
-Opens from the head of the ticket column and **freezes playback**. It expands over the column and
-stage **without moving either**, so everything is where it was when it closes. Ships at **authored
-height with no reserved space** (T21).
+Opens from the ticket column and **freezes playback**. It expands over the column and stage
+**without moving either**, so everything is where it was when it closes. **It clears the SCOREBUG
+entirely** — top below the scorebug band, so the score and the clock are never covered (Allen,
+2026-08-15). Ships at **authored height with no reserved space** (T21).
+
+*Two notes on this paragraph, because both were learned the hard way (batch 88).*
+
+**"the head of" was deleted, and the reason generalises.** It described where the panel's top edge
+met the column, and the first time the panel was repositioned it became false — at the new top the
+same edge reads as the column's *side*. **A phrase that names a SEAM goes stale every time the seam
+moves; a phrase that names a RELATIONSHIP does not.** The panel belongs to the ticket column, and
+that is what the sentence now says.
+
+**The extent clause was never amended — it was RESTORED.** *Column and stage* names two regions, and
+the scorebug is a third (§4.1: *compact scorebug + stage* fill the right; §5.1: the stage clips to
+its own region). **The shipped panel covered the scorebug, which this paragraph never licensed.**
+T99 granted that overreach a conditional licence; Allen's placement returns the panel inside the
+line this doc already drew. **T99's licence is therefore MOOT, not wrong — and it is dormant rather
+than retired: if the panel is ever raised back over the scorebug band, T99 applies again and its
+condition binds.** **The freeze is unaffected** — it stands on *freezes playback* above, which never
+depended on what the panel covered.
 
 **Revealed-ledger values only.** Formations (no engine concept) and player stats (generator truth — a
 blocker-class leak) are dropped; per-team corners and cards ship from `CountLedger` (T36). **A row
