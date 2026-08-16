@@ -221,8 +221,29 @@ namespace SBR.Tests.PlayMode
         // Leg 2 (0-based) of the fixed ticket built below is always the AnytimeScorer leg.
         private const int ScorerLegIndex = 2;
 
-        private static string OutputDir =>
-            Path.Combine(Directory.GetCurrentDirectory(), "artifacts", "tv-sweat-capture");
+        // ANCHORED TO Application.dataPath, NOT Directory.GetCurrentDirectory(). The process's
+        // working directory is not a stable base for an output path — Unity's batchmode cwd
+        // happens to be the project path (unity/SBR) TODAY, but that is a property of how this
+        // particular launcher invokes Unity, not a guarantee; a run launched with a different cwd
+        // would silently write frames somewhere else. This lane already paid for that once: a poll
+        // watched <repo>/artifacts and reported files=0 for a run that was writing frames the whole
+        // time — they were landing one level down, at unity/SBR/artifacts/tv-sweat-capture, purely
+        // because that run's cwd happened to be the project path.
+        //
+        // unity/SBR/artifacts/tv-sweat-capture is a DELIBERATE CLAIM of this location, not an
+        // accident of cwd: 1,300+ frames and every docked evidence set already live here, so the
+        // destination is kept exactly where it has always been rather than re-pointed. It is only
+        // the DEPENDENCY on cwd that is being killed.
+        //
+        // Application.dataPath is <repo>/unity/SBR/Assets, so ONE level up ("..") lands at
+        // <repo>/unity/SBR — NOT three levels, which is what SureThingVisualCaptureTests.cs uses to
+        // reach the repo ROOT for artifacts/surething-ui. That harness needs to climb one level
+        // further out than this one does; copying its "..", "..", ".." blindly would land this
+        // harness's frames at <repo>/artifacts/tv-sweat-capture, one directory short of every
+        // existing frame. Pinned in TvSweatScreenTests.cs (this class is disposable, opt-in
+        // evidence infrastructure — the pin lives where it actually runs).
+        internal static string OutputDir =>
+            Path.GetFullPath(Path.Combine(Application.dataPath, "..", "artifacts", "tv-sweat-capture"));
 
         /// <summary>OPT-IN ONLY — <c>[Explicit]</c> is load-bearing, not tidiness.
         ///
@@ -799,6 +820,163 @@ namespace SBR.Tests.PlayMode
                 "the revealed corners count must be unchanged across the overlay");
             Assert.AreEqual(cAway, screen.DebugRevealedCountAway,
                 "the revealed corners count must be unchanged across the overlay");
+        }
+
+        /// <summary>DD batch 93 — THE PANEL WITH A ROW SET BEING SELECTED.
+        ///
+        /// <para>T100's ticket carries exactly one count leg, so it can only ever prove "a row this
+        /// ticket bought can fill in". It cannot prove the ROW SET ITSELF is selected by the ticket
+        /// — CORNERS and CARDS both present because the ticket carries both, independent of which
+        /// leg happens to be live — because a single-count ticket only ever has one such row to
+        /// show. This ticket carries BOTH a TotalCorners leg and a TotalCards leg, on two DIFFERENT
+        /// matchups, so the shot proves what T100 structurally cannot.</para>
+        ///
+        /// <para><b>Same discipline as T99's 0-0 and T100's empty-row conditions:</b> this waits for
+        /// at least one of the two counts to have revealed something before it shoots, and fails
+        /// loudly rather than shoot a table that is still all mark.</para>
+        ///
+        /// <para><b>Both selections are READ OFF THE BOARD, never constructed</b> — same reasoning as
+        /// T100: the corners/cards line is generated per matchup, so an invented selection may not be
+        /// one that matchup actually offers. The cards search explicitly excludes the corners
+        /// matchup, so the ticket carries at most one leg per fixture and prices on the ordinary
+        /// path — no same-match correlation model enters this capture at all.</para></summary>
+        [UnityTest]
+        public IEnumerator Capture_StatsPanel_MultiCountTicket()
+        {
+            _seed = "STATS-MULTI-1";
+            s_sceneIndex = 0;
+            Directory.CreateDirectory(OutputDir);
+
+            TheaterStage.PresentationSeedOverride = StableSeed(_seed);
+            Time.captureDeltaTime = 1f / 50f;
+
+            yield return LoadRoom();
+
+            var director = Object.FindAnyObjectByType<RunDirector>();
+            var screen = Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing - run SBR.GrayboxRoomBuilder.Build first.");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+
+            Camera cam = Camera.main;
+            Assert.IsNotNull(cam, "MainCamera (PlayerCamera) missing - cannot capture without it");
+
+            screen.TimeScaleOverride = 1f;
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntilOrFail(() => director.Run != null,
+                Time.realtimeSinceStartup + 10f, "director never started a run");
+
+            director.StartNewRun(_seed);
+            Run run = director.Run;
+            Assert.AreEqual(Phase.Betting, run.Phase, "a fresh run opens in Betting");
+
+            // Take an OFFERED corners selection off the board first.
+            int cornersMatchupIndex = -1;
+            MarketSelection cornersSelection = default;
+            foreach (Matchup mm in run.CurrentSlate.Matchups)
+            {
+                foreach (MarketOffer off in mm.Markets)
+                {
+                    if (off.Selection.Kind != MarketKind.TotalCorners) continue;
+                    cornersMatchupIndex = mm.Index;
+                    cornersSelection = off.Selection;
+                    break;
+                }
+                if (cornersMatchupIndex >= 0) break;
+            }
+            Assert.GreaterOrEqual(cornersMatchupIndex, 0,
+                "no matchup on this slate offers TotalCorners - this needs a COUNT leg, so this is a "
+                + "re-seed rather than a reason to invent a selection the board did not offer");
+
+            // Then an OFFERED cards selection, from a DIFFERENT matchup — never the same fixture as
+            // corners, so this ticket carries at most one leg per matchup and prices on the ordinary
+            // path (no same-match correlation model).
+            int cardsMatchupIndex = -1;
+            MarketSelection cardsSelection = default;
+            foreach (Matchup mm in run.CurrentSlate.Matchups)
+            {
+                if (mm.Index == cornersMatchupIndex) continue;
+                foreach (MarketOffer off in mm.Markets)
+                {
+                    if (off.Selection.Kind != MarketKind.TotalCards) continue;
+                    cardsMatchupIndex = mm.Index;
+                    cardsSelection = off.Selection;
+                    break;
+                }
+                if (cardsMatchupIndex >= 0) break;
+            }
+            Assert.GreaterOrEqual(cardsMatchupIndex, 0,
+                "no OTHER matchup on this slate offers TotalCards - this needs a second, distinct "
+                + "COUNT leg, so this is a re-seed rather than a reason to invent a selection the "
+                + "board did not offer");
+
+            const double Stake = 25.0;
+            run.PlaceTicket(new List<Pick>
+            {
+                new Pick(cornersMatchupIndex, cornersSelection),
+                new Pick(cardsMatchupIndex, cardsSelection),
+            }, Stake);
+            director.LockRound();
+            Assert.AreEqual(Phase.Sweat, run.Phase);
+
+            couch.OnInteract(null);
+            yield return WaitUntilOrFail(() => SitSpot.Active != null,
+                Time.realtimeSinceStartup + 15f, "player never sat down");
+
+            // THE BINDING CONDITION, same shape as T100's: -1 means no count ledger at all; 0/0 means
+            // a count leg that has revealed nothing YET. Only a revealed count fills a row, and only
+            // a filled row can be read for how the table composes.
+            yield return WaitUntilOrFail(
+                () => screen.DebugRevealedCountHome >= 0
+                      && screen.DebugRevealedCountHome + screen.DebugRevealedCountAway > 0,
+                Time.realtimeSinceStartup + 300f,
+                "neither count leg ever revealed anything. Same discipline as T100: this is a "
+                + "re-seed, never a reason to shoot the empty form a second time.");
+
+            int cHome = screen.DebugRevealedCountHome, cAway = screen.DebugRevealedCountAway;
+            Debug.Log($"[TvSweatCaptureHarness] MultiCountTicket condition met: live count {cHome}-"
+                + $"{cAway} score='{screen.RevealedView.ScoreText}' clock='{screen.RevealedView.ClockText}'");
+
+            Assert.IsFalse(screen.DebugStatsPanelOpen, "precondition: the panel starts closed");
+            yield return CaptureBurst(screen, cam, "multicount-closed-before", 20, 0f);
+
+            screen.ForceStatsPanel(true);
+            yield return null;
+            Assert.IsTrue(screen.DebugStatsPanelOpen, "the panel did not open - nothing below is the shot");
+
+            // THE ROW SET IS ACTUALLY SELECTED, asserted before the frames are spent. This is what a
+            // single-count ticket structurally cannot show: BOTH rows present because the TICKET
+            // carries both leg kinds, never mind which one is currently live.
+            string cornersRow = screen.DebugStatsRow(1);
+            string cardsRow = screen.DebugStatsRow(2);
+            string mark = screen.DebugStatsUnrevealedMark;
+            Assert.IsTrue(
+                cornersRow != null && cornersRow.StartsWith("CORNERS|")
+                && cardsRow != null && cardsRow.StartsWith("CARDS|"),
+                "DD batch 93: a multi-count ticket must show BOTH the CORNERS and CARDS rows - this "
+                + $"is the whole point of the shot. Got corners='{cornersRow}' cards='{cardsRow}'");
+            Assert.IsTrue(cornersRow != $"CORNERS|{mark}|{mark}" || cardsRow != $"CARDS|{mark}|{mark}",
+                "T100's own binding condition carried forward: a set shot on rows that BOTH still "
+                + $"carry the mark proves nothing. corners='{cornersRow}' cards='{cardsRow}'");
+            Debug.Log($"[TvSweatCaptureHarness] MultiCountTicket rows :: '{screen.DebugStatsRow(0)}' "
+                + $":: '{cornersRow}' :: '{cardsRow}'");
+
+            string clockAtOpen = screen.RevealedView.ClockText;
+            yield return CaptureBurst(screen, cam, "multicount-open", 30, 0f);
+            Assert.AreEqual(clockAtOpen, screen.RevealedView.ClockText,
+                "T99's standing condition holds here too: the match clock must not advance behind "
+                + "the panel");
+
+            screen.ForceStatsPanel(false);
+            yield return null;
+            yield return CaptureBurst(screen, cam, "multicount-closed-after", 20, 0f);
+
+            Assert.AreEqual(cHome, screen.DebugRevealedCountHome,
+                "the revealed count must be unchanged across the overlay");
+            Assert.AreEqual(cAway, screen.DebugRevealedCountAway,
+                "the revealed count must be unchanged across the overlay");
         }
 
         // [Explicit] is on the CLASS — every capture entry point here is filter-only already, and a
