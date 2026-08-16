@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 330.** THE STATS PHASE
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 331 (INCIDENT).** Third
+Orca outage of the window, mid-back-catalogue-clear; app relaunched via
+orca open (pid 18500), runtime warming; recovery watch armed. All main
+work was already merged and pushed (3fe804b) - exposure is the seats
+only. Seat rebuild follows the runtime.
+
+*(prior stamp, cycle 330:)* THE STATS PHASE
 IS CLOSED (batch 97, d57dbc8) - the panel's whole arc now canon: rows
 three-fixed to ticket-keyed, height build-fixed to adoption-derived,
 MATCH STATS to COUNTS, not-in-your-ticket to not-yet-revealed. DD ledger
