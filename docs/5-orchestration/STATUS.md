@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 328 (heartbeat).** DD on
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 329 (heartbeat).** su's
+guard fix merged (guards the WRITE, keeps coverage - f51d33e), lane
+available. TV's two-row build grinding; Allen's read-it draft held until
+the dock is real. With Allen: research words.
+
+*(prior stamp, cycle 328:)* DD on
 the phase-closing frame; su on the capture-guard fix; TV standing by.
 With Allen: the research words.
 
