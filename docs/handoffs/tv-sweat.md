@@ -2766,10 +2766,25 @@ harmless that time. The procedure below closes it.
 4. `git checkout --` the three build side-effect files; confirm `git status` shows only intended
    changes before committing.
 
-**Current baselines — all three measured 2026-08-16, batch 94, ON ONE TREE, after the main merge:**
+**Current baselines — all three measured 2026-08-16, batch 96, ON ONE TREE, after the main merge:**
 engine **306 / 306, 0 failed** ·
 EditMode **255 executed / 254 passed / 0 failed / 1 ignored** (G1's grant, held) ·
-PlayMode **124 executed / 110 passed / 0 failed / 14 by-design skips**.
+PlayMode **126 executed / 112 passed / 0 failed / 14 by-design skips**.
+
+*(PlayMode's +2 over batch 94 is this lane's two new batch-95 pins — an unbought row occupying no
+height, and a moneyline panel shorter still. Growth, not drift.)*
+
+> **TWO CORRECT ANSWERS TO ONE DEFECT, and the difference is worth knowing before you copy either.**
+> Capture entry points writing frames during routine suites was the same defect on both surfaces.
+> **This lane guarded the ENTRY POINT** (`[Explicit]` on each capture) — right here, because these
+> captures assert nothing beyond the shoot, so skipping them costs no coverage. **The screen lane
+> guarded the WRITE instead** (`c180202`, *"nine flows keep their coverage and stop writing frames"*)
+> — right there, because their capture tests carry real assertions about paired output, and skipping
+> would have thrown coverage away to fix a filesystem problem.
+>
+> **The question is not "should captures run" but "does this test assert anything besides the
+> frames".** Their nine still run — 9 of 19 `Capture_*` cases in the suite are theirs and are not
+> skipped — and that is correct, not an outstanding defect.
 
 **No caveat this time — the engine line's "last known good, not today's number" is discharged.** It
 was re-run on this tree and grew 292 → 306 with sgp's phase 4. **The 55 inherited reds are long gone**
