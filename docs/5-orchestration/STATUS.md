@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 335 (FLAP CONTINUES).**
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 336 (heartbeat).** Flap
+watch round 3 still armed (~25 min, no stability signal yet). Exposure
+zero. Waiting.
+
+*(prior stamp, cycle 335:)*
 Fifth Orca drop, ~10 min after the round-2 rebuild - the app is
 genuinely unstable; relaunched again (pid 41168), 120s-stability watch
 armed. Seats from round 2 presumably dead again; rebuild only after the
