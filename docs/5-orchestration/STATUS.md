@@ -1,8 +1,8 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 338 (heartbeat).** Orca
-still down; passive watch quiet; escalation to Allen stands. Exposure
-zero.
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 339 (heartbeat).** Orca
+still down (~1.5h); passive watch quiet; escalation to Allen stands.
+Exposure zero.
 
 *(prior stamp, cycle 337:)* Orca's app process runs but its runtime never initializes -
 the orca-runtime.json is never written, 30+ min after the last relaunch.
