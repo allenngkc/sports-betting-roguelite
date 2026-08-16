@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 320 (heartbeat).** TV's
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 321.** TV's keying
+implementation reviewed clean (derive-once at adoption, absence pin
+re-authored not deleted, no production edited to satisfy a test); one
+consequence flagged and Allen ordered it docked with the frames: a
+blank persistent slot means a moneyline ticket yields ONE row in a
+fixed three-row panel - batch 87's oversized finding quietly reopens.
+Agent finishing reachability + full re-verify; commit and dock follow.
+
+*(prior stamp, cycle 320:)* TV's
 ticket-keying bundle still grinding; all else clear and standing by.
 With Allen: the research words.
 
