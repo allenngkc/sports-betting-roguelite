@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 351 (heartbeat).** Quiet
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 352.** THREE WORKTREES
+RETIRED on Allen's order after merge verification (0 ahead, clean):
+tv-sweat, sgp, surething-ui-2 - worktrees deleted, branches deleted
+(verified merged against main explicitly), registry updated (1a331bb).
+Remaining: main-2, markets-pregame (held), research (held). Seats live:
+DD only. With Allen: the research words.
+
+*(prior stamp, cycle 351:)* Quiet
 hold continues - all seats idle, nothing staged. With Allen: the
 research words.
 
