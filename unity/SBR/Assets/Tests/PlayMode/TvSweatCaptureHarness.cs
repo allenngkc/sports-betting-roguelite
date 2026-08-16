@@ -680,6 +680,127 @@ namespace SBR.Tests.PlayMode
         /// wrong beat in this lane. It also matters more than usual here: the panel's whole claim is
         /// that time is STOPPED, and a set that let the match move between frames would be arguing
         /// against itself.</para></summary>
+        /// <summary>T100 (batch 85) — THE PANEL WITH A POPULATED COUNT ROW.
+        ///
+        /// <para>T99's set shot the panel on a MONEYLINE leg, so `CORNERS` and `CARDS` carried the
+        /// unrevealed mark. That is ruled behaviour and not a defect, but it left two of three rows
+        /// in their empty form, and <b>a panel judged on that state would be judged on its thinnest
+        /// possible content</b>. So the composition was raised and deliberately not ruled.</para>
+        ///
+        /// <para><b>Same discipline as T99's own 0–0 condition: a surface shot in its emptiest state
+        /// cannot be read for how it FILLS.</b> This ticket carries a CORNERS leg, and the run waits
+        /// for the count ledger to have revealed something before it shoots.</para>
+        ///
+        /// <para><b>The selection is READ OFF THE BOARD, never constructed.</b> The corners line is
+        /// generated per matchup, so an invented `TotalCorners(9.5, over)` would be a selection this
+        /// matchup may not offer — the exact class of error that had this lane withdraw three
+        /// findings built on strings the surface cannot emit. The pick takes an offer that exists.</para></summary>
+        [UnityTest]
+        public IEnumerator Capture_StatsPanel_WithAPopulatedCountRow()
+        {
+            _seed = "STATS-COUNT-1";
+            s_sceneIndex = 0;
+            Directory.CreateDirectory(OutputDir);
+
+            TheaterStage.PresentationSeedOverride = StableSeed(_seed);
+            Time.captureDeltaTime = 1f / 50f;
+
+            yield return LoadRoom();
+
+            var director = Object.FindAnyObjectByType<RunDirector>();
+            var screen = Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing - run SBR.GrayboxRoomBuilder.Build first.");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+
+            Camera cam = Camera.main;
+            Assert.IsNotNull(cam, "MainCamera (PlayerCamera) missing - cannot capture without it");
+
+            screen.TimeScaleOverride = 1f;
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntilOrFail(() => director.Run != null,
+                Time.realtimeSinceStartup + 10f, "director never started a run");
+
+            director.StartNewRun(_seed);
+            Run run = director.Run;
+            Assert.AreEqual(Phase.Betting, run.Phase, "a fresh run opens in Betting");
+
+            // Take an OFFERED corners selection off the board rather than constructing a line.
+            int countMatchupIndex = -1;
+            MarketSelection countSelection = default;
+            foreach (Matchup mm in run.CurrentSlate.Matchups)
+            {
+                foreach (MarketOffer off in mm.Markets)
+                {
+                    if (off.Selection.Kind != MarketKind.TotalCorners) continue;
+                    countMatchupIndex = mm.Index;
+                    countSelection = off.Selection;
+                    break;
+                }
+                if (countMatchupIndex >= 0) break;
+            }
+            Assert.GreaterOrEqual(countMatchupIndex, 0,
+                "no matchup on this slate offers TotalCorners - T100 needs a COUNT leg, so this is a "
+                + "re-seed rather than a reason to shoot the moneyline state again");
+
+            const double Stake = 25.0;
+            run.PlaceTicket(new List<Pick> { new Pick(countMatchupIndex, countSelection) }, Stake);
+            director.LockRound();
+            Assert.AreEqual(Phase.Sweat, run.Phase);
+
+            couch.OnInteract(null);
+            yield return WaitUntilOrFail(() => SitSpot.Active != null,
+                Time.realtimeSinceStartup + 15f, "player never sat down");
+
+            // T100's BINDING CONDITION. -1 means there is no count ledger at all (not a count leg);
+            // 0/0 means a count leg that has revealed nothing YET. Only a revealed count fills a row,
+            // and only a filled row can be read for how the table composes.
+            yield return WaitUntilOrFail(
+                () => screen.DebugRevealedCountHome >= 0
+                      && screen.DebugRevealedCountHome + screen.DebugRevealedCountAway > 0,
+                Time.realtimeSinceStartup + 300f,
+                "the corners leg never revealed a count. T100 exists because the emptiest state "
+                + "cannot be read for how the panel FILLS, so this is a re-seed, never a reason to "
+                + "shoot the empty form a second time.");
+
+            int cHome = screen.DebugRevealedCountHome, cAway = screen.DebugRevealedCountAway;
+            Debug.Log($"[TvSweatCaptureHarness] T100 condition met: corners {cHome}-{cAway} "
+                + $"score='{screen.RevealedView.ScoreText}' clock='{screen.RevealedView.ClockText}'");
+
+            Assert.IsFalse(screen.DebugStatsPanelOpen, "precondition: the panel starts closed");
+            yield return CaptureBurst(screen, cam, "countrow-closed-before", 20, 0f);
+
+            screen.ForceStatsPanel(true);
+            yield return null;
+            Assert.IsTrue(screen.DebugStatsPanelOpen, "the panel did not open - nothing below is the shot");
+
+            // THE ROW IS ACTUALLY POPULATED, asserted before the frames are spent. A set shot on a
+            // row still carrying the mark would be T99's set again under a new name.
+            string cornersRow = screen.DebugStatsRow(1);
+            string mark = screen.DebugStatsUnrevealedMark;
+            Assert.AreNotEqual($"CORNERS|{mark}|{mark}", cornersRow,
+                $"T100 needs a POPULATED corners row and this one reads '{cornersRow}'");
+            Debug.Log($"[TvSweatCaptureHarness] T100 rows :: '{screen.DebugStatsRow(0)}' :: "
+                + $"'{cornersRow}' :: '{screen.DebugStatsRow(2)}'");
+
+            string clockAtOpen = screen.RevealedView.ClockText;
+            yield return CaptureBurst(screen, cam, "countrow-open", 30, 0f);
+            Assert.AreEqual(clockAtOpen, screen.RevealedView.ClockText,
+                "T99's standing condition holds here too: the match clock must not advance behind "
+                + "the panel");
+
+            screen.ForceStatsPanel(false);
+            yield return null;
+            yield return CaptureBurst(screen, cam, "countrow-closed-after", 20, 0f);
+
+            Assert.AreEqual(cHome, screen.DebugRevealedCountHome,
+                "the revealed corners count must be unchanged across the overlay");
+            Assert.AreEqual(cAway, screen.DebugRevealedCountAway,
+                "the revealed corners count must be unchanged across the overlay");
+        }
+
         // [Explicit] is on the CLASS — every capture entry point here is filter-only already, and a
         // second one on the method is a compile error rather than emphasis.
         [UnityTest]

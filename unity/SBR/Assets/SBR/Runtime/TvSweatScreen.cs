@@ -481,6 +481,13 @@ namespace SBR.Game
         /// the harness must wait for a fact the player can actually see.</summary>
         public int DebugRevealedPicked => _ledger != null ? _ledger.Picked : 0;
         public int DebugRevealedOpponent => _ledger != null ? _ledger.Opponent : 0;
+        /// <summary>T100's condition: the REVEALED per-team count on a count leg. <b>−1 means there
+        /// is no count ledger at all</b> — the live leg is not a corners or cards leg — which is a
+        /// different state from "a count leg that has revealed nothing yet", and the capture must be
+        /// able to tell them apart or it will wait forever on the wrong one. Revealed totals, never
+        /// <c>TargetHome</c>/<c>TargetAway</c>, which are the locked endpoint.</summary>
+        public int DebugRevealedCountHome => _countLedger != null ? _countLedger.Home : -1;
+        public int DebugRevealedCountAway => _countLedger != null ? _countLedger.Away : -1;
         /// <summary>Test/debug hook (TVS-H01 regression): true while the cash-out amount is mid-tween
         /// (AnimateCashOut running). Reads _cashOutTweening, not _cashOutAnimation directly — the
         /// Coroutine handle isn't assigned until StartCoroutine returns, one instant after the
@@ -1034,11 +1041,15 @@ namespace SBR.Game
         /// VISIBLE rather than hidden (Allen, 2026-08-15).</summary>
         private const string StatsUnrevealed = "—";
 
-        /// <summary>UNRATIFIED — this seat's pick, flagged exactly as T88 flagged `ENTER`. It is
-        /// bound to nothing on this surface or in the room's asset, and it is the genre's own
+        /// <summary>RATIFIED by Allen (T101, batch 85). Raised as this seat's own pick and explicitly
+        /// unratified, the way T88 raised `ENTER` — *"correctly raised and correctly not assumed"*.
+        ///
+        /// <para>The reason it needed a word rather than a default: <b>`ENTER` is the studio commit
+        /// key by standing ruling, and a panel toggle is a different act</b>, so it takes its own.
+        /// `TAB` is bound to nothing on this surface or in the room's asset and is the genre's own
         /// scoreboard key. §8.8 requires only that it neither swallows nor is swallowed by the
-        /// cash-out or stand controls (TVS-H01's shape); a distinct key satisfies that by
-        /// construction, and the pin asserts it rather than trusting it.</summary>
+        /// cash-out or stand controls (TVS-H01's shape); a distinct key gives that by construction,
+        /// and the pin asserts it rather than trusting it.</para></summary>
         private const string StatsKeyWord = "TAB";
         /// <summary>T74-am5: the footer's right-anchored half. `_tRiskPays` keeps its name and carries
         /// RISK; this carries PAYS. Two elements, one row, no authored gap between them.</summary>
