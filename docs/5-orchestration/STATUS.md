@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 307.** ALLEN TOOK (B)
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 308 (heartbeat).** TV's
+resize agent grinding; DD standing by for its frames (batch 88's wording
+fold was a return to canon); su idle. With Allen: research words.
+
+*(prior stamp, cycle 307:)* ALLEN TOOK (B)
 on the panel: top below y=62, scorebug clear throughout - the freeze
 licence goes moot exactly as the DD's coupling predicted, the freeze
 itself survives on the pausing clause. TV dispatches the resize +
