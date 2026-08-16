@@ -4420,31 +4420,47 @@ namespace SBR.Game
         /// lets the frozen pitch through is not readable. No new colour is introduced.</para></summary>
         private void BuildStatsPanel(Transform root, LayoutGrid grid)
         {
-            var area = new Rect(0f, 0f, grid.Stage.xMax, grid.TicketColumn.height);
+            const float pad = 32f;
+
+            // CONTENT-FIT SIZING (DD batch 87 + Allen): "a surface that takes the entire stage and
+            // returns three rows hasn't earned the stage." Box per column = widest measured ink (C46,
+            // Evidence_C46_the_stats_panel_strings_against_their_boxes) + one margin. `contentMargin`
+            // is the ONLY invented number in this method and it is UNRATIFIED — the DD ruled the
+            // resize-to-content PRINCIPLE, not this specific margin; flag it for ruling rather than
+            // treating it as settled. It drives labelW/valueW directly (rather than being restated as
+            // independent literals) so a future ruling changes one number, not a copied derivation.
+            //   label column widest ink: "MATCH STATS" 155.8px  -> labelW = ceil(155.8 + margin)
+            //   value column widest ink: "Spreadsheets" 115.3px -> valueW = ceil(115.3 + margin)
+            const float contentMargin = 16f; // UNRATIFIED - flag for DD ruling
+            float labelW = Mathf.Ceil(155.8f + contentMargin); // 172
+            float valueW = Mathf.Ceil(115.3f + contentMargin); // 132
+
+            // pad is the ONLY spacing value on this panel: left inset, both inter-column gaps, right
+            // inset, and (below) the bottom inset. colA/colB are RE-DERIVED from labelW/valueW/pad —
+            // they must move whenever the boxes do, never sit as fixed pixels left over from a wider
+            // panel. That was this method's exact bug before this pass: colA/colB were fixed at
+            // 450.8/666.4, correct only for the old 980-wide full-stage panel and outside the bounds
+            // of this narrower, content-fit one.
+            float colA = pad + labelW + pad;                         // 236
+            float colB = colA + valueW + pad;                        // 400
+            float panelW = colB + valueW + pad;                      // 564
+
+            // Vertical rhythm is UNCHANGED (title at -pad, rows at -(pad+56+i*46), rows 34 tall) —
+            // only the panel's own height now stops exactly where the content does, instead of
+            // running all the way to the bottom of the ticket column. Height = last row's bottom+pad.
+            const float panelH = pad + 56f + (StatsRowSlots - 1) * 46f + 34f + pad; // 246
+
+            // DD batch 87 + Allen, option (B): the panel's TOP drops BELOW the scorebug band so the
+            // two zones never share a pixel on either axis, instead of narrowing just enough to dodge
+            // it — a half-covered scorebug would be worse than a fully covered one. x stays 0 so the
+            // panel still sits against the ticket column's side. Verified arithmetically against
+            // grid.TicketColumn.height (bottomY, where CashOut/EventStrip begin): panel bottom
+            // ScoreBugHeight+panelH = 62+246 = 308 stays clear of bottomY (480 at the 980x550
+            // reference canvas) by 172px — the rhythm did not need to shrink to fit.
+            var area = new Rect(0f, ScoreBugHeight, panelW, panelH);
             _statsPanel = MakePanel(root, "StatsPanel", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 AnchorTopLeft(area), new Vector2(area.width, area.height),
                 new Color(screenBg.r, screenBg.g, screenBg.b, 1f)).rectTransform;
-
-            const float pad = 32f;
-            const float labelW = 300f, valueW = 150f;
-            // colA/colB used to be `area.width * 0.46f` / `* 0.68f` — fractions of the PANEL'S OWN
-            // width. That is circular against the DD's resize-to-content ruling: shrink the panel and
-            // the columns move inward, which changes the content extent, which changes the required
-            // width, which would move the columns again — the measurement chases itself.
-            //
-            // Derivation: area.width == grid.Stage.xMax, and LayoutGrid builds Stage as
-            // new Rect(rightX, ScoreBugHeight, rightW, ...) with rightX = ticketW and
-            // rightW = w - ticketW, so Stage.xMax = rightX + rightW = w algebraically — the full
-            // canvas width, independent of TicketColumnWidthFraction. w = referencePixelsWide = 980
-            // (field default above; Room.unity's TV entry pins the same 980 against its matching
-            // 0.98x0.55 screenWorldSize). So area.width was always exactly 980, never actually a
-            // measure of "the panel": colA = 980 * 0.46 = 450.8, colB = 980 * 0.68 = 666.4 —
-            // reproduced below to the pixel. Fixed here, derived ONCE at design time instead of
-            // recomputed from the live container: a fixed grid constant re-derived once at design
-            // time is legal on this surface (§2, T51, S40); a value that recomputes from a container
-            // at runtime is exactly the coupling being removed. What the columns SHOULD be is the
-            // resize proposal's question, not this one.
-            const float colA = 450.8f, colB = 666.4f;
 
             _tStatsTitle = MakeText(_statsPanel, "StatsTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(pad, -pad), new Vector2(labelW, 34f), TypeProgress,

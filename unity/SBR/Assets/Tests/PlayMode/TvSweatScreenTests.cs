@@ -1041,6 +1041,42 @@ namespace SBR.Tests.PlayMode
                 + "scorebug's own argument does not cover.");
         }
 
+        /// <summary>THE SCOREBUG IS NEVER COVERED (DD batch 87, Allen): the §8.8 resize dropped the
+        /// panel's top BELOW the scorebug band rather than narrowing the panel around it, so the two
+        /// zones never share a pixel on EITHER axis — asserted as NON-OVERLAP against the live rects,
+        /// never against remembered constants, so a grid or panel change that pushed either zone into
+        /// the other fails here instead of on a frame (same approach as the event-strip pin above).
+        ///
+        /// <para>A half-covered scorebug is worse than a fully covered one: a partly-obscured score or
+        /// clock reads as a rendering bug, where a fully covered one at least reads as "this element is
+        /// elsewhere". Full 2D overlap is asserted rather than a single-axis comparison, so a future
+        /// change that only narrows the vertical gap while the columns still cross horizontally is
+        /// still caught as the partial-coverage failure it would be.</para></summary>
+        [UnityTest]
+        public IEnumerator Stats_panel_does_not_cover_the_scorebug()
+        {
+            yield return OpenStatsPanelOnALiveLeg();
+            TvSweatScreen screen = _statsScreen;
+
+            var panel = screen.DebugStatsPanel as RectTransform;
+            var bug = FindChildComponent<RectTransform>(screen, "ScoreBugZone");
+            Assert.IsNotNull(panel, "no StatsPanel element");
+            Assert.IsNotNull(bug, "no ScoreBugZone element — re-point this pin, never delete it");
+
+            // Top-left anchored, y running DOWN the canvas: a zone occupies
+            // [x, x + width] x [-y, -y + height].
+            var panelRect = new Rect(panel.anchoredPosition.x, -panel.anchoredPosition.y,
+                panel.rect.width, panel.rect.height);
+            var bugRect = new Rect(bug.anchoredPosition.x, -bug.anchoredPosition.y,
+                bug.rect.width, bug.rect.height);
+
+            Assert.IsFalse(panelRect.Overlaps(bugRect),
+                $"the stats panel {panelRect} must NOT overlap the scorebug {bugRect} — a "
+                + "half-covered scorebug is worse than a fully covered one (a partly-obscured score "
+                + "or clock reads as a rendering bug), so ANY partial coverage is the failure this "
+                + "guards, not just full coverage.");
+        }
+
         /// <summary>THE UNREVEALED MARK. §8.8: a stat not causally revealed is absent or shown as the
         /// mark, NEVER as its true final value — "a leak here is a blocker, not a polish item". The
         /// row still prints, so the gap is VISIBLE rather than hidden (Allen, 2026-08-15).</summary>
