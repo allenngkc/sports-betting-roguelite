@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 327.** TV's closing set
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 328 (heartbeat).** DD on
+the phase-closing frame; su on the capture-guard fix; TV standing by.
+With Allen: the research words.
+
+*(prior stamp, cycle 327:)* TV's closing set
 MERGED (312af18): COUNTS title + the single-count frame, every capture
 entry point guarded (three ran in every routine suite), baselines
 re-dated on one tree. The DD's read of the frame closes the stats phase.
