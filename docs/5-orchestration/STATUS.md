@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 353 (heartbeat).** Quiet:
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 354.** ALLEN GREENLIT
+BOTH HALVES: (1) Market surfaces - the DD spawns a research agent on
+real sportsbook UIs (FanDuel, bet365...) then specs how the board
+presents the 80-offer vocabulary; (2) Theater - corner-count tension +
+booking drama specced for the sweat (the COUNTS panel was built for
+this). Design first per the flow; markets-pregame revives for the
+surfaces build and a fresh TV seat for theater once specs are approved.
+Mandate with the DD.
+
+*(prior stamp, cycle 353:)* Quiet:
 DD the only live seat, idle; two held worktrees; surfaces/theater brief
 delivered to Allen. With Allen: research words + the markets-pregame
 seat call.
