@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 321.** TV's keying
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 322.** The ticket-keyed
+panel MERGED (18e50a6) - built, shot multi-count, reviewed clean; a new
+standing dispatch rule (full suite, no -testFilter - the unfiltered gate
+found what the filtered one hid). The dock opens on the cost per Allen.
+DD's closing read: four items in one pass (blank row, MATCH STATS, 0px
+gap, composition) - the stats phase closes on it. With Allen: research
+words.
+
+*(prior stamp, cycle 321:)* TV's keying
 implementation reviewed clean (derive-once at adoption, absence pin
 re-authored not deleted, no production edited to satisfy a test); one
 consequence flagged and Allen ordered it docked with the frames: a
