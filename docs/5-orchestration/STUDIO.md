@@ -41,7 +41,13 @@ reverted.
   sub-agent only for genuinely hard dispatches (architecture-adjacent, subtle
   concurrency, gnarly debugging). Every dispatch names allowed files, forbidden
   files, required evidence, and an exit gate; sub-agents never commit unless the
-  dispatch says so.
+  dispatch says so. **Small items are not an exemption (Allen, 2026-08-15):**
+  the register workflow produces many small tasks, and "too small to delegate"
+  one-at-a-time is how a lead ends up doing 400 edits by hand — bundle related
+  small items into ONE dispatch (six string fixes = one Sonnet agent carrying
+  all six, with per-item evidence). Delegation is measured mechanically
+  (`tools/delegation-audit.py`); sustained hands-on volume with zero spawns is
+  a recorded contract deviation.
 
 ## Worktree registry
 

@@ -193,6 +193,15 @@ Wake discipline: watchers die with every Orca restart — treat the fallback
 heartbeat (≤30 min) as the guarantee and watchers as an optimization. First
 action on every wake: verify watcher liveness and re-arm before anything else.
 
+**Delegation check (daily, Allen 2026-08-15):** run
+`python tools/delegation-audit.py` — it counts tool *names* in lead
+transcripts (spawns vs hands-on edits), never content, so context hygiene
+holds. A lane with heavy hands-on volume and zero sub-agent spawns since the
+last check gets a deviation notice naming the batching pattern (bundle small
+items into one bounded Sonnet dispatch); log it in STATUS.md. Baseline
+2026-08-15 (4 days): sgp 18 spawns (compliant); tv-sweat 0 of 1470 calls;
+markets-pregame 0 of 286; room 0 of 320; research 0 despite a fan-out mandate.
+
 ### 6b. Plans are work, not reports (Allen, 2026-08-08)
 
 The banned failure mode, verbatim from this seat: a cycle report ended "Next: I
