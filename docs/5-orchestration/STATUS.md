@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 354.** ALLEN GREENLIT
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 355 (heartbeat).** DD
+working the register fixes + its sportsbook-UI research agent; the
+parallel-vs-sequenced theater question answered to Allen (recommend
+parallel, spec-first kept; his word pending). Register sweep landed.
+
+*(prior stamp, cycle 354:)* ALLEN GREENLIT
 BOTH HALVES: (1) Market surfaces - the DD spawns a research agent on
 real sportsbook UIs (FanDuel, bet365...) then specs how the board
 presents the 80-offer vocabulary; (2) Theater - corner-count tension +
