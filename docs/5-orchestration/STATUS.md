@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 308 (heartbeat).** TV's
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 309.** THE RESIZE IS IN
+(5f9b068): panel sized to content, scorebug clear on both axes (2D
+non-overlap pinned), freeze standing on the pausing clause, 70-frame
+dock superseding the count-row set. DD reading with two riders (the 0px
+flush edge, contentMargin). TV's Unity dispatch rule recorded: never end
+a turn against a running process. With Allen: research words.
+
+*(prior stamp, cycle 308:)* TV's
 resize agent grinding; DD standing by for its frames (batch 88's wording
 fold was a return to canon); su idle. With Allen: research words.
 
