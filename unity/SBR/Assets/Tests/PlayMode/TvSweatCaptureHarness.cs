@@ -652,35 +652,6 @@ namespace SBR.Tests.PlayMode
         /// Logs the RevealedView's own display state alongside each frame - factual telemetry, not
         /// a legibility judgment, so a reviewer can cross-check the PNG against what the TV's own
         /// causal mirror says it was showing at that instant.</summary>
-        /// <summary>T87-am: THE SCORELESS DRAW, to full time, with BOTH tickets resolving.
-        ///
-        /// <para>T87 ruled the drawn beat is the match <b>ending level, stated</b>, and every mechanism
-        /// it names is goal-independent — so none is absent at 0–0. What 0–0 changes is the RISK: the
-        /// surface has not punched all match, so a quiet ending arrives against a quiet match, and
-        /// <b>the one state it must never be mistaken for is idle.</b></para>
-        ///
-        /// <para><b>And a draw is quiet for the room and LOUD for one ticket.</b> The draw-backer has
-        /// won, on a match where nothing happened. That is why both tickets are in one set: the loud
-        /// half and the quiet half have to be readable side by side, on the same settlement moment.</para>
-        ///
-        /// <para><b>No 0–0 full-time frame existed in evidence</b> — the `LEVEL 0–0` readings on hand
-        /// were mid-match (11', 32'), the progress line doing its job and saying nothing about the
-        /// ending. C11 binds: a claim about how the ending reads is made against a rendered frame of
-        /// the ending.</para>
-        ///
-        /// <para><b>The seed is found, not hoped for.</b> `engine.tests/GoallessDrawSeedTests` searched
-        /// 400 seeds through the same path this takes (`new Run(seed)`, default config, exactly what
-        /// `RunDirector.StartNewRun` builds) and found eight goalless matches; `GOALLESS-5` matchup 0
-        /// is `Atlanta Middlemen 0 – 0 Scranton Mallards`. `LockRound` resolves every game on the
-        /// slate whether it was bet or not — <i>"outcomes for a seed are identical no matter what the
-        /// player wagered"</i> — so the tickets are placed onto a result that already exists rather
-        /// than steering it.</para>
-        ///
-        /// <para><b>Capture and dock — the read is NOT made here.</b> Three dispositions are
-        /// pre-committed at the DD seat and this harness deliberately asserts nothing about how the
-        /// ending looks; its assertions are plumbing only, as everywhere else in this file.</para></summary>
-        [Explicit("T87-am evidence capture: the goalless draw to full time, both tickets. Run by filter only.")]
-        [Timeout(1500000)]
         /// <summary>T99 (batch 79) — THE STATS PANEL OVER A NON-LEVEL SCOREBUG.
         ///
         /// <para><b>The one binding condition is a refusal to shoot at 0–0</b>: a stats panel over a
@@ -716,6 +687,7 @@ namespace SBR.Tests.PlayMode
         /// generated per matchup, so an invented `TotalCorners(9.5, over)` would be a selection this
         /// matchup may not offer — the exact class of error that had this lane withdraw three
         /// findings built on strings the surface cannot emit. The pick takes an offer that exists.</para></summary>
+        [Explicit("T100 (batch 85) evidence capture: the stats panel with a populated count row. Run by filter only.")]
         [UnityTest]
         public IEnumerator Capture_StatsPanel_WithAPopulatedCountRow()
         {
@@ -840,6 +812,7 @@ namespace SBR.Tests.PlayMode
         /// one that matchup actually offers. The cards search explicitly excludes the corners
         /// matchup, so the ticket carries at most one leg per fixture and prices on the ordinary
         /// path — no same-match correlation model enters this capture at all.</para></summary>
+        [Explicit("DD batch 93 evidence capture: the stats panel with a multi-count (CORNERS + CARDS) ticket. Run by filter only.")]
         [UnityTest]
         public IEnumerator Capture_StatsPanel_MultiCountTicket()
         {
@@ -979,8 +952,18 @@ namespace SBR.Tests.PlayMode
                 "the revealed count must be unchanged across the overlay");
         }
 
-        // [Explicit] is on the CLASS — every capture entry point here is filter-only already, and a
-        // second one on the method is a compile error rather than emphasis.
+        // CORRECTED — this comment used to claim "[Explicit] is on the CLASS"; that reading was
+        // WRONG, and this fix is what disproves it. There is no class-level [Explicit] anywhere in
+        // this file, and never was. What actually happened: a T87-am [Explicit]+[Timeout] pair
+        // written for Capture_GoallessDraw_BothTicketsToFullTime sat above three stacked XML
+        // doc-comments (its own, then T99's, then T100's) with no real declaration between them —
+        // and C# binds attributes to the next actual member declaration regardless of doc-comment
+        // trivia in between, so both attributes landed on Capture_StatsPanel_WithAPopulatedCountRow
+        // instead of the method they described. The CS0579 that produced the old (wrong) reading was
+        // that misbound [Explicit] colliding with a method-level one — not evidence of a class-level
+        // attribute. Every capture method in this file now carries its own [Explicit], attached
+        // directly to it, so the guard cannot drift by textual adjacency again.
+        [Explicit("T99 (batch 79) evidence capture: the stats panel over a non-level scorebug. Run by filter only.")]
         [UnityTest]
         public IEnumerator Capture_StatsPanel_OverANonLevelScorebug()
         {
@@ -1067,6 +1050,35 @@ namespace SBR.Tests.PlayMode
                 "T99 check 4: the freeze - the revealed score must be unchanged across the overlay");
         }
 
+        /// <summary>T87-am: THE SCORELESS DRAW, to full time, with BOTH tickets resolving.
+        ///
+        /// <para>T87 ruled the drawn beat is the match <b>ending level, stated</b>, and every mechanism
+        /// it names is goal-independent — so none is absent at 0–0. What 0–0 changes is the RISK: the
+        /// surface has not punched all match, so a quiet ending arrives against a quiet match, and
+        /// <b>the one state it must never be mistaken for is idle.</b></para>
+        ///
+        /// <para><b>And a draw is quiet for the room and LOUD for one ticket.</b> The draw-backer has
+        /// won, on a match where nothing happened. That is why both tickets are in one set: the loud
+        /// half and the quiet half have to be readable side by side, on the same settlement moment.</para>
+        ///
+        /// <para><b>No 0–0 full-time frame existed in evidence</b> — the `LEVEL 0–0` readings on hand
+        /// were mid-match (11', 32'), the progress line doing its job and saying nothing about the
+        /// ending. C11 binds: a claim about how the ending reads is made against a rendered frame of
+        /// the ending.</para>
+        ///
+        /// <para><b>The seed is found, not hoped for.</b> `engine.tests/GoallessDrawSeedTests` searched
+        /// 400 seeds through the same path this takes (`new Run(seed)`, default config, exactly what
+        /// `RunDirector.StartNewRun` builds) and found eight goalless matches; `GOALLESS-5` matchup 0
+        /// is `Atlanta Middlemen 0 – 0 Scranton Mallards`. `LockRound` resolves every game on the
+        /// slate whether it was bet or not — <i>"outcomes for a seed are identical no matter what the
+        /// player wagered"</i> — so the tickets are placed onto a result that already exists rather
+        /// than steering it.</para>
+        ///
+        /// <para><b>Capture and dock — the read is NOT made here.</b> Three dispositions are
+        /// pre-committed at the DD seat and this harness deliberately asserts nothing about how the
+        /// ending looks; its assertions are plumbing only, as everywhere else in this file.</para></summary>
+        [Explicit("T87-am evidence capture: the goalless draw to full time, both tickets. Run by filter only.")]
+        [Timeout(1500000)]
         [UnityTest]
         public IEnumerator Capture_GoallessDraw_BothTicketsToFullTime()
         {
