@@ -1485,8 +1485,8 @@ namespace SBR.Tests.PlayMode
             var aSlots = new[] { Slot("StatsA0"), Slot("StatsA1"), Slot("StatsA2") };
             var bSlots = new[] { Slot("StatsB0"), Slot("StatsB1"), Slot("StatsB2") };
 
-            // ---- (1) TITLE — the one constant (TvSweatScreen.cs:3801).
-            Log("StatsTitle", title, "MATCH STATS");
+            // ---- (1) TITLE — the one constant, DD batch 94: "COUNTS" (TvSweatScreen.cs:3875).
+            Log("StatsTitle", title, "COUNTS");
 
             // ---- (2) ROW LABELS — the three constants (TvSweatScreen.cs:3819, 3824, 3827).
             string[] rowLabels = { "GOALS", "CORNERS", "CARDS" };
