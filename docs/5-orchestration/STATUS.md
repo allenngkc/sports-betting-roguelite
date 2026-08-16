@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 314 (heartbeat).** TV's
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 315 (heartbeat).** S85
+CLOSED end to end (batch 91): treatment approved, ENTRY needs no channel,
+screen lane clear. TV's bundle agent grinding; Allen's docked-frames
+draft HELD until the dock is real. With Allen: research words.
+
+*(prior stamp, cycle 314:)* TV's
 turn died on an API error mid-bundle-release (the pin landed first,
 5bf2b8d) - tapped to continue and confirm the branch name. DD reading
 the S85 treatment frames + the ENTRY-channel question. su standing by.
