@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 325 (heartbeat).** TV's
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 326 (heartbeat).** TV's
+closing dock + harness-fix dispatches grinding; all else standing by.
+With Allen: the research words.
+
+*(prior stamp, cycle 325:)* TV's
 closing unit still grinding. Quiet elsewhere. With Allen: research words.
 
 *(prior stamp, cycle 324:)* TV's
