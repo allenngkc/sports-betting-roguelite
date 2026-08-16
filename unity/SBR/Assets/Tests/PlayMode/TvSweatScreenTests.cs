@@ -914,6 +914,27 @@ namespace SBR.Tests.PlayMode
 
         private TvSweatScreen _statsScreen;
 
+        /// <summary>The engine's closed club-noun pool — <c>SlateGenerator.Nouns</c>
+        /// (engine/SlateGenerator.cs:15-21), private there and so unreachable by reference from a
+        /// test; transcribed here ONCE, verbatim, cross-checked against
+        /// <c>TvExtentSweep.ClubNouns</c>'s own transcription of the same pool
+        /// (Assets/SBR/Editor/TvExtentSweep.cs). Shared by
+        /// <see cref="Evidence_C46_the_stats_panel_strings_against_their_boxes"/> and its non-Explicit
+        /// guard twin, <see cref="Stats_panel_value_column_holds_the_full_club_pool_at_max_ink_fraction"/>
+        /// (S84's binding), so a pool change is one edit here, not two silently-drifting ones.</summary>
+        private static readonly string[] ClosedClubPool =
+        {
+            "Yams", "Startups", "Bricklayers", "Longhaulers", "Mallards", "Spreadsheets",
+            "Turnips", "Middlemen", "Regulators", "Plumbers", "Meatballs", "Auditors",
+            "Ferrets", "Overheads", "Gravediggers", "Notaries", "Muskrats", "Zambonis",
+            "Loopholes", "Refunds",
+        };
+
+        /// <summary>TMP's own unconstrained preferred-width — TvExtentSweep's own constant and
+        /// rationale (Assets/SBR/Editor/TvExtentSweep.cs) — one instrument, not a second one invented
+        /// here. Shared by C46 and its guard twin below.</summary>
+        private const float Unconstrained = 100000f;
+
         /// <summary>Seats the player into a live sweat and opens the panel, asserting the
         /// precondition on the way. The panel mirrors whichever leg the scorebug is showing, so
         /// until a beat has rendered it has no leg and every assertion downstream would pass by
@@ -1195,14 +1216,13 @@ namespace SBR.Tests.PlayMode
         /// below), never that any string fits its box.</para>
         ///
         /// <para><b>Population, enumerated from source, not invented.</b> The title and the three row
-        /// labels are the constants <c>RenderStatsPanel</c> assigns (TvSweatScreen.cs:3782, 3792,
-        /// 3797, 3800). Team headers are every club in the engine's closed pool
-        /// (<c>SlateGenerator.Nouns</c>, engine/SlateGenerator.cs:15-21 — private, so unreachable by
-        /// reference from a test and transcribed here exactly as read, cross-checked against
-        /// <c>TvExtentSweep.ClubNouns</c>'s own transcription of the same pool, which matches
-        /// verbatim) through <c>SweatFlavor.Short</c>. Values are every digit form the LIVE RUN's own
-        /// config can realize per row, plus the unrevealed mark where the source can actually produce
-        /// it — see the DIGIT-COUNT ASSUMPTION comment below for the citation.</para>
+        /// labels are the constants <c>RenderStatsPanel</c> assigns (TvSweatScreen.cs:3801, 3819,
+        /// 3824, 3827). Team headers are every club in the engine's closed pool (the shared
+        /// <see cref="ClosedClubPool"/> field above — <c>SlateGenerator.Nouns</c>,
+        /// engine/SlateGenerator.cs:15-21, private there and so unreachable by reference from a test)
+        /// through <c>SweatFlavor.Short</c>. Values are every digit form the LIVE RUN's own config can
+        /// realize per row, plus the unrevealed mark where the source can actually produce it — see
+        /// the DIGIT-COUNT ASSUMPTION comment below for the citation.</para>
         ///
         /// <para><b>Face borrowed from the RENDERED components</b>, off the live, seated panel opened
         /// by <see cref="OpenStatsPanelOnALiveLeg"/> — never a lookalike node. No TV-surface
@@ -1221,10 +1241,6 @@ namespace SBR.Tests.PlayMode
         {
             yield return OpenStatsPanelOnALiveLeg();
             TvSweatScreen screen = _statsScreen;
-
-            // TMP's own unconstrained preferred-width — TvExtentSweep's own constant and rationale
-            // (Assets/SBR/Editor/TvExtentSweep.cs) — one instrument, not a second one invented here.
-            const float Unconstrained = 100000f;
 
             var measuredSlotNames = new HashSet<string>();
             int measured = 0;
@@ -1261,28 +1277,19 @@ namespace SBR.Tests.PlayMode
             var aSlots = new[] { Slot("StatsA0"), Slot("StatsA1"), Slot("StatsA2") };
             var bSlots = new[] { Slot("StatsB0"), Slot("StatsB1"), Slot("StatsB2") };
 
-            // ---- (1) TITLE — the one constant (TvSweatScreen.cs:3782).
+            // ---- (1) TITLE — the one constant (TvSweatScreen.cs:3801).
             Log("StatsTitle", title, "MATCH STATS");
 
-            // ---- (2) ROW LABELS — the three constants (TvSweatScreen.cs:3792, 3797, 3800).
+            // ---- (2) ROW LABELS — the three constants (TvSweatScreen.cs:3819, 3824, 3827).
             string[] rowLabels = { "GOALS", "CORNERS", "CARDS" };
             for (int i = 0; i < rowLabels.Length; i++)
                 Log($"StatsLabel{i}", labels[i], rowLabels[i]);
 
-            // ---- (3) TEAM HEADERS — every club in the engine's closed pool, both columns (StatsTeamA
-            // and StatsTeamB are two DIFFERENT rendered components; measured separately rather than
-            // assumed symmetric). Transcribed from `SlateGenerator.Nouns` (engine/SlateGenerator.cs:
-            // 15-21) — private, unreachable by reference from a test — and it matches
-            // `TvExtentSweep.ClubNouns` verbatim, this repo's own transcription of the same pool.
-            string[] clubNouns =
-            {
-                "Yams", "Startups", "Bricklayers", "Longhaulers", "Mallards", "Spreadsheets",
-                "Turnips", "Middlemen", "Regulators", "Plumbers", "Meatballs", "Auditors",
-                "Ferrets", "Overheads", "Gravediggers", "Notaries", "Muskrats", "Zambonis",
-                "Loopholes", "Refunds",
-            };
+            // ---- (3) TEAM HEADERS — every club in the engine's closed pool (the shared
+            // ClosedClubPool field above), both columns (StatsTeamA and StatsTeamB are two DIFFERENT
+            // rendered components; measured separately rather than assumed symmetric).
             float worstClubW = float.MinValue; string worstClub = "";
-            foreach (string noun in clubNouns)
+            foreach (string noun in ClosedClubPool)
             {
                 // SlateGenerator.MakeTeam builds `"{city} {noun}"`; Short returns the substring after
                 // the LAST space, so the city prefix is inert — any placeholder city reproduces
@@ -1333,9 +1340,10 @@ namespace SBR.Tests.PlayMode
             }
 
             // GOALS (row 0) never shows the mark — RenderStatsPanel sets it unconditionally:
-            // `SetStatsRow(0, "GOALS", goalsHome.ToString(), goalsAway.ToString())` (TvSweatScreen.cs
-            // :3792). CORNERS/CARDS are conditional on the live leg's market (:3797-3802), so both
-            // forms are reachable there and both are measured.
+            // `SetStatsRow(0, "GOALS", goalsAway.ToString(), goalsHome.ToString())` (TvSweatScreen.cs
+            // :3819 — T102/S84's column swap put AWAY in the "a" slot and HOME in "b"). CORNERS/CARDS
+            // are conditional on the live leg's market (:3821-3829), so both forms are reachable there
+            // and both are measured.
             SweepValueSlot("StatsA0", aSlots[0], maxGoals, markReachable: false);
             SweepValueSlot("StatsB0", bSlots[0], maxGoals, markReachable: false);
             SweepValueSlot("StatsA1", aSlots[1], maxCorners, markReachable: true);
@@ -1360,6 +1368,72 @@ namespace SBR.Tests.PlayMode
             Assert.AreEqual(0, uncovered.Count,
                 "panel text slot(s) exist that this sweep never measured: "
                 + string.Join(", ", uncovered));
+        }
+
+        /// <summary>T102/S84's GUARD (DD batch 89): the value column must be sized against THE
+        /// ENUMERATED CLOSED POOL, not a sampled widest — and this has to stay true as the pool
+        /// changes. C46 above is the measurement lane and offers no fit verdict, and it is
+        /// <c>[Explicit]</c> so it never runs in a routine suite — exactly why a 21st club could
+        /// overflow the box silently. THIS is the verdict, and it is deliberately NOT
+        /// <c>[Explicit]</c>: it has to gate.
+        ///
+        /// <para>Measured off the LIVE rendered team-header components — StatsTeamA/StatsTeamB are
+        /// the only slots a club short-name ever actually renders into
+        /// (<c>RenderStatsPanel</c>, TvSweatScreen.cs:3810-3811) — borrowing their real font, size and
+        /// tracking, never a lookalike node. Same instrument C46 uses:
+        /// <c>TMP_Text.GetPreferredValues</c> at the shared <see cref="Unconstrained"/> width. The
+        /// ratio itself is read live off <see cref="TvSweatScreen.DebugStatsMaxInkFraction"/> rather
+        /// than a second, driftable "0.8" literal here.</para>
+        ///
+        /// <para><b>If this fires</b>, the pool grew a short name that no longer fits at
+        /// <c>MaxInkFraction</c>. The fix is to RE-DERIVE labelW/valueW in <c>BuildStatsPanel</c> from
+        /// the new widest under the same 80% rule — never to shorten the string to fit the old
+        /// box.</para></summary>
+        [UnityTest]
+        public IEnumerator Stats_panel_value_column_holds_the_full_club_pool_at_max_ink_fraction()
+        {
+            yield return OpenStatsPanelOnALiveLeg();
+            TvSweatScreen screen = _statsScreen;
+
+            TMP_Text teamA = FindChildComponent<TMP_Text>(screen, "StatsTeamA");
+            TMP_Text teamB = FindChildComponent<TMP_Text>(screen, "StatsTeamB");
+            Assert.IsNotNull(teamA,
+                "StatsTeamA not found on the live stats panel — BuildStatsPanel's naming moved");
+            Assert.IsNotNull(teamB,
+                "StatsTeamB not found on the live stats panel — BuildStatsPanel's naming moved");
+
+            // Both columns are built to the same valueW (BuildStatsPanel) but measured independently
+            // rather than assumed identical — the same caution C46 takes with these two slots.
+            float boxA = teamA.rectTransform.rect.width;
+            float boxB = teamB.rectTransform.rect.width;
+            Assert.AreEqual(boxA, boxB, 0.01f,
+                "StatsTeamA/StatsTeamB boxes disagree — BuildStatsPanel no longer builds one shared "
+                + "valueW for both columns");
+
+            float maxInkFraction = screen.DebugStatsMaxInkFraction;
+            float worst = float.MinValue; string worstClub = "";
+            foreach (string noun in ClosedClubPool)
+            {
+                // SlateGenerator.MakeTeam builds `"{city} {noun}"`; Short returns the substring after
+                // the LAST space, so the city prefix is inert — any placeholder city reproduces
+                // exactly what the live surface would render for that noun (same reasoning C46 uses).
+                string shortName = SweatFlavor.Short($"City {noun}");
+                float wa = teamA.GetPreferredValues(shortName, Unconstrained, 0f).x;
+                float wb = teamB.GetPreferredValues(shortName, Unconstrained, 0f).x;
+                if (wa > worst) { worst = wa; worstClub = shortName; }
+                if (wb > worst) { worst = wb; worstClub = shortName; }
+            }
+
+            float limit = boxA * maxInkFraction;
+            UnityEngine.Debug.Log($"[T102-GUARD] pool {ClosedClubPool.Length} clubs · widest "
+                + $"\"{worstClub}\" {worst:0.0}px · box {boxA:0.0}px · {maxInkFraction:0.00} limit "
+                + $"{limit:0.0}px");
+
+            Assert.LessOrEqual(worst, limit,
+                $"\"{worstClub}\" measures {worst:0.0}px against a {boxA:0.0}px box — over the "
+                + $"{maxInkFraction:0.00} max-ink-fraction limit of {limit:0.0}px. The club pool grew "
+                + "past the box: RE-DERIVE labelW/valueW in BuildStatsPanel from this new widest under "
+                + "MaxInkFraction — never shorten the string to fit.");
         }
 
         private static T FindChildComponent<T>(TvSweatScreen screen, string childName) where T : Component

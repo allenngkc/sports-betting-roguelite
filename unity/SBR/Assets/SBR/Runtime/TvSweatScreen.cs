@@ -475,6 +475,10 @@ namespace SBR.Game
                 ? null
                 : $"{_tStatsLabel[i].text}|{_tStatsA[i].text}|{_tStatsB[i].text}";
         public string DebugStatsUnrevealedMark => StatsUnrevealed;
+        /// <summary>T102/S84's ratio, exposed so the guard test asserts against the SAME instrument
+        /// <see cref="BuildStatsPanel"/> sizes columns with, rather than a second, driftable copy of
+        /// "0.8" living in the test file.</summary>
+        public float DebugStatsMaxInkFraction => MaxInkFraction;
         /// <summary>The REVEALED goals, for the capture harness's one binding condition (T99): the
         /// panel must not be shot over a 0–0, because a covered scorebug carrying no information
         /// cannot fail any reading of it. Read from the revealed ledger, never the locked StatLine —
@@ -1040,6 +1044,21 @@ namespace SBR.Game
         /// item". It is what corners and cards read off a count leg, and that gap is deliberately
         /// VISIBLE rather than hidden (Allen, 2026-08-15).</summary>
         private const string StatsUnrevealed = "—";
+
+        /// <summary>T102 (DD batch 89): the stats panel's column-sizing rule, re-ruled from "widest
+        /// ink + contentMargin" to "the widest measured ink is at most this fraction of its own
+        /// box". <see cref="BuildStatsPanel"/> derives labelW/valueW from this ONE constant rather
+        /// than restating them as independent literals, so a future ruling on the fraction moves one
+        /// number, not a copied derivation.
+        ///
+        /// <para>S84's binding: the value column's widest ink is the engine's closed club pool, not
+        /// a sampled string, and a guard test re-measures the FULL pool against this fraction on
+        /// every routine run (TvSweatScreenTests.cs,
+        /// <c>Stats_panel_value_column_holds_the_full_club_pool_at_max_ink_fraction</c> — unlike the
+        /// C46 evidence sweep it borrows its measuring instrument from, it is deliberately NOT
+        /// [Explicit], because that is exactly what lets a grown pool overflow the box
+        /// silently).</para></summary>
+        private const float MaxInkFraction = 0.8f;
 
         /// <summary>RATIFIED by Allen (T101, batch 85). Raised as this seat's own pick and explicitly
         /// unratified, the way T88 raised `ENTER` — *"correctly raised and correctly not assumed"*.
@@ -3780,8 +3799,16 @@ namespace SBR.Game
 
             Matchup m = _statsLeg.Matchup;
             _tStatsTitle.text = "MATCH STATS";
-            _tStatsTeamA.text = SweatFlavor.Short(m.Home.Name);
-            _tStatsTeamB.text = SweatFlavor.Short(m.Away.Name);
+
+            // COLUMN ORDER IS THE SCOREBUG'S, NOT THIS METHOD'S OWN TO CHOOSE. The scorebug composes
+            // AWAY on the left, HOME on the right (TvSweatScreen.cs ~2404:
+            // `_tMatchup.text = $"{awayMark}{away}  {awayScore} — {homeScore}  {home}{homeMark}"`).
+            // So column A (colA, the left value column built in BuildStatsPanel) is AWAY and column
+            // B (colB, right) is HOME — on EVERY row below, headers and values together. Swapping one
+            // without the other prints the right club names over the wrong numbers, a state lie that
+            // is worse than the mismatched order it would replace.
+            _tStatsTeamA.text = SweatFlavor.Short(m.Away.Name);
+            _tStatsTeamB.text = SweatFlavor.Short(m.Home.Name);
 
             // The score ledger counts PICKED/OPPONENT; the count ledger counts HOME/AWAY. The panel
             // is about the MATCH, so home/away is the honest axis and the goals are mapped onto it
@@ -3789,17 +3816,17 @@ namespace SBR.Game
             bool pickedHome = SweatFlavor.PickedHomeForPresentation(_statsLeg);
             int goalsHome = pickedHome ? _ledger.Picked : _ledger.Opponent;
             int goalsAway = pickedHome ? _ledger.Opponent : _ledger.Picked;
-            SetStatsRow(0, "GOALS", goalsHome.ToString(), goalsAway.ToString());
+            SetStatsRow(0, "GOALS", goalsAway.ToString(), goalsHome.ToString());
 
             MarketKind kind = _statsLeg.Selection.Kind;
             bool corners = _countLedger != null && kind == MarketKind.TotalCorners;
             bool cards = _countLedger != null && kind == MarketKind.TotalCards;
             SetStatsRow(1, "CORNERS",
-                corners ? _countLedger.Home.ToString() : StatsUnrevealed,
-                corners ? _countLedger.Away.ToString() : StatsUnrevealed);
+                corners ? _countLedger.Away.ToString() : StatsUnrevealed,
+                corners ? _countLedger.Home.ToString() : StatsUnrevealed);
             SetStatsRow(2, "CARDS",
-                cards ? _countLedger.Home.ToString() : StatsUnrevealed,
-                cards ? _countLedger.Away.ToString() : StatsUnrevealed);
+                cards ? _countLedger.Away.ToString() : StatsUnrevealed,
+                cards ? _countLedger.Home.ToString() : StatsUnrevealed);
         }
 
         private void SetStatsRow(int i, string label, string a, string b)
@@ -4423,17 +4450,21 @@ namespace SBR.Game
             const float pad = 32f;
 
             // CONTENT-FIT SIZING (DD batch 87 + Allen): "a surface that takes the entire stage and
-            // returns three rows hasn't earned the stage." Box per column = widest measured ink (C46,
-            // Evidence_C46_the_stats_panel_strings_against_their_boxes) + one margin. `contentMargin`
-            // is the ONLY invented number in this method and it is UNRATIFIED — the DD ruled the
-            // resize-to-content PRINCIPLE, not this specific margin; flag it for ruling rather than
-            // treating it as settled. It drives labelW/valueW directly (rather than being restated as
-            // independent literals) so a future ruling changes one number, not a copied derivation.
-            //   label column widest ink: "MATCH STATS" 155.8px  -> labelW = ceil(155.8 + margin)
-            //   value column widest ink: "Spreadsheets" 115.3px -> valueW = ceil(115.3 + margin)
-            const float contentMargin = 16f; // UNRATIFIED - flag for DD ruling
-            float labelW = Mathf.Ceil(155.8f + contentMargin); // 172
-            float valueW = Mathf.Ceil(115.3f + contentMargin); // 132
+            // returns three rows hasn't earned the stage." T102 (DD batch 89) RE-RULED the box rule:
+            // no longer "widest measured ink (C46, Evidence_C46_the_stats_panel_strings_against_
+            // their_boxes) + a margin" — that `contentMargin` cut was UNRATIFIED and is superseded,
+            // not kept as a dead constant — but THE WIDEST MEASURED INK MUST BE AT MOST
+            // MaxInkFraction OF ITS BOX. labelW/valueW are DERIVED from MaxInkFraction, never
+            // restated as independent literals, so a future ruling on the fraction moves one number,
+            // not a copied derivation.
+            //   label column widest ink: "MATCH STATS" 155.8px  -> labelW = ceil(155.8 / MaxInkFraction)
+            //   value column widest ink: "Spreadsheets" 115.3px -> valueW = ceil(115.3 / MaxInkFraction)
+            // S84: that 115.3px value-column figure is only honest while it stays the widest ink the
+            // engine's CLOSED CLUB POOL can produce, not merely a sampled string — guarded on every
+            // routine run by Stats_panel_value_column_holds_the_full_club_pool_at_max_ink_fraction
+            // (TvSweatScreenTests.cs), which fails the day the pool outgrows this box.
+            float labelW = Mathf.Ceil(155.8f / MaxInkFraction); // 195
+            float valueW = Mathf.Ceil(115.3f / MaxInkFraction); // 145
 
             // pad is the ONLY spacing value on this panel: left inset, both inter-column gaps, right
             // inset, and (below) the bottom inset. colA/colB are RE-DERIVED from labelW/valueW/pad —
@@ -4441,9 +4472,9 @@ namespace SBR.Game
             // panel. That was this method's exact bug before this pass: colA/colB were fixed at
             // 450.8/666.4, correct only for the old 980-wide full-stage panel and outside the bounds
             // of this narrower, content-fit one.
-            float colA = pad + labelW + pad;                         // 236
-            float colB = colA + valueW + pad;                        // 400
-            float panelW = colB + valueW + pad;                      // 564
+            float colA = pad + labelW + pad;                         // 259
+            float colB = colA + valueW + pad;                        // 436
+            float panelW = colB + valueW + pad;                      // 613
 
             // Vertical rhythm is UNCHANGED (title at -pad, rows at -(pad+56+i*46), rows 34 tall) —
             // only the panel's own height now stops exactly where the content does, instead of
