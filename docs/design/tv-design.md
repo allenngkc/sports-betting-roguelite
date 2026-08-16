@@ -581,6 +581,50 @@ depended on what the panel covered.
 blocker-class leak) are dropped; per-team corners and cards ship from `CountLedger` (T36). **A row
 returns only when the sim emits it as a first-class value, never computed in presentation.**
 
+#### Its subject, and the rows that follow from it (T104, Allen 2026-08-16 — option (c))
+
+**Three surfaces carry this match's numbers, and each owns one:**
+
+| surface | what it gives |
+|---|---|
+| the **scorebug** | **the RESULT** — the scoreline and the clock |
+| the **ticket column** | **each leg's own PROGRESS** toward its line |
+| the **panel** | **the PER-TEAM SPLIT of the counts the ticket rides on** |
+
+**The panel gives the breakdown neither neighbour can.** That is what *opens from the ticket column*
+has always meant, now true of its content and not only of its position.
+
+**One row per countable quantity the ticket's legs ride on, deduped — the unit is the QUANTITY, not
+the leg**, so two corners legs at different lines take one `CORNERS` row. **Rows appear in a fixed
+canonical order: the ticket selects WHICH rows appear, never in what order.**
+
+**THE `GOALS` ROW IS REMOVED, and the reason is structural rather than a duplication complaint: the
+panel exists to give the SPLIT, and for goals there is no split to give.** The panel's two numbers and
+the scorebug's are the same two, in the same order, one slot apart — **nothing to ADD, not merely
+something repeated.** Every goals market is served by the scorebug directly: moneyline reads the
+result, BTTS reads both numbers, correct score **is** the scoreline, over/under is their sum. **A
+scorer leg takes no row either, by the same rule rather than a special case.**
+
+**Where the ticket gives the panel no rows — a moneyline-only ticket — the panel DOES NOT OPEN EMPTY:
+its affordance is unavailable and says so before the key is pressed** (S85: *a refusal knowable
+before the act is shown before it*). **This makes the panel a count-ticket feature: available where it
+has something to say.**
+
+**The unrevealed mark survives and changes meaning.** `_countLedger` carries one kind and resets per
+leg, so a ticket may ride on more quantities than it can populate. **Where `—` meant *not in your
+ticket*, it now means *your ticket rides on this and it is not revealed yet* — the mark stops meaning
+irrelevant and starts meaning not yet.**
+
+**§2 is not breached by a varying row count.** The set is derived **once, at placement**, and is
+constant for that ticket's life: §2 forbids a zone resizing in response to content **while the player
+is watching**, and this one cannot change under him — nor can he see two at once, which is the
+side-by-side comparison the ragged-list case is about. **The draws block had siblings; the panel has
+none.**
+
+**`MATCH STATS` now overstates the subject** and is **coupled to the box** — it is the widest ink in
+the label column and sets `labelW` (T102). The title is authored against the measured slot and the box
+derives from it; **not blocking, and not to be changed in passing.**
+
 ### 6.7 Ticket interstitial
 
 Appears only once the stage and active-leg card have **cleared**. No score, clock, tape, event line,
