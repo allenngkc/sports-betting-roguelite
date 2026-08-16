@@ -302,12 +302,7 @@ namespace SBR.Tests.PlayMode
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "06-ledger", capturedPaths);
 
-            Assert.AreEqual(18, capturedPaths.Count, "nine states must emit paired captures");
-            foreach (string path in capturedPaths)
-            {
-                Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
-                Assert.Greater(new FileInfo(path).Length, 0L, $"capture is empty: {path}");
-            }
+            AssertCaptureOutput(capturedPaths, 18);
         }
 
         /// <summary>C17: no rebuild verdict on a state no capture shows. B1 rebuilt the margin's
@@ -380,12 +375,7 @@ namespace SBR.Tests.PlayMode
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "16-margin-max-legs-staged-receipt", capturedPaths);
 
-            Assert.AreEqual(2, capturedPaths.Count, "one state must emit paired captures");
-            foreach (string path in capturedPaths)
-            {
-                Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
-                Assert.Greater(new FileInfo(path).Length, 0L, $"capture is empty: {path}");
-            }
+            AssertCaptureOutput(capturedPaths, 2);
         }
 
         /// <summary>THE BOARD AT THE CAP, under the additive gesture (DD batch 84).
@@ -455,12 +445,7 @@ namespace SBR.Tests.PlayMode
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "18-board-at-the-leg-cap", capturedPaths);
 
-            Assert.AreEqual(2, capturedPaths.Count, "one state must emit paired captures");
-            foreach (string path in capturedPaths)
-            {
-                Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
-                Assert.Greater(new FileInfo(path).Length, 0L, $"capture is empty: {path}");
-            }
+            AssertCaptureOutput(capturedPaths, 2);
         }
 
         /// <summary>S83's scroll, on the state that ACTUALLY SCROLLS (DD batch 81).
@@ -514,12 +499,7 @@ namespace SBR.Tests.PlayMode
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "17-margin-scrolling-four-legs-consumable", capturedPaths);
 
-            Assert.AreEqual(2, capturedPaths.Count, "one state must emit paired captures");
-            foreach (string path in capturedPaths)
-            {
-                Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
-                Assert.Greater(new FileInfo(path).Length, 0L, $"capture is empty: {path}");
-            }
+            AssertCaptureOutput(capturedPaths, 2);
         }
 
         [UnityTest]
@@ -614,12 +594,7 @@ namespace SBR.Tests.PlayMode
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "08-old-slips", capturedPaths);
 
-            Assert.AreEqual(8, capturedPaths.Count, "four states must emit paired captures");
-            foreach (string path in capturedPaths)
-            {
-                Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
-                Assert.Greater(new FileInfo(path).Length, 0L, $"capture is empty: {path}");
-            }
+            AssertCaptureOutput(capturedPaths, 8);
         }
 
         /// <summary>
@@ -699,12 +674,7 @@ namespace SBR.Tests.PlayMode
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "10-ledger-populated", capturedPaths);
 
-            Assert.AreEqual(2, capturedPaths.Count, "one state must emit paired captures");
-            foreach (string path in capturedPaths)
-            {
-                Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
-                Assert.Greater(new FileInfo(path).Length, 0L, $"capture is empty: {path}");
-            }
+            AssertCaptureOutput(capturedPaths, 2);
         }
 
         /// <summary>
@@ -827,12 +797,7 @@ namespace SBR.Tests.PlayMode
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "12-ledger-populated-multi", capturedPaths);
 
-            Assert.AreEqual(2, capturedPaths.Count, "one state must emit paired captures");
-            foreach (string path in capturedPaths)
-            {
-                Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
-                Assert.Greater(new FileInfo(path).Length, 0L, $"capture is empty: {path}");
-            }
+            AssertCaptureOutput(capturedPaths, 2);
         }
 
         /// <summary>
@@ -899,12 +864,7 @@ namespace SBR.Tests.PlayMode
             StringAssert.Contains("$290", wonFigures, "the won frame should end holding more");
             StringAssert.Contains("$40", lostFigures, "the lost frame should end holding less");
 
-            Assert.AreEqual(4, capturedPaths.Count, "two states must emit paired captures");
-            foreach (string path in capturedPaths)
-            {
-                Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
-                Assert.Greater(new FileInfo(path).Length, 0L, $"capture is empty: {path}");
-            }
+            AssertCaptureOutput(capturedPaths, 4);
         }
 
         /// <summary>
@@ -1000,12 +960,7 @@ namespace SBR.Tests.PlayMode
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "15-ledger-across-rounds", capturedPaths);
 
-            Assert.AreEqual(2, capturedPaths.Count, "one state must emit paired captures");
-            foreach (string path in capturedPaths)
-            {
-                Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
-                Assert.Greater(new FileInfo(path).Length, 0L, $"capture is empty: {path}");
-            }
+            AssertCaptureOutput(capturedPaths, 2);
         }
 
         /// <summary>Places one ticket and travels the real place-lock-sweat path to a terminal
@@ -1181,6 +1136,48 @@ namespace SBR.Tests.PlayMode
             return x.r == y.r && x.g == y.g && x.b == y.b;
         }
 
+        /// <summary>Whether this run is a DELIBERATE SHOOT. Set `SBR_SHOOT` to write frames.
+        ///
+        /// <para><b>THE GUARD IS ON THE WRITE, NOT ON THE ENTRY POINT — and that is a ruling, not a
+        /// shortcut.</b> The routed defect is TV's class: capture flows running inside every routine
+        /// suite, so a dock could scope against frames a suite happened to write rather than a
+        /// deliberate shoot. TV closed it with `[Explicit]` on the entry points, which is right for
+        /// THAT file — it says so itself: *"DELETE THIS FILE once evidence review is done — it is not
+        /// production coverage."*</para>
+        ///
+        /// <para><b>This file is the opposite.</b> Its nine flows carry ~130 substantive assertions
+        /// and are the ONLY routine coverage of the run verdict's copy, the ledger's retention across
+        /// rounds, the leg-cap treatment and the scroll actually engaging. Guarding the entry points
+        /// would close the defect by deleting the coverage.</para>
+        ///
+        /// <para>So the two concerns are separated where they actually differ. The defect is not
+        /// "these tests run" — it is "these tests WRITE FRAMES". Routine runs verify and write
+        /// nothing; a shoot is opt-in and therefore deliberate. **A frame can now only exist because
+        /// someone asked for one**, which is the provenance the docks were arguing from timestamps
+        /// before.</para></summary>
+        internal static bool ShootRequested =>
+            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SBR_SHOOT"));
+
+        /// <summary>The paired tail every capture flow ends with. Positive in BOTH directions: on a
+        /// shoot it requires the frames; on a routine run it requires that none were written, so the
+        /// guard cannot silently regress into writing again.</summary>
+        private static void AssertCaptureOutput(ICollection<string> capturedPaths, int expectedPaths)
+        {
+            if (!ShootRequested)
+            {
+                Assert.IsEmpty(capturedPaths,
+                    "a routine suite must write no frames — set SBR_SHOOT for a deliberate shoot. "
+                    + "A frame written here could be scoped against by a dock as though it were one");
+                return;
+            }
+            Assert.AreEqual(expectedPaths, capturedPaths.Count, "states must emit paired captures");
+            foreach (string path in capturedPaths)
+            {
+                Assert.IsTrue(File.Exists(path), $"capture missing: {path}");
+                Assert.Greater(new FileInfo(path).Length, 0L, $"capture is empty: {path}");
+            }
+        }
+
         private static IEnumerator CaptureState(LaptopScreen laptop, string outputDirectory,
             string runPrefix, string stateName, ICollection<string> capturedPaths)
         {
@@ -1190,6 +1187,15 @@ namespace SBR.Tests.PlayMode
             RectTransform canvasRect = Required(
                 laptop.transform, "LaptopOsCanvas") as RectTransform;
             Assert.IsNotNull(canvasRect, "LaptopOsCanvas RectTransform missing");
+
+            // The state was still BUILT and still asserted above — only the frames are withheld.
+            // That is the whole point of guarding here rather than at the entry point.
+            if (!ShootRequested)
+            {
+                Debug.Log($"[SureThingCapture] skipped '{stateName}' — routine run, not a shoot. "
+                    + "Set SBR_SHOOT to write frames.");
+                yield break;
+            }
 
             string flatPath = Path.Combine(outputDirectory,
                 $"{runPrefix}-{stateName}-flat-{FlatWidth}x{FlatHeight}.png");
