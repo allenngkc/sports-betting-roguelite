@@ -1183,30 +1183,41 @@ namespace SBR.Tests.PlayMode
         /// <summary>DD batch 93 item 5: THE ROW SET KEYS TO THE TICKET, so its premise changed —
         /// a row the ticket never bought is not "unrevealed", it does not exist. On a moneyline-only
         /// ticket (DemoTicketPolicy's picks) the ticket carries no TotalCorners/TotalCards leg, so
-        /// CORNERS and CARDS must be ABSENT rows (blank — no label, no values), never printed with
+        /// CORNERS and CARDS must be ABSENT rows, never printed with
         /// <see cref="TvSweatScreen.DebugStatsUnrevealedMark"/>. The mark is reserved for a row the
         /// ticket DID buy but has not yet revealed (see the multi-count pins below) — "a leak here is
         /// a blocker, not a polish item" still holds, just narrowed to bought rows (Allen,
-        /// 2026-08-15).</summary>
+        /// 2026-08-15).
+        ///
+        /// <para><b>DD batch 95 re-authoring:</b> "ABSENT" changed FORM. It used to mean a row printed
+        /// blank (label/A/B all empty strings, still occupying its slot's height) — <c>"||"</c> off
+        /// <see cref="TvSweatScreen.DebugStatsRow"/>. "An unbought row is not a silent row, it is NO
+        /// row": the slot itself is gone, so <c>DebugStatsRow</c> now returns <c>null</c> for it. This
+        /// pin is renamed (was <c>Stats_panel_omits_corners_and_cards_rows_off_a_moneyline_ticket</c>)
+        /// because "omits ... rows" described the old blank-in-place form; the claim now is
+        /// absence.</para></summary>
         [UnityTest]
-        public IEnumerator Stats_panel_omits_corners_and_cards_rows_off_a_moneyline_ticket()
+        public IEnumerator Stats_panel_corners_and_cards_rows_are_absent_off_a_moneyline_ticket()
         {
             yield return OpenStatsPanelOnALiveLeg();
             TvSweatScreen screen = _statsScreen;
 
             // DemoTicketPolicy picks MONEYLINE only, so the ticket's row set carries neither count
-            // kind — ABSENT means blank (no label, no values), not the unrevealed mark.
-            Assert.AreEqual("||", screen.DebugStatsRow(1),
+            // kind — ABSENT means no slot at all (null), not a blank one and not the unrevealed mark.
+            Assert.IsNull(screen.DebugStatsRow(1),
                 "a moneyline ticket carries no TotalCorners leg, so the CORNERS row must be ABSENT — "
-                + "blank, not printed with the unrevealed mark. Got: " + screen.DebugStatsRow(1));
-            Assert.AreEqual("||", screen.DebugStatsRow(2),
-                "a moneyline ticket carries no TotalCards leg, so the CARDS row must be ABSENT — "
-                + "blank, not printed with the unrevealed mark. Got: " + screen.DebugStatsRow(2));
+                + "no slot at all, not blank and not the unrevealed mark. Got: "
+                + screen.DebugStatsRow(1));
+            Assert.IsNull(screen.DebugStatsRow(2),
+                "a moneyline ticket carries no TotalCards leg, so the CARDS row must be ABSENT — no "
+                + "slot at all, not blank and not the unrevealed mark. Got: " + screen.DebugStatsRow(2));
 
-            // NON-VACUITY: a build that blanked EVERY row would satisfy both assertions above. The
-            // goals row IS revealed and must carry figures, or this test proves only that the panel
-            // says nothing.
+            // NON-VACUITY: a build that reported every row absent would satisfy both assertions above.
+            // The goals row IS revealed, must still be PRESENT, and must carry figures, or this test
+            // proves only that the panel says nothing.
             string goals = screen.DebugStatsRow(0);
+            Assert.IsNotNull(goals,
+                "the GOALS row is unconditional and must be PRESENT even on a moneyline ticket");
             StringAssert.StartsWith("GOALS|", goals);
             string mark = screen.DebugStatsUnrevealedMark;
             StringAssert.DoesNotContain(mark, goals,
@@ -1413,6 +1424,167 @@ namespace SBR.Tests.PlayMode
                 $"the corners reveal must be RETAINED once the cards leg is live — got "
                 + $"'{cornersRowAfter}' (the unrevealed mark). A revealed fact un-revealing itself is "
                 + "worse than the mark it would be replacing (DD batch 93 item 2)");
+        }
+
+        /// <summary>DD batch 95: seats the player on a ticket carrying EXACTLY ONE count leg — a
+        /// TotalCorners leg, and no TotalCards leg — the exact row set (GOALS+CORNERS, CARDS ABSENT)
+        /// the §8.8 closing ruling's own binary criterion names ("on a corners-only ticket there is
+        /// NOTHING BENEATH CORNERS"). Same "read the selection off the board, never construct it"
+        /// discipline as <see cref="SeatOnAMultiCountTicket"/>, and the SAME seed T100's own capture
+        /// (TvSweatCaptureHarness.cs, <c>Capture_StatsPanel_WithAPopulatedCountRow</c>) already proved
+        /// offers a TotalCorners market — reused here rather than gambling on an unproven one.</summary>
+        private IEnumerator SeatOnACornersOnlyTicket()
+        {
+            yield return LoadRoom();
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+            var screen = UnityEngine.Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = UnityEngine.Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+
+            screen.TimeScaleOverride = 0.0001f;
+            couch.transitionDuration = 0.01f;
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+
+            // "STATS-COUNT-1" — T100's own known-good seed (TvSweatCaptureHarness.cs), documented
+            // there to offer a TotalCorners market on this slate.
+            director.StartNewRun("STATS-COUNT-1");
+            Run run = director.Run;
+            Assert.AreEqual(Phase.Betting, run.Phase, "a fresh run opens in Betting");
+
+            int cornersMatchup = -1;
+            MarketSelection cornersSelection = default;
+            foreach (Matchup mm in run.CurrentSlate.Matchups)
+            {
+                foreach (MarketOffer off in mm.Markets)
+                {
+                    if (off.Selection.Kind != MarketKind.TotalCorners) continue;
+                    cornersMatchup = mm.Index;
+                    cornersSelection = off.Selection;
+                    break;
+                }
+                if (cornersMatchup >= 0) break;
+            }
+            Assert.GreaterOrEqual(cornersMatchup, 0,
+                "no matchup on this slate offers TotalCorners - this is a re-seed, never a reason to "
+                + "invent a selection the board did not offer");
+
+            const double Stake = 25.0;
+            run.PlaceTicket(new List<Pick> { new Pick(cornersMatchup, cornersSelection) }, Stake);
+            director.LockRound();
+
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+            yield return WaitUntil(() => screen.DebugSeatedDeltaTime > 0f, 20f,
+                "the screen never became seated-and-running");
+            for (int i = 0; i < 30; i++) yield return null; // let the first beat render a scorebug
+
+            _statsScreen = screen;
+        }
+
+        /// <summary>DD batch 95 closing ruling, THE BINARY CRITERION: "on a corners-only ticket there
+        /// is NOTHING BENEATH CORNERS — no empty slot, no reserved space; the panel's bottom inset
+        /// sits directly under the CORNERS row." Asserted against LIVE rects throughout, never a
+        /// remembered constant, so a future ruling on pad/pitch/row height moves this pin's own
+        /// expectation for free rather than going red on a ruling.</summary>
+        [UnityTest]
+        public IEnumerator Stats_panel_unbought_row_occupies_no_height_on_a_corners_only_ticket()
+        {
+            yield return SeatOnACornersOnlyTicket();
+            TvSweatScreen screen = _statsScreen;
+            screen.ForceStatsPanel(true);
+            yield return null;
+
+            var panel = screen.DebugStatsPanel as RectTransform;
+            Assert.IsNotNull(panel, "no StatsPanel element");
+
+            Assert.IsNotNull(screen.DebugStatsRow(0), "GOALS must be PRESENT — it is unconditional");
+            StringAssert.StartsWith("CORNERS|", screen.DebugStatsRow(1),
+                "a corners-only ticket must show the CORNERS row");
+            Assert.IsNull(screen.DebugStatsRow(2),
+                "a corners-only ticket carries no TotalCards leg — CARDS must be ABSENT (DD batch 95: "
+                + "'an unbought row is not a silent row, it is NO row'), not an empty reserved slot. "
+                + "Got: " + screen.DebugStatsRow(2));
+
+            // Discovered LIVE off the panel's own ACTIVE children only — same instrument as
+            // Stats_panel_is_sized_exactly_to_its_content (GetComponentsInChildren<RectTransform>
+            // (true), so it still SEES inactive slots too), filtered to activeInHierarchy here because
+            // this pin's specific claim is that an ABSENT row contributes NOTHING to the bound.
+            float activeBottom = float.MinValue;
+            int activeLabelCount = 0;
+            foreach (RectTransform rt in panel.GetComponentsInChildren<RectTransform>(true))
+            {
+                bool isRowSlot = rt.name.StartsWith("StatsLabel") || rt.name.StartsWith("StatsA")
+                    || rt.name.StartsWith("StatsB");
+                if (!isRowSlot || !rt.gameObject.activeInHierarchy) continue;
+                if (rt.name.StartsWith("StatsLabel")) activeLabelCount++;
+                activeBottom = Mathf.Max(activeBottom, -rt.anchoredPosition.y + rt.rect.height);
+            }
+            Assert.AreEqual(2, activeLabelCount,
+                $"a corners-only ticket must show exactly 2 ACTIVE rows (GOALS, CORNERS) — found "
+                + $"{activeLabelCount}. DD batch 93's row set gives GOALS+CORNERS here — TWO rows, "
+                + "not the closing ruling's own 'ONE ROW' prose; built to the ruling's BINARY "
+                + "criterion (nothing beneath CORNERS) rather than to that count, per the DD brief.");
+
+            var title = FindChildComponent<RectTransform>(screen, "StatsTitle");
+            Assert.IsNotNull(title, "no StatsTitle element — re-point this pin, never delete it");
+            float topInset = -title.anchoredPosition.y;
+            float bottomInset = panel.rect.height - activeBottom;
+
+            const float tol = 0.5f;
+            Assert.AreEqual(topInset, bottomInset, tol,
+                $"THE BINARY CRITERION: nothing beneath CORNERS. The panel's bottom inset "
+                + $"({bottomInset:0.0}px) must equal its top inset ({topInset:0.0}px) — measured "
+                + "against the LIVE active rows, never a remembered constant — so the panel's bottom "
+                + "sits directly under CORNERS with no reserved space for the CARDS row this ticket "
+                + "never bought.");
+
+            // The slot that WOULD have carried CARDS must not be the thing quietly extending the
+            // panel: it is discoverable (the GameObject still exists, collapsed) but must be INACTIVE.
+            var cardsLabel = FindChildComponent<RectTransform>(screen, "StatsLabel2");
+            Assert.IsNotNull(cardsLabel, "no StatsLabel2 element — re-point this pin, never delete it");
+            Assert.IsFalse(cardsLabel.gameObject.activeInHierarchy,
+                "the row slot beneath CORNERS must be INACTIVE on a corners-only ticket — an "
+                + "active-but-blank slot would still be occupying space by DD batch 95's own ruling "
+                + "('an unbought row is not a silent row, it is NO row')");
+        }
+
+        /// <summary>DD batch 95, "ADD or extend a pin that a moneyline ticket (no count legs) yields a
+        /// panel shorter still": a BUILT RELATIONSHIP, not a pair of remembered constants — the LIVE
+        /// panel height a moneyline ticket (one row: GOALS) actually builds must be strictly less than
+        /// the LIVE panel height a corners-only ticket (two rows: GOALS+CORNERS) actually builds, so a
+        /// future ruling on pad/pitch/row height moves both sides of this comparison together and the
+        /// relationship still holds. Proves the panel's height truly FOLLOWS ITS ROWS rather than
+        /// coincidentally landing on the same number across different ticket row sets.</summary>
+        [UnityTest]
+        public IEnumerator Stats_panel_a_moneyline_ticket_yields_a_panel_shorter_still()
+        {
+            yield return SeatOnACornersOnlyTicket();
+            TvSweatScreen cornersScreen = _statsScreen;
+            cornersScreen.ForceStatsPanel(true);
+            yield return null;
+            var cornersPanel = cornersScreen.DebugStatsPanel as RectTransform;
+            Assert.IsNotNull(cornersPanel, "no StatsPanel element");
+            Assert.IsNotNull(cornersScreen.DebugStatsRow(1),
+                "PRECONDITION: the corners-only ticket must show a CORNERS row — nothing below is "
+                + "proven without this");
+            float cornersOnlyHeight = cornersPanel.rect.height;
+
+            yield return OpenStatsPanelOnALiveLeg(); // fresh room + a moneyline ticket
+            TvSweatScreen moneyScreen = _statsScreen;
+            var moneyPanel = moneyScreen.DebugStatsPanel as RectTransform;
+            Assert.IsNotNull(moneyPanel, "no StatsPanel element");
+            Assert.IsNull(moneyScreen.DebugStatsRow(1),
+                "PRECONDITION: a moneyline ticket must show no CORNERS row — nothing below is proven "
+                + "without this");
+            float moneylineHeight = moneyPanel.rect.height;
+
+            Assert.Less(moneylineHeight, cornersOnlyHeight,
+                $"a moneyline ticket (one row: GOALS) must yield a SHORTER panel than a corners-only "
+                + $"ticket (two rows: GOALS+CORNERS) — got moneyline {moneylineHeight:0.0}px, "
+                + $"corners-only {cornersOnlyHeight:0.0}px. The panel's height must FOLLOW ITS ROWS, "
+                + "not stay fixed across different ticket row sets.");
         }
 
         /// <summary>C46: THE PANEL'S OWN STRINGS AGAINST THEIR OWN BOXES (T101, register batch 85).
