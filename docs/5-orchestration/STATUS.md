@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 312 (heartbeat).** TV
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 313.** ROUTING MISS
+caught by the register audit and fixed: S85's treatment proposal was
+assigned to surething-ui in batch 87 and never dispatched - the seat sat
+idle on dispatchable work (a 6a violation, mine). Dispatched now with
+the full bounds (offer goes/fact stays, once at the count, marked cells
+live, MORE-sheet scope). TV on its bundle; DD standing by.
+
+*(prior stamp, cycle 312:)* TV
 working its bundle (pin landed, reorder+margin+pool dispatched); su
 idle; DD standing by for the S85 frames; batch 90's column-order
 reasoning on the record. With Allen: research words.
