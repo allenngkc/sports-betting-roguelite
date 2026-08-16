@@ -4427,7 +4427,24 @@ namespace SBR.Game
 
             const float pad = 32f;
             const float labelW = 300f, valueW = 150f;
-            float colA = area.width * 0.46f, colB = area.width * 0.68f;
+            // colA/colB used to be `area.width * 0.46f` / `* 0.68f` — fractions of the PANEL'S OWN
+            // width. That is circular against the DD's resize-to-content ruling: shrink the panel and
+            // the columns move inward, which changes the content extent, which changes the required
+            // width, which would move the columns again — the measurement chases itself.
+            //
+            // Derivation: area.width == grid.Stage.xMax, and LayoutGrid builds Stage as
+            // new Rect(rightX, ScoreBugHeight, rightW, ...) with rightX = ticketW and
+            // rightW = w - ticketW, so Stage.xMax = rightX + rightW = w algebraically — the full
+            // canvas width, independent of TicketColumnWidthFraction. w = referencePixelsWide = 980
+            // (field default above; Room.unity's TV entry pins the same 980 against its matching
+            // 0.98x0.55 screenWorldSize). So area.width was always exactly 980, never actually a
+            // measure of "the panel": colA = 980 * 0.46 = 450.8, colB = 980 * 0.68 = 666.4 —
+            // reproduced below to the pixel. Fixed here, derived ONCE at design time instead of
+            // recomputed from the live container: a fixed grid constant re-derived once at design
+            // time is legal on this surface (§2, T51, S40); a value that recomputes from a container
+            // at runtime is exactly the coupling being removed. What the columns SHOULD be is the
+            // resize proposal's question, not this one.
+            const float colA = 450.8f, colB = 666.4f;
 
             _tStatsTitle = MakeText(_statsPanel, "StatsTitle", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(pad, -pad), new Vector2(labelW, 34f), TypeProgress,
