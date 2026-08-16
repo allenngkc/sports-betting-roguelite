@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 336 (heartbeat).** Flap
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 337 (ESCALATED TO
+ALLEN).** Orca's app process runs but its runtime never initializes -
+the orca-runtime.json is never written, 30+ min after the last relaunch.
+My orca open loop no longer helps; this needs Allen (app update,
+reinstall, or a machine look). Relaunch loop STOPPED; a passive 60s
+recovery watch runs instead, and the board rebuilds itself the moment
+the runtime answers. Exposure zero: all work merged and pushed; pending
+anywhere: two artifact deletions + Allen's two research words.
+
+*(prior stamp, cycle 336:)* Flap
 watch round 3 still armed (~25 min, no stability signal yet). Exposure
 zero. Waiting.
 
