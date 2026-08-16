@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 322.** The ticket-keyed
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 323 (heartbeat).** TV
+writes its phase handoff section on Allen's word while the DD runs the
+four-item closing read. All else standing by. With Allen: research words.
+
+*(prior stamp, cycle 322:)* The ticket-keyed
 panel MERGED (18e50a6) - built, shot multi-count, reviewed clean; a new
 standing dispatch rule (full suite, no -testFilter - the unfiltered gate
 found what the filtered one hid). The dock opens on the cost per Allen.
