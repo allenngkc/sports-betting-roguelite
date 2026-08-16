@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 305 (heartbeat).** TV
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 306 (heartbeat).** TV's
+two dispatched agents grinding - the sweep agent is diagnosing a Unity
+crash-handler/lockfile state (lead supervising per its own staging
+discipline); the de-fraction agent running EditMode. su and DD idle
+awaiting results. With Allen: research words.
+
+*(prior stamp, cycle 305:)* TV
 running TWO dispatched agents (the string sweep + a gating check) with
 clean staging discipline around the live dispatch; DD reading T100 (its
 dock title: the third row cannot be filled at all); su standing by.
