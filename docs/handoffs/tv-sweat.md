@@ -11,6 +11,97 @@ discarded.
 
 ---
 
+## 0-B93. THE STATS PANEL SHIPPED, AND THE LANE LEARNED TO DELEGATE · 2026-08-15
+
+**Branch `4fb6756`, pushed, remote-verified, and merged to main. Tree clean, editor released.**
+Eleven commits on top of §0-B85. §8.8's panel went from mechanism to a ticket-keyed feature across
+DD batches 87, 89 and 93, **and every build item after the first was executed by a dispatched agent.**
+
+| suite | measured | when |
+|---|---|---|
+| EditMode | **255 executed / 254 passed / 0 failed / 1 ignored** (G1's grant) | this window |
+| PlayMode | **122 executed / 111 passed / 0 failed / 11 by-design skips** | this window |
+| engine | 292 / 292, 0 failed | **earlier this window, NOT re-run since**; the branch is behind main |
+
+### THE TWO STANDING DISPATCH RULES — and both gaps were in MY BRIEFS, not the agents' judgement
+
+**1. NEVER END A TURN AGAINST A RUNNING UNITY PROCESS.** A dispatch launched a warm compile and ended
+its turn saying it would continue "when the notification arrives". Nothing was watching it. My brief
+said *"launch detached and poll"* and never said *never hand the turn back* — the agent honoured the
+letter and missed §4 rule 4. **Resumed with the rule rather than restarted; its work survived intact.**
+
+**2. FULL SUITE, NO `-testFilter`, WHENEVER PRODUCTION CHANGED.** I asked for *"PlayMode 0 FAILED with
+every `Stats_panel_*` pin passing by name"*. A dispatch satisfied that with a filter on one class,
+25/25 — **a fair reading of what I wrote.** The whole suite then failed on a new pin. **A filtered run
+is not a suite; a gate that a filter can satisfy is a gate that will be satisfied by one.**
+
+> **Both now go verbatim into every Unity dispatch. An agent that meets a brief exactly and still
+> ships a hole has found a defect in the brief, and writing it down is cheaper than remembering it.**
+
+### THE ONE THAT COST A CAPTURE, and it generalises past this surface
+
+> **A CHANNEL THAT NEVER READS THE AUTHORITY IS INVISIBLE TO A PIN ON THE AUTHORITY.**
+
+The panel freezes time by adding a term to `SeatedDeltaTime`. That was pinned; the pin passed; **the
+pin was correct.** T99's capture then showed the panel over a frozen scoreline **with the minute
+ticking `18' → 21'` behind it** — `TickClock` advanced on `Time.deltaTime`, and the `!_seated` guard
+above it was what actually froze the clock on stand-up. Two expressions of one rule, so a third freeze
+condition reached only one of them. **The frames caught what the pin structurally could not.**
+
+### THE KEYING ARCHITECTURE — read this before touching the panel
+
+- **The row set comes from the TICKET, derived ONCE at adoption** (`ComputeStatsRowSet`, called right
+  after `_ticket = director.CurrentTicket`) and stored. `RenderStatsPanel` reads the stored flags,
+  never the live leg's kind. **It must not recompute per leg** — a table whose rows appear and vanish
+  under the player is the defect this replaced, not a variant of it.
+- **`_countLedger` IS PER-LEG, HOLDS EXACTLY ONE KIND, AND IS REPLACED ON EVERY LEG.** That single
+  fact drives everything else here.
+- **So revealed counts are RETAINED per kind for the ticket's life**, cleared in
+  `ResetForNewSession` and **never on a leg change**. Without it a filled row reverts to the mark when
+  the next leg starts — **a revealed fact un-revealing itself.**
+- **The mark means "bought but NOT YET REVEALED". An unbought row is ABSENT** (rendered as empty
+  strings). Two different states, and the distinction is the ruling.
+- **Two rows of three is still the maximum SIMULTANEOUS fill** — one count kind is live at a time.
+  Unchanged by the keying and restated because composition keeps getting ruled against it.
+- Read `Home`/`Away`, **never** `TargetHome`/`TargetAway` — the locked endpoint sits one property away
+  and §8.8 calls a leak here blocker-class.
+
+### THE GEOMETRY CHAIN, so a future change knows what moves what
+
+```
+widest measured ink --(MaxInkFraction 0.8)--> labelW / valueW --> colA / colB --> panel width
+panelW = labelW + 418      (418 = 4*pad + 2*valueW, independent of the title string)
+```
+
+**`MATCH STATS` is coupled 1:1 to the panel's width** through `labelW` — every pixel off the label's
+ink is a pixel off the panel. **The club-pool gate has 0.7px of headroom** (`Spreadsheets` 115.3
+against a 116.0 limit, 79.52%); it is the tightest gate on the surface and fires on any pool
+addition — by design, and the message says re-derive the BOX, never shorten the name.
+
+### OPEN — all four with the DD, none of it this lane's to start
+
+| item | where it sits |
+|---|---|
+| **The blank-row consequence** — content is now variable while height is build-time fixed, so a moneyline ticket is ONE row in a THREE-row panel and batch 87's oversized finding reopens on the commonest ticket | docked, leads the README of `tv-statspanel-ticket-keyed-2026-08-15` |
+| **`MATCH STATS`** overstates a ticket-keyed panel; measured coupling supplied, no label authored | batch 93 |
+| **The 0px flush gap** at the scorebug's bottom edge | batch 87 |
+| **The panel's composition** itself | batch 87 / 93 |
+
+**Three docked sets, deliberately scoped so one cannot be read for another's checks:**
+`…-scorebug-…` carries T99's four checks (non-level scoreline) · `…-reordered-…` the size and column
+order · `…-ticket-keyed-…` the keying and its cost. **Each README names what it does NOT claim.**
+
+### DELEGATION — the deviation and the correction
+
+**The audit read this lane at ZERO spawns across 1,473 tool calls and 397 hands-on edits.** The
+loophole was that no single item ever looked big enough; **the batching rule closes it.** Five
+dispatches followed and every one was reviewed at the diff, not the summary — which is how a filtered
+suite, a stalled compile and an agent's own red pin were all caught before they were committed.
+**The lead plans, dispatches, reviews, integrates. Docking and committing stayed with the lead** —
+an agent that both makes a change and certifies it is how an unreviewed decision ships.
+
+---
+
 ## 0-B85. THE DRAW ROW, THE STATS PANEL, AND A FREEZE THAT A PIN COULD NOT SEE · 2026-08-15
 
 **Branch `832eae7`, pushed and remote-verified. Tree clean.** Seven commits on top of §0-B69's fold,
@@ -2675,9 +2766,19 @@ harmless that time. The procedure below closes it.
 4. `git checkout --` the three build side-effect files; confirm `git status` shows only intended
    changes before committing.
 
-**Current baselines — measured 2026-08-15, batch 85 (§0-B85):** engine **292 / 292, 0 failed** ·
-EditMode **255 discovered / 255 executed / 254 passed / 0 failed / 1 ignored** (G1's grant, held) ·
-PlayMode **111 / 111 executed / 101 passed / 0 failed / 10 by-design skips**.
+**Current baselines — measured 2026-08-15, batch 93 (§0-B93):**
+EditMode **255 executed / 254 passed / 0 failed / 1 ignored** (G1's grant, held) ·
+PlayMode **122 executed / 111 passed / 0 failed / 11 by-design skips**.
+
+**engine: 292 / 292, 0 failed — measured EARLIER in the same window and NOT re-run since**, and the
+branch has taken main merges after it. **Treat it as the last known good, not as today's number**,
+and re-run before any claim rests on it. *Recorded this way deliberately: the honest failure of a
+baseline is not that it is wrong, it is that it does not say how old it is.*
+
+**PlayMode grew 95 → 122 across this window** — the merges brought the screen lane's suites, and this
+lane added the stats panel's pins, the club-pool gate, the capture-path pin and two capture entry
+points. **The `[Explicit]` skips grew with them**: the count is by-design opt-in evidence, never a
+regression to chase.
 
 **ALL THREE SUITES ARE GREEN, AND THAT IS NEW.** Batch 70's block carried two expected reds and told
 the next seat to expect them; **both cleared on the merge from main, exactly as it predicted** — the
