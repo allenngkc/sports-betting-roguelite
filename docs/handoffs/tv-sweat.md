@@ -2766,9 +2766,27 @@ harmless that time. The procedure below closes it.
 4. `git checkout --` the three build side-effect files; confirm `git status` shows only intended
    changes before committing.
 
-**Current baselines — measured 2026-08-15, batch 93 (§0-B93):**
+**Current baselines — all three measured 2026-08-16, batch 94, ON ONE TREE, after the main merge:**
+engine **306 / 306, 0 failed** ·
 EditMode **255 executed / 254 passed / 0 failed / 1 ignored** (G1's grant, held) ·
-PlayMode **122 executed / 111 passed / 0 failed / 11 by-design skips**.
+PlayMode **124 executed / 110 passed / 0 failed / 14 by-design skips**.
+
+**No caveat this time — the engine line's "last known good, not today's number" is discharged.** It
+was re-run on this tree and grew 292 → 306 with sgp's phase 4. **The 55 inherited reds are long gone**
+(`c82aefe`), and nothing in this window was ever red.
+
+> **PLAYMODE'S SKIPS JUMPED 11 → 14 ON PURPOSE, AND THE PASSED COUNT FELL 113 → 110 WITH THEM.**
+> Three capture entry points had been running in every routine suite: an `[Explicit]`+`[Timeout]` pair
+> was separated from its method by two further stacked doc comments, and since XML doc comments are
+> trivia in C# it bound to the next real declaration instead. **Read a falling passed-count here as
+> the guard working, never as tests going missing.**
+
+**The hazard that fix closed is worth knowing before the next capture.** Each capture shoots ~70
+frames into `unity/SBR/artifacts/tv-sweat-capture`, and **this lane docks evidence by scoping that
+directory by MTIME** — so a routine suite rewriting capture output could put the wrong frames inside
+an evidence dock. Every dock is safe because docking **copies** its frames in at dock time; that was
+luck of practice and is now safe by construction. **`SureThingVisualCaptureTests.cs` still has nine
+unguarded captures in the same suite — the screen lane's call, routed not corrected.**
 
 **engine: 292 / 292, 0 failed — measured EARLIER in the same window and NOT re-run since**, and the
 branch has taken main merges after it. **Treat it as the last known good, not as today's number**,
