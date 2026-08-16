@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 319 (heartbeat).** TV's
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 320 (heartbeat).** TV's
+ticket-keying bundle still grinding; all else clear and standing by.
+With Allen: the research words.
+
+*(prior stamp, cycle 319:)* TV's
 ticket-keying bundle grinding; DD reading the reordered dock in
 parallel; su + sgp clear. With Allen: the research words.
 
