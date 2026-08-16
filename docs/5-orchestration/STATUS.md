@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 318.** (c) RULED on
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 319 (heartbeat).** TV's
+ticket-keying bundle grinding; DD reading the reordered dock in
+parallel; su + sgp clear. With Allen: the research words.
+
+*(prior stamp, cycle 318:)* (c) RULED on
 Allen's call (batch 93, e31e90a): the panel keys to its ticket - a
 count-ticket feature that exists only when it has numbers worth the
 stage; the unrevealed mark's meaning shifts from 'not in your ticket'
