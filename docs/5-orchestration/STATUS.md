@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 329 (heartbeat).** su's
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 330.** THE STATS PHASE
+IS CLOSED (batch 97, d57dbc8) - the panel's whole arc now canon: rows
+three-fixed to ticket-keyed, height build-fixed to adoption-derived,
+MATCH STATS to COUNTS, not-in-your-ticket to not-yet-revealed. DD ledger
+empty. TV refreshing baselines on merged main. With Allen: the research
+words - the board's only open items.
+
+*(prior stamp, cycle 329:)* su's
 guard fix merged (guards the WRITE, keeps coverage - f51d33e), lane
 available. TV's two-row build grinding; Allen's read-it draft held until
 the dock is real. With Allen: research words.
