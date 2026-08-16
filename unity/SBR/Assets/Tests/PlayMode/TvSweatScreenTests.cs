@@ -1077,6 +1077,87 @@ namespace SBR.Tests.PlayMode
                 + "guards, not just full coverage.");
         }
 
+        /// <summary>§8.8 CONTENT-FIT, PINNED AS A RELATIONSHIP, NOT AS NUMBERS (DD batch 87 + Allen;
+        /// register batch 79, S74-am3). The DD ruled this panel oversized — "a surface that takes
+        /// the entire stage and returns three rows hasn't earned the stage" — and BuildStatsPanel
+        /// was resized so `pad` is now the ONLY spacing value on the panel: left inset, both
+        /// inter-column gaps, right inset, top inset and bottom inset all derive from it.
+        ///
+        /// <para>Two of the panel's numbers are still with the DD for ruling (<c>contentMargin</c>,
+        /// and possibly the panel's placement), so a pin that hardcoded today's
+        /// 172/132/236/400/564/246 would go red on a RULING rather than on a DEFECT. Register batch
+        /// 79, S74-am3 records this studio's standard exactly: a RULED VALUE goes stale the moment
+        /// anything near it moves; a BUILT RELATIONSHIP carries. So this pins the RELATIONSHIP those
+        /// numbers are required to have, independent of what either unratified number turns out to
+        /// be: SYMMETRIC INSETS on both axes. The left inset (the label column's x) must equal the
+        /// right inset (panel width minus the rightmost value column's right edge); the top inset
+        /// (the title's distance from the panel top) must equal the bottom inset (panel height minus
+        /// the bottom row's bottom edge). That is what "one spacing value, spent on all six edges"
+        /// means geometrically, and it is measured off the LIVE BUILT RECTS — never a copied
+        /// constant — so it survives whatever the DD rules on <c>contentMargin</c> and still catches
+        /// the one thing that actually matters: space the content did not ask for.</para>
+        ///
+        /// <para>Row/column population is discovered live off the panel's own children too, never
+        /// assumed from a copied row count, so an added or removed row cannot leave this pin quietly
+        /// checking the wrong one.</para></summary>
+        [UnityTest]
+        public IEnumerator Stats_panel_is_sized_exactly_to_its_content()
+        {
+            yield return OpenStatsPanelOnALiveLeg();
+            TvSweatScreen screen = _statsScreen;
+
+            var panel = screen.DebugStatsPanel as RectTransform;
+            Assert.IsNotNull(panel, "no StatsPanel element");
+            var title = FindChildComponent<RectTransform>(screen, "StatsTitle");
+            Assert.IsNotNull(title, "no StatsTitle element — re-point this pin, never delete it");
+
+            // Discovered LIVE off the panel's own children, never off a copied row count — the
+            // bottom row and rightmost column below are whichever slots actually exist.
+            var labelSlots = new List<RectTransform>();
+            var aSlots = new List<RectTransform>();
+            var bSlots = new List<RectTransform>();
+            foreach (RectTransform rt in panel.GetComponentsInChildren<RectTransform>(true))
+            {
+                if (rt.name.StartsWith("StatsLabel")) labelSlots.Add(rt);
+                else if (rt.name.StartsWith("StatsA")) aSlots.Add(rt);
+                else if (rt.name.StartsWith("StatsB")) bSlots.Add(rt);
+            }
+            Assert.IsTrue(labelSlots.Count > 0 && aSlots.Count > 0 && bSlots.Count > 0,
+                "no StatsLabel{i}/StatsA{i}/StatsB{i} slots found on the live panel — "
+                + "BuildStatsPanel's naming moved, re-point this pin");
+
+            // Top-left anchored, y running DOWN the canvas (same convention as the scorebug/event
+            // strip pins above): a slot's own right edge is anchoredPosition.x + width, and its own
+            // bottom edge is -anchoredPosition.y + height.
+            float leftInset = labelSlots[0].anchoredPosition.x; // the label column's x
+
+            float rightmostValueEdge = float.MinValue;
+            foreach (RectTransform rt in aSlots)
+                rightmostValueEdge = Mathf.Max(rightmostValueEdge, rt.anchoredPosition.x + rt.rect.width);
+            foreach (RectTransform rt in bSlots)
+                rightmostValueEdge = Mathf.Max(rightmostValueEdge, rt.anchoredPosition.x + rt.rect.width);
+            float rightInset = panel.rect.width - rightmostValueEdge;
+
+            float topInset = -title.anchoredPosition.y; // the title's distance from the panel top
+
+            float bottomRowBottom = float.MinValue;
+            foreach (RectTransform rt in labelSlots)
+                bottomRowBottom = Mathf.Max(bottomRowBottom, -rt.anchoredPosition.y + rt.rect.height);
+            foreach (RectTransform rt in aSlots)
+                bottomRowBottom = Mathf.Max(bottomRowBottom, -rt.anchoredPosition.y + rt.rect.height);
+            foreach (RectTransform rt in bSlots)
+                bottomRowBottom = Mathf.Max(bottomRowBottom, -rt.anchoredPosition.y + rt.rect.height);
+            float bottomInset = panel.rect.height - bottomRowBottom;
+
+            const float tol = 0.5f;
+            Assert.AreEqual(leftInset, rightInset, tol,
+                $"HORIZONTAL asymmetry: left inset {leftInset:0.0}px, right inset {rightInset:0.0}px "
+                + "— the panel is carrying horizontal space its content did not ask for.");
+            Assert.AreEqual(topInset, bottomInset, tol,
+                $"VERTICAL asymmetry: top inset {topInset:0.0}px, bottom inset {bottomInset:0.0}px "
+                + "— the panel is carrying vertical space its content did not ask for.");
+        }
+
         /// <summary>THE UNREVEALED MARK. §8.8: a stat not causally revealed is absent or shown as the
         /// mark, NEVER as its true final value — "a leak here is a blocker, not a polish item". The
         /// row still prints, so the gap is VISIBLE rather than hidden (Allen, 2026-08-15).</summary>
