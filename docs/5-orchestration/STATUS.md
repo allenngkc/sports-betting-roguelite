@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 303 (heartbeat).** Quiet:
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 304.** DELEGATION
+ENFORCEMENT executed per Allen's contract (496bc4d): deviation notice
+SENT to tv-sweat's live seat (0 spawns/1,473 calls/397 edits - batching
+pattern named); notices ON RECORD in markets-pregame and research
+handoffs (unseated - reach the next seats at seating); room retired,
+moot. Audit baseline logged; `tools/delegation-audit.py` runs DAILY from
+here, deviations logged in this file. Tooling gap noted: the audit maps
+surething-ui's OLD path - surething-ui-2's transcripts read 0 sessions.
+
+*(prior stamp, cycle 303:)* Quiet:
 su shooting the MaxLegs frame, DD mid-read on T99's four checks, TV and
 sgp standing by. With Allen: research words + TAB.
 
