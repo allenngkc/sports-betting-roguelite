@@ -1039,10 +1039,14 @@ namespace SBR.Game
         /// the engine has neither, and a placeholder would promise a row that is not coming.</summary>
         private const int StatsRowSlots = 3;
 
-        /// <summary>THE UNREVEALED MARK. §8.8: a stat that has not been causally revealed is absent
-        /// or shown as this, NEVER as its true final value — "a leak here is a blocker, not a polish
-        /// item". It is what corners and cards read off a count leg, and that gap is deliberately
-        /// VISIBLE rather than hidden (Allen, 2026-08-15).</summary>
+        /// <summary>THE UNREVEALED MARK. DD batch 93: since the panel's rows now KEY TO THE TICKET
+        /// (<see cref="ComputeStatsRowSet"/>) — a CORNERS/CARDS row exists at all only if the ticket
+        /// bought that leg — this mark's meaning NARROWED. It no longer means "not in your ticket";
+        /// that case is now an ABSENT row (blank, not printed), never a marked one. It means NOT YET
+        /// REVEALED: a row the ticket DID buy, whose stat has not been causally revealed, is shown as
+        /// this, NEVER as its true final value — "a leak here is a blocker, not a polish item". The
+        /// glyph itself is unchanged, only the set of rows it can ever appear on (Allen, 2026-08-15 /
+        /// DD batch 93).</summary>
         private const string StatsUnrevealed = "—";
 
         /// <summary>T102 (DD batch 89): the stats panel's column-sizing rule, re-ruled from "widest
@@ -1155,6 +1159,30 @@ namespace SBR.Game
         private readonly SweatPresentationModel _presModel = new SweatPresentationModel();
         private readonly ScoreLedger _ledger = new ScoreLedger();
         private CountLedger _countLedger;
+
+        /// <summary>DD batch 93 item 1: the stats panel's ROW SET for the CURRENT ticket — CORNERS
+        /// present only if the ticket carries a TotalCorners leg, CARDS only if it carries a
+        /// TotalCards leg. GOALS needs no flag; it is unconditional. Computed exactly ONCE, by
+        /// <see cref="ComputeStatsRowSet"/> at the same site <c>_ticket</c> itself is adopted
+        /// (<c>PresentRound</c>), and never recomputed per leg or per beat — <see cref="RenderStatsPanel"/>
+        /// only ever reads these two flags, never <c>Ticket.Legs</c> directly.</summary>
+        private bool _statsRowHasCorners;
+        private bool _statsRowHasCards;
+
+        /// <summary>DD batch 93 item 2: revealed per-team counts, RETAINED for the life of the
+        /// ticket — independent of <see cref="_countLedger"/>, which is REPLACED per leg (see
+        /// <see cref="BeginStageLeg"/>) and holds exactly one count kind at a time. Without this, a
+        /// count revealed while its leg was live would UN-REVEAL itself the instant a later leg went
+        /// live — a fact un-revealing itself, strictly worse than the mark it would replace.
+        ///
+        /// <para>Keyed by the count MarketKind (TotalCorners/TotalCards only). Seeded the instant a
+        /// count leg goes live (<see cref="BeginStageLeg"/>) and advanced on every completed count
+        /// (<see cref="OnCountPlayed"/>), so it always agrees with a live <c>_countLedger</c>'s own
+        /// Home/Away exactly, and keeps the last value once that ledger is replaced. Cleared ONLY in
+        /// <see cref="ResetForNewSession"/> (a new ticket/session) — never on a leg change.</para></summary>
+        private readonly Dictionary<MarketKind, (int Home, int Away)> _statsRetainedCounts =
+            new Dictionary<MarketKind, (int Home, int Away)>();
+
         private TheaterChoreographer _choreo;
         // Phase 2C (PRD §9): the planner elaborates the choreographer's factual SceneSpec into a
         // TheaterScenePlan; TheaterStage executes that plan. This screen is the session
@@ -1452,6 +1480,9 @@ namespace SBR.Game
             {
                 _session = director.CurrentSession;
                 _ticket = director.CurrentTicket;
+                // DD batch 93 item 1: derived HERE, at the same instant the ticket itself is
+                // adopted — once per ticket, never per leg or per beat.
+                ComputeStatsRowSet();
 
                 yield return TicketCardBeat();
                 yield return PlaySweat();
@@ -1940,6 +1971,16 @@ namespace SBR.Game
         {
             if (_countLedger == null) return;
             _countLedger.CompleteCount(count);
+            // DD batch 93 item 2: every completed count writes through to the RETAINED store, keyed
+            // off the leg the panel is currently mirroring (guaranteed to be this same count kind,
+            // since _countLedger only exists while the live leg is one) — never off TargetTotal or
+            // any other locked-endpoint field (§8.8's leak).
+            if (_statsLeg != null)
+            {
+                MarketKind statsLegKind = _statsLeg.Selection.Kind;
+                if (statsLegKind == MarketKind.TotalCorners || statsLegKind == MarketKind.TotalCards)
+                    _statsRetainedCounts[statsLegKind] = (_countLedger.Home, _countLedger.Away);
+            }
             if (_countLedger.TargetTotal > 0)
             {
                 if (_ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count)
@@ -2244,6 +2285,10 @@ namespace SBR.Game
             _stageLeg = -1;
             _stageBeatCount = 0;
             _countLedger = null;
+            // DD batch 93 item 2: the RETAINED store is ticket/session-scoped — cleared HERE, on a
+            // new ticket/session, and nowhere else. A leg change must never touch it (that is the
+            // exact trap item 2 exists to close).
+            _statsRetainedCounts.Clear();
             _finalSequenceActive = false;
             _audioUrgency = 0f;
             _stoppageGoalCount = 0;
@@ -2314,6 +2359,11 @@ namespace SBR.Game
             {
                 _countLedger = new CountLedger();
                 _countLedger.ConfigureEndpoint(leg.Matchup.StatLine, leg.Selection.Kind, Math.Max(1, beatCount));
+                // DD batch 93 item 2: seed the RETAINED store the instant this kind goes live, so it
+                // agrees with a freshly-configured ledger's own 0/0 immediately — matching the
+                // pre-existing "shows 0, never the mark, from kickoff" behaviour — rather than
+                // waiting for this leg's first OnCountPlayed callback to write anything at all.
+                _statsRetainedCounts[leg.Selection.Kind] = (_countLedger.Home, _countLedger.Away);
             }
             // Kickoff: the match clock returns to zero and the final-sequence state clears.
             _clockShownMin = 0f;
@@ -3779,20 +3829,44 @@ namespace SBR.Game
                 _tInterventionPrompt.transform.SetAsLastSibling();
         }
 
-        /// <summary>§8.8's three shipped rows, all REVEALED-LEDGER values.
+        /// <summary>DD batch 93 item 1: derives the stats panel's ROW SET from the TICKET'S LEGS —
+        /// GOALS is unconditional (the match score is always sourced); CORNERS is present only if
+        /// <c>_ticket.Legs</c> carries a TotalCorners leg; CARDS only if it carries a TotalCards leg.
+        ///
+        /// <para>Called exactly ONCE, at the same site <c>_ticket</c> itself is adopted
+        /// (<c>PresentRound</c>) — never per leg, never per beat. A table whose rows appear and
+        /// vanish as legs go live is the defect this replaces, not a variant of it, so
+        /// <see cref="RenderStatsPanel"/> reads only the two stored flags this method writes and
+        /// never re-derives them from <c>Ticket.Legs</c> or the live leg.</para></summary>
+        private void ComputeStatsRowSet()
+        {
+            _statsRowHasCorners = false;
+            _statsRowHasCards = false;
+            if (_ticket == null) return;
+            foreach (Leg leg in _ticket.Legs)
+            {
+                if (leg.Selection.Kind == MarketKind.TotalCorners) _statsRowHasCorners = true;
+                else if (leg.Selection.Kind == MarketKind.TotalCards) _statsRowHasCards = true;
+            }
+        }
+
+        /// <summary>§8.8's shipped rows, all REVEALED-LEDGER values.
         ///
         /// <para><b>The leak this panel exists to avoid is one property away.</b> `CountLedger`
         /// exposes `TargetHome`/`TargetAway`/`TargetTotal` — the LOCKED endpoint, the match's true
-        /// final count — right beside `Home`/`Away`, the revealed running totals. This reads
+        /// final count — right beside `Home`/`Away`, the revealed running totals. This (through
+        /// <see cref="RenderStatsCountRow"/> and <see cref="_statsRetainedCounts"/>) reads
         /// `Home`/`Away` and must never read the other three: §8.8 calls a leak here a blocker, not a
         /// polish item, and the two pairs are one character apart at the call site.</para>
         ///
-        /// <para><b>Why corners and cards are usually the unrevealed mark.</b> `_countLedger` is null
-        /// unless the LIVE LEG is a TotalCorners or TotalCards leg, and when it exists it is
-        /// configured for exactly ONE of them — so on a moneyline, BTTS or scorer leg neither count
-        /// has been revealed at all. The row still prints, carrying <see cref="StatsUnrevealed"/>:
-        /// the gap is deliberately VISIBLE rather than hidden (Allen, 2026-08-15), and the ruled row
-        /// grammar keeps.</para></summary>
+        /// <para><b>DD batch 93: CORNERS/CARDS no longer key to the LIVE leg.</b> Presence keys to
+        /// <see cref="_statsRowHasCorners"/>/<see cref="_statsRowHasCards"/> — the ticket's own,
+        /// frozen-at-placement row set (<see cref="ComputeStatsRowSet"/>) — and value keys to
+        /// <see cref="_statsRetainedCounts"/>, so a count revealed earlier in the ticket stays
+        /// revealed after its leg stops being live. A row absent from the ticket's row set is left
+        /// BLANK, never marked; a row the ticket bought but has not yet revealed carries
+        /// <see cref="StatsUnrevealed"/> — the gap is deliberately VISIBLE rather than hidden (Allen,
+        /// 2026-08-15), and the ruled row grammar keeps.</para></summary>
         private void RenderStatsPanel()
         {
             if (!_statsOpen || _statsPanel == null || _statsLeg == null) return;
@@ -3818,15 +3892,25 @@ namespace SBR.Game
             int goalsAway = pickedHome ? _ledger.Opponent : _ledger.Picked;
             SetStatsRow(0, "GOALS", goalsAway.ToString(), goalsHome.ToString());
 
-            MarketKind kind = _statsLeg.Selection.Kind;
-            bool corners = _countLedger != null && kind == MarketKind.TotalCorners;
-            bool cards = _countLedger != null && kind == MarketKind.TotalCards;
-            SetStatsRow(1, "CORNERS",
-                corners ? _countLedger.Away.ToString() : StatsUnrevealed,
-                corners ? _countLedger.Home.ToString() : StatsUnrevealed);
-            SetStatsRow(2, "CARDS",
-                cards ? _countLedger.Away.ToString() : StatsUnrevealed,
-                cards ? _countLedger.Home.ToString() : StatsUnrevealed);
+            // DD batch 93 items 1-3: presence keys to the STORED, ticket-derived set; value keys to
+            // the RETAINED store — neither ever reads the live leg's own kind.
+            RenderStatsCountRow(1, "CORNERS", MarketKind.TotalCorners, _statsRowHasCorners);
+            RenderStatsCountRow(2, "CARDS", MarketKind.TotalCards, _statsRowHasCards);
+        }
+
+        /// <summary>DD batch 93 items 1-3, one count row. <paramref name="inTicket"/> is the STORED
+        /// row-set flag, not a live-leg check: absent from the ticket's row set -> the row is left
+        /// BLANK (not printed, not marked — a row that was never bought does not exist to be marked).
+        /// Present but not yet in <see cref="_statsRetainedCounts"/> -> <see cref="StatsUnrevealed"/>.
+        /// Present and revealed (this leg or an earlier one) -> the RETAINED Home/Away, so a count
+        /// revealed while its leg was live does not un-reveal itself once a later leg goes live.</summary>
+        private void RenderStatsCountRow(int i, string label, MarketKind kind, bool inTicket)
+        {
+            if (!inTicket) { SetStatsRow(i, "", "", ""); return; }
+            if (_statsRetainedCounts.TryGetValue(kind, out (int Home, int Away) revealed))
+                SetStatsRow(i, label, revealed.Away.ToString(), revealed.Home.ToString());
+            else
+                SetStatsRow(i, label, StatsUnrevealed, StatsUnrevealed);
         }
 
         private void SetStatsRow(int i, string label, string a, string b)

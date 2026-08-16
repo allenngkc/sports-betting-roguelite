@@ -1180,32 +1180,239 @@ namespace SBR.Tests.PlayMode
                 + "— the panel is carrying vertical space its content did not ask for.");
         }
 
-        /// <summary>THE UNREVEALED MARK. §8.8: a stat not causally revealed is absent or shown as the
-        /// mark, NEVER as its true final value — "a leak here is a blocker, not a polish item". The
-        /// row still prints, so the gap is VISIBLE rather than hidden (Allen, 2026-08-15).</summary>
+        /// <summary>DD batch 93 item 5: THE ROW SET KEYS TO THE TICKET, so its premise changed —
+        /// a row the ticket never bought is not "unrevealed", it does not exist. On a moneyline-only
+        /// ticket (DemoTicketPolicy's picks) the ticket carries no TotalCorners/TotalCards leg, so
+        /// CORNERS and CARDS must be ABSENT rows (blank — no label, no values), never printed with
+        /// <see cref="TvSweatScreen.DebugStatsUnrevealedMark"/>. The mark is reserved for a row the
+        /// ticket DID buy but has not yet revealed (see the multi-count pins below) — "a leak here is
+        /// a blocker, not a polish item" still holds, just narrowed to bought rows (Allen,
+        /// 2026-08-15).</summary>
         [UnityTest]
-        public IEnumerator Stats_panel_marks_corners_and_cards_unrevealed_off_a_count_leg()
+        public IEnumerator Stats_panel_omits_corners_and_cards_rows_off_a_moneyline_ticket()
         {
             yield return OpenStatsPanelOnALiveLeg();
             TvSweatScreen screen = _statsScreen;
-            string mark = screen.DebugStatsUnrevealedMark;
 
-            // DemoTicketPolicy picks MONEYLINE only, so no count ledger exists on this leg and
-            // neither count has been revealed at all.
-            Assert.AreEqual($"CORNERS|{mark}|{mark}", screen.DebugStatsRow(1),
-                "corners are unrevealed off a corners leg, and the row still prints");
-            Assert.AreEqual($"CARDS|{mark}|{mark}", screen.DebugStatsRow(2),
-                "cards are unrevealed off a cards leg, and the row still prints");
+            // DemoTicketPolicy picks MONEYLINE only, so the ticket's row set carries neither count
+            // kind — ABSENT means blank (no label, no values), not the unrevealed mark.
+            Assert.AreEqual("||", screen.DebugStatsRow(1),
+                "a moneyline ticket carries no TotalCorners leg, so the CORNERS row must be ABSENT — "
+                + "blank, not printed with the unrevealed mark. Got: " + screen.DebugStatsRow(1));
+            Assert.AreEqual("||", screen.DebugStatsRow(2),
+                "a moneyline ticket carries no TotalCards leg, so the CARDS row must be ABSENT — "
+                + "blank, not printed with the unrevealed mark. Got: " + screen.DebugStatsRow(2));
 
-            // NON-VACUITY: a build that marked EVERY row would satisfy both assertions above. The
+            // NON-VACUITY: a build that blanked EVERY row would satisfy both assertions above. The
             // goals row IS revealed and must carry figures, or this test proves only that the panel
             // says nothing.
             string goals = screen.DebugStatsRow(0);
             StringAssert.StartsWith("GOALS|", goals);
+            string mark = screen.DebugStatsUnrevealedMark;
             StringAssert.DoesNotContain(mark, goals,
                 "the GOALS row is revealed-ledger data and must never carry the unrevealed mark — "
-                + "if it does, the panel is marking everything and the two assertions above are "
+                + "if it does, the panel is blanking/marking everything and the assertions above are "
                 + "passing on silence");
+        }
+
+        /// <summary>DD batch 93 items 5-6: seats the player on a ticket carrying BOTH a
+        /// TotalCorners leg (leg 0) AND a TotalCards leg (leg 1) — a single-count ticket cannot show
+        /// a row set being SELECTED, which is the whole point of the pins that use this. Both
+        /// selections are taken OFF THE BOARD (<c>matchup.Markets</c>), never constructed — the
+        /// corners/cards line is generated per matchup, so an invented selection may not be a line
+        /// that matchup actually offers.
+        ///
+        /// <para>The two legs are deliberately pinned to DIFFERENT matchups (a second pass excludes
+        /// the corners matchup from the cards search) so the ticket prices on the ordinary
+        /// independent-legs path — no same-match correlation model enters at all — and so the two
+        /// legs' matches are distinguishable by their own scorebug text, which the pins below use to
+        /// detect a leg change.</para></summary>
+        private IEnumerator SeatOnAMultiCountTicket()
+        {
+            yield return LoadRoom();
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+            var screen = UnityEngine.Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = UnityEngine.Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+
+            screen.TimeScaleOverride = 0.0001f;
+            couch.transitionDuration = 0.01f;
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+
+            // PINNED SEED, not the natural random draw. Two pins built on this helper each wait for
+            // a full leg to reach ITS OWN LegFinal (matchupText changing) inside a bounded wall-clock
+            // window — an un-seeded run's beat count and time-to-LegFinal vary draw to draw, so under
+            // full-suite load (fewer frames per wall-clock second, not fewer needed) an unlucky draw
+            // can miss a budget that an easy one clears with room to spare. That is exactly what
+            // happened: the FILTERED run (this class alone) passed 25/25; the FULL 122-test run
+            // failed only this helper's retention pin on "never advanced past the corners leg (waited
+            // 90s)" — the guard did its job and refused to assert on a leg change it never observed,
+            // rather than passing on a state it never reached.
+            //
+            // "STATS-MULTI-1" is not a guess: it is the exact seed DD batch 93's own capture,
+            // TvSweatCaptureHarness.Capture_StatsPanel_MultiCountTicket, already runs — its slate is
+            // KNOWN (from that capture's own log) to offer both a TotalCorners and a TotalCards
+            // market, and its corners leg is KNOWN to reveal a nonzero count by match minute 32,
+            // inside 37 real seconds total, AT SHIP PACING (TimeScaleOverride 1, i.e. with NO
+            // acceleration at all). At this file's 0.0001 fast-forward that resolves in a handful of
+            // frames — deterministically, not as a wall-clock gamble that degrades again under load.
+            director.StartNewRun("STATS-MULTI-1");
+            Run run = director.Run;
+            Assert.AreEqual(Phase.Betting, run.Phase, "a fresh run opens in Betting");
+
+            int cornersMatchup = -1;
+            MarketSelection cornersSelection = default;
+            foreach (Matchup mm in run.CurrentSlate.Matchups)
+            {
+                foreach (MarketOffer off in mm.Markets)
+                {
+                    if (off.Selection.Kind != MarketKind.TotalCorners) continue;
+                    cornersMatchup = mm.Index;
+                    cornersSelection = off.Selection;
+                    break;
+                }
+                if (cornersMatchup >= 0) break;
+            }
+            Assert.GreaterOrEqual(cornersMatchup, 0,
+                "no matchup on this slate offers TotalCorners - this is a re-seed, never a reason to "
+                + "invent a selection the board did not offer");
+
+            int cardsMatchup = -1;
+            MarketSelection cardsSelection = default;
+            foreach (Matchup mm in run.CurrentSlate.Matchups)
+            {
+                if (mm.Index == cornersMatchup) continue; // DIFFERENT matchup - ordinary pricing path
+                foreach (MarketOffer off in mm.Markets)
+                {
+                    if (off.Selection.Kind != MarketKind.TotalCards) continue;
+                    cardsMatchup = mm.Index;
+                    cardsSelection = off.Selection;
+                    break;
+                }
+                if (cardsMatchup >= 0) break;
+            }
+            Assert.GreaterOrEqual(cardsMatchup, 0,
+                "no OTHER matchup on this slate offers TotalCards - this is a re-seed, never a reason "
+                + "to invent a selection the board did not offer");
+
+            const double Stake = 25.0;
+            run.PlaceTicket(new List<Pick>
+            {
+                new Pick(cornersMatchup, cornersSelection),
+                new Pick(cardsMatchup, cardsSelection),
+            }, Stake);
+            director.LockRound();
+
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+            yield return WaitUntil(() => screen.DebugSeatedDeltaTime > 0f, 20f,
+                "the screen never became seated-and-running");
+            for (int i = 0; i < 30; i++) yield return null; // let the first beat render a scorebug
+
+            _statsScreen = screen;
+        }
+
+        /// <summary>DD batch 93 item 5: the row SET keys to the TICKET and does not change as legs
+        /// advance. A multi-count ticket yields BOTH the CORNERS and CARDS rows from the moment it is
+        /// adopted — asserted twice, across a real leg change, so a row that flickered in and out as
+        /// the live leg moved would fail here exactly as the pre-existing "always three rows, marked
+        /// off the live leg" defect would have on the OLD assertion shape.</summary>
+        [UnityTest]
+        public IEnumerator Stats_panel_row_set_keys_to_the_ticket_and_holds_across_a_leg_change()
+        {
+            yield return SeatOnAMultiCountTicket();
+            TvSweatScreen screen = _statsScreen;
+
+            TMP_Text matchupText = FindChildComponent<TMP_Text>(screen, "Matchup");
+            Assert.IsNotNull(matchupText, "no Matchup element — re-point this pin, never delete it");
+            string matchupAtFirstLeg = matchupText.text;
+
+            screen.ForceStatsPanel(true);
+            Assert.IsNotNull(screen.DebugStatsRow(0),
+                "the panel rendered no rows — it never had a leg, so nothing below is proven");
+            StringAssert.StartsWith("CORNERS|", screen.DebugStatsRow(1),
+                "a multi-count ticket must yield a CORNERS row from the moment it is adopted, "
+                + "regardless of which leg is currently live");
+            StringAssert.StartsWith("CARDS|", screen.DebugStatsRow(2),
+                "a multi-count ticket must yield a CARDS row from the moment it is adopted, "
+                + "regardless of which leg is currently live");
+            screen.ForceStatsPanel(false);
+
+            // Advance OFF the first leg. The two legs sit on deliberately DIFFERENT matchups
+            // (SeatOnAMultiCountTicket), so the scorebug's matchup text changing is the leg-change
+            // signal.
+            yield return WaitUntil(() => matchupText.text != matchupAtFirstLeg, 90f,
+                "the sweat never advanced off the first leg's matchup — cannot prove the row set "
+                + "survives a leg change without one actually happening");
+
+            screen.ForceStatsPanel(true);
+            StringAssert.StartsWith("CORNERS|", screen.DebugStatsRow(1),
+                "the row SET must not change as legs advance — CORNERS vanished after the leg "
+                + "change, which is the exact defect DD batch 93 item 1 replaces");
+            StringAssert.StartsWith("CARDS|", screen.DebugStatsRow(2),
+                "the row SET must not change as legs advance — CARDS vanished after the leg change, "
+                + "which is the exact defect DD batch 93 item 1 replaces");
+        }
+
+        /// <summary>DD batch 93 item 5 (item 2's trap, pinned directly): a revealed count is RETAINED
+        /// once its leg stops being live. <c>_countLedger</c> is replaced the instant the next leg
+        /// begins (<c>BeginStageLeg</c>) — reading it directly for the CORNERS row after the CARDS
+        /// leg has gone live would read CARDS' fresh 0/0, not corners' own revealed total, which is
+        /// precisely how a revealed fact would un-reveal itself under the player.
+        ///
+        /// <para>Deliberately does NOT pin the exact number across the transition: corners can keep
+        /// revealing right up to its own LegFinal, so a value snapshotted while still live can be
+        /// stale by the time the leg actually ends (a real race this pin hit once during authoring —
+        /// see git history). The claim item 2 makes is narrower and does not need that number: a
+        /// row that showed a REAL reveal while its leg was live must still show a REAL (non-mark)
+        /// reveal once that leg is no longer live — never revert to <see cref="TvSweatScreen.
+        /// DebugStatsUnrevealedMark"/>. Reading the panel row rather than the raw ledger hooks also
+        /// means the assertion exercises exactly what a player sees.</para></summary>
+        [UnityTest]
+        public IEnumerator Stats_panel_retains_a_revealed_count_after_its_leg_stops_being_live()
+        {
+            yield return SeatOnAMultiCountTicket();
+            TvSweatScreen screen = _statsScreen;
+            string mark = screen.DebugStatsUnrevealedMark;
+
+            TMP_Text matchupText = FindChildComponent<TMP_Text>(screen, "Matchup");
+            Assert.IsNotNull(matchupText, "no Matchup element — re-point this pin, never delete it");
+            string matchupAtFirstLeg = matchupText.text;
+
+            // The FIRST leg is CORNERS (SeatOnAMultiCountTicket's pick order). Wait for it to reveal
+            // something WHILE STILL LIVE — the emptiest state cannot be read for whether retention
+            // works.
+            yield return WaitUntil(
+                () => screen.DebugRevealedCountHome >= 0
+                      && screen.DebugRevealedCountHome + screen.DebugRevealedCountAway > 0,
+                90f,
+                "the corners leg never revealed a count - this is a re-seed, never a reason to prove "
+                + "retention off an empty ledger");
+
+            screen.ForceStatsPanel(true);
+            string cornersRowWhileLive = screen.DebugStatsRow(1);
+            Assert.AreNotEqual($"CORNERS|{mark}|{mark}", cornersRowWhileLive,
+                $"PRECONDITION: corners must show a REAL reveal while its own leg is live, got "
+                + $"'{cornersRowWhileLive}' — nothing below is proven without this");
+            screen.ForceStatsPanel(false);
+
+            // Advance OFF the corners leg — _countLedger is replaced under the player the instant the
+            // cards leg begins. This is the exact trap item 2 exists to close.
+            yield return WaitUntil(() => matchupText.text != matchupAtFirstLeg, 90f,
+                "the sweat never advanced past the corners leg — cannot prove retention without a "
+                + "leg change actually happening");
+
+            screen.ForceStatsPanel(true);
+            string cornersRowAfter = screen.DebugStatsRow(1);
+            StringAssert.StartsWith("CORNERS|", cornersRowAfter,
+                "the row itself must still be PRESENT once the cards leg is live — an absent row "
+                + "here would be item 1's defect, not item 2's");
+            Assert.AreNotEqual($"CORNERS|{mark}|{mark}", cornersRowAfter,
+                $"the corners reveal must be RETAINED once the cards leg is live — got "
+                + $"'{cornersRowAfter}' (the unrevealed mark). A revealed fact un-revealing itself is "
+                + "worse than the mark it would be replacing (DD batch 93 item 2)");
         }
 
         /// <summary>C46: THE PANEL'S OWN STRINGS AGAINST THEIR OWN BOXES (T101, register batch 85).
