@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 331 (INCIDENT).** Third
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 332 (INCIDENT, ongoing).**
+Orca is FLAPPING - fourth outage, minutes after relaunch, mid-seat-
+rebuild. The rebuild got far: four seats relaunched WITH transcript
+persistence restored (the restored terminals had inherited a
+child-session marker that silently disabled transcripts - caught and
+fixed with CLAUDE_CODE_FORCE_SESSION_PERSIST) and effort max set; the
+recovery taps were in flight when it dropped. No work exposure - disk
+fully merged through 3ca0f09. A 60s-stability watch is armed; seats
+re-tap when it holds. Possible cause: an Orca update in progress.
+
+*(prior stamp, cycle 331:)* Third
 Orca outage of the window, mid-back-catalogue-clear; app relaunched via
 orca open (pid 18500), runtime warming; recovery watch armed. All main
 work was already merged and pushed (3fe804b) - exposure is the seats
