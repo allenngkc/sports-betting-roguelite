@@ -11,6 +11,78 @@ discarded.
 
 ---
 
+## 0-B85. THE DRAW ROW, THE STATS PANEL, AND A FREEZE THAT A PIN COULD NOT SEE · 2026-08-15
+
+**Branch `832eae7`, pushed and remote-verified. Tree clean.** Seven commits on top of §0-B69's fold,
+all merged to main as they landed.
+
+| suite | discovered | executed | passed | failed | skipped |
+|---|---|---|---|---|---|
+| engine | 292 | 292 | 292 | 0 | 0 |
+| EditMode | 255 | 255 | 254 | 0 | 1 ignored — G1's grant, held |
+| PlayMode | 111 | 111 | 101 | 0 | 10 by-design |
+
+**BOTH INHERITED REDS ARE GONE**, cleared by merging main exactly as predicted: the engine's 55
+(`c82aefe`'s joint-model repair) and the laptop margin pin. **§0-B69's expected-red rows are closed.**
+
+### THE ONE TO CARRY, and it cost a capture to learn
+
+> **A CHANNEL THAT NEVER READS THE AUTHORITY IS INVISIBLE TO A PIN ON THE AUTHORITY.**
+
+§8.8's stats panel freezes time by adding one term to `SeatedDeltaTime`, the single expression every
+channel §4.4 lists reads. That was pinned, the pin passed, and **the pin was correct**. Then T99's
+capture shot the panel over a frozen scoreline **with the minute ticking `18' → 21'` behind it**.
+
+`TickClock` advanced on `Time.deltaTime`, and the `!_seated` guard above it is what actually froze the
+clock on stand-up — **two expressions of one rule, agreeing by convention**, so a third freeze
+condition reached only one of them. **T95's law arriving from the other side:** when a ruling adds a
+condition, every mirror moves too, and the mirrors are found by grepping the quantity, never by
+remembering. The clock now reads the authority. *The frames caught what the pin structurally could
+not — which is the argument for ordering captures instead of accepting assertions, and the DD said so
+in closing T99.*
+
+### What landed
+
+| item | state |
+|---|---|
+| **S74-am — the board's DRAW row** | Built (`5724aa1`), docked, **Design-verified**. Own line between the two teams, matchup column empty, `MatchupCardPitch` 78 → 116 re-derived from the 38px line pitch; six blocks → four, measured and confirmed on the frame |
+| **C46 — the DRAW cell's widths** | Reported as widths, no verdict. Whole difference is the WORD (`DRAW` 49.88 vs `HOME` 49.02); the numeral contributes nothing — all three families top out at four characters |
+| **§8.8 stats panel** | Mechanism + three rows + four pins. `TAB` **ratified** (T101) |
+| **T99 — panel over the scorebug** | **CLOSED, Design-verified.** Four checks passed on the docked set |
+| **T100 — populated count row** | Shot and docked (`832eae7`), with the DD |
+
+### THE STRUCTURAL FACT THE NEXT SEAT WILL TRIP ON
+
+**`CARDS` and `CORNERS` cannot both be populated. Ever, on one leg, by construction.**
+`_countLedger` is **null unless the live leg is a corners or cards leg**, is configured for **exactly
+one** of them, and **resets per leg**. So **two rows of three is the maximum fill the panel can
+reach**, and §4D's *"per-team corners/cards are available"* is true only inside a count leg of that
+kind. **A summary that reads as capability, describing something conditional and mostly absent** —
+checked at the assignment site, which is the only reason it was caught before the composition was
+ruled against a fill the surface cannot produce.
+
+### A CONTRACT DEVIATION, recorded because the record is the point
+
+**The 4-day delegation audit read this lane at ZERO sub-agent spawns across 1,473 tool calls and 397
+hands-on edits.** Delegation is the operating mode, not an option: the lead plans, dispatches,
+reviews, integrates. **The loophole actually being used was that no single item ever looked big
+enough to delegate** — and the batching rule closes it: *small items are not an exemption; bundle
+related small items into ONE bounded dispatch.* Corrected at the next item (the C46 panel-string
+sweep) rather than at the next window. **Audited daily from here.**
+
+### OPEN
+
+| item | state |
+|---|---|
+| **T100's composition** | with the DD — ruled once it reads a filled table. **The `CARDS` fact above is what it must be ruled against** |
+| **C46 sweep of the panel's strings** | T101's second item, running under dispatch |
+| **The panel's scorebug overlap** | **CLOSED** — T99 permits it *only while time is frozen*; the condition is written at `SeatedDeltaTime`, where the change that would break it would be made |
+| `RiskPays`' fact floor — 378.1 vs a LOCKED 249.0 | **Allen's**, unchanged |
+| `CashOut`'s `MARKET SUSPENDED`, 26.7px | T74's table |
+| The stand-up freeze path | **unphotographed**, named as such and accepted by the DD |
+
+---
+
 ## 0-B69. THE HOLD, THE GUARD'S REAL GATE, AND THE DIAGNOSTIC THAT SETTLED BOTH · SEAT ROTATES HERE · 2026-08-15
 
 **Branch `3652418`, pushed and remote-verified. Tree clean, Unity zero.** **This seat is at context
@@ -2603,19 +2675,23 @@ harmless that time. The procedure below closes it.
 4. `git checkout --` the three build side-effect files; confirm `git status` shows only intended
    changes before committing.
 
-**Current baselines — measured 2026-08-15, batch 70:** engine **260 total: 205 passed, 55 FAILED —
-every one INHERITED** · EditMode **255 discovered / 255 executed / 254 passed / 0 failed / 1
-ignored** (G1's grant, held) · PlayMode **95 / 95 / 87 passed / 1 FAILED — INHERITED / 7 by-design
-capture skips**.
+**Current baselines — measured 2026-08-15, batch 85 (§0-B85):** engine **292 / 292, 0 failed** ·
+EditMode **255 discovered / 255 executed / 254 passed / 0 failed / 1 ignored** (G1's grant, held) ·
+PlayMode **111 / 111 executed / 101 passed / 0 failed / 10 by-design skips**.
 
-**TWO OF THESE SUITES ARE EXPECTED RED AND NEITHER IS THIS LANE'S.** This branch is **59 behind
-`origin/main`** and both failures are already fixed up there. Same class, same remedy: **the next
-merge from main, not a repair here.**
+**ALL THREE SUITES ARE GREEN, AND THAT IS NEW.** Batch 70's block carried two expected reds and told
+the next seat to expect them; **both cleared on the merge from main, exactly as it predicted** — the
+engine's 55 by `c82aefe`'s joint-model repair, the laptop margin pin by the surething-ui lane's own
+fix arriving. **The rows are kept below as the record of a prediction that held**, not as live state.
 
-| suite | the failure | why it is not ours |
+> **THE PREDICTION WAS THE VALUABLE PART.** Both reds were diagnosed as inherited, each with the
+> commit on main that already fixed it, and each cleared without a line of repair in this lane. A red
+> that is *understood* costs a sentence; a red that is merely *observed* costs a seat.
+
+| CLEARED — the record, not live | the failure | how it closed |
 |---|---|---|
-| **engine, 55 of 260** | one `TypeInitializationException` repeated — `JointModel`'s static ctor throws *"the outcome partition needs exactly one residual class, found 2"* | **main already carries the fix**: `c82aefe`, *"repair the joint model for the merged draws board … 270/270 green (was 55 failing)"* — which names this exact count. Measured with this lane's own change stashed: **identical 55/205/260**, so it predates it |
-| **PlayMode, 1 of 95** | `SureThingEntryTests.Working_margin_contains_its_content_at_the_legal_maximum_leg_count` — `4.74798583984375` against a signed 4.56 | **measured against a SUPERSEDED test.** The surething-ui lane's repair merged to main *after* this branch's last main merge, so this tree still runs the old price-dependent pin |
+| **engine, 55 of 260** | one `TypeInitializationException` repeated — `JointModel`'s static ctor throws *"the outcome partition needs exactly one residual class, found 2"* | `c82aefe` on main, *"270/270 green (was 55 failing)"*, naming this exact count. Verified inherited by re-running with this lane's change stashed: **identical 55/205/260** |
+| **PlayMode, 1 of 95** | `SureThingEntryTests.Working_margin_contains_its_content_at_the_legal_maximum_leg_count` — `4.74798583984375` against a signed 4.56 | a **SUPERSEDED test**; the surething-ui lane's repair came across on the merge |
 
 > **A STALE BASELINE TURNS AN INHERITED RED INTO A DIAGNOSIS.** The engine line here read
 > **160/160** from 2026-08-09 until batch 70 — taken *before* the main merge that brought the joint

@@ -1041,6 +1041,42 @@ namespace SBR.Tests.PlayMode
                 + "scorebug's own argument does not cover.");
         }
 
+        /// <summary>THE SCOREBUG IS NEVER COVERED (DD batch 87, Allen): the §8.8 resize dropped the
+        /// panel's top BELOW the scorebug band rather than narrowing the panel around it, so the two
+        /// zones never share a pixel on EITHER axis — asserted as NON-OVERLAP against the live rects,
+        /// never against remembered constants, so a grid or panel change that pushed either zone into
+        /// the other fails here instead of on a frame (same approach as the event-strip pin above).
+        ///
+        /// <para>A half-covered scorebug is worse than a fully covered one: a partly-obscured score or
+        /// clock reads as a rendering bug, where a fully covered one at least reads as "this element is
+        /// elsewhere". Full 2D overlap is asserted rather than a single-axis comparison, so a future
+        /// change that only narrows the vertical gap while the columns still cross horizontally is
+        /// still caught as the partial-coverage failure it would be.</para></summary>
+        [UnityTest]
+        public IEnumerator Stats_panel_does_not_cover_the_scorebug()
+        {
+            yield return OpenStatsPanelOnALiveLeg();
+            TvSweatScreen screen = _statsScreen;
+
+            var panel = screen.DebugStatsPanel as RectTransform;
+            var bug = FindChildComponent<RectTransform>(screen, "ScoreBugZone");
+            Assert.IsNotNull(panel, "no StatsPanel element");
+            Assert.IsNotNull(bug, "no ScoreBugZone element — re-point this pin, never delete it");
+
+            // Top-left anchored, y running DOWN the canvas: a zone occupies
+            // [x, x + width] x [-y, -y + height].
+            var panelRect = new Rect(panel.anchoredPosition.x, -panel.anchoredPosition.y,
+                panel.rect.width, panel.rect.height);
+            var bugRect = new Rect(bug.anchoredPosition.x, -bug.anchoredPosition.y,
+                bug.rect.width, bug.rect.height);
+
+            Assert.IsFalse(panelRect.Overlaps(bugRect),
+                $"the stats panel {panelRect} must NOT overlap the scorebug {bugRect} — a "
+                + "half-covered scorebug is worse than a fully covered one (a partly-obscured score "
+                + "or clock reads as a rendering bug), so ANY partial coverage is the failure this "
+                + "guards, not just full coverage.");
+        }
+
         /// <summary>THE UNREVEALED MARK. §8.8: a stat not causally revealed is absent or shown as the
         /// mark, NEVER as its true final value — "a leak here is a blocker, not a polish item". The
         /// row still prints, so the gap is VISIBLE rather than hidden (Allen, 2026-08-15).</summary>
@@ -1067,6 +1103,182 @@ namespace SBR.Tests.PlayMode
                 "the GOALS row is revealed-ledger data and must never carry the unrevealed mark — "
                 + "if it does, the panel is marking everything and the two assertions above are "
                 + "passing on silence");
+        }
+
+        /// <summary>C46: THE PANEL'S OWN STRINGS AGAINST THEIR OWN BOXES (T101, register batch 85).
+        ///
+        /// <para>Every fixed box in <c>BuildStatsPanel</c> carries an unstated assumption that its
+        /// content fits. This measures every string the panel can be asked to render against the box
+        /// it renders in — <b>and offers no fit verdict</b>: C46 is a measurement lane, not a
+        /// judgement. The only assertion here is that every panel text slot got measured (COVERAGE,
+        /// below), never that any string fits its box.</para>
+        ///
+        /// <para><b>Population, enumerated from source, not invented.</b> The title and the three row
+        /// labels are the constants <c>RenderStatsPanel</c> assigns (TvSweatScreen.cs:3782, 3792,
+        /// 3797, 3800). Team headers are every club in the engine's closed pool
+        /// (<c>SlateGenerator.Nouns</c>, engine/SlateGenerator.cs:15-21 — private, so unreachable by
+        /// reference from a test and transcribed here exactly as read, cross-checked against
+        /// <c>TvExtentSweep.ClubNouns</c>'s own transcription of the same pool, which matches
+        /// verbatim) through <c>SweatFlavor.Short</c>. Values are every digit form the LIVE RUN's own
+        /// config can realize per row, plus the unrevealed mark where the source can actually produce
+        /// it — see the DIGIT-COUNT ASSUMPTION comment below for the citation.</para>
+        ///
+        /// <para><b>Face borrowed from the RENDERED components</b>, off the live, seated panel opened
+        /// by <see cref="OpenStatsPanelOnALiveLeg"/> — never a lookalike node. No TV-surface
+        /// <c>MeasureWidth</c> helper exists in Runtime (only the laptop has one, <c>LaptopUi</c>), so
+        /// this uses TMP's own preferred-width on the real component
+        /// (<c>TMP_Text.GetPreferredValues</c>) — the same call <c>TvExtentSweep</c>, this repo's own
+        /// sweep instrument, already uses for exactly this question, at the same unconstrained width
+        /// for the same reason (a wrapping query at 0 width measures the widest GLYPH, not the widest
+        /// STRING; these components build with <c>enableWordWrapping = false</c> so it cannot bite
+        /// here, but the constant is kept so this stays one instrument rather than two).</para></summary>
+        [UnityTest]
+        [Explicit("C46 evidence for the DD: §8.8 stats panel string widths against their own boxes — "
+            + "closed club pool, row labels/title, goals/corners/cards value range. Measures only, "
+            + "asserts no fit. Run by filter only.")]
+        public IEnumerator Evidence_C46_the_stats_panel_strings_against_their_boxes()
+        {
+            yield return OpenStatsPanelOnALiveLeg();
+            TvSweatScreen screen = _statsScreen;
+
+            // TMP's own unconstrained preferred-width — TvExtentSweep's own constant and rationale
+            // (Assets/SBR/Editor/TvExtentSweep.cs) — one instrument, not a second one invented here.
+            const float Unconstrained = 100000f;
+
+            var measuredSlotNames = new HashSet<string>();
+            int measured = 0;
+
+            float Log(string slot, TMP_Text t, string s)
+            {
+                float box = t.rectTransform.rect.width;
+                float w = t.GetPreferredValues(s, Unconstrained, 0f).x;
+                UnityEngine.Debug.Log($"[C46-PANEL] {slot,-12} \"{s}\" box {box:0.0}px measured "
+                    + $"{w:0.0}px clearance {box - w:0.0}px");
+                measuredSlotNames.Add(slot);
+                measured++;
+                return w;
+            }
+
+            // ---- Resolve every rendered component off the LIVE PANEL, by name — borrows font, size
+            // and tracking from the real thing (MakeText wires them once, per component), never from
+            // a lookalike node. Doubles as the coverage population below.
+            var panelSlots = new Dictionary<string, TMP_Text>();
+            foreach (TMP_Text t in screen.DebugStatsPanel.GetComponentsInChildren<TMP_Text>(true))
+                panelSlots[t.gameObject.name] = t;
+
+            TMP_Text Slot(string name)
+            {
+                Assert.IsTrue(panelSlots.TryGetValue(name, out TMP_Text t),
+                    $"{name} not found on the live stats panel — BuildStatsPanel's construction moved");
+                return t;
+            }
+
+            TMP_Text title = Slot("StatsTitle");
+            TMP_Text teamA = Slot("StatsTeamA");
+            TMP_Text teamB = Slot("StatsTeamB");
+            var labels = new[] { Slot("StatsLabel0"), Slot("StatsLabel1"), Slot("StatsLabel2") };
+            var aSlots = new[] { Slot("StatsA0"), Slot("StatsA1"), Slot("StatsA2") };
+            var bSlots = new[] { Slot("StatsB0"), Slot("StatsB1"), Slot("StatsB2") };
+
+            // ---- (1) TITLE — the one constant (TvSweatScreen.cs:3782).
+            Log("StatsTitle", title, "MATCH STATS");
+
+            // ---- (2) ROW LABELS — the three constants (TvSweatScreen.cs:3792, 3797, 3800).
+            string[] rowLabels = { "GOALS", "CORNERS", "CARDS" };
+            for (int i = 0; i < rowLabels.Length; i++)
+                Log($"StatsLabel{i}", labels[i], rowLabels[i]);
+
+            // ---- (3) TEAM HEADERS — every club in the engine's closed pool, both columns (StatsTeamA
+            // and StatsTeamB are two DIFFERENT rendered components; measured separately rather than
+            // assumed symmetric). Transcribed from `SlateGenerator.Nouns` (engine/SlateGenerator.cs:
+            // 15-21) — private, unreachable by reference from a test — and it matches
+            // `TvExtentSweep.ClubNouns` verbatim, this repo's own transcription of the same pool.
+            string[] clubNouns =
+            {
+                "Yams", "Startups", "Bricklayers", "Longhaulers", "Mallards", "Spreadsheets",
+                "Turnips", "Middlemen", "Regulators", "Plumbers", "Meatballs", "Auditors",
+                "Ferrets", "Overheads", "Gravediggers", "Notaries", "Muskrats", "Zambonis",
+                "Loopholes", "Refunds",
+            };
+            float worstClubW = float.MinValue; string worstClub = "";
+            foreach (string noun in clubNouns)
+            {
+                // SlateGenerator.MakeTeam builds `"{city} {noun}"`; Short returns the substring after
+                // the LAST space, so the city prefix is inert — any placeholder city reproduces
+                // exactly what the live surface would render for that noun.
+                string shortName = SweatFlavor.Short($"City {noun}");
+                float wa = Log("StatsTeamA", teamA, shortName);
+                float wb = Log("StatsTeamB", teamB, shortName);
+                if (wa > worstClubW) { worstClubW = wa; worstClub = shortName; }
+                if (wb > worstClubW) { worstClubW = wb; worstClub = shortName; }
+            }
+            UnityEngine.Debug.Log(
+                $"[C46-PANEL] WIDEST CLUB SHORT-NAME \"{worstClub}\" {worstClubW:0.0}px");
+
+            // ---- (4) VALUES — digits and the mark.
+            //
+            // DIGIT-COUNT ASSUMPTION, read off the LIVE RUN's own config rather than a copied
+            // constant. `MatchModel.SampleStatLine` draws goals from `HomeWinScores`/`AwayWinScores`/
+            // `DrawScores`, built by loops bounded at `config.MaxGoalsGrid` per side (MatchModel.cs:
+            // 197-198, 716-717); corners/cards are drawn by `SampleFromRaw` over `RawPoisson` arrays
+            // sized `[0, config.MaxCornerGrid]` / `[0, config.MaxCardGrid]` (MatchModel.cs ~51-54,
+            // 779). These are HARD CLAMPS on the REALIZED simulation output, not a pricing-only grid,
+            // so a side's goals/corners/cards can never exceed its own Max*Grid. The three rows share
+            // ONE box/type class (StatsA{i}/StatsB{i} — valueW x 34, TypeProgress, no tracking), so
+            // every value from 0 to that row's own max is measured — never assuming the ceiling number
+            // renders widest, the same "do not pick a champion" principle the team-header population
+            // uses; a proportional font need not put its widest glyphs in its largest number.
+            Run liveRun = UnityEngine.Object.FindAnyObjectByType<RunDirector>().Run;
+            int maxGoals = liveRun.Config.MaxGoalsGrid;
+            int maxCorners = liveRun.Config.MaxCornerGrid;
+            int maxCards = liveRun.Config.MaxCardGrid;
+            string mark = screen.DebugStatsUnrevealedMark;
+
+            void SweepValueSlot(string slotName, TMP_Text t, int max, bool markReachable)
+            {
+                float worst = float.MinValue; string worstS = "";
+                for (int v = 0; v <= max; v++)
+                {
+                    string s = v.ToString();
+                    float w = Log(slotName, t, s);
+                    if (w > worst) { worst = w; worstS = s; }
+                }
+                if (markReachable)
+                {
+                    float w = Log(slotName, t, mark);
+                    if (w > worst) { worst = w; worstS = mark; }
+                }
+                UnityEngine.Debug.Log($"[C46-PANEL] WIDEST {slotName} \"{worstS}\" {worst:0.0}px");
+            }
+
+            // GOALS (row 0) never shows the mark — RenderStatsPanel sets it unconditionally:
+            // `SetStatsRow(0, "GOALS", goalsHome.ToString(), goalsAway.ToString())` (TvSweatScreen.cs
+            // :3792). CORNERS/CARDS are conditional on the live leg's market (:3797-3802), so both
+            // forms are reachable there and both are measured.
+            SweepValueSlot("StatsA0", aSlots[0], maxGoals, markReachable: false);
+            SweepValueSlot("StatsB0", bSlots[0], maxGoals, markReachable: false);
+            SweepValueSlot("StatsA1", aSlots[1], maxCorners, markReachable: true);
+            SweepValueSlot("StatsB1", bSlots[1], maxCorners, markReachable: true);
+            SweepValueSlot("StatsA2", aSlots[2], maxCards, markReachable: true);
+            SweepValueSlot("StatsB2", bSlots[2], maxCards, markReachable: true);
+
+            // ---- COVERAGE, derived rather than asserted as prose (T89-B's shape, TvExtentSweep):
+            // every text slot that actually exists on the live panel, diffed against every slot this
+            // sweep touched. UNACCOUNTED-FOR must be zero, or a slot went unmeasured rather than
+            // dropped silently.
+            var uncovered = new List<string>();
+            foreach (string name in panelSlots.Keys)
+                if (!measuredSlotNames.Contains(name)) uncovered.Add(name);
+            uncovered.Sort();
+
+            UnityEngine.Debug.Log($"[C46-PANEL] COVERAGE: {measured} strings measured across "
+                + $"{measuredSlotNames.Count} of {panelSlots.Count} panel text slots · "
+                + $"UNACCOUNTED-FOR: {uncovered.Count}"
+                + (uncovered.Count > 0 ? $" ({string.Join(", ", uncovered)})" : ""));
+
+            Assert.AreEqual(0, uncovered.Count,
+                "panel text slot(s) exist that this sweep never measured: "
+                + string.Join(", ", uncovered));
         }
 
         private static T FindChildComponent<T>(TvSweatScreen screen, string childName) where T : Component
