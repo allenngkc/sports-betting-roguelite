@@ -3872,7 +3872,9 @@ namespace SBR.Game
             if (!_statsOpen || _statsPanel == null || _statsLeg == null) return;
 
             Matchup m = _statsLeg.Matchup;
-            _tStatsTitle.text = "MATCH STATS";
+            // DD batch 94 item 1: "MATCH STATS" overstated the subject once the panel became
+            // ticket-keyed (DD batch 93) — the surface's own word is COUNTS.
+            _tStatsTitle.text = "COUNTS";
 
             // COLUMN ORDER IS THE SCOREBUG'S, NOT THIS METHOD'S OWN TO CHOOSE. The scorebug composes
             // AWAY on the left, HOME on the right (TvSweatScreen.cs ~2404:
@@ -4541,13 +4543,23 @@ namespace SBR.Game
             // MaxInkFraction OF ITS BOX. labelW/valueW are DERIVED from MaxInkFraction, never
             // restated as independent literals, so a future ruling on the fraction moves one number,
             // not a copied derivation.
-            //   label column widest ink: "MATCH STATS" 155.8px  -> labelW = ceil(155.8 / MaxInkFraction)
+            //
+            // DD batch 94 item 1: the title reads "COUNTS", not "MATCH STATS" — and the label column
+            // holds FOUR strings at TWO type sizes (the title at TypeProgress/19px; the three row
+            // labels GOALS/CORNERS/CARDS at TypeEyebrow/15px), so a shorter title does NOT
+            // automatically shrink the column — a row label could be the widest thing in it. Measured
+            // live off the built components (C46, Evidence_C46_the_stats_panel_strings_against_
+            // their_boxes, [C46-PANEL] log): COUNTS 88.5px, CORNERS 81.2px, GOALS/CARDS 56.6px each —
+            // the title still binds, but by only 7.3px over CORNERS, so this MUST be re-measured
+            // (never assumed) the next time either string set changes.
+            //   label column widest ink: "COUNTS" 88.5px (title, TypeProgress/19px) -> labelW =
+            //     ceil(88.5 / MaxInkFraction)
             //   value column widest ink: "Spreadsheets" 115.3px -> valueW = ceil(115.3 / MaxInkFraction)
             // S84: that 115.3px value-column figure is only honest while it stays the widest ink the
             // engine's CLOSED CLUB POOL can produce, not merely a sampled string — guarded on every
             // routine run by Stats_panel_value_column_holds_the_full_club_pool_at_max_ink_fraction
             // (TvSweatScreenTests.cs), which fails the day the pool outgrows this box.
-            float labelW = Mathf.Ceil(155.8f / MaxInkFraction); // 195
+            float labelW = Mathf.Ceil(88.5f / MaxInkFraction); // 111
             float valueW = Mathf.Ceil(115.3f / MaxInkFraction); // 145
 
             // pad is the ONLY spacing value on this panel: left inset, both inter-column gaps, right
@@ -4556,9 +4568,9 @@ namespace SBR.Game
             // panel. That was this method's exact bug before this pass: colA/colB were fixed at
             // 450.8/666.4, correct only for the old 980-wide full-stage panel and outside the bounds
             // of this narrower, content-fit one.
-            float colA = pad + labelW + pad;                         // 259
-            float colB = colA + valueW + pad;                        // 436
-            float panelW = colB + valueW + pad;                      // 613
+            float colA = pad + labelW + pad;                         // 175
+            float colB = colA + valueW + pad;                        // 352
+            float panelW = colB + valueW + pad;                      // 529
 
             // Vertical rhythm is UNCHANGED (title at -pad, rows at -(pad+56+i*46), rows 34 tall) —
             // only the panel's own height now stops exactly where the content does, instead of
