@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 313.** ROUTING MISS
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 314 (heartbeat).** TV's
+turn died on an API error mid-bundle-release (the pin landed first,
+5bf2b8d) - tapped to continue and confirm the branch name. DD reading
+the S85 treatment frames + the ENTRY-channel question. su standing by.
+
+*(prior stamp, cycle 313:)* ROUTING MISS
 caught by the register audit and fixed: S85's treatment proposal was
 assigned to surething-ui in batch 87 and never dispatched - the seat sat
 idle on dispatchable work (a 6a violation, mine). Dispatched now with
