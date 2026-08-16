@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 304.** DELEGATION
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 305 (heartbeat).** TV
+running TWO dispatched agents (the string sweep + a gating check) with
+clean staging discipline around the live dispatch; DD reading T100 (its
+dock title: the third row cannot be filled at all); su standing by.
+Delegation enforcement visibly working. With Allen: research words.
+
+*(prior stamp, cycle 304:)* DELEGATION
 ENFORCEMENT executed per Allen's contract (496bc4d): deviation notice
 SENT to tv-sweat's live seat (0 spawns/1,473 calls/397 edits - batching
 pattern named); notices ON RECORD in markets-pregame and research
