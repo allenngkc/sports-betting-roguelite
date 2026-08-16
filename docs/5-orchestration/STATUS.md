@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 306 (heartbeat).** TV's
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 307.** ALLEN TOOK (B)
+on the panel: top below y=62, scorebug clear throughout - the freeze
+licence goes moot exactly as the DD's coupling predicted, the freeze
+itself survives on the pausing clause. TV dispatches the resize +
+re-shoot as one bounded agent; the head-of-column wording folds to the
+DD. De-fraction landed earlier (fixed offsets, four pins by name).
+With Allen: research words.
+
+*(prior stamp, cycle 306:)* TV's
 two dispatched agents grinding - the sweep agent is diagnosing a Unity
 crash-handler/lockfile state (lead supervising per its own staging
 discipline); the de-fraction agent running EditMode. su and DD idle
