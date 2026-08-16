@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 348 (ORCA RECOVERED).**
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 349 (heartbeat).** Board
+fully quiet: four seats idle-by-completion, register repair landed
+(5d5e54c), everything merged and pushed. With Allen: the research words.
+
+*(prior stamp, cycle 348 - ORCA RECOVERED:)*
 The runtime initialized after ~5.5h down; ALL FOUR SEATS REBUILT (three
 leads via --continue, DD fresh: tv term_619db826, sgp term_77bee29a, su
 term_e580e276, dd term_b5b39b78), effort max on all, monitors re-armed
