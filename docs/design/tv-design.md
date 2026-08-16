@@ -598,17 +598,18 @@ has always meant, now true of its content and not only of its position.
 the leg**, so two corners legs at different lines take one `CORNERS` row. **Rows appear in a fixed
 canonical order: the ticket selects WHICH rows appear, never in what order.**
 
-**THE `GOALS` ROW IS REMOVED, and the reason is structural rather than a duplication complaint: the
-panel exists to give the SPLIT, and for goals there is no split to give.** The panel's two numbers and
-the scorebug's are the same two, in the same order, one slot apart — **nothing to ADD, not merely
-something repeated.** Every goals market is served by the scorebug directly: moneyline reads the
-result, BTTS reads both numbers, correct score **is** the scoreline, over/under is their sum. **A
-scorer leg takes no row either, by the same rule rather than a special case.**
+**`GOALS` IS A STANDING ROW, NOT A KEYED ONE** (Allen, 2026-08-16 — T104-am3). **The panel is `GOALS`
+plus the count rows the ticket keys: keying governs what sits BENEATH the standing row and never
+governed the standing row itself.** So a moneyline ticket carries **one** row, one count leg **two**,
+corners and cards **three** — the three-row maximum the panel was already built for.
 
-**Where the ticket gives the panel no rows — a moneyline-only ticket — the panel DOES NOT OPEN EMPTY:
-its affordance is unavailable and says so before the key is pressed** (S85: *a refusal knowable
-before the act is shown before it*). **This makes the panel a count-ticket feature: available where it
-has something to say.**
+*(A DD ruling removing `GOALS` — on the ground that the panel gives the per-team SPLIT and goals have
+no split the scorebug is not already showing — was put to Allen by TV, which caught that it applied
+keying to a row that was never keyed. It is overruled and recorded at T104-am3. The zero-row
+affordance and the "count-ticket feature" framing died with it and must not be built: the panel is
+never empty and is always available.)*
+
+**A scorer leg keys no row** — player stats are barred outright (§6.6, a generator-truth leak).
 
 **The unrevealed mark survives and changes meaning.** `_countLedger` carries one kind and resets per
 leg, so a ticket may ride on more quantities than it can populate. **Where `—` meant *not in your
