@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 332 (INCIDENT, ongoing).**
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 333 (heartbeat, incident
+ongoing).** Orca still down ~25 min after the flap began; stability watch
+armed and quiet. No exposure - all merged. Waiting.
+
+*(prior stamp, cycle 332:)*
 Orca is FLAPPING - fourth outage, minutes after relaunch, mid-seat-
 rebuild. The rebuild got far: four seats relaunched WITH transcript
 persistence restored (the restored terminals had inherited a
