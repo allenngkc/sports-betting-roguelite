@@ -420,26 +420,31 @@ namespace SBR.Tests.PlayMode
             }
             Assert.AreEqual(maxLegs, laptop.Slip.Picks.Count, "the board must be at the cap");
 
-            // THE DEAD CLICK, PROVEN. A fifth matchup's price is picked and the slip does not move —
-            // no leg, no refusal, no stamp, nothing. That silence is what the treatment is for.
+            // THE ACT NEVER HAPPENS — which is the ruled general rule, and it is now what this
+            // capture asserts. The first version of this test CLICKED a capped cell and proved the
+            // slip did not move; under S85's treatment that click is structurally impossible, so
+            // the assertion moved to where the rule actually lives: the control has stopped
+            // offering BEFORE it is touched.
             Assert.Greater(run.CurrentSlate.Matchups.Count, maxLegs,
-                "this frame needs an unpicked matchup left on the board to click");
-            Invoke(Required(Required(App(laptop), "Matchup" + maxLegs), "AwayOdds"));
-            yield return WaitForRebuild();
-            Assert.AreEqual(maxLegs, laptop.Slip.Picks.Count,
-                "the click past the cap must do nothing — if it added a leg, MaxLegs is not binding "
-                + "and this capture is of a state that does not exist");
-            Assert.IsFalse(laptop.Slip.Contains(maxLegs, MarketSelection.Moneyline(Side.Away)),
-                "and it must not have landed on the slip by another route");
+                "this frame needs an unpicked matchup left on the board");
+            Transform capped = Required(Required(App(laptop), "Matchup" + maxLegs), "AwayOdds");
+            Assert.IsFalse(capped.GetComponent<Button>().interactable,
+                "the capped cell must have stopped offering before it is touched");
+            Assert.AreEqual(0f, capped.GetComponent<Image>().color.a, 0.001f,
+                "and it must have lost its field — the offer's own channel");
+            Assert.AreEqual(LaptopOs.White,
+                Required(capped, "Label").GetComponent<TMP_Text>().color,
+                "while the price stays a legible FACT — a dim here would be frozen's meaning");
 
-            // A SECOND pick on an already-marked match is dead for the same reason at the cap, and
-            // that one is new to the gesture: before it, this click replaced rather than added.
-            Invoke(Required(Required(App(laptop), "Matchup0"), "HomeOdds"));
-            yield return WaitForRebuild();
-            Assert.AreEqual(maxLegs, laptop.Slip.Picks.Count,
-                "a second market on a marked match is dead at the cap too");
-            Assert.IsTrue(laptop.Slip.Contains(0, MarketSelection.Moneyline(Side.Away)),
-                "and the pick already there is untouched by the refused click");
+            // A second market on an already-marked match is inert for the same reason, and that case
+            // is new to the gesture: before it, this click replaced rather than added.
+            Assert.IsFalse(Required(Required(App(laptop), "Matchup0"), "HomeOdds")
+                .GetComponent<Button>().interactable,
+                "a second market on a marked match is inert at the cap too");
+            Assert.IsTrue(Required(Required(App(laptop), "Matchup0"), "AwayOdds")
+                .GetComponent<Button>().interactable,
+                "but the MARKED cell stays live — un-picking is the remedy and a remedy is never "
+                + "disabled (S73-am4)");
 
             string outputDirectory = Path.GetFullPath(Path.Combine(
                 Application.dataPath, "..", "..", "..", "artifacts", "surething-ui"));

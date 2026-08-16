@@ -296,13 +296,15 @@ namespace SBR.Game
 
             LaptopUi.MakeButton(card, "AwayOdds", $"AWAY  {OddsFormat.American(matchup.AwayOdds)}",
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, AwayCellY), new Vector2(112f, 32f), 19,
-                LaptopOs.Ink, frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
+                OfferField(OfferIsTakeable(slip, _host.director.Run, matchup.Index, MarketSelection.Moneyline(Side.Away))), frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
                 // C15/S28: `.03`, NOT MakeButton's `.14` action default. A price control is a price
                 // first — `PriceCell.jsx` and `MarketOffer.jsx` both set `--st-track-name` on it, and
                 // the token's own comment reads "team names, prices, masthead". The previous commit's
                 // premise (a button label is an action label) is wrong for exactly this class, and
                 // the kit is what says so.
-                frozen ? null : () => { PickOffer(slip, matchup.Index, MarketSelection.Moneyline(Side.Away)); }, _fontCond, !frozen, LaptopTrack.Names);
+                frozen || !OfferIsTakeable(slip, _host.director.Run, matchup.Index, MarketSelection.Moneyline(Side.Away)) ? (System.Action)null
+                    : () => { PickOffer(slip, matchup.Index, MarketSelection.Moneyline(Side.Away)); }, _fontCond,
+                    !frozen && OfferIsTakeable(slip, _host.director.Run, matchup.Index, MarketSelection.Moneyline(Side.Away)), LaptopTrack.Names);
             // S74-am — THE DRAW GOES IN THE PRICE CELL, in the slot HOME used to hold.
             // The price cell is the one that names the OUTCOME, never the matchup column, which
             // names TEAMS: the board already reads `AWAY −156` rather than `NOTARIES −156`, so the
@@ -329,15 +331,19 @@ namespace SBR.Game
             if (matchup.DrawOdds > 1.0)
                 LaptopUi.MakeButton(card, "DrawOdds", $"DRAW  {OddsFormat.American(matchup.DrawOdds)}",
                     new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, DrawCellY), new Vector2(112f, 32f), 19,
-                    LaptopOs.Ink, frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
-                    frozen ? null : () => { PickOffer(slip, matchup.Index, MarketSelection.MoneylineDraw()); }, _fontCond, !frozen, LaptopTrack.Names);
+                    OfferField(OfferIsTakeable(slip, _host.director.Run, matchup.Index, MarketSelection.MoneylineDraw())), frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
+                    frozen || !OfferIsTakeable(slip, _host.director.Run, matchup.Index, MarketSelection.MoneylineDraw()) ? (System.Action)null
+                    : () => { PickOffer(slip, matchup.Index, MarketSelection.MoneylineDraw()); }, _fontCond,
+                    !frozen && OfferIsTakeable(slip, _host.director.Run, matchup.Index, MarketSelection.MoneylineDraw()), LaptopTrack.Names);
             // HOME sits one line pitch below the draw. It is the only thing that moved when the draw
             // landed: AWAY does not shift at all and the card's bottom slack is unchanged, which is
             // what makes the re-derived pitch above a pure insertion rather than a re-layout.
             LaptopUi.MakeButton(card, "HomeOdds", $"HOME  {OddsFormat.American(matchup.HomeOdds)}",
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(462f, HomeCellY), new Vector2(112f, 32f), 19,
-                LaptopOs.Ink, frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
-                frozen ? null : () => { PickOffer(slip, matchup.Index, MarketSelection.Moneyline(Side.Home)); }, _fontCond, !frozen, LaptopTrack.Names);
+                OfferField(OfferIsTakeable(slip, _host.director.Run, matchup.Index, MarketSelection.Moneyline(Side.Home))), frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
+                frozen || !OfferIsTakeable(slip, _host.director.Run, matchup.Index, MarketSelection.Moneyline(Side.Home)) ? (System.Action)null
+                    : () => { PickOffer(slip, matchup.Index, MarketSelection.Moneyline(Side.Home)); }, _fontCond,
+                    !frozen && OfferIsTakeable(slip, _host.director.Run, matchup.Index, MarketSelection.Moneyline(Side.Home)), LaptopTrack.Names);
             if (awaySelected || homeSelected || drawSelected)
             {
                 Sprite ring = ResolvePriceRing(matchup.Index);
@@ -836,7 +842,23 @@ namespace SBR.Game
                 // `.03` for the same reason as the moneyline buttons: MarketOffer.jsx sets
                 // --st-track-name on the price cell. This is the interior-list price and the two
                 // must match — one is the same object one screen deeper.
-                frozen ? null : () => { PickOffer(slip, matchup.Index, selection); }, _fontCond, !frozen, LaptopTrack.Names);
+                // S85 §6 — THE BEHAVIOURAL HALF ONLY, AND THE REASON IS A FINDING. At the cap this
+                // stops accepting the click, exactly as the board's cells do. What it CANNOT do here
+                // is show it: the board says "offer" with a FIELD and this cell has none to remove —
+                // `MarketOffer.jsx` gives the interior price cell no fill, so the transparent
+                // treatment that expresses the rule on the board is a no-op one screen deeper.
+                //
+                // Which surfaces a scope fact §6 asked for and the frame could not show: the two
+                // surfaces do not share an offer affordance today. On the board a live offer sits in
+                // a field; on this sheet a live offer is already bare type. So an ENTRY offer that
+                // has gone dead is indistinguishable from a live one BECAUSE a live one already
+                // looks like a fact. Reported, not solved — giving these cells a field would
+                // contradict the kit, and that is a ruling rather than a lane's call.
+                frozen || !OfferIsTakeable(slip, _host.director.Run, matchup.Index, selection)
+                    ? (System.Action)null
+                    : () => { PickOffer(slip, matchup.Index, selection); }, _fontCond,
+                !frozen && OfferIsTakeable(slip, _host.director.Run, matchup.Index, selection),
+                LaptopTrack.Names);
 
             // S27 ruling: the printed row rule (kit: screens.jsx:64, 1px --rule-soft).
             LaptopUi.MakeRule(row, "OfferRowRule" + offerIndex, new Vector2(0f, 0f), new Vector2(0f, 0f),
@@ -1003,7 +1025,18 @@ namespace SBR.Game
             TMP_Text headerTitle = LaptopUi.MakeText(panel, "Title", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(14f, -10f), new Vector2(150f, 24f), 16, TextAnchor.UpperLeft, LaptopOs.Accent,
                 "MY MARKS", _fontCond);
-            string countText = $"{slip.Picks.Count} {Pluralize(slip.Picks.Count, "SELECTION")} · {run.Tickets.Count} STAGED";
+            // S85 §1 — THE CAUSE IS STATED ONCE, HERE. Fourteen dead cells are ONE fact about the
+            // slip, not fourteen facts about prices: a refusal printed on every refused control is
+            // T69/T70's defect at fourteen sites, and would put more words on the board than the
+            // board has prices. This head already states how many he holds, and the cap is a fact
+            // about that count — so the count states it, in its own grammar.
+            //
+            // `4 OF 4 SELECTIONS` rather than a new sentence: no vocabulary is added, the denominator
+            // IS the cause, and it appears only at the cap so it never reads as decoration.
+            bool slipFull = slip.Picks.Count >= run.Config.MaxLegs;
+            string countText = slipFull
+                ? $"{slip.Picks.Count} OF {run.Config.MaxLegs} SELECTIONS · {run.Tickets.Count} STAGED"
+                : $"{slip.Picks.Count} {Pluralize(slip.Picks.Count, "SELECTION")} · {run.Tickets.Count} STAGED";
             float countMaxWidth = Mathf.Max(0f, headerRight - headerTitle.preferredWidth - 8f);
             countText = LaptopUi.FitText(_font, countText, 13, countMaxWidth);
             LaptopUi.MakeText(panel, "Count", new Vector2(1f, 1f), new Vector2(1f, 1f),
@@ -1950,6 +1983,40 @@ namespace SBR.Game
         /// <para><b>`MaxLegs` still binds and `AddLeg` returns false at the cap.</b> A pick refused
         /// for the cap currently does nothing visible — see the report; no treatment is ruled for it
         /// and none is invented here.</para></summary>
+        /// <summary>S85 — whether a price is still an OFFER, or has become a fact only.
+        ///
+        /// <para>§8's distinction is the ruling: the theatre prints FACTS and OFFERS, and a price
+        /// cell is both at once — the house's line on an outcome, and a thing he may take. At the leg
+        /// cap it is still true and no longer takeable, so it stops being an offer and remains a
+        /// fact.</para>
+        ///
+        /// <para>A leg already on the slip stays takeable in the other direction: clicking it
+        /// removes it, and removing is the remedy. **A remedy may never be disabled** (S73-am4).
+        /// That is why this asks `Contains` first rather than testing the cap alone.</para></summary>
+        private static bool OfferIsTakeable(BetslipModel slip, Run run, int matchupIndex,
+            MarketSelection selection)
+            => slip.Contains(matchupIndex, selection) || slip.Picks.Count < run.Config.MaxLegs;
+
+        /// <summary>S85's treatment: the FIELD carries the offer, the TYPE carries the fact.
+        ///
+        /// <para><b>Not invented — S69's own move.</b> This surface already says "unavailable" by
+        /// taking the fill away and leaving the control's type: *"a disabled LOCK is TRANSPARENT, per
+        /// LockAction.jsx — it carried a fill and no border, which is the inversion of the kit."* A
+        /// capped price is the same class of thing: legible, and not currently takeable.</para>
+        ///
+        /// <para><b>It satisfies §7's constraints by SUBTRACTION, which is why it needs no new
+        /// ink.</b> §3.1's table is Wax, Biro and Stamp and nothing may borrow the three — so the
+        /// treatment adds no colour at all. It removes one.</para>
+        ///
+        /// <para><b>And it is distinguishable from `frozen` in the only way that matters — the
+        /// opposite channel.</b> `frozen` means the round is locked, so the price is no longer live
+        /// information and the FACT dims. The cap means the slip is full, the price is still true,
+        /// and the OFFER goes. One dims the type and keeps the field; the other keeps the type and
+        /// removes the field. A player who learned the dim as "the board has closed" is never shown
+        /// it for a full slip.</para></summary>
+        private static Color OfferField(bool takeable) =>
+            takeable ? LaptopOs.Ink : new Color(0f, 0f, 0f, 0f);
+
         private void PickOffer(BetslipModel slip, int matchupIndex, MarketSelection selection)
         {
             if (slip.Contains(matchupIndex, selection)) slip.RemoveSelection(matchupIndex, selection);

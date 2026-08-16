@@ -730,6 +730,65 @@ namespace SBR.Tests.PlayMode
             }
         }
 
+        /// <summary>S85 — at the cap a price STOPS BEING AN OFFER AND REMAINS A FACT.
+        ///
+        /// <para>The two halves are asserted separately because they are the ruling: the FIELD
+        /// carries the offer and goes; the TYPE carries the fact and stays, at full strength. A dim
+        /// here would be `frozen`'s meaning — the round is locked — on a price that is still
+        /// perfectly true.</para></summary>
+        [UnityTest, Order(9)]
+        public IEnumerator At_the_leg_cap_a_price_loses_its_field_and_keeps_its_type()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            Run run = laptop.director.Run;
+            BetslipModel slip = laptop.Slip;
+            int maxLegs = run.Config.MaxLegs;
+
+            // Below the cap: an untaken price is an OFFER — it has its field and it accepts a click.
+            var freeCell = Required(Required(App(laptop), "Matchup" + maxLegs), "AwayOdds");
+            Assert.AreEqual(LaptopOs.Ink, freeCell.GetComponent<Image>().color,
+                "below the cap a price sits in a field — that field is what says 'takeable'");
+            Assert.IsTrue(freeCell.GetComponent<Button>().interactable);
+
+            for (int i = 0; i < maxLegs; i++)
+            {
+                Invoke(Required(Required(App(laptop), "Matchup" + i), "AwayOdds"));
+                yield return WaitForRebuild();
+            }
+            Assert.AreEqual(maxLegs, slip.Picks.Count);
+
+            // At the cap: the offer goes, the fact stays.
+            Transform capped = Required(Required(App(laptop), "Matchup" + maxLegs), "AwayOdds");
+            Assert.AreEqual(0f, capped.GetComponent<Image>().color.a, 0.001f,
+                "S85: the FIELD carries the offer and the offer is gone — S69's own move, the same "
+                + "way a disabled LOCK goes transparent rather than growing a new treatment");
+            Assert.IsFalse(capped.GetComponent<Button>().interactable, "and it stops accepting");
+
+            var cappedLabel = Required(capped, "Label").GetComponent<TMP_Text>();
+            Assert.AreEqual(LaptopOs.White, cappedLabel.color,
+                "the TYPE carries the fact and stays at full strength. A dim is `frozen`'s meaning — "
+                + "the round is locked — and this price is still true; teaching one treatment for "
+                + "both would read a full slip as a closed round");
+            StringAssert.Contains("AWAY", cappedLabel.text, "and it is still legible as a price");
+
+            // Disposition (3): the marked four stay live, because removing a leg is the remedy and a
+            // remedy may never be disabled (S73-am4).
+            Transform marked = Required(Required(App(laptop), "Matchup0"), "AwayOdds");
+            Assert.IsTrue(marked.GetComponent<Button>().interactable,
+                "a leg already on the slip must stay clickable — un-picking is the remedy");
+            Assert.AreEqual(LaptopOs.Ink, marked.GetComponent<Image>().color,
+                "and it keeps its field, because it is still an offer — in the other direction");
+
+            // §1: the cause is stated ONCE, in the head, in the count's own grammar.
+            var count = Required(Required(App(laptop), "WorkingMargin"), "Count")
+                .GetComponent<TMP_Text>();
+            StringAssert.Contains($"{maxLegs} OF {maxLegs}", count.text,
+                "the cap is a fact about the count, and the count states it");
+            Assert.IsFalse(count.text.Contains("…"),
+                $"the cause must not be fitted away: \"{count.text}\"");
+        }
+
         /// <summary>S74's middle position, measured rather than asserted. The draw's line sits
         /// physically between the two teams' — so the gap above it and the gap below it are the
         /// same, and the shipped −43 made them 35 and 38.
