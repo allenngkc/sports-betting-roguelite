@@ -73,6 +73,11 @@ That is `C51`'s shape landing on the row whose entire subject is what the studio
 
 ## 4. TO ALLEN — `C51` IS A GENUINE ID COLLISION, AND THE MOVE IS HELD ON IT
 
+> **ANSWERED at batch 99, same day: `C52` taken, as recommended.** Authorised as bookkeeping on
+> C22.1's earlier-ID-governs precedent and logged to Allen. Batch 64's law keeps `C51`; batch 97's
+> law is now `C52` and sits in the Cross-surface table. The section below is kept as the record of
+> the finding and of why the move was held.
+
 **Two different laws are both numbered `C51`:**
 
 | | |

@@ -3,8 +3,14 @@
 **THE STATS PHASE CLOSES.** Read at the DD seat against
 `dd-import/tv-statspanel-rows-removed-2026-08-16/`, measured against its predecessor.
 
+> **RENUMBERED AFTER SHIPPING — the law promoted here as `C51` is now `C52`.** `C51` was already
+> carried by batch 64's *a cross-element invariant is an ASSERTION or it does not exist*, four weeks
+> earlier and in force; the collision was silent because the C-series had no gaps to notice.
+> Resolved at **batch 99** under C22.1's earlier-ID-governs precedent — the batch-64 law keeps
+> `C51`. **The ruling below is unchanged; only its number is.** This file reads `C52` from here on.
+
 **Destination table: TV — match theater.** **Rows shipped:** `T106` **DESIGN-VERIFIED — PHASE
-CLOSED** · `C51` (a law promoted from the lane's own dock correction).
+CLOSED** · `C52` (a law promoted from the lane's own dock correction).
 
 ---
 
@@ -44,14 +50,14 @@ the failure this studio has spent the week naming; this one was found before it 
 
 ---
 
-## C51 — PROMOTED, from the lane's own correction of its dock template
+## C52 — PROMOTED, from the lane's own correction of its dock template
 
 **Four earlier docks carried the panel's 0px flush gap as OPEN. It closed at batch 89.** **The lane
 found the mechanism rather than the instance: its `NOT CLAIMED` section had become a TEMPLATE, copied
 between docks without re-checking each line against canon.** **It is struck here and struck from the
 template.**
 
-> **C51 — A disclosure block that is not re-verified per dock stops being a disclosure and becomes a
+> **C52 — A disclosure block that is not re-verified per dock stops being a disclosure and becomes a
 > false claim with a wide readership.**
 
 **Promoted to a register-level law because every dock in this studio carries a `NOT CLAIMED` section,
@@ -90,7 +96,7 @@ rather than a design.** **Named so the gap is known.**
 
 ---
 
-**Routing.** **T106 CLOSED — Design-verified. THE STATS PHASE IS CLOSED.** **C51 → the register as a
+**Routing.** **T106 CLOSED — Design-verified. THE STATS PHASE IS CLOSED.** **C52 → the register as a
 law; the four docks carrying the struck line are named in it.** **Nothing is owed at this seat.**
 
 **To Allen, in one line:** *closed — the panel is a fifth of the size it started at, covers nothing

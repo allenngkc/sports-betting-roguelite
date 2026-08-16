@@ -87,6 +87,15 @@ their heads are stale.
 
 ## 6. A structural defect found during the sweep
 
+> **RESOLVED — batches 98 and 99, same day. This section is kept as written, as the record of what
+> was found.** The thirteen T-rows moved to the TV table (batch 98, IDs unchanged). Carrying that
+> out uncovered a larger defect underneath it — **75 of 343 rows were not rendering as table rows
+> at all**, because blank lines between rows terminate a GFM table; repaired in the same batch,
+> whitespace only. And `C51` turned out to be **an ID collision, not merely a misfiling**: batch 97
+> had promoted its law onto a number batch 64 was already using. Batch 99 renumbered batch 97's law
+> to **`C52`** under C22.1, so **every "`C51`" below means the law now called `C52`.** The register
+> now audits clean: 343 rows, no duplicate IDs, no misfiled rows, all rendering.
+
 **Fifteen rows sit in the wrong table.** The section a row lives in is decided by the heading
 above it, and:
 
