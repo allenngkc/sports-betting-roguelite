@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-15, cycle 310 (heartbeat).** TV's
+**Keeper-era heartbeat stamp: 2026-08-15, cycle 311.** Batch 89 landed
+(7bc4bc0): the un-covered scorebug now coexists with the GOALS row in
+opposite column order - Allen took (b), reorder the columns; routed to
+TV bundled with T102's ink-budget re-derivation and S84's pool binding.
+DD's owed: S85's treatment, T103's call. With Allen: research words.
+
+*(prior stamp, cycle 310:)* TV's
 pin agent running; DD mid-read on the resize frames. Quiet. With Allen:
 research words.
 
