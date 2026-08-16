@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 316.** The batch-89
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 317 (heartbeat).** TV's
+path-fix agent grinding; DD mid-read on the final panel dock; su and sgp
+clear. With Allen: the two research words - the board's only Allen items.
+
+*(prior stamp, cycle 316:)* The batch-89
 bundle MERGED (fac5a61): scorebug column order, ink-budget boxes read
 off production, pool binding, 70 frames. Allen's held docked-frames
 draft FIRED (now true); DD reading with the 0px-gap and composition
