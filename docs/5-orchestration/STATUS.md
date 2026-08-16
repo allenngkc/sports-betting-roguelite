@@ -1,7 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 333 (heartbeat, incident
-ongoing).** Orca still down ~25 min after the flap began; stability watch
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 334 (RECOVERED).** Orca
+back and 60s-stable after ~50 min down (one orca open + stability watch);
+all four seats rebuilt with transcript persistence FORCED (the
+child-session trap defeated on both rebuild rounds), effort max,
+recovery taps delivered. TV finishes the 76-file back-catalogue remnant
+then stands by; DD seated fresh on an empty ledger. Watcher v37
+(b70ebd9pv), heartbeat bgxe0jq8g. Board otherwise idle-by-completion;
+with Allen: the research words.
+
+*(prior stamp, cycle 333:)* Orca still down ~25 min after the flap began; stability watch
 armed and quiet. No exposure - all merged. Waiting.
 
 *(prior stamp, cycle 332:)*
