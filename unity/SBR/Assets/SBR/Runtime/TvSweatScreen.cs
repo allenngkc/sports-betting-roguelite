@@ -470,8 +470,12 @@ namespace SBR.Game
         public float DebugSeatedDeltaTime => SeatedDeltaTime;
         public Transform DebugStatsPanel => _statsPanel;
         public TMP_Text DebugInterventionPrompt => _tInterventionPrompt;
+        /// <summary>DD batch 95: null past <see cref="StatsActiveRowCount"/> means the row is ABSENT
+        /// — there is no slot there for this ticket's row set, not a blank one. A row inside that
+        /// count is always PRESENT (label/A/B all populated, or the unrevealed mark) even if it has
+        /// not been rendered yet this frame.</summary>
         public string DebugStatsRow(int i)
-            => _tStatsLabel == null || i < 0 || i >= _tStatsLabel.Length
+            => _tStatsLabel == null || i < 0 || i >= StatsActiveRowCount
                 ? null
                 : $"{_tStatsLabel[i].text}|{_tStatsA[i].text}|{_tStatsB[i].text}";
         public string DebugStatsUnrevealedMark => StatsUnrevealed;
@@ -1036,17 +1040,47 @@ namespace SBR.Game
         private TMP_Text[] _tStatsLabel, _tStatsA, _tStatsB;
 
         /// <summary>Three rows ship (Allen, 2026-08-15). Formation and player stats are NOT stubbed —
-        /// the engine has neither, and a placeholder would promise a row that is not coming.</summary>
+        /// the engine has neither, and a placeholder would promise a row that is not coming.
+        /// <c>StatsRowSlots</c> is the PHYSICAL slot count built once by <see cref="BuildStatsPanel"/>;
+        /// how many of them are ever ACTIVE for a given ticket is a separate, per-ticket question —
+        /// see <see cref="StatsActiveRowCount"/>.</summary>
         private const int StatsRowSlots = 3;
+
+        /// <summary>DD batch 95: the ONE spacing value the stats panel spends on every edge (left
+        /// inset, both inter-column gaps, right inset, top inset, bottom inset — see
+        /// <see cref="BuildStatsPanel"/>), hoisted to a class constant because <see
+        /// cref="StatsRowY"/>/<see cref="StatsPanelHeight"/> must share the EXACT number
+        /// <c>BuildStatsPanel</c> builds the rows with, never a second, driftable copy of "32".</summary>
+        private const float StatsPad = 32f;
+
+        /// <summary>DD batch 95: the Y position (top-left anchored, so negative and growing downward)
+        /// of row slot <paramref name="slotIndex"/> — title at -StatsPad, row 0 at -(StatsPad+56),
+        /// pitch 46 per slot after that. The ONE formula both <see cref="BuildStatsPanel"/> (building
+        /// every physical slot) and <see cref="ResizeStatsPanel"/> (re-homing a slot onto an EARLIER
+        /// index when it is active, or COLLAPSING it onto the last active slot when it is not) must
+        /// share — two independent copies of this arithmetic is exactly how a slot ends up "hidden in
+        /// place" instead of contiguous.</summary>
+        private static float StatsRowY(int slotIndex) => -(StatsPad + 56f + slotIndex * 46f);
+
+        /// <summary>DD batch 95: THE PANEL'S HEIGHT FOLLOWS ITS ROWS. A function of <paramref
+        /// name="rowCount"/> rather than a fixed constant, because the row SET — and so the row COUNT
+        /// — is only known once <see cref="ComputeStatsRowSet"/> runs, at ticket adoption; it can no
+        /// longer be fixed at canvas-build time, when no ticket exists yet. Height = the last row's
+        /// own bottom edge (-<see cref="StatsRowY"/>(rowCount-1), plus its 34px height) + StatsPad —
+        /// the same "bottom inset == top inset" relationship <c>Stats_panel_is_sized_exactly_to_its_
+        /// content</c> pins, now genuinely load-bearing vertically rather than incidentally true of one
+        /// fixed 3-row number.</summary>
+        private static float StatsPanelHeight(int rowCount) => -StatsRowY(rowCount - 1) + 34f + StatsPad;
 
         /// <summary>THE UNREVEALED MARK. DD batch 93: since the panel's rows now KEY TO THE TICKET
         /// (<see cref="ComputeStatsRowSet"/>) — a CORNERS/CARDS row exists at all only if the ticket
         /// bought that leg — this mark's meaning NARROWED. It no longer means "not in your ticket";
-        /// that case is now an ABSENT row (blank, not printed), never a marked one. It means NOT YET
-        /// REVEALED: a row the ticket DID buy, whose stat has not been causally revealed, is shown as
-        /// this, NEVER as its true final value — "a leak here is a blocker, not a polish item". The
-        /// glyph itself is unchanged, only the set of rows it can ever appear on (Allen, 2026-08-15 /
-        /// DD batch 93).</summary>
+        /// that case is now an ABSENT row — DD batch 95: not merely unprinted text in an existing
+        /// slot, but NO SLOT AT ALL ("an unbought row is not a silent row, it is NO row") — never a
+        /// marked one. It means NOT YET REVEALED: a row the ticket DID buy, whose stat has not been
+        /// causally revealed, is shown as this, NEVER as its true final value — "a leak here is a
+        /// blocker, not a polish item". The glyph itself is unchanged, only the set of rows it can
+        /// ever appear on (Allen, 2026-08-15 / DD batch 93; batch 95 sharpened "absent").</summary>
         private const string StatsUnrevealed = "—";
 
         /// <summary>T102 (DD batch 89): the stats panel's column-sizing rule, re-ruled from "widest
@@ -1168,6 +1202,14 @@ namespace SBR.Game
         /// only ever reads these two flags, never <c>Ticket.Legs</c> directly.</summary>
         private bool _statsRowHasCorners;
         private bool _statsRowHasCards;
+
+        /// <summary>DD batch 95: how many of the panel's <see cref="StatsRowSlots"/> are ACTIVE for
+        /// the CURRENT ticket — GOALS unconditionally, plus one more per count kind the row set
+        /// carries. THE ONE SOURCE both <see cref="ResizeStatsPanel"/> (which physical slots to
+        /// activate and how tall the panel is) and <see cref="DebugStatsRow"/> (which indices are
+        /// PRESENT vs ABSENT to a test) read, so the two can never silently disagree about where the
+        /// row set "ends". "An unbought row is not a silent row, it is NO row" — this is that count.</summary>
+        private int StatsActiveRowCount => 1 + (_statsRowHasCorners ? 1 : 0) + (_statsRowHasCards ? 1 : 0);
 
         /// <summary>DD batch 93 item 2: revealed per-team counts, RETAINED for the life of the
         /// ticket — independent of <see cref="_countLedger"/>, which is REPLACED per leg (see
@@ -3837,17 +3879,77 @@ namespace SBR.Game
         /// (<c>PresentRound</c>) — never per leg, never per beat. A table whose rows appear and
         /// vanish as legs go live is the defect this replaces, not a variant of it, so
         /// <see cref="RenderStatsPanel"/> reads only the two stored flags this method writes and
-        /// never re-derives them from <c>Ticket.Legs</c> or the live leg.</para></summary>
+        /// never re-derives them from <c>Ticket.Legs</c> or the live leg.</para>
+        ///
+        /// <para><b>DD batch 95:</b> this is also the ONE site the panel's row COUNT becomes known,
+        /// so it is the one site <see cref="ResizeStatsPanel"/> is called from — "the panel's height
+        /// must be set when the row set is known", never before (no ticket to know it from) and never
+        /// per-render (the row set does not change without a new ticket).</para></summary>
         private void ComputeStatsRowSet()
         {
             _statsRowHasCorners = false;
             _statsRowHasCards = false;
-            if (_ticket == null) return;
-            foreach (Leg leg in _ticket.Legs)
+            if (_ticket != null)
             {
-                if (leg.Selection.Kind == MarketKind.TotalCorners) _statsRowHasCorners = true;
-                else if (leg.Selection.Kind == MarketKind.TotalCards) _statsRowHasCards = true;
+                foreach (Leg leg in _ticket.Legs)
+                {
+                    if (leg.Selection.Kind == MarketKind.TotalCorners) _statsRowHasCorners = true;
+                    else if (leg.Selection.Kind == MarketKind.TotalCards) _statsRowHasCards = true;
+                }
             }
+            ResizeStatsPanel();
+        }
+
+        /// <summary>DD batch 95: "AN UNBOUGHT ROW IS NOT A SILENT ROW, IT IS NO ROW." Applies the row
+        /// set <see cref="ComputeStatsRowSet"/> just computed to the PANEL ITSELF — resizes <see
+        /// cref="_statsPanel"/>'s rect to <see cref="StatsPanelHeight"/> of <see
+        /// cref="StatsActiveRowCount"/>, and for every physical row slot either:
+        /// <list type="bullet">
+        /// <item>ACTIVATES it at its rank's own <see cref="StatsRowY"/>, if its rank is within the
+        /// active count — so a row's PHYSICAL box always sits directly under the row before it,
+        /// contiguous, regardless of which specific kind (CORNERS/CARDS) that earlier row is; or</item>
+        /// <item>DEACTIVATES it AND collapses its y onto the last active row's own y, if not.</item>
+        /// </list>
+        ///
+        /// <para>The collapse (not just the deactivate) is load-bearing, not decoration: <c>Stats_
+        /// panel_is_sized_exactly_to_its_content</c> discovers row slots via <c>GetComponentsInChildren
+        /// &lt;RectTransform&gt;(true)</c> — <c>true</c> meaning it still SEES inactive slots — so a
+        /// slot merely deactivated IN PLACE at its old build-time position would still be measured at
+        /// its old, further-down y and silently re-inflate the panel's computed content bounds back
+        /// out to the fixed 3-row extent this batch removes. Collapsing an inactive slot onto the last
+        /// active row's own y makes it measure as contributing nothing beyond that row, which is the
+        /// geometric expression of "does not exist" this pin can actually see.</para>
+        ///
+        /// <para>Idempotent and re-run-safe: a later ticket with a DIFFERENT row set (fewer or more
+        /// rows) simply recomputes every slot's active state and y from scratch, so nothing carries
+        /// over from a previous ticket's shape.</para></summary>
+        private void ResizeStatsPanel()
+        {
+            if (_statsPanel == null || _tStatsLabel == null) return;
+
+            int activeRows = StatsActiveRowCount;
+
+            Vector2 size = _statsPanel.sizeDelta;
+            size.y = StatsPanelHeight(activeRows);
+            _statsPanel.sizeDelta = size;
+
+            float collapseY = StatsRowY(activeRows - 1); // the last ACTIVE row's own y
+            for (int i = 0; i < StatsRowSlots; i++)
+            {
+                bool active = i < activeRows;
+                float y = active ? StatsRowY(i) : collapseY;
+                CollapseStatsSlot(_tStatsLabel[i], active, y);
+                CollapseStatsSlot(_tStatsA[i], active, y);
+                CollapseStatsSlot(_tStatsB[i], active, y);
+            }
+        }
+
+        private static void CollapseStatsSlot(TMP_Text slot, bool active, float y)
+        {
+            slot.gameObject.SetActive(active);
+            Vector2 pos = slot.rectTransform.anchoredPosition;
+            pos.y = y;
+            slot.rectTransform.anchoredPosition = pos;
         }
 
         /// <summary>§8.8's shipped rows, all REVEALED-LEDGER values.
@@ -3863,10 +3965,18 @@ namespace SBR.Game
         /// <see cref="_statsRowHasCorners"/>/<see cref="_statsRowHasCards"/> — the ticket's own,
         /// frozen-at-placement row set (<see cref="ComputeStatsRowSet"/>) — and value keys to
         /// <see cref="_statsRetainedCounts"/>, so a count revealed earlier in the ticket stays
-        /// revealed after its leg stops being live. A row absent from the ticket's row set is left
-        /// BLANK, never marked; a row the ticket bought but has not yet revealed carries
-        /// <see cref="StatsUnrevealed"/> — the gap is deliberately VISIBLE rather than hidden (Allen,
-        /// 2026-08-15), and the ruled row grammar keeps.</para></summary>
+        /// revealed after its leg stops being live. A row the ticket bought but has not yet revealed
+        /// carries <see cref="StatsUnrevealed"/> — the gap is deliberately VISIBLE rather than hidden
+        /// (Allen, 2026-08-15), and the ruled row grammar keeps.</para>
+        ///
+        /// <para><b>DD batch 95: a row ABSENT from the ticket's row set is never written here at
+        /// all.</b> Slot indices are assigned CONTIGUOUSLY, by presence-rank in this fixed priority
+        /// order (GOALS, then CORNERS if present, then CARDS if present) — never at the kind's own
+        /// canonical index — so an absent row leaves no gap for a present one further down the
+        /// priority order to fall into. <see cref="ResizeStatsPanel"/> (run the instant the row set
+        /// itself becomes known, alongside <see cref="ComputeStatsRowSet"/>) activates exactly this
+        /// many slots, in this same order, so the two can never disagree about which physical slot a
+        /// given row lands on.</para></summary>
         private void RenderStatsPanel()
         {
             if (!_statsOpen || _statsPanel == null || _statsLeg == null) return;
@@ -3892,23 +4002,25 @@ namespace SBR.Game
             bool pickedHome = SweatFlavor.PickedHomeForPresentation(_statsLeg);
             int goalsHome = pickedHome ? _ledger.Picked : _ledger.Opponent;
             int goalsAway = pickedHome ? _ledger.Opponent : _ledger.Picked;
-            SetStatsRow(0, "GOALS", goalsAway.ToString(), goalsHome.ToString());
+            int slot = 0;
+            SetStatsRow(slot++, "GOALS", goalsAway.ToString(), goalsHome.ToString());
 
             // DD batch 93 items 1-3: presence keys to the STORED, ticket-derived set; value keys to
-            // the RETAINED store — neither ever reads the live leg's own kind.
-            RenderStatsCountRow(1, "CORNERS", MarketKind.TotalCorners, _statsRowHasCorners);
-            RenderStatsCountRow(2, "CARDS", MarketKind.TotalCards, _statsRowHasCards);
+            // the RETAINED store — neither ever reads the live leg's own kind. DD batch 95: the slot
+            // index is a RANK (this row's position among the rows actually present), not a fixed
+            // constant — see the type doc above.
+            if (_statsRowHasCorners) RenderStatsCountRow(slot++, "CORNERS", MarketKind.TotalCorners);
+            if (_statsRowHasCards) RenderStatsCountRow(slot++, "CARDS", MarketKind.TotalCards);
         }
 
-        /// <summary>DD batch 93 items 1-3, one count row. <paramref name="inTicket"/> is the STORED
-        /// row-set flag, not a live-leg check: absent from the ticket's row set -> the row is left
-        /// BLANK (not printed, not marked — a row that was never bought does not exist to be marked).
-        /// Present but not yet in <see cref="_statsRetainedCounts"/> -> <see cref="StatsUnrevealed"/>.
-        /// Present and revealed (this leg or an earlier one) -> the RETAINED Home/Away, so a count
-        /// revealed while its leg was live does not un-reveal itself once a later leg goes live.</summary>
-        private void RenderStatsCountRow(int i, string label, MarketKind kind, bool inTicket)
+        /// <summary>DD batch 93 items 1-3, one count row — DD batch 95 dropped the <c>inTicket</c>
+        /// check: the caller (<see cref="RenderStatsPanel"/>) now only ever calls this for a row that
+        /// IS in the ticket's row set, so there is no blank branch to write. Not yet in <see
+        /// cref="_statsRetainedCounts"/> -> <see cref="StatsUnrevealed"/>. Revealed (this leg or an
+        /// earlier one) -> the RETAINED Home/Away, so a count revealed while its leg was live does not
+        /// un-reveal itself once a later leg goes live.</summary>
+        private void RenderStatsCountRow(int i, string label, MarketKind kind)
         {
-            if (!inTicket) { SetStatsRow(i, "", "", ""); return; }
             if (_statsRetainedCounts.TryGetValue(kind, out (int Home, int Away) revealed))
                 SetStatsRow(i, label, revealed.Away.ToString(), revealed.Home.ToString());
             else
@@ -4533,7 +4645,7 @@ namespace SBR.Game
         /// lets the frozen pitch through is not readable. No new colour is introduced.</para></summary>
         private void BuildStatsPanel(Transform root, LayoutGrid grid)
         {
-            const float pad = 32f;
+            const float pad = StatsPad; // the ONE spacing value — see StatsPad's own doc
 
             // CONTENT-FIT SIZING (DD batch 87 + Allen): "a surface that takes the entire stage and
             // returns three rows hasn't earned the stage." T102 (DD batch 89) RE-RULED the box rule:
@@ -4572,10 +4684,16 @@ namespace SBR.Game
             float colB = colA + valueW + pad;                        // 352
             float panelW = colB + valueW + pad;                      // 529
 
-            // Vertical rhythm is UNCHANGED (title at -pad, rows at -(pad+56+i*46), rows 34 tall) —
-            // only the panel's own height now stops exactly where the content does, instead of
-            // running all the way to the bottom of the ticket column. Height = last row's bottom+pad.
-            const float panelH = pad + 56f + (StatsRowSlots - 1) * 46f + 34f + pad; // 246
+            // Vertical rhythm is UNCHANGED (title at -pad, rows at -(pad+56+i*46), rows 34 tall).
+            // DD batch 95: the panel's own HEIGHT is no longer fixed here — the row SET (and so the
+            // row COUNT) is not known until ComputeStatsRowSet runs, at ticket adoption, so a fixed
+            // 3-row constant can no longer live at canvas-build time, before any ticket exists. This
+            // builds with a minimal 1-row (GOALS-only) placeholder; ResizeStatsPanel (called at the
+            // end of this method, and again every time ComputeStatsRowSet runs) is the ONE place that
+            // sets the panel's REAL height, from the REAL row count — the panel starts inactive
+            // (bottom of this method) and nothing can observe it before a ticket exists, so the
+            // placeholder itself is never shown.
+            float panelH = StatsPanelHeight(1);
 
             // DD batch 87 + Allen, option (B): the panel's TOP drops BELOW the scorebug band so the
             // two zones never share a pixel on either axis, instead of narrowing just enough to dodge
@@ -4583,7 +4701,10 @@ namespace SBR.Game
             // panel still sits against the ticket column's side. Verified arithmetically against
             // grid.TicketColumn.height (bottomY, where CashOut/EventStrip begin): panel bottom
             // ScoreBugHeight+panelH = 62+246 = 308 stays clear of bottomY (480 at the 980x550
-            // reference canvas) by 172px — the rhythm did not need to shrink to fit.
+            // reference canvas) by 172px — the rhythm did not need to shrink to fit. DD batch 95: 246
+            // (StatsPanelHeight(StatsRowSlots), all three rows bought) is now the MAXIMUM panelH can
+            // ever be, not its fixed value, so this clearance argument still holds against every
+            // shorter, real ticket-derived height a session can ever build.
             var area = new Rect(0f, ScoreBugHeight, panelW, panelH);
             _statsPanel = MakePanel(root, "StatsPanel", new Vector2(0f, 1f), new Vector2(0f, 1f),
                 AnchorTopLeft(area), new Vector2(area.width, area.height),
@@ -4618,6 +4739,12 @@ namespace SBR.Game
                     new Vector2(colB, y), new Vector2(valueW, 34f), TypeProgress,
                     TextAnchor.UpperLeft, flavorColor);
             }
+
+            // DD batch 95: no ticket has been adopted yet (_statsRowHasCorners/_statsRowHasCards are
+            // both still their default false), so this sizes the panel to its true 1-row minimum and
+            // deactivates/collapses row slots 1-2 — the same call ComputeStatsRowSet makes once a real
+            // ticket exists, reused here rather than a second copy of the same math.
+            ResizeStatsPanel();
 
             _statsPanel.gameObject.SetActive(false);
         }
