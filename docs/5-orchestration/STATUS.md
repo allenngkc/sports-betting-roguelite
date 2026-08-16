@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 334 (RECOVERED).** Orca
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 335 (FLAP CONTINUES).**
+Fifth Orca drop, ~10 min after the round-2 rebuild - the app is
+genuinely unstable; relaunched again (pid 41168), 120s-stability watch
+armed. Seats from round 2 presumably dead again; rebuild only after the
+longer stability bar holds. FOR ALLEN: five drops in ~2 hours - an app
+update or a machine-level look from you may be the real fix; my relaunch
+loop only patches. Board work exposure remains ZERO (all merged;
+the two artifact-cache deletions are the only pending actions).
+
+*(prior stamp, cycle 334:)* Orca
 back and 60s-stable after ~50 min down (one orca open + stability watch);
 all four seats rebuilt with transcript persistence FORCED (the
 child-session trap defeated on both rebuild rounds), effort max,
