@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 365 (RECOVERED).** The
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 366 (INCIDENT - FLAP).**
+Fifth outage, minutes after the fourth - the runtime is now FLAPPING
+(one old process from 14:30 plus four spawned at 19:33 suggests a crash
+loop or a stuck old instance). Relaunched, watch armed. ESCALATION TO
+ALLEN: the Orca app itself looks unhealthy - a machine-level look (kill
+the stale 14:30 process, or update/reinstall) is likely needed; seat
+rebuilds every few minutes are not a sustainable loop. All work pushed;
+exposure remains seats only.
+
+*(prior stamp, cycle 365:)* The
 fourth outage was brief; the DD seat SURVIVED with context. tv-theater
 seated (term_4ba5fae9, Opus max, charter by file) on the approved
 resolved-leg spec + the consolidated C46 sweep; duplicates from the
