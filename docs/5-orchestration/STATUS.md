@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 360 (heartbeat).**
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 361 (heartbeat).** The
+capture charter re-delivered as a file after head-truncation (hardened
+rule: long text goes in files, sends are pointers); seat executing. DD
+exploring. Open with Allen: three surface calls, research words.
+
+*(prior stamp, cycle 360:)*
 Capture seat shooting; DD exploring both phases. Open with Allen: three
 surface calls, research words.
 
