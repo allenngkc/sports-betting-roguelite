@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 362.** Capture window
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 363 (heartbeat).** Both
+evidence reads landed (13d79be): the flat premise confirmed but the
+cause is GRAMMAR (corners has no resting state); the NEED 0/RISK state
+lie ruled a defect - DD speccing the fix now. With Allen: the reveal
+question (match or ticket's slice), three surface calls, research words.
+
+*(prior stamp, cycle 362:)* Capture window
 COMPLETE: three frame sets on disk (ENTRY five-tab + full-scroll,
 corners sweat with the hand-over photographed, goals control arm on the
 same seed). INCIDENT caught pre-push: the dock commits carried 487MB of
