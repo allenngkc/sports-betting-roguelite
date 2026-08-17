@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 363 (heartbeat).** Both
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 364 (INCIDENT).** Fourth
+Orca outage, mid-seating: the resolved-leg spec APPROVED and landed
+(16d751d), the tv-theater worktree created and synced (cc7a0f9), its
+handoff committed - the seat terminal was the step that failed. App
+relaunched (pid 3484), hour-long recovery watch armed. The DD seat
+presumably dead with the runtime. Exposure: seats only, all work pushed.
+
+*(prior stamp, cycle 363:)* Both
 evidence reads landed (13d79be): the flat premise confirmed but the
 cause is GRAMMAR (corners has no resting state); the NEED 0/RISK state
 lie ruled a defect - DD speccing the fix now. With Allen: the reveal
