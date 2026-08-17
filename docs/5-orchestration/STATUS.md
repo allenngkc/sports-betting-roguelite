@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 359.** CAPTURE SEAT
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 360 (heartbeat).**
+Capture seat shooting; DD exploring both phases. Open with Allen: three
+surface calls, research words.
+
+*(prior stamp, cycle 359:)* CAPTURE SEAT
 seated on Allen's word (term_e50d9f6f, fresh in main-2 at HEAD): ENTRY
 all five tabs + a corners-sweat watch, dock-only, lease granted. The
 DD's theater exploration is producing structure already (corners and
