@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 355 (heartbeat).** DD
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 356 (heartbeat).** The
+sportsbook research landed (b000cba) - THREE MATERIAL CALLS with Allen
+(print empty groups; folio contents rail; line-first hierarchy - all
+recommended yes) + the cross-event-pivot exclusion confirmation. DD
+measures rendered density next. Also with Allen: theater parallel-vs-
+sequenced, the research words.
+
+*(prior stamp, cycle 355:)* DD
 working the register fixes + its sportsbook-UI research agent; the
 parallel-vs-sequenced theater question answered to Allen (recommend
 parallel, spec-first kept; his word pending). Register sweep landed.
