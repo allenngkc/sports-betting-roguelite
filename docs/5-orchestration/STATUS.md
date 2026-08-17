@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 369 (heartbeat).** Lane
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 370 (INCIDENT).** Sixth
+Orca outage; relaunched (pid 36868), watch armed. The lane was mid-
+dispatch - its work is in its worktree, recoverable as always. The
+Allen escalation on Orca's health now carries six data points.
+
+*(prior stamp, cycle 369:)* Lane
 grinding unit 1 under dispatch (announces before taking the editor;
 honest-risk language on the PlayMode pin's reach). DD idle. With Allen:
 three surface calls, the reveal question, research words, Orca health.
