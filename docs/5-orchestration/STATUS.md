@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 364 (INCIDENT).** Fourth
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 365 (RECOVERED).** The
+fourth outage was brief; the DD seat SURVIVED with context. tv-theater
+seated (term_4ba5fae9, Opus max, charter by file) on the approved
+resolved-leg spec + the consolidated C46 sweep; duplicates from the
+double-restore closed; watcher v39 (bp4qb7ig9). With Allen: the reveal
+question, three surface calls, research words.
+
+*(prior stamp, cycle 364:)* Fourth
 Orca outage, mid-seating: the resolved-leg spec APPROVED and landed
 (16d751d), the tv-theater worktree created and synced (cc7a0f9), its
 handoff committed - the seat terminal was the step that failed. App
