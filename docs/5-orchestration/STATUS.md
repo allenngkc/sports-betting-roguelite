@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 356 (heartbeat).** The
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 357.** ALLEN RULED
+PARALLEL: the DD runs surfaces and theater concurrently - theater
+exploration starts now, surfaces' three calls stay with Allen without
+blocking, specs land independently and leads seat on approval. Capture
+window offered if density needs a fresh board.
+
+*(prior stamp, cycle 356:)* The
 sportsbook research landed (b000cba) - THREE MATERIAL CALLS with Allen
 (print empty groups; folio contents rail; line-first hierarchy - all
 recommended yes) + the cross-event-pivot exclusion confirmation. DD
