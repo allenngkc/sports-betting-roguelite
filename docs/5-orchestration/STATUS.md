@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 368 (heartbeat).** Batch
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 369 (heartbeat).** Lane
+grinding unit 1 under dispatch (announces before taking the editor;
+honest-risk language on the PlayMode pin's reach). DD idle. With Allen:
+three surface calls, the reveal question, research words, Orca health.
+
+*(prior stamp, cycle 368:)* Batch
 100 landed (43b888b) - the spec's rows are canon, T111's bindings relayed
 to the lane; tv-theater building unit 1 under dispatch. With Allen: three
 surface calls, the reveal question, research words, and the Orca-health
