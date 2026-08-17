@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 367 (RECOVERED).** The
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 368 (heartbeat).** Batch
+100 landed (43b888b) - the spec's rows are canon, T111's bindings relayed
+to the lane; tv-theater building unit 1 under dispatch. With Allen: three
+surface calls, the reveal question, research words, and the Orca-health
+look (five outages today).
+
+*(prior stamp, cycle 367:)* The
 flap settled after the relaunch; a Claude restart rode along. Census:
 the DD SURVIVED AGAIN, caught mid-batch-100 (the spec's register rows
 drafted, not yet inserted - ordered to finish; rows govern on conflict).
