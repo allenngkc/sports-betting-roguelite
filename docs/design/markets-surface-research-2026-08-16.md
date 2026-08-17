@@ -172,16 +172,69 @@ at 13px is the price, so the typography budget goes where it matters.
 deliberately. **Recommend: yes, and it should be a deliberate ruling rather than a drift**, because
 once the board is built price-first it will not be cheaply reversed.
 
-### 5.4 Scope question, not a design one — the cross-event pivot
+### 5.4 The cross-event pivot — REJECTED by Allen, and struck
 
-The one thing users actually ask for and no book ships: markets **pivoted across events** ("every
-corners market on the slate") rather than siloed per match. Nearly free for us, since the engine
-prices a known market set per matchup. **Genuinely unmet need in the real category.**
+The researcher's bonus idea was markets **pivoted across events** ("every corners market on the
+slate") rather than siloed per match — an unmet need in the real category and cheap for us.
 
-**Not recommended for this phase** — it is a new surface, not a presentation pass on an existing
-one. Recorded so it is not lost, and so it is not smuggled into the board spec by accident.
+**RULED OUT — Allen, relayed 2026-08-16. Not parked, not deferred: rejected, and off the future
+list.** He wants the conventional axis — **click a MATCH, see every market type for it**, the way
+bet365 and FanDuel work. **The surfaces spec is match-first, full stop.**
+
+Struck rather than softened, on batch 96's precedent: *an outstanding obligation that can no longer
+fire is a thing someone eventually builds.* A "recorded so it is not lost" line is exactly how a
+rejected idea comes back as a half-remembered requirement, so it is recorded as **dead** instead.
+
+**And it removes the one tension in this document.** Every book in §2 is siloed by event, and §5a's
+correction puts the whole vocabulary behind a per-match rail; the pivot was the only proposal
+pulling against that axis. **Match-first is now the settled frame for the entire phase**, and §3's
+taxonomy question is unambiguously *"what are the destinations within one match"* — nothing else.
 
 ---
+
+## 5a. THE SUBJECT, CORRECTED — it is ENTRY's market body, not the FORM board
+
+Written after §1–5 and checked against canon and source. **The ~80 offers do not live on the board.**
+
+- **The FORM board is the SLATE** — six matchups at a 116px block pitch in a 504px body, each block
+  showing three prices (`AWAY`/`DRAW`/`HOME`) and a `MORE ›` column head. Its density is **already
+  measured and already ruled**: `S81`/`S81-am`, Allen at batch 76 — the scrolling board stays, slate
+  holds at six, pitch unchanged, price face untouched, and *"the FORM board is no longer a board the
+  whole slate fits on, by decision."* **That question is closed and §5 must not reopen it.**
+- **ENTRY is the market sheet**, reached through `MORE ›`, and it is where the full vocabulary lives.
+
+**ENTRY already has a group rail** — five destinations, hardcoded: `GOALS · BTTS · CORNERS · CARDS ·
+PLAYERS`. So the industry's dominant pattern is already built here, and §3's taxonomy work is a
+question of *what the destinations should be*, not whether to have any.
+
+**And the rail is nearly full.** Its tab origins are authored at x 14/118/222/338/442 — roughly 104px
+apart — against ~996px of usable width, so **about nine destinations fit before it overflows.** That
+is arithmetic on authored constants rather than a measurement, and it wants confirming with §6; but
+it is enough to size the problem, and the problem is that **grouping is forced, not optional.** The
+engine prices **fifteen market kinds** into a rail that holds about nine. §3's hybrid taxonomy stops
+being a style preference and becomes the mechanism that makes the vocabulary fit at all.
+
+## 5b. A REACHABILITY GAP AT SOURCE — flagged under C17, not ruled
+
+`MarketKind` currently enumerates **fifteen kinds**: Moneyline, TotalGoals, BothTeamsToScore,
+TotalCorners, TotalCards, AnytimeScorer, DoubleChance, Handicap, TeamTotalGoals, CorrectScore,
+WinningMargin, TotalGoalsOddEven, TeamTotalCorners, TeamTotalCards, PlayerMultiScorer.
+
+`SportsbookApp.DetailTab` enumerates **five**: Goals, Btts, Corners, Cards, Players.
+
+On the face of it, **eight kinds have no destination on ENTRY** — Double Chance, Handicap, Team Total
+Goals, Correct Score (12–16 rows on its own), Winning Margin, Odd/Even, Team Total Corners, Team
+Total Cards. If the engine prices them and the sheet has nowhere to show them, that is **C19** —
+*an offer the engine prices is reachable on the surface; hiding it misrepresents the slate.*
+
+**Stated as a source read and NOT as a ruling, per C17** — *no rebuild verdict on a state no capture
+shows; where a source read suggests a defect, the capture is a named deliverable of the next window
+and the verdict waits for it.* The capture in §6 is that deliverable.
+
+**Context that makes this expected rather than alarming:** the markets lane shipped the pre-game
+vocabulary with **surfaces explicitly still owed**. This is the debt this mandate exists to
+discharge. What it changes is the phase's floor: **the presentation pass is not a polish job, it is
+how ~8 priced-but-unreachable market kinds get a home.**
 
 ## 6. What this seat must measure before any spec
 

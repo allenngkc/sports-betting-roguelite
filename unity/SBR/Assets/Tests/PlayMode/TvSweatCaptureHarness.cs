@@ -1228,6 +1228,446 @@ namespace SBR.Tests.PlayMode
             Debug.Log($"[TvSweatCaptureHarness] seed={_seed} goalless capture complete -> {OutputDir}");
         }
 
+        /// <summary>CAPTURE CHARTER 2026-08-16, shoot 2 — THE SIZING PROBE. WRITES NO FRAMES.
+        ///
+        /// <para><b>Why a probe exists at all.</b> The charter asks for a corners sweat captured
+        /// "full sweat end to end, frame-contiguous". Frame-contiguous is <c>intervalSeconds: 0</c>
+        /// — one capture per RENDERED frame — and every rendered frame advances the sim by
+        /// <c>captureDeltaTime</c> (1/50s). So the frame count of an end-to-end roll is not a dial
+        /// this harness chooses: it is <i>fifty times the sweat's sim duration</i>, a quantity
+        /// nobody in this lane has ever measured. At the docked sets' measured 2.57 MB/frame, the
+        /// difference between a 20-second and a 60-second sweat is the difference between a 2.6 GB
+        /// dock and a 7.7 GB one.</para>
+        ///
+        /// <para><b>Measured, not assumed</b> — this lane's own law, and the reason this runs before
+        /// a single frame is spent rather than after a window is burnt. Guessing the cap risks the
+        /// two failures that actually matter: an undockable set, or a roll that stops before the
+        /// whistle and is therefore not "end to end" at all.</para>
+        ///
+        /// <para>It also logs the sweat's STATE-CHANGE PROFILE — every clock, score, strip and
+        /// revealed-corners transition with the frame it happened on. That is raw observation the
+        /// README can quote; <b>this seat draws no conclusion from it.</b> Whether a count bet
+        /// watches flat is the Design Director's read, and a harness log is not evidence for it —
+        /// the frames are.</para></summary>
+        [Explicit("Capture charter 2026-08-16 shoot 2: SIZING PROBE, writes no frames. Run by filter only.")]
+        [UnityTest]
+        public IEnumerator Probe_CornersSweat_LengthAndStateChanges()
+        {
+            _seed = "CORNERS-SWEAT-1";
+            s_sceneIndex = 0;
+
+            TheaterStage.PresentationSeedOverride = StableSeed(_seed);
+            Time.captureDeltaTime = 1f / 50f;
+
+            yield return LoadRoom();
+
+            var director = Object.FindAnyObjectByType<RunDirector>();
+            var screen = Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing - run SBR.GrayboxRoomBuilder.Build first.");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+
+            screen.TimeScaleOverride = 1f;      // ship pacing: how long the watch actually IS
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntilOrFail(() => director.Run != null,
+                Time.realtimeSinceStartup + 10f, "director never started a run");
+
+            director.StartNewRun(_seed);
+            Run run = director.Run;
+            Assert.AreEqual(Phase.Betting, run.Phase, "a fresh run opens in Betting");
+
+            // Taken OFF THE BOARD, never constructed — T100's reasoning: the corners line is
+            // generated per matchup, so an invented selection may be one this matchup never offers.
+            int cornersMatchup = -1;
+            MarketSelection cornersSelection = default;
+            foreach (Matchup mm in run.CurrentSlate.Matchups)
+            {
+                foreach (MarketOffer off in mm.Markets)
+                {
+                    if (off.Selection.Kind != MarketKind.TotalCorners) continue;
+                    cornersMatchup = mm.Index;
+                    cornersSelection = off.Selection;
+                    break;
+                }
+                if (cornersMatchup >= 0) break;
+            }
+            Assert.GreaterOrEqual(cornersMatchup, 0,
+                "no matchup on this slate offers TotalCorners — this is a re-seed, never a reason to "
+                + "probe the moneyline sweat instead");
+
+            // ONE leg, so the roll is the corners watch and nothing else. A second leg would put
+            // another market's beats inside a set whose whole subject is this one.
+            run.PlaceTicket(new List<Pick> { new Pick(cornersMatchup, cornersSelection) }, 25.0);
+            director.LockRound();
+            Assert.AreEqual(Phase.Sweat, run.Phase);
+
+            couch.OnInteract(null);
+            yield return WaitUntilOrFail(() => SitSpot.Active != null,
+                Time.realtimeSinceStartup + 15f, "player never sat down");
+
+            int frames = 0, changes = 0;
+            string lastClock = null, lastScore = null, lastFlavor = null, lastCounts = null;
+            float deadline = Time.realtimeSinceStartup + 420f;
+
+            while (!SweatEnded(director) && Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+                frames++;
+
+                string clock = screen.RevealedView.ClockText;
+                string score = screen.RevealedView.ScoreText;
+                string flavor = screen.DebugFlavorText;
+                string counts = $"{screen.DebugRevealedCountHome}-{screen.DebugRevealedCountAway}";
+
+                if (clock != lastClock || score != lastScore || flavor != lastFlavor
+                    || counts != lastCounts)
+                {
+                    changes++;
+                    Debug.Log($"[probe] f={frames:0000} sim={frames / 50f:0.00}s clock='{clock}' "
+                        + $"score='{score}' corners={counts} strip='{flavor}'");
+                    lastClock = clock; lastScore = score; lastFlavor = flavor; lastCounts = counts;
+                }
+            }
+
+            bool ended = SweatEnded(director);
+            Debug.Log($"[probe] CORNERS SWEAT SIZING :: frames={frames} sim={frames / 50f:0.00}s "
+                + $"stateChanges={changes} reachedEnd={ended} "
+                + $"estimatedDockMB={frames * 2.57f:0} (at the docked sets' measured 2.57 MB/frame)");
+
+            Assert.IsTrue(ended,
+                $"the sweat did not reach its end inside the probe's own deadline (stopped at "
+                + $"{frames} frames). The sizing number is therefore a FLOOR, not the length.");
+        }
+
+        /// <summary>CAPTURE CHARTER 2026-08-16, shoot 2 — THE CORNERS SWEAT, END TO END.
+        ///
+        /// <para><b>THE ARITHMETIC THAT SHAPED THIS SET, stated because it changes what the set can
+        /// support.</b> <see cref="Probe_CornersSweat_LengthAndStateChanges"/> measured this exact
+        /// sweat at <b>2,221 rendered frames over 44.42 sim-seconds</b>. A literally continuous
+        /// frame-contiguous roll is therefore 2,221 frames at the docked sets' measured 2.57 MB —
+        /// <b>~5.7 GB</b>, seventeen times the largest set ever docked here (128 frames, 329 MB).
+        /// That roll was NOT shot. This set instead tiles the same 44.42 seconds with
+        /// frame-contiguous WINDOWS, so the control §0-B69 names (<c>intervalSeconds: 0</c>) holds
+        /// inside every window and the whole arc is still represented.</para>
+        ///
+        /// <para><b>Every window is fired by a LOGICAL STATE CHANGE, never a frame index.</b> The
+        /// probe's frame numbers are deliberately not reused: this lane's own rule is that a moment
+        /// predicate is a state check, because a frame count silently shoots the wrong beat the
+        /// first time host timing moves. So a corner window fires when the revealed count actually
+        /// changes, and the ending's windows fire on the score and on FT.</para>
+        ///
+        /// <para><b>The dead air is shot on purpose and in proportion.</b> A set containing only the
+        /// events would show a corners sweat as a sequence of things happening, which is the exact
+        /// question under review and would answer it by construction. The periodic window fires
+        /// through the stretches where nothing but the minute moves, so those stretches are IN the
+        /// set rather than edited out of it.</para>
+        ///
+        /// <para><b>This seat makes NO claim about whether a count bet watches flat.</b> The frames
+        /// are the evidence and the read is the Design Director's.</para></summary>
+        [Explicit("Capture charter 2026-08-16 shoot 2: the corners sweat end to end. Run by filter only.")]
+        [UnityTest]
+        public IEnumerator Capture_CornersSweat_EndToEnd()
+        {
+            _seed = "CORNERS-SWEAT-1";   // the probe's seed, so the measured profile describes THIS run
+            s_sceneIndex = 0;
+            Directory.CreateDirectory(OutputDir);
+
+            TheaterStage.PresentationSeedOverride = StableSeed(_seed);
+            Time.captureDeltaTime = 1f / 50f;
+
+            yield return LoadRoom();
+
+            var director = Object.FindAnyObjectByType<RunDirector>();
+            var screen = Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing - run SBR.GrayboxRoomBuilder.Build first.");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+
+            Camera cam = Camera.main;
+            Assert.IsNotNull(cam, "MainCamera (PlayerCamera) missing - cannot capture without it");
+
+            screen.TimeScaleOverride = 1f;      // ship pacing: the rhythm of the watch IS the subject
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntilOrFail(() => director.Run != null,
+                Time.realtimeSinceStartup + 10f, "director never started a run");
+
+            director.StartNewRun(_seed);
+            Run run = director.Run;
+            Assert.AreEqual(Phase.Betting, run.Phase, "a fresh run opens in Betting");
+
+            int cornersMatchup = -1;
+            MarketSelection cornersSelection = default;
+            foreach (Matchup mm in run.CurrentSlate.Matchups)
+            {
+                foreach (MarketOffer off in mm.Markets)
+                {
+                    if (off.Selection.Kind != MarketKind.TotalCorners) continue;
+                    cornersMatchup = mm.Index;
+                    cornersSelection = off.Selection;
+                    break;
+                }
+                if (cornersMatchup >= 0) break;
+            }
+            Assert.GreaterOrEqual(cornersMatchup, 0,
+                "no matchup on this slate offers TotalCorners — a re-seed, never a reason to shoot "
+                + "some other market's sweat under this set's name");
+
+            run.PlaceTicket(new List<Pick> { new Pick(cornersMatchup, cornersSelection) }, 25.0);
+            director.LockRound();
+            Assert.AreEqual(Phase.Sweat, run.Phase);
+
+            couch.OnInteract(null);
+            yield return WaitUntilOrFail(() => SitSpot.Active != null,
+                Time.realtimeSinceStartup + 15f, "player never sat down");
+
+            // The watch as it opens, before anything has happened at all.
+            yield return CaptureBurst(screen, cam, "sweat-opens", 10, 0f);
+
+            string lastCounts = $"{screen.DebugRevealedCountHome}-{screen.DebugRevealedCountAway}";
+            string lastScore = screen.RevealedView.ScoreText;
+            string lastClock = screen.RevealedView.ClockText;
+            int corners = 0, deadAir = 0, scoreShots = 0;
+            // THE TILING PERIOD, and it is measured FROM THE LAST WINDOW OF ANY KIND rather than
+            // from the last event. Keyed to the last EVENT (the first cut of this set) the probe's
+            // ~4s corner cadence outran a 6s timer and only 2 dead-air windows ever fired — so the
+            // stretches where nothing but the minute moves went unshot, which is precisely the
+            // stretch the set was sent to photograph. Uniform tiling cannot have that failure mode.
+            const float TilePeriodSeconds = 2.5f;
+            float lastWindowSim = 0f;
+            int frames = 0;
+            float endBy = Time.realtimeSinceStartup + 600f;
+
+            while (!SweatEnded(director) && Time.realtimeSinceStartup < endBy)
+            {
+                yield return null;
+                frames++;
+
+                string counts = $"{screen.DebugRevealedCountHome}-{screen.DebugRevealedCountAway}";
+                string score = screen.RevealedView.ScoreText;
+                string clock = screen.RevealedView.ClockText;
+
+                if (counts != lastCounts)
+                {
+                    lastCounts = counts;
+                    corners++;
+                    Debug.Log($"[shoot2] corner {corners} at sim={frames / 50f:0.00}s counts={counts} "
+                        + $"clock='{clock}' strip='{screen.DebugFlavorText}'");
+                    yield return CaptureBurst(screen, cam, $"corner{corners:00}-count-{counts}", 10, 0f);
+                    lastWindowSim = frames / 50f;
+                }
+                else if (score != lastScore)
+                {
+                    lastScore = score;
+                    scoreShots++;
+                    yield return CaptureBurst(screen, cam, $"score{scoreShots:00}-reveal", 12, 0f);
+                    lastWindowSim = frames / 50f;
+                }
+                else if (clock != lastClock && clock == "FT")
+                {
+                    lastClock = clock;
+                    yield return CaptureBurst(screen, cam, "full-time", 12, 0f);
+                    lastWindowSim = frames / 50f;
+                }
+                else if (frames / 50f - lastWindowSim >= TilePeriodSeconds)
+                {
+                    deadAir++;
+                    // THE STRETCHES WHERE ONLY THE MINUTE MOVES. Shot deliberately — see the class
+                    // note: a set of events only would answer the question it was sent to ask.
+                    yield return CaptureBurst(screen, cam, $"deadair{deadAir:00}", 6, 0f);
+                    lastWindowSim = frames / 50f;
+                }
+
+                lastClock = clock;
+            }
+
+            // The grade and the settle — the end of the watch, not merely the end of the match.
+            yield return CaptureBurst(screen, cam, "sweat-ends", 12, 0f);
+
+            Assert.IsTrue(SweatEnded(director),
+                $"the sweat did not reach its end — this set is NOT end to end (stopped at {frames} frames)");
+            Assert.GreaterOrEqual(corners, 1,
+                "a corners sweat that never moved its count cannot be read for how a count bet "
+                + "watches — that is a re-seed, not a set");
+            // A FLOOR ON THE TILING, not a formality. The first cut of this set fired 2 dead-air
+            // windows because the timer was keyed to the last EVENT; the set looked complete and
+            // had almost none of the flat stretch in it. This fails loudly if that returns.
+            Assert.GreaterOrEqual(deadAir, 5,
+                $"only {deadAir} dead-air windows fired, so the set is mostly events and cannot "
+                + "answer the question it was shot for — the flat stretches must be IN it");
+
+            Debug.Log($"[shoot2] CORNERS SWEAT SET :: cornerWindows={corners} deadAirWindows={deadAir} "
+                + $"scoreWindows={scoreShots} sweptFrames={frames} sim={frames / 50f:0.00}s -> {OutputDir}");
+        }
+
+        /// <summary>CAPTURE CHARTER 2026-08-16, shoot 3 — THE GOALS CONTROL ARM.
+        ///
+        /// <para><b>A control arm exists to isolate ONE variable, so everything else is held.</b>
+        /// Same seed as <see cref="Capture_CornersSweat_EndToEnd"/>, <b>the same matchup</b> (found
+        /// by the identical board search, so the fixture is literally the same match), the same ship
+        /// pacing, the same 1/50 frame lock, the same 2560×1440, and the same window scheme fired by
+        /// the same logical predicates. The ONLY difference is the market the ticket carries.</para>
+        ///
+        /// <para><b>Why TOTAL GOALS specifically, and not the moneyline.</b> The corners leg is an
+        /// over/under against a line. A moneyline control would change the market's SHAPE as well as
+        /// its subject, and the comparison would then be unable to say which of the two produced any
+        /// difference. Total goals is the same shape — a running count against a line — over a
+        /// different counted thing, which is exactly the variable the flatness question is about.</para>
+        ///
+        /// <para><b>The structural difference this arm is built to expose.</b> <c>_countLedger</c> is
+        /// null unless the live leg is a corners or cards leg, so a goals leg has no count ledger at
+        /// all. The count-change branch below therefore cannot fire, and <b>that non-firing is
+        /// asserted rather than assumed</b> — if a count event ever fires here, this is not a control
+        /// arm and the run says so instead of docking a set that quietly is not one.</para>
+        ///
+        /// <para><b>This seat still makes no claim.</b> The pair of sets is the evidence; which of
+        /// them watches flatter, and whether either does, is the Design Director's read.</para></summary>
+        [Explicit("Capture charter 2026-08-16 shoot 3: the goals control arm. Run by filter only.")]
+        [UnityTest]
+        public IEnumerator Capture_GoalsControl_EndToEnd()
+        {
+            _seed = "CORNERS-SWEAT-1";   // THE SAME SEED. The control is worthless on a different match.
+            s_sceneIndex = 0;
+            Directory.CreateDirectory(OutputDir);
+
+            TheaterStage.PresentationSeedOverride = StableSeed(_seed);
+            Time.captureDeltaTime = 1f / 50f;
+
+            yield return LoadRoom();
+
+            var director = Object.FindAnyObjectByType<RunDirector>();
+            var screen = Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing - run SBR.GrayboxRoomBuilder.Build first.");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+
+            Camera cam = Camera.main;
+            Assert.IsNotNull(cam, "MainCamera (PlayerCamera) missing - cannot capture without it");
+
+            screen.TimeScaleOverride = 1f;
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntilOrFail(() => director.Run != null,
+                Time.realtimeSinceStartup + 10f, "director never started a run");
+
+            director.StartNewRun(_seed);
+            Run run = director.Run;
+            Assert.AreEqual(Phase.Betting, run.Phase, "a fresh run opens in Betting");
+
+            // THE SAME MATCHUP, found by the corners arm's identical search, so the two sets watch
+            // the same fixture. Then the goals offer is taken off THAT matchup's board.
+            int matchup = -1;
+            foreach (Matchup mm in run.CurrentSlate.Matchups)
+            {
+                foreach (MarketOffer off in mm.Markets)
+                {
+                    if (off.Selection.Kind != MarketKind.TotalCorners) continue;
+                    matchup = mm.Index;
+                    break;
+                }
+                if (matchup >= 0) break;
+            }
+            Assert.GreaterOrEqual(matchup, 0,
+                "the corners arm's matchup could not be located — the two sets would not be watching "
+                + "the same match and the pair would not be a control");
+
+            MarketSelection goalsSelection = default;
+            bool found = false;
+            foreach (MarketOffer off in run.CurrentSlate.Matchups[matchup].Markets)
+            {
+                if (off.Selection.Kind != MarketKind.TotalGoals) continue;
+                if (off.Selection.Choice != MarketChoice.Over) continue;   // OVER, matching the corners leg
+                goalsSelection = off.Selection;
+                found = true;
+                break;
+            }
+            Assert.IsTrue(found,
+                "this matchup offers no OVER total-goals line, so the control cannot be built on it");
+
+            run.PlaceTicket(new List<Pick> { new Pick(matchup, goalsSelection) }, 25.0);
+            director.LockRound();
+            Assert.AreEqual(Phase.Sweat, run.Phase);
+
+            couch.OnInteract(null);
+            yield return WaitUntilOrFail(() => SitSpot.Active != null,
+                Time.realtimeSinceStartup + 15f, "player never sat down");
+
+            yield return CaptureBurst(screen, cam, "sweat-opens", 10, 0f);
+
+            string lastCounts = $"{screen.DebugRevealedCountHome}-{screen.DebugRevealedCountAway}";
+            string lastScore = screen.RevealedView.ScoreText;
+            string lastClock = screen.RevealedView.ClockText;
+            int countEvents = 0, deadAir = 0, scoreShots = 0;
+            const float TilePeriodSeconds = 2.5f;   // identical to the corners arm
+            float lastWindowSim = 0f;
+            int frames = 0;
+            float endBy = Time.realtimeSinceStartup + 600f;
+
+            while (!SweatEnded(director) && Time.realtimeSinceStartup < endBy)
+            {
+                yield return null;
+                frames++;
+
+                string counts = $"{screen.DebugRevealedCountHome}-{screen.DebugRevealedCountAway}";
+                string score = screen.RevealedView.ScoreText;
+                string clock = screen.RevealedView.ClockText;
+
+                if (counts != lastCounts)
+                {
+                    lastCounts = counts;
+                    countEvents++;
+                    Debug.Log($"[shoot3] UNEXPECTED count event {countEvents} at sim={frames / 50f:0.00}s "
+                        + $"counts={counts} — a goals leg should have no count ledger");
+                    yield return CaptureBurst(screen, cam, $"count{countEvents:00}-{counts}", 10, 0f);
+                    lastWindowSim = frames / 50f;
+                }
+                else if (score != lastScore)
+                {
+                    lastScore = score;
+                    scoreShots++;
+                    Debug.Log($"[shoot3] goal {scoreShots} at sim={frames / 50f:0.00}s score='{score}' "
+                        + $"clock='{clock}' strip='{screen.DebugFlavorText}'");
+                    yield return CaptureBurst(screen, cam, $"goal{scoreShots:00}-{clock}", 12, 0f);
+                    lastWindowSim = frames / 50f;
+                }
+                else if (clock != lastClock && clock == "FT")
+                {
+                    lastClock = clock;
+                    yield return CaptureBurst(screen, cam, "full-time", 12, 0f);
+                    lastWindowSim = frames / 50f;
+                }
+                else if (frames / 50f - lastWindowSim >= TilePeriodSeconds)
+                {
+                    deadAir++;
+                    yield return CaptureBurst(screen, cam, $"deadair{deadAir:00}", 6, 0f);
+                    lastWindowSim = frames / 50f;
+                }
+
+                lastClock = clock;
+            }
+
+            yield return CaptureBurst(screen, cam, "sweat-ends", 12, 0f);
+
+            Assert.IsTrue(SweatEnded(director),
+                $"the sweat did not reach its end — this set is NOT end to end (stopped at {frames} frames)");
+            // THE CONTROL'S OWN DEFINING PROPERTY, asserted rather than described. A goals leg has no
+            // count ledger; if one moved here the two sets differ by more than their market and the
+            // pair cannot be read as a control.
+            Assert.AreEqual(0, countEvents,
+                $"{countEvents} count events fired on a goals leg — this is not a control arm");
+            Assert.GreaterOrEqual(deadAir, 5,
+                $"only {deadAir} dead-air windows fired, so the set is mostly events and cannot be "
+                + "compared against the corners arm's tiling");
+
+            Debug.Log($"[shoot3] GOALS CONTROL SET :: goalWindows={scoreShots} deadAirWindows={deadAir} "
+                + $"countEvents={countEvents} sweptFrames={frames} sim={frames / 50f:0.00}s "
+                + $"countLedger={screen.DebugRevealedCountHome} -> {OutputDir}");
+        }
+
         /// <summary>The match minute a clock string is showing, or -1 for the non-minute states
         /// (`PRE`, `FT`, `90'+2`). Deliberately narrow: it exists to say "we are mid-match", so a
         /// stoppage or a terminal clock answering -1 is the correct answer, not a parse failure.</summary>

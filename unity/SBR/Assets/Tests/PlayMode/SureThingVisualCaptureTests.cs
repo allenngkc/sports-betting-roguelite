@@ -963,6 +963,91 @@ namespace SBR.Tests.PlayMode
             AssertCaptureOutput(capturedPaths, 2);
         }
 
+        /// <summary>CAPTURE CHARTER 2026-08-16, shoot 1 — THE ENTRY SHEET AT HEAD, ALL FIVE MARKET
+        /// DESTINATIONS, ONE CLEAN FRAME EACH.
+        ///
+        /// <para><b>CLEAN means nothing staged.</b> No pick is placed, so no wide biro ring, no
+        /// staged receipt and no working-margin state rides into the frame. Every ENTRY state this
+        /// fixture already shoots carries a selection (<c>02-entry-selected-wide-ring</c>) or exists
+        /// to photograph the scroll rail (<c>02b-entry-players-scrolling-rail</c>) — so the sheet's
+        /// own RESTING treatment has never been captured on four of the five destinations at all,
+        /// and GOALS has only ever been shot with a ring on it.</para>
+        ///
+        /// <para><b>Five is the surface's own number, not a target.</b> <c>BuildDetail</c> builds
+        /// exactly GOALS/BTTS/CORNERS/CARDS/PLAYERS, and the loop below drives that same authored
+        /// order BY BUTTON NAME — so a sixth destination added later fails here as a missing button
+        /// rather than shipping a silently short set.</para>
+        ///
+        /// <para><b>The body is asserted to have rebuilt before each shutter.</b> A frame of the
+        /// previous destination filed under the next destination's name is C50's shape exactly, and
+        /// a set carrying one would be unreadable without a second instrument.</para>
+        ///
+        /// <para><b>This fixture makes no claim about density, grouping or ordering.</b> It is
+        /// evidence for a read that has not been made.</para></summary>
+        [UnityTest]
+        public IEnumerator Capture_the_entry_sheet_across_all_five_market_destinations()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            yield return PinRun(laptop, SeedLobby);
+
+            string outputDirectory = Path.GetFullPath(Path.Combine(
+                Application.dataPath, "..", "..", "..", "artifacts", "surething-ui"));
+            Directory.CreateDirectory(outputDirectory);
+            string runPrefix = DateTime.UtcNow.ToString(
+                "yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture);
+            var capturedPaths = new List<string>();
+
+            Assert.AreEqual(SportsbookApp.Tab.Lobby, laptop.Os.CurrentTab);
+            Invoke(Required(Required(App(laptop), "Matchup0"), "Details"));
+            yield return WaitForRebuild();
+            Assert.AreEqual(SportsbookApp.Tab.Detail, laptop.Os.CurrentTab);
+
+            // The strip's own authored order, transcribed from BuildDetail rather than inferred.
+            string[] destinations = { "GOALS", "BTTS", "CORNERS", "CARDS", "PLAYERS" };
+            int states = 0;
+            for (int i = 0; i < destinations.Length; i++)
+            {
+                string label = destinations[i];
+                Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTab" + label));
+                yield return WaitForRebuild();
+
+                Assert.IsNotNull(Required(App(laptop), "MarketBody"),
+                    $"{label}: the market body must have rebuilt before the shutter");
+                Assert.AreEqual(0, laptop.Slip.Picks.Count,
+                    $"{label}: the sheet must be CLEAN — a staged pick puts a ring and a receipt "
+                    + "into a frame whose whole subject is the resting sheet");
+
+                yield return CaptureState(laptop, outputDirectory, runPrefix,
+                    $"E{i + 1:00}-entry-{label.ToLowerInvariant()}", capturedPaths);
+                states++;
+
+                // THE DD'S BINDING CONDITION 1.1 (capture pre-commitment, 2026-08-16). A tab's first
+                // screen alone cannot answer "does market kind X appear anywhere on ENTRY" — a block
+                // nested below the fold is, in one unscrolled frame, INDISTINGUISHABLE FROM AN ABSENT
+                // ONE. So a tab is either shown whole (S27's rail absent, which is itself the
+                // evidence of absence C37 requires) or it is shot at top AND at scroll-bottom.
+                Transform rail = Find(App(laptop), "PositionRailTrack");
+                Debug.Log($"[entry-extent] {label}: rail={(rail != null ? "PRESENT — scrolls" : "ABSENT — whole content visible")}");
+                if (rail == null) continue;
+
+                ScrollRect scroll = Required(App(laptop), "MarketBody")
+                    .GetComponentInChildren<ScrollRect>(true);
+                Assert.IsNotNull(scroll, $"{label}: a rail is present so a ScrollRect must be too");
+                scroll.verticalNormalizedPosition = 0f;   // 0 == bottom
+                Canvas.ForceUpdateCanvases();
+                yield return WaitForRebuild();
+                Assert.IsNotNull(Find(App(laptop), "PositionRailTrack"),
+                    $"{label}: the rail must still be present at the extent");
+
+                yield return CaptureState(laptop, outputDirectory, runPrefix,
+                    $"E{i + 1:00}-entry-{label.ToLowerInvariant()}-bottom", capturedPaths);
+                states++;
+            }
+
+            AssertCaptureOutput(capturedPaths, states * 2);
+        }
+
         /// <summary>Places one ticket and travels the real place-lock-sweat path to a terminal
         /// state. The ledger reads engine state, so a ticket has to be settled rather than written
         /// into a settled-looking shape.</summary>
