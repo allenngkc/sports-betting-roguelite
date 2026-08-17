@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 361 (heartbeat).** The
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 362.** Capture window
+COMPLETE: three frame sets on disk (ENTRY five-tab + full-scroll,
+corners sweat with the hand-over photographed, goals control arm on the
+same seed). INCIDENT caught pre-push: the dock commits carried 487MB of
+raw frames into local history via my charter wording - recut canon-only
+(aca6735), frames stay untracked per standing practice; a stale
+maintenance.lock also cleared. DD has all evidence for both specs. Open
+with Allen: three surface calls, research words.
+
+*(prior stamp, cycle 361:)* The
 capture charter re-delivered as a file after head-truncation (hardened
 rule: long text goes in files, sends are pointers); seat executing. DD
 exploring. Open with Allen: three surface calls, research words.
