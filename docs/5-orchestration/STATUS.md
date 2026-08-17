@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 366 (INCIDENT - FLAP).**
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 367 (RECOVERED).** The
+flap settled after the relaunch; a Claude restart rode along. Census:
+the DD SURVIVED AGAIN, caught mid-batch-100 (the spec's register rows
+drafted, not yet inserted - ordered to finish; rows govern on conflict).
+The tv-theater seat resumed via --continue at max effort and reads its
+charter. Monitors re-armed (heartbeat b7isewlye, watcher v40 b4hd0mln6).
+The Allen escalation on Orca's health STANDS - five outages today.
+
+*(prior stamp, cycle 366:)*
 Fifth outage, minutes after the fourth - the runtime is now FLAPPING
 (one old process from 14:30 plus four spawned at 19:33 suggests a crash
 loop or a stuck old instance). Relaunched, watch armed. ESCALATION TO
