@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 370 (INCIDENT).** Sixth
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 371 (PAUSED - Allen's
+order).** All orchestration STOPPED on Allen's word: no seat rebuilds,
+no dispatches, watcher stopped. Surviving state at pause: one Unity
+batch compile (pid 43096) belongs to TV-THEATER's dispatched agent -
+warm compile with -quit, exits on its own; the tv-theater PTY survived
+but its Claude session is blank; a DD session lives; two-plus stray
+restored terminals uninvestigated BY DESIGN under the pause. All repo
+work pushed through 250f560. Resume decisions are Allen's.
+
+*(prior stamp, cycle 370:)* Sixth
 Orca outage; relaunched (pid 36868), watch armed. The lane was mid-
 dispatch - its work is in its worktree, recoverable as always. The
 Allen escalation on Orca's health now carries six data points.
