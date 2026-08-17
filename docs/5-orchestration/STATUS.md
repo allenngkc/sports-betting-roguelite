@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 371 (PAUSED - Allen's
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 367 - STUDIO PAUSED on
+Allen's order.** No sweeps, no dispatches, no monitors armed until he
+resumes. State at pause: everything through the resolved-leg spec and
+the tv-theater seating is merged and pushed; the tv-theater lead had
+just been seated (its work not started); the DD's ledger held the
+surfaces spec (three calls with Allen), the theater spec (the reveal
+question with Allen), and the NEED-0 spec routed to tv-theater. Orca had
+flapped five times; its restored sessions carry child-session markers
+and pause orders were delivered to all of them. Open with Allen: resume
+word, the reveal question, three surface calls, research words.
+
+*(prior stamp, cycle 366 follows:)* **Keeper-era heartbeat stamp: 2026-08-16, cycle 371 (PAUSED - Allen's
 order).** All orchestration STOPPED on Allen's word: no seat rebuilds,
 no dispatches, watcher stopped. Surviving state at pause: one Unity
 batch compile (pid 43096) belongs to TV-THEATER's dispatched agent -
