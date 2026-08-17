@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 357.** ALLEN RULED
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 358.** Allen REJECTED
+the cross-event pivot outright (not parked): the surfaces spec is
+match-first - click a match, see every market type, the conventional
+axis. Relayed to the DD. Open with Allen: the three material calls,
+the research words.
+
+*(prior stamp, cycle 357:)* ALLEN RULED
 PARALLEL: the DD runs surfaces and theater concurrently - theater
 exploration starts now, surfaces' three calls stay with Allen without
 blocking, specs land independently and leads seat on approval. Capture
