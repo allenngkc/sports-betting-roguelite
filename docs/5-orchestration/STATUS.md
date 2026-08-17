@@ -11,8 +11,19 @@ flapped five times; its restored sessions carry child-session markers
 and pause orders were delivered to all of them. Open with Allen: resume
 word, the reveal question, three surface calls, research words.
 
-*(prior stamp, cycle 366 follows:)* **Keeper-era heartbeat stamp: 2026-08-16, cycle 371 (PAUSED - Allen's
-order).** All orchestration STOPPED on Allen's word: no seat rebuilds,
+*(prior stamp, cycle 366 follows:)* **Keeper-era heartbeat stamp: 2026-08-16, cycle 372 (PAUSE HONORED).**
+Allen's pause reached this session directly and via the repo. Full
+compliance: heartbeat and watcher STOPPED, no sweeps, no dispatches.
+Disclosed honestly: in the ~10 minutes between the other instance
+recording the pause and this session learning of it, this session raced
+- closed that instance as a ghost twin, resumed tv-theater with a tap,
+synced the DD, armed a watcher. ALL COUNTERMANDED: both seats ordered
+to stand down idle; the watcher stopped. Seats alive but idle: the DD
+(term_ed1b0cc4) and tv-theater (term_f2f79230, tree untouched). All
+repo work pushed. Resume is Allen's word only; this session holds
+paused and silent until it comes.
+
+*(prior stamp, cycle 371 - PAUSED:)*  All orchestration STOPPED on Allen's word: no seat rebuilds,
 no dispatches, watcher stopped. Surviving state at pause: one Unity
 batch compile (pid 43096) belongs to TV-THEATER's dispatched agent -
 warm compile with -quit, exits on its own; the tv-theater PTY survived
