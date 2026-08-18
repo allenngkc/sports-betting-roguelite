@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-17, cycle 375.** THE FIVE CALLS
+**Keeper-era heartbeat stamp: 2026-08-17, cycle 376 (heartbeat).** TV's
+unit-1 agents grinding (seed search pinning); DD verifying the calm-beat
+reachability before speccing. With Allen: the five calls + research two.
+
+*(prior stamp, cycle 375:)* THE FIVE CALLS
 are composed, landed (19b5634), and PUT TO ALLEN: the reveal, empty
 groups, navigation, the price (two halves), row density (the DD reversed
 its own flag on 5 after checking canon - four precedents rule one-per-
