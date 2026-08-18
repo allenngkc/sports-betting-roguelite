@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-17, cycle 387 (heartbeat).** TV in
+**Keeper-era heartbeat stamp: 2026-08-17, cycle 388 - BOTH BUILDS LIVE.**
+Both specs FINAL and merged (fc5a1f5); Allen confirmed A on the reveal.
+markets-pregame RE-SEATED for the surfaces build (term_af511a67, merging
+main first); the theater build queued as tv-theater's unit 3 behind its
+bundle. Watcher v41 (b20c44khm). Parked with Allen: research 8-9 only.
+
+*(prior stamp, cycle 387:)* TV in
 its suite gate; DD finalizing both specs on the seven words. Parked with
 Allen: research 8-9.
 
