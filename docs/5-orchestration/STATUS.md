@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-18, cycle 394 (heartbeat).** The
+**Keeper-era heartbeat stamp: 2026-08-18, cycle 395 - THE SURFACES BUILD
+IS MERGED (519c6fd).** The whole redesigned market sheet: derivation
+layer + gates, six destinations, printed groups, leaders, folio,
+contents, the measured rail, the six-frame dock. Four DD rulings pending
+on the frames (rail order, casing, amber, TEAM TOTALS), none blocking.
+TV holds the editor for phase B's gate + the re-shot pair. Parked with
+Allen: research 8-9.
+
+*(prior stamp, cycle 394:)* The
 reveal row closed across all carriers; markets docking its evidence
 frames and releasing the lease to TV; TV's phase B built-but-unverified
 awaiting its window. Parked with Allen: research 8-9.
