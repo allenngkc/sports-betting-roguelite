@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-17, cycle 381.** THE PROBE
+**Keeper-era heartbeat stamp: 2026-08-17, cycle 382 (heartbeat).** Quiet:
+both seats standing by; batch 105's sixth call landed. THE WHOLE BOARD
+WAITS ON ALLEN: six calls + the nudge word + the research two.
+
+*(prior stamp, cycle 381:)* THE PROBE
 ANSWERED: the drama stream is innocent (both arms beat-for-beat
 identical) - the flatness is presentation ROUTING: the resting state
 generated six times and overwritten six times, every non-final beat
