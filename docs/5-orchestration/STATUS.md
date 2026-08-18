@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-17, cycle 380 (heartbeat).** TV
+**Keeper-era heartbeat stamp: 2026-08-17, cycle 381.** THE PROBE
+ANSWERED: the drama stream is innocent (both arms beat-for-beat
+identical) - the flatness is presentation ROUTING: the resting state
+generated six times and overwritten six times, every non-final beat
+taking the count branch. The DD's grammar direction confirmed by
+measurement (six of eight beats are calm beats already being spent);
+Territory proven impossible on a momentum beat; the fallback arm
+unreachable. Theater spec is evidence-complete minus Allen's reveal
+answer. With Allen: five calls, nudge, research two.
+
+*(prior stamp, cycle 380:)* TV
 probing the calm-beat reachability; DD holding. With Allen: the five
 call words (the staged relay arrived as an empty stub), the held nudge
 draft, research two.
