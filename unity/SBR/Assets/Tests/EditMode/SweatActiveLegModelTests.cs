@@ -105,8 +105,8 @@ namespace SBR.Tests.EditMode
 
         [TestCase(0, 0, "0 GOALS • 3 MORE")]     // zero revealed
         [TestCase(1, 1, "2 GOALS • 1 MORE")]     // mid
-        [TestCase(2, 1, "3 GOALS • 0 MORE")]     // exactly at the line (threshold reached)
-        [TestCase(3, 2, "5 GOALS • 0 MORE")]     // already cleared — never a negative "more"
+        [TestCase(2, 1, "3 GOALS • WON")]        // exactly at the line: outcome selects WON, never "0 MORE"
+        [TestCase(3, 2, "5 GOALS • WON")]        // already cleared — still WON, never a negative "more"
         public void Total_goals_over_live_progress_at_line_2_5(int revealedFor, int revealedAgainst, string expected)
         {
             ActiveLegCopy copy = Describe(ActiveLegInput.TotalGoals(true, 2.5, revealedFor, revealedAgainst));
@@ -115,8 +115,8 @@ namespace SBR.Tests.EditMode
 
         [TestCase(0, 0, "0 GOALS • LIMIT 2")]    // zero revealed
         [TestCase(1, 0, "1 GOALS • LIMIT 1")]    // mid
-        [TestCase(1, 1, "2 GOALS • LIMIT 0")]    // exactly at the line (no more room)
-        [TestCase(2, 1, "3 GOALS • LIMIT 0")]    // already busted — never a negative limit
+        [TestCase(1, 1, "2 GOALS • LIMIT 0")]    // exactly at the line — LIMIT 0 is TRUE and stays; still live
+        [TestCase(2, 1, "3 GOALS • LOST")]       // already busted — outcome selects LOST, never a negative limit
         public void Total_goals_under_live_progress_at_line_2_5(int revealedFor, int revealedAgainst, string expected)
         {
             ActiveLegCopy copy = Describe(ActiveLegInput.TotalGoals(false, 2.5, revealedFor, revealedAgainst));
@@ -136,8 +136,8 @@ namespace SBR.Tests.EditMode
 
         [TestCase(0, 0, "0 CORNERS • NEED 10")]
         [TestCase(3, 2, "5 CORNERS • NEED 5")]
-        [TestCase(5, 5, "10 CORNERS • NEED 0")]     // at the line
-        [TestCase(7, 6, "13 CORNERS • NEED 0")]     // already cleared
+        [TestCase(5, 5, "10 CORNERS • WON")]        // at the line — NEED 0 is unconstructible; WON instead
+        [TestCase(7, 6, "13 CORNERS • WON")]        // already cleared
         public void Total_corners_over_live_progress_at_line_9_5(int revealedHome, int revealedAway, string expected)
         {
             ActiveLegCopy copy = Describe(ActiveLegInput.TotalCorners(true, 9.5, revealedHome, revealedAway));
@@ -146,8 +146,8 @@ namespace SBR.Tests.EditMode
 
         [TestCase(0, 0, "0 CORNERS • LIMIT 9")]
         [TestCase(4, 4, "8 CORNERS • LIMIT 1")]
-        [TestCase(5, 4, "9 CORNERS • LIMIT 0")]     // at the line
-        [TestCase(6, 5, "11 CORNERS • LIMIT 0")]    // already busted
+        [TestCase(5, 4, "9 CORNERS • LIMIT 0")]     // at the line — LIMIT 0 is TRUE and stays; still live
+        [TestCase(6, 5, "11 CORNERS • LOST")]       // already busted — outcome selects LOST
         public void Total_corners_under_live_progress_at_line_9_5(int revealedHome, int revealedAway, string expected)
         {
             ActiveLegCopy copy = Describe(ActiveLegInput.TotalCorners(false, 9.5, revealedHome, revealedAway));
@@ -156,7 +156,7 @@ namespace SBR.Tests.EditMode
 
         [TestCase(0, 0, "0 CARDS • NEED 5")]
         [TestCase(2, 2, "4 CARDS • NEED 1")]
-        [TestCase(3, 2, "5 CARDS • NEED 0")]
+        [TestCase(3, 2, "5 CARDS • WON")]           // NEED 0 is unconstructible; WON instead
         public void Total_cards_over_live_progress_at_line_4_5(int revealedHome, int revealedAway, string expected)
         {
             ActiveLegCopy copy = Describe(ActiveLegInput.TotalCards(true, 4.5, revealedHome, revealedAway));
@@ -341,6 +341,255 @@ namespace SBR.Tests.EditMode
             });
             Assert.AreEqual(1, single.Count);
             Assert.AreEqual("LEVEL 0–0", single[0].Live);
+        }
+
+        // ------------------------------------------------------------------------- 7. NEED 0 is unconstructible (C46 state-lie fix)
+
+        [Test]
+        public void Need_0_is_unconstructible_across_the_full_half_line_and_total_sweep()
+        {
+            // The defect: `Math.Max(0, threshold - total)` clamped a cleared requirement to zero
+            // and kept printing it forever after — "10 CORNERS • NEED 0" stayed on screen for
+            // eighteen minutes of match time in the capture that found it. This sweeps every
+            // corners/cards/total-goals leg, both directions, across every half-line this run's
+            // config can generate (0.5 through 12.5) and every revealed total from 0 to 20, and
+            // asserts NEED 0 / 0 MORE / any stray negative number can never be produced.
+            int cases = 0;
+            for (double halfLine = 0.5; halfLine <= 12.5 + 1e-9; halfLine += 1.0)
+            {
+                for (int total = 0; total <= 20; total++)
+                {
+                    var legs = new[]
+                    {
+                        ActiveLegInput.TotalCorners(true, halfLine, total, 0),
+                        ActiveLegInput.TotalCorners(false, halfLine, total, 0),
+                        ActiveLegInput.TotalCards(true, halfLine, total, 0),
+                        ActiveLegInput.TotalCards(false, halfLine, total, 0),
+                        ActiveLegInput.TotalGoals(true, halfLine, total, 0),
+                        ActiveLegInput.TotalGoals(false, halfLine, total, 0),
+                    };
+                    foreach (ActiveLegInput leg in legs)
+                    {
+                        cases++;
+                        string live = Describe(leg).Live;
+                        StringAssert.DoesNotContain("NEED 0", live,
+                            $"case {cases} ({leg.Kind}/{leg.Choice}, line {halfLine}, total {total}): " +
+                            "NEED 0 must be unconstructible, got '" + live + "'");
+                        // Anchored to the bullet: a bare "0 MORE" substring check false-positives on
+                        // legitimate output — "3 GOALS • 10 MORE" contains "0 MORE" as the tail of
+                        // "10 MORE", and remaining=10 is reached inside this exact sweep (e.g. line
+                        // 9.5, total 0). The number is always immediately preceded by "{Bullet} ", so
+                        // anchoring the check there makes "0" a token boundary instead of a digit tail.
+                        StringAssert.DoesNotContain("• 0 MORE", live,
+                            $"case {cases} ({leg.Kind}/{leg.Choice}, line {halfLine}, total {total}): " +
+                            "0 MORE must be unconstructible, got '" + live + "'");
+                        Assert.IsFalse(ContainsNegativeNumber(live),
+                            $"case {cases} ({leg.Kind}/{leg.Choice}, line {halfLine}, total {total}): " +
+                            $"'{live}' must never contain a negative number");
+                    }
+                }
+            }
+            Assert.AreEqual(13 * 21 * 6, cases, $"NEED-0 sweep executed {cases} cases (13 half-lines x 21 totals x 6 market/direction pairs)");
+        }
+
+        // ------------------------------------------------------------------------- 8. the form is selected by the outcome, not a clamp
+
+        [Test]
+        public void The_form_is_selected_by_the_outcome_not_by_a_clamp()
+        {
+            // Consequence, not mechanism: this does not inspect DescribeCount's/DescribeTotalGoals*'s
+            // internals — it only checks that whatever outcome came out, the STRING shape that goes
+            // with it is the one the outcome rule promises. If a later change ever reintroduces a
+            // clamp that leaves the wrong form selected, this is the assertion that catches it.
+            int cases = 0;
+            for (double halfLine = 0.5; halfLine <= 12.5 + 1e-9; halfLine += 1.0)
+            {
+                for (int total = 0; total <= 20; total++)
+                {
+                    var overLegs = new[]
+                    {
+                        ActiveLegInput.TotalCorners(true, halfLine, total, 0),
+                        ActiveLegInput.TotalCards(true, halfLine, total, 0),
+                        ActiveLegInput.TotalGoals(true, halfLine, total, 0),
+                    };
+                    var underLegs = new[]
+                    {
+                        ActiveLegInput.TotalCorners(false, halfLine, total, 0),
+                        ActiveLegInput.TotalCards(false, halfLine, total, 0),
+                        ActiveLegInput.TotalGoals(false, halfLine, total, 0),
+                    };
+
+                    foreach (ActiveLegInput leg in overLegs)
+                    {
+                        cases++;
+                        ActiveLegCopy copy = Describe(leg);
+                        if (copy.Outcome == RevealedLegOutcome.Won)
+                        {
+                            Assert.IsTrue(copy.Live.EndsWith("WON"),
+                                $"case {cases}: Won must end WON, got '{copy.Live}'");
+                        }
+                        else
+                        {
+                            Assert.AreEqual(RevealedLegOutcome.Undecided, copy.Outcome,
+                                $"case {cases}: the over/NEED-MORE family is only ever Won or Undecided");
+                            bool hasExpectedToken = copy.Live.Contains("NEED ") || copy.Live.Contains(" MORE");
+                            Assert.IsTrue(hasExpectedToken,
+                                $"case {cases}: Undecided must contain 'NEED ' or ' MORE', got '{copy.Live}'");
+
+                            // Asserted as the CONSEQUENCE of the outcome selection, not the mechanism:
+                            // there is no clamp any more, so this is not "the clamp never produces
+                            // k < 1" — it is "the selection never emits NEED alongside k < 1".
+                            if (copy.Live.Contains("NEED "))
+                            {
+                                int needValue = ExtractTrailingInt(copy.Live, "NEED ");
+                                Assert.GreaterOrEqual(needValue, 1,
+                                    $"case {cases}: NEED must never appear with k < 1, got '{copy.Live}'");
+                            }
+                        }
+                    }
+
+                    foreach (ActiveLegInput leg in underLegs)
+                    {
+                        cases++;
+                        ActiveLegCopy copy = Describe(leg);
+                        if (copy.Outcome == RevealedLegOutcome.Lost)
+                        {
+                            Assert.IsTrue(copy.Live.EndsWith("LOST"),
+                                $"case {cases}: Lost must end LOST, got '{copy.Live}'");
+                        }
+                        else
+                        {
+                            Assert.AreEqual(RevealedLegOutcome.Undecided, copy.Outcome,
+                                $"case {cases}: the under/LIMIT family is only ever Lost or Undecided");
+                            Assert.IsTrue(copy.Live.Contains("LIMIT "),
+                                $"case {cases}: Undecided must contain 'LIMIT ', got '{copy.Live}'");
+                        }
+                    }
+                }
+            }
+            Assert.AreEqual(13 * 21 * 6, cases, $"outcome-selection sweep executed {cases} cases (13 half-lines x 21 totals x 6 market/direction pairs)");
+        }
+
+        // ------------------------------------------------------------------------- 9. LIMIT 0 survives (not the same defect as NEED 0)
+
+        [Test]
+        public void Limit_0_survives_an_under_leg_at_its_maximum_is_still_undecided()
+        {
+            // This exists so a later seat does not "fix" LIMIT 0 into looking like NEED 0. They
+            // are not the same defect: NEED 0 named a requirement that had already stopped
+            // existing; LIMIT 0 names an allowance that is still real and still live — one more of
+            // the stat kills the leg, but none has happened yet.
+            ActiveLegCopy corners = Describe(ActiveLegInput.TotalCorners(false, 9.5, 5, 4)); // total 9 = maxAllowed
+            Assert.AreEqual("9 CORNERS • LIMIT 0", corners.Live);
+            Assert.AreEqual(RevealedLegOutcome.Undecided, corners.Outcome);
+
+            ActiveLegCopy cards = Describe(ActiveLegInput.TotalCards(false, 4.5, 2, 2)); // total 4 = maxAllowed
+            Assert.AreEqual("4 CARDS • LIMIT 0", cards.Live);
+            Assert.AreEqual(RevealedLegOutcome.Undecided, cards.Outcome);
+
+            ActiveLegCopy goals = Describe(ActiveLegInput.TotalGoals(false, 2.5, 1, 1)); // total 2 = maxAllowed
+            Assert.AreEqual("2 GOALS • LIMIT 0", goals.Live);
+            Assert.AreEqual(RevealedLegOutcome.Undecided, goals.Outcome);
+        }
+
+        // ------------------------------------------------------------------------- 10. the ticket-word trap, exhaustively
+
+        [Test]
+        public void TicketCannotLose_is_true_iff_every_leg_is_won_or_voided()
+        {
+            var allOutcomes = new[]
+            {
+                RevealedLegOutcome.Undecided, RevealedLegOutcome.Won,
+                RevealedLegOutcome.Lost, RevealedLegOutcome.Voided,
+            };
+
+            int cases = 0;
+            for (int length = 1; length <= 3; length++)
+            {
+                foreach (List<RevealedLegOutcome> combo in AllCombinations(allOutcomes, length))
+                {
+                    cases++;
+                    bool expected = combo.TrueForAll(o => o == RevealedLegOutcome.Won || o == RevealedLegOutcome.Voided);
+                    bool actual = TicketCannotLose(combo);
+                    Assert.AreEqual(expected, actual,
+                        $"case {cases} [{string.Join(", ", combo)}]: TicketCannotLose must be true iff every leg is Won or Voided");
+                }
+            }
+            Assert.AreEqual(4 + 16 + 64, cases,
+                $"exhaustive ticket-word sweep executed {cases} cases (4^1 + 4^2 + 4^3 over lengths 1..3)");
+
+            // THE TRAP CASE, named on its own: one leg won and one still live does not change the
+            // ticket's word. RISK is a TICKET word — every leg has to clear it.
+            Assert.IsFalse(
+                TicketCannotLose(new List<RevealedLegOutcome> { RevealedLegOutcome.Won, RevealedLegOutcome.Undecided }),
+                "[Won, Undecided]: one leg won and one still live must NOT flip the ticket word to STAKE");
+
+            Assert.IsFalse(TicketCannotLose(null), "null must be false, never a NullReferenceException masquerading as true");
+            Assert.IsFalse(TicketCannotLose(new List<RevealedLegOutcome>()),
+                "empty must be false — a ticket with no legs cannot be said to have none that can lose it");
+        }
+
+        // ------------------------------------------------------------------------- 11. StakeWord: STAKE iff TicketCannotLose, else RISK
+
+        [Test]
+        public void StakeWord_is_stake_exactly_when_the_ticket_cannot_lose()
+        {
+            Assert.AreEqual("STAKE", StakeWord(new List<RevealedLegOutcome> { RevealedLegOutcome.Won }));
+            Assert.AreEqual("STAKE", StakeWord(new List<RevealedLegOutcome> { RevealedLegOutcome.Won, RevealedLegOutcome.Voided }));
+            Assert.AreEqual("RISK", StakeWord(new List<RevealedLegOutcome> { RevealedLegOutcome.Undecided }));
+            Assert.AreEqual("RISK", StakeWord(new List<RevealedLegOutcome> { RevealedLegOutcome.Won, RevealedLegOutcome.Undecided }));
+
+            // [Lost] => RISK is the DELIBERATE unbuilt dead-ticket state, not an oversight: the
+            // spec rules only the principle (no word may name a jeopardy or payout that no longer
+            // exists) and leaves the actual dead-ticket strings to a frame, because the capture
+            // contains no losing ticket. Today's RISK is what a ticket with a Lost leg keeps until
+            // that frame lands. Do not "fix" this pin without new evidence.
+            Assert.AreEqual("RISK", StakeWord(new List<RevealedLegOutcome> { RevealedLegOutcome.Lost }));
+
+            Assert.AreEqual("RISK", StakeWord(null));
+            Assert.AreEqual("RISK", StakeWord(new List<RevealedLegOutcome>()));
+        }
+
+        // ------------------------------------------------------------------------- sweep helpers
+
+        /// <summary>True iff <paramref name="s"/> contains a '-' immediately followed by a digit —
+        /// the shape a stray negative number would take from unclamped subtraction.</summary>
+        private static bool ContainsNegativeNumber(string s)
+        {
+            for (int i = 0; i < s.Length - 1; i++)
+                if (s[i] == '-' && char.IsDigit(s[i + 1])) return true;
+            return false;
+        }
+
+        /// <summary>Parses the integer immediately following the last occurrence of
+        /// <paramref name="marker"/> in <paramref name="s"/>. Used to pull the "k" out of "NEED k",
+        /// which is always the trailing token in this file's corners/cards copy.</summary>
+        private static int ExtractTrailingInt(string s, string marker)
+        {
+            int idx = s.IndexOf(marker, System.StringComparison.Ordinal);
+            Assert.GreaterOrEqual(idx, 0, $"expected to find '{marker}' in '{s}'");
+            string tail = s.Substring(idx + marker.Length);
+            return int.Parse(tail);
+        }
+
+        /// <summary>Every ordered tuple of length <paramref name="length"/> drawn from
+        /// <paramref name="values"/> (the full Cartesian product, values.Length^length tuples) —
+        /// the exhaustive enumeration item 10 requires.</summary>
+        private static IEnumerable<List<RevealedLegOutcome>> AllCombinations(RevealedLegOutcome[] values, int length)
+        {
+            int total = 1;
+            for (int i = 0; i < length; i++) total *= values.Length;
+            for (int index = 0; index < total; index++)
+            {
+                var combo = new List<RevealedLegOutcome>(length);
+                int remainder = index;
+                for (int slot = 0; slot < length; slot++)
+                {
+                    combo.Add(values[remainder % values.Length]);
+                    remainder /= values.Length;
+                }
+                yield return combo;
+            }
         }
     }
 }

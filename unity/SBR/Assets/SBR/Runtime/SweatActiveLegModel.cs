@@ -4,6 +4,14 @@ using SBR.Engine;
 
 namespace SBR.Game
 {
+    /// <summary>A leg's outcome AS THE REVEALED LEDGER ALREADY ESTABLISHES IT — never the resolved
+    /// match. Distinct from <c>RevealedLegState</c> (TvSweatScreen), which reaches Won/Lost only at
+    /// full time and so cannot answer the mid-match question this enum exists for. `Undecided` covers
+    /// both "not yet decided" and "not derivable from revealed values". `Voided` is never produced by
+    /// this file — it exists so <see cref="SweatActiveLegModel.TicketCannotLose"/> can accept a voided
+    /// leg from its caller.</summary>
+    public enum RevealedLegOutcome { Undecided, Won, Lost, Voided }
+
     /// <summary>
     /// Phase 3A (PRD §8.2, §9): a pure, standalone formatter for active-leg market copy — the
     /// <c>NEED</c> and <c>LIVE</c> sentences the active-leg card shows for each live leg. This
@@ -19,7 +27,14 @@ namespace SBR.Game
     /// <see cref="ActiveLegInput.TotalCards"/>, <see cref="ActiveLegInput.AnytimeScorer"/>) whose
     /// parameters are exclusively <c>int</c>, <c>double</c>, <c>bool</c>, and <c>string</c> —
     /// plain revealed counts and betting-time facts (market line, backed team/player display
-    /// name). There is no parameter, field, or property anywhere in this file typed as
+    /// name). <b>Amended for the outcome enum:</b> that sentence describes
+    /// <see cref="ActiveLegInput"/>'s factories only, and it is no longer the complete list of
+    /// parameter types in this file — <see cref="ActiveLegCopy"/>'s constructor and the
+    /// ticket-level <see cref="SweatActiveLegModel.TicketCannotLose"/>/
+    /// <see cref="SweatActiveLegModel.StakeWord"/> also take <see cref="RevealedLegOutcome"/>, a
+    /// presentation enum. The law's SUBSTANCE is unchanged: that enum has four fixed values and
+    /// no field, so it cannot carry an endpoint even in principle. There is still no parameter,
+    /// field, or property anywhere in this file typed as
     /// <c>Leg</c>, <c>ScoreLedger</c>, <c>CountLedger</c>, or <c>MatchStatLine</c> — the four
     /// types that can reach a locked endpoint or target
     /// (<c>ScoreLedger.TargetPicked</c>/<c>TargetOpponent</c>, <c>CountLedger.TargetHome</c>/
@@ -37,6 +52,10 @@ namespace SBR.Game
     /// retired. <see cref="DescribeAll"/> takes <c>IReadOnlyList&lt;ActiveLegInput&gt;</c> so a
     /// caller with zero, one, or several concurrent live legs on one match uses the same entry
     /// point; nothing in this file's signatures hard-codes a single live leg.</para>
+    ///
+    /// <para><b>Outcome derivation, and the rule that binds it to the copy (the NEED 0 fix).</b>
+    /// The outcome is derived wherever the revealed values decide the leg. The STRING changes
+    /// only where the old string named a requirement or an allowance that no longer exists.</para>
     ///
     /// <para><b>Pure and deterministic.</b> No <c>UnityEngine</c> types, no <c>MonoBehaviour</c>,
     /// no RNG, no clock, no static mutable state. Every method is a pure function of its
@@ -164,14 +183,21 @@ namespace SBR.Game
             /// subject. The subject is not missing, it is simply not repeated.</para></summary>
             public readonly string NeedFallback;
 
+            /// <summary>The leg's outcome as the revealed ledger already establishes it (see
+            /// <see cref="RevealedLegOutcome"/>). Defaults to <c>Undecided</c> so every call site
+            /// that predates this field keeps its old behavior unchanged.</summary>
+            public readonly RevealedLegOutcome Outcome;
+
             public ActiveLegCopy(string need, string live, bool isTeamMarket, string identity,
-                                 string needFallback = null)
+                                 string needFallback = null,
+                                 RevealedLegOutcome outcome = RevealedLegOutcome.Undecided)
             {
                 Need = need;
                 Live = live;
                 IsTeamMarket = isTeamMarket;
                 Identity = identity;
                 NeedFallback = needFallback;
+                Outcome = outcome;
             }
         }
 
@@ -219,6 +245,40 @@ namespace SBR.Game
             return result;
         }
 
+        // ------------------------------------------------------------------------- ticket words (RISK/STAKE)
+
+        /// <summary>`RISK` is a TICKET word. On a multi-leg ticket one leg winning changes nothing about
+        /// it, so this takes EVERY leg's outcome and never a single leg's — the signature is what enforces
+        /// that, not discipline.
+        ///
+        /// <para>True iff the ticket has legs and none of them can still lose it: every leg is Won or
+        /// Voided. A voided leg returns its own stake and cannot kill the ticket. This reproduces
+        /// `RevealedTicketState.Won`'s own definition and extends it to the revealed-derived case, which is
+        /// the point — the enum does not reach Won until full time.</para></summary>
+        public static bool TicketCannotLose(IReadOnlyList<RevealedLegOutcome> legOutcomes)
+        {
+            if (legOutcomes == null || legOutcomes.Count == 0) return false;
+            for (int i = 0; i < legOutcomes.Count; i++)
+            {
+                RevealedLegOutcome outcome = legOutcomes[i];
+                if (outcome != RevealedLegOutcome.Won && outcome != RevealedLegOutcome.Voided)
+                    return false;
+            }
+            return true;
+        }
+
+        /// <summary>The first word of the ticket footer's pair. `STAKE` is already in the product — the
+        /// laptop's margin prints `STAKE $35`. Same figure, same position, same amber, same box: the stake
+        /// is still a true fact, it is simply no longer at risk.
+        ///
+        /// <para>THE DEAD TICKET IS DELIBERATELY NOT BUILT. The capture contains no losing ticket, so the
+        /// spec rules only the PRINCIPLE — no word may name a jeopardy or a payout that no longer exists —
+        /// and leaves the strings to a frame. A ticket with a Lost leg therefore keeps today's `RISK`.
+        /// That is a deliberate omission awaiting evidence, NOT an oversight. Do not invent the
+        /// string.</para></summary>
+        public static string StakeWord(IReadOnlyList<RevealedLegOutcome> legOutcomes)
+            => TicketCannotLose(legOutcomes) ? "STAKE" : "RISK";
+
         // ------------------------------------------------------------------------- moneyline
 
         private static ActiveLegCopy DescribeMoneyline(ActiveLegInput l)
@@ -251,9 +311,12 @@ namespace SBR.Game
             if (l.Choice == MarketChoice.Draw)
             {
                 bool level = l.RevealedGoalsFor == l.RevealedGoalsAgainst;
+                // A moneyline leg — the draw row included — can never be decided before full time:
+                // a goal at any point up to the whistle can flip LEVEL to NOT LEVEL, so this always
+                // reads Undecided from revealed values alone.
                 return new ActiveLegCopy("LEVEL AT FULL TIME", level ? "LEVEL" : "NOT LEVEL",
                                          isTeamMarket: false, identity: MarketPick,
-                                         needFallback: "LEVEL AT FT");
+                                         needFallback: "LEVEL AT FT", outcome: RevealedLegOutcome.Undecided);
             }
 
             string need = $"{club} TO WIN";
@@ -285,8 +348,10 @@ namespace SBR.Game
             //
             // MEASURED, all twenty against 261.0: rung 2 overruns for NONE of them. The widest form
             // actually reached is `SPREADSHEETS WIN` at 249.5px, 11.5px spare.
+            // Same reason as the draw arm above: goals can always change a moneyline result up to
+            // full time, so a revealed-only read can never call this leg decided.
             return new ActiveLegCopy(need, live, isTeamMarket: true, identity: team,
-                                     needFallback: $"{club} WIN");
+                                     needFallback: $"{club} WIN", outcome: RevealedLegOutcome.Undecided);
         }
 
         // ------------------------------------------------------------------------- total goals
@@ -295,20 +360,62 @@ namespace SBR.Game
         {
             string need = $"OVER {l.Line:0.0} GOALS";
             int total = l.RevealedGoalsFor + l.RevealedGoalsAgainst;
-            string live = HalfLineThreshold(l.Line, out int threshold)
-                ? $"{total} GOALS {Bullet} {Math.Max(0, threshold - total)} MORE"
-                : $"{total} GOALS";
-            return new ActiveLegCopy(need, live, isTeamMarket: false, identity: MarketPick);
+            string live;
+            RevealedLegOutcome outcome;
+            if (HalfLineThreshold(l.Line, out int threshold))
+            {
+                // The clamp that used to sit here (`Math.Max(0, threshold - total)`) is the NEED-0
+                // defect: once `remaining` reaches zero the requirement is already satisfied, and
+                // clamping kept naming it forever after. The form is now selected BY the outcome —
+                // a cleared line prints WON, never a MORE count of anything.
+                int remaining = threshold - total;
+                if (remaining <= 0)
+                {
+                    outcome = RevealedLegOutcome.Won;
+                    live = $"{total} GOALS {Bullet} WON";
+                }
+                else
+                {
+                    outcome = RevealedLegOutcome.Undecided;
+                    live = $"{total} GOALS {Bullet} {remaining} MORE";
+                }
+            }
+            else
+            {
+                outcome = RevealedLegOutcome.Undecided;
+                live = $"{total} GOALS";
+            }
+            return new ActiveLegCopy(need, live, isTeamMarket: false, identity: MarketPick, outcome: outcome);
         }
 
         private static ActiveLegCopy DescribeTotalGoalsUnder(ActiveLegInput l)
         {
             string need = $"UNDER {l.Line:0.0} GOALS";
             int total = l.RevealedGoalsFor + l.RevealedGoalsAgainst;
-            string live = HalfLineMaxAllowed(l.Line, out int maxAllowed)
-                ? $"{total} GOALS {Bullet} LIMIT {Math.Max(0, maxAllowed - total)}"
-                : $"{total} GOALS";
-            return new ActiveLegCopy(need, live, isTeamMarket: false, identity: MarketPick);
+            string live;
+            RevealedLegOutcome outcome;
+            if (HalfLineMaxAllowed(l.Line, out int maxAllowed))
+            {
+                int slack = maxAllowed - total;
+                if (slack < 0)
+                {
+                    outcome = RevealedLegOutcome.Lost;
+                    live = $"{total} GOALS {Bullet} LOST";
+                }
+                else
+                {
+                    // Same LIMIT 0 rule as DescribeCount below: zero slack is still live — one more
+                    // goal kills it, but none has happened yet. Not the NEED-0 defect's shape.
+                    outcome = RevealedLegOutcome.Undecided;
+                    live = $"{total} GOALS {Bullet} LIMIT {slack}";
+                }
+            }
+            else
+            {
+                outcome = RevealedLegOutcome.Undecided;
+                live = $"{total} GOALS";
+            }
+            return new ActiveLegCopy(need, live, isTeamMarket: false, identity: MarketPick, outcome: outcome);
         }
 
         // ------------------------------------------------------------------------- BTTS
@@ -319,7 +426,11 @@ namespace SBR.Game
             string live = $"{scored}/2 TEAMS SCORED";
             // G1: "BOTH TEAMS TO SCORE" (19) was a permanently marginal CONSTANT — no variable in it
             // at all, so it was over budget on every frame it ever drew. One word clears it.
-            return new ActiveLegCopy("BOTH TEAMS SCORE", live, isTeamMarket: false, identity: MarketPick);
+            // Outcome only, no string change: "2/2 TEAMS SCORED" already names no requirement, so
+            // there is nothing stale left inside it once both sides have scored.
+            RevealedLegOutcome outcome = scored == 2 ? RevealedLegOutcome.Won : RevealedLegOutcome.Undecided;
+            return new ActiveLegCopy("BOTH TEAMS SCORE", live, isTeamMarket: false, identity: MarketPick,
+                                     outcome: outcome);
         }
 
         private static ActiveLegCopy DescribeBttsNo(ActiveLegInput l)
@@ -331,8 +442,11 @@ namespace SBR.Game
             // G1: "KEEP ONE TEAM SCORELESS" (23) was over budget as a constant, and "KEEP" was also a
             // §8 register problem — an instruction to the player about a thing he cannot influence.
             // The requirement is a state of the match, so the copy names the state.
+            // Outcome only, no string change: "BOTH HAVE SCORED" already states the fact that kills
+            // this leg — there is no stale requirement word left inside it to fix.
+            RevealedLegOutcome outcome = bothScored ? RevealedLegOutcome.Lost : RevealedLegOutcome.Undecided;
             return new ActiveLegCopy("ONE TEAM SCORELESS", live, isTeamMarket: false, identity: MarketPick,
-                                     needFallback: "ONE TEAM BLANKED");
+                                     needFallback: "ONE TEAM BLANKED", outcome: outcome);
         }
 
         // ------------------------------------------------------------------------- corners / cards
@@ -351,14 +465,55 @@ namespace SBR.Game
                 : $"{(over ? "OVER" : "UNDER")} {l.Line:0.0} {shortNoun}";
             int total = l.RevealedCountHome + l.RevealedCountAway;
             string live;
+            RevealedLegOutcome outcome;
             if (over && HalfLineThreshold(l.Line, out int threshold))
-                live = $"{total} {noun} {Bullet} NEED {Math.Max(0, threshold - total)}";
+            {
+                // THE DEFECT LIVED HERE: `Math.Max(0, threshold - total)` clamped a cleared
+                // requirement to zero and kept printing it — "10 CORNERS • NEED 0" — for as long as
+                // the leg stayed on screen after it was already won. The clamp is deleted; the form
+                // is selected BY the outcome instead, so NEED 0 is unconstructible rather than
+                // guarded.
+                int remaining = threshold - total;
+                if (remaining <= 0)
+                {
+                    outcome = RevealedLegOutcome.Won;
+                    live = $"{total} {noun} {Bullet} WON";
+                }
+                else
+                {
+                    outcome = RevealedLegOutcome.Undecided;
+                    live = $"{total} {noun} {Bullet} NEED {remaining}";
+                }
+            }
             else if (!over && HalfLineMaxAllowed(l.Line, out int maxAllowed))
-                live = $"{total} {noun} {Bullet} LIMIT {Math.Max(0, maxAllowed - total)}";
+            {
+                int slack = maxAllowed - total;
+                if (slack < 0)
+                {
+                    outcome = RevealedLegOutcome.Lost;
+                    live = $"{total} {noun} {Bullet} LOST";
+                }
+                else
+                {
+                    // LIMIT 0 IS TRUE AND STAYS. This looks like the same defect as NEED 0 — a
+                    // number sitting at its floor — and it is not: NEED 0 named a requirement that
+                    // had already stopped existing, while LIMIT 0 names an allowance that is still
+                    // real. An under leg with zero slack is still live; one more of this stat kills
+                    // it, but none has happened yet. Do not "fix" this to Won or Lost.
+                    outcome = RevealedLegOutcome.Undecided;
+                    live = $"{total} {noun} {Bullet} LIMIT {slack}";
+                }
+            }
             else
+            {
+                // Whole-number line: a push is possible, so this class declines to fabricate an
+                // exact remaining/allowed count rather than guess (see the half-line math section
+                // below).
+                outcome = RevealedLegOutcome.Undecided;
                 live = $"{total} {noun}";
+            }
             return new ActiveLegCopy(need, live, isTeamMarket: false, identity: MarketPick,
-                                     needFallback: needFallback);
+                                     needFallback: needFallback, outcome: outcome);
         }
 
         // ------------------------------------------------------------------------- anytime scorer
@@ -379,6 +534,8 @@ namespace SBR.Game
             // same thing. That is T69's defect (a fact named twice in one statement) reproduced
             // vertically instead of horizontally. The player is named ONCE, by NEED directly above.
             string live = l.ScorerRevealed ? "SCORED" : "NOT YET";
+            // Outcome only, no string change: "SCORED" already names no requirement left to void.
+            RevealedLegOutcome outcome = l.ScorerRevealed ? RevealedLegOutcome.Won : RevealedLegOutcome.Undecided;
             // G1-am8 (batch 63): the SAME two-rung ladder as the moneyline arm, chosen by measurement.
             //
             //   rung 1  `{SURNAME} TO SCORE`
@@ -401,7 +558,8 @@ namespace SBR.Game
             // 22.6px spare. The retired bare form was 119.8px — it always fit, and fitting was never
             // the problem with it.
             return new ActiveLegCopy(need, live, isTeamMarket: false, identity: MarketPick,
-                                     needFallback: $"{Surname(l.BackedPlayerName).ToUpperInvariant()} SCORES");
+                                     needFallback: $"{Surname(l.BackedPlayerName).ToUpperInvariant()} SCORES",
+                                     outcome: outcome);
         }
 
         /// <summary>G1's player-naming convention: surname, uppercase. Exposed because the TV's

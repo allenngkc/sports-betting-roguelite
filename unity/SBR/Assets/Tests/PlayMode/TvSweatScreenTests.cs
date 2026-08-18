@@ -885,6 +885,529 @@ namespace SBR.Tests.PlayMode
             finally { InputSystem.RemoveDevice(kb); RestoreFocusBehaviour(previousFocus); }
         }
 
+        // ---- the footer word (RISK/STAKE) must never disagree with what the rows show, and no live
+        // row's progress may ever print NEED 0 — watched on a REAL sweat rather than through the pure
+        // model directly. SweatActiveLegModelTests already proves both predicates exhaustively off
+        // pure inputs (item 7 "NEED 0 is unconstructible", item 10 "TicketCannotLose is true iff every
+        // leg is won or voided"); this proves the WIRING — the footer text and each row's own
+        // chip/progress text are painted by two different call sites in TvSweatScreen and could drift
+        // apart even with a correct model underneath.
+
+        /// <summary>Polls EVERY FRAME across a real sweat — a pin that samples one frame proves
+        /// nothing, since both defects this guards are about a MOMENT the two surfaces disagree, not a
+        /// steady state. Reads exactly what the player is looking at
+        /// (<see cref="TvSweatScreen.DebugTicketRiskText"/>, <c>DebugLegProgress</c>,
+        /// <c>DebugLegState</c>), never a re-derivation of it.
+        ///
+        /// <para><c>DemoTicketPolicy</c> derives a ticket's leg count as
+        /// <c>2 + hash(seed#round) % 2</c> — see the note on <see cref="PinnedSweatSeed"/> above —
+        /// which is always 2 or 3, never 1, so an un-pinned run already gives a multi-leg ticket. If
+        /// that ever stops holding and a single-leg ticket is drawn, the NEXT-chip half of the second
+        /// assertion below simply never fires (there is no pending row to show it) — logged plainly
+        /// rather than faked or failed.</para></summary>
+        [UnityTest]
+        public IEnumerator TicketFooterWord_NeverDisagreesWithAnyRow_AndNoLiveRowEverPrintsNeedZero()
+        {
+            yield return LoadRoom();
+            (RunDirector director, TvSweatScreen screen, SitSpot couch) = FindTrio();
+
+            // Fast-forward, same as the other full-sweat tests (FullRound_TwoTickets,
+            // SeatOnAMultiCountTicket): batch mode still renders at thousands of fps regardless of
+            // TimeScaleOverride (see WaitUntil's own note below), so "every frame" here still means
+            // many hundreds of samples over a wall-clock window of a few seconds.
+            screen.TimeScaleOverride = 0.0001f;
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            Run run = director.Run;
+            (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run);
+            run.PlaceTicket(picks, stake);
+            director.LockRound();
+            int legCount = picks.Count;
+
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+
+            int framesSampled = 0;
+            var footerWords = new HashSet<string>();
+            var progressStrings = new HashSet<string>();
+            bool sawNextChip = false;
+            bool sawDecidedLeg = false; // any row reached W/L/VOID, or the footer ever read STAKE
+
+            float start = Time.realtimeSinceStartup;
+            const float maxSeconds = 60f;
+            while (run.Phase == Phase.Sweat)
+            {
+                if (Time.realtimeSinceStartup - start > maxSeconds)
+                {
+                    Assert.Fail($"the sweat never settled within {maxSeconds}s wall-clock "
+                        + $"(frames sampled so far: {framesSampled})");
+                    yield break;
+                }
+
+                framesSampled++;
+                string footer = screen.DebugTicketRiskText; // e.g. "RISK $35.00" / "STAKE $35.00"
+                string footerWord = footer.Length > 0 ? footer.Split(' ')[0] : string.Empty;
+                if (footerWord.Length > 0) footerWords.Add(footerWord);
+                if (footerWord == "STAKE") sawDecidedLeg = true;
+
+                for (int i = 0; i < legCount; i++)
+                {
+                    string progress = screen.DebugLegProgress(i);
+                    string chip = screen.DebugLegState(i);
+
+                    // 1. THE CAPTURED DEFECT: a live row's progress must never read NEED 0.
+                    if (!string.IsNullOrEmpty(progress))
+                    {
+                        progressStrings.Add(progress);
+                        Assert.IsFalse(progress.Contains("NEED 0"),
+                            $"frame {framesSampled}, leg {i}: progress '{progress}' contains NEED 0 — "
+                            + "the exact state-lie this dispatch fixes");
+                    }
+
+                    if (chip == "NEXT")
+                    {
+                        sawNextChip = true;
+                        // 2, RISK half — the trap named in the brief: a leg still to come must not
+                        // have let the footer say STAKE. RISK is a TICKET word.
+                        Assert.AreEqual("RISK", footerWord,
+                            $"frame {framesSampled}: leg {i} shows the NEXT chip but the footer reads "
+                            + $"'{footerWord}' — a leg still to come must not flip RISK to STAKE");
+                    }
+                    else if (chip == "W" || chip == "L" || chip == "VOID")
+                    {
+                        sawDecidedLeg = true;
+                    }
+
+                    // 2, STAKE half — a decided ticket must not still be showing a live requirement
+                    // anywhere. (The NEXT-chip half of this same claim is asserted above.)
+                    if (footerWord == "STAKE" && !string.IsNullOrEmpty(progress))
+                    {
+                        bool namesALiveRequirement = progress.Contains("NEED")
+                            || progress.Contains("MORE") || progress.Contains("LIMIT");
+                        Assert.IsFalse(namesALiveRequirement,
+                            $"frame {framesSampled}: footer reads STAKE but leg {i} progress "
+                            + $"'{progress}' still names a live requirement — STAKE claims the whole "
+                            + "ticket is decided");
+                    }
+                }
+
+                yield return null;
+            }
+
+            UnityEngine.Debug.Log(
+                $"[TICKET-WORD] legs={legCount} frames={framesSampled} "
+                + $"footerWordCount={footerWords.Count} footerWords=[{string.Join(",", footerWords)}] "
+                + $"distinctProgressStrings={progressStrings.Count} "
+                + $"sawNextChip={sawNextChip} sawDecidedLeg={sawDecidedLeg}");
+
+            // LEFT AS A LOG, deliberately — do not promote this to an assertion. This pin walks an
+            // UN-SEEDED demo run (DemoTicketPolicy's natural draw, not a pinned seed), and the final
+            // leg's grade can land AFTER this while loop's own exit condition (run.Phase no longer
+            // Sweat) already stopped sampling. Asserting on sawDecidedLeg here would be exactly the
+            // load-dependent flake this suite has been bitten by before (SeatOnAMultiCountTicket's
+            // own comment above documents the identical shape: an easy draw clears a wall-clock
+            // budget an unlucky one misses under full-suite load). The deterministic half of this
+            // duty is carried instead by
+            // TicketFooterWord_LegOneWon_RiskWhileLegTwoLive_StakeWhenLegTwoWonEarly below, on a
+            // pinned seed — a structural guarantee, not a wall-clock gamble — which is why THIS
+            // branch is allowed to stay a log rather than a gate.
+            if (!sawDecidedLeg)
+                UnityEngine.Debug.Log("[TICKET-WORD] the run never reached a decided leg within the "
+                    + "sampling window — the STAKE half of assertion 2 was never exercised");
+
+            // HARD GATE, not a log: DemoTicketPolicy derives a ticket's leg count as
+            // 2 + hash(seed#round) % 2 (see PinnedSweatSeed's own note above), which is always 2 or
+            // 3 — NEVER fewer than 2. A ticket with under 2 legs here means that policy itself broke,
+            // not an unlucky draw, so this is asserted rather than logged: a log would hide a broken
+            // policy behind a still-green test, the exact C29 shape this dispatch closes elsewhere.
+            Assert.GreaterOrEqual(legCount, 2,
+                $"ticket had only {legCount} leg(s) — DemoTicketPolicy's own arity floor is broken, "
+                + "not an unlucky draw; the NEXT-chip half of assertion 2 could never fire");
+        }
+
+        // ---- DD ruling-t108-trigger-2026-08-17.md §5 — THE TWO NAMED STATES, exercised by
+        // construction. The pin above proves the BROADER claim (any decided leg forces RISK while
+        // any other leg is undecided) on SeatOnAMultiCountTicket's own seed. The ruling wants
+        // something more precise the broader claim cannot certify: state 1 needs leg 0 SPECIFICALLY
+        // Won (not merely "decided" — W/L/VOID conflated is not enough), and there is a SECOND state
+        // — leg 1 already won on its own REVEALED COUNT while still the live row, ahead of its own
+        // whistle — that the broader pin cannot even distinguish, because leg 1's chip reads
+        // identically (blank/live) in both states. Only the footer word tells them apart, which is
+        // exactly ruling §4's "decided, but not yet resolved" third state: the model has graded the
+        // leg, the chip has not caught up, and the footer is the one surface reading the model's
+        // grade rather than the whistle.
+        //
+        // No force-hook exists to drive the ledger to that second state on demand, and adding one to
+        // production is out of scope for this dispatch. So the construction is a SEED CHOICE:
+        // "measure, then pin" — this lane's own precedent, the exact method that chose
+        // SeatOnAMultiCountTicket's own STATS-MULTI-1 (see that helper's comment above). Deliverable
+        // A below is the measurement; Deliverable B is the pin, seed left as a named placeholder
+        // pending A's result.
+
+        /// <summary>Shared by the seed search (Deliverable A) and the pinned gate (Deliverable B):
+        /// the LOWEST-line OVER offer of <paramref name="kind"/>, on any matchup other than
+        /// <paramref name="excludeMatchup"/> (-1 excludes nothing).
+        ///
+        /// <para>OVER-ONLY, by ruling (DD correction, 2026-08-17): state 2 needs a leg won on the
+        /// REVEALED COUNT before its own whistle, and only an OVER leg can be revealed-Won early —
+        /// the count crosses the threshold and the leg can no longer lose. AN UNDER LEG HAS NO EARLY
+        /// WON; its only pre-whistle verdict is Lost (the count busts its allowance), so an UNDER
+        /// fixture cannot certify state 2, no matter which seed carries it.</para>
+        ///
+        /// <para>LOWEST LINE among the OVERs offered, deliberately: the lower the line, the more
+        /// match time remains after it clears, so the lowest-line OVER is the one most likely to be
+        /// revealed-Won while its leg is still live — a bias toward REACHING the state being
+        /// searched for, not toward a fitted outcome. The assertions this feeds are unchanged either
+        /// way; this only affects which slate lines get a chance to demonstrate them.</para>
+        ///
+        /// <para>Returns false if the slate offers no such selection — "re-seed, never invent a
+        /// selection the board did not offer" (<see cref="SeatOnAMultiCountTicket"/>'s own
+        /// discipline) holds for a seed-searched slate exactly as it does for a pinned one.</para>
+        /// </summary>
+        private static bool TryFindLowestLineOver(Run run, MarketKind kind, int excludeMatchup,
+            out int matchupIndex, out MarketSelection selection)
+        {
+            matchupIndex = -1;
+            selection = default;
+            double bestLine = double.MaxValue;
+            foreach (Matchup mm in run.CurrentSlate.Matchups)
+            {
+                if (mm.Index == excludeMatchup) continue; // DIFFERENT matchup - ordinary pricing path
+                foreach (MarketOffer off in mm.Markets)
+                {
+                    if (off.Selection.Kind != kind) continue;
+                    if (off.Selection.Choice != MarketChoice.Over) continue;
+                    if (off.Selection.Line >= bestLine) continue;
+                    bestLine = off.Selection.Line;
+                    matchupIndex = mm.Index;
+                    selection = off.Selection;
+                }
+            }
+            return matchupIndex >= 0;
+        }
+
+        /// <summary>Deliverable A's candidate pool. A plain static field, not a local, so it is
+        /// trivially editable without touching the search logic below. Includes
+        /// <c>STATS-MULTI-1</c> (<see cref="SeatOnAMultiCountTicket"/>'s own seed — already known to
+        /// offer BOTH a TotalCorners and a TotalCards market on different matchups, though NOT
+        /// confirmed OVER specifically until this search checks it) and <c>48151623</c> (already a
+        /// stable pinned seed elsewhere in this suite family —
+        /// <c>TvSweatCaptureHarness.Capture_Batch22_StatementFit_And_PayoffBeats</c>); the rest are
+        /// plausible A-Z0-9 draws for breadth. No claim any of them reach either named state — that
+        /// is what the search below measures.</summary>
+        private static readonly string[] TrapSeedCandidates =
+        {
+            "STATS-MULTI-1", "48151623", "STATS-MULTI-2", "STATS-MULTI-3", "STATS-MULTI-4",
+            "STATS-MULTI-5", "STATS-MULTI-6", "TRAP-1", "TRAP-2", "TRAP-3", "TRAP-4", "TRAP-5",
+        };
+
+        /// <summary>DELIVERABLE A — a MEASUREMENT instrument, not a gate. Same "measures only,
+        /// asserts no fit" shape as
+        /// <see cref="Evidence_C46_the_stats_panel_strings_against_their_boxes"/>, and
+        /// <c>[Explicit]</c> for the same reason: it walks up to <c>TrapSeedCandidates.Length</c>
+        /// fresh rooms end to end, which has no place in a routine suite — that guard is
+        /// load-bearing on this surface (see the capture harness's own <c>[Explicit]</c> pins).
+        ///
+        /// <para>For each candidate seed: start a run, find the lowest-line CORNERS-OVER and
+        /// CARDS-OVER offers on different matchups (skip the seed, logged, if either is absent —
+        /// never invent a selection the board did not offer), place the 2-leg ticket, lock, seat,
+        /// fast-forward, and poll every frame for whether leg 0 ever reads <c>W</c> and, while it
+        /// does and leg 1 is the live row, whether the footer ever reads <c>RISK</c> (state 1) or
+        /// <c>STAKE</c> (state 2). One <c>Debug.Log</c> line per seed — the lead reads the table and
+        /// hand-picks a seed for Deliverable B's placeholder constant below.</para>
+        ///
+        /// <para>Attributes kept directly adjacent to this signature, nothing between them and it.
+        /// <c>TvSweatCaptureHarness.cs</c> carries the standing account of why: a T87-am
+        /// <c>[Explicit]+[Timeout]</c> pair once sat above THREE stacked XML doc-comments with no
+        /// real declaration between them, and C# binds attributes to the next actual member
+        /// regardless of doc-comment trivia in between — so both attributes silently landed on the
+        /// WRONG method. This doc comment therefore ends immediately before the attributes, with no
+        /// further comment text between them and the signature.</para></summary>
+        [Explicit("Seed search for the T108 two-state trap gate (DD ruling-t108-trigger-2026-08-17.md "
+            + "§5): finds a seed whose corners+cards ticket demonstrates BOTH leg-0-Won-leg-1-RISK "
+            + "and leg-0-Won-leg-1-STAKE-before-whistle. Logs one line per candidate. Run by filter "
+            + "only.")]
+        [Timeout(1500000)]
+        [UnityTest]
+        public IEnumerator SeedSearch_TrapGateCandidates_LogsWhichSeedsReachBothStates()
+        {
+            foreach (string seed in TrapSeedCandidates)
+            {
+                bool leg0EverWon = false;
+                bool state1Seen = false; // leg0==W, leg1 live, footer==RISK
+                bool state2Seen = false; // leg0==W, leg1 live, footer==STAKE
+
+                yield return LoadRoom();
+                var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+                var screen = UnityEngine.Object.FindAnyObjectByType<TvSweatScreen>();
+                var couch = UnityEngine.Object.FindAnyObjectByType<SitSpot>();
+                Assert.IsNotNull(director, "RunDirector missing");
+                Assert.IsNotNull(screen, "TvSweatScreen missing");
+                Assert.IsNotNull(couch, "SitSpot missing");
+
+                screen.TimeScaleOverride = 0.0001f;
+                couch.transitionDuration = 0.01f;
+                yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+
+                director.StartNewRun(seed);
+                Run run = director.Run;
+
+                // WHY OVER-ONLY (TryFindLowestLineOver does the actual filtering, but the reason
+                // belongs here too, in the search pin, not only in the shared helper it calls): an
+                // UNDER leg has no early Won; its only pre-whistle verdict is Lost, so an UNDER
+                // fixture cannot certify state 2, no matter which seed carries it.
+                //
+                // Sequential checks below, NOT combined via && — each out-selection must come from
+                // an UNCONDITIONAL call so it is definitely assigned on the path that reads it below.
+                bool haveCorners = TryFindLowestLineOver(run, MarketKind.TotalCorners, -1,
+                    out int cornersMatchup, out MarketSelection cornersSelection);
+                if (!haveCorners)
+                {
+                    UnityEngine.Debug.Log($"[TRAP-SEARCH] seed={seed} SKIPPED (no CORNERS-OVER offer "
+                        + $"on this slate) leg0EverWon={leg0EverWon} state1(RISK)={state1Seen} "
+                        + $"state2(STAKE)={state2Seen}");
+                    continue; // a seed failing the precondition is a RESULT, not a reason to invent
+                              // a selection the board did not offer
+                }
+
+                bool haveCards = TryFindLowestLineOver(run, MarketKind.TotalCards, cornersMatchup,
+                    out int cardsMatchup, out MarketSelection cardsSelection);
+                if (!haveCards)
+                {
+                    UnityEngine.Debug.Log($"[TRAP-SEARCH] seed={seed} SKIPPED (no CARDS-OVER offer "
+                        + $"on a DIFFERENT matchup) leg0EverWon={leg0EverWon} "
+                        + $"state1(RISK)={state1Seen} state2(STAKE)={state2Seen}");
+                    continue;
+                }
+
+                const double Stake = 25.0;
+                run.PlaceTicket(new List<Pick>
+                {
+                    new Pick(cornersMatchup, cornersSelection),
+                    new Pick(cardsMatchup, cardsSelection),
+                }, Stake);
+                director.LockRound();
+
+                couch.OnInteract(null);
+                yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+                yield return WaitUntil(() => screen.DebugSeatedDeltaTime > 0f, 20f,
+                    "the screen never became seated-and-running");
+                for (int i = 0; i < 30; i++) yield return null; // first beat renders a scorebug
+
+                string endNote = "swept to completion";
+                float start = Time.realtimeSinceStartup;
+                const float maxSeconds = 60f; // per-seed budget — a slow seed is skipped, never
+                                               // fatal to the survey
+                while (run.Phase == Phase.Sweat)
+                {
+                    if (Time.realtimeSinceStartup - start > maxSeconds)
+                    {
+                        endNote = $"TIMED OUT after {maxSeconds}s";
+                        break;
+                    }
+
+                    string chip0 = screen.DebugLegState(0);
+                    string chip1 = screen.DebugLegState(1);
+                    if (chip0 == "W") leg0EverWon = true;
+
+                    if (chip0 == "W" && chip1 == string.Empty) // leg 0 Won, leg 1 IS the live row
+                    {
+                        string footer = screen.DebugTicketRiskText;
+                        string footerWord = footer.Length > 0 ? footer.Split(' ')[0] : string.Empty;
+                        if (footerWord == "RISK") state1Seen = true;
+                        else if (footerWord == "STAKE") state2Seen = true;
+                    }
+
+                    yield return null;
+                }
+
+                UnityEngine.Debug.Log($"[TRAP-SEARCH] seed={seed} {endNote} "
+                    + $"leg0EverWon={leg0EverWon} state1(RISK)={state1Seen} "
+                    + $"state2(STAKE)={state2Seen} cornersLine={cornersSelection.Line} "
+                    + $"cardsLine={cardsSelection.Line}");
+            }
+
+            // MEASUREMENT ONLY, same shape as C46 — this pin asserts nothing about which seed wins.
+            // The lead reads the [TRAP-SEARCH] lines above and hand-picks a seed with
+            // state1(RISK)=True AND state2(STAKE)=True for Deliverable B's placeholder constant.
+        }
+
+        // MEASURED, NOT GUESSED — "measure, then pin", the same route that chose STATS-MULTI-1
+        // itself (see SeatOnAMultiCountTicket's own comment). The seed search directly above was run
+        // 2026-08-17 over all twelve candidates; its [TRAP-SEARCH] lines are the record, and this is
+        // the ONLY candidate that reached BOTH states:
+        //
+        //   seed=STATS-MULTI-5  leg0EverWon=True  state1(RISK)=True  state2(STAKE)=True
+        //                       cornersLine=8.5   cardsLine=3.5
+        //
+        // The near misses are kept here because they are what makes the choice non-arbitrary, and
+        // because a later seat re-running the search should recognise the shape rather than re-derive
+        // it: STATS-MULTI-1/-3, TRAP-2 and TRAP-5 reach state 1 but never state 2 (leg 1 never clears
+        // its line before its own whistle); STATS-MULTI-2 reaches state 2 but never state 1; and five
+        // of the twelve never get leg 0 won at all. ONE seed in twelve carries both, which is exactly
+        // why the ruling refused to let this gate depend on an unpinned draw.
+        //
+        // If this seed ever stops qualifying, RE-RUN THE SEARCH — never widen the gate to match
+        // whatever the seed now does.
+        private const string TrapGateSeed = "STATS-MULTI-5";
+
+        /// <summary>DELIVERABLE B — THE WIRING GATE (DD ruling-t108-trigger-2026-08-17.md §5),
+        /// built to exercise both named states BY CONSTRUCTION rather than by luck.
+        ///
+        /// <para><b>A broader pin was drafted here and DELETED rather than kept, and the reason is
+        /// the whole point of this gate.</b> It asserted that any decided leg forces <c>RISK</c>
+        /// while any other leg is undecided — which reads as a safe superset and is in fact FALSE
+        /// under the ruling: state 2 is precisely leg 0 decided, leg 1 undecided-by-chip, and the
+        /// footer correctly reading <c>STAKE</c>. That pin would have failed on the exact state this
+        /// fix exists to produce. A "broader" assertion over a state space you have not enumerated
+        /// is not a stronger claim, it is an unenumerated one.</para>
+        ///
+        /// <para>The two states the ruling names cannot be told apart by the rows at all — leg 1's
+        /// chip reads identically blank/live in both — so the footer word is the only discriminator,
+        /// and it is bucketed by what was OBSERVED rather than checked against a re-derivation of the
+        /// model:</para>
+        ///
+        /// <para>STATE 1 — leg 0 resolved <c>Won</c>, leg 1 the live row → footer reads <c>RISK</c>.
+        /// The trap: a won leg must not reach the ticket word.</para>
+        /// <para>STATE 2 — leg 0 resolved <c>Won</c>, leg 1 STILL the live row (chip not yet
+        /// W/L/VOID) but ALREADY won on its revealed count, ahead of its own whistle → footer reads
+        /// <c>STAKE</c>. This is the fix actually working on a multi-leg ticket — the state the
+        /// whole spec was written for (ruling §4's "decided, but not yet resolved" third
+        /// state).</para>
+        ///
+        /// <para>OVER-only selections, lowest line: see <see cref="TryFindLowestLineOver"/> — an
+        /// UNDER leg has no early Won, so an UNDER fixture cannot reach state 2 on any seed.</para>
+        ///
+        /// <para>THE SEED IS A NAMED PLACEHOLDER (<see
+        /// cref="TrapGateSeed"/>), pending Deliverable A's measurement — see
+        /// that constant's own comment. No force-hook drives the ledger and adding one to production
+        /// is out of scope for this dispatch, so the construction is a SEED CHOICE, not a hook.
+        /// </para>
+        ///
+        /// <para>DOES NOT PROVE: how <c>WON</c>/<c>STAKE</c> read at review distance — that is a C11
+        /// frame claim neither this gate nor the one above states anything about (ruling
+        /// §6).</para></summary>
+        [UnityTest]
+        public IEnumerator TicketFooterWord_LegOneWon_RiskWhileLegTwoLive_StakeWhenLegTwoWonEarly()
+        {
+            yield return LoadRoom();
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+            var screen = UnityEngine.Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = UnityEngine.Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+
+            screen.TimeScaleOverride = 0.0001f;
+            couch.transitionDuration = 0.01f;
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+
+            director.StartNewRun(TrapGateSeed);
+            Run run = director.Run;
+            Assert.AreEqual(Phase.Betting, run.Phase, "a fresh run opens in Betting");
+
+            bool haveCorners = TryFindLowestLineOver(run, MarketKind.TotalCorners, -1,
+                out int cornersMatchup, out MarketSelection cornersSelection);
+            Assert.IsTrue(haveCorners,
+                $"seed '{TrapGateSeed}' offers no CORNERS-OVER selection — "
+                + "the pinned seed has stopped qualifying — RE-RUN the seed search above and re-pin, "
+                + "never invent a selection the "
+                + "board did not offer");
+
+            bool haveCards = TryFindLowestLineOver(run, MarketKind.TotalCards, cornersMatchup,
+                out int cardsMatchup, out MarketSelection cardsSelection);
+            Assert.IsTrue(haveCards,
+                $"seed '{TrapGateSeed}' offers no CARDS-OVER selection on a "
+                + "DIFFERENT matchup — the pinned seed has stopped qualifying; RE-RUN the seed search "
+                + "above and re-pin, never invent a selection the board did not "
+                + "offer");
+
+            const double Stake = 25.0;
+            run.PlaceTicket(new List<Pick>
+            {
+                new Pick(cornersMatchup, cornersSelection),
+                new Pick(cardsMatchup, cardsSelection),
+            }, Stake);
+            director.LockRound();
+
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+            yield return WaitUntil(() => screen.DebugSeatedDeltaTime > 0f, 20f,
+                "the screen never became seated-and-running");
+            for (int i = 0; i < 30; i++) yield return null; // let the first beat render a scorebug
+
+            int framesSampled = 0;
+            int state1Cases = 0;
+            int state2Cases = 0;
+
+            float start = Time.realtimeSinceStartup;
+            // Same failsafe shape as the other every-frame pins in this file: a hang is a FAILURE,
+            // never a silent pass.
+            const float maxSeconds = 60f;
+            while (run.Phase == Phase.Sweat)
+            {
+                if (Time.realtimeSinceStartup - start > maxSeconds)
+                {
+                    Assert.Fail($"the sweat never settled within {maxSeconds}s wall-clock (frames "
+                        + $"sampled so far: {framesSampled}, state1={state1Cases}, "
+                        + $"state2={state2Cases})");
+                    yield break;
+                }
+
+                framesSampled++;
+                string chip0 = screen.DebugLegState(0);
+                string chip1 = screen.DebugLegState(1);
+
+                // THE QUALIFYING FRAME for both states: leg 0 resolved Won, leg 1 IS the live row
+                // (blank chip — DebugLegState's own documented meaning of "live"). Off this frame,
+                // the footer word is the ONLY thing that tells states 1 and 2 apart — leg 1's OWN
+                // chip reads identically (blank) in both, which IS ruling §4's "decided, but not yet
+                // resolved" third state: the model has already graded the leg, the chip has not
+                // caught up, and the footer is the one surface reading the model's grade rather than
+                // the whistle. Bucketing by the observed word (never re-deriving an expectation from
+                // the model) is reading the ruling's own definition of each state literally.
+                if (chip0 == "W" && chip1 == string.Empty)
+                {
+                    string footer = screen.DebugTicketRiskText;
+                    string footerWord = footer.Length > 0 ? footer.Split(' ')[0] : string.Empty;
+
+                    if (footerWord == "RISK")
+                    {
+                        state1Cases++;
+                    }
+                    else if (footerWord == "STAKE")
+                    {
+                        state2Cases++;
+                    }
+                    else
+                    {
+                        Assert.Fail($"frame {framesSampled}: leg 0 is Won and leg 1 is the live row, "
+                            + $"so the footer must read RISK or STAKE — got '{footerWord}'");
+                    }
+                }
+
+                yield return null;
+            }
+
+            UnityEngine.Debug.Log($"[TRAP-GATE] seed={TrapGateSeed} "
+                + $"frames={framesSampled} state1Cases={state1Cases} state2Cases={state2Cases}");
+
+            // C29: a gate reports its executed case count and fails on zero. Both states are RULED
+            // requirements (§5), not one — a run that only ever showed state 1 has not certified the
+            // fix "actually working on a multi-leg ticket" (§5 item 2), the state the whole spec was
+            // written for.
+            Assert.Greater(state1Cases, 0,
+                $"state 1 (leg 0 Won, leg 1 live, footer RISK) was never observed across "
+                + $"{framesSampled} frames on seed '{TrapGateSeed}' — this gate "
+                + "has proven nothing about the trap (C29)");
+            Assert.Greater(state2Cases, 0,
+                $"state 2 (leg 0 Won, leg 1 live, footer STAKE on the revealed count) was never "
+                + $"observed across {framesSampled} frames on seed "
+                + $"'{TrapGateSeed}' — this gate has proven nothing about the "
+                + "fix actually working on a multi-leg ticket (C29)");
+        }
+
         private static (RunDirector, TvSweatScreen, SitSpot) FindTrio()
         {
             var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
