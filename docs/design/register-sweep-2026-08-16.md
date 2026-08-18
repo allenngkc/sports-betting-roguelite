@@ -83,6 +83,16 @@ their heads are stale.
 - **`T7`'s gate** — remove the stale "gated on T5" and re-point it at T41, or the next reader
   will chase a gate that opened two and a half weeks ago.
 
+> **STATUS — DD seat, 2026-08-17, batch 103. Both items taken; one needed nothing.**
+>
+> - **`C26` WAS ALREADY CLOSED when this sweep was written.** The row carries **`C26-cl`, batch
+>   98** — closed against the four documents' own headers rather than against the row. This sweep
+>   was written against the register at 343 rows, canon through batch 97, so it predates that
+>   close by hours. **Do not re-open it.**
+> - **`T7`'s gate is re-pointed at `T41`** (`T7-am`, batch 103). `T41` is recorded there as the TV
+>   register's structural bottleneck: it also gates `T49`, it was the third of `C26`'s own
+>   sequencing conditions, and it has carried no amendment since 2026-08-02.
+
 ---
 
 ## 6. A structural defect found during the sweep
