@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-18, cycle 395 - THE SURFACES BUILD
+**Keeper-era heartbeat stamp: 2026-08-18, cycle 396 (heartbeat).** TV in
+its editor window (phase B gate + re-shoot); DD reading the surfaces
+dock. Parked with Allen: research 8-9.
+
+*(prior stamp, cycle 395 - THE SURFACES BUILD
 IS MERGED (519c6fd).** The whole redesigned market sheet: derivation
 layer + gates, six destinations, printed groups, leaders, folio,
 contents, the measured rail, the six-frame dock. Four DD rulings pending
