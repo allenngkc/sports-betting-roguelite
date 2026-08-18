@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-17, cycle 388 - BOTH BUILDS LIVE.**
+**Keeper-era heartbeat stamp: 2026-08-17, cycle 389 (heartbeat).** Both
+builds grinding: TV's bundle in PlayMode then unit 3; markets confirming
+the spec's premises before its plan. DD idle awaiting evidence. Parked
+with Allen: research 8-9.
+
+*(prior stamp, cycle 388 - BOTH BUILDS LIVE:)*
 Both specs FINAL and merged (fc5a1f5); Allen confirmed A on the reveal.
 markets-pregame RE-SEATED for the surfaces build (term_af511a67, merging
 main first); the theater build queued as tv-theater's unit 3 behind its
