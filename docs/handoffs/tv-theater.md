@@ -240,8 +240,89 @@ instrument:**
    > longest member is 36. **That says the pool never contained the real strings. It
    > does NOT say by how many px the box overruns** — the sweep says that, and nothing
    > here anticipates its number.
-4. **The stats panel has NO slot in the sweep at all** — `T101`'s open residual,
-   confirmed by inspection rather than assumed.
+4. **The stats panel has no slot in `TvExtentSweep` — but it DOES have an
+   instrument**, and this seat's first reading of it was wrong. `T101`'s residual is
+   served by a dedicated `[Explicit]` PlayMode pin,
+   `Evidence_C46_the_stats_panel_strings_against_their_boxes`, and it is already built
+   to the standard: population enumerated from source (the closed club pool through
+   `SweatFlavor.Short`, the title and row labels read off their assign sites), face
+   borrowed from the RENDERED components rather than a lookalike, and **it offers no
+   fit verdict** — *C46 is a measurement lane, not a judgement.*
+
+   **So the residual is not "no instrument", it is "never run and never docked."**
+   Corrected here because the two call for completely different work, and the second
+   is much cheaper. **Absence from `TvExtentSweep` is not absence of coverage** — the
+   sweep is one instrument on this surface, not the only one.
+
+### THE MEASUREMENTS — run 2026-08-17, both instruments, one window
+
+**Measurements only. No fit verdict is offered and none is implied: `C46` is a
+measurement lane and the DD rules.** Every number is TMP's own unconstrained
+preferred width on the real component, the instruments' shared call.
+
+**Family 1 — the ticket column (`T108`'s new strings)**
+
+| slot | box | widest measured | result |
+|---|---|---|---|
+| `LegRowProgress0` | 249.0px | `CLEAN-SHEET PATH LIVE` 191.4px | fits, **57.6px spare** |
+| `RiskPays` | 249.0px | `STAKE $13,639` 158.9px | fits, **90.1px spare** |
+
+**The footer-widening risk this seat raised is measured and it is clear.** `RISK` →
+`STAKE` was flagged as pressing a box the spec said it relieved; on the instrument it
+costs 90.1px of headroom that was already there. **The flag was right to raise and the
+measurement is what settles it** — neither the spec's "relieves" nor this seat's
+"presses" was a measurement.
+
+**And the new strings are not the widest in their own slot.** `LegRowProgress0`'s
+widest is `CLEAN-SHEET PATH LIVE`, a BTTS line that predates this unit entirely.
+
+**Family 2 — the flavour strip (`T110`) — THE ONE THAT OVERRUNS**
+
+| slot | box | widest measured | result |
+|---|---|---|---|
+| `Flavor` | 651.0px | `yellow card in the spell — the picked number improves. (12 in the spell)` 745.8px | **OVERRUNS by 94.8px** |
+
+**`T110` is confirmed and quantified.** The clip reported on frame was a corner line;
+the widest reachable form is a **booking** line carrying the same suffix. The old pool
+could not have found either — its widest member was an invented 36-character string.
+
+**Family 3 — the stats panel (`T101`'s residual) — 142 strings, no overrun**
+
+| slot | box | widest measured | spare |
+|---|---|---|---|
+| `StatsLabel1` | 111.0px | `CORNERS` 81.2px | 29.8px |
+| `StatsTeamA` / `StatsTeamB` | 145.0px | `Spreadsheets` 115.3px | 29.7px |
+| `StatsTitle` | 111.0px | `COUNTS` 88.5px | 22.5px |
+| value cells `StatsA*`/`StatsB*` | 145.0px | `10` 22.0px | ≥123px |
+
+### TWO FINDINGS THE SWEEP PRODUCED THAT NOBODY ASKED IT FOR
+
+**1. `CashOut` OVERRUNS by 26.7px — and it is outside all three families.**
+Box 241.0px, widest `MARKET SUSPENDED` at 267.7px. §6.1's money control, one of its
+six ruled states, and `TV-12/13` gives that string the slot **exclusively**. Not this
+lane's to fix and not in the consolidated sweep's scope — **routed, and named here so
+it is not lost.**
+
+**2. The sweep's own §4.2 invariant is currently FALSE.** It prints
+`UNACCOUNTED FOR — this number must be 0` and reports **12**: every stats-panel slot
+(`StatsA0-2`, `StatsB0-2`, `StatsLabel0-2`, `StatsTeamA/B`, `StatsTitle`). Those slots
+ARE covered — by the panel pin above — but `TvExtentSweep`'s only category for a slot
+it does not sweep is *declared unswept (renders no string)*, **which is false for all
+twelve.** So the instrument cannot express "covered by a different instrument" and its
+own must-be-zero line is lying rather than gapping. **A third category is owed; that is
+an instrument change and the DD's call, so it is reported rather than made.**
+
+### SCOPE OF THIS RUN — stated so absence is not read as coverage
+
+- **Production runtime did not change.** The only edited file is
+  `Assets/SBR/Editor/TvExtentSweep.cs`, an editor-only measurement tool that no test
+  references as code. **The full-suite trigger did not fire and no suite was re-run
+  this window** — said plainly rather than implied by silence.
+- **Two pool members are deliberately unreachable today:** the whole-number-line bare
+  forms (`{n} GOALS` etc.). The generator emits only half-integer lines, so the branch
+  is defensive-only. Kept, and named, because a config change makes them real.
+- **`C46` is a measurement lane. Nothing above is a verdict**, including the two
+  overruns — what to do about them is the DD's.
 
 ---
 
