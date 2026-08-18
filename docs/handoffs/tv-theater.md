@@ -324,6 +324,33 @@ an instrument change and the DD's call, so it is reported rather than made.**
 - **`C46` is a measurement lane. Nothing above is a verdict**, including the two
   overruns — what to do about them is the DD's.
 
+### `T108-am2`'s ROUTED ITEM — closed, and it found a hole in the pool above
+
+Batch 102 routed one item into `T111`: every count arm formats `{total} {NOUN}` with
+the noun a fixed literal and **no arity branch anywhere in the file**, so a revealed
+total of one renders **`1 GOALS`**.
+
+**It was missing from the pool this lane had just shipped.** The first cut instantiated
+totals at 0, 3, 5, 10, 16, 24 and 40 — every edge it could think of except one, and
+`1` is the one that carries a grammar defect rather than a width one. **The DD found it
+by source read while this seat was reporting the pool complete.** Added and re-swept.
+
+**The measurement says it is NOT a width problem.** With the singular forms enumerated,
+`LegRowProgress0`'s widest is unchanged — `CLEAN-SHEET PATH LIVE` at 191.4px, **57.6px
+spare**, and no new overrun anywhere. So the sweep's contribution here is to make the
+form *visible*, not to condemn it: **whether `1 GOALS` is acceptable copy is grammar and
+the DD holds it.**
+
+**The corners singular is kept even though this seed cannot reach it** — its batch
+deltas were 2 throughout, and a step of 2 can jump the line without landing on it.
+**Reachability is a property of the generator, not of one capture**, and a pool sized to
+one seed's deltas is `S84`'s failure in miniature.
+
+> **The reusable half: an edge-case pool is only as good as the edges someone thought
+> of, and "every edge I could think of" is not an enumeration.** The first cut was
+> built by reading the source and still missed the case the source makes trivial —
+> `{total}` with `total = 1`.
+
 ---
 
 ## 1. Context (read in order)

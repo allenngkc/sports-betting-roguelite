@@ -379,6 +379,22 @@ namespace SBR.EditorTools
                     "16 GOALS • WON",     // cleared, line 375; total at its match-wide max
                     "0 GOALS • 4 MORE",   // undecided, line 380; total=0 edge
                     "3 GOALS • 1 MORE",   // undecided, line 380; total=threshold-1 edge
+                    // THE SINGULAR TOTAL, routed here by T108-am2 and MISSING from this pool's
+                    // first cut. Every count arm formats `{total} {NOUN}` with the noun as a fixed
+                    // literal and no arity branch anywhere in the file, so a revealed total of ONE
+                    // renders `1 GOALS`. Goals certainly reach it — the docked
+                    // goals-control-2026-08-16 set holds a revealed `1 — 0` from 30' to 90'+1 — and
+                    // the corners arm may not, since that seed's batch deltas were 2 throughout and
+                    // a step of 2 can jump the line without landing on it.
+                    //
+                    // Enumerated, NOT ruled: this pool's job is to make every renderable form
+                    // measurable, and whether `1 GOALS` is acceptable copy is a grammar question the
+                    // DD holds. It is here because a form the code can emit and the pool cannot see
+                    // is the C46 failure this instrument exists to catch — and the first cut of this
+                    // very pool had it, which is the point worth keeping.
+                    "1 GOALS • WON",      // over 0.5, total 1: cleared at the smallest total that can
+                    "1 GOALS • 3 MORE",   // over 3.5, total 1
+                    "1 GOALS • LIMIT 2",  // under 3.5, total 1
                     // TotalGoals Under, SweatActiveLegModel.cs:391-419.
                     "16 GOALS • LOST",    // line 403; total at its match-wide max
                     "0 GOALS • LIMIT 3",  // undecided, line 410; total=0 edge
@@ -395,6 +411,11 @@ namespace SBR.EditorTools
                     // edges of NEED/LIMIT are kept (see the digit-count-split note above).
                     "40 CORNERS • WON",       // line 480
                     "0 CORNERS • NEED 11",    // undecided, line 485; total=0 edge
+                    "1 CORNERS • NEED 10",    // the singular total — see the T108-am2 note above.
+                                              // Kept even though this seed's batch deltas were 2
+                                              // throughout: reachability is a property of the
+                                              // generator, not of one capture, and a pool sized to
+                                              // one seed's deltas is S84's failure in miniature.
                     "10 CORNERS • NEED 1",    // undecided, line 485; total=threshold-1 edge
                     "40 CORNERS • LOST",      // line 494
                     "0 CORNERS • LIMIT 10",   // undecided, line 504; total=0 edge
@@ -405,6 +426,7 @@ namespace SBR.EditorTools
                     // CardLines' max 5.5.
                     "24 CARDS • WON",        // line 480
                     "0 CARDS • NEED 6",      // undecided, line 485; total=0 edge
+                    "1 CARDS • NEED 5",      // the singular total — see the T108-am2 note above
                     "5 CARDS • NEED 1",      // undecided, line 485; total=threshold-1 edge
                     "24 CARDS • LOST",       // line 494
                     "0 CARDS • LIMIT 5",     // undecided, line 504; total=0 edge
