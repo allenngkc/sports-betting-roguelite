@@ -1693,6 +1693,25 @@ namespace SBR.Game
                 bool countScene = spec.Count.HasValue && spec.Count.Value.TotalDelta > 0;
                 if (countScene && spec.Count.Value.TotalDelta > 1)
                     _pendingFlavor += $" ({spec.Count.Value.TotalDelta} in the spell)";
+
+                // spec-count-theater-2026-08-17.md §4, THE BINDING: StageBeat() already advanced
+                // the count ledger's cursor unconditionally the instant _choreo.ResolveBeat ran
+                // above — if the resolver declined to stage that batch as a scene (SceneSpec.
+                // QuietCount rather than Count), the batch must still be committed here, or the
+                // column falls short of the match's own total (spec §7 item 2's gate). Uses the
+                // exact same authority a narrated count uses (CommitRevealedCount), so commit and
+                // repaint land on the same frame here too — never a second, hand-kept-in-step copy.
+                // NO flavour text, NO audio: only the drama is discretionary, the count is a fact.
+                // Do not "fix" this silence by adding a line — it is deliberate and ruled.
+                //
+                // NO-OP TODAY: no path populates QuietCount yet (see that field's own doc) — every
+                // fixture that exists right now resolves every TotalDelta > 0 batch through Count,
+                // never QuietCount, so this condition never once evaluates true against any
+                // existing suite. It exists ahead of the later significance gate that will populate
+                // it, per this phase's own scope (commit path only, no behaviour change).
+                if (spec.QuietCount.HasValue)
+                    CommitRevealedCount(spec.QuietCount.Value);
+
                 // A zero batch fell through to ordinary play: the pre-computed corner/booking
                 // line would narrate an event the pitch never shows (Sol, F_0.4.0 P3 r2).
                 // But a staged goal owns the beat's story wherever it lands (M-T4.1) — the
@@ -2031,9 +2050,34 @@ namespace SBR.Game
             if (_ballFlash != null) _ballFlash.enabled = false;
         }
 
-        /// <summary>A corner kick or booking reaches its payoff. Count and market direction
-        /// move together here; the stage callback fires before the chrome reveal callback.</summary>
-        private void OnCountPlayed(CountLedger.StagedCount count)
+        /// <summary>THE ONE COMMIT AUTHORITY for a count batch (spec-count-theater-2026-08-17.md §4:
+        /// "no beat may consume a count batch without committing it"). Advances the revealed ledger,
+        /// writes the stats panel's retained mirror, and repaints every surface that mirrors the
+        /// revealed count — the same three steps <see cref="OnCountPlayed"/> always ran, factored
+        /// out here so a beat that stages NO scene for a batch (a quiet corner,
+        /// <see cref="SceneSpec.QuietCount"/>) can commit it through the IDENTICAL path a narrated
+        /// one uses, rather than a second copy that must be kept in step by hand. This file's own
+        /// standing reasoning binds that exactly as it binds <see cref="RepaintRevealedScore"/>
+        /// itself (see that method's T62 note and the stats panel as its "third mirror"): one
+        /// authority, or the mirrors drift. Two commit paths drifting apart is precisely the defect
+        /// that reasoning exists to prevent — so there is only ever this one.
+        ///
+        /// <para>Commit and repaint land TOGETHER, never split across two call sites — this method
+        /// calls <see cref="RepaintRevealedScore"/> itself rather than leaving it to each caller, so
+        /// §6.2/T62's law ("a progress line lands on the same frame as its revealed payload") holds
+        /// by construction for both the narrated and the quiet path.</para>
+        ///
+        /// <para><b>Audio is deliberately NOT here</b> — it stays with <see cref="OnCountPlayed"/>
+        /// alone, the caller for a beat that actually staged a corner/booking scene. A quiet corner
+        /// commits the fact and gets no riser and no whistle: "the count is a fact; only the drama
+        /// is discretionary" (spec §4).</para>
+        ///
+        /// <para>Guarded on <c>_countLedger == null</c> exactly as the pre-refactor
+        /// <c>OnCountPlayed</c> was, so a call with no live count ledger is a no-op here exactly as
+        /// it always was — <see cref="OnCountPlayed"/> keeps its own copy of this same guard so a
+        /// null ledger still short-circuits before its audio, unchanged from today's
+        /// behaviour.</para></summary>
+        private void CommitRevealedCount(CountLedger.StagedCount count)
         {
             if (_countLedger == null) return;
             _countLedger.CompleteCount(count);
@@ -2052,6 +2096,17 @@ namespace SBR.Game
                 if (_ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count)
                     RepaintRevealedScore(_ticket.Legs[_stageLeg]);
             }
+        }
+
+        /// <summary>A corner kick or booking reaches its payoff. Count and market direction
+        /// move together here; the stage callback fires before the chrome reveal callback. The
+        /// commit itself (ledger advance, stats mirror, repaint) is <see cref="CommitRevealedCount"/>
+        /// — this method adds only the audio, which is narration and belongs to a SCENE, never to a
+        /// silent commit (see that method's own doc).</summary>
+        private void OnCountPlayed(CountLedger.StagedCount count)
+        {
+            if (_countLedger == null) return;
+            CommitRevealedCount(count);
             if (_ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count
                 && _ticket.Legs[_stageLeg].Selection.Kind == MarketKind.TotalCards)
                 _audio?.BookingWhistle();

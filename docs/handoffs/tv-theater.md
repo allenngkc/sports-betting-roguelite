@@ -353,6 +353,69 @@ one seed's deltas is `S84`'s failure in miniature.
 
 ---
 
+## 0-U5. UNIT 3 — THE THEATER BUILD · in progress 2026-08-17
+
+Spec: `docs/design/spec-count-theater-2026-08-17.md` (FINAL, canon `fc5a1f5`).
+
+### THE PHASING, and why §4 goes first
+
+| phase | contents |
+|---|---|
+| **A** | **§4 — the quiet-corner commit path.** The prerequisite. |
+| **B** | §3.1–3.4 — the distance gate. |
+| **C** | §3.5's disjointness structure (pool owed) + §2 the reveal. |
+
+**§4 is first because §3 is unsafe without it.** `StageBeat()` advances its cursor
+unconditionally while `CompleteCount` fires from the scene's payoff, so the moment a beat
+can decline a batch, it consumes a count without committing one — *"the column stops
+tracking and the match ends short of its own total."* **Phase A is deliberately a NO-OP on
+today's behaviour**: nothing yet declines a batch, so every suite must stay at its exact
+numbers. The invariant lands before the change that can break it.
+
+### §2 AND §3 ARE BUILT INDEPENDENT, BY INSTRUCTION
+
+The DD flagged its own reading of Allen's *"stay personalized"*: it discriminates against
+option B but **not between A and C**, and *"stay" is a preservation word* reading toward
+C — no change at all. So the spec says: *"If Allen meant C, delete §2 and build §3
+unchanged… **Do not let §3 acquire a dependency on §2 during the build** — that is the one
+thing that would make the flag expensive."* Honoured: they are two independent changes.
+
+### SIGNIFICANCE IS COMPUTABLE WITH NO LEAK
+
+`distance = threshold − (revealed Home + Away + this batch's delta)`, with `threshold`
+derived from `leg.Selection.Line` — a **betting-time** fact — and the counts from the
+revealed ledger. **No path touches `TargetHome`/`TargetAway`**, so §3.3's *reads the
+REVEALED count, never the locked target* holds by construction, exactly as `T108` does.
+
+**Distance is measured where the beat LEAVES the count, not where it found it.** The
+grammar doc's own table reads distance after each event (43', total 8, *"one short — THE
+APPROACH"*), so the staged batch is included before the comparison.
+
+### THE THRESHOLD — A SPEC GAP, ROUTED AND BUILT ONE EDIT WIDE
+
+§3.1 says **"a ramp, not a switch"**; §7's gate 1 asserts events **"below the significance
+threshold"** produce no count scene. **The two pull opposite ways and no value is named.**
+
+Routed to the DD. Built meanwhile on Allen's word — **the explicit cases the spec does
+name**: the approach, the turn, and *"a resolved leg's corners have no distance to any
+line, so they earn nothing."* The distance sits in a **named constant, not a literal**, so
+the ramp is one edit wide. **A silent constant must not stand in for a ruling.**
+
+Consistent with the measured shape: 7 count events, 2 weighted, 5 going quiet — inside
+`T113`'s "up to six of eight" ceiling.
+
+### AN UNSTATED CONSEQUENCE — GOING QUIET ALSO SHORTENS THE WATCH
+
+`cornerSeconds` 4.5 against `calmSeconds` 3.0, × `paceMultiplier` 0.75 = **1.125 sim-s
+reclaimed per quieted beat.** At ~5 quieted that is **~5.6s off a 44.42s sweat, ~12.5%.**
+
+Probably the right direction — the evidence had corners at 41.42s against the goals
+control's 35.40s, so quieting the arm also converges its **duration** on the control. But
+**the spec does not mention pacing**, and it will be visible on the re-shot pair §8 asks
+for. **Flagged before the frames, not discovered after them.** Routed to the DD.
+
+---
+
 ## 0-U4. THE RULED QUEUE — batches 103-106 · 2026-08-17
 
 ### `T112` — the cash-out constant · MEASURED, then BUILT

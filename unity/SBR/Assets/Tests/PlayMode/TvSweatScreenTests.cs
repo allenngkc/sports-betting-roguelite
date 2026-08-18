@@ -1949,6 +1949,147 @@ namespace SBR.Tests.PlayMode
                 + "worse than the mark it would be replacing (DD batch 93 item 2)");
         }
 
+        /// <summary>spec-count-theater-2026-08-17.md §7 item 2 — described in §4 as "the assertion
+        /// that matters most": <b>a fixture running a full sweat must finish with the column's total
+        /// equal to the match's own.</b> §4's binding is that <c>StageBeat()</c> advances the count
+        /// ledger's cursor unconditionally, so any beat that consumes a batch without committing it
+        /// leaves the revealed column short of a total the match actually reached — this pin is the
+        /// gate against exactly that.
+        ///
+        /// <para>Reuses <see cref="SeatOnAMultiCountTicket"/> rather than a new fixture (pinned seed
+        /// <c>STATS-MULTI-1</c>, leg 0 CORNERS / leg 1 CARDS — see that helper's own comment) and
+        /// runs the WHOLE ticket to settlement, the same wall-clock-failsafe shape as
+        /// <see cref="TicketFooterWord_LegOneWon_RiskWhileLegTwoLive_StakeWhenLegTwoWonEarly"/> and
+        /// <see cref="TicketFooterWord_NeverDisagreesWithAnyRow_AndNoLiveRowEverPrintsNeedZero"/>: a
+        /// hang is a FAILURE (<c>Assert.Fail</c>), never a silent pass. Running the whole ticket
+        /// (not just corners' own leg) exercises cards' identical StageBeat/commit path too, not
+        /// only corners'.</para>
+        ///
+        /// <para><b>Why the corners figure is captured MID-LOOP, the instant leg 0 stops being live,
+        /// rather than read off the screen after the whole ticket settles:</b> <c>_countLedger</c> is
+        /// REPLACED the instant leg 1 (cards) begins (T62 note on <c>RepaintRevealedScore</c>;
+        /// <see cref="Stats_panel_retains_a_revealed_count_after_its_leg_stops_being_live"/>'s own
+        /// trap), so <c>DebugRevealedCountHome/Away</c> would read CARDS by the end, not CORNERS. The
+        /// STATS PANEL's RETAINED row (index 1, "CORNERS|away|home") is what DD batch 93 item 2 built
+        /// so a count revealed earlier survives its leg going non-live — captured here at the
+        /// earliest frame that row can hold corners' FINAL figure (leg 0 just decided) rather than a
+        /// value snapshotted mid-reveal, which <see cref="Stats_panel_retains_a_revealed_count_after_its_leg_stops_being_live"/>'s
+        /// own comment already warns can be stale. This also sidesteps ever reading screen state
+        /// after <c>run.Phase</c> leaves Sweat, which nothing in this suite has previously
+        /// exercised. Opening the panel FREEZES time (§8.8's "TIME STOPS" — see
+        /// <see cref="Stats_panel_opening_stops_time_at_its_single_authority"/>), so it is closed
+        /// again in the same frame, before the next <c>yield return null</c> — left open it would
+        /// freeze leg 1 forever and this pin would fail on its own wall-clock budget instead of
+        /// proving anything.</para>
+        ///
+        /// <para>"The match's own total" is read directly off <c>Leg.Matchup.StatLine</c> — the
+        /// exact ground-truth field <c>CountLedger.ConfigureEndpoint(MatchStatLine, ...)</c> itself
+        /// reads to set <c>TargetHome</c>/<c>TargetAway</c> in the first place
+        /// (SweatPresentationModel.cs), and the same field <c>ScoreLedgerTests.cs</c> already reads
+        /// for the identical comparison (<c>cornersLeg.Matchup.StatLine.HomeCorners + AwayCorners</c>).
+        /// Not a number computed here, and not a new TvSweatScreen accessor: no production surface
+        /// gains any new way to leak the locked target, because none is touched — this reads a field
+        /// already public on the engine's own <c>Matchup</c>, exactly as production code and
+        /// <c>ScoreLedgerTests.cs</c> already do.</para>
+        ///
+        /// <para><b>What this does NOT prove</b> (see <see cref="SceneSpec.QuietCount"/>'s own doc):
+        /// this phase is a no-op by design — nothing yet populates <c>QuietCount</c>, so every count
+        /// batch in this run commits through the narrated <c>Count</c> path exactly as before this
+        /// dispatch. This pin certifies the invariant still holds (it always did — DD batch 93's
+        /// commit path was already unconditional per beat) now that the commit call has been
+        /// factored out, AHEAD of the later significance gate that will actually decline a batch and
+        /// route it through <c>QuietCount</c> instead. It says nothing about whether any particular
+        /// beat was quiet, because in this phase none are.</para></summary>
+        [UnityTest]
+        public IEnumerator FullSweat_RevealedCountColumnFinishesEqualToTheMatchsOwnTotal()
+        {
+            yield return SeatOnAMultiCountTicket();
+            TvSweatScreen screen = _statsScreen;
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+            Assert.IsNotNull(director, "RunDirector missing");
+            Run run = director.Run;
+            Assert.IsNotNull(run, "no run - SeatOnAMultiCountTicket did not seat a live run");
+
+            Leg cornersLeg = director.CurrentTicket.Legs[0];
+            Assert.AreEqual(MarketKind.TotalCorners, cornersLeg.Selection.Kind,
+                "SeatOnAMultiCountTicket's own pick order puts CORNERS at leg 0 - re-point this pin "
+                + "if that order ever changes, never assume it silently");
+            int matchHome = cornersLeg.Matchup.StatLine.HomeCorners;
+            int matchAway = cornersLeg.Matchup.StatLine.AwayCorners;
+
+            string mark = screen.DebugStatsUnrevealedMark;
+            string cornersRowAtLegEnd = null;
+
+            int framesSampled = 0;
+            float start = Time.realtimeSinceStartup;
+            const float maxSeconds = 60f;
+            // Same failsafe shape as the file's other full-sweat pins: a hang is a FAILURE, never a
+            // silent pass. Runs the WHOLE ticket (both legs) to settlement per §7 item 2, not just
+            // corners' own leg.
+            while (run.Phase == Phase.Sweat)
+            {
+                if (Time.realtimeSinceStartup - start > maxSeconds)
+                {
+                    Assert.Fail($"the sweat never settled within {maxSeconds}s wall-clock (frames "
+                        + $"sampled so far: {framesSampled})");
+                    yield break;
+                }
+                framesSampled++;
+
+                // Snapshot the CORNERS retained row the FIRST frame leg 0 is no longer the live row
+                // (DebugLegState(0) leaves "" for "W"/"L"/"VOID" — never "NEXT", since corners is
+                // always the first leg to go live) — the earliest moment its own total can have
+                // stopped changing, while the screen is definitely still mid-Sweat and valid.
+                if (cornersRowAtLegEnd == null && screen.DebugLegState(0) != string.Empty)
+                {
+                    screen.ForceStatsPanel(true);
+                    cornersRowAtLegEnd = screen.DebugStatsRow(1);
+                    screen.ForceStatsPanel(false); // must close in-frame - open freezes time (§8.8)
+                }
+
+                yield return null;
+            }
+
+            // C29: a gate reports its executed case count and fails on zero - a fixture that never
+            // reached settlement, or whose leg 0 never actually decided, has proven nothing.
+            Assert.Greater(framesSampled, 0,
+                "zero frames sampled before the run left Phase.Sweat - the fixture never actually "
+                + "ran, so nothing below is proven (C29)");
+            Assert.IsNotNull(cornersRowAtLegEnd,
+                "leg 0 (corners) never reached a decided state across the whole sweat - cannot prove "
+                + "the count-commit invariant without corners actually finishing (C29)");
+
+            StringAssert.StartsWith("CORNERS|", cornersRowAtLegEnd,
+                $"row 1 was not CORNERS when leg 0 finished — got '{cornersRowAtLegEnd}'");
+            Assert.AreNotEqual($"CORNERS|{mark}|{mark}", cornersRowAtLegEnd,
+                "the CORNERS row still carried the unrevealed mark once its own leg finished - the "
+                + "leg settled without ever committing a count, which is §4's exact defect");
+
+            string[] parts = cornersRowAtLegEnd.Split('|');
+            Assert.AreEqual(3, parts.Length, $"unexpected CORNERS row shape: '{cornersRowAtLegEnd}'");
+            Assert.IsTrue(int.TryParse(parts[1], out int revealedAway),
+                $"CORNERS row's away figure did not parse as an int: '{parts[1]}'");
+            Assert.IsTrue(int.TryParse(parts[2], out int revealedHome),
+                $"CORNERS row's home figure did not parse as an int: '{parts[2]}'");
+
+            // §7 item 2, the assertion that matters most: the REVEALED column must finish EQUAL to
+            // the MATCH'S OWN total - not "close", exactly equal, or a batch was consumed by
+            // StageBeat() without ever being committed (§4) and the column fell short of a total the
+            // match actually reached. Component-wise, not just the sum, so one side over-counting
+            // while the other under-counts by the same amount cannot hide behind a matching total.
+            Assert.AreEqual(matchAway, revealedAway,
+                $"revealed AWAY corners {revealedAway} != the match's own AWAY corners {matchAway}");
+            Assert.AreEqual(matchHome, revealedHome,
+                $"revealed HOME corners {revealedHome} != the match's own HOME corners {matchHome}");
+            Assert.AreEqual(matchAway + matchHome, revealedAway + revealedHome,
+                $"revealed corners total {revealedAway + revealedHome} != the match's own total "
+                + $"{matchAway + matchHome} after its leg finished - a count batch was consumed "
+                + "without being committed (§4)");
+
+            UnityEngine.Debug.Log($"[COUNT-COMMIT] frames={framesSampled} "
+                + $"revealedTotal={revealedAway + revealedHome} matchTotal={matchAway + matchHome}");
+        }
+
         /// <summary>DD batch 95: seats the player on a ticket carrying EXACTLY ONE count leg — a
         /// TotalCorners leg, and no TotalCards leg — the exact row set (GOALS+CORNERS, CARDS ABSENT)
         /// the §8.8 closing ruling's own binary criterion names ("on a corners-only ticket there is

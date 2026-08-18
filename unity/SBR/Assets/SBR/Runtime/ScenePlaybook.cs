@@ -85,6 +85,32 @@ namespace SBR.Game
         /// independent of this field (reviewer correction: a prior revision of this fix
         /// conflated the two, making Corner's routing follow the template/bet again).</summary>
         public readonly bool? CountBeneficiaryIsHome;
+        /// <summary>spec-count-theater-2026-08-17.md §4, "a quiet corner must still count": a count
+        /// batch this beat CONSUMED (<see cref="CountLedger.StageBeat"/> already advanced the
+        /// ledger's cursor unconditionally when this spec was resolved) but DECLINED to stage as a
+        /// scene. The binding rule: "no beat may consume a count batch without committing it. A
+        /// corner that earns no scene is still a corner — the count is a fact; only the drama is
+        /// discretionary." When set, the batch must still be committed (TvSweatScreen's
+        /// CommitRevealedCount) — with no flavour text and no audio, because this field itself
+        /// carries no drama, only the fact.
+        ///
+        /// <para>Deliberately a SEPARATE field from <see cref="Count"/>, never a reuse of it:
+        /// <c>Count</c> means "this beat narrates a count event" and drives real presentation —
+        /// TvSweatScreen's <c>countScene</c> check, the " ({n} in the spell)" flavour suffix, and
+        /// the dangerous-scene reveal/audio routing all key off <c>Count.HasValue</c>. Staging a
+        /// quiet batch through <c>Count</c> would narrate and sound a corner that earned no scene —
+        /// the exact opposite of the rule this field exists to satisfy. A resolved beat carries AT
+        /// MOST ONE of <c>Count</c>/<c>QuietCount</c> populated — the resolver either stages the
+        /// batch as a scene or commits it silently, never both.</para>
+        ///
+        /// <para><b>This phase (the commit path only) never populates this field — it stays null on
+        /// every path.</b> Nothing yet declines a batch (see <c>TheaterChoreographer.ResolveBeat</c>'s
+        /// count branch: every batch with <c>TotalDelta &gt; 0</c> still stages a scene via
+        /// <c>Count</c>), so no existing call site sets this and no existing fixture ever sees it
+        /// populated. It exists ahead of the later significance gate that will set it, so that gate
+        /// lands on top of a commit path that already exists rather than inventing one under
+        /// time pressure.</para></summary>
+        public readonly CountLedger.StagedCount? QuietCount;
 
         public SceneSpec(SceneTemplate template, int variant, bool leadChangeIntro, bool urgent,
             bool forPicked, ScoreLedger.StagedGoal? goal, float duration)
@@ -94,7 +120,7 @@ namespace SBR.Game
         public SceneSpec(SceneTemplate template, int variant, bool leadChangeIntro, bool urgent,
             bool forPicked, ScoreLedger.StagedGoal? goal, CountLedger.StagedCount? count,
             CountLedger.FinalPlan? countFinal, MarketKind market, float duration,
-            bool? countBeneficiaryIsHome = null)
+            bool? countBeneficiaryIsHome = null, CountLedger.StagedCount? quietCount = null)
         {
             Template = template;
             Variant = variant;
@@ -107,6 +133,7 @@ namespace SBR.Game
             Market = market;
             Duration = duration;
             CountBeneficiaryIsHome = countBeneficiaryIsHome;
+            QuietCount = quietCount;
         }
     }
 
