@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-17, cycle 390 (heartbeat).** Both
+**Keeper-era heartbeat stamp: 2026-08-17, cycle 391 (heartbeat).** TV in
+phase B; markets rendering the rail with three design questions routing
+to the DD as a findings doc. Parked with Allen: research 8-9.
+
+*(prior stamp, cycle 390:)* Both
 builds deep in phase work (TV: the quiet-corner commit path; markets:
 the destinations). All six authorings ruled and landed (2bff94e). DD
 standing by for frames. Parked with Allen: research 8-9.
