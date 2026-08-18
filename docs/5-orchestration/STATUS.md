@@ -1,6 +1,9 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-17, cycle 392 (heartbeat).** The
+**Keeper-era heartbeat stamp: 2026-08-18, cycle 393 (heartbeat).** Both
+builds grinding through their phases. Parked with Allen: research 8-9.
+
+*(prior stamp, cycle 392:)* The
 routed surfaces rulings landed (8e8b03d) incl. S93 assigned to the
 build; reveal-A ledger closed. Both builds grinding. Parked with Allen:
 research 8-9.
