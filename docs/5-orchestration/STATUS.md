@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 373 - RESUMED on Allen's
+**Keeper-era heartbeat stamp: 2026-08-17, cycle 374.** Batch 101 landed
+(6ccd871): the trigger ruled on the revealed-count reading + a NEW LAW
+(a leg won on the count before its whistle is a third state); the gate
+corrected (two states by construction). Ruling relayed to tv-theater,
+building. The DD composes the FOUR CALLS for Allen on his staged word.
+
+*(prior stamp, cycle 373 - RESUMED on Allen's
 'continue'.** The orchestrator session received Allen's continue directly
 and reads it as the resume word the pause was waiting on (stated to him
 for veto). Board rebuilt after the sixth restart: tv-theater resumed via
