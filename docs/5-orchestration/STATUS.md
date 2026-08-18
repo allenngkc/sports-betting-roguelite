@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-17, cycle 391 (heartbeat).** TV in
+**Keeper-era heartbeat stamp: 2026-08-17, cycle 392 (heartbeat).** The
+routed surfaces rulings landed (8e8b03d) incl. S93 assigned to the
+build; reveal-A ledger closed. Both builds grinding. Parked with Allen:
+research 8-9.
+
+*(prior stamp, cycle 391:)* TV in
 phase B; markets rendering the rail with three design questions routing
 to the DD as a findings doc. Parked with Allen: research 8-9.
 
