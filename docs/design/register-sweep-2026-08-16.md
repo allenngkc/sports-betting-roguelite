@@ -3,6 +3,24 @@
 **Written:** Design Director seat, 2026-08-16 · **Against:** `REGISTER.md` at 343 rows, canon
 through batch 97 · **Requested by:** Allen
 
+> ## ⚠ READ THIS FIRST — 2026-08-17, DD seat
+>
+> **This sweep reports an UPPER BOUND on what is open. It is not a worklist.** Four items taken
+> so far have turned out more discharged than reported, **every one of them in the direction this
+> document itself declared as its blind spot** (*"where a row's current status sits mid-amendment
+> rather than at its tail, this sweep will have mis-read it"*):
+>
+> | item | reported | actually |
+> |---|---|---|
+> | `C26` (§5) | *recommend close it* | **already closed at batch 98**, hours before this sweep |
+> | `S80-am2` clause 7 (§2) | *probably unblocked* | **half discharged**; both named targets retired by ordering, only `B` remains (`S80-am2-cl`) |
+> | `T95` (§3) | *needs a measured close* | **fixed, merged, pinned and re-captured 2026-08-13** — three days earlier (`T95-cl`) |
+> | `G1` residual (§2) | *`{SURNAME} SCORES` unmeasured across the twelve* | **measured at batch 63**; only the rendered read is owed (`G1-am`) |
+>
+> **Verify every item against its row's TAIL and against source before doing work on it.** That
+> check has now saved wasted work four times out of four attempts.
+
+
 ## Method, and what it cannot see (C18 §4.2)
 
 Every one of the 343 rows was probed on its **leading verdict plus the tail of its amendment
