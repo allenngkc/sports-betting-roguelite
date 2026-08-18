@@ -1,6 +1,18 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-17, cycle 385.** Allen's continue:
+**Keeper-era heartbeat stamp: 2026-08-17, cycle 387 (heartbeat).** TV in
+its suite gate; DD finalizing both specs on the seven words. Parked with
+Allen: research 8-9.
+
+*(prior stamp, cycle 386 - ALLEN'S SEVEN
+WORDS.** (1) Reveal: A - score always true, rest personalized; (2) empty
+groups PRINT; (3) folio+contents YES; (4) name-first ratified now, amber
+on a comparison frame; (5) one-per-row ratified; (6) count-beat distance
+treatment YES; (7) nudge row DELETE (fresh product call). 8-9 later. DD
+finalizes both specs; the surfaces build (markets-pregame revival) and
+the theater build follow the approved specs. TV mid-bundle meanwhile.
+
+*(prior stamp, cycle 385:)* Allen's continue:
 the ruled-but-undispatched queue drained to TV as one bundle - the two
 overrun fixes (batches 103-104) + the sweep instrument's DELEGATED
 category (four clauses). Still with Allen: six calls, nudge, research
