@@ -916,8 +916,14 @@ namespace SBR.Game
         // S51 closed on, reused here rather than restated as a number.
         private const float CommitPayoutTop = ActionBandReservedHeight + (31f * 1.1f + 2f);
         private const float CommitPayoutLabelTop = CommitPayoutTop + 16f;
-        private const float CommitNudgeTop = CommitPayoutLabelTop + 32f;
-        private const float CommitChipTop = CommitNudgeTop + 34f;
+        // CommitNudgeTop is GONE — S82-am2 / S80-am2-cl2 (batch 107, 2026-08-17) DELETED the nudge
+        // row (−$10/+$10 stake chips) on redundancy: the fraction chips already set the stake. This
+        // is the whole edit — CommitChipTop now builds directly on CommitPayoutLabelTop, reusing the
+        // same +34f the chip row always advanced by (its own height plus trailing gap), previously
+        // spent reaching the nudge row and now reaching the payout label straight away. The removed
+        // hop is exactly CommitNudgeTop's old +32f, so this recovers 32px with nothing hand-patched
+        // downstream to compensate — CommitZoneReserved and SlipViewportHeight just fall out of it.
+        private const float CommitChipTop = CommitPayoutLabelTop + 34f;
         /// <summary>Zone 3's full reservation, measured up from the panel floor: the action band plus
         /// the stake and payout blocks that commit depends on.</summary>
         internal const float CommitZoneReserved = CommitChipTop + 34f;
@@ -1373,11 +1379,12 @@ namespace SBR.Game
             MakeChip(panel, "50%", chipX, y, () => slip.SetStakeFraction(0.50)); chipX += 76f;
             MakeChip(panel, "MAX", chipX, y, () => slip.SetStakeFraction(1.00));
             y -= 34f;
-            // Nudge keys are "raised chrome" per StakeButton.jsx and set in the condensed face;
-            // the quick fraction chips above (10%/25%/50%/MAX) stay on the data face.
-            MakeChip(panel, "−$10", 14f, y, () => slip.Nudge(-10), 88f, _fontCond);
-            MakeChip(panel, "+$10", 110f, y, () => slip.Nudge(10), 88f, _fontCond);
-            y -= 32f;
+            // S82-am2 / S80-am2-cl2 (batch 107, 2026-08-17): nudge row (−$10/+$10 stake chips)
+            // DELETED — redundant, the fraction chips above already set the stake. The 34px advance
+            // above is untouched (it was always the chip row's own trailing gap into whatever comes
+            // next); the payout label below now takes that position directly, so the nudge row's own
+            // +32f hop is simply gone from the chain rather than left as a dead gap. `BetslipModel.
+            // Nudge(double)` stays — only this player-facing row is deleted.
             // B1-5/M-06: PayoutFigure.jsx (kit) carries a "POTENTIAL PAYOUT" label — roman, fact
             // floor, --toner-3 — above the value; shipped had none. Added by moving the cursor down
             // to make room, not by touching the 31px wax figure's own size/colour/font or the hand-
