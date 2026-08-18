@@ -148,6 +148,29 @@ or `Fallback` — **not calm** — and this direction would deliver a different 
 
 **Naming a reachable branch is not checking that anything reaches it.** That is exactly the error
 `T108-am` recorded three days running, and it is unproven here. **Settle it before speccing.**
+> **DISCHARGED — 2026-08-17, by measurement (`T113`, batch 105).** The calm-beat probe answers
+> this section and refutes both fears.
+>
+> - **Calm beats ARE scheduled: up to SIX OF EIGHT** beats in this sweat are calm beats already
+>   being spent. **And the stream is innocent** — the goals and corners arms are beat-for-beat
+>   identical, probabilities within thousandths. The flatness is **entirely presentation routing.**
+> - **`Territory` can never occur on a momentum beat** — `Swing` needs Δp ≥ 0.10, `Momentum` caps
+>   under 0.07: **mutually exclusive by arithmetic**, so it holds for every seed. The **stronger**
+>   of the two refutations.
+> - **The fallback arm is unreachable today** — true of *today's* config, so the **weaker** one; it
+>   would not survive a config change unexamined.
+>
+> **One wording correction, and it changes the fix:** the count branch **returns before the base
+> table runs**, so `CalmPossession` is never constructed. Nothing is *overwritten* — **the calm
+> branch is never reached.** The beats are tagged `Calm` by the stream and rendered `CornerFor` by
+> the routing. *Overwritten* invites computing both and preferring calm; the actual change is
+> **gating the count branch's entry.**
+>
+> **Still not established, and §5 is untouched:** the probe measured **scheduling only**, one seed,
+> one line, with `ResolveBeat`'s interception left alone — which is exactly what this direction
+> changes. It proves the calm beats exist and are spent; **it does not prove that reclaiming them
+> yields a good watch.** That is a `C11` frame claim awaiting a capture.
+
 
 ## 9. WHERE THIS FORKS ON ALLEN'S REVEAL ANSWER
 
