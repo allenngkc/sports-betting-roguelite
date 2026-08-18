@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-17, cycle 374.** Batch 101 landed
+**Keeper-era heartbeat stamp: 2026-08-17, cycle 375.** THE FIVE CALLS
+are composed, landed (19b5634), and PUT TO ALLEN: the reveal, empty
+groups, navigation, the price (two halves), row density (the DD reversed
+its own flag on 5 after checking canon - four precedents rule one-per-
+row). tv-theater builds unit 1 under the trigger ruling. The board waits
+on Allen's five words + the research two.
+
+*(prior stamp, cycle 374:)* Batch 101 landed
 (6ccd871): the trigger ruled on the revealed-count reading + a NEW LAW
 (a leg won on the count before its whistle is a third state); the gate
 corrected (two states by construction). Ruling relayed to tv-theater,
