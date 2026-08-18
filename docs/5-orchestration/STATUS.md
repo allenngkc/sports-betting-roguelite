@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-17, cycle 378 (heartbeat).** TV on
+**Keeper-era heartbeat stamp: 2026-08-17, cycle 379.** The C46 sweep
+MERGED (d093827) - both tv-theater units delivered: two overruns routed
+to the DD (strip + CashOut) plus a found instrument gap (the sweep's
+category system lies about covered slots - a third category owed). DD
+ruling. With Allen: the held nudge draft, five calls, research two.
+
+*(prior stamp, cycle 378:)* TV on
 the C46 sweep; DD holding. One staged draft HELD pending Allen's word:
 'B is taken, delete the nudge row' contradicts the settled C-forward
 ruling and its deficit rationale is gone - offered back as a fresh
