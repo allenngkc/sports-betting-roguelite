@@ -24,10 +24,13 @@ variable — `OVER 8.5 CORNERS` against `OVER 1.5 GOALS`.
 - **The corners player was shown `0 — 0` for 86% of a match that finished 5–1**, then handed the
   result in two steps at the death.
 
-## 2. CLAUSE ONE — THE REVEAL (`T109-cl`) · ⚠ SEPARABLE, AND FLAGGED
+## 2. CLAUSE ONE — THE REVEAL (`T109-cl`) · RULED, CLOSED
 
-**RULED (on the reading of Allen's *"stay personalized"* as option A): the revealed scoreline is never
-withheld. Goals reveal on the true clock whether or not the ticket rides on them.**
+**RULED — ALLEN, FINAL, 2026-08-18: THE REVEAL IS A. The revealed scoreline is never withheld. Goals
+reveal on the true clock whether or not the ticket rides on them.**
+
+**Confirmed three times** — his *"stay personalized"* word, then twice against a staged draft. **This
+clause is no longer conditional and no longer carries a flag; build it.**
 
 **Everything else stays ticket-keyed** — the stats panel's rows, player detail, and the flavour
 strip's subject continue to follow the ticket. **Personalization is preserved as the governing
@@ -41,14 +44,14 @@ arm with a resting state was also the only arm that got to see a goal.
 and becomes *"the score is always true, the rest follows the ticket."* **A rule changing shape, not a
 tweak** — every reader of the revealed ledger inherits it.
 
-> **⚠ THE READING MAY BE WRONG, AND THE SPEC IS BUILT SO THAT BEING WRONG IS CHEAP.**
-> *"Stay personalized"* discriminates cleanly against option **B** (show the whole match) but **not
-> between A and C**, and **"stay" is a preservation word** — which reads toward **C, no change at
-> all.** A and C are opposite answers on whether a measured falsehood gets fixed.
+> **CLOSED 2026-08-18.** This spec carried a flag here: *"stay personalized"* discriminated cleanly
+> against option B but not between A and C, and *stay* is a preservation word. **Allen has ruled A,
+> final. The flag is discharged and nothing in this spec is conditional on it.**
 >
-> **This clause is therefore self-contained. If Allen meant C, delete §2 and build §3 unchanged.**
-> Nothing below reads from it. **Do not let §3 acquire a dependency on §2 during the build** — that
-> is the one thing that would make the flag expensive.
+> **What the flag built is KEPT, because it was good architecture and not only insurance: §3 does not
+> read from §2, and it must not acquire a dependency on it during the build.** The reveal and the
+> grammar are separately true, separately testable, and separately reversible. **That property was
+> worth having before the answer and is still worth having after it.**
 
 **And it compounds with §3 rather than overlapping it:** a goal the corners player does not need is
 exactly the **departure from calm** his watch is missing. §2 supplies contour from outside the count
