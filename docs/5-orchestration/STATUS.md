@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-17, cycle 379.** The C46 sweep
+**Keeper-era heartbeat stamp: 2026-08-17, cycle 380 (heartbeat).** TV
+probing the calm-beat reachability; DD holding. With Allen: the five
+call words (the staged relay arrived as an empty stub), the held nudge
+draft, research two.
+
+*(prior stamp, cycle 379:)* The C46 sweep
 MERGED (d093827) - both tv-theater units delivered: two overruns routed
 to the DD (strip + CashOut) plus a found instrument gap (the sweep's
 category system lies about covered slots - a third category owed). DD
