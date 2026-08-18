@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-17, cycle 386 - ALLEN'S SEVEN
+**Keeper-era heartbeat stamp: 2026-08-17, cycle 387 (heartbeat).** TV in
+its suite gate; DD finalizing both specs on the seven words. Parked with
+Allen: research 8-9.
+
+*(prior stamp, cycle 386 - ALLEN'S SEVEN
 WORDS.** (1) Reveal: A - score always true, rest personalized; (2) empty
 groups PRINT; (3) folio+contents YES; (4) name-first ratified now, amber
 on a comparison frame; (5) one-per-row ratified; (6) count-beat distance
