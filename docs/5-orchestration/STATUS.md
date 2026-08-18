@@ -1,7 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-16, cycle 367 - STUDIO PAUSED on
-Allen's order.** No sweeps, no dispatches, no monitors armed until he
+**Keeper-era heartbeat stamp: 2026-08-16, cycle 373 - RESUMED on Allen's
+'continue'.** The orchestrator session received Allen's continue directly
+and reads it as the resume word the pause was waiting on (stated to him
+for veto). Board rebuilt after the sixth restart: tv-theater resumed via
+--continue (term_8ab552c4, on the resolved-leg spec + C46 sweep), DD
+seated fresh with full state pointers (term_42675867), effort max on
+both, monitors re-armed (heartbeat buxw165ej, watcher v40 bv8ncqti7).
+Everything through the resolved-leg spec and tv-theater's seating remains
+merged and pushed. With Allen: the reveal question, three surface calls,
+research words.
+
+*(prior stamp, cycle 367 - STUDIO PAUSED on Allen's order:)* No sweeps, no dispatches, no monitors armed until he
 resumes. State at pause: everything through the resolved-leg spec and
 the tv-theater seating is merged and pushed; the tv-theater lead had
 just been seated (its work not started); the DD's ledger held the
