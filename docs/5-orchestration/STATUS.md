@@ -1,6 +1,38 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-17, cycle 379.** The C46 sweep
+**Keeper-era heartbeat stamp: 2026-08-17, cycle 385.** Allen's continue:
+the ruled-but-undispatched queue drained to TV as one bundle - the two
+overrun fixes (batches 103-104) + the sweep instrument's DELEGATED
+category (four clauses). Still with Allen: six calls, nudge, research
+two.
+
+*(prior stamp, cycle 384:)* No
+change - quiet hold on Allen's words.
+
+*(prior stamp, cycle 383:)* Quiet
+hold - both seats idle, batch 106's sweep-doc warning landed. Waiting on
+Allen: six calls, the nudge word, research two.
+
+*(prior stamp, cycle 382:)* Quiet:
+both seats standing by; batch 105's sixth call landed. THE WHOLE BOARD
+WAITS ON ALLEN: six calls + the nudge word + the research two.
+
+*(prior stamp, cycle 381:)* THE PROBE
+ANSWERED: the drama stream is innocent (both arms beat-for-beat
+identical) - the flatness is presentation ROUTING: the resting state
+generated six times and overwritten six times, every non-final beat
+taking the count branch. The DD's grammar direction confirmed by
+measurement (six of eight beats are calm beats already being spent);
+Territory proven impossible on a momentum beat; the fallback arm
+unreachable. Theater spec is evidence-complete minus Allen's reveal
+answer. With Allen: five calls, nudge, research two.
+
+*(prior stamp, cycle 380:)* TV
+probing the calm-beat reachability; DD holding. With Allen: the five
+call words (the staged relay arrived as an empty stub), the held nudge
+draft, research two.
+
+*(prior stamp, cycle 379:)* The C46 sweep
 MERGED (d093827) - both tv-theater units delivered: two overruns routed
 to the DD (strip + CashOut) plus a found instrument gap (the sweep's
 category system lies about covered slots - a third category owed). DD
