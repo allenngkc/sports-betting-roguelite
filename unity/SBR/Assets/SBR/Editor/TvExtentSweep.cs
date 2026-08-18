@@ -379,6 +379,22 @@ namespace SBR.EditorTools
                     "16 GOALS • WON",     // cleared, line 375; total at its match-wide max
                     "0 GOALS • 4 MORE",   // undecided, line 380; total=0 edge
                     "3 GOALS • 1 MORE",   // undecided, line 380; total=threshold-1 edge
+                    // THE SINGULAR TOTAL, routed here by T108-am2 and MISSING from this pool's
+                    // first cut. Every count arm formats `{total} {NOUN}` with the noun as a fixed
+                    // literal and no arity branch anywhere in the file, so a revealed total of ONE
+                    // renders `1 GOALS`. Goals certainly reach it — the docked
+                    // goals-control-2026-08-16 set holds a revealed `1 — 0` from 30' to 90'+1 — and
+                    // the corners arm may not, since that seed's batch deltas were 2 throughout and
+                    // a step of 2 can jump the line without landing on it.
+                    //
+                    // Enumerated, NOT ruled: this pool's job is to make every renderable form
+                    // measurable, and whether `1 GOALS` is acceptable copy is a grammar question the
+                    // DD holds. It is here because a form the code can emit and the pool cannot see
+                    // is the C46 failure this instrument exists to catch — and the first cut of this
+                    // very pool had it, which is the point worth keeping.
+                    "1 GOALS • WON",      // over 0.5, total 1: cleared at the smallest total that can
+                    "1 GOALS • 3 MORE",   // over 3.5, total 1
+                    "1 GOALS • LIMIT 2",  // under 3.5, total 1
                     // TotalGoals Under, SweatActiveLegModel.cs:391-419.
                     "16 GOALS • LOST",    // line 403; total at its match-wide max
                     "0 GOALS • LIMIT 3",  // undecided, line 410; total=0 edge
@@ -395,6 +411,11 @@ namespace SBR.EditorTools
                     // edges of NEED/LIMIT are kept (see the digit-count-split note above).
                     "40 CORNERS • WON",       // line 480
                     "0 CORNERS • NEED 11",    // undecided, line 485; total=0 edge
+                    "1 CORNERS • NEED 10",    // the singular total — see the T108-am2 note above.
+                                              // Kept even though this seed's batch deltas were 2
+                                              // throughout: reachability is a property of the
+                                              // generator, not of one capture, and a pool sized to
+                                              // one seed's deltas is S84's failure in miniature.
                     "10 CORNERS • NEED 1",    // undecided, line 485; total=threshold-1 edge
                     "40 CORNERS • LOST",      // line 494
                     "0 CORNERS • LIMIT 10",   // undecided, line 504; total=0 edge
@@ -405,6 +426,7 @@ namespace SBR.EditorTools
                     // CardLines' max 5.5.
                     "24 CARDS • WON",        // line 480
                     "0 CARDS • NEED 6",      // undecided, line 485; total=0 edge
+                    "1 CARDS • NEED 5",      // the singular total — see the T108-am2 note above
                     "5 CARDS • NEED 1",      // undecided, line 485; total=threshold-1 edge
                     "24 CARDS • LOST",       // line 494
                     "0 CARDS • LIMIT 5",     // undecided, line 504; total=0 edge
@@ -419,8 +441,13 @@ namespace SBR.EditorTools
                     // literals, no numeric field.
                     "SCORED", "NOT YET",
                 }),
+            // T112 (register batch 104): the incumbent CONSTANT overran its box by 26.7px on EVERY
+            // frame — no pool, no seed, no widest case where it fit, which makes it a defect rather
+            // than a risk. Re-authored, not truncated. Measured 2026-08-17 (SBR/TV/T84 candidate
+            // measure): 'SUSPENDED' 152.3px against the 241.0px box, 88.7px spare — the pool below
+            // holds only what the code can now actually emit (C46's both-directions rule).
             ("CashOut", "§6.1 money control, six states", new[]
-                { "MARKET SUSPENDED", "CASHED OUT $1,240", "CASH OUT $1,240", "CASH OUT $183" }),
+                { "SUSPENDED", "CASHED OUT $1,240", "CASH OUT $1,240", "CASH OUT $183" }),
             // T88's gesture gave the status word a THIRD state: under a held preview the only act left
             // is the commit, so the word says so. Added with the wiring rather than after it.
             ("CashOutStatus", "§6.1 status words — all three states of CashOutStatusWord()",
@@ -580,6 +607,191 @@ namespace SBR.EditorTools
             "BigAmount",
         };
 
+        /// <summary>C53: a delegation's own staleness, named rather than left implicit.
+        ///
+        /// <para><c>Covered</c> and <c>Scheduled</c> are not two flavours of the same good news.
+        /// <c>Covered</c> is a claim that the named instrument HAS RUN and its numbers are DOCKED
+        /// somewhere a reader can check. <c>Scheduled</c> is the honest state before that: delegated
+        /// in principle, unmeasured in fact. Collapsing the two would report a panel <c>COVERED</c>
+        /// while it was still <c>UNMEASURED</c> — T101's residual, "never run and never docked",
+        /// recreated one level up, inside the fix for it.</para></summary>
+        private enum DelegationStatus { Covered, Scheduled }
+
+        /// <summary>C53's third category. A slot that is neither in <see cref="Cases"/> nor declared
+        /// in <see cref="Unswept"/> is not automatically a gap: it may be measured by a NAMED OTHER
+        /// instrument, and this table is the only place that claim is allowed to live.
+        ///
+        /// <para><b>Why a category, not a fold into <see cref="Unswept"/>.</b> <c>Unswept</c> means
+        /// "renders no string" — true of <c>BigAmount</c> alone. It is FALSE of every slot below: all
+        /// twelve render measured strings, just not through <em>this</em> instrument. Reporting them
+        /// unswept would not be naming a gap, it would be asserting a REASON — "renders nothing" —
+        /// that is not true. An instrument may report that it did not measure something; it may not
+        /// assert why, and a false why is exactly what C53 exists to remove.</para>
+        ///
+        /// <para><b>Two obligations a delegation carries that a direct sweep does not.</b>
+        /// (1) The named instrument must actually RESOLVE — see <see cref="ResolveDelegate"/>, called
+        /// for every row below on every run, so renaming or deleting the pin breaks THIS sweep rather
+        /// than leaving it silently certifying coverage nobody provides. (2) The claim carries its own
+        /// status and evidence date (see <see cref="DelegationStatus"/>) rather than borrowing the
+        /// sweep's — a delegation is a claim about a DIFFERENT run, at a different time.</para></summary>
+        private static readonly (string[] slots, string instrumentType, string instrumentMethod,
+            DelegationStatus status, string evidenceDate, string note)[] Delegated =
+        {
+            (
+                new[]
+                {
+                    "StatsTitle", "StatsTeamA", "StatsTeamB",
+                    "StatsLabel0", "StatsLabel1", "StatsLabel2",
+                    "StatsA0", "StatsA1", "StatsA2",
+                    "StatsB0", "StatsB1", "StatsB2",
+                },
+                "SBR.Tests.PlayMode.TvSweatScreenTests",
+                "Evidence_C46_the_stats_panel_strings_against_their_boxes",
+                DelegationStatus.Covered,
+                "2026-08-17",
+                "142 strings over these 12 slots, no overrun, tightest spare 22.5px — StatsTitle's "
+                    + "111.0px box against 'COUNTS' at 88.5px. Docked: docs/handoffs/tv-theater.md, "
+                    + "Family 3 (the stats panel, T101's residual)."
+            ),
+        };
+
+        /// <summary>Resolves a delegated instrument's method by FULL TYPE NAME, searching every
+        /// loaded assembly rather than trusting <c>Type.GetType</c> alone. This Editor assembly does
+        /// not reference <c>SBR.Tests.PlayMode</c> — and should not start to, just to satisfy a
+        /// sweep — so a same-assembly lookup would silently miss a type that genuinely exists. Test
+        /// assemblies ARE loaded in a normal Editor session, which is what this sweep always runs in,
+        /// so the search below finds it there.
+        ///
+        /// <para><b>Fails LOUDLY, on purpose — C53 clause 2.</b> A delegation whose named instrument
+        /// cannot be resolved is not "a gap": the table entry above already asserted coverage, so an
+        /// unresolvable name makes that assertion a LIE, not an absence. <c>Debug.LogError</c> puts it
+        /// where a human reads a normal Editor run; the <c>throw</c> is what makes an
+        /// <c>-executeMethod</c> batch invocation (run with no human watching) exit non-zero. Neither
+        /// alone is sufficient: the log line is invisible to a caller that only checks the exit code,
+        /// and the exit code alone is invisible to a person reading Editor.log after the fact.</para></summary>
+        private static MethodInfo ResolveDelegate(string typeFullName, string methodName)
+        {
+            System.Type type = null;
+            foreach (Assembly asm in System.AppDomain.CurrentDomain.GetAssemblies())
+            {
+                type = asm.GetType(typeFullName);
+                if (type != null) break;
+            }
+            if (type == null)
+            {
+                string msg = $"[T84] DELEGATION UNRESOLVED: type '{typeFullName}' was not found in any " +
+                    "loaded assembly. A named delegation with no instrument behind it is a false " +
+                    "coverage claim (C53) — fix the Delegated table's name or the instrument's, do not " +
+                    "silence this by removing the check.";
+                Debug.LogError(msg);
+                throw new System.InvalidOperationException(msg);
+            }
+            MethodInfo method = type.GetMethod(methodName,
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            if (method == null)
+            {
+                string msg = $"[T84] DELEGATION UNRESOLVED: '{typeFullName}' has no method '{methodName}'. " +
+                    "A named delegation with no instrument behind it is a false coverage claim (C53) — " +
+                    "fix the Delegated table's name or the instrument's, do not silence this by removing " +
+                    "the check.";
+                Debug.LogError(msg);
+                throw new System.InvalidOperationException(msg);
+            }
+            return method;
+        }
+
+        /// <summary>MEASURE BEFORE YOU AUTHOR — the step `T110-am` and `T112` both make a
+        /// precondition, and the reason it is an instrument rather than a habit.
+        ///
+        /// <para><c>T112</c>: *"Named as a candidate, not ruled as the string: it must be measured
+        /// before it is authored. Dropping seven of sixteen characters will very probably clear
+        /// 26.7px, and* very probably *is the word this studio has been wrong on twice this
+        /// week."* <c>T110-am</c>: *"One number decides, and authoring four fallbacks before taking
+        /// it is the predict-instead-of-measure error this lane exists to prevent."*</para>
+        ///
+        /// <para>So this measures CANDIDATE strings that are NOT YET in the product, against the
+        /// real slot's real box and real face. It is deliberately separate from
+        /// <see cref="Sweep"/>: the sweep's pools must contain only strings the code can actually
+        /// emit (C46's both-directions rule), and a candidate is by definition one it cannot emit
+        /// yet. Mixing them would put an invented string in the population — the exact defect
+        /// <c>T111-am</c> ruled on.</para>
+        ///
+        /// <para>It rules nothing and authors nothing. It prints numbers.</para></summary>
+        [MenuItem("SBR/TV/T84 candidate measure (pre-authoring)")]
+        public static void MeasureCandidates()
+        {
+            var go = new GameObject("ExtentCandidates");
+            go.SetActive(false);
+            try
+            {
+                var screen = go.AddComponent<SBR.Game.TvSweatScreen>();
+                screen.theaterEnabled = false;
+                typeof(SBR.Game.TvSweatScreen)
+                    .GetMethod("Awake", BindingFlags.NonPublic | BindingFlags.Instance)
+                    ?.Invoke(screen, null);
+
+                var all = new Dictionary<string, TMP_Text>();
+                foreach (TMP_Text t in screen.GetComponentsInChildren<TMP_Text>(true))
+                    all[t.gameObject.name] = t;
+
+                // T112's owed measurement. The incumbent is measured beside the candidate so the
+                // delta is stated rather than inferred.
+                MeasureOne(all, "CashOut", "MARKET SUSPENDED", "T112 incumbent — the overrunning constant");
+                MeasureOne(all, "CashOut", "SUSPENDED", "T112 candidate named by the DD");
+
+                // T110-am's owed measurement: THE DECKS WITHOUT THE SUFFIX. The overrun is reachable
+                // only on the four decks that can receive the suffix, so the suffix is common to
+                // every overrunning string. If the base decks fit, the suffix alone causes this and
+                // no deck is re-authored; if they do not, rung-2 forms are needed regardless.
+                if (all.TryGetValue("Flavor", out TMP_Text flavor))
+                {
+                    float box = flavor.rectTransform.rect.width;
+
+                    string worstBase = null, worstSuffixed = null;
+                    float wBase = -1f, wSuffixed = -1f;
+                    // Read the SWEEP'S OWN pool rather than rebuilding it — two copies of a
+                    // population is how the two drift apart, which is this instrument's own subject.
+                    string[] pool = null;
+                    foreach ((string slot, string _, string[] strings) in Cases)
+                        if (slot == "Flavor") { pool = strings; break; }
+                    if (pool == null)
+                    {
+                        Debug.Log("[T84-CAND] Flavor has no case in the sweep — nothing to partition");
+                        return;
+                    }
+
+                    foreach (string s in pool)
+                    {
+                        float w = flavor.GetPreferredValues(s, Unconstrained, 0f).x;
+                        bool suffixed = s.EndsWith(" in the spell)", System.StringComparison.Ordinal);
+                        if (suffixed) { if (w > wSuffixed) { wSuffixed = w; worstSuffixed = s; } }
+                        else if (w > wBase) { wBase = w; worstBase = s; }
+                    }
+
+                    Debug.Log($"[T84-CAND] Flavor box {box:0.0}px");
+                    Debug.Log($"[T84-CAND] Flavor WITHOUT suffix: widest '{Show(worstBase)}' {wBase:0.0}px  " +
+                              $"{(wBase > box ? $"OVERRUNS by {wBase - box:0.0}px" : $"fits, {box - wBase:0.0}px spare")}");
+                    Debug.Log($"[T84-CAND] Flavor WITH suffix:    widest '{Show(worstSuffixed)}' {wSuffixed:0.0}px  " +
+                              $"{(wSuffixed > box ? $"OVERRUNS by {wSuffixed - box:0.0}px" : $"fits, {box - wSuffixed:0.0}px spare")}");
+                    Debug.Log($"[T84-CAND] Flavor suffix cost: {wSuffixed - wBase:0.0}px between the two widest");
+                }
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        private static void MeasureOne(Dictionary<string, TMP_Text> all, string slot, string candidate, string note)
+        {
+            if (!all.TryGetValue(slot, out TMP_Text t))
+            {
+                Debug.Log($"[T84-CAND] {slot,-12} NOT BUILT in this configuration — not measured");
+                return;
+            }
+            float box = t.rectTransform.rect.width;
+            float w = t.GetPreferredValues(candidate, Unconstrained, 0f).x;
+            Debug.Log($"[T84-CAND] {slot,-12} '{Show(candidate)}' {w,6:0.0}px against box {box:0.0}px  " +
+                      $"{(w > box ? $"OVERRUNS by {w - box:0.0}px" : $"fits, {box - w:0.0}px spare")}  · {note}");
+        }
+
         [MenuItem("SBR/TV/T84 extent sweep")]
         public static void Sweep()
         {
@@ -599,6 +811,13 @@ namespace SBR.EditorTools
 
                 Debug.Log($"[T84] sweeping {Cases.Length} slots with string sets; " +
                           $"{Unswept.Length} reported unswept; {all.Count} text slots exist on the surface");
+
+                // C53 clause 2, run FIRST and unconditionally: resolve every delegated instrument
+                // before anything else executes, so a renamed or deleted pin fails this whole run
+                // loudly instead of quietly producing a report that omits the check it should have
+                // failed on.
+                foreach (var delegation in Delegated)
+                    ResolveDelegate(delegation.instrumentType, delegation.instrumentMethod);
 
                 int overrunning = 0;
                 foreach ((string slot, string source, string[] strings) in Cases)
@@ -707,14 +926,35 @@ namespace SBR.EditorTools
                 var sweptNames = new HashSet<string>();
                 foreach ((string slot, string _, string[] __) in Cases) sweptNames.Add(slot);
 
+                // C53: a flat name -> row lookup for the DELEGATED category, built from the
+                // declaration table rather than duplicated by hand — the same reason MeasureCandidates
+                // reads the sweep's own `Cases` back instead of re-typing it: two copies of a
+                // population is how the two drift apart.
+                var delegatedRowOf = new Dictionary<string, int>();
+                for (int i = 0; i < Delegated.Length; i++)
+                    foreach (string slot in Delegated[i].slots) delegatedRowOf[slot] = i;
+                var delegatedMatched = new List<string>[Delegated.Length];
+                for (int i = 0; i < Delegated.Length; i++) delegatedMatched[i] = new List<string>();
+
                 var declared = new HashSet<string>(Unswept);
                 var siblings = new List<string>();
                 var excluded = new List<string>();
                 var uncovered = new List<string>();
+                int delegatedCount = 0;
                 foreach (string name in all.Keys)
                 {
                     if (sweptNames.Contains(name)) continue;
                     if (declared.Contains(name)) { excluded.Add(name); continue; }
+                    // C53: covered by a NAMED OTHER instrument — checked before the sibling heuristic
+                    // and the uncovered fallback, because a delegation is an explicit claim (like
+                    // `declared` above) rather than an inferred one (like the sibling check below),
+                    // and an explicit claim decides first.
+                    if (delegatedRowOf.TryGetValue(name, out int row))
+                    {
+                        delegatedMatched[row].Add(name);
+                        delegatedCount++;
+                        continue;
+                    }
                     // `LegRowNeed3` is `LegRowNeed0`'s construction at another index: strip the
                     // trailing digits and ask whether index 0 of the same family is swept.
                     string stem = name.TrimEnd('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
@@ -726,9 +966,28 @@ namespace SBR.EditorTools
 
                 Debug.Log($"[T84] POPULATION: {all.Count} text slots exist · {Cases.Length} swept · " +
                           $"{siblings.Count} the same construction at another row index (covered by index 0) · " +
-                          $"{excluded.Count} declared unswept · {uncovered.Count} unaccounted for");
+                          $"{excluded.Count} declared unswept · {delegatedCount} delegated to a named other " +
+                          $"instrument · {uncovered.Count} unaccounted for");
                 if (excluded.Count > 0)
                     Debug.Log($"[T84] DECLARED UNSWEPT (renders no string): {string.Join(", ", excluded)}");
+                // C53 clause 3: DELEGATED slots report on their OWN line — a positive statement of
+                // what covers them, never folded into "unaccounted for" and never phrased as an
+                // absence. Clause 4: COVERED and SCHEDULED are not interchangeable, so the distinction
+                // sits in the tag itself rather than in prose a reader can skim past.
+                for (int i = 0; i < Delegated.Length; i++)
+                {
+                    if (delegatedMatched[i].Count == 0) continue;
+                    delegatedMatched[i].Sort();
+                    var delegation = Delegated[i];
+                    string tag = delegation.status == DelegationStatus.Covered
+                        ? "DELEGATED — COVERED"
+                        : "DELEGATED — SCHEDULED (NOT YET RUN, not docked — do not read this as measured)";
+                    string dateWord = delegation.status == DelegationStatus.Covered ? "evidence" : "declared";
+                    Debug.Log($"[T84] {tag}: {delegatedMatched[i].Count} slots covered by " +
+                              $"{delegation.instrumentType}.{delegation.instrumentMethod} " +
+                              $"({dateWord} {delegation.evidenceDate}: {delegation.note}) " +
+                              $"— {string.Join(", ", delegatedMatched[i])}");
+                }
                 if (uncovered.Count > 0)
                     Debug.Log($"[T84] UNACCOUNTED FOR — this number must be 0: {string.Join(", ", uncovered)}");
             }
