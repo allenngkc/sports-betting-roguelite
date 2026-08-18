@@ -3,6 +3,248 @@
 **Created:** 2026-08-16 · **Worktree:** `tv-theater` (from main at HEAD) ·
 **Lead:** Claude (Opus 5, max effort)
 
+---
+
+## 0-U1. UNIT 1 — THE RESOLVED-LEG COLUMN · window open 2026-08-16
+
+**MEASURED THIS WINDOW, on this tree, after the main merge:**
+
+| suite | measured | against baseline |
+|---|---|---|
+| engine | **306 / 306, 0 failed** | 306/306 — unchanged |
+| EditMode | **260 executed / 259 passed / 0 failed / 1 skipped** | 255/254/1 — **+5, all this unit's new pins** |
+| PlayMode | **133 executed / 115 passed / 0 failed / 18 skipped** | 126/112/14 |
+
+**All three green. Full suites, no `-testFilter` on any gate** — the only filtered run
+this window was the `[Explicit]` seed search, which is an instrument and gates nothing.
+
+**Every one of the 18 PlayMode skips is `[Explicit]` by design** — enumerated from the
+results XML rather than assumed: eleven capture entry points, four `Evidence_*`/`Probe_*`
+pins, and this unit's own seed search. **No red is hiding in the skip count.**
+
+**THE GATE FIRED ON REAL OBSERVATION, and this is the C29 evidence:**
+
+```
+[TRAP-GATE] seed=STATS-MULTI-5 frames=59 state1Cases=49 state2Cases=2
+```
+
+Both counts non-zero, so both `Assert.Greater(…, 0)` gates passed on states actually
+reached rather than on a technicality. **`STAKE` was observed on the surface, on a
+multi-leg ticket, with leg 2 still live — the state the whole spec was written for.**
+
+> **RECORDED AS A LIVE RISK: `state2Cases=2` is TWO FRAMES.** The window where leg 2 is
+> won-on-the-count but not yet whistled is genuinely narrow on this seed. The gate is
+> real and non-vacuous, but it sits close to its own floor — **if beat pacing shifts,
+> this gate goes red because the STATE stopped being reachable, not because the build
+> broke.** A future seat meeting that red should re-run the seed search and re-pin
+> before touching anything in `BuildTicketLegOutcomes`.
+
+The engine line is today's number, not an inherited one: re-run here because
+`tv-sweat` §4's own rule is that a baseline's honest failure is not being wrong but
+not saying how old it is.
+
+**Merged `main` twice this window** (both fast-forwards, docs-only, no conflicts):
+batch 100 (`43b888b`) made the resolved-leg column canon, and batch 101 (`6ccd871`)
+carries the ruling below.
+
+> **THE STUDIO WAS PAUSED MID-UNIT AND THIS SEAT STOOD DOWN.** Allen's pause reached
+> the repo while the lane was building; a resume tap that raced it was countermanded
+> at cycle 372. The lane held idle — no suites, no commits, no dispatches — until
+> Allen's own resume. Recorded because the tree was NOT "untouched" as the pause
+> census recorded it: unit 1's build was already sitting in it, unverified.
+
+### THE RULING — finding 1 went to the DD and came back CONFIRMED
+
+`docs/design/ruling-t108-trigger-2026-08-17.md` (batch 101, canon at `6ccd871`)
+answers this lane's routed question. **Build proceeds on the revealed-count reading**
+— not as a deviation from the spec but as *clause 3 applied correctly to a field the
+spec should not have named*. The DD verified the single-call-site claim at source
+rather than taking it on report, and recorded its own §1.5: **naming a field is not
+reading it** — the enum exists but does not carry the state at the moment the defect
+occurs, and a state field's transition points are the whole of its meaning to a fix
+keyed to a moment.
+
+**Five things the ruling RATIFIES as built, so a later hand does not tidy them:** the
+separate `RevealedLegOutcome` enum (must stay separate — the two answer different
+questions); `LIMIT 0` staying; `TicketCannotLose`'s whole-ticket signature (clause 2's
+trap closed structurally, *stronger than the spec asked*); `BuildTicketLegOutcomes`'
+three-way composition; and the dead ticket deliberately not built.
+
+**A THIRD STATE was ruled that `G1` never contemplated** — *decided, but not yet
+resolved*. On a leg won by the revealed count before its whistle the statement line
+**does not change**: `OVER 8.5 CORNERS` stays, because it reads as the market that was
+bet and the line directly beneath it answers any reading of it as an outstanding ask.
+
+**One correction binds, and it is in §6 below.**
+
+### THE FINDINGS AS ROUTED (finding 1 now ruled above)
+
+**1. `RevealedLegState` CANNOT BE THE TRIGGER, and a literal build of clause 1 is a
+no-op that ships green.**
+
+`T108` and the spec's §2 both say *"the surface has the information and is not
+reading it"*, naming `RevealedLegState` / `RevealedTicketState`. Measured, that is
+right about the revealed COUNTS and wrong about the enums:
+
+- `RevealedView.ResolveLeg` has **exactly one call site** — `FinalSlam`, at full
+  time. So on all three defect frames (48' / 66' / 71') the enum reads `Live`.
+- `FinalSlam` advances `_resolvedThrough` in the same method, and
+  `UpdateTicketColumn` blanks `Need`/`Progress` for every row below it. **So by the
+  time the enum says `Won`, the row has already left the live form** — clause 1's
+  `Won` and `Lost` rows are unreachable, and `{n} CORNERS • WON` would never render.
+
+**The trigger is the revealed COUNT** (`_countLedger.Home/Away`), which is what
+constructs `NEED 0` in the first place and is already in the describer's hand.
+`k = threshold − total ≤ 0` *is* "the revealed count has cleared the line". That
+satisfies **clause 3 more exactly than the enum does**: the enum follows the
+*resolved* match arriving on a reveal frame; the count is the *revealed* state, and
+it can never run ahead of the screen because it is the screen's own published value.
+
+**2. `ResolveBeat` never updates the revealed mirror.** Only `FinalSlam` does, so on
+a multi-leg ticket an intermediate leg's `RevealedLegState` never leaves `Live`.
+**The laptop's MY BETS reads that mirror and the laptop is not this lane's surface —
+ROUTED, not fixed.** It is also why the footer's leg-outcome list is built from the
+same fields the rows themselves render from, behind the same `_resolvedThrough`
+guard: the footer can then never contradict the chips the player is looking at.
+
+**3. `T62`'s defect, on the count ledger instead of the score ledger.**
+`RepaintRevealedScore` exists so one ledger advance repaints every mirror in the
+same call, and `OnGoalPlayed` uses it. **`OnCountPlayed` does not** — it repaints the
+scorebug and leaves the ticket column until the next beat's `RenderEvent`.
+
+This refines `T62-am`. The DD checked the 66' frame, found the count tracks by 71',
+and closed it — **the frames were read correctly and the conclusion holds**; the
+mechanism is nonetheless T62's, and the count tracks *one beat late*. Fixed inside
+this unit rather than routed, because the new `WON` string is a progress line and
+§6.2 requires a progress line to land on the same frame as the revealed payload —
+shipping it a beat late would breach canon on the very change being made.
+
+### SCOPE — one deliberate extension and two deliberate omissions
+
+- **EXTENDED:** the form-selection is applied to **every arm that constructs a
+  remaining-count**, not only corners. `{n} GOALS • 0 MORE` is the identical lie from
+  the identical clamp. Rule as built: *the outcome is derived wherever the revealed
+  values decide the leg; the STRING changes only where the old string named a
+  requirement or an allowance that no longer exists.* BTTS and scorer therefore take
+  an outcome and keep their copy. **DD to rule** — clause 4 forbids tidying the
+  column, not applying the ruled form to a sibling market.
+- **NOT BUILT — the dead ticket** (spec §5). No losing ticket in the capture; the
+  principle is ruled and the strings are owed on a frame. A ticket with a `Lost` leg
+  keeps today's `RISK`, pinned as a deliberate omission.
+- **`LIMIT 0` IS TRUE AND STAYS.** An under leg at zero slack is still live. It looks
+  like `NEED 0` and is not, and it is pinned so a later seat does not "fix" it.
+
+### THE GATE CORRECTION — the ruling's §5, and why the first gate was not enough
+
+The every-frame poll is **the right instrument** and the DD said so: a moment where
+two surfaces disagree cannot be caught by a sampled pin, and it reads the
+player-visible text rather than re-deriving it. **But it could pass without ever
+exercising clause 2** — the ticket comes from an unpinned `DemoTicketPolicy` draw, so
+where the run never reached a decided leg the STAKE half logged and did not fire.
+
+> **A gate whose central assertion is conditional on the draw certifies nothing about
+> that assertion** — and the composition it guards, `BuildTicketLegOutcomes`'
+> three-way split, is the one part of this fix **no signature protects.**
+
+**RULED: two states, exercised BY CONSTRUCTION, not by luck —**
+
+1. leg 1 resolved `Won` + leg 2 live and undecided → footer reads **`RISK`**
+2. leg 1 resolved `Won` + leg 2 live and won ON THE REVEALED COUNT before its whistle
+   → footer reads **`STAKE`**
+
+`sawDecidedLeg` / `sawNextChip` become end-of-run assertions on a fixture built to
+guarantee them; the every-frame poll is unchanged.
+
+**THE CONSTRUCTION IS THE LANE'S CALL and this is it: measure, then pin** — the same
+route that chose `STATS-MULTI-1`, and the only one available, because no hook exists
+to drive the ledger and adding one to production to satisfy a gate is out of scope.
+
+**RUN 2026-08-17, twelve candidates, and ONE carries both states:**
+
+| seed | leg 0 won | state 1 `RISK` | state 2 `STAKE` |
+|---|---|---|---|
+| **`STATS-MULTI-5`** | **yes** | **yes** | **yes** ← pinned |
+| `STATS-MULTI-1` · `-3` · `TRAP-2` · `TRAP-5` | yes | yes | **no** |
+| `STATS-MULTI-2` | yes | **no** | yes |
+| `48151623` · `-4` · `-6` · `TRAP-1` · `-3` · `-4` | **no** | no | no |
+
+**One seed in twelve carries both, and that is the ruling's own argument made
+arithmetic** — a gate left on an unpinned draw would have certified state 2 about one
+run in twelve. `STATS-MULTI-1`, the seed the lane already trusted for multi-count work,
+is one of the four that never reaches it.
+
+**The OVER-only constraint was load-bearing:** an under leg has no early `Won` — its
+only pre-whistle verdict is `Lost` — so an under fixture could not certify state 2 on
+any seed. Without that the search would have reported all-false and read as "the state
+is unreachable."
+
+> **A PIN WAS DELETED AT DIFF REVIEW, and it is the reusable half of this window.**
+> The dispatch also produced a *broader* pin — *any decided leg forces `RISK` while any
+> other leg is undecided* — written against the pre-ruling brief and kept because it
+> read as a safe superset. **It is false.** State 2 is exactly leg 0 decided, leg 1
+> undecided-by-chip, footer correctly reading `STAKE`; that pin would have failed on the
+> one state the whole fix exists to produce, and it would have failed *on the pinned
+> seed*, so the suite would have gone red with the build correct.
+>
+> **A "broader" assertion over a state space you have not enumerated is not a stronger
+> claim, it is an unenumerated one.** The agent met both briefs and still shipped the
+> contradiction, because the ruling arrived mid-flight and superseded the assumption the
+> first brief was written on — which is the standing reason this lane reviews the diff
+> and not the summary.
+
+### EVIDENCE OWED before Design-verified (spec §8, unchanged)
+
+1. A won leg with match time remaining — the before-state is already in the set.
+2. A multi-leg ticket, one leg won and one live.
+3. A losing ticket, for §5.
+
+**Frame claims stay frame claims:** whether `WON` and `STAKE` read at review distance
+is C11 and neither gate states anything about it.
+
+---
+
+## 0-U2. UNIT 2 — THE CONSOLIDATED `C46` SWEEP · scoped, not yet built
+
+`T111` binds it: **three families, ONE sweep**, under `S84` (size against the
+ENUMERATED POOL's widest, never the sweep's widest measured) and batch 95 (the widest
+string is a MEASUREMENT, never read off string lengths or type sizes).
+
+Scoped against `Assets/SBR/Editor/TvExtentSweep.cs` this window. **Four concrete
+findings, and three of them are the S84 failure mode already sitting in the
+instrument:**
+
+1. **`RiskPays` gains a WIDER string, and the spec did not name this.** §7 says the
+   change *relieves* the box — true of the progress line, **false of the footer**.
+   `RISK` → `STAKE` is 4 chars → 5, and the slot's pool is
+   `{"RISK $13,639", "RISK $1,234", "RISK $50"}` with no `STAKE` form in it. The
+   footer is one row with **both ends anchored**, so a wider left half eats the
+   clearance to a right-anchored `PAYS` whose own maximum is eleven digits.
+2. **`LegRowProgress0`'s pool is fabricated and always was.** It holds
+   `"0-0, 62' PLAYED"`, `"NEEDS 1 MORE, 78'"`, `"2-1, 88' PLAYED"` — **none of which
+   this model can emit.** The real forms are `LEADING 2–1` / `LEVEL` / `NOT LEVEL` /
+   `SCORED` / `NOT YET` / `{n} GOALS • {k} MORE` / `{n} CORNERS • NEED {k}` /
+   `• LIMIT {k}`, plus this unit's new `• WON` / `• LOST`. The column family's sweep
+   has been **vacuous**, not merely incomplete.
+3. **`Flavor`'s pool is three invented ALL-CAPS strings**
+   (`"REGULATORS BREAK AWAY DOWN THE RIGHT"`…) while the strings that actually clip
+   are lower-case authored lines from `SweatFlavor.cs` **plus a generated suffix** —
+   `TvSweatScreen.cs:1695` appends `" ({n} in the spell)"`. That composition is the
+   whole of `T110`, and no pool member contains it. The real pool is **ten authored
+   arrays** in `SweatFlavor.cs`; the suffix reaches only the four count arrays.
+
+   > **THE CHARACTER COUNTS BELOW ARE NOT THE MEASUREMENT, and are recorded only to
+   > show the pool is wrong.** Batch 95's binding is that the widest string in a column
+   > is a **measurement**, never something readable off string lengths or type sizes —
+   > it cost the DD two wrong predictions in a week. So: the deck's longest authored
+   > line is 54 characters and the suffix adds up to ~18 more, against a pool whose
+   > longest member is 36. **That says the pool never contained the real strings. It
+   > does NOT say by how many px the box overruns** — the sweep says that, and nothing
+   > here anticipates its number.
+4. **The stats panel has NO slot in the sweep at all** — `T101`'s open residual,
+   confirmed by inspection rather than assumed.
+
+---
+
 ## 1. Context (read in order)
 
 - `docs/5-orchestration/STUDIO.md` — roles, ownership, merge protocol,

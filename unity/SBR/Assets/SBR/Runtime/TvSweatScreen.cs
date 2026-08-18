@@ -521,6 +521,30 @@ namespace SBR.Game
         /// wants to observe a tween polls this (a state that latches) rather than the animation
         /// flag (a state that passes).</summary>
         public bool DebugHasCashOutShown => _hasCashOutShown;
+        /// <summary>Debug accessors for the ticket footer and each leg row's own text — read-only
+        /// mirrors of what actually rendered, in the same null-safe-returns-empty-string shape as
+        /// <see cref="DebugStatsRow"/>, every index guarded the same way. Exist so a PlayMode pin can
+        /// watch the footer word (RISK/STAKE) never disagree with a row's own progress line or state
+        /// chip.</summary>
+        public string DebugTicketRiskText => _tRiskPays != null ? _tRiskPays.text : string.Empty;
+        /// <summary>The PAYS half of the footer — see <see cref="DebugTicketRiskText"/>.</summary>
+        public string DebugTicketPaysText => _tPays != null ? _tPays.text : string.Empty;
+        /// <summary>Row <paramref name="i"/>'s live progress text (empty on a resolved/NEXT row, or
+        /// out of range).</summary>
+        public string DebugLegProgress(int i)
+            => _legRow == null || i < 0 || i >= _legRow.Length || _legRow[i].Progress == null
+                ? string.Empty : _legRow[i].Progress.text;
+        /// <summary>Row <paramref name="i"/>'s live NEED text (empty on a resolved/NEXT row, or out
+        /// of range).</summary>
+        public string DebugLegNeed(int i)
+            => _legRow == null || i < 0 || i >= _legRow.Length || _legRow[i].Need == null
+                ? string.Empty : _legRow[i].Need.text;
+        /// <summary>Row <paramref name="i"/>'s state chip — <c>"W"</c>/<c>"L"</c>/<c>"VOID"</c>/
+        /// <c>"NEXT"</c>, or empty on a live row (the live row's chip is blanked) or out of
+        /// range.</summary>
+        public string DebugLegState(int i)
+            => _legRow == null || i < 0 || i >= _legRow.Length || _legRow[i].State == null
+                ? string.Empty : _legRow[i].State.text;
         /// <summary>Test/debug hook: displace the SHOWN cash-out figure so that the next natural
         /// offer read must take the tween branch of SetCashOutOffer.
         ///
@@ -2026,7 +2050,7 @@ namespace SBR.Game
             if (_countLedger.TargetTotal > 0)
             {
                 if (_ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count)
-                    UpdateScorebug(_ticket.Legs[_stageLeg]);
+                    RepaintRevealedScore(_ticket.Legs[_stageLeg]);
             }
             if (_ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count
                 && _ticket.Legs[_stageLeg].Selection.Kind == MarketKind.TotalCards)
@@ -2473,7 +2497,15 @@ namespace SBR.Game
         /// <para>The column is refreshed at its CURRENT live index, not re-pointed: this states the
         /// score, it does not decide which row is live. Nothing here is revealed early — the ledger
         /// has already advanced and the scorebug is already showing it, so this only stops the column
-        /// lagging behind a fact the surface has published.</para></summary>
+        /// lagging behind a fact the surface has published.</para>
+        ///
+        /// <para><b>Amended: this method is not score-ledger-only.</b> It serves any revealed-LEDGER
+        /// advance — score OR count — not just the score ledger the paragraphs above were written
+        /// against. <c>OnGoalPlayed</c> has called it since T62; <c>OnCountPlayed</c> did not, calling
+        /// <c>UpdateScorebug</c> directly instead, so a count advance repainted the scorebug but left
+        /// the ticket column's progress line stale until the next beat's <c>RenderEvent</c> — T62's
+        /// own defect, reproduced on the count ledger instead of the score ledger. The count arm was
+        /// missing until this fix.</para></summary>
         private void RepaintRevealedScore(Leg leg)
         {
             UpdateScorebug(leg);
@@ -2743,8 +2775,55 @@ namespace SBR.Game
             // §7: "Risk and pays sit at the foot in gold at L2."
             // T74-am5: two ends of one row. The five-space spacer is GONE — it was the thing being
             // measured, not the content, and anchoring retired it.
-            _tRiskPays.text = $"RISK ${Money(_ticket.Stake)}";
+            // Amended for the state-lie fix: the footer's first word is no longer a hard-coded
+            // "RISK" — it comes from the whole ticket's leg outcomes, so it reads "STAKE" once no
+            // remaining leg can still lose it (SweatActiveLegModel.StakeWord). `_tPays` is UNCHANGED.
+            _tRiskPays.text = $"{SweatActiveLegModel.StakeWord(BuildTicketLegOutcomes())} ${Money(_ticket.Stake)}";
             if (_tPays != null) _tPays.text = $"PAYS ${Money(_ticket.PotentialPayout)}";
+        }
+
+        /// <summary>The whole ticket's leg outcomes, for <see cref="SweatActiveLegModel.StakeWord"/>.
+        /// Built from the SAME sources <see cref="UpdateTicketColumn"/>'s own rows above render
+        /// from — deliberately NOT from <see cref="RevealedView"/>'s mirror: its
+        /// <c>ResolveLeg</c> has exactly one call site (<c>FinalSlam</c>), so on a multi-leg ticket a
+        /// leg resolved through <c>ResolveBeat</c> never leaves <c>RevealedLegState.Live</c> there.
+        /// Building on that mirror would make STAKE unreachable and would silently disagree with the
+        /// chips the player is looking at.
+        ///
+        /// <para>Resolved legs (<c>i &lt; _resolvedThrough</c>) read <c>leg.IsVoided</c>/
+        /// <c>leg.GradesWon</c> — this MIRRORS the resolved-row branch above exactly, and is not an
+        /// endpoint leak: <c>_resolvedThrough</c> only advances at the reveal moment, and that
+        /// branch already reads these same two fields behind the same index guard. The live row
+        /// (<c>i == _liveLegIndexShown</c>) takes <see cref="DescribeActiveLeg"/>'s revealed-derived
+        /// outcome — the only one that can be true before full time. Every other row (pending/NEXT)
+        /// is <c>Undecided</c>.</para>
+        ///
+        /// <para>Never throws from this render path: a null <c>_ticket</c> yields an empty list, and
+        /// <see cref="SweatActiveLegModel.StakeWord"/> already reads an empty list as RISK. Every
+        /// call site of <see cref="UpdateTicketColumn"/> is event-driven, not per-frame, so this
+        /// small per-call allocation is not cached.</para></summary>
+        private List<RevealedLegOutcome> BuildTicketLegOutcomes()
+        {
+            var outcomes = new List<RevealedLegOutcome>();
+            if (_ticket == null) return outcomes;
+            for (int i = 0; i < _ticket.Legs.Count; i++)
+            {
+                Leg leg = _ticket.Legs[i];
+                if (i < _resolvedThrough)
+                {
+                    outcomes.Add(leg.IsVoided ? RevealedLegOutcome.Voided
+                        : leg.GradesWon ? RevealedLegOutcome.Won : RevealedLegOutcome.Lost);
+                }
+                else if (i == _liveLegIndexShown)
+                {
+                    outcomes.Add(DescribeActiveLeg(leg).Outcome);
+                }
+                else
+                {
+                    outcomes.Add(RevealedLegOutcome.Undecided);
+                }
+            }
+            return outcomes;
         }
 
         /// <summary>TV-14: sets a compact row's price and state chip together.
