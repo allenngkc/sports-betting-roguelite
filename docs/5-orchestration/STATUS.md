@@ -1,6 +1,9 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-17, cycle 383 (heartbeat).** Quiet
+**Keeper-era heartbeat stamp: 2026-08-17, cycle 384 (heartbeat).** No
+change - quiet hold on Allen's words.
+
+*(prior stamp, cycle 383:)* Quiet
 hold - both seats idle, batch 106's sweep-doc warning landed. Waiting on
 Allen: six calls, the nudge word, research two.
 
