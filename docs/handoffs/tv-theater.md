@@ -353,6 +353,81 @@ one seed's deltas is `S84`'s failure in miniature.
 
 ---
 
+## 0-U3. THE §8 CALM-BEAT CHECK — SETTLED · 2026-08-17
+
+**The question** (`grammar-count-markets-2026-08-17.md` §8, the one item blocking that
+direction from becoming a spec): *are `Momentum` beats tagged `Calm` actually SCHEDULED
+during a corners sweat?* If the stream never emits them, widening the count gate would
+yield `Territory` or `Fallback` — not calm.
+
+### THE ANSWER: YES, and it is most of the leg
+
+**Measured on the docked capture's own seed `CORNERS-SWEAT-1`, both arms, one variable:**
+
+| | corners | goals (control) |
+|---|---|---|
+| `Momentum` / `Calm` | **6** | **6** |
+| `Score` / `Swing` | 1 | 1 |
+| `LegFinal` / `Decisive` | 1 | 1 |
+| **total beats** | **8** | **8** |
+
+**Six of eight beats on the corners leg are `Momentum` + `Calm`** — the tag that maps to
+`CalmPossession`. The branch is not merely reachable; it is the majority of the leg.
+
+### AND THE TWO ARMS ARE BEAT-FOR-BEAT IDENTICAL — which sharpens the finding
+
+Same seed, **same matchup**, `OVER 8.5 CORNERS` against `OVER 1.5 GOALS`, both `Won`.
+The type/tag distribution is not merely similar, it is **the same in every cell**, and
+the per-beat probabilities track within a few thousandths.
+
+> **So the difference between the two watches is not in the drama stream at all. It is
+> entirely presentation routing.** `count-sweat-read` §2 concluded *the corners arm has
+> no resting state*, which is correct — and the mechanism is now exact: **the resting
+> state was generated six times and overwritten six times.** All seven non-final beats
+> staged a count, so every one took the count branch and rendered `CornerFor`.
+
+**This is `grammar-count-markets` §1 confirmed by measurement rather than by source read,
+and it quantifies that direction's own proposal: up to six of eight beats in this sweat
+are calm beats already being spent.**
+
+### `Territory` AND `Fallback` — the two outcomes §8 feared, checked
+
+- **`Territory` never occurs in either arm.** Zero `Momentum` beats carried a non-`Calm`
+  tag. Structurally it needs a `LeadChange` — a sub-`0.07` step that crosses `0.5` —
+  because `Swing` requires `|Δp| ≥ 0.10` and `Momentum` requires `|Δp| < 0.07`, so
+  **`Swing` is impossible on a `Momentum` beat** and `NearMiss`/`LegFinal` both return
+  before the scene table.
+- **`Fallback` is unreachable today.** It is the `_ =>` arm for future `DramaEventType`
+  additions; all four current members are handled above it.
+
+**So §8's worry inverts: `CalmPossession` is the DEFAULT for a momentum beat and
+`Territory` is the narrow case, not the other way round.**
+
+### WHY FRAMES COULD NOT HAVE ANSWERED THIS
+
+The capture's filenames carry the **scene** token. The count branch returns *before* the
+`(Type, Tag)` scene table, so a `Calm`-tagged beat and a `Swing`-tagged one both render
+`CornerFor`. **The token stream is blind to exactly the distinction §8 asks about** — the
+evidence had to come from the beat stream, which is pure engine and deterministic.
+
+### NOT CLAIMED
+
+- **One seed, one line, one side, both arms `Won`.** A leg that lands near its line, or
+  loses, has a different probability path and is not in evidence.
+- **This does not model the count branch.** It answers only whether the stream *schedules*
+  the beat. **A second gate exists and is untouched here:** even with calm beats
+  scheduled, `ResolveBeat` intercepts any beat coinciding with a nonzero staged count —
+  which is precisely what the proposed change would alter, and what §5's
+  consume-without-committing binding is about.
+- **No frame was read.** Nothing here is a claim about how anything looks.
+
+**Instrument:** `engine.tests/CalmBeatReachabilityProbe.cs`, `[Fact(Skip=…)]` — opt-in,
+so the engine baseline stays **306 passed / 0 failed** (307 total, 1 skipped). It reads
+`Type` and `Tag` straight off each emitted `DramaEvent` and **never recomputes them from
+the thresholds** — recomputing would prove only that the rule can be reimplemented.
+
+---
+
 ## 1. Context (read in order)
 
 - `docs/5-orchestration/STUDIO.md` — roles, ownership, merge protocol,
