@@ -58,6 +58,9 @@ namespace SBR.Tests.PlayMode
         // BETS mirror hand-builds the ticket identity a shared formatter already produces). The rule
         // costs nothing to keep here and the alternative has now cost four items.
         private const string SeedLobby = "52830174";
+        /// <summary>The surfaces §8 evidence set. R38: 8 digits, scattered — the state name lives
+        /// in the filename, never in the seed.</summary>
+        private const string SeedMarketSheet = "54435761";
         private const string SeedMaxLegs = "31468052";
         private const string SeedShop = "70925314";
         private const string SeedLedgerOne = "48137690";
@@ -452,13 +455,305 @@ namespace SBR.Tests.PlayMode
             AssertCaptureOutput(capturedPaths, 2);
         }
 
+        /// <summary>The §8 evidence for `spec-market-surfaces-2026-08-17` — the four things that
+        /// spec says must be shown before Design-verified, in five states.
+        ///
+        /// <para><b>Seed 54435761 is R38-shaped on purpose</b> — 8 digits, scattered, an ordinary
+        /// member of `NewSeed`'s own space. A seed spelled like a label ("SHEET-EMPTY") would be a
+        /// rig string in a player slot, which is R38's whole subject. The STATE NAME lives in the
+        /// filename, which is also where the empty-group frame declares its non-shipped config.</para>
+        ///
+        /// <para><b>Why the empty group needs a config at all.</b> `no prices offered` (§5.3/`S89`)
+        /// is UNREACHABLE at the shipped `RunConfig` — measured, zero empty groups across 18,000
+        /// matchups, because `CorrectScoreFloor` 0.02 always leaves CORRECT SCORE ≥ 11 rows and
+        /// MULTI SCORER ≥ 3. Raising the floor to 0.08 empties MULTI SCORER. Per `S57`, a capture
+        /// whose figures are arbitrary cannot be read as evidence by anyone who was not told how it
+        /// was made — so the floor is named in the frame's filename. It is NOT captioned into the
+        /// pixels: that would put rig state in a player slot, the very defect `R38` records.</para>
+        ///
+        /// <para><b>Second disclosure on that frame:</b> the raised floor also thins CORRECT SCORE
+        /// from 13 rows to 6. Two things differ between the shipped sheet and that frame, not one,
+        /// and the thinner CORRECT SCORE must not be read as a defect.</para>
+        ///
+        /// <para><b>The amber pair is one switch</b> (§4.4, `S91` half two, deliberately unruled):
+        /// the same sheet, same seed, same scroll position, rendered with `PriceTakesAmber` off and
+        /// on. Nothing else changes between the two frames, which is the only way the comparison
+        /// answers the question it was commissioned to answer.</para>
+        ///
+        /// <para>§8's "every destination populated" is not shot here — it is already covered by the
+        /// destinations walk, which reads `MarketDestinations.All` and shoots all six. Every matchup
+        /// prices all fifteen kinds at the shipped config, so that walk is a full-vocabulary walk.</para></summary>
+        [UnityTest]
+        public IEnumerator Capture_the_market_sheet_evidence_for_the_surfaces_spec()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            AssertPinnedSeed(SeedMarketSheet);
+
+            string outputDirectory = Path.GetFullPath(Path.Combine(
+                Application.dataPath, "..", "..", "..", "artifacts", "surething-ui"));
+            Directory.CreateDirectory(outputDirectory);
+            string runPrefix = DateTime.UtcNow.ToString(
+                "yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture);
+            var capturedPaths = new List<string>();
+
+            // ---- the shipped sheet ----
+            yield return DriveToMarketSheet(laptop, new RunConfig());
+
+            // FRAMES 1a/1b — the contents block, §8 item 2: every destination, with DERIVED ranges.
+            //
+            // TWO frames, because twenty-one printed lines do not fit one 378px viewport. The first
+            // cut of this shot asserted only that each destination line EXISTED IN THE HIERARCHY,
+            // which is not the same claim as being in the picture — it passed on a frame where
+            // PLAYERS was below the fold. A capture whose subject is off-screen is not evidence of
+            // its subject, so presence is now asserted IN FRAME, and the two shots must between
+            // them show all six.
+            Invoke(Required(Required(App(laptop), "FolioBand"), "ContentsToggle"));
+            yield return WaitForRebuild();
+            Transform contents = Required(App(laptop), "ContentsBlock");
+            var contentsScroll = contents.GetComponentInChildren<ScrollRect>();
+            Assert.IsNotNull(contentsScroll, "the contents list scrolls (§5.4)");
+
+            // World corners are meaningless until the layout has been flushed, and the first cut of
+            // this read them straight off WaitForRebuild — so RESULT, which is the very first line
+            // of the list and plainly in the picture, recorded as not-in-frame. CaptureState forces
+            // the canvases itself before the shutter; the measurement has to do the same or it is
+            // measuring a different layout from the one being photographed.
+            UnityEngine.Canvas.ForceUpdateCanvases();
+            var shown = new HashSet<MarketDestination>();
+            var diagnostics = new List<string> { "contents HEAD:" };
+            RecordDestinationsInFrame(contents, contentsScroll, shown, diagnostics);
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "S1a-entry-contents-head", capturedPaths);
+
+            contentsScroll.verticalNormalizedPosition = 0f;
+            yield return WaitForRebuild();
+            UnityEngine.Canvas.ForceUpdateCanvases();
+            diagnostics.Add("contents FOOT:");
+            RecordDestinationsInFrame(contents, contentsScroll, shown, diagnostics);
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "S1b-entry-contents-foot", capturedPaths);
+
+            foreach (MarketDestination d in MarketDestinations.All)
+                Assert.IsTrue(shown.Contains(d),
+                    $"{d} never appears IN FRAME across the contents pair — §5.3 prints a "
+                    + "destination whether or not it is priced, and a frame that does not show it "
+                    + "cannot evidence that. MEASURED: "
+                    + string.Join(" · ", diagnostics));
+
+            Invoke(Required(Required(App(laptop), "FolioBand"), "ContentsToggle"));
+            yield return WaitForRebuild();
+
+            // FRAME 2 — the folio at a scroll extent, §8 item 4. The frame is worth nothing unless
+            // the number MOVED, so that is asserted: a folio reading the same at both extents is
+            // authored, which is exactly what §5.1 and S74-am3 forbid.
+            Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTabPlayers"));
+            yield return WaitForRebuild();
+            var sheetScroll = Required(App(laptop), "MarketBody")
+                .GetComponentInChildren<ScrollRect>();
+            Assert.IsNotNull(sheetScroll, "PLAYERS is the deepest list on the sheet and must scroll");
+            string folioAtRest = Required(App(laptop), "Folio").GetComponent<TMP_Text>().text;
+
+            sheetScroll.verticalNormalizedPosition = 0f;
+            yield return WaitForRebuild();
+            UnityEngine.Canvas.ForceUpdateCanvases();
+            string folioAtEnd = Required(App(laptop), "Folio").GetComponent<TMP_Text>().text;
+            Assert.AreNotEqual(folioAtRest, folioAtEnd,
+                $"the folio must be DERIVED from the rendered window — it read '{folioAtRest}' at "
+                + $"rest and '{folioAtEnd}' at the extent, and a folio that does not move is a "
+                + "constant wearing a fact's clothes (§5.1, S74-am3)");
+            Debug.Log($"[surfaces §8] folio at rest '{folioAtRest}' -> at extent '{folioAtEnd}'");
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "S2-entry-folio-at-extent", capturedPaths);
+
+            // FRAME 3 — the empty group. The floor is in the FILENAME, never in the pixels.
+            //
+            // MULTI SCORER is the LAST group in PLAYERS, behind fourteen ANYTIME SCORER rows, so at
+            // rest it sits below the fold. The first cut of this shot asserted the form existed in
+            // the hierarchy and passed on a frame that did not contain it. The list is scrolled to
+            // its foot and the form's own rect is asserted to be IN the viewport.
+            yield return DriveToMarketSheet(laptop, new RunConfig { CorrectScoreFloor = 0.08 });
+            Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTabPlayers"));
+            yield return WaitForRebuild();
+            Transform emptyBody = Required(App(laptop), "MarketBody");
+            var emptyScroll = emptyBody.GetComponentInChildren<ScrollRect>();
+            Assert.IsNotNull(emptyScroll, "PLAYERS scrolls, and the empty group is at its foot");
+            emptyScroll.verticalNormalizedPosition = 0f;
+            yield return WaitForRebuild();
+            UnityEngine.Canvas.ForceUpdateCanvases();
+
+            TMP_Text form = null;
+            foreach (TMP_Text t in emptyBody.GetComponentsInChildren<TMP_Text>(true))
+                if (t.text == MarketSheet.NoPricesOffered) { form = t; break; }
+            Assert.IsNotNull(form,
+                $"this frame exists to show S89's '{MarketSheet.NoPricesOffered}' form and the "
+                + "state does not print it — the frame would be evidence of nothing");
+            Assert.IsTrue(IsInFrame(
+                    emptyScroll.viewport != null
+                        ? emptyScroll.viewport : (RectTransform)emptyScroll.transform,
+                    (RectTransform)form.transform),
+                $"'{MarketSheet.NoPricesOffered}' is printed but is NOT IN THE FRAME — the whole "
+                + "subject of this capture would be below the fold");
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "S3-entry-empty-group-correctscorefloor-0p08-NOT-SHIPPED", capturedPaths);
+
+            // FRAMES 4 and 5 — the amber comparison, §4.4. Back to the SHIPPED config so the pair
+            // is read against the real sheet, and the only thing that moves between them is the ink.
+            yield return DriveToMarketSheet(laptop, new RunConfig());
+            SportsbookApp.PriceTakesAmber = false;
+            yield return WaitForRebuild();
+            AssertPriceInk(laptop, LaptopOs.White, "toner");
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "S4-entry-price-ink-A-toner", capturedPaths);
+
+            SportsbookApp.PriceTakesAmber = true;
+            yield return WaitForRebuild();
+            AssertPriceInk(laptop, LaptopOs.MoneyGold, "amber");
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "S5-entry-price-ink-B-amber", capturedPaths);
+
+            // The switch is static and the default is the shipped ink; leaving it set would silently
+            // repaint every later capture in this session.
+            SportsbookApp.PriceTakesAmber = false;
+            yield return WaitForRebuild();
+            AssertPriceInk(laptop, LaptopOs.White, "toner (restored)");
+
+            // Six states now: the contents block takes two frames because its twenty-one lines do
+            // not fit one viewport, and one frame could only ever have shown part of it.
+            AssertCaptureOutput(capturedPaths, 12);
+        }
+
+        /// <summary>Whether <paramref name="target"/> is wholly inside <paramref name="viewport"/>
+        /// vertically and overlaps it horizontally — i.e. whether a reader would actually SEE it in
+        /// the frame.
+        ///
+        /// <para>This exists because `GetComponentsInChildren` finds rows that scrolled out of view,
+        /// and two of this set's captures passed their first cut on frames that did not contain
+        /// their own subject. Existence in the hierarchy is not the claim a capture makes.</para></summary>
+        private static bool IsInFrame(RectTransform viewport, RectTransform target)
+        {
+            // MEASURED IN THE VIEWPORT'S OWN LOCAL SPACE, not in world space.
+            //
+            // The first cut compared world-space corners and rejected every line on a list that was
+            // plainly in the picture. This is a WORLD-SPACE canvas on a physical laptop in a room:
+            // the whole 704px viewport spans about 0.1 world units, so every row rounds to the same
+            // two digits — and the screen is TILTED, so a world-space x comparison is being taken
+            // across a rotated plane and means nothing. Local space is the space the layout was
+            // authored in, and its units are the pixels every other constant in this build is
+            // written in.
+            //
+            // Vertical only, deliberately: these lists clip vertically, the lines span the block's
+            // width by construction, and the horizontal term is what was producing the false
+            // negative rather than catching anything.
+            var corners = new Vector3[4];
+            target.GetWorldCorners(corners);
+            float min = float.MaxValue, max = float.MinValue;
+            for (int i = 0; i < corners.Length; i++)
+            {
+                float y = viewport.InverseTransformPoint(corners[i]).y;
+                min = Mathf.Min(min, y);
+                max = Mathf.Max(max, y);
+            }
+            Rect r = viewport.rect;
+            return min >= r.yMin - 0.5f && max <= r.yMax + 0.5f;
+        }
+
+        /// <summary>The vertical extent of <paramref name="target"/> in <paramref name="viewport"/>'s
+        /// local space, for diagnostics — the same space <see cref="IsInFrame"/> judges in, so a
+        /// printed number and a verdict can never disagree.</summary>
+        private static string LocalExtent(RectTransform viewport, RectTransform target)
+        {
+            var corners = new Vector3[4];
+            target.GetWorldCorners(corners);
+            float min = float.MaxValue, max = float.MinValue;
+            for (int i = 0; i < corners.Length; i++)
+            {
+                float y = viewport.InverseTransformPoint(corners[i]).y;
+                min = Mathf.Min(min, y);
+                max = Mathf.Max(max, y);
+            }
+            return $"{min:0.0}..{max:0.0}";
+        }
+
+        /// <summary>Adds every destination whose contents line is IN FRAME to
+        /// <paramref name="shown"/>. Called once per contents shot so the pair can be required to
+        /// cover all six between them.</summary>
+        private static void RecordDestinationsInFrame(Transform contents, ScrollRect scroll,
+            ISet<MarketDestination> shown, IList<string> diagnostics)
+        {
+            RectTransform viewport = scroll.viewport != null
+                ? scroll.viewport
+                : (RectTransform)scroll.transform;
+            Rect r = viewport.rect;
+            diagnostics.Add($"  viewport '{viewport.name}' local y {r.yMin:0.0}..{r.yMax:0.0}");
+            foreach (MarketDestination d in MarketDestinations.All)
+            {
+                Transform line = Find(contents, "ContentsDestination" + d);
+                if (line == null)
+                {
+                    diagnostics.Add($"    {d}: NOT FOUND in the tree");
+                    continue;
+                }
+                bool inFrame = IsInFrame(viewport, (RectTransform)line);
+                if (inFrame) shown.Add(d);
+                diagnostics.Add($"    {d}: {LocalExtent(viewport, (RectTransform)line)} -> "
+                    + (inFrame ? "IN FRAME" : "out"));
+            }
+        }
+
+        /// <summary>Puts a pinned run under the laptop and opens ENTRY on matchup 0. Split out
+        /// because the §8 set drives it three times with two different configs, and a capture whose
+        /// states were reached by three hand-copied sequences is a capture whose states differ in
+        /// ways nobody wrote down.</summary>
+        private static IEnumerator DriveToMarketSheet(LaptopScreen laptop, RunConfig config)
+        {
+            laptop.director.StartNewRun(SeedMarketSheet);
+            SetDirectorRun(laptop.director, new Run(SeedMarketSheet, config));
+            AssertShootingSeed(laptop, SeedMarketSheet);
+            yield return WaitForRebuild();
+
+            Invoke(Required(Required(App(laptop), "Matchup0"), "Details"));
+            yield return WaitForRebuild();
+            Assert.AreEqual(SportsbookApp.Tab.Detail, laptop.Os.CurrentTab,
+                "the market sheet is ENTRY, and every §8 frame is taken on it");
+        }
+
+        /// <summary>Reads the ink actually on a price cell. §4.4's comparison is worth nothing if
+        /// both frames came out the same colour, so each half asserts its own ink rather than
+        /// trusting that the switch reached the render.</summary>
+        private static void AssertPriceInk(LaptopScreen laptop, Color expected, string what)
+        {
+            Button price = FirstNamedButton(Required(App(laptop), "MarketBody"), "Market");
+            Assert.IsNotNull(price, "the sheet must have a price cell for the ink to be read from");
+            var text = price.GetComponentInChildren<TMP_Text>();
+            Assert.IsNotNull(text, "the price cell must carry its figure");
+            Assert.AreEqual(expected, text.color,
+                $"the {what} half of §4.4's comparison did not reach the render — both frames would "
+                + "be the same sheet and the comparison would answer nothing");
+        }
+
         /// <summary>S83's scroll, on the state that ACTUALLY SCROLLS (DD batch 81).
         ///
-        /// <para><b>Four legs plus a held consumable.</b> A non-scrolling capture proves nothing
-        /// about a scroll, and four legs ALONE does not scroll — measured, it is 168.0 of content
-        /// into a 177.9 viewport and clears by 9.9px. The modifiers row is the 34px that puts it
-        /// over: 202.0 into 177.9, scrolling by 24.1px. That row is gated on pure RUN state, so the
-        /// capture grants the consumable rather than hoping for one.</para>
+        /// <para><b>RE-CUT after the nudge row was deleted (S82-am2/S80-am2-cl2, batch 107).</b> The
+        /// state this captured no longer scrolls, and that is the deletion working rather than a
+        /// regression: B returned 32px to the flow, so `SlipViewportHeight` went 177.9 → 209.9 and
+        /// the old subject — four legs plus a held consumable, 202.0 of content — now CLEARS by
+        /// 7.9px instead of scrolling by 24.1.</para>
+        ///
+        /// <para>That 7.9 is the register's own "roughly 8px standing" (`S80-am2-cl2`: 404.10 −
+        /// 10.00 − 32 = 362.10 against a 370 budget) arrived at from the other end — the first
+        /// independent confirmation of that arithmetic, since 404.10 is bookkeeping that cannot be
+        /// re-derived from the layout constants alone.</para>
+        ///
+        /// <para><b>So the state is heavier now: four legs, a held consumable, AND the relation
+        /// statement.</b> S80-am's measured bill was 4 legs +0.1 · +consumable +34.1 · +statement
+        /// +36.1 · +both +70.1 against the budget; A and B together returned 42, so BOTH is the one
+        /// case still over — by ~28.1px. Two of the four legs are therefore a same-match pair that
+        /// states a relation, which is an ordinary shipped slip, not a rig.</para>
+        ///
+        /// <para><b>This is why taking B did not retire C</b> (`S82-am2` says so in words; this
+        /// says it in pixels). The flow still overflows at its heaviest reachable state, so option
+        /// C — scrolling the flow region — still has a live case.</para>
         ///
         /// <para>Seeded on the same pin as the max-legs frame, so the board underneath is the board
         /// that set is already read against.</para></summary>
@@ -477,18 +772,63 @@ namespace SBR.Tests.PlayMode
             run.GrantConsumable(freeBet);
 
             int maxLegs = run.Config.MaxLegs;
-            for (int i = 0; i < maxLegs; i++)
-            {
-                Invoke(Required(Required(App(laptop), "Matchup" + i), "AwayOdds"));
-                yield return WaitForRebuild();
-            }
-            Assert.AreEqual(maxLegs, laptop.Slip.Picks.Count, "the captured state must be a full slip");
+            BetslipModel slip = laptop.Slip;
+
+            // Two of the four legs must be a same-match pair that STATES a relation, because the
+            // statement's 36.1px is what still carries this state over the reclaimed viewport.
+            // Searched rather than authored: which pairs correlate is a property of a board that is
+            // re-priced every boot, and S79 records that 46.1% of same-match slips correctly state
+            // nothing — so the first pair found is usually not one of them.
+            MarketSelection selA = default, selB = default;
+            bool found = false;
+            IReadOnlyList<MarketOffer> offers = run.CurrentSlate.Matchups[0].Markets;
+            for (int a = 0; a < offers.Count && !found; a++)
+                for (int b = a + 1; b < offers.Count; b++)
+                {
+                    slip.Clear();
+                    if (!slip.AddLeg(0, offers[a].Selection)) continue;
+                    if (!slip.AddLeg(0, offers[b].Selection)) continue;
+                    if (slip.Refusal != null) continue;
+                    if (SportsbookApp.RelationStatement(slip.SameMatchPricing, slip.Picks) == null)
+                        continue;
+                    selA = offers[a].Selection;
+                    selB = offers[b].Selection;
+                    found = true;
+                    break;
+                }
+            Assert.IsTrue(found,
+                "no same-match pair on matchup 0 states a relation, so the heaviest reachable flow "
+                + "cannot be built and this capture cannot mean what it claims");
+
+            // That search churned thousands of two-leg slips with no frame between them, and the OS
+            // rebuilds off a SIGNATURE — so clear to a state that cannot share one with the pair
+            // below, let it draw, then build the real slip.
+            slip.Clear();
+            yield return WaitForRebuild();
+            Assert.IsTrue(slip.AddLeg(0, selA), "leg 1 of the stating same-match pair");
+            Assert.IsTrue(slip.AddLeg(0, selB), "leg 2 of the stating same-match pair");
+            for (int i = 1; slip.Picks.Count < maxLegs; i++)
+                Assert.IsTrue(slip.AddLeg(i, MarketSelection.Moneyline(Side.Away)),
+                    $"leg on matchup {i} to fill the slip to its cap");
+            yield return WaitForRebuild();
+            Assert.AreEqual(maxLegs, slip.Picks.Count, "the captured state must be a full slip");
 
             // The frame is only worth docking if it IS the scrolling state, so that is asserted
             // rather than assumed — a capture that silently caught the non-scrolling case would be
             // exactly the evidence the DD said proves nothing.
             Transform margin = Required(App(laptop), "WorkingMargin");
+            Assert.IsNotNull(Find(margin, "RelationStatement"),
+                "the statement is the 36.1px this state now depends on — without it the flow fits");
             var scroll = Required(margin, "SlipScroll").GetComponent<ScrollRect>();
+
+            // MEASURED, not inferred. The old numbers in this file's summary were invalidated by a
+            // 32px reclaim, and the replacements are printed rather than asserted so the next reader
+            // gets the figures from the run instead of from a comment that may have gone stale the
+            // same way.
+            Debug.Log($"[S83 flow] content {scroll.content.rect.height:0.0} into viewport "
+                + $"{SportsbookApp.SlipViewportHeight:0.0} — over by "
+                + $"{scroll.content.rect.height - SportsbookApp.SlipViewportHeight:0.0}px");
+
             Assert.IsTrue(scroll.vertical,
                 "this capture exists to show the scroll engaged; it is not engaged in this state");
             Assert.IsNotNull(Find(Required(margin, "SlipScroll"), "RailTrack"),

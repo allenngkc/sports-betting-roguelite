@@ -150,7 +150,12 @@ namespace SBR.Game
                 run.ShopOffers.Count, "|", run.ConsumableOffers.Count, "|", run.OwnedRelics.Count, "|",
                 run.OwnedConsumables.Count, "|", slip.Picks.Count, "|", ((long)slip.Stake).ToString(CultureInfo.InvariantCulture), "|",
                 (int)slip.Modifier, "|", slip.BoostLeg, "|", _activeApp, "|", _tab, "|", viewRevision,
-                "|", _toast);
+                // The price-ink switch (spec-market-surfaces §4.4) changes what is DRAWN, so it
+                // belongs in the signature that decides whether to redraw. Without it the amber
+                // comparison could not be rendered both ways in one session — the second state
+                // would carry the first state's ink and the frame would quietly be a duplicate,
+                // which is the worst possible failure for a comparison.
+                "|", SportsbookApp.PriceTakesAmber, "|", _toast);
             if (signature == _signature) return;
             _signature = signature;
             Rebuild(run, slip);
