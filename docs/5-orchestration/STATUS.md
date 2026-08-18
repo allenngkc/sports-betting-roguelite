@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-18, cycle 393 (heartbeat).** Both
+**Keeper-era heartbeat stamp: 2026-08-18, cycle 394 (heartbeat).** The
+reveal row closed across all carriers; markets docking its evidence
+frames and releasing the lease to TV; TV's phase B built-but-unverified
+awaiting its window. Parked with Allen: research 8-9.
+
+*(prior stamp, cycle 393:)* Both
 builds grinding through their phases. Parked with Allen: research 8-9.
 
 *(prior stamp, cycle 392:)* The
