@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-17, cycle 377.** UNIT 1 MERGED
+**Keeper-era heartbeat stamp: 2026-08-17, cycle 378 (heartbeat).** TV on
+the C46 sweep; DD holding. One staged draft HELD pending Allen's word:
+'B is taken, delete the nudge row' contradicts the settled C-forward
+ruling and its deficit rationale is gone - offered back as a fresh
+product call if he means it on the merits. With Allen: that, the five
+calls, research two.
+
+*(prior stamp, cycle 377:)* UNIT 1 MERGED
 (d671fee): the settled leg's column stops lying - all three suites green
 including engine 306/306, the trap gate fired on real observation, the
 third state built to the ruling. Sibling-extension rule-as-built with
