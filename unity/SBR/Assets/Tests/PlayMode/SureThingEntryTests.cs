@@ -40,13 +40,18 @@ namespace SBR.Tests.PlayMode
             EntryPersistenceSnapshot persistent = CaptureEntryPersistence(laptop);
             string previousBodyContent = AllText(Required(app, "MarketBody"));
 
+            // spec-market-surfaces-2026-08-17.md §3: the five old tabs (GOALS/BTTS/CORNERS/CARDS/
+            // PLAYERS, each showing ONE MarketKind) are replaced by the six destinations. Ends on
+            // RESULT, which is where ENTRY opens, so the walk returns to its start exactly as the
+            // old GOALS-last order did.
             string[] destinationNames =
             {
-                "DetailTabBTTS",
-                "DetailTabCORNERS",
-                "DetailTabCARDS",
-                "DetailTabPLAYERS",
-                "DetailTabGOALS",
+                "DetailTabGoals",
+                "DetailTabCorrectScore",
+                "DetailTabCorners",
+                "DetailTabCards",
+                "DetailTabPlayers",
+                "DetailTabResult",
             };
             // A2 ruling: the per-destination panel title ("BOTH TEAMS TO SCORE" etc.) is deleted —
             // each row now names its own market, so there is no longer a fixed title node to pin
@@ -102,7 +107,10 @@ namespace SBR.Tests.PlayMode
             AssertRect(firstRing.rectTransform, 192f, 48f, "WideBiroRing");
             string variant = firstRing.sprite.name;
 
-            Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTabBTTS"));
+            // BTTS no longer has a destination of its own — §3 folds it into GOALS, and §5.2's
+            // contents block is what keeps it findable. The market it is is unchanged, so this test
+            // reaches it one stop over rather than losing its second-market subject.
+            Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTabGoals"));
             yield return WaitForRebuild();
             Transform bttsBody = Required(App(laptop), "MarketBody");
             Button second = FirstNamedButton(bttsBody, "MarketBothTeamsToScore");
@@ -346,16 +354,10 @@ namespace SBR.Tests.PlayMode
             // it scrolls or not, is horizontal containment against the viewport — A4 requires
             // content to stay clear of the S27 rail, so a row (and its price cell) may never run
             // wider than the viewport it is masked by.
-            string[] destinationNames =
-            {
-                "DetailTabBTTS",
-                "DetailTabCORNERS",
-                "DetailTabCARDS",
-                "DetailTabPLAYERS",
-                "DetailTabGOALS",
-            };
+            MarketSheet sheet = MarketSheet.Build(laptop.director.Run.CurrentSlate.Matchups[0]);
+            int totalRowsSeen = 0;
 
-            foreach (string destinationName in destinationNames)
+            foreach ((string destinationName, MarketDestination destination) in EntryDestinations)
             {
                 Invoke(Required(Required(App(laptop), "MarketDestinations"), destinationName));
                 yield return WaitForRebuild();
@@ -367,10 +369,34 @@ namespace SBR.Tests.PlayMode
                 List<Transform> rows = AllNamed(bodyTransform, "MarketOffer");
                 foreach (Transform row in rows)
                     AssertWithinContainerHorizontally(viewport, row as RectTransform, $"{destinationName} {row.name}");
-                Assert.Greater(rows.Count, 0,
-                    $"{destinationName} must render at least one market offer row for this invariant to mean anything");
+
+                // The old form asserted "at least one row" per destination. It cannot survive §3:
+                // CORRECT SCORE and MULTI SCORER are priced only above RunConfig's own floor, so a
+                // destination legitimately renders zero rows and §5.3 prints it anyway. Pinning the
+                // count to the derivation layer keeps the same guard against a silently empty body
+                // without asserting something the spec allows to be false.
+                Assert.AreEqual(sheet.Section(destination).Count, rows.Count,
+                    $"{destinationName} must render exactly the rows MarketSheet seats in it");
+                totalRowsSeen += rows.Count;
             }
+
+            Assert.Greater(totalRowsSeen, 0,
+                "the six destinations together must render rows for this invariant to mean anything");
         }
+
+        /// <summary>§3's six destinations and the scene-graph name of each one's rail tab, in rail
+        /// order. Safe as a literal here precisely because §3.1 makes the destination set a CONSTANT
+        /// — it never varies by matchup — and the rail test below asserts this list against
+        /// <see cref="MarketDestinations.All"/> so the two cannot drift.</summary>
+        private static readonly (string node, MarketDestination destination)[] EntryDestinations =
+        {
+            ("DetailTabResult", MarketDestination.Result),
+            ("DetailTabGoals", MarketDestination.Goals),
+            ("DetailTabCorrectScore", MarketDestination.CorrectScore),
+            ("DetailTabCorners", MarketDestination.Corners),
+            ("DetailTabCards", MarketDestination.Cards),
+            ("DetailTabPlayers", MarketDestination.Players),
+        };
 
         [UnityTest, Order(5)]
         public IEnumerator Every_destination_renders_a_single_column_of_offer_rows()
@@ -383,28 +409,28 @@ namespace SBR.Tests.PlayMode
             LaptopScreen laptop = Laptop();
             yield return OpenEntry(laptop);
 
-            string[] destinationNames =
-            {
-                "DetailTabGOALS",
-                "DetailTabBTTS",
-                "DetailTabCORNERS",
-                "DetailTabCARDS",
-                "DetailTabPLAYERS",
-            };
+            int destinationsWithRows = 0;
 
-            foreach (string destinationName in destinationNames)
+            foreach ((string destinationName, MarketDestination _) in EntryDestinations)
             {
                 Invoke(Required(Required(App(laptop), "MarketDestinations"), destinationName));
                 yield return WaitForRebuild();
 
                 List<float> rowX = OfferRowX(Required(App(laptop), "MarketBody"));
-                Assert.Greater(rowX.Count, 0,
-                    $"{destinationName} must render at least one offer for a single-column claim to mean anything");
+                // A destination with nothing priced still prints its groups (§5.3) but has no rows
+                // to make a column claim about — see the containment test for why "at least one row
+                // per destination" is no longer assertable.
+                if (rowX.Count == 0) continue;
+                destinationsWithRows++;
+
                 var distinctX = new HashSet<float>();
                 foreach (float x in rowX) distinctX.Add(Mathf.Round(x * 10f) / 10f);
                 Assert.AreEqual(1, distinctX.Count,
                     $"A1: every {destinationName} offer row must share the same column (row x position)");
             }
+
+            Assert.Greater(destinationsWithRows, 0,
+                "at least one destination must render offer rows for a single-column claim to mean anything");
         }
 
         [UnityTest, Order(6)]
@@ -413,38 +439,40 @@ namespace SBR.Tests.PlayMode
             // C19 (law): "an offer the engine prices is reachable on the surface." For every
             // destination, the number of rendered market-offer rows must equal the number of
             // offers the engine actually priced for that destination on this matchup — derived
-            // from the engine (matchup.Markets filtered by kind), never a hardcoded number, so a
-            // silently hidden offer fails here.
+            // from the engine (matchup.Markets seated by MarketDestinations.For), never a hardcoded
+            // number, so a silently hidden offer fails here.
+            //
+            // STRENGTHENED by §3, not weakened. The old form walked five destinations against ONE
+            // MarketKind each and could therefore only speak for five of fifteen kinds — nine had
+            // no home at all and the test could not see them (S86). This walks all six destinations
+            // and closes with the whole-sheet total, so an offer of ANY kind that reaches no row
+            // fails here.
             yield return Boot();
             LaptopScreen laptop = Laptop();
             yield return OpenEntry(laptop);
             Run run = laptop.director.Run;
             Matchup matchup = run.CurrentSlate.Matchups[0];
 
-            (string destination, MarketKind kind)[] destinations =
-            {
-                ("DetailTabGOALS", MarketKind.TotalGoals),
-                ("DetailTabBTTS", MarketKind.BothTeamsToScore),
-                ("DetailTabCORNERS", MarketKind.TotalCorners),
-                ("DetailTabCARDS", MarketKind.TotalCards),
-                ("DetailTabPLAYERS", MarketKind.AnytimeScorer),
-            };
-
-            foreach ((string destinationName, MarketKind kind) in destinations)
+            int renderedAcrossTheSheet = 0;
+            foreach ((string destinationName, MarketDestination destination) in EntryDestinations)
             {
                 Invoke(Required(Required(App(laptop), "MarketDestinations"), destinationName));
                 yield return WaitForRebuild();
 
                 int expected = 0;
                 foreach (MarketOffer offer in matchup.Markets)
-                    if (offer.Selection.Kind == kind) expected++;
-                Assert.Greater(expected, 0,
-                    $"{destinationName} must have at least one engine-priced offer for C19 to mean anything");
+                    if (MarketDestinations.For(offer.Selection.Kind) == destination) expected++;
 
                 int rendered = AllNamed(Required(App(laptop), "MarketBody"), "MarketOffer").Count;
                 Assert.AreEqual(expected, rendered,
                     $"C19: {destinationName} must render exactly the offers the engine priced ({expected}) — none hidden");
+                renderedAcrossTheSheet += rendered;
             }
+
+            Assert.AreEqual(matchup.Markets.Count, renderedAcrossTheSheet,
+                "C19: every priced offer on the matchup must have been rendered on exactly one "
+                + "destination — this is the whole-vocabulary form of the guard, and it is the one "
+                + "the nine homeless kinds used to escape");
 
             // Ladder counts must also match the run's own line configuration, not just an internal
             // engine-list/render-count agreement, so a config change is caught too.
@@ -470,7 +498,7 @@ namespace SBR.Tests.PlayMode
             // PLAYERS: S25 amended removed the capacity cap, and the shipped roster (PlayersPerTeam
             // per side, both teams) comfortably exceeds the ~7-row viewport at 54px/row, so PLAYERS
             // overflows and must carry the rail.
-            Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTabPLAYERS"));
+            Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTabPlayers"));
             yield return WaitForRebuild();
             Transform overflowingBody = Required(App(laptop), "MarketBody");
             var trackRect = Required(overflowingBody, "PositionRailTrack") as RectTransform;
@@ -490,13 +518,111 @@ namespace SBR.Tests.PlayMode
             Assert.LessOrEqual(thumbCorners[2].y, trackCorners[2].y + epsilon,
                 "S27 thumb top must lie within the track");
 
-            // BTTS is always exactly 2 rows (108px of content against a 412px viewport) — it never
-            // overflows, so the rail must be entirely absent.
-            Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTabBTTS"));
-            yield return WaitForRebuild();
-            Transform fittingBody = Required(App(laptop), "MarketBody");
-            Assert.IsNull(Find(fittingBody, "PositionRailTrack"), "S27 rail track must be absent when the list fits");
-            Assert.IsNull(Find(fittingBody, "PositionRailThumb"), "S27 rail thumb must be absent when the list fits");
+            // THE ABSENT HALF, RE-AUTHORED — and the reason is a measurement worth keeping.
+            //
+            // This used to pin BTTS: 2 rows, 108px of content against a 412px viewport, guaranteed
+            // never to overflow. §3 dissolved that destination into GOALS, and with the six
+            // destinations carrying 10–24 rows each plus §5.3's group headings — against a body that
+            // §5.1's folio band trims to 378px, exactly seven rows — there is NO destination left
+            // that is guaranteed to fit. So the invariant is asserted in its real form (present IFF
+            // the content overflows) on every destination, instead of against one hand-picked
+            // destination that happened to demonstrate one side of it.
+            foreach ((string destinationName, MarketDestination _) in EntryDestinations)
+            {
+                Invoke(Required(Required(App(laptop), "MarketDestinations"), destinationName));
+                yield return WaitForRebuild();
+
+                Transform body = Required(App(laptop), "MarketBody");
+                var viewport = Required(body, "MarketViewport") as RectTransform;
+                var content = Required(body, "MarketContent") as RectTransform;
+                Assert.IsNotNull(viewport, $"{destinationName} MarketViewport must be a RectTransform");
+                Assert.IsNotNull(content, $"{destinationName} MarketContent must be a RectTransform");
+
+                bool overflows = content.rect.height > viewport.rect.height;
+                Assert.AreEqual(overflows, Find(body, "PositionRailTrack") != null,
+                    $"S27: {destinationName} content {content.rect.height}px in a "
+                    + $"{viewport.rect.height}px viewport — the rail track must be present exactly "
+                    + "when it overflows");
+                Assert.AreEqual(overflows, Find(body, "PositionRailThumb") != null,
+                    $"S27: {destinationName} rail thumb must track the track's own presence");
+            }
+        }
+
+        [UnityTest, Order(7)]
+        public IEnumerator Destination_rail_prints_all_six_and_the_measured_pack_fits_the_700px_column()
+        {
+            // spec §9 asked for the one number it explicitly did NOT claim: the rail's capacity,
+            // measured rather than computed from authored constants. §7's gate 2 asks for the other:
+            // the destination set is CONSTANT across matchups.
+            //
+            // The pack is measured from the labels themselves (LaptopUi.MeasureWidth, at the same
+            // 13px and the same tracking the tabs render with), so this asserts the arithmetic the
+            // surface actually uses — not a transcription of it.
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            yield return OpenEntry(laptop);
+
+            Assert.AreEqual(MarketDestinations.All.Count, EntryDestinations.Length,
+                "this file's destination list must hold every member of MarketDestinations.All");
+            for (int i = 0; i < EntryDestinations.Length; i++)
+                Assert.AreEqual(MarketDestinations.All[i], EntryDestinations[i].destination,
+                    $"rail order must match MarketDestinations.All at index {i}");
+
+            Transform rail = Required(App(laptop), "MarketDestinations");
+            var railRect = rail as RectTransform;
+            Assert.IsNotNull(railRect, "the rail band must be a RectTransform");
+            Assert.AreEqual(700f, railRect.rect.width, 0.01f,
+                "ENTRY's market column is 700px — the betslip takes the other 324 of the 1024");
+
+            // The face is READ OFF the rendered tab, never assumed: the pack is only a claim about
+            // the rail if it measures the glyphs the rail actually prints (see TestFont's note —
+            // this fixture has been wrong about a font before, and the width arithmetic went with it).
+            TMP_Text sample = Required(rail, EntryDestinations[0].node).GetComponentInChildren<TMP_Text>();
+            Assert.IsNotNull(sample, "a destination tab must carry a Text to measure against");
+            Assert.IsNotNull(sample.font, "the destination tab has no font; the production face failed to load");
+            SportsbookApp.DestinationRailPack pack =
+                SportsbookApp.PackDestinationRail(sample.font, railRect.rect.width);
+            Debug.Log("[rail-pack] " + pack.Report());
+            Assert.IsTrue(pack.Fits,
+                "spec §9 — the six destinations must fit the 700px rail: " + pack.Report());
+
+            // Every stop printed, in order, at its packed x, and never overlapping its neighbour.
+            float previousRight = 0f;
+            for (int i = 0; i < EntryDestinations.Length; i++)
+            {
+                (string node, MarketDestination destination) = EntryDestinations[i];
+                var tab = Required(rail, node) as RectTransform;
+                Assert.IsNotNull(tab, $"{node} must be a RectTransform");
+                Assert.IsNotNull(tab.GetComponent<Button>(),
+                    $"{node} must be an independently named destination");
+                Assert.AreEqual(MarketDestinations.Label(destination), TextOf(tab),
+                    $"{node} must print its ruled label");
+                Assert.AreEqual(pack.TabX[i], tab.anchoredPosition.x, 0.01f,
+                    $"{node} must sit at its MEASURED x, never an authored one");
+                Assert.AreEqual(pack.TabWidth[i], tab.sizeDelta.x, 0.01f,
+                    $"{node} must be as wide as its own measured label plus padding");
+                Assert.GreaterOrEqual(tab.anchoredPosition.x, previousRight,
+                    $"{node} must not overlap the destination before it");
+                previousRight = tab.anchoredPosition.x + tab.sizeDelta.x;
+            }
+            Assert.LessOrEqual(previousRight, railRect.rect.width,
+                "the last destination must end inside the rail");
+
+            // §7 gate 2 / §3.1: the set does not vary with what is priced. Walking the slate is the
+            // only way to say that on the surface rather than in the derivation layer.
+            Run run = laptop.director.Run;
+            for (int matchup = 0; matchup < run.CurrentSlate.Matchups.Count; matchup++)
+            {
+                Invoke(Required(Required(App(laptop), "FormTabs"), "FORM"));
+                yield return WaitForRebuild();
+                Invoke(Required(Required(App(laptop), "Matchup" + matchup), "Details"));
+                yield return WaitForRebuild();
+
+                Transform strip = Required(App(laptop), "MarketDestinations");
+                foreach ((string node, MarketDestination _) in EntryDestinations)
+                    Assert.IsNotNull(Find(strip, node),
+                        $"§3.1: {node} must print on matchup {matchup} whatever it happens to price");
+            }
         }
 
         private static int CountByKind(Matchup matchup, MarketKind kind)
