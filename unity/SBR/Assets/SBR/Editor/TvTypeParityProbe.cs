@@ -36,7 +36,12 @@ namespace SBR.EditorTools
             ("ONE TEAM SCORELESS", 28),   // G1 at-budget primary, NEED size
             ("ONE TEAM BLANKED", 28),     // G1 authored fallback
             ("CASH OUT $183", 29),        // the cash-out figure
-            ("MARKET SUSPENDED", 15),     // the string T20's face error clipped
+            // T112: re-authored from "MARKET SUSPENDED", which measured 267.7px against a 241.0px
+            // box — over on every frame it ever drew. T20's face error clipped the OLD string; this
+            // probe measures what the surface can emit TODAY, so the entry moves with the copy.
+            // A measurement instrument whose pool outlives its string measures a phantom, which is
+            // T111-am's own finding applied to a sibling instrument rather than to the sweep.
+            ("SUSPENDED", 15),
             ("ZAMBONIS 0 — REGULATORS 1", 36), // the score line, widest routine content
             ("PAYS", 15),
             ("$1,234", 24),
@@ -206,7 +211,8 @@ namespace SBR.EditorTools
 
                 float slot = figure.rectTransform.rect.width;
                 // The six states §6.1 names, in the copy each actually renders.
-                foreach (string money in new[] { "CASH OUT $183", "CASH OUT $1,240", "CASHED OUT $183", "MARKET SUSPENDED" })
+                // T112: "SUSPENDED", re-authored from "MARKET SUSPENDED".
+                foreach (string money in new[] { "CASH OUT $183", "CASH OUT $1,240", "CASHED OUT $183", "SUSPENDED" })
                 {
                     foreach (string word in new[] { "HOLD E", "UPDATING" })
                     {

@@ -200,8 +200,8 @@ namespace SBR.Tests.EditMode
                 {
                     ("Actionable",       "CASH OUT $184   [E]", true),
                     ("Price animating",  "CASH OUT $176   •   UPDATING", true),
-                    ("Suspended",        "MARKET SUSPENDED", true),
-                    ("Pending window",   "MARKET SUSPENDED", true),
+                    ("Suspended",        "SUSPENDED", true),  // T112: re-authored, was "MARKET SUSPENDED"
+                    ("Pending window",   "SUSPENDED", true),  // T112: re-authored, was "MARKET SUSPENDED"
                     ("Unavailable",      string.Empty, false),
                     ("Accepted",         "CASHED OUT $184", true),
                 };

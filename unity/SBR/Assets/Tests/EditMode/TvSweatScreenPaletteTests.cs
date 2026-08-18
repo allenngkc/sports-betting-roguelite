@@ -1805,7 +1805,7 @@ namespace SBR.Tests.EditMode
 
                 InvokePrivate(s, "ShowMarketSuspended"); // the transition, and NOT a frame more
 
-                Assert.AreEqual("MARKET SUSPENDED", cashOut.text, "the label did not change");
+                Assert.AreEqual("SUSPENDED", cashOut.text, "the label did not change"); // T112: was "MARKET SUSPENDED"
                 Assert.AreEqual(s.structureGrey, cashOut.color,
                     "§8.5: suspended is L1 unlit slate — structureGrey, on the label's own frame");
                 Assert.IsFalse(field.enabled,
@@ -1893,7 +1893,7 @@ namespace SBR.Tests.EditMode
                     "T43: the per-frame gold taunt repainted a suspended slot. The market is not "
                     + "suspended in a pending-loss window, so a _marketSuspended-only guard does not "
                     + "hold — the slot's own presentation state is what gates it.");
-                Assert.AreEqual("MARKET SUSPENDED", cashOut.text, "the taunt changed the label");
+                Assert.AreEqual("SUSPENDED", cashOut.text, "the taunt changed the label"); // T112: was "MARKET SUSPENDED"
                 Assert.IsFalse(field.enabled, "the taunt re-lit the field under a suspended label");
             }
             finally

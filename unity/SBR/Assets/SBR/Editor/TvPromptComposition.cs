@@ -239,7 +239,8 @@ namespace SBR.EditorTools
 
                     // On its own row each member has the FULL width instead of the other's leftovers.
                     float box = fig.rectTransform.rect.width;
-                    foreach (string s in new[] { "CASHED OUT $1,240", "CASH OUT $1,240", "MARKET SUSPENDED" })
+                    // T112: "SUSPENDED", re-authored from "MARKET SUSPENDED".
+                    foreach (string s in new[] { "CASHED OUT $1,240", "CASH OUT $1,240", "SUSPENDED" })
                         Row(box, "figure row      ", s, W(fig, s));
                     foreach (string s in new[] { StatusPreview, "UPDATING", "HOLD E" })
                         Row(box, "status row      ", s, W(status, s));

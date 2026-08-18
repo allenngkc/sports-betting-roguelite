@@ -353,6 +353,148 @@ one seed's deltas is `S84`'s failure in miniature.
 
 ---
 
+## 0-U4. THE RULED QUEUE — batches 103-106 · 2026-08-17
+
+### `T112` — the cash-out constant · MEASURED, then BUILT
+
+**Measured before authoring, because `T112` made that a precondition** (*"very probably is
+the word this studio has been wrong on twice this week"*):
+
+```
+CashOut 'MARKET SUSPENDED'  267.7px against box 241.0px  OVERRUNS by 26.7px
+CashOut 'SUSPENDED'         152.3px against box 241.0px  fits, 88.7px spare
+```
+
+The DD's named candidate clears with **88.7px spare**. Re-authored, box unchanged, and
+the state is still **stated** rather than carried by grey.
+
+**A new instrument came out of it: `SBR/TV/T84 candidate measure (pre-authoring)`.**
+Measure-before-you-author has now been a precondition on two consecutive rulings, and it
+could not use the sweep — the sweep's pools may contain only strings the code can already
+emit, and **a candidate is by definition one it cannot emit yet.** Mixing them would put
+an invented string in the population, which is the exact defect `T111-am` ruled on. So it
+is a separate entry point that measures candidates against the real slot's real box and
+real face, and **rules nothing.**
+
+### `T110-am` — the flavour strip · MEASURED, and the measurement REMOVED THE BUILD
+
+The ruling made one measurement owed first and said it *"may remove the work entirely"*.
+It did:
+
+```
+Flavor box 651.0px
+  WITHOUT suffix: widest 577.2px  fits, 73.8px spare
+  WITH suffix:    widest 745.8px  OVERRUNS by 94.8px
+  suffix cost:    168.7px between the two widest
+```
+
+**The base decks FIT, with 73.8px to spare. The suffix alone causes the overrun** — it
+costs 168.7px, nearly twice the overrun itself.
+
+**So no deck is re-authored, and the four rung-2 fallbacks the remedy would have needed
+are not written.** Per the ruling: *"authoring four fallbacks before taking it is the
+predict-instead-of-measure error this lane exists to prevent."*
+
+**AND THE REMEDY IS NOW A COPY DECISION THIS LANE MAY NOT TAKE.** With the decks
+exonerated, everything that overruns does so because of `" ({n} in the spell)"` — and the
+suffix's fate is explicitly **not ruled** (`C11` authors copy on a frame; the DD's lean is
+on record that it goes). **The overrun stays live and the fix is with the DD.** This lane
+built nothing here on purpose.
+
+*(The DD also noted the widest string prints `spell` twice — `…in the spell — …(12 in the
+spell)` — `T69`/`T70`'s family inside a single string. Also copy, also not this lane's.)*
+
+**BUILT — and the fix was necessary but NOT SUFFICIENT. `CashOut` STILL OVERRUNS.**
+
+With `MARKET SUSPENDED` retired, the sweep's next run reports the slot over on a
+different member:
+
+```
+CashOut  box 241.0px  widest 'CASHED OUT $1,240'  255.6px  OVERRUNS by 14.6px
+```
+
+**It was always over. It was hidden behind a bigger overrun** — the sweep reports the
+widest per slot, and 267.7 masked 255.6. This is the instrument's own recorded pattern
+turned around: *an over-generated string suppresses the under-generation it sits on top
+of*, and here a genuinely-reachable over-long string suppressed a second one.
+
+**NOT FIXED, ROUTED.** `CASHED OUT $x` is authored copy (`T35`, `T68-am` — it prints in
+the slot at L3), so shortening it is a copy decision and `C11` puts that on a frame. **The
+lane measured it, refused to author it, and routes it** — the same disposition as `T112`
+itself before its candidate was measured.
+
+> **The reusable half: a per-slot sweep that reports only the widest can only ever find
+> ONE defect per box.** Clearing the widest is what makes the next one visible, so a slot
+> that has just been fixed is exactly the slot most worth re-sweeping — which is why this
+> was found at all.
+
+### `C53` — the sweep's third category · BUILT, all four clauses, verified on a run
+
+```
+POPULATION: 60 text slots exist · 22 swept · 25 the same construction at another row
+            index · 1 declared unswept · 12 delegated to a named other instrument ·
+            0 unaccounted for
+DELEGATED — COVERED: 12 slots covered by
+  SBR.Tests.PlayMode.TvSweatScreenTests.Evidence_C46_the_stats_panel_strings_against_their_boxes
+  (evidence 2026-08-17: 142 strings over these 12 slots, no overrun, tightest 22.5px)
+  — StatsA0 … StatsTitle
+```
+
+- **Clause 1** — `DELEGATED` exists and names its instrument.
+- **Clause 2** — the name is resolved by reflection across
+  `AppDomain.CurrentDomain.GetAssemblies()` (the Editor assembly does not reference the
+  PlayMode test assembly, so `Type.GetType` alone cannot find it), and an unresolved name
+  **logs an error AND throws**, so the run fails both visibly and non-zero. Renaming or
+  deleting that pin now breaks the sweep loudly.
+- **Clause 3** — `UNACCOUNTED FOR` is **genuinely 0**, not absorbed: delegated slots are
+  excluded from `uncovered` by classification, and report on their **own** line as a
+  positive statement with count, list and instrument.
+- **Clause 4, the trap** — `DelegationStatus { Covered, Scheduled }` with an evidence
+  date. `Covered` = has run and been docked. `Scheduled` prints
+  **"NOT YET RUN, not docked — do not read this as measured"**. Without this the panel
+  would have reported `COVERED` while `T101`'s residual was, in this same window,
+  *never run and never docked* — the identical lie one level up, inside the fix for it.
+
+### ROUTED, not this lane's
+
+- **`docs/design/tv-design.md` §6.1 names `MARKET SUSPENDED`.** DD's owning document; a
+  canon update is owed. Not opened.
+- **`SportsbookApp.cs:2107`** prints `TV REVEAL IN PROGRESS · MARKET SUSPENDED` on the
+  **laptop's** mirror — a different surface and a different box, and the charter says the
+  laptop is not this lane's. Unmeasured here. **`S88`'s cousin.**
+- **Two sibling TV instruments carried the retired string in their own pools** —
+  `TvTypeParityProbe.cs` (×2) and `TvPromptComposition.cs`. **Fixed here rather than
+  routed**, because leaving them would have recreated `T111-am`'s exact defect —
+  *a measurement instrument whose pool outlives its string measures a phantom* — in two
+  more places, on the same day it was ruled.
+
+### `T114` — ARRIVED, RULED, AND **NOT BUILDABLE YET**
+
+A cashed-out ticket's footer prints `RISK $87` · `PAYS $1,490` above `CASHED OUT $199` —
+both false, held across all thirty frames. `T108`'s principle verbatim.
+
+**The DD recorded the omission as its own:** the spec named
+`RevealedTicketState { Riding, Won, Lost, CashedOut }` and tabled three of its four
+members. *Naming a state is not ruling it* — the same shape as `T108-am`'s *naming a field
+is not reading it*, one week apart.
+
+**And it names why this lane's build cannot express it, correctly:** `StakeWord` takes
+`IReadOnlyList<RevealedLegOutcome>`, and **a cash-out is a player action not derivable
+from leg outcomes at all.** Not a flaw in the build — the consequence of a table with a
+missing row.
+
+**WHY IT IS NOT BUILT HERE: the strings are not authored.** The row says the exact strings
+are copy, that `C11` authors copy on a frame, and that the frame now exists so it is *no
+longer blocked* — but **"no longer blocked" is not "authored".** §5's standing rule binds:
+*until it lands a lane must not invent the string.* **Owed from the DD: the fourth row's
+strings.** The wiring gap is known and small once they land.
+
+*(Routed with it and also not built: the cancelled legs still read `NEXT` after a
+cash-out, and `T25.6` defines `NEXT` as "the next thing that can take his money". The DD
+did not judge the strike's presence — only that the word is legible and false.)*
+
+---
+
 ## 0-U3. THE §8 CALM-BEAT CHECK — SETTLED · 2026-08-17
 
 **The question** (`grammar-count-markets-2026-08-17.md` §8, the one item blocking that
@@ -382,9 +524,19 @@ the per-beat probabilities track within a few thousandths.
 
 > **So the difference between the two watches is not in the drama stream at all. It is
 > entirely presentation routing.** `count-sweat-read` §2 concluded *the corners arm has
-> no resting state*, which is correct — and the mechanism is now exact: **the resting
-> state was generated six times and overwritten six times.** All seven non-final beats
-> staged a count, so every one took the count branch and rendered `CornerFor`.
+> no resting state*, which is correct — and the mechanism is now exact: **six beats were
+> tagged `Calm` by the stream and rendered `CornerFor` by the routing.** All seven
+> non-final beats staged a count, so every one took the count branch.
+
+> **CORRECTED BY `T113`, and the correction changes the fix.** This section first read
+> *"generated six times and overwritten six times"*. **That is loose and the DD was right
+> to catch it: the count branch returns BEFORE the base table runs, so `CalmPossession`
+> is never constructed at all. Nothing is overwritten — the calm branch is never
+> reached.** The distinction matters because "overwritten" implies a scene exists to
+> suppress, and the actual fix is about a branch that never executes.
+
+**`T113` ruled the finding** and put it at its strongest: *"count markets are simply less
+eventful" is not merely unproven — it is refuted on a matched pair.*
 
 **This is `grammar-count-markets` §1 confirmed by measurement rather than by source read,
 and it quantifies that direction's own proposal: up to six of eight beats in this sweat

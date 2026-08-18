@@ -626,7 +626,7 @@ namespace SBR.Game
         // StopCashOutAnimation), so RenderCashOut's animating/idle branch is never a frame stale.
         private bool _cashOutTweening;
         // T43 (state lie, DD 2026-08-02): the slot's PRESENTATION state, distinct from
-        // _marketSuspended's MARKET state. Two sites paint "MARKET SUSPENDED" — SuspendMarket (the
+        // _marketSuspended's MARKET state. Two sites paint "SUSPENDED" — SuspendMarket (the
         // market really is suspended) and PendingWindowBeat (§8.7's intervention overlay, which
         // renders the same slate while _marketSuspended is still false, because ResolveBeat never
         // suspends). Keying the presentation off _marketSuspended alone would leave the pending
@@ -2120,7 +2120,7 @@ namespace SBR.Game
         /// keyboard (batch tests) the window declines immediately, so autoplay never hangs.
         ///
         /// PRD §8.7 / DESIGN.md §8.5: "intervention controls live in their own overlay, never in
-        /// [the cash-out] row." The cash-out slot stays MARKET SUSPENDED (structureGrey, L1) for
+        /// [the cash-out] row." The cash-out slot stays SUSPENDED (structureGrey, L1) for
         /// the duration; the M/R/N verbs render on the separate InterventionPrompt element.</summary>
         private IEnumerator PendingWindowBeat()
         {
@@ -3260,7 +3260,13 @@ namespace SBR.Game
             // as a voided leg.
             _cashOutSlotSuspended = true;
             _tCashOut.enabled = true;
-            _tCashOut.text = "MARKET SUSPENDED";
+            // T112 (register batch 104): re-authored from "MARKET SUSPENDED", which overran the
+            // 241.0px box by 26.7px on EVERY frame — a constant that overruns is a defect, not a
+            // risk, so the fix is the shorter word, never a wider box. Measured 2026-08-17:
+            // 267.7px (incumbent) vs 152.3px (this string) against the same 241.0px box, 88.7px
+            // spare. The surviving constraint: the state must still be STATED, never carried by
+            // grey alone — do not weaken this further to a glyph, an icon, or an empty slot.
+            _tCashOut.text = "SUSPENDED";
             // T68: the ink is no longer set here. ApplyCashOutSlotState derives all three states
             // from the flag set on the line above, so the slate's grey and the lit field's punched
             // ink cannot drift apart at separate sites.
