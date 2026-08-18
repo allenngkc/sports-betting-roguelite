@@ -4,11 +4,14 @@
 **Building to:** `docs/design/spec-market-surfaces-2026-08-17.md` (S89–S92, batch 107)
 
 Five findings from building the spec. **Four need a DD ruling; one is recorded as resolved
-without one.** Everything quoted below is verbatim from the spec or measured from the engine —
-nothing here is a paraphrase, and where a number is measured the sample size is given.
+without one.** Everything quoted below is verbatim from the spec or measured from the build —
+nothing here is a paraphrase, and where a number is measured the method is given.
 
-The build continues meanwhile. Nothing in this document blocks the derivation layer, which is
-landed and gated (`8f7cf38`); findings 1 and 2 reach the rendered surface, which is in progress.
+**Nothing here blocks the build, and nothing here is waiting on you to proceed.** The rail
+measurement §9 asked for has LANDED (§2a): the six destinations fit, so no ruling is needed to
+ship them. The rulings sought are about what the measurements MEAN — the rail's exhausted
+headroom, a contradiction the build had to resolve by choosing, and a vocabulary the lane will not
+change by hand.
 
 ---
 
@@ -56,7 +59,7 @@ range and every folio number, but all of those are derived, so nothing is hand-e
 
 ---
 
-## 2. The spec's ~996px is wrong by the width of the betslip — the rail may not hold six
+## 2. The spec's ~996px is wrong by the width of the betslip — and the rail's true capacity is SIX
 
 **§4.3, verbatim:**
 
@@ -78,27 +81,54 @@ Two consequences, of very different weight:
 
 - **§4.3's ruling survives its wrong premise.** At the true width the row is 700px (692 with the
   position rail), and the price cell is 176px + 14px pad, so the annotation gap is still ~490px.
-  A gap that large still needs the device. **Leader dots are being built; no ruling needed.**
+  A gap that large still needs the device. **Leader dots are built; no ruling needed.**
 - **§3's claimed headroom does not survive.** "Six destinations for fifteen kinds, against a rail
   that holds about nine" was `996 ÷ ~104px`. Against 700px the same arithmetic gives ~6.7, and
-  `CORRECT SCORE` is materially wider than any label the rail carries today — the current builder
-  only ever sizes a tab 96f or 108f (`SportsbookApp.cs:515`).
+  `CORRECT SCORE` is materially wider than any label the rail carried — the strip this replaces
+  only ever sized a tab 96f or 108f. Measured in §2a: it is the widest label on the rail by 59px.
 
-**Status: the rail's packing is being built as a derived measurement with a gate that asserts it
-fits 700px.** The build was instructed to report an overflow rather than resolve it. The measured
-per-label widths and the total land in §2a below.
+### 2a. MEASURED RAIL WIDTHS — the six FIT, with zero headroom
 
-**If it overflows, the levers are all yours, not the lane's** — and the spec closes three of them
-already: type does not shrink and the 13px floor is law (§4.5), a second rail tier is forbidden
-(§5.2), and a reflowing rail would cost §3.1's constancy. What remains is shortening a label
-(`CORRECT SCORE` → `SCORE`), tightening tab padding, or narrowing the betslip. The lane will not
-pick among those.
+**No ruling is needed to ship six. One is needed before a seventh is ever proposed.**
 
-### 2a. MEASURED RAIL WIDTHS
+Measured on Archivo Regular at 13px with tracking `.14em` (`MakeButton`'s default, unchanged),
+replicating `LaptopUi.MeasureWidth`'s formula against `Archivo.ttf`'s `hmtx` table. Padding is
+`RailTabPadX = 12f` per side — the one authored number; every x below is derived from the measured
+label and gated by `SportsbookApp.RequireDestinationRailFits`, which throws carrying every width.
 
-*Pending — the rendering build's gate has not reported yet. This section will be filled with the
-per-label widths and the packed total, and this document re-committed, before the DD is asked to
-rule on it.*
+| destination | label width | box (label + 12px/side) | x |
+|---|---|---|---|
+| RESULT | 62.52 | 86.52 | 14.00 |
+| GOALS | 54.89 | 78.89 | 108.52 |
+| **CORRECT SCORE** | **136.86** | **160.86** | 195.40 |
+| CORNERS | 77.84 | 101.84 | 364.27 |
+| CARDS | 55.15 | 79.15 | 474.11 |
+| PLAYERS | 73.61 | 97.61 | 561.26 |
+
+Labels 460.86 · boxes 604.87 · +5×8px gutter +2×14px margin = **672.86 of 700. Slack: 27.14px.**
+
+**Finding: the real capacity is exactly SIX. §3's "the headroom is deliberate" is false at 700px.**
+The 27.14px cannot hold a seventh destination — `MakeButton` floors a control at 44px, plus an 8px
+gutter is 52px minimum. Even dropping the rail to `LaptopTrack.Tabs` (.11em) recovers only
+16.77px, reaching 43.91px slack — still short of 52. **A seventh destination is a design problem,
+not a build one, and it arrives the moment a sixteenth market kind needs a home that is not one of
+these six.** §3 wrote the headroom argument to protect against exactly that case; the protection
+does not exist.
+
+**And it was a near miss.** The ceiling for symmetric padding is **14.26px/side**. The strip this
+replaces ran its own tightest box at **15.08px/side** (CORNERS: a 108f box around 77.84px of type).
+Carrying that grammar forward would have overflowed by ~9.8px — the six fit because the packing is
+derived from measured labels, not because the old numbers had room in them.
+
+**Nothing was shrunk, truncated, abbreviated, wrapped or scrolled to make this fit.** The levers
+that would have been needed are all yours, and the spec closes three of them itself: type does not
+shrink and the 13px floor is law (§4.5), a second rail tier is forbidden (§5.2), and a reflowing
+rail would cost §3.1's constancy.
+
+**One open design call, which does not change the verdict.** The rail keeps
+`LaptopTrack.Actions` (.14em), matching the strip it replaces. `MakeTab`'s own comment — *a tab is
+a place, not an act* — argues the rail should take `LaptopTrack.Tabs` (.11em). That is your call;
+it narrows the pack by 16.77px and the six fit either way.
 
 ---
 
