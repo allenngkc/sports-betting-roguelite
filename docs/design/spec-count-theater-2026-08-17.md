@@ -199,6 +199,17 @@ tracking and the match ends short of its own total.**
 still a corner — **the count is a fact; only the drama is discretionary.** The arrangement is the
 lane's call; that it must hold is not.
 
+> **AMENDED 2026-08-18 (`T118`) — THERE IS A SECOND DOOR AND THIS SECTION NAMED ONLY THE FIRST.**
+> A quieted beat does not always become calm. Because a corners leg's `_goalSense` is **0**, a
+> fallen-through Momentum beat reaches the **probability-reconciliation branch and may stage a
+> GOAL** — in which case the scene's payoff is `OnGoalPlayed`, **not** `OnCountPlayed`, **so the
+> batch is consumed and the count is still not committed.** The calm fall-through and the
+> goal-upgrade lose it the same way, and a fix aimed only at the first leaves the second open.
+>
+> **But the cost is LOWER than budgeted below:** the count commit is already factored into a method
+> independent of `OnCountPlayed` (which keeps its own copy of the same guard), **so this needs a
+> CALL SITE rather than a new path.**
+
 **Budgeted here rather than discovered: this is one gate PLUS a commit path that does not exist
 today.**
 
@@ -280,7 +291,11 @@ and duration all shift, and none of them is the spine.
    after-set's final total is short of the before-set's, **a quiet corner was consumed without being
    committed** and the fix has shipped a counting bug. **Cheap to check and it fails silently
    otherwise — check it first.**
-2. **The five quiet events produce no count scene and no strip line.** The resting state is legible as
+2. **The five quiet events produce no COUNT scene and no count strip line.** ⚠ **Amended 2026-08-18
+   (`T118`): NOT "no scene."** A quieted beat falls through to the base table, where it may
+   legitimately be upgraded to a **goal** scene by probability reconciliation. **As first written this
+   criterion would have failed a correct build.** The claim is that the count branch stops
+   pre-empting — never that the beat goes silent. The resting state is legible as
    *absence*, and this is what the phase is for.
 3. **Events 4 and 5 are visibly different from the other five.** The approach and the turn are the
    whole claim; if they do not separate, the ramp did not land.
