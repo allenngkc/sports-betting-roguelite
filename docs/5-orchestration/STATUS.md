@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-17, cycle 376 (heartbeat).** TV's
+**Keeper-era heartbeat stamp: 2026-08-17, cycle 377.** UNIT 1 MERGED
+(d671fee): the settled leg's column stops lying - all three suites green
+including engine 306/306, the trap gate fired on real observation, the
+third state built to the ruling. Sibling-extension rule-as-built with
+the DD; the laptop MY BETS mirror defect LOGGED as a future laptop-lane
+item. TV runs the C46 sweep. With Allen: five calls + research two.
+
+*(prior stamp, cycle 376:)* TV's
 unit-1 agents grinding (seed search pinning); DD verifying the calm-beat
 reachability before speccing. With Allen: the five calls + research two.
 
