@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-17, cycle 384 (heartbeat).** No
+**Keeper-era heartbeat stamp: 2026-08-17, cycle 385.** Allen's continue:
+the ruled-but-undispatched queue drained to TV as one bundle - the two
+overrun fixes (batches 103-104) + the sweep instrument's DELEGATED
+category (four clauses). Still with Allen: six calls, nudge, research
+two.
+
+*(prior stamp, cycle 384:)* No
 change - quiet hold on Allen's words.
 
 *(prior stamp, cycle 383:)* Quiet
