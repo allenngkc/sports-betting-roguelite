@@ -130,13 +130,17 @@ namespace SBR.Tests.PlayMode
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "02-entry-selected-wide-ring", capturedPaths);
 
-            // C17: no rebuild verdict on a state no capture shows. Every previously captured ENTRY
-            // state is GOALS, which fits its body and therefore correctly renders NO position rail
-            // — so the scrolling branch and the S27 rail had no photograph at all. PLAYERS is the
-            // one shipped destination whose list overflows (14 scorer offers against a body that
-            // shows ~7 at the 54px row), so this is the state that actually exercises S25's scroll
-            // and S27's track-and-thumb.
-            Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTabPLAYERS"));
+            // C17: no rebuild verdict on a state no capture shows. This shot exists because the
+            // scrolling branch and S27's rail once had no photograph at all — every captured ENTRY
+            // state was GOALS, which fitted its body and so correctly rendered no rail.
+            //
+            // The surfaces build (spec-market-surfaces-2026-08-17) changed the premise but not the
+            // point: the body is now 378px with a folio band under it, and MEASURED, every one of
+            // the six destinations overflows it except an EMPTY CorrectScore. PLAYERS is still the
+            // right subject — it is the deepest list on the sheet (17–24 rows measured) — but it is
+            // no longer the only overflowing one, so this is now a rail-is-present shot rather than
+            // the only place the rail can be seen.
+            Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTabPlayers"));
             yield return WaitForRebuild();
             Assert.IsNotNull(Required(App(laptop), "PositionRailTrack"),
                 "PLAYERS overflows its body, so S27's rail must be present");
@@ -1003,12 +1007,17 @@ namespace SBR.Tests.PlayMode
             yield return WaitForRebuild();
             Assert.AreEqual(SportsbookApp.Tab.Detail, laptop.Os.CurrentTab);
 
-            // The strip's own authored order, transcribed from BuildDetail rather than inferred.
-            string[] destinations = { "GOALS", "BTTS", "CORNERS", "CARDS", "PLAYERS" };
+            // The rail's own order, READ from MarketDestinations.All rather than transcribed. The
+            // transcribed list this replaces named five destinations that no longer exist, and it
+            // could only ever have been found by running the capture — a capture set that walks the
+            // rail must walk the rail the build actually prints (S74-am3: a constant that happens to
+            // equal the right answer is a constant that will stop equalling it). Tab GameObjects are
+            // named by enum member, so ToString() is the name.
+            var destinations = MarketDestinations.All;
             int states = 0;
-            for (int i = 0; i < destinations.Length; i++)
+            for (int i = 0; i < destinations.Count; i++)
             {
-                string label = destinations[i];
+                string label = destinations[i].ToString();
                 Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTab" + label));
                 yield return WaitForRebuild();
 
