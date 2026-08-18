@@ -33,26 +33,34 @@ reachable **on the betting surface**. Named so it is not flagged later.
 | row pitch | **54px** (`S87`) |
 | market body viewport | ~422px → **~7.8 rows per screen** |
 | the full vocabulary | **~10 screens, not four** |
-| rail capacity | **~9 destinations** (arithmetic on authored constants — **still unmeasured, see §9**) |
+| rail usable width | **700px — MEASURED by the build, 2026-08-17** (the spec's ~996px was arithmetic on authored constants and was wrong; §9's flag fired) |
 
 **The presentation pass is not a polish job. It is how nine priced market kinds get a home.**
 
-## 3. THE DESTINATIONS — six, fixed, and always printed
+## 3. THE DESTINATIONS — five, fixed, and always printed
 
 **The hybrid taxonomy transfers and every book converged on it:** statistic names where the thing is
 physical and countable, bet-type names where it is abstract. **Do not purify it.**
 
 | destination | holds | ~rows |
 |---|---|---|
-| **RESULT** | Moneyline · DoubleChance · Handicap · WinningMargin | 18–20 |
+| **RESULT** | Moneyline · DoubleChance · Handicap · WinningMargin · **CorrectScore** | 30–36 |
 | **GOALS** | TotalGoals · TeamTotalGoals · TotalGoalsOddEven · BothTeamsToScore | 16–18 |
-| **CORRECT SCORE** | CorrectScore | 12–16 |
 | **CORNERS** | TotalCorners · TeamTotalCorners | 10–12 |
 | **CARDS** | TotalCards · TeamTotalCards | 10–12 |
 | **PLAYERS** | AnytimeScorer · PlayerMultiScorer | ~15+ |
 
-**Six destinations for fifteen kinds, against a rail that holds about nine.** The headroom is
-deliberate: markets get added, and a rail authored to its limit is a rail that breaks on the next one.
+**Five destinations for fifteen kinds, against a rail measured at 700px.**
+
+**Amended 2026-08-17 (`S94`) — this table said SIX and the build measured it into overflow.** The
+spec assumed ~996px of usable width; **it is 700px**, and six tabs carry 43 characters against
+today's working five at 28. **The cause was the sixth destination, not the longest name** — so
+`CORRECT SCORE` folded into `RESULT` rather than being abbreviated, tiered or shrunk. **The new five
+carry 30 characters against today's 28: it fits by the same arithmetic that already works.**
+
+**Three options were offered and all three refused** — shrinking type (the 13px floor is law),
+tiering (§5.2 rules the rail stays one level), and abbreviating (treats the symptom). **§9's flag
+worked; the number it guarded was wrong; the "deliberate headroom" claim rested on it. §1.5.**
 
 **Three derivations, so the grouping is not read as taste:**
 
@@ -61,8 +69,10 @@ deliberate: markets get added, and a rail authored to its limit is a rail that b
   stat group is then a **complete** answer to its statistic.
 - **BTTS folds into GOALS.** It is a two-row market about goals; it does not earn a destination. **It
   does not become hard to find — §5 names it in the contents.**
-- **CORRECT SCORE keeps its own.** It is a distinct bet type, it is abstract (so it takes a bet-type
-  name), and at 12–16 rows it would swamp whatever it joined.
+- **CORRECT SCORE folds into RESULT** (`S94`). **It is taxonomically better, not a compromise:**
+  Correct Score IS a result market — the most specific one there is — `RESULT` is a bet-type name
+  holding abstractions, and `WinningMargin` is already inside it as its near cousin. It makes `RESULT`
+  a 30–36 row destination that scrolls, **which is already ruled and already demonstrated.**
 
 ### 3.1 The rail is a CONSTANT — and `S89` is what makes it one
 
@@ -135,20 +145,27 @@ lied to.
 **The contents lists the destination AND the markets inside it**, each with its printed line range:
 
 ```
-GOALS ....................... 12–29
-    TOTAL GOALS ............. 12–17
-    TEAM TOTALS ............. 18–25
-    ODD / EVEN .............. 26–27
-    BOTH TEAMS TO SCORE ..... 28–29
-CORNERS ..................... 30–41
-CARDS ....................... 42–53
-CORRECT SCORE ............... 54–69
-PLAYERS ..................... 70–85
-RESULT ...................... 1–11
+RESULT ...................... 1–33
+    MATCH RESULT ............ 1–3
+    DOUBLE CHANCE ........... 4–6
+    HANDICAP ................ 7–12
+    WINNING MARGIN .......... 13–18
+    CORRECT SCORE ........... 19–33
+GOALS ....................... 34–51
+    TOTAL GOALS ............. 34–39
+    TEAM TOTALS ............. 40–47
+    ODD / EVEN .............. 48–49
+    BOTH TEAMS TO SCORE ..... 50–51
+CORNERS ..................... 52–63
+CARDS ....................... 64–75
+PLAYERS ..................... 76–91
 ```
 
-**This is the move that makes §3's grouping safe.** Every market is named in the contents regardless
-of which destination holds it, so **BTTS being inside GOALS costs the player nothing.**
+**This is the move that makes §3's grouping safe, and `S94` is the first time it has been asked to
+prove it.** Every market is named in the contents regardless of which destination holds it — so
+**BTTS inside GOALS, and CORRECT SCORE inside RESULT, cost the player nothing.** **The two-level
+contents was built precisely so the RAIL could flex without the vocabulary paying for it**, and when
+the measured width forced a destination out, that is exactly what happened.
 
 **And it is not the double-tiered rail.** The **RAIL stays ONE level** — DraftKings ships two and is
 rated down for it by every comparison in the corpus, and we do not build tier two. **A printed
@@ -210,9 +227,14 @@ glance. Those are `C11` frame claims and no gate speaks to them.
 
 ## 9. NOT CLAIMED
 
-- **The rail's ~9 capacity is arithmetic on authored constants and has NEVER been measured.** §3 fits
-  six destinations into it with headroom, so **the spec does not depend on the number** — but nobody
-  should quote it as measured. **Measure it during the build.**
+- ~~**The rail's ~9 capacity is arithmetic on authored constants and has NEVER been measured.**~~
+  **RESOLVED 2026-08-17 — and it was wrong.** The build measured **700px**, not the ~996px assumed,
+  and **six destinations overflowed.** `S94` folded `CORRECT SCORE` into `RESULT`; §3 now carries five
+  and the amended reasoning. **The flag did its job — but note what it did NOT protect: §3's
+  "the headroom is deliberate" was a design claim resting on the unmeasured number, and flagging a
+  figure is not the same as declining to build on it.** The remaining claim stands: **the build gates
+  at real width and reports overflow rather than resolving it, and that gate is the arbiter** — if five
+  still overflows, abbreviation becomes live and returns to this seat.
 - **The ~80 figure is the mandate's, not this seat's.** What was measured is ~35 on ENTRY today.
 - **Row counts in §3 are estimates from the kinds' own shapes**, not measurements. `CorrectScore`'s
   12–16 is its own source comment.

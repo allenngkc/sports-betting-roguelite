@@ -435,7 +435,7 @@ Two consequences, both paid for in Phase T:
 |---|---|
 | actionable | gold at **L4**, inverted field, **dark type punched out — field AND type invert** (T68) |
 | updating | gold at **L3** — never L4: brightness must not promise what input refuses |
-| suspended | **L1 unlit slate from its first frame** (T43), `MARKET SUSPENDED`, no amount |
+| suspended | **L1 unlit slate from its first frame** (T43), `SUSPENDED`, no amount |
 | pending | as suspended; intervention controls live in their own overlay, never in this row |
 | unavailable | L1, quiet, no reflow |
 | accepted | brief L4 punch, then `CASHED OUT $x` **in the slot** at L3, inverted — the gold flood is a celebration ground, **never the field a money figure is read against** (T68-am) |
@@ -465,7 +465,9 @@ label before the amount.**
 already dark and labelled. Accepting a declared-refused input on a money control is the worst
 available outcome: the player gets a price the display is not showing.
 
-**`MARKET SUSPENDED` owns the slot exclusively** (TV-12/13) — no actionable offer beside it.
+**`SUSPENDED` owns the slot exclusively** (TV-12/13) — no actionable offer beside it.
+
+> **Re-authored 2026-08-17 (`T112`).** The constant was `MARKET SUSPENDED` and it **overran its 241.0px box by 26.7px — a permanently marginal constant, over budget on every frame it ever drew** (`G1`'s solved case). `SUSPENDED` measures **152.3px, 88.7px spare**. The control **is** the subject, so `MARKET` was the repeated half; box unchanged, not truncated, and the state is still **stated** rather than carried by grey.
 
 **A lit field blooms into its neighbours** (T67). Risk/pays taking gold is not a ration event; **the
 event strip taking gold is**, because T27 keeps the bar neutral. This is judged at the seated in-room
