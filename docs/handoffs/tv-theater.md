@@ -353,6 +353,63 @@ one seed's deltas is `S84`'s failure in miniature.
 
 ---
 
+## 0-U6. UNIT 3 PHASE C — THE REVEAL AND THE DECISIVE POOL · SHIPPED AND DOCKED 2026-08-18
+
+**Merged:** `d10a6f2` (§2, the A-reveal) · `817066a` (§3.5, the disjoint pool + the frame set).
+**Both clauses land on one set** — `dd-import/corners-reveal-and-decisive-2026-08-18`,
+same seed and line as the original before-state.
+
+| | before | after |
+|---|---|---|
+| scorebug | `0 — 0` held to `90'+1` | **goal at 22'** |
+| approach, 43' | corner #1's line, verbatim | **`one short. the ledger is holding its breath.`** |
+| crossing, 53' | corner #2's line, verbatim | **`that clears it. the line is beaten.`** |
+
+At the reveal window the token is `CornerFor` and the strip is a possession line: **the scorebug
+moved and nothing else did**, which is §2 literally.
+
+**Suites:** EditMode **304 / 303 / 0 failed / 1** · PlayMode **142 / 122 / 0 failed / 20**.
+**All three invariants hold TOGETHER** — `[COUNT-COMMIT] 11=11` (§4), `[QUIET-COUNT-GATE]` (§3),
+`[SCORE-REVEAL-GATE]` (§2). That co-existence was the real risk: each phase could have broken the
+one before it, which is why the pins were built in that order.
+
+### THE THINGS A LATER SEAT NEEDS
+
+1. **"The true clock" does not mean what it sounds like.** `MatchStatLine` carries only FINAL
+   totals — **the engine records no goal times at all** — and the TV's clock advances toward each
+   beat's baked minute. §2 means the corners arm reveals on **the same beat schedule the goals arm
+   already uses**, which the count branch was pre-empting. **Do not go looking for a goal minute.**
+2. **§2 is §4's binding applied to goals**, and is built as Phase A's mirror — a staged goal commits
+   when the beat plays, independent of any payoff callback. **Do not add a second architecture
+   beside it.**
+3. **Significance rides `SceneSpec` as a NULLABLE and the null is load-bearing** — it means
+   UNCLASSIFIED, not `Ordinary`. A count scene also reaches the screen from an **ungated** beat
+   (cards, Under, a `Score`-typed beat, a whole-number line) which is genuinely ordinary. **A bool
+   would hand an ordinary corner the decisive copy** — §3.5's own defect from the opposite
+   direction.
+4. **Phase B's goal suppression is REPLACED, not deleted.** It existed only while §2 was unbuilt and
+   conditional.
+
+### OWED, AND NOT THIS LANE'S TO DECIDE
+
+- **`C46` is NOT discharged for the four new strings.** They are enumerated in the sweep's `Flavor`
+  pool; **the sweep has not been re-run since.** Enumerated, not measured.
+- **Two of §3.5's four cells are authored but UNREACHABLE** — `APPROACH·UNDER` / `TURN·UNDER`.
+  `gateEligible` hard-requires `countHelps`, and §6 keeps the under mirror out of scope.
+- **TWO PAIRINGS, to be ruled TOGETHER not separately** — (1) does a count-leg goal reach the SCENE,
+  and the STRIP? (2) a goal riding a **showing count scene** vs one riding a **quieted beat**. This
+  build treats (2) identically in both cases, and §2's *"departure from calm"* bites hardest on the
+  quieted one, where nothing else carries attention.
+
+### AN OPERATIONAL FIX WORTH CARRYING
+
+**A wait-for-editor loop must CLEAR a stale lockfile at zero processes, never wait on it.** The
+`-quit` segfault fault leaves one behind, and `while (procs OR lockfile)` then spins forever: Unity
+is never launched, **no log is written to explain it**, and the call burns to its timeout. Cost one
+window slot here.
+
+---
+
 ## 0-U5. UNIT 3 — THE THEATER BUILD · PHASES A + B SHIPPED AND DOCKED 2026-08-18
 
 **State:** phase A `acd9d9f`, phase B `4a06b52`, the evidence dock `f88b00f` — **all three
