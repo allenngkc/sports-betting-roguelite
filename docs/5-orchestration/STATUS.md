@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-18, cycle 412 - BOTH MANDATE
+**Keeper-era heartbeat stamp: 2026-08-19, cycle 413 (heartbeat).** Quiet
+hold - the DD exploring the drawn ending; the fork + research 8-9 with
+Allen.
+
+*(prior stamp, cycle 412 - BOTH MANDATE
 PHASES CLOSED** (surfaces 119, theater 120, b88f619). The board runs on
 the new mandate: the drawn-ending exploration underway (two of four bet
 types already photographed); console surfaces waits on ALLEN'S FORK WORD
