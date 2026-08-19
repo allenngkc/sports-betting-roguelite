@@ -1,11 +1,19 @@
 # EVIDENCE DOCK — the market surfaces, §8's owed frames
 
-**Shot:** markets-pregame lane, 2026-08-18 · **Spec:** `docs/design/spec-market-surfaces-2026-08-17.md` §8
-**Findings routed alongside these:** `docs/design/surfaces-build-findings-2026-08-17.md`
+**RE-SHOT 2026-08-19** against the surface as batch 113 left it. **Spec:**
+`docs/design/spec-market-surfaces-2026-08-17.md` §8 · **Findings:**
+`docs/design/surfaces-build-findings-2026-08-17.md` · **S96's measurement:**
+`docs/design/s96-casing-measurement-2026-08-18.md`
 
-**Frame set:** `artifacts/surething-ui/20260818-074113-568-*` — six states, twelve files (each state
-writes a flat `1024x704` and an angled `main-camera 1280x720`). **The frames are deliberately NOT
-committed** — capture sets live on disk and the harness is what is versioned.
+**Frame set:** `artifacts/surething-ui/20260819-034625-465-*` — **five states, ten files** (each
+state writes a flat `1024x704` and an angled `main-camera 1280x720`). **The frames are deliberately
+NOT committed** — capture sets live on disk and the harness is what is versioned. The
+2026-08-18 set it replaces is deleted, not archived: it shows a surface that no longer exists.
+
+**Why re-shot — every ruling in batch 113 changed the pixels.** `S95` reordered the rail, `S96`
+uppercased every row name, `S97` retired the amber half of the pair, `S98` relabelled three markets,
+and the price cell narrowed 176 → 160 to pay for `S96`. Suites green before the shutter: **EditMode
+303 executed / 302 passed / 0 failed; PlayMode 139 executed / 121 passed / 0 failed.**
 
 **Seed `54435761`, matchup 0 (Denver Plumbers @ Moose Jaw Overheads), for every frame.** Eight
 digits and scattered, per `R38`: a seed spelled like a label is a rig string in a player slot. The
@@ -21,12 +29,15 @@ run with `SBR_SHOOT=1`. Executed 1 of 1, passed.
 
 | # | file stem | subject | §8 item |
 |---|---|---|---|
-| S1a | `S1a-entry-contents-head` | contents block, head — RESULT · GOALS · CORRECT SCORE · CORNERS · CARDS | item 2 |
-| S1b | `S1b-entry-contents-foot` | contents block, foot — CORRECT SCORE through PLAYERS | item 2 |
-| S2 | `S2-entry-folio-at-extent` | PLAYERS scrolled to its foot, folio `76–82 of 82` | item 4 |
+| S1a | `S1a-entry-contents-head` | contents block, head — RESULT through CORNERS | item 2 |
+| S1b | `S1b-entry-contents-foot` | contents block, foot — GOALS through PLAYERS | item 2 |
+| S2 | `S2-entry-folio-at-extent` | PLAYERS scrolled to its foot, folio at the extent | item 4 |
 | S3 | `S3-entry-empty-group-correctscorefloor-0p08-NOT-SHIPPED` | `MULTI SCORER ….. no prices offered` | item 3 |
-| S4 | `S4-entry-price-ink-A-toner` | the sheet with the price in toner | item 1 |
-| S5 | `S5-entry-price-ink-B-amber` | the same sheet with the price in amber | item 1 |
+| S4 | `S4-entry-price-ink-toner` | the sheet as ruled — price in toner | item 1 |
+
+**There is no S5 any more.** `S97` closed §4.4 on the old pair: the price does NOT take the amber.
+The comparison is discharged, so a single toner frame stands in place of the two, and the capture
+still asserts the ink before the shutter as a regression check.
 
 **§8 item 2's "every destination populated" is covered by the destinations walk**, not by this set.
 That walk reads `MarketDestinations.All` and shoots all six; every matchup prices all fifteen kinds
@@ -40,11 +51,15 @@ destinations **between them**, and the harness asserts exactly that.
 
 ### What the ranges show, checked against the sheet
 
-`RESULT 1–13 · GOALS 14–31 · CORRECT SCORE 32–44 · CORNERS 45–54 · CARDS 55–64 · PLAYERS 65–82`,
-contiguous, summing to the `1–82 of 82` the contents header prints. RESULT decomposes into
-`MONEYLINE 1–3 · DOUBLE CHANCE 4–6 · HANDICAP 7–10 · WINNING MARGIN 11–13`. **The folio moved**
-from `1–6 of 82` at rest to `76–82 of 82` at the extent — derived from the rendered window, which
-is the whole claim of §5.1 and `S74-am3`.
+**In `S95`'s order:** `RESULT 1–13 · GOALS 14–31 · CORNERS 32–41 · CARDS 42–51 ·
+CORRECT SCORE 52–64 · PLAYERS 65–82`, contiguous, summing to the `1–82 of 82` the contents header
+prints. RESULT decomposes into `MONEYLINE 1–3 · DOUBLE CHANCE 4–6 · HANDICAP 7–10 ·
+WINNING MARGIN 11–13`. **The folio is derived** — `1–6 of 82` at rest against the extent's own
+reading, which is the whole claim of §5.1 and `S74-am3`.
+
+**`S98` is visible in the same frame and this is what it was for:** `TEAM TOTAL GOALS 20–27`,
+`TEAM TOTAL CORNERS 38–41`, `TEAM TOTAL CARDS 48–51` — **three distinct scannable entries** where
+the short form would have printed `TEAM TOTALS` three times with three different line ranges.
 
 ---
 
@@ -67,43 +82,60 @@ is a consequence of the floor, not a defect.
 
 ---
 
-## S4/S5 — THE AMBER COMPARISON
+## S4 — THE PRICE INK, NOW RULED
 
-Same seed, same matchup, same destination, same scroll position, same session. **The only thing
-that moves between the two frames is the price column's ink** — `PriceTakesAmber` off and on. Each
-half asserts its own ink before the shutter, so the pair cannot silently be the same sheet twice.
+**`S97` closed this on the old pair and the ruling is built.** The price stays in TONER. The
+`PriceTakesAmber` switch and its `PriceInk` indirection are deleted, and the rebuild-signature term
+this lane added to carry the comparison went with them — a signature term for a constant is dead
+weight.
 
-**This seat does not decide it** (§4.4 / `S91` half two leaves it to the frame). One observation,
-offered as a read and not a verdict:
+**The comparison did its job and is recorded so the frame is not re-litigated:** on the old pair the
+amber made the price the most saturated element in the market column and **inverted the name-first
+hierarchy `S91` had ratified**; it put two amber things on one screen meaning different things (the
+price column and the `$0` POTENTIAL PAYOUT); and eighty amber marks is not marking. **This seat's
+recorded lean was *yes*, and the frame overturned it** — which is why §4.4 sent it to a frame
+instead of deciding it at a desk.
 
-**In the amber state there are two amber things on screen** — the price column and the `$0`
-POTENTIAL PAYOUT figure in the slip. Amber currently reads as *money you might win*; giving it to
-prices widens it to *any money figure*. That is the substance of §4.4's own worry — *if everything
-is amber, nothing is* — now visible rather than argued. Against it, the seat's recorded lean holds
-up in the frame: at one offer per row the amber does land as a single column down the right edge,
-which reads as an annotation rail rather than scattered ink.
+**Named, not ruled, and carried forward:** amber's real claim is the **SELECTED** price — the moment
+a price stops being the house's offer and becomes the player's stake. That belongs with the
+selection treatment and is not settled here.
 
----
+## THE CASING, RULED AND BUILT — and what it cost
 
-## FINDING 3 IS NOW VISIBLE — the casing
+`S96` ruled it after seeing the drift on the old pair: title-case club names sat in the same column,
+at the same size, beneath an uppercase `MONEYLINE` and beside an uppercase `DRAW`. **On `S4` the
+column now reads consistently** — `MOOSE JAW OVERHEADS`, `DRAW`, `DENVER PLUMBERS`, `EITHER TEAM`.
 
-The routed casing inconsistency can be **seen** in S4/S5 rather than only measured: `Moose Jaw
-Overheads` and `Denver Plumbers` sit in mixed case directly beneath an uppercase `MONEYLINE`
-heading and beside an uppercase `DRAW`. In one full-width column it reads as drift. Pre-existing
-and ruled verbatim by `A2`; the lane has not normalised it. See findings §3.
+**It was not free, and `C46`'s binding is what caught the bill.** Uppercase is wider per character.
+Measured over the whole reachable pool, the longest row name is
+`SAN FRANCISCO SPREADSHEETS UNDER 4.5 CORNERS` — **493.69px live**, and it overflowed the old
+480px name cell. The DD's named candidate, `MOOSE JAW OVERHEADS OR DRAW`, has 161.94px spare and was
+never the worst case: **a spot-check of it would have passed and shipped the defect.**
 
----
+**Resolved as ruled — the name cell widened out of the price cell's slack**, 176 → 160, because a
+176px cell was carrying 46.61px of type (73.5% empty) and its ring stretches rather than breaking.
+Collisions 5 → 0, zero-dot rows 17 → 5, under-six-dot rows 139 → 59, headroom now **2.31px**.
+
+**Still open, and not repaired here:** §4.3's leader device is not fully restored — the longest names
+still print no leaders, and six dots on the longest would need a 544.68px name cell, i.e. a ~111px
+price cell and a ring 30.7% off native aspect. **The arithmetic is available; the design is not.**
+Full numbers in `docs/design/s96-casing-measurement-2026-08-18.md`.
+
+**`S84`'s binding is discharged clean** — 320 clubs and 144 players enumerated in-engine as a pool,
+not a sample; zero case-dependent names.
 
 ## WHAT THIS SET DOES NOT CLAIM
 
 - **No claim that the sheet READS well.** These are `C11` frames for the DD to read; the gates are
   blind to the leaders, the amber and the density at a glance, exactly as spec §7 says.
-- ~~The rail's pack is a TTF-replicated measurement, not a live TMP one.~~ **RESOLVED
-  2026-08-18: the pack is now measured LIVE** — `672.76 of 700, 27.24px slack`, read off a rendered
-  destination tab's own font and logged by the rail test on every PlayMode run
-  (`evidence/logs/PlayMode-20260818-000748.log`). The replicated figures were within 0.10px on the
-  total though up to 0.98px out on a single label; findings §2a carries both and the delta. **The
-  DD may now rule on the number as well as the verdict.**
+- **The rail pack is measured LIVE** — `672.76 of 700, 27.24px slack`, read off a rendered
+  destination tab's own font and logged by the rail test on every PlayMode run. `S95`'s reorder
+  does not change the total, only the seats.
+- **§4.3's leader device is NOT fully restored** and this set should not be read as showing it
+  intact — 59 rows still print fewer than six dots, all club-prefixed team totals. See the casing
+  section.
+- **C55 is now LAW**, promoted from this set's own harness fault (below). The in-frame assertions it
+  requires are built into this capture and ran green here.
 - **S3 is not a shipped state.** See the disclosures.
 
 ---
@@ -125,5 +157,12 @@ means nothing. It now measures in the viewport's **local space** — the space t
 in, whose units are the pixels every other constant here is written in.
 
 Recorded because the failure mode is general: **a capture harness that asks whether a thing EXISTS
-will pass on a frame that does not show it.** Three of this set's six states would have docked as
+will pass on a frame that does not show it.** Three of that set's six states would have docked as
 evidence of nothing.
+
+**PROMOTED TO LAW as `C55` (DD batch 113)**, with the world-space half named as the part that gets
+missed. It now sits in a family of three instrument laws — `C53` a classification with no category
+for the truth, `C54` an instrument reporting only the extremum, `C55` an instrument asserting the
+wrong predicate — *all three making claims wider than their evidence, all three green while doing
+it.* The gate it produced is what carried this re-shoot: every state here asserts its subject is in
+frame, in local space, before the shutter.
