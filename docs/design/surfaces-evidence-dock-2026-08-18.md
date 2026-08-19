@@ -98,10 +98,12 @@ and ruled verbatim by `A2`; the lane has not normalised it. See findings §3.
 
 - **No claim that the sheet READS well.** These are `C11` frames for the DD to read; the gates are
   blind to the leaders, the amber and the density at a glance, exactly as spec §7 says.
-- **The rail's 672.86px pack is a TTF-replicated measurement, not a live TMP one.** The live gate
-  asserts the pack *fits* 700px and it passes in-engine — the verdict is confirmed. The specific
-  figure in findings §2a is not independently confirmed, and with 27.14px of slack the distinction
-  only matters if the DD rules on the number rather than on the verdict.
+- ~~The rail's pack is a TTF-replicated measurement, not a live TMP one.~~ **RESOLVED
+  2026-08-18: the pack is now measured LIVE** — `672.76 of 700, 27.24px slack`, read off a rendered
+  destination tab's own font and logged by the rail test on every PlayMode run
+  (`evidence/logs/PlayMode-20260818-000748.log`). The replicated figures were within 0.10px on the
+  total though up to 0.98px out on a single label; findings §2a carries both and the delta. **The
+  DD may now rule on the number as well as the verdict.**
 - **S3 is not a shipped state.** See the disclosures.
 
 ---
