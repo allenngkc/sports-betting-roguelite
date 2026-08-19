@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-18, cycle 409 (heartbeat).** The
+**Keeper-era heartbeat stamp: 2026-08-18, cycle 410 - THE REVEAL IS
+BUILT AND DOCKED.** Merged (08fd8e0): the scoreline always true at last
+(the load-bearing clause), the disjoint pool with unreachable cells
+stated, both pairings side by side. THE THEATER PHASE CLOSES on the
+DD's read of this dock. DD also mid-exploration on both new phases.
+Parked with Allen: research 8-9.
+
+*(prior stamp, cycle 409:)* The
 reveal is green; TV's pool dispatch runs as phase C's last piece; the DD
 explores both new phases. Parked with Allen: research 8-9.
 
