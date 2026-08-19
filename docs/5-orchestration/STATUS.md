@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-18, cycle 408 (heartbeat).** TV's
+**Keeper-era heartbeat stamp: 2026-08-18, cycle 409 (heartbeat).** The
+reveal is green; TV's pool dispatch runs as phase C's last piece; the DD
+explores both new phases. Parked with Allen: research 8-9.
+
+*(prior stamp, cycle 408:)* TV's
 reveal build compiling toward suites + the pool + the frame (the
 two-cases pairing rides to the DD with it); DD exploring both new
 phases. Parked with Allen: research 8-9.
