@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-18, cycle 411 (heartbeat).** DD on
+**Keeper-era heartbeat stamp: 2026-08-18, cycle 412 - BOTH MANDATE
+PHASES CLOSED** (surfaces 119, theater 120, b88f619). The board runs on
+the new mandate: the drawn-ending exploration underway (two of four bet
+types already photographed); console surfaces waits on ALLEN'S FORK WORD
+(A: polish the existing console surface - recommended; B: a new
+in-fiction apparatus). Parked with Allen: the fork + research 8-9.
+
+*(prior stamp, cycle 411:)* DD on
 the theater's closing read; TV standing by; markets available. Parked
 with Allen: research 8-9.
 
