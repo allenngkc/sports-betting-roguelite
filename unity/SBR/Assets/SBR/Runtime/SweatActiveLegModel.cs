@@ -12,6 +12,31 @@ namespace SBR.Game
     /// leg from its caller.</summary>
     public enum RevealedLegOutcome { Undecided, Won, Lost, Voided }
 
+    /// <summary>spec-count-theater-2026-08-17.md §3: an OVER count leg's beat-by-beat
+    /// SIGNIFICANCE, classified purely from its DISTANCE TO THE LINE — "an event earns its
+    /// treatment from its distance to the line, not from having arrived" (§3.1). Four cases, in
+    /// the PRECEDENCE <see cref="SweatActiveLegModel.Classify"/> applies them:
+    ///
+    /// <list type="bullet">
+    /// <item><description><c>Decided</c> — the leg had already cleared its line BEFORE this
+    /// beat's own batch. Wins over every other case even where the after-distance arithmetic
+    /// would also match Turn or Approach (§3.4: "a resolved leg's corners have no distance to
+    /// any line, so they earn nothing").</description></item>
+    /// <item><description><c>Turn</c> — this beat's batch is what CROSSES the line: the
+    /// decisive beat.</description></item>
+    /// <item><description><c>Approach</c> — this beat lands exactly
+    /// <see cref="SweatActiveLegModel.ApproachDistance"/> short of the line. "A ramp, not a
+    /// switch" (§3.1) — one named rung on that ramp, not the whole of it.</description></item>
+    /// <item><description><c>Ordinary</c> — everything else: too far from the line to
+    /// weight.</description></item>
+    /// </list>
+    ///
+    /// <para><b>Significant</b> = <c>Approach</c> or <c>Turn</c> — stays a count scene.
+    /// <b>Quiet</b> = <c>Ordinary</c> or <c>Decided</c> — falls through to the base table, the
+    /// batch committed silently via <c>SceneSpec.QuietCount</c> rather than narrated (spec §4's
+    /// binding: a declined batch is still a fact and must still be counted).</para></summary>
+    public enum CountSignificance { Ordinary, Approach, Turn, Decided }
+
     /// <summary>
     /// Phase 3A (PRD §8.2, §9): a pure, standalone formatter for active-leg market copy — the
     /// <c>NEED</c> and <c>LIVE</c> sentences the active-leg card shows for each live leg. This
@@ -588,8 +613,20 @@ namespace SBR.Game
             return Math.Abs(frac - 0.5) < 1e-9;
         }
 
-        /// <summary>The smallest total that CLEARS an Over <paramref name="line"/> outright.</summary>
-        private static bool HalfLineThreshold(double line, out int threshold)
+        /// <summary>The smallest total that CLEARS an Over <paramref name="line"/> outright.
+        ///
+        /// <para>Widened from private to internal (spec-count-theater-2026-08-17.md §3): shared,
+        /// not duplicated — the ticket column and the theater's distance gate must never derive
+        /// the clearing point two different ways. <c>TheaterChoreographer.ResolveBeat</c> (same
+        /// assembly, SBR.Game — no <c>InternalsVisibleTo</c> needed) calls this directly to
+        /// decide the non-half-line "cannot classify" fallback BEFORE ever calling
+        /// <see cref="Classify"/> (§3: "when significance cannot be computed, keep today's
+        /// behaviour... falling back to loud is merely the status quo"). Still not public:
+        /// nothing outside this assembly needs it, and unlike <c>SBR.Tests.PlayMode</c>, the
+        /// EditMode test assembly has no <c>InternalsVisibleTo</c> grant (see this project's
+        /// <c>AssemblyInfo.cs</c>) — widened exactly as far as the one real caller needs, no
+        /// further.</para></summary>
+        internal static bool HalfLineThreshold(double line, out int threshold)
         {
             threshold = (int)Math.Floor(line) + 1;
             return IsHalfLine(line);
@@ -600,6 +637,70 @@ namespace SBR.Game
         {
             maxAllowed = (int)Math.Floor(line);
             return IsHalfLine(line);
+        }
+
+        // ------------------------------------------------------------------------- count significance (spec-count-theater-2026-08-17.md §3)
+
+        /// <summary>spec-count-theater-2026-08-17.md §3.1: the ramp's one named rung before the
+        /// line. THE SPEC ITSELF ROUTES THIS NUMBER TO THE DD, IN TERMS: it asks for "a ramp, not
+        /// a switch" while its own gate is a binary "significance threshold" test, and it names
+        /// no value for that threshold — the tension is in the spec text, not manufactured here.
+        /// <c>1</c> stands in for an UNRULED number, not a ruling: it is what keeps the ramp
+        /// exactly one edit wide (change this one constant) if/when the DD rules a wider approach
+        /// window. Do not read this value as a design decision this file is making.</summary>
+        public const int ApproachDistance = 1;
+
+        /// <summary>spec-count-theater-2026-08-17.md §3.3: "the theater asks the question the
+        /// column already answers" — <see cref="DescribeCount"/> already derives
+        /// <c>threshold − total</c> from revealed values to print "8 CORNERS • NEED 1"; this
+        /// reuses that exact <see cref="HalfLineThreshold"/> math rather than re-deriving a
+        /// second copy of it, so the column and the theater can never quietly disagree about
+        /// where the line is.
+        ///
+        /// <para><b>THE NO-LEAK LAW, enforced by the signature — the identical law and the
+        /// identical enforcement this file's header already states for
+        /// <see cref="ActiveLegInput"/></b> (spec §7 item 3: "significance is computed from
+        /// REVEALED values, no path from the locked target"). The three parameters are
+        /// <c>int</c>, <c>int</c>, <c>double</c> — plain already-revealed values, never
+        /// <c>Leg</c>, <c>CountLedger</c>, <c>MatchStatLine</c>, or <c>ScoreLedger</c>, and
+        /// nothing that can reach <c>TargetHome</c>/<c>TargetAway</c>/<c>TargetTotal</c>. A
+        /// reviewer can confirm the no-leak property from this signature alone, exactly as with
+        /// <see cref="ActiveLegInput"/>: there is nothing here to leak from, because nothing
+        /// carrying a hidden endpoint is ever accepted. The caller
+        /// (<c>TheaterChoreographer.ResolveBeat</c>) passes <c>countLedger.Home +
+        /// countLedger.Away</c> as <paramref name="revealedTotal"/> — never <c>TargetHome</c>/
+        /// <c>TargetAway</c>/<c>TargetTotal</c>.</para>
+        ///
+        /// <para><b>Precondition — the caller decides computability, this method does not:</b>
+        /// callers must confirm <see cref="HalfLineThreshold"/> for <paramref name="line"/>
+        /// THEMSELVES before calling this (which is exactly why that method widened from private
+        /// to internal). A whole-number line admits a push, so its "threshold" is not an exact
+        /// clearing point; classifying against it would be invented, not derived. Rather than
+        /// smuggle a fifth, dishonest case into <see cref="CountSignificance"/> for "cannot
+        /// tell", the spec's default-loud fallback ("when significance cannot be computed, keep
+        /// today's behaviour") is the CALLER's policy decision, made by skipping this method
+        /// entirely — see <c>TheaterChoreographer.ResolveBeat</c>'s own gate.</para></summary>
+        public static CountSignificance Classify(int revealedTotal, int stagedDelta, double line)
+        {
+            // HalfLineThreshold's own bool return is not re-checked here — see the precondition
+            // above; only its out-value is used. A caller that skips the precondition gets a
+            // threshold computed against a line that may admit a push, which is exactly the
+            // "invented, not derived" outcome the precondition exists to keep out of production.
+            HalfLineThreshold(line, out int threshold);
+            int distanceBefore = threshold - revealedTotal;
+            int distanceAfter = threshold - (revealedTotal + stagedDelta);
+
+            // Precedence is load-bearing, not incidental: Decided must win even where
+            // distanceAfter's own arithmetic would also satisfy Turn (a batch staged well after
+            // an already-cleared line stays Decided, never Turn) — §3.4, "a resolved leg's
+            // corners have no distance to any line". A non-negative stagedDelta (the only shape
+            // a real StagedCount ever takes) makes a Decided/Approach collision impossible
+            // (distanceAfter <= distanceBefore <= 0 leaves no room to land on the positive
+            // ApproachDistance), but the ORDER below still guards the general case.
+            if (distanceBefore <= 0) return CountSignificance.Decided;
+            if (distanceAfter <= 0) return CountSignificance.Turn;
+            if (distanceAfter == ApproachDistance) return CountSignificance.Approach;
+            return CountSignificance.Ordinary;
         }
     }
 }

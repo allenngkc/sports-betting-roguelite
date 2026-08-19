@@ -51,6 +51,14 @@ namespace SBR.Game
             int variant = ScenePlaybook.VariantFor(evt.Step);
 
             MarketKind market = leg == null ? MarketKind.Moneyline : leg.Selection.Kind;
+            // spec-count-theater-2026-08-17.md §4: a batch the distance gate below declines to
+            // stage as a scene must still be committed — StageBeat() advances the ledger's
+            // cursor unconditionally the instant it is called, so a declined batch is a fact
+            // that already happened, not one that gets to vanish. Set only inside the count
+            // branch's gate; threaded onto whichever SceneSpec the fall-through actually builds,
+            // as QuietCount (never Count — see that field's own doc for why the two must never
+            // conflate).
+            CountLedger.StagedCount? pendingQuietCount = null;
             // LegFinal must fall through to the total outcome-scene case below — the count
             // branch consuming a scheduled batch on a final would corrupt PlanFinal's remainder.
             if (evt.Type != DramaEventType.LegFinal
@@ -84,13 +92,98 @@ namespace SBR.Game
                     // must NOT be driven by which template — see TheaterStage.cs).
                     bool beneficiaryIsHome = count.Value.BeneficiaryIsHome;
                     bool corners = market == MarketKind.TotalCorners;
-                    SceneTemplate countTemplate = corners
-                        ? (countHelps ? SceneTemplate.CornerFor : SceneTemplate.CornerAgainst)
-                        : SceneTemplate.Booking;
-                    bool countIntro = evt.Tag == TensionTag.LeadChange;
-                    return new SceneSpec(countTemplate, variant, countIntro, evt.Tag == TensionTag.Swing,
-                        countHelps, null, count, null, market,
-                        _pacer.SceneSeconds(countTemplate, countIntro), beneficiaryIsHome);
+
+                    // spec-count-theater-2026-08-17.md §3, THE DISTANCE GATE: "an event earns
+                    // its treatment from its DISTANCE TO THE LINE, not from having arrived."
+                    // This gates the count branch's ENTRY — it never computes both and prefers
+                    // calm; the spec is explicit that the cheaper-looking "compute both, prefer
+                    // calm" edit is the wrong one, because it leaves the short-circuit's cost
+                    // (CalmPossession never even gets CONSTRUCTED) in place. Three scope
+                    // restrictions, each named in §6/§3.4, each load-bearing on its own — do not
+                    // widen any of them beyond what is written here:
+                    //
+                    //  1. CORNERS ONLY (`corners`). §6: cards are "the opposite problem — a
+                    //     booking arrives carrying its own significance and needs catching, not
+                    //     ramping... No cards arm has ever been shot." A cards leg (Booking
+                    //     template) always takes the `!quiet` branch below, unconditionally —
+                    //     today's behaviour exactly.
+                    //  2. OVER ONLY. `countHelps`, already computed above for mood, IS the Over
+                    //     check here — it is literally `Choice == Over` for both corners and
+                    //     cards, so it doubles as this scope test without a second field. §6: the
+                    //     Under case is "the mirror distance profile, not in evidence." An Under
+                    //     leg always takes the `!quiet` branch too — today's behaviour exactly.
+                    //  3. MOMENTUM BEATS ONLY, AND NEVER A NEAR-MISS
+                    //     (`evt.Type == Momentum && evt.Tag != NearMiss`) — the restriction that
+                    //     protects a spec-level constraint, so the one most important not to
+                    //     relax. NOT because a Momentum beat structurally CANNOT stage a goal —
+                    //     it CAN: on a corners/cards leg ScoreLedger's goal sense is neutral
+                    //     (`_goalSense == 0`, "the neutral home-anchored goal decoration",
+                    //     SweatPresentationModel.cs), the exact same shape as a moneyline leg, so
+                    //     StageBeatGoal's prob-RECONCILIATION arm is reachable on ANY beat type,
+                    //     Momentum included — that arm is what the goal-suppression below exists
+                    //     for. A Score/BigPlay beat is worse, not merely different: its
+                    //     TYPE-ATTRIBUTION arm (`if (typeGoal)`) is UNCONDITIONAL — it always
+                    //     returns a StagedGoal, chalked or committing, regardless of probability
+                    //     bands — so quieting one would CERTAINLY, not just possibly, fall
+                    //     through into a goal scene. Restricting to Momentum is instead because
+                    //     T113 (the calm-beat probe) measured that the reclaimable calm beats are
+                    //     EXACTLY the Momentum ones — that is the set the spec's own evidence
+                    //     covers, so confining the gate to it keeps the change's blast radius no
+                    //     wider than the measurement behind it. NearMiss is excluded separately
+                    //     and for a different reason: the generator CAN tag a Momentum-typed beat
+                    //     NearMiss (the near-miss injection clamps toward 0.75/0.25 independently
+                    //     of the Type-classifying delta — engine/DramaGenerator.cs — and this
+                    //     exact combination is already live in
+                    //     TheaterChoreographerTests.Reconciliation_upgrades_a_momentum_beat_to_a_goal_scene),
+                    //     and rule 2 immediately below (NearMiss wins over the base table) has no
+                    //     QuietCount slot to carry a declined batch through — see its own comment.
+                    //     A Score/BigPlay beat, and a NearMiss-tagged beat of any type, keep
+                    //     today's count-branch behaviour whatever their distance.
+                    bool gateEligible = corners && countHelps
+                        && evt.Type == DramaEventType.Momentum && evt.Tag != TensionTag.NearMiss;
+
+                    // Non-half-line lines admit no exact distance (a push is possible —
+                    // SweatActiveLegModel.HalfLineThreshold's own contract), so significance
+                    // cannot be computed at all here, not merely computed as Ordinary. DEFAULT
+                    // LOUD: falling back to quiet would silently mute a market on a config no
+                    // generator produces today (RunConfig lines are all half-integers — this
+                    // branch is defensive only); falling back to loud is merely the status quo.
+                    // Checked BEFORE Classify runs — see Classify's own doc for why the split.
+                    bool computable = gateEligible
+                        && SweatActiveLegModel.HalfLineThreshold(leg.Selection.Line, out _);
+
+                    bool quiet = false;
+                    if (computable)
+                    {
+                        // Revealed, never locked: countLedger.Home/Away are mutated ONLY by
+                        // CompleteCount (from a narrated scene's OnCountPlayed payoff, or from
+                        // TvSweatScreen's QuietCount commit path) — StageBeat() above never
+                        // touches them, so this is the state strictly BEFORE this beat's own
+                        // batch, exactly the "revealedTotal" the classifier's contract wants.
+                        int revealedTotal = countLedger.Home + countLedger.Away;
+                        CountSignificance significance = SweatActiveLegModel.Classify(
+                            revealedTotal, count.Value.TotalDelta, leg.Selection.Line);
+                        // Quiet = Ordinary or Decided (spec §3's own mapping); Significant =
+                        // Approach or Turn keeps today's scene, unchanged, below.
+                        quiet = significance == CountSignificance.Ordinary
+                            || significance == CountSignificance.Decided;
+                    }
+
+                    if (!quiet)
+                    {
+                        SceneTemplate countTemplate = corners
+                            ? (countHelps ? SceneTemplate.CornerFor : SceneTemplate.CornerAgainst)
+                            : SceneTemplate.Booking;
+                        bool countIntro = evt.Tag == TensionTag.LeadChange;
+                        return new SceneSpec(countTemplate, variant, countIntro, evt.Tag == TensionTag.Swing,
+                            countHelps, null, count, null, market,
+                            _pacer.SceneSeconds(countTemplate, countIntro), beneficiaryIsHome);
+                    }
+
+                    // Quiet: StageBeat() already consumed this batch above — §4's binding says it
+                    // must still be committed even though it earns no scene here. Stash it; the
+                    // fall-through below threads it onto whatever SceneSpec it actually builds.
+                    pendingQuietCount = count;
                 }
             }
 
@@ -105,7 +198,12 @@ namespace SBR.Game
                     final == SceneTemplate.LegFinalWon, null, _pacer.SceneSeconds(final, false));
             }
 
-            // 2. NearMiss wins over the base table — never a goal, regardless of Type.
+            // 2. NearMiss wins over the base table — never a goal, regardless of Type. This
+            // return CANNOT be reached carrying a pendingQuietCount: the distance gate above
+            // excludes every NearMiss-tagged beat from gateEligible precisely BECAUSE this
+            // return has no QuietCount slot (its SceneSpec constructor overload hard-codes
+            // quietCount: null via the chained 7-arg overload) — so a quieted batch is never at
+            // risk of landing here silently dropped. Left otherwise untouched.
             if (evt.Tag == TensionTag.NearMiss)
             {
                 SceneTemplate miss = up ? SceneTemplate.NearMissHope : SceneTemplate.NearMissScare;
@@ -130,7 +228,26 @@ namespace SBR.Game
             // playtest #14). A reconciliation goal on a momentum beat UPGRADES the scene to
             // the goal template — the board only ever moves behind a staged goal, and a goal
             // must look like one.
-            ScoreLedger.StagedGoal? goal = ledger.StageBeatGoal(evt.Type, up, delta, evt.WinProbAfter);
+            //
+            // spec-count-theater-2026-08-17.md §2/§3: A QUIETED COUNT BEAT MUST NOT STAGE A
+            // GOAL. Quieting is a SCENE decision, never a SCORE decision — a quieted beat must
+            // leave the revealed scoreline exactly where it found it, because the reveal is
+            // §2's territory and §2 is deliberately separable ("do not let §3 acquire a
+            // dependency on §2 during the build — that is the one thing that would make the
+            // flag expensive"). Skipping the call is side-effect free: StageBeatGoal only READS
+            // Picked/Opponent/the targets and returns a value — CompleteGoal is the ledger's
+            // ONLY mutator (its own doc says so) and nothing between here and the return below
+            // ever calls it. This is not a defense against a hidden mutation (there isn't one);
+            // it is refusing the prob-RECONCILIATION arm a chance to fire at all on the one
+            // beat kind (Momentum, corners/cards, `_goalSense == 0`) where it is reachable
+            // without a Score/BigPlay type attribution — see the distance gate's own comment
+            // above. It is also what makes the reclaimed scene correct, not just safe: without
+            // this, a quieted beat could still get UPGRADED to GoalFor/GoalAgainst below,
+            // which would be both the goal-leak AND a failure to show the resting state §3.4
+            // promises.
+            ScoreLedger.StagedGoal? goal = pendingQuietCount.HasValue
+                ? null
+                : ledger.StageBeatGoal(evt.Type, up, delta, evt.WinProbAfter);
             if (goal.HasValue && !ScenePlaybook.ProducesGoal(template))
                 template = goal.Value.ScoredByPicked ? SceneTemplate.GoalFor : SceneTemplate.GoalAgainst;
             else if (goal.HasValue)
@@ -145,7 +262,7 @@ namespace SBR.Game
             }
 
             return new SceneSpec(template, variant, leadChange, urgent, up, goal, null, null,
-                market, _pacer.SceneSeconds(template, leadChange));
+                market, _pacer.SceneSeconds(template, leadChange), quietCount: pendingQuietCount);
         }
 
         /// <summary>The real LegFinal staging: scene #12/#13 from the FINAL ticket-local grade,

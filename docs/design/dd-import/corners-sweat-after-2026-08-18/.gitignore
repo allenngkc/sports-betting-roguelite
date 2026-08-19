@@ -1,0 +1,11 @@
+# Frame sets stay UNTRACKED. The README and the harness commit; the roll never does.
+#
+# This guard is LOCAL to this dock deliberately. The dd-import-level .gitignore covers only
+# *.zip, so a `git add -A` anywhere in the tree would sweep 182 PNGs into history — which has
+# already happened once on this repo (a 487MB roll committed by a wording error, caught before
+# push and recut, 2026-08-16). Staging by explicit path is the practice; this makes the practice
+# hold even when someone forgets it.
+#
+# It is NOT raised to the dd-import level on purpose: some docks legitimately track small crops
+# (see blur-bundle-2026-08-09/crops/), and a blanket rule there would block those.
+*.png
