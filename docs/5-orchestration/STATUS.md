@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-18, cycle 401 (heartbeat).** The
+**Keeper-era heartbeat stamp: 2026-08-18, cycle 402.** The surfaces
+re-shoot MERGED (d046a6c - five states, ten files against the ruled
+surface; editor released clean); the DD reads it toward the surfaces
+close. TV takes the free window for the near-line pair (OVER-fails +
+UNDER mirror) - the theater close rides its read. Two phase-closes in
+flight. Parked with Allen: research 8-9.
+
+*(prior stamp, cycle 401:)* The
 casing fix merged (695f40b); markets re-shooting its six frames against
 the changed surface; DD on the theater read; TV standing by for the
 near-line word. Parked with Allen: research 8-9.
