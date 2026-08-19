@@ -19,14 +19,15 @@ namespace SBR.Tests.EditMode
     {
         private static readonly MarketKind[] AllKinds = (MarketKind[])Enum.GetValues(typeof(MarketKind));
 
-        // Spec §3: rail order, RESULT through PLAYERS.
+        // Spec §3: rail order, RESULT through PLAYERS. S95: CORRECT SCORE moved from third to
+        // fifth — GOALS, CORNERS, CARDS now run adjacently as the three countable statistics.
         private static readonly MarketDestination[] ExpectedRailOrder =
         {
             MarketDestination.Result,
             MarketDestination.Goals,
-            MarketDestination.CorrectScore,
             MarketDestination.Corners,
             MarketDestination.Cards,
+            MarketDestination.CorrectScore,
             MarketDestination.Players,
         };
 
@@ -74,8 +75,8 @@ namespace SBR.Tests.EditMode
             Assert.AreEqual(6, MarketDestinations.All.Count,
                 "the rail is spec §3's six destinations, never more or fewer");
             CollectionAssert.AreEqual(ExpectedRailOrder, MarketDestinations.All,
-                "MarketDestinations.All must print RESULT, GOALS, CORRECT SCORE, CORNERS, CARDS, "
-                + "PLAYERS in that order (spec §3) — the rail is authored once and never reflows");
+                "MarketDestinations.All must print RESULT, GOALS, CORNERS, CARDS, CORRECT SCORE, "
+                + "PLAYERS in that order (spec §3, S95) — the rail is authored once and never reflows");
         }
 
         // --------------------------------------------------------------------------- agreement
@@ -128,7 +129,7 @@ namespace SBR.Tests.EditMode
         [TestCase(MarketKind.AnytimeScorer, "ANYTIME SCORER")]
         [TestCase(MarketKind.DoubleChance, "DOUBLE CHANCE")]
         [TestCase(MarketKind.Handicap, "HANDICAP")]
-        [TestCase(MarketKind.TeamTotalGoals, "TEAM TOTALS")]
+        [TestCase(MarketKind.TeamTotalGoals, "TEAM TOTAL GOALS")]
         [TestCase(MarketKind.CorrectScore, "CORRECT SCORE")]
         [TestCase(MarketKind.WinningMargin, "WINNING MARGIN")]
         [TestCase(MarketKind.TotalGoalsOddEven, "ODD / EVEN")]

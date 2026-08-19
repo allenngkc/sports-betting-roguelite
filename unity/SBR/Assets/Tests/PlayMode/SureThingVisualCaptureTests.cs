@@ -475,10 +475,12 @@ namespace SBR.Tests.PlayMode
         /// from 13 rows to 6. Two things differ between the shipped sheet and that frame, not one,
         /// and the thinner CORRECT SCORE must not be read as a defect.</para>
         ///
-        /// <para><b>The amber pair is one switch</b> (§4.4, `S91` half two, deliberately unruled):
-        /// the same sheet, same seed, same scroll position, rendered with `PriceTakesAmber` off and
-        /// on. Nothing else changes between the two frames, which is the only way the comparison
-        /// answers the question it was commissioned to answer.</para>
+        /// <para><b>The amber pair is DISCHARGED, and is now one frame.</b> §4.4 shot the same
+        /// sheet twice — same seed, same scroll position, `PriceTakesAmber` off and on — so `S91`
+        /// half two could be decided on the frame rather than argued. It was: `S97` (DD batch 113)
+        /// rules that the price does NOT take the amber. The switch is gone with the question it
+        /// existed to put, and what remains is the single shipped toner frame with its ink still
+        /// asserted.</para>
         ///
         /// <para>§8's "every destination populated" is not shot here — it is already covered by the
         /// destinations walk, which reads `MarketDestinations.All` and shoots all six. Every matchup
@@ -597,30 +599,27 @@ namespace SBR.Tests.PlayMode
             yield return CaptureState(laptop, outputDirectory, runPrefix,
                 "S3-entry-empty-group-correctscorefloor-0p08-NOT-SHIPPED", capturedPaths);
 
-            // FRAMES 4 and 5 — the amber comparison, §4.4. Back to the SHIPPED config so the pair
-            // is read against the real sheet, and the only thing that moves between them is the ink.
+            // FRAME 4 — the price ink. ONE frame, not two.
+            //
+            // This was §4.4's amber COMPARISON: the same sheet shot with `PriceTakesAmber` off and
+            // on, so `S91` half two could be decided on the frame rather than argued. That pair was
+            // shot, it was read, and S97 (DD batch 113) decided it — THE PRICE STAYS IN TONER. The
+            // comparison is DISCHARGED, the switch it was driven by is gone, and a comparison frame
+            // for a settled question is not evidence of anything.
+            //
+            // What survives is the single toner frame, kept because §8 still wants the shipped
+            // sheet's price column on the record, and the ink is still ASSERTED rather than assumed
+            // — a frame that quietly went amber would now be a regression rather than a variant.
             yield return DriveToMarketSheet(laptop, new RunConfig());
-            SportsbookApp.PriceTakesAmber = false;
             yield return WaitForRebuild();
             AssertPriceInk(laptop, LaptopOs.White, "toner");
             yield return CaptureState(laptop, outputDirectory, runPrefix,
-                "S4-entry-price-ink-A-toner", capturedPaths);
+                "S4-entry-price-ink-toner", capturedPaths);
 
-            SportsbookApp.PriceTakesAmber = true;
-            yield return WaitForRebuild();
-            AssertPriceInk(laptop, LaptopOs.MoneyGold, "amber");
-            yield return CaptureState(laptop, outputDirectory, runPrefix,
-                "S5-entry-price-ink-B-amber", capturedPaths);
-
-            // The switch is static and the default is the shipped ink; leaving it set would silently
-            // repaint every later capture in this session.
-            SportsbookApp.PriceTakesAmber = false;
-            yield return WaitForRebuild();
-            AssertPriceInk(laptop, LaptopOs.White, "toner (restored)");
-
-            // Six states now: the contents block takes two frames because its twenty-one lines do
-            // not fit one viewport, and one frame could only ever have shown part of it.
-            AssertCaptureOutput(capturedPaths, 12);
+            // Five states now (was six): the amber half of the price-ink pair retired with S97. The
+            // contents block still takes two frames of its own, because its twenty-one lines do not
+            // fit one viewport and one frame could only ever have shown part of it.
+            AssertCaptureOutput(capturedPaths, 10);
         }
 
         /// <summary>Whether <paramref name="target"/> is wholly inside <paramref name="viewport"/>
@@ -718,9 +717,11 @@ namespace SBR.Tests.PlayMode
                 "the market sheet is ENTRY, and every §8 frame is taken on it");
         }
 
-        /// <summary>Reads the ink actually on a price cell. §4.4's comparison is worth nothing if
-        /// both frames came out the same colour, so each half asserts its own ink rather than
-        /// trusting that the switch reached the render.</summary>
+        /// <summary>Reads the ink actually on a price cell. This began as §4.4's guard — a
+        /// comparison is worth nothing if both frames came out the same colour — and outlived the
+        /// comparison: with `S97` closing the question in favour of toner, the same read is now a
+        /// REGRESSION check on the shipped ink rather than a check that a switch reached the
+        /// render.</summary>
         private static void AssertPriceInk(LaptopScreen laptop, Color expected, string what)
         {
             Button price = FirstNamedButton(Required(App(laptop), "MarketBody"), "Market");

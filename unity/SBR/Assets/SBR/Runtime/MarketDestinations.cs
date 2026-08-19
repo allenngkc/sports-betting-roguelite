@@ -7,17 +7,20 @@ namespace SBR.Game
     /// <summary>
     /// The six market-sheet destinations ENTRY's contents rail prints
     /// (<c>spec-market-surfaces-2026-08-17.md</c> §3). Declaration order below IS the rail's
-    /// printed order: RESULT, GOALS, CORRECT SCORE, CORNERS, CARDS, PLAYERS. Per §3.1 this set is
-    /// a CONSTANT — authored once, never varying by matchup, because empty groups still print. No
-    /// destination ever appears or disappears because of what happens to be priced.
+    /// printed order: RESULT, GOALS, CORNERS, CARDS, CORRECT SCORE, PLAYERS (<c>S95</c>: runs the
+    /// three countable statistics GOALS, CORNERS, CARDS adjacently — the same statistic-vs-bet-type
+    /// seam §3 uses to justify the taxonomy — and stops seating CORRECT SCORE, one of the
+    /// least-bet markets, third). Per §3.1 this set is a CONSTANT — authored once, never varying by
+    /// matchup, because empty groups still print. No destination ever appears or disappears because
+    /// of what happens to be priced.
     /// </summary>
     public enum MarketDestination
     {
         Result,
         Goals,
-        CorrectScore,
         Corners,
         Cards,
+        CorrectScore,
         Players,
     }
 
@@ -36,9 +39,9 @@ namespace SBR.Game
         {
             MarketDestination.Result,
             MarketDestination.Goals,
-            MarketDestination.CorrectScore,
             MarketDestination.Corners,
             MarketDestination.Cards,
+            MarketDestination.CorrectScore,
             MarketDestination.Players,
         };
 
@@ -117,13 +120,15 @@ namespace SBR.Game
         /// totality and agreement gates; this list's row ORDER is covered by its own table-order
         /// test.)</para>
         /// </summary>
+        // S95: groups run RESULT, GOALS, CORNERS, CARDS, CORRECT SCORE, PLAYERS — CORRECT SCORE
+        // moved from third to fifth. Order WITHIN each group is unchanged.
         private static readonly MarketKind[] TableOrder =
         {
             MarketKind.Moneyline, MarketKind.DoubleChance, MarketKind.Handicap, MarketKind.WinningMargin,
             MarketKind.TotalGoals, MarketKind.TeamTotalGoals, MarketKind.TotalGoalsOddEven, MarketKind.BothTeamsToScore,
-            MarketKind.CorrectScore,
             MarketKind.TotalCorners, MarketKind.TeamTotalCorners,
             MarketKind.TotalCards, MarketKind.TeamTotalCards,
+            MarketKind.CorrectScore,
             MarketKind.AnytimeScorer, MarketKind.PlayerMultiScorer,
         };
 
@@ -155,13 +160,15 @@ namespace SBR.Game
             MarketKind.AnytimeScorer => "ANYTIME SCORER",
             MarketKind.DoubleChance => "DOUBLE CHANCE",
             MarketKind.Handicap => "HANDICAP",
-            // JUDGMENT CALL (flagged in the implementing agent's report): the task's own example
-            // list gives this row exactly "TEAM TOTALS", not "TEAM TOTAL GOALS" — asymmetric with
-            // TeamTotalCorners/TeamTotalCards below, which do carry their stat name. Kept literal
-            // because the mapping is forced by elimination (15 example labels, 15 MarketKind
-            // members, every other label has an unambiguous single kind it names), not because the
-            // asymmetry has an obvious rationale.
-            MarketKind.TeamTotalGoals => "TEAM TOTALS",
+            // S98: long form, symmetric with TeamTotalCorners/TeamTotalCards below — TEAM TOTAL
+            // GOALS, TEAM TOTAL CORNERS, TEAM TOTAL CARDS all carry their statistic. The short form
+            // "TEAM TOTALS" reads unambiguously on the sheet, but S90's contents block is a flat
+            // printed list where it would appear three times with three different line ranges,
+            // disambiguated only by indentation — and a contents list exists to be scanned, so
+            // three identical entries is the one thing it must not contain. General form: where a
+            // market name appears in both the sheet and the contents, it is authored for the
+            // contents — the harder reading — and the sheet inherits it.
+            MarketKind.TeamTotalGoals => "TEAM TOTAL GOALS",
             MarketKind.CorrectScore => "CORRECT SCORE",
             MarketKind.WinningMargin => "WINNING MARGIN",
             MarketKind.TotalGoalsOddEven => "ODD / EVEN",
