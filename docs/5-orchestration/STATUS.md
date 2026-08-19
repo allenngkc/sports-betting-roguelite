@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-18, cycle 406 (heartbeat).** TV
+**Keeper-era heartbeat stamp: 2026-08-18, cycle 407 - TWO NEW PHASES
+GREENLIT.** Allen's word on both queued phases: console surfaces + the
+drawn-match ending. Mandate committed (8e36949), DD exploring both in
+parallel; specs come to Allen before any lane builds. The reveal build
+continues in TV as the current slate's last item; its read stays the
+DD's priority. Parked with Allen: research 8-9.
+
+*(prior stamp, cycle 406:)* TV
 building the A-reveal (the studio's one remaining item); all else stood
 down or standing by. Parked with Allen: research 8-9.
 
