@@ -550,6 +550,110 @@ namespace SBR.Tests.EditMode
             Assert.AreEqual("RISK", StakeWord(new List<RevealedLegOutcome>()));
         }
 
+        // ------------------------------------------------------------------------- 12. count significance classifier (spec-count-theater-2026-08-17.md §3)
+
+        [Test]
+        public void Classify_matches_the_ruled_distance_precedence_across_a_full_sweep()
+        {
+            // spec-count-theater-2026-08-17.md §3: independently RE-DERIVES the expected case
+            // from the SPEC TEXT's own precedence (Decided > Turn > Approach > Ordinary) —
+            // never by calling a production helper to compute "expected", which would only
+            // prove Classify agrees with itself. HalfLineThreshold is `internal`
+            // (TheaterChoreographer needs it; this EditMode assembly has no InternalsVisibleTo
+            // grant — see Runtime/AssemblyInfo.cs), so `threshold` below inlines that same
+            // trivial formula rather than calling it — this is not a re-test of that method.
+            //
+            // Same half-line sweep as the NEED-0 sweep above (0.5 through 12.5 — every line
+            // this run's config can generate) and the same 0..20 total range. stagedDelta
+            // sweeps 0..3: production never calls Classify with a zero delta (the caller gates
+            // TotalDelta > 0 first), but the classifier's own signature does not forbid it, so
+            // it is swept anyway for completeness; real batches are small per-beat increments
+            // (PlanForBeats spreads the target across many beats), so 1-3 covers the realistic
+            // range without pretending to sweep an unbounded delta.
+            int cases = 0;
+            var seen = new Dictionary<CountSignificance, int>
+            {
+                [CountSignificance.Ordinary] = 0, [CountSignificance.Approach] = 0,
+                [CountSignificance.Turn] = 0, [CountSignificance.Decided] = 0,
+            };
+            for (double halfLine = 0.5; halfLine <= 12.5 + 1e-9; halfLine += 1.0)
+            {
+                int threshold = (int)System.Math.Floor(halfLine) + 1;
+                for (int total = 0; total <= 20; total++)
+                {
+                    for (int delta = 0; delta <= 3; delta++)
+                    {
+                        cases++;
+                        int distanceBefore = threshold - total;
+                        int distanceAfter = threshold - (total + delta);
+                        CountSignificance expected =
+                            distanceBefore <= 0 ? CountSignificance.Decided
+                            : distanceAfter <= 0 ? CountSignificance.Turn
+                            : distanceAfter == ApproachDistance ? CountSignificance.Approach
+                            : CountSignificance.Ordinary;
+
+                        CountSignificance actual = Classify(total, delta, halfLine);
+                        Assert.AreEqual(expected, actual,
+                            $"case {cases}: line={halfLine}, total={total}, delta={delta} - " +
+                            $"distanceBefore={distanceBefore}, distanceAfter={distanceAfter}");
+
+                        // Decided never yields Approach/Turn: the per-case comparison above
+                        // already proves this (the ruled precedence says Decided, so actual
+                        // must equal Decided too), named here explicitly rather than left
+                        // implicit in the loop.
+                        if (distanceBefore <= 0)
+                            Assert.AreEqual(CountSignificance.Decided, actual,
+                                $"case {cases}: distanceBefore<=0 must always classify Decided, " +
+                                $"never Approach/Turn, got {actual}");
+
+                        seen[actual]++;
+                    }
+                }
+            }
+            Assert.AreEqual(13 * 21 * 4, cases,
+                $"count-significance sweep executed {cases} cases (13 half-lines x 21 totals x 4 deltas)");
+            // C29: the case count alone is not enough if one whole classification were
+            // unreachable across the entire sweep — assert every one of the four actually fired.
+            Assert.Greater(seen[CountSignificance.Ordinary], 0, "Ordinary never produced across the sweep");
+            Assert.Greater(seen[CountSignificance.Approach], 0, "Approach never produced across the sweep");
+            Assert.Greater(seen[CountSignificance.Turn], 0, "Turn never produced across the sweep");
+            Assert.Greater(seen[CountSignificance.Decided], 0, "Decided never produced across the sweep");
+        }
+
+        [Test]
+        public void Decided_wins_precedence_even_when_the_after_distance_would_also_match_turn()
+        {
+            // spec-count-theater-2026-08-17.md §3: "Decided ... distanceBefore <= 0. The leg
+            // was already won before this beat" — and it wins PRECEDENCE, not merely the case
+            // where no other rule could also match. Named separately from the sweep above
+            // because the property being pinned is the ORDER of the checks, not just their
+            // union (the sweep already covers this arithmetically; this pins it by name).
+            double line = 8.5; // threshold = 9
+
+            // distanceBefore = 9 - 10 = -1 (Decided on its own); distanceAfter = 9 - (10+0) =
+            // -1 too (would read Turn taken alone) — Decided must still win.
+            Assert.AreEqual(CountSignificance.Decided, Classify(revealedTotal: 10, stagedDelta: 0, line: line),
+                "already past the line, zero further batch: distanceAfter also reads <= 0 " +
+                "(Turn's own test) but Decided must win");
+
+            // A REALISTIC post-win corner: total already AT the line (distanceBefore == 0,
+            // Decided), one more corner arrives (distanceAfter = -1, Turn's own test again) —
+            // still Decided. This is §3.4's "corpse stretch": corners keep arriving after the
+            // leg is already won and must keep being counted (QuietCount), never re-dramatized
+            // as a crossing.
+            Assert.AreEqual(CountSignificance.Decided, Classify(revealedTotal: 9, stagedDelta: 1, line: line),
+                "at the line already (distanceBefore == 0) plus a further batch: still Decided, not Turn");
+
+            // Defensive-only (StagedCount deltas are never negative in production —
+            // CountLedger.Distribute never emits one): a negative delta could in principle
+            // land distanceAfter exactly on ApproachDistance while distanceBefore <= 0. Even
+            // then, Decided must still win — the ORDER of the checks is what this test pins,
+            // not merely their reachable union under a realistic non-negative delta.
+            Assert.AreEqual(CountSignificance.Decided, Classify(revealedTotal: 9, stagedDelta: -1, line: line),
+                "distanceBefore <= 0 with distanceAfter landing exactly on ApproachDistance: " +
+                "Decided must still win over Approach too");
+        }
+
         // ------------------------------------------------------------------------- sweep helpers
 
         /// <summary>True iff <paramref name="s"/> contains a '-' immediately followed by a digit —

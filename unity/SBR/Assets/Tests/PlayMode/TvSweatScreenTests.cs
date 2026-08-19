@@ -2090,6 +2090,145 @@ namespace SBR.Tests.PlayMode
                 + $"revealedTotal={revealedAway + revealedHome} matchTotal={matchAway + matchHome}");
         }
 
+        /// <summary>spec-count-theater-2026-08-17.md §7 item 1: "a count event below the
+        /// significance threshold does NOT produce a count scene, and the beat reaches the base
+        /// table." Reuses <see cref="SeatOnAMultiCountTicket"/> (pinned seed
+        /// <c>STATS-MULTI-1</c>, leg 0 CORNERS) rather than a new fixture, per this phase's own
+        /// instruction to use the existing pinned corners fixture.
+        ///
+        /// <para>The corners leg's OVER Choice is not a property of this seed's draw — it is
+        /// guaranteed by construction: <c>engine/MatchModel.cs</c>'s <c>BuildOffers</c> always
+        /// adds the OVER offer before the UNDER offer for a matchup's TotalCorners market, and
+        /// both this fixture's own search and <c>TvSweatCaptureHarness</c>'s control arm take
+        /// "the first TotalCorners offer" — so this leg is OVER for any seed, not by luck of
+        /// this one. Asserted below rather than merely assumed, so a future change to that
+        /// ordering fails loudly here instead of silently proving nothing.</para>
+        ///
+        /// <para><b>Asserts on the SURFACE, never re-deriving from the model</b>
+        /// (<c>SweatActiveLegModel.Classify</c> is not called here — comparing the surface
+        /// against the model would only prove the surface agrees with itself). Samples every
+        /// frame the corners leg is still live (<c>DebugLegState(0) == ""</c> — <c>_countLedger</c>
+        /// is still corners' own, the same trap <see
+        /// cref="Stats_panel_retains_a_revealed_count_after_its_leg_stops_being_live"/> already
+        /// documents) and looks for a REVEALED-COUNT INCREASE whose scene was one of the base
+        /// table's own Momentum templates (CalmPossession/TerritoryFor/TerritoryAgainst) rather
+        /// than a count template — the observable signature of a quieted batch reaching the base
+        /// table (§3) while still being committed (§4, the same invariant <see
+        /// cref="FullSweat_RevealedCountColumnFinishesEqualToTheMatchsOwnTotal"/> pins at the
+        /// leg's end). Deliberately NOT "any non-Corner template", which would also match the
+        /// unrelated LegFinal correction window this sampling window structurally excludes
+        /// anyway (the loop exits the instant <c>DebugLegState(0)</c> leaves "") — the tighter
+        /// check means this pin cannot be satisfied by that confound even if the exclusion were
+        /// ever weakened. C29: the executed case count is reported and the pin fails on
+        /// zero.</para></summary>
+        [UnityTest]
+        public IEnumerator QuietCountBeat_ProducesNoCountScene_AndTheCountStillCommits()
+        {
+            // A CORNERS-ONLY fixture and a SHORT warm-up, both forced by measurement. This pin first
+            // ran on SeatOnAMultiCountTicket and reported templatesSeen=[Booking,LegFinalLost,
+            // NearMissHope] finalTotal=2 on a corners leg whose real total was 11 - IT WAS WATCHING
+            // THE CARDS LEG. _countLedger is per-leg and is REPLACED when leg 1 goes live, so
+            // DebugRevealedCountHome/Away stop reading corners the moment cards start. Phase A's pin
+            // dodges that by reading the RETAINED row; a pin that must also watch SCENE TEMPLATES
+            // cannot, because the templates it needs are leg 0's. One count leg removes the confound
+            // at the root. The 4-frame warm-up is the other half: 30 frames consumed leg 0's beats
+            // outright on the sibling fixture, so sampling must start while beats are still to come.
+            yield return SeatOnACornersOnlyTicket(warmUpFrames: 4);
+            TvSweatScreen screen = _statsScreen;
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+            Assert.IsNotNull(director, "RunDirector missing");
+            Run run = director.Run;
+            Assert.IsNotNull(run, "no run - SeatOnAMultiCountTicket did not seat a live run");
+
+            Leg cornersLeg = director.CurrentTicket.Legs[0];
+            Assert.AreEqual(MarketKind.TotalCorners, cornersLeg.Selection.Kind,
+                "SeatOnAMultiCountTicket's own pick order puts CORNERS at leg 0 - re-point this "
+                + "pin if that order ever changes, never assume it silently");
+            Assert.AreEqual(1, director.CurrentTicket.Legs.Count,
+                "T115: this pin needs a CORNERS-ONLY ticket - see the fixture note above");
+            Assert.AreEqual(MarketChoice.Over, cornersLeg.Selection.Choice,
+                "engine/MatchModel.cs always offers OVER before UNDER for TotalCorners, and both "
+                + "this fixture and TvSweatCaptureHarness's control arm take the first offer - if "
+                + "this ever reads Under, the board's generation order changed and this pin needs "
+                + "re-pointing, not silent adaptation (the distance gate is OVER-only by spec §6)");
+
+            int quietCommits = 0;
+            int countIncreases = 0;
+            var templatesSeen = new SortedSet<string>();
+            var templatesAtIncrease = new List<string>();
+            int priorTotal = screen.DebugRevealedCountHome + screen.DebugRevealedCountAway;
+            int framesSampled = 0;
+            float start = Time.realtimeSinceStartup;
+            const float maxSeconds = 60f;
+
+            // THE LOOP BOUND WAS `while (DebugLegState(0) == string.Empty)` — leg 0 still live —
+            // AND IT SAMPLED ZERO FRAMES. Measured: a whole sweat runs ~22 frames past this
+            // fixture's seating at its 0.0001 fast-forward, and SeatOnAMultiCountTicket burns 30
+            // warm-up frames of its own, so leg 0 had already decided before the loop was entered.
+            // The pin's own C29 guard caught it and refused to certify anything, which is the guard
+            // working — but the bound has to go.
+            //
+            // THE CONFOUND IT WAS GUARDING AGAINST IS ALREADY EXCLUDED, AND BY A STRONGER MEANS.
+            // The worry was the LegFinal correction window — a real, separate, pre-existing
+            // count-commit path just past leg 0's end. But the `reclaimedMomentumScene` whitelist
+            // below counts ONLY CalmPossession/TerritoryFor/TerritoryAgainst, and a LegFinal
+            // correction renders LegFinalWon/LegFinalLost, which are not in it. So the confound is
+            // excluded BY TEMPLATE, not by timing — which is the more robust of the two, and the
+            // timing half is exactly what just proved fragile.
+            while (run.Phase == Phase.Sweat)
+            {
+                if (Time.realtimeSinceStartup - start > maxSeconds)
+                {
+                    Assert.Fail($"the sweat never settled within {maxSeconds}s wall-clock "
+                        + $"(frames sampled so far: {framesSampled}, quiet commits so far: {quietCommits})");
+                    yield break;
+                }
+                framesSampled++;
+
+                if (!string.IsNullOrEmpty(screen.DebugSceneTemplate))
+                    templatesSeen.Add(screen.DebugSceneTemplate);
+
+                int total = screen.DebugRevealedCountHome + screen.DebugRevealedCountAway;
+                if (total > priorTotal)
+                {
+                    countIncreases++;
+                    templatesAtIncrease.Add($"{screen.DebugSceneTemplate}:{priorTotal}->{total}");
+                    string template = screen.DebugSceneTemplate;
+                    bool reclaimedMomentumScene = template == SceneTemplate.CalmPossession.ToString()
+                        || template == SceneTemplate.TerritoryFor.ToString()
+                        || template == SceneTemplate.TerritoryAgainst.ToString();
+                    if (reclaimedMomentumScene) quietCommits++;
+                }
+                priorTotal = total;
+
+                yield return null;
+            }
+
+            // C29: a gate reports its executed case count and fails on zero - a fixture that
+            // never reached settlement, or whose leg 0 never actually decided, has proven
+            // nothing.
+            // DIAGNOSTICS BEFORE THE ASSERTIONS, deliberately. A gate that fails without saying
+            // what it saw costs a whole editor window to re-run for the answer, and this window is
+            // a shared, serialized resource. Everything needed to tell "the gate never fired" from
+            // "the gate fired and this pin cannot see it" is printed first.
+            UnityEngine.Debug.Log($"[QUIET-COUNT-GATE] frames={framesSampled} quietCommits={quietCommits} "
+                + $"cornersLine={cornersLeg.Selection.Line} choice={cornersLeg.Selection.Choice} "
+                + $"countIncreases={countIncreases} finalTotal={priorTotal} "
+                + $"templatesSeen=[{string.Join(",", templatesSeen)}] "
+                + $"templatesAtIncrease=[{string.Join(",", templatesAtIncrease)}]");
+
+            Assert.Greater(framesSampled, 0,
+                "zero frames sampled across the whole sweat - the fixture never actually ran, so "
+                + "nothing below is proven (C29)");
+            Assert.Greater(quietCommits, 0,
+                "no quiet count commit was observed across the whole corners leg (C29) - either "
+                + "the distance gate never found a beat below its significance threshold on this "
+                + "seed's own path (a re-seed/re-point question, not necessarily a code defect), "
+                + "or the gate is not wired - see this pin's own doc for what it samples and why");
+
+            UnityEngine.Debug.Log($"[QUIET-COUNT-GATE] frames={framesSampled} quietCommits={quietCommits}");
+        }
+
         /// <summary>DD batch 95: seats the player on a ticket carrying EXACTLY ONE count leg — a
         /// TotalCorners leg, and no TotalCards leg — the exact row set (GOALS+CORNERS, CARDS ABSENT)
         /// the §8.8 closing ruling's own binary criterion names ("on a corners-only ticket there is
@@ -2097,7 +2236,7 @@ namespace SBR.Tests.PlayMode
         /// discipline as <see cref="SeatOnAMultiCountTicket"/>, and the SAME seed T100's own capture
         /// (TvSweatCaptureHarness.cs, <c>Capture_StatsPanel_WithAPopulatedCountRow</c>) already proved
         /// offers a TotalCorners market — reused here rather than gambling on an unproven one.</summary>
-        private IEnumerator SeatOnACornersOnlyTicket()
+        private IEnumerator SeatOnACornersOnlyTicket(int warmUpFrames = 30)
         {
             yield return LoadRoom();
             var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
@@ -2142,7 +2281,12 @@ namespace SBR.Tests.PlayMode
             yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
             yield return WaitUntil(() => screen.DebugSeatedDeltaTime > 0f, 20f,
                 "the screen never became seated-and-running");
-            for (int i = 0; i < 30; i++) yield return null; // let the first beat render a scorebug
+            // T115: the 30 is now a DEFAULT, not a constant. At this fixture's 0.0001 fast-forward a
+            // whole sweat runs only a few dozen frames, so 30 warm-up frames can consume the very
+            // beats a pin means to watch — measured, on the multi-count sibling, as a loop that
+            // sampled ZERO frames because its leg had already decided. Callers that need to observe
+            // early beats pass a smaller number; every existing caller keeps 30 by defaulting.
+            for (int i = 0; i < warmUpFrames; i++) yield return null; // let the first beat render a scorebug
 
             _statsScreen = screen;
         }

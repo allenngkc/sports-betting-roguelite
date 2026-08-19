@@ -467,7 +467,13 @@ namespace SBR.Tests.EditMode
             {
                 Leg leg = BuildCountLeg(MarketSelection.TotalCorners(8.5, over), $"S01-HOME-{over}");
                 var counts = new CountLedger();
-                counts.ConfigureEndpoint(targetHome: 2, targetAway: 0, beatCount: 1);
+                // T115: the target CROSSES the 8.5 line so this single dumped batch classifies as
+                // the TURN and still earns a count scene. It was 2 — an Ordinary-distance batch,
+                // which the significance gate now quiets, leaving no spec.Count for the routing
+                // assertion below to read. The fixture is re-pointed, NOT the assertion: this test's
+                // subject is which TEAM the corner routes to, and the significance dimension simply
+                // did not exist when it was written. 9 against 0 keeps the beneficiary unambiguous.
+                counts.ConfigureEndpoint(targetHome: 9, targetAway: 0, beatCount: 1);
 
                 SceneSpec spec = choreo.ResolveBeat(evt, up: true, delta: 0.05, new ScoreLedger(), leg, counts);
 
@@ -491,7 +497,9 @@ namespace SBR.Tests.EditMode
             {
                 Leg leg = BuildCountLeg(MarketSelection.TotalCorners(8.5, over), $"S01-AWAY-{over}");
                 var counts = new CountLedger();
-                counts.ConfigureEndpoint(targetHome: 0, targetAway: 2, beatCount: 1);
+                // T115: crosses the line so the batch is the TURN — see the sibling home test's
+                // note. Was 2, which the significance gate now quiets.
+                counts.ConfigureEndpoint(targetHome: 0, targetAway: 9, beatCount: 1);
 
                 SceneSpec spec = choreo.ResolveBeat(evt, up: false, delta: -0.05, new ScoreLedger(), leg, counts);
 
@@ -525,8 +533,11 @@ namespace SBR.Tests.EditMode
                     Leg leg = BuildCountLeg(MarketSelection.TotalCorners(8.5, over),
                         $"S01-MOOD-ROUTE-{over}-{homeWins}");
                     var counts = new CountLedger();
+                    // T115: crosses the line so the batch is the TURN — see the routing tests'
+                    // note above. Was 2, which the significance gate now quiets, and this test
+                    // asserts BOTH mood and routing off spec.Count, so it needs the scene to exist.
                     counts.ConfigureEndpoint(
-                        targetHome: homeWins ? 2 : 0, targetAway: homeWins ? 0 : 2, beatCount: 1);
+                        targetHome: homeWins ? 9 : 0, targetAway: homeWins ? 0 : 9, beatCount: 1);
 
                     SceneSpec spec = choreo.ResolveBeat(evt, up: true, delta: 0.05, new ScoreLedger(), leg, counts);
 
@@ -607,6 +618,10 @@ namespace SBR.Tests.EditMode
             // The fix must attribute each leg's own staged batches correctly regardless of
             // interleaving, and never reach back to "the active leg" to decide it.
             var run = new Run("S01-CONCURRENT", new RunConfig());
+            // T115, and the line STAYS 8.5 — an attempt to re-point it lower was REFUSED by the
+            // engine: `PlaceTicket` throws "Market selection is not offered" for a line this board
+            // never priced. That is the codebase enforcing this lane's own standing discipline —
+            // never invent a selection the board did not offer — at runtime, and it is correct.
             Ticket cornersTicket = run.PlaceTicket(new[] { new Pick(0, MarketSelection.TotalCorners(8.5, true)) }, 10);
             Ticket cardsTicket = run.PlaceTicket(new[] { new Pick(0, MarketSelection.TotalCards(3.5, false)) }, 10);
             run.LockRound();
@@ -622,6 +637,8 @@ namespace SBR.Tests.EditMode
 
             // Drive both legs' beats interleaved (cards, corners, cards, corners, ...) to prove
             // neither ledger's attribution depends on the other or on ordering.
+            int cornersCases = 0;   // T115 — see the note after this loop
+            int cardsCases = 0;     // T115 — cards stay OUT of the gate, so this one is asserted
             for (int step = 1; step <= 6; step++)
             {
                 SceneSpec cardsSpec = choreo.ResolveBeat(
@@ -629,6 +646,7 @@ namespace SBR.Tests.EditMode
                     up: step % 2 == 0, delta: step % 2 == 0 ? 0.05 : -0.05, new ScoreLedger(), cardsLeg, cardsCounts);
                 if (cardsSpec.Count.HasValue && cardsSpec.Count.Value.TotalDelta > 0)
                 {
+                    cardsCases++;
                     CountLedger.StagedCount c = cardsSpec.Count.Value;
                     Assert.AreEqual(SceneTemplate.Booking, cardsSpec.Template);
                     if (c.HomeDelta > c.AwayDelta) Assert.IsTrue(c.BeneficiaryIsHome);
@@ -641,6 +659,7 @@ namespace SBR.Tests.EditMode
                     up: step % 2 == 0, delta: step % 2 == 0 ? 0.05 : -0.05, new ScoreLedger(), cornersLeg, cornersCounts);
                 if (cornersSpec.Count.HasValue && cornersSpec.Count.Value.TotalDelta > 0)
                 {
+                    cornersCases++;
                     CountLedger.StagedCount c = cornersSpec.Count.Value;
                     // cornersLeg is a fixed Over pick for the whole test, so the MOOD template
                     // is always CornerFor regardless of which team the engine actually credits —
@@ -652,6 +671,36 @@ namespace SBR.Tests.EditMode
                     Assert.AreEqual(c.BeneficiaryIsHome, cornersSpec.CountBeneficiaryIsHome);
                 }
             }
+
+            // T115 — MEASURED, and the honest disposition of a conditional block.
+            //
+            // A `cornersCases > 0` assertion was added here and it FAILED, correctly: on this
+            // fixture the match never approaches 8.5, so every corners beat classifies Ordinary and
+            // the significance gate quiets all six. The corners `if` above cannot fire.
+            //
+            // THE ASSERTION WAS WRONG, NOT THE GATE. It asserted something no longer true of this
+            // fixture, and the fixture cannot be re-pointed — the engine refuses an unoffered line
+            // (see the placement above). What it DID earn its place by doing is proving the skip is
+            // real rather than suspected: before it, this test would have gone green with zero
+            // corners coverage and nobody would have known.
+            //
+            // The coverage is not lost, it MOVED, and to tests that still exercise it: per-beat
+            // corners attribution is pinned by Corner_credited_home_routes_to_home...,
+            // Corner_credited_away_routes_to_away... and
+            // Corner_mood_follows_the_bet_and_routing_follows_the_team_independently, all three
+            // re-pointed under T115 to a Turn-significant batch so they still produce a count scene.
+            // THIS test's own load-bearing claim is the convergence pair below, which is
+            // unconditional and untouched by the gate.
+            //
+            // The cards half IS gated on: cards are excluded from T115 by §6 (distance-to-line is
+            // the wrong instrument for a booking), so a cards beat that stops producing scenes is a
+            // real regression and must fail rather than skip.
+            Assert.Greater(cardsCases, 0,
+                "no cards beat produced a count scene across the whole run, so the cards half of "
+                + "this test asserted nothing (C29). Cards are OUT of T115's scope, so this is a "
+                + "regression, never the significance gate working.");
+            UnityEngine.Debug.Log($"[CONCURRENT-LEGS] cardsCases={cardsCases} cornersCases={cornersCases} "
+                + "(corners expected 0 under T115 on this fixture - see the note above)");
 
             // Both ledgers converge to their OWN market's endpoint from the same locked match —
             // proof neither leg's schedule leaked into the other's.

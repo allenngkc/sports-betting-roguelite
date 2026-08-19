@@ -404,6 +404,44 @@ the ramp is one edit wide. **A silent constant must not stand in for a ruling.**
 Consistent with the measured shape: 7 count events, 2 weighted, 5 going quiet — inside
 `T113`'s "up to six of eight" ceiling.
 
+### WHY THE CORNERS ARM SHOWED `0 — 0` — the mechanism, found at source, and it is NOT a reveal rule
+
+**Established reading `SweatPresentationModel.cs` and `TheaterChoreographer.cs`:**
+
+1. `ConfigureEndpoint(leg)` sets `_goalSense = 0` for corners/cards — *"Corners/cards legs
+   keep the neutral home-anchored goal decoration."* So a corners leg does **not** take the
+   market early-return; it takes the **moneyline** goal path, which stages on
+   `Score`/`BigPlay` **and** on probability reconciliation *"regardless of its type."*
+2. **But `ResolveBeat`'s count branch RETURNS before `ledger.StageBeatGoal(...)` is ever
+   called.**
+3. `T113` measured that **every non-final beat on that arm staged a non-zero count**, so
+   every one took the count branch.
+4. **Therefore goal staging was never reached on a single non-final beat**, and `PlanFinal`
+   reconciled the whole match at the whistle.
+
+**That is the `0 — 0` for 86% and the two-step result at `90'+1`/`90'+2`, exactly.**
+
+> **AND IT REFINES §2's STATED COST.** The spec describes the fix as the ledger's rule
+> changing shape — *from "reveal what the ticket rides on" to "the score is always true"* —
+> and calls that *"a rule changing shape, not a tweak."* **At source the corners arm's
+> goals are not withheld by a reveal RULE at all: they are never STAGED, because the count
+> branch pre-empts the call.** The reveal rule and the pre-emption are two different
+> mechanisms and only the second is what these frames measured. **Routed — it may make §2
+> cheaper or differently shaped than costed, and that is the DD's to judge, not this
+> lane's.**
+
+**It also made a correction to this lane's own Phase B brief load-bearing.** The brief
+justified confining the gate to `Momentum` beats on the ground that *a `Momentum` beat
+cannot stage a goal* — **true only on the `_goalSense != 0` path, which corners legs do not
+take.** Momentum beats are precisely the ones the reconciliation branch can fire on. So
+without a further rule, **quieting a corner would have revealed goals on a corners ticket —
+delivering part of §2 by accident, through §3, which the spec forbids in terms.**
+
+**The rule added: a quieted count beat must not stage a goal.** Quieting is a scene
+decision, never a score decision; a quieted beat leaves the revealed scoreline exactly where
+it found it. `StageBeatGoal` is a pure read (the mutation is in `CompleteGoal`), so
+suppressing the call is side-effect free.
+
 ### AN UNSTATED CONSEQUENCE — GOING QUIET ALSO SHORTENS THE WATCH
 
 `cornerSeconds` 4.5 against `calmSeconds` 3.0, × `paceMultiplier` 0.75 = **1.125 sim-s
