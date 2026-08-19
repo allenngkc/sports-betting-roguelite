@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-18, cycle 403 (heartbeat).** Both
+**Keeper-era heartbeat stamp: 2026-08-18, cycle 404 (heartbeat).** The
+near-line pair merged (8f85cff) and with the DD; markets shooting its
+final worst-case frame. Both phase-closes ride the DD's two reads.
+Parked with Allen: research 8-9.
+
+*(prior stamp, cycle 403:)* Both
 phases one frame from closing: TV shooting the near-line pair in its
 window (lease discipline as literal code); markets building the
 child-suppression fix for its worst-case frame. Parked with Allen:
