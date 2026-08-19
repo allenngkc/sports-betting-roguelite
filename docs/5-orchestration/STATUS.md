@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-18, cycle 399 (heartbeat).** TV's
+**Keeper-era heartbeat stamp: 2026-08-18, cycle 400.** THE THEATER DOCK
+IS IN (20f80cc): the contour landed and the count reaches 12 - the
+binding criterion held on frames; the near-line watch stays owed (every
+held frame is a comfortable winner). DD reading; its word decides close
+vs near-line-shot-first. Markets applying the casing + amber close (the
+leader held at 18 dots). Parked with Allen: research 8-9.
+
+*(prior stamp, cycle 399:)* TV's
 full suite running (merge + re-shot pair behind it); markets closing its
 casing + amber folds; DD current through batch 114. Parked with Allen:
 research 8-9.
