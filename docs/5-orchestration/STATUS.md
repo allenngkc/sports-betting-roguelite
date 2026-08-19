@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-18, cycle 402.** The surfaces
+**Keeper-era heartbeat stamp: 2026-08-18, cycle 403 (heartbeat).** Both
+phases one frame from closing: TV shooting the near-line pair in its
+window (lease discipline as literal code); markets building the
+child-suppression fix for its worst-case frame. Parked with Allen:
+research 8-9.
+
+*(prior stamp, cycle 402:)* The surfaces
 re-shoot MERGED (d046a6c - five states, ten files against the ruled
 surface; editor released clean); the DD reads it toward the surfaces
 close. TV takes the free window for the near-line pair (OVER-fails +

@@ -353,7 +353,68 @@ one seed's deltas is `S84`'s failure in miniature.
 
 ---
 
-## 0-U5. UNIT 3 — THE THEATER BUILD · in progress 2026-08-17
+## 0-U5. UNIT 3 — THE THEATER BUILD · PHASES A + B SHIPPED AND DOCKED 2026-08-18
+
+**State:** phase A `acd9d9f`, phase B `4a06b52`, the evidence dock `f88b00f` — **all three
+merged to `main` and pushed.** Phase C (§3.5's disjoint pool, §2's reveal) not started.
+
+**The result, on frames:** before, `CornerFor` on scenes 002–015 — fourteen consecutive
+windows, one token. After, the arm departs from calm and returns to it:
+
+```
+corner01 CalmPossession  2      corner05 CornerFor  10  ← the turn
+corner02 CalmPossession  4      corner06 CalmPossession 11
+corner03 CornerFor       6      corner07 CalmPossession 12
+corner04 CornerFor       8  ← the approach
+```
+
+**§8.1's six criteria:** 1 **PASS** (the count still reaches 12 — the only correctness
+check) · 2 **PASS on strip, 4-of-5 on scene** · 3 **PASS on strip, partial on scene** ·
+4 **PASS** · 5 **N/A** (§2 not built) · 6 **recorded, and it corrects the register** —
+predicted ~5.5s/~12.5%, **measured 4.58s / 10.3%**.
+
+Full read: `dd-import/corners-sweat-after-2026-08-18/README.md`. **Frames untracked, and now
+structurally so** — a local `*.png` guard was added because `dd-import`'s own `.gitignore`
+covers only `*.zip`, which is the gap behind the 487MB incident.
+
+**Suites at ship, full and unfiltered, post-merge:** EditMode **303 / 302 / 0 failed / 1** ·
+PlayMode **137 / 119 / 0 failed / 18**.
+
+### THE THREE THINGS A LATER SEAT NEEDS FROM THIS UNIT
+
+1. **`T117` cost nothing, and the reason is structural.** A quieted batch rides `QuietCount`,
+   **never `Count`** — so `countScene` is false and `T97-am`'s existing override already routes
+   the strip to `NeutralLine`. **Do not "wire up" the strip; it is already correct, and the
+   field separation is what makes it so.**
+2. **`T118`'s second door is closed UPSTREAM and the two remedies are NOT interchangeable.**
+   A quieted beat stages no goal at all, so the `OnGoalPlayed` payoff is unreachable. The
+   amendment's cheaper call-site fix closes the count loss but **leaves the goal**, and a
+   quieted corner would then reveal a goal on a corners ticket — the §2 coupling §3 must not
+   acquire.
+3. **ROUTED, one line wide: widen the gate from `Momentum`-only to all beat types?** §3.1 keys
+   on **distance**, not on having arrived, and the original objection (a `Score` beat can stage
+   a goal) is **spent** now that goal-suppression covers every type. That single restriction is
+   the whole 4-vs-5 divergence in criterion 2.
+
+### OWED, AND NOT THIS LANE'S TO DECIDE
+
+- **§8 item 3, the near-line watch** — a leg that lands close to its line, or loses. **Every
+  frame we hold is a comfortable winner and the ramp's whole value is in the case never shot.**
+  The DD's read decides whether it precedes the close.
+- **Phase C** — §3.5's disjoint decisive-beat pool (structure buildable, contents owed) and §2's
+  reveal, to be built **independent** of §3 per the spec's own instruction.
+
+### NEWLY UNBLOCKED BY BATCH 108 — queue, not this window
+
+- **`T114-am`** — the footer and banner authored **as one job**: `STAKE $87` / `RETURNED $199`,
+  the banner shedding its amount. ⚠ **`_tPays`'s box has never been measured** — the sweep
+  measured the other component. **Measure before authoring**, as `T112` required.
+- **`T110-am2`** — the flavour suffix **REMOVED**, with the overrun deliberately the least of
+  four reasons. Still present on events 4 and 5 of the docked set, which predates it.
+
+---
+
+## 0-U5-PRE. UNIT 3 — the groundwork, recorded before the build
 
 Spec: `docs/design/spec-count-theater-2026-08-17.md` (FINAL, canon `fc5a1f5`).
 
