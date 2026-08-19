@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-18, cycle 410 - THE REVEAL IS
+**Keeper-era heartbeat stamp: 2026-08-18, cycle 411 (heartbeat).** DD on
+the theater's closing read; TV standing by; markets available. Parked
+with Allen: research 8-9.
+
+*(prior stamp, cycle 410 - THE REVEAL IS
 BUILT AND DOCKED.** Merged (08fd8e0): the scoreline always true at last
 (the load-bearing clause), the disjoint pool with unreachable cells
 stated, both pairings side by side. THE THEATER PHASE CLOSES on the
