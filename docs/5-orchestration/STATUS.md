@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-18, cycle 405 - THE SURFACES
+**Keeper-era heartbeat stamp: 2026-08-18, cycle 406 (heartbeat).** TV
+building the A-reveal (the studio's one remaining item); all else stood
+down or standing by. Parked with Allen: research 8-9.
+
+*(prior stamp, cycle 405 - THE SURFACES
 PHASE IS CLOSED.** Design-verified on the worst-case frame (af4ccdc);
 the theater's grammar Design-verified with it. ONE item remains across
 both phases: the A-reveal - approved, load-bearing, building in TV's
