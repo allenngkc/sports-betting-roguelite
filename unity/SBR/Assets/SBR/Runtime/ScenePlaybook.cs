@@ -112,6 +112,40 @@ namespace SBR.Game
         /// time pressure.</para></summary>
         public readonly CountLedger.StagedCount? QuietCount;
 
+        /// <summary>spec-count-theater-2026-08-17.md §2, THE A-REVEAL (T109-cl, ruled FINAL): a
+        /// goal <see cref="ScoreLedger.StageBeatGoal"/> staged on THIS beat that must still
+        /// COMMIT — "the revealed scoreline is never withheld... whether or not the ticket rides
+        /// on them" — but whose SCENE belongs to whatever the count/momentum grammar (§3) already
+        /// chose for this beat, not to the goal. Mirrors <see cref="QuietCount"/>'s own shape
+        /// exactly, for the other ledger: set only on a count leg (corners/cards), only when this
+        /// beat's own scene is CornerFor/CornerAgainst/Booking or a grammar-quieted
+        /// CalmPossession/TerritoryFor/TerritoryAgainst — never when the base table would have
+        /// shown a goal-family template on its own (a zero-batch Score/BigPlay beat, or any beat
+        /// on a goals-market leg), where a goal still earns/upgrades its own scene exactly as
+        /// before this dispatch. <c>TvSweatScreen.CommitRevealedGoal</c> commits it (mirroring
+        /// <c>CommitRevealedCount</c>'s "one authority" shape) independent of any scene payoff —
+        /// a goal-scene payoff is never reached here, since the scene playing ISN'T a goal scene,
+        /// so a goal that only ever advanced the ledger from <c>OnGoalPlayed</c> would never
+        /// advance it at all for this beat. No flavour text, no audio, no scorer reveal: the same
+        /// "only the drama is discretionary" law <see cref="QuietCount"/> already states, applied
+        /// here to the other ledger.
+        ///
+        /// <para>Deliberately a SEPARATE field from <see cref="Goal"/>, never a reuse of it:
+        /// <c>Goal</c> means "this scene IS a goal (or goal-eligible Breakaway) and stages its own
+        /// payoff" — every existing reader (TvSweatScreen's goalWords/goalScene/dangerous checks,
+        /// the stage's goal playback) keys off <c>Goal.HasValue</c> to decide whether THIS beat's
+        /// own scene is a goal. Routing a quieted beat's goal through <c>Goal</c> would upgrade
+        /// CornerFor/CalmPossession into GoalFor/GoalAgainst — exactly the scene hijack STEP 2
+        /// forbids. A resolved beat carries at most one of <c>Goal</c>/<c>QuietGoal</c> populated,
+        /// mirroring <c>Count</c>/<c>QuietCount</c>'s own at-most-one discipline.</para>
+        ///
+        /// <para><b>ROUTED, not decided here:</b> whether a count leg's quiet goal should ALSO
+        /// earn its own scene, rather than only moving the scorebug, is an open design question
+        /// the lead has put to the Design Director (§2: "a goal the corners player does not need
+        /// is exactly the departure from calm his watch is missing" cuts toward yes, but it is not
+        /// ruled). This field is the conservative build — scorebug only.</para></summary>
+        public readonly ScoreLedger.StagedGoal? QuietGoal;
+
         public SceneSpec(SceneTemplate template, int variant, bool leadChangeIntro, bool urgent,
             bool forPicked, ScoreLedger.StagedGoal? goal, float duration)
             : this(template, variant, leadChangeIntro, urgent, forPicked, goal, null, null,
@@ -120,7 +154,8 @@ namespace SBR.Game
         public SceneSpec(SceneTemplate template, int variant, bool leadChangeIntro, bool urgent,
             bool forPicked, ScoreLedger.StagedGoal? goal, CountLedger.StagedCount? count,
             CountLedger.FinalPlan? countFinal, MarketKind market, float duration,
-            bool? countBeneficiaryIsHome = null, CountLedger.StagedCount? quietCount = null)
+            bool? countBeneficiaryIsHome = null, CountLedger.StagedCount? quietCount = null,
+            ScoreLedger.StagedGoal? quietGoal = null)
         {
             Template = template;
             Variant = variant;
@@ -134,6 +169,7 @@ namespace SBR.Game
             Duration = duration;
             CountBeneficiaryIsHome = countBeneficiaryIsHome;
             QuietCount = quietCount;
+            QuietGoal = quietGoal;
         }
     }
 

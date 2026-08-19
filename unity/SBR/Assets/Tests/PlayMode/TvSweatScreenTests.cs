@@ -2229,6 +2229,136 @@ namespace SBR.Tests.PlayMode
             UnityEngine.Debug.Log($"[QUIET-COUNT-GATE] frames={framesSampled} quietCommits={quietCommits}");
         }
 
+        /// <summary>spec-count-theater-2026-08-17.md §7 item 5 / §2 THE A-REVEAL (T109-cl, ruled
+        /// FINAL): "assert the scoreline reveals independently of the ticket's market, on a
+        /// corners fixture whose match scores." Reuses <see cref="SeatOnACornersOnlyTicket"/>
+        /// (pinned seed <c>STATS-COUNT-1</c>, leg 0 CORNERS, no CARDS leg) rather than inventing a
+        /// fixture, per this dispatch's own instruction.
+        ///
+        /// <para>A SHORT warm-up (4, not the 30 default) for the SAME measured reason
+        /// <see cref="QuietCountBeat_ProducesNoCountScene_AndTheCountStillCommits"/> already gives
+        /// its own: at this fixture's 0.0001 fast-forward a whole sweat runs only a few dozen
+        /// frames, and 30 warm-up frames has already been measured consuming a leg's beats
+        /// outright on the multi-count sibling fixture (see that pin's own comment). This gate
+        /// needs frames still ahead of leg 0 to sample across, not a leg that has already
+        /// decided.</para>
+        ///
+        /// <para><b>The precondition this gate cannot assume:</b> whether STATS-COUNT-1's own
+        /// match actually scores is a property of the seed's simulation, not of this test's code,
+        /// so it is asserted explicitly, first, straight off <c>Leg.Matchup.StatLine</c> — the
+        /// same ground-truth field <see cref="FullSweat_RevealedCountColumnFinishesEqualToTheMatchsOwnTotal"/>
+        /// already reads for corners. A scoreless match on this seed is a RE-POINT (a different
+        /// seed, or a forced-goal harness), never a silent pass — the failure message says so
+        /// rather than letting the gate below pass vacuously.</para>
+        ///
+        /// <para><b>What "before full time" means here, operationally:</b> sampled while leg 0 is
+        /// still LIVE (<c>DebugLegState(0) == ""</c> — the same live-window instrument
+        /// <see cref="QuietCountBeat_ProducesNoCountScene_AndTheCountStillCommits"/> already uses),
+        /// which is every ordinary beat strictly BEFORE leg 0's own LegFinal correction plays. If
+        /// the revealed total (<c>DebugRevealedPicked + DebugRevealedOpponent</c> — the exact pair
+        /// <c>UpdateScorebug</c> itself reads, never re-derived) is already nonzero at any point in
+        /// that window, the reveal happened on an ordinary beat, not only in <c>PlanFinal</c>'s
+        /// stoppage-time correction — which is exactly the "two-step ending at the death" defect
+        /// §1 measured (the corners arm shown 0-0 for 86% of a match that finished 5-1), restated
+        /// as a pass/fail condition.</para>
+        ///
+        /// <para><b>What this does NOT prove:</b> that the FINAL revealed scoreline exactly equals
+        /// the match's own final goal total (no equivalent of §4's count-total pin exists here for
+        /// goals — this gate is about WHEN the reveal starts, not whether it is exact by the
+        /// whistle); that the SCENE stays ticket-keyed (STEP 2 — a separate claim about the
+        /// TEMPLATE; this test never reads <c>DebugSceneTemplate</c>); anything about cards (out
+        /// of scope, §6); or which BEAT or minute the reveal lands on — there is no goal minute in
+        /// the engine (<c>MatchStatLine</c> carries only final totals, never timing), so "before
+        /// full time" is read off leg-liveness, never a clock value. C29: the executed case count
+        /// is reported and the pin fails on zero.</para></summary>
+        [UnityTest]
+        public IEnumerator RevealedScoreline_OnACornersLeg_AdvancesBeforeFullTime()
+        {
+            yield return SeatOnACornersOnlyTicket(warmUpFrames: 4);
+            TvSweatScreen screen = _statsScreen;
+            var director = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+            Assert.IsNotNull(director, "RunDirector missing");
+            Run run = director.Run;
+            Assert.IsNotNull(run, "no run - SeatOnACornersOnlyTicket did not seat a live run");
+
+            Leg cornersLeg = director.CurrentTicket.Legs[0];
+            Assert.AreEqual(MarketKind.TotalCorners, cornersLeg.Selection.Kind,
+                "SeatOnACornersOnlyTicket's own pick is CORNERS - re-point this pin if that ever "
+                + "changes, never assume it silently");
+            Assert.AreEqual(1, director.CurrentTicket.Legs.Count,
+                "this pin needs a CORNERS-ONLY ticket, same precondition "
+                + "QuietCountBeat_ProducesNoCountScene_AndTheCountStillCommits already asserts");
+
+            int matchGoals = cornersLeg.Matchup.StatLine.HomeGoals + cornersLeg.Matchup.StatLine.AwayGoals;
+            Assert.Greater(matchGoals, 0,
+                "PRECONDITION: this gate needs a corners fixture WHOSE MATCH SCORES (spec §7 item "
+                + "5) - STATS-COUNT-1's match has zero total goals on this seed, so nothing below "
+                + "can be proven. This is a RE-POINT (a different seed or a forced-goal harness), "
+                + "never a silent pass.");
+
+            bool revealedBeforeFullTime = false;
+            int revealedAtFirstAdvance = 0;
+            int framesSampled = 0;
+            int framesLegLive = 0;
+            float start = Time.realtimeSinceStartup;
+            const float maxSeconds = 60f;
+
+            // Same failsafe shape as this file's other full-sweat pins: a hang is a FAILURE, never
+            // a silent pass.
+            while (run.Phase == Phase.Sweat)
+            {
+                if (Time.realtimeSinceStartup - start > maxSeconds)
+                {
+                    Assert.Fail($"the sweat never settled within {maxSeconds}s wall-clock (frames "
+                        + $"sampled so far: {framesSampled})");
+                    yield break;
+                }
+                framesSampled++;
+
+                // DebugLegState(0) == "" is the SAME live-window instrument
+                // QuietCountBeat_ProducesNoCountScene_AndTheCountStillCommits already uses: leg 0
+                // is still live, i.e. this is an ORDINARY beat, strictly before its own LegFinal
+                // correction plays.
+                if (string.IsNullOrEmpty(screen.DebugLegState(0)))
+                {
+                    framesLegLive++;
+                    int revealedTotal = screen.DebugRevealedPicked + screen.DebugRevealedOpponent;
+                    if (!revealedBeforeFullTime && revealedTotal > 0)
+                    {
+                        revealedBeforeFullTime = true;
+                        revealedAtFirstAdvance = revealedTotal;
+                    }
+                }
+
+                yield return null;
+            }
+
+            // DIAGNOSTICS BEFORE THE ASSERTIONS, deliberately - same discipline as the sibling
+            // quiet-count gate: everything needed to tell "the gate never fired" from "the gate
+            // fired and this pin cannot see it" is printed first.
+            UnityEngine.Debug.Log($"[SCORE-REVEAL-GATE] frames={framesSampled} framesLegLive={framesLegLive} "
+                + $"matchGoals={matchGoals} revealedBeforeFullTime={revealedBeforeFullTime} "
+                + $"revealedAtFirstAdvance={revealedAtFirstAdvance}");
+
+            // C29: a gate reports its executed case count and fails on zero - a fixture that never
+            // ran, or whose leg 0 was never actually observed live, has proven nothing.
+            Assert.Greater(framesSampled, 0,
+                "zero frames sampled before the run left Phase.Sweat - the fixture never actually "
+                + "ran, so nothing below is proven (C29)");
+            Assert.Greater(framesLegLive, 0,
+                "leg 0 (corners) was never observed live across the whole sweat - cannot prove "
+                + "anything about beats before its own final without at least one live frame (C29)");
+
+            // THE GATE ITSELF (spec §7 item 5): the revealed scoreline must move on an ORDINARY
+            // beat, independent of the ticket riding a corners market - never held back to reveal
+            // only in one lump at the whistle (§1's measured "two-step ending... at the death").
+            Assert.IsTrue(revealedBeforeFullTime,
+                $"the revealed scoreline (Picked+Opponent) never advanced above zero while leg 0 "
+                + $"was still live, across {framesLegLive} live frames, even though the match "
+                + $"itself scores {matchGoals} goal(s) - the reveal is being withheld until the "
+                + "whistle, which is §2's exact defect (the false 0-0 and the two-step ending)");
+        }
+
         /// <summary>DD batch 95: seats the player on a ticket carrying EXACTLY ONE count leg — a
         /// TotalCorners leg, and no TotalCards leg — the exact row set (GOALS+CORNERS, CARDS ABSENT)
         /// the §8.8 closing ruling's own binary criterion names ("on a corners-only ticket there is
