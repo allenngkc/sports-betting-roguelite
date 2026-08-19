@@ -177,10 +177,22 @@ thing.
 `DARRYL LEDGER ANYTIME` uppercases a player's name while `Waterloo Notaries OVER 0.5 GOALS` does not
 uppercase a club's.
 
-**Two bindings before it ships.** **`C46`:** uppercase is wider per character, and
-`MOOSE JAW OVERHEADS OR DRAW` is the longest reachable form — **measure it against the row.**
-**`S84`:** check the **enumerated** club and player pools for any name whose meaning depends on its
-case. The measured sample shows none; **the check is the pool's, not the sample's.**
+**Two bindings — and the first is a GATE on shipping this ruling, not a confirmation of it.**
+
+**`C46`.** This section first named `MOOSE JAW OVERHEADS OR DRAW` (27 chars) as the longest reachable
+form. **Wrong, and corrected at `S96-am`:** clubs are **generated** — `Cities` (16) × `Nouns` (20) =
+**320 constructible names**, widest `San Francisco Spreadsheets` — so the widest reachable row is
+**`SAN FRANCISCO SPREADSHEETS OVER 4.5 CORNERS`, 43 characters.** Sixteen longer than the form named,
+and **`Moose Jaw Overheads` was a champion picked off one frame in a paragraph citing `S84`.**
+
+**43 uppercase characters is plausibly 370–390px of a ~490px name-and-leaders budget.** This ruling
+was made on consistency and legibility grounds **without pricing the width**. **Measure it; if it
+overruns, the answer is `G1`'s two-rung ladder — an authored shorter form for the clubs that miss —
+not abandoning the casing rule.**
+
+**`S84`.** Check the **enumerated** pools for any name whose meaning depends on its case. `Cities`
+and `Nouns` are plain title case throughout with no particles, so nothing is at risk today — **but
+the check is the pool's, not the sample's.**
 
 ## 5. THE CONTENTS BLOCK AND THE FOLIO (`S90`)
 
