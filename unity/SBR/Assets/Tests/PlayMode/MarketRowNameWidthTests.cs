@@ -195,6 +195,20 @@ namespace SBR.Tests.PlayMode
         /// design call this seat does not hold: truncating changes a ruled string, shrinking breaks
         /// §4.5's 13px floor, and widening the name cell takes width from the price. So this fails
         /// with every measured number instead.</para>
+        ///
+        /// <para><b>It DID fail once, and the DD ruled on it.</b> First measurement:
+        /// <c>SAN FRANCISCO SPREADSHEETS UNDER 4.5 CORNERS</c> at 493.68px against a 480px cell —
+        /// five names over, and seventeen printing no leader dots at all. The ruling was to widen
+        /// the name cell out of the price cell's slack, which was measured at 129.39px (the widest
+        /// reachable price is 46.61px against a 176px cell) and 16px of it spent — see
+        /// <see cref="SportsbookApp.OfferPriceCellWidth"/>. The assertion below is UNCHANGED by that;
+        /// only the geometry it reads moved.</para>
+        ///
+        /// <para><b>The headroom is 2.32px.</b> That is deliberate — the DD authorised the deficit,
+        /// not a margin — and it is why this gate matters more now than when it was failing: one
+        /// more city or noun in <c>SlateGenerator</c> can spend it. If this goes red again the
+        /// price cell still holds ~113px of slack, but spending it further compresses the selection
+        /// ring below its native aspect, which is a DD call and not a repair to make here.</para>
         /// </summary>
         [Test]
         public void The_longest_uppercase_row_name_fits_the_row_it_is_printed_on()

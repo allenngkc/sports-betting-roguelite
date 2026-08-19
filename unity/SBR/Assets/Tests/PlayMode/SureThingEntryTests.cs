@@ -104,10 +104,18 @@ namespace SBR.Tests.PlayMode
             StringAssert.StartsWith("ring-wide-", firstRing.sprite.name,
                 "wide selection ink must be prefix-filtered from the wide family");
             Assert.IsFalse(firstRing.raycastTarget, "decorative wide ink must not intercept the price");
-            // The rule is cell + 16 on both axes (ASSETS.md, and the design system's InkMark.rect):
-            // A1 widened the market cell from 160 to 176 wide (32 tall, unchanged), so the ring is
-            // 192x48.
-            AssertRect(firstRing.rectTransform, 192f, 48f, "WideBiroRing");
+            // The rule is cell + 16 on both axes (ASSETS.md, and the design system's InkMark.rect).
+            // A1 had widened the market cell 160 -> 176, making the ring 192x48.
+            //
+            // S96 (DD batch 113) sent it back: uppercasing row names overflowed the name cell, and
+            // the ruled remedy was to widen that cell out of the PRICE cell's slack. The price cell
+            // returns to 160 — the width it shipped at before A1 — so the ring is 176x48 again.
+            //
+            // The ring is Image.Type.Simple with preserveAspect off, so it stretches rather than
+            // breaking; 176 is also its sprite's own native width (176x46 @1x), which is why the
+            // ruling could be taken at all. A fixed-width or 9-sliced ring would have made the
+            // price cell's slack unusable and returned the figure to the DD.
+            AssertRect(firstRing.rectTransform, 176f, 48f, "WideBiroRing");
             string variant = firstRing.sprite.name;
 
             // BTTS no longer has a destination of its own — §3 folds it into GOALS, and §5.2's

@@ -52,7 +52,38 @@ namespace SBR.Game
 
         internal const float OfferRightPad = 14f;
 
-        internal const float OfferPriceCellWidth = 176f;
+        /// <summary>
+        /// <b>160, not 176 — S96's resolution, and every number in it is measured.</b>
+        ///
+        /// <para>S96 uppercased the row name; C46 then measured the longest reachable one at
+        /// <c>SAN FRANCISCO SPREADSHEETS UNDER 4.5 CORNERS</c>, 493.68px against a 480px name cell
+        /// on the scrolling row. The DD ruled the deficit is paid OUT OF THE PRICE CELL'S SLACK, and
+        /// the slack was measured before it was spent rather than assumed:</para>
+        ///
+        /// <para><b>The cell's true floor is 46.61px.</b> That is the widest price string reachable
+        /// anywhere in the pool — 5 characters, e.g. <c>+2272</c> — measured at this cell's own
+        /// render parameters (19px, the condensed face, <see cref="LaptopTrack.Names"/>), over
+        /// 10,176,799 offers across 120,000 matchups. Every 5-character price measures identically
+        /// because the condensed digits are tabular (S29) and U+2212 MINUS and U+002B PLUS carry the
+        /// same 479/1000 advance. Under it sit MakeButton's own 44px width clamp and zero internal
+        /// padding (the label rect IS the button rect, centred). So the usable slack was 129.39px
+        /// and this spends 16 of it.</para>
+        ///
+        /// <para><b>Why 16 and not more.</b> Two independent reasons land on the same number.
+        /// 160 is the width this cell shipped at before A1 widened it, so it is a restoration rather
+        /// than an invention. And it is where the SELECTION RING stops degrading: the ring is
+        /// <c>Image.Type.Simple</c> with <c>preserveAspect</c> off, so it stretches to whatever rect
+        /// it is given — it cannot break, but it can distort. At 176 the ring drew 192x48 against a
+        /// 176x46 sprite, 4.55% wider than native; at 160 it draws 176x48 — the sprite's own native
+        /// width, 4.17% narrower than native in aspect. Less distorted than what it replaces, and
+        /// the symmetric limit is 159.66, so going further would make the ink worse than it was.</para>
+        ///
+        /// <para><b>The headroom this buys is 2.32px</b> (493.68 against a 496px cell) and that is
+        /// thin on purpose rather than by accident — the DD authorised the deficit, not a margin.
+        /// <c>MarketRowNameWidthTests</c> is what holds it: a seventeenth city or a twenty-first
+        /// noun that pushes past 496 fails that gate instead of silently wrapping.</para>
+        /// </summary>
+        internal const float OfferPriceCellWidth = 160f;
 
         /// <summary>4px RuleSoft track + 4px clearance (A4: a row never runs under the position
         /// rail). Named because it is the difference between the two row widths this surface has —
@@ -1248,8 +1279,10 @@ namespace SBR.Game
 
         /// <summary>A1's shared single-column offer row (S27 ruling): 54px tall, full content
         /// width, a fact-coloured line/name label on the left (<see cref="LaptopOs.White"/>,
-        /// condensed, 19px, uppercase — E-12, load-bearing under S28) and a 176px right-aligned
-        /// price cell, with a 1px <see cref="LaptopOs.RuleSoft"/> rule along the row's bottom edge
+        /// condensed, 19px, uppercase — E-12, load-bearing under S28) and a
+        /// <see cref="OfferPriceCellWidth"/>px right-aligned price cell (160 since S96 —
+        /// A1's 176 held 129px of measured slack and the name needed 16 of it),
+        /// with a 1px <see cref="LaptopOs.RuleSoft"/> rule along the row's bottom edge
         /// (kit: screens.jsx:59-72). <paramref name="role"/> is the S22/E-24 scorer-role word
         /// printed after the name in <see cref="LaptopOs.Muted"/> — null/empty for every
         /// non-scorer row. Shared by BuildMarketLines, BuildBothTeamsScore and BuildPlayerLines so
@@ -1349,8 +1382,16 @@ namespace SBR.Game
                     // moves the rect DOWN, so the ring must overshoot with a positive Y to sit above
                     // the cell rather than under it.
                     //
-                    // Size is the cell + 16 per ASSETS.md/InkMark.rect(): A1 widened the price cell
-                    // from 160 to 176, so the ring is now 192x48 (was 176x48).
+                    // Size is the cell + 16 per ASSETS.md/InkMark.rect(). A1 widened the price cell
+                    // from 160 to 176 and the ring went 176x48 -> 192x48; S96's widening returns the
+                    // cell to 160, so the ring is 176x48 again.
+                    //
+                    // That is the ring-wide sprite's OWN native @1x width (176x46, ASSETS.md), which
+                    // it had not been drawn at since A1. The Image is Type.Simple with preserveAspect
+                    // off, so it stretches to this rect rather than breaking on it — measured, the
+                    // aspect goes from 4.55% wider than native to 4.17% narrower. E-18's open point
+                    // stands either way: the ring is still sized off the 32px HIT AREA rather than
+                    // the ~30px printed figure, and that is not this change's to settle.
                     const float overshoot = 8f;
                     Vector2 cellSize = new Vector2(priceCellWidth, priceCellHeight);
                     LaptopUi.MakeSprite(offer, "WideBiroRing", ring, new Vector2(0f, 1f),
