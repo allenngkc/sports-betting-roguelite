@@ -91,34 +91,46 @@ Two consequences, of very different weight:
 
 **No ruling is needed to ship six. One is needed before a seventh is ever proposed.**
 
-Measured on Archivo Regular at 13px with tracking `.14em` (`MakeButton`'s default, unchanged),
-replicating `LaptopUi.MeasureWidth`'s formula against `Archivo.ttf`'s `hmtx` table. Padding is
-`RailTabPadX = 12f` per side — the one authored number; every x below is derived from the measured
-label and gated by `SportsbookApp.RequireDestinationRailFits`, which throws carrying every width.
+**MEASURED LIVE IN THE ENGINE**, not replicated: `SureThingEntryTests` reads the font off a rendered
+destination tab and logs `DestinationRailPack.Report()` on every PlayMode run. Figures below are
+from `evidence/logs/PlayMode-20260818-000748.log`. Padding is `RailTabPadX = 12f` per side — the one
+authored number; every x is derived from the measured label and gated by
+`SportsbookApp.RequireDestinationRailFits`, which throws carrying every width.
 
 | destination | label width | box (label + 12px/side) | x |
 |---|---|---|---|
-| RESULT | 62.52 | 86.52 | 14.00 |
-| GOALS | 54.89 | 78.89 | 108.52 |
-| **CORRECT SCORE** | **136.86** | **160.86** | 195.40 |
-| CORNERS | 77.84 | 101.84 | 364.27 |
-| CARDS | 55.15 | 79.15 | 474.11 |
-| PLAYERS | 73.61 | 97.61 | 561.26 |
+| RESULT | 62.27 | 86.27 | 14.00 |
+| GOALS | 54.27 | 78.27 | 108.27 |
+| **CORRECT SCORE** | **137.84** | **161.84** | 194.55 |
+| CORNERS | 78.47 | 102.47 | 364.39 |
+| CARDS | 55.17 | 79.17 | 474.86 |
+| PLAYERS | 72.73 | 96.73 | 562.03 |
 
-Labels 460.86 · boxes 604.87 · +5×8px gutter +2×14px margin = **672.86 of 700. Slack: 27.14px.**
+Labels 460.75 · +12 padding sites +5×8px gutter +2×14px margin = **672.76 of 700. Slack: 27.24px.**
+
+**The earlier TTF-replicated figures were close but not exact, and the difference is recorded rather
+than quietly replaced.** They read 672.86 packed / 27.14 slack. Per-label error reached **0.98px**
+(on `CORRECT SCORE`, the widest label; `PLAYERS` was off 0.88px the other way), but the errors
+largely cancel and **the total was within 0.10px**. No conclusion moved. Worth carrying as a method
+note: replicating a font metric off the `hmtx` table gets a TOTAL right while getting individual
+labels wrong by up to a pixel — fine for a fit verdict, not fine for anything that turns on one
+label's width.
 
 **Finding: the real capacity is exactly SIX. §3's "the headroom is deliberate" is false at 700px.**
-The 27.14px cannot hold a seventh destination — `MakeButton` floors a control at 44px, plus an 8px
+The 27.24px cannot hold a seventh destination — `MakeButton` floors a control at 44px, plus an 8px
 gutter is 52px minimum. Even dropping the rail to `LaptopTrack.Tabs` (.11em) recovers only
-16.77px, reaching 43.91px slack — still short of 52. **A seventh destination is a design problem,
+16.77px, reaching 44.01px slack — still short of 52. **A seventh destination is a design problem,
 not a build one, and it arrives the moment a sixteenth market kind needs a home that is not one of
 these six.** §3 wrote the headroom argument to protect against exactly that case; the protection
 does not exist.
 
-**And it was a near miss.** The ceiling for symmetric padding is **14.26px/side**. The strip this
-replaces ran its own tightest box at **15.08px/side** (CORNERS: a 108f box around 77.84px of type).
-Carrying that grammar forward would have overflowed by ~9.8px — the six fit because the packing is
-derived from measured labels, not because the old numbers had room in them.
+**And it was a near miss.** The ceiling for symmetric padding is **14.27px/side**. The strip this
+replaces ran its own tightest box at **14.77px/side** (CORNERS: a 108f box around 78.47px of type).
+Carrying that grammar forward gives 705.93 — **an overflow of ~5.9px.** The six fit because the
+packing is derived from measured labels, not because the old numbers had room in them.
+
+*(Both figures moved with the live measurement: on the TTF replication this read 15.08px/side and
+~9.8px of overflow. The margin is smaller than first reported, and the conclusion is the same.)*
 
 **Nothing was shrunk, truncated, abbreviated, wrapped or scrolled to make this fit.** The levers
 that would have been needed are all yours, and the spec closes three of them itself: type does not
