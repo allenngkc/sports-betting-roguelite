@@ -44,12 +44,15 @@ namespace SBR.Tests.PlayMode
             // PLAYERS, each showing ONE MarketKind) are replaced by the six destinations. Ends on
             // RESULT, which is where ENTRY opens, so the walk returns to its start exactly as the
             // old GOALS-last order did.
+            // Rail order (S95) with RESULT rotated to the end. This is a WALK, not an order
+            // assertion — EntryDestinations is what pins the order — but it is kept in step so a
+            // reader does not mistake a stale sequence for the ruled one.
             string[] destinationNames =
             {
                 "DetailTabGoals",
-                "DetailTabCorrectScore",
                 "DetailTabCorners",
                 "DetailTabCards",
+                "DetailTabCorrectScore",
                 "DetailTabPlayers",
                 "DetailTabResult",
             };
@@ -392,9 +395,9 @@ namespace SBR.Tests.PlayMode
         {
             ("DetailTabResult", MarketDestination.Result),
             ("DetailTabGoals", MarketDestination.Goals),
-            ("DetailTabCorrectScore", MarketDestination.CorrectScore),
             ("DetailTabCorners", MarketDestination.Corners),
             ("DetailTabCards", MarketDestination.Cards),
+            ("DetailTabCorrectScore", MarketDestination.CorrectScore),
             ("DetailTabPlayers", MarketDestination.Players),
         };
 

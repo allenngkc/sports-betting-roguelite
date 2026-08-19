@@ -34,15 +34,26 @@ namespace SBR.Tests.EditMode
             "SHEET-E", "SHEET-F", "SHEET-G", "SHEET-H",
         };
 
-        // Spec §3 rail order, restated here rather than read back from MarketDestinations.All so
-        // this file asserts the ORDER instead of agreeing with whatever that list happens to say.
+        // The rail order, restated here rather than read back from MarketDestinations.All so this
+        // file asserts the ORDER instead of agreeing with whatever that list happens to say.
+        //
+        // S95 (DD 2026-08-18, batch 113) moved CORRECT SCORE from third to FIFTH, resolving the
+        // spec's self-contradiction — §3's table seated it third, §5.2's contents example fifth, and
+        // the illustration was the considered half. The order now runs the three countable
+        // statistics adjacently (GOALS · CORNERS · CARDS), which is the same statistic-vs-bet-type
+        // seam §3 uses to justify the taxonomy, and it stops seating one of the least-bet markets
+        // third.
+        //
+        // This array being INDEPENDENT is what made it worth having: it went stale the moment the
+        // enum moved, and it compiles clean — so it fails at run time, loudly, instead of silently
+        // agreeing with the change. That is the whole point of not reading it back.
         private static readonly MarketDestination[] RailOrder =
         {
             MarketDestination.Result,
             MarketDestination.Goals,
-            MarketDestination.CorrectScore,
             MarketDestination.Corners,
             MarketDestination.Cards,
+            MarketDestination.CorrectScore,
             MarketDestination.Players,
         };
 

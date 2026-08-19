@@ -39,29 +39,64 @@ namespace SBR.Game
         /// navigation tier: the RAIL stays one level and this is a page you read.</summary>
         private bool _contentsOpen;
 
-        /// <summary>
-        /// §4.4 — <b>THE ONE SWITCH, and the only reason the amber comparison costs one build
-        /// rather than two.</b> `S91` half two is deliberately NOT settled: the law says amber is
-        /// money and a price is money; against it, ~80 amber prices on one sheet, and amber is also
-        /// the ACTION colour. The spec rules that one sheet is rendered BOTH WAYS and decided on the
-        /// frame, so the ink is a toggle read at exactly one site
-        /// (<see cref="MakeOfferRow"/>'s price cell, through <see cref="PriceInk"/>) instead of a
-        /// second layout.
-        ///
-        /// <para>DEFAULTS TO TODAY'S BEHAVIOUR (<c>false</c> — <see cref="LaptopOs.White"/>). This
-        /// lane does not decide the question; flipping it is how the comparison frame is shot.</para>
-        /// </summary>
-        internal static bool PriceTakesAmber;
-
-        /// <summary>The price cell's ink, §4.4's single switch resolved. Frozen rows do NOT read
-        /// this: a locked board's price is not an offer, so it keeps its dimmed
-        /// <see cref="LaptopOs.Muted"/> in BOTH states of the switch (see <see cref="MakeOfferRow"/>).</summary>
-        private static Color PriceInk => PriceTakesAmber ? LaptopOs.MoneyGold : LaptopOs.White;
-
         /// <summary>Fixed gap between an offer row's label cell and its price cell (MakeOfferRow).
         /// Shared as a class constant so every destination's row layout and MakeOfferRow's own
         /// price placement can never silently drift apart.</summary>
-        private const float OfferLabelGap = 8f;
+        internal const float OfferLabelGap = 8f;
+
+        /// <summary>The offer row's own page margins and price cell, promoted out of
+        /// <see cref="MakeOfferRow"/>'s locals for one reason: <c>C46</c>'s width gate has to be
+        /// measured against THE ROW'S OWN numbers, not against a second copy of them written down
+        /// beside it. Same discipline as <see cref="OfferLabelGap"/>.</summary>
+        internal const float OfferLeftPad = 14f;
+
+        internal const float OfferRightPad = 14f;
+
+        internal const float OfferPriceCellWidth = 176f;
+
+        /// <summary>4px RuleSoft track + 4px clearance (A4: a row never runs under the position
+        /// rail). Named because it is the difference between the two row widths this surface has —
+        /// <see cref="EntryBoardWidth"/> when the sheet fits, and that less this when it scrolls —
+        /// and <c>C46</c>'s gate is judged against the NARROW one.</summary>
+        internal const float ScrollRailReserve = 8f;
+
+        /// <summary>The offer row's width when the sheet scrolls, which on the market sheet is
+        /// nearly always. The narrow case, and therefore the case a name has to fit.</summary>
+        internal const float ScrollingOfferRowWidth = EntryBoardWidth - ScrollRailReserve;
+
+        /// <summary>The width the printed row NAME actually has, on a row of
+        /// <paramref name="rowWidth"/>: from the left pad to the price cell's left edge, less the
+        /// annotation gap. DERIVED here so <see cref="MakeOfferRow"/> and <c>C46</c>'s gate cannot
+        /// disagree about how much room a name has.
+        ///
+        /// <para><paramref name="rowWidth"/> is <see cref="EntryBoardWidth"/> when the sheet fits
+        /// and 8px less when it scrolls (BuildScrollingBody's rail reserve) — the scrolling case is
+        /// the narrow one and is what a gate must be judged against.</para></summary>
+        internal static float OfferNameCellWidth(float rowWidth)
+            => rowWidth - OfferRightPad - OfferPriceCellWidth - OfferLabelGap - OfferLeftPad;
+
+        /// <summary>
+        /// <c>S96</c> (DD batch 113) — <b>the sheet UPPERCASES row names, and it does it HERE, at
+        /// the presentation layer.</b>
+        ///
+        /// <para><c>A2</c> is NOT overridden and the distinction is the whole ruling: <c>A2</c>
+        /// fixes the WORDS — <see cref="MarketSheetRow.Name"/> stays the engine's own field,
+        /// verbatim, same words in the same order, and <c>MarketSheetTests</c> still asserts that.
+        /// CASE IS TYPOGRAPHY, and typography is the surface's: this row already sets the face, the
+        /// size, the tracking and the colour of that same string.</para>
+        ///
+        /// <para>The ruling is a read off the docked frames — <c>Moose Jaw Overheads</c> sitting in
+        /// title case in the same column, at the same size, directly beneath an uppercase
+        /// <c>MONEYLINE</c> heading and beside an uppercase <c>DRAW</c> and <c>EITHER TEAM</c>. The
+        /// group headings (<c>MarketDestinations.KindLabel</c>) and the scorer ROLE word
+        /// (<c>MatchModel.RoleWord</c>) were CHECKED rather than assumed: both are already
+        /// uppercase at their source, so this is the one string on the row that was drifting.</para>
+        ///
+        /// <para>Named so <c>C46</c>'s width gate can measure the string the row actually prints
+        /// rather than its own copy of this rule.</para>
+        /// </summary>
+        internal static string PrintedRowName(string name)
+            => string.IsNullOrEmpty(name) ? string.Empty : name.ToUpperInvariant();
 
         /// <summary>A1 ruling: every destination's offer row is 54px tall, full content width,
         /// single column. Shared so BuildMarketLines/BuildBothTeamsScore/BuildPlayerLines,
@@ -1082,7 +1117,7 @@ namespace SBR.Game
             out float rowWidth, out float rowsOffsetY, out ScrollRect scrollRect,
             out float viewportHeight, out float contentHeight)
         {
-            const float railReserve = 8f; // 4px RuleSoft track + 4px clearance (A4: never under the rail).
+            const float railReserve = ScrollRailReserve;
             float bodyWidth = body.rect.width;
             float bodyHeight = body.rect.height;
             viewportHeight = bodyHeight;
@@ -1219,14 +1254,21 @@ namespace SBR.Game
         /// printed after the name in <see cref="LaptopOs.Muted"/> — null/empty for every
         /// non-scorer row. Shared by BuildMarketLines, BuildBothTeamsScore and BuildPlayerLines so
         /// their row geometry, the selection ring and the replacement-hint plumbing can never
-        /// independently drift.</summary>
+        /// independently drift.
+        ///
+        /// <para><b>"uppercase" above was a CLAIM until S96.</b> E-12 has asserted it since the
+        /// audit, but the row printed the engine's field verbatim — so the names that reach it as a
+        /// Line ("OVER 2.5 GOALS", "DRAW") happened to be uppercase at source, while the ones built
+        /// from a club name (the moneyline's two sides, "{Club} OR DRAW", "{Club} OVER 0.5 GOALS")
+        /// printed in title case directly beneath an uppercase heading.
+        /// <see cref="PrintedRowName"/> is what makes the sentence true.</para></summary>
         private void MakeOfferRow(RectTransform parent, BetslipModel slip, Matchup matchup,
             MarketSelection selection, string label, string role, int offerIndex, float y,
             float rowWidth, bool frozen)
         {
-            const float leftPad = 14f;
-            const float rightPad = 14f;
-            const float priceCellWidth = 176f;
+            const float leftPad = OfferLeftPad;
+            const float rightPad = OfferRightPad;
+            const float priceCellWidth = OfferPriceCellWidth;
             const float priceCellHeight = 32f;
             const float priceCellY = -(OfferRowHeight - priceCellHeight) / 2f; // vertical centre of the row.
 
@@ -1255,12 +1297,17 @@ namespace SBR.Game
             // when picked — MarketOffer.jsx:11 sets the picked figure to var(--toner) and gives the
             // ring alone the biro. Tinting the type as well spends the player's ink on something he
             // did not write, which is what the two-ink law forbids (audit E-13).
+            // S96 — THE ROW NAME IS UPPERCASED HERE, at the render site, and nowhere else. The
+            // derivation layer keeps the engine's field verbatim (A2); the case is this surface's,
+            // exactly like the face, the size and the tracking set on the same line. See
+            // PrintedRowName for the ruling, and MarketRowNameWidthTests for C46's width gate.
             TMP_Text labelText = LaptopUi.MakeText(row, "MarketLabel" + key, new Vector2(0f, 1f),
                 new Vector2(0f, 1f), new Vector2(leftPad, 0f), new Vector2(labelWidth, OfferRowHeight),
                 // C15/S28: `.08` — MarketOffer.jsx's `line` span carries --st-track-rec. (The kit puts
                 // that span at --st-size-fact where this renders at --st-size-price; that size
                 // difference predates the migration and is not touched here, only the tracking.)
-                19, TextAnchor.MiddleLeft, LaptopOs.White, label, _fontCond, LaptopTrack.Records);
+                19, TextAnchor.MiddleLeft, LaptopOs.White, PrintedRowName(label), _fontCond,
+                LaptopTrack.Records);
 
             // The rendered end of the NAME — the market name, plus the scorer role when there is
             // one. §4.3's leaders start here rather than at the end of the label CELL, which on this
@@ -1320,12 +1367,27 @@ namespace SBR.Game
             LaptopUi.MakeButton(offer, "Market" + key,
                 price, new Vector2(0f, 1f), new Vector2(0f, 1f),
                 Vector2.zero, new Vector2(priceCellWidth, priceCellHeight), 19, new Color(0f, 0f, 0f, 0f),
-                // §4.4 — THE ONE PRICE-INK SITE ON THIS SURFACE. PriceInk is the switch (--toner
-                // today, --wax when it is thrown); the frozen arm is deliberately NOT switched,
-                // because a locked board's price is not an offer and greys in both states (§4.5:
-                // suspended is greyed, non-clickable AND stated — the LockedMarketReason banner in
-                // BuildDetail is the stating half).
-                frozen ? LaptopUi.Dim(LaptopOs.Muted) : PriceInk,
+                // §4.4 — THE ONE PRICE-INK SITE ON THIS SURFACE, and it is now a COLOUR rather than
+                // a switch.
+                //
+                // S97 (DD batch 113): THE PRICE DOES NOT TAKE THE AMBER. S91 half two is CLOSED —
+                // the price stays in toner. Read off the S4/S5 pair this seam existed to shoot:
+                //   · amber made the price the most saturated element in the column and INVERTED
+                //     the name-first hierarchy S91 had just ratified;
+                //   · it diluted amber — two amber things on one sheet meaning different things;
+                //   · and scarcity is what makes an action colour work at all.
+                // The build already defaulted to toner, so nothing shipped changes; what changes is
+                // that the question is closed in the code. The `PriceTakesAmber` toggle and the
+                // `PriceInk` indirection are gone and this reads LaptopOs.White directly.
+                //
+                // NAMED, NOT RULED: amber's real claim is the SELECTED price — the moment a price
+                // stops being the house's offer and becomes the player's stake. That belongs with
+                // the selection treatment (today the biro ring above), and S97 does not rule it.
+                //
+                // The frozen arm was never part of the question and is unchanged: a locked board's
+                // price is not an offer, so it greys (§4.5: suspended is greyed, non-clickable AND
+                // stated — the LockedMarketReason banner in BuildDetail is the stating half).
+                frozen ? LaptopUi.Dim(LaptopOs.Muted) : LaptopOs.White,
                 // `.03` for the same reason as the moneyline buttons: MarketOffer.jsx sets
                 // --st-track-name on the price cell. This is the interior-list price and the two
                 // must match — one is the same object one screen deeper.
