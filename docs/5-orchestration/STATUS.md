@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-19, cycle 414 (heartbeat).** No
+**Keeper-era heartbeat stamp: 2026-08-19, cycle 415 (heartbeat).** Quiet
+hold; DD nearing rotation (796k) - rotate on the handoff when its
+drawn-ending exploration lands. With Allen: the console fork, research
+8-9.
+
+*(prior stamp, cycle 414:)* No
 change - quiet hold on Allen's fork word and research 8-9.
 
 *(prior stamp, cycle 413:)* Quiet
