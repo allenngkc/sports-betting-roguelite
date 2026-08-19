@@ -1370,7 +1370,58 @@ namespace SBR.Tests.PlayMode
         [UnityTest]
         public IEnumerator Capture_CornersSweat_EndToEnd()
         {
-            _seed = "CORNERS-SWEAT-1";   // the probe's seed, so the measured profile describes THIS run
+            // "CORNERS-SWEAT-1" — the probe's seed, so the measured profile in the doc comment
+            // above still describes THIS run. requiredChoice: null keeps today's behaviour
+            // byte-for-byte: the first TotalCorners offer of ANY direction, exactly what this body
+            // did before it moved into the shared helper below (2026-08-18 extraction, made to let
+            // the near-line watch's OVER/UNDER siblings reuse this exact tiling/window scheme).
+            yield return RunCornersSweatCapture("CORNERS-SWEAT-1", requiredChoice: null, logTag: "shoot2");
+        }
+
+        /// <summary>THE SHARED CORNERS-SWEAT CAPTURE BODY — extracted 2026-08-18 from
+        /// <see cref="Capture_CornersSweat_EndToEnd"/> so the near-line watch's two owed shots
+        /// (theater spec §8 item 3) can reuse it exactly rather than fork it. Everything below is
+        /// that method's original body, UNCHANGED, with only the two things that were ever specific
+        /// to one caller pulled into parameters — every other assertion and every comment explaining
+        /// why the set is shaped as it is (the tiling-period reasoning, the dead-air floor, the
+        /// "re-seed, never shoot some other market's sweat under this set's name" guard) are exactly
+        /// as they were.
+        ///
+        /// <para><paramref name="seed"/> drives <c>RunDirector.StartNewRun</c> and the frame-lock,
+        /// same as before.</para>
+        ///
+        /// <para><paramref name="requiredChoice"/> is the one behavioural fork. <c>null</c> takes the
+        /// first <c>TotalCorners</c> offer on the board of ANY direction — <see
+        /// cref="Capture_CornersSweat_EndToEnd"/>'s exact original search, preserved so that already
+        /// docked set (<c>dd-import/corners-sweat-after-2026-08-18</c>) stays reproducible. Set to a
+        /// specific <see cref="MarketChoice"/>, the search additionally requires that direction and,
+        /// if the board prices none, FAILS as a re-seed — it never falls back to the other direction
+        /// and never constructs a selection the board did not offer, because
+        /// <c>Matchup.Odds</c>/<c>PlaceTicket</c> already enforces exactly that at runtime
+        /// ("Market selection is not offered"), which has already cost this lane a run.</para>
+        ///
+        /// <para><paramref name="logTag"/> replaces the old hard-coded <c>[shoot2]</c> log prefix, so
+        /// the three sets this helper now drives (end-to-end, near-miss OVER, near-allowance UNDER)
+        /// stay separable in one combined log.</para></summary>
+        private IEnumerator RunCornersSweatCapture(string seed, MarketChoice? requiredChoice, string logTag)
+        {
+            // THE PLACEHOLDER MUST FAIL LOUDLY, and it does NOT fail on its own — which is the
+            // whole reason this guard exists.
+            //
+            // The trap-gate seed in TvSweatScreenTests could be left unguarded because its
+            // placeholder was refused downstream: PlaceTicket throws for a LINE the board never
+            // priced. A SEED is different. Every string is a valid seed, so `new Run("PENDING-...")`
+            // builds a perfectly good slate and this capture would shoot a real, complete,
+            // structurally-fine set OF THE WRONG MATCH — frames that close their windows and answer
+            // nothing. That is this lane's recorded trap in its purest form: a capture can arrive
+            // and still not close its item.
+            Assert.IsFalse(seed != null && seed.StartsWith("PENDING-", System.StringComparison.Ordinal),
+                $"seed '{seed}' is still the un-pinned placeholder. Run "
+                + "engine.tests/NearLineSeedSearch.cs, read its [NEAR-LINE] table, and PIN a measured "
+                + "seed before shooting. Measure, then pin - never guess, and never let a placeholder "
+                + "reach the shutter, because this set would otherwise LOOK correct.");
+
+            _seed = seed;
             s_sceneIndex = 0;
             Directory.CreateDirectory(OutputDir);
 
@@ -1406,6 +1457,10 @@ namespace SBR.Tests.PlayMode
                 foreach (MarketOffer off in mm.Markets)
                 {
                     if (off.Selection.Kind != MarketKind.TotalCorners) continue;
+                    // The one new filter: null keeps the original "any direction" search; set, the
+                    // offer must also match, and this never falls back to the other direction and
+                    // never builds a selection the board did not offer.
+                    if (requiredChoice.HasValue && off.Selection.Choice != requiredChoice.Value) continue;
                     cornersMatchup = mm.Index;
                     cornersSelection = off.Selection;
                     break;
@@ -1413,8 +1468,12 @@ namespace SBR.Tests.PlayMode
                 if (cornersMatchup >= 0) break;
             }
             Assert.GreaterOrEqual(cornersMatchup, 0,
-                "no matchup on this slate offers TotalCorners — a re-seed, never a reason to shoot "
-                + "some other market's sweat under this set's name");
+                requiredChoice.HasValue
+                    ? $"no matchup on this slate offers a TotalCorners {requiredChoice.Value} — a "
+                        + "re-seed, never a reason to fall back to the other direction or construct "
+                        + "a selection the board did not offer"
+                    : "no matchup on this slate offers TotalCorners — a re-seed, never a reason to shoot "
+                        + "some other market's sweat under this set's name");
 
             run.PlaceTicket(new List<Pick> { new Pick(cornersMatchup, cornersSelection) }, 25.0);
             director.LockRound();
@@ -1454,7 +1513,7 @@ namespace SBR.Tests.PlayMode
                 {
                     lastCounts = counts;
                     corners++;
-                    Debug.Log($"[shoot2] corner {corners} at sim={frames / 50f:0.00}s counts={counts} "
+                    Debug.Log($"[{logTag}] corner {corners} at sim={frames / 50f:0.00}s counts={counts} "
                         + $"clock='{clock}' strip='{screen.DebugFlavorText}'");
                     yield return CaptureBurst(screen, cam, $"corner{corners:00}-count-{counts}", 10, 0f);
                     lastWindowSim = frames / 50f;
@@ -1499,8 +1558,115 @@ namespace SBR.Tests.PlayMode
                 $"only {deadAir} dead-air windows fired, so the set is mostly events and cannot "
                 + "answer the question it was shot for — the flat stretches must be IN it");
 
-            Debug.Log($"[shoot2] CORNERS SWEAT SET :: cornerWindows={corners} deadAirWindows={deadAir} "
+            Debug.Log($"[{logTag}] CORNERS SWEAT SET :: cornerWindows={corners} deadAirWindows={deadAir} "
                 + $"scoreWindows={scoreShots} sweptFrames={frames} sim={frames / 50f:0.00}s -> {OutputDir}");
+        }
+
+        // PENDING PLACEHOLDER — MEASURE, THEN PIN (this lane's own law; see TvSweatScreenTests.cs's
+        // TrapGateSeed for the same discipline on its own gate). This value is not a candidate seed,
+        // it is a marker: the real seed is found by engine.tests/NearLineSeedSearch.cs, which has
+        // not been written yet, searching for a seed whose OVER corners leg finishes ONE SHORT of
+        // its line. Guessing a plausible-looking seed here would be exactly the failure mode
+        // "measure, then pin" exists to prevent, so this stays an obvious sentinel until the search
+        // runs and hands back a MEASURED replacement. Until then, Capture_CornersNearMiss_
+        // OverFailsToCross is EXPECTED to fail at its own precondition (RunCornersSweatCapture's
+        // offer-search guard, or simply a capture that does not show a near miss) — that failure is
+        // the placeholder doing its job, not a defect in this harness.
+        // MEASURED, NOT GUESSED — engine.tests/NearLineSeedSearch.cs, run 2026-08-18 over 40
+        // candidates. This is the TIGHTEST possible miss on the board:
+        //
+        //   seed=APPROACH-WATCH-2  matchup=#0  OVER line=8.5  matchTotal=8  threshold=9
+        //   margin=-1  state=Lost  tag=OVER-MISS-BY-1
+        //
+        // The count reaches 8 against a threshold of 9, so the APPROACH fires at distance 1 and
+        // THE TURN NEVER COMES. That is the whole point of the set: §8 item 3 says the ramp's
+        // value lives in the case never shot, and a leg that misses by five would be a quiet watch
+        // proving nothing about the ramp. Proximity IS the subject, so the smallest margin wins.
+        private const string CornersNearMissOverSeed = "APPROACH-WATCH-2";
+
+        /// <summary>THE NEAR-LINE WATCH, OVER ARM (theater spec §8 item 3's owed shot A) — an OVER
+        /// corners leg that FAILS TO CROSS its line, ideally finishing exactly one short, so the
+        /// near-line watch reaches the approach and the cross itself never comes.
+        ///
+        /// <para>Pure delegation to <see cref="RunCornersSweatCapture"/> with
+        /// <c>requiredChoice: MarketChoice.Over</c> — same tiling/window scheme, same assertions,
+        /// same re-seed discipline as <see cref="Capture_CornersSweat_EndToEnd"/>; the only
+        /// difference is the seed and the forced OVER direction on the offer search.</para>
+        ///
+        /// <para><b>What this set will NOT claim.</b> This is not a comfortable winner — the entire
+        /// point is a leg that stays under its own line, so the set can show what the watch looks
+        /// like when the approach is reached and the turn never comes. Nothing here asserts that the
+        /// frames actually READ as a near miss; that is a Design Director call against the frames,
+        /// exactly as everywhere else in this file.</para>
+        ///
+        /// <para><see cref="CornersNearMissOverSeed"/> is a PENDING placeholder — see its own comment.
+        /// Until <c>engine.tests/NearLineSeedSearch.cs</c> measures a real seed, this entry point is
+        /// expected to fail at its own precondition, and that is correct, not a bug.</para></summary>
+        [Explicit("Near-line watch, OVER arm (theater spec §8 item 3): an OVER corners leg that fails "
+            + "to cross its line. Seed is a PENDING placeholder (CornersNearMissOverSeed) - fails at "
+            + "its own precondition until engine.tests/NearLineSeedSearch.cs fills it in. Run by "
+            + "filter only.")]
+        [Timeout(900000)]
+        [UnityTest]
+        public IEnumerator Capture_CornersNearMiss_OverFailsToCross()
+        {
+            yield return RunCornersSweatCapture(CornersNearMissOverSeed, requiredChoice: MarketChoice.Over,
+                logTag: "nearmiss-over");
+        }
+
+        // PENDING PLACEHOLDER — same discipline as CornersNearMissOverSeed directly above, and the
+        // same law: measure, then pin, never guess. The UNDER mirror's real seed also comes from
+        // engine.tests/NearLineSeedSearch.cs (not yet written) — this one searching for a seed whose
+        // UNDER corners leg sits near its own allowance. Until that search runs and replaces this
+        // sentinel with a MEASURED seed, Capture_CornersUnder_Mirror is EXPECTED to fail at its own
+        // precondition — the placeholder doing its job, not a defect.
+        // MEASURED, NOT GUESSED — same search, same run:
+        //
+        //   seed=APPROACH-WATCH-2  matchup=#0  UNDER line=8.5  matchTotal=8  maxAllowed=8
+        //   margin=0  state=Won  tag=UNDER-HOLDS-EXACTLY
+        //
+        // The under holds with NOTHING TO SPARE — `LIMIT 0`, the tightest hold available.
+        //
+        // AND IT IS THE SAME SEED AND THE SAME MATCH AS THE OVER ARM ABOVE, which is better than
+        // two unrelated fixtures and was not designed for — the search found it. One match, one
+        // variable (the direction), so the near-line pair is a MATCHED PAIR on the instrument
+        // discipline this phase's whole read already rests on: the corners/goals pair differed
+        // only by market, and these two differ only by side of the same line.
+        //
+        // NOTE WHAT THIS ARM IS: a BEFORE-state, not an after. §6 puts the UNDER case OUT of the
+        // distance gate's scope — "the mirror distance profile, not in evidence" — so this leg
+        // still gets today's flat treatment. The set shows what the mirror looks like UNCHANGED,
+        // which is the evidence needed to decide whether it wants a ramp at all. Gating it too
+        // would have made this shot measure an invention rather than the question.
+        private const string CornersUnderMirrorSeed = "APPROACH-WATCH-2";
+
+        /// <summary>THE NEAR-LINE WATCH, UNDER MIRROR (theater spec §8 item 3's owed shot B) — the
+        /// UNDER mirror of <see cref="Capture_CornersNearMiss_OverFailsToCross"/>: an under corners
+        /// leg finishing near its own allowance.
+        ///
+        /// <para>Pure delegation to <see cref="RunCornersSweatCapture"/> with
+        /// <c>requiredChoice: MarketChoice.Under</c> — otherwise identical in every respect to the
+        /// OVER arm above: same helper, same tiling/window scheme, same assertions, same re-seed
+        /// discipline on the offer search (never falls back to OVER, never constructs a
+        /// selection).</para>
+        ///
+        /// <para><b>What this set will NOT claim.</b> Same discipline as the OVER arm: not a
+        /// comfortable winner, and this seat asserts nothing about whether the frames read as "near
+        /// its allowance" — the frames are the evidence, the read is the Design Director's.</para>
+        ///
+        /// <para><see cref="CornersUnderMirrorSeed"/> is a PENDING placeholder — see its own comment.
+        /// Until <c>engine.tests/NearLineSeedSearch.cs</c> measures a real seed, this entry point is
+        /// expected to fail at its own precondition, and that is correct, not a bug.</para></summary>
+        [Explicit("Near-line watch, UNDER mirror (theater spec §8 item 3): an under corners leg near "
+            + "its allowance. Seed is a PENDING placeholder (CornersUnderMirrorSeed) - fails at its "
+            + "own precondition until engine.tests/NearLineSeedSearch.cs fills it in. Run by filter "
+            + "only.")]
+        [Timeout(900000)]
+        [UnityTest]
+        public IEnumerator Capture_CornersUnder_Mirror()
+        {
+            yield return RunCornersSweatCapture(CornersUnderMirrorSeed, requiredChoice: MarketChoice.Under,
+                logTag: "nearmiss-under");
         }
 
         /// <summary>CAPTURE CHARTER 2026-08-16, shoot 3 — THE GOALS CONTROL ARM.
