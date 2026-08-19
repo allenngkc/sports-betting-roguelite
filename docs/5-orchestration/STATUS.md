@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-18, cycle 397 (RECOVERED).**
+**Keeper-era heartbeat stamp: 2026-08-18, cycle 398 (heartbeat).** The
+four surface rulings landed + routed (6f3d780, incl. C55 promoted from
+the lane's self-caught fault); the live rail figure merged. TV's gate
+running toward the merge + re-shot pair; markets folding rulings; DD
+queued on the theater dock. Parked with Allen: research 8-9.
+
+*(prior stamp, cycle 397:)*
 Restart absorbed: TV + markets resumed via --continue at max (TV keeps
 its editor window - procs were 0, its gate re-runs from disk; phase A's
 inert-then-armed commit path is committed at acd9d9f); the DD survived
