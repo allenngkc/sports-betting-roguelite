@@ -61,6 +61,16 @@ namespace SBR.Tests.PlayMode
         /// <summary>The surfaces §8 evidence set. R38: 8 digits, scattered — the state name lives
         /// in the filename, never in the seed.</summary>
         private const string SeedMarketSheet = "54435761";
+        /// <summary>The WORST-CASE row's slate (`S101`). Chosen, not stumbled on: the club pool was
+        /// enumerated whole and measured, and this seed is one of the slates that seats a co-widest
+        /// club on MATCHUP 0 — `San Francisco Spreadsheets`, home, so its team-total rows sit near
+        /// the top of the CORNERS destination's second group rather than at the foot of a list.
+        ///
+        /// <para>R38: 8 digits, scattered — and the state name lives in the FILENAME, never here.
+        /// The slate is `Fresno Notaries @ San Francisco Spreadsheets` and five ordinary matchups
+        /// behind it; nothing about this run is rigged except which of the 320 reachable clubs the
+        /// draw happened to seat.</para></summary>
+        private const string SeedWorstCaseRow = "49768152";
         private const string SeedMaxLegs = "31468052";
         private const string SeedShop = "70925314";
         private const string SeedLedgerOne = "48137690";
@@ -500,7 +510,7 @@ namespace SBR.Tests.PlayMode
             var capturedPaths = new List<string>();
 
             // ---- the shipped sheet ----
-            yield return DriveToMarketSheet(laptop, new RunConfig());
+            yield return DriveToMarketSheet(laptop, SeedMarketSheet, new RunConfig());
 
             // FRAMES 1a/1b — the contents block, §8 item 2: every destination, with DERIVED ranges.
             //
@@ -574,7 +584,8 @@ namespace SBR.Tests.PlayMode
             // rest it sits below the fold. The first cut of this shot asserted the form existed in
             // the hierarchy and passed on a frame that did not contain it. The list is scrolled to
             // its foot and the form's own rect is asserted to be IN the viewport.
-            yield return DriveToMarketSheet(laptop, new RunConfig { CorrectScoreFloor = 0.08 });
+            yield return DriveToMarketSheet(laptop, SeedMarketSheet,
+                new RunConfig { CorrectScoreFloor = 0.08 });
             Invoke(Required(Required(App(laptop), "MarketDestinations"), "DetailTabPlayers"));
             yield return WaitForRebuild();
             Transform emptyBody = Required(App(laptop), "MarketBody");
@@ -610,7 +621,7 @@ namespace SBR.Tests.PlayMode
             // What survives is the single toner frame, kept because §8 still wants the shipped
             // sheet's price column on the record, and the ink is still ASSERTED rather than assumed
             // — a frame that quietly went amber would now be a regression rather than a variant.
-            yield return DriveToMarketSheet(laptop, new RunConfig());
+            yield return DriveToMarketSheet(laptop, SeedMarketSheet, new RunConfig());
             yield return WaitForRebuild();
             AssertPriceInk(laptop, LaptopOs.White, "toner");
             yield return CaptureState(laptop, outputDirectory, runPrefix,
@@ -620,6 +631,312 @@ namespace SBR.Tests.PlayMode
             // contents block still takes two frames of its own, because its twenty-one lines do not
             // fit one viewport and one frame could only ever have shown part of it.
             AssertCaptureOutput(capturedPaths, 10);
+        }
+
+        /// <summary>The row name's own size, from <c>MakeOfferRow</c>'s MakeText call. Whatever a
+        /// slot renders with, it measures with — measuring at another size would report a width no
+        /// reader will ever see. (<c>MarketRowNameWidthTests.RowNameSize</c> is the same number for
+        /// the same reason; both are read against the render below rather than trusted.)</summary>
+        private const int WorstCaseRowSize = 19;
+
+        /// <summary>THE row this whole capture exists for, spelled out so the frame cannot silently
+        /// catch a different one. Asserted against the engine's own composition path below, not
+        /// merely typed — see the flow for why both halves are needed.</summary>
+        private const string WorstCaseRowName = "SAN FRANCISCO SPREADSHEETS UNDER 4.5 CORNERS";
+
+        /// <summary>Its width, MEASURED (not asserted from the register): 493.68px in a 496px cell,
+        /// 2.32px of headroom. This is the number `C46` reports and the number `S101` exists to
+        /// photograph.</summary>
+        private const float WorstCaseRowWidth = 493.68f;
+
+        /// <summary>
+        /// <c>S101</c> and <c>S102</c>, one forced matchup, two states.
+        ///
+        /// <para><b>Why this frame exists.</b> The Design Director accepted §4.3's leader-dot
+        /// residual FROM A DISTRIBUTION TABLE: 59 rows print fewer than six dots and 5 print none.
+        /// Every frame in the docked evidence set is <c>SeedMarketSheet</c>, whose longest row is
+        /// <c>MOOSE JAW OVERHEADS OR DRAW</c> — 318.06px with 161.94px spare, the COMFORTABLE case.
+        /// The DD's own words: the worst case is a 493.69px name in a 496px cell — the full width,
+        /// no leaders, the price immediately after — and nobody has looked at it. <b>It could READ
+        /// as a collision while MEASURING as none.</b> That is the whole question, and this is the
+        /// only frame that puts it.</para>
+        ///
+        /// <para><b>The club was MEASURED out of the pool, not assumed.</b> The 16 cities × 20 nouns
+        /// were enumerated whole and every one of the 320 clubs measured through the row's own face,
+        /// size and tracking. The result corrects a standing assumption: <c>SAN FRANCISCO
+        /// SPREADSHEETS</c> is not THE widest club, it is a widest club. <c>SAN FRANCISCO
+        /// GRAVEDIGGERS</c> ties it EXACTLY — both nouns sum to 6653 font units, so both clubs
+        /// measure 298.38px and both corners rows measure 493.68px, to the last representable
+        /// digit. <c>C46</c> reports SPREADSHEETS only because <c>Widest</c> keeps the first of an
+        /// equal pair and SPREADSHEETS is the earlier noun in the pool. Either club is the true
+        /// worst case; the seed search accepted both and this seed happened to draw SPREADSHEETS.
+        /// (If a future pool edit breaks the tie, the width assertion below moves — which is the
+        /// point of asserting it.)</para>
+        ///
+        /// <para><b>Why CORNERS and why UNDER.</b> <c>{CLUB} UNDER 4.5 CORNERS</c> is the widest
+        /// form the sheet can print on the widest club: it beats OVER by 12.75px (a five-character
+        /// word against a four), TEAM TOTAL CARDS by 26.41px and TEAM TOTAL GOALS by 27.25px, and
+        /// the next-widest kind on the same club — <c>{CLUB} OR DRAW</c> — by 103.51px. The 4.5 line
+        /// is <c>RunConfig.TeamCornerLines</c>' only member, and the row is asserted PRICED below
+        /// rather than assumed from the config.</para>
+        ///
+        /// <para><b>Judged on the SCROLLING row.</b> CORNERS holds 10 rows in two groups — 592px of
+        /// content against a body under 400 — so it overflows, the position rail takes its 8px out
+        /// of the 700, and the name cell is 496 rather than 504. The row's own rect is asserted to
+        /// be the scrolling width: a frame shot on the fitting case would be photographing 8px of
+        /// headroom the player almost never has.</para>
+        ///
+        /// <para><b>Second state, <c>S102</c>.</b> The contents stutter fix landed on the same
+        /// surface and asked to be confirmed on the same shoot, so it is: CORRECT SCORE prints ONCE
+        /// in the contents block, its redundant child suppressed entirely (no line, no reserved
+        /// gap). Asserted two ways — the child node is gone, AND the printed label appears exactly
+        /// once — because either alone would pass on a fix that moved the defect rather than
+        /// removing it.</para>
+        ///
+        /// <para><b><c>C55</c>: both subjects are asserted IN FRAME, not merely present.</b> This
+        /// file's own fault promoted that to law — two of the §8 captures passed their first cut on
+        /// frames that did not contain their own subject. Both lists are scrolled to CENTRE their
+        /// subject (not merely to reveal it at an edge) and both are then judged by
+        /// <see cref="IsInFrame"/>, in the viewport's LOCAL space.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Capture_the_worst_case_row_name_and_the_suppressed_contents_child()
+        {
+            yield return Boot();
+            LaptopScreen laptop = Laptop();
+            AssertPinnedSeed(SeedWorstCaseRow);
+
+            string outputDirectory = Path.GetFullPath(Path.Combine(
+                Application.dataPath, "..", "..", "..", "artifacts", "surething-ui"));
+            Directory.CreateDirectory(outputDirectory);
+            string runPrefix = DateTime.UtcNow.ToString(
+                "yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture);
+            var capturedPaths = new List<string>();
+
+            yield return DriveToMarketSheet(laptop, SeedWorstCaseRow, new RunConfig());
+
+            // The subject is a fact about the SLATE before it is a fact about the render, so it is
+            // established from the engine first. Two halves, and both are load-bearing:
+            //
+            //   1. the row must be PRICED — a seed that seats the club but does not offer the line
+            //      would give a frame of a row that does not exist;
+            //   2. the engine's own composed wording must MATCH the literal above — so a reworded
+            //      row fails loudly here with both strings, instead of quietly moving this
+            //      capture's subject to whatever the sheet now prints.
+            Run run = laptop.director.Run;
+            Matchup matchup = run.CurrentSlate.Matchups[0];
+            MarketSelection worstSelection =
+                MarketSelection.TeamTotalCorners(Side.Home, 4.5, over: false);
+            bool priced = false;
+            foreach (MarketOffer offer in matchup.Markets)
+                if (offer.Selection == worstSelection) { priced = true; break; }
+            Assert.IsTrue(priced,
+                $"'{WorstCaseRowName}' is not PRICED on seed {SeedWorstCaseRow} — RunConfig."
+                + "TeamCornerLines no longer holds 4.5, or the slate moved. This capture would be "
+                + "a frame of a row that does not exist.");
+            string composed = SportsbookApp.PrintedRowName(
+                MatchModel.Fields(matchup, worstSelection).Line);
+            Assert.AreEqual(WorstCaseRowName, composed,
+                $"the engine now composes the home team-total corners row as '{composed}', not "
+                + $"'{WorstCaseRowName}'. Either the slate moved off seed {SeedWorstCaseRow}'s "
+                + $"{matchup.Away.Name} @ {matchup.Home.Name}, or §3's wording changed — and in "
+                + "either case the widest reachable name must be re-measured against the pool "
+                + "before this frame means anything.");
+
+            // ── STATE W1 · the worst-case row ────────────────────────────────────────────────────
+            Invoke(Required(Required(App(laptop), "MarketDestinations"),
+                "DetailTab" + MarketDestination.Corners));
+            yield return WaitForRebuild();
+            UnityEngine.Canvas.ForceUpdateCanvases();
+
+            Transform body = Required(App(laptop), "MarketBody");
+            var sheetScroll = body.GetComponentInChildren<ScrollRect>();
+            Assert.IsNotNull(sheetScroll,
+                "CORNERS overflows the market body at the shipped config (10 rows in two groups), "
+                + "so it must scroll — and the 496px name cell this frame is judged against is the "
+                + "SCROLLING one. A CORNERS that fits would mean the geometry moved.");
+
+            TMP_Text worst = null;
+            var widestRival = 0f;
+            string widestRivalName = null;
+            foreach (TMP_Text t in body.GetComponentsInChildren<TMP_Text>(true))
+            {
+                if (!t.name.StartsWith("MarketLabel", StringComparison.Ordinal)) continue;
+                if (t.text == WorstCaseRowName) { worst = t; continue; }
+                float w = LaptopUi.MeasureWidth(t.font, t.text, WorstCaseRowSize, LaptopTrack.Records);
+                if (w <= widestRival) continue;
+                widestRival = w;
+                widestRivalName = t.text;
+            }
+            Assert.IsNotNull(worst,
+                $"'{WorstCaseRowName}' is not printed on the CORNERS sheet — the frame would show a "
+                + "merely-long row and evidence nothing about the residual the DD accepted");
+
+            // Whatever it renders with, it is measured with. Asserting the size against the render
+            // is what stops this becoming a measurement of a row nobody sees.
+            Assert.AreEqual(WorstCaseRowSize, worst.fontSize, 0.01f,
+                "the row name's rendered size moved away from MakeOfferRow's 19px, so every width "
+                + "below is a measurement of a different row than the one in the picture");
+            float measured = LaptopUi.MeasureWidth(
+                worst.font, worst.text, WorstCaseRowSize, LaptopTrack.Records);
+
+            // The row this frame is shot on must be the SCROLLING row: the narrower cell is the
+            // worst case, and the fitting row would quietly hand it 8px it does not have.
+            RectTransform row = null;
+            for (Transform t = worst.transform.parent; t != null; t = t.parent)
+                if (t.name.StartsWith("MarketOffer", StringComparison.Ordinal))
+                { row = (RectTransform)t; break; }
+            Assert.IsNotNull(row, "the worst-case name is not inside an offer row");
+            Assert.AreEqual(SportsbookApp.ScrollingOfferRowWidth, row.rect.width, 0.5f,
+                "this frame must be shot on the SCROLLING row — the position rail's 8px is what "
+                + "makes 496 the cell rather than 504, and the fitting case is one the player "
+                + "almost never sees");
+            float cell = SportsbookApp.OfferNameCellWidth(row.rect.width);
+
+            Assert.AreEqual(WorstCaseRowWidth, measured, 0.25f,
+                $"'{WorstCaseRowName}' measures {measured.ToString("0.##", CultureInfo.InvariantCulture)}px, "
+                + $"not the {WorstCaseRowWidth.ToString("0.##", CultureInfo.InvariantCulture)}px this "
+                + "frame is captioned with. The pool, the face, the size or the tracking moved — "
+                + "re-measure the 320 clubs before shooting, because the widest may no longer be "
+                + "this one (SAN FRANCISCO SPREADSHEETS and SAN FRANCISCO GRAVEDIGGERS tie exactly "
+                + "at the shipped pool, and a tie is one edit away from becoming a change).");
+            Assert.LessOrEqual(measured, cell,
+                "C46 restated at the frame: the worst-case row name does not fit its cell, so this "
+                + "capture would be photographing a defect rather than the accepted residual");
+
+            // The one thing on this sheet that could make the frame lie: a row WIDER than the
+            // subject would mean the picture's worst case is not the row named in its filename.
+            Assert.Less(widestRival, measured,
+                $"'{widestRivalName}' measures {widestRival.ToString("0.##", CultureInfo.InvariantCulture)}px "
+                + $"against the subject's {measured.ToString("0.##", CultureInfo.InvariantCulture)}px "
+                + "— the frame's own filename would name the wrong row as the worst case");
+
+            // §4.3 IN PIXELS — the DD's actual question. `nameEnd` is where MakeOfferRow starts the
+            // leaders (the rendered end of the type, not of the cell) and `priceX` is the price
+            // cell's left edge. MakeLeaders emits NO node at all when there is no room, so an
+            // absent OfferLeaders is the five-rows-print-none case, photographed.
+            float nameEnd = SportsbookApp.OfferLeftPad + worst.preferredWidth;
+            float priceX = row.rect.width - SportsbookApp.OfferRightPad
+                - SportsbookApp.OfferPriceCellWidth;
+            string dots = null;
+            foreach (TMP_Text t in row.GetComponentsInChildren<TMP_Text>(true))
+                if (t.name.StartsWith("OfferLeaders", StringComparison.Ordinal))
+                { dots = t.text; break; }
+            Debug.Log($"[S101] '{WorstCaseRowName}' measured "
+                + measured.ToString("0.##", CultureInfo.InvariantCulture) + "px in a "
+                + cell.ToString("0.##", CultureInfo.InvariantCulture) + "px cell on a "
+                + row.rect.width.ToString("0.##", CultureInfo.InvariantCulture)
+                + "px row · headroom " + (cell - measured).ToString("0.##", CultureInfo.InvariantCulture)
+                + "px · name ends at " + nameEnd.ToString("0.##", CultureInfo.InvariantCulture)
+                + ", price cell begins at " + priceX.ToString("0.##", CultureInfo.InvariantCulture)
+                + " · leader dots printed: " + (dots == null ? "NONE (no node)" : dots.Length.ToString(
+                    CultureInfo.InvariantCulture)));
+            Assert.Less(nameEnd, priceX,
+                "the printed name OVERRUNS the price cell — that is a collision by MEASURE, not the "
+                + "residual the DD accepted, and it is a Design Director matter rather than a frame");
+
+            yield return ScrollIntoFrame(sheetScroll, row, $"the '{WorstCaseRowName}' row");
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "W1-entry-worst-case-row-493p68-in-a-496px-cell", capturedPaths);
+
+            // ── STATE W2 · S102's suppressed contents child ──────────────────────────────────────
+            Invoke(Required(Required(App(laptop), "FolioBand"), "ContentsToggle"));
+            yield return WaitForRebuild();
+            UnityEngine.Canvas.ForceUpdateCanvases();
+
+            Transform contents = Required(App(laptop), "ContentsBlock");
+            var contentsScroll = contents.GetComponentInChildren<ScrollRect>();
+            Assert.IsNotNull(contentsScroll, "the contents list scrolls (§5.4)");
+
+            Transform correctScore = Required(contents,
+                "ContentsDestination" + MarketDestination.CorrectScore);
+            Assert.IsNull(Find(contents, "ContentsKind" + MarketKind.CorrectScore),
+                "S102: CORRECT SCORE's redundant child line is still in the tree. The ruling is "
+                + "that it is suppressed ENTIRELY — no line, no reserved gap — so a child that is "
+                + "merely blank or merely transparent is the defect wearing a fix's clothes.");
+
+            // The second half, stated as behaviour rather than as a node name: whatever the fix is
+            // implemented as, the printed page must name CORRECT SCORE once. Counting catches a fix
+            // that suppressed the wrong line just as surely as one that suppressed nothing.
+            string label = MarketDestinations.Label(MarketDestination.CorrectScore);
+            int printed = 0;
+            foreach (TMP_Text t in contents.GetComponentsInChildren<TMP_Text>(true))
+                if (t.name == "ContentsLabel" && t.text == label) printed++;
+            Assert.AreEqual(1, printed,
+                $"S102: the contents block prints '{label}' {printed} times. Once is the ruling — "
+                + "twice is the stutter this frame exists to show closed, and none would mean the "
+                + "destination line itself was suppressed, which §5.3 forbids.");
+
+            yield return ScrollIntoFrame(contentsScroll, (RectTransform)correctScore,
+                "the CORRECT SCORE contents line");
+            yield return CaptureState(laptop, outputDirectory, runPrefix,
+                "W2-entry-contents-correct-score-child-suppressed", capturedPaths);
+
+            AssertCaptureOutput(capturedPaths, 4);
+        }
+
+        /// <summary>Scrolls <paramref name="scroll"/> until <paramref name="target"/> is CENTRED in
+        /// the viewport, then proves it is actually in the picture.
+        ///
+        /// <para><c>C55</c> requires the subject to be in frame, and "scroll to an extent and hope"
+        /// is how two of the §8 captures came to be shot on frames that did not contain their own
+        /// subject. Centring rather than merely revealing is deliberate: a subject clinging to the
+        /// top or bottom edge is in frame by the letter and unreadable by the eye.</para>
+        ///
+        /// <para>The placement is arithmetic and the verdict is not. The analytic position is
+        /// computed in the CONTENT's own local space — the authored-pixel space the rows were laid
+        /// out in — and then <see cref="IsInFrame"/> is asked, in the VIEWPORT's local space,
+        /// whether it worked. If it did not, the list is swept and the assertion still has to pass:
+        /// a placement that silently missed would leave the flow shooting exactly as before while
+        /// every comment here claimed otherwise.</para></summary>
+        private static IEnumerator ScrollIntoFrame(ScrollRect scroll, RectTransform target,
+            string what)
+        {
+            RectTransform viewport = scroll.viewport != null
+                ? scroll.viewport
+                : (RectTransform)scroll.transform;
+            RectTransform content = scroll.content;
+            Assert.IsNotNull(content, $"{what}: the list has no scroll content to move");
+
+            yield return WaitForRebuild();
+            UnityEngine.Canvas.ForceUpdateCanvases();
+
+            float viewHeight = viewport.rect.height;
+            float travel = content.rect.height - viewHeight;
+            if (travel > 0.5f)
+            {
+                var corners = new Vector3[4];
+                target.GetWorldCorners(corners);
+                float min = float.MaxValue, max = float.MinValue;
+                for (int i = 0; i < corners.Length; i++)
+                {
+                    float y = content.InverseTransformPoint(corners[i]).y;
+                    min = Mathf.Min(min, y);
+                    max = Mathf.Max(max, y);
+                }
+                float centreFromTop = content.rect.yMax - (min + max) * 0.5f;
+                float top = Mathf.Clamp(centreFromTop - viewHeight * 0.5f, 0f, travel);
+                scroll.verticalNormalizedPosition = 1f - top / travel;
+                yield return WaitForRebuild();
+                UnityEngine.Canvas.ForceUpdateCanvases();
+            }
+
+            if (!IsInFrame(viewport, target))
+                for (int step = 0; step <= 40; step++)
+                {
+                    scroll.verticalNormalizedPosition = 1f - step / 40f;
+                    yield return WaitForRebuild();
+                    UnityEngine.Canvas.ForceUpdateCanvases();
+                    if (IsInFrame(viewport, target)) break;
+                }
+
+            Assert.IsTrue(IsInFrame(viewport, target),
+                $"{what} could not be brought INTO THE FRAME — it measures "
+                + LocalExtent(viewport, target) + " against a viewport of "
+                + $"{viewport.rect.yMin:0.0}..{viewport.rect.yMax:0.0}. A capture whose subject is "
+                + "off-screen is not evidence of its subject (C55).");
+            Debug.Log($"[C55] {what} is IN FRAME at {LocalExtent(viewport, target)} "
+                + $"(viewport {viewport.rect.yMin:0.0}..{viewport.rect.yMax:0.0})");
         }
 
         /// <summary>Whether <paramref name="target"/> is wholly inside <paramref name="viewport"/>
@@ -703,12 +1020,18 @@ namespace SBR.Tests.PlayMode
         /// <summary>Puts a pinned run under the laptop and opens ENTRY on matchup 0. Split out
         /// because the §8 set drives it three times with two different configs, and a capture whose
         /// states were reached by three hand-copied sequences is a capture whose states differ in
-        /// ways nobody wrote down.</summary>
-        private static IEnumerator DriveToMarketSheet(LaptopScreen laptop, RunConfig config)
+        /// ways nobody wrote down.
+        ///
+        /// <para><b>The seed is a PARAMETER, not <c>SeedMarketSheet</c> baked in.</b> `S101`'s
+        /// worst-case frame is taken on the same ENTRY surface by the same sequence but on a
+        /// deliberately different slate, and re-typing the four lines for it would reintroduce
+        /// exactly the hand-copied divergence this helper exists to prevent.</para></summary>
+        private static IEnumerator DriveToMarketSheet(LaptopScreen laptop, string seed,
+            RunConfig config)
         {
-            laptop.director.StartNewRun(SeedMarketSheet);
-            SetDirectorRun(laptop.director, new Run(SeedMarketSheet, config));
-            AssertShootingSeed(laptop, SeedMarketSheet);
+            laptop.director.StartNewRun(seed);
+            SetDirectorRun(laptop.director, new Run(seed, config));
+            AssertShootingSeed(laptop, seed);
             yield return WaitForRebuild();
 
             Invoke(Required(Required(App(laptop), "Matchup0"), "Details"));

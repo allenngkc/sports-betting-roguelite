@@ -1054,6 +1054,15 @@ namespace SBR.Game
                 y += ContentsDestinationHeight;
                 foreach (MarketSheetGroup group in section.Groups)
                 {
+                    // S102 (batch 117): a destination holding exactly one market under that
+                    // market's own name — CORRECT SCORE today — would otherwise print its name and
+                    // range twice, one line apart. Suppress the child line ENTIRELY (no line, no
+                    // reserved gap) rather than leave it blank; see ContentsChildIsRedundant for
+                    // the rule this reads.
+                    if (ContentsChildIsRedundant(section.Label, section.RangeText, group.Label,
+                        group.RangeText))
+                        continue;
+
                     MakeContentsLine(content, "ContentsKind" + group.Kind, group.Label,
                         group.RangeText, RailPageMargin + 26f, y, width, ContentsKindHeight,
                         group.IsEmpty ? LaptopOs.Muted : LaptopOs.TonerSecondary, null);
@@ -1063,6 +1072,65 @@ namespace SBR.Game
 
             LaptopUi.FinishScrollBody(host, scrollRect, content, y, listHeight);
         }
+
+        /// <summary>
+        /// S102 (batch 117). The defect: ENTRY's contents printed <c>CORRECT SCORE 52–64</c> and
+        /// then, indented directly beneath it, <c>CORRECT SCORE 52–64</c> again — the same name AND
+        /// the same range, one line apart — because CORRECT SCORE is the only destination today
+        /// holding exactly one market that carries its own name (<see cref="MarketDestinations.KindsIn"/>
+        /// returns a single <see cref="MarketKind.CorrectScore"/> for <see cref="MarketDestination.CorrectScore"/>,
+        /// and both the destination and the kind print as "CORRECT SCORE" — <see cref="MarketDestinations.Label"/>
+        /// and <see cref="MarketDestinations.KindLabel"/> agree). <c>S90</c> ruled the contents a
+        /// printed page, and a printed contents list does not name a section and its only entry
+        /// twice — the same family as <c>T69</c>/<c>T70</c>, a fact stated twice.
+        ///
+        /// <para><b>The rule fires on IDENTITY, not on childlessness.</b> Both the name AND the
+        /// range must match. A future destination that comes to hold exactly one market under a
+        /// DIFFERENT name still prints that child, because then the child is telling the reader
+        /// something the parent line didn't — which market, specifically, lives here. Checking the
+        /// name alone would wrongly suppress that case; checking childlessness alone (rather than
+        /// identity) would too. This is deliberately NOT a reversal of <c>S98</c> (which LENGTHENED
+        /// three group names — TEAM TOTAL GOALS/CORNERS/CARDS — so three siblings under one section
+        /// could be told apart): S98 disambiguates siblings that would otherwise collide with EACH
+        /// OTHER; this suppresses an only child that cannot be told apart from its own PARENT. Same
+        /// "a contents list exists to be scanned" principle, opposite operation.</para>
+        ///
+        /// <para><b>Comparison is ordinary exact string equality</b> on the printed forms — the
+        /// <c>==</c> operator on <see cref="string"/> is ordinal, so this is a byte-for-byte check
+        /// with no case-folding and no normalisation invented for the occasion. Two names or ranges
+        /// that merely LOOK alike do not collapse together.</para>
+        ///
+        /// <para><b>Empty destinations (S89) fire too — a deliberate choice, not an oversight.</b>
+        /// S89 prints <see cref="MarketSheet.NoPricesOffered"/> for BOTH an empty section's range
+        /// AND its one empty group's range, so an emptied CORRECT SCORE (reachable by raising
+        /// <c>RunConfig.CorrectScoreFloor</c> past what the slate prices — see
+        /// <c>MarketSheetTests.An_empty_group_still_prints_and_the_sheet_around_it_still_numbers_cleanly</c>)
+        /// satisfies both conditions exactly the same as a priced one: "CORRECT SCORE" repeats and
+        /// "no prices offered" repeats. Repeating a null result is exactly as redundant as repeating
+        /// a real one — arguably more so, since the second line has even less to add. We chose NOT
+        /// to carve out an exception that keeps the child printed when empty.
+        ///
+        /// <para>The alternative reading — that suppressing the child leaves an empty destination
+        /// showing nothing beneath its own heading, which could read as an incomplete page rather
+        /// than a deliberately empty one — was weighed and rejected: the heading line itself already
+        /// prints "CORRECT SCORE ... no prices offered" once, in full, per S89's own ruling that a
+        /// racecard prints the race even when it is abandoned. That heading IS the complete
+        /// statement of the destination's emptiness; the child line, were it printed, would say
+        /// nothing further — not even a different count, since S89's group <c>CountText</c> and
+        /// <c>RangeText</c> both collapse to the identical literal. Suppressing it removes a second,
+        /// uninformative statement of the same fact, exactly as the non-empty case does.</para>
+        ///
+        /// <para><b>Accessibility:</b> <c>internal</c>, and the gate reaches it because
+        /// <c>Runtime/AssemblyInfo.cs</c> now grants <c>InternalsVisibleTo</c> to
+        /// <c>SBR.Tests.EditMode</c> as well as <c>SBR.Tests.PlayMode</c>. The ruling's whole point
+        /// is a gate calling the SAME rule the renderer uses rather than a re-derived copy that
+        /// could drift from it, and this rule is pure string equality, so it belongs in the fast
+        /// suite. Making it <c>public</c> would have bought the same reach by stating something
+        /// false about who the rule is for — it is the contents block's, not the game's.</para>
+        /// </summary>
+        internal static bool ContentsChildIsRedundant(string parentLabel, string parentRange,
+            string childLabel, string childRange)
+            => parentLabel == childLabel && parentRange == childRange;
 
         private void MakeContentsLine(RectTransform parent, string name, string label, string range,
             float indent, float y, float width, float height, Color ink, MarketDestination? destination)
