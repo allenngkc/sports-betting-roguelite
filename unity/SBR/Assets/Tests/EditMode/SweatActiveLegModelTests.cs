@@ -654,6 +654,76 @@ namespace SBR.Tests.EditMode
                 "Decided must still win over Approach too");
         }
 
+        // ------------------------------------------------------------------------- 13. the decisive-beat pool is disjoint from the ordinary pool (spec-count-theater-2026-08-17.md §3.5, gate item 4)
+
+        [Test]
+        public void Decisive_beat_pool_is_disjoint_from_the_ordinary_count_event_pool()
+        {
+            // spec-count-theater-2026-08-17.md §3.5 / strings-owed-2026-08-17.md §4: "the pool
+            // is disjoint, so recycling onto a decisive beat is unconstructible rather than
+            // unlikely" (T108 clause 1's standard). This is a property of the two POOLS, not a
+            // probe for a collision: every reachable member of each pool is enumerated over its
+            // full domain through SweatFlavor's own PUBLIC surface (never a re-typed copy of its
+            // private arrays, which could silently drift from the authored decks) and the actual
+            // string SETS are compared directly.
+            //
+            // The ORDINARY pool: CornerFor/CornerAgainst/BookingFor/BookingAgainst, each a
+            // 3-variant deck selected by `step % 3` (SweatFlavor.CornerLine/BookingLine). `leg`
+            // is accepted but never dereferenced by either method (SweatFlavor.cs), so null is a
+            // faithful call, not a workaround. forPicked x step x {corner, booking} exhausts all
+            // 12 slots — the complete deck, not a sample of it.
+            var ordinary = new HashSet<string>();
+            int ordinaryCases = 0;
+            foreach (bool forPicked in new[] { true, false })
+            {
+                for (int step = 0; step < 3; step++)
+                {
+                    ordinary.Add(SweatFlavor.CornerLine(forPicked, null, step));
+                    ordinaryCases++;
+                    ordinary.Add(SweatFlavor.BookingLine(forPicked, null, step));
+                    ordinaryCases++;
+                }
+            }
+
+            // The DECISIVE pool: the four §3.5/§4.2 cells (Approach/Turn x Over/Under) plus each
+            // cell's fallback rung, via SweatFlavor.DecisiveLine/DecisiveShortLine — the selector
+            // this unit adds. Both rungs are swept: a fallback that collided with the ordinary
+            // pool would be exactly as unconstructible a defect as the primary line colliding,
+            // and §4.4 puts both rungs into the same C46 sweep for the same reason.
+            var decisive = new HashSet<string>();
+            int decisiveCases = 0;
+            foreach (CountSignificance significance in new[] { CountSignificance.Approach, CountSignificance.Turn })
+            {
+                foreach (bool over in new[] { true, false })
+                {
+                    decisive.Add(SweatFlavor.DecisiveLine(significance, over));
+                    decisiveCases++;
+                    decisive.Add(SweatFlavor.DecisiveShortLine(significance, over));
+                    decisiveCases++;
+                }
+            }
+
+            // C29: the executed case count is reported and a zero-case sweep fails outright,
+            // rather than an empty pool silently reading as "no collision found".
+            Assert.AreEqual(12, ordinaryCases,
+                $"ordinary-pool sweep executed {ordinaryCases} cases (2 forPicked x 3 steps x " +
+                "{corner, booking}), expected 12");
+            Assert.AreEqual(8, decisiveCases,
+                $"decisive-pool sweep executed {decisiveCases} cases (2 significance x 2 " +
+                "valence x {full, short}), expected 8");
+            Assert.Greater(ordinary.Count, 0, "the ordinary pool must not be empty");
+            Assert.Greater(decisive.Count, 0, "the decisive pool must not be empty");
+
+            // THE ASSERTION: not "no collision was observed this run" but the sets themselves
+            // have empty intersection — disjoint, not merely distinct.
+            var intersection = new HashSet<string>(decisive);
+            intersection.IntersectWith(ordinary);
+            Assert.AreEqual(0, intersection.Count,
+                "the decisive pool must be DISJOINT from the ordinary pool (spec §3.5) so a " +
+                "decisive beat can never recycle an ordinary line and vice versa — shared " +
+                $"line(s) found: {string.Join(", ", intersection)}");
+        }
+
         // ------------------------------------------------------------------------- sweep helpers
 
         /// <summary>True iff <paramref name="s"/> contains a '-' immediately followed by a digit —

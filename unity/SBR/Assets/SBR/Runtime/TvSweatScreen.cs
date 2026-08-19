@@ -1691,7 +1691,35 @@ namespace SBR.Game
                 bool countLeg = leg.Selection.Kind == MarketKind.TotalCorners
                     || leg.Selection.Kind == MarketKind.TotalCards;
                 bool countScene = spec.Count.HasValue && spec.Count.Value.TotalDelta > 0;
-                if (countScene && spec.Count.Value.TotalDelta > 1)
+
+                // §3.5 — THE DECISIVE BEATS DRAW FROM A DISJOINT POOL, so recycling onto them is
+                // UNCONSTRUCTIBLE rather than unlikely (T108 clause 1's standard, arriving on copy
+                // instead of on a form).
+                //
+                // The measured defect this closes: of seven count events, the APPROACH printed
+                // corner #1's line — the least consequential event of the match — verbatim, and
+                // THE CROSSING, the moment the bet was won, printed corner #2's. The two decisive
+                // events were narrated with recycled openers from the two that mattered least.
+                //
+                // Gated on `spec.Decisive`, which is NULL wherever the classifier never ran. That
+                // distinction is the whole guard: a count scene also reaches here from an UNGATED
+                // beat (cards, an Under leg, a Score-typed beat, a whole-number line), and those
+                // are ordinary events that must keep the ordinary deck. Reading `countScene` alone
+                // cannot tell the two apart — which is exactly the blocker the build dispatch hit
+                // and correctly refused to work around by re-deriving the gate here.
+                //
+                // Valence is read off the TICKET (`spec.ForPicked`, set from leg.Selection.Choice),
+                // never off the event — ScoreLedgerTests already pins that mood follows the bet.
+                bool decisiveBeat = countScene
+                    && (spec.Decisive == CountSignificance.Approach
+                        || spec.Decisive == CountSignificance.Turn);
+                if (decisiveBeat)
+                    _pendingFlavor = SweatFlavor.DecisiveLine(spec.Decisive.Value, spec.ForPicked);
+
+                // The count-batch suffix is NOT appended to a decisive line. T110-am2 has ruled
+                // the suffix removed outright, and until that lands it must at minimum not blunt
+                // the two lines authored to carry these moments.
+                if (countScene && !decisiveBeat && spec.Count.Value.TotalDelta > 1)
                     _pendingFlavor += $" ({spec.Count.Value.TotalDelta} in the spell)";
 
                 // spec-count-theater-2026-08-17.md §4, THE BINDING: StageBeat() already advanced

@@ -1,0 +1,3 @@
+# Frame sets stay UNTRACKED — README commits, the roll never does.
+# Local guard: dd-import/.gitignore covers only *.zip (the 487MB incident, 2026-08-16).
+*.png

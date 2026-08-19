@@ -153,6 +153,20 @@ namespace SBR.Game
                         && SweatActiveLegModel.HalfLineThreshold(leg.Selection.Line, out _);
 
                     bool quiet = false;
+                    // §3.5's carrier. NULLABLE, and the null case is load-bearing: it means THIS
+                    // BEAT WAS NEVER CLASSIFIED, which is NOT the same as classifying Ordinary.
+                    //
+                    // The `!quiet` branch below is reached two ways, and only one of them is a
+                    // decisive beat. GATED: the classifier ran and returned Approach or Turn.
+                    // UNGATED: `computable` was false — a cards leg, an Under leg, a Score/BigPlay
+                    // beat, a NearMiss beat, a whole-number line — so `quiet` stayed false by
+                    // DEFAULT and the count scene plays regardless of distance, which is an
+                    // ordinary event.
+                    //
+                    // A bool would conflate those two and hand an ordinary corner the decisive
+                    // pool's copy, which is the recycling defect §3.5 exists to make
+                    // unconstructible, arriving from the opposite direction.
+                    CountSignificance? decisive = null;
                     if (computable)
                     {
                         // Revealed, never locked: countLedger.Home/Away are mutated ONLY by
@@ -167,6 +181,8 @@ namespace SBR.Game
                         // Approach or Turn keeps today's scene, unchanged, below.
                         quiet = significance == CountSignificance.Ordinary
                             || significance == CountSignificance.Decided;
+                        // Recorded only where the classifier actually ran — see `decisive`'s note.
+                        decisive = significance;
                     }
 
                     if (!quiet)
@@ -202,7 +218,7 @@ namespace SBR.Game
                         return new SceneSpec(countTemplate, variant, countIntro, evt.Tag == TensionTag.Swing,
                             countHelps, null, count, null, market,
                             _pacer.SceneSeconds(countTemplate, countIntro), beneficiaryIsHome,
-                            quietGoal: countSceneQuietGoal);
+                            quietGoal: countSceneQuietGoal, decisive: decisive);
                     }
 
                     // Quiet: StageBeat() already consumed this batch above — §4's binding says it

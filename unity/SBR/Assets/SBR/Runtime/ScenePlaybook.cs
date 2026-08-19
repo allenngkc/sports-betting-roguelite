@@ -146,6 +146,14 @@ namespace SBR.Game
         /// ruled). This field is the conservative build — scorebug only.</para></summary>
         public readonly ScoreLedger.StagedGoal? QuietGoal;
 
+        /// <summary>§3.5: this beat's significance, or NULL where the classifier never ran.
+        /// The null case is load-bearing — it means UNCLASSIFIED, not Ordinary. A count scene
+        /// reaches the screen both from a classified-significant beat and from an ungated one
+        /// (cards, Under, a Score-typed beat, a whole-number line), and only the first may draw
+        /// the decisive copy pool. A bool would conflate them and hand an ordinary corner the
+        /// decisive line, which is §3.5's own defect arriving from the opposite direction.</summary>
+        public readonly CountSignificance? Decisive;
+
         public SceneSpec(SceneTemplate template, int variant, bool leadChangeIntro, bool urgent,
             bool forPicked, ScoreLedger.StagedGoal? goal, float duration)
             : this(template, variant, leadChangeIntro, urgent, forPicked, goal, null, null,
@@ -155,7 +163,8 @@ namespace SBR.Game
             bool forPicked, ScoreLedger.StagedGoal? goal, CountLedger.StagedCount? count,
             CountLedger.FinalPlan? countFinal, MarketKind market, float duration,
             bool? countBeneficiaryIsHome = null, CountLedger.StagedCount? quietCount = null,
-            ScoreLedger.StagedGoal? quietGoal = null)
+            ScoreLedger.StagedGoal? quietGoal = null,
+            CountSignificance? decisive = null)
         {
             Template = template;
             Variant = variant;
@@ -170,6 +179,7 @@ namespace SBR.Game
             CountBeneficiaryIsHome = countBeneficiaryIsHome;
             QuietCount = quietCount;
             QuietGoal = quietGoal;
+            Decisive = decisive;
         }
     }
 

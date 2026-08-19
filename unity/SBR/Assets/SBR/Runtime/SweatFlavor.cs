@@ -256,6 +256,119 @@ namespace SBR.Game
             "another booking. the number turns sour.",
         };
 
+        /// <summary>spec-count-theater-2026-08-17.md §3.5 / strings-owed-2026-08-17.md §4 — THE
+        /// DISJOINT DECISIVE-BEAT POOL. The measured defect: of seven count events, the approach
+        /// (43') printed corner #1's ORDINARY line verbatim, and the crossing (53') — the moment
+        /// the bet was won — printed corner #2's. RULED: the approach and the turn draw from a
+        /// pool <see cref="CornerFor"/>/<see cref="CornerAgainst"/>/<see cref="BookingFor"/>/
+        /// <see cref="BookingAgainst"/> cannot reach — DISJOINT, not merely distinct, so
+        /// recycling onto a decisive beat is unconstructible rather than unlikely (`T108`
+        /// clause 1's standard). That is why these four lines live in their OWN arrays, never
+        /// appended to or read from the four above: the separation IS the property, visible in
+        /// the code rather than asserted in a comment. SweatActiveLegModelTests asserts the two
+        /// pools' string sets do not intersect.
+        ///
+        /// <para>Four cells, not two: <c>Approach</c>/<c>Turn</c> (<see cref="CountSignificance"/>,
+        /// the classification <c>SweatActiveLegModel.Classify</c> already computes) each split by
+        /// the leg's own valence — the same <c>countHelps</c> Over/Under mood (never the beat's
+        /// team or probability direction) that already chooses <see cref="CornerFor"/> vs
+        /// <see cref="CornerAgainst"/>. Not new machinery, per strings-owed-2026-08-17.md §4.2.
+        /// </para>
+        ///
+        /// <para>ONE line per cell, not a step-indexed deck like the arrays above (§4.3): "a
+        /// decisive beat fires at most once per leg", so there is nothing to vary a selection
+        /// against. Kept as single-element arrays rather than plain constants to match this
+        /// file's deck convention (<c>private static readonly string[]</c>) and so a
+        /// disjointness sweep can walk every pool the same way.</para>
+        ///
+        /// <para><b>Both APPROACH cells share one short form</b> (<c>"one short."</c>) —
+        /// authored, not an oversight: "at the fallback rung the fact is what survives, and the
+        /// valence is already carried by the scene's own register" (§4.2). TURN's two short
+        /// forms differ.</para>
+        ///
+        /// <para><b>UNDER is authored but UNREACHABLE today.</b> spec-count-theater-2026-08-17.md
+        /// §6 scopes the distance gate to OVER only ("the Under case is the mirror distance
+        /// profile, not in evidence") — <c>TheaterChoreographer.ResolveBeat</c>'s own
+        /// `gateEligible` requires `countHelps` (Over), so an Under leg is never classified
+        /// <c>Approach</c>/<c>Turn</c> in this build and <see cref="DecisiveLine"/> is never
+        /// called with <c>over: false</c> in production. Authored anyway because
+        /// strings-owed-2026-08-17.md §4.2 authored all four cells against the under mirror this
+        /// spec explicitly defers, not against what today's build can reach.</para></summary>
+        private static readonly string[] ApproachOver =
+        {
+            "one short. the ledger is holding its breath.",
+        };
+
+        private static readonly string[] ApproachUnder =
+        {
+            "one short, and the ledger would rather it stopped here.",
+        };
+
+        private static readonly string[] TurnOver =
+        {
+            "that clears it. the line is beaten.",
+        };
+
+        private static readonly string[] TurnUnder =
+        {
+            "the line goes. the ledger closes this one.",
+        };
+
+        private const string ApproachShort = "one short.";
+        private const string TurnOverShort = "the line is beaten.";
+        private const string TurnUnderShort = "the line goes.";
+
+        /// <summary>The decisive-beat line (pool doc above) for <paramref name="significance"/>
+        /// (<c>Approach</c> or <c>Turn</c> ONLY — anything else throws, DEFAULT LOUD: an
+        /// <c>Ordinary</c>/<c>Decided</c> beat must draw from <see cref="CornerLine"/>/
+        /// <see cref="BookingLine"/> instead, and a caller that cannot yet tell the two apart
+        /// must not call this at all), split by <paramref name="over"/> — the leg's
+        /// <c>countHelps</c> valence, true for Over.
+        ///
+        /// <para>NO CALL SITE EXISTS IN PRODUCTION YET. <see cref="CountSignificance"/> is
+        /// computed inside <c>TheaterChoreographer.ResolveBeat</c> as a local variable and is
+        /// never threaded onto the <c>SceneSpec</c> it returns (checked directly: SceneSpec's
+        /// fields are Template/Variant/LeadChangeIntro/Urgent/ForPicked/Goal/Count/CountFinal/
+        /// Market/Duration/CountBeneficiaryIsHome/QuietCount/QuietGoal — none carries
+        /// significance), so <c>TvSweatScreen</c> has no way to learn it at the point the
+        /// flavour line is chosen — <c>countScene</c> there is only
+        /// <c>spec.Count.HasValue &amp;&amp; spec.Count.Value.TotalDelta &gt; 0</c>, true for
+        /// both a gated decisive beat AND an ungated one (cards, Under, a Score/BigPlay-typed or
+        /// NearMiss-tagged corner beat all reach the same CornerFor/CornerAgainst/Booking
+        /// template unconditionally — see ResolveBeat's own `gateEligible`/`computable` gates).
+        /// Recomputing <c>Classify</c> at that call site would mean re-deriving those gates too
+        /// — a second classifier, not a reuse of the one that exists — so this selector is
+        /// authored WITHOUT wiring it in, ahead of a future field threading the significance
+        /// through SceneSpec. Same shape as <c>SceneSpec.QuietCount</c> having been authored
+        /// ahead of its own gate: the pool exists so the wiring lands on top of it rather than
+        /// inventing one under time pressure.</para></summary>
+        public static string DecisiveLine(CountSignificance significance, bool over) =>
+            (significance, over) switch
+            {
+                (CountSignificance.Approach, true) => ApproachOver[0],
+                (CountSignificance.Approach, false) => ApproachUnder[0],
+                (CountSignificance.Turn, true) => TurnOver[0],
+                (CountSignificance.Turn, false) => TurnUnder[0],
+                _ => throw new ArgumentOutOfRangeException(nameof(significance), significance,
+                    "SweatFlavor's decisive pool covers only Approach/Turn — Ordinary/Decided " +
+                    "must never reach it; that is the disjointness spec §3.5 rules, not a range " +
+                    "to widen."),
+            };
+
+        /// <summary>The decisive-beat line's fallback rung (`T110-am`/`C46`) — same parameters as
+        /// <see cref="DecisiveLine"/>. Approach's two cells collapse to one shared short form;
+        /// Turn's do not (see the pool's own doc above).</summary>
+        public static string DecisiveShortLine(CountSignificance significance, bool over) =>
+            significance switch
+            {
+                CountSignificance.Approach => ApproachShort,
+                CountSignificance.Turn => over ? TurnOverShort : TurnUnderShort,
+                _ => throw new ArgumentOutOfRangeException(nameof(significance), significance,
+                    "SweatFlavor's decisive pool covers only Approach/Turn — Ordinary/Decided " +
+                    "must never reach it; that is the disjointness spec §3.5 rules, not a range " +
+                    "to widen."),
+            };
+
         /// <summary>Market legs (O/U, BTTS) have no picked TEAM — presentation anchors them on the
         /// home side; the market label carries the pick. Shared by every renderer so the anchor
         /// can never disagree across surfaces. Moneyline legs answer with their real side.
