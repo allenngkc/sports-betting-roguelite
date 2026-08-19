@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-18, cycle 398 (heartbeat).** The
+**Keeper-era heartbeat stamp: 2026-08-18, cycle 399 (heartbeat).** TV's
+full suite running (merge + re-shot pair behind it); markets closing its
+casing + amber folds; DD current through batch 114. Parked with Allen:
+research 8-9.
+
+*(prior stamp, cycle 398:)* The
 four surface rulings landed + routed (6f3d780, incl. C55 promoted from
 the lane's self-caught fault); the live rail figure merged. TV's gate
 running toward the merge + re-shot pair; markets folding rulings; DD
