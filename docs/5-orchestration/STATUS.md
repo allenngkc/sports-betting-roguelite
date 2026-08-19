@@ -1,6 +1,64 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-17, cycle 387 (heartbeat).** TV in
+**Keeper-era heartbeat stamp: 2026-08-18, cycle 398 (heartbeat).** The
+four surface rulings landed + routed (6f3d780, incl. C55 promoted from
+the lane's self-caught fault); the live rail figure merged. TV's gate
+running toward the merge + re-shot pair; markets folding rulings; DD
+queued on the theater dock. Parked with Allen: research 8-9.
+
+*(prior stamp, cycle 397:)*
+Restart absorbed: TV + markets resumed via --continue at max (TV keeps
+its editor window - procs were 0, its gate re-runs from disk; phase A's
+inert-then-armed commit path is committed at acd9d9f); the DD survived
+with context (term_39bf9f59). Monitors re-armed (heartbeat bjjtg0nr1,
+watcher v42 bs19wd7p2). Parked with Allen: research 8-9.
+
+*(prior stamp, cycle 396:)* TV in
+its editor window (phase B gate + re-shoot); DD reading the surfaces
+dock. Parked with Allen: research 8-9.
+
+*(prior stamp, cycle 395 - THE SURFACES BUILD
+IS MERGED (519c6fd).** The whole redesigned market sheet: derivation
+layer + gates, six destinations, printed groups, leaders, folio,
+contents, the measured rail, the six-frame dock. Four DD rulings pending
+on the frames (rail order, casing, amber, TEAM TOTALS), none blocking.
+TV holds the editor for phase B's gate + the re-shot pair. Parked with
+Allen: research 8-9.
+
+*(prior stamp, cycle 394:)* The
+reveal row closed across all carriers; markets docking its evidence
+frames and releasing the lease to TV; TV's phase B built-but-unverified
+awaiting its window. Parked with Allen: research 8-9.
+
+*(prior stamp, cycle 393:)* Both
+builds grinding through their phases. Parked with Allen: research 8-9.
+
+*(prior stamp, cycle 392:)* The
+routed surfaces rulings landed (8e8b03d) incl. S93 assigned to the
+build; reveal-A ledger closed. Both builds grinding. Parked with Allen:
+research 8-9.
+
+*(prior stamp, cycle 391:)* TV in
+phase B; markets rendering the rail with three design questions routing
+to the DD as a findings doc. Parked with Allen: research 8-9.
+
+*(prior stamp, cycle 390:)* Both
+builds deep in phase work (TV: the quiet-corner commit path; markets:
+the destinations). All six authorings ruled and landed (2bff94e). DD
+standing by for frames. Parked with Allen: research 8-9.
+
+*(prior stamp, cycle 389:)* Both
+builds grinding: TV's bundle in PlayMode then unit 3; markets confirming
+the spec's premises before its plan. DD idle awaiting evidence. Parked
+with Allen: research 8-9.
+
+*(prior stamp, cycle 388 - BOTH BUILDS LIVE:)*
+Both specs FINAL and merged (fc5a1f5); Allen confirmed A on the reveal.
+markets-pregame RE-SEATED for the surfaces build (term_af511a67, merging
+main first); the theater build queued as tv-theater's unit 3 behind its
+bundle. Watcher v41 (b20c44khm). Parked with Allen: research 8-9 only.
+
+*(prior stamp, cycle 387:)* TV in
 its suite gate; DD finalizing both specs on the seven words. Parked with
 Allen: research 8-9.
 

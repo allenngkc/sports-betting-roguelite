@@ -4,13 +4,25 @@
 (Phase 1 evidence) · `markets-surface-research-2026-08-16.md` §5 (the surface calls as first framed) ·
 register rows `T109`, `S86`, `S87`, and the precedent rows `S74`, `T74`, `T88`, `T92`.
 
-**Status:** all five are material and none is taken. Everything below is measured on frames except
-where marked. **Call 5 was a flag in the four-call set; Allen folded it in, and developing it
-reversed the seat's own recommendation — see §5.**
+**Status — ALL SIX ARE NOW TAKEN.** Allen ruled calls 1–7 on 2026-08-17 (`S89`–`S92`, `S82-am2`,
+`T109-cl`, `T115`), and **the reveal was reconfirmed FINAL as A on 2026-08-18.** A sixth call — the
+count grammar — was added after this document and is ruled at `T115`. **Nothing here is open.**
+
+**This document is the record of the calls AS PUT.** It is deliberately not rewritten to match the
+answers: the options as offered, and the recommendations made before the rulings, are the thing worth
+keeping. **For what was decided, read the rows.**
+
+Everything below is measured on frames except where marked. **Call 5 was a flag in the four-call set;
+Allen folded it in, and developing it reversed the seat's own recommendation — see §5.**
 
 ---
 
 ## 1 — THE REVEAL. Does the theater show the MATCH, or only the ticket's slice?
+
+> **ANSWERED — ALLEN, FINAL 2026-08-18: A.** The scoreline is always true; everything else
+> stays ticket-keyed. **Confirmed three times.** Ruled at `T109-cl`; the theater spec §2 carries it
+> and is not conditional on anything. **This section is the record of the call as PUT — not an open
+> question.**
 
 **What we measured.** Same seed, both arms finished `REGULATORS 5 — SPREADSHEETS 1`. The goals
 ticket saw the 30' goal. **The corners ticket never saw it** — its scoreline read `0 — 0` for **86%
