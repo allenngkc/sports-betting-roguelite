@@ -1704,11 +1704,10 @@ namespace SBR.Game
                 // NO flavour text, NO audio: only the drama is discretionary, the count is a fact.
                 // Do not "fix" this silence by adding a line — it is deliberate and ruled.
                 //
-                // NO-OP TODAY: no path populates QuietCount yet (see that field's own doc) — every
-                // fixture that exists right now resolves every TotalDelta > 0 batch through Count,
-                // never QuietCount, so this condition never once evaluates true against any
-                // existing suite. It exists ahead of the later significance gate that will populate
-                // it, per this phase's own scope (commit path only, no behaviour change).
+                // LIVE AS OF PHASE B (T115). This note read "NO-OP TODAY: no path populates
+                // QuietCount yet" while phase A stood alone; the distance gate now populates it, and
+                // the docked after-set shows the result — four of seven corners committing their
+                // count with no scene of their own (dd-import/corners-sweat-after-2026-08-18).
                 if (spec.QuietCount.HasValue)
                     CommitRevealedCount(spec.QuietCount.Value);
 
