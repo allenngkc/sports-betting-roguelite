@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-18, cycle 396 (heartbeat).** TV in
+**Keeper-era heartbeat stamp: 2026-08-18, cycle 397 (RECOVERED).**
+Restart absorbed: TV + markets resumed via --continue at max (TV keeps
+its editor window - procs were 0, its gate re-runs from disk; phase A's
+inert-then-armed commit path is committed at acd9d9f); the DD survived
+with context (term_39bf9f59). Monitors re-armed (heartbeat bjjtg0nr1,
+watcher v42 bs19wd7p2). Parked with Allen: research 8-9.
+
+*(prior stamp, cycle 396:)* TV in
 its editor window (phase B gate + re-shoot); DD reading the surfaces
 dock. Parked with Allen: research 8-9.
 
