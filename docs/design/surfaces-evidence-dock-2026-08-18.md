@@ -166,3 +166,53 @@ for the truth, `C54` an instrument reporting only the extremum, `C55` an instrum
 wrong predicate — *all three making claims wider than their evidence, all three green while doing
 it.* The gate it produced is what carried this re-shoot: every state here asserts its subject is in
 frame, in local space, before the shutter.
+
+---
+
+## THE CLOSING FRAME — `S101`'s worst case and `S102`'s suppression (shot 2026-08-19)
+
+**Set:** `artifacts/surething-ui/20260819-043447-953-*` — two states, four files. **Seed `49768152`,
+matchup 0 — `Fresno Notaries @ San Francisco Spreadsheets`.** `R38`-clean: eight digits, eight
+distinct, no run. Suites green before the shutter: **EditMode 312 executed / 311 passed / 0 failed;
+PlayMode 142 / 122 / 0.**
+
+The forced matchup exists because every earlier frame is the COMFORTABLE case. `S101`: *the worst
+case is a 493.69px name in a 496px cell — the full width, no leaders, the price immediately after —
+and nobody has looked at it. It could READ as a collision while MEASURING as none.*
+
+### W1 — the worst-case row
+
+`SAN FRANCISCO SPREADSHEETS UNDER 4.5 CORNERS … −136`, priced at 1.73, **493.68px in a 496px cell,
+2.32px of headroom**, in frame and centred rather than clinging to an edge.
+
+**This seat's read, offered as a read — the `C11` judgment is the DD's:**
+
+**It does not read as a collision.** The name ends and the price begins with clear air between them;
+nothing touches, nothing crowds. `nameEnd < priceX` is also asserted in pixels, so the *measures-as-
+none* half is machine-checked — but that was never the half in doubt.
+
+**What IS visible is the residual, exactly as measured and no worse.** Two rows on this sheet print
+no leader dots — `SAN FRANCISCO SPREADSHEETS OVER 4.5 CORNERS` and `… UNDER 4.5 CORNERS` — while
+`FRESNO NOTARIES OVER/UNDER 4.5 CORNERS` directly beneath them carry full runs. **The device is
+present on most rows of the group and absent on the longest two.** That inconsistency is the honest
+subject of this frame. It reads as a long name that ran out of room, not as a defect — but it is
+the thing `S96-am2` accepted from a table, now visible, and it is the DD's to accept or not.
+
+**One correction carried from the build:** `SAN FRANCISCO SPREADSHEETS` and `SAN FRANCISCO
+GRAVEDIGGERS` **tie exactly** at 298.376px — both nouns sum to 6653 font units. `C46` names
+SPREADSHEETS only because its `Widest()` keeps the first on a tie. Same width, so no verdict moves
+and this frame is genuinely the worst case — but GRAVEDIGGERS should not be read as untested.
+
+### W2 — the contents child suppressed
+
+`CORRECT SCORE 52–65` prints **once**, at the destination level, with no indented twin beneath it.
+The stutter `S102` named is gone.
+
+**Read:** it reads as COMPLETE, not as a missing child. The destination line carries its own range,
+which is the whole statement; a section that is one market simply has nothing to indent. Every other
+destination still prints all of its children (`GOALS` four, `CORNERS` two, `CARDS` two, `PLAYERS`
+two), so the hierarchy is intact and only the redundancy is gone.
+
+The rule is gated on identity rather than on childlessness: all four combinations of name and range
+are asserted, and a real-sheet sweep of 96 matchups across 16 seeds suppresses exactly one child
+each, always `CORRECT SCORE`'s.
