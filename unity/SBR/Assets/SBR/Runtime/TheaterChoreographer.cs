@@ -153,6 +153,20 @@ namespace SBR.Game
                         && SweatActiveLegModel.HalfLineThreshold(leg.Selection.Line, out _);
 
                     bool quiet = false;
+                    // §3.5's carrier. NULLABLE, and the null case is load-bearing: it means THIS
+                    // BEAT WAS NEVER CLASSIFIED, which is NOT the same as classifying Ordinary.
+                    //
+                    // The `!quiet` branch below is reached two ways, and only one of them is a
+                    // decisive beat. GATED: the classifier ran and returned Approach or Turn.
+                    // UNGATED: `computable` was false — a cards leg, an Under leg, a Score/BigPlay
+                    // beat, a NearMiss beat, a whole-number line — so `quiet` stayed false by
+                    // DEFAULT and the count scene plays regardless of distance, which is an
+                    // ordinary event.
+                    //
+                    // A bool would conflate those two and hand an ordinary corner the decisive
+                    // pool's copy, which is the recycling defect §3.5 exists to make
+                    // unconstructible, arriving from the opposite direction.
+                    CountSignificance? decisive = null;
                     if (computable)
                     {
                         // Revealed, never locked: countLedger.Home/Away are mutated ONLY by
@@ -167,6 +181,8 @@ namespace SBR.Game
                         // Approach or Turn keeps today's scene, unchanged, below.
                         quiet = significance == CountSignificance.Ordinary
                             || significance == CountSignificance.Decided;
+                        // Recorded only where the classifier actually ran — see `decisive`'s note.
+                        decisive = significance;
                     }
 
                     if (!quiet)
@@ -175,9 +191,34 @@ namespace SBR.Game
                             ? (countHelps ? SceneTemplate.CornerFor : SceneTemplate.CornerAgainst)
                             : SceneTemplate.Booking;
                         bool countIntro = evt.Tag == TensionTag.LeadChange;
+                        // spec-count-theater-2026-08-17.md §2 STEPS 1+2 (T109-cl, ruled FINAL):
+                        // this early return is the mechanism's item 2, verbatim — "the count
+                        // branch RETURNS before ledger.StageBeatGoal(...) is ever called...
+                        // every [non-final beat on a corners leg] took that branch [so] goal
+                        // staging was never reached." Reached now, unconditionally, whether or
+                        // not this beat's own event type would independently have attributed a
+                        // goal (Score/BigPlay can still land here whenever their beat also
+                        // carries a nonzero count batch — the count branch takes priority over
+                        // type attribution by construction, unchanged). Carried as quietGoal,
+                        // never as this SceneSpec's Goal slot (left null, as before): STEP 2
+                        // forbids a goal from hijacking "the corner/calm scene the grammar
+                        // chose" — countTemplate plays exactly as computed above, and
+                        // TvSweatScreen.CommitRevealedGoal (mirroring CommitRevealedCount)
+                        // commits the goal on this same beat regardless, since no goal-scene
+                        // payoff will ever fire for a CornerFor/CornerAgainst/Booking template.
+                        // Side-effect free (see StageBeatGoal's own doc: CompleteGoal is the
+                        // ledger's ONLY mutator), so computing it here rather than never changes
+                        // nothing about the ledger except that the answer is no longer discarded.
+                        // Named distinctly from the fall-through path's own `quietGoal` below:
+                        // C# forbids reusing the name across the enclosing scope, and the two are
+                        // genuinely different cases — this one rides a COUNT SCENE that is showing,
+                        // that one rides a beat whose scene was quieted.
+                        ScoreLedger.StagedGoal? countSceneQuietGoal =
+                            ledger.StageBeatGoal(evt.Type, up, delta, evt.WinProbAfter);
                         return new SceneSpec(countTemplate, variant, countIntro, evt.Tag == TensionTag.Swing,
                             countHelps, null, count, null, market,
-                            _pacer.SceneSeconds(countTemplate, countIntro), beneficiaryIsHome);
+                            _pacer.SceneSeconds(countTemplate, countIntro), beneficiaryIsHome,
+                            quietGoal: countSceneQuietGoal, decisive: decisive);
                     }
 
                     // Quiet: StageBeat() already consumed this batch above — §4's binding says it
@@ -227,27 +268,55 @@ namespace SBR.Game
             // The ledger owns BOTH goal sources (type attribution + prob reconciliation,
             // playtest #14). A reconciliation goal on a momentum beat UPGRADES the scene to
             // the goal template — the board only ever moves behind a staged goal, and a goal
-            // must look like one.
+            // must look like one. That upgrade is exactly what STEP 2 below must prevent for a
+            // beat the count grammar already quieted.
             //
-            // spec-count-theater-2026-08-17.md §2/§3: A QUIETED COUNT BEAT MUST NOT STAGE A
-            // GOAL. Quieting is a SCENE decision, never a SCORE decision — a quieted beat must
-            // leave the revealed scoreline exactly where it found it, because the reveal is
-            // §2's territory and §2 is deliberately separable ("do not let §3 acquire a
-            // dependency on §2 during the build — that is the one thing that would make the
-            // flag expensive"). Skipping the call is side-effect free: StageBeatGoal only READS
-            // Picked/Opponent/the targets and returns a value — CompleteGoal is the ledger's
-            // ONLY mutator (its own doc says so) and nothing between here and the return below
-            // ever calls it. This is not a defense against a hidden mutation (there isn't one);
-            // it is refusing the prob-RECONCILIATION arm a chance to fire at all on the one
-            // beat kind (Momentum, corners/cards, `_goalSense == 0`) where it is reachable
-            // without a Score/BigPlay type attribution — see the distance gate's own comment
-            // above. It is also what makes the reclaimed scene correct, not just safe: without
-            // this, a quieted beat could still get UPGRADED to GoalFor/GoalAgainst below,
-            // which would be both the goal-leak AND a failure to show the resting state §3.4
-            // promises.
-            ScoreLedger.StagedGoal? goal = pendingQuietCount.HasValue
-                ? null
-                : ledger.StageBeatGoal(evt.Type, up, delta, evt.WinProbAfter);
+            // spec-count-theater-2026-08-17.md §2 (T109-cl, ruled FINAL) STEP 1: Phase B's
+            // blanket suppression — skipping this call entirely whenever pendingQuietCount was
+            // set — is RETIRED here, not merely deleted. It existed only so §3's reclaimed calm
+            // beats could not accidentally deliver §2 while §2 was still unbuilt and
+            // conditional ("do not let §3 acquire a dependency on §2 during the build — that is
+            // the one thing that would make the flag expensive"). §2 is ruled A now — the score
+            // is always true — so this beat's goal decision is always computed, never thrown
+            // away sight unseen. Still side-effect free either way: StageBeatGoal only READS
+            // Picked/Opponent/the targets (CompleteGoal is the ledger's ONLY mutator, its own
+            // doc says so), so calling it unconditionally changes nothing about WHEN the ledger
+            // can move — only whether this method still discards the answer.
+            ScoreLedger.StagedGoal? stagedGoal = ledger.StageBeatGoal(evt.Type, up, delta, evt.WinProbAfter);
+
+            // STEP 2 — THE SCENE STAYS TICKET-KEYED, ONLY THE SCOREBUG MOVES: pendingQuietCount
+            // set means THIS beat's own batch was declined a scene by the distance gate above,
+            // so Calm/TerritoryFor/TerritoryAgainst plays instead (never a goal template —
+            // gateEligible above requires Momentum, so `template` below can never already be
+            // GoalFor/GoalAgainst/BreakawayFor/BreakawayAgainst when this is true). That
+            // declined scene IS "the corner/calm scene the grammar chose" STEP 2 protects: a
+            // goal must not punch through and upgrade it, so it is carried as quietGoal
+            // instead, and TvSweatScreen.CommitRevealedGoal (mirroring CommitRevealedCount's
+            // shape exactly) commits it on this same beat regardless — no goal-scene payoff
+            // will ever fire for a Calm/Territory template to do it otherwise.
+            //
+            // A beat that never entered the count branch's quiet path at all — a zero batch, or
+            // a non-count-leg market, either way pendingQuietCount stays null — is UNCHANGED
+            // from before this dispatch: its goal still earns/upgrades its own scene exactly as
+            // always. §5: "zero batches already fall through ... already correct" for the count
+            // side; STEP 2's own words for the other — "a goal on a goals-market leg keeps
+            // today's behaviour exactly."
+            //
+            // ROUTED, NOT DECIDED HERE: whether a count leg's quiet goal should ALSO earn its
+            // own scene, rather than only moving the scorebug, is an open design question the
+            // lead has put to the Design Director (§2: "a goal the corners player does not need
+            // is exactly the departure from calm his watch is missing" cuts toward yes, but it
+            // is not ruled). This builds the conservative reading; flipping it later is routing
+            // quietGoal into goal below instead of splitting them here.
+            //
+            // STEP 3 — ORTHOGONALITY: this split reads only pendingQuietCount, a FACT the count
+            // branch already recorded above without ever reading the ledger — never Classify's
+            // output or any other significance state directly. The significance gate above, in
+            // turn, never reads the ledger or either goal variable below. Neither clause can
+            // acquire a dependency on the other through this line.
+            ScoreLedger.StagedGoal? goal = pendingQuietCount.HasValue ? null : stagedGoal;
+            ScoreLedger.StagedGoal? quietGoal = pendingQuietCount.HasValue ? stagedGoal : null;
+
             if (goal.HasValue && !ScenePlaybook.ProducesGoal(template))
                 template = goal.Value.ScoredByPicked ? SceneTemplate.GoalFor : SceneTemplate.GoalAgainst;
             else if (goal.HasValue)
@@ -262,7 +331,8 @@ namespace SBR.Game
             }
 
             return new SceneSpec(template, variant, leadChange, urgent, up, goal, null, null,
-                market, _pacer.SceneSeconds(template, leadChange), quietCount: pendingQuietCount);
+                market, _pacer.SceneSeconds(template, leadChange), quietCount: pendingQuietCount,
+                quietGoal: quietGoal);
         }
 
         /// <summary>The real LegFinal staging: scene #12/#13 from the FINAL ticket-local grade,

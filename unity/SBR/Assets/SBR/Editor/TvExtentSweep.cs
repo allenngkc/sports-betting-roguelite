@@ -247,6 +247,43 @@ namespace SBR.EditorTools
             "THE MATCH ENDS LEVEL",                           // TvSweatScreen.cs:3127, drawn full time (batch 68)
         };
 
+        /// <summary>The DISJOINT DECISIVE-BEAT POOL's four lines plus its fallback rung
+        /// (T115 §3.5, T110-am/C46 — strings-owed-2026-08-17.md §4.4: "these join the sweep,
+        /// they do not get a private one"), transcribed verbatim from
+        /// SweatFlavor.cs:297-319 (ApproachOver/ApproachUnder/TurnOver/TurnUnder, then
+        /// ApproachShort/TurnOverShort/TurnUnderShort).
+        ///
+        /// <para>Eight entries, matching what <c>SweatFlavor.DecisiveLine</c>/
+        /// <c>DecisiveShortLine</c> actually PRODUCE (four cells x two rungs = eight calls) —
+        /// not four unique fallback strings. Approach's fallback is authored once and shared by
+        /// both valence cells (SweatFlavor.cs:317, <c>ApproachShort</c>), so
+        /// <c>DecisiveShortLine(Approach, true)</c> and <c>DecisiveShortLine(Approach, false)</c>
+        /// both return the same text — included twice here rather than deduplicated. A width
+        /// sweep is unaffected either way (a duplicate can never become the new widest member),
+        /// so this favours matching the selector's call shape over a smaller pool.</para>
+        ///
+        /// <para><b>UNDER's two cells are authored but UNREACHABLE in this build</b> — see
+        /// SweatFlavor.DecisiveLine's own doc: TheaterChoreographer.ResolveBeat's
+        /// `gateEligible` requires the Over valence, so an Under leg is never classified
+        /// Approach/Turn today. Swept anyway, same direction as §5.1's rule for
+        /// <see cref="FlavorNonDeckLines"/> above: a pool that includes a not-yet-reachable
+        /// string is caught the moment anyone looks at it; a pool that OMITS one is invisible
+        /// in the frames until the day it becomes reachable and nobody re-swept for it.</para>
+        /// </summary>
+        private static readonly string[] DecisiveBeatLines =
+        {
+            // Full lines, SweatFlavor.cs:297-315.
+            "one short. the ledger is holding its breath.",           // ApproachOver
+            "one short, and the ledger would rather it stopped here.", // ApproachUnder — UNREACHABLE today
+            "that clears it. the line is beaten.",                    // TurnOver
+            "the line goes. the ledger closes this one.",             // TurnUnder — UNREACHABLE today
+            // Fallback rung, SweatFlavor.cs:317-319 — one entry per DecisiveShortLine call.
+            "one short.",         // DecisiveShortLine(Approach, over: true)
+            "one short.",         // DecisiveShortLine(Approach, over: false) — UNREACHABLE today; same text as above
+            "the line is beaten.", // DecisiveShortLine(Turn, over: true)
+            "the line goes.",     // DecisiveShortLine(Turn, over: false) — UNREACHABLE today
+        };
+
         /// <summary>The count-batch suffix's number, at its reachable maximum. TvSweatScreen.cs:
         /// 1694-1695 appends <c>$" ({spec.Count.Value.TotalDelta} in the spell)"</c>, where
         /// TotalDelta is ONE beat's HomeDelta+AwayDelta from <c>CountLedger.Distribute</c>'s even
@@ -530,11 +567,11 @@ namespace SBR.EditorTools
             //
             // No claim is made here about whether any of the five is wide. That is the sweep's
             // output (batch 95: the widest string in a column is a MEASUREMENT).
-            ("Flavor", "SweatFlavor's ten authored decks (verbatim) + the count-batch suffix (TvSweatScreen.cs:1695) — see the block comment above for which four decks the suffix can reach and why, and for the named gaps",
+            ("Flavor", "SweatFlavor's ten authored decks (verbatim) + the count-batch suffix (TvSweatScreen.cs:1695) + the disjoint decisive-beat pool (SweatFlavor.cs:297-319, T115 §3.5/C46) — see the block comment above for which four decks the suffix can reach and why, and for the named gaps",
                 And(FromEach(FlavorPickedTemplates, ClubNouns), FromEach(FlavorOtherTemplates, ClubNouns),
                     CornerForAgainst, BookingForAgainst,
                     Suffixed(CornerForAgainst, MaxCornerBatchDelta), Suffixed(BookingForAgainst, MaxCardBatchDelta),
-                    FlavorNonDeckLines)),
+                    FlavorNonDeckLines, DecisiveBeatLines)),
             ("Chrome", "PRD §8.1 chrome row", new[] { "ROUND 3   BANK $1,240   PAYMENT $800   SEED 48151623" }),
 
             // The six that were UNSWEPT, now enumerated from their assignment sites rather than

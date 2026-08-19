@@ -1691,7 +1691,35 @@ namespace SBR.Game
                 bool countLeg = leg.Selection.Kind == MarketKind.TotalCorners
                     || leg.Selection.Kind == MarketKind.TotalCards;
                 bool countScene = spec.Count.HasValue && spec.Count.Value.TotalDelta > 0;
-                if (countScene && spec.Count.Value.TotalDelta > 1)
+
+                // §3.5 — THE DECISIVE BEATS DRAW FROM A DISJOINT POOL, so recycling onto them is
+                // UNCONSTRUCTIBLE rather than unlikely (T108 clause 1's standard, arriving on copy
+                // instead of on a form).
+                //
+                // The measured defect this closes: of seven count events, the APPROACH printed
+                // corner #1's line — the least consequential event of the match — verbatim, and
+                // THE CROSSING, the moment the bet was won, printed corner #2's. The two decisive
+                // events were narrated with recycled openers from the two that mattered least.
+                //
+                // Gated on `spec.Decisive`, which is NULL wherever the classifier never ran. That
+                // distinction is the whole guard: a count scene also reaches here from an UNGATED
+                // beat (cards, an Under leg, a Score-typed beat, a whole-number line), and those
+                // are ordinary events that must keep the ordinary deck. Reading `countScene` alone
+                // cannot tell the two apart — which is exactly the blocker the build dispatch hit
+                // and correctly refused to work around by re-deriving the gate here.
+                //
+                // Valence is read off the TICKET (`spec.ForPicked`, set from leg.Selection.Choice),
+                // never off the event — ScoreLedgerTests already pins that mood follows the bet.
+                bool decisiveBeat = countScene
+                    && (spec.Decisive == CountSignificance.Approach
+                        || spec.Decisive == CountSignificance.Turn);
+                if (decisiveBeat)
+                    _pendingFlavor = SweatFlavor.DecisiveLine(spec.Decisive.Value, spec.ForPicked);
+
+                // The count-batch suffix is NOT appended to a decisive line. T110-am2 has ruled
+                // the suffix removed outright, and until that lands it must at minimum not blunt
+                // the two lines authored to carry these moments.
+                if (countScene && !decisiveBeat && spec.Count.Value.TotalDelta > 1)
                     _pendingFlavor += $" ({spec.Count.Value.TotalDelta} in the spell)";
 
                 // spec-count-theater-2026-08-17.md §4, THE BINDING: StageBeat() already advanced
@@ -1710,6 +1738,17 @@ namespace SBR.Game
                 // count with no scene of their own (dd-import/corners-sweat-after-2026-08-18).
                 if (spec.QuietCount.HasValue)
                     CommitRevealedCount(spec.QuietCount.Value);
+
+                // spec-count-theater-2026-08-17.md §2, THE A-REVEAL (T109-cl, ruled FINAL): the
+                // mirror image of the QuietCount commit just above, for the OTHER ledger. A count
+                // leg's goal (SceneSpec.QuietGoal) never gets a goal scene of its own — STEP 2
+                // keeps this beat's scene exactly what the count/momentum grammar chose — so
+                // OnGoalPlayed's payoff callback, the only other caller of CompleteGoal, is never
+                // reached for it. Committed here instead, through the same CommitRevealedGoal
+                // authority every caller of it shares, on the identical frame as the scene that
+                // (deliberately) does not narrate it.
+                if (spec.QuietGoal.HasValue)
+                    CommitRevealedGoal(spec.QuietGoal.Value);
 
                 // A zero batch fell through to ordinary play: the pre-computed corner/booking
                 // line would narrate an event the pitch never shows (Sol, F_0.4.0 P3 r2).
@@ -1741,6 +1780,41 @@ namespace SBR.Game
                 // so `HasValue` is the beat's INTENT while `Commits` is what the scene CONTAINS.
                 // The law says the words are licensed by what the RESOLVED SCENE contains, and this
                 // is the difference between reading the law and implementing it.
+                //
+                // spec-count-theater-2026-08-17.md §2 addendum: extended to QuietGoal, not just
+                // Goal, or this guard would reintroduce T97's own bug in the opposite direction. A
+                // count leg's committing quiet goal (STEP 2) can coincide with a Score/BigPlay-typed
+                // beat that also carries a nonzero count batch — CornerFor/CornerAgainst/Booking
+                // plays, spec.Goal stays null by design, but the scoreboard truly does move. Without
+                // this half, goalScene would read false and NoGoalLine would overwrite the corner's
+                // own text with a claim the frame's own scorebug contradicts — a state lie of
+                // exactly the shape T62/T97 exist to prevent, just newly reachable now that §2
+                // lets the goal commit at all. A CHALKED quiet goal still falls to NoGoalLine below,
+                // correctly — no goal actually happened, so "no goal" is not a lie there.
+                // REVERTED TO THE CONSERVATIVE FORM BY THE LEAD, and the reasoning is worth keeping
+                // because the alternative was well argued and is one edit away.
+                //
+                // The build dispatch extended this to `|| (spec.QuietGoal.HasValue &&
+                // spec.QuietGoal.Value.Commits)` — letting goal words STAND when a quiet goal
+                // commits — on the ground that NoGoalLine would otherwise overwrite the line while
+                // the scorebug advances underneath, a T62/T97-shaped state lie newly reachable
+                // because §2 lets the goal commit at all.
+                //
+                // IT GOES THE WRONG WAY AGAINST §2. That clause carves out the SCORE and says
+                // everything else — the panel's rows, player detail, and THE FLAVOUR STRIP'S
+                // SUBJECT — continues to follow the ticket. Letting goal words stand is the strip
+                // following the MATCH, which is the one thing §2 did not carve out.
+                //
+                // And the lie is not established: `NoGoalLine` SELECTS a line that does not ASSERT
+                // a goal (it skips members flagged assertsGoal). Silence about a goal is not a
+                // contradiction of one. A strip that stays on corners while the scorebug shows the
+                // score is exactly "the score is always true, the rest follows the ticket."
+                //
+                // ROUTED to the DD with the dispatch's reasoning attached: if a count-leg goal
+                // should also reach the STRIP, this line is the one edit, and it is the same
+                // question as whether it should earn a SCENE (see TheaterChoreographer's own
+                // ROUTED note). Both are the same call and should be ruled together, not
+                // separately.
                 bool goalScene = spec.Goal.HasValue && spec.Goal.Value.Commits;
                 if (goalWords && !goalScene)
                     _pendingFlavor = SweatFlavor.NoGoalLine(evt, leg, _lastBeatUp);
@@ -2095,6 +2169,40 @@ namespace SBR.Game
                 if (_ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count)
                     RepaintRevealedScore(_ticket.Legs[_stageLeg]);
             }
+        }
+
+        /// <summary>spec-count-theater-2026-08-17.md §2, THE A-REVEAL (T109-cl, ruled FINAL): THE
+        /// ONE COMMIT AUTHORITY for a <see cref="SceneSpec.QuietGoal"/> — mirrors
+        /// <see cref="CommitRevealedCount"/>'s shape exactly, for the score ledger instead of the
+        /// count ledger, and for the identical reason: a beat whose own scene is NOT a goal scene
+        /// (STEP 2 — the scene stays ticket-keyed on a count leg) can never reach
+        /// <see cref="OnGoalPlayed"/>, which only ever fires from a goal scene's own payoff. "The
+        /// revealed scoreline is never withheld... whether or not the ticket rides on them" means
+        /// this beat's goal cannot be left to wait for a payoff that will never arrive — it commits
+        /// HERE, on the beat that staged it, exactly as <see cref="CommitRevealedCount"/> commits a
+        /// declined count batch on ITS staging beat.
+        ///
+        /// <para>Calls the SAME ledger mutator (<see cref="ScoreLedger.CompleteGoal"/>) and the
+        /// SAME repaint authority (<see cref="RepaintRevealedScore"/>) <see cref="OnGoalPlayed"/>
+        /// itself uses, so the scorebug, the ticket column's live row, and the stats panel mirror
+        /// all move on the identical frame a narrated goal would move them on — T62's rule again,
+        /// this time for a goal with no scene to carry it. A chalked-off quiet goal (Commits false)
+        /// completes without moving anything, exactly like a narrated one.</para>
+        ///
+        /// <para><b>Deliberately NOT here:</b> audio, flavour text, the score/ball L4 punch, and the
+        /// scorer reveal — all of it lives in <see cref="OnGoalPlayed"/> alone, which this method
+        /// never calls and is never called by. STEP 2's own words: "committed, scoreline
+        /// repainted, scene unchanged" — a quiet goal gets no riser and no punch, mirroring exactly
+        /// what <see cref="CommitRevealedCount"/> withholds for a quiet count ("only the drama is
+        /// discretionary", spec §4, applied here to the other ledger). <c>_ledger</c> is a plain
+        /// <c>readonly</c> field, never null (unlike <c>_countLedger</c>, which is per-leg and
+        /// nullable), so this needs no guard <see cref="CommitRevealedCount"/>'s equivalent
+        /// carries.</para></summary>
+        private void CommitRevealedGoal(ScoreLedger.StagedGoal goal)
+        {
+            _ledger.CompleteGoal(goal);
+            if (_ticket != null && _stageLeg >= 0 && _stageLeg < _ticket.Legs.Count)
+                RepaintRevealedScore(_ticket.Legs[_stageLeg]);
         }
 
         /// <summary>A corner kick or booking reaches its payoff. Count and market direction
