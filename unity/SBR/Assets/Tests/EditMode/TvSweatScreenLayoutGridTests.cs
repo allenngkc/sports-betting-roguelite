@@ -617,11 +617,16 @@ namespace SBR.Tests.EditMode
                 float columnH = columnZone.rectTransform.sizeDelta.y;   // the ticket column's whole vertical budget
                 float rowPitch = Mathf.Abs(need1.rectTransform.anchoredPosition.y
                                          - need.rectTransform.anchoredPosition.y);
-                // RiskPays is placed at AnchorTopLeft(grid.TicketFooter, 8f, 8f) with a box of
-                // footer.height - 8f, so box + 8 recovers the footer's built height; the 8f below is
-                // that authored top inset, not a magic number.
-                float footerH = riskPays.rectTransform.sizeDelta.y + 8f;
-                float headerH = columnH - 6f * rowPitch - footerH;
+                // Read off the built objects. NOT `riskPays.sizeDelta.y + 8` — that inference died
+                // with the one-row footer (see FooterHeight) — and NOT a hard-coded slot count,
+                // which T147-am moved from 6 to 4.
+                TMP_Text paysRow = FindChild<TMP_Text>(screen, "Pays");
+                TMP_Text headerRow = FindChild<TMP_Text>(screen, "TicketHeader");
+                Assert.IsNotNull(paysRow, "Pays not found");
+                Assert.IsNotNull(headerRow, "TicketHeader not found");
+                float footerH = FooterHeight(riskPays, paysRow);
+                float headerH = HeaderHeight(headerRow);
+                int slots = Mathf.RoundToInt((columnH - headerH - footerH) / rowPitch);
                 float boxW = riskPays.rectTransform.sizeDelta.x;   // the footer's inner box
 
                 Debug.Log($"[T144] column budget = {columnH:0.0}px, row pitch = {rowPitch:0.0}px, " +
@@ -702,9 +707,9 @@ namespace SBR.Tests.EditMode
                 Debug.Log($"[T144] two-row bare (0 padding) = {twoRowBare:0.0}px; " +
                           $"two-row padded (today's 8px top inset) = {twoRowPadded:0.0}px");
 
-                float footerRowHeight = (columnH - headerH - footerH) / 6f;
-                float bareRowHeight = (columnH - headerH - twoRowBare) / 6f;
-                float paddedRowHeight = (columnH - headerH - twoRowPadded) / 6f;
+                float footerRowHeight = (columnH - headerH - footerH) / slots;
+                float bareRowHeight = (columnH - headerH - twoRowBare) / slots;
+                float paddedRowHeight = (columnH - headerH - twoRowPadded) / slots;
                 Debug.Log($"[T144] footer (today) F={footerH:0.0} -> row height {footerRowHeight:0.0}");
                 Debug.Log($"[T144] two-row bare F={twoRowBare:0.0} -> row height {bareRowHeight:0.0}");
                 Debug.Log($"[T144] two-row padded F={twoRowPadded:0.0} -> row height {paddedRowHeight:0.0}");
@@ -717,7 +722,7 @@ namespace SBR.Tests.EditMode
                 Debug.Log($"[T144] live row ink = {liveInk:0.0}px (NEED {need.preferredHeight:0.0} + " +
                           $"progress {progress.preferredHeight:0.0}) with T24's margin = {liveNeed:0.0}px");
 
-                float footerCeiling = columnH - headerH - 6f * liveNeed;
+                float footerCeiling = columnH - headerH - slots * liveNeed;
                 Debug.Log("[T144] footer ceiling (largest footer that still leaves every live row its " +
                           $"T24 margin) = {footerCeiling:0.0}px");
 
@@ -735,6 +740,255 @@ namespace SBR.Tests.EditMode
                 Object.DestroyImmediate(go);
             }
         }
+
+        /// <summary>§4.1 of <c>spec-ticket-footer-2026-08-19.md</c>, as re-ruled at batch 133
+        /// (<c>T147-am</c>): the live leg row re-derived against the row height the composition
+        /// leaves behind. The ruling drops <c>TicketRowSlots</c> 6 → 4 to match
+        /// <c>RunConfig.MaxLegs</c> and grows the footer 40 → 60.
+        ///
+        /// <para>§4.1 asks for THREE lines — the compact statement, the NEED and the progress.
+        /// Today exactly one FORM carries text at a time: compact for resolved/pending rows, NEED +
+        /// progress for the live one. All three are measured here anyway, because the canon
+        /// three-line row T24 CUT for want of ~73px against a 70px slot becomes a different question
+        /// at a 99px slot, and the gate should say so rather than leave it to be rediscovered.</para>
+        ///
+        /// <para>REPORTS, never rules — same standing as T15 and T144. Measured at the real face on
+        /// the real components, so the widths carry the slot's own tracking and weight.</para></summary>
+        [Test]
+        public void T147_the_live_rows_three_lines_are_re_derived_at_the_four_slot_row_height()
+        {
+            var go = new GameObject("T147RowDerive");
+            try
+            {
+                var screen = BuildScreen(go);
+                TMP_Text compact = FindChild<TMP_Text>(screen, "LegRowLine0");
+                TMP_Text need = FindChild<TMP_Text>(screen, "LegRowNeed0");
+                TMP_Text progress = FindChild<TMP_Text>(screen, "LegRowProgress0");
+                Image columnZone = FindChild<Image>(screen, "TicketColumnZone");
+                TMP_Text riskPays = FindChild<TMP_Text>(screen, "RiskPays");
+                Assert.IsNotNull(compact, "LegRowLine0 not found");
+                Assert.IsNotNull(need, "LegRowNeed0 not found");
+                Assert.IsNotNull(progress, "LegRowProgress0 not found");
+                Assert.IsNotNull(columnZone, "TicketColumnZone not found");
+                Assert.IsNotNull(riskPays, "RiskPays not found");
+                Assert.IsNotNull(need.font, "no font resolved — a measurement in the fallback face is void");
+                Assert.IsTrue(need.font.name.Contains("Encode"),
+                    $"measured in '{need.font.name}', not Encode Sans — the same mistake T20 made once");
+
+                // Geometry read off the built objects, never recomputed from the constants under test.
+                float columnH = columnZone.rectTransform.sizeDelta.y;
+                TMP_Text paysRow = FindChild<TMP_Text>(screen, "Pays");
+                TMP_Text headerRow = FindChild<TMP_Text>(screen, "TicketHeader");
+                Assert.IsNotNull(paysRow, "Pays not found");
+                Assert.IsNotNull(headerRow, "TicketHeader not found");
+                float footerH = FooterHeight(riskPays, paysRow);
+                float headerH = HeaderHeight(headerRow);
+                TMP_Text need1 = FindChild<TMP_Text>(screen, "LegRowNeed1");
+                float pitchNow = need1 != null
+                    ? Mathf.Abs(need1.rectTransform.anchoredPosition.y - need.rectTransform.anchoredPosition.y)
+                    : 0f;
+                int slotsNow = pitchNow > 0f ? Mathf.RoundToInt((columnH - headerH - footerH) / pitchNow) : 0;
+
+                // The longest authored forms §6 permits — T24's own strings for the live pair, and
+                // T90-am's widest compact statement for the compact line.
+                // Bound to locals and logged FROM the locals: the first cut of this instrument logged
+                // one string name while measuring another, which is the phantom problem one layer down.
+                const string CompactProbe = "LANYARD TO SCORE";
+                const string NeedWidest = "ONE TEAM BLANKED";
+                const string ProgressWidest = "LIVE • 0 GOALS • 3 MORE";
+                Vector2 compactV = compact.GetPreferredValues(CompactProbe, 100000f, 0f);
+                // NOT T24's 'MARCUS VALE TO SCORE': T69/G1 retired the full-name form and
+                // SweatActiveLegModel.cs:551 emits $"{Surname(...)} TO SCORE", so that string is a
+                // PHANTOM the surface can no longer produce (it measures 300.3 against a 261.0 box and
+                // would read as a 39.3px overrun that cannot occur). T90-am's widest EMITTABLE NEED is
+                // used instead. Height is string-independent either way; the WIDTH is why this matters.
+                Vector2 needV = need.GetPreferredValues(NeedWidest, 100000f, 0f);
+                Vector2 progV = progress.GetPreferredValues(ProgressWidest, 100000f, 0f);
+
+                Debug.Log($"[T147] column {columnH:0.0} = header {headerH:0.0} + {slotsNow} x pitch "
+                          + $"{pitchNow:0.0} + footer {footerH:0.0}");
+                // HEIGHT PROBE ONLY. A TMP line box is a function of face and size, never of the
+                // string, so any string gives the compact line's true height — but this one is T90-am's
+                // NEED worst case, NOT the compact line's, and its width here is therefore not an
+                // extent verdict. The compact statement's own extent belongs to the T84 sweep.
+                Debug.Log($"[T147] compact  line box {compactV.y:0.0}h at the compact size (height probe; "
+                          + $"width {compactV.x:0.0} is NOT this slot's worst case — see the T84 sweep)");
+                Debug.Log($"[T147] NEED     '{NeedWidest}' {needV.x:0.0}w x {needV.y:0.0}h "
+                          + $"against box {need.rectTransform.sizeDelta.x:0.0}w (T90's band)");
+                Debug.Log($"[T147] progress '{ProgressWidest}' {progV.x:0.0}w x {progV.y:0.0}h "
+                          + $"against box {progress.rectTransform.sizeDelta.x:0.0}w");
+
+                const float T24Margin = 8f;   // T24's pinned margin: 4px top pad + the row's breathing
+                float liveTwoLine = needV.y + progV.y;
+                float canonThreeLine = compactV.y + needV.y + progV.y;
+
+                // The ruled geometry: four slots, a 60px footer, everything else derived.
+                const float RuledSlots = 4f, RuledFooter = 60f;
+                float ruledPitch = (columnH - headerH - RuledFooter) / RuledSlots;
+
+                // Once the composition is BUILT these two agree, and saying so is the point: the
+                // ruling's arithmetic and the surface's geometry are then one number, not two.
+                Debug.Log($"[T147] RULED geometry: {RuledSlots:0} slots, footer {RuledFooter:0.0} "
+                          + $"-> row pitch {ruledPitch:0.0}px · BUILT: {slotsNow} slots, footer "
+                          + $"{footerH:0.0}, pitch {pitchNow:0.0}px — "
+                          + (Mathf.Abs(ruledPitch - pitchNow) < 0.05f && slotsNow == (int)RuledSlots
+                             ? "BUILT MATCHES RULED"
+                             : "BUILT DOES NOT MATCH RULED — one of them has drifted"));
+                Debug.Log($"[T147] live row as BUILT (NEED + progress) = {liveTwoLine:0.0} + "
+                          + $"{T24Margin:0.0} margin = {liveTwoLine + T24Margin:0.0} vs {ruledPitch:0.0} — "
+                          + (liveTwoLine + T24Margin <= ruledPitch
+                             ? $"CLEARS by {ruledPitch - liveTwoLine - T24Margin:0.0}px"
+                             : $"SHORT by {liveTwoLine + T24Margin - ruledPitch:0.0}px"));
+                Debug.Log($"[T147] canon THREE-line row (compact + NEED + progress) = "
+                          + $"{canonThreeLine:0.0} + {T24Margin:0.0} margin = "
+                          + $"{canonThreeLine + T24Margin:0.0} vs {ruledPitch:0.0} — "
+                          + (canonThreeLine + T24Margin <= ruledPitch
+                             ? $"CLEARS by {ruledPitch - canonThreeLine - T24Margin:0.0}px. T24 cut this "
+                               + "form for want of room at a 70px slot; at this pitch it fits. REPORTED, "
+                               + "not proposed — restoring it is a ruling, not a build decision."
+                             : $"SHORT by {canonThreeLine + T24Margin - ruledPitch:0.0}px — T24's cut stands"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        /// <summary>Spec §4.2's pair check (<c>docs/design/spec-ticket-footer-2026-08-19.md</c>), in
+        /// its SECOND form. §4.2, verbatim: "assert `RiskPays` ink + `Pays` ink against the row they
+        /// share — or, once they no longer share one, assert each against its own row and assert the
+        /// rows do not overlap. Two independent green checks are what let this ship." T147-am built
+        /// separate rows, so the first form — one shared row, T144's own check — no longer applies;
+        /// this is the second.
+        ///
+        /// <para>CHECK ONE: each row's enumerated worst case — <c>RISK $13,639</c> on row 1,
+        /// <c>PAYS $73,318,376,502</c> on row 2 (the live state's own strings; T144's pool,
+        /// <c>PayoutMaximumTests</c>) — fits its OWN 249.0px box. Measured on the real
+        /// <c>RiskPays</c>/<c>Pays</c> components via <c>GetPreferredValues</c>, never
+        /// <c>float.PositiveInfinity</c> (TMP returns infinities at that width) and never the
+        /// <c>MeasureText</c> throwaway (it applies faux-bold to a face already Bold 700).</para>
+        ///
+        /// <para>CHECK TWO: the two rows do not overlap. Both are built top-left anchored with pivot
+        /// (0,1) (<c>BuildTicketColumn</c>'s two <c>MakeText</c> calls), so this reads
+        /// <c>anchoredPosition.y</c> and <c>sizeDelta.y</c> directly.</para>
+        ///
+        /// <para>The settled-state row is REPORTED, never asserted: <c>RETURNED $73,318,376,502</c>
+        /// overruns its own row, and that is <c>T133</c>, still open with the Design Director —
+        /// separate rows was ruled to fix the PAIR collision (<c>T74-am6</c>), never claimed to fix
+        /// this, and spec §2 was corrected at batch 133 to say exactly that.</para></summary>
+        [Test]
+        public void T147_the_two_footer_rows_each_clear_their_own_box_and_do_not_overlap()
+        {
+            var go = new GameObject("T147TwoRows");
+            try
+            {
+                var screen = BuildScreen(go);
+                TMP_Text riskPays = FindChild<TMP_Text>(screen, "RiskPays");
+                TMP_Text pays = FindChild<TMP_Text>(screen, "Pays");
+                Assert.IsNotNull(riskPays, "RiskPays not found");
+                Assert.IsNotNull(pays, "Pays not found");
+                Assert.IsNotNull(riskPays.font, "no font resolved — a measurement in the fallback face is void");
+                Assert.IsTrue(riskPays.font.name.Contains("Encode"),
+                    $"measured in '{riskPays.font.name}', not Encode Sans — the same mistake T20 made once");
+
+                // CHECK ONE (spec §4.2, second form): each row's own enumerated worst case against its
+                // own box. sizeDelta.x is each row's real built width (249.0, footerBoxW in
+                // BuildTicketColumn) — read off the component, never recomputed from the constants
+                // under test (T20RowFit's own discipline). 100000f, not float.PositiveInfinity: TMP
+                // multiplies the width constraint into its layout maths and a value that large returns
+                // infinities (T144's own note on this same call).
+                float riskBoxW = riskPays.rectTransform.sizeDelta.x;
+                float paysBoxW = pays.rectTransform.sizeDelta.x;
+                Vector2 riskV = riskPays.GetPreferredValues("RISK $13,639", 100000f, 0f);
+                Vector2 paysV = pays.GetPreferredValues("PAYS $73,318,376,502", 100000f, 0f);
+
+                Assert.LessOrEqual(riskV.x, riskBoxW,
+                    $"RiskPays (row 1) worst case 'RISK $13,639' measures {riskV.x:0.0}px, which " +
+                    $"overruns its own {riskBoxW:0.0}px box by {riskV.x - riskBoxW:0.0}px — row 1 no " +
+                    "longer clears its enumerated worst case.");
+                Assert.LessOrEqual(paysV.x, paysBoxW,
+                    $"Pays (row 2) worst case 'PAYS $73,318,376,502' measures {paysV.x:0.0}px, which " +
+                    $"overruns its own {paysBoxW:0.0}px box by {paysV.x - paysBoxW:0.0}px — row 2 no " +
+                    "longer clears its enumerated worst case.");
+
+                // CHECK TWO (spec §4.2, second form): the rows do not overlap. Both rows are built
+                // top-left anchored with pivot (0,1), and AnchorTopLeft returns -(zone.y + pad) —
+                // Unity's canvas y is NEGATIVE downward on this surface — so anchoredPosition.y is
+                // already a negated distance from the footer's top. Negate it back here to reason in
+                // absolute, downward-positive px, where "top" and "bottom" read the way a person reads
+                // a screen instead of by chasing a double negative.
+                float riskTop = -riskPays.rectTransform.anchoredPosition.y;
+                float riskBottom = riskTop + riskPays.rectTransform.sizeDelta.y;
+                float paysTop = -pays.rectTransform.anchoredPosition.y;
+                float paysBottom = paysTop + pays.rectTransform.sizeDelta.y;
+                float overlap = riskBottom - paysTop;   // > 0 means row 2's top sits above row 1's bottom
+
+                Assert.LessOrEqual(overlap, 0.01f,
+                    $"the two footer rows overlap by {overlap:0.0}px — RiskPays runs " +
+                    $"{riskTop:0.0}..{riskBottom:0.0}, Pays runs {paysTop:0.0}..{paysBottom:0.0}. The " +
+                    "lower row's top must sit at or below the upper row's bottom.");
+
+                // REPORT ONLY, never assert — T144's own standing: the layout call belongs to the
+                // Design Director, and a failing assert here would fail the suite for a design reason,
+                // not a code defect. The settled-state strings against each row's own 249.0px box.
+                Vector2 stakeV = riskPays.GetPreferredValues("STAKE $13,639", 100000f, 0f);
+                Vector2 returnedV = pays.GetPreferredValues("RETURNED $73,318,376,502", 100000f, 0f);
+                Vector2 paidV = pays.GetPreferredValues("PAID $73,318,376,502", 100000f, 0f);
+
+                Debug.Log($"[T147] row 1 settled 'STAKE $13,639' = {stakeV.x:0.0}w — " +
+                          (stakeV.x <= riskBoxW
+                              ? $"fits the {riskBoxW:0.0}px row 1 box"
+                              : $"OVERRUNS the {riskBoxW:0.0}px row 1 box by {stakeV.x - riskBoxW:0.0}px"));
+                Debug.Log($"[T147] row 2 live 'PAYS $73,318,376,502' = {paysV.x:0.0}w — " +
+                          (paysV.x <= paysBoxW
+                              ? $"fits the {paysBoxW:0.0}px row 2 box"
+                              : $"OVERRUNS the {paysBoxW:0.0}px row 2 box by {paysV.x - paysBoxW:0.0}px"));
+                // EXPECTED to overrun (~300.9 against 249.0, ~51.9px over, per the spec's own batch-133
+                // measurement) — this is T133, still open with the Design Director. Separate rows fixes
+                // the PAIR collision (T74-am6) and was never claimed to fix this; spec §2 was corrected
+                // at batch 133 to say exactly that. DO NOT "fix" this by asserting — the word is the
+                // DD's call, not this suite's.
+                Debug.Log($"[T147] row 2 settled 'RETURNED $73,318,376,502' = {returnedV.x:0.0}w — " +
+                          (returnedV.x <= paysBoxW
+                              ? $"fits the {paysBoxW:0.0}px row 2 box"
+                              : $"OVERRUNS the {paysBoxW:0.0}px row 2 box by {returnedV.x - paysBoxW:0.0}px (EXPECTED — T133, open with the DD)"));
+                Debug.Log($"[T147] row 2 settled 'PAID $73,318,376,502' = {paidV.x:0.0}w — " +
+                          (paidV.x <= paysBoxW
+                              ? $"fits the {paysBoxW:0.0}px row 2 box"
+                              : $"OVERRUNS the {paysBoxW:0.0}px row 2 box by {paidV.x - paysBoxW:0.0}px"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        /// <summary>The footer's BUILT height, read off its two money rows.
+        ///
+        /// <para>It used to be inferred as <c>riskPays.sizeDelta.y + 8f</c>, which was correct while
+        /// the footer held ONE row whose box was <c>footer.height - 8</c>. <c>T147-am</c> split it
+        /// into TWO rows of <c>footer.height / 2</c>, and that formula silently began reporting
+        /// <b>38.0 for a 60px footer</b> — which then propagated into a negative derived header and
+        /// a "ruled" pitch lower than the built one. <b>The suite stayed green throughout:</b>
+        /// nothing asserted on these numbers, because they are a report. A stale READER is the same
+        /// defect class this lane keeps finding in stale COMMENTS, and it is worth naming as such.</para>
+        ///
+        /// <para>Read from the rows themselves — top of row 1 to bottom of row 2 — so it survives
+        /// any future re-padding. Canvas y is negative downward here (<c>AnchorTopLeft</c> returns
+        /// <c>-(zone.y + pad)</c>), hence the negations.</para></summary>
+        private static float FooterHeight(TMP_Text riskPays, TMP_Text pays)
+        {
+            float top = -riskPays.rectTransform.anchoredPosition.y;
+            float bottom = -pays.rectTransform.anchoredPosition.y + pays.rectTransform.sizeDelta.y;
+            return bottom - top;
+        }
+
+        /// <summary>The ticket header's built height. <c>TicketHeader</c> is placed at
+        /// <c>AnchorTopLeft(grid.TicketHeader, 8f, 4f)</c> with a box of <c>height - 4</c>, so box
+        /// plus that 4px inset recovers it. Read rather than assumed, for the same reason as
+        /// <see cref="FooterHeight"/>.</summary>
+        private static float HeaderHeight(TMP_Text ticketHeader)
+            => ticketHeader.rectTransform.sizeDelta.y + 4f;
 
         /// <summary>A throwaway text component used only to ask Unity what a string actually
         /// measures. Phase T: TMP, so it measures in the same renderer the surface now uses — a

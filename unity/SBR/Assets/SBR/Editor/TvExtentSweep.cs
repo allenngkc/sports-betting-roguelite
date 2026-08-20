@@ -508,10 +508,10 @@ namespace SBR.EditorTools
             // SweatActiveLegModel.cs:258-268); RISK otherwise. The figure's own bound is unchanged
             // (see Pays below); only the leading word is now two-valued, so every existing amount
             // gets a matching STAKE form alongside the RISK form it already had.
-            ("RiskPays", "the footer's LEFT half; stake-bounded; first word is StakeWord() (RISK/STAKE) — SweatActiveLegModel.cs:279-280, TvSweatScreen.cs:2781", new[]
+            ("RiskPays", "the footer's FIRST row, at the full inner width; stake-bounded; first word is StakeWord() (RISK/STAKE) — SweatActiveLegModel.cs:279-280, TvSweatScreen.cs:2781", new[]
                 { "RISK $13,639", "RISK $1,234", "RISK $50",
                   "STAKE $13,639", "STAKE $1,234", "STAKE $50" }),
-            ("Pays", "the footer's RIGHT half; parlay term 7,331,837.65 x stake — see PayoutMaximumTests", new[]
+            ("Pays", "the footer's SECOND row, at the full inner width; parlay term 7,331,837.65 x stake — see PayoutMaximumTests", new[]
                 // T114-am/T121 put `RETURNED $x` into THIS slot, so the pool carries it — including
                 // at the enumerated worst case, which is the whole of T133's exposure. `RETURNED` is
                 // eight characters where `PAYS` is four, on the one slot whose worst case was already
@@ -1099,7 +1099,13 @@ namespace SBR.EditorTools
 
         /// <summary>Two slots anchored from opposite edges of one rectangle. Neither overruns its own
         /// box; together they overprint, which is the shape the pair caught and which no single-slot
-        /// measurement can see.</summary>
+        /// measurement can see.
+        ///
+        /// <para>RETIRED as of the footer's split into two rows (T147-am): <c>RiskPays</c> and
+        /// <c>Pays</c> no longer share one rectangle from opposite edges, so this helper's subject no
+        /// longer exists on this surface. It has NO CALL SITES as of this change — kept rather than
+        /// deleted (removing dead code is a separate call from this one), but nothing here should be
+        /// read as describing the current footer.</para></summary>
         private static void Pair(Dictionary<string, TMP_Text> all, string aName, string aText,
                                  string bName, string bText)
         {

@@ -1320,6 +1320,137 @@ namespace SBR.Tests.PlayMode
                       "worst-case amount is unreachable in play; see the dock README");
         }
 
+        /// <summary>T147 — THE RE-RULED TWO-ROW FOOTER, AND THE COST IT WAS PAID OUT OF.
+        ///
+        /// <para>`T144`/`T74-am6` ruled the two money facts onto SEPARATE ROWS: each half fits the
+        /// 249.0px column alone and the PAIR does not, at ordinary values. Built at `T147-am` with
+        /// <c>TicketFooterHeight</c> 40 → 60 and <c>TicketRowSlots</c> 6 → 4 — the slot count was
+        /// reserving two rows the engine can never fill (<c>RunConfig.MaxLegs = 4</c>, ENFORCED at
+        /// <c>Run.cs:190-191</c>), and that is what paid for the taller footer with `T24`'s margin
+        /// intact.</para>
+        ///
+        /// <para><b>E3 IS THE ONE TO HOLD ON, and it is why this arm shoots a multi-leg ticket.</b>
+        /// The footer is easy to shoot and easy to like; the cost lands elsewhere on the same
+        /// screen — the leg rows went 69.3px → 99.0px for 58.8px of live ink. A set showing only
+        /// the footer has not shown the change. Every burst here carries a live leg row in frame.</para>
+        ///
+        /// <para><b>WHY E1's OWN CASE IS FORCED.</b> `T74-am6` names `$1,234` staked paying
+        /// `$12,340` — a plain 10x parlay and deliberately NOT a tail case. It is nonetheless
+        /// unreachable at a fresh run's bank of 350 (<c>RunConfig.StartingBank</c>), so it cannot be
+        /// dealt for. This arm therefore shoots BOTH: an UNFORCED ordinary state at whatever the run
+        /// really affords, and the cited pair FORCED. They differ in provenance, not just in
+        /// magnitude, and the filenames say which is which.</para>
+        ///
+        /// <para><b>THE OPPOSITE-ANCHOR ARM (`T147-am2`).</b> The ruling builds left/left, but the
+        /// money control kept OPPOSITE anchors when it split onto two rows, so the alignment is an
+        /// open choice with a precedent against it. Both arms are shot on one ruler, on the SETTLED
+        /// pair: `RISK`/`PAYS` are both four characters and align either way, while `STAKE`/
+        /// `RETURNED` are five and eight and are where left/left goes ragged.</para>
+        ///
+        /// <para><b>WHAT THIS SET DOES NOT CLAIM.</b> Nothing about `RETURNED`'s own width. It
+        /// measures 300.9 against the 249.0 row and OVERRUNS BY 51.9px — separate rows fixes the
+        /// PAIR collision and was never claimed to fix that. It is `T133`, still open, and it is
+        /// visible in these frames rather than hidden by them.</para></summary>
+        [Explicit("T147 E1/E2/E3: the re-ruled two-row footer — an unforced ordinary state, T74-am6's "
+            + "cited pair FORCED, the enumerated fact floor FORCED, and the opposite-anchor arm, all "
+            + "with a live leg row in frame. Writes frames. Run by filter only.")]
+        [Timeout(900000)]
+        [UnityTest]
+        public IEnumerator Capture_T147_TwoRowFooter()
+        {
+            _seed = "GOALLESS-5";
+            s_sceneIndex = 0;
+            Directory.CreateDirectory(OutputDir);
+            TheaterStage.PresentationSeedOverride = StableSeed(_seed);
+            Time.captureDeltaTime = 1f / 50f;
+
+            yield return LoadRoom();
+            var director = Object.FindAnyObjectByType<RunDirector>();
+            var screen = Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+            Camera cam = Camera.main;
+            Assert.IsNotNull(cam, "no main camera");
+
+            screen.TimeScaleOverride = 1f;
+            couch.transitionDuration = 0.01f;
+            yield return WaitUntilOrFail(() => director.Run != null,
+                Time.realtimeSinceStartup + 10f, "director never started a run");
+
+            director.StartNewRun(_seed);
+            Run run = director.Run;
+            // MULTI-LEG, for E3: a single-leg ticket has no second row to show the new pitch against,
+            // and the whole point of E3 is that the height came from the rows. Two matchups, base
+            // moneyline selections — PlaceTicket REFUSES an unoffered selection at runtime, so this
+            // takes markets the slate certainly carries rather than inventing a line.
+            Matchup m0 = run.CurrentSlate.Matchups[0];
+            Matchup m1 = run.CurrentSlate.Matchups[1];
+            run.PlaceTicket(new List<Pick>
+            {
+                new Pick(m0.Index, MarketSelection.MoneylineDraw()),
+                new Pick(m1.Index, MarketSelection.MoneylineDraw()),
+            }, 25.0);
+            director.LockRound();
+            couch.OnInteract(null);
+            yield return WaitUntilOrFail(() => SitSpot.Active != null,
+                Time.realtimeSinceStartup + 15f, "player never sat down");
+
+            // E3's binding condition: a LIVE leg row must be on screen, not merely a ticket. The live
+            // form is the only one that carries progress text, so that is the signal — the same one
+            // TicketFooterWord_NeverDisagreesWithAnyRow reads.
+            yield return WaitUntilOrFail(
+                () => !string.IsNullOrEmpty(screen.DebugLegProgress(0))
+                   || !string.IsNullOrEmpty(screen.DebugLegProgress(1)),
+                Time.realtimeSinceStartup + 60f,
+                "no leg ever went live — E3 cannot be satisfied by a frame with no live row");
+
+            Debug.Log($"[T147-CAP] live row present :: leg0='{screen.DebugLegProgress(0)}' "
+                      + $"leg1='{screen.DebugLegProgress(1)}' footer='{screen.DebugTicketRiskText}' "
+                      + $"/ '{screen.DebugTicketPaysText}'");
+
+            // E1 + E3, UNFORCED: the real ticket at what the run actually affords, with a live row in
+            // frame. This is the only burst here whose strings the product produced by itself.
+            yield return CaptureBurst(screen, cam, "t147-E1E3-unforced-live-row", 6, 0f);
+
+            // Each force is re-applied immediately before its own burst: the force LATCHES NOTHING by
+            // design, so any repaint between force and shutter photographs the real string instead.
+            foreach ((string label, string risk, string pays) in new[]
+            {
+                // E1's cited case — T74-am6's plain 10x parlay, the one that collides in the old
+                // one-row form at ORDINARY values.
+                ("E1-ordinary-cited", "RISK $1,234", "PAYS $12,340"),
+                // E2 — the enumerated fact floor, bank $10,000, from PayoutMaximumTests.
+                ("E2-fact-floor", "RISK $13,639", "PAYS $73,318,376,502"),
+                // The settled pair, left/left as ruled. RETURNED overruns its own row by 51.9px and
+                // that is T133, shown rather than hidden.
+                ("E1-settled-left-left", "STAKE $13,639", "RETURNED $73,318,376,502"),
+            })
+            {
+                screen.ForceRiskPaysTextForCapture(risk);
+                screen.ForcePaysTextForCapture(pays);
+                Debug.Log($"[T147-CAP] {label} :: '{screen.DebugTicketRiskText}' / "
+                          + $"'{screen.DebugTicketPaysText}' — FORCED, NOT A SHIPPED STATE");
+                yield return CaptureBurst(screen, cam, $"FORCED-t147-{label}", 6, 0f);
+            }
+
+            // T147-am2's counter-arm, on the SETTLED pair and nothing else — that is where five
+            // characters over eight go ragged and four over four do not.
+            screen.ForcePaysAnchorForCapture(true);
+            screen.ForceRiskPaysTextForCapture("STAKE $13,639");
+            screen.ForcePaysTextForCapture("RETURNED $73,318,376,502");
+            Debug.Log("[T147-CAP] E1-settled-opposite-anchor :: second row RIGHT-anchored — "
+                      + "FORCED LAYOUT, NOT THE SHIPPED COMPOSITION (the build is left/left)");
+            yield return CaptureBurst(screen, cam, "FORCED-t147-E1-settled-opposite-anchor", 6, 0f);
+            screen.ForcePaysAnchorForCapture(false);   // leave the scene as the product ships it
+
+            Debug.Log($"[T147-CAP] complete -> {OutputDir}. UNFORCED: the E1E3 burst. FORCED and "
+                      + "disclosed in the filename: everything else. The opposite-anchor burst forces "
+                      + "LAYOUT, not just copy — it is the arm T147-am2 sent to a frame, not a state "
+                      + "the product has.");
+        }
+
         /// <summary>T129 ARM 2 — COUNT LEGS SETTLING LEVEL.
         ///
         /// <para>A goalless draw settles a whole family the docked set has never carried:
