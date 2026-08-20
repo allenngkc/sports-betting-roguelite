@@ -1,6 +1,19 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-19, cycle 421 (heartbeat).** THE
+**Keeper-era heartbeat stamp: 2026-08-19, cycle 422.** THE T140 FORK IS
+WITH ALLEN (batch 130): (A) one telling with N legs live - LARGE, an
+engine restructure TV cannot execute alone; DD recommends it because SGP
+made same-match tickets the expected shape - vs (B) a labelled replay
+per leg, cheaper and a real broadcast idiom, defensible if cost decides.
+Neither form has a frame. Also this cycle: the three string builds
+MERGED (suffix gone, banner bare, settled footer); T133 ruled as a
+two-rung ladder, TV measuring PAID + shooting the rung-2 frame to close
+it; the stale :2841 clause (engine forbids two legs on one matchup -
+false since SGP) strikes with the next build. With Allen: the T140 fork,
+BOTH spec approvals (console 121, drawn ending 128), the hold's
+structure (T127), research 8-9.
+
+*(prior stamp, cycle 421 (heartbeat):)* THE
 DRAWN-ENDING SPEC IS WITH ALLEN (batch 128, 737f4c2 - Allen ruled the
 ending belongs to the TICKET; T140 holds the ending line until every leg
 on the fixture sweeps, killing T135's rewind; D1 = arm 2 re-shot is the
