@@ -1,6 +1,20 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-19, cycle 420 (heartbeat).** Allen
+**Keeper-era heartbeat stamp: 2026-08-19, cycle 421 (heartbeat).** THE
+DRAWN-ENDING SPEC IS WITH ALLEN (batch 128, 737f4c2 - Allen ruled the
+ending belongs to the TICKET; T140 holds the ending line until every leg
+on the fixture sweeps, killing T135's rewind; D1 = arm 2 re-shot is the
+phase's holding frame). The window read landed (batch 127): T135 the
+multi-leg rewind, T130-vf CorrectScore prints a C# identifier in
+money-amber, T136 the loser told before the winner, T138 fixed (frames
+copied to main-2). TV builds the three string items DIRECTLY - Allen
+authorized the delegation deviation (its bundled agent ran long; the
+items are authored verbatim). Owed next: TV numbers the per-fixture
+restructure cost after its builds dock. With Allen: BOTH spec approvals
+(console batch 121, drawn ending batch 128), the hold's structure
+(T127), research 8-9.
+
+*(prior stamp, cycle 420 (heartbeat):)* Allen
 countermanded the bundling: the three string builds dispatched to TV NOW
 (one bundled sub-agent running - the suffix, the cash-out amount,
 STAKE/RETURNED with its T133 gate), not held for the DD's read. DD still
