@@ -1934,7 +1934,7 @@ namespace SBR.Tests.EditMode
 
                 typeof(TvSweatScreen).GetMethod("ShowCashOutAccepted",
                     BindingFlags.NonPublic | BindingFlags.Instance)
-                    .Invoke(screen, new object[] { "CASHED OUT $199" });
+                    .Invoke(screen, new object[] { "CASHED OUT" });   // T114-am: bare, the amount moved to the footer
 
                 Assert.IsTrue(field.enabled,
                     "T68-am: the accepted state lights the slot's field — that is the stable ground "
@@ -1946,7 +1946,11 @@ namespace SBR.Tests.EditMode
                     "T68-am: no status word. The OFFER is over — T43's 'nothing of the offer "
                     + "outlives the accept' is about the price and the HOLD E instruction, not the "
                     + "slot rectangle, which §6.1 gives six states.");
-                Assert.AreEqual("CASHED OUT $199", figure.text);
+                // T114-am: the banner DROPPED its amount. The assertion is not weakened — it still
+                // pins the accepted slot's exact text — only the expected literal moves, because
+                // the footer now states the return and a banner restating it would name the same
+                // fact one slot apart (T69/T70).
+                Assert.AreEqual("CASHED OUT", figure.text);
             }
             finally { Object.DestroyImmediate(go); }
         }

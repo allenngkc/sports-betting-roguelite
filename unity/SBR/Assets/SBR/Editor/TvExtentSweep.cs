@@ -484,7 +484,9 @@ namespace SBR.EditorTools
             // measure): 'SUSPENDED' 152.3px against the 241.0px box, 88.7px spare — the pool below
             // holds only what the code can now actually emit (C46's both-directions rule).
             ("CashOut", "§6.1 money control, six states", new[]
-                { "SUSPENDED", "CASHED OUT $1,240", "CASH OUT $1,240", "CASH OUT $183" }),
+                // T114-am: `CASHED OUT` is BARE — the banner dropped its amount, so the amount-bearing
+                // forms can no longer be emitted and a pool that kept them would measure a phantom.
+                { "SUSPENDED", "CASHED OUT", "CASH OUT $1,240", "CASH OUT $183" }),
             // T88's gesture gave the status word a THIRD state: under a held preview the only act left
             // is the commit, so the word says so. Added with the wiring rather than after it.
             ("CashOutStatus", "§6.1 status words — all three states of CashOutStatusWord()",
@@ -510,7 +512,14 @@ namespace SBR.EditorTools
                 { "RISK $13,639", "RISK $1,234", "RISK $50",
                   "STAKE $13,639", "STAKE $1,234", "STAKE $50" }),
             ("Pays", "the footer's RIGHT half; parlay term 7,331,837.65 x stake — see PayoutMaximumTests", new[]
-                { "PAYS $73,318,376,502", "PAYS $7,331,837,650", "PAYS $12,340" }),
+                // T114-am/T121 put `RETURNED $x` into THIS slot, so the pool carries it — including
+                // at the enumerated worst case, which is the whole of T133's exposure. `RETURNED` is
+                // eight characters where `PAYS` is four, on the one slot whose worst case was already
+                // established by enumeration. Enumerated here so the sweep PRICES it rather than the
+                // lane predicting it.
+                { "PAYS $73,318,376,502", "PAYS $7,331,837,650", "PAYS $12,340",
+                  "RETURNED $73,318,376,502", "RETURNED $7,331,837,650", "RETURNED $199",
+                  "RETURNED $0" }),
             // Added when the POPULATION line below named them: the sweep's own §4.2 statement found
             // three slots that were neither swept nor a sibling row index, and two of them are
             // trivially enumerable. Closing the gap beats excusing it — a named gap is still a gap.
@@ -570,7 +579,12 @@ namespace SBR.EditorTools
             ("Flavor", "SweatFlavor's ten authored decks (verbatim) + the count-batch suffix (TvSweatScreen.cs:1695) + the disjoint decisive-beat pool (SweatFlavor.cs:297-319, T115 §3.5/C46) — see the block comment above for which four decks the suffix can reach and why, and for the named gaps",
                 And(FromEach(FlavorPickedTemplates, ClubNouns), FromEach(FlavorOtherTemplates, ClubNouns),
                     CornerForAgainst, BookingForAgainst,
-                    Suffixed(CornerForAgainst, MaxCornerBatchDelta), Suffixed(BookingForAgainst, MaxCardBatchDelta),
+                    // T110-am2: THE SUFFIXED FORMS ARE GONE FROM THE POOL because the suffix is gone
+                    // from the code. `Suffixed(...)` is kept as a helper but is no longer called —
+                    // a pool that outlives its strings MEASURES A PHANTOM, which is this
+                    // instrument's own recorded defect (T111-am) and the reason C46's traceability
+                    // runs in BOTH directions. The first sweep after the removal still reported the
+                    // 94.8px overrun off these entries, on a string the surface can no longer emit.
                     FlavorNonDeckLines, DecisiveBeatLines)),
             ("Chrome", "PRD §8.1 chrome row", new[] { "ROUND 3   BANK $1,240   PAYMENT $800   SEED 48151623" }),
 
@@ -775,6 +789,23 @@ namespace SBR.EditorTools
                 // delta is stated rather than inferred.
                 MeasureOne(all, "CashOut", "MARKET SUSPENDED", "T112 incumbent — the overrunning constant");
                 MeasureOne(all, "CashOut", "SUSPENDED", "T112 candidate named by the DD");
+
+                // T133's owed measurement, taken AT BUILD TIME exactly as that row schedules it.
+                //
+                // T121 authored `RETURNED $x` into the footer's RIGHT half. That slot is `Pays`, and
+                // it is THE WIDEST-BOUNDED STRING ON THE SURFACE — `PAYS $73,318,376,502`, eleven
+                // digits, enumerated over 648,000 priced offers by PayoutMaximumTests and carried in
+                // the sweep's pool for exactly that reason.
+                //
+                // `RETURNED` IS EIGHT CHARACTERS WHERE `PAYS` IS FOUR, and nothing in T121 priced
+                // the swap. This sweep already measured the incumbent at 239.7px against a 249.0px
+                // box — 9.3px spare — so four extra characters is the whole question.
+                //
+                // The incumbent is measured beside the candidate so the delta is stated, never
+                // inferred.
+                MeasureOne(all, "Pays", "PAYS $73,318,376,502", "T133 incumbent — the enumerated worst case");
+                MeasureOne(all, "Pays", "RETURNED $73,318,376,502", "T133 candidate — T121's word on the worst case");
+                MeasureOne(all, "Pays", "RETURNED $0", "T133 — T121's own authored string, shortest form");
 
                 // T110-am's owed measurement: THE DECKS WITHOUT THE SUFFIX. The overrun is reachable
                 // only on the four decks that can receive the suffix, so the suffix is common to

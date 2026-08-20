@@ -203,7 +203,7 @@ namespace SBR.Tests.EditMode
                     ("Suspended",        "SUSPENDED", true),  // T112: re-authored, was "MARKET SUSPENDED"
                     ("Pending window",   "SUSPENDED", true),  // T112: re-authored, was "MARKET SUSPENDED"
                     ("Unavailable",      string.Empty, false),
-                    ("Accepted",         "CASHED OUT $184", true),
+                    ("Accepted",         "CASHED OUT", true),   // T114-am: the banner DROPPED its amount
                 };
 
                 foreach ((string label, string text, bool enabled) in states)
