@@ -1209,7 +1209,16 @@ namespace SBR.Tests.PlayMode
                 // At interval 0 each capture is one rendered frame, so 60 frames is 1.2 SIM-seconds
                 // of contiguous coverage from the whistle forward, and the clock in each frame's own
                 // log line says exactly which beat it is rather than the label claiming it.
-                yield return CaptureBurst(screen, cam, $"goalless-{label}-ending", 60, 0f);
+                // T129 arm 1: 60 -> 150 frames (3.0 sim-seconds at this harness's 50fps capture
+                // rate). THE GAP T125 MEASURED: the drawn-ending hold consumes 1.02s of the old
+                // 1.2s window, so the win's TALLY, FLOOD and ROOM GLOW all fall OUTSIDE it — the
+                // set could show the ending beginning and never whether it resolves.
+                //
+                // NOTHING ELSE ABOUT THIS ENTRY POINT CHANGES — same seed, same matchup, same
+                // stake, same two picks. That is T129's binding condition (a), and it is the whole
+                // arm: a re-shoot that moves any other variable is not comparable to the docked set
+                // and the point is lost.
+                yield return CaptureBurst(screen, cam, $"goalless-{label}-ending", 150, 0f);
                 Debug.Log($"[TvSweatCaptureHarness] ending {endingsCaptured}: sweat {idx} ({label}) " +
                           $"ticket state '{(at == null ? "null" : at.State.ToString())}' " +
                           $"— it leaves Open at ROUND settlement, not at its own sweat's end");
@@ -1226,6 +1235,169 @@ namespace SBR.Tests.PlayMode
 
 
             Debug.Log($"[TvSweatCaptureHarness] seed={_seed} goalless capture complete -> {OutputDir}");
+        }
+
+        /// <summary>T129 ARM 2 — COUNT LEGS SETTLING LEVEL.
+        ///
+        /// <para>A goalless draw settles a whole family the docked set has never carried:
+        /// <c>UNDER 1.5/2.5/3.5 GOALS</c> all win, <c>BTTS — NO</c> wins, <c>TOTAL GOALS EVEN</c>
+        /// wins on zero. <b>None has ever been shot at its ending.</b> One ticket carrying an under
+        /// leg and a BTTS-NO leg covers it.</para>
+        ///
+        /// <para><b>Same seed and same goalless matchup as arm 1, deliberately.</b> A 0–0 settles
+        /// this whole family at once, and sharing the fixture keeps the three arms comparable with
+        /// each other as well as with the docked set — a second fixture would buy nothing and cost
+        /// the comparison.</para>
+        ///
+        /// <para><b>Selections come OFF THE BOARD.</b> <c>PlaceTicket</c> throws
+        /// "Market selection is not offered" for anything the board never priced — the engine
+        /// enforcing this lane's own discipline, and it has already cost a run. A matchup that
+        /// prices neither line is a RE-SEED, never a substitution.</para>
+        ///
+        /// <para><b>WHAT THIS SET DOES NOT CLAIM:</b> nothing about a NON-goalless draw (§6.8 rules
+        /// this the drawn match's line, not the goalless one, and generality is not what is
+        /// missing); nothing about cards; and no judgement on whether the ending reads — that is a
+        /// C11 call at the acceptance view.</para></summary>
+        [Explicit("T129 arm 2: count legs settling level on a goalless draw — an under-goals leg and "
+            + "a BTTS-NO leg, shot at their ending. Writes frames. Run by filter only.")]
+        [Timeout(1200000)]
+        [UnityTest]
+        public IEnumerator Capture_CountLegsSettlingLevel()
+        {
+            yield return RunGoallessSingleTicketCapture(
+                "level-count-legs",
+                (matchupIndex, matchup) =>
+                {
+                    MarketSelection under = FirstOfferedSelection(matchup, MarketKind.TotalGoals,
+                        s => s.Choice == MarketChoice.Under,
+                        "no UNDER total-goals line on the goalless matchup — a RE-SEED, never a "
+                        + "substitution and never a constructed selection");
+                    MarketSelection bttsNo = FirstOfferedSelection(matchup, MarketKind.BothTeamsToScore,
+                        s => s.Choice == MarketChoice.No,
+                        "no BTTS-NO line on the goalless matchup — a RE-SEED, never a substitution");
+                    return new List<Pick> { new Pick(matchupIndex, under), new Pick(matchupIndex, bttsNo) };
+                });
+        }
+
+        /// <summary>T129 ARM 3 — CORRECT SCORE <c>0-0</c>.
+        ///
+        /// <para><b>New territory: <c>CorrectScore</c> had no reachable home until <c>S95</c>, so NO
+        /// CAPTURE OF ANY KIND EXISTS.</b> The longest price on the board settling on the quietest
+        /// possible match is this phase's extreme case.</para>
+        ///
+        /// <para><b>T129 condition (b) bites hardest here: the subject is a specific STRING</b>, so
+        /// the matchup is PINNED and the <c>0-0</c> cell is located explicitly. <b>It is not dealt
+        /// for.</b> A different correct-score cell would produce a complete, structurally-fine set
+        /// that answers nothing — the failure this lane has already recorded twice — so a board that
+        /// does not price <c>0-0</c> here fails loudly as a re-seed.</para>
+        ///
+        /// <para><b>WHAT THIS SET DOES NOT CLAIM:</b> nothing about any other correct-score cell,
+        /// and nothing about how the price READS at the acceptance view (C11).</para></summary>
+        [Explicit("T129 arm 3: correct score 0-0 settling on a goalless draw — no capture of this "
+            + "market has ever existed. Writes frames. Run by filter only.")]
+        [Timeout(1200000)]
+        [UnityTest]
+        public IEnumerator Capture_CorrectScoreNilNil()
+        {
+            yield return RunGoallessSingleTicketCapture(
+                "correct-score-0-0",
+                (matchupIndex, matchup) =>
+                {
+                    MarketSelection cs = FirstOfferedSelection(matchup, MarketKind.CorrectScore,
+                        s => s.ScoreHome == 0 && s.ScoreAway == 0,
+                        "the goalless matchup does not price the CORRECT SCORE 0-0 cell — a RE-SEED. "
+                        + "T129 (b) says PIN OR FORCE the matchup because the subject is a specific "
+                        + "STRING; shooting a different cell would answer nothing while looking fine");
+                    return new List<Pick> { new Pick(matchupIndex, cs) };
+                });
+        }
+
+        /// <summary>The first offer of <paramref name="kind"/> on this matchup matching
+        /// <paramref name="want"/>, read OFF the board and never constructed. Fails with the
+        /// caller's own re-seed message when the board does not price it.</summary>
+        private static MarketSelection FirstOfferedSelection(
+            Matchup matchup, MarketKind kind, System.Func<MarketSelection, bool> want, string reseedMessage)
+        {
+            foreach (MarketOffer offer in matchup.Markets)
+                if (offer.Selection.Kind == kind && want(offer.Selection))
+                    return offer.Selection;
+            Assert.Fail(reseedMessage);
+            return default;
+        }
+
+        /// <summary>Arms 2 and 3 share everything except which picks they place, so the shoot lives
+        /// here once. Same seed, same goalless matchup, same stake and the same 150-frame
+        /// frame-contiguous ending burst as arm 1 — T129's conditions (a), (c) and (d) hold by
+        /// construction, and (e)'s payout-slot trace rides CaptureBurst's own per-frame log.</summary>
+        private IEnumerator RunGoallessSingleTicketCapture(
+            string label, System.Func<int, Matchup, List<Pick>> buildPicks)
+        {
+            _seed = "GOALLESS-5";
+            s_sceneIndex = 0;
+            Directory.CreateDirectory(OutputDir);
+            TheaterStage.PresentationSeedOverride = StableSeed(_seed);
+            Time.captureDeltaTime = 1f / 50f;
+
+            yield return LoadRoom();
+            var director = Object.FindAnyObjectByType<RunDirector>();
+            var screen = Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+            Camera cam = Camera.main;   // the SEATED IN-ROOM camera — T129 (d): the room band is
+                                        // captured, not cropped, and it carries §6.8's own claim.
+            Assert.IsNotNull(cam, "no main camera — the room band would be lost");
+
+            screen.TimeScaleOverride = 1f;
+            couch.transitionDuration = 0.01f;
+            yield return WaitUntilOrFail(() => director.Run != null,
+                Time.realtimeSinceStartup + 10f, "director never started a run");
+
+            director.StartNewRun(_seed);
+            Run run = director.Run;
+            Assert.AreEqual(Phase.Betting, run.Phase, "a fresh run opens in Betting");
+
+            // Matchup 0 is the seed-searched goalless one, and a Pick addresses Matchup.Index rather
+            // than the slate position — the two are not guaranteed to coincide, and using the
+            // position is how a ticket that backed a 0-0 draw once came back LOST.
+            Matchup m = run.CurrentSlate.Matchups[0];
+            Assert.IsNotNull(m, "the goalless matchup is missing from this slate");
+
+            const double Stake = 25.0;
+            run.PlaceTicket(buildPicks(m.Index, m), Stake);
+            director.LockRound();
+            Assert.AreEqual(Phase.Sweat, run.Phase);
+
+            // T129 (a)'s premise, checked rather than trusted: both arms' whole claim is a leg
+            // set that settles on a 0-0, and this is a FRESH sweat with its own StartNewRun — arm
+            // 1's own goalless assertion (same seed, same Matchups[0]) does not carry across test
+            // runs. A drifted seed or slate must fail loudly here, exactly as arm 1 fails loudly,
+            // rather than quietly capture a ticket that does not settle the way the row claims.
+            Assert.IsNotNull(m.StatLine, "the match did not resolve at lock");
+            Assert.AreEqual(0, m.StatLine.HomeGoals,
+                $"seed '{_seed}' matchup {m.Index} is no longer goalless — arm '{label}' needs a 0-0");
+            Assert.AreEqual(0, m.StatLine.AwayGoals,
+                $"seed '{_seed}' matchup {m.Index} is no longer goalless — arm '{label}' needs a 0-0");
+
+            couch.OnInteract(null);
+            yield return WaitUntilOrFail(() => SitSpot.Active != null,
+                Time.realtimeSinceStartup + 15f, "player never sat down");
+
+            float runDeadline = Time.realtimeSinceStartup + 900f;
+            yield return WaitUntilOrFail(
+                () => screen.RevealedView.ClockText == "FT" || run.Phase != Phase.Sweat,
+                runDeadline,
+                $"the ending never reached full time · clock='{screen.RevealedView.ClockText}'");
+            Assert.AreEqual(Phase.Sweat, run.Phase,
+                "the sweat ended before its own whistle could be shot");
+
+            // 150 frames at interval 0 — 3.0 contiguous SIM-seconds from the whistle forward, the
+            // length T125's measurement says the ending's second half needs (T129 arm 1's own
+            // sizing, reused so the three arms are read on one ruler).
+            yield return CaptureBurst(screen, cam, $"goalless-{label}-ending", 150, 0f);
+
+            Debug.Log($"[TvSweatCaptureHarness] seed={_seed} arm '{label}' complete -> {OutputDir}");
         }
 
         /// <summary>CAPTURE CHARTER 2026-08-16, shoot 2 — THE SIZING PROBE. WRITES NO FRAMES.
@@ -1868,9 +2040,30 @@ namespace SBR.Tests.PlayMode
                 // "the line was visible, for multiple frames, before the grade", and a set whose whole
                 // claim is about what the strip said should be able to answer that from its own log
                 // rather than from a second instrument.
+                // T129 condition (e) and T128's carried diagnosis, both added to the EXISTING
+                // per-frame line rather than to a second logger.
+                //
+                // (e) says every ending must run PAST ITS OWN TALLY, "verified by the payout slot
+                // changing and then settling". That is only verifiable if the slot is recorded per
+                // frame — "150 frames ought to be enough" is not evidence, and a window that ends
+                // mid-tally cannot answer whether the ending resolves.
+                //
+                // T128 asks its question be carried into this window "as an assertion rather than
+                // left to be noticed": on the docked pre-T108 set, at FT on a settled 0-0, the
+                // column held `MIDDLEMEN TO WIN` for 51 frames and `RISK $25` on a WON ticket.
+                // T108 has since been built and verified on CORNERS material but never on a drawn
+                // ending, where the NEED sits at full time for a full second rather than passing
+                // through. So the leg row and the footer word are recorded here too.
+                //
+                // LOGGED, NOT ASSERTED. Either answer produces the same ruling, and which one the
+                // frames show is the lead's to report rather than this harness's to presuppose.
                 Debug.Log($"[TvSweatCaptureHarness] {file} :: score='{screen.RevealedView.ScoreText}' " +
                     $"clock='{screen.RevealedView.ClockText}' suspended={screen.RevealedView.MarketSuspended} " +
-                    $"strip='{screen.DebugFlavorText}'");
+                    $"strip='{screen.DebugFlavorText}' " +
+                    $"cashout='{screen.DebugCashOutText}' footer='{screen.DebugTicketRiskText}' " +
+                    $"pays='{screen.DebugTicketPaysText}' " +
+                    $"leg0need='{screen.DebugLegNeed(0)}' leg0prog='{screen.DebugLegProgress(0)}' " +
+                    $"leg0chip='{screen.DebugLegState(0)}'");
 
                 if (i < frameCount - 1)
                 {
