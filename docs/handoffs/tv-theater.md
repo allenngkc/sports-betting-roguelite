@@ -353,6 +353,55 @@ one seed's deltas is `S84`'s failure in miniature.
 
 ---
 
+## 0-U7. `T129` — THE DRAWN ENDING'S SECOND HALF · THREE ARMS SHOT AND DOCKED 2026-08-19
+
+**Merged `f7d55ca`.** Dock: `dd-import/drawn-ending-t129-2026-08-19/` — 608 frames, **one seed
+(`GOALLESS-5`), one matchup, one stake across all three arms** so they read against each other as
+well as against the docked set.
+
+### THE TWO FINDINGS THAT MATTER
+
+**1. `T125`'s gap is confirmed, and the old set could not have shown the tally AT ALL.**
+The draw-backer's tally starts at **f068** and last changes at **f127**, then settles.
+**The old window was 60 frames.** Not a fraction of the tally was in it. Arm 3 closes condition (e)
+most cleanly: `+$4` → **`+$256`**, which is exactly the ticket's own `PAYS $256` — it changes, then
+settles, inside the window.
+
+**2. `T128`'s carried question is ANSWERED, identically in all three arms, at 51 frames.**
+
+| | f001 – f051 | f052 → |
+|---|---|---|
+| arms 1, 3 | `RISK $25` · a live NEED · chip `''` | **`STAKE $25`** · NEED cleared · chip `W` |
+| arm 2 | `RISK $25` · `UNDER 1.5 GOALS` / `0 GOALS • LIMIT 1` | `RISK $25` · cleared · chip `W` |
+
+**From f001 the screen already reads `0 — 0`, `FT` and `THE MATCH ENDS LEVEL`** — the facts that
+decided every one of these legs — while the column prints a live requirement and a live risk beside
+them for **1.02 sim-seconds**.
+
+> **`T108`'s fix WORKS on a drawn ending; it lands one second late.** On corners material the stale
+> form passes through IN FLIGHT. On a drawn ending it **sits still at full time, where the player is
+> looking.** That is why `T128` asked for it here rather than taking the corners verification.
+
+### ARM 2's OWN FINDING — correct, and the multi-leg form of `T128`
+
+Its footer **never reaches `STAKE`** across 150 frames, and a live cash-out **offer** still stands at
+f088 on a settled 0–0. **That is `T108` clause 2 working exactly as ruled** — `RISK` is a TICKET word
+and leg 1 is unrevealed inside the window. **And** the match is over, both legs will win, and the
+surface still offers to buy the ticket back. **Named, not ruled.**
+
+### NEW TERRITORY
+
+**Arm 3 is the first capture of `CorrectScore` that has ever existed** (no reachable home until
+`S95`). `PAYS $256` on `$25`, **no progress line at all** — at full time the column is a statement
+and a price and nothing else.
+
+### NOT CLAIMED
+**Nothing about whether the ending READS.** `T127` recorded that the hold's only motion is the pitch
+and deliberately did not rule whether the territory view should hold, settle or clear. **These frames
+are the material for that call and do not make it.**
+
+---
+
 ## 0-U6. UNIT 3 PHASE C — THE REVEAL AND THE DECISIVE POOL · SHIPPED AND DOCKED 2026-08-18
 
 **Merged:** `d10a6f2` (§2, the A-reveal) · `817066a` (§3.5, the disjoint pool + the frame set).
