@@ -1,5 +1,15 @@
 # Route: the settled ticket's rows still say NEXT — TV → DD (2026-08-19, diagnosis per Allen)
 
+> **CLOSED 2026-08-19 (`11e4ad7`) — Allen ruled remedy 1 and ordered the leak settled first.**
+> Remedy 1 built as described below. **The leak flagged in §"A SECOND RISK" is REAL and was
+> measured:** `MoveNext` busts before it hands the event back, and three of ten repaint sites
+> land in the gap before `FinalSlam` reveals it. **Remedy 1 alone propagated the leak into the
+> rows and turned the existing pin GREEN while still leaking** — it compares footer to rows, so
+> settling the rows early makes both agree early. Fixed by reveal-gating the dead fact at the
+> source of truth, which closes all three sites at once; a new assertion compares the footer to
+> the REVEAL and is proven armed (fails at frame 23 with the gate removed). Suites: EditMode
+> 314/313/0 · PlayMode 146/123/0.
+
 The PlayMode red found while running `T144`'s gate, diagnosed to source. **Inherited from
 `e8cb38e`** (the three ruled string builds — the settled footer, `T121`/`T114-am`); the pin that
 catches it predates it (`acd9d9f` / `4e45464`). Attribution was measured: both this seat's files

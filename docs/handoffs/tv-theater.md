@@ -169,10 +169,38 @@ the player is deciding, and un-marks it once it actually is** — and never stri
 bust. `T121` justified reading `_ticket.State` because a cash-out is a player action leg outcomes
 cannot see; **right for `CashedOut`, extended to `Lost`, which is derivable and reveal-timed.**
 
-**NOT FIXED — it needs a ruling** (`T121` left the dead ticket's strings to a frame; its rows are
-equally unruled). TV's read is remedy 1: the strike stops being preview-gated. **Flagged unverified:**
-a repaint between the engine's bust and the reveal would leak the ending; eight other
-`UpdateTicketColumn` call sites were not traced.
+**BUILT AND VERIFIED 2026-08-19 (`11e4ad7`), on Allen's order — remedy 1 PLUS the leak it hid.**
+
+**Remedy 1:** the settled fact is read ONCE and hoisted; `isLive` takes `!ticketSettled` so the leg
+after the loser stops rendering a NEED on a ticket that cannot pay; a pending leg's chip falls
+silent and takes §8.10's strike permanently instead of only while previewing. **The line drawn:**
+`NEXT` is TRUE while he is deciding (he can decline and the leg plays on) and FALSE once the ticket
+settles — so the preview keeps the word and strikes it; the settle takes the word away. A fully WON
+ticket stays `Open` in the engine, so its rows are untouched.
+
+### ⚠ THE LEAK WAS REAL, AND REMEDY 1 ALONE WOULD HAVE SHIPPED IT GREEN
+
+**`SweatSession.MoveNext` resolves a `LegFinal` and busts BEFORE it hands the event back**
+(`SweatSession.cs:150-154`, `:184-185`), while `_resolvedThrough` advances only in `FinalSlam`,
+after the whole final scene has played. **Three of ten repaint sites land in that gap** —
+`RenderEvent` (called straight off `MoveNext`), `RepaintRevealedScore` (stoppage-time goals during
+the final scene) and `ExitCashOutPreview` (polled every frame). A footer reading raw `_ticket.State`
+prints `STAKE` / `RETURNED $0` **during the scene that kills him.**
+
+> **AND REMEDY 1 PROPAGATED IT INTO THE ROWS.** `ticketSettled` read `_ticket.State`, so the rows
+> went silent in the same gap. **The existing pin then passed** — it compares footer to ROWS, and
+> settling the rows early makes both agree while both are still early. **A green suite, still
+> telling the ending.** This is the sharpest example this lane has of a consistency pin certifying
+> a correctness defect.
+
+**THE FIX IS AT THE SOURCE OF TRUTH, NOT AT THE CALL SITES.** `settledDead` is now REVEAL-GATED off
+the same test the resolved row renders its `L` chip from, so footer and rows cannot disagree by
+construction and **all three sites close at once**. `CashedOut` is deliberately NOT gated: a player
+action has no hidden outcome behind it and settles synchronously (`T114`'s own argument).
+
+**THE NEW PIN IS PROVEN ARMED** — assertion 3, the reveal gate, compares the footer to the REVEAL
+rather than to the rows. **With the gate removed it fails at frame 23 of a real sweat; with it in,
+silent.** That probe is also what turned the leak from a source-read into a MEASUREMENT.
 
 ### SUITES — this tree, this window
 
@@ -180,7 +208,8 @@ a repaint between the engine's bust and the reveal would leak the ending; eight 
 |---|---|---|
 | engine | **307 passed / 0 failed / 1 skipped** (308) | +1, growth |
 | EditMode | **314 executed / 313 passed / 0 failed / 1 ignored** | +59 since batch 96; +1 is `T144` |
-| PlayMode | **146 executed / 122 passed / 1 FAILED / 23 skipped** | the 1 is the inherited red above |
+| PlayMode | **146 executed / 122 passed / 1 FAILED / 23 skipped** | the 1 was the inherited red above |
+| PlayMode *(after `11e4ad7`)* | **146 executed / 123 passed / 0 failed / 23 skipped** | red cleared; +1 is the reveal-gate assertion |
 
 ### TRAPS THIS WINDOW ADDED
 
