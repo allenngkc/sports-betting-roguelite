@@ -807,6 +807,17 @@ namespace SBR.EditorTools
                 MeasureOne(all, "Pays", "RETURNED $73,318,376,502", "T133 candidate — T121's word on the worst case");
                 MeasureOne(all, "Pays", "RETURNED $0", "T133 — T121's own authored string, shortest form");
 
+                // T133's rung-2 candidate. `PAID` was REJECTED at batch 108 — "colliding at the
+                // root with `PAY $60` on the same screen" — so this is not a proposal, it is the
+                // measurement the DD asked for against that rejection now that `RETURNED` is known
+                // to overrun by 51.9px. Whether a root collision is worth 51.9px is the DD's call
+                // and not this lane's; the number is.
+                //
+                // `PAID` is FOUR characters, the same as `PAYS`, so the incumbent above is its own
+                // control: if it lands near 239.7px the collision is the only thing left to weigh.
+                MeasureOne(all, "Pays", "PAID $73,318,376,502", "T133 rung-2 candidate at the enumerated worst case");
+                MeasureOne(all, "Pays", "PAID $199", "T133 rung-2 candidate at T114-am's own authored amount");
+
                 // T110-am's owed measurement: THE DECKS WITHOUT THE SUFFIX. The overrun is reachable
                 // only on the four decks that can receive the suffix, so the suffix is common to
                 // every overrunning string. If the base decks fit, the suffix alone causes this and

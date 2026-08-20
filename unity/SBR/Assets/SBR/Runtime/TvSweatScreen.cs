@@ -466,6 +466,23 @@ namespace SBR.Game
         /// expression, so asserting it is asserting all of them, and a pin on (say) the cash-out
         /// tween alone would leave the other ten unasserted.</para></summary>
         public void ForceStatsPanel(bool open) => SetStatsPanel(open);
+
+        /// <summary>FORCES the footer's RIGHT half to a literal, for `T133`'s rung-2 frame only.
+        ///
+        /// <para><b>This is an S99-style forcing and it is NOT a shipped state.</b> `S3` reached an
+        /// otherwise-unreachable empty group with a non-shipped `CorrectScoreFloor = 0.08` and put
+        /// the disclosure on the frame's face; this is the same device for the same reason — the
+        /// enumerated worst case (`$73,318,376,502`, eleven digits over 648,000 priced offers)
+        /// cannot be dealt for in a capture, and `C11` puts a copy decision on a frame rather than
+        /// on a px number.</para>
+        ///
+        /// <para><b>Every frame it produces is named `FORCED-…` and the dock says so</b>, because a
+        /// forced frame that does not disclose its forcing is evidence for a state the product does
+        /// not have. The next repaint overwrites it — this sets no flag and latches nothing.</para></summary>
+        public void ForcePaysTextForCapture(string literal)
+        {
+            if (_tPays != null) _tPays.text = literal;
+        }
         public bool DebugStatsPanelOpen => _statsOpen;
         public float DebugSeatedDeltaTime => SeatedDeltaTime;
         public Transform DebugStatsPanel => _statsPanel;
