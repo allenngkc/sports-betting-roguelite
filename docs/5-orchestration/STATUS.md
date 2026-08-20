@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-19, cycle 419.** THE THREE-ARM
+**Keeper-era heartbeat stamp: 2026-08-19, cycle 420 (heartbeat).** Allen
+countermanded the bundling: the three string builds dispatched to TV NOW
+(one bundled sub-agent running - the suffix, the cash-out amount,
+STAKE/RETURNED with its T133 gate), not held for the DD's read. DD still
+on S88. Markets idle on the spec. With Allen: the console spec approval
+(batch 121), the hold-not-climax look, research 8-9.
+
+*(prior stamp, cycle 419:)* THE THREE-ARM
 WINDOW IS SHOT AND MERGED (T129, autonomous merge 3d0e589 - checklist
 passed: frames untracked, one read-only debug accessor, no drift). TV's
 findings: T108's fix lands a second late on a drawn ending; arm 2's
