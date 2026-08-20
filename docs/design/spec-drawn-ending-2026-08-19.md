@@ -98,8 +98,20 @@ third is what makes it correct rather than merely tidy:
 ### 3.1 Legs on DIFFERENT fixtures are unaffected — and the distinction is the ruling's edge
 
 A four-leg ticket across three fixtures gets **three tellings.** The clock resetting between them is
-honest — it is a different match — and **`§6.7`'s interstitial is already the device that marks that
-boundary.** It fires between fixtures, as it does today between tickets.
+honest — it is a different match.
+
+> **CORRECTED 2026-08-19, batch 130 (`T140-am`), §1.5.** This section originally read *"`§6.7`'s
+> interstitial is already the device that marks that boundary — it fires between fixtures, as it does
+> today between tickets."* **It does not fire between fixtures.** `PresentRound`'s loop is
+> `TicketCardBeat()` → `PlaySweat()` → `SettlementBeat()`: the interstitial is **once per ticket**,
+> and `PlaySweat()` runs every leg of that ticket inside one call with no boundary treatment between
+> them, same fixture or not.
+>
+> **So the hard cut `T139` measured is every leg boundary, not only the same-fixture one** —
+> same-fixture is where it produces the rewind, different-fixture is where it would produce an
+> unannounced change of match. **Not claimed as a defect: no capture has ever carried a multi-fixture
+> ticket, which is what `D2` asks for.** The consequence for this spec is that **multi-fixture tickets
+> may need `§6.7` applied at the fixture boundary, and `T140` does not include that work.**
 
 **So the rule is per (ticket, fixture), not per ticket and not per leg.** Stated that way because
 "the ending belongs to the ticket" read literally would suppress two genuine endings on a
