@@ -63,9 +63,18 @@ Stated because a cheaper lever exists and does **not** suffice, and a lead will 
 - **Abbreviation** is refused (`C49`), copy is not reopened (`T24-am`), truncation is barred (`T69`),
   and the column's outer width is **locked** (`T46`, `R30`) — a change there is Allen's and he did not
   make it.
-- **Separate rows is the only form where each fact gets the full 249.0px**, and at full width both
-  clear their own enumerated worst case: `PAYS $73,318,376,502` = 239.7 ≤ 249.0, `RISK $13,639` =
-  138.4 ≤ 249.0.
+- **Separate rows is the only form where each fact gets the full 249.0px**, and at full width the
+  live-state pair clears its enumerated worst case: `PAYS $73,318,376,502` = 239.7 ≤ 249.0,
+  `RISK $13,639` = 138.4 ≤ 249.0.
+
+> **CORRECTED 2026-08-19, batch 133 (`T148`), §1.5.** This originally read *"both clear their own
+> enumerated worst case"* without qualification. **It is word-dependent and false for the string that
+> ships in the settled state:** `STAKE $13,639` = 158.9 fits and `PAID $73,318,376,502` = 235.8 fits,
+> but **`RETURNED $73,318,376,502` = 300.9 OVERRUNS ITS OWN FULL-WIDTH ROW BY 51.9px.**
+>
+> **Separate rows fixes the PAIR collision (`T74-am6`) and does not save `RETURNED` (`T133`).**
+> `T133`'s ladder therefore binds this composition too and must land with it — it is not made
+> redundant by the extra row.
 
 **So the ruling is not a preference between two adequate answers. It is the only composition inside
 the locked column that carries the fact floor.**
@@ -82,10 +91,22 @@ The opposite anchoring is `T74-am5`'s device and it had one job: *"anchor `RISK`
 edge and `PAYS` to its right and the authored gap CEASES TO EXIST."* **On separate rows there is no
 shared gap, so the device has no subject** — and keeping it would leave a stagger nobody chose.
 
-**Left-anchored, both**, matching the money control's two members (`:5468` — *"Anchors are left
-exactly as they were"*) and the column's other rows. **This is the ruling naming its alignment rather
-than leaving it**, because leaving it is what `T74-am3` explicitly declined to do and the footer has
-no equivalent reason to inherit that silence.
+**Left-anchored, both. This is the ruling naming its alignment rather than leaving it**, because
+leaving it is what `T74-am3` explicitly declined to do and the footer has no equivalent reason to
+inherit that silence.
+
+> **CORRECTED 2026-08-19, batch 133 (`T147-am2`), §1.5.** This paragraph originally added *"matching
+> the money control's two members (`:5468` — Anchors are left exactly as they were)."* **That comment
+> means the anchors were left UNCHANGED, not left-ALIGNED.** In the code the two members are opposite:
+> `CashOut` pivot (0, 0.5) `MiddleLeft` (`:5459-5462`), `CashOutStatus` pivot (1, 0.5) `MiddleRight`
+> (`:5471-5474`). **The money control is a counter-precedent — it kept opposite anchors when it split
+> onto separate rows.**
+>
+> The primary argument above never depended on it and stands. **But the alignment is now an open
+> choice with a precedent against it, so it goes to a frame: BUILD LEFT/LEFT, and shoot the
+> opposite-anchor arm as one more state on `E1`'s ruler.** Read it on the **settled** state —
+> `RISK`/`PAYS` are both four characters and nearly align either way, while `STAKE`/`RETURNED` are
+> five and eight and are where left/left goes ragged.
 
 ### 3.2 Reading order: what he put in, then what comes back
 
@@ -109,6 +130,27 @@ breath as the ruling. This section is that breath, and §4 is its gate.**
 **Not pre-ruled:** whether the 20px comes from the leg rows, from `TypeRisk`, or from somewhere the
 build finds. **`T20` grew this footer once already (36 → 40) to hold 24px type**, so growth is
 precedented — but the leg rows pay for it and nobody has checked they can.
+
+> **ANSWERED 2026-08-19, batch 133 (`T147-am`) — read this before building §3.**
+>
+> **The gate ran and FAILED: ceiling 55.4px against 60.0 needed, short by 4.6px** (0.8px per leg row
+> of `T24`'s 8.0px margin, six rows). **The deficit is an artefact of a stale constant.**
+>
+> `TvSweatScreen.cs:868` justifies `TicketRowSlots = 6` with *"RunConfig.MaxLegs defaults to 6"* —
+> **`RunConfig.cs:49` reads `MaxLegs = 4`.** Six slots reserve 6 × 66.8 = 400.8px of the 456px
+> available; four reserve 267.2px. **Dropping to four frees 133.6px against a 4.6px deficit** — and
+> on a four-leg ticket slots 5 and 6 already go dark, 138.6px no ticket the engine can build will
+> ever fill.
+>
+> **RULED: `TicketRowSlots` 6 → 4, `TicketFooterHeight` 40 → 60, stale comment struck. No pin
+> touched, no type ruled, no `C16` deviation signed, `T24`'s margin paid in full.** The comment's
+> rule 2 survives: a five-leg ticket truncates at four exactly as a seven-leg one truncates at six
+> today.
+>
+> **The consequence that is a READ, not a ruling: the row pitch grows 69.3px → ~99px for 58.8px of
+> live ink.** That goes on `E3`. **If it reads sparse the next rung is a fixed pitch with the
+> remainder dark below the last leg; after that, money type 24 → 22 (measured to clear by 0.4px),
+> which this seat reserves rather than spends.**
 
 ---
 
