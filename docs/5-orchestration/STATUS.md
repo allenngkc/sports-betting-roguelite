@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-19, cycle 426 (heartbeat).** THE
+**Keeper-era heartbeat stamp: 2026-08-19, cycle 427 (heartbeat).**
+Remedy 1 building in TV with the leak trace running (commit held on the
+trace); DD's batch 133 landed (remedy 1's acceptance pre-committed:
+CANCELLED not LOST on struck rows; T148 - RETURNED overruns even a
+full-width row). HELD a second staged order (trace-the-eight-sites to
+the DD) - the trace already runs in TV's seat; result routes to the DD
+as its own item; veto window open. With Allen: the T140 fork, both spec
+approvals, T144's re-ruling (with the DD), the hold's structure,
+research 8-9.
+
+*(prior stamp, cycle 426 (heartbeat):)* THE
 T144 GATE FAILED ON MEASUREMENT - the two-row footer does NOT clear
 (4.6px short bare, 12.6px padded, ratio measured 1.25): the composition
 is HELD per the spec's own §4.5 and returns to the DD - the same height
