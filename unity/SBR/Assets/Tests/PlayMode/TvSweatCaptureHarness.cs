@@ -6,6 +6,7 @@ using System.IO;
 using NUnit.Framework;
 using SBR.Engine;
 using SBR.Game;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -1320,6 +1321,126 @@ namespace SBR.Tests.PlayMode
                       "worst-case amount is unreachable in play; see the dock README");
         }
 
+        /// <summary>The named element's rect, found the way <c>TvExtentSweep</c> finds its slots —
+        /// by GameObject name off the live hierarchy — rather than by adding another Debug accessor
+        /// to production for a test's convenience.</summary>
+        private static RectTransform NamedRect(TvSweatScreen screen, string name)
+        {
+            foreach (TMP_Text t in screen.GetComponentsInChildren<TMP_Text>(true))
+                if (t.gameObject.name == name) return t.rectTransform;
+            return null;
+        }
+
+        /// <summary><c>C55</c>: THE SUBJECT MUST BE IN FRAME, and the verdict is taken in LOCAL
+        /// space. A green capture proves nothing if the thing it was shot for is not in the picture.
+        ///
+        /// <para>The viewport is the sweat canvas itself, which carries a <c>RectMask2D</c> — its own
+        /// build note says anything outside it "stops existing on screen no matter which layer
+        /// misplaces itself." So containment in the canvas IS the in-frame question on this surface,
+        /// and it is exactly the question a composition change can break.</para>
+        ///
+        /// <para><b>LOCAL space, for the reason the laptop's own helper gives:</b> this is a
+        /// WORLD-SPACE canvas hanging on a TV in a room, scaled to about a metre across, so every
+        /// element rounds to the same two world digits and the plane is rotated to face the couch.
+        /// Local space is the space the layout was authored in and its units are the pixels every
+        /// constant in this build is written in.</para>
+        ///
+        /// <para><b>BOTH AXES, unlike the laptop's vertical-only cut.</b> There the horizontal term
+        /// produced false negatives on a scrolling list whose lines span the block by construction.
+        /// Here nothing scrolls, the column's width is locked (T46/R30), and the change under
+        /// examination moved things in BOTH directions — the footer grew 40 → 60 and the rows
+        /// re-pitched 69.3 → 99.0. A vertical-only verdict would not be testing this change.</para></summary>
+        private static void AssertSubjectInFrame(TvSweatScreen screen, string subjectName, string burst)
+        {
+            RectTransform target = NamedRect(screen, subjectName);
+            Assert.IsNotNull(target,
+                $"C55: '{subjectName}' does not exist in the hierarchy, so the burst '{burst}' "
+                + "cannot possibly contain it.");
+            var graphic = target.GetComponent<TMP_Text>();
+            Canvas canvas = graphic != null ? graphic.canvas : null;
+            Assert.IsNotNull(canvas, $"C55: '{subjectName}' renders to no canvas — nothing to be in frame OF.");
+            var viewport = canvas.transform as RectTransform;
+
+            var corners = new Vector3[4];
+            target.GetWorldCorners(corners);
+            float minX = float.MaxValue, maxX = float.MinValue;
+            float minY = float.MaxValue, maxY = float.MinValue;
+            for (int i = 0; i < corners.Length; i++)
+            {
+                Vector3 local = viewport.InverseTransformPoint(corners[i]);
+                minX = Mathf.Min(minX, local.x); maxX = Mathf.Max(maxX, local.x);
+                minY = Mathf.Min(minY, local.y); maxY = Mathf.Max(maxY, local.y);
+            }
+            Rect r = viewport.rect;
+            bool inFrame = minX >= r.xMin - 0.5f && maxX <= r.xMax + 0.5f
+                        && minY >= r.yMin - 0.5f && maxY <= r.yMax + 0.5f;
+
+            Debug.Log($"[T147-C55] {subjectName,-16} local x {minX,7:0.0}..{maxX,7:0.0} "
+                      + $"y {minY,7:0.0}..{maxY,7:0.0}  against canvas x {r.xMin:0.0}..{r.xMax:0.0} "
+                      + $"y {r.yMin:0.0}..{r.yMax:0.0} — {(inFrame ? "IN FRAME" : "OUT OF FRAME")}");
+            Assert.IsTrue(inFrame,
+                $"C55: '{subjectName}' is NOT inside the canvas for burst '{burst}'. Local extent "
+                + $"x {minX:0.0}..{maxX:0.0}, y {minY:0.0}..{maxY:0.0}; canvas x {r.xMin:0.0}.."
+                + $"{r.xMax:0.0}, y {r.yMin:0.0}..{r.yMax:0.0}. The RectMask2D clips it, so the "
+                + "frame would not contain its own subject.");
+        }
+
+        /// <summary>C55's cousin, REPORTED not asserted: a subject can be in frame as a RECT and
+        /// still have its INK clipped, because these components are Overflow by construction. The
+        /// live case is `RETURNED $73,318,376,502`, which overruns its own 249.0px row by 51.9px —
+        /// T133, open with the Design Director. Whether that ink survives to the canvas edge or is
+        /// cut by the mask is a fact the frames should carry rather than one a reader guesses.</summary>
+        private static void ReportInkAgainstCanvas(TvSweatScreen screen, string subjectName)
+        {
+            RectTransform target = NamedRect(screen, subjectName);
+            var graphic = target != null ? target.GetComponent<TMP_Text>() : null;
+            if (graphic == null || graphic.canvas == null) return;
+            var viewport = graphic.canvas.transform as RectTransform;
+
+            // The BOX in the canvas's own local space, from its corners — the same space and the
+            // same method AssertSubjectInFrame judges in, so a printed number and a verdict cannot
+            // disagree.
+            var corners = new Vector3[4];
+            target.GetWorldCorners(corners);
+            float boxLeft = float.MaxValue, boxRight = float.MinValue;
+            for (int i = 0; i < corners.Length; i++)
+            {
+                float x = viewport.InverseTransformPoint(corners[i]).x;
+                boxLeft = Mathf.Min(boxLeft, x); boxRight = Mathf.Max(boxRight, x);
+            }
+
+            float inkW = graphic.GetPreferredValues(graphic.text, 100000f, 0f).x;
+            float boxW = boxRight - boxLeft;
+
+            // ⚠ THE INK GROWS AWAY FROM THE ALIGNED EDGE, AND THE FIRST CUT OF THIS HELPER FORGOT
+            // IT. It assumed left alignment and computed `boxLeft + inkW` for every case, so on the
+            // RIGHT-anchored arm it reported the ink running rightward from the left edge — and
+            // printed "ink survives the mask" for a string that is in fact cut by it. A right-aligned
+            // overrun spills LEFTWARD, off the column's outer edge, where this canvas's RectMask2D
+            // is waiting. Same bug shape as the stale footer reader: a number that stopped meaning
+            // what its label said, on a report nothing asserts against.
+            bool rightAligned = graphic.alignment == TextAlignmentOptions.TopRight
+                             || graphic.alignment == TextAlignmentOptions.Right
+                             || graphic.alignment == TextAlignmentOptions.BottomRight;
+            float inkLeft = rightAligned ? boxRight - inkW : boxLeft;
+            float inkRight = rightAligned ? boxRight : boxLeft + inkW;
+
+            Rect v = viewport.rect;
+            float clippedLeft = Mathf.Max(0f, v.xMin - inkLeft);
+            float clippedRight = Mathf.Max(0f, inkRight - v.xMax);
+            bool clipped = clippedLeft > 0.5f || clippedRight > 0.5f;
+
+            Debug.Log($"[T147-C55-ink] {subjectName} '{graphic.text}' "
+                      + $"[{(rightAligned ? "RIGHT" : "LEFT")}-aligned] ink {inkW:0.0}px vs box "
+                      + $"{boxW:0.0}px ({(inkW > boxW ? $"over by {inkW - boxW:0.0}" : "inside")}); "
+                      + $"ink spans local x {inkLeft:0.0}..{inkRight:0.0} against canvas "
+                      + $"{v.xMin:0.0}..{v.xMax:0.0} — "
+                      + (clipped
+                         ? $"INK IS CLIPPED BY THE MASK ({clippedLeft:0.0}px off the left, "
+                           + $"{clippedRight:0.0}px off the right)"
+                         : "ink survives the mask"));
+        }
+
         /// <summary>T147 — THE RE-RULED TWO-ROW FOOTER, AND THE COST IT WAS PAID OUT OF.
         ///
         /// <para>`T144`/`T74-am6` ruled the two money facts onto SEPARATE ROWS: each half fits the
@@ -1410,6 +1531,14 @@ namespace SBR.Tests.PlayMode
                       + $"leg1='{screen.DebugLegProgress(1)}' footer='{screen.DebugTicketRiskText}' "
                       + $"/ '{screen.DebugTicketPaysText}'");
 
+            // C55, BEFORE the shutter and before every burst: both money rows and the live row's own
+            // two lines must be inside the canvas. The composition just moved all of them.
+            string liveNeed = !string.IsNullOrEmpty(screen.DebugLegProgress(0))
+                ? "LegRowNeed0" : "LegRowNeed1";
+            string liveProgress = liveNeed == "LegRowNeed0" ? "LegRowProgress0" : "LegRowProgress1";
+            foreach (string subject in new[] { "RiskPays", "Pays", liveNeed, liveProgress })
+                AssertSubjectInFrame(screen, subject, "t147-E1E3-unforced-live-row");
+
             // E1 + E3, UNFORCED: the real ticket at what the run actually affords, with a live row in
             // frame. This is the only burst here whose strings the product produced by itself.
             yield return CaptureBurst(screen, cam, "t147-E1E3-unforced-live-row", 6, 0f);
@@ -1432,6 +1561,10 @@ namespace SBR.Tests.PlayMode
                 screen.ForcePaysTextForCapture(pays);
                 Debug.Log($"[T147-CAP] {label} :: '{screen.DebugTicketRiskText}' / "
                           + $"'{screen.DebugTicketPaysText}' — FORCED, NOT A SHIPPED STATE");
+                AssertSubjectInFrame(screen, "RiskPays", label);
+                AssertSubjectInFrame(screen, "Pays", label);
+                AssertSubjectInFrame(screen, liveNeed, label);
+                ReportInkAgainstCanvas(screen, "Pays");
                 yield return CaptureBurst(screen, cam, $"FORCED-t147-{label}", 6, 0f);
             }
 
@@ -1442,6 +1575,10 @@ namespace SBR.Tests.PlayMode
             screen.ForcePaysTextForCapture("RETURNED $73,318,376,502");
             Debug.Log("[T147-CAP] E1-settled-opposite-anchor :: second row RIGHT-anchored — "
                       + "FORCED LAYOUT, NOT THE SHIPPED COMPOSITION (the build is left/left)");
+            AssertSubjectInFrame(screen, "RiskPays", "opposite-anchor");
+            AssertSubjectInFrame(screen, "Pays", "opposite-anchor");
+            AssertSubjectInFrame(screen, liveNeed, "opposite-anchor");
+            ReportInkAgainstCanvas(screen, "Pays");
             yield return CaptureBurst(screen, cam, "FORCED-t147-E1-settled-opposite-anchor", 6, 0f);
             screen.ForcePaysAnchorForCapture(false);   // leave the scene as the product ships it
 
