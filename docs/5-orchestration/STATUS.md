@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-19, cycle 424 (heartbeat).** THE
+**Keeper-era heartbeat stamp: 2026-08-19, cycle 425 (heartbeat).** T144
+BUILDS: the DD's ticket-footer spec landed (batch 132) and the fresh TV
+lead builds it delegated, editor window granted (procs 0) for the §4
+height gate + E3 evidence; the stale :2858 clause strikes in the same
+build; one spec-citation defect found (the money control's anchors are
+opposite, ruling unaffected) - routes to the DD after the gate. A
+premise-failed staged order was HELD: 'export the T133 frames' - the
+export was already done and read (batch 131); veto window open. With
+Allen: the T140 fork, both spec approvals (console 121, drawn ending
+128), the hold's structure (T127), research 8-9.
+
+*(prior stamp, cycle 424 (heartbeat):)* THE
 TV SEAT ROTATED at 98%: handoff merged (f61edd2), old terminal closed, a
 fresh Opus-max lead loading the lane (term_c9559160); watcher rebuilt
 v44 (bg1orud9f). T133 CLOSED ON WIDTH and its frames found T144 (the
