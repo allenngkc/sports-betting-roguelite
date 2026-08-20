@@ -5,6 +5,84 @@
 
 ---
 
+## 0-ROT. SEAT ROTATION 2026-08-19 — READ THIS FIRST
+
+Everything below `0-ROT` is the record of what shipped. **This section is what a fresh seat needs
+that the record does not already say.** Both charter units and unit 3 are complete and merged; the
+lane is idle with nothing half-built and no dirty tree beyond the two permanent-`M` files
+(`SBR.Engine.dll`, `URP.png` — never stage either) and the untracked `unity/SBR/artifacts/`.
+
+### THE FOUR LIVE CALLS — all with the DD, none of them this lane's to decide
+
+1. **`T133`'s ROOT COLLISION.** `T133` is **closed on width and only on width.** Measured on the real
+   slot, box 249.0px: `PAYS $73,318,376,502` 239.7px (9.3px spare) · **`RETURNED $73,318,376,502`
+   300.9px — OVERRUNS by 51.9px** · **`PAID $73,318,376,502` 235.8px — fits with 13.2px, MORE room
+   than the incumbent.** Frames shot `S99`-style at
+   `dd-import/t133-pays-rung2-2026-08-19/`. **The remaining objection is batch 108's: `PAID` collides
+   at the root with `PAY $60` on the same screen. That is copy and the DD holds it.**
+   ⚠ **Until it is ruled, `RETURNED` ships and the cashed-out worst case overruns.** The DEAD case is
+   safe (`RETURNED $0`, 102.5px spare); **the exposure is the cashed-out case alone.**
+2. **`T140`'s cost** — estimated, routed at `docs/5-orchestration/route-t140-cost-2026-08-19.md`.
+   **LARGE, multi-phase, and NOT executable by this lane alone: it needs `SweatSession` and
+   `DramaGenerator` changes, and `engine/**` is READ-ONLY here — an edit is an escalation.** Two spec
+   gaps must close before any build: **whose probability the cash-out prices off with N legs live**
+   (`_liveProb` is one scalar), and **what the pending-loss window does with N simultaneous finals.**
+3. **The two `T129` pairings** — scene-vs-strip, and a goal riding a **showing count scene** vs one
+   riding a **quieted beat**. The build treats the second pair identically and may not deserve to.
+4. **`T127`** — whether the ending's territory hold should hold, settle or clear. The `T129` frames
+   are the material; they deliberately do not make the call.
+
+### A DEFECT FOUND WHILE COSTING `T140`, AND IT IS LOAD-BEARING
+
+**`TvSweatScreen.cs:2841` states *"the engine forbids two legs on one matchup"*. THAT IS STALE.**
+The sgp lane shipped same-game parlays (F_0.6.0 — engine, gates, conditional cash-out), and
+`JointModel` explicitly models *"two legs on one match plus a third elsewhere"* with a `SameMatch`
+block. **The comment is the stated justification for "at most one row is ever live", so the column's
+own reasoning now rests on something untrue.** Routed with the `T140` cost; not fixed here because
+the fix is the same work `T140` prices.
+
+### THE INSTRUMENTS THIS SEAT BUILT — use them, do not rebuild them
+
+- **`SBR/TV/T84 candidate measure (pre-authoring)`** — measures strings that are NOT yet in the
+  product, against the real slot's real box and face. **Measure-before-you-author has now been a
+  precondition on `T112`, `T114-am` and `T133`.** It is separate from the sweep on purpose: the
+  sweep's pools may hold only strings the code can already emit, and a candidate is by definition one
+  it cannot.
+- **`TvSweatScreen.ForcePaysTextForCapture` + the `FORCED-` filename discipline** — `S99`-style
+  forcing for states that cannot be dealt for. **A forced frame that does not disclose its forcing is
+  evidence for a state the product does not have.**
+- **`engine.tests/NearLineSeedSearch.cs`** and **`CalmBeatReachabilityProbe.cs`** — pure-engine
+  searches that need NO editor lease. **Reach for these before requesting a window.**
+
+### FIVE TRAPS THAT COST THIS SEAT TIME
+
+1. **A wait-for-editor loop must CLEAR a stale lockfile at zero processes, never wait on it.** The
+   `-quit` segfault leaves one behind; `while (procs OR lockfile)` then spins forever, **Unity is
+   never launched and no log is written to explain it.** Cost a window slot.
+2. **Shoot DETACHED and poll on artifact mtime.** A foreground wait died with the tool call twice and
+   took the editor with it, truncating a set that then had to be re-shot.
+3. **Removing a string means removing it from the sweep IN THE SAME CHANGE.** This seat removed the
+   flavour suffix from the code, left it in the pool, and the next sweep dutifully reported a 94.8px
+   overrun **on a string the surface could no longer emit** — `T111-am`'s own finding, committed by
+   the lane that had just ruled on it.
+4. **`PlaceTicket` refuses an unoffered selection at runtime** (`"Market selection is not offered"`).
+   A fixture cannot be re-pointed to an invented line — that is the engine enforcing
+   never-invent-a-selection, and it rejected this seat once.
+5. **A per-leg accessor silently changes subject mid-sweat.** `_countLedger` is replaced when the
+   next leg goes live, so `DebugRevealedCountHome/Away` stop reading the leg you think they read. A
+   pin built on it watched the CARDS leg while asserting about corners. Read the RETAINED row, or use
+   a one-count-leg fixture.
+
+### THE OWED QUEUE — nothing blocking, nothing started
+
+- **CARDS** — untouched and out of scope by §6; distance-to-line is the wrong instrument for a
+  booking and **no cards arm has ever been shot.**
+- **§3.5's two UNDER cells** — authored, in the pool, **unreachable** until the under mirror is gated.
+- **`T129`'s §8 item 3 successor questions** — a non-goalless draw (1–1 / 2–2) was **deliberately not
+  requested**: it is a question about GENERALITY, and generality was not what was missing.
+
+---
+
 ## 0-U1. UNIT 1 — THE RESOLVED-LEG COLUMN · window open 2026-08-16
 
 **MEASURED THIS WINDOW, on this tree, after the main merge:**
