@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-19, cycle 429 (heartbeat).** Both
+**Keeper-era heartbeat stamp: 2026-08-19, cycle 430 (heartbeat).** The
+register carries the backlog (66 rows transcribed, near-miss row
+written); the DD authored the three grammar-breaking kinds (batch 137),
+took an API cut mid-turn on the other six (resumed - it was withdrawing
+T126 on finding T70-am already ruled that pair); TV building the
+re-ruled composition under its window. With Allen: the T140 fork, both
+spec approvals, the hold's structure, research 8-9.
+
+*(prior stamp, cycle 429 (heartbeat):)* Both
 seats grinding: TV building the re-ruled composition (T147-am: slots
 6-to-4, footer 40-to-60; left/left with the opposite-anchor E1 arm; gate
 lines re-derived before landing), DD transcribing the 66-row backlog
