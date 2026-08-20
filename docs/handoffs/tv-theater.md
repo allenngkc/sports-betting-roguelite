@@ -353,6 +353,50 @@ one seed's deltas is `S84`'s failure in miniature.
 
 ---
 
+## 0-U8. THE THREE RULED STRING BUILDS · SHIPPED 2026-08-19 (`e8cb38e`, merged)
+
+Built directly on Allen's **authorised deviation from the delegation contract** after the bundled
+dispatch stalled; the agent was **wound down first** so it could not land conflicting edits.
+
+| ruling | built |
+|---|---|
+| `T110-am2` | the flavour suffix `" ({n} in the spell)"` **removed outright** |
+| `T114-am` + `T112-am` | banner **drops its amount** — bare `CASHED OUT`, at acceptance *and* in the held preview |
+| `T121` | the settled footer — **`STAKE $x` / `RETURNED $x`**, on both the dead and cashed-out cases |
+
+**THE SWEEP PRICES THEM; THE LANE DOES NOT ASSERT THEM:**
+
+```
+Flavor    577.2px / 651.0px   fits, 73.8px spare   T110-am2 + T110-am closed
+CashOut   221.5px / 241.0px   fits, 19.5px spare   T112-am confirmed
+Pays      300.9px / 249.0px   OVERRUNS by 51.9px   T133 — LIVE, routed
+overrunning: 1 of 22 (was 2)
+```
+
+**`C46` is now ALSO discharged for §3.5's four decisive lines** — they sit in the same `Flavor` pool,
+which measures clean. That had been outstanding since phase C.
+
+### THE THINGS WORTH CARRYING
+
+1. **`T110-am2` is NOT a width fix and must not be summarised as one.** Width is the **fifth and
+   least** of its five reasons; the first four are that *spell* is never explained, it misreads as a
+   running total, the count is already shown in the column (*drawn, not captioned*), and the widest
+   string said `spell` **twice** one clause apart.
+2. **`T112-am` needed no separate fix at all.** Batch 108 had already ruled the banner drops its
+   amount, on independent grounds and **four hours before** the overrun was routed past it.
+3. **`T133` IS LIVE AND WAS NOT DODGED.** `RETURNED` is **eight characters where `PAYS` is four**, on
+   the one slot whose worst case was established by enumeration over 648,000 priced offers. **The
+   dead case is safe** (always `$0` — 146.5px, 102.5px spare); **the cashed-out case is not bounded
+   to `$0` and overruns by 51.9px.** Shortening the word is a **copy** decision and `C11` puts copy on
+   a frame — recorded at the site, routed, not worked around.
+4. **A DEFECT OF THIS SEAT'S OWN, CAUGHT BY THE INSTRUMENT ONE RUN LATER.** The first re-sweep still
+   reported `Flavor`'s 94.8px overrun because the suffix was removed from the **code** and left in
+   the **pool**. **A pool that outlives its strings measures a phantom** — `T111-am`'s own finding,
+   committed by this seat. **Whenever a string is removed, remove it from the sweep in the same
+   change.**
+
+---
+
 ## 0-U7. `T129` — THE DRAWN ENDING'S SECOND HALF · THREE ARMS SHOT AND DOCKED 2026-08-19
 
 **Merged `f7d55ca`.** Dock: `dd-import/drawn-ending-t129-2026-08-19/` — 608 frames, **one seed
