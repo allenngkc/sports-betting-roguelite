@@ -90,6 +90,71 @@ still T140's.
 
 ---
 
+## 0-U10. `T147-am`/`am2` — THE COMPOSITION BUILT, SHOT, AND C55-CERTIFIED · 2026-08-20
+
+**SHIPPED `83d8072` (build) + `8e02d13` (captures).** The re-ruling paid for itself out of two row
+slots the engine can never fill.
+
+| | |
+|---|---|
+| gate | ran FIRST, composition ABSENT from the tree — pitch 99.0 vs a live row needing 66.8, **CLEARS by 32.2px** |
+| built | `TicketRowSlots` 6→4, `TicketFooterHeight` 40→60, both money rows left-anchored at the full 249.0px |
+| verified | `column 480.0 = header 24.0 + 4 x pitch 99.0 + footer 60.0` · **BUILT MATCHES RULED** |
+| suites | engine 307/0/1 · EditMode 316/315/0/1 · PlayMode 147/123/0/24 |
+| frames | 30, five bursts, `README-t147.md` docked beside them |
+
+### THE ALIGNMENT ARM IS ANSWERED ON MEASUREMENT — and it is not close
+
+Row 2's box spans canvas-local **`-482..-233`**; the canvas spans **`-490..490`**. At the fact floor:
+
+| arm | `RETURNED $73,318,376,502` ink | verdict |
+|---|---|---|
+| **left/left (shipped)** | `-482.0 .. -181.1` | over its own box by **51.9px**, spilling RIGHTWARD into the neighbouring zone — **survives the mask** |
+| **right-anchored (`T147-am2`'s counter-arm)** | `-533.9 .. -233.0` | **43.9px CLIPPED off the left by the `RectMask2D`** — the opening characters are destroyed |
+
+**Left/left overruns visibly; right/right destroys characters.** The DD asked for this read on the
+SETTLED state exactly because `RISK`/`PAYS` are four characters each and align either way, while
+`STAKE`/`RETURNED` are five and eight. **It does not close `T133`** — the 51.9px overrun is
+untouched by the composition and the word is still the DD's.
+
+### THREE STALE READERS IN ONE DAY, ALL THE SAME SHAPE, TWO OF THEM MINE
+
+1. **The footer reader.** Both instruments inferred footer height as `riskPays box + 8` — true only
+   while the footer held ONE row. After the split it reported **38.0 for a 60px footer**, a NEGATIVE
+   derived header, and a "ruled" pitch BELOW the built one. **The suite was green throughout**,
+   because nothing asserts on a report. Now read from row 1's top to row 2's bottom.
+2. **The ink reporter.** It assumed LEFT alignment and computed `boxLeft + inkW` for every case, so
+   on the right-anchored arm it printed *"ink survives the mask"* for a string the mask cuts. **That
+   frame set was deleted and re-shot rather than kept.**
+3. **The gate's own fixture** inherited `T24`'s `MARCUS VALE TO SCORE` — retired by `T69`;
+   `SweatActiveLegModel.cs:551` emits `{Surname} TO SCORE`. It read as a 39.3px overrun that cannot
+   occur. Re-pointed at `ONE TEAM BLANKED` (252.5, matching the record) and **log labels bound to
+   the measured constants** so name and value cannot drift apart again.
+
+> **THE LESSON, AND IT IS THE DAY'S:** a stale READER is the same defect as a stale COMMENT, and
+> nothing catches it, because a report is not an assertion. **`T24`'s own pin still carries the
+> phantom string** — its assertion is height-only so nothing is wrong with it, but the fixture
+> measures something the product cannot emit. Not fixed here; it is another pin's evidence.
+
+### C55 ON THIS SURFACE — both axes, and why
+
+Asserted before EVERY burst, in the canvas's LOCAL space: both money rows plus the live row's own
+two lines. **The laptop's helper judges vertically only** — correct there, where the horizontal term
+produced false negatives on a scrolling list. **Here nothing scrolls and the change moved things
+BOTH ways** (footer 40→60, pitch 69.3→99.0), so a vertical-only verdict would not have been testing
+this change at all.
+
+### READS OWED TO THE DD, off the docked frames
+
+- **Does the 99.0px row read SPARSE** for 58.8px of live ink? The ruling already names the next rung
+  if so: a fixed pitch with the remainder dark below the last leg.
+- **The canon THREE-line live row now CLEARS by 13.5px** at this pitch (`T24` cut it for want of
+  room at 70px). Reported by the gate; restoring it is a ruling.
+- **The footer's 8px top inset is SPENT** — 60px holds exactly two 30.0px line boxes. 68 is
+  affordable (rows would go 99→97) if a frame says the money rows crowd leg row 4.
+
+---
+
 ## 0-U9. `T144` — THE TICKET FOOTER'S TWO ROWS · GATE RUN, GATE FAILED, COMPOSITION HELD · 2026-08-19
 
 **Ordered by Allen:** build `spec-ticket-footer-2026-08-19.md` (`T144` takes `T74-am3`'s separate
