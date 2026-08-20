@@ -581,6 +581,161 @@ namespace SBR.Tests.EditMode
             }
         }
 
+        /// <summary>The §3.3 height re-derivation gated by §4 of
+        /// <c>docs/design/spec-ticket-footer-2026-08-19.md</c>. The ruling is Allen's — T144 takes
+        /// T74-am3's separate rows — and the identical ruling was WITHDRAWN once already, at batch 59
+        /// (T74-am5), precisely because the height was never re-derived.
+        ///
+        /// <para>This is that re-derivation, taken at the real face rather than reasoned from
+        /// <c>LineBox</c>. It REPORTS rather than RULES — every number below is logged, not asserted,
+        /// because the layout call belongs to the Design Director and a failing assert here would
+        /// fail the suite for a design reason, not a code defect (T15's own precedent).</para></summary>
+        [Test]
+        public void T144_the_two_row_footer_height_is_re_derived_against_the_live_row()
+        {
+            var go = new GameObject("T144FooterHeight");
+            try
+            {
+                var screen = BuildScreen(go);
+                TMP_Text riskPays = FindChild<TMP_Text>(screen, "RiskPays");
+                TMP_Text need = FindChild<TMP_Text>(screen, "LegRowNeed0");
+                TMP_Text need1 = FindChild<TMP_Text>(screen, "LegRowNeed1");
+                TMP_Text progress = FindChild<TMP_Text>(screen, "LegRowProgress0");
+                Image columnZone = FindChild<Image>(screen, "TicketColumnZone");
+                Assert.IsNotNull(riskPays, "RiskPays not found");
+                Assert.IsNotNull(need, "LegRowNeed0 not found");
+                Assert.IsNotNull(need1, "LegRowNeed1 not found");
+                Assert.IsNotNull(progress, "LegRowProgress0 not found");
+                Assert.IsNotNull(columnZone, "TicketColumnZone not found");
+
+                Assert.IsNotNull(riskPays.font, "no font resolved — a measurement in the fallback face is void");
+                Assert.IsTrue(riskPays.font.name.Contains("Encode"),
+                    $"measured in '{riskPays.font.name}', not Encode Sans — the same mistake T20 made once");
+
+                // Geometry read off the built objects, never recomputed from the constants the code
+                // under test uses (T20RowFit's own discipline).
+                float columnH = columnZone.rectTransform.sizeDelta.y;   // the ticket column's whole vertical budget
+                float rowPitch = Mathf.Abs(need1.rectTransform.anchoredPosition.y
+                                         - need.rectTransform.anchoredPosition.y);
+                // RiskPays is placed at AnchorTopLeft(grid.TicketFooter, 8f, 8f) with a box of
+                // footer.height - 8f, so box + 8 recovers the footer's built height; the 8f below is
+                // that authored top inset, not a magic number.
+                float footerH = riskPays.rectTransform.sizeDelta.y + 8f;
+                float headerH = columnH - 6f * rowPitch - footerH;
+                float boxW = riskPays.rectTransform.sizeDelta.x;   // the footer's inner box
+
+                Debug.Log($"[T144] column budget = {columnH:0.0}px, row pitch = {rowPitch:0.0}px, " +
+                          $"footer (today) = {footerH:0.0}px, derived header = {headerH:0.0}px, " +
+                          $"footer inner box = {boxW:0.0}px");
+
+                // Measured on the REAL RiskPays component via GetPreferredValues, not the MeasureText
+                // throwaway T15 uses: the throwaway sets fontStyle = Bold on a face that is already
+                // Bold 700 and carries none of the slot's characterSpacing, so its width would be a
+                // faux-bold approximation of a slot that does not exist. GetPreferredValues on the
+                // built component measures through the real face, the real weight and the real
+                // characterSpacing — the same path TvSweatScreen.MakeText sets and TvExtentSweep
+                // measures through. Height is unaffected either way (TMP takes line height from the
+                // font asset, not the style), but width is the number spec §4.3 wants against the
+                // enumerated pool, so it must come from the real slot.
+                //
+                // Unconstrained is not defined in this file — it is TvExtentSweep's own constant,
+                // mirrored in TvSweatScreen.cs, TvPromptComposition.cs and TvSweatScreenTests.cs.
+                // Declared locally, not at class scope, so this change stays exactly one test. Not
+                // float.PositiveInfinity: TMP multiplies the width constraint into its layout maths,
+                // and TvSweatScreen.cs's own comment on this constant says a value that large returns
+                // infinities — 100000f is the value the rest of this codebase already uses for "no
+                // string on this surface can reach this width."
+                const float Unconstrained = 100000f;
+
+                // Row 1, the stake fact — two candidates (spec §3.2 puts STAKE above RETURNED in the
+                // settled state). Row 2, the return fact — three candidates, because T133's word is
+                // still open with the Design Director.
+                Vector2 riskV = riskPays.GetPreferredValues("RISK $13,639", Unconstrained, 0f);
+                Vector2 stakeV = riskPays.GetPreferredValues("STAKE $13,639", Unconstrained, 0f);
+                Vector2 paysV = riskPays.GetPreferredValues("PAYS $73,318,376,502", Unconstrained, 0f);
+                Vector2 returnedV = riskPays.GetPreferredValues("RETURNED $73,318,376,502", Unconstrained, 0f);
+                Vector2 paidV = riskPays.GetPreferredValues("PAID $73,318,376,502", Unconstrained, 0f);
+
+                Debug.Log($"[T144] RISK worst case 'RISK $13,639' = {riskV.x:0.0}w x {riskV.y:0.0}h — " +
+                          (riskV.x <= boxW
+                              ? $"fits the {boxW:0.0}px footer box"
+                              : $"OVERRUNS the {boxW:0.0}px footer box by {riskV.x - boxW:0.0}px"));
+                Debug.Log($"[T144] STAKE worst case 'STAKE $13,639' = {stakeV.x:0.0}w x {stakeV.y:0.0}h — " +
+                          (stakeV.x <= boxW
+                              ? $"fits the {boxW:0.0}px footer box"
+                              : $"OVERRUNS the {boxW:0.0}px footer box by {stakeV.x - boxW:0.0}px"));
+                Debug.Log($"[T144] PAYS worst case 'PAYS $73,318,376,502' = {paysV.x:0.0}w x {paysV.y:0.0}h — " +
+                          (paysV.x <= boxW
+                              ? $"fits the {boxW:0.0}px footer box"
+                              : $"OVERRUNS the {boxW:0.0}px footer box by {paysV.x - boxW:0.0}px"));
+                Debug.Log($"[T144] RETURNED worst case 'RETURNED $73,318,376,502' = {returnedV.x:0.0}w x {returnedV.y:0.0}h — " +
+                          (returnedV.x <= boxW
+                              ? $"fits the {boxW:0.0}px footer box"
+                              : $"OVERRUNS the {boxW:0.0}px footer box by {returnedV.x - boxW:0.0}px"));
+                Debug.Log($"[T144] PAID worst case 'PAID $73,318,376,502' = {paidV.x:0.0}w x {paidV.y:0.0}h — " +
+                          (paidV.x <= boxW
+                              ? $"fits the {boxW:0.0}px footer box"
+                              : $"OVERRUNS the {boxW:0.0}px footer box by {paidV.x - boxW:0.0}px"));
+
+                // §2 of the spec claims separate rows lets both facts clear their enumerated worst
+                // case at full width — true only for the word that actually ends up on the row.
+                Debug.Log("[T144] row 2 at full width: " +
+                          $"PAYS {(paysV.x <= boxW ? "CLEARS" : "OVERRUNS")}, " +
+                          $"RETURNED {(returnedV.x <= boxW ? "CLEARS" : "OVERRUNS")}, " +
+                          $"PAID {(paidV.x <= boxW ? "CLEARS" : "OVERRUNS")}");
+
+                // Word choice changes WIDTH (measured above), never height — TMP takes line height
+                // from the font asset, not from string content — so the taller of the two rows' line
+                // boxes serves all five candidates; this is not five different heights.
+                float row1H = Mathf.Max(riskV.y, stakeV.y);
+                float row2H = Mathf.Max(paysV.y, Mathf.Max(returnedV.y, paidV.y));
+                float lineBox = Mathf.Max(row1H, row2H);
+                float observedRatio = lineBox / 24f;
+                Debug.Log($"[T144] line box = {lineBox:0.0}px (word choice changes width, not line " +
+                          "height, so one height serves all five candidates) at size 24 -> observed " +
+                          $"ratio {observedRatio:0.00}, against the LineBox design constant 1.18 and " +
+                          "the real advance ratio 1.25 established at T74-am3 — the spec requires the " +
+                          "1.25 measurement, never the 1.18 constant.");
+
+                float twoRowBare = 2f * lineBox;              // two rows, zero padding
+                float twoRowPadded = 8f + 2f * lineBox;       // two rows, keeping today's 8px top inset
+                Debug.Log($"[T144] two-row bare (0 padding) = {twoRowBare:0.0}px; " +
+                          $"two-row padded (today's 8px top inset) = {twoRowPadded:0.0}px");
+
+                float footerRowHeight = (columnH - headerH - footerH) / 6f;
+                float bareRowHeight = (columnH - headerH - twoRowBare) / 6f;
+                float paddedRowHeight = (columnH - headerH - twoRowPadded) / 6f;
+                Debug.Log($"[T144] footer (today) F={footerH:0.0} -> row height {footerRowHeight:0.0}");
+                Debug.Log($"[T144] two-row bare F={twoRowBare:0.0} -> row height {bareRowHeight:0.0}");
+                Debug.Log($"[T144] two-row padded F={twoRowPadded:0.0} -> row height {paddedRowHeight:0.0}");
+
+                // The live row, measured exactly as T24 does.
+                need.text = "MARCUS VALE TO SCORE";
+                progress.text = "LIVE • 0 GOALS • 3 MORE";
+                float liveInk = need.preferredHeight + progress.preferredHeight;
+                float liveNeed = liveInk + 8f;   // T24's own margin: 4px top pad + the row's bottom breathing
+                Debug.Log($"[T144] live row ink = {liveInk:0.0}px (NEED {need.preferredHeight:0.0} + " +
+                          $"progress {progress.preferredHeight:0.0}) with T24's margin = {liveNeed:0.0}px");
+
+                float footerCeiling = columnH - headerH - 6f * liveNeed;
+                Debug.Log("[T144] footer ceiling (largest footer that still leaves every live row its " +
+                          $"T24 margin) = {footerCeiling:0.0}px");
+
+                float deficitBare = twoRowBare - footerCeiling;
+                float deficitPadded = twoRowPadded - footerCeiling;
+                Debug.Log("[T144] two-row bare vs ceiling: " + (deficitBare <= 0f
+                    ? $"CLEARS by {-deficitBare:0.0}px"
+                    : $"SHORT by {deficitBare:0.0}px"));
+                Debug.Log("[T144] two-row padded vs ceiling: " + (deficitPadded <= 0f
+                    ? $"CLEARS by {-deficitPadded:0.0}px"
+                    : $"SHORT by {deficitPadded:0.0}px"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
         /// <summary>A throwaway text component used only to ask Unity what a string actually
         /// measures. Phase T: TMP, so it measures in the same renderer the surface now uses — a
         /// measurement taken in the OTHER renderer would be exactly the T20 mistake this test's own

@@ -12,6 +12,11 @@ that the record does not already say.** Both charter units and unit 3 are comple
 lane is idle with nothing half-built and no dirty tree beyond the two permanent-`M` files
 (`SBR.Engine.dll`, `URP.png` — never stage either) and the untracked `unity/SBR/artifacts/`.
 
+> **SINCE THIS ROTATION (see `0-U9`):** `T144`'s height gate was run and **FAILED** — the two-row
+> footer is short 4.6px against the live row's pinned margin; the composition is HELD and routed.
+> **The stale two-legs clause below is STRUCK** (`2f76062`). A **PlayMode red on main** was found and
+> proven inherited from `e8cb38e`.
+
 ### THE FOUR LIVE CALLS — all with the DD, none of them this lane's to decide
 
 1. **`T133`'s ROOT COLLISION.** `T133` is **closed on width and only on width.** Measured on the real
@@ -34,12 +39,14 @@ lane is idle with nothing half-built and no dirty tree beyond the two permanent-
 
 ### A DEFECT FOUND WHILE COSTING `T140`, AND IT IS LOAD-BEARING
 
-**`TvSweatScreen.cs:2841` states *"the engine forbids two legs on one matchup"*. THAT IS STALE.**
+**STRUCK 2026-08-19 (`2f76062`) — the record of why is kept here.** **`TvSweatScreen.cs:2858` stated *"the engine forbids two legs on one matchup"*. THAT IS STALE.**
 The sgp lane shipped same-game parlays (F_0.6.0 — engine, gates, conditional cash-out), and
 `JointModel` explicitly models *"two legs on one match plus a third elsewhere"* with a `SameMatch`
 block. **The comment is the stated justification for "at most one row is ever live", so the column's
-own reasoning now rests on something untrue.** Routed with the `T140` cost; not fixed here because
-the fix is the same work `T140` prices.
+own reasoning now rests on something untrue.** Routed with the `T140` cost. The predecessor did not strike it (the BUILD it describes is the
+same work `T140` prices); **this seat struck the CLAUSE only** — the comment no longer
+asserts something false, and the per-fixture restructure it points at is still unbuilt and
+still T140's.
 
 ### THE INSTRUMENTS THIS SEAT BUILT — use them, do not rebuild them
 
@@ -80,6 +87,112 @@ the fix is the same work `T140` prices.
 - **§3.5's two UNDER cells** — authored, in the pool, **unreachable** until the under mirror is gated.
 - **`T129`'s §8 item 3 successor questions** — a non-goalless draw (1–1 / 2–2) was **deliberately not
   requested**: it is a question about GENERALITY, and generality was not what was missing.
+
+---
+
+## 0-U9. `T144` — THE TICKET FOOTER'S TWO ROWS · GATE RUN, GATE FAILED, COMPOSITION HELD · 2026-08-19
+
+**Ordered by Allen:** build `spec-ticket-footer-2026-08-19.md` (`T144` takes `T74-am3`'s separate
+rows), height re-derived per §3.3 and gated by §4, evidence to include `E3`. **The gate did not
+clear and §4 says the gate passes BEFORE the composition lands, so the composition is NOT built.**
+Routed at `docs/5-orchestration/route-t144-height-gate-2026-08-19.md`.
+
+**SHIPPED (`2f76062`):** the gate instrument, and the stale clause struck.
+
+| | |
+|---|---|
+| `T144` gate | `TvSweatScreenLayoutGridTests.T144_the_two_row_footer_height_is_re_derived_against_the_live_row` — report-only, rides EditMode |
+| the strike | `TvSweatScreen.cs:2858`'s "the engine forbids two legs on one matchup" — struck, with why |
+
+### THE NUMBERS — and the ceiling is the one to carry
+
+Column budget **480.0** = header 24.0 + six rows + footer. Line box at `TypeRisk` 24 is **30.0px,
+ratio 1.25 measured** (§4.4 satisfied; 1.18 would have predicted a fit again). Live row ink
+**58.8** (NEED 35.0 + progress 23.8); with `T24`'s pinned 8px margin, **66.8**.
+
+> **THE FOOTER'S CEILING IS 55.4px.** Two rows need 60.0 bare and 68.0 as the footer is actually
+> built (8px top inset). **SHORT by 4.6px and 12.6px.** Per row that is **0.8px off `T24`'s 8.0px
+> margin**, six rows.
+
+**As type:** the two rows fit the ceiling at **~22.2px** with zero top inset, **~19px** with any
+inset. §5 reserves type for the DD, so neither was TV's to take.
+
+### `RETURNED` DOES NOT FIT ITS OWN ROW — §2's full-width claim is word-dependent
+
+`RISK $13,639` 138.4 · `STAKE $13,639` 158.9 · `PAYS $…502` 239.7 · `PAID $…502` 235.8 — all fit
+249.0. **`RETURNED $…502` is 300.9 — OVERRUNS by 51.9.** Separate rows fixes the PAIR; it does not
+save the word that ships in the settled state. **`T133`'s copy ruling binds this composition too**,
+not just the one it replaces. Four of the five widths reproduce the record exactly — the
+instrument agrees with the sweep.
+
+### §3.1's CITATION IS INVERTED — the ruling stands, the reason does not
+
+§3.1 cites the money control as a left/left precedent via `:5468`'s *"Anchors are left exactly as
+they were."* **That means left UNCHANGED, not left-ALIGNED:** `CashOut` is `MiddleLeft`
+(`:5459-5462`), `CashOutStatus` is `MiddleRight` (`:5471-5474`). The money control is the
+precedent for KEEPING opposite anchors across a move to separate rows. **The ruling is unaffected**
+— §3.1's real argument (no shared gap, so the device has no subject) stands alone — and TV will
+build left/left as ruled. Routed so the register does not carry a backwards precedent.
+
+### ⚠ AN INHERITED PLAYMODE RED, ON MAIN, PROVEN NOT THIS SEAT'S
+
+```
+FAIL SBR.Tests.PlayMode.TvSweatScreenTests
+     .TicketFooterWord_NeverDisagreesWithAnyRow_AndNoLiveRowEverPrintsNeedZero
+     "leg N shows the NEXT chip but the footer reads 'STAKE'" — expected RISK
+```
+
+**`StakeWord` landed in `e8cb38e`** (the three ruled string builds — the settled footer, `T121`);
+**the pin that catches it predates it** (`acd9d9f` / `4e45464`). `0-U8` records that build's SWEEP
+and **no suite numbers** — the full-suite rule was not discharged on it, and this is the cost.
+
+**Attribution was MEASURED, not argued:** both this seat's files were stashed, the tree recompiled,
+and the pin re-run filtered — **1 of 1 executed, still failed.**
+
+**DIAGNOSED to source on Allen's order** — `docs/5-orchestration/route-settled-ticket-rows-2026-08-19.md`.
+**Two sources of truth, and the session stops between them.** The footer's settled branch reads the
+ENGINE's `_ticket.State` (`:3011-3012`); the rows read the SURFACE's reveal cursor `_resolvedThrough`.
+Both engine settle paths set the state AND `_complete = true` in the same breath
+(`SweatSession.cs:252-253` bust, `:503-508` cash out), and `:136-140` then emits no further drama
+events — so **the remaining legs are never resolved on the surface**, fall to `UpdateTicketColumn`'s
+final `else`, and print **NEXT** while the footer correctly says the position is closed.
+
+**A STEADY STATE, NOT A RACE.** The bust is instant on the first losing leg (`SweatSession.cs:185`)
+and `DemoTicketPolicy` deals 2-3 legs, so most non-winning tickets end there and STAY there. That is
+why the pin trips at frame 16 / frame 51 of hundreds: the fast-forward settles the sweat in a few
+sampled frames and every frame after settlement fails.
+
+**THE ROWS ARE WRONG, NOT THE FOOTER** — by `T121`'s own principle. And **§8.10 already has the
+vocabulary, gated on the wrong flag:** a pending leg takes the VOID strike (never the LOST
+extinguish), but only while `_cashOutPreview` is true. **The surface marks the leg cancelled while
+the player is deciding, and un-marks it once it actually is** — and never strikes it at all on a
+bust. `T121` justified reading `_ticket.State` because a cash-out is a player action leg outcomes
+cannot see; **right for `CashedOut`, extended to `Lost`, which is derivable and reveal-timed.**
+
+**NOT FIXED — it needs a ruling** (`T121` left the dead ticket's strings to a frame; its rows are
+equally unruled). TV's read is remedy 1: the strike stops being preview-gated. **Flagged unverified:**
+a repaint between the engine's bust and the reveal would leak the ending; eight other
+`UpdateTicketColumn` call sites were not traced.
+
+### SUITES — this tree, this window
+
+| suite | measured | against baseline |
+|---|---|---|
+| engine | **307 passed / 0 failed / 1 skipped** (308) | +1, growth |
+| EditMode | **314 executed / 313 passed / 0 failed / 1 ignored** | +59 since batch 96; +1 is `T144` |
+| PlayMode | **146 executed / 122 passed / 1 FAILED / 23 skipped** | the 1 is the inherited red above |
+
+### TRAPS THIS WINDOW ADDED
+
+1. **The suite runs dirty FIVE side-effect files, not three.** Three TMP font SDF assets
+   (`EncodeSans Bold`, `EncodeSansCondensed Bold`, `EncodeSansCondensed`), the TMP fallback, and
+   `ProjectSettings.asset` — the dynamic atlas populates on any newly-measured glyph run, so a
+   measurement instrument dirties them by existing. `git checkout --` all five before staging.
+2. **`float.PositiveInfinity` is the wrong "unconstrained" for TMP.** `GetPreferredValues` folds
+   the constraint into its layout maths and returns infinities. The codebase's own constant is
+   `100000f`, in four places. A bounded agent caught this one against the lead's instruction.
+3. **`-quit` segfaulted again** (`0xC0000005`) with a clean compile — procs 0, stale lockfile,
+   cleared. The known fault, on the shutdown path only; the compile and the results were valid.
 
 ---
 

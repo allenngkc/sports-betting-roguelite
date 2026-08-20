@@ -2854,8 +2854,16 @@ namespace SBR.Game
         ///
         /// PRD §8.2A tolerance: this reads legs as a collection and checks each row's own live
         /// state independently (never a single hard-coded "the active leg" index), so it does not
-        /// need a rewrite if concurrent live legs are ever re-authorized — today at most one row
-        /// is ever live, since the engine forbids two legs on one matchup.</summary>
+        /// need a rewrite if concurrent live legs are ever authorized.
+        ///
+        /// <para><b>T140 (2026-08-19): the clause that stood here was stale and load-bearing.</b> It
+        /// read "today at most one row is ever live, since the engine forbids two legs on one
+        /// matchup." The sgp lane shipped same-game parlays (F_0.6.0 — engine, gates, conditional
+        /// cash-out) and <c>JointModel</c> explicitly models "two legs on one match plus a third
+        /// elsewhere" with a SameMatch block, so THE CASE IS ALREADY REACHABLE and the stated
+        /// justification for "at most one row is ever live" no longer holds. What keeps this method
+        /// correct is the per-row tolerance above, not the engine restriction it cited — and the
+        /// per-fixture restructure T140 prices is what would first exercise it.</para></summary>
         private void UpdateTicketColumn(int liveLegIndex)
         {
             _liveLegIndexShown = liveLegIndex;
