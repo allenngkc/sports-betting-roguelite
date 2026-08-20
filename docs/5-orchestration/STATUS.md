@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-19, cycle 427 (heartbeat).**
+**Keeper-era heartbeat stamp: 2026-08-19, cycle 428 (heartbeat).** Quiet
+hold - TV mid-verification (warm-compile running against the editor;
+remedy 1 + leak trace); DD and markets idle. With Allen: the T140 fork,
+both spec approvals, T144's re-ruling (with the DD), the hold's
+structure, research 8-9.
+
+*(prior stamp, cycle 427 (heartbeat):)*
 Remedy 1 building in TV with the leak trace running (commit held on the
 trace); DD's batch 133 landed (remedy 1's acceptance pre-committed:
 CANCELLED not LOST on struck rows; T148 - RETURNED overruns even a
