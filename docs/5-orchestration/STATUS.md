@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-19, cycle 430 (heartbeat).** The
+**Keeper-era heartbeat stamp: 2026-08-20, cycle 431 (heartbeat).** All
+nine market kinds AUTHORED (G1 discharged pending measurement; T126
+withdrawn on T70-am; the '1 GOALS' defect left alone - every remedy
+reads worse). TV builds the composition with suites + the nine-kind
+measurement queued behind; DD grinds the ledger (batch 140 mid-write).
+With Allen: the T140 fork, both spec approvals, the hold's structure,
+research 8-9.
+
+*(prior stamp, cycle 430 (heartbeat):)* The
 register carries the backlog (66 rows transcribed, near-miss row
 written); the DD authored the three grammar-breaking kinds (batch 137),
 took an API cut mid-turn on the other six (resumed - it was withdrawing
