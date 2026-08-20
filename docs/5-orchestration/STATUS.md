@@ -1,6 +1,10 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-19, cycle 416 - THE CONSOLE FORK
+**Keeper-era heartbeat stamp: 2026-08-19, cycle 417 (heartbeat).** Fresh
+DD loading both explorations; TV + markets standing by. With Allen:
+research 8-9.
+
+*(prior stamp, cycle 416 - THE CONSOLE FORK
 IS RULED: A.** Allen took the recommendation - the presentation pass on
 the existing console betting surface. The restart forced the DD's due
 rotation: fresh seat (term_0a31a10f) carries both explorations by docket
