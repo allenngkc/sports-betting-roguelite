@@ -1,6 +1,12 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-19, cycle 417 (heartbeat).** Fresh
+**Keeper-era heartbeat stamp: 2026-08-19, cycle 418 (heartbeat).** THE
+CONSOLE SPEC IS WITH ALLEN (batch 121, 2475bbd - the line number as the
+pick address; two keystrokes worst-case, zero to bet). DD on the
+drawn-ending frames. With Allen: the spec approval, A2's provenance if
+remembered, research 8-9.
+
+*(prior stamp, cycle 417:)* Fresh
 DD loading both explorations; TV + markets standing by. With Allen:
 research 8-9.
 
