@@ -1,6 +1,20 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-19, cycle 418 (heartbeat).** THE
+**Keeper-era heartbeat stamp: 2026-08-19, cycle 419.** THE THREE-ARM
+WINDOW IS SHOT AND MERGED (T129, autonomous merge 3d0e589 - checklist
+passed: frames untracked, one read-only debug accessor, no drift). TV's
+findings: T108's fix lands a second late on a drawn ending; arm 2's
+footer never reaches STAKE with a live cash-out standing on a settled
+0-0; arm 3 is correct-score's first capture. DD worked the owed ledger
+dry (batches 123-126 landed; C57 promoted: a sweep certifies the build,
+never the canon), now on S88's source-claim re-check at HEAD, then the
+window read - the phase's next gate. Allen's fired words this cycle:
+queue the three builds / keep working the ledger / take S88 / merged,
+stand by for the DD's read. With Allen: the console spec approval (batch
+121), the hold-not-climax direction look, A2's provenance if remembered,
+research 8-9.
+
+*(prior stamp, cycle 418 (heartbeat):)* THE
 CONSOLE SPEC IS WITH ALLEN (batch 121, 2475bbd - the line number as the
 pick address; two keystrokes worst-case, zero to bet). DD on the
 drawn-ending frames. With Allen: the spec approval, A2's provenance if
