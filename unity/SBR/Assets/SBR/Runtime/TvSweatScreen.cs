@@ -1391,7 +1391,11 @@ namespace SBR.Game
             if (_tCashOut != null)
             {
                 _cashOutTextBeforePreview = _tCashOut.text;
-                _tCashOut.text = $"CASHED OUT ${Money(_cashOutPreviewAmount)}";
+                // T114-am: bare here too. This is the HELD PREVIEW of the accepted state, so it
+                // must show what acceptance will actually show — a preview that promises an amount
+                // the accepted banner then drops would misstate the very act it is previewing, and
+                // §6.1's own law is that a control's copy IS its input contract.
+                _tCashOut.text = "CASHED OUT";
             }
             // The instruction moves with the state, at the moment the state moves. The status word is
             // otherwise written only when a price is rendered, and a preview is entered between those
@@ -1726,11 +1730,27 @@ namespace SBR.Game
                 if (decisiveBeat)
                     _pendingFlavor = SweatFlavor.DecisiveLine(spec.Decisive.Value, spec.ForPicked);
 
-                // The count-batch suffix is NOT appended to a decisive line. T110-am2 has ruled
-                // the suffix removed outright, and until that lands it must at minimum not blunt
-                // the two lines authored to carry these moments.
-                if (countScene && !decisiveBeat && spec.Count.Value.TotalDelta > 1)
-                    _pendingFlavor += $" ({spec.Count.Value.TotalDelta} in the spell)";
+                // T110-am2 (batch 108): THE COUNT-BATCH SUFFIX IS REMOVED. It read
+                // `" ({n} in the spell)"` and it is gone outright — not narrowed, not shortened.
+                //
+                // FIVE REASONS, AND WIDTH IS DELIBERATELY THE LEAST OF THEM. The value was
+                // TRUTHFUL — `spec.Count.Value.TotalDelta`, checked at source — and it goes anyway:
+                //   1. `spell` is never explained to the player anywhere on this surface;
+                //   2. it misreads as a running TOTAL when it is a per-event DELTA;
+                //   3. the fact is already SHOWN — the count moves in the column in front of him,
+                //      which is §3.1's *drawn, not captioned*;
+                //   4. the widest string printed `spell` TWICE, one clause apart — T69/T70's
+                //      defect inside a single string;
+                //   5. and only fifth, the 94.8px overrun.
+                //
+                // Recorded in that order on purpose: a string is not cut for its width when four
+                // better reasons were already standing. The overrun's discharge is a CONSEQUENCE
+                // here rather than the purpose — the lead measured the decks WITHOUT the suffix at
+                // 577.2px against a 651.0px box, fits with 73.8px spare, so removing it closes
+                // T110-am as a side effect.
+                //
+                // The decisive-beat lines never took the suffix in the first place (§3.5), so
+                // nothing about them changes.
 
                 // spec-count-theater-2026-08-17.md §4, THE BINDING: StageBeat() already advanced
                 // the count ledger's cursor unconditionally the instant _choreo.ResolveBeat ran
@@ -2950,8 +2970,51 @@ namespace SBR.Game
             // Amended for the state-lie fix: the footer's first word is no longer a hard-coded
             // "RISK" — it comes from the whole ticket's leg outcomes, so it reads "STAKE" once no
             // remaining leg can still lose it (SweatActiveLegModel.StakeWord). `_tPays` is UNCHANGED.
-            _tRiskPays.text = $"{SweatActiveLegModel.StakeWord(BuildTicketLegOutcomes())} ${Money(_ticket.Stake)}";
-            if (_tPays != null) _tPays.text = $"PAYS ${Money(_ticket.PotentialPayout)}";
+            // T114-am (cashed out) and T121 (dead) — THE SETTLED TICKET'S FOOTER, and the two are
+            // ONE job because separately they restate. On a settled ticket BOTH incumbent words are
+            // false: there is no risk on a position that is closed, and it will not pay what the
+            // slot promises. T121 read it on frame — `RISK $25` and `PAYS $37` in money amber while
+            // `−$60` two lines below said it paid nothing.
+            //
+            // `STAKE` / `RETURNED` is borrowed as a PAIR from S38's laptop ledger rather than
+            // assembled from two singles, which is what keeps the two halves saying one thing.
+            //
+            // The state comes from `_ticket.State` — the ENGINE's own TicketState, already read at
+            // two other sites in this file. A cash-out is a PLAYER ACTION and is not derivable from
+            // leg outcomes at all, so `StakeWord` (which takes leg outcomes) structurally cannot see
+            // it — T114 says so in terms. This reads the ticket, not a second source of truth.
+            bool settledCashedOut = _ticket.State == TicketState.CashedOut;
+            bool settledDead = _ticket.State == TicketState.Lost;
+
+            if (settledCashedOut || settledDead)
+            {
+                _tRiskPays.text = $"STAKE ${Money(_ticket.Stake)}";
+                // The dead ticket returned nothing and says so; the cashed-out one returns what the
+                // player actually took, which is the accepted offer rather than the potential
+                // payout he gave up.
+                double returned = settledCashedOut ? _lastCashOutAmount : 0.0;
+                if (_tPays != null) _tPays.text = $"RETURNED ${Money(returned)}";
+            }
+            else
+            {
+                _tRiskPays.text = $"{SweatActiveLegModel.StakeWord(BuildTicketLegOutcomes())} ${Money(_ticket.Stake)}";
+                if (_tPays != null) _tPays.text = $"PAYS ${Money(_ticket.PotentialPayout)}";
+            }
+
+            // ⚠ T133 — MEASURED AT BUILD TIME, AND THE EXPOSURE IS REAL. `RETURNED` goes into the
+            // footer's RIGHT half, which is `Pays` — THE WIDEST-BOUNDED SLOT ON THIS SURFACE, whose
+            // worst case was established by enumeration over 648,000 priced offers. Measured:
+            //
+            //     PAYS $73,318,376,502      239.7px  against box 249.0px  fits,  9.3px spare
+            //     RETURNED $73,318,376,502  300.9px  against box 249.0px  OVERRUNS by 51.9px
+            //     RETURNED $0               146.5px  against box 249.0px  fits, 102.5px spare
+            //
+            // `RETURNED` is EIGHT characters where `PAYS` is FOUR, and nothing in T114-am or T121
+            // priced the swap. **The dead case is safe — it is always $0. The CASHED-OUT case is
+            // not bounded to $0 and its worst case overruns.**
+            //
+            // NOT dodged by shortening or truncating the word: that is a copy decision and C11 puts
+            // copy on a frame. Recorded here and routed.
         }
 
         /// <summary>The whole ticket's leg outcomes, for <see cref="SweatActiveLegModel.StakeWord"/>.
@@ -4020,7 +4083,19 @@ namespace SBR.Game
         {
             // T68-am: §6.1's accepted state — "brief L4 punch, then CASHED OUT $x at L3" — rendered
             // in the slot, not on a canvas-centre figure over the flood.
-            ShowCashOutAccepted($"CASHED OUT ${Money(amount)}");
+            // T114-am: THE BANNER DROPS ITS AMOUNT. `CASHED OUT` bare.
+            //
+            // The footer and the banner are ONE job: the footer now states the return
+            // (`RETURNED $x`), so a banner also stating it would name the same fact ONE SLOT APART —
+            // T69/T70's family, and authoring them separately walks straight into it.
+            //
+            // AND THIS DISPOSES OF T112-am WITHOUT A SEPARATE FIX. The lane routed
+            // `CASHED OUT $1,240` at 255.6px against a 241.0px box — over by 14.6px — as copy
+            // awaiting a frame. It was not awaiting anything: batch 108 had already ruled the drop,
+            // on independent grounds and four hours before the overrun was routed. `CASHED OUT`
+            // bare is ten characters against seventeen, so the overrun does not survive the ruling.
+            // The lead re-runs the sweep to price that rather than assert it.
+            ShowCashOutAccepted("CASHED OUT");
             EmissionFlash(goldL4);
             RoomSettlementGlow(); // T65: taking the money is a settlement
             // The punch runs ALONGSIDE the flood, not before it: blocking here would delay the
