@@ -2876,6 +2876,45 @@ namespace SBR.Game
                 return;
             }
 
+            // T121/T114-am's SETTLED STATE, hoisted above the row loop because the ROWS need it
+            // too. `Bust()` and the cash-out each set `_ticket.State` AND `_complete` in the same
+            // breath (SweatSession.cs:252-253, :503-508), and a complete session emits no further
+            // drama events (:136-140) — so every leg after the settle is NEVER revealed. The rows
+            // below used to leave those legs reading LIVE and NEXT on a ticket that is over, while
+            // the footer said the position was closed. `NEXT` means "the next thing that can take
+            // his money" (T25.6) and after the settle nothing can.
+            //
+            // ⚠ THE DEAD FACT IS REVEAL-GATED, AND THAT IS THE WHOLE POINT OF THIS BLOCK.
+            // `SweatSession.MoveNext` resolves a `LegFinal` BEFORE it hands the event back —
+            // `if (e.Type == LegFinal) ResolveLegFinal();` then `evt = e; return true;`
+            // (SweatSession.cs:150-154) — and `ResolveLegFinal` busts instantly when no save is
+            // held (:184-185). So `_ticket.State` reads `Lost` from the moment the event is
+            // DELIVERED, while `_resolvedThrough` only advances in `FinalSlam`, after the whole
+            // final scene has played. Three repaints land inside that gap — `RenderEvent`
+            // (called straight off `MoveNext`), `RepaintRevealedScore` (stoppage-time goals
+            // during the final scene) and `ExitCashOutPreview` (polled every frame) — and a
+            // footer reading raw `_ticket.State` would print `STAKE` / `RETURNED $0` while the
+            // scene that kills him is still playing. **That is the ending, told early.**
+            //
+            // So the dead fact is taken from what has been REVEALED, using the SAME test the
+            // resolved-row branch below renders its `L` chip from. Footer and rows then cannot
+            // disagree by construction — which is the invariant the PlayMode pin asserts — and
+            // no call site can leak, because the leak is closed at the source of truth rather
+            // than at each of the ten repaints.
+            //
+            // CASHED OUT IS NOT GATED and must not be: it is a PLAYER ACTION with no hidden
+            // outcome behind it (T114 says so in terms), it settles synchronously at the moment
+            // he acts, and there is nothing for a reveal to be ahead of.
+            bool revealedLoss = false;
+            for (int i = 0; i < _resolvedThrough && i < _ticket.Legs.Count; i++)
+            {
+                Leg revealedLeg = _ticket.Legs[i];
+                if (!revealedLeg.IsVoided && !revealedLeg.GradesWon) { revealedLoss = true; break; }
+            }
+            bool settledCashedOut = _ticket.State == TicketState.CashedOut;
+            bool settledDead = _ticket.State == TicketState.Lost && revealedLoss;
+            bool ticketSettled = settledCashedOut || settledDead;
+
             _tTicketHeader.text = director != null
                 ? $"TICKET {director.SweatIndex + 1}/{director.Run.Sweats.Count}"
                 : string.Empty;
@@ -2893,7 +2932,10 @@ namespace SBR.Game
                 // states and not others.
                 string statement = FitToColumn(_legRow[i].Line, LegStatement(leg));
                 string price = OddsFormat.American(leg.OfferedOdds);
-                bool isLive = i == liveLegIndex && i >= _resolvedThrough;
+                // A SETTLED ticket has no live leg. The session is complete, so this row's events
+                // will never arrive; without this clause the leg AFTER the loser keeps rendering the
+                // live form — a NEED and a progress line — on a ticket that can no longer pay.
+                bool isLive = i == liveLegIndex && i >= _resolvedThrough && !ticketSettled;
                 _legRow[i].IsLive = isLive;
 
                 if (i < _resolvedThrough)
@@ -2978,12 +3020,24 @@ namespace SBR.Game
                     // can take his money." This overrides canon's own LEVEL.NEXT = L1.
                     _legRow[i].Line.color = AtTier(flavorColor, TierL2);
                     _legRow[i].Line.text = statement;
-                    SetRowChip(i, "NEXT", AtTier(flavorColor, TierL2), price);
+                    // §8.10's CANCELLED treatment, extended from the PREVIEW of a settle to the
+                    // settle itself. The word turns on whether the leg can still take his money:
+                    // while previewing it CAN (he may decline and the leg plays on), so the preview
+                    // keeps `NEXT` and only strikes it; once the ticket has settled it CANNOT, and
+                    // the word goes. The chip falls silent rather than being re-authored — the
+                    // strike is already this surface's mark for a cancelled leg and no new string
+                    // is invented here (T121 left the dead ticket's copy to a frame).
+                    SetRowChip(i, ticketSettled ? string.Empty : "NEXT",
+                        AtTier(flavorColor, TierL2), price);
                     if (_legRow[i].Extinguish != null) _legRow[i].Extinguish.enabled = false;
-                    // A pending leg is equally ended by cashing out, so it is struck too. It does
-                    // NOT step down: NEXT already sits at L1 and the next level is L0, which is the
-                    // LOST extinguish this preview must never borrow.
-                    if (_legRow[i].Strike != null) _legRow[i].Strike.enabled = _cashOutPreview;
+                    // A pending leg is equally ended by cashing out, so it is struck too — and it
+                    // stays struck once the ticket actually settles, by cash-out or by bust. Gated
+                    // on `_cashOutPreview` alone this marked the leg cancelled while the player was
+                    // DECIDING and un-marked it the moment it truly was, and never fired at all on a
+                    // bust. It does NOT step down: NEXT already sits at L1 and the next level is L0,
+                    // which is the LOST extinguish a cancellation must never borrow.
+                    if (_legRow[i].Strike != null)
+                        _legRow[i].Strike.enabled = _cashOutPreview || ticketSettled;
                     _legRow[i].Need.text = string.Empty;
                     _legRow[i].Progress.text = string.Empty;
                 }
@@ -3008,8 +3062,10 @@ namespace SBR.Game
             // two other sites in this file. A cash-out is a PLAYER ACTION and is not derivable from
             // leg outcomes at all, so `StakeWord` (which takes leg outcomes) structurally cannot see
             // it — T114 says so in terms. This reads the ticket, not a second source of truth.
-            bool settledCashedOut = _ticket.State == TicketState.CashedOut;
-            bool settledDead = _ticket.State == TicketState.Lost;
+            //
+            // `settledCashedOut` / `settledDead` are HOISTED to the top of this method: the rows
+            // need the same fact, and reading it twice is how the footer and the rows came to
+            // disagree in the first place. One read, one truth, both consumers.
 
             if (settledCashedOut || settledDead)
             {

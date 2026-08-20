@@ -950,6 +950,9 @@ namespace SBR.Tests.PlayMode
                 string footerWord = footer.Length > 0 ? footer.Split(' ')[0] : string.Empty;
                 if (footerWord.Length > 0) footerWords.Add(footerWord);
                 if (footerWord == "STAKE") sawDecidedLeg = true;
+                // Per-FRAME, unlike sawDecidedLeg above which is per-RUN: assertion 3 below is
+                // about this frame's surface, not about anything the run reached earlier.
+                bool anyDecidedChipThisFrame = false;
 
                 for (int i = 0; i < legCount; i++)
                 {
@@ -977,6 +980,7 @@ namespace SBR.Tests.PlayMode
                     else if (chip == "W" || chip == "L" || chip == "VOID")
                     {
                         sawDecidedLeg = true;
+                        anyDecidedChipThisFrame = true;
                     }
 
                     // 2, STAKE half — a decided ticket must not still be showing a live requirement
@@ -990,6 +994,32 @@ namespace SBR.Tests.PlayMode
                             + $"'{progress}' still names a live requirement — STAKE claims the whole "
                             + "ticket is decided");
                     }
+                }
+
+                // 3. THE REVEAL GATE. A footer reading STAKE has named the ticket SETTLED; on a
+                // dead ticket the surface may only say that once a row has SHOWN the loss.
+                // `SweatSession.MoveNext` resolves a LegFinal and busts BEFORE it hands the event
+                // back (SweatSession.cs:150-154, :184-185), while `_resolvedThrough` advances only
+                // in FinalSlam, after the whole final scene has played — so a footer reading raw
+                // `_ticket.State` prints the ending during the scene that delivers it.
+                //
+                // ASSERTION 2 ABOVE CANNOT CATCH THAT, and the distinction is the reason this
+                // exists: assertion 2 compares the footer against the ROWS, so a change that
+                // settles the rows early makes both agree while both are still early — green, and
+                // still telling the ending. This one compares the footer against the REVEAL,
+                // which is the thing actually being raced.
+                //
+                // Cash-out is exempt and must be: it is a PLAYER ACTION with no hidden outcome
+                // behind it, it settles synchronously at the moment he acts, and no row shows a
+                // decided chip for it — there is nothing for a reveal to be ahead of.
+                if (footerWord == "STAKE"
+                    && director.CurrentTicket != null
+                    && director.CurrentTicket.State != TicketState.CashedOut
+                    && !anyDecidedChipThisFrame)
+                {
+                    Assert.Fail($"frame {framesSampled}: the footer reads STAKE on a ticket that "
+                        + "is not cashed out, but NO row shows a decided chip (W/L/VOID) — the "
+                        + "ending is being told before the theater shows it");
                 }
 
                 yield return null;
