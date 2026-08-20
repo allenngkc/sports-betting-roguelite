@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-19, cycle 423 (heartbeat).** Quiet
+**Keeper-era heartbeat stamp: 2026-08-19, cycle 424 (heartbeat).** THE
+TV SEAT ROTATED at 98%: handoff merged (f61edd2), old terminal closed, a
+fresh Opus-max lead loading the lane (term_c9559160); watcher rebuilt
+v44 (bg1orud9f). T133 CLOSED ON WIDTH and its frames found T144 (the
+footer slot occludes) - Allen ruled it takes the separate-rows
+precedent; DD speccing that now. The root-collision read rides T144's
+re-shoot. With Allen: the T140 fork, both spec approvals (console 121,
+drawn ending 128), the hold's structure (T127), research 8-9.
+
+*(prior stamp, cycle 423 (heartbeat):)* Quiet
 hold - TV closing T133 (PAID measurement + rung-2 frame); DD idle, its
 whole desk with Allen. With Allen: the T140 fork, both spec approvals
 (console 121, drawn ending 128), the hold's structure (T127), research
