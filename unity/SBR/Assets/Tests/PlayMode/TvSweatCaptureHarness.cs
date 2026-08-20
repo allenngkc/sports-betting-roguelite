@@ -1237,6 +1237,89 @@ namespace SBR.Tests.PlayMode
             Debug.Log($"[TvSweatCaptureHarness] seed={_seed} goalless capture complete -> {OutputDir}");
         }
 
+        /// <summary>`T133` — THE RUNG-2 FRAME. Forced, and the forcing is disclosed on every
+        /// filename it writes.
+        ///
+        /// <para><b>Why forced at all.</b> The subject is the footer's RIGHT half at the ENUMERATED
+        /// WORST CASE — `$73,318,376,502`, eleven digits established over 648,000 priced offers by
+        /// `PayoutMaximumTests`. **That amount cannot be dealt for in a capture.** `S3`'s precedent
+        /// is exactly this: it reached an otherwise-unreachable empty group with a non-shipped
+        /// `CorrectScoreFloor = 0.08` and put the disclosure on the frame's face. Same device, same
+        /// reason.</para>
+        ///
+        /// <para><b>Why a frame at all, when the widths are already measured.</b> Because they
+        /// answer different questions. Measured: `RETURNED` overruns by 51.9px, `PAID` fits with
+        /// 13.2px — MORE headroom than the incumbent `PAYS`'s 9.3px. **Width is settled. What no px
+        /// number can say is whether the word READS in that slot at the acceptance view**, and
+        /// `C11` puts that on a frame.</para>
+        ///
+        /// <para><b>Three states, so the comparison is on one ruler:</b> the incumbent `PAYS`, the
+        /// ruled-but-overrunning `RETURNED`, and the rung-2 candidate `PAID`. Shooting the candidate
+        /// alone would show a string that looks fine with nothing to look fine AGAINST.</para>
+        ///
+        /// <para><b>WHAT THIS SET DOES NOT CLAIM:</b> nothing about whether `PAID` should be
+        /// adopted — batch 108 rejected it for colliding at the root with `PAY $60` on the same
+        /// screen, and that objection is untouched by any of this. **The width case against `PAID`
+        /// is closed; the collision case is not, and it is a copy call this lane does not
+        /// hold.**</para></summary>
+        [Explicit("T133 rung-2 frame: the footer's right half at the enumerated worst case, in three "
+            + "states, FORCED and disclosed. Writes frames. Run by filter only.")]
+        [Timeout(900000)]
+        [UnityTest]
+        public IEnumerator Capture_T133_PaysRungTwo_Forced()
+        {
+            _seed = "GOALLESS-5";
+            s_sceneIndex = 0;
+            Directory.CreateDirectory(OutputDir);
+            TheaterStage.PresentationSeedOverride = StableSeed(_seed);
+            Time.captureDeltaTime = 1f / 50f;
+
+            yield return LoadRoom();
+            var director = Object.FindAnyObjectByType<RunDirector>();
+            var screen = Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+            Camera cam = Camera.main;   // the seated in-room camera — the acceptance view is the
+                                        // only one that can answer "does it read".
+            Assert.IsNotNull(cam, "no main camera");
+
+            screen.TimeScaleOverride = 1f;
+            couch.transitionDuration = 0.01f;
+            yield return WaitUntilOrFail(() => director.Run != null,
+                Time.realtimeSinceStartup + 10f, "director never started a run");
+
+            director.StartNewRun(_seed);
+            Run run = director.Run;
+            Matchup m = run.CurrentSlate.Matchups[0];
+            run.PlaceTicket(new List<Pick> { new Pick(m.Index, MarketSelection.MoneylineDraw()) }, 25.0);
+            director.LockRound();
+            couch.OnInteract(null);
+            yield return WaitUntilOrFail(() => SitSpot.Active != null,
+                Time.realtimeSinceStartup + 15f, "player never sat down");
+            for (int i = 0; i < 30; i++) yield return null;   // let the column render
+
+            // Three states on one ruler. Each is re-forced immediately before its own burst because
+            // ANY repaint overwrites the literal — the force latches nothing by design, so a burst
+            // that assumed it persisted would silently photograph the real string instead.
+            foreach ((string label, string literal) in new[]
+            {
+                ("incumbent-PAYS",   "PAYS $73,318,376,502"),
+                ("ruled-RETURNED",   "RETURNED $73,318,376,502"),
+                ("rung2-PAID",       "PAID $73,318,376,502"),
+            })
+            {
+                screen.ForcePaysTextForCapture(literal);
+                Debug.Log($"[T133-FORCED] {label} :: pays='{screen.DebugTicketPaysText}' " +
+                          $"footer='{screen.DebugTicketRiskText}' — FORCED, NOT A SHIPPED STATE");
+                yield return CaptureBurst(screen, cam, $"FORCED-t133-{label}", 6, 0f);
+            }
+
+            Debug.Log($"[T133-FORCED] complete -> {OutputDir} — every frame here is FORCED and the " +
+                      "worst-case amount is unreachable in play; see the dock README");
+        }
+
         /// <summary>T129 ARM 2 — COUNT LEGS SETTLING LEVEL.
         ///
         /// <para>A goalless draw settles a whole family the docked set has never carried:
