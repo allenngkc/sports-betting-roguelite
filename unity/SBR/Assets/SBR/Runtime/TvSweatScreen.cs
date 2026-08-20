@@ -526,6 +526,16 @@ namespace SBR.Game
         /// <see cref="DebugStatsRow"/>, every index guarded the same way. Exist so a PlayMode pin can
         /// watch the footer word (RISK/STAKE) never disagree with a row's own progress line or state
         /// chip.</summary>
+        /// <summary>The §6.1 money control's own text — the slot that carries `CASH OUT $x`,
+        /// `CASHED OUT $x`, `SUSPENDED` and, at a win, the payout tally (`T71` puts `WinBeat`'s
+        /// `+$X` on the same treatment).
+        ///
+        /// <para>Added for `T129` condition (e): *every ending runs PAST its own tally, verified by
+        /// the payout slot changing and then settling.* That is only checkable if the slot can be
+        /// READ per frame — otherwise a window that ends mid-tally looks identical to one that
+        /// resolved, and the set cannot answer the question it was shot for. Read-only, and the same
+        /// null-safe-returns-empty shape as its siblings above.</para></summary>
+        public string DebugCashOutText => _tCashOut != null ? _tCashOut.text : string.Empty;
         public string DebugTicketRiskText => _tRiskPays != null ? _tRiskPays.text : string.Empty;
         /// <summary>The PAYS half of the footer — see <see cref="DebugTicketRiskText"/>.</summary>
         public string DebugTicketPaysText => _tPays != null ? _tPays.text : string.Empty;
