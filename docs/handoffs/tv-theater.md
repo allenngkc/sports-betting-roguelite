@@ -43,8 +43,10 @@ lane is idle with nothing half-built and no dirty tree beyond the two permanent-
 The sgp lane shipped same-game parlays (F_0.6.0 — engine, gates, conditional cash-out), and
 `JointModel` explicitly models *"two legs on one match plus a third elsewhere"* with a `SameMatch`
 block. **The comment is the stated justification for "at most one row is ever live", so the column's
-own reasoning now rests on something untrue.** Routed with the `T140` cost; not fixed here because
-the fix is the same work `T140` prices.
+own reasoning now rests on something untrue.** Routed with the `T140` cost. The predecessor did not strike it (the BUILD it describes is the
+same work `T140` prices); **this seat struck the CLAUSE only** — the comment no longer
+asserts something false, and the per-fixture restructure it points at is still unbuilt and
+still T140's.
 
 ### THE INSTRUMENTS THIS SEAT BUILT — use them, do not rebuild them
 
