@@ -1,6 +1,47 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-18, cycle 410 - THE REVEAL IS
+**Keeper-era heartbeat stamp: 2026-08-19, cycle 418 (heartbeat).** THE
+CONSOLE SPEC IS WITH ALLEN (batch 121, 2475bbd - the line number as the
+pick address; two keystrokes worst-case, zero to bet). DD on the
+drawn-ending frames. With Allen: the spec approval, A2's provenance if
+remembered, research 8-9.
+
+*(prior stamp, cycle 417:)* Fresh
+DD loading both explorations; TV + markets standing by. With Allen:
+research 8-9.
+
+*(prior stamp, cycle 416 - THE CONSOLE FORK
+IS RULED: A.** Allen took the recommendation - the presentation pass on
+the existing console betting surface. The restart forced the DD's due
+rotation: fresh seat (term_0a31a10f) carries both explorations by docket
+file (cbe1cb7); markets resumed (term_9e46f12a) to build on the approved
+spec; TV survived (term_02eb420a). Monitors: heartbeat baxe0yz2e,
+watcher v43 bzttyzjuu. With Allen: research 8-9 only.
+
+*(prior stamp, cycle 415:)* Quiet
+hold; DD nearing rotation (796k) - rotate on the handoff when its
+drawn-ending exploration lands. With Allen: the console fork, research
+8-9.
+
+*(prior stamp, cycle 414:)* No
+change - quiet hold on Allen's fork word and research 8-9.
+
+*(prior stamp, cycle 413:)* Quiet
+hold - the DD exploring the drawn ending; the fork + research 8-9 with
+Allen.
+
+*(prior stamp, cycle 412 - BOTH MANDATE
+PHASES CLOSED** (surfaces 119, theater 120, b88f619). The board runs on
+the new mandate: the drawn-ending exploration underway (two of four bet
+types already photographed); console surfaces waits on ALLEN'S FORK WORD
+(A: polish the existing console surface - recommended; B: a new
+in-fiction apparatus). Parked with Allen: the fork + research 8-9.
+
+*(prior stamp, cycle 411:)* DD on
+the theater's closing read; TV standing by; markets available. Parked
+with Allen: research 8-9.
+
+*(prior stamp, cycle 410 - THE REVEAL IS
 BUILT AND DOCKED.** Merged (08fd8e0): the scoreline always true at last
 (the load-bearing clause), the disjoint pool with unreachable cells
 stated, both pairings side by side. THE THEATER PHASE CLOSES on the
