@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-19, cycle 425 (heartbeat).** T144
+**Keeper-era heartbeat stamp: 2026-08-19, cycle 426 (heartbeat).** THE
+T144 GATE FAILED ON MEASUREMENT - the two-row footer does NOT clear
+(4.6px short bare, 12.6px padded, ratio measured 1.25): the composition
+is HELD per the spec's own §4.5 and returns to the DD - the same height
+that withdrew this ruling at batch 59, now with a number. The stale
+two-legs clause was struck in the same commit. TV still verifying;
+merge on its report. With Allen: the T140 fork, both spec approvals,
+the hold's structure, research 8-9.
+
+*(prior stamp, cycle 425 (heartbeat):)* T144
 BUILDS: the DD's ticket-footer spec landed (batch 132) and the fresh TV
 lead builds it delegated, editor window granted (procs 0) for the §4
 height gate + E3 evidence; the stale :2858 clause strikes in the same
