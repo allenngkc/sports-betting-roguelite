@@ -147,11 +147,32 @@ FAIL SBR.Tests.PlayMode.TvSweatScreenTests
 and **no suite numbers** — the full-suite rule was not discharged on it, and this is the cost.
 
 **Attribution was MEASURED, not argued:** both this seat's files were stashed, the tree recompiled,
-and the pin re-run filtered — **1 of 1 executed, still failed.** `TicketCannotLose` is correct in
-isolation (any `Undecided` leg returns `RISK`), so the defect is upstream of it: at the failing
-frame the footer's word source and the row's chip source disagree about leg state — either
-`_liveLegIndexShown` or `_resolvedThrough` is ahead of what the rows render. **Not diagnosed
-further; not this window's order.**
+and the pin re-run filtered — **1 of 1 executed, still failed.**
+
+**DIAGNOSED to source on Allen's order** — `docs/5-orchestration/route-settled-ticket-rows-2026-08-19.md`.
+**Two sources of truth, and the session stops between them.** The footer's settled branch reads the
+ENGINE's `_ticket.State` (`:3011-3012`); the rows read the SURFACE's reveal cursor `_resolvedThrough`.
+Both engine settle paths set the state AND `_complete = true` in the same breath
+(`SweatSession.cs:252-253` bust, `:503-508` cash out), and `:136-140` then emits no further drama
+events — so **the remaining legs are never resolved on the surface**, fall to `UpdateTicketColumn`'s
+final `else`, and print **NEXT** while the footer correctly says the position is closed.
+
+**A STEADY STATE, NOT A RACE.** The bust is instant on the first losing leg (`SweatSession.cs:185`)
+and `DemoTicketPolicy` deals 2-3 legs, so most non-winning tickets end there and STAY there. That is
+why the pin trips at frame 16 / frame 51 of hundreds: the fast-forward settles the sweat in a few
+sampled frames and every frame after settlement fails.
+
+**THE ROWS ARE WRONG, NOT THE FOOTER** — by `T121`'s own principle. And **§8.10 already has the
+vocabulary, gated on the wrong flag:** a pending leg takes the VOID strike (never the LOST
+extinguish), but only while `_cashOutPreview` is true. **The surface marks the leg cancelled while
+the player is deciding, and un-marks it once it actually is** — and never strikes it at all on a
+bust. `T121` justified reading `_ticket.State` because a cash-out is a player action leg outcomes
+cannot see; **right for `CashedOut`, extended to `Lost`, which is derivable and reveal-timed.**
+
+**NOT FIXED — it needs a ruling** (`T121` left the dead ticket's strings to a frame; its rows are
+equally unruled). TV's read is remedy 1: the strike stops being preview-gated. **Flagged unverified:**
+a repaint between the engine's bust and the reveal would leak the ending; eight other
+`UpdateTicketColumn` call sites were not traced.
 
 ### SUITES — this tree, this window
 
