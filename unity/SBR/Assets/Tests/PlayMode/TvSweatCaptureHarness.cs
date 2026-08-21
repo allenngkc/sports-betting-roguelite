@@ -1331,6 +1331,25 @@ namespace SBR.Tests.PlayMode
             return null;
         }
 
+        /// <summary>The named text component itself, for the callers that need its colour or its
+        /// string rather than its rect.</summary>
+        private static TMP_Text NamedText(TvSweatScreen screen, string name)
+        {
+            foreach (TMP_Text t in screen.GetComponentsInChildren<TMP_Text>(true))
+                if (t.gameObject.name == name) return t;
+            return null;
+        }
+
+        /// <summary>The named Image, for the row furniture that carries no text — the VOID strike
+        /// and the lost row's extinguish panel. Both are state the chip cannot report, and
+        /// <c>T149</c>'s criterion is about exactly the difference between them.</summary>
+        private static UnityEngine.UI.Image NamedImage(TvSweatScreen screen, string name)
+        {
+            foreach (UnityEngine.UI.Image g in screen.GetComponentsInChildren<UnityEngine.UI.Image>(true))
+                if (g.gameObject.name == name) return g;
+            return null;
+        }
+
         /// <summary><c>C55</c>: THE SUBJECT MUST BE IN FRAME, and the verdict is taken in LOCAL
         /// space. A green capture proves nothing if the thing it was shot for is not in the picture.
         ///
@@ -1675,6 +1694,161 @@ namespace SBR.Tests.PlayMode
                       + "disclosed in the filename: everything else. The opposite-anchor burst forces "
                       + "LAYOUT, not just copy — it is the arm T147-am2 sent to a frame, not a state "
                       + "the product has.");
+        }
+
+        /// <summary>T149 CRITERION 2 — THE BUSTED TICKET'S CANCELLED ROWS, AGAINST ITS LOST ROW.
+        ///
+        /// <para>Shot against <c>docs/design/t149-bust-precommit-2026-08-20.md</c>, which binds this
+        /// window. Criterion 2 asks whether an unplayed leg on a busted ticket reads as CANCELLED
+        /// rather than as LOST. Four channels separate them, per that document's source read: text
+        /// tier L1 vs L2, chip <c>L</c> vs blank, background extinguished vs not, strike off vs on.
+        /// All four are logged here so the frame can be judged against the build rather than
+        /// against a memory of it.</para>
+        ///
+        /// <para><b>THE CONDITION THAT KILLED THE TWO EARLIER ATTEMPTS IS ASSERTED, NOT ASSUMED.</b>
+        /// A one-leg bust has nothing after the loser to strike, and a cash-out is not a bust at all
+        /// — the precommit's §1 records both failures. So this arm FINDS the lost leg and FAILS
+        /// unless at least one leg sits AFTER it. It does not trust the recipe to have produced the
+        /// state; it checks.</para>
+        ///
+        /// <para><b>THE PENDING-LOSS WINDOW IS DECLINED IF IT OPENS.</b> <c>ResolveLegFinal</c> busts
+        /// instantly only when no save is legal, and <c>mulliganLegal</c> is
+        /// <c>_mulliganAvailable() &amp;&amp; ActiveLegCount() &gt;= 2</c> — which a three-leg ticket
+        /// satisfies. Left alone, the recipe would sit in the window and never bust.</para>
+        ///
+        /// <para><b>UNFORCED, ENTIRELY.</b> No string and no layout is forced here, so no filename
+        /// carries <c>FORCED-</c>. The state is dealt for, which is what makes it evidence.</para></summary>
+        [Explicit("T149 criterion 2: a REAL busted ticket's cancelled rows beside its lost row, in "
+            + "one frame. Writes frames. Run by filter only.")]
+        [Timeout(900000)]
+        [UnityTest]
+        public IEnumerator Capture_T149_BustedTicket()
+        {
+            _seed = "GOALLESS-5";
+            s_sceneIndex = 0;
+            Directory.CreateDirectory(OutputDir);
+            TheaterStage.PresentationSeedOverride = StableSeed(_seed);
+            Time.captureDeltaTime = 1f / 50f;
+
+            yield return LoadRoom();
+            var director = Object.FindAnyObjectByType<RunDirector>();
+            var screen = Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+            Camera cam = Camera.main;
+            Assert.IsNotNull(cam, "no main camera");
+
+            screen.TimeScaleOverride = 1f;
+            couch.transitionDuration = 0.01f;
+            yield return WaitUntilOrFail(() => director.Run != null,
+                Time.realtimeSinceStartup + 10f, "director never started a run");
+
+            director.StartNewRun(_seed);
+            Run run = director.Run;
+            // The precommit's offered recipe: a team backer that loses on this seed, then two draws
+            // behind it. THREE legs, and the loser first — rows AFTER the loser are the struck ones
+            // this criterion is about. PlaceTicket refuses an unoffered selection, so these are base
+            // moneyline markets the slate certainly carries.
+            Matchup m0 = run.CurrentSlate.Matchups[0];
+            Matchup m1 = run.CurrentSlate.Matchups[1];
+            Matchup m2 = run.CurrentSlate.Matchups[2];
+            run.PlaceTicket(new List<Pick>
+            {
+                new Pick(m0.Index, MarketSelection.Moneyline(Side.Home)),
+                new Pick(m1.Index, MarketSelection.MoneylineDraw()),
+                new Pick(m2.Index, MarketSelection.MoneylineDraw()),
+            }, 25.0);
+            director.LockRound();
+            couch.OnInteract(null);
+            yield return WaitUntilOrFail(() => SitSpot.Active != null,
+                Time.realtimeSinceStartup + 15f, "player never sat down");
+
+            // Decline the pending-loss window the moment it opens — see the note above. Polled in
+            // the same loop that waits for the settle, because the window can open at any leg.
+            float deadline = Time.realtimeSinceStartup + 180f;
+            bool declined = false;
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                SweatSession session = director.CurrentSession;
+                if (session != null && session.HasPendingLoss)
+                {
+                    session.DeclinePendingLoss();
+                    declined = true;
+                    Debug.Log("[T149-CAP] pending-loss window opened and was DECLINED — a three-leg "
+                              + "ticket makes a mulligan legal, so the bust is not instant here");
+                }
+                if (director.CurrentTicket != null
+                    && director.CurrentTicket.State == TicketState.Lost
+                    && screen.DebugTicketRiskText.StartsWith("STAKE"))
+                    break;
+                yield return null;
+            }
+
+            // CONDITION 4, and it is the T133-am2 check restated for this state: reaching Lost is not
+            // the same as RENDERING it. If the footer still reads RISK/PAYS the settled branch did
+            // not run and the frame is not of this subject.
+            Assert.AreEqual(TicketState.Lost, director.CurrentTicket.State,
+                $"the ticket never busted within the window (declined a pending loss: {declined}). "
+                + "A frame of a live ticket cannot test criterion 2.");
+            Assert.IsTrue(screen.DebugTicketRiskText.StartsWith("STAKE"),
+                $"the ticket is Lost but the footer reads '{screen.DebugTicketRiskText}' — the settled "
+                + "branch did not render, so this frame would show a live composition on a dead ticket.");
+
+            // CONDITION 1: find the LOST leg and prove at least one leg sits AFTER it. This is the
+            // condition a one-leg bust and a last-leg bust each fail, and it is checked rather than
+            // assumed because both earlier attempts died on it.
+            int legCount = director.CurrentTicket.Legs.Count;
+            int lost = -1;
+            for (int i = 0; i < legCount; i++)
+                if (screen.DebugLegState(i) == "L") { lost = i; break; }
+            Assert.GreaterOrEqual(lost, 0,
+                "no row shows the L chip, so there is no lost leg in frame to compare against");
+            Assert.Less(lost, legCount - 1,
+                $"the losing leg is the LAST of {legCount} — there is no unplayed leg behind it to "
+                + "strike, which is exactly the state the precommit's §1 found untestable.");
+
+            // CRITERION 1: no row prints NEXT, and every unplayed leg carries the strike.
+            for (int i = lost + 1; i < legCount; i++)
+            {
+                Assert.AreNotEqual("NEXT", screen.DebugLegState(i),
+                    $"leg {i} still prints NEXT on a busted ticket — criterion 1 fails at source, "
+                    + "before any question of how it reads.");
+                UnityEngine.UI.Image strike = NamedImage(screen, $"LegRowStrike{i}");
+                Assert.IsNotNull(strike, $"LegRowStrike{i} not found");
+                Assert.IsTrue(strike.enabled,
+                    $"leg {i} is unplayed on a busted ticket but carries no VOID strike");
+            }
+
+            // The four channels, logged per row so the frame is self-describing and can be read
+            // against the precommit's own source table rather than from memory.
+            for (int i = 0; i < legCount; i++)
+            {
+                TMP_Text line = NamedText(screen, $"LegRowLine{i}");
+                UnityEngine.UI.Image strike = NamedImage(screen, $"LegRowStrike{i}");
+                UnityEngine.UI.Image ext = NamedImage(screen, $"LegRowExtinguish{i}");
+                Debug.Log($"[T149-CH] leg {i} {(i == lost ? "LOST" : i < lost ? "resolved" : "CANCELLED")}"
+                          + $" :: chip='{screen.DebugLegState(i)}' text='{(line != null ? line.text : "")}'"
+                          + $" alpha={(line != null ? line.color.a : 0f):0.00}"
+                          + $" strike={(strike != null && strike.enabled)}"
+                          + $" extinguished={(ext != null && ext.enabled)}");
+            }
+            Debug.Log($"[T149-CAP] busted :: state={director.CurrentTicket.State} "
+                      + $"footer='{screen.DebugTicketRiskText}' / '{screen.DebugTicketPaysText}' "
+                      + $"lost leg={lost} of {legCount}, cancelled behind it={legCount - lost - 1}");
+
+            // C55, condition 3: the LOST row and at least one STRUCK row must be in ONE frame, plus
+            // the chrome row and both footer rows (condition 4). Two frames cannot make this
+            // comparison, which is why every subject is asserted before the one shutter.
+            foreach (string subject in new[]
+                     { $"LegRowLine{lost}", $"LegRowLine{lost + 1}", "Chrome", "RiskPays", "Pays" })
+                AssertSubjectInFrame(screen, subject, "t149-bust-cancelled-rows");
+
+            yield return CaptureBurst(screen, cam, "t149-bust-cancelled-rows", 8, 0f);
+
+            Debug.Log($"[T149-CAP] complete -> {OutputDir}. UNFORCED throughout: no string and no "
+                      + "layout was forced, so nothing here carries FORCED-. The state was dealt for.");
         }
 
         /// <summary>T129 ARM 2 — COUNT LEGS SETTLING LEVEL.
