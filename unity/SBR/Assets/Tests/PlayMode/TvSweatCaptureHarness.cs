@@ -6,6 +6,7 @@ using System.IO;
 using NUnit.Framework;
 using SBR.Engine;
 using SBR.Game;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -1318,6 +1319,362 @@ namespace SBR.Tests.PlayMode
 
             Debug.Log($"[T133-FORCED] complete -> {OutputDir} — every frame here is FORCED and the " +
                       "worst-case amount is unreachable in play; see the dock README");
+        }
+
+        /// <summary>The named element's rect, found the way <c>TvExtentSweep</c> finds its slots —
+        /// by GameObject name off the live hierarchy — rather than by adding another Debug accessor
+        /// to production for a test's convenience.</summary>
+        private static RectTransform NamedRect(TvSweatScreen screen, string name)
+        {
+            foreach (TMP_Text t in screen.GetComponentsInChildren<TMP_Text>(true))
+                if (t.gameObject.name == name) return t.rectTransform;
+            return null;
+        }
+
+        /// <summary><c>C55</c>: THE SUBJECT MUST BE IN FRAME, and the verdict is taken in LOCAL
+        /// space. A green capture proves nothing if the thing it was shot for is not in the picture.
+        ///
+        /// <para>The viewport is the sweat canvas itself, which carries a <c>RectMask2D</c> — its own
+        /// build note says anything outside it "stops existing on screen no matter which layer
+        /// misplaces itself." So containment in the canvas IS the in-frame question on this surface,
+        /// and it is exactly the question a composition change can break.</para>
+        ///
+        /// <para><b>LOCAL space, for the reason the laptop's own helper gives:</b> this is a
+        /// WORLD-SPACE canvas hanging on a TV in a room, scaled to about a metre across, so every
+        /// element rounds to the same two world digits and the plane is rotated to face the couch.
+        /// Local space is the space the layout was authored in and its units are the pixels every
+        /// constant in this build is written in.</para>
+        ///
+        /// <para><b>BOTH AXES, unlike the laptop's vertical-only cut.</b> There the horizontal term
+        /// produced false negatives on a scrolling list whose lines span the block by construction.
+        /// Here nothing scrolls, the column's width is locked (T46/R30), and the change under
+        /// examination moved things in BOTH directions — the footer grew 40 → 60 and the rows
+        /// re-pitched 69.3 → 99.0. A vertical-only verdict would not be testing this change.</para></summary>
+        private static void AssertSubjectInFrame(TvSweatScreen screen, string subjectName, string burst)
+        {
+            RectTransform target = NamedRect(screen, subjectName);
+            Assert.IsNotNull(target,
+                $"C55: '{subjectName}' does not exist in the hierarchy, so the burst '{burst}' "
+                + "cannot possibly contain it.");
+            var graphic = target.GetComponent<TMP_Text>();
+            Canvas canvas = graphic != null ? graphic.canvas : null;
+            Assert.IsNotNull(canvas, $"C55: '{subjectName}' renders to no canvas — nothing to be in frame OF.");
+            var viewport = canvas.transform as RectTransform;
+
+            var corners = new Vector3[4];
+            target.GetWorldCorners(corners);
+            float minX = float.MaxValue, maxX = float.MinValue;
+            float minY = float.MaxValue, maxY = float.MinValue;
+            for (int i = 0; i < corners.Length; i++)
+            {
+                Vector3 local = viewport.InverseTransformPoint(corners[i]);
+                minX = Mathf.Min(minX, local.x); maxX = Mathf.Max(maxX, local.x);
+                minY = Mathf.Min(minY, local.y); maxY = Mathf.Max(maxY, local.y);
+            }
+            Rect r = viewport.rect;
+            bool inFrame = minX >= r.xMin - 0.5f && maxX <= r.xMax + 0.5f
+                        && minY >= r.yMin - 0.5f && maxY <= r.yMax + 0.5f;
+
+            Debug.Log($"[T147-C55] {subjectName,-16} local x {minX,7:0.0}..{maxX,7:0.0} "
+                      + $"y {minY,7:0.0}..{maxY,7:0.0}  against canvas x {r.xMin:0.0}..{r.xMax:0.0} "
+                      + $"y {r.yMin:0.0}..{r.yMax:0.0} — {(inFrame ? "IN FRAME" : "OUT OF FRAME")}");
+            Assert.IsTrue(inFrame,
+                $"C55: '{subjectName}' is NOT inside the canvas for burst '{burst}'. Local extent "
+                + $"x {minX:0.0}..{maxX:0.0}, y {minY:0.0}..{maxY:0.0}; canvas x {r.xMin:0.0}.."
+                + $"{r.xMax:0.0}, y {r.yMin:0.0}..{r.yMax:0.0}. The RectMask2D clips it, so the "
+                + "frame would not contain its own subject.");
+        }
+
+        /// <summary>C55's cousin, REPORTED not asserted: a subject can be in frame as a RECT and
+        /// still have its INK clipped, because these components are Overflow by construction. The
+        /// live case is `RETURNED $73,318,376,502`, which overruns its own 249.0px row by 51.9px —
+        /// T133, open with the Design Director. Whether that ink survives to the canvas edge or is
+        /// cut by the mask is a fact the frames should carry rather than one a reader guesses.</summary>
+        private static void ReportInkAgainstCanvas(TvSweatScreen screen, string subjectName)
+        {
+            RectTransform target = NamedRect(screen, subjectName);
+            var graphic = target != null ? target.GetComponent<TMP_Text>() : null;
+            if (graphic == null || graphic.canvas == null) return;
+            var viewport = graphic.canvas.transform as RectTransform;
+
+            // The BOX in the canvas's own local space, from its corners — the same space and the
+            // same method AssertSubjectInFrame judges in, so a printed number and a verdict cannot
+            // disagree.
+            var corners = new Vector3[4];
+            target.GetWorldCorners(corners);
+            float boxLeft = float.MaxValue, boxRight = float.MinValue;
+            for (int i = 0; i < corners.Length; i++)
+            {
+                float x = viewport.InverseTransformPoint(corners[i]).x;
+                boxLeft = Mathf.Min(boxLeft, x); boxRight = Mathf.Max(boxRight, x);
+            }
+
+            float inkW = graphic.GetPreferredValues(graphic.text, 100000f, 0f).x;
+            float boxW = boxRight - boxLeft;
+
+            // ⚠ THE INK GROWS AWAY FROM THE ALIGNED EDGE, AND THE FIRST CUT OF THIS HELPER FORGOT
+            // IT. It assumed left alignment and computed `boxLeft + inkW` for every case, so on the
+            // RIGHT-anchored arm it reported the ink running rightward from the left edge — and
+            // printed "ink survives the mask" for a string that is in fact cut by it. A right-aligned
+            // overrun spills LEFTWARD, off the column's outer edge, where this canvas's RectMask2D
+            // is waiting. Same bug shape as the stale footer reader: a number that stopped meaning
+            // what its label said, on a report nothing asserts against.
+            bool rightAligned = graphic.alignment == TextAlignmentOptions.TopRight
+                             || graphic.alignment == TextAlignmentOptions.Right
+                             || graphic.alignment == TextAlignmentOptions.BottomRight;
+            float inkLeft = rightAligned ? boxRight - inkW : boxLeft;
+            float inkRight = rightAligned ? boxRight : boxLeft + inkW;
+
+            Rect v = viewport.rect;
+            float clippedLeft = Mathf.Max(0f, v.xMin - inkLeft);
+            float clippedRight = Mathf.Max(0f, inkRight - v.xMax);
+            bool clipped = clippedLeft > 0.5f || clippedRight > 0.5f;
+
+            Debug.Log($"[T147-C55-ink] {subjectName} '{graphic.text}' "
+                      + $"[{(rightAligned ? "RIGHT" : "LEFT")}-aligned] ink {inkW:0.0}px vs box "
+                      + $"{boxW:0.0}px ({(inkW > boxW ? $"over by {inkW - boxW:0.0}" : "inside")}); "
+                      + $"ink spans local x {inkLeft:0.0}..{inkRight:0.0} against canvas "
+                      + $"{v.xMin:0.0}..{v.xMax:0.0} — "
+                      + (clipped
+                         ? $"INK IS CLIPPED BY THE MASK ({clippedLeft:0.0}px off the left, "
+                           + $"{clippedRight:0.0}px off the right)"
+                         : "ink survives the mask"));
+        }
+
+        /// <summary>T147 — THE RE-RULED TWO-ROW FOOTER, AND THE COST IT WAS PAID OUT OF.
+        ///
+        /// <para>`T144`/`T74-am6` ruled the two money facts onto SEPARATE ROWS: each half fits the
+        /// 249.0px column alone and the PAIR does not, at ordinary values. Built at `T147-am` with
+        /// <c>TicketFooterHeight</c> 40 → 60 and <c>TicketRowSlots</c> 6 → 4 — the slot count was
+        /// reserving two rows the engine can never fill (<c>RunConfig.MaxLegs = 4</c>, ENFORCED at
+        /// <c>Run.cs:190-191</c>), and that is what paid for the taller footer with `T24`'s margin
+        /// intact.</para>
+        ///
+        /// <para><b>E3 IS THE ONE TO HOLD ON, and it is why this arm shoots a multi-leg ticket.</b>
+        /// The footer is easy to shoot and easy to like; the cost lands elsewhere on the same
+        /// screen — the leg rows went 69.3px → 99.0px for 58.8px of live ink. A set showing only
+        /// the footer has not shown the change. Every burst here carries a live leg row in frame.</para>
+        ///
+        /// <para><b>WHY E1's OWN CASE IS FORCED.</b> `T74-am6` names `$1,234` staked paying
+        /// `$12,340` — a plain 10x parlay and deliberately NOT a tail case. It is nonetheless
+        /// unreachable at a fresh run's bank of 350 (<c>RunConfig.StartingBank</c>), so it cannot be
+        /// dealt for. This arm therefore shoots BOTH: an UNFORCED ordinary state at whatever the run
+        /// really affords, and the cited pair FORCED. They differ in provenance, not just in
+        /// magnitude, and the filenames say which is which.</para>
+        ///
+        /// <para><b>THE OPPOSITE-ANCHOR ARM (`T147-am2`).</b> The ruling builds left/left, but the
+        /// money control kept OPPOSITE anchors when it split onto two rows, so the alignment is an
+        /// open choice with a precedent against it. Both arms are shot on one ruler, on the SETTLED
+        /// pair: `RISK`/`PAYS` are both four characters and align either way, while `STAKE`/
+        /// `RETURNED` are five and eight and are where left/left goes ragged.</para>
+        ///
+        /// <para><b>WHAT THIS SET DOES NOT CLAIM.</b> Nothing about `RETURNED`'s own width. It
+        /// measures 300.9 against the 249.0 row and OVERRUNS BY 51.9px — separate rows fixes the
+        /// PAIR collision and was never claimed to fix that. It is `T133`, still open, and it is
+        /// visible in these frames rather than hidden by them.</para></summary>
+        [Explicit("T147 E1/E2/E3: the re-ruled two-row footer — an unforced ordinary state, T74-am6's "
+            + "cited pair FORCED, the enumerated fact floor FORCED, and the opposite-anchor arm, all "
+            + "with a live leg row in frame. Writes frames. Run by filter only.")]
+        [Timeout(900000)]
+        [UnityTest]
+        public IEnumerator Capture_T147_TwoRowFooter()
+        {
+            _seed = "GOALLESS-5";
+            s_sceneIndex = 0;
+            Directory.CreateDirectory(OutputDir);
+            TheaterStage.PresentationSeedOverride = StableSeed(_seed);
+            Time.captureDeltaTime = 1f / 50f;
+
+            yield return LoadRoom();
+            var director = Object.FindAnyObjectByType<RunDirector>();
+            var screen = Object.FindAnyObjectByType<TvSweatScreen>();
+            var couch = Object.FindAnyObjectByType<SitSpot>();
+            Assert.IsNotNull(director, "RunDirector missing");
+            Assert.IsNotNull(screen, "TvSweatScreen missing");
+            Assert.IsNotNull(couch, "SitSpot missing");
+            Camera cam = Camera.main;
+            Assert.IsNotNull(cam, "no main camera");
+
+            screen.TimeScaleOverride = 1f;
+            couch.transitionDuration = 0.01f;
+            yield return WaitUntilOrFail(() => director.Run != null,
+                Time.realtimeSinceStartup + 10f, "director never started a run");
+
+            director.StartNewRun(_seed);
+            Run run = director.Run;
+            // MULTI-LEG, for E3: a single-leg ticket has no second row to show the new pitch against,
+            // and the whole point of E3 is that the height came from the rows. Two matchups, base
+            // moneyline selections — PlaceTicket REFUSES an unoffered selection at runtime, so this
+            // takes markets the slate certainly carries rather than inventing a line.
+            Matchup m0 = run.CurrentSlate.Matchups[0];
+            Matchup m1 = run.CurrentSlate.Matchups[1];
+            run.PlaceTicket(new List<Pick>
+            {
+                new Pick(m0.Index, MarketSelection.MoneylineDraw()),
+                new Pick(m1.Index, MarketSelection.MoneylineDraw()),
+            }, 25.0);
+            director.LockRound();
+            couch.OnInteract(null);
+            yield return WaitUntilOrFail(() => SitSpot.Active != null,
+                Time.realtimeSinceStartup + 15f, "player never sat down");
+
+            // E3's binding condition: a LIVE leg row must be on screen, not merely a ticket. The live
+            // form is the only one that carries progress text, so that is the signal — the same one
+            // TicketFooterWord_NeverDisagreesWithAnyRow reads.
+            yield return WaitUntilOrFail(
+                () => !string.IsNullOrEmpty(screen.DebugLegProgress(0))
+                   || !string.IsNullOrEmpty(screen.DebugLegProgress(1)),
+                Time.realtimeSinceStartup + 60f,
+                "no leg ever went live — E3 cannot be satisfied by a frame with no live row");
+
+            Debug.Log($"[T147-CAP] live row present :: leg0='{screen.DebugLegProgress(0)}' "
+                      + $"leg1='{screen.DebugLegProgress(1)}' footer='{screen.DebugTicketRiskText}' "
+                      + $"/ '{screen.DebugTicketPaysText}'");
+
+            // C55, BEFORE the shutter and before every burst: both money rows and the live row's own
+            // two lines must be inside the canvas. The composition just moved all of them.
+            string liveNeed = !string.IsNullOrEmpty(screen.DebugLegProgress(0))
+                ? "LegRowNeed0" : "LegRowNeed1";
+            string liveProgress = liveNeed == "LegRowNeed0" ? "LegRowProgress0" : "LegRowProgress1";
+            // "Chrome" is in the list on the precommit's §1.2: the open objection against `PAID` is
+            // that it collides at the ROOT with `PAY $60`, and that read is impossible unless both
+            // are in one frame. A frame missing the chrome row cannot answer the question it is for.
+            foreach (string subject in new[] { "RiskPays", "Pays", "Chrome", liveNeed, liveProgress })
+                AssertSubjectInFrame(screen, subject, "t147-E1E3-unforced-live-row");
+
+            // E1 + E3, UNFORCED: the real ticket at what the run actually affords, with a live row in
+            // frame. This is the only burst here whose strings the product produced by itself.
+            yield return CaptureBurst(screen, cam, "t147-E1E3-unforced-live-row", 6, 0f);
+
+            // Each force is re-applied immediately before its own burst: the force LATCHES NOTHING by
+            // design, so any repaint between force and shutter photographs the real string instead.
+            foreach ((string label, string risk, string pays) in new[]
+            {
+                // E1's cited case — T74-am6's plain 10x parlay, the one that collides in the old
+                // one-row form at ORDINARY values.
+                ("E1-ordinary-cited", "RISK $1,234", "PAYS $12,340"),
+                // E2 — the enumerated fact floor, bank $10,000, from PayoutMaximumTests.
+                ("E2-fact-floor", "RISK $13,639", "PAYS $73,318,376,502"),
+            })
+            {
+                screen.ForceRiskPaysTextForCapture(risk);
+                screen.ForcePaysTextForCapture(pays);
+                Debug.Log($"[T147-CAP] {label} :: '{screen.DebugTicketRiskText}' / "
+                          + $"'{screen.DebugTicketPaysText}' — FORCED, NOT A SHIPPED STATE");
+                AssertSubjectInFrame(screen, "RiskPays", label);
+                AssertSubjectInFrame(screen, "Pays", label);
+                AssertSubjectInFrame(screen, "Chrome", label);
+                AssertSubjectInFrame(screen, liveNeed, label);
+                ReportInkAgainstCanvas(screen, "Pays");
+                yield return CaptureBurst(screen, cam, $"FORCED-t147-{label}", 6, 0f);
+            }
+
+            // ================= THE SETTLED STATE, SETTLED FOR REAL =================
+            //
+            // ⚠ THE FIRST CUT OF THIS ARM FORCED `STAKE`/`RETURNED` ONTO AN OPEN TICKET, and that
+            // frame set was DELETED rather than docked. The settled footer renders ONLY when
+            // `_ticket.State` is CashedOut or Lost (TvSweatScreen's settled branch), so forcing its
+            // strings onto a live ticket photographs a composition the code path cannot produce —
+            // the footer precommit's §0, and `T133-am2`'s own mistake one screen over.
+            //
+            // It is worse than a wrong label here: on a settled ticket T147's own build CANCELS the
+            // remaining rows (chip silent, struck), so a forced-settled frame over live rows shows a
+            // state the product no longer has at all.
+            //
+            // So: take a REAL cash-out, and force only the AMOUNT afterwards. The composition is
+            // then the product's own and only the digits are authored.
+            yield return WaitUntilOrFail(
+                () => director.CurrentSession != null && !director.CurrentSession.IsComplete
+                   && screen.EventsEmitted >= 1 && !screen.RevealedView.MarketSuspended
+                   && !screen.DebugCashOutAnimating
+                   && director.CurrentSession.CashOutOffer().HasValue,
+                Time.realtimeSinceStartup + 90f, "never reached an open cash-out window");
+
+            // DRIVE THE PLAYER'S OWN SEQUENCE: preview, THEN accept. Not a nicety —
+            // `ExitCashOutPreview` early-returns unless a preview is open, and IT is the thing
+            // that calls `UpdateTicketColumn`. Accepting without previewing leaves the column
+            // unrepainted: the settled branch never runs, so the footer keeps its LIVE words and
+            // the rows keep their live/NEXT chips on a position that is already closed.
+            //
+            // The first cut of this arm did exactly that, and the run log caught it —
+            // `state=CashedOut` printed beside `footer='RISK $25' / 'PAYS $330'` and leg 1 still
+            // reading `NEXT`. **That was THIS HARNESS taking a shortcut the product does not
+            // offer, not a defect in the product**: in play the hold opens the preview and the
+            // accept closes it, and closing it is what repaints. Worth the words, because a frame
+            // shot that way would have been read as a product defect by whoever opened it next.
+            const System.Reflection.BindingFlags Priv =
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+            System.Reflection.MethodInfo enterPreview =
+                typeof(TvSweatScreen).GetMethod("EnterCashOutPreview", Priv);
+            System.Reflection.MethodInfo tryCashOut =
+                typeof(TvSweatScreen).GetMethod("TryCashOut", Priv);
+            Assert.IsNotNull(enterPreview, "TvSweatScreen.EnterCashOutPreview not found by reflection — renamed?");
+            Assert.IsNotNull(tryCashOut, "TvSweatScreen.TryCashOut not found by reflection — renamed?");
+            Assert.IsTrue((bool)enterPreview.Invoke(screen, null),
+                "the cash-out preview refused to open, so the accept path cannot be driven as the player drives it");
+            // NO YIELD BETWEEN THESE TWO. Update's gesture resolution closes the preview whenever no
+            // key is held — and with no InputSystem device driving this arm, that is every frame. A
+            // frame's gap here closes the preview BEFORE the accept, so the repaint happens while the
+            // ticket is still live and the settle then repaints nothing. Enter and accept in one
+            // frame; the NEXT Update finds the preview open and the offer gone, and that is the
+            // repaint that renders the settled column.
+            tryCashOut.Invoke(screen, null);
+            Assert.AreEqual(TicketState.CashedOut, director.CurrentTicket.State,
+                "the settle must ACTUALLY take: a forced string on an open ticket is exactly the "
+                + "precommit's §0 mistake, and this assertion is what stops it recurring.");
+            for (int i = 0; i < 30; i++) yield return null;   // let the column repaint settled
+
+            Debug.Log($"[T147-CAP] SETTLED for real :: state={director.CurrentTicket.State} "
+                      + $"footer='{screen.DebugTicketRiskText}' / '{screen.DebugTicketPaysText}' "
+                      + $"leg0 chip='{screen.DebugLegState(0)}' leg1 chip='{screen.DebugLegState(1)}' "
+                      + "— the chips are the T147 cancelled-row treatment, unforced");
+
+            // THE PIN THAT STOPS THE SHORTCUT RECURRING. Reaching CashedOut is not the same as
+            // RENDERING it, and the difference is a whole frame set. If the column has not repainted,
+            // the footer still carries its live word and every burst below would photograph a live
+            // composition on a closed position — the precommit's §0 in its subtlest form, because
+            // the ticket state really IS settled and only the picture is stale.
+            Assert.IsTrue(screen.DebugTicketRiskText.StartsWith("STAKE"),
+                $"the settled footer never RENDERED: state is {director.CurrentTicket.State} but the "
+                + $"footer still reads '{screen.DebugTicketRiskText}'. The column did not repaint "
+                + "after the settle, so these frames would show a live composition on a closed "
+                + "position. Drive the preview before the accept — closing the preview is what repaints.");
+
+            // S1 — the settled composition ENTIRELY UNFORCED. Never shot before: it carries T147's
+            // cancelled rows (a pending leg on a settled ticket goes silent and takes §8.10's
+            // strike) as well as the two-row settled footer.
+            foreach (string subject in new[] { "RiskPays", "Pays", "Chrome" })
+                AssertSubjectInFrame(screen, subject, "t147-S1-settled-unforced");
+            ReportInkAgainstCanvas(screen, "Pays");
+            yield return CaptureBurst(screen, cam, "t147-S1-settled-unforced", 6, 0f);
+
+            // S2/S3 — the enumerated fact floor on that same real settle, both alignment arms on one
+            // ruler. Only the DIGITS are forced now; the state, the rows and the branch are real.
+            // `RETURNED $73,318,376,502` is T148's overrun and it is shown, not hidden.
+            foreach ((string label, bool rightAnchored) in new[]
+            {
+                ("S2-settled-factfloor-left-left", false),
+                ("S3-settled-factfloor-opposite-anchor", true),
+            })
+            {
+                screen.ForcePaysAnchorForCapture(rightAnchored);
+                screen.ForceRiskPaysTextForCapture("STAKE $13,639");
+                screen.ForcePaysTextForCapture("RETURNED $73,318,376,502");
+                Debug.Log($"[T147-CAP] {label} :: settled ticket ({director.CurrentTicket.State}), "
+                          + $"AMOUNT forced to the fact floor, row 2 "
+                          + $"{(rightAnchored ? "RIGHT" : "LEFT")}-anchored"
+                          + (rightAnchored ? " — FORCED LAYOUT, NOT THE SHIPPED COMPOSITION" : ""));
+                foreach (string subject in new[] { "RiskPays", "Pays", "Chrome" })
+                    AssertSubjectInFrame(screen, subject, label);
+                ReportInkAgainstCanvas(screen, "Pays");
+                yield return CaptureBurst(screen, cam, $"FORCED-t147-{label}", 6, 0f);
+            }
+            screen.ForcePaysAnchorForCapture(false);   // leave the scene as the product ships it
+
+            Debug.Log($"[T147-CAP] complete -> {OutputDir}. UNFORCED: the E1E3 burst. FORCED and "
+                      + "disclosed in the filename: everything else. The opposite-anchor burst forces "
+                      + "LAYOUT, not just copy — it is the arm T147-am2 sent to a frame, not a state "
+                      + "the product has.");
         }
 
         /// <summary>T129 ARM 2 — COUNT LEGS SETTLING LEVEL.

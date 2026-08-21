@@ -483,6 +483,48 @@ namespace SBR.Game
         {
             if (_tPays != null) _tPays.text = literal;
         }
+
+        /// <summary>The FIRST money row's literal, symmetric to <see cref="ForcePaysTextForCapture"/>.
+        /// Added at T147 because the composition put the two facts on separate rows and the settled
+        /// pair — <c>STAKE</c> over <c>RETURNED</c> — cannot be photographed with only the second row
+        /// forceable. Same discipline: LATCHES NOTHING (any repaint overwrites it, so re-force
+        /// immediately before each burst) and every frame taken through it carries <c>FORCED-</c> in
+        /// its filename.</summary>
+        public void ForceRiskPaysTextForCapture(string literal)
+        {
+            if (_tRiskPays != null) _tRiskPays.text = literal;
+        }
+
+        /// <summary>T147-am2's OPPOSITE-ANCHOR ARM, for E1's ruler and for nothing else.
+        ///
+        /// <para>The ruling builds the two money rows LEFT/LEFT, but the money control is a
+        /// counter-precedent — it kept opposite anchors when it split onto two rows — so the
+        /// alignment is an open choice with a precedent against it and goes to a frame. This
+        /// re-anchors the second row so both arms can be shot from one build, rather than the
+        /// alternative being argued from a description of itself.</para>
+        ///
+        /// <para><b>A FORCED STATE MUST DISCLOSE ITS FORCING.</b> Any frame shot through this call
+        /// carries `FORCED-` in its filename, exactly as `ForcePaysTextForCapture`'s do: a frame
+        /// that hides its forcing is evidence for a state the product does not have. The product
+        /// ships left/left until this seat rules otherwise.</para>
+        ///
+        /// <para>Self-inverse and grid-free: it reads the row's own pivot and width, so it needs no
+        /// LayoutGrid and calling it twice returns the row to where it started. Read the SETTLED
+        /// state on the result — `RISK`/`PAYS` are both four characters and align either way, while
+        /// `STAKE`/`RETURNED` are five and eight and are where left/left goes ragged.</para></summary>
+        public void ForcePaysAnchorForCapture(bool rightAnchored)
+        {
+            if (_tPays == null) return;
+            RectTransform rt = _tPays.rectTransform;
+            bool isRightNow = rt.pivot.x > 0.5f;
+            if (isRightNow == rightAnchored) return;
+            float w = rt.sizeDelta.x;
+            rt.pivot = new Vector2(rightAnchored ? 1f : 0f, 1f);
+            rt.anchoredPosition += new Vector2(rightAnchored ? w : -w, 0f);
+            _tPays.alignment = rightAnchored
+                ? TextAlignmentOptions.TopRight
+                : TextAlignmentOptions.TopLeft;
+        }
         public bool DebugStatsPanelOpen => _statsOpen;
         public float DebugSeatedDeltaTime => SeatedDeltaTime;
         public Transform DebugStatsPanel => _statsPanel;
@@ -864,14 +906,24 @@ namespace SBR.Game
         private const float ScoreBugHeight = 62f;
         private const float BottomRowHeight = 52f;     // shared row: cash-out | event strip
         private const float TicketHeaderHeight = 24f;
-        private const float TicketFooterHeight = 40f;  // RISK / PAYS — T20: 36 -> 40 to hold 24px
-        // RunConfig.MaxLegs defaults to 6 (engine\RunConfig.cs). BuildCanvas runs from Awake, before
-        // GrayboxRoomBuilder assigns `director` (AddComponent fires Awake synchronously, before the
-        // caller's next line runs) — the row-slot count cannot be read from the live run and must be
-        // a fixed constant per rule 1. Unused slots simply go dark (rule 2): a ticket with fewer legs
-        // never reflows the grid, and one with more (a future config change) silently truncates rather
-        // than resize anything.
-        private const int TicketRowSlots = 6;
+        // T147-am (batch 133): 40 -> 60. The two money facts take a ROW EACH (T144/T74-am6 — each
+        // half fits alone and the PAIR does not), and two 24px lines at this face's measured 1.25
+        // advance ratio are 60.0px. Everything else derives: TicketRowHeight is computed from this.
+        private const float TicketFooterHeight = 60f;  // STAKE/RISK over RETURNED/PAYS, one row each
+        // T147-am: 6 -> 4, TO MATCH THE ENGINE. The line that stood here read "RunConfig.MaxLegs
+        // defaults to 6" — `RunConfig.cs:49` reads `MaxLegs = 4`, and `Run.cs:190-191` ENFORCES it
+        // ("Tickets take 1 to {Config.MaxLegs} legs"), so slots 5 and 6 were not merely unlikely to
+        // fill, they were UNFILLABLE. Two dark slots reserved 138.6px no ticket the engine can build
+        // would ever occupy, and the footer's growth was priced against a column that had already
+        // given that space away. This is what paid for the row above with T24's margin intact.
+        //
+        // BuildCanvas runs from Awake, before GrayboxRoomBuilder assigns `director` (AddComponent
+        // fires Awake synchronously, before the caller's next line runs) — the row-slot count cannot
+        // be read from the live run and must be a fixed constant per rule 1. RULE 2 SURVIVES THE
+        // CHANGE: unused slots go dark, a ticket with fewer legs never reflows the grid, and one with
+        // more truncates rather than resize anything — a five-leg ticket truncates at four exactly as
+        // a seven-leg one truncated at six.
+        private const int TicketRowSlots = 4;
         // T16 (Design Director ruling): the momentum tape sits at the FOOT of the scorebug zone —
         // a thin strip hugging its inside-bottom edge, matching MomentumTape's own fixed RowHeight
         // so a single-row ticket fits exactly.
@@ -5290,34 +5342,66 @@ namespace SBR.Game
             }
 
             // §7: "Risk and pays sit at the foot in gold at L2."
-            // T74-am5 (batch 59): ONE ROW, BOTH ENDS ANCHORED. The two-row form is withdrawn — batch
-            // 57 ruled separate rows AND "label left, figure right-anchored", and the second makes
-            // the first unnecessary.
+            // ⚠ T74-am5 (batch 59) STOOD HERE AND IS ITSELF WITHDRAWN, by T144 / T147-am. It read
+            // "ONE ROW, BOTH ENDS ANCHORED. The two-row form is withdrawn," on this argument: the
+            // concatenated `RISK $1,234     PAYS $12,340` measured 296.5 only because of an AUTHORED
+            // five-space spacer, so anchoring the two facts to opposite edges retires the gap and
+            // "the binding constraint stops being 296.5 and becomes RISK's ink + PAYS's ink."
             //
-            // `RISK $1,234     PAYS $12,340` measured 296.5 as one concatenated string WITH AUTHORED
-            // SPACING IN THE MIDDLE. Anchor RISK to the left edge and PAYS to the right and the
-            // authored gap ceases to exist: the slack lives between them, where it costs nothing, and
-            // the binding constraint stops being 296.5 and becomes RISK's ink + PAYS's ink. The 40px
-            // footer's height problem dissolves rather than being paid for — no band grows, no size
-            // moves, no deviation signs.
+            // THE FIRST HALF WAS TRUE AND THE SECOND HALF WAS THE DEFECT. Retiring the gap did make
+            // the two inks the constraint — and T74-am6 then MEASURED those inks: at bank $10,000,
+            // RISK 138.4 + PAYS 239.7 = 378.1 against 249.0, over by 129.1; at typical values 270.6,
+            // over by 21.6. `$1,234` staked paying `$12,340` is a plain 10x parlay, so the pair
+            // collides AT ORDINARY VALUES. The device removed the spacer, not the collision, and the
+            // form it withdrew is the only one that fits — which is why it came back seventy-one
+            // batches later under a second ID (C22.1: T74-am6 governs, T144 cross-references).
             //
-            // PAYS stays right-anchored for T82's reason as well as this one: against the tabular set
-            // it then grows leftward in exact digit-width steps, so the clearance to RISK is
-            // predictable rather than content-dependent.
+            // T82's reason for right-anchoring PAYS — that against the tabular set it grows leftward
+            // in exact digit-width steps, so clearance is predictable rather than content-dependent
+            // — was real, and it PURCHASED PREDICTABLE CLEARANCE IN A ROW THAT HAD NONE TO GIVE.
+            // On its own row each fact has the whole 249.0px and nothing to be clear OF.
             //
             // THE NAME `RiskPays` IS KEPT for the left half, and deliberately: it is in the C8
             // protected set and a LayoutGrid test finds it by that name. Same reasoning the money
             // figure's own name was kept under — a rename here would be a second change riding a
             // composition fix.
+            // T144 / T74-am6, RULED BY ALLEN AND BUILT AT T147-am: A ROW EACH. `RISK 138.4 + PAYS
+            // 239.7 = 378.1 against 249.0` — each half fits ALONE and the PAIR does not, at ORDINARY
+            // values, not a tail case. Separate rows is the only composition inside the locked column
+            // (T46/R30) that carries the fact floor without abbreviating (C49), truncating (T69) or
+            // reopening the copy (T24-am). On its own row each fact gets the whole 249.0px.
+            //
+            // BOTH LEFT-ANCHORED (T147-am2). T74-am5's opposite anchoring had exactly one job — to
+            // retire the authored gap BETWEEN two facts sharing one row. On separate rows there is no
+            // shared gap, so the device has no subject, and keeping it would leave a stagger nobody
+            // chose. ⚠ The money control is a COUNTER-PRECEDENT, not a supporting one: `CashOut` is
+            // MiddleLeft (:5459) and `CashOutStatus` MiddleRight (:5471) — it KEPT opposite anchors
+            // when it split onto two rows. So this is an open choice with a precedent against it and
+            // it goes to a frame: left/left ships, the opposite-anchor arm is shot beside it on E1,
+            // and the SETTLED state is where the two diverge (`STAKE`/`RETURNED` are five and eight
+            // characters; `RISK`/`PAYS` are both four and align either way).
+            //
+            // THE TOP INSET IS SPENT, DELIBERATELY. 60px holds exactly two 30.0px line boxes, so the
+            // 8px the single row used above its ink is what the second row is made of. The air is
+            // still there: the last leg row's ink now ends ~40px above the footer inside its own 99px
+            // slot. If a frame says otherwise the footer can afford 68 (rows would go 99 -> 97) —
+            // recorded so the next seat re-reads it rather than rediscovering it.
+            //
+            // THE NAMES `RiskPays` AND `Pays` ARE KEPT: both are in the C8 protected set, the T84
+            // sweep's declaration table addresses them by name, and a rename here would be a second
+            // change riding a composition fix.
+            float footerRowH = grid.TicketFooter.height * 0.5f;      // 30.0 — one 24px line box at 1.25
+            float footerBoxW = grid.TicketFooter.width - 16f;        // 249.0 — the full inner width, twice
+
             _tRiskPays = MakeText(root, "RiskPays", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                AnchorTopLeft(grid.TicketFooter, 8f, 8f),
-                new Vector2(grid.TicketFooter.width - 16f, grid.TicketFooter.height - 8f), TypeRisk,
+                AnchorTopLeft(grid.TicketFooter, 8f, 0f),
+                new Vector2(footerBoxW, footerRowH), TypeRisk,
                 TextAnchor.UpperLeft, goldL2, FontStyle.Normal, Face.Condensed, FontWeight.Bold); // TvRiskPays.jsx:14
 
-            _tPays = MakeText(root, "Pays", new Vector2(0f, 1f), new Vector2(1f, 1f),
-                AnchorTopLeft(grid.TicketFooter, 8f, 8f) + new Vector2(grid.TicketFooter.width - 16f, 0f),
-                new Vector2(grid.TicketFooter.width - 16f, grid.TicketFooter.height - 8f), TypeRisk,
-                TextAnchor.UpperRight, goldL2, FontStyle.Normal, Face.Condensed, FontWeight.Bold);
+            _tPays = MakeText(root, "Pays", new Vector2(0f, 1f), new Vector2(0f, 1f),
+                AnchorTopLeft(grid.TicketFooter, 8f, footerRowH),
+                new Vector2(footerBoxW, footerRowH), TypeRisk,
+                TextAnchor.UpperLeft, goldL2, FontStyle.Normal, Face.Condensed, FontWeight.Bold);
         }
 
         private void BuildScoreBug(Transform root, LayoutGrid grid)
