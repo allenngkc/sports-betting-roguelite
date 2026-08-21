@@ -1252,6 +1252,68 @@ namespace SBR.Tests.EditMode
                         prevRight = hi; prevName = nm; prevYLo = ylo; prevYHi = yhi;
                     }
                 }
+                // ---- INK CLEARANCE, which is what "clearance" actually means -----------------
+                // The rects above are BOXES. A box overlap is not a collision: T95 is this lane's
+                // own case of two elements sharing a rect and reading fine, and of two CENTRED
+                // elements with different boxes reading as a doubled line. What decides it is where
+                // the INK sits inside each box, and that depends on the element's ALIGNMENT.
+                //
+                // Measured, not derived: each element's widest form is measured on the element
+                // itself, and its ink extents are placed from its own alignment.
+                Debug.Log("[T91-INK] ink extents, placed from each element's own alignment");
+                var inkLo = new Dictionary<string, float>();
+                var inkHi = new Dictionary<string, float>();
+                var yLo = new Dictionary<string, float>();
+                var yHi = new Dictionary<string, float>();
+                foreach ((string nm, string widest) in new[]
+                {
+                    ("Leg", "LEG 4/4"),
+                    ("Matchup", "BRICKLAYERS 0 \u2014 MIDDLEMEN 0"),
+                    ("Clock", "90'+9"),
+                })
+                {
+                    TMP_Text t = FindChild<TMP_Text>(screen, nm);
+                    if (t == null) { Debug.Log($"[T91-INK] {nm} NOT FOUND"); continue; }
+                    var cs = new Vector3[4];
+                    t.rectTransform.GetWorldCorners(cs);
+                    float bl = float.MaxValue, br = float.MinValue, by0 = float.MaxValue, by1 = float.MinValue;
+                    for (int i = 0; i < 4; i++)
+                    {
+                        Vector3 lp = canvas.InverseTransformPoint(cs[i]);
+                        bl = Mathf.Min(bl, lp.x); br = Mathf.Max(br, lp.x);
+                        by0 = Mathf.Min(by0, lp.y); by1 = Mathf.Max(by1, lp.y);
+                    }
+                    float w = t.GetPreferredValues(widest, 100000f, 0f).x;
+                    bool centred = t.alignment == TextAlignmentOptions.Top
+                                || t.alignment == TextAlignmentOptions.Center
+                                || t.alignment == TextAlignmentOptions.Bottom;
+                    bool right = t.alignment == TextAlignmentOptions.TopRight
+                              || t.alignment == TextAlignmentOptions.Right
+                              || t.alignment == TextAlignmentOptions.BottomRight;
+                    float lo = centred ? (bl + br) * 0.5f - w * 0.5f : right ? br - w : bl;
+                    float hi = lo + w;
+                    inkLo[nm] = lo; inkHi[nm] = hi; yLo[nm] = by0; yHi[nm] = by1;
+                    Debug.Log($"[T91-INK] {nm,-9} align={t.alignment} widest '{widest}' {w:0.0}px  "
+                              + $"box x {bl:0.0}..{br:0.0}  INK x {lo:0.0}..{hi:0.0}  y {by0:0.0}..{by1:0.0}");
+                }
+
+                foreach ((string a, string b) in new[] { ("Leg", "Matchup"), ("Matchup", "Clock") })
+                {
+                    if (!inkLo.ContainsKey(a) || !inkLo.ContainsKey(b)) continue;
+                    // Left-to-right order is not assumed: the pair is ordered by measured position.
+                    string left = inkLo[a] <= inkLo[b] ? a : b;
+                    string rightN = left == a ? b : a;
+                    float clearance = inkLo[rightN] - inkHi[left];
+                    bool yMeet = yLo[a] < yHi[b] && yHi[a] > yLo[b];
+                    Debug.Log($"[T91-INK] {left} -> {rightN} :: ink clearance {clearance:0.0}px, "
+                              + $"y bands {(yMeet ? "INTERSECT" : "disjoint")} — "
+                              + (clearance >= 0f
+                                 ? "no ink collision"
+                                 : yMeet
+                                   ? $"** INK COLLIDES by {-clearance:0.0}px AT THE WIDEST FORMS **"
+                                   : "x-overlap only, different rows"));
+                }
+
                 Debug.Log("[T91-GAP] authored constants, for comparison: BuildTicketColumn declares "
                           + "chipW 44, priceW 52, gap 6 — the compact row's spans are fixed, never "
                           + "derived from content (§6), so a measured gap that differs from 6 is the "
