@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-20, cycle 439 - ALLEN RULED THREE.**
+**Keeper-era heartbeat stamp: 2026-08-20, cycle 440 (heartbeat).** Three
+lanes building: markets on the console (composer-first - K16 forces it;
+the console-read dock copied to its worktree; SPECIMEN ruled
+illustrative by Allen), TV on the phantom-string pin, DD delivered the
+terse-copy spec + the fork-independent split of the drawn ending
+(batch 158 on disk, landing on its report). The network is flaky
+tonight: DNS cuts hit TV and the DD mid-turn again; both resumed with
+pick-up points. With Allen: the T140 fork (A/B - explained), the hold's
+structure, research 8-9.
+
+*(prior stamp, cycle 439 - ALLEN RULED THREE.**
 (1) The nine-kind scope: the DD's recommendation - terse copy for the
 four blocked kinds, team totals held; DD speccing. (2) THE CONSOLE SPEC
 IS APPROVED (batch 121) - markets-pregame DISPATCHED on
