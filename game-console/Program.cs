@@ -20,8 +20,14 @@ internal static class Program
                 return GameLoop.AutoRun(autoSeed);
             }
 
+            // §14's evidence hook, resolved BEFORE anything renders so a malformed value cannot
+            // produce a transcript that looks shot but is not. Null — the ordinary case — is the
+            // shipped config; see Evidence.cs for why only ONE field is exposed and why a chosen
+            // seed is not one of them (stdin already answers the seed prompt).
+            RunConfig? evidenceConfig = Evidence.ConfigOverride();
+
             TrySetupConsole();
-            InteractiveLoop();
+            InteractiveLoop(evidenceConfig);
             return 0;
         }
         finally
@@ -30,14 +36,14 @@ internal static class Program
         }
     }
 
-    private static void InteractiveLoop()
+    private static void InteractiveLoop(RunConfig? config = null)
     {
         Ui.Title();
         bool again = true;
         while (again)
         {
             string seed = PromptSeed();
-            var run = new Run(seed);
+            var run = new Run(seed, config);
             again = GameLoop.Play(run);
         }
         Ui.WriteLine(ConsoleColor.DarkGray, "thanks for playing.");
