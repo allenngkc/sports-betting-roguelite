@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-20, cycle 437 (heartbeat).** TV's
+**Keeper-era heartbeat stamp: 2026-08-20, cycle 438 (heartbeat).** THE
+FOOTER THREAD HAS NO OUTSTANDING FRAMES: T149 closed on a real bust
+(batches 155-156), T63 and T159 closed, T94 half-discharged, the
+register transcribed through 154. THE DD IS BLOCKED ON ALLEN - its
+docket is two items, both waiting (T91 at TV; T94's other half on the
+T140 fork). dd-import frames ignored repo-wide now (ed023c4). TV taking
+the four measurements itself (Allen-authorized deviation #2 today - its
+agent stalled). With Allen: the nine-kind SCOPE call (batch 151), the
+T140 fork (now gating two items), both spec approvals, the hold's
+structure, research 8-9.
+
+*(prior stamp, cycle 437 (heartbeat):)* TV's
 phantom-fixture fix merged (the 'phantom' was canon the build diverged
 from); its measurements agent running (chasing whether the stoppage-time
 string is bounded in source), bust shoot next with the lease held; DD's
