@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-20, cycle 436 (heartbeat +
+**Keeper-era heartbeat stamp: 2026-08-20, cycle 437 (heartbeat).** TV's
+phantom-fixture fix merged (the 'phantom' was canon the build diverged
+from); its measurements agent running (chasing whether the stoppage-time
+string is bounded in source), bust shoot next with the lease held; DD's
+open set seven to three (batch 153), now on T63 (154 mid-write), the
+register backlog 137+ transcription queued behind it. With Allen: the
+nine-kind SCOPE call, the T140 fork, both spec approvals, the hold's
+structure, research 8-9.
+
+*(prior stamp, cycle 436 (heartbeat +
 network blip).** A DNS/API outage cut both seats mid-turn (TV mid-T24-
 fix at 31 min, DD mid-window-request); network back, both resumed with
 explicit pick-up points (TV: fix -> suite -> measurements -> bust
