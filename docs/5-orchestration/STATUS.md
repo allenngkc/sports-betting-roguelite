@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-20, cycle 434 (heartbeat).** THE
+**Keeper-era heartbeat stamp: 2026-08-20, cycle 435 (heartbeat).** Fresh
+DD productive: batch 151 (width table ruled; SCOPE QUESTION FOR ALLEN -
+both boxes were full to ~2px before the nine kinds existed: terse copy /
+reopen geometry / new row treatment; DD recommends terse copy for the
+four blocked kinds, hold team totals) and batch 152 (the T149 bust-frame
+pre-commitment written before frames; one narrow window requested). TV
+queue: phantom-fixture fix + suite (running) -> three measurements ->
+the bust window. Markets idle. With Allen: the nine-kind SCOPE call, the
+T140 fork, both spec approvals, the hold's structure, research 8-9.
+
+*(prior stamp, cycle 434 (heartbeat):)* THE
 FOOTER ARC CLOSED ON FRAMES: the T147 dock built properly in dd-import
 (TV had docked beside the artifacts), the DD's read landed (batches
 148-149: alignment settled - left/left spills, the counter-arm clips the
