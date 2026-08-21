@@ -31,7 +31,15 @@ internal static class Ui
 
     public static void Line() => Console.WriteLine();
 
-    public static void Rule() => WriteLine(ConsoleColor.DarkGray, new string('─', 62));
+    /// <summary>
+    /// The page's horizontal rule. <b>Fixed at the source, not per call site</b>
+    /// (spec-console-surfaces-2026-08-19.md §3): this authored 62 for its whole life, which was
+    /// <c>Ui.Title</c>'s 60-column box plus two — a width that came from a decoration rather than
+    /// from content, and the exact <c>C46</c> shape the spec names. It now derives from
+    /// <see cref="Page.Width"/> like every other layout on this surface, so the number is written
+    /// down once (constitution §3.5) and every screen that rules gets the same page.
+    /// </summary>
+    public static void Rule() => WriteLine(ConsoleColor.DarkGray, Page.Rule());
 
     /// <summary>Whole-dollar money, thousands-separated. Negatives render as "-$X".</summary>
     public static string Money(double v)

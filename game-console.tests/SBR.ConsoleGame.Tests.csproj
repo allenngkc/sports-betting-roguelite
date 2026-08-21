@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <!--
+    REFERENCE THE CONSOLE PROJECT, NOT THE ENGINE (spec-console-surfaces-2026-08-19.md §13.3).
+
+    game-console/SBR.ConsoleGame.csproj already links MarketSheet.cs and MarketDestinations.cs BY
+    SOURCE (its own "ONE COMPOSER, TWO SURFACES" doc comment) so the console renders through the
+    exact same composer the laptop does. Referencing the console project here — rather than
+    engine/SBR.Engine.csproj directly — pulls those SBR.Game types in for free, so this fixture
+    calls the real MarketSheet.Build the console uses rather than a copy of it. SBR.Engine comes
+    along transitively through the console's own ProjectReference to it.
+
+    OutputType=Exe did not need any special handling: a Library-output test project references an
+    Exe-output project the same way it references any other project (the SDK still emits a normal
+    reference assembly DLL alongside the .exe/apphost), and `dotnet build`/`dotnet test` here did
+    not require EnableDynamicLoading or any other Exe-specific opt-in.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\game-console\SBR.ConsoleGame.csproj" />
+  </ItemGroup>
+
+</Project>

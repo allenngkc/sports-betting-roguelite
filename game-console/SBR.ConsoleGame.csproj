@@ -13,4 +13,25 @@
     <ProjectReference Include="..\engine\SBR.Engine.csproj" />
   </ItemGroup>
 
+  <!--
+    ONE COMPOSER, TWO SURFACES (spec-console-surfaces-2026-08-19 §6.6, K8).
+
+    MarketSheet and MarketDestinations are linked BY SOURCE rather than copied, so the console and
+    the laptop cannot print two different names for the same market — which is MarketLabel's own
+    stated purpose, unmet until now. They live under unity/ only because the laptop needed them
+    first; both are deliberately pure C# over SBR.Engine with no UnityEngine type in either, and
+    MarketSheet.cs says so in its own doc comment.
+
+    Linking rather than moving them into the engine is deliberate: moving would change the engine
+    and force a rebuild of the tracked SBR.Engine.dll, which this lane must never commit.
+
+    What the console gets for free is the whole spine the spec asks for - S95's six destinations in
+    order (§4), the folio (§5), and the matchup-global line numbers that ARE the pick addresses
+    (§5.1) - already gated by the laptop's own EditMode suite.
+  -->
+  <ItemGroup>
+    <Compile Include="..\unity\SBR\Assets\SBR\Runtime\MarketDestinations.cs" />
+    <Compile Include="..\unity\SBR\Assets\SBR\Runtime\MarketSheet.cs" />
+  </ItemGroup>
+
 </Project>
