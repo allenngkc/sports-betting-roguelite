@@ -616,11 +616,14 @@ internal static class BettingScreen
 
     private static void Build(Run run)
     {
-        string picksLine = Ui.Prompt("picks> (e.g. 1H 3GO2.5 5CO9.5 2Y 1S3)  ");
+        string picksLine = Ui.Prompt(PicksPrompt);
         List<Pick> picks;
         try
         {
-            picks = ParsePicks(picksLine, run.CurrentSlate.Matchups);
+            // §8: the leg cap is knowable BEFORE the stake is typed, so the parser is told it. It
+            // used to be discovered by the engine after the stake prompt and the boost prompt and
+            // the modifier prompt — three questions asked about a ticket that could never exist.
+            picks = ParsePicks(picksLine, run.CurrentSlate.Matchups, run.Config.MaxLegs);
         }
         catch (Exception ex)
         {
@@ -689,34 +692,98 @@ internal static class BettingScreen
         Ui.Pause();
     }
 
-    // ---- parsing ----
+    // ---- parsing: §7's grammar and §8's refusals ----
 
-    private static List<Pick> ParsePicks(string line, IReadOnlyList<Matchup> matchups)
+    /// <summary>
+    /// §7's prompt: <b>the general form plus one alias</b>. The old line read
+    /// <c>(e.g. 1H 3GO2.5 5CO9.5 2Y 1S3)</c> — five examples for six kinds, and it could not have
+    /// grown a seventh: team totals alone need three fields (team, over/under, line) in a
+    /// space-delimited token with room for one. That is a measured capacity failure, the same shape
+    /// as a rail overflow, and it is why §7 rules the address rather than a seventh mnemonic.
+    /// </summary>
+    private const string PicksPrompt = "picks> (e.g. 1#16 3#22 5H)  ";
+
+    /// <summary>
+    /// How much of a refused token is echoed back. <b>A refusal that is truncated has stopped being
+    /// a refusal</b>, and <see cref="Page.Fit"/> cuts the TAIL — the remedy — so a long token would
+    /// eat the sentence that tells the player what to do. Bounding the echo instead keeps the
+    /// sentence whole at any input length, and §13 gate 1 is asserted against the worst echo rather
+    /// than against a typical one.
+    /// </summary>
+    private const int EchoCap = 16;
+
+    private static string Echo(string token)
+        => token.Length <= EchoCap ? token : token.Substring(0, EchoCap);
+
+    /// <summary>
+    /// §8: <b>the fifth leg is refused at the fifth TOKEN.</b> The cap was previously discovered by
+    /// <c>Run.PlaceTicket</c> — after the stake prompt, the profit-boost prompt and the modifier
+    /// prompt had all been answered about a ticket that could never be placed. It is knowable at the
+    /// picks prompt, so <c>S85</c> says it happens there and the act never starts.
+    ///
+    /// <para>The count is checked BEFORE the token is resolved, deliberately. A fifth token that is
+    /// also malformed gets the cap refusal, not a grammar refusal, because the cap is the first
+    /// thing that is actually wrong — resolving it first would name the second fault.</para>
+    ///
+    /// <para><c>maxLegs</c> is read off <see cref="RunConfig.MaxLegs"/> by the caller rather than
+    /// authored here, so the refusal cannot state a cap the engine does not hold.</para>
+    /// </summary>
+    private static List<Pick> ParsePicks(string line, IReadOnlyList<Matchup> matchups, int maxLegs)
     {
         var picks = new List<Pick>();
         foreach (string tok in line.Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries))
         {
+            if (picks.Count >= maxLegs)
+                throw new ArgumentException(
+                    $"A ticket takes {maxLegs} legs; {picks.Count} are already held, "
+                    + $"so '{Echo(tok)}' is refused.");
             picks.Add(ParseOne(tok, matchups));
         }
         return picks;
     }
 
+    /// <summary>
+    /// §7's pick grammar. <b>The token is <c>{matchup}#{line}</c> — <c>1#38</c> — and the six
+    /// mnemonics stay as ALIASES.</b>
+    ///
+    /// <para><b>§7.3, the property that matters: <c>C19</c> is now STRUCTURAL rather than
+    /// maintained.</b> The <c>#</c> form resolves by walking <c>MarketSheet.Build(matchup).AllRows</c>
+    /// and matching <c>row.Line</c> — the very rows §4's destination pages print, carrying the very
+    /// numbers §5.1 prints in their address column. There is no second table of bettable kinds to
+    /// keep in step with the sheet, so <i>printing an offer is what gives it an address</i> and a
+    /// printed-but-unbettable kind cannot exist. The defect this phase was opened to fix cannot
+    /// recur, and no future market kind needs a line of this method.</para>
+    ///
+    /// <para>It invents nothing: <c>1S3</c> — matchup 1, scorer 3 — was already index addressing,
+    /// adopted for the one market with too many rows to mnemonic. §7 generalises the surface's own
+    /// answer to the exact problem that produced it.</para>
+    ///
+    /// <para>The <c>#</c> path does NOT re-validate through <c>matchup.Odds</c>. The offer came off
+    /// <c>matchup.Markets</c> by way of the sheet, which <c>MarketSheet.Build</c> already proves is a
+    /// re-ordering of that list with nothing added and nothing lost; asking the matchup whether it
+    /// prices its own priced offer would be a second opinion about a fact, not a check.</para>
+    /// </summary>
     private static Pick ParseOne(string token, IReadOnlyList<Matchup> matchups)
     {
         token = token.Trim();
         if (token.Length < 2)
-            throw new ArgumentException($"Bad pick '{token}' — use 1H, 1GO2.5, 1CO9.5, 1KO4.5, 1Y, or 1S3.");
+            throw new ArgumentException($"Bad pick '{Echo(token)}' — use 1#16, or 1H / 1GO2.5 / 1S3.");
 
         int marker = 0;
         while (marker < token.Length && char.IsDigit(token[marker])) marker++;
         if (!int.TryParse(token.Substring(0, marker), NumberStyles.Integer, CultureInfo.InvariantCulture, out int n))
-            throw new ArgumentException($"Bad matchup number in '{token}'.");
+            throw new ArgumentException($"Bad matchup number in '{Echo(token)}'.");
 
         int idx = n - 1;
         if (idx < 0 || idx >= matchups.Count)
             throw new ArgumentException($"Matchup {n} is off the slate (pick 1–{matchups.Count}).");
         string code = token.Substring(marker).ToUpperInvariant();
         Matchup matchup = matchups[idx];
+
+        // §7's general form, first: it is the grammar, and the mnemonics below are its aliases.
+        if (code.Length > 0 && code[0] == '#')
+            return new Pick(idx, Addressed(token, n, matchup, code.Substring(1)));
+
         if (code == "H" || code == "A")
             return new Pick(idx, MarketSelection.Moneyline(code == "H" ? Side.Home : Side.Away));
         if (code == "Y" || code == "N")
@@ -730,24 +797,64 @@ internal static class BettingScreen
             return new Pick(idx, scorer);
         }
         if (code.Length < 3)
-            throw new ArgumentException($"Bad market in '{token}'. Use GO/GU, CO/CU, KO/KU, Y/N, or S#.");
+            throw new ArgumentException(BadMarket(token));
+
+        // §8's fourth finding, fixed: A REFUSAL NAMES THE FIRST THING THAT IS ACTUALLY WRONG.
+        // The line parse used to sit ABOVE the over/under check, so `1CS1-1` was told "Bad line in
+        // '1CS1-1'" — a verdict on the line of a market that does not exist, because CS is not a
+        // market prefix at all. Both halves of the prefix are now checked before anything is said
+        // about the line. It is one swap and it stops the whole class.
         string prefix = code.Substring(0, 2);
-        if (!double.TryParse(code.Substring(2), NumberStyles.Float, CultureInfo.InvariantCulture, out double line))
-            throw new ArgumentException($"Bad line in '{token}'.");
+        if (prefix[0] != 'G' && prefix[0] != 'C' && prefix[0] != 'K')
+            throw new ArgumentException(BadMarket(token));
         if (prefix[1] != 'O' && prefix[1] != 'U')
-            throw new ArgumentException($"Bad market in '{token}'. Use GO/GU, CO/CU, KO/KU, Y/N, or S#.");
+            throw new ArgumentException(BadMarket(token));
+        if (!double.TryParse(code.Substring(2), NumberStyles.Float, CultureInfo.InvariantCulture, out double line))
+            throw new ArgumentException($"Bad line in '{Echo(token)}'.");
+
         bool over = prefix[1] == 'O';
         MarketSelection selection = prefix[0] == 'G'
             ? MarketSelection.TotalGoals(line, over)
             : prefix[0] == 'C'
                 ? MarketSelection.TotalCorners(line, over)
-                : prefix[0] == 'K'
-                    ? MarketSelection.TotalCards(line, over)
-                    : throw new ArgumentException($"Bad market in '{token}'. Use GO/GU, CO/CU, KO/KU, Y/N, or S#.");
-        // This also rejects syntactically valid but unavailable ladder lines.
+                : MarketSelection.TotalCards(line, over);
+        // This also rejects syntactically valid but unavailable ladder lines. Engine message,
+        // verbatim — §8 moves WHEN a refusal happens, never who authors it.
         matchup.Odds(selection);
         return new Pick(idx, selection);
     }
+
+    /// <summary>
+    /// §7's address resolved against §5.1's printed line number — <b>the number
+    /// <c>MarketSheet</c> already assigns</b>, never a parallel numbering. The row is found by
+    /// matching <c>row.Line</c> rather than by indexing <c>AllRows</c>, so the address means "the
+    /// number that was printed" even if the sheet's row order ever stopped being its line order.
+    ///
+    /// <para>§8's third refusal lives here: an out-of-range address is refused AT THE PICKS PROMPT
+    /// and names the matchup's own range, read off the sheet (<c>S74-am3</c>'s discipline — a range
+    /// that lies is worse than no range). Nothing is hard-coded to 84; the denominator is whatever
+    /// this matchup actually lists.</para>
+    /// </summary>
+    private static MarketSelection Addressed(string token, int matchupNumber, Matchup matchup, string lineText)
+    {
+        MarketSheet sheet = MarketSheet.Build(matchup);
+        string range = $"matchup {matchupNumber.ToString(CultureInfo.InvariantCulture)} "
+            + $"lists 1{MarketSheet.EnDash}{sheet.TotalRows.ToString(CultureInfo.InvariantCulture)}";
+
+        if (!int.TryParse(lineText, NumberStyles.Integer, CultureInfo.InvariantCulture, out int wanted))
+            throw new ArgumentException($"'{Echo(token)}' is not a line number — {range}.");
+
+        foreach (MarketSheetRow row in sheet.AllRows)
+        {
+            if (row.Line == wanted) return row.Offer.Selection;
+        }
+        throw new ArgumentException($"'{Echo(token)}' is off the sheet — {range}.");
+    }
+
+    /// <summary>The mnemonic set's own refusal, stated once. It leads with §7's general form because
+    /// that is the remedy that always works — the mnemonics after it are the shortcuts.</summary>
+    private static string BadMarket(string token)
+        => $"Bad market in '{Echo(token)}'. Use 1#16, or GO/GU, CO/CU, KO/KU, Y/N, S#.";
 
     // ---- helpers ----
 
