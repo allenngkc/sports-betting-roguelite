@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-21, cycle 441 (heartbeat).** Three
+**Keeper-era heartbeat stamp: 2026-08-21, cycle 442 - THE T140 FORK IS
+RULED: (A), ONE TELLING.** Allen took the DD's recommendation - one
+telling per (ticket, fixture); the LARGE arm (three phases, phase 1 in
+the engine - needs an engine-owning lane). DD writing the arm-A plan
+(Section 2 items, the two spec gates, the phase breakdown with what each
+needs ruled). The register is CURRENT (523 rows / 607 IDs, zero
+duplicates, nine collisions resolved, T103-am corrected). TV on T91,
+markets on the console sheet. With Allen: the hold's structure (T127),
+research 8-9 - nothing else.
+
+*(prior stamp, cycle 441 (heartbeat):)* Three
 lanes building, all delegated: markets on the console composer (pool
 gate verified not trusted; page assertion sweeps not samples); TV on T91
 (the phantom-string pin merged at 060c40c - it caught a fourth phantom
