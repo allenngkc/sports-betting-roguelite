@@ -147,7 +147,10 @@ internal static class GameLoop
 
     /// <summary>The visible ratchet/streak state (design/10 mandate, rev 5 §20) — one line,
     /// only when something is wound up.</summary>
-    internal static void WriteEffectStates(Run run)
+    /// <summary>Returns the number of LINES written (0 or 1), because the betting screen's slate is
+    /// paginated against the rows its header leaves it (spec-console-surfaces §3, §13 gate 2) and a
+    /// conditional line it could not count would be exactly the unstated claim <c>C46</c> names.</summary>
+    internal static int WriteEffectStates(Run run)
     {
         var parts = new List<string>();
         foreach (EffectStat s in run.EffectStates)
@@ -155,8 +158,9 @@ internal static class GameLoop
                 parts.Add(s.Id == "the_system"
                     ? $"{s.Label} {s.Value:0} streak"
                     : $"{s.Label} +{s.Value:0.#}pp");
-        if (parts.Count > 0)
-            Ui.WriteLine(ConsoleColor.Magenta, " " + string.Join("   ·   ", parts));
+        if (parts.Count == 0) return 0;
+        Ui.WriteLine(ConsoleColor.Magenta, " " + string.Join("   ·   ", parts));
+        return 1;
     }
 
     // ---- run over ----
