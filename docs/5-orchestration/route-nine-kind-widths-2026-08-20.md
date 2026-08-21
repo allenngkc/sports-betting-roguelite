@@ -30,12 +30,14 @@ Pays          box 249.0px   widest 'RETURNED $73,318,376,502'         300.9px
 full inner width. The compact STATEMENT's box is 147px** — `stmtW = lineW − 38 − priceW − gap*2`,
 with the chip and the price taking the rest. The pressure is 100px worse than the spec assumed.
 
-### DERIVED, and rulable now: no club name makes the compact form fit
+### MEASURED: no club name makes the compact team-total form fit
 
-At the measured ~8px/character on this face, **147px holds about 18 characters.** The shortest
-possible team-total compact form — a six-character club, `UNDER`, `4.5`, `CARDS` — is about 25.
-**So the team-total compact form overruns for EVERY club in the pool, not merely the longest.**
-Stated as a derivation from the measurement above, not as a separate measurement.
+**All 60 team-total compact forms overrun**, the narrowest by 11.4px. So the form fails for every
+club in the pool, not merely the longest.
+
+*(This paragraph first stated the same conclusion as a DERIVATION from an assumed ~8px/character.
+The per-kind pass below measured it instead. The conclusion held; the arithmetic behind it did not,
+and per batch 95 a width is measured and never read off a character count — including by this lane.)*
 
 ### The club-name assumption in §5 is wrong, in the cheaper direction
 
