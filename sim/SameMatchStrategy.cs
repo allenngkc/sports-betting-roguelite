@@ -166,29 +166,47 @@ public sealed class SameMatchStrategy : IStrategy
         // one that cashes out; exactly one of the round's three tickets is marked.
         if ((run.Round + slot * 2) % MarkedSlotCycle != 0) return false;
 
-        int cursor = evt.LegIndex;
-        int lastLeg = ticket.Legs.Count - 1;
+        // RE-POINTED FOR T140 ARM A, AND IT WAS NOT OPTIONAL — this probe read `evt.LegIndex`
+        // against `Legs.Count - 1`, on SAME-MATCH tickets, which is exactly the population arm A
+        // restructures. A 2-leg same-match ticket is now ONE telling, so that cursor is 0 on every
+        // beat: MID and LATE could never fire again and `G7-SGP`'s cash-out coverage would have gone
+        // VACUOUS — a gate still passing while it had stopped testing anything. A gate that cannot
+        // fail is worse than a missing gate.
+        //
+        // The position is now (which TELLING) plus (where inside it). The fixture half preserves the
+        // original meaning exactly — a fixture boundary is where legs settle, so "a leg settled and a
+        // leg still pending" is "not the first telling and not the last" — and on an ordinary ticket
+        // fixture index IS leg index, so nothing about the ordinary population moves.
+        int fixtureIndex = evt.FixtureIndex;
+        int lastFixture = session.FixtureCount - 1;
+        bool earlyInTelling = evt.Step * 3 <= evt.TotalSteps;
+        bool lateInTelling = evt.Step * 3 >= evt.TotalSteps * 2;
 
         // WHERE the marked ticket cashes out walks on its own period, so the two walks do not lock.
         // The allocation that falls out is the one worth having: rounds 1 and 2 — the only rounds
         // every run reaches — draw MID and LATE, which are the positions that need a ticket to
         // survive, while EARLY, which always fires, takes the starved later rounds.
         int position = run.Round % PositionCycle;
-        if (position == 1 && ticket.Legs.Count < 3)
-            position = 2; // no mid position exists on a 2-leg ticket; take the last leg instead
 
         return position switch
         {
-            // MID — a leg settled and a leg still pending, so the conditional is a genuine ratio over
-            // two different leg sets, and the only position where it is.
-            1 => cursor >= 1 && cursor < lastLeg,
-            // LATE — the last leg, where numerator and denominator share a leg set, the quote walks
-            // to the full payout, and a settled leg that entails the live one makes the certainty
-            // carve-out reachable. Fires only on tickets that survive that far, which is the point.
-            2 => cursor == lastLeg,
+            // MID — the quote's middle. On a MULTI-fixture ticket this still means a leg has settled
+            // and a leg is still pending, so the conditional is a genuine ratio over two different leg
+            // sets. On a SINGLE-fixture ticket — a T2 composite, three or four legs one match settles —
+            // NO SUCH MOMENT EXISTS under arm A: every leg settles at one whistle. Stated rather than
+            // hidden, because it is a real reduction in what MID covers for that shape. There it means
+            // mid-telling, where the quote has moved off the sold joint by the live number's drift but
+            // has not yet walked to the payout. Still a distinct point on the curve; not the same one.
+            1 => lastFixture > 0
+                ? fixtureIndex >= 1 && fixtureIndex < lastFixture
+                : !earlyInTelling && !lateInTelling,
+            // LATE — the last telling's tail, where numerator and denominator share a leg set, the
+            // quote walks to the full payout, and a settled leg that entails the live one makes the
+            // certainty carve-out reachable. Fires only on tickets that survive that far, the point.
+            2 => fixtureIndex == lastFixture && lateInTelling,
             // EARLY — nothing has settled yet: the quote is the ticket's own locked joint, moved only
             // by how far the live number has drifted from the marginal it was sold at.
-            _ => cursor == 0,
+            _ => fixtureIndex == 0 && earlyInTelling,
         };
     }
 

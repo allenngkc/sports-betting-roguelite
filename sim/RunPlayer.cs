@@ -248,8 +248,16 @@ public static class RunPlayer
                     {
                         result.SameMatchCashedOut++;
                         result.SameMatchCashOutCredit += o;
-                        if (evt!.LegIndex == 0) result.SameMatchCashOutsEarly++;
-                        else if (evt.LegIndex == ticket.Legs.Count - 1) result.SameMatchCashOutsLate++;
+                        // Position within the SWEAT, not within the leg list — under T140 arm A a
+                        // same-match ticket can be one telling, where every leg index is the anchor's
+                        // and a leg-index bucket would record every quote as EARLY. Matches the
+                        // definition SameMatchStrategy aims at, so the probe and the telemetry that
+                        // reports it cannot disagree about where a quote was taken.
+                        if (evt!.FixtureIndex == 0 && evt.Step * 3 <= evt.TotalSteps)
+                            result.SameMatchCashOutsEarly++;
+                        else if (evt.FixtureIndex == session.FixtureCount - 1
+                                 && evt.Step * 3 >= evt.TotalSteps * 2)
+                            result.SameMatchCashOutsLate++;
                     }
                     break;
                 }

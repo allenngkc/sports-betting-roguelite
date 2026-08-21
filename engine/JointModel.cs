@@ -1344,7 +1344,11 @@ public static class SameMatchModel
     /// from a seed on any run. Shared by <see cref="PriceCore"/> and
     /// <see cref="JointProbabilityOf"/> so a locked price and a cash-out conditional can never disagree
     /// about which legs share a match or in which order their joints multiply.</para></summary>
-    private static (List<Matchup> matchups, List<List<int>> groups) GroupByMatchup(IReadOnlyList<Leg> legs)
+    /// <summary>Legs partitioned by matchup, matchups in FIRST-APPEARANCE order over the list. Internal
+    /// rather than private since <c>T140</c> arm A: <see cref="DramaGenerator"/> assembles one telling
+    /// per (ticket, fixture) and must group through THIS helper, in THIS order, or the sweat's idea of
+    /// a fixture and the joint price's would be two implementations of one rule.</summary>
+    internal static (List<Matchup> matchups, List<List<int>> groups) GroupByMatchup(IReadOnlyList<Leg> legs)
     {
         var matchups = new List<Matchup>();
         var groups = new List<List<int>>();

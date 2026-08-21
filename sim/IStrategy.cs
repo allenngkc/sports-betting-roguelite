@@ -87,8 +87,11 @@ public interface IStrategy
     /// Called once per sweat event on an open, cash-out-eligible ticket when an offer exists.
     /// Return true to take <paramref name="offer"/>. <paramref name="bankNow"/> is the live bank and
     /// <paramref name="target"/> the round's settle requirement (target + any bookie debt);
-    /// <paramref name="evt"/>.WinProbAfter is the on-screen live win% of the current leg
-    /// (legitimate player information).
+    /// <paramref name="evt"/>.WinProbAfter is the live win% of the telling's ANCHOR leg — since
+    /// <c>T140</c> arm A a beat can carry N legs, and <c>T164</c> rules that the ON-SCREEN number is
+    /// the ticket's (<c>SweatSession.TicketWinProbability</c>), not a leg's. Both are legitimate
+    /// player information; they are no longer the same number on a same-match ticket. Use
+    /// <c>evt.LegProbs</c> when a per-leg figure is what is meant.
     /// </summary>
     bool ShouldCashOut(Run run, Ticket ticket, SweatSession session, DramaEvent evt,
         double offer, double bankNow, double target, BotState state, Pcg32 rng);

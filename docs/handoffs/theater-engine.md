@@ -75,12 +75,13 @@ at most one leg per matchup**.
 
 | member | type | what it is |
 |---|---|---|
-| `SweatSession.TicketWinProbability` | `double` | **The displayed win-probability (`T164`).** The live TICKET-level win prob — the same quantity the cash-out prices off. At t=0 it equals the ticket's sold probability (`Ticket.SameMatch.PTicket` bit-for-bit on a same-match ticket). **This is the only probability presentation may show.** |
+| `SweatSession.TicketWinProbability` | `double` | **The displayed win-probability (`T164`).** The live TICKET-level win prob — the same quantity the cash-out prices off. At t=0 it equals the ticket's sold probability: **exactly** `Π TrueProb` on an ordinary ticket, and within a few ulp of `Ticket.SameMatch.PTicket` on a same-match one — that slack is `JointModel`'s already-documented goal-family slack, not new. **This is the only probability presentation may show.** |
 | `SweatSession.FixtureCount` | `int` | Tellings on this ticket. `== Ticket.Legs.Count` unless the ticket has a same-match pair. |
 | `SweatSession.CurrentFixtureIndex` | `int` | Which telling is in flight (0-based, first-appearance order). |
 | `SweatSession.CurrentFixtureLegs` | `IReadOnlyList<int>` | The ticket-order leg indices LIVE right now. Length 1 on an ordinary ticket. **This is the live set phase 3 renders.** |
 | `SweatSession.PendingDeadLegIndices` | `IReadOnlyList<int>` | Every leg that died at this whistle, in ticket order (`T143`: the window NAMES them all). Empty when no window is open. |
 | `SweatSession.NoSingleCallSaves` | `bool` | True when ≥2 legs died at this whistle, so neither a Mulligan nor a Whistle can rescue the ticket. **`S85`: the surface states this BEFORE the offer is presented.** |
+| `SweatSession.PendingLossTicketProbBefore` | `double` | **The window's DISPLAY quantity (`T143-am`).** The TICKET's win-prob frozen from before the killing beat. Pairs with `PendingLossProbBefore`, which stays the LEG's and stays the Whistle's roll target. |
 | `SweatSession.LiveLegProbability(int legIndex)` | `double` | One leg's live prob. **Engine/consumable use only — `T143` forbids showing a leg's probability alone.** Present because the Whistle's roll is per-leg. |
 | `DramaEvent.FixtureIndex` | `int` | Which telling this beat belongs to. |
 | `DramaEvent.LegIndices` | `IReadOnlyList<int>` | The legs live on this telling, ticket order. |
@@ -180,6 +181,17 @@ golden ticket carries no same-match pair this probe must pass unchanged after th
 is §5's structural claim, checkable by a third party. This lane will not touch the file; the same
 assertion is mirrored into `engine.tests` so it can be proven without a Unity lease.
 
+### 6e-bis. Unity test files that call `BuildTicketPaths` directly — VERIFY, do not assume
+
+`unity/SBR/Assets/Tests/EditMode/ScoreLedgerTests.cs:251` and
+`unity/SBR/Assets/Tests/EditMode/TheaterChoreographerTests.cs:208` build paths themselves. They are
+unaffected **if and only if** their tickets carry no same-match pair — on those, `paths.Count` is
+still the leg count and the beats are bit-identical. Named for the TV lane to confirm under a Unity
+lease; this lane does not hold one and will not edit them.
+
+`unity/SBR/Assets/Tests/EditMode/ScoreLedgerTests.cs` also constructs `DramaEvent` with the 6-argument
+constructor at nine sites. **That constructor is retained unchanged** for exactly this reason.
+
 ### 6f. Already fixture-ready — a reduction, named so phase 3 does not rediscover it
 
 - `PresentationSceneKey.cs:70-82`, `:110-122` — the scene key is **already match-scoped**
@@ -192,26 +204,69 @@ assertion is mirrored into `engine.tests` so it can be proven without a Unity le
   the column reads legs as a collection and is N-live-capable by construction — stands and is
   load-bearing for phase 3.
 
-### 6g. Inside this lane, fixed here
+### 6g. `game-console/` — the markets lane's, and it has the SAME per-leg drive loop
 
-`sim/RunPlayer.cs:251-252` — `evt.LegIndex == 0` / `== ticket.Legs.Count - 1` buckets same-match
-cash-outs early/late. Re-pointed to the fixture cursor by this lane.
+Found by the call-site survey; an earlier grep of mine truncated before reaching these files, so they
+are recorded here in full rather than summarised.
 
-## 7. The one contract item where the evidence contradicted the plan
+| site | what it does |
+|---|---|
+| `game-console/SweatRenderer.cs:73-75` | `int lastLeg = ticket.Legs.Count - 1` — the console's own final-leg scalar. |
+| `game-console/SweatRenderer.cs:83-90` | `Leg leg = ticket.Legs[evt.LegIndex]; if (evt.LegIndex != legSeen) { legSeen = …; prevProb = leg.TrueProb; }` — the same single-leg-cursor drive loop as `TvSweatScreen.PlaySweat`. |
+| `game-console/SweatRenderer.cs:129` | `bool onFinalLeg = evt.LegIndex == lastLeg` |
+| `game-console/SweatRenderer.cs:153`, `:158` | `session.PendingLossProbBefore` in `PromptSave` — **the one surviving reader of that property anywhere outside the engine.** It still reads the LEG's number, which is what §7a preserves. |
+| `game-console/SweatRenderer.cs:165-192` | `int k = e.LegIndex + 1`; `session.RevealedLegState(e.LegIndex)` |
+| `game-console/EventText.cs:14` | `For(DramaEvent e, Leg leg, double prevProb)` — one leg per call, same shape as `SweatFlavor`. |
 
-`T143` rules that the pending-loss window displays the TICKET's probability, reasoning from
-`PendingLossProbBefore` being *"the leg's displayed win-prob from before the killer."*
+**On a ticket with no same-match pair none of this moves.** The console reaches the new shape only
+when a player builds a same-game parlay there.
 
-**That display no longer exists.** `TvSweatScreen.cs:2405` records batch 46/47: *"the probability
-GOES … an offer states its COST rather than its odds."* The window prints the whistle's cost. Grepped
-across `unity/**` and `game-console/**`: **`PendingLossProbBefore` has zero live consumers** — the
-only code that reads it is the engine's own Whistle roll, `roll.NextDouble() < _pendingLossProb`.
+### 6h. Comments that cite `SweatSession.cs` by LINE NUMBER — they go stale silently
 
-So re-basing it to the ticket would display nothing new and would silently make the Ref's Whistle
-much weaker on multi-leg tickets — a consumable re-balance, which is Allen's call, not a
-presentation ruling's side effect.
+`TvSweatScreen.cs:2933` cites `SweatSession.cs:252-253, :503-508`; `:2940-2942` cites
+`SweatSession.cs:136-140, :150-154, :184-185`. These are prose, so nothing fails — they just stop
+describing the engine. Named because a line-number citation into a file another lane is restructuring
+cannot survive it, and a reader will trust it.
 
-**This lane builds the reversible reading:** the roll keeps the leg's own pre-kill probability
-(now one per dead leg); the ticket-level quantity `T143` and `T164` want is available as
-`TicketWinProbability` for any surface that wants to show it. Routed to the DD; if the answer is that
-the roll itself must re-base, that is a one-line change plus a gate re-baseline.
+### 6i. Inside this lane, fixed here (`sim/**`)
+
+| site | what it does, and why it matters |
+|---|---|
+| `sim/RunPlayer.cs:249-252` | `evt.LegIndex == 0` / `== ticket.Legs.Count - 1` buckets same-match cash-outs EARLY/LATE. |
+| `sim/SkilledStrategy.cs:473-486` | `EstHoldEv` partitions legs into resolved (`j < cur`), live (`j == cur`) and unstarted (`j > cur`) off `evt.LegIndex`. Mis-partitions a shared telling — it would price two live legs as one live and one unstarted. |
+| `sim/SameMatchStrategy.cs:169-192` | **The severe one.** The EARLY/MID/LATE cash-out probe is `cursor == 0` / `cursor >= 1 && cursor < lastLeg` / `cursor == lastLeg`, evaluated on SAME-MATCH tickets — exactly the population arm A restructures. A 2-leg same-match ticket now has ONE telling, so `evt.LegIndex` is 0 for every beat: **MID and LATE would never fire and `G7-SGP`'s cash-out coverage would quietly go vacuous — a passing gate that had stopped testing anything.** Re-pointed to position WITHIN the telling (`evt.Step` against `evt.TotalSteps`), which is the honest reading of "early/late in the sweat" once a fixture is the unit and works unchanged for multi-fixture tickets. |
+| `sim/IStrategy.cs:90` | Doc comment asserts `evt.WinProbAfter` is "the on-screen live win% of the current leg". Now the anchor leg's, and no longer the on-screen number at all (`T164`). Corrected. |
+
+**This is a finding, not a chore.** A gate that cannot fail is worse than a missing gate, and the
+restructure would have produced one silently.
+
+## 7. The three design items — ROUTED AND ANSWERED (DD batch 169, at HEAD)
+
+All three were built on stated assumptions; **all three assumptions hold** and no rework follows.
+
+### 7a. `PendingLossProbBefore` — the split is RIGHT (`T143-am`, ground `S67`)
+
+The finding that raised it: `T143` re-bases the window's probability to the ticket, reasoning from
+`PendingLossProbBefore` being *"the leg's displayed win-prob from before the killer."* **That display
+was removed at batch 46/47** (`TvSweatScreen.cs:2405` — *"the probability GOES … an offer states its
+COST rather than its odds"*), and the property has **zero consumers outside `unity/`** — grepped
+across `unity/**` and `game-console/**`. Its only live reader is the engine's own Whistle roll,
+`roll.NextDouble() < _pendingLossProb`. Re-basing it would have displayed nothing new and quietly
+weakened the Ref's Whistle on every multi-leg ticket — a consumable re-balance.
+
+**Ruled:** display goes ticket-level, the roll keeps the leg's prob. Built literally, as two frozen
+values captured before the killing beat: `PendingLossTicketProbBefore` (display) and
+`PendingLossProbBefore` (roll, now one per dead leg). The economy does not move.
+
+### 7b. `T164`'s "moves no number on any screen shipping today" — false, and re-scheduled (`T164-cl`)
+
+The TV shows the live LEG's probability today on a multi-leg ticket, so re-pointing the display to
+the ticket's number **is** a visible change. The ruling stands; it is re-scheduled as a visible one.
+Nothing changes in this lane's build — `TicketWinProbability` is purely additive here and the
+re-point is phase 3's.
+
+### 7c. Two or more legs dead at one whistle — saves stay LEGAL
+
+Neither a Mulligan nor a Whistle can rescue the ticket, but the player may still spend one.
+**This lane builds the FLAG only** — `NoSingleCallSaves`. The present-with-warning affordance
+(`S85`: stated before the offer) is phase 3's, not this lane's.
