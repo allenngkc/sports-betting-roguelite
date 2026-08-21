@@ -1265,6 +1265,12 @@ namespace SBR.Tests.EditMode
                 var yHi = new Dictionary<string, float>();
                 foreach ((string nm, string widest) in new[]
                 {
+                    // T91-cl (batch 158): TicketHeader joins this set because Leg's neighbour
+                    // changed — see the retired/added pairs below. Widest form read off
+                    // TvExtentSweep.cs's own pool for this slot ("TICKET 2/2" / "TICKET 2 OF
+                    // 2"), not invented here; both are 13 characters and the digit is tabular
+                    // (T82's atlas working), so they measure equal and either is the widest.
+                    ("TicketHeader", "TICKET 2/2"),
                     ("Leg", "LEG 4/4"),
                     ("Matchup", "BRICKLAYERS 0 \u2014 MIDDLEMEN 0"),
                     ("Clock", "90'+9"),
@@ -1295,7 +1301,16 @@ namespace SBR.Tests.EditMode
                               + $"box x {bl:0.0}..{br:0.0}  INK x {lo:0.0}..{hi:0.0}  y {by0:0.0}..{by1:0.0}");
                 }
 
-                foreach ((string a, string b) in new[] { ("Leg", "Matchup"), ("Matchup", "Clock") })
+                // ("Leg", "Matchup") is RETIRED here, NOT deleted silently: this exact pair is the
+                // whole reason this change exists. T91-cl measured it COLLIDING by 41.7px, Leg's
+                // ink sharing Matchup's y-band, and that finding is why LEG n/m no longer lives in
+                // this band at all (see BuildTicketColumn). It was checked, it failed, and the fix
+                // was to move Leg rather than to widen anything. Leg's neighbour now is
+                // TicketHeader, added below.
+                const float InkFloor = 2f; // T90-am's floor; T91-am2 put it on both sides of the
+                                            // column edge; T91-cl generalised it to ANY pair whose
+                                            // ink shares a y-band, which is what is asserted below.
+                foreach ((string a, string b) in new[] { ("TicketHeader", "Leg"), ("Matchup", "Clock") })
                 {
                     if (!inkLo.ContainsKey(a) || !inkLo.ContainsKey(b)) continue;
                     // Left-to-right order is not assumed: the pair is ordered by measured position.
@@ -1310,6 +1325,15 @@ namespace SBR.Tests.EditMode
                                  : yMeet
                                    ? $"** INK COLLIDES by {-clearance:0.0}px AT THE WIDEST FORMS **"
                                    : "x-overlap only, different rows"));
+                    // T91-cl: the 2px ink floor is a property of ANY TWO ELEMENTS WHOSE INK SHARES
+                    // A y-BAND, not of one particular seam, so it is asserted on every pair this
+                    // block measures rather than only logged. A pre-existing violation is a
+                    // finding, not a reason to soften this assertion.
+                    Assert.GreaterOrEqual(clearance, InkFloor,
+                        $"[T91-cl] ink floor violated between {left} and {rightN}: {left} ink " +
+                        $"{inkLo[left]:0.0}..{inkHi[left]:0.0}, {rightN} ink " +
+                        $"{inkLo[rightN]:0.0}..{inkHi[rightN]:0.0}, measured clearance " +
+                        $"{clearance:0.0}px (floor {InkFloor:0.0}px)");
                 }
 
                 Debug.Log("[T91-GAP] authored constants, for comparison: BuildTicketColumn declares "
@@ -1655,7 +1679,15 @@ namespace SBR.Tests.EditMode
                 var owned = new (string element, string zone)[]
                 {
                     ("Matchup", "ScoreBugZone"), ("Score", "ScoreBugZone"),
-                    ("Leg", "ScoreBugZone"), ("Clock", "ScoreBugZone"),
+                    // `Leg` LEFT THIS LIST AT T91-cl, and this is an inventory correction rather
+                    // than a relaxation: it moved out of the scorebug into the ticket column header,
+                    // so it is no longer right-hand zone content and this test is about right-hand
+                    // zone content. Its new sibling `TicketHeader` has never been in this list
+                    // either, because the ticket column takes no ZoneRoot of its own — `ZoneRoot` is
+                    // called for the scorebug and the event strip ONLY, and the column's children
+                    // clip to the canvas-level glass mask. The rule still binds every element that
+                    // remains in the zone; the zone simply has one fewer member.
+                    ("Clock", "ScoreBugZone"),
                     ("Flavor", "EventStripZone"),
                 };
 
