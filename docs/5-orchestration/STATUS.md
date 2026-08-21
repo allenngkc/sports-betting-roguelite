@@ -1,6 +1,21 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-21, cycle 444 (heartbeat).** Four
+**Keeper-era heartbeat stamp: 2026-08-21, cycle 445 (heartbeat).** CONSOLE
+COMMIT 2 MERGED (the grammar open, K16 riding it, bcae002); K17 RULED a
+violation (batch 170) - markets builds it behind the Section 14
+evidence; the console is not player-ready until it lands. TV: terse
+rungs merged (two ladders end; DoubleChance does not fit even
+one-worded); Section 1.1 HELD behind phase 1 (its either-arm argument
+lapsed with B), 1.2/1.3 in hand directly (deviation #5 - the network
+keeps killing agents). Engine: contract merged to main (b02d9d8), phase
+1 building, agent lost to DNS and resumed. The DNS flapping is the
+night's tax: five seat cuts. WITH ALLEN: DOUBLECHANCE'S SCOPE (batch
+170 - terse copy is exhausted; (a) ship the club-alone NEED as interim,
+(b) the real question: does a market whose requirement this surface
+cannot state belong on the surface; DD recommends a-then-b); the hold's
+structure; research 8-9.
+
+*(prior stamp, cycle 444 (heartbeat):)* Four
 lanes live. Engine (phase 1): plan approved, session contract PUBLISHED
 before the change (d28f36b - added/changed/broken surface, the
 byte-identity argument, named unity call sites); its three design items
