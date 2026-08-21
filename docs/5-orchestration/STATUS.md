@@ -1,6 +1,19 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-20, cycle 433 (heartbeat).** Post-
+**Keeper-era heartbeat stamp: 2026-08-20, cycle 434 (heartbeat).** THE
+FOOTER ARC CLOSED ON FRAMES: the T147 dock built properly in dd-import
+(TV had docked beside the artifacts), the DD's read landed (batches
+148-149: alignment settled - left/left spills, the counter-arm clips the
+label; T133 CLOSED, PAID ruled on the frame; a bust frame owed), the DD
+ROTATED at 99% (batch 150 = its open set; fresh seat term_aec777f0 on
+dd-docket-2026-08-20.md; watcher v46 bgbyi100m). TV's per-form pass
+merged (ONE of nine kinds clears; 60 team-total + 9 DoubleChance compact
+forms overrun) - the fresh DD's first read. TV now fixing T24's phantom
+fixture string (Allen); its effort reset to max (the outage resume had
+dropped it to xhigh). With Allen: the T140 fork, both spec approvals,
+the hold's structure, research 8-9.
+
+*(prior stamp, cycle 433 (heartbeat):)* Post-
 recovery steady: DD on the ledger (batches 143-145 landed since
 recovery - the pre-commitment amended ahead of the frames, a latent
 console beat-prefix defect caught for the console build's dispatch, the
