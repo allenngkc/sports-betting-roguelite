@@ -5229,6 +5229,29 @@ namespace SBR.Game
                 new Vector2(grid.TicketHeader.width - 16f, grid.TicketHeader.height - 4f), TypeEyebrow,
                 TextAnchor.UpperLeft, structureGrey, tracking: TvTrack.Label); // tv.card.html:20
 
+            // T91-cl (batch 158): LEG n/m MOVES HERE, out of the scorebug's top band (was built in
+            // BuildScoreBug, left-aligned beside Matchup). T91 settled on this lane's own ink
+            // measurement that the old band did not fit Leg, Matchup and Clock at current sizes:
+            // Matchup cleared Clock by 31.3px, no collision, but Leg's ink COLLIDED with Matchup's
+            // by 41.7px, y bands intersecting. THE 2px INK FLOOR — T90-am's, generalised to both
+            // sides of the ticket column's edge by T91-am2 — IS A PROPERTY OF ANY TWO ELEMENTS
+            // WHOSE INK SHARES A y-BAND, not of one particular seam, and honouring it on both sides
+            // of the old band still left the scoreline 14.3px short (569.0px available against
+            // 583.3px needed): a clearance rule alone could not discharge it, so something had to
+            // move. WHICH element moves was deliberately NOT ruled — T100's precedent puts position
+            // and edges with TV — but the DD recommended this one: the scoreline and the clock are
+            // both match facts and already clear each other, while `LEG n/m` is ticket bookkeeping,
+            // and the ticket column already carries a header of exactly that kind. So it lands
+            // RIGHT-aligned beside `_tTicketHeader`, in the same tracking, so the two read as one
+            // row of bookkeeping rather than two. Worth recording: the leg counter itself had never
+            // been ruled before T91-cl — zero register rows — which is why every prior ruling about
+            // the old band was about the two elements that DO have rows (`Matchup`, `Clock`). Name
+            // kept as `Leg` (the T84 sweep addresses it by that name) and its pool strings are
+            // unchanged — only where and how it is placed moved.
+            _tLeg = MakeText(root, "Leg", new Vector2(0f, 1f), new Vector2(1f, 1f),
+                AnchorTopRight(grid.TicketHeader, 8f, 4f), new Vector2(140f, Mathf.Ceil(TypeEyebrow * LineBox)),
+                TypeEyebrow, TextAnchor.UpperRight, structureGrey, tracking: TvTrack.Label);
+
             _legRow = new LegRowUi[TicketRowSlots];
             // T20 row stack, budgeted from the canon type scale rather than hand-placed. The two
             // live lines must fit inside TicketRowHeight with the row's own padding; asserted by
@@ -5414,10 +5437,14 @@ namespace SBR.Game
             // expressed against the thing that owns them. §6's fixed grid is untouched — this rect
             // is still derived once, from the grid, never from content.
             Rect sb = new Rect(0f, 0f, grid.ScoreBug.width, grid.ScoreBug.height);
-            // §7 Scorebug: "Ticket/leg index at L1, present but subordinate."
-            _tLeg = MakeText(sbRoot, "Leg", new Vector2(0f, 1f), new Vector2(0f, 1f),
-                AnchorTopLeft(sb, 10f, 8f), new Vector2(140f, Mathf.Ceil(TypeEyebrow * LineBox)),
-                TypeEyebrow, TextAnchor.UpperLeft, structureGrey);
+            // §7 Scorebug: "Ticket/leg index at L1, present but subordinate." — true of the FACT,
+            // no longer true of this BAND. T91-cl (batch 158) measured this band failing to fit
+            // Leg, Matchup and Clock at current sizes — Leg's ink collided with Matchup's by
+            // 41.7px, and even with the 2px ink floor honoured on both sides the scoreline was
+            // still 14.3px short of room (569.0px available against 583.3px needed) — and
+            // recommended moving LEG n/m out rather than widening the band. TV built that: `_tLeg`
+            // now lives in BuildTicketColumn, right-aligned beside `_tTicketHeader`. See that
+            // construction for the full ruling.
             // §7: "Clock remains fixed at the right edge."
             // T91-am (batch 61): THE TOP BAND IS PARTITIONED. The scoreline's territory and the
             // clock's are DISJOINT, each sized to its OWN longest renderable form, and the scoreline

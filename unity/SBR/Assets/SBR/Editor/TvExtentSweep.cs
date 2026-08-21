@@ -668,7 +668,7 @@ namespace SBR.EditorTools
             // Added when the POPULATION line below named them: the sweep's own §4.2 statement found
             // three slots that were neither swept nor a sibling row index, and two of them are
             // trivially enumerable. Closing the gap beats excusing it — a named gap is still a gap.
-            ("Leg", "the scorebug's leg counter, bounded by MaxLegs (4)", new[]
+            ("Leg", "the ticket header's leg counter (moved out of the scorebug, into BuildTicketColumn beside TicketHeader, by T91-cl batch 158), bounded by MaxLegs (4)", new[]
                 { "LEG 4/4", "LEG 1/4", "LEG 1/1" }),
             // `MomentumLabel` is GONE (T90-am/T93, batch 61) — dropped, not shortened, because its
             // overlap with the NEED line was positional. The slot no longer exists to sweep, and the
@@ -677,7 +677,13 @@ namespace SBR.EditorTools
                 { "ZAMBONIS 0 — REGULATORS 1", "BRICKLAYERS 0 — MIDDLEMEN 0", "STARTUPS 1 — PLUMBERS 2" }),
             ("Score", "the punch overlay mirrors Matchup", new[] { "ZAMBONIS 0 — REGULATORS 1" }),
             ("Clock", "clock forms seen in the after-set manifest", new[] { "90'+2", "90'+1", "PRE", "FT", "45'" }),
-            ("TicketHeader", "tv.card.html:20", new[] { "TICKET 1 OF 2", "TICKET 2 OF 2" }),
+            // FORMAT CORRECTED (T91 build, 2026-08-21): this pool carried `TICKET n OF m`, which is
+            // `TakeoverTitle`'s format (TvSweatScreen.cs:3243). THE HEADER EMITS `TICKET {n}/{m}`
+            // (:2971) and never has. A PHANTOM IN THE POOL, and the fifth this lane has found —
+            // notable because T158 checks fixtures AGAINST this pool, so a phantom that lives HERE
+            // is invisible to that pin. The range is inherited from the old entry rather than
+            // re-derived: nothing in source bounds sweats-per-round that this seat could find.
+            ("TicketHeader", "tv.card.html:20 · TvSweatScreen.cs:2971", new[] { "TICKET 1/1", "TICKET 1/2", "TICKET 2/2" }),
             // REBUILT. The old set {"REGULATORS BREAK AWAY DOWN THE RIGHT", "ZAMBONIS CLEAR THE
             // LINE", "GOAL"} was invented ALL-CAPS narration this surface never authors — none of
             // those three lines exists in SweatFlavor.cs, and the strip's actual voice is lower-case
