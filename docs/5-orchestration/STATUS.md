@@ -1,6 +1,19 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-21, cycle 443 - PHASE 1 STAFFED.**
+**Keeper-era heartbeat stamp: 2026-08-21, cycle 444 (heartbeat).** Four
+lanes live. Engine (phase 1): plan approved, session contract PUBLISHED
+before the change (d28f36b - added/changed/broken surface, the
+byte-identity argument, named unity call sites); its three design items
+answered by the DD (batch 169 - the display/roll split is right; T164
+re-scheduled as visible; saves stay legal, flag built, affordance is
+phase 3); same-match tests red in its tree by construction until the
+restructure lands. TV: T91 merged (644637e), terse copy in hand directly
+(authorized deviation #4). Markets: console commit 2 building. DD: the
+neither-branch lines specced (phase 3 content complete). One
+environmental flake for a docket: the phone focus PlayMode test. With
+Allen: the hold's structure (T127), research 8-9.
+
+*(prior stamp, cycle 443 - PHASE 1 STAFFED.**
 The DD's three rulings landed (batch 167: the prose anchor under N live
 legs, the win-probability's seed, the leg counter) - phase 1 of arm A is
 unblocked and a FRESH ENGINE LANE is seated: worktree `theater-engine`,
