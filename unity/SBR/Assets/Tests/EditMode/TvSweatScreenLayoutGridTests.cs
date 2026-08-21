@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
 using SBR.Game;
@@ -490,8 +491,8 @@ namespace SBR.Tests.EditMode
                 // assertion below never depended on either phantom, which is exactly why two
                 // unproducible strings sat here unnoticed. A fixture nothing asserts against content is
                 // where a phantom survives.
-                need.text = "ONE TEAM BLANKED";
-                progress.text = "CLEAN-SHEET PATH LIVE";
+                need.text = FxNeedWidest;
+                progress.text = FxProgressWidest;
                 float measured = need.preferredHeight + progress.preferredHeight;
 
                 float slot = Mathf.Abs(need1.rectTransform.anchoredPosition.y
@@ -678,11 +679,11 @@ namespace SBR.Tests.EditMode
                 // Row 1, the stake fact — two candidates (spec §3.2 puts STAKE above RETURNED in the
                 // settled state). Row 2, the return fact — three candidates, because T133's word is
                 // still open with the Design Director.
-                Vector2 riskV = riskPays.GetPreferredValues("RISK $13,639", Unconstrained, 0f);
-                Vector2 stakeV = riskPays.GetPreferredValues("STAKE $13,639", Unconstrained, 0f);
-                Vector2 paysV = riskPays.GetPreferredValues("PAYS $73,318,376,502", Unconstrained, 0f);
-                Vector2 returnedV = riskPays.GetPreferredValues("RETURNED $73,318,376,502", Unconstrained, 0f);
-                Vector2 paidV = riskPays.GetPreferredValues("PAID $73,318,376,502", Unconstrained, 0f);
+                Vector2 riskV = riskPays.GetPreferredValues(FxRiskWorst, Unconstrained, 0f);
+                Vector2 stakeV = riskPays.GetPreferredValues(FxStakeWorst, Unconstrained, 0f);
+                Vector2 paysV = riskPays.GetPreferredValues(FxPaysWorst, Unconstrained, 0f);
+                Vector2 returnedV = riskPays.GetPreferredValues(FxReturnedWorst, Unconstrained, 0f);
+                Vector2 paidV = riskPays.GetPreferredValues(FxPaidWorst, Unconstrained, 0f);
 
                 Debug.Log($"[T144] RISK worst case 'RISK $13,639' = {riskV.x:0.0}w x {riskV.y:0.0}h — " +
                           (riskV.x <= boxW
@@ -754,8 +755,8 @@ namespace SBR.Tests.EditMode
                 // font-face check above does), so a ruling could be made on numbers this instrument
                 // produced while naming a player and a progress line the surface cannot actually show.
                 // That is exactly how it went unnoticed.
-                need.text = "ONE TEAM BLANKED";
-                progress.text = "CLEAN-SHEET PATH LIVE";
+                need.text = FxNeedWidest;
+                progress.text = FxProgressWidest;
                 float liveInk = need.preferredHeight + progress.preferredHeight;
                 float liveNeed = liveInk + 8f;   // T24's own margin: 4px top pad + the row's bottom breathing
                 Debug.Log($"[T144] live row ink = {liveInk:0.0}px (NEED {need.preferredHeight:0.0} + " +
@@ -832,10 +833,7 @@ namespace SBR.Tests.EditMode
                 // T90-am's widest compact statement for the compact line.
                 // Bound to locals and logged FROM the locals: the first cut of this instrument logged
                 // one string name while measuring another, which is the phantom problem one layer down.
-                const string CompactProbe = "LANYARD TO SCORE";
-                const string NeedWidest = "ONE TEAM BLANKED";
-                const string ProgressWidest = "CLEAN-SHEET PATH LIVE";
-                Vector2 compactV = compact.GetPreferredValues(CompactProbe, 100000f, 0f);
+                Vector2 compactV = compact.GetPreferredValues(FxCompactProbe, 100000f, 0f);
                 // NOT T24's 'MARCUS VALE TO SCORE': T69/G1 retired the full-name form and
                 // SweatActiveLegModel.cs:551 emits $"{Surname(...)} TO SCORE", so that string is a
                 // PHANTOM the surface can no longer produce (it measures 300.3 against a 261.0 box and
@@ -852,8 +850,8 @@ namespace SBR.Tests.EditMode
                 // method that returns T90-am's NEED fallback above (:474) — one market's real row, not
                 // two worst cases from different markets. Same as the NEED phantom, height here is
                 // string-independent; the WIDTH is why this one matters too.
-                Vector2 needV = need.GetPreferredValues(NeedWidest, 100000f, 0f);
-                Vector2 progV = progress.GetPreferredValues(ProgressWidest, 100000f, 0f);
+                Vector2 needV = need.GetPreferredValues(FxNeedWidest, 100000f, 0f);
+                Vector2 progV = progress.GetPreferredValues(FxProgressWidest, 100000f, 0f);
 
                 Debug.Log($"[T147] column {columnH:0.0} = header {headerH:0.0} + {slotsNow} x pitch "
                           + $"{pitchNow:0.0} + footer {footerH:0.0}");
@@ -863,9 +861,9 @@ namespace SBR.Tests.EditMode
                 // extent verdict. The compact statement's own extent belongs to the T84 sweep.
                 Debug.Log($"[T147] compact  line box {compactV.y:0.0}h at the compact size (height probe; "
                           + $"width {compactV.x:0.0} is NOT this slot's worst case — see the T84 sweep)");
-                Debug.Log($"[T147] NEED     '{NeedWidest}' {needV.x:0.0}w x {needV.y:0.0}h "
+                Debug.Log($"[T147] NEED     '{FxNeedWidest}' {needV.x:0.0}w x {needV.y:0.0}h "
                           + $"against box {need.rectTransform.sizeDelta.x:0.0}w (T90's band)");
-                Debug.Log($"[T147] progress '{ProgressWidest}' {progV.x:0.0}w x {progV.y:0.0}h "
+                Debug.Log($"[T147] progress '{FxProgressWidest}' {progV.x:0.0}w x {progV.y:0.0}h "
                           + $"against box {progress.rectTransform.sizeDelta.x:0.0}w");
 
                 const float T24Margin = 8f;   // T24's pinned margin: 4px top pad + the row's breathing
@@ -949,8 +947,8 @@ namespace SBR.Tests.EditMode
                 // infinities (T144's own note on this same call).
                 float riskBoxW = riskPays.rectTransform.sizeDelta.x;
                 float paysBoxW = pays.rectTransform.sizeDelta.x;
-                Vector2 riskV = riskPays.GetPreferredValues("RISK $13,639", 100000f, 0f);
-                Vector2 paysV = pays.GetPreferredValues("PAYS $73,318,376,502", 100000f, 0f);
+                Vector2 riskV = riskPays.GetPreferredValues(FxRiskWorst, 100000f, 0f);
+                Vector2 paysV = pays.GetPreferredValues(FxPaysWorst, 100000f, 0f);
 
                 Assert.LessOrEqual(riskV.x, riskBoxW,
                     $"RiskPays (row 1) worst case 'RISK $13,639' measures {riskV.x:0.0}px, which " +
@@ -981,9 +979,9 @@ namespace SBR.Tests.EditMode
                 // REPORT ONLY, never assert — T144's own standing: the layout call belongs to the
                 // Design Director, and a failing assert here would fail the suite for a design reason,
                 // not a code defect. The settled-state strings against each row's own 249.0px box.
-                Vector2 stakeV = riskPays.GetPreferredValues("STAKE $13,639", 100000f, 0f);
-                Vector2 returnedV = pays.GetPreferredValues("RETURNED $73,318,376,502", 100000f, 0f);
-                Vector2 paidV = pays.GetPreferredValues("PAID $73,318,376,502", 100000f, 0f);
+                Vector2 stakeV = riskPays.GetPreferredValues(FxStakeWorst, 100000f, 0f);
+                Vector2 returnedV = pays.GetPreferredValues(FxReturnedWorst, 100000f, 0f);
+                Vector2 paidV = pays.GetPreferredValues(FxPaidWorst, 100000f, 0f);
 
                 Debug.Log($"[T147] row 1 settled 'STAKE $13,639' = {stakeV.x:0.0}w — " +
                           (stakeV.x <= riskBoxW
@@ -1060,8 +1058,8 @@ namespace SBR.Tests.EditMode
                 // trailing preposition. The DD asked whether it stops on "AT".
                 foreach ((string primary, string fallback) in new[]
                 {
-                    ("3+ GOALS APART AT FULL TIME", "3+ GOALS APART AT FT"),
-                    ("2 GOALS APART AT FULL TIME", "2 GOALS APART AT FT"),
+                    (FxMargin3Primary, FxMargin3Fallback),
+                    (FxMargin2Primary, FxMargin2Fallback),
                 })
                 {
                     float wp = need.GetPreferredValues(primary, 100000f, 0f).x;
@@ -1323,6 +1321,159 @@ namespace SBR.Tests.EditMode
             {
                 Object.DestroyImmediate(go);
             }
+        }
+
+        // ---- THE MEASURED-FIXTURE TABLE, and the pin that guards it (T158) ------------------
+        //
+        // This lane shipped THREE fixtures measuring strings the product cannot emit — `MARCUS VALE
+        // TO SCORE`, retired by T69, and the `LIVE • ...` progress form, which is canon in the
+        // design-system components and was never implemented. All three were green throughout, because a fixture
+        // string is not asserted against anything. These constants are the single source, and
+        // T158 asserts every one of them against the T84 pool for its slot.
+        internal const string FxNeedWidest = "ONE TEAM BLANKED";
+        internal const string FxProgressWidest = "CLEAN-SHEET PATH LIVE";
+        // WAS `LANYARD TO SCORE` UNTIL T158 CAUGHT IT — a NEED-shaped string measured against the
+        // COMPACT slot, which renders the scorer arm as `{SURNAME} ANYTIME`. A fourth phantom, found
+        // by the pin on its first run and in this seat's own instrument. Height is
+        // string-independent so no routed number moves; the width in that log line was already
+        // labelled as not being the slot's worst case.
+        internal const string FxCompactProbe = "PAVEMENT ANYTIME";
+        internal const string FxRiskWorst = "RISK $13,639";
+        internal const string FxStakeWorst = "STAKE $13,639";
+        internal const string FxPaysWorst = "PAYS $73,318,376,502";
+        internal const string FxReturnedWorst = "RETURNED $73,318,376,502";
+        internal const string FxPaidWorst = "PAID $73,318,376,502";
+        internal const string FxMargin3Primary = "3+ GOALS APART AT FULL TIME";
+        internal const string FxMargin3Fallback = "3+ GOALS APART AT FT";
+        internal const string FxMargin2Primary = "2 GOALS APART AT FULL TIME";
+        internal const string FxMargin2Fallback = "2 GOALS APART AT FT";
+
+        /// <summary>Every string a layout test measures AS EVIDENCE, paired with the slot it is
+        /// measured against. <see cref="T158_every_measured_fixture_string_is_in_the_T84_pool_for_its_slot"/>
+        /// asserts each one is renderable in that slot.
+        ///
+        /// <para><b>Deliberately NOT covered: stress content.</b>
+        /// <c>Zone_rects_are_unchanged_when_text_content_changes_dramatically</c> assigns absurd
+        /// strings ON PURPOSE — its subject is that the rects do not move whatever the content, so an
+        /// unrenderable string is the point rather than a defect. Same for the punch-overlay test's
+        /// long matchup line. Those are exempt BY NAME here rather than by silence, so a later reader
+        /// can see they were considered.</para></summary>
+        internal static readonly (string Slot, string Text)[] MeasuredFixtures =
+        {
+            ("LegRowNeed0", FxNeedWidest),
+            ("LegRowProgress0", FxProgressWidest),
+            ("LegRowLine0", FxCompactProbe),
+            ("RiskPays", FxRiskWorst),
+            ("RiskPays", FxStakeWorst),
+            ("Pays", FxPaysWorst),
+            ("Pays", FxReturnedWorst),
+            ("LegRowNeed0", FxMargin3Primary),
+            ("LegRowNeed0", FxMargin3Fallback),
+            ("LegRowNeed0", FxMargin2Primary),
+            ("LegRowNeed0", FxMargin2Fallback),
+        };
+
+        /// <summary>Strings measured DELIBERATELY BEFORE THEY EXIST — candidates, not fixtures.
+        ///
+        /// <para>`T84`'s candidate instrument exists for exactly this and says so: <i>"the sweep's
+        /// pools may hold only strings the code can already emit, and A CANDIDATE IS BY DEFINITION
+        /// ONE IT CANNOT."</i> Measure-before-you-author is a precondition on this lane, so a rule
+        /// that every measured string must be in the pool would forbid the practice it depends on.
+        ///
+        /// <para><b>The assertion is INVERTED for these, not waived.</b> A candidate must be ABSENT
+        /// from the pool. Once it is adopted the code can emit it, it enters the pool, and this
+        /// table is then wrong — so the pin fails and the entry moves to
+        /// <see cref="MeasuredFixtures"/>. Neither table can rot silently.</para></summary>
+        internal static readonly (string Slot, string Text, string Why)[] MeasuredCandidates =
+        {
+            ("Pays", FxPaidWorst,
+             "T133's rung-2 candidate. Measured at 235.8px against the 249.0 box (13.2px spare, more "
+             + "headroom than the incumbent PAYS), but NOT adopted: batch 108 rejected it for "
+             + "colliding at the root with PAY $60, and that copy call is still open with the DD. "
+             + "The surface cannot emit it, and that is correct."),
+        };
+
+        /// <summary>EVERY STRING A LAYOUT TEST MEASURES MUST BE RENDERABLE IN THE SLOT IT IS MEASURED
+        /// AGAINST. Ordered by Allen after this lane shipped three phantom fixtures in one file.
+        ///
+        /// <para>The T84 pool is the enumerated set of strings each slot can actually produce. A
+        /// measured string missing from it means either the fixture is a phantom or the pool is
+        /// incomplete — and both are findings, which is why this asserts rather than logs.</para>
+        ///
+        /// <para><b>The pool lives in another assembly and is reached by reflection.</b>
+        /// <c>SBR.Tests.EditMode</c> does not reference <c>SBR.Game.Editor</c> and deliberately still
+        /// does not — a guard is not worth a build-graph change. <b>A lookup that fails must FAIL THE
+        /// PIN, never skip it:</b> a guard that passes while blind is exactly the defect class this
+        /// pin exists to close, and this file has three examples of it.</para></summary>
+        [Test]
+        public void T158_every_measured_fixture_string_is_in_the_T84_pool_for_its_slot()
+        {
+            System.Type sweep = System.Type.GetType("SBR.EditorTools.TvExtentSweep, SBR.Game.Editor");
+            Assert.IsNotNull(sweep,
+                "could not load SBR.EditorTools.TvExtentSweep from SBR.Game.Editor — the pin cannot "
+                + "see the pool it is meant to check, and a pin that cannot see its subject must fail "
+                + "rather than pass.");
+            FieldInfo casesField = sweep.GetField("Cases",
+                BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.IsNotNull(casesField,
+                "TvExtentSweep.Cases not found by reflection — renamed? The pin fails rather than "
+                + "silently checking nothing.");
+            var cases = (System.Array)casesField.GetValue(null);
+            Assert.IsNotNull(cases, "TvExtentSweep.Cases read as null");
+            Assert.Greater(cases.Length, 0, "TvExtentSweep.Cases is EMPTY — nothing to check against");
+
+            // The pool is an array of value tuples (slot, source, strings). Read the fields by name
+            // so a reordering of the tuple cannot silently repoint this at the wrong member.
+            var pool = new Dictionary<string, HashSet<string>>();
+            foreach (object row in cases)
+            {
+                System.Type rt = row.GetType();
+                var slot = (string)rt.GetField("Item1").GetValue(row);
+                var strings = (string[])rt.GetField("Item3").GetValue(row);
+                if (slot == null || strings == null) continue;
+                if (!pool.TryGetValue(slot, out HashSet<string> set))
+                    pool[slot] = set = new HashSet<string>();
+                foreach (string str in strings) set.Add(str);
+            }
+            Debug.Log($"[T158] pool read: {pool.Count} slots, "
+                      + $"{pool.Values.Sum(v => v.Count)} enumerated strings");
+
+            var missing = new List<string>();
+            foreach ((string slot, string text) in MeasuredFixtures)
+            {
+                if (!pool.TryGetValue(slot, out HashSet<string> set))
+                {
+                    missing.Add($"slot '{slot}' has NO POOL AT ALL (measuring '{text}')");
+                    continue;
+                }
+                if (set.Contains(text)) continue;
+                // Name a near neighbour so the report says what the slot CAN render, not merely
+                // what it cannot.
+                string nearest = set.OrderBy(x => Mathf.Abs(x.Length - text.Length))
+                                    .FirstOrDefault() ?? "(pool empty)";
+                missing.Add($"'{text}' is not renderable in '{slot}' "
+                            + $"({set.Count} strings pooled there; e.g. '{nearest}')");
+            }
+
+            // Candidates: the assertion inverts. A candidate found IN the pool has been adopted,
+            // and the finding is that this table is out of date rather than that anything is broken.
+            foreach ((string slot, string text, string why) in MeasuredCandidates)
+            {
+                bool inPool = pool.TryGetValue(slot, out HashSet<string> cset) && cset.Contains(text);
+                Debug.Log($"[T158] candidate '{text}' in '{slot}' :: "
+                          + (inPool ? "NOW IN THE POOL — adopted" : "absent, as a candidate should be")
+                          + $" · {why}");
+                Assert.IsFalse(inPool,
+                    $"'{text}' is listed as a CANDIDATE for '{slot}' but the pool now contains it, so "
+                    + "the surface can emit it and it is no longer a candidate. Move it to "
+                    + "MeasuredFixtures rather than leaving this table stale.");
+            }
+
+            foreach (string m in missing) Debug.Log($"[T158] PHANTOM {m}");
+            Assert.IsEmpty(missing,
+                "a layout test measures a string its slot cannot render. Either the fixture is a "
+                + "phantom or the T84 pool is incomplete; BOTH are findings and neither is fixed by "
+                + "narrowing this assertion.\n  " + string.Join("\n  ", missing));
         }
 
         /// <summary>The footer's BUILT height, read off its two money rows.
