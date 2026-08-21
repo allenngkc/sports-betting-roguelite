@@ -30,10 +30,15 @@ or the stage shows a ticket card, the frame is not of this subject.
    both are in one frame.**
 3. **`E3` carries a LIVE leg row and the footer TOGETHER.** A frame of the footer alone does not show
    this change — the height came from the leg rows and the cost lands there.
-4. **`E1` carries the alignment arm** (`T147-am2`): left/left as built, plus the opposite-anchor arm,
-   on one ruler.
+4. **The alignment arm** (`T147-am2`): left/left as built, plus the opposite-anchor arm, on one ruler.
 5. **Read the alignment on the SETTLED state.** `RISK`/`PAYS` are both four characters and align
    either way; `STAKE`/`RETURNED` are five and eight, and that is where left/left can go ragged.
+
+> **AMENDED 2026-08-20, BEFORE THE FRAMES EXIST.** Conditions 4 and 5 contradicted each other as
+> written: 4 put the alignment arm on **`E1`**, and `E1` is the **LIVE** pair (`RISK $1,234` /
+> `PAYS $12,340`, `T74-am6`'s case), while 5 requires the **SETTLED** state. **The arm belongs
+> wherever `STAKE`/`RETURNED` renders — `E2` — or `E1` carries both states.** Left as written it
+> would have produced an alignment ruler that cannot show the ragged case it exists to test.
 
 ---
 
@@ -54,16 +59,42 @@ tail case."*
 
 ## 3. `E2` — the enumerated fact floor, forced
 
-- **BINARY — does the ladder FIRE?** `T148` already establishes `RETURNED $73,318,376,502` overruns
-  its own full-width row by 51.9px. **So this frame shows rung 2 or it shows an overrun**, and either
-  is informative.
-- **BINARY — does rung 2 RENDER?** `PAID` measures 235.8px against 249.0 (13.2px spare) — more
-  headroom than the incumbent `PAYS`.
-- **DIRECTION — do the two rungs read as ONE slot?** That is `T133-am`'s stated question and it is
-  the whole reason a frame was asked for. **Not *"does an $73bn cash-out look right."***
-- **THE COPY CALL — `PAID` against `PAY $60`.** `T133-am2` left it live and unanswered. **I will rule
-  it on this frame and not before.** My recorded position is that the width case is closed and the
-  root collision is the only open question; **TV raised it, TV was right to, and it decides here.**
+> **AMENDED 2026-08-20, BEFORE THE FRAMES EXIST — and the reason is a PRODUCT FACT, not evidence.**
+> **`T133`'s ladder rung 2 is UNBUILT**, so the only settled state the product has is `RETURNED` with
+> its overrun (`T148`). **`PAID` will not appear on any true frame.** Allen ruled *"shoot what exists
+> now — the DD rules the copy on a true frame rather than waiting on a build."*
+>
+> **The clauses below as first written are unexecutable**: they asked whether rung 2 renders and
+> whether the two rungs read as one slot, and neither can be seen. Amending now is legitimate for one
+> reason only — **the frames do not exist yet, and nothing here is shaped by them.**
+
+- **BINARY — `T148` ON A FRAME FOR THE FIRST TIME.** `RETURNED $73,318,376,502` overruns its own
+  full-width row by 51.9px, measured. **This is that overrun rendered on a true settled footer** —
+  and until now `T148` has been arithmetic.
+- **THE COLLISION ENVIRONMENT — and this is what a `RETURNED` frame CAN settle.** TV's objection is
+  that `PAID` collides at the root with `PAY $60` **on the same screen**. Whether that matters is a
+  question about *the screen*, and the screen is fully visible without `PAID` rendered:
+  - **BINARY — are `PAY $60` and the footer's right half ever in ONE READ?** Separation, and whether
+    the eye takes them together at review distance.
+  - **DIRECTION — does TREATMENT already separate the two money directions?** The footer is
+    money-amber and large; the chrome row is dim, small, and in another register. **If the treatment
+    already distinguishes them, the WORD is carrying less than the objection assumes.**
+- **THE COPY CALL — RULED ON THIS FRAME, per Allen.** The width case is closed (`PAID` 235.8px,
+  13.2px spare, more headroom than the incumbent `PAYS`); the root collision is the only open
+  question; **the frame supplies the environment and I rule the string on it.**
+- **MY LEAN, ON THE RECORD AND NOT BINDING: I expect the collision to be REAL BUT NOT DISQUALIFYING,
+  and I expect to rule `PAID`.** `PAY` and `PAID` share a root and point in opposite money
+  directions, which is a genuine defect of `T69`/`T70`'s family — but they live at different sizes in
+  different registers. **This seat's leans get overturned by frames more often than confirmed, which
+  is exactly why it is written down.**
+- **THE FALLBACK, NAMED NOW SO IT IS NOT IMPROVISED: `TOOK`.** Rung 2's only population is
+  **cashed-out** tickets — `RETURNED $0` always fits, so a dead ticket never reaches it — and *took*
+  is accurate for an accepted offer with no root collision anywhere on the surface. **Its cost is
+  voice: it moves the ledger's neutral framing onto the player's action, which `S38`'s pair
+  deliberately avoids.**
+- **STATED AS THE LIMIT OF THIS EVIDENCE: no frame will show how `PAID` READS.** The string is ruled
+  on environment plus measurement. **When the ladder builds, rung 2 gets a CONFIRMATION frame — not
+  a re-decision** — and if it reads wrong there, that is a new finding and not a reopening.
 
 ## 4. `E3` — the leg rows, where the cost landed
 
