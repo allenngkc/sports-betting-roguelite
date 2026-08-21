@@ -2,7 +2,7 @@
 
 **Written at the DD seat**, during the hold on Allen's calls. **Read at this seat on frames already
 docked — no capture was commissioned.** **Destination table:** TV — match theater (`T95-cl`, `T114`,
-`G1-am`).
+`G1-am15`).
 
 Evidence: `dd-import/tv-t95-transitions-2026-08-13/`, frames `…t68am-accept-slot__frame008` and
 `__frame029`.
@@ -56,7 +56,7 @@ on a frame — **the frame now exists**, so unlike §5's dead ticket this one is
 No strike is visible, but a thin rule may not survive this grade — **the strike is not judged here;
 the word is legible and it is false.**
 
-## `G1-am` — the scorer residual re-scoped, and the seed is known
+## `G1-am15` — the scorer residual re-scoped, and the seed is known
 
 **The sweep says `{SURNAME} SCORES` is "still unmeasured across the twelve surnames." That half was
 discharged at batch 63** — the build comment states it: *measured, all twelve against 261.0; rung 2
