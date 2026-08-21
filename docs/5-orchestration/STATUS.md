@@ -1,6 +1,23 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-20, cycle 431 (heartbeat).** All
+**Keeper-era heartbeat stamp: 2026-08-20 20:50, cycle 432 (INCIDENT -
+Orca outage ~01:00-20:40, ~20h, the longest yet).** Recovery: monitors
+re-armed FIRST (heartbeat bvatis42h, watcher v45 bsivo0ibe); Orca
+relaunched; the detached Unity shoot SURVIVED the outage and finished
+(48 frames in artifacts); TV's seat was resumed during the gap (now
+term_24e7ecbd) and kept working - T147 built, shot, alignment settled on
+measurement (right-anchored loses 43.9px to the mask; left/left stands),
+now re-shooting the settled state truthfully per Allen's 'shoot what
+exists now' (the T133 rung-2 ladder is unbuilt, so RETURNED's overrun
+IS the settled state); DD resumed BY SESSION ID (term_48211c80 - not
+--continue, which would twin the orchestrator), markets resumed
+(term_496f4ff0), both at Opus max. The held 'frames are docked' draft
+died with the old DD terminal - the dock completes with TV's re-shoot,
+then the read fires. Merge of TV's gap commits waits on its report.
+With Allen: the T140 fork, both spec approvals, the hold's structure,
+research 8-9.
+
+*(prior stamp, cycle 431 (heartbeat):)* All
 nine market kinds AUTHORED (G1 discharged pending measurement; T126
 withdrawn on T70-am; the '1 GOALS' defect left alone - every remedy
 reads worse). TV builds the composition with suites + the nine-kind
