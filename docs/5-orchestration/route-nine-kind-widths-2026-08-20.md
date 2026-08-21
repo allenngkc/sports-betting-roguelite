@@ -46,12 +46,71 @@ dropped (`G1`'s own convention, `T69`), and it caps at 12 characters. The sweep 
 code. **The 33-character figure is not the worst case; it is longer than anything the engine emits**
 — so the headroom §5 reasoned from was never there.
 
+## THE PER-KIND PASS — RUN 2026-08-20. **ONE KIND OF NINE CLEARS.**
+
+Complete, not capped: 253 overrunning forms listed, no truncation line. **Absence from this list now
+means the kind clears**, which is what the first pass could not say.
+
+| kind | slot | forms over | worst form | measured vs box | narrowest overrun |
+|---|---|---|---|---|---|
+| **CorrectScore** | — | **0** | — | **CLEARS EVERYWHERE** | — |
+| TotalGoalsOddEven | NEED | 2 | `EVEN TOTAL AT FULL TIME` | 326.5 vs 261.0 — **over 65.5** | 53.9 |
+| WinningMargin | NEED | 4 | `3+ GOALS APART AT FULL TIME` | 380.8 vs 261.0 — **over 119.8** | 7.8 |
+| DoubleChance | compact | 9 | `SPREADSHEETS OR DRAW` | 170.3 vs 147.0 — **over 23.3** | **0.4** |
+| DoubleChance | NEED | 40 | `SPREADSHEETS TO WIN OR DRAW` | 417.6 vs 261.0 — **over 156.6** | 33.5 |
+| Handicap | NEED | 50 | `SPREADSHEETS WITHIN 1 GOAL` | 386.2 vs 261.0 — **over 125.2** | 3.7 |
+| **TeamTotal** ×3 | compact | 60 | `SPREADSHEETS UNDER 4.5 CORNERS` | 240.8 vs 147.0 — **over 93.8** | 11.4 |
+| **TeamTotal** ×3 | NEED | 80 | `SPREADSHEETS UNDER 4.5 CORNERS` | 449.5 vs 261.0 — **over 188.5** | 18.1 |
+| PlayerMultiScorer | NEED | 6 | `PAVEMENT TO SCORE 2+` | 301.3 vs 261.0 — **over 40.3** | 6.4 |
+
+**`CorrectScore` is the only kind of the nine that clears in every slot.** It is also the only one
+whose forms carry no club name and no team noun — which is the pattern in the table, not a
+coincidence: **every overrunning kind is one that interpolates a CLUB.** The three grammar-breakers
+that do not (`CorrectScore`) clear; the one that names a quantity in words (`WinningMargin`,
+`TotalGoalsOddEven`) overrun on the LITERAL alone, with no club involved at all.
+
+### THE LADDER RESCUES SOME KINDS AND NOT OTHERS — and it is measured, not assumed
+
+Both rungs were pooled as independent strings, so each was measured on its own merits.
+
+- **`WinningMargin` — BOTH RUNGS OVERRUN.** Four forms over: two margins × two rungs. Even the
+  fallback `3+ GOALS APART AT FT` is over, by 7.8px at the narrowest. **The ladder does not save it.**
+- **`Handicap` — rung 2 rescues SHORT CLUBS ONLY.** `MUSKRATS WITHIN 1` is the WIDEST FITTING string
+  in the whole NEED band at 259.2px, with **1.8px spare**. Longer clubs overrun even at rung 2.
+- **`TotalGoalsOddEven` — the ladder saves it.** Only 2 of its 4 NEED forms overrun, so the `AT FT`
+  rung fits.
+
+### WHERE THE CEILING ALREADY SAT, BEFORE ANY OF THIS
+
+| slot | widest FITTING string | spare |
+|---|---|---|
+| compact 147.0px | `UNDER 10.5 CORNERS` (a pre-existing BARE total) | **2.8px** |
+| NEED 261.0px | `MUSKRATS WITHIN 1` (a Handicap rung 2) | **1.8px** |
+
+**Both boxes were already full to within about 2px before the nine kinds arrived.** There was no
+headroom to author into — which is the structural finding under all the numbers above, and it is why
+"plausibly inside the existing worst case" was never going to hold.
+
+### ⚠ A CORRECTION TO THIS LANE'S OWN FIRST REPORT
+
+TV first reported the compact box's 69 overrunning forms as **"all team-totals."** **That was wrong**,
+and wrong by exactly the mechanism this pass was run to remove: the first run capped at 40, all 40
+shown happened to be team-totals, and the lane extrapolated across the 29 it could not see.
+**60 are team-totals and 9 are `DoubleChance`.** The `0.4px` narrowest compact overrun belongs to
+`DoubleChance`, not to the team-totals, whose narrowest is 11.4px.
+
+The team-total conclusion itself SURVIVES — all 60 of its compact forms overrun, so no club makes
+that form fit — but it survives on this pass's measurement, not on the last one's arithmetic.
+**Absence from a capped list is not evidence, and the lane said otherwise once.**
+
 ### WHAT IS NOT ANSWERED, and it needs one more pass
 
-**The sweep reports widest-per-slot only, so this does not say which of the other eight kinds
-clear.** The widest is a team-total form in both boxes; whether `DoubleChance`, `Handicap`,
-`PlayerMultiScorer` and the three grammar-breakers fit is unmeasured. **Per-form attribution is one
-instrument change away** and this lane will take it on order.
+**ANSWERED by the per-kind pass above (2026-08-20).** The instrument now reports every overrunning
+form, not the widest per slot, and the cap is raised past the point where it bites.
+
+**What remains unmeasured:** the progress-line forms. `LegRowProgress0` shows no overrun and
+57.6px of spare at its widest, so nothing there is in question — recorded so that silence is read
+as measured rather than skipped.
 
 ### Flagged by the pooling pass, for this seat rather than the lane
 

@@ -1068,6 +1068,15 @@ namespace SBR.EditorTools
                     float worst = float.MinValue, worstTab = float.MinValue;
                     string worstS = "", worstTabS = "";
                     int laddered = 0;
+                    // T84-FORM/-FIT (this batch): nine market kinds are now pooled into these same
+                    // slots and the summary line below can only speak for the SLOT — "widest is X" —
+                    // which is exactly the number the DD cannot rule nine kinds against individually.
+                    // `perString` carries every set member's LADDER-SELECTED string and its TABULAR
+                    // width out of this loop unchanged, so the per-string report below is built from
+                    // the identical `GetPreferredValues` call and the identical digit screen the
+                    // summary line uses to decide `over` — never a second measurement that could
+                    // disagree with the first.
+                    var perString = new List<(string s, float tab)>(strings.Length);
                     foreach (string composed in strings)
                     {
                         // LADDER SELECTION, applied before measurement so the sweep tests what the
@@ -1091,6 +1100,7 @@ namespace SBR.EditorTools
                         foreach (char c in s)
                             if (c >= '0' && c <= '9') tab += tabularPx - digitPx[c - '0'];
                         if (tab > worstTab) { worstTab = tab; worstTabS = s; }
+                        perString.Add((s, tab));
                     }
 
                     bool over = worstTab > box;
@@ -1120,6 +1130,54 @@ namespace SBR.EditorTools
                               $"{(over ? $"OVERRUNS by {worstTab - box:0.0}px" : $"fits, {box - worstTab:0.0}px spare")}  " +
                               $"{(laddered > 0 ? $"[{laddered} forms took the ladder's next rung] " : "")}" +
                               $"· set: {source}");
+
+                    // T84-FORM / T84-FIT: attribution the line above cannot give. "Widest is X" was
+                    // enough while a slot held one market kind's forms; now nine kinds share this box
+                    // and the DD has to rule on each of the nine, not on the slot. This walks the same
+                    // `perString` pairs recorded above — same call, same ladder rung, same tabular
+                    // screen the summary just used — so a form reported here as overrunning can never
+                    // disagree with whether the slot itself was found to overrun.
+                    var seen = new HashSet<string>();
+                    var overrunners = new List<(string s, float tab)>();
+                    float fitWidest = float.MinValue;
+                    string fitWidestS = "";
+                    foreach ((string s, float tab) in perString)
+                    {
+                        if (!seen.Add(s)) continue; // closed club/surname pools repeat literals
+                        if (tab > box) overrunners.Add((s, tab));
+                        else if (tab > fitWidest) { fitWidest = tab; fitWidestS = s; }
+                    }
+                    overrunners.Sort((a, b) => b.tab.CompareTo(a.tab)); // widest first
+
+                    // 400, not 40: the first per-form run capped at 40 and hid 142 of 182
+                    // overrunning NEED forms, which is enough to name the worst offender and NOT
+                    // enough to say which of nine kinds clear — the question the pass exists for.
+                    // Absence from a CAPPED list means nothing; absence from a complete one is the
+                    // answer. The dropped-count line below stays regardless, because a cap that ever
+                    // does bite must still say so.
+                    const int FormCap = 400;
+                    int shown = Mathf.Min(overrunners.Count, FormCap);
+                    for (int i = 0; i < shown; i++)
+                        Debug.Log($"[T84-FORM] {slot,-16} '{Show(overrunners[i].s)}'  " +
+                                  $"{overrunners[i].tab:0.0}px vs box {box:0.0}px  " +
+                                  $"OVERRUNS by {overrunners[i].tab - box:0.0}px");
+                    if (overrunners.Count > FormCap)
+                    {
+                        // NO SILENT TRUNCATION. A cap that hides its own effect reads as "that was
+                        // all of them" — the exact false all-clear this instrument exists to prevent
+                        // — so the drop states its own count and names the narrowest thing it dropped.
+                        int dropped = overrunners.Count - FormCap;
+                        float narrowest = overrunners[overrunners.Count - 1].tab; // list is widest-first
+                        Debug.Log($"[T84-FORM] {slot,-16} {dropped} further overrunning forms not " +
+                                  $"listed, narrowest {narrowest:0.0}px");
+                    }
+
+                    // Where the ceiling actually sits inside the box — half of what a per-kind ruling
+                    // needs is knowing how much room the surviving forms leave, not just which forms
+                    // don't.
+                    if (fitWidest > float.MinValue)
+                        Debug.Log($"[T84-FIT] {slot,-16} widest fitting '{Show(fitWidestS)}' " +
+                                  $"{fitWidest:0.0}px, {box - fitWidest:0.0}px spare");
                 }
 
                 // The two-into-one-box members: §6.1's money control and the leg row's three spans
