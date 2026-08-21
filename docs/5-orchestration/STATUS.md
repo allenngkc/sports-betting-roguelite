@@ -1,6 +1,22 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-21, cycle 442 - THE T140 FORK IS
+**Keeper-era heartbeat stamp: 2026-08-21, cycle 443 - PHASE 1 STAFFED.**
+The DD's three rulings landed (batch 167: the prose anchor under N live
+legs, the win-probability's seed, the leg counter) - phase 1 of arm A is
+unblocked and a FRESH ENGINE LANE is seated: worktree `theater-engine`,
+contract docs/handoffs/theater-engine.md (owns engine/** + the DLL;
+byte-identity on every non-same-match ticket shape; a new gate for the
+pair), lead at Opus max (term_059ec14b), plan-before-build. Watcher v47
+(bzidr28c8) watches four seats. Also: markets' console commit 1 MERGED
+(the page + sheet, 30d9e71) with three DD-routed calls (one product
+loss: the per-side stats block has no home); commit 2 building (the
+grammar + K16). TV on T91 (third DNS cut tonight, resumed). DD authoring
+the neither-branch flavour lines. AUTONOMOUS DECISION (veto window): the
+new worktree + lead for phase 1 - Allen chose the LARGE arm knowing the
+cost; markets is committed to the console, so the two run parallel.
+With Allen: the hold's structure (T127), research 8-9.
+
+*(prior stamp, cycle 442 - THE T140 FORK IS
 RULED: (A), ONE TELLING.** Allen took the DD's recommendation - one
 telling per (ticket, fixture); the LARGE arm (three phases, phase 1 in
 the engine - needs an engine-owning lane). DD writing the arm-A plan
