@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-20, cycle 440 (heartbeat).** Three
+**Keeper-era heartbeat stamp: 2026-08-21, cycle 441 (heartbeat).** Three
+lanes building, all delegated: markets on the console composer (pool
+gate verified not trusted; page assertion sweeps not samples); TV on T91
+(the phantom-string pin merged at 060c40c - it caught a fourth phantom
+on its first run); DD sweeping every register prefix with the
+inline-aware ID scan (G1's five collisions re-keyed, batch 160). Nothing
+uncommitted. With Allen: the T140 fork (A/B), the hold's structure,
+research 8-9.
+
+*(prior stamp, cycle 440 (heartbeat):)* Three
 lanes building: markets on the console (composer-first - K16 forces it;
 the console-read dock copied to its worktree; SPECIMEN ruled
 illustrative by Allen), TV on the phantom-string pin, DD delivered the
