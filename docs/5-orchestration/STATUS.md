@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-20 20:50, cycle 432 (INCIDENT -
+**Keeper-era heartbeat stamp: 2026-08-20, cycle 433 (heartbeat).** Post-
+recovery steady: DD on the ledger (batches 143-145 landed since
+recovery - the pre-commitment amended ahead of the frames, a latent
+console beat-prefix defect caught for the console build's dispatch, the
+offline width route's wrong-face-right-name warning; 146 mid-write); TV
+re-shooting the settled state with a new shutter assertion (the footer
+must have rendered before the shutter opens); markets idle. TV's five
+gap commits merge on its report. With Allen: the T140 fork, both spec
+approvals, the hold's structure, research 8-9.
+
+*(prior stamp, cycle 432 (INCIDENT -
 Orca outage ~01:00-20:40, ~20h, the longest yet).** Recovery: monitors
 re-armed FIRST (heartbeat bvatis42h, watcher v45 bsivo0ibe); Orca
 relaunched; the detached Unity shoot SURVIVED the outage and finished
