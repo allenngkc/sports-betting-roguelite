@@ -1013,6 +1013,256 @@ namespace SBR.Tests.EditMode
             }
         }
 
+        /// <summary>The four measurements the Design Director routed at batches 151 and 153, taken
+        /// through the SURFACE'S OWN entry points rather than through a replica of them.
+        ///
+        /// <para><c>FitToColumn</c> and <c>FitOrFallback</c> are private statics on
+        /// <c>TvSweatScreen</c> and are reached by reflection. A reimplementation that drifted from
+        /// the real method would produce numbers that look right and mean nothing, and every one of
+        /// these questions is about what the surface ACTUALLY does to a string.</para>
+        ///
+        /// <para>The two slots take DIFFERENT entry points, which is the part that is easy to get
+        /// wrong: the compact statement is assigned through <c>FitToColumn</c> directly (`:2985`),
+        /// while NEED goes through <c>FitOrFallback</c> (`:3064`), whose own fall-through truncates
+        /// the FALLBACK when both rungs miss.</para>
+        ///
+        /// <para>REPORT-ONLY. The rulings are the DD's.</para></summary>
+        [Test]
+        public void T157_the_routed_truncation_measurements_for_the_blocked_kinds()
+        {
+            var go = new GameObject("T157Truncation");
+            try
+            {
+                var screen = BuildScreen(go);
+                TMP_Text need = FindChild<TMP_Text>(screen, "LegRowNeed0");
+                TMP_Text line = FindChild<TMP_Text>(screen, "LegRowLine0");
+                Assert.IsNotNull(need, "LegRowNeed0 not found");
+                Assert.IsNotNull(line, "LegRowLine0 not found");
+                Assert.IsNotNull(need.font, "no font resolved — a measurement in the fallback face is void");
+                Assert.IsTrue(need.font.name.Contains("Encode"),
+                    $"measured in '{need.font.name}', not Encode Sans — the same mistake T20 made once");
+
+                MethodInfo fitToColumn = typeof(TvSweatScreen).GetMethod("FitToColumn",
+                    BindingFlags.NonPublic | BindingFlags.Static);
+                MethodInfo fitOrFallback = typeof(TvSweatScreen).GetMethod("FitOrFallback",
+                    BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.IsNotNull(fitToColumn, "TvSweatScreen.FitToColumn not found by reflection — renamed?");
+                Assert.IsNotNull(fitOrFallback, "TvSweatScreen.FitOrFallback not found by reflection — renamed?");
+
+                float needBox = need.rectTransform.sizeDelta.x;
+                float lineBox = line.rectTransform.sizeDelta.x;
+                Debug.Log($"[T157] boxes :: NEED {needBox:0.0}px · compact {lineBox:0.0}px");
+
+                // ---- (1) WHAT THE MARGIN LINE TRUNCATES TO -------------------------------------
+                // Both WinningMargin NEED rungs overrun, so FitOrFallback falls through to
+                // FitToColumn(target, FALLBACK) and drops whole words from the end. FitToColumn's
+                // dangling-token cleanup matches only " v", " ·" and " —", so nothing strips a
+                // trailing preposition. The DD asked whether it stops on "AT".
+                foreach ((string primary, string fallback) in new[]
+                {
+                    ("3+ GOALS APART AT FULL TIME", "3+ GOALS APART AT FT"),
+                    ("2 GOALS APART AT FULL TIME", "2 GOALS APART AT FT"),
+                })
+                {
+                    float wp = need.GetPreferredValues(primary, 100000f, 0f).x;
+                    float wf = need.GetPreferredValues(fallback, 100000f, 0f).x;
+                    var rendered = (string)fitOrFallback.Invoke(null, new object[] { need, primary, fallback });
+                    float wr = need.GetPreferredValues(rendered, 100000f, 0f).x;
+                    string which = rendered == primary ? "RUNG 1"
+                                 : rendered == fallback ? "RUNG 2"
+                                 : "TRUNCATED";
+                    Debug.Log($"[T157-MARGIN] '{primary}' {wp:0.0} / '{fallback}' {wf:0.0} "
+                              + $"-> {which} '{rendered}' {wr:0.0}px vs box {needBox:0.0}px"
+                              + (rendered.EndsWith(" AT") ? "  ** ENDS ON THE DANGLING 'AT' **" : ""));
+                }
+
+                // ---- (2) DOUBLE CHANCE'S RUNGS -------------------------------------------------
+                // Club pool is TvExtentSweep's own ClubNouns, mirrored here because that array is
+                // private to the Editor assembly. Uppercased the way the surface uppercases it.
+                string[] clubs =
+                {
+                    "YAMS", "STARTUPS", "BRICKLAYERS", "LONGHAULERS", "MALLARDS", "SPREADSHEETS",
+                    "TURNIPS", "MIDDLEMEN", "REGULATORS", "PLUMBERS", "MEATBALLS", "AUDITORS",
+                    "FERRETS", "OVERHEADS", "GRAVEDIGGERS", "NOTARIES", "MUSKRATS", "ZAMBONIS",
+                    "LOOPHOLES", "REFUNDS",
+                };
+
+                int r1 = 0, r2 = 0, trunc = 0;
+                foreach (string c in clubs)
+                {
+                    string primary = $"{c} TO WIN OR DRAW", fallback = $"{c} WIN OR DRAW";
+                    var rendered = (string)fitOrFallback.Invoke(null, new object[] { need, primary, fallback });
+                    if (rendered == primary) r1++;
+                    else if (rendered == fallback) r2++;
+                    else { trunc++; Debug.Log($"[T157-DC-NEED] '{primary}' -> TRUNCATED '{rendered}'"); }
+                }
+                Debug.Log($"[T157-DC-NEED] {clubs.Length} clubs :: rung 1 {r1} · rung 2 {r2} · truncated {trunc}");
+
+                int compactTrunc = 0;
+                var lostNoun = new List<string>();
+                foreach (string c in clubs)
+                {
+                    string compact = $"{c} OR DRAW";
+                    var rendered = (string)fitToColumn.Invoke(null, new object[] { line, compact });
+                    if (rendered != compact)
+                    {
+                        compactTrunc++;
+                        if (!rendered.Contains("DRAW")) lostNoun.Add($"'{compact}' -> '{rendered}'");
+                    }
+                }
+                Debug.Log($"[T157-DC-COMPACT] {clubs.Length} clubs :: {compactTrunc} truncated; "
+                          + $"{lostNoun.Count} LOST THE WORD 'DRAW' — the token that says which market this is");
+                foreach (string ex in lostNoun) Debug.Log($"[T157-DC-COMPACT]   {ex}");
+
+                // ---- (3) THE SCORER OVERRUN'S SOURCE -------------------------------------------
+                // PlayerMultiScorer has NO fallback rung authored, so the fallback argument is null —
+                // that is the authored state, not an omission here. The shipped {SURNAME} TO SCORE is
+                // measured beside it to separate the surname's contribution from the " 2+" tail's.
+                string[] surnames =
+                {
+                    "LEDGER", "CINDER", "MUFFIN", "PAVEMENT", "COUPON", "WOBBLE",
+                    "GASKET", "PYLON", "KETCHUP", "LANYARD", "RACKET", "STAPLER",
+                };
+                int shippedOver = 0, newOver = 0;
+                float worstDelta = 0f;
+                foreach (string n in surnames)
+                {
+                    string shipped = $"{n} TO SCORE", multi = $"{n} TO SCORE 2+";
+                    float ws = need.GetPreferredValues(shipped, 100000f, 0f).x;
+                    float wm = need.GetPreferredValues(multi, 100000f, 0f).x;
+                    if (ws > needBox) shippedOver++;
+                    if (wm > needBox) newOver++;
+                    worstDelta = Mathf.Max(worstDelta, wm - ws);
+                    var rendered = (string)fitOrFallback.Invoke(null, new object[] { need, multi, null });
+                    if (rendered != multi)
+                        Debug.Log($"[T157-SCORER] '{multi}' {wm:0.0} -> '{rendered}'");
+                }
+                Debug.Log($"[T157-SCORER] {surnames.Length} surnames :: shipped '{{N}} TO SCORE' over box "
+                          + $"{shippedOver} · new '{{N}} TO SCORE 2+' over box {newOver} · widest ' 2+' "
+                          + $"tail cost {worstDelta:0.0}px — if shipped is 0 and new is not, the TAIL is "
+                          + "the cause and the surname is not");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
+        /// <summary>`T91`'s two numbers, owed to the Design Director since 2026-08-13 and routed at
+        /// batch 153 (`T91-am3`). `T91` needs no ruling — its ruling was made at `T91-am2`, batch 63.
+        /// It needs these.
+        ///
+        /// <para>REPORT-ONLY, and the clock number deliberately reports its own BOUND rather than a
+        /// single width: the DD's cell asks for the longest RENDERABLE form and says explicitly that
+        /// the box is "the quantity in doubt", so answering with the box would answer the wrong
+        /// question.</para></summary>
+        [Test]
+        public void T91_the_two_numbers_owed_since_batch_63()
+        {
+            var go = new GameObject("T91Numbers");
+            try
+            {
+                var screen = BuildScreen(go);
+                TMP_Text clock = FindChild<TMP_Text>(screen, "Clock");
+                Assert.IsNotNull(clock, "Clock not found");
+                Assert.IsNotNull(clock.font, "no font resolved — a measurement in the fallback face is void");
+                Assert.IsTrue(clock.font.name.Contains("Encode"),
+                    $"measured in '{clock.font.name}', not Encode Sans — the same mistake T20 made once");
+
+                // ---- NUMBER 1: the clock's LONGEST RENDERABLE FORM -----------------------------
+                // Enumerated from source, not from an observed manifest. Four producers:
+                //   TvSweatScreen.cs:2659/:3239  "PRE"
+                //   TvSweatScreen.cs:2049        "FT"          (also SweatFlavor.Clock on LegFinal)
+                //   TvSweatScreen.cs:2373        "{minute}'"   — SweatFlavor.Minute CAPS AT 89, and
+                //                                 says why: "the 90th minute belongs to the final
+                //                                 sequence's stoppage time"
+                //   TvSweatScreen.cs:2116        "90'+{_stoppageGoalCount}"
+                // The first three are bounded. THE FOURTH IS NOT BOUNDED BY ANY FORMATTER: :2115 is
+                // a bare ++ on each stoppage-time goal, reset at :2329/:2621/:2699 and capped
+                // nowhere. So "longest renderable" has no answer from the format alone — it is
+                // whatever the sim can score in stoppage time — and that IS the finding.
+                float box = clock.rectTransform.sizeDelta.x;
+                foreach (string form in new[] { "PRE", "FT", "89'" })
+                {
+                    float w = clock.GetPreferredValues(form, 100000f, 0f).x;
+                    Debug.Log($"[T91-CLOCK] bounded form '{form}' {w:0.0}px vs box {box:0.0}px — "
+                              + (w <= box ? $"fits, {box - w:0.0}px spare" : $"OVERRUNS by {w - box:0.0}px"));
+                }
+                for (int n = 1; n <= 12; n++)
+                {
+                    string form = $"90'+{n}";
+                    float w = clock.GetPreferredValues(form, 100000f, 0f).x;
+                    Debug.Log($"[T91-CLOCK] unbounded form '{form}' {w:0.0}px vs box {box:0.0}px — "
+                              + (w <= box ? $"fits, {box - w:0.0}px spare" : $"OVERRUNS by {w - box:0.0}px"));
+                }
+
+                // ---- NUMBER 2: element rects and their authored gaps ---------------------------
+                // Read off the built components in the CANVAS's local space, never from the
+                // constants — the point of the number is to catch the case where the two disagree.
+                // NOT `clock.canvas` — that resolves through the Graphic's canvas cache, which is
+                // null on a screen built in EditMode with no CanvasUpdateRegistry pass. Found by
+                // component instead.
+                //
+                // A COMMON space is required rather than each element's own anchoredPosition,
+                // because THE TWO GROUPS SIT UNDER DIFFERENT PARENTS: the ticket column's spans are
+                // children of the canvas root, while the scorebug's are children of its ZoneRoot
+                // (T46). Comparing their anchored positions directly would be comparing two
+                // coordinate systems and calling the difference a gap.
+                Canvas canvasComp = screen.GetComponentInChildren<Canvas>(true);
+                Assert.IsNotNull(canvasComp, "no Canvas under the screen — nothing to measure against");
+                var canvas = canvasComp.transform as RectTransform;
+                foreach (string group in new[] { "row", "scorebug" })
+                {
+                    string[] names = group == "row"
+                        ? new[] { "LegRowLine0", "LegRowPrice0", "LegRowState0" }
+                        : new[] { "Leg", "Matchup", "Clock" };
+                    float prevRight = float.NaN, prevYLo = float.NaN, prevYHi = float.NaN;
+                    string prevName = null;
+                    foreach (string nm in names)
+                    {
+                        TMP_Text t = FindChild<TMP_Text>(screen, nm);
+                        if (t == null) { Debug.Log($"[T91-RECT] {group}: {nm} NOT FOUND"); continue; }
+                        var corners = new Vector3[4];
+                        t.rectTransform.GetWorldCorners(corners);
+                        float lo = float.MaxValue, hi = float.MinValue;
+                        float ylo = float.MaxValue, yhi = float.MinValue;
+                        for (int i = 0; i < 4; i++)
+                        {
+                            Vector3 lp = canvas.InverseTransformPoint(corners[i]);
+                            lo = Mathf.Min(lo, lp.x); hi = Mathf.Max(hi, lp.x);
+                            ylo = Mathf.Min(ylo, lp.y); yhi = Mathf.Max(yhi, lp.y);
+                        }
+                        Debug.Log($"[T91-RECT] {group,-9} {nm,-14} x {lo,8:0.0}..{hi,8:0.0} (w {hi - lo,6:0.0})  "
+                                  + $"y {ylo,8:0.0}..{yhi,8:0.0}");
+                        if (prevName != null)
+                        {
+                            // A NEGATIVE x-gap is only a COLLISION if the two also share a y band.
+                            // Reported together for that reason: an x-overlap between elements on
+                            // different rows is a layout fact, not a defect, and reporting the one
+                            // without the other is how a number gets read as an alarm.
+                            bool yOverlap = ylo < prevYHi && yhi > prevYLo;
+                            float gap = lo - prevRight;
+                            Debug.Log($"[T91-GAP]  {group,-9} {prevName} -> {nm} :: x-gap {gap:0.0}px"
+                                      + (gap < 0f
+                                         ? (yOverlap
+                                            ? "  ** OVERLAP, and the y bands INTERSECT **"
+                                            : "  (x-overlap only — the y bands are DISJOINT, so they do not collide)")
+                                         : ""));
+                        }
+                        prevRight = hi; prevName = nm; prevYLo = ylo; prevYHi = yhi;
+                    }
+                }
+                Debug.Log("[T91-GAP] authored constants, for comparison: BuildTicketColumn declares "
+                          + "chipW 44, priceW 52, gap 6 — the compact row's spans are fixed, never "
+                          + "derived from content (§6), so a measured gap that differs from 6 is the "
+                          + "finding rather than the tolerance.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
         /// <summary>The footer's BUILT height, read off its two money rows.
         ///
         /// <para>It used to be inferred as <c>riskPays.sizeDelta.y + 8f</c>, which was correct while
