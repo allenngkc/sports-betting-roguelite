@@ -371,13 +371,27 @@ namespace SBR.EditorTools
                     "ODD TOTAL AT FULL TIME", "EVEN TOTAL AT FULL TIME",
                     "ODD TOTAL AT FT", "EVEN TOTAL AT FT",
                     "2 GOALS APART AT FULL TIME", "3+ GOALS APART AT FULL TIME",
-                    "2 GOALS APART AT FT", "3+ GOALS APART AT FT" },
-                  // T152: DoubleChance's NEED is a TWO-RUNG ladder over the closed club pool, the
-                  // same shape as the moneyline arm above. Both rungs are generated and pooled
-                  // directly here — not left to LadderFallback's dynamic derivation, which only
-                  // recognises the moneyline/scorer/draw suffixes — because a fallback that was
-                  // never measured is a rung nobody knows the surface can reach.
-                  From(ClubNouns, "{0} TO WIN OR DRAW"), From(ClubNouns, "{0} WIN OR DRAW"),
+                    "2 GOALS APART AT FT", "3+ GOALS APART AT FT",
+                    // spec-terse-copy §3.2: RUNG 3, authored after this lane measured BOTH existing
+                    // rungs overrunning — rung 2 by 7.8px at the narrowest — and the floor rendering
+                    // `3+ GOALS APART AT`, a dangling preposition. Stays inside T151's own
+                    // vocabulary: `APART` is the word the market already uses.
+                    "2 APART AT FT", "3+ APART AT FT" },
+                  // DoubleChance's NEED, RE-AUTHORED at spec-terse-copy §3.4 and NOT rung-extended.
+                  // `{SHORT} TO WIN OR DRAW` and `{SHORT} WIN OR DRAW` ARE RETIRED HERE, in the same
+                  // change that adds their replacements: a pool that outlives its strings measures a
+                  // phantom (T111-am, this lane's own, paid for repeatedly).
+                  //
+                  // WHY THEY WENT RATHER THAN GAINING A RUNG: rung 1 cleared 0 of 20 clubs and rung 2
+                  // cleared 1, and 19 truncated to strings like `BRICKLAYERS WIN` — a MONEYLINE
+                  // statement. Not an unreadable row; a row stating a requirement the player does not
+                  // have. `DRAW` was the token that distinguished the market and it sat LAST, which is
+                  // the position truncation deletes first.
+                  //
+                  // `UNBEATEN` is two tokens, so its only truncation is `{SHORT}` — there is no
+                  // intermediate form that says WIN. That property is the point, and it is measured
+                  // rather than asserted (see T163).
+                  From(ClubNouns, "{0} UNBEATEN AT FULL TIME"), From(ClubNouns, "{0} UNBEATEN"),
                   // DoubleChance's team-agnostic half — no {SHORT} — pairs with the literal
                   // `EITHER TEAM` compact form (LegRowLine0, below).
                   new[] { "A WINNER AT FULL TIME", "A WINNER AT FT" },
@@ -386,6 +400,11 @@ namespace SBR.EditorTools
                   // ±1.5 line (engine/RunConfig.cs:76, HandicapLines, the only line offered).
                   From(ClubNouns, "{0} TO WIN BY 2+"), From(ClubNouns, "{0} BY 2+"),
                   From(ClubNouns, "{0} WITHIN 1 GOAL"), From(ClubNouns, "{0} WITHIN 1"),
+                  // spec-terse-copy §3.3: RUNG 3, for the long half of the pool — rung 2 rescued
+                  // SHORT clubs only (`MUSKRATS WITHIN 1` was the widest FITTING string in the whole
+                  // band, at 1.8px spare, and longer clubs fell through). The rung is the line
+                  // itself, which is what the compact slot already prints.
+                  From(ClubNouns, "{0} +1.5"), From(ClubNouns, "{0} -1.5"),
                   // T152: TeamTotalGoals / TeamTotalCorners / TeamTotalCards' NEED is the SAME
                   // template as their compact form (LegRowLine0, below) — {SHORT} {OVER/UNDER}
                   // {n.n} {NOUN} — over the closed club pool. UNDER is the swept side: OVER is
@@ -412,7 +431,13 @@ namespace SBR.EditorTools
                   // composable (Domain.cs:203-205 permits `goals >= 2`) but not producible today, so
                   // sweeping only `2+` matches the retired-bare-`TO WIN` direction: sweep what the
                   // board can actually deal, not what the type merely allows.
-                  From(Surnames, "{0} TO SCORE 2+"))),
+                  From(Surnames, "{0} TO SCORE 2+"),
+                  // spec-terse-copy §3.1: RUNG 2, and the cause was already measured — the ` 2+`
+                  // tail costs up to 36.4px and took this arm from 1 raw overrun to 6, while the
+                  // shipped `{SURNAME} TO SCORE` survives because it HAS a rung. With none, this one
+                  // landed on the floor and the floor took the verb: `PAVEMENT TO SCORE 2+` rendered
+                  // `PAVEMENT TO`. The rung is the compact form, which already clears.
+                  From(Surnames, "{0} 2+"))),
             // `TO SCORE` is GONE from the set with G1-am8: bare is retired on the scorer arm and must
             // not be reachable, so sweeping it would certify a string the surface may never render.
             // CORRECTED by the traceability pass, in BOTH directions. The old set was
@@ -445,7 +470,11 @@ namespace SBR.EditorTools
                   // upper-cased, every member generated rather than one picked), per G1 §5's
                   // instruction to follow the pool this file already established rather than invent
                   // a second one.
-                  From(ClubNouns, "{0} OR DRAW"),
+                  // RETIRED with its NEED rungs at spec-terse-copy §3.4 — `{SHORT} OR DRAW`
+                  // truncated for 9 of 20 clubs and ALL NINE lost the word `DRAW`, leaving
+                  // `BRICKLAYERS OR`: a dangling conjunction on a row that no longer names its
+                  // market. Replaced by the same one-word condition the NEED band now uses.
+                  From(ClubNouns, "{0} UNBEATEN"),
                   // Handicap's two picks — favourite (-1.5) and underdog (+1.5) — are DISTINCT
                   // renderable forms, not a primary/fallback pair, so both are pooled in full.
                   From(ClubNouns, "{0} -1.5"), From(ClubNouns, "{0} +1.5"),

@@ -1146,6 +1146,169 @@ namespace SBR.Tests.EditMode
             }
         }
 
+        /// <summary>§4 of `spec-terse-copy-2026-08-20.md`: every rung the DD authored for the four
+        /// blocked kinds, measured over the closed pools, in the box it renders in, through the
+        /// SURFACE'S OWN selector.
+        ///
+        /// <para>Three questions, and the third is the one that matters most. (1) How many of the 20
+        /// clubs / 12 surnames each rung clears. (2) Whether the rung's truncation is REACHABLE at
+        /// all — a rung that fits for every member never truncates, and §4 says aiming for that is
+        /// the point. (3) `T156`'s collision test: the rung AND every truncation of it, checked
+        /// against what OTHER markets on this surface can produce. `{CLUB} TO WIN OR DRAW`
+        /// truncating to `{CLUB} WIN` is why `DoubleChance` was re-authored — a row stating a
+        /// requirement the player does not have — so a collision found here is a finding, never
+        /// something to author around.</para>
+        ///
+        /// <para>`FitToColumn` and `FitOrFallback` are reached by REFLECTION. A replica that drifted
+        /// would answer a question nobody asked.</para></summary>
+        [Test]
+        public void T163_the_terse_rungs_measured_over_the_closed_pools()
+        {
+            var go = new GameObject("T163Terse");
+            try
+            {
+                var screen = BuildScreen(go);
+                TMP_Text need = FindChild<TMP_Text>(screen, "LegRowNeed0");
+                TMP_Text line = FindChild<TMP_Text>(screen, "LegRowLine0");
+                Assert.IsNotNull(need, "LegRowNeed0 not found");
+                Assert.IsNotNull(line, "LegRowLine0 not found");
+                Assert.IsNotNull(need.font, "no font resolved — a measurement in the fallback face is void");
+                Assert.IsTrue(need.font.name.Contains("Encode"),
+                    $"measured in '{need.font.name}', not Encode Sans — the same mistake T20 made once");
+
+                MethodInfo fitToColumn = typeof(TvSweatScreen).GetMethod("FitToColumn",
+                    BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.IsNotNull(fitToColumn, "TvSweatScreen.FitToColumn not found by reflection — renamed?");
+
+                // The pool, read the way T158 reads it — so the collision check compares against what
+                // the surface can ACTUALLY produce rather than against a list kept by hand here.
+                System.Type sweep = System.Type.GetType("SBR.EditorTools.TvExtentSweep, SBR.Game.Editor");
+                Assert.IsNotNull(sweep, "could not load TvExtentSweep — the collision check would be blind");
+                FieldInfo casesField = sweep.GetField("Cases", BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.IsNotNull(casesField, "TvExtentSweep.Cases not found by reflection");
+                var pool = new Dictionary<string, HashSet<string>>();
+                foreach (object row in (System.Array)casesField.GetValue(null))
+                {
+                    System.Type rt = row.GetType();
+                    var sl = (string)rt.GetField("Item1").GetValue(row);
+                    var st = (string[])rt.GetField("Item3").GetValue(row);
+                    if (sl == null || st == null) continue;
+                    if (!pool.TryGetValue(sl, out HashSet<string> set)) pool[sl] = set = new HashSet<string>();
+                    foreach (string x in st) set.Add(x);
+                }
+
+                string[] clubs =
+                {
+                    "YAMS", "STARTUPS", "BRICKLAYERS", "LONGHAULERS", "MALLARDS", "SPREADSHEETS",
+                    "TURNIPS", "MIDDLEMEN", "REGULATORS", "PLUMBERS", "MEATBALLS", "AUDITORS",
+                    "FERRETS", "OVERHEADS", "GRAVEDIGGERS", "NOTARIES", "MUSKRATS", "ZAMBONIS",
+                    "LOOPHOLES", "REFUNDS",
+                };
+                string[] surnames =
+                {
+                    "LEDGER", "CINDER", "MUFFIN", "PAVEMENT", "COUPON", "WOBBLE",
+                    "GASKET", "PYLON", "KETCHUP", "LANYARD", "RACKET", "STAPLER",
+                };
+
+                // kind · slot · the rung's format · the pool it generates over · the kind's OWN forms
+                // (a truncation landing on one of these is the LADDER WORKING, not a collision)
+                var rungs = new List<(string Kind, TMP_Text Slot, string SlotName, string Fmt, string[] Pool, string[] Own)>
+                {
+                    ("DoubleChance NEED r1", need, "LegRowNeed0", "{0} UNBEATEN AT FULL TIME", clubs,
+                        new[] { "{0} UNBEATEN AT FULL TIME", "{0} UNBEATEN" }),
+                    ("DoubleChance NEED r2", need, "LegRowNeed0", "{0} UNBEATEN", clubs,
+                        new[] { "{0} UNBEATEN AT FULL TIME", "{0} UNBEATEN" }),
+                    ("DoubleChance compact", line, "LegRowLine0", "{0} UNBEATEN", clubs,
+                        new[] { "{0} UNBEATEN" }),
+                    ("Handicap NEED r3 (+)", need, "LegRowNeed0", "{0} +1.5", clubs,
+                        new[] { "{0} +1.5", "{0} WITHIN 1", "{0} WITHIN 1 GOAL" }),
+                    ("Handicap NEED r3 (-)", need, "LegRowNeed0", "{0} -1.5", clubs,
+                        new[] { "{0} -1.5", "{0} BY 2+", "{0} TO WIN BY 2+" }),
+                    ("PlayerMultiScorer NEED r2", need, "LegRowNeed0", "{0} 2+", surnames,
+                        new[] { "{0} 2+", "{0} TO SCORE 2+" }),
+                    ("Handicap compact (+, shipped)", line, "LegRowLine0", "{0} +1.5", clubs,
+                        new[] { "{0} +1.5" }),
+                    ("Handicap compact (-, shipped)", line, "LegRowLine0", "{0} -1.5", clubs,
+                        new[] { "{0} -1.5" }),
+                    ("PlayerMultiScorer compact (shipped)", line, "LegRowLine0", "{0} 2+", surnames,
+                        new[] { "{0} 2+" }),
+                };
+
+                foreach (var r in rungs)
+                {
+                    float box = r.Slot.rectTransform.sizeDelta.x;
+                    int clears = 0;
+                    var misses = new List<string>();
+                    var collisions = new List<string>();
+                    float widest = 0f; string widestS = "";
+                    var ownConcrete = new HashSet<string>();
+                    foreach (string m in r.Pool)
+                        foreach (string f in r.Own) ownConcrete.Add(string.Format(f, m));
+
+                    foreach (string m in r.Pool)
+                    {
+                        string str = string.Format(r.Fmt, m);
+                        float w = r.Slot.GetPreferredValues(str, 100000f, 0f).x;
+                        if (w > widest) { widest = w; widestS = str; }
+                        if (w <= box) { clears++; continue; }
+                        misses.Add($"{m} ({w:0.0})");
+                        var cut = (string)fitToColumn.Invoke(null, new object[] { r.Slot, str });
+                        // T156: does the truncation land on a string ANOTHER market can produce?
+                        if (pool.TryGetValue(r.SlotName, out HashSet<string> set)
+                            && set.Contains(cut) && !ownConcrete.Contains(cut))
+                            collisions.Add($"'{str}' -> '{cut}' COLLIDES with another market's string");
+                        else
+                            collisions.Add($"'{str}' -> '{cut}'");
+                    }
+
+                    Debug.Log($"[T163] {r.Kind,-36} box {box:0.0}  widest '{widestS}' {widest:0.0}  "
+                              + $"clears {clears}/{r.Pool.Length}"
+                              + (clears == r.Pool.Length
+                                 ? "  — TRUNCATION UNREACHABLE, the outcome §4 aims for"
+                                 : $"  — misses: {string.Join(", ", misses)}"));
+                    foreach (string c in collisions) Debug.Log($"[T163-CUT] {r.Kind,-36} {c}");
+                }
+
+                // THE LADDER AS THE SURFACE ACTUALLY RUNS IT. Every rung above was truncated in
+                // ISOLATION, which is the right way to price a rung and the WRONG way to read what
+                // renders: FitOrFallback tries rung 1, then rung 2, and only truncates the one it
+                // ends on. Reporting rung 1's isolated truncation as a rendering would invent a
+                // string the ladder prevents — `YAMS UNBEATEN AT` is exactly that shape.
+                MethodInfo fitOrFallback = typeof(TvSweatScreen).GetMethod("FitOrFallback",
+                    BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.IsNotNull(fitOrFallback, "TvSweatScreen.FitOrFallback not found by reflection");
+                int r1 = 0, r2 = 0, fellToFloor = 0;
+                var lost = new List<string>();
+                foreach (string c in clubs)
+                {
+                    string p1 = $"{c} UNBEATEN AT FULL TIME", p2 = $"{c} UNBEATEN";
+                    var rendered = (string)fitOrFallback.Invoke(null, new object[] { need, p1, p2 });
+                    if (rendered == p1) r1++;
+                    else if (rendered == p2) r2++;
+                    else { fellToFloor++; if (!rendered.Contains("UNBEATEN")) lost.Add($"{c} -> '{rendered}'"); }
+                }
+                Debug.Log($"[T163-LADDER] DoubleChance NEED, as the surface runs it :: rung 1 {r1}/20 · "
+                          + $"rung 2 {r2}/20 · truncated {fellToFloor}/20; of those, {lost.Count} lost the word "
+                          + "UNBEATEN entirely and render as the club alone");
+                foreach (string x in lost) Debug.Log($"[T163-LADDER]   {x}");
+
+                // The COMPACT slot has NO ladder (T155's build order is unbuilt), so its form
+                // truncates directly — this is what renders today, not a hypothetical.
+                int cLost = 0;
+                foreach (string c in clubs)
+                {
+                    var rendered = (string)fitToColumn.Invoke(null, new object[] { line, $"{c} UNBEATEN" });
+                    if (!rendered.Contains("UNBEATEN")) cLost++;
+                }
+                Debug.Log($"[T163-LADDER] DoubleChance COMPACT, no ladder to fall to :: {cLost}/20 render "
+                          + "as the club alone, with no word naming the market");
+            }
+            finally
+            {
+                Object.DestroyImmediate(go);
+            }
+        }
+
         /// <summary>`T91`'s two numbers, owed to the Design Director since 2026-08-13 and routed at
         /// batch 153 (`T91-am3`). `T91` needs no ruling — its ruling was made at `T91-am2`, batch 63.
         /// It needs these.
