@@ -1536,7 +1536,10 @@ namespace SBR.Tests.PlayMode
             string liveNeed = !string.IsNullOrEmpty(screen.DebugLegProgress(0))
                 ? "LegRowNeed0" : "LegRowNeed1";
             string liveProgress = liveNeed == "LegRowNeed0" ? "LegRowProgress0" : "LegRowProgress1";
-            foreach (string subject in new[] { "RiskPays", "Pays", liveNeed, liveProgress })
+            // "Chrome" is in the list on the precommit's §1.2: the open objection against `PAID` is
+            // that it collides at the ROOT with `PAY $60`, and that read is impossible unless both
+            // are in one frame. A frame missing the chrome row cannot answer the question it is for.
+            foreach (string subject in new[] { "RiskPays", "Pays", "Chrome", liveNeed, liveProgress })
                 AssertSubjectInFrame(screen, subject, "t147-E1E3-unforced-live-row");
 
             // E1 + E3, UNFORCED: the real ticket at what the run actually affords, with a live row in
@@ -1552,9 +1555,6 @@ namespace SBR.Tests.PlayMode
                 ("E1-ordinary-cited", "RISK $1,234", "PAYS $12,340"),
                 // E2 — the enumerated fact floor, bank $10,000, from PayoutMaximumTests.
                 ("E2-fact-floor", "RISK $13,639", "PAYS $73,318,376,502"),
-                // The settled pair, left/left as ruled. RETURNED overruns its own row by 51.9px and
-                // that is T133, shown rather than hidden.
-                ("E1-settled-left-left", "STAKE $13,639", "RETURNED $73,318,376,502"),
             })
             {
                 screen.ForceRiskPaysTextForCapture(risk);
@@ -1563,23 +1563,112 @@ namespace SBR.Tests.PlayMode
                           + $"'{screen.DebugTicketPaysText}' — FORCED, NOT A SHIPPED STATE");
                 AssertSubjectInFrame(screen, "RiskPays", label);
                 AssertSubjectInFrame(screen, "Pays", label);
+                AssertSubjectInFrame(screen, "Chrome", label);
                 AssertSubjectInFrame(screen, liveNeed, label);
                 ReportInkAgainstCanvas(screen, "Pays");
                 yield return CaptureBurst(screen, cam, $"FORCED-t147-{label}", 6, 0f);
             }
 
-            // T147-am2's counter-arm, on the SETTLED pair and nothing else — that is where five
-            // characters over eight go ragged and four over four do not.
-            screen.ForcePaysAnchorForCapture(true);
-            screen.ForceRiskPaysTextForCapture("STAKE $13,639");
-            screen.ForcePaysTextForCapture("RETURNED $73,318,376,502");
-            Debug.Log("[T147-CAP] E1-settled-opposite-anchor :: second row RIGHT-anchored — "
-                      + "FORCED LAYOUT, NOT THE SHIPPED COMPOSITION (the build is left/left)");
-            AssertSubjectInFrame(screen, "RiskPays", "opposite-anchor");
-            AssertSubjectInFrame(screen, "Pays", "opposite-anchor");
-            AssertSubjectInFrame(screen, liveNeed, "opposite-anchor");
+            // ================= THE SETTLED STATE, SETTLED FOR REAL =================
+            //
+            // ⚠ THE FIRST CUT OF THIS ARM FORCED `STAKE`/`RETURNED` ONTO AN OPEN TICKET, and that
+            // frame set was DELETED rather than docked. The settled footer renders ONLY when
+            // `_ticket.State` is CashedOut or Lost (TvSweatScreen's settled branch), so forcing its
+            // strings onto a live ticket photographs a composition the code path cannot produce —
+            // the footer precommit's §0, and `T133-am2`'s own mistake one screen over.
+            //
+            // It is worse than a wrong label here: on a settled ticket T147's own build CANCELS the
+            // remaining rows (chip silent, struck), so a forced-settled frame over live rows shows a
+            // state the product no longer has at all.
+            //
+            // So: take a REAL cash-out, and force only the AMOUNT afterwards. The composition is
+            // then the product's own and only the digits are authored.
+            yield return WaitUntilOrFail(
+                () => director.CurrentSession != null && !director.CurrentSession.IsComplete
+                   && screen.EventsEmitted >= 1 && !screen.RevealedView.MarketSuspended
+                   && !screen.DebugCashOutAnimating
+                   && director.CurrentSession.CashOutOffer().HasValue,
+                Time.realtimeSinceStartup + 90f, "never reached an open cash-out window");
+
+            // DRIVE THE PLAYER'S OWN SEQUENCE: preview, THEN accept. Not a nicety —
+            // `ExitCashOutPreview` early-returns unless a preview is open, and IT is the thing
+            // that calls `UpdateTicketColumn`. Accepting without previewing leaves the column
+            // unrepainted: the settled branch never runs, so the footer keeps its LIVE words and
+            // the rows keep their live/NEXT chips on a position that is already closed.
+            //
+            // The first cut of this arm did exactly that, and the run log caught it —
+            // `state=CashedOut` printed beside `footer='RISK $25' / 'PAYS $330'` and leg 1 still
+            // reading `NEXT`. **That was THIS HARNESS taking a shortcut the product does not
+            // offer, not a defect in the product**: in play the hold opens the preview and the
+            // accept closes it, and closing it is what repaints. Worth the words, because a frame
+            // shot that way would have been read as a product defect by whoever opened it next.
+            const System.Reflection.BindingFlags Priv =
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+            System.Reflection.MethodInfo enterPreview =
+                typeof(TvSweatScreen).GetMethod("EnterCashOutPreview", Priv);
+            System.Reflection.MethodInfo tryCashOut =
+                typeof(TvSweatScreen).GetMethod("TryCashOut", Priv);
+            Assert.IsNotNull(enterPreview, "TvSweatScreen.EnterCashOutPreview not found by reflection — renamed?");
+            Assert.IsNotNull(tryCashOut, "TvSweatScreen.TryCashOut not found by reflection — renamed?");
+            Assert.IsTrue((bool)enterPreview.Invoke(screen, null),
+                "the cash-out preview refused to open, so the accept path cannot be driven as the player drives it");
+            // NO YIELD BETWEEN THESE TWO. Update's gesture resolution closes the preview whenever no
+            // key is held — and with no InputSystem device driving this arm, that is every frame. A
+            // frame's gap here closes the preview BEFORE the accept, so the repaint happens while the
+            // ticket is still live and the settle then repaints nothing. Enter and accept in one
+            // frame; the NEXT Update finds the preview open and the offer gone, and that is the
+            // repaint that renders the settled column.
+            tryCashOut.Invoke(screen, null);
+            Assert.AreEqual(TicketState.CashedOut, director.CurrentTicket.State,
+                "the settle must ACTUALLY take: a forced string on an open ticket is exactly the "
+                + "precommit's §0 mistake, and this assertion is what stops it recurring.");
+            for (int i = 0; i < 30; i++) yield return null;   // let the column repaint settled
+
+            Debug.Log($"[T147-CAP] SETTLED for real :: state={director.CurrentTicket.State} "
+                      + $"footer='{screen.DebugTicketRiskText}' / '{screen.DebugTicketPaysText}' "
+                      + $"leg0 chip='{screen.DebugLegState(0)}' leg1 chip='{screen.DebugLegState(1)}' "
+                      + "— the chips are the T147 cancelled-row treatment, unforced");
+
+            // THE PIN THAT STOPS THE SHORTCUT RECURRING. Reaching CashedOut is not the same as
+            // RENDERING it, and the difference is a whole frame set. If the column has not repainted,
+            // the footer still carries its live word and every burst below would photograph a live
+            // composition on a closed position — the precommit's §0 in its subtlest form, because
+            // the ticket state really IS settled and only the picture is stale.
+            Assert.IsTrue(screen.DebugTicketRiskText.StartsWith("STAKE"),
+                $"the settled footer never RENDERED: state is {director.CurrentTicket.State} but the "
+                + $"footer still reads '{screen.DebugTicketRiskText}'. The column did not repaint "
+                + "after the settle, so these frames would show a live composition on a closed "
+                + "position. Drive the preview before the accept — closing the preview is what repaints.");
+
+            // S1 — the settled composition ENTIRELY UNFORCED. Never shot before: it carries T147's
+            // cancelled rows (a pending leg on a settled ticket goes silent and takes §8.10's
+            // strike) as well as the two-row settled footer.
+            foreach (string subject in new[] { "RiskPays", "Pays", "Chrome" })
+                AssertSubjectInFrame(screen, subject, "t147-S1-settled-unforced");
             ReportInkAgainstCanvas(screen, "Pays");
-            yield return CaptureBurst(screen, cam, "FORCED-t147-E1-settled-opposite-anchor", 6, 0f);
+            yield return CaptureBurst(screen, cam, "t147-S1-settled-unforced", 6, 0f);
+
+            // S2/S3 — the enumerated fact floor on that same real settle, both alignment arms on one
+            // ruler. Only the DIGITS are forced now; the state, the rows and the branch are real.
+            // `RETURNED $73,318,376,502` is T148's overrun and it is shown, not hidden.
+            foreach ((string label, bool rightAnchored) in new[]
+            {
+                ("S2-settled-factfloor-left-left", false),
+                ("S3-settled-factfloor-opposite-anchor", true),
+            })
+            {
+                screen.ForcePaysAnchorForCapture(rightAnchored);
+                screen.ForceRiskPaysTextForCapture("STAKE $13,639");
+                screen.ForcePaysTextForCapture("RETURNED $73,318,376,502");
+                Debug.Log($"[T147-CAP] {label} :: settled ticket ({director.CurrentTicket.State}), "
+                          + $"AMOUNT forced to the fact floor, row 2 "
+                          + $"{(rightAnchored ? "RIGHT" : "LEFT")}-anchored"
+                          + (rightAnchored ? " — FORCED LAYOUT, NOT THE SHIPPED COMPOSITION" : ""));
+                foreach (string subject in new[] { "RiskPays", "Pays", "Chrome" })
+                    AssertSubjectInFrame(screen, subject, label);
+                ReportInkAgainstCanvas(screen, "Pays");
+                yield return CaptureBurst(screen, cam, $"FORCED-t147-{label}", 6, 0f);
+            }
             screen.ForcePaysAnchorForCapture(false);   // leave the scene as the product ships it
 
             Debug.Log($"[T147-CAP] complete -> {OutputDir}. UNFORCED: the E1E3 burst. FORCED and "

@@ -334,13 +334,85 @@ namespace SBR.EditorTools
             // Bare `TO WIN` is RETIRED and deliberately absent: it must not be reachable on a
             // moneyline leg (T94's desync), so sweeping it would certify a string the surface may
             // never render — the over-generation half of the traceability pass, one arm over.
-            ("LegRowNeed0", "G1's NEED deck over the closed pools; the moneyline arm is a LADDER (see LadderFallback)",
+            ("LegRowNeed0", "G1's NEED deck over the closed pools; the moneyline arm is a LADDER (see LadderFallback) + G1/T152's nine authored kinds' NEED forms",
                 And(From(ClubNouns, "{0} TO WIN"), From(Surnames, "{0} TO SCORE"), new[]
                 { "ONE TEAM SCORELESS", "ONE TEAM BLANKED", "BOTH TEAMS SCORE", "NOT YET",
                   // T96 (batch 68): the DRAW's own row, from the amended deck. `LEVEL AT FULL TIME`
                   // is 18 chars at the NEED budget and carries `LEVEL AT FT` as its authored shorter
                   // line — the same ladder shape as ONE TEAM SCORELESS / ONE TEAM BLANKED.
-                  "LEVEL AT FULL TIME", "LEVEL AT FT" })),
+                  "LEVEL AT FULL TIME", "LEVEL AT FT" },
+                  // G1 (batch 137, docs/design/g1-point-markets-2026-08-19.md) + T152 (batch 138,
+                  // docs/design/register-entries-2026-08-19-batch-138.md): the nine authored kinds'
+                  // NEED forms, added to the ENUMERATED pool per G1 §5's gate. WIDTHS ARE OWED TO
+                  // THE DD — both source docs are explicit that no width is claimed in them — and
+                  // NONE of these nine kinds is wired in SweatActiveLegModel yet: this is authored
+                  // copy, measured before authoring, per this lane's standing precondition (T111's
+                  // pattern, cited by both source docs).
+                  //
+                  // CorrectScore / TotalGoalsOddEven / WinningMargin (G1 §3) carry ONE NEED form
+                  // each, laddered only on `FULL TIME` -> `FT` — the same shortening
+                  // `LEVEL AT FULL TIME` already uses above, not a new shape. A CorrectScore
+                  // scoreline is single-digit each side regardless of which score is picked
+                  // (MaxGoalsGrid=8, engine/RunConfig.cs:64), and the sweep's own tabular digit pass
+                  // below (T89-B) already pads any single digit to its worst-case glyph width, so no
+                  // digit stresses the box more than another the way the moneyline draw's adjacent
+                  // max pair (8–7) needs to — the DD's own representative `3-1` stands for the width
+                  // unchanged. FLAGGED for the lead: the dash here is rendered U+2013 EN DASH,
+                  // matching `Dash` (SweatActiveLegModel.cs:231, "never retyped as an ASCII hyphen"),
+                  // not the doc's plain hyphen — CorrectScore has no implementation yet to confirm
+                  // this against. ALSO FLAGGED: G1 §5 compares its widest authored form against the
+                  // shipped `{CLUB} TO WIN` "reaching 33 at San Francisco Spreadsheets" — the pool
+                  // actually coded here (ClubNouns, top of file) holds club NOUNS only, no city, so
+                  // its longest member is SPREADSHEETS/GRAVEDIGGERS (12 chars each); the DD's own §5
+                  // text calls that comparison "an observation and NOT a measurement", so the coded
+                  // pool is followed here rather than the doc's larger figure.
+                  new[]
+                  { "3–1 AT FULL TIME", "3–1 AT FT",
+                    "ODD TOTAL AT FULL TIME", "EVEN TOTAL AT FULL TIME",
+                    "ODD TOTAL AT FT", "EVEN TOTAL AT FT",
+                    "2 GOALS APART AT FULL TIME", "3+ GOALS APART AT FULL TIME",
+                    "2 GOALS APART AT FT", "3+ GOALS APART AT FT" },
+                  // T152: DoubleChance's NEED is a TWO-RUNG ladder over the closed club pool, the
+                  // same shape as the moneyline arm above. Both rungs are generated and pooled
+                  // directly here — not left to LadderFallback's dynamic derivation, which only
+                  // recognises the moneyline/scorer/draw suffixes — because a fallback that was
+                  // never measured is a rung nobody knows the surface can reach.
+                  From(ClubNouns, "{0} TO WIN OR DRAW"), From(ClubNouns, "{0} WIN OR DRAW"),
+                  // DoubleChance's team-agnostic half — no {SHORT} — pairs with the literal
+                  // `EITHER TEAM` compact form (LegRowLine0, below).
+                  new[] { "A WINNER AT FULL TIME", "A WINNER AT FT" },
+                  // T152: Handicap's NEED carries TWO INDEPENDENT two-rung ladders, not one — the
+                  // favourite's arm and the underdog's arm print different NEED text for the same
+                  // ±1.5 line (engine/RunConfig.cs:76, HandicapLines, the only line offered).
+                  From(ClubNouns, "{0} TO WIN BY 2+"), From(ClubNouns, "{0} BY 2+"),
+                  From(ClubNouns, "{0} WITHIN 1 GOAL"), From(ClubNouns, "{0} WITHIN 1"),
+                  // T152: TeamTotalGoals / TeamTotalCorners / TeamTotalCards' NEED is the SAME
+                  // template as their compact form (LegRowLine0, below) — {SHORT} {OVER/UNDER}
+                  // {n.n} {NOUN} — over the closed club pool. UNDER is the swept side: OVER is
+                  // strictly shorter at an equal line and noun so it can never set the widest case,
+                  // the same reasoning the shipped `UNDER 10.5 CORNERS` literal already relies on in
+                  // LegRowLine0 below. Lines are the TEAM config, not the match one — TeamGoalLines
+                  // max 1.5, TeamCornerLines' only line 4.5, TeamCardLines' only line 1.5
+                  // (engine/RunConfig.cs:79-81) — narrower than the match-wide GoalLines/
+                  // CornerLines/CardLines this file already sweeps in LegRowProgress0.
+                  From(ClubNouns, "{0} UNDER 1.5 GOALS"),
+                  // CORNERS carries the shortNoun ladder — DescribeCount's own `shortNoun: "CNRS"`
+                  // (SweatActiveLegModel.cs:251) — so BOTH rungs are pooled here; GOALS and CARDS
+                  // have none. DescribeCount's own doc says why: "CARDS is four characters shorter
+                  // [than CORNERS] and cannot overflow, so it has none" (SweatActiveLegModel.cs:
+                  // 479-483) — GOALS is the same length as CARDS (5 characters), so the identical
+                  // reasoning gives it no shortNoun either; read off the source rather than assumed.
+                  From(ClubNouns, "{0} UNDER 4.5 CORNERS"), From(ClubNouns, "{0} UNDER 4.5 CNRS"),
+                  From(ClubNouns, "{0} UNDER 1.5 CARDS"),
+                  // T152: PlayerMultiScorer's NEED over the closed surname pool — no fallback rung is
+                  // authored for this arm (T152 lists none), so only the one form is pooled. `2+` is
+                  // the ONLY threshold this board ever prices: MarketSelection.PlayerMultiScorer's
+                  // `goals` parameter defaults to 2 (engine/Domain.cs:202) and the board-generation
+                  // call site never passes another value (engine/MatchModel.cs:213) — `3+`/`4+` are
+                  // composable (Domain.cs:203-205 permits `goals >= 2`) but not producible today, so
+                  // sweeping only `2+` matches the retired-bare-`TO WIN` direction: sweep what the
+                  // board can actually deal, not what the type merely allows.
+                  From(Surnames, "{0} TO SCORE 2+"))),
             // `TO SCORE` is GONE from the set with G1-am8: bare is retired on the scorer arm and must
             // not be reachable, so sweeping it would certify a string the surface may never render.
             // CORRECTED by the traceability pass, in BOTH directions. The old set was
@@ -352,10 +424,42 @@ namespace SBR.EditorTools
             // old set. `BRICKLAYERS ANYTIME` was unproducible (a club noun in the surname slot) and
             // was the set's own maximum; `REGULATORS ML` was a picked champion two characters short
             // of the pool's longest. Both arms are generated now.
-            ("LegRowLine0", "LegStatement's six arms: ML and ANYTIME generated over the closed pools — see the UNBOUNDED note on its default",
+            ("LegRowLine0", "LegStatement's six arms: ML and ANYTIME generated over the closed pools — see the UNBOUNDED note on its default + G1/T152's nine authored kinds' compact forms",
                 And(From(ClubNouns, "{0} ML"), From(Surnames, "{0} ANYTIME"), new[]
                 { "UNDER 10.5 CORNERS", "UNDER 10.5 GOALS", "UNDER 10.5 CARDS",
-                  "BTTS YES", "BTTS NO" })),
+                  "BTTS YES", "BTTS NO" },
+                  // G1 (batch 137) + T152 (batch 138): the nine authored kinds' COMPACT forms.
+                  // WIDTHS OWED TO THE DD, none of the nine wired in SweatActiveLegModel yet — same
+                  // standing precondition as the NEED additions above.
+                  //
+                  // NO FALLBACK is authored for any compact form here: T151/T152 give exactly one
+                  // rung each on this arm, the same shape ML/ANYTIME already have above (this box's
+                  // own two generated arms have never carried a second rung either). LadderFallback
+                  // only ever fires for slot "LegRowNeed0" (see its own guard clause, above) — so an
+                  // overrun on this arm has no rescue today. Flagged, not fixed: pooling the string
+                  // is this lane's job; authoring a shorter one is the DD's.
+                  new[]
+                  { "EXACT 3–1", "TOTAL ODD", "TOTAL EVEN", "MARGIN 2", "MARGIN 3+", "EITHER TEAM" },
+                  // DoubleChance's and Handicap's club-bearing halves, over the closed club pool —
+                  // `{SHORT}` follows the SAME mechanism as ML/ANYTIME above (ClubNouns + From,
+                  // upper-cased, every member generated rather than one picked), per G1 §5's
+                  // instruction to follow the pool this file already established rather than invent
+                  // a second one.
+                  From(ClubNouns, "{0} OR DRAW"),
+                  // Handicap's two picks — favourite (-1.5) and underdog (+1.5) — are DISTINCT
+                  // renderable forms, not a primary/fallback pair, so both are pooled in full.
+                  From(ClubNouns, "{0} -1.5"), From(ClubNouns, "{0} +1.5"),
+                  // TeamTotalGoals / TeamTotalCorners / TeamTotalCards' compact form — see the NEED
+                  // entry above for the line/noun sourcing (engine/RunConfig.cs:79-81) and why UNDER
+                  // is the swept side. No shortNoun fallback on THIS arm even for CORNERS: the
+                  // shipped `UNDER 10.5 CORNERS` literal two lines up never carried one either — the
+                  // shortNoun ladder is DescribeCount's own NEED-band mechanism only.
+                  From(ClubNouns, "{0} UNDER 1.5 GOALS"),
+                  From(ClubNouns, "{0} UNDER 4.5 CORNERS"),
+                  From(ClubNouns, "{0} UNDER 1.5 CARDS"),
+                  // PlayerMultiScorer's compact form over the closed surname pool, `2+` for the same
+                  // reason given on its NEED entry above (the only threshold the board ever prices).
+                  From(Surnames, "{0} 2+"))),
             ("LegRowPrice0", "price forms, generated", new[] { "+450", "-110", "2.75", "+1200" }),
             // CORRECTED. The first set here was {LIVE, NEXT, WON, LOST, VOID, PEND} and I invented
             // it — the plausible vocabulary for a state chip, not this build's. Enumerated properly
@@ -477,6 +581,47 @@ namespace SBR.EditorTools
                     // Anytime scorer, SweatActiveLegModel.cs:521-563 (ScorerRevealed gate). Two
                     // literals, no numeric field.
                     "SCORED", "NOT YET",
+
+                    // G1 (batch 137, DD): the new MET/NOT YET pair for the three NON-MONOTONE kinds
+                    // — CorrectScore, TotalGoalsOddEven, WinningMargin (G1 §2). NOT YET is not new —
+                    // it is AnytimeScorer's own word directly above — and is deliberately not
+                    // duplicated here; MET is the only new word this pass adds. WIDTH OWED TO THE DD;
+                    // none of the three is wired in SweatActiveLegModel yet.
+                    "MET",
+                    // T152 (batch 138): Handicap's own new pair, `CLEAR BY {n}` / `TRAILING BY {n}`
+                    // — the one place among the six T152 kinds a new progress pair was needed (the
+                    // rest reuse an existing family, noted below rather than duplicated). n is a goal
+                    // margin, bounded 0..8 by MaxGoalsGrid=8 per side (engine/RunConfig.cs:64) — the
+                    // same bound the moneyline score digits above are read off — single digit
+                    // throughout, so there is no stress choice to make (same reasoning as BTTS's
+                    // 0/2, 1/2, 2/2 above).
+                    "CLEAR BY 8", "TRAILING BY 8",
+                    // T152: PlayerMultiScorer's progress takes the COUNT grammar — `{n} GOALS •
+                    // NEED {m}` — on the BACKED PLAYER's own revealed goals, not the match or team
+                    // total, and deliberately NOT AnytimeScorer's SCORED/NOT YET (T152's own reason:
+                    // at one goal on a 2+ leg the player HAS scored and the leg is not won, so a
+                    // binary flag would misread as a win). This is a NEW string family, textually
+                    // distinct from every existing count form above — DescribeCount's own GOALS
+                    // forms always pair with MORE, never NEED, and its NEED forms never pair with
+                    // GOALS — so it is pooled here rather than folded into either. The only offered
+                    // threshold is 2+ (see the LegRowLine0/LegRowNeed0 note on PlayerMultiScorer
+                    // above), so NEED only ever reads 2 or 1; "1 GOALS • NEED 1" is the same
+                    // T153-flagged singular-noun gap as the CORNERS/CARDS entries above, carried
+                    // rather than fixed, per T153's own note that the fix is not this pass's to make.
+                    // A single player's own total is bounded here by their team's side of
+                    // MaxGoalsGrid=8 — the tightest ceiling found in the engine for one player's own
+                    // count, not a per-player cap specifically — so the lead should confirm no
+                    // narrower bound exists before ruling on "8 GOALS • WON".
+                    "0 GOALS • NEED 2", "1 GOALS • NEED 1", "8 GOALS • WON",
+                    // T152: DoubleChance's progress REUSES the moneyline's LEADING/TRAILING/LEVEL
+                    // verbatim — already pooled above ("LEADING 8–7" / "TRAILING 7–8" / "LEVEL 8–8")
+                    // — not duplicated here.
+                    // T152: TeamTotalGoals / TeamTotalCorners / TeamTotalCards' progress REUSES
+                    // DescribeCount verbatim on that team's own count — already pooled above (the
+                    // GOALS/CORNERS/CARDS families a few dozen lines up) — not duplicated here. The
+                    // team-level total's own reachable range (0..8 goals, 0..20 corners, 0..12 cards
+                    // per side, engine/RunConfig.cs:64-66) sits strictly inside the match-total range
+                    // already swept (0..16/40/24), so nothing wider is reachable.
                 }),
             // T112 (register batch 104): the incumbent CONSTANT overran its box by 26.7px on EVERY
             // frame — no pool, no seed, no widest case where it fit, which makes it a defect rather
