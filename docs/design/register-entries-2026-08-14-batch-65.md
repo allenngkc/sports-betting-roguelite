@@ -4,9 +4,9 @@
 `surething-design.md`, S74/S24/C47, and the board as it actually renders —
 `dd-import/phase-l-push/final/…-01-form-lobby-flat-1024x704.png`, read at this seat.
 
-**Destination tables: SureThing — the laptop** (`S74-am`) · **TV — match theater** (`T87-am`).
+**Destination tables: SureThing — the laptop** (`S74-am`) · **TV — match theater** (`T87-am4`).
 
-**Rows shipped:** `S74-am` · `T87-am`. **No new IDs** — both are the composition owed by a ruling that
+**Rows shipped:** `S74-am` · `T87-am4`. **No new IDs** — both are the composition owed by a ruling that
 already exists, and C22.1 keeps them on their governing lines.
 
 ---
@@ -105,7 +105,7 @@ they measure against their cells like everything else, and they join the sweep's
 
 ---
 
-## T87-am — THE SCORELESS DRAW: T87 REACHES IT. No new beat, one risk named, frames owed.
+## T87-am4 — THE SCORELESS DRAW: T87 REACHES IT. No new beat, one risk named, frames owed.
 
 The question queued was whether **0–0 needs its own read.** It does not need its own **ruling**, and it
 does need its own **look**. Those are different, and separating them is the whole of this row.
