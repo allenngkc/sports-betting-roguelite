@@ -466,9 +466,32 @@ namespace SBR.Tests.EditMode
                     $"measured in '{need.font.name}', not Encode Sans. T24 asks for the PRODUCTION " +
                     "face; a measurement in any other face is the mistake T20 already made once.");
 
-                // Real rendered heights, with the longest authored strings §6 permits.
-                need.text = "MARCUS VALE TO SCORE";
-                progress.text = "LIVE • 0 GOALS • 3 MORE";
+                // Real rendered heights, with the longest strings the production model can actually
+                // emit today — not the longest §6's wireframe once sketched. Two phantoms retired here.
+                //
+                // NOT 'MARCUS VALE TO SCORE': PHANTOM. T69/G1 retired the full-name NEED —
+                // SweatActiveLegModel.cs:551 emits $"{Surname(l.BackedPlayerName).ToUpperInvariant()} TO
+                // SCORE", surname only, the exact substitution that turned T69's overrun
+                // "RICO LANYARD TO SCORE" into "RICO LANYARD TO". The full name cannot reach this field.
+                //
+                // NOT 'LIVE • 0 GOALS • 3 MORE': PHANTOM, and never anything but. No live-progress arm
+                // in SweatActiveLegModel.cs carries a `LIVE •` prefix, and none ever has — this file's
+                // whole git history never adds or removes that substring. The form traces to
+                // docs/tv-sweat-refinement/VISUAL-DESIGN.md's wireframe mockup, which the build never
+                // implemented literally: `LIVE` became the leg row's own pulsing state badge instead
+                // (DESIGN.md §8, "Leg states" — "the surface's only slow pulse"), and the progress field
+                // itself stayed bare.
+                //
+                // Replaced with DescribeBttsNo's own pair (SweatActiveLegModel.cs:466,474): the
+                // clean-sheet arm's live string and its NEED fallback are ONE method's two return
+                // values — a real co-occurring row, not two worst cases stitched together.
+                //
+                // `preferredHeight` is a function of face and size, never of string content — the
+                // assertion below never depended on either phantom, which is exactly why two
+                // unproducible strings sat here unnoticed. A fixture nothing asserts against content is
+                // where a phantom survives.
+                need.text = "ONE TEAM BLANKED";
+                progress.text = "CLEAN-SHEET PATH LIVE";
                 float measured = need.preferredHeight + progress.preferredHeight;
 
                 float slot = Mathf.Abs(need1.rectTransform.anchoredPosition.y
@@ -714,9 +737,25 @@ namespace SBR.Tests.EditMode
                 Debug.Log($"[T144] two-row bare F={twoRowBare:0.0} -> row height {bareRowHeight:0.0}");
                 Debug.Log($"[T144] two-row padded F={twoRowPadded:0.0} -> row height {paddedRowHeight:0.0}");
 
-                // The live row, measured exactly as T24 does.
-                need.text = "MARCUS VALE TO SCORE";
-                progress.text = "LIVE • 0 GOALS • 3 MORE";
+                // The live row, measured exactly as T24 does — including T24's fixture, copied
+                // verbatim, which means it carried T24's same two phantoms: 'MARCUS VALE TO SCORE'
+                // (full name; T69/G1 retired it — SweatActiveLegModel.cs:551 emits surname only) and
+                // 'LIVE • 0 GOALS • 3 MORE' (no `LIVE •` prefix has ever existed on any live-progress
+                // arm in SweatActiveLegModel.cs — see T24's fixture comment above for the full account).
+                // Replaced here with the same honest pair: DescribeBttsNo's NEED fallback and live
+                // string (SweatActiveLegModel.cs:466,474), one method's two return values.
+                //
+                // This matters MORE here than at T24: T144 is the gate instrument, and the numbers it
+                // reports below (liveInk, footerCeiling, the CLEARS/SHORT verdicts) are Debug.Log output
+                // quoted to the Design Director as evidence. `preferredHeight` is a function of face and
+                // size, never of string content, so those reported numbers were never wrong and do not
+                // move now. But a phantom sitting in an INSTRUMENT's fixture is worse than one sitting in
+                // a plain test's: this method asserts nothing against the string either (only the
+                // font-face check above does), so a ruling could be made on numbers this instrument
+                // produced while naming a player and a progress line the surface cannot actually show.
+                // That is exactly how it went unnoticed.
+                need.text = "ONE TEAM BLANKED";
+                progress.text = "CLEAN-SHEET PATH LIVE";
                 float liveInk = need.preferredHeight + progress.preferredHeight;
                 float liveNeed = liveInk + 8f;   // T24's own margin: 4px top pad + the row's bottom breathing
                 Debug.Log($"[T144] live row ink = {liveInk:0.0}px (NEED {need.preferredHeight:0.0} + " +
@@ -795,13 +834,24 @@ namespace SBR.Tests.EditMode
                 // one string name while measuring another, which is the phantom problem one layer down.
                 const string CompactProbe = "LANYARD TO SCORE";
                 const string NeedWidest = "ONE TEAM BLANKED";
-                const string ProgressWidest = "LIVE • 0 GOALS • 3 MORE";
+                const string ProgressWidest = "CLEAN-SHEET PATH LIVE";
                 Vector2 compactV = compact.GetPreferredValues(CompactProbe, 100000f, 0f);
                 // NOT T24's 'MARCUS VALE TO SCORE': T69/G1 retired the full-name form and
                 // SweatActiveLegModel.cs:551 emits $"{Surname(...)} TO SCORE", so that string is a
                 // PHANTOM the surface can no longer produce (it measures 300.3 against a 261.0 box and
                 // would read as a 39.3px overrun that cannot occur). T90-am's widest EMITTABLE NEED is
                 // used instead. Height is string-independent either way; the WIDTH is why this matters.
+                //
+                // NOT T24's 'LIVE • 0 GOALS • 3 MORE' either: that one was never emittable at all, not
+                // retired but never built — no live-progress arm in SweatActiveLegModel.cs has ever
+                // carried a `LIVE •` prefix (they build `{total} GOALS {Bullet} {remaining} MORE` and
+                // its siblings; the form traces only to docs/tv-sweat-refinement/VISUAL-DESIGN.md's
+                // wireframe, where `LIVE` was a separate pulsing state badge, DESIGN.md §8, not text
+                // glued onto the progress field). The T84 sweep's widest EMITTABLE progress form is used
+                // instead: DescribeBttsNo's own live string (SweatActiveLegModel.cs:466), the same
+                // method that returns T90-am's NEED fallback above (:474) — one market's real row, not
+                // two worst cases from different markets. Same as the NEED phantom, height here is
+                // string-independent; the WIDTH is why this one matters too.
                 Vector2 needV = need.GetPreferredValues(NeedWidest, 100000f, 0f);
                 Vector2 progV = progress.GetPreferredValues(ProgressWidest, 100000f, 0f);
 
