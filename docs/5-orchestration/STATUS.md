@@ -1,6 +1,18 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-20, cycle 438 (heartbeat).** THE
+**Keeper-era heartbeat stamp: 2026-08-20, cycle 439 - ALLEN RULED THREE.**
+(1) The nine-kind scope: the DD's recommendation - terse copy for the
+four blocked kinds, team totals held; DD speccing. (2) THE CONSOLE SPEC
+IS APPROVED (batch 121) - markets-pregame DISPATCHED on
+console-build-dispatch-2026-08-20.md (K16's beat-prefix fix rides the
+grammar-opening commit; evidence self-shootable, no Unity). (3) THE
+DRAWN-ENDING SPEC IS APPROVED (batch 128); the T140 fork A/B still open
+- Allen asked what it means; the DD says what builds ahead of it. TV
+building the phantom-string pin directly (authorized deviation #3 today).
+With Allen: the T140 fork (explained this cycle), the hold's structure,
+research 8-9.
+
+*(prior stamp, cycle 438 (heartbeat):)* THE
 FOOTER THREAD HAS NO OUTSTANDING FRAMES: T149 closed on a real bust
 (batches 155-156), T63 and T159 closed, T94 half-discharged, the
 register transcribed through 154. THE DD IS BLOCKED ON ALLEN - its
