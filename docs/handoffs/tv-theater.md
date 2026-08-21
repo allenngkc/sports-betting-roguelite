@@ -48,6 +48,14 @@ same work `T140` prices); **this seat struck the CLAUSE only** — the comment n
 asserts something false, and the per-fixture restructure it points at is still unbuilt and
 still T140's.
 
+### WHERE A FRAME SET DOCKS — corrected 2026-08-20
+
+**The harness WRITES to `unity/SBR/artifacts/tv-sweat-capture/` (untracked, `dataPath`-anchored).
+THE DOCK IS SOMEWHERE ELSE: `docs/design/dd-import/<set>-<date>/`** — a README, a
+`FRAME-INVENTORY-all-<n>.txt` listing every frame, and a CURATED few PNGs, not the whole set. This
+seat left the T147 README beside the artifacts and Allen built the dd-import dir from it. **Writing
+a set is not docking it.**
+
 ### THE INSTRUMENTS THIS SEAT BUILT — use them, do not rebuild them
 
 - **`SBR/TV/T84 candidate measure (pre-authoring)`** — measures strings that are NOT yet in the
