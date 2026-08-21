@@ -3,7 +3,7 @@
 **Design Director** · 2026-08-12 · docket: the Phase T before/after pair
 (`dd-import/tv-phase-t-before-2026-08-11/` at `233bf7a` × `tv-phase-t-after-2026-08-12/` at `cb84278`)
 
-**Destination tables:** `T83`, `T84`, `T85` new → **TV**. `T75-am4`, `G1-am3`, `T82-cl` amend existing
+**Destination tables:** `T83`, `T84`, `T85` new → **TV**. `T75-am4`, `G1-am3`, `T82-a` amend existing
 **TV** rows.
 
 ---

@@ -3,13 +3,13 @@
 **THE BEFORE-SHIP LIST CLOSES.** Ruled at the DD seat on `dd-import/tv-t95-transitions-2026-08-13/`
 (159 frames, two entry points, tree `8ecdc53`), read at review distance at this seat.
 
-**Destination tables: TV — match theater** (`T95-cl`, `G1-am9`) · **Cross-surface** (`C50`, `C51`).
+**Destination tables: TV — match theater** (`T95-am`, `G1-am9`) · **Cross-surface** (`C50`, `C51`).
 
-**Rows shipped:** `T95-cl` · `G1-am9` · `C50` · `C51`.
+**Rows shipped:** `T95-am` · `G1-am9` · `C50` · `C51`.
 
 ---
 
-## T95-cl — CONFIRMED FIXED on frames. The scoreline reads as one string.
+## T95-am — CONFIRMED FIXED on frames. The scoreline reads as one string.
 
 **The call T95 reserved to this seat — whether the scoreline reads as one string at review distance —
 is made here: it does.**
@@ -108,7 +108,7 @@ while believing it is comparing one.
 |---|---|---|
 | 1 | R43, one lane over — the seed pins the deal, not the timeline | founding mechanism |
 | 2 | T83 — 21 paired frames matched on moment, seed, scene and index, **differing on grammar**; the README's *"nothing was substituted"* was true and insufficient | a **false pairing** |
-| 3 | T95-cl — a clean frame at the same index offered as proof of a fix, on a run that had drifted to a different beat | a **false confirmation** |
+| 3 | T95-am — a clean frame at the same index offered as proof of a fix, on a run that had drifted to a different beat | a **false confirmation** |
 
 **T83 wrote that this promotes on a third catch. This is the third**, and it is the first to arrive as a
 *confirmation* rather than a *comparison*, which is what completes the shape: **the error is symmetric,
