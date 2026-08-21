@@ -1,0 +1,38 @@
+# Register entries — batch 167 (2026-08-21)
+
+**The three rulings arm A was waiting on. Phase 1 is unblocked by design; phase 3's content question
+is answered and lands with `T91-cl`.**
+
+**Three rows.** **Destination table:** TV (`T163`, `T164`, `T165`).
+
+**Two source reads and one ruled precedent. Nothing measured, nothing shot.**
+
+---
+
+## The rows
+
+| T163 | The prose anchor under N live legs — it is TICKET-AND-FIXTURE derived and it ADMITS *NEITHER*; and the mechanism named *neutral* is not neutral about this | **RULED — DD 2026-08-21 batch 167, on `T140` arm A, read at source.** **WHAT THE ANCHOR ACTUALLY CONTROLS, because the name hides it: `SweatFlavor.For` and `GoalLine` compute `picked` and `other` from `PickedHomeForPresentation(leg)` and interpolate them as the fixture's two club NOUNS. It is a binary naming of the two clubs relative to the player's interest — not a side-effect, the flavour's subject.** **IT IS A PROPERTY OF A LEG AND DOES NOT SURVIVE THE MOVE TO A PER-FIXTURE TELLING.** Under arm A the telling belongs to the (ticket, fixture), and a leg-derived anchor has N candidates and no rule.** **RULED, in three branches: (1) WHERE EVERY LIVE LEG ON THAT FIXTURE THAT NAMES A SIDE NAMES THE SAME SIDE, that side is `picked`. **This subsumes today's single-leg case exactly, so nothing on screen changes before arm A lands.** (2) WHERE LIVE LEGS NAME OPPOSITE SIDES — one on `{CLUB} UNBEATEN`, another on the other club's total — there is NO picked side. **NEITHER.** (3) WHERE NO LIVE LEG NAMES A SIDE — totals, BTTS, correct score, odd/even, margin — **NEITHER.** Today `PickedHomeForPresentation` returns HOME unconditionally for every non-moneyline kind, which is `K17`'s flag on the console; this ruling makes the honest answer available on the TV as well.** **THE PRECEDENT FOR *NEITHER* IS ALREADY ON THE RECORD AND IS NOT INVENTED HERE: `PickedHomeForPresentation`'s own docstring distinguishes it from the sibling that answers WHICH SIDE YOU BACKED, *"where a draw's honest answer is NEITHER"*, and `T96` ruled that a draw ticket takes the deck's own `DRAW` row rather than borrowing a team's treatment. The surface has met *neither* before and answered it by not pretending.** **ITS DOCSTRING'S OBJECTION IS ANSWERED RATHER THAN OVERRULED — *"'neither' would leave the flavour with no names."* It would not. **Neither means the two clubs are named AS THEMSELVES rather than as picked and other**; what it costs is a line set whose sense does not depend on the anchor.** **AND THE TRAP, WHICH IS WHY THIS ROW EXISTS RATHER THAN A NOTE: `NeutralLine` IS NOT NEUTRAL ABOUT THIS AXIS. It is neutral about the count FAMILY — possession language where a count beat carried no count event — and it computes `pickedHome`, `picked` and `other` exactly like every other line. **Wiring the *neither* branch to it would ship a HOME anchor under a neutral name, silently, on precisely the kinds `K17` already flags.*** **THE NEITHER-BRANCH LINE SET IS OWED FROM THIS SEAT AND DOES NOT BLOCK PHASE 1** — the engine lane needs the RULE (the anchor is ticket-and-fixture derived and admits neither); the lines are presentation and belong with phase 3 | batch 167 |
+| T164 | The displayed win-probability seeds from the TICKET, never from a leg — `T143`'s reserved question, ruled the way that costs nothing today | **RULED — DD 2026-08-21 batch 167. `T143` (batch 130) named this seam and deliberately left it: `_liveProb` is seeded per-leg at `SweatSession.cs:265` from `_ticket.Legs[_currentLeg].TrueProb`, and `RevealedView.Reset` seeds `WinProbability` from `Legs[0].TrueProb`. Its words: *"On a sequential single-live model that is arguable; under N-live it is a VISIBLE LIE."* Arm A makes it N-live.** **RULED: THE SEED IS THE TICKET'S PROBABILITY, IN BOTH SITES, FOR EVERY TICKET.** **THE REASON IT IS SAFE TO RULE THE SINGLE-LEG CASE TOO — which `T143` reserved as its own question — IS THAT THE TWO COINCIDE THERE. A one-leg ticket's win probability IS that leg's probability; the change is a strict generalisation, it moves no number on any screen shipping today, and it makes the N-live case correct by construction rather than by a second edit later.** **IT IS ALSO THE SAME QUANTITY `T143` ALREADY RULED ONE STEP DOWNSTREAM: *the cash-out is a TICKET-level fact and always was… NO LEG'S PROBABILITY IS EVER SHOWN ALONE.* A seed that is leg-derived and a display that is ticket-derived cannot both be right, and `T143` settled which.** **CONSEQUENCE FOR SEQUENCING, and it is the useful half: **THIS DOES NOT HAVE TO WAIT FOR PHASE 1.** It changes nothing visible today, so it can land ahead of the restructure and remove one thing phase 1 would otherwise carry — the only ruling of these three with that property** | batch 167 |
+| T165 | The scorebug's counter counts FIXTURES, not legs — and it lands with `T91-cl` or the element moves twice | **RULED — DD 2026-08-21 batch 167. No register row has ever governed this element (searched at batch 158: *leg counter*, *LEG 4/4*, *LEG {n}* — zero rows), so this is its first.** **UNDER ARM A THE UNIT OF BROADCAST IS THE (TICKET, FIXTURE). A counter that counts LEGS counts the wrong thing on a surface that now tells fixtures — and it is not merely imprecise, it is INCOHERENT: two legs can be live at once, so *which leg* has no single answer to print.** **RULED: THE COUNTER'S REFERENT MOVES FROM THE LEG TO THE FIXTURE.** Before arm A, `LEG n/m` was correct — each leg WAS a telling — and this row does not say it was ever wrong; it says the ruling that changes what a telling IS changes what this counter counts.** **THE FORM IS TV's TO PROPOSE and no width is asserted here (`C58`, batch 95). What binds it: `T91-cl`'s 2px ink floor against the scoreline, on a band where the three elements measured 569.0px available against 583.3px needed — **a 14.3px deficit that a shorter counter may or may not close, and only measurement decides.*** **LAND IT WITH `T91-cl`. That row ruled the counter's ink must clear the scoreline and left the geometry to TV; this one changes what it says. **Done separately the element moves twice, and the second move re-opens the measurement the first one settled** — which is the whole reason `T91-cl` declined to draw the remedy itself.** **AND ONE AGREEMENT TO KEEP, named because the two are built by different phases: a fixture counter and the `§6.7` interstitial at the fixture boundary DESCRIBE THE SAME EVENT. The boundary is where the counter increments. If they disagree — a counter that moves without a boundary, or a boundary the counter ignores — the surface is telling two stories about one seam, which is `T94`'s family exactly** | batch 167 |
+
+---
+
+## For the orchestrator
+
+- **PHASE 1 IS UNBLOCKED BY DESIGN.** `T163` gives the engine lane the rule it needs; the neither-branch
+  line set is presentation and belongs with phase 3.
+- **`T164` can land AHEAD of phase 1** — it moves no number on any shipping screen and removes one
+  item from the restructure.
+- **`T165` schedules with `T91-cl`**, which TV already holds. Both are phase 3.
+- **Owed from this seat, not blocking:** the *neither*-branch flavour lines (`T163`), when phase 3
+  is scheduled.
+- **Backlog is 164–167.**
+
+## Limits
+
+- **`T164`'s two site references are `T143`'s**, cited rather than independently re-read; the ruling
+  is about the quantity, not about the line numbers.
+- **No width is ruled in `T165`.** Whether a fixture counter closes `T91-cl`'s 14.3px deficit is a
+  measurement and is explicitly not claimed.
+- **`T163` rules the STRUCTURE of the anchor, not the copy.** The lines the *neither* branch needs do
+  not exist and are owed.
