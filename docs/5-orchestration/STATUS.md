@@ -1,6 +1,38 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-20, cycle 433 (heartbeat).** Post-
+**Keeper-era heartbeat stamp: 2026-08-20, cycle 436 (heartbeat +
+network blip).** A DNS/API outage cut both seats mid-turn (TV mid-T24-
+fix at 31 min, DD mid-window-request); network back, both resumed with
+explicit pick-up points (TV: fix -> suite -> measurements -> bust
+window; DD: the register backlog 137-152 transcription). Orca itself
+stayed up. Allen's 'continue' received. With Allen: the nine-kind SCOPE
+call, the T140 fork, both spec approvals, the hold's structure, research
+8-9.
+
+*(prior stamp, cycle 435 (heartbeat):)* Fresh
+DD productive: batch 151 (width table ruled; SCOPE QUESTION FOR ALLEN -
+both boxes were full to ~2px before the nine kinds existed: terse copy /
+reopen geometry / new row treatment; DD recommends terse copy for the
+four blocked kinds, hold team totals) and batch 152 (the T149 bust-frame
+pre-commitment written before frames; one narrow window requested). TV
+queue: phantom-fixture fix + suite (running) -> three measurements ->
+the bust window. Markets idle. With Allen: the nine-kind SCOPE call, the
+T140 fork, both spec approvals, the hold's structure, research 8-9.
+
+*(prior stamp, cycle 434 (heartbeat):)* THE
+FOOTER ARC CLOSED ON FRAMES: the T147 dock built properly in dd-import
+(TV had docked beside the artifacts), the DD's read landed (batches
+148-149: alignment settled - left/left spills, the counter-arm clips the
+label; T133 CLOSED, PAID ruled on the frame; a bust frame owed), the DD
+ROTATED at 99% (batch 150 = its open set; fresh seat term_aec777f0 on
+dd-docket-2026-08-20.md; watcher v46 bgbyi100m). TV's per-form pass
+merged (ONE of nine kinds clears; 60 team-total + 9 DoubleChance compact
+forms overrun) - the fresh DD's first read. TV now fixing T24's phantom
+fixture string (Allen); its effort reset to max (the outage resume had
+dropped it to xhigh). With Allen: the T140 fork, both spec approvals,
+the hold's structure, research 8-9.
+
+*(prior stamp, cycle 433 (heartbeat):)* Post-
 recovery steady: DD on the ledger (batches 143-145 landed since
 recovery - the pre-commitment amended ahead of the frames, a latent
 console beat-prefix defect caught for the console build's dispatch, the
