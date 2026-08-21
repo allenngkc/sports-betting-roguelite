@@ -270,3 +270,43 @@ re-point is phase 3's.
 Neither a Mulligan nor a Whistle can rescue the ticket, but the player may still spend one.
 **This lane builds the FLAG only** — `NoSingleCallSaves`. The present-with-warning affordance
 (`S85`: stated before the offer) is phase 3's, not this lane's.
+
+
+---
+
+# FOR ALLEN — arm A retires the certainty carve-out (via the orchestrator)
+
+**One ruling has been made unreachable by another, and that is his to know rather than mine to
+absorb.**
+
+On **2026-08-14** Allen ruled the CERTAINTY CARVE-OUT: *a certainty never quotes below its worth.*
+It exists for one shape — a **settled** leg that ENTAILS a **live** one, a settled `OVER 3.5` beside a
+live `OVER 2.5`. There `P(L | S)` is 1 while the drama's number for the live leg is the board's
+unconditional marginal and is not, so the cash-out re-weight would scale the quote DOWN on a leg that
+cannot lose. The carve-out drops the re-weight in exactly that case and quotes the pure conditional.
+
+**`T140` arm A makes that state unreachable.** Entailment is only ever between two legs on the SAME
+match — legs on different matchups are independent by construction, and `JointProbabilityOf`
+factorises over matchups, so for a settled set `S` and a live set `L` on disjoint matchups
+`P(L | S)` is just `P(L)`, the live legs' own marginal, which no sellable board price approaches 1.
+And under arm A two legs on one match are **never in different stages**: they are one telling, live
+together and graded at one whistle. The pairing the carve-out exists for cannot occur. This is not
+inferred from a failing test — it is the test's own construction: `PlaceEntailment` builds precisely
+that settled-entails-live pair, and the state it walks to no longer exists.
+
+**What is lost: nothing in money.** The harm the carve-out prevented was under-quoting a certainty,
+and a certainty can no longer be half-settled. Within a shared telling the correlation is still
+carried exactly, by the joint in the quote's denominator; each live leg drifts on its own number
+against its own baseline, so no leg is scaled by another's marginal. The guard becomes dead code
+rather than wrong code, and this lane has **left it in place** — it is still correct if the shape ever
+returns, and deleting a ruling is not a lane's call.
+
+**What is worth knowing anyway**, because it is the same physics surfacing somewhere new: the drama
+now runs entailed legs as two independent tracks on one clock, so a shared telling can show
+`OVER 2.5` reading *below* `OVER 3.5` for a beat — incoherent as a pair, though the quote is
+unaffected because the pricing correlation never comes from those tracks. Nobody has ruled what a
+shared telling's per-leg numbers owe each other. Not a defect against any current spec, and not this
+phase's to fix; recorded so it is found on purpose rather than in a capture.
+
+**Asked of Allen:** nothing blocking. Only whether the 2026-08-14 ruling should be recorded as
+SUPERSEDED-BY-CONSTRUCTION, so a later reader does not go looking for behaviour that cannot fire.
