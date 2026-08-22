@@ -1,6 +1,19 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-21, cycle 448 (heartbeat).**
+**Keeper-era heartbeat stamp: 2026-08-21, cycle 449 (INCIDENT - Orca
+crashed again; harsher: all four lead sessions died, only bare shells
+restored).** Recovery: monitors first (heartbeat bds2w115q, watcher v49
+bkz8smjjb); all four seats RESUMED at Opus max - engine/TV/markets by
+--continue in their worktrees (markets' render corruption cured by the
+clean terminal), DD by session ID; each briefed with its pick-up point
+(engine: check whether the 10k campaign survived; TV: re-run what the
+crash took of the 1.2/1.3 suites; markets: restate the two spec
+corrections for routing; DD: K17's report is yours). Merged before the
+crash: K17 + the console handoff (da082dd). WITH ALLEN: the carve-out
+bookkeeping, DoubleChance's scope, the hold's structure, research 8-9,
+B9's human colour capture.
+
+*(prior stamp, cycle 448 (heartbeat):)*
 ENGINE PHASE 1 GREEN ON ITS BRANCH (45b8224 - per-fixture sweat, G8-ARMA
 gate, DLL rebuilt+committed; the carve-out assertion branch-guarded to
 fail loudly if stale); the 10k gate campaign runs - merge on its report.
