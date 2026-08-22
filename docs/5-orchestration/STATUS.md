@@ -1,6 +1,21 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-21, cycle 449 (INCIDENT - Orca
+**Keeper-era heartbeat stamp: 2026-08-21, cycle 450 (INCIDENT
+CORRECTION - the census after the crash MISLABELED SEATS and spawned a
+DD twin; caught and fixed).** What happened: Orca had restored two
+live sessions into bare-titled terminals; my relaunches then (a) opened
+the DD's session A SECOND TIME - the twin was killed within minutes,
+before it wrote anything - and (b) sent the TV seat an engine brief,
+which TV itself flagged ('I can't answer for the campaign without
+inventing the answer' - the honest refusal that unmasked the mislabel).
+TRUE MAP now verified by content, not title: TV=term_5740cddd (running
+PlayMode for 1.3 per Allen), DD=term_4c29ccbe (corrected, on the
+neither-branch routing), markets=term_67f6ad21, engine=term_c72acfd3
+(freshly resumed - checking whether the 10k campaign survived). Watcher
+v50 (bf0bh0n06) carries the corrected map. LESSON for the next census:
+identify a restored seat by its CONTENT, never its terminal title.
+
+*(prior stamp, cycle 449 (INCIDENT - Orca
 crashed again; harsher: all four lead sessions died, only bare shells
 restored).** Recovery: monitors first (heartbeat bds2w115q, watcher v49
 bkz8smjjb); all four seats RESUMED at Opus max - engine/TV/markets by
