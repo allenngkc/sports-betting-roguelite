@@ -50,14 +50,25 @@ internal static class EventText
                 : "a goal in the churn — not the backed scorer.";
         }
 
-        // Market legs (O/U, BTTS) have no picked TEAM — anchor the narrative on the home side;
-        // the market prefix carries the pick, and up/down still tracks the pick's win prob.
-        // The market-aware vocabulary itself is the count-narration block below: corners/cards
-        // key their mood to the selection (Over/Under), not to the home/away anchor used here.
-        bool pickedHome = leg.Selection.Kind != MarketKind.Moneyline
-            || leg.Selection.Choice == MarketChoice.Home;
-        string picked = Short(pickedHome ? leg.Matchup.Home.Name : leg.Matchup.Away.Name);
-        string other = Short(pickedHome ? leg.Matchup.Away.Name : leg.Matchup.Home.Name);
+        // K17-cl (DD 2026-08-21 batch 170, VIOLATION) — THE ANCHOR IS THE BACKED SIDE, AND WHERE
+        // THE LEG NAMES NO SIDE THERE IS NO ANCHOR. What stood on these lines was:
+        //
+        //     // Market legs (O/U, BTTS) have no picked TEAM — anchor the narrative on the home side
+        //     bool pickedHome = leg.Selection.Kind != MarketKind.Moneyline
+        //         || leg.Selection.Choice == MarketChoice.Home;
+        //
+        // THAT COMMENT WAS TRUE WHEN IT WAS WRITTEN, and that is the whole of why this is a
+        // violation only now: every non-moneyline kind then was team-agnostic, so a HOME anchor
+        // was arbitrary and harmless. F_0.5.0 added five kinds that DO carry a side —
+        // DoubleChance, Handicap and the three team totals — and the pick grammar made all of
+        // them bettable. For each one the predicate above returns true and the prose anchors
+        // HOME, so BACKING THE AWAY SIDE NARRATED THE OPPONENT AS THE PLAYER'S TEAM while the
+        // leg's own verdict row named the club he actually backed: two zones of one surface
+        // disagreeing about whose side he is on (T59's family, T94's shape on the fixture axis).
+        // The same expression also answered AWAY for the X of 1X2 — "not Home" meant Away only
+        // while Choice had two values — which is the defect BetslipModel.SideOn's own docstring
+        // records fixing on the other surface.
+        Side? backed = BackedSide(leg.Selection);
         bool up = e.WinProbAfter >= prevProb;
 
         // Count narration is honest two ways (F_0.4.0 P3 review, mirrored from the TV):
@@ -69,7 +80,7 @@ internal static class EventText
             bool countHelps = leg.Selection.Choice == MarketChoice.Over;
             bool countEventBeat = up == countHelps;
             if (!countEventBeat)
-                return Base(DramaEventType.Momentum, up, picked, other, e.Step);
+                return Anchored(DramaEventType.Momentum, up, backed, leg.Matchup, e.Step);
             return leg.Selection.Kind == MarketKind.TotalCorners
                 ? CornerLine(countHelps, e.Step)
                 : BookingLine(countHelps, e.Step);
@@ -95,7 +106,131 @@ internal static class EventText
         // `TensionTag.LeadChange => 800` pacing is the twin of the TV's leadChangeMs and is
         // untouched and correct. Removing the suffix also closes the second defect — it appended
         // UPPERCASE to a sentence-case line, against the one-casing-one-dash rule.
-        return Base(e.Type, up, picked, other, e.Step);
+        return Anchored(e.Type, up, backed, leg.Matchup, e.Step);
+    }
+
+    /// <summary>
+    /// <b><c>K17-cl</c> — WHICH SIDE THIS LEG BACKS, where the honest answer can be NEITHER.</b>
+    /// This is <c>BetslipModel.SideOn</c>'s SHAPE — <c>Side?</c>, a draw answering neither — which
+    /// is what the ruling names as the fix. It is deliberately NOT a call to that method, and the
+    /// reason is worth stating so nobody "simplifies" this into one:
+    ///
+    /// <list type="number">
+    /// <item><c>SideOn</c> short-circuits on <c>Kind != Moneyline</c> and returns null, so it
+    /// answers NEITHER for all five of the side-carrying kinds this ruling is about. Calling it
+    /// here would delete the false HOME anchor and never name the correct side — half a fix.</item>
+    /// <item>Its signature takes a MATCHUP INDEX and scans a slip. A sweat beat holds ONE leg and
+    /// no slip; there is nothing here to scan.</item>
+    /// </list>
+    ///
+    /// <para><b>It is also NOT <c>SweatFlavor.PickedHomeForPresentation</c> widened, and the
+    /// ruling forbids making it that.</b> That function answers WHICH TEAM THE PROSE ANCHORS ON,
+    /// where every leg needs an answer and (its own docstring) <i>"neither" would leave the
+    /// flavour with no names</i>. This one answers WHICH SIDE YOU BACKED. Two questions, two
+    /// correct shapes; collapsing them re-creates the conflation <c>T143-am</c> split apart.</para>
+    ///
+    /// <para><b>Every arm reads the engine's own selection shape rather than restating what a kind
+    /// is believed to do</b>, and the switch NAMES ALL FIFTEEN KINDS with no silent default — a
+    /// <c>default:</c> that guesses a side is precisely how the struck predicate above came to be
+    /// wrong. The throw mirrors <c>SweatLines.LegName</c>'s: a sixteenth kind fails loudly here
+    /// rather than inheriting some other kind's answer.</para>
+    /// </summary>
+    internal static Side? BackedSide(MarketSelection s) => s.Kind switch
+    {
+        // The engine's own factories map a backed Side ONTO Choice — MarketSelection.Moneyline(Side)
+        // and Handicap(Side backed, double line), whose summary says the line "is applied TO THE
+        // BACKED SIDE". Reading Choice back is that mapping inverted. MoneylineDraw() sets
+        // Choice.Draw, of which the engine says "Has no Side by construction": the X of 1X2 is
+        // NEITHER, never Away (DD batch 49 — the draw is not a team, ever).
+        MarketKind.Moneyline or MarketKind.Handicap => s.Choice switch
+        {
+            MarketChoice.Home => Side.Home,
+            MarketChoice.Away => Side.Away,
+            _ => null,
+        },
+
+        // Double chance names its selection as a UNION of results rather than reusing Home/Away —
+        // MarketChoice's own comment: "1X is not Home, and a reader who assumes it is has a losing
+        // bet graded as a winner". The backed side is the ONE CLUB in the union. 12 (HomeOrAway)
+        // holds both clubs, so no club is his: NEITHER.
+        MarketKind.DoubleChance => s.Choice switch
+        {
+            MarketChoice.HomeOrDraw => Side.Home,
+            MarketChoice.AwayOrDraw => Side.Away,
+            _ => null,
+        },
+
+        // The three team totals carry their team in a NAMED field, which exists so exactly this
+        // question has an answer that is read and not decoded. Read it.
+        MarketKind.TeamTotalGoals or MarketKind.TeamTotalCorners or MarketKind.TeamTotalCards
+            => s.Team,
+
+        // Match-scoped kinds. Selection.Team is null by construction on all of them and their
+        // Choice carries Over/Under/Yes/No/Odd/Even — there is no club anywhere in the selection.
+        // T163 branch (3) names this set outright: totals, BTTS, correct score, odd/even, margin
+        // — NEITHER.
+        MarketKind.TotalGoals or MarketKind.BothTeamsToScore or MarketKind.TotalCorners
+            or MarketKind.TotalCards or MarketKind.CorrectScore or MarketKind.WinningMargin
+            or MarketKind.TotalGoalsOddEven
+            => null,
+
+        // The player markets. A scorer's CLUB is knowable (Matchup.PlayerSide), and this still
+        // answers NEITHER, because the question is which side he BACKED: a man can score in a
+        // 3–1 defeat and the leg wins, so his club is not the player's side. The TV's
+        // PickedHomeForPresentation does anchor these on PlayerSide — that is the other question
+        // answered correctly for itself, and the divergence is the two shapes working as ruled.
+        MarketKind.AnytimeScorer or MarketKind.PlayerMultiScorer => null,
+
+        _ => throw new ArgumentOutOfRangeException(nameof(s), s.Kind,
+            "EventText.BackedSide has no arm for this market kind. Add one — deliberately, having "
+            + "decided whether the kind names a side. Nothing here falls through to a guess: that "
+            + "fallback IS K17-cl."),
+    };
+
+    private static Side Opposite(Side side) => side == Side.Home ? Side.Away : Side.Home;
+
+    private static string NameOf(Matchup matchup, Side side)
+        => side == Side.Home ? matchup.Home.Name : matchup.Away.Name;
+
+    /// <summary>The base tables, filled from the backed side — or, where the leg backs neither,
+    /// from the club-free set below. <c>T163</c>'s trap is why this is one function and not two
+    /// call sites: a "neutral" path that still computed <c>picked</c>/<c>other</c> would ship a
+    /// HOME anchor under a neutral name, silently, on precisely the kinds this row rules on.</summary>
+    private static string Anchored(DramaEventType type, bool up, Side? backed, Matchup matchup, int step)
+        => backed is Side side
+            ? Base(type, up, Short(NameOf(matchup, side)), Short(NameOf(matchup, Opposite(side))), step)
+            : NeitherLine(type, up, step);
+
+    /// <summary>
+    /// <b>The <i>neither</i> branch — a beat that names no club at all.</b> Selected by the same
+    /// (type, direction) key as <see cref="Table"/> so the two cannot drift apart.
+    ///
+    /// <para><b>WHY THESE ARE CLUB-FREE RATHER THAN CLUB-NAMING, which is not what the TV's spec
+    /// asks for.</b> <c>spec-neither-branch-lines-2026-08-21.md</c> §1 keeps the club in the
+    /// sentence and moves the REFERENT: in the neither branch <c>{picked}</c>/<c>{other}</c>
+    /// resolve to the club the EVENT belongs to — the scorer on a goal, the side in possession on
+    /// a momentum beat. <b>That mechanism has nothing to read here.</b>
+    /// <c>engine/DramaEvent.cs</c> carries LegIndex, Step, TotalSteps, Type, WinProbAfter and Tag
+    /// and no actor of any kind — no scorer, no possession side — and the engine is not this
+    /// lane's to change. So §3 of that spec fires, by its own terms: <i>"If the actor is
+    /// unavailable, the momentum beat takes a CLUB-FREE line."</i></para>
+    ///
+    /// <para>§3 authored four momentum lines and they are used verbatim below. It authored none
+    /// for a GOAL, because on the TV the scorer was assumed knowable; on this surface it is not,
+    /// so the two goal lines are assembled from clauses already authored for this exact case —
+    /// see each field. <b>The line copy is the part of <c>K17-cl</c> the DD left NOT RULED and it
+    /// is reported as a lane finding, not settled here.</b></para>
+    /// </summary>
+    private static string NeitherLine(DramaEventType type, bool up, int step)
+    {
+        string[] variants = (type, up) switch
+        {
+            (DramaEventType.Score, true) or (DramaEventType.BigPlay, true) => NeitherGoalUp,
+            (DramaEventType.Score, false) or (DramaEventType.BigPlay, false) => NeitherGoalDown,
+            (DramaEventType.Momentum, true) => NeitherMomUp,
+            _ => NeitherMomDown,
+        };
+        return variants[step % variants.Length];
     }
 
     // K16 — THE PREFIX WAS HERE. It read:
@@ -188,6 +323,44 @@ internal static class EventText
         "{other} keeping the ball.",
         "{other} pass it around, slow and mean.",
         "{other} settle in; the drift runs the other way.",
+    };
+
+    // ---- K17-cl / T163: the *neither* branch. No slot, so no club can reach these lines. ----
+
+    /// <summary>ASSEMBLED, NOT AUTHORED, and flagged as such. <c>ScoreUp</c>'s third variant already
+    /// ships <c>"Goal for {picked} — the number ticks with it."</c>; this is that clause with the
+    /// club-naming subject replaced by the file's own club-free goal subject (<c>"a goal in the
+    /// churn — …"</c>, the scorer branch). No new idiom is introduced. The DD did not rule the
+    /// console's neither-branch copy and this is the lane's smallest honest stand-in for it.</summary>
+    private static readonly string[] NeitherGoalUp =
+    {
+        "a goal — the number ticks with it.",
+    };
+
+    /// <summary>ASSEMBLED, NOT AUTHORED. <c>spec-neither-branch-lines</c> §2 authored
+    /// <c>"{other} score against the slip."</c> for exactly this branch and says why the phrase
+    /// works: it states that the goal works against the ticket WITHOUT NAMING A SIDE IT WORKS FOR.
+    /// With no actor to fill the slot, the club-free subject carries it instead.</summary>
+    private static readonly string[] NeitherGoalDown =
+    {
+        "a goal against the slip.",
+    };
+
+    /// <summary><c>spec-neither-branch-lines-2026-08-21.md</c> §3, VERBATIM — the DD's own
+    /// club-free momentum fallback, authored for the case where the event's actor is unknowable,
+    /// which is this surface's case on every beat. Not re-cased: §4 rules that the new lines match
+    /// the table they join exactly and that re-casing a shipped table is its own question.</summary>
+    private static readonly string[] NeitherMomUp =
+    {
+        "The half tightens.",
+        "Territory, and the clock with it.",
+    };
+
+    /// <summary><c>spec-neither-branch-lines-2026-08-21.md</c> §3, VERBATIM.</summary>
+    private static readonly string[] NeitherMomDown =
+    {
+        "The ball stays in midfield.",
+        "Slow through the middle, and no one in a hurry.",
     };
 
     private static readonly string[] CornerFor =
