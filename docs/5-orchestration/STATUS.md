@@ -1,6 +1,25 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-22 00:35, cycle 451 (INCIDENT -
+**Keeper-era heartbeat stamp: 2026-08-22 00:50, cycle 452 - ORCA
+CRASH-LOOP, RELAUNCHES STOPPED. NEED ALLEN AT THE HOST.** Orca has
+died six times since ~23:30 (the last two within 30s of coming up);
+every restore re-spawns duplicate copies of the lead sessions (twelve
+terminals last time, including twins of the DD, the engine and the
+orchestrator), which I suspect is now feeding the crash itself, and
+each death kills in-flight shells (the 10k campaign twice). I will
+not relaunch again without Allen: please (1) check Orca's logs /
+session-restore state - the growing restored-terminal list is the
+likely culprit - and consider clearing it; (2) the pending Claude Code
+update ('Restart to update') on every seat may be involved. WORK IS
+SAFE: main == origin (b635d16); theater-engine is 6 ahead (phase 1
+green; DLL re-committed from a CLEAN Release build - a new law, see
+memory) and merges on its campaign roster; nothing else uncommitted.
+When Orca is stable: census BY CONTENT, one seat each, relaunch the
+campaign with --workers 16. WITH ALLEN: the host, the DoubleChance
+restatement, the carve-out bookkeeping, the hold's structure, research
+8-9, B9's colour capture.
+
+*(prior stamp, cycle 451 (INCIDENT -
 Orca CRASH-LOOPED overnight; on the final relaunch it restored TWELVE
 terminals including duplicate live copies of the DD, the engine, and
 the orchestrator itself).** Recovery by content, not title: one copy
