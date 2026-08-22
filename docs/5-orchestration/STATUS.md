@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-21, cycle 446 (heartbeat).** Quiet
+**Keeper-era heartbeat stamp: 2026-08-21 18:50, cycle 447 (INCIDENT -
+Orca restart + ~17h overnight halt, seats down since ~01:40).** Recovery:
+monitors re-armed FIRST (heartbeat bds2w115q, watcher v48 bh5ojznrs);
+census: engine/TV/markets terminals restored ALIVE (new handles
+term_08b03220 / term_652fd627 / term_f4dbe16b), the DD terminal did NOT
+restore - resumed by session ID (9f5a0cff -> term_cf77847d, Opus max).
+theater-engine is 2 commits ahead (phase-1 work continued before the
+halt) - merge on its report. No branch lost work; main == origin.
+Sweeping seats for staged drafts next. With Allen: DoubleChance's scope
+(a-then-b recommended), the hold's structure, research 8-9.
+
+*(prior stamp, cycle 446 (heartbeat):)* Quiet
 grind, all four seats working: engine on phase-1 commit 1 (fixture-path
 tests); markets on K17 + the Section 14 evidence (B9 needs a human
 colour capture - Allen's); TV on 1.2/1.3 directly; DD idle, desk clean.
