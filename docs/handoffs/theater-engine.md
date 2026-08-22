@@ -310,3 +310,38 @@ phase's to fix; recorded so it is found on purpose rather than in a capture.
 
 **Asked of Allen:** nothing blocking. Only whether the 2026-08-14 ruling should be recorded as
 SUPERSEDED-BY-CONSTRUCTION, so a later reader does not go looking for behaviour that cannot fire.
+
+
+---
+
+# WHAT THE EVIDENCE ACTUALLY COVERS — and the one clause it does not
+
+The contract asks this phase to prove four things about a shared telling. Three are measured. The
+fourth is not measurable from outside the engine, and is recorded as what it is rather than folded
+into the green.
+
+| clause | status |
+|---|---|
+| **N grades at ONE whistle** | **MEASURED.** `SharedTellingTests` asserts exactly one `LegFinal` for a two-leg fixture and that both legs are revealed at it, each to its own result; `G8-ARMA` counts it across the campaign. Before arm A that fixture emitted two whistles — the falsifier fires on the old behaviour. |
+| **ONE hold, not N** | **MEASURED, as far as the engine owns it.** The hold itself is presentation (`T87-am2`, TV's); the engine's half is that there is one whistle beat to hold on, which is the row above. |
+| **the window ONCE per whistle** | **MEASURED.** One window opens after every grade on the fixture has landed, naming every leg that died, with `NoSingleCallSaves` true where more than one did and — the half that makes it a real distinction — false where only one did. |
+| **grades land in LEG ORDER** | **NOT MEASURED. Construction and review only.** |
+
+**Why the last one is not measured, stated rather than glossed.** The order grades land in is the
+order `_effects.OnLegResolved` is called, and that is not reachable from outside `SBR.Engine`:
+`EffectEngine.Add` builds its behaviours through `RelicBehavior.Create(def)` from the shipped
+catalogue, so a test cannot register an observer without putting test scaffolding into product code.
+Nothing in the public surface records the order afterwards — `RevealedLegState` reports a leg's final
+state, not when it got it.
+
+**What supports the clause instead:** `ResolveFixtureFinal` iterates `_fixtures[_currentFixture]`
+directly, and `SameMatchModel.GroupByMatchup` appends leg indices in ascending ticket order, so the
+walk is ticket order by construction. `FixturePathTests` pins the parallel fact on the data — that
+`DramaEvent.LegIndices` is ascending ticket order, including when the fixture's legs are NOT
+contiguous in the ticket. Between them the claim is well-founded; it is still an argument and a
+code-read, not a measurement, and it should not be reported as one.
+
+**If it must be measured**, the cheapest honest route is an `internal` test seam on `EffectEngine`
+plus `InternalsVisibleTo` for `SBR.Engine.Tests` — a real change to the engine's public shape for the
+sake of one assertion, which this lane did not make on its own authority. Route it if the phase's
+review wants the clause measured rather than argued.

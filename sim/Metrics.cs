@@ -211,6 +211,66 @@ public sealed class RunResult
     /// G7-SGP's per-kind arm reads. Same per-run-field discipline as everything above it.</summary>
     public readonly Dictionary<MarketKind, SameMatchKindExposure> SameMatchKinds = new();
 
+    // ---- T140 arm A gate telemetry (the per-leg sweat became a per-(ticket, FIXTURE) sweat) ----
+    //
+    // Same per-run-field discipline as the SAME MATCH counters above: RunPlayer accumulates these
+    // per session in PlaySweatWithControl, and BatchSummary reduces them sequentially in run-index
+    // order. The falsifier G8-ARMA is evaluated on is simple: before arm A an N-leg fixture emitted
+    // N LegFinal beats; after it, exactly one.
+
+    /// <summary>Distinct tellings (one (ticket, fixture) broadcast) begun this run — one per beat
+    /// carrying <c>Step == 1</c>.</summary>
+    public int ArmATellings;
+
+    /// <summary>Of those, tellings carrying more than one leg (<c>DramaEvent.IsSharedTelling</c>) —
+    /// same-match pairs riding one fixture.</summary>
+    public int ArmASharedTellings;
+
+    /// <summary>Whistles: every <c>DramaEventType.LegFinal</c> beat emitted this run. An N-leg
+    /// fixture must produce exactly one of these under arm A, never N.</summary>
+    public int ArmAWhistles;
+
+    /// <summary>A <c>LegFinal</c> on a fixture that ALREADY had one this sweat — the per-leg sweat
+    /// running again would show up here. MUST be 0 (see G8-ARMA).</summary>
+    public int ArmAExtraWhistles;
+
+    /// <summary>Violations of the telling clock: within one telling <c>Step</c> failing to run
+    /// 1,2,3,… with no gap/repeat/decrease, <c>TotalSteps</c> changing mid-telling, a new telling
+    /// not starting at <c>Step == 1</c>, or <c>FixtureIndex</c> decreasing across the sweat.
+    /// <c>T135</c>'s rewind, generalized to hold on multi-fixture tickets too. MUST be 0.</summary>
+    public int ArmAClockFaults;
+
+    /// <summary>Summed over every shared-telling <c>LegFinal</c>: how many of that fixture's legs
+    /// left <c>LegState.Pending</c> at that one whistle (<c>session.RevealedLegState</c> over
+    /// <c>evt.LegIndices</c>).</summary>
+    public int ArmASharedWhistleGradesLanded;
+
+    /// <summary>Summed over the same shared-telling whistles: how many non-voided legs the fixture
+    /// carried. Must equal <see cref="ArmASharedWhistleGradesLanded"/> whistle for whistle — see
+    /// <see cref="ArmAWhistleGradeMismatches"/>.</summary>
+    public int ArmASharedWhistleLegsExpected;
+
+    /// <summary>Shared whistles where the landed-grade count and the live-leg count differed. MUST
+    /// be 0 — a shared telling's one whistle must grade every one of its legs, not some.</summary>
+    public int ArmAWhistleGradeMismatches;
+
+    /// <summary>Pending-loss windows opened, read as <c>session.HasPendingLoss</c> right after a
+    /// <c>LegFinal</c> resolves.</summary>
+    public int ArmAWindowsOpened;
+
+    /// <summary>Of those, windows where <c>session.NoSingleCallSaves</c> — two or more legs died at
+    /// one whistle, so no single save closes it.</summary>
+    public int ArmAMultiDeathWindows;
+
+    /// <summary>Sweats whose ticket carries MORE THAN ONE fixture. The multi-fixture population is a
+    /// separate coverage question from the shared-telling one and neither implies the other: the
+    /// same-match probe builds tickets that are all one fixture, so it proves N-legs-one-whistle and
+    /// proves NOTHING about a clock that legitimately resets at a fixture boundary. `T140-am` is the
+    /// reason that distinction is load-bearing — a gate reading "per ticket" instead of
+    /// "per (ticket, fixture)" would FAIL a correct multi-fixture broadcast, and the only way to know
+    /// this one does not is to run it over tickets that have a boundary in them.</summary>
+    public int ArmAMultiFixtureTickets;
+
     public SameMatchExposure Relation(RelationKind kind)
     {
         if (!SameMatchRelations.TryGetValue(kind, out SameMatchExposure? e))

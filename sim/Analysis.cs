@@ -766,6 +766,85 @@ public sealed class GateData
                     + "the policy never reached a live quote at all.");
         }
 
+        // G8-ARMA (T140 arm A): the sweat was restructured from per-LEG to per-(ticket, FIXTURE) —
+        // a fixture is broadcast ONCE per ticket and every leg riding it grades at that one whistle.
+        // The falsifier is simple and is the whole point: before arm A an N-leg fixture emitted N
+        // LegFinal beats; after it, exactly one. G7 and G7-SGP cannot see this at all — both key on
+        // MarketKind / ticket shape, not on how many beats one fixture's grading took.
+        //
+        // Read off the "samematch" batch, same as G7-SGP: it is the one bot whose catalogue actually
+        // builds same-match tickets, i.e. fixtures carrying more than one leg — the only shape a
+        // per-leg regression could hide inside. The coverage arm below is not decoration: without it
+        // this gate would pass on a campaign that never built a same-match ticket at all, which is a
+        // gate that cannot fail.
+        if (sameMatch != null)
+        {
+            bool coverage = sameMatch.ArmASharedTellings > 0;
+            bool noExtraWhistles = sameMatch.ArmAExtraWhistles == 0;
+            bool noClockFaults = sameMatch.ArmAClockFaults == 0;
+            bool noMismatches = sameMatch.ArmAWhistleGradeMismatches == 0;
+
+            // THE SECOND COVERAGE ARM, AND IT IS NOT SYMMETRY FOR ITS OWN SAKE. The same-match probe's
+            // catalogue builds tickets whose legs all ride ONE matchup, so on that batch every telling
+            // is a shared one and `tellings == sharedTellings`. That proves N-legs-one-whistle and
+            // proves NOTHING about the other half of the rule: a MULTI-fixture ticket, where the
+            // fixture index advances and the clock legitimately restarts at 1 between tellings.
+            //
+            // `T140-am` is why that half needs a witness rather than an argument. A gate written "per
+            // ticket" instead of "per (ticket, fixture)" reads a correct multi-fixture broadcast as a
+            // rewind and fails it — the exact over-reach the spec was corrected for. The skilled batch
+            // is where those tickets live (ordinary parlays across matchups), so the clock rules are
+            // asserted THERE, over a population that actually has boundaries in it.
+            bool boundaryCoverage = skilled != null && skilled.ArmAMultiFixtureTickets > 0;
+            bool noBoundaryClockFaults = skilled == null || skilled.ArmAClockFaults == 0;
+            bool noBoundaryExtraWhistles = skilled == null || skilled.ArmAExtraWhistles == 0;
+
+            bool armAPass = coverage && noExtraWhistles && noClockFaults && noMismatches
+                && boundaryCoverage && noBoundaryClockFaults && noBoundaryExtraWhistles;
+
+            long midWhistleGrades = sameMatch.ArmASharedWhistleGradesLanded;
+            long midWhistleExpected = sameMatch.ArmASharedWhistleLegsExpected;
+
+            string shortfall = armAPass
+                ? ""
+                : " — FAILED ON: " + string.Join(", ",
+                    MissingArmA(coverage, noExtraWhistles, noClockFaults, noMismatches,
+                        boundaryCoverage, noBoundaryClockFaults, noBoundaryExtraWhistles));
+
+            g.Add("G8-ARMA", "T140 arm A restructure: the sweat resolves per (ticket, FIXTURE), not "
+                + "per leg — every leg riding one fixture is live for that fixture's whole telling "
+                + "and grades at its single whistle. A fixture emitting more than one LegFinal means "
+                + "the per-leg sweat is still running; a clock fault is T135's rewind returned "
+                + "(checked on multi-fixture tickets too, where the fixture index legitimately "
+                + "advances). Passes only when the campaign actually exercised a shared telling "
+                + "(sharedTellings > 0 — the coverage arm; without it this gate would pass on a "
+                + "campaign that never built a same-match ticket, i.e. a gate that cannot fail), zero "
+                + "fixtures emitted an extra whistle, zero clock faults, and every shared whistle "
+                + "graded exactly its own live legs. The clock rules are asserted a SECOND time over "
+                + "the skilled batch, which is where MULTI-fixture tickets live: the same-match probe "
+                + "builds only single-fixture tickets, so on its own it witnesses N-legs-one-whistle "
+                + "and never a fixture BOUNDARY — and T140-am's over-reach (reading a correct "
+                + "multi-fixture broadcast as a rewind) can only be ruled out on tickets that have "
+                + "one",
+                armAPass,
+                $"tellings {sameMatch.ArmATellings:N0}, shared tellings {sameMatch.ArmASharedTellings:N0}, "
+                + $"whistles {sameMatch.ArmAWhistles:N0}, extra whistles {sameMatch.ArmAExtraWhistles:N0}, "
+                + $"clock faults {sameMatch.ArmAClockFaults:N0}, grades landed at shared whistles "
+                + $"{midWhistleGrades:N0} (expected {midWhistleExpected:N0}), mismatches "
+                + $"{sameMatch.ArmAWhistleGradeMismatches:N0}, windows opened "
+                + $"{sameMatch.ArmAWindowsOpened:N0}, multi-death windows "
+                + $"{sameMatch.ArmAMultiDeathWindows:N0}"
+                + (skilled == null
+                    ? " | boundary arm: NO SKILLED BATCH"
+                    : $" | boundary arm (skilled): multi-fixture tickets "
+                      + $"{skilled.ArmAMultiFixtureTickets:N0}, tellings {skilled.ArmATellings:N0}, "
+                      + $"clock faults {skilled.ArmAClockFaults:N0}, extra whistles "
+                      + $"{skilled.ArmAExtraWhistles:N0}")
+                + shortfall,
+                // Same structural argument as G7 / G7-SGP: a beat count is not a sample.
+                "exact — a beat count is not a sample; no resolution limit");
+        }
+
         if (audit != null)
         {
             // Statistical control (rev 5 §15): paired-seed CIs, Bonferroni z across the whole
@@ -896,6 +975,23 @@ public sealed class GateData
         if (uncoveredKinds.Count > 0)
             yield return "never in a same-match ticket: "
                 + string.Join(", ", uncoveredKinds.Select(Report.MarketName));
+    }
+
+    /// <summary>Which condition(s) of G8-ARMA failed. Named individually for the same reason as
+    /// <see cref="Missing"/> above it: "the gate failed" sends the reader back to the counters to
+    /// find out which invariant broke, and the whole point of a falsifier is that the answer arrives
+    /// with the verdict.</summary>
+    private static IEnumerable<string> MissingArmA(bool coverage, bool noExtraWhistles,
+        bool noClockFaults, bool noMismatches, bool boundaryCoverage, bool noBoundaryClockFaults,
+        bool noBoundaryExtraWhistles)
+    {
+        if (!coverage) yield return "no shared telling was ever exercised (the gate decided nothing)";
+        if (!noExtraWhistles) yield return "a fixture emitted more than one whistle (the per-leg sweat is still running)";
+        if (!noClockFaults) yield return "the rendered clock regressed inside a telling (T135's rewind)";
+        if (!noMismatches) yield return "a shared whistle did not grade exactly its own live legs";
+        if (!boundaryCoverage) yield return "no MULTI-fixture ticket was ever swept, so the fixture boundary is unwitnessed (T140-am)";
+        if (!noBoundaryClockFaults) yield return "a clock fault across a fixture boundary on the skilled batch";
+        if (!noBoundaryExtraWhistles) yield return "an extra whistle on the skilled batch";
     }
 
     private void Add(string id, string desc, bool pass, string actual, string resolution = "",

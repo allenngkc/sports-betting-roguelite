@@ -194,9 +194,23 @@ public static class RunPlayer
         {
             SweatSession session = sweats[i];
             Ticket ticket = run.Tickets[i];
+
+            // T140 arm A gate telemetry (G8-ARMA): per-ticket cursor state for the clock-fault and
+            // extra-whistle checks. -1 sentinels mean "no telling seen yet" / "no whistle yet".
+            int armALastFixture = -1;
+            int armALastStep = 0;
+            int armALastTotalSteps = -1;
+            int armAWhistledFixture = -1;
+            if (session.FixtureCount > 1) result.ArmAMultiFixtureTickets++;
+
             while (true)
             {
                 bool moved = session.MoveNext(out DramaEvent? evt);
+
+                if (moved)
+                    RecordArmATelemetry(session, ticket, evt!, result,
+                        ref armALastFixture, ref armALastStep, ref armALastTotalSteps,
+                        ref armAWhistledFixture);
 
                 // The pending-loss window (rev 5 §13): the strategy chooses; legality is
                 // enforced here and an illegal choice falls back to Decline.
@@ -264,6 +278,72 @@ public static class RunPlayer
             }
         }
         run.FinishSweat();
+    }
+
+    /// <summary>T140 arm A gate telemetry (G8-ARMA): accumulates the counters that prove the sweat
+    /// resolves per (ticket, FIXTURE) and not per leg — a fixture emitting more than one
+    /// <c>LegFinal</c> means the per-leg sweat is still running, and a clock fault is <c>T135</c>'s
+    /// rewind. Called once per real event (<c>moved == true</c>) from <see cref="PlaySweatWithControl"/>,
+    /// BEFORE any pending-loss action is taken, so <c>session.HasPendingLoss</c> reflects exactly
+    /// what <c>MoveNext</c> just resolved. Allocation-free except at a <c>LegFinal</c> on a shared
+    /// telling, where <c>evt.LegIndices</c> is the cached per-path array (see <c>DramaEvent</c>) —
+    /// tens of thousands of sessions run this, so no LINQ and no per-event allocation on the common
+    /// (non-LegFinal) beat.</summary>
+    private static void RecordArmATelemetry(SweatSession session, Ticket ticket, DramaEvent e,
+        RunResult result, ref int lastFixture, ref int lastStep, ref int lastTotalSteps,
+        ref int whistledFixture)
+    {
+        // FixtureIndex must never decrease across the sweat (T135's rewind, generalized: this must
+        // also hold on multi-fixture tickets, where the index legitimately advances).
+        if (e.FixtureIndex < lastFixture) result.ArmAClockFaults++;
+
+        if (e.FixtureIndex != lastFixture)
+        {
+            // A new telling begins: it must start at Step == 1.
+            result.ArmATellings++;
+            if (e.IsSharedTelling) result.ArmASharedTellings++;
+            if (e.Step != 1) result.ArmAClockFaults++;
+            lastFixture = e.FixtureIndex;
+        }
+        else
+        {
+            // Within one telling Step must run 1,2,3,... with no gap, repeat or decrease, and
+            // TotalSteps must not change — counted as two independent violations, since both can
+            // fire on the same beat.
+            if (e.Step != lastStep + 1) result.ArmAClockFaults++;
+            if (e.TotalSteps != lastTotalSteps) result.ArmAClockFaults++;
+        }
+        lastStep = e.Step;
+        lastTotalSteps = e.TotalSteps;
+
+        if (e.Type != DramaEventType.LegFinal) return;
+
+        result.ArmAWhistles++;
+        if (whistledFixture == e.FixtureIndex) result.ArmAExtraWhistles++;
+        else whistledFixture = e.FixtureIndex;
+
+        if (e.IsSharedTelling)
+        {
+            IReadOnlyList<int> legIndices = e.LegIndices; // cached per-path array on a shared telling
+            int landed = 0, expected = 0;
+            for (int k = 0; k < legIndices.Count; k++)
+            {
+                int j = legIndices[k];
+                if (session.RevealedLegState(j) != LegState.Pending) landed++;
+                if (!ticket.Legs[j].IsVoided) expected++;
+            }
+            result.ArmASharedWhistleGradesLanded += landed;
+            result.ArmASharedWhistleLegsExpected += expected;
+            if (landed != expected) result.ArmAWhistleGradeMismatches++;
+        }
+
+        // The window this whistle opened, if any — read now, before any mulligan/whistle/decline
+        // action the caller is about to take on it.
+        if (session.HasPendingLoss)
+        {
+            result.ArmAWindowsOpened++;
+            if (session.NoSingleCallSaves) result.ArmAMultiDeathWindows++;
+        }
     }
 
     // Swing = the biggest single-ticket money movement this round: a won ticket's gross payout, the
