@@ -56,3 +56,71 @@ pattern, named: small items are not an exemption - bundle related small items
 into ONE bounded Sonnet dispatch (six string fixes = one agent carrying all
 six, with per-item evidence, allowed/forbidden files, and an exit gate).
 Audited daily by `python tools/delegation-audit.py`.
+
+---
+
+## CONSOLE SURFACES PHASE — built 2026-08-21, evidence docked, awaiting DD read
+
+Built to `docs/design/spec-console-surfaces-2026-08-19.md` (Allen approved, batch 121) under
+`docs/5-orchestration/console-build-dispatch-2026-08-20.md`. Four commits:
+
+- `bb14ac3` — the 80×24 page and the market sheet (§3–§6, §10)
+- `2c01d7b` — `K6`'s address grammar with `K16`'s beat-prefix fix riding it, as bound
+- `43301f4` — the evidence hook (one env var, default-inert)
+- `15ad83d` — `K17-cl`, the narration anchor
+
+**ONE COMPOSER, TWO SURFACES.** `game-console` links `MarketSheet.cs` and `MarketDestinations.cs`
+**by source** (see `SBR.ConsoleGame.csproj`). They are pure C# over `SBR.Engine`; linking rather
+than moving them into the engine is deliberate — moving changes the engine and forces a rebuild of
+the tracked `SBR.Engine.dll`, **which this lane must never commit.** The console therefore
+re-derives nothing: destinations, order, folio, and the matchup-global line numbers that ARE the
+pick addresses all come from the laptop's gated model.
+
+**Evidence:** `docs/design/dd-import/console-build-2026-08-21/` — B1–B8 plus README. **Untracked,
+and it stays untracked**; the harness is versioned, the capture set is not. B1–B7 were shot at
+`4f1b01e`; **B8 was re-shot at `15ad83d`** because `K17` changed the beats it captures.
+
+### Owed / open when this seat next reports
+
+- **`B9` (colour) is NOT this lane's** — a piped transcript carries zero ANSI bytes (measured), so
+  it needs a human at a real terminal. With Allen or a capture seat.
+- **The neither-branch LINES are routed to the DD**, per `K17-cl`'s own "NOT RULED". `T163-am`'s
+  momentum lines transfer verbatim; **its goal lines do not exist**, and its mechanism cannot
+  transfer because `DramaEvent` carries no actor. What ships is assembled from already-authored
+  clauses and is marked `ASSEMBLED-NOT-AUTHORED` in `EventText.cs`.
+- **DoubleChance scope is Allen's** (batch 170). Nothing here is built on it.
+
+### Two measured corrections to the spec, for whoever amends it
+
+- **§3 says 15 leader dots at worst; the surface prints 16.** `RowGeometry.OfferRow` uses a
+  one-space gap where `Page.Leadered` uses two. The conclusion is unaffected; the number is one low.
+- **§14's `B4` folio cannot read `66–83 of 84`** at the shipped geometry — `BodyRows` is 20, so a
+  first page is always 20 rows. Those numbers are §5's illustrative example. The pin is met.
+
+### DOCKET — an ungated surface, out of this spec's scope, NOT fixed here
+
+`§1`/`§15` exclude the shop and `SweatRenderer`'s composition, so these were reported rather than
+touched — but they are real `§13` gate 1/2 breaches on screens a player sees:
+
+- **422 lines over 80** across shop/sweat screens (commit 1's sweep, 1,983 lines) — shop relic and
+  consumable descriptions run to **214 columns**.
+- **The sweat command hint is 82 columns**, identical in the DD's own `console-read-2026-08-19/`
+  `A4-sweat.txt` — pre-existing, and now *inside* the evidence set because `§14` `B8` forces a
+  sweat capture.
+- One sweat screen is **32 rows** against a 24-row page.
+- **The fix is a three-line `line.Length <= 80` gate over those screens** (DD's own words).
+
+### Cross-lane finding for the TV lane
+
+**§3 of `spec-neither-branch-lines` must NOT be deleted.** `DramaEvent` carries `LegIndex, Step,
+TotalSteps, Type, WinProbAfter, Tag` and **no actor** — no scorer, no possession side — so §1's
+slot change is unimplementable on the TV too without an engine change.
+
+### Traps this phase paid for
+
+- **`BetslipModel.SideOn` cannot be called for non-moneyline kinds** — it short-circuits and answers
+  *neither* for all five side-carrying kinds; `Pick.Side`/`Leg.Side` both throw. A ruling naming it
+  names the SHAPE of the answer, not a call site.
+- **A piped transcript's prompts carry no trailing newline.** A naive width sweep concatenates them
+  with the next screen and reports false violations. Split them first.
+- **`ConsoleColor` does not survive a redirect** — zero escape bytes. Colour is not self-shootable.
