@@ -404,3 +404,31 @@ was corrected for — and only a population that HAS boundaries can rule that ou
 `SweatSession.TicketWinProbability` is the ONLY probability presentation may show (`T143`, `T164`).
 `DramaEvent.WinProbAfter` is the anchor leg's and is a pricing input — it survives because cash-out
 and the Whistle's roll need a per-leg number, not because anything should display it.
+
+
+---
+
+# THE PLUGIN DLL WANTS A CLEAN RELEASE BUILD — a trap this lane walked into
+
+**The rule:** an engine-owning lane must build `SBR.Engine.dll` with a **clean** Release build before
+committing it — wipe `engine/obj/Release` and `engine/bin/Release` first. Never commit the output of
+an incremental one.
+
+**Why, measured rather than assumed.** The DLL committed at `45b8224` was not reproducible: a clean
+Release build of the *same, unchanged* source produced different bytes. Two readings were possible
+and they want opposite responses — a non-deterministic compiler (harmless churn, ignore it) or a
+stale artifact (Unity is running the wrong engine). So it was measured: **two builds from wiped
+`obj/` and `bin/` are byte-identical**, so the build is deterministic and the churn was a STALE
+ARTIFACT. Re-committed clean at `0f00122`; engine source unchanged since `e8492b5`, so no behaviour
+moved.
+
+**Where the staleness comes from, and it is the routine practice itself.** Test runs in this repo use
+`-p:SbrUnityPluginDir=<scratch>` so the tracked Unity DLL stays clean during iteration — correct, and
+recorded practice. But those runs leave intermediates in `engine/obj`, and a later incremental
+`dotnet build engine -c Release` layered on top of them emits a binary that no clean build reproduces.
+The habit that protects the working tree is exactly what poisons the artifact at the end.
+
+**How to verify before committing:** hash the output and confirm it is identical in all three places
+it lands — `engine/bin/Release/netstandard2.1/`, `sim/bin/Release/net10.0/`, and
+`unity/SBR/Assets/Plugins/SBR/`. If they disagree, something rebuilt between them and the commit
+would capture whichever ran last.
