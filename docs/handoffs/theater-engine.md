@@ -345,3 +345,62 @@ code-read, not a measurement, and it should not be reported as one.
 plus `InternalsVisibleTo` for `SBR.Engine.Tests` — a real change to the engine's public shape for the
 sake of one assertion, which this lane did not make on its own authority. Route it if the phase's
 review wants the clause measured rather than argued.
+
+
+---
+
+# PHASE 1 — LANDED
+
+**Suite: 324 passed, 0 failed, 1 skipped** (baseline 307/0/1, +17 new tests). `engine`, `sim` and
+`game-console` all build clean in Release. `SBR.Engine.dll` rebuilt in Release and committed.
+
+| commit | what |
+|---|---|
+| `d28f36b` | the session contract, published BEFORE the change, with every broken call site named |
+| `e8492b5` | the restructure — one telling per (ticket, fixture) |
+| `388ac16` | session-level pins on the shared telling; the carve-out escalation |
+| `45b8224` | same-match quotes re-pointed; `G8-ARMA`; the rebuilt DLL |
+
+## The evidence, and what each piece actually proves
+
+- **Byte-identity on every ticket without a same-match pair — STRUCTURAL, then confirmed twice.**
+  The drama stream is untouched by construction (§5). `GoldenSeedTests`' 14-beat `(LegIndex, Step,
+  Type, Tag)` pin plus its first-ten `WinProbAfter` and settled bank — written by another lane before
+  this one existed — is **green, unmodified**. `FixturePathTests`' stream-position test passed on its
+  first run: a same-match ticket leaves the drama stream exactly where an ordinary ticket of the same
+  leg count would, asserted with `==`.
+- **N grades at ONE whistle** — `SharedTellingTests` (session mechanics) and `G8-ARMA` (population).
+- **The clock never regresses** — asserted inside a telling AND across a fixture boundary.
+- **One window per whistle**, naming every dead leg, with `NoSingleCallSaves` true on multi-death and
+  **false on single-death** — the half that makes it a distinction rather than a constant.
+- **Grades in LEG ORDER** — argued, not measured. See the section above; do not report it as measured.
+
+## `G8-ARMA` has TWO coverage arms, and the second one was missing at first
+
+The same-match probe builds only SINGLE-fixture tickets, so on its batch `tellings ==
+sharedTellings`: it witnesses N-legs-one-whistle and never a fixture BOUNDARY. The gate's first cut
+nevertheless described itself as checking multi-fixture tickets. **The claim was false, so the gate
+was fixed rather than the sentence** — the clock rules are asserted a second time over the skilled
+batch, where ordinary multi-matchup parlays live, gated on `ArmAMultiFixtureTickets > 0`.
+
+`T140-am` is why this matters and not merely tidy: a gate written *per ticket* instead of
+*per (ticket, fixture)* would FAIL a correct multi-fixture broadcast — the exact over-reach the spec
+was corrected for — and only a population that HAS boundaries can rule that out.
+
+## What phase 1 does NOT do
+
+- **No `unity/` runtime change.** Every broken call site is named in §6 and belongs to the TV lane.
+  Nothing outside `engine/` was edited except `sim/` (this lane's, for the gate) and `engine.tests/`.
+- **`§6.7` at the fixture boundary is NOT here.** `T140-am` scoped it out of `T140` entirely; the
+  engine now makes the boundary *addressable* (`FixtureIndex` advances, `CurrentFixtureLegs` changes)
+  but draws nothing.
+- **Phases 2 and 3 are untouched** — the count ledger's N-live lifecycle, the live set, the pulse, and
+  `T165`'s fixture counter (which lands with `T91-cl`, or the element moves twice).
+- **`T163`'s *neither*-branch flavour lines** are owed from the DD and belong to phase 3. The engine
+  supplies the RULE's inputs (`CurrentFixtureLegs`, `LegIndices`); it authors no copy.
+
+## The one thing the next lane should not have to rediscover
+
+`SweatSession.TicketWinProbability` is the ONLY probability presentation may show (`T143`, `T164`).
+`DramaEvent.WinProbAfter` is the anchor leg's and is a pricing input — it survives because cash-out
+and the Whistle's roll need a per-leg number, not because anything should display it.
