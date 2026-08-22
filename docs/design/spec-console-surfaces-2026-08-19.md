@@ -113,7 +113,15 @@ Against a row whose fixed chrome — line number, price, probability — is 19 c
 |---|---|---|---|
 | **62** (today's rule) | 43 | **FAILS by 1 character** | |
 | 72 | 53 | fits | 7 leader dots at worst |
-| **80** | **61** | fits | **15 leader dots at worst** |
+| **80** | **61** | fits | **16 leader dots at worst** |
+
+> **CORRECTED 2026-08-22, batch 172, on the markets lane's measurement of the built surface.**
+> This row read **15**. The surface prints **16**: `RowGeometry.OfferRow` computes
+> `dots = Field - head.Length - 1` — **one** reserved space — where `Page.Leadered` computes
+> `Width - indent - left.Length - 1 - 1 - right.Length` — **two**. Same device, two gap
+> conventions, so an offer row gets one dot more than a contents line for the same content.
+> **The ruling is untouched: 80 still clears and 62 still fails by one character.** Only the
+> illustrative count was low, and it was low in the safe direction.
 
 **RULED: the console's page is 80 columns × 24 rows.**
 
@@ -196,7 +204,10 @@ Derived from the rendered list, never authored (`S74-am3`). **A folio that lies 
 folio**, because its whole value is that it is true inside a game about being lied to.
 
 **Where the destination overflows the page, the folio paginates and says so:**
-`PLAYERS   66–83 of 84   [N]ext`. The folio already carries the range; a next page is the folio's
+`PLAYERS   66–83 of 84   [N]ext` — **an ILLUSTRATION of the form, not a shipped value; at the built
+geometry `BodyRows` is 20, so PLAYERS paginates `1–20` / `21–40` / … `81–84`** (batch 172, and §14's
+`B4` was corrected for having quoted this line back as a criterion).
+The folio already carries the range; a next page is the folio's
 own next page and needs no new vocabulary. `S25-am` transfers as: *every destination that overflows
 the page paginates with the folio.*
 
@@ -255,8 +266,12 @@ The gap between a name and its price is the **annotation gap**, and a gap doing 
 like it. Monospace makes this exact rather than measured.
 
 **`S100`'s minimum-run guard transfers as law and never fires at this geometry** — the worst
-constructible row still prints 15 dots, where the laptop's prints none. Stated so nobody removes the
+constructible row still prints 16 dots, where the laptop's prints none. Stated so nobody removes the
 guard, and so nobody thinks it is doing work.
+
+> **CORRECTED 2026-08-22, batch 172** — read 15; measured 16 on the built surface (see §3's
+> correction for the one-space/two-space cause). **The clause is strengthened, not weakened:** the
+> guard is one dot further from firing than this spec claimed.
 
 ### 6.5 Row names uppercase at the presentation layer (`S96`)
 
@@ -512,7 +527,16 @@ Transcripts, shot the way §2's were — cheap, deterministic, and this surface'
 | `B1` | the contents page | all six destinations, all line ranges, `CORRECT SCORE`'s child suppressed (`S102`) |
 | `B2` | a destination page at its maximum | GOALS at 18 offers, folio, leaders on every row |
 | `B3` | **the worst constructible row** | a **forced** matchup carrying `SAN FRANCISCO SPREADSHEETS UNDER 4.5 CORNERS`. **`S99`'s pin and `C55`: the subject must be IN FRAME** — a capture that happens to deal `Denver Plumbers` proves nothing |
-| `B4` | PLAYERS paginating | the folio reading `66–83 of 84` and its next page |
+| `B4` | PLAYERS paginating | **the folio carrying its OWN range and `[N]ext`, and its next page** |
+
+> **CORRECTED 2026-08-22, batch 172.** This criterion read *"the folio reading `66–83 of 84`"*.
+> **Those numbers cannot occur at the shipped geometry:** `Page.BodyRows` is `Height - ChromeRows`
+> = `24 - 4` = **20**, so a first page is always 20 offers and PLAYERS paginates `1–20` / `21–40` /
+> … `81–84`. **`66–83 of 84` is §5's ILLUSTRATIVE example and was never a shipped value** — this
+> spec quoted its own illustration back as an evidence criterion.
+> **The pin is met and `B4` is satisfied**; what was wrong was the criterion, not the surface.
+> **The general lesson, worth more than the fix: an example in a prose section is not a
+> specification.** Copying one into the evidence table turns a teaching number into a gate.
 | `B5` | an empty destination | `no prices offered` (`S89`), forced |
 | `B6` | the three refusals | fifth leg at the fifth token, an out-of-range address, and a legal `1#nn` pick placed |
 | `B7` | a four-leg ticket read back | the ledger block, and no line over 80 |
