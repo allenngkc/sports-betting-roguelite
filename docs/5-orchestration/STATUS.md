@@ -1,6 +1,18 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-21 18:50, cycle 447 (INCIDENT -
+**Keeper-era heartbeat stamp: 2026-08-21, cycle 448 (heartbeat).**
+ENGINE PHASE 1 GREEN ON ITS BRANCH (45b8224 - per-fixture sweat, G8-ARMA
+gate, DLL rebuilt+committed; the carve-out assertion branch-guarded to
+fail loudly if stale); the 10k gate campaign runs - merge on its report.
+Markets mid-K17-verification (terminal render corrupted since the
+restart - re-seat planned after its report; watcher noise tolerated).
+TV nudged for state after its Unity wait. DD stood down overnight, now
+holding; Allen's morning order (take K17's report) HELD - the report
+does not exist yet. WITH ALLEN: the carve-out bookkeeping (record
+2026-08-14 as superseded-by-construction?), DoubleChance's scope, the
+hold's structure, research 8-9.
+
+*(prior stamp, cycle 447 (INCIDENT -
 Orca restart + ~17h overnight halt, seats down since ~01:40).** Recovery:
 monitors re-armed FIRST (heartbeat bds2w115q, watcher v48 bh5ojznrs);
 census: engine/TV/markets terminals restored ALIVE (new handles
