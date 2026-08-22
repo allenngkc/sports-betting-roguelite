@@ -5,6 +5,28 @@
 
 ---
 
+> ## ⚠ AMENDED 2026-08-21, batch 171 — §1's MECHANISM IS UNIMPLEMENTABLE ON BOTH SURFACES
+>
+> **`DramaEvent` carries `LegIndex`, `Step`, `TotalSteps`, `Type`, `WinProbAfter` and `Tag` —
+> and NO ACTOR.** No scorer, no possession side. Measured by the markets lane while building
+> `K17-cl`, and it is true of the TV as well as the console: **§1's slot change has nothing to
+> read.** It is not buildable on either surface without an engine change.
+>
+> **So the document inverts.** §3 — which this spec called a fallback and told the lane to
+> **delete if unused** — **IS WHAT SHIPS, on both surfaces.** §1 stands as the design that would
+> be right if the event carried an actor, and as the statement of what an engine change would buy.
+>
+> **§2's three replacements still hold as PHRASES.** They interpolate a slot, so they cannot be
+> used verbatim where there is no actor — but *"score against the slip"* was authored precisely
+> because it states the goal works against the ticket **without naming a side it works for**, and
+> that is *more* true with no slot than with one. The console's `a goal against the slip.` is that
+> phrase landing where it always belonged.
+>
+> **§4's casing rule is CORRECTED — see §5.** *"Match the table they join"* was written for one
+> file and produced the wrong result on transfer to another.
+>
+> **The full club-free line set, authored, is §5.**
+
 ## 0. THE FINDING THAT MAKES THIS CHEAP
 
 **I expected to author eighteen lines. Fifteen of them already work.**
@@ -92,3 +114,47 @@ and should be deleted rather than shipped unused.
   two styles should converge is its own question and is not asked here.
 - **When the neither branch FIRES.** That is `T163`'s three branches, ruled and unchanged.
 - **The fifteen surviving lines.** Not re-authored, not re-ordered, not touched.
+
+---
+
+## 5. THE CLUB-FREE LINE SET — authored in full (batch 171)
+
+**Two of these ship already**, assembled by the markets lane and flagged `ASSEMBLED, NOT AUTHORED`
+in `EventText.cs`. **Both are endorsed as authored** — see `K17-cl-vf`. The rest are added here
+because **each goal table shipped with ONE variant**, and `variants[step % variants.Length]` on a
+single-element table means every goal beat in the branch reads identically.
+
+### 5.1 Casing — the corrected rule
+
+**A club-free line takes the casing its own FILE uses for club-free lines.**
+
+Not *"the table it joins"*: a table whose other lines open with an interpolated club noun has no
+casing of its own to match, which is how four lines in one branch ended up split two capitalised,
+two lowercase. `EventText.cs` establishes lowercase for club-free copy — `a goal in the churn — not
+the backed scorer.`, `off the bar and away.` — **so on the console the whole branch is lowercase**,
+momentum lines included. On the TV, whose club-free convention is its own, they take that.
+
+### 5.2 The set
+
+| table | variant | line |
+|---|---|---|
+| **goal, number up** | 1 | `a goal — the number ticks with it.` *(ships)* |
+| | 2 | `a goal in the churn; the number moves.` |
+| | 3 | `one goes in — the slip gains.` |
+| **goal, number down** | 1 | `a goal against the slip.` *(ships)* |
+| | 2 | `a goal; the slip flinches.` |
+| | 3 | `one goes in, the wrong way for the slip.` |
+| **momentum, up** | 1 | `the half tightens.` |
+| | 2 | `territory, and the clock with it.` |
+| | 3 | `the pitch shrinks.` |
+| **momentum, down** | 1 | `the ball stays in midfield.` |
+| | 2 | `slow through the middle, and no one in a hurry.` |
+| | 3 | `sideways, and the clock with it.` |
+
+**Every line names no club and states no verdict on the match** (`T39`, `T44`, §8). Where a line
+speaks of the ticket it uses the surface's own word — `the slip` — which `ScoreDown` already ships
+in *"the slip flinches"*.
+
+**`a goal in the churn`** is borrowed from `EventText.cs`'s own scorer branch rather than invented,
+and **`territory` / `sideways`** are deliberately paired so the two momentum directions read as one
+axis rather than two moods.
