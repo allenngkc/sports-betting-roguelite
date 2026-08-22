@@ -1,6 +1,23 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-21, cycle 450 (INCIDENT
+**Keeper-era heartbeat stamp: 2026-08-22 00:35, cycle 451 (INCIDENT -
+Orca CRASH-LOOPED overnight; on the final relaunch it restored TWELVE
+terminals including duplicate live copies of the DD, the engine, and
+the orchestrator itself).** Recovery by content, not title: one copy
+per seat kept (DD=term_5ecc9def, engine=term_5c318dae - it holds the
+4h campaign shell, TV=term_c6ef519b, markets=term_cecd6038), seven
+stale/duplicate terminals CLOSED including an idle orchestrator twin;
+monitors re-armed (heartbeat b232dpy98, watcher v51 bxb3efc1z). Landed
+from the DD's restored copy: batch 172 + the two console-spec
+corrections (f952a97). Allen's staged words recovered: engine
+'relaunch with --workers 16' (FIRED). ONE STAGED WORD LOST to a
+corrupted terminal: Allen's DoubleChance scope ruling, cut at 'the
+DoubleChance scope call i...' - ALLEN, PLEASE RESTATE. Markets reports
+the console phase built, evidenced (B1-B8) and merged. WITH ALLEN: the
+DoubleChance restatement, the carve-out bookkeeping, the hold's
+structure, research 8-9, B9's human colour capture.
+
+*(prior stamp, cycle 450 (INCIDENT
 CORRECTION - the census after the crash MISLABELED SEATS and spawned a
 DD twin; caught and fixed).** What happened: Orca had restored two
 live sessions into bare-titled terminals; my relaunches then (a) opened
