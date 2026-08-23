@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-22, cycle 457 (heartbeat).** TV's
+**Keeper-era heartbeat stamp: 2026-08-23, cycle 458 (heartbeat).**
+MARKETS ROTATED OUT: the console-surfaces seat stood down on Allen's
+word after its rotation handoff merged (5780269); the worktree stays for
+the lane's next phase. TV building 1.2 directly (authorized deviation);
+engine + DD standing by. WITH ALLEN: the DoubleChance restatement, the
+carve-out bookkeeping, engine worktree retire/keep, the hold's
+structure, research 8-9, B9's colour capture.
+
+*(prior stamp, cycle 457 (heartbeat).** TV's
 1.3 merged (c710a23 - the correct-score column stops being blank); TV
 mid-re-verify against the new DLL (a long suite turn). MARKETS ORDERED
 TO ROTATE (688k context, mandate complete) - handoff then stand-down.
