@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-22, cycle 454 - ALLEN'S
+**Keeper-era heartbeat stamp: 2026-08-22, cycle 455 - ARM A PHASE 1 IS
+MERGED (671766c).** The ruled campaign: 9 gates, 9 PASSED, 9
+adjudicated; suite 324/0; the DLL clean-built (the lane's own law);
+seven commits, no drift. The engine worktree's mandate is complete -
+holding it pending Allen's word on retire-vs-next-phase. TV takes
+phases 2-3 against the published contract after 1.3 closes (merge main
+first - re-verify engine assumptions against the new DLL). WITH ALLEN:
+the DoubleChance restatement, the carve-out bookkeeping, engine
+worktree retire/keep, the hold's structure, research 8-9, B9's colour
+capture.
+
+*(prior stamp, cycle 454 - ALLEN'S
 'CONTINUE': the board is rebuilt.** Orca stable again; all four seats
 seated and briefed (DD=term_9cfd59bd by session ID, TV=term_51f1dee1,
 markets=term_4ca80d34 by --continue, engine=term_69990413 - it SURVIVED
