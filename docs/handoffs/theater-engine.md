@@ -432,3 +432,64 @@ The habit that protects the working tree is exactly what poisons the artifact at
 it lands — `engine/bin/Release/netstandard2.1/`, `sim/bin/Release/net10.0/`, and
 `unity/SBR/Assets/Plugins/SBR/`. If they disagree, something rebuilt between them and the commit
 would capture whichever ran last.
+
+
+---
+
+# THE GATE CAMPAIGN — RUN AND PASSED (2026-08-22)
+
+**Bare `--gates`, the ruled floor of 10,000 runs. 9 gates evaluated, 9 passed, 9 produced a verdict.**
+Artifact: `docs/theater-engine/gate-campaign-arm-a-2026-08-22.md` (the report in full, reproducible —
+the sim pins its seeds, so the same arguments reproduce the body byte-for-byte).
+
+| gate | verdict | reading |
+|---|---|---|
+| `G1` | PASS | median 4, won 0.1% |
+| `G2` | PASS | median 5, won 0.0% |
+| `G3` | PASS | median 5, won 5.2% (0.7pp from the nearest band edge) |
+| `G4` | PASS | EV arc crosses at R3 |
+| `G5` | PASS | synergy excess +3.0pp |
+| `G6` | PASS | martyr-worst 4.8% vs skilled 5.2% |
+| `G7` | PASS | all shipped markets covered |
+| `G7-SGP` | PASS | placed 106,419 · settled 71,056 · kinds 15/15 · no-label fallbacks 0 · cashed out 35,363 (14,967 early / 10,395 mid / 10,001 late) |
+| **`G8-ARMA`** | **PASS** | **tellings 106,419 · shared tellings 106,419 · whistles 71,056 · extra whistles 0 · clock faults 0 · grades at shared whistles 179,669 of 179,669 expected · mismatches 0 · windows opened 12,173 · multi-death windows 5,666** |
+| | | **boundary arm (skilled): multi-fixture tickets 29,019 · tellings 81,559 · clock faults 0 · extra whistles 0** |
+
+## What the numbers say, read rather than glanced at
+
+- **THE FALSIFIER FIRED AND HELD. `extra whistles 0` over 106,419 shared tellings.** Before arm A
+  every one of those fixtures emitted N `LegFinal` beats; a single leftover per-leg path anywhere in
+  the campaign would have shown here. This is `T140` arm A landing, counted.
+- **`grades landed at shared whistles 179,669 of 179,669 expected`** — every leg on every shared
+  fixture graded at its own whistle, none early, none missed. 179,669 against 106,419 tellings is the
+  N-legs-per-fixture ratio made visible: **73,250 legs that used to need their own telling no longer
+  do.**
+- **`clock faults 0` on BOTH arms.** `T135`'s rewind is gone inside a telling (same-match arm) AND
+  across a fixture boundary (skilled arm, **29,019 multi-fixture tickets**) — the second arm being
+  the one added because the same-match probe alone never witnesses a boundary, and `T140-am` warns
+  that a badly scoped gate would FAIL a correct multi-fixture broadcast rather than pass it.
+- **`multi-death windows 5,666`** — `S85`'s state is real and common, not theoretical. In 5,666 cases
+  two or more legs died at one whistle and `NoSingleCallSaves` was true, which is the fact phase 3's
+  affordance must state before presenting the offer.
+- **THE ECONOMY DID NOT MOVE.** `G1`–`G6` are the economy gates and all six pass at their pre-arm-A
+  criteria — `G3`'s skilled win rate at 5.2% inside its band, `G6`'s worst-case loss-farmer 2.4pp
+  from the breach line. The restructure is presentation-shaped and the campaign says so in numbers.
+- **`G7-SGP` still covers what it covered**: 15/15 market kinds, zero no-label fallbacks, and 35,363
+  same-match cash-outs split 14,967 / 10,395 / 10,001 across early / mid / late. **That split is the
+  proof the re-pointed EARLY/MID/LATE probe did not go vacuous** — the defect this lane caught in
+  `sim/SameMatchStrategy` would have collapsed mid and late to zero while the gate still passed.
+
+## One flag, pre-existing and not this lane's
+
+`⚑ UNDEREXPOSED: Chalk Eater (0 wound-up runs < 200)` — an item-exposure flag from the audit table,
+not a gate verdict. It is unrelated to arm A and was present before this phase; recorded so it is not
+mistaken for fallout.
+
+## A note on running it
+
+The campaign took two wall-clock days across three attempts, and none of that was the engine's fault:
+the first two runs were killed by session teardown (a detached `Start-Process` survives an agent
+restart but not the harness's own cleanup), and the machine slept overnight mid-run. **`--workers 16`
+did not speed it up meaningfully** — `WorkerPolicy`'s own note is right that this workload reaches
+~5–6 cores whatever the degree, so the worker count was never the ceiling. Budget a campaign in
+compute-hours on a machine that stays awake, not in wall time.
