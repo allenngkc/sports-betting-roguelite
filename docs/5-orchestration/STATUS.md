@@ -1,6 +1,19 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-23 23:59, cycle 459 (INCIDENT -
+**Keeper-era heartbeat stamp: 2026-08-24, cycle 460 - TV ROTATED.** The
+drawn-ending Section 1 is closed but 1.1 (1.2 merged, 3b1b207); the
+seat reached 97-98% and rotated on a handoff carrying the FULL phases
+2-3 plan (60a89f5 - four steps + a free reduction + a doc-comment
+correction; step 4's 'owed' flavour lines are in fact landed, corrected
+in the handoff). AUTONOMOUS DECISION (veto window): Allen's 'start step
+1' went to the FRESH seat (term_502cf0a7, Opus max) rather than the
+97% one - a heavy diff would not have survived it. Watcher v54
+(bzm7f9m13). Seats live: TV (fresh), DD. Unseated: engine (mandate
+complete), markets (rotated out). WITH ALLEN: the DoubleChance
+restatement, the carve-out bookkeeping, engine worktree retire/keep,
+the hold's structure, research 8-9, B9's colour capture.
+
+*(prior stamp, cycle 459 (INCIDENT -
 another restart; ~day gap since 458).** Recovery: monitors first
 (heartbeat bwixrbt0l, watcher v53 ba3pdxlyj); census by content: TV
 survived (term_9383cdcd - its 1.2 pin uncommitted, suite cut; ordered:
