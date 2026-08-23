@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-22 00:50, cycle 452 - ORCA
+**Keeper-era heartbeat stamp: 2026-08-22, cycle 453 (heartbeat).** Orca
+process alive (6 procs, runtime file present) but its CLI HANGS; 18
+claude.exe processes on the box - the duplicate restores have piled up
+and are the probable load behind the crash loop. Not touching it; the
+fix is Allen's: quit Orca fully, kill the orphaned claude processes
+(the four lead sessions resume cleanly by --continue / --resume <id>
+afterwards - nothing is lost), clear the session-restore list, relaunch.
+Work safe in git (unchanged since 452).
+
+*(prior stamp, cycle 452 - ORCA
 CRASH-LOOP, RELAUNCHES STOPPED. NEED ALLEN AT THE HOST.** Orca has
 died six times since ~23:30 (the last two within 30s of coming up);
 every restore re-spawns duplicate copies of the lead sessions (twelve
