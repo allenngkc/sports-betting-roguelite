@@ -1,6 +1,18 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-23, cycle 458 (heartbeat).**
+**Keeper-era heartbeat stamp: 2026-08-23 23:59, cycle 459 (INCIDENT -
+another restart; ~day gap since 458).** Recovery: monitors first
+(heartbeat bwixrbt0l, watcher v53 ba3pdxlyj); census by content: TV
+survived (term_9383cdcd - its 1.2 pin uncommitted, suite cut; ordered:
+suite, commit by path, restore Unity's regenerated font atlases, then
+the phases 2-3 plan); DD resumed by session ID (term_80c33dc0); the
+engine seat left UNSEATED - mandate complete, nothing in flight,
+retire/keep is Allen's. Registry updated (markets empty, engine
+complete). WITH ALLEN: the DoubleChance restatement, the carve-out
+bookkeeping, engine worktree retire/keep, the hold's structure,
+research 8-9, B9's colour capture.
+
+*(prior stamp, cycle 458 (heartbeat).**
 MARKETS ROTATED OUT: the console-surfaces seat stood down on Allen's
 word after its rotation handoff merged (5780269); the worktree stays for
 the lane's next phase. TV building 1.2 directly (authorized deviation);
