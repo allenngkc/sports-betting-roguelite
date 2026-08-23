@@ -122,6 +122,16 @@ namespace SBR.Game
             /// <summary>Corners/cards: REVEALED away-side count so far (e.g. <c>CountLedger.Away</c>).</summary>
             public readonly int RevealedCountAway;
 
+            /// <summary>CorrectScore only: the scoreline the player BACKED, home then away.
+            /// <b>This is the bet's own terms, not an endpoint</b> — he chose it, it is printed on
+            /// his ticket, and this file's no-leak law is about the MATCH's locked outcome rather
+            /// than about the wager. Ints, so nothing that could carry a hidden result comes with
+            /// them.</summary>
+            public readonly int TargetHome;
+
+            /// <summary>CorrectScore only — see <see cref="TargetHome"/>.</summary>
+            public readonly int TargetAway;
+
             /// <summary>Anytime scorer only: true only at the leg's causal identity payoff — the
             /// same instant <c>TvSweatScreen.ScorerFor</c> would first return the bound actor.
             /// False for every frame before that, including every frame where the backed
@@ -131,8 +141,11 @@ namespace SBR.Game
             private ActiveLegInput(MarketKind kind, MarketChoice choice, double line,
                 string backedTeamName, string backedPlayerName,
                 int revealedGoalsFor, int revealedGoalsAgainst,
-                int revealedCountHome, int revealedCountAway, bool scorerRevealed)
+                int revealedCountHome, int revealedCountAway, bool scorerRevealed,
+                int targetHome = 0, int targetAway = 0)
             {
+                TargetHome = targetHome;
+                TargetAway = targetAway;
                 Kind = kind;
                 Choice = choice;
                 Line = line;
@@ -175,6 +188,19 @@ namespace SBR.Game
             public static ActiveLegInput TotalCards(bool over, double line, int revealedHome, int revealedAway)
                 => new ActiveLegInput(MarketKind.TotalCards, over ? MarketChoice.Over : MarketChoice.Under, line,
                     null, null, 0, 0, revealedHome, revealedAway, false);
+
+            /// <summary>T151's CorrectScore arm. <paramref name="revealedHome"/>/
+            /// <paramref name="revealedAway"/> are the REVEALED scoreline, home then away — the same
+            /// pair <see cref="Moneyline"/> takes, and for this kind they are genuinely home/away
+            /// rather than backed-anchored, because a scoreline market backs no side.
+            /// <c>SweatFlavor.PickedHomeForPresentation</c> returns true unconditionally for every
+            /// kind that is not Moneyline or AnytimeScorer (T152-am), so the caller's
+            /// picked/opponent pair IS home/away here. Stated because it is a dependency, not a
+            /// coincidence.</summary>
+            public static ActiveLegInput CorrectScore(int targetHome, int targetAway,
+                int revealedHome, int revealedAway)
+                => new ActiveLegInput(MarketKind.CorrectScore, MarketChoice.Yes, 0.0, null, null,
+                    revealedHome, revealedAway, 0, 0, false, targetHome, targetAway);
 
             public static ActiveLegInput AnytimeScorer(string backedPlayerName, bool scorerRevealed)
                 => new ActiveLegInput(MarketKind.AnytimeScorer, MarketChoice.Yes, 0.0, null, backedPlayerName,
@@ -229,6 +255,11 @@ namespace SBR.Game
         private const string MarketPick = "MARKET PICK";
         // U+2013 EN DASH, matching the PRD's literal "n–n" scoreline copy.
         private const char Dash = '–';
+
+        /// <summary>The same dash, for the compact statement built in <c>TvSweatScreen</c>. Exposed
+        /// rather than duplicated: two copies of one convention is exactly how the two halves of a
+        /// statement drift apart, which this file's AnytimeScorer arm already says in terms.</summary>
+        public const char DashChar = Dash;
         // U+2022 BULLET, matching the PRD's literal "n GOALS • m MORE" separator.
         private const char Bullet = '•';
 
@@ -251,6 +282,8 @@ namespace SBR.Game
                     return DescribeCount(input, "CORNERS", shortNoun: "CNRS");
                 case MarketKind.TotalCards:
                     return DescribeCount(input, "CARDS");
+                case MarketKind.CorrectScore:
+                    return DescribeCorrectScore(input);
                 case MarketKind.AnytimeScorer:
                     return DescribeAnytimeScorer(input);
                 default:
@@ -456,6 +489,26 @@ namespace SBR.Game
             RevealedLegOutcome outcome = scored == 2 ? RevealedLegOutcome.Won : RevealedLegOutcome.Undecided;
             return new ActiveLegCopy("BOTH TEAMS SCORE", live, isTeamMarket: false, identity: MarketPick,
                                      outcome: outcome);
+        }
+
+        /// <summary>T151's CorrectScore forms, unblocked at T161 — one of only two of G1's nine
+        /// kinds that CLEARS IN EVERY SLOT, so it needs no rung and no re-authoring.
+        ///
+        /// <para><b>The outcome is ALWAYS Undecided, and that is the market's defining property
+        /// rather than caution on this seat's part.</b> G1's own monotonicity table has CorrectScore
+        /// as the quantity that is NOT monotone — <i>you can be ON it and drift off</i>. Reporting
+        /// <c>Won</c> while the score currently matches would be a state the very next goal
+        /// falsifies, which is T108's family.</para></summary>
+        private static ActiveLegCopy DescribeCorrectScore(ActiveLegInput l)
+        {
+            // Revealed-only, both sides: the comparison is between two REVEALED counters and the
+            // ticket's own target. Nothing here reads the match's locked scoreline.
+            string target = $"{l.TargetHome}{Dash}{l.TargetAway}";
+            bool met = l.RevealedGoalsFor == l.TargetHome && l.RevealedGoalsAgainst == l.TargetAway;
+            return new ActiveLegCopy($"{target} AT FULL TIME", met ? "MET" : "NOT YET",
+                                     isTeamMarket: false, identity: MarketPick,
+                                     needFallback: $"{target} AT FT",
+                                     outcome: RevealedLegOutcome.Undecided);
         }
 
         private static ActiveLegCopy DescribeBttsNo(ActiveLegInput l)
