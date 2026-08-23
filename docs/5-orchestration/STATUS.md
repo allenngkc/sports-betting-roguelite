@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-24, cycle 461 (heartbeat).** Quiet:
+**Keeper-era heartbeat stamp: 2026-08-24, cycle 462 (heartbeat).** Fresh
+TV on phases 2-3 step 1 (the probability re-point): built, EditMode
+green at the rotation baseline (320/319/0/1), PlayMode running
+detached; commit follows green (Allen's 'commit step 1' held until
+PlayMode lands). DD ruled T166 (batch 173): the magnitude-band
+thresholds STAY - multi-leg quietening is true. WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 461 (heartbeat).** Quiet:
 the fresh TV lead is loading the phases 2-3 handoff toward its step-1
 plan; DD holding. Nothing to land or merge. WITH ALLEN: unchanged.
 
