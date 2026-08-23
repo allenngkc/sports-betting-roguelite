@@ -3,6 +3,14 @@
 **Created:** 2026-08-12 · **Branch:** `markets-pregame` (from main) · **Lead:** Claude (Opus 5)
 **Charter source:** `docs/5-orchestration/next-slices-2026-08-12.md` Lane 1 (Allen's rulings, e141eed)
 
+> **STATE AT ROTATION — 2026-08-22. READ THIS BEFORE §2 AND §3, WHICH ARE STALE.**
+> §2 and §3 are the 2026-08-12 charter and still say *"No code yet"* and *"Step 1 is a plan, not
+> code."* Both were discharged long ago. **Three phases have shipped from this lane** — the v1
+> pre-game vocabulary, the SureThing market surfaces (Design-verified), and the console betting
+> surface (built and evidenced). The current state is at the BOTTOM of this file, newest last.
+> **Nothing is in flight and nothing is owed by this seat.**
+
+
 ## 1. Studio context (read these, in order)
 
 - `docs/5-orchestration/STUDIO.md` — roles, ownership rules, merge protocol, autonomy policy.
@@ -124,3 +132,59 @@ slot change is unimplementable on the TV too without an engine change.
 - **A piped transcript's prompts carry no trailing newline.** A naive width sweep concatenates them
   with the next screen and reports false violations. Split them first.
 - **`ConsoleColor` does not survive a redirect** — zero escape bytes. Colour is not self-shootable.
+
+---
+
+## SURFACES PHASE (the LAPTOP) — CLOSED, Design-verified 2026-08-19
+
+Built to `docs/design/spec-market-surfaces-2026-08-17.md`. Closed on the worst-case-row frame.
+Rulings applied: `S89`–`S92`, then `S95`–`S98` and `S102` as they landed.
+
+**THE ONE THING A SUCCESSOR MUST NOT UNDO.** §4.3's leader dots are **not fully restored** — 59 rows
+print fewer than six dots, all club-prefixed team totals — and **that residual was SEEN ON THE FRAME
+THAT SHOWS IT AND ACCEPTED** (`S96-am2`, and the DD verified it at close). Full restoration needs a
+544.68px name cell, i.e. a ~111px price cell and a ring 30.7% off native aspect: **the arithmetic is
+available, the design is not.** It reads as a defect in a distribution table and was ruled not to be
+one. **Do not re-fix it.**
+
+**Geometry that is ruled and derived, not free to re-author:** ENTRY's market column is **700px**
+(the betslip takes the other 324 of the 1024 — the spec's "~996px" forgot it); the price cell is
+**160** and the name cell **496**, because `S96`'s uppercase overflowed 480 and the name cell was
+widened out of the price cell's slack. That lever only worked because `WideBiroRing` is
+`Image.Type.Simple` with `preserveAspect` off — **a fixed or 9-sliced ring would have made the slack
+unusable.** `SureThingEntryTests` pins that ring rect at 176×48.
+
+---
+
+## SINCE THE CONSOLE PHASE CLOSED — additions, 2026-08-22
+
+- **The two spec corrections are LANDED** (DD batch 172), so the section above headed *"for whoever
+  amends it"* is discharged. Recorded because the numbers themselves still matter: §3's worst-case
+  leader run is **16 dots, not 15** (a one-space vs two-space gap), and §14's `B4` folio numbers
+  (`66–83 of 84`) are **unreachable at the shipped geometry** — `BodyRows` is 20, so a first page is
+  always 20 rows.
+
+- **THE DOCKED EVIDENCE REPRODUCES FROM A CLEAN BUILD — measured 2026-08-22, and worth keeping.**
+  A hazard landed from the theater-engine lane: the `-p:SbrUnityPluginDir=<scratch>` habit leaves
+  intermediates in `engine/obj`, and a later incremental Release build there emits a binary **no
+  clean build reproduces** (see [[plugin-dll-needs-clean-release-build]] in memory). Every transcript
+  in this lane was shot from Release builds sitting on exactly those intermediates. **Tested rather
+  than assumed:** `engine/obj/Release` and `engine/bin/Release` wiped, clean Release rebuild, `B3`
+  and `B8` re-shot from their documented commands — **both byte-identical to the docked files.**
+  The hazard did not reach this evidence.
+
+- **THIS LANE IS NOT ENGINE-OWNING AND SHOULD STAY THAT WAY.** The console links `MarketSheet.cs`
+  and `MarketDestinations.cs` **by source** precisely so no engine change is needed and the tracked
+  `SBR.Engine.dll` is never committed from here. If a future phase genuinely needs an engine change,
+  the handoff §3 rule applies (rebuild AND commit the DLL) — but read the clean-build hazard first,
+  because the two halves of that decision look identical in `git status` and want opposite responses.
+
+- **Process note for whoever dispatches here.** Three sub-agents died on transient
+  `ENOTFOUND` API errors this phase; all were recoverable by `SendMessage` resume, and in every case
+  the tree was clean because the work lands in the repo rather than in the agent. **A resumed agent
+  counts against the two-at-once cap** — I once had three running by forgetting that a resume is a
+  spawn. Check `git status` after every dispatch regardless; one agent created a stray directory from
+  a path-escaping bug and cleaned it, and the only reason I know it cleaned it is that I looked.
+
+- **Still owed to the ORIGINAL charter, never started:** the match theater has no drawn ending —
+  TV's lane, routed to the DD, three questions named in `docs/1-plans/F_0.5.0_*` §12.7.
