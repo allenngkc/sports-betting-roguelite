@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-22, cycle 456 (heartbeat).** Quiet
+**Keeper-era heartbeat stamp: 2026-08-22, cycle 457 (heartbeat).** TV's
+1.3 merged (c710a23 - the correct-score column stops being blank); TV
+mid-re-verify against the new DLL (a long suite turn). MARKETS ORDERED
+TO ROTATE (688k context, mandate complete) - handoff then stand-down.
+Engine + DD standing by. WITH ALLEN: unchanged (DoubleChance
+restatement, carve-out bookkeeping, engine worktree retire/keep, the
+hold's structure, research 8-9, B9's capture).
+
+*(prior stamp, cycle 456 (heartbeat).** Quiet
 board: TV mid-PlayMode for 1.3 (15 min in); markets confirmed clean and
 stands by (Allen); engine standing by post-merge; DD holding for the
 DoubleChance restatement. WITH ALLEN: unchanged - the DoubleChance
