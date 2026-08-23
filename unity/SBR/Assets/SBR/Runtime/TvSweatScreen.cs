@@ -2848,6 +2848,18 @@ namespace SBR.Game
                     return SweatActiveLegModel.Describe(SweatActiveLegModel.ActiveLegInput.TotalCards(
                         leg.Selection.Choice == MarketChoice.Over, leg.Selection.Line,
                         _countLedger?.Home ?? 0, _countLedger?.Away ?? 0));
+                case MarketKind.CorrectScore:
+                    // T151/T161: WITHOUT THIS CASE THE ARM BELOW IS UNREACHABLE and the row falls to
+                    // `default`, which returns an EMPTY copy — that is literally the blank column the
+                    // drawn-ending spec's §4 records as "nothing — the column is blank". The describer
+                    // arm alone does not fix it; the SITE that knows the selection has to route here.
+                    //
+                    // `_ledger.Picked`/`Opponent` are home/away for this kind:
+                    // SweatFlavor.PickedHomeForPresentation returns true unconditionally for every
+                    // kind that is not Moneyline or AnytimeScorer (T152-am), so picked IS home.
+                    return SweatActiveLegModel.Describe(SweatActiveLegModel.ActiveLegInput.CorrectScore(
+                        leg.Selection.ScoreHome, leg.Selection.ScoreAway,
+                        _ledger.Picked, _ledger.Opponent));
                 case MarketKind.AnytimeScorer:
                 {
                     Player player = leg.Matchup.PlayerAt(leg.Selection.PlayerIndex);
@@ -3891,6 +3903,13 @@ namespace SBR.Game
                     return $"{overUnder} {sel.Line:0.0} CORNERS";
                 case MarketKind.TotalCards:
                     return $"{overUnder} {sel.Line:0.0} CARDS";
+                case MarketKind.CorrectScore:
+                    // T151's compact form. The DASH IS THE SURFACE'S OWN — SweatActiveLegModel
+                    // declares `Dash = '\u2013'` (EN DASH) and the T84 pool already carries
+                    // `EXACT 3\u20131` with those bytes. The spec prints an ASCII hyphen; the CODE
+                    // decides, and a one-character divergence here is how the last five phantoms
+                    // started.
+                    return $"EXACT {sel.ScoreHome}{SweatActiveLegModel.DashChar}{sel.ScoreAway}";
                 case MarketKind.AnytimeScorer:
                     // Same surname rule as NEED, from the same helper — two copies of one convention
                     // is how the two halves of a statement drift apart.

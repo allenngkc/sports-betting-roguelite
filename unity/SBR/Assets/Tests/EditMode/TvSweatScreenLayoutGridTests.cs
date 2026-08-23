@@ -1162,9 +1162,9 @@ namespace SBR.Tests.EditMode
         /// <para>`FitToColumn` and `FitOrFallback` are reached by REFLECTION. A replica that drifted
         /// would answer a question nobody asked.</para></summary>
         [Test]
-        public void T163_the_terse_rungs_measured_over_the_closed_pools()
+        public void TerseCopy_the_rungs_measured_over_the_closed_pools()
         {
-            var go = new GameObject("T163Terse");
+            var go = new GameObject("TerseCopyRungs");
             try
             {
                 var screen = BuildScreen(go);
@@ -1261,12 +1261,12 @@ namespace SBR.Tests.EditMode
                             collisions.Add($"'{str}' -> '{cut}'");
                     }
 
-                    Debug.Log($"[T163] {r.Kind,-36} box {box:0.0}  widest '{widestS}' {widest:0.0}  "
+                    Debug.Log($"[TERSE] {r.Kind,-36} box {box:0.0}  widest '{widestS}' {widest:0.0}  "
                               + $"clears {clears}/{r.Pool.Length}"
                               + (clears == r.Pool.Length
                                  ? "  — TRUNCATION UNREACHABLE, the outcome §4 aims for"
                                  : $"  — misses: {string.Join(", ", misses)}"));
-                    foreach (string c in collisions) Debug.Log($"[T163-CUT] {r.Kind,-36} {c}");
+                    foreach (string c in collisions) Debug.Log($"[TERSE-CUT] {r.Kind,-36} {c}");
                 }
 
                 // THE LADDER AS THE SURFACE ACTUALLY RUNS IT. Every rung above was truncated in
@@ -1287,10 +1287,10 @@ namespace SBR.Tests.EditMode
                     else if (rendered == p2) r2++;
                     else { fellToFloor++; if (!rendered.Contains("UNBEATEN")) lost.Add($"{c} -> '{rendered}'"); }
                 }
-                Debug.Log($"[T163-LADDER] DoubleChance NEED, as the surface runs it :: rung 1 {r1}/20 · "
+                Debug.Log($"[TERSE-LADDER] DoubleChance NEED, as the surface runs it :: rung 1 {r1}/20 · "
                           + $"rung 2 {r2}/20 · truncated {fellToFloor}/20; of those, {lost.Count} lost the word "
                           + "UNBEATEN entirely and render as the club alone");
-                foreach (string x in lost) Debug.Log($"[T163-LADDER]   {x}");
+                foreach (string x in lost) Debug.Log($"[TERSE-LADDER]   {x}");
 
                 // The COMPACT slot has NO ladder (T155's build order is unbuilt), so its form
                 // truncates directly — this is what renders today, not a hypothetical.
@@ -1300,7 +1300,7 @@ namespace SBR.Tests.EditMode
                     var rendered = (string)fitToColumn.Invoke(null, new object[] { line, $"{c} UNBEATEN" });
                     if (!rendered.Contains("UNBEATEN")) cLost++;
                 }
-                Debug.Log($"[T163-LADDER] DoubleChance COMPACT, no ladder to fall to :: {cLost}/20 render "
+                Debug.Log($"[TERSE-LADDER] DoubleChance COMPACT, no ladder to fall to :: {cLost}/20 render "
                           + "as the club alone, with no word naming the market");
             }
             finally
