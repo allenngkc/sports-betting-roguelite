@@ -5,6 +5,135 @@
 
 ---
 
+## 0-ROT2. SEAT ROTATION 2026-08-24 — READ THIS FIRST
+
+Rotating at 97% context, with **phases 2–3 planned and none of it started**. Section 1 of the
+drawn ending is closed except `1.1`, which is held on purpose. The tree is clean apart from
+`URP.png` (permanent phantom). **Steps 1 and 2 below are heavy `TvSweatScreen` diffs — that is why
+this seat stopped rather than starting one.**
+
+### WHAT SHIPPED, AND WHAT EACH ONE ACTUALLY FIXED
+
+| item | commit | the part worth knowing |
+|---|---|---|
+| `T147-am`/`am2` | `83d8072` | footer 40→60, slots 6→4. **The slot count was reserving two rows `RunConfig.MaxLegs = 4` makes unfillable** — `Run.cs:190-191` ENFORCES it. That is what paid for the taller footer with `T24`'s margin intact. |
+| settled-ticket fix | `11e4ad7` | remedy 1 **plus** the reveal gate. Remedy 1 alone propagated the leak into the rows and turned the pin GREEN while still leaking. |
+| `T91-cl` | `a8d9a73` | `LEG n/m` left the scorebug for the ticket header. Ink clearance −41.7 → **+86.8px**. |
+| phantom pin `T158` | `3126ee5` | every measured fixture must be renderable in its slot. Caught a fourth phantom on its first run. |
+| `1.3` correct score | `d90f122` | the arm AND the caller wiring. **The arm alone would not have fixed it** — the caller's `default:` returned an empty copy, which IS the blank column. |
+| `1.2` `T130`'s gate | `9ffe399` | a RENDERED row is never empty, per ROW not per SPAN. |
+
+**Suites at rotation: EditMode 320/319/0 · PlayMode 149/124/0.**
+
+### TWO CORRECTIONS THIS SEAT CARRIED WRONG — fixed, and stated so they are not re-inherited
+
+1. **`T163`'s neither-branch lines are LANDED, NOT OWED.**
+   `docs/design/spec-neither-branch-lines-2026-08-21.md`, batches 168/171, §5 authors the club-free
+   set in full. This seat's earlier plan called step 4 BLOCKED on the DD. **It is not. It is
+   buildable.**
+2. **`DramaEvent` carries NO possession side — re-checked AFTER phase 1.**
+   Fields are `LegIndex`, `FixtureIndex`, `IsSharedTelling`, `LegIndices`, `LegProbs`, `Step`,
+   `TotalSteps`, `Type`, `WinProbAfter`, `Tag`. The spec's §3 says *"if `DramaEvent` already carries
+   a possession side, §3 is dead and should be deleted rather than shipped unused."* **It does not.
+   §3 IS LIVE and the momentum fallback ships.** That is the answer the spec asked this lane for.
+
+---
+
+## PHASES 2–3 — THE PLAN, AGAINST THE PUBLISHED CONTRACT
+
+`docs/handoffs/theater-engine.md` §6 is the break list. **Read it before touching anything.** Phase 1
+is merged; the DLL in the tree is the engine lane's rebuild.
+
+**THE GATE FOR EVERY STEP, and it needs no editor lease:**
+`dotnet test engine.tests` — `GoldenSeedTests` mirrors the golden byte-identity pin, plus phase 1's
+`SharedTellingTests` and `TicketWinProbabilityTests`. Then EditMode, then the 80 TV PlayMode cases.
+**Run the engine gate FIRST on every step** — it is the cheapest and it is the one another lane wrote.
+
+### STEP 1 — §6c, the probability sites
+Display re-points to `SweatSession.TicketWinProbability`. `RevealedView.Reset` (`TvSweatScreen.cs:76`)
+stops seeding from `Legs[0].TrueProb`. `_stage.SetLiveProb`, `_probTarget`, `_prevProb`/`_pendingProb`
+all stop reading `evt.WinProbAfter`.
+
+> **THE SUBTLE ONE IS `TheaterChoreographer` (`:217`, `:235`, `:285`).** The contract's own words:
+> goal staging may legitimately stay leg-scoped, **but it must read `LegProbs`, not `WinProbAfter`,
+> "or it silently reads the anchor leg's number for every leg."** Silent wrongness, not a crash —
+> nothing fails, every leg just shows one leg's probability.
+
+### STEP 2 — §6a, N grades at one whistle
+Loop `evt.LegIndices` at the resolve sites (`:2056`, `:2057`, and the `_resolvedThrough` /
+`UpdateTicketColumn` / `int k` triples at `:2085-2087` and `:4030-4031`, `:4009`).
+
+> **A DEPENDENCY THE CONTRACT DOES NOT NAME, AND IT IS THIS LANE'S OWN.** The settled-ticket reveal
+> gate derives `revealedLoss` by scanning `i < _resolvedThrough`. Grades land in LEG ORDER after one
+> hold (`T87-am2`), so the high-water mark itself may survive — **but its UPDATE,
+> `_resolvedThrough = evt.LegIndex + 1`, is wrong under N-live and must become `max(LegIndices) + 1`.**
+> Get it wrong and the footer resumes announcing deaths before the reveal: the `T144`-era leak
+> reopening through a different door. **Re-verify with the armed assertion** (remove the gate, watch
+> it fail at frame 23), never by inspection — that assertion exists because inspection missed it once.
+
+### STEP 3 — §6d, the leg counter (`T165`)
+Half-done. `T91-cl` already moved the element to the ticket header and its width is measured
+(66.9px ink, 86.8px clearance). This repoints the REFERENT to `CurrentFixtureIndex`/`FixtureCount`.
+**`T165` says land it with `T91-cl` or the element moves twice** — `T91-cl` has landed, so this rides
+soon or the cost is paid again.
+
+### STEP 4 — §6b, the flavour subject. **BUILDABLE — this seat's "blocked" was wrong.**
+`T163`'s anchor rule plus the landed line set. Sites: `_ticket.Legs[evt.LegIndex]` (`:1721`, `:3466`,
+`:4008`), `_flavorLegSeen` (`:3470-3472`), `SweatFlavor`'s `picked`/`other` (`:25-64`, `:201`, `:216`),
+`onFinalLeg` (`:1683` — should be the final FIXTURE), `BeginStageLeg` (`:3515-3516` — per fixture now).
+
+**Ship §3's momentum fallback**: `DramaEvent` has no possession side, so a momentum beat in the
+neither branch takes the club-free line. **Do NOT re-case the lines** — §4 says they match the table
+they join, sentence case with a terminal period, and re-casing a shipped table silently is exactly
+what that clause forbids.
+
+### THE FREE REDUCTION — §6f, and one correction owed
+- `PresentationSceneKey` (`:70-82`, `:110-122`) is **already match-scoped** and its author's note asks
+  for exactly this change. After phase 1, `DramaEvent.Step` IS that shared cursor — **discharge the
+  note rather than working around it.**
+- **`UpdateTicketColumn`'s doc comment is now FALSE IN CODE.** `T142` struck its stale half ("the
+  engine forbids two legs on one matchup"); phase 1 makes the case real. Its other half — the column
+  reads legs as a collection and is N-live-capable by construction — **stands and is load-bearing.**
+
+**Sequencing:** steps 1–3 are independent of each other and of the DD. **1 and 2 both touch
+`TvSweatScreen` heavily — separate diffs, never one.** Step 4 is the largest and touches `SweatFlavor`.
+
+---
+
+### FIVE THINGS THAT COST THIS SEAT TIME
+
+1. **The runner ABANDONS Unity on timeout rather than killing it.** Both suites reported
+   *"TIMED OUT — executed case count UNKNOWN"* and then finished and wrote clean results. **A timeout
+   verdict from `run-unity-tests.ps1` means the WRAPPER gave up, not that the run failed** — and every
+   abandonment leaves an editor holding the lock for the next run to fight. Two such editors from
+   20:34 squatted the lock for FOUR HOURS. **Launch detached and poll the results artifact.**
+2. **`Get-Process` lies about Unity; `Get-CimInstance Win32_Process` does not.** Exited-but-unreaped
+   entries still list. The orchestrator's "Unity procs 0" census was wrong twice on this basis.
+3. **PlayMode now takes ~1000s**, against the wrapper's default limit. It will always "time out".
+4. **A blank leg row is CORRECT when no ticket is rendered** (`ClearLegRow` via the null-ticket
+   branch). `T130`'s gate scopes itself on the footer being non-empty for that reason; an unguarded
+   version fails on legal frames.
+5. **Read the compiled DLL, not `engine/` source.** This seat wrote `HomeGoals` from source when the
+   compiled member is `ScoreHome`. The engine lane owns and commits `SBR.Engine.dll`; **it is no
+   longer a "never stage" file** — discard local build side-effects so theirs lands.
+
+### OWED, AND NOT STARTED
+
+- **`1.1`** — §6.7's interstitial at the fixture boundary. **HELD DELIBERATELY**: its site is the
+  fixture change inside `PlaySweat()`, which is what phase 1 restructured. Now that phase 1 has
+  landed, **re-read the split doc against the contract before building** — its fork-independence
+  argument ("a strict subset under (B)") lapsed when Allen ruled (A).
+- **`T130`'s gate has not met its subject.** The run dealt `kinds=[Moneyline,Moneyline]`, so it has
+  never seen a `CorrectScore` row — the market `1.3` un-blanked. **Sound but unproven against the one
+  kind this section fixed.**
+- **`T158` guards test↔pool agreement, NOT pool↔code.** A phantom that lives in the POOL is invisible
+  to it — that is how the fifth phantom (`TICKET n OF m`) survived. Five have been found; assume a sixth.
+- **DoubleChance still does not fit** — 16/20 clubs truncate to the club alone. With Allen for scope.
+- **The scorebug ink collision** is fixed on the leg-counter side only; `Matchup`→`Clock` was always
+  clear at +31.3px.
+
+---
+
 ## 0-ROT. SEAT ROTATION 2026-08-19 — READ THIS FIRST
 
 Everything below `0-ROT` is the record of what shipped. **This section is what a fresh seat needs
