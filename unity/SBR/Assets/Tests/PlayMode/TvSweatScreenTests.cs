@@ -885,6 +885,109 @@ namespace SBR.Tests.PlayMode
             finally { InputSystem.RemoveDevice(kb); RestoreFocusBehaviour(previousFocus); }
         }
 
+        /// <summary>`T130`'s gate, and the drawn-ending split's §1.2: <b>A RENDERED LEG ROW IS NEVER
+        /// EMPTY.</b> The spec's own words are that it <i>"would have caught arm 3 before it
+        /// shot"</i> — an arm was captured with a blank column and nothing asserted otherwise.
+        ///
+        /// <para><b>The assertion is per ROW, never per SPAN.</b> A live row deliberately blanks its
+        /// compact line; a cancelled row on a settled ticket deliberately blanks its state chip
+        /// (`T149`). Emptiness of a SPAN is normal and correct. Emptiness of the WHOLE ROW — no
+        /// statement, no NEED, no progress — is the defect, because the player is looking at a leg
+        /// of his ticket that says nothing about itself.</para>
+        ///
+        /// <para><b>It asserts nothing about WHICH leg is live</b>, deliberately. The engine's
+        /// per-(ticket, fixture) restructure makes `DramaEvent.LegIndex` the telling's ANCHOR leg and
+        /// puts several legs live at once; a gate phrased around the live leg would fail on a legal
+        /// arm, and a gate that fails on a legal arm is not a gate. Phrased per row, this reads
+        /// identically before and after that change.</para>
+        ///
+        /// <para><b>THE GUARD MATTERS AS MUCH AS THE ASSERTION.</b> `ClearLegRow` blanks every span,
+        /// and `UpdateTicketColumn` calls it for every row when `_ticket` is null — so a genuinely
+        /// blank column is CORRECT whenever no ticket is being rendered, and an unguarded
+        /// every-frame assertion would fail on those frames rather than on a defect. The footer is
+        /// non-empty exactly when a ticket is rendered, so it is the proxy this gate scopes
+        /// itself by.</para></summary>
+        [UnityTest]
+        public IEnumerator T130_a_rendered_leg_row_is_never_empty()
+        {
+            yield return LoadRoom();
+            (RunDirector director, TvSweatScreen screen, SitSpot couch) = FindTrio();
+
+            screen.TimeScaleOverride = 0.0001f;
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            Run run = director.Run;
+            (IReadOnlyList<Pick> picks, double stake) = DemoTicketPolicy.Choose(run);
+            run.PlaceTicket(picks, stake);
+            director.LockRound();
+            int legCount = picks.Count;
+
+            // Which kinds this run actually exercised. Logged rather than asserted: a gate that
+            // never met a given market has not been proven against it, and saying so plainly is
+            // better than a green that reads as coverage it does not have.
+            var kinds = new List<string>();
+            for (int i = 0; i < director.CurrentTicket.Legs.Count; i++)
+                kinds.Add(director.CurrentTicket.Legs[i].Selection.Kind.ToString());
+
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+
+            int framesSampled = 0, framesAsserted = 0;
+            float start = Time.realtimeSinceStartup;
+            const float maxSeconds = 60f;
+            while (run.Phase == Phase.Sweat)
+            {
+                if (Time.realtimeSinceStartup - start > maxSeconds)
+                {
+                    Assert.Fail($"the sweat never settled within {maxSeconds}s wall-clock "
+                        + $"(frames sampled: {framesSampled})");
+                    yield break;
+                }
+                framesSampled++;
+
+                // See the summary: a blank column is correct when no ticket is rendered.
+                if (!string.IsNullOrEmpty(screen.DebugTicketRiskText))
+                {
+                    framesAsserted++;
+                    for (int i = 0; i < legCount; i++)
+                    {
+                        string line = LegRowLineText(screen, i);
+                        string need = screen.DebugLegNeed(i);
+                        string progress = screen.DebugLegProgress(i);
+                        bool carriesSomething = !string.IsNullOrEmpty(line)
+                                             || !string.IsNullOrEmpty(need)
+                                             || !string.IsNullOrEmpty(progress);
+                        Assert.IsTrue(carriesSomething,
+                            $"frame {framesAsserted}, leg {i} of {legCount}: the row carries NO text in "
+                            + "any form — compact line, NEED and progress are all empty on a ticket that "
+                            + $"IS being rendered (footer reads '{screen.DebugTicketRiskText}'). A leg of "
+                            + "his ticket is saying nothing about itself. Leg kinds this run: "
+                            + $"{string.Join(", ", kinds)}");
+                    }
+                }
+                yield return null;
+            }
+
+            UnityEngine.Debug.Log($"[T130] legs={legCount} kinds=[{string.Join(",", kinds)}] "
+                + $"framesSampled={framesSampled} framesAsserted={framesAsserted}");
+
+            // A gate that never ran is not a passing gate. C29's shape, one layer down.
+            Assert.Greater(framesAsserted, 0,
+                "the gate never asserted on a single frame — no frame rendered a ticket, so this "
+                + "result proves nothing about whether a rendered row can be empty.");
+        }
+
+        /// <summary>The compact statement's text, by GameObject name. There is no Debug accessor for
+        /// it and this adds none to production for a test's convenience — the same lookup the
+        /// capture harness uses.</summary>
+        private static string LegRowLineText(TvSweatScreen screen, int i)
+        {
+            foreach (TMP_Text t in screen.GetComponentsInChildren<TMP_Text>(true))
+                if (t.gameObject.name == $"LegRowLine{i}") return t.text;
+            return null;
+        }
+
         // ---- the footer word (RISK/STAKE) must never disagree with what the rows show, and no live
         // row's progress may ever print NEED 0 — watched on a REAL sweat rather than through the pure
         // model directly. SweatActiveLegModelTests already proves both predicates exhaustively off
