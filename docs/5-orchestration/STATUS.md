@@ -1,6 +1,13 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-22, cycle 455 - ARM A PHASE 1 IS
+**Keeper-era heartbeat stamp: 2026-08-22, cycle 456 (heartbeat).** Quiet
+board: TV mid-PlayMode for 1.3 (15 min in); markets confirmed clean and
+stands by (Allen); engine standing by post-merge; DD holding for the
+DoubleChance restatement. WITH ALLEN: unchanged - the DoubleChance
+restatement, the carve-out bookkeeping, engine worktree retire/keep, the
+hold's structure, research 8-9, B9's colour capture.
+
+*(prior stamp, cycle 455 - ARM A PHASE 1 IS
 MERGED (671766c).** The ruled campaign: 9 gates, 9 PASSED, 9
 adjudicated; suite 324/0; the DLL clean-built (the lane's own law);
 seven commits, no drift. The engine worktree's mandate is complete -
