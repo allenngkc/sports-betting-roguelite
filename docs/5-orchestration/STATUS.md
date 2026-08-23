@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-22, cycle 453 (heartbeat).** Orca
+**Keeper-era heartbeat stamp: 2026-08-22, cycle 454 - ALLEN'S
+'CONTINUE': the board is rebuilt.** Orca stable again; all four seats
+seated and briefed (DD=term_9cfd59bd by session ID, TV=term_51f1dee1,
+markets=term_4ca80d34 by --continue, engine=term_69990413 - it SURVIVED
+and is checking whether the 16-worker campaign lived); watcher v52
+(bfvo2pomr). Pick-up points: TV re-runs what the crash took of the 1.3
+PlayMode; markets confirms nothing uncommitted; DD holds for the
+DoubleChance restatement; engine reports the roster. WITH ALLEN: the
+DoubleChance restatement, the carve-out bookkeeping, the hold's
+structure, research 8-9, B9's colour capture.
+
+*(prior stamp, cycle 453 (heartbeat).** Orca
 process alive (6 procs, runtime file present) but its CLI HANGS; 18
 claude.exe processes on the box - the duplicate restores have piled up
 and are the probable load behind the crash loop. Not touching it; the
