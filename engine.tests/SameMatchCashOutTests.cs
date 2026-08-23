@@ -97,20 +97,59 @@ public class SameMatchCashOutTests
         return fair;
     }
 
-    /// <summary>The active legs split into the three sets the conditional is written over, in TICKET
-    /// ORDER: what has settled, that plus the leg in progress, that plus everything still pending.</summary>
-    private static (List<Leg> settled, List<Leg> settledLive, List<Leg> active) Sets(Ticket ticket, int currentLeg)
+    /// <summary>Legs grouped by MATCHUP in first-appearance ticket order — the SAME grouping, through
+    /// the SAME rule, that <c>SameMatchModel.GroupByMatchup</c> (internal to the engine assembly) uses
+    /// to assemble a fixture, transcribed here so the test's idea of a fixture cannot drift from the
+    /// engine's. <c>T140</c> arm A: a telling is a (ticket, FIXTURE), not a (ticket, leg).</summary>
+    private static List<List<int>> GroupLegsByFixture(Ticket ticket)
     {
+        var matchups = new List<Matchup>();
+        var groups = new List<List<int>>();
+        for (int i = 0; i < ticket.Legs.Count; i++)
+        {
+            int group = -1;
+            for (int m = 0; m < matchups.Count; m++)
+                if (ReferenceEquals(matchups[m], ticket.Legs[i].Matchup)) { group = m; break; }
+            if (group < 0)
+            {
+                matchups.Add(ticket.Legs[i].Matchup);
+                groups.Add(new List<int>());
+                group = groups.Count - 1;
+            }
+            groups[group].Add(i);
+        }
+        return groups;
+    }
+
+    /// <summary>Which fixture each leg (by ticket index) rides, derived from <see
+    /// cref="GroupLegsByFixture"/>.</summary>
+    private static int[] FixtureOfLeg(Ticket ticket)
+    {
+        List<List<int>> fixtures = GroupLegsByFixture(ticket);
+        var map = new int[ticket.Legs.Count];
+        for (int f = 0; f < fixtures.Count; f++)
+            foreach (int j in fixtures[f]) map[j] = f;
+        return map;
+    }
+
+    /// <summary>The active legs split into the three sets the conditional is written over, in TICKET
+    /// ORDER: what has settled, that plus every leg riding the fixture in progress, that plus
+    /// everything still pending (<c>T140</c> arm A — keyed off the FIXTURE, not the leg, so a
+    /// same-match GROUP riding one telling enters <c>settledLive</c> together).</summary>
+    private static (List<Leg> settled, List<Leg> settledLive, List<Leg> active) Sets(Ticket ticket, int currentFixture)
+    {
+        int[] fixtureOfLeg = FixtureOfLeg(ticket);
         var settled = new List<Leg>();
-        for (int j = 0; j < currentLeg; j++)
-            if (!ticket.Legs[j].IsVoided) settled.Add(ticket.Legs[j]);
-
-        var settledLive = new List<Leg>(settled) { ticket.Legs[currentLeg] };
-
-        var active = new List<Leg>(settledLive);
-        for (int j = currentLeg + 1; j < ticket.Legs.Count; j++)
-            if (!ticket.Legs[j].IsVoided) active.Add(ticket.Legs[j]);
-
+        var settledLive = new List<Leg>();
+        var active = new List<Leg>();
+        for (int j = 0; j < ticket.Legs.Count; j++)
+        {
+            if (ticket.Legs[j].IsVoided) continue;
+            int f = fixtureOfLeg[j];
+            if (f < currentFixture) settled.Add(ticket.Legs[j]);
+            if (f <= currentFixture) settledLive.Add(ticket.Legs[j]);
+            active.Add(ticket.Legs[j]);
+        }
         return (settled, settledLive, active);
     }
 
@@ -122,37 +161,76 @@ public class SameMatchCashOutTests
     /// <summary>The scope doc's rule, transcribed: <c>P(L ∧ U | S) × ( liveProb / P(L | S) )</c> —
     /// with the CERTAINTY CARVE-OUT (Allen, 2026-08-14): when the settled legs entail the live leg,
     /// <c>P(L | S)</c> is 1, and the re-weight is dropped rather than scaling a leg that cannot lose
-    /// down by its unconditional marginal. See <c>Gate6_*</c>.</summary>
-    private static double ConditionalWinProb(Ticket ticket, int currentLeg, double liveProb)
+    /// down by its unconditional marginal. See <c>Gate6_*</c>.
+    ///
+    /// <para><c>T140</c> arm A: <c>liveProb</c> is no longer one scalar — a shared telling can carry N
+    /// live legs at once — so the re-weight's numerator is <see cref="LiveDramaJoint"/>, transcribed
+    /// from the engine's own doc comment rather than invented.</para></summary>
+    private static double ConditionalWinProb(Ticket ticket, int currentFixture, double[] legLiveProb)
     {
-        (List<Leg> settled, List<Leg> settledLive, List<Leg> active) = Sets(ticket, currentLeg);
+        (List<Leg> settled, List<Leg> settledLive, List<Leg> active) = Sets(ticket, currentFixture);
 
         double pSettled = SameMatchModel.JointProbabilityOf(settled);
         double condAll = SameMatchModel.JointProbabilityOf(active) / pSettled;
         double condLive = SameMatchModel.JointProbabilityOf(settledLive) / pSettled;
         if (condLive >= 1.0 - CertaintySlack) return condAll;
-        return condAll * (liveProb / condLive);
+        double liveDramaJoint = LiveDramaJoint(ticket, currentFixture, legLiveProb, pSettled, condLive);
+        return condAll * (liveDramaJoint / condLive);
+    }
+
+    /// <summary>The drama's estimate of <c>P(every live leg wins | S)</c>, transcribed from
+    /// <c>SweatSession.LiveDramaJoint</c>: one live leg → that leg's own live probability, exactly;
+    /// N live legs → the model's joint for the set, drifted by each live leg's own
+    /// <c>live_j / P(j | S)</c> factor, clamped to at most 1.0 since this estimates a probability.
+    /// <c>P(j | S)</c> is <c>J(settled ∪ {j}) / J(settled)</c>, that set ALSO built in ticket order.</summary>
+    private static double LiveDramaJoint(Ticket ticket, int currentFixture, double[] legLiveProb,
+        double pSettled, double condLive)
+    {
+        List<List<int>> fixtures = GroupLegsByFixture(ticket);
+        int[] fixtureOfLeg = FixtureOfLeg(ticket);
+        List<int> live = fixtures[currentFixture];
+
+        int only = -1, n = 0;
+        foreach (int j in live)
+            if (!ticket.Legs[j].IsVoided) { only = j; n++; }
+        if (n <= 1) return only >= 0 ? legLiveProb[only] : condLive;
+
+        double drifted = condLive;
+        foreach (int j in live)
+        {
+            if (ticket.Legs[j].IsVoided) continue;
+            var withJ = new List<Leg>();
+            for (int q = 0; q < ticket.Legs.Count; q++)
+            {
+                if (ticket.Legs[q].IsVoided) continue;
+                if (fixtureOfLeg[q] < currentFixture || q == j) withJ.Add(ticket.Legs[q]);
+            }
+            double baseline = SameMatchModel.JointProbabilityOf(withJ) / pSettled;
+            if (!(baseline > 0.0)) continue;
+            drifted *= legLiveProb[j] / baseline;
+        }
+        return drifted > 1.0 ? 1.0 : drifted;
     }
 
     /// <summary><c>P(L | S)</c> alone — the quantity the carve-out keys on.</summary>
-    private static double LiveConditional(Ticket ticket, int currentLeg)
+    private static double LiveConditional(Ticket ticket, int currentFixture)
     {
-        (List<Leg> settled, List<Leg> settledLive, List<Leg> _) = Sets(ticket, currentLeg);
+        (List<Leg> settled, List<Leg> settledLive, List<Leg> _) = Sets(ticket, currentFixture);
         return SameMatchModel.JointProbabilityOf(settledLive)
             / SameMatchModel.JointProbabilityOf(settled);
     }
 
     /// <summary><c>P(L ∧ U | S)</c> alone — the PURE conditional, unweighted.</summary>
-    private static double PureConditional(Ticket ticket, int currentLeg)
+    private static double PureConditional(Ticket ticket, int currentFixture)
     {
-        (List<Leg> settled, List<Leg> _, List<Leg> active) = Sets(ticket, currentLeg);
+        (List<Leg> settled, List<Leg> _, List<Leg> active) = Sets(ticket, currentFixture);
         return SameMatchModel.JointProbabilityOf(active)
             / SameMatchModel.JointProbabilityOf(settled);
     }
 
-    private static double JointFair(Ticket ticket, int currentLeg, double liveProb)
+    private static double JointFair(Ticket ticket, int currentFixture, double[] legLiveProb)
     {
-        double pWin = ConditionalWinProb(ticket, currentLeg, liveProb);
+        double pWin = ConditionalWinProb(ticket, currentFixture, legLiveProb);
         double fair = ticket.PotentialPayout * pWin;
         if (ticket.Modifier == TicketModifier.FreeBet && !ticket.Refunded)
             fair += (1.0 - pWin) * ticket.Stake;
@@ -163,60 +241,90 @@ public class SameMatchCashOutTests
     // Walking a sweat while mirroring the two pieces of state a quote depends on.
     // =======================================================================================
 
-    /// <summary>One quote taken mid-sweat, with the session state it was taken at.</summary>
+    /// <summary>One quote taken mid-sweat, with the session state it was taken at. <c>T140</c> arm A:
+    /// the telling is a (ticket, FIXTURE), so the cursor is a fixture index and the live number is a
+    /// PER-LEG array, not one scalar. <see cref="CurrentLeg"/>/<see cref="LiveProb"/> are retained for
+    /// consumers that only need the telling's ANCHOR leg — the lowest ticket-order leg on the live
+    /// fixture — the same reduction <c>DramaEvent.LegIndex</c>/<c>WinProbAfter</c> make.</summary>
     private readonly struct Quote
     {
-        public Quote(int currentLeg, double liveProb, double fair, double offer)
+        public Quote(int currentFixture, int anchorLeg, double[] legLiveProb, double fair, double offer)
         {
-            CurrentLeg = currentLeg;
-            LiveProb = liveProb;
+            CurrentFixture = currentFixture;
+            CurrentLeg = anchorLeg;
+            LiveProb = legLiveProb[anchorLeg];
+            LegLiveProb = legLiveProb;
             Fair = fair;
             Offer = offer;
         }
 
+        public int CurrentFixture { get; }
         public int CurrentLeg { get; }
         public double LiveProb { get; }
+        public double[] LegLiveProb { get; }
         public double Fair { get; }
         public double Offer { get; }
     }
 
     /// <summary>
     /// Drains a session, collecting the quote at every point one is live, together with the
-    /// <c>currentLeg</c> / <c>liveProb</c> pair the session priced it at.
+    /// <c>currentFixture</c> / per-leg live-probability array the session priced it at.
     ///
-    /// <para>Both are mirrored from the PUBLIC stream rather than read out of the session: the cursor
-    /// advances on a won <see cref="DramaEventType.LegFinal"/>, and the live probability is the last
-    /// event's <see cref="DramaEvent.WinProbAfter"/> except immediately after a leg boundary, where
-    /// the session re-seeds it to the next leg's pre-match marginal. Grant no consumables and a dead
-    /// leg busts instantly, so the only boundary this has to model is the winning one.</para>
+    /// <para>Both are mirrored from the PUBLIC stream rather than read out of the session
+    /// (<c>T140</c> arm A): the cursor advances on a fully-won fixture's <see
+    /// cref="DramaEventType.LegFinal"/>, and each leg's own live probability is the last event that
+    /// named it — <see cref="DramaEvent.LegIndices"/>/<see cref="DramaEvent.LegProbs"/> on a shared
+    /// telling, <see cref="DramaEvent.LegIndex"/>/<see cref="DramaEvent.WinProbAfter"/> on a solo one.
+    /// THERE IS NO RE-SEED AT A FIXTURE BOUNDARY: every leg starts at its own <see cref="Leg.TrueProb"/>
+    /// and keeps its own number, exactly as the session does. Grant no consumables and a dead leg busts
+    /// instantly, so the only boundary this has to model is the winning one.</para>
     /// </summary>
     private static List<Quote> Sweat(SweatSession session, Ticket ticket)
     {
         var quotes = new List<Quote>();
-        int currentLeg = 0;
-        double liveProb = ticket.Legs[0].TrueProb;
+        List<List<int>> fixtures = GroupLegsByFixture(ticket);
+        int currentFixture = 0;
+        var legLiveProb = new double[ticket.Legs.Count];
+        for (int j = 0; j < legLiveProb.Length; j++) legLiveProb[j] = ticket.Legs[j].TrueProb;
 
-        Take(quotes, session, currentLeg, liveProb);
+        Take(quotes, session, currentFixture, fixtures, legLiveProb);
         while (session.MoveNext(out DramaEvent? e))
         {
-            liveProb = e!.WinProbAfter;
+            if (e!.IsSharedTelling)
+            {
+                IReadOnlyList<int> idx = e.LegIndices;
+                IReadOnlyList<double> pr = e.LegProbs;
+                for (int i = 0; i < idx.Count; i++) legLiveProb[idx[i]] = pr[i];
+            }
+            else
+            {
+                legLiveProb[e.LegIndex] = e.WinProbAfter;
+            }
+
             if (e.Type == DramaEventType.LegFinal)
             {
-                if (session.RevealedLegState(e.LegIndex) != LegState.Won) break; // busted
-                currentLeg++;
+                bool anyLost = false;
+                foreach (int j in fixtures[currentFixture])
+                    if (!ticket.Legs[j].IsVoided && session.RevealedLegState(j) != LegState.Won)
+                    { anyLost = true; break; }
+                if (anyLost) break; // busted
+
+                currentFixture++;
                 if (session.IsComplete) break;
-                liveProb = ticket.Legs[currentLeg].TrueProb;
             }
-            Take(quotes, session, currentLeg, liveProb);
+            Take(quotes, session, currentFixture, fixtures, legLiveProb);
         }
         return quotes;
     }
 
-    private static void Take(List<Quote> quotes, SweatSession session, int currentLeg, double liveProb)
+    private static void Take(List<Quote> quotes, SweatSession session, int currentFixture,
+        List<List<int>> fixtures, double[] legLiveProb)
     {
         double? fair = session.CashOutFair();
         if (!fair.HasValue) return;
-        quotes.Add(new Quote(currentLeg, liveProb, fair.Value, session.CashOutOffer()!.Value));
+        int anchorLeg = fixtures[currentFixture][0];
+        quotes.Add(new Quote(currentFixture, anchorLeg, (double[])legLiveProb.Clone(),
+            fair.Value, session.CashOutOffer()!.Value));
     }
 
     // =======================================================================================
@@ -284,6 +392,46 @@ public class SameMatchCashOutTests
                 state = Step(state);
                 picks.Add(new Pick(other, otherBoard[state % otherBoard.Length]));
             }
+
+            if (run.RefusalFor(picks) != null) continue;   // the book would not sell it
+            run.PlaceTicket(picks, 10);
+        }
+    }
+
+    /// <summary>Like <see cref="PlaceSameMatch"/> but the spread leg (a SECOND matchup) is ALWAYS
+    /// present rather than one shape in three — so every sold ticket carries two FIXTURES. Needed
+    /// because <c>T140</c> arm A folds a same-match GROUP into one shared telling: "only the last leg
+    /// left" no longer occurs on a ticket whose only fixture IS the same-match group, and this
+    /// population is what lets <c>Gate2_with_only_the_last_leg_left_...</c> reach "only the last
+    /// FIXTURE left" instead.</summary>
+    private static void PlaceSameMatchWithSpread(Run run, int seed, int shapes)
+    {
+        int slateSize = run.CurrentSlate.Matchups.Count;
+        int state = Step(seed + 13);
+
+        for (int shape = 0; shape < shapes; shape++)
+        {
+            state = Step(state);
+            int home = state % slateSize;
+            MarketSelection[] board = Board(run.CurrentSlate.Matchups[home]);
+
+            int groupSize = 2 + (shape % 2);              // two or three legs on the one matchup
+
+            var picks = new List<Pick>();
+            var seen = new HashSet<MarketSelection>();
+            for (int i = 0; i < groupSize; i++)
+            {
+                state = Step(state);
+                MarketSelection selection = board[state % board.Length];
+                if (!seen.Add(selection)) continue;
+                picks.Add(new Pick(home, selection));
+            }
+            if (picks.Count < 2) continue;
+
+            int other = (home + 1 + (state % (slateSize - 1))) % slateSize;
+            MarketSelection[] otherBoard = Board(run.CurrentSlate.Matchups[other]);
+            state = Step(state);
+            picks.Add(new Pick(other, otherBoard[state % otherBoard.Length]));
 
             if (run.RefusalFor(picks) != null) continue;   // the book would not sell it
             run.PlaceTicket(picks, 10);
@@ -409,7 +557,10 @@ public class SameMatchCashOutTests
     {
         long tickets = 0, comparisons = 0, afterASettle = 0;
 
-        for (int seed = 0; seed < 40; seed++)
+        // T140 arm A: a same-match GROUP now resolves at a single whistle, so "after a settle" only
+        // happens on a ticket that ALSO carries a leg on a second matchup (one shape in three) — the
+        // seed range is widened over the pre-arm-A 40 so the sweep still reaches that state in force.
+        for (int seed = 0; seed < 130; seed++)
         {
             var run = new Run($"sgp-cashout-joint-{seed}", SweepConfig());
             PlaceSameMatch(run, seed, shapes: 6);
@@ -425,11 +576,11 @@ public class SameMatchCashOutTests
 
                 foreach (Quote q in Sweat(run.Sweats[i], ticket))
                 {
-                    double expected = JointFair(ticket, q.CurrentLeg, q.LiveProb);
+                    double expected = JointFair(ticket, q.CurrentFixture, q.LegLiveProb);
                     Assert.True(expected == q.Fair,
-                        $"seed {seed} ticket {i} leg {q.CurrentLeg}: {expected:R} != {q.Fair:R}");
+                        $"seed {seed} ticket {i} fixture {q.CurrentFixture}: {expected:R} != {q.Fair:R}");
                     comparisons++;
-                    if (q.CurrentLeg > 0) afterASettle++;
+                    if (q.CurrentFixture > 0) afterASettle++;
                 }
             }
         }
@@ -544,30 +695,45 @@ public class SameMatchCashOutTests
         Assert.Equal(0, ticketMismatch);
     }
 
-    /// <summary>ANCHOR 2, in the only form the session can express it. Once the leg in progress is the
-    /// LAST one, <c>P(L ∧ U | S)</c> and <c>P(L | S)</c> are joints over the same leg set, so the
-    /// quote is <c>payout × liveProb</c> — and walks to the full payout as that leg closes out. Pinned
-    /// to a relative ulp rather than <c>==</c>: the rule is written as the scope doc writes it, two
-    /// ratios, and <c>c × (liveProb / c)</c> is not required to round back to <c>liveProb</c>.</summary>
+    /// <summary>ANCHOR 2, in the only form the session can express it. Once the FIXTURE in progress is
+    /// the LAST one, <c>P(L ∧ U | S)</c> and <c>P(L | S)</c> are joints over the same leg set, so the
+    /// quote is <c>payout × liveProb</c> — and walks to the full payout as that fixture closes out.
+    ///
+    /// <para><c>T140</c> arm A: on a ticket whose only fixture IS a same-match GROUP, "only the last
+    /// leg left" never occurs — every leg of that group is live from the start, together, as one
+    /// telling. So this sweeps <see cref="PlaceSameMatchWithSpread"/> instead of <see
+    /// cref="PlaceSameMatch"/>: a same-match pair on one matchup PLUS a leg on a second, which
+    /// guarantees a SOLO final fixture — the state the anchor needs — reached after the same-match
+    /// group's shared telling resolves. <c>q.LiveProb</c> is that solo fixture's own (and only) live
+    /// leg, exactly the quantity the rule is written over.</para>
+    ///
+    /// <para>Pinned to a relative ulp rather than <c>==</c>: the rule is written as the scope doc
+    /// writes it, two ratios, and <c>c × (liveProb / c)</c> is not required to round back to
+    /// <c>liveProb</c>.</para></summary>
     [Fact]
     public void Gate2_with_only_the_last_leg_left_the_quote_is_the_payout_times_the_live_number()
     {
         long anchors = 0;
 
-        for (int seed = 0; seed < 40; seed++)
+        // Every ticket here needs TWO fixtures to reach "only the last fixture left"; the seed range
+        // is widened over the pre-arm-A 40 so the sweep gathers enough of that state.
+        for (int seed = 0; seed < 80; seed++)
         {
             var run = new Run($"sgp-cashout-last-{seed}", SweepConfig());
-            PlaceSameMatch(run, seed, shapes: 6);
+            PlaceSameMatchWithSpread(run, seed, shapes: 6);
             if (run.Tickets.Count == 0) continue;
             run.LockRound();
 
             for (int i = 0; i < run.Sweats.Count; i++)
             {
                 Ticket ticket = run.Tickets[i];
-                int lastActive = ticket.Legs.Count - 1;
+                List<List<int>> fixtures = GroupLegsByFixture(ticket);
+                int lastFixture = fixtures.Count - 1;
+                if (lastFixture < 1) continue; // needs two fixtures to have a state to reach
+
                 foreach (Quote q in Sweat(run.Sweats[i], ticket))
                 {
-                    if (q.CurrentLeg != lastActive) continue;
+                    if (q.CurrentFixture != lastFixture) continue;
                     double expected = ticket.PotentialPayout * q.LiveProb;
                     Assert.Equal(expected, q.Fair, 12);
                     Assert.True(Math.Abs(expected - q.Fair) <= 4.0 * Math.Abs(expected) * 2.220446049250313e-16,
@@ -577,8 +743,8 @@ public class SameMatchCashOutTests
             }
         }
 
-        _output.WriteLine($"Gate 2 anchor 2: {anchors} last-leg quotes.");
-        Assert.True(anchors >= 100, $"only {anchors} last-leg quotes");
+        _output.WriteLine($"Gate 2 anchor 2: {anchors} last-fixture quotes.");
+        Assert.True(anchors >= 100, $"only {anchors} last-fixture quotes");
     }
 
     /// <summary>
@@ -659,11 +825,21 @@ public class SameMatchCashOutTests
     /// payout exactly when every remaining leg is entailed by a settled one, and there it is not a
     /// leak: all legs on a matchup grade off ONE sampled <c>MatchStatLine</c>, so an entailed leg
     /// cannot then grade Lost, and settlement would have paid the same payout anyway.</para>
+    ///
+    /// <para><b><c>T140</c> arm A splits the re-weighted branch again, by SOLO vs SHARED telling.</b>
+    /// <c>q.LiveProb</c> is now the fixture's ANCHOR leg alone, not the whole live set — so
+    /// <c>p_win ≤ liveProb</c> was derived from there being exactly one live leg, and stays exactly
+    /// that precise on a SOLO telling (still asserted, unchanged). On a SHARED telling <c>liveProb</c>
+    /// is no longer the number the quote is bounded by; what survives there is that <c>p_win</c> is a
+    /// genuine probability — in <c>[0, 1]</c>, finite — and the payout bound above, which does not
+    /// depend on which arm fired. Both arms' counts are reported so the sweep visibly exercises
+    /// both.</para>
     /// </summary>
     [Fact]
     public void Gate2_the_conditional_is_bounded_by_the_live_number_and_never_divides_by_zero()
     {
         long checks = 0, reWeighted = 0, carvedOut = 0, atTheFullPayout = 0;
+        long soloArm = 0, sharedArm = 0;
         double maxRatio = 0.0, minDenominator = double.MaxValue;
 
         for (int seed = 0; seed < 40; seed++)
@@ -676,9 +852,10 @@ public class SameMatchCashOutTests
             for (int i = 0; i < run.Sweats.Count; i++)
             {
                 Ticket ticket = run.Tickets[i];
+                List<List<int>> fixtures = GroupLegsByFixture(ticket);
                 foreach (Quote q in Sweat(run.Sweats[i], ticket))
                 {
-                    (List<Leg> settled, List<Leg> settledLive, _) = Sets(ticket, q.CurrentLeg);
+                    (List<Leg> settled, List<Leg> settledLive, _) = Sets(ticket, q.CurrentFixture);
                     double pSettled = SameMatchModel.JointProbabilityOf(settled);
                     double pSettledLive = SameMatchModel.JointProbabilityOf(settledLive);
                     Assert.True(pSettled > 0.0, "p_joint(S) reached zero on a sold ticket");
@@ -694,12 +871,31 @@ public class SameMatchCashOutTests
                         $"a quote of {q.Fair:R} exceeded the payout {ticket.PotentialPayout:R}");
                     if (q.Fair == ticket.PotentialPayout) atTheFullPayout++;
 
+                    int liveUnvoided = 0;
+                    foreach (int j in fixtures[q.CurrentFixture])
+                        if (!ticket.Legs[j].IsVoided) liveUnvoided++;
+                    bool solo = liveUnvoided <= 1;
+
                     if (condLive < 1.0 - CertaintySlack)
                     {
-                        // The ratified branch: unchanged, and asserted exactly as it was.
-                        Assert.True(pWin <= q.LiveProb + 1e-12,
-                            $"p_win {pWin:R} exceeded liveProb {q.LiveProb:R}");
-                        maxRatio = Math.Max(maxRatio, pWin / q.LiveProb);
+                        if (solo)
+                        {
+                            // The ratified branch on a SOLO telling: unchanged, and asserted exactly
+                            // as it was — liveProb IS the whole live set's number here.
+                            Assert.True(pWin <= q.LiveProb + 1e-12,
+                                $"p_win {pWin:R} exceeded liveProb {q.LiveProb:R}");
+                            maxRatio = Math.Max(maxRatio, pWin / q.LiveProb);
+                            soloArm++;
+                        }
+                        else
+                        {
+                            // SHARED telling: liveProb is only the anchor leg's number now. What
+                            // survives is that p_win is a genuine, finite probability.
+                            Assert.True(pWin >= 0.0 && pWin <= 1.0 + 1e-12
+                                && !double.IsNaN(pWin) && !double.IsInfinity(pWin),
+                                $"degenerate shared-telling p_win {pWin:R}");
+                            sharedArm++;
+                        }
                         reWeighted++;
                     }
                     else
@@ -714,11 +910,14 @@ public class SameMatchCashOutTests
             }
         }
 
-        _output.WriteLine($"Gate 2 bound: {checks} quotes ({reWeighted} re-weighted, {carvedOut} "
-            + $"carved out as certainties, {atTheFullPayout} at the full payout); max p_win/liveProb "
-            + $"on the re-weighted branch {maxRatio:F12}; smallest P(L|S) seen {minDenominator:R}.");
+        _output.WriteLine($"Gate 2 bound: {checks} quotes ({reWeighted} re-weighted [{soloArm} solo, "
+            + $"{sharedArm} shared], {carvedOut} carved out as certainties, {atTheFullPayout} at the "
+            + $"full payout); max p_win/liveProb on the re-weighted SOLO branch {maxRatio:F12}; "
+            + $"smallest P(L|S) seen {minDenominator:R}.");
         Assert.True(checks >= 500);
         Assert.True(reWeighted >= 500, $"only {reWeighted} quotes took the re-weighted branch");
+        Assert.True(soloArm >= 1, "the solo-telling arm was never exercised");
+        Assert.True(sharedArm >= 1, "the shared-telling arm was never exercised");
         Assert.True(maxRatio <= 1.0 + 1e-12);
     }
 
@@ -771,7 +970,7 @@ public class SameMatchCashOutTests
 
                 for (int q = 0; q < a.Count; q++)
                 {
-                    double pWin = ConditionalWinProb(freeTicket, b[q].CurrentLeg, b[q].LiveProb);
+                    double pWin = ConditionalWinProb(freeTicket, b[q].CurrentFixture, b[q].LegLiveProb);
                     double refund = (1.0 - pWin) * freeTicket.Stake;
 
                     // The engine's own gap between the two quotes IS the refund it applied.
@@ -924,13 +1123,23 @@ public class SameMatchCashOutTests
     /// conditional runs over the surviving legs only. Driven through the real
     /// <c>Run.PlayMulliganSlip</c> — <c>Leg.IsVoided</c> has an internal setter, so there is no way to
     /// fake a void.
+    ///
+    /// <para><c>T140</c> arm A: a fixture's cursor does NOT advance on a void alone — N legs can die
+    /// at one whistle (<c>SweatSession.CloseOrKeepOpenAfterSave</c>), and the window stays open while
+    /// any legal save remains and dead legs remain. The cursor only moves once the pending-loss window
+    /// CLOSES with no dead legs left, mirroring exactly when the engine's own
+    /// <c>AdvanceOrComplete</c> fires.</para>
     /// </summary>
     [Fact]
     public void Gate4_a_voided_same_match_ticket_quotes_off_the_locked_replacement_price()
     {
         long voided = 0, quotes = 0;
 
-        for (int seed = 0; seed < 90 && voided < 8; seed++)
+        // T140 arm A: the fixture cursor holds while a shared telling's window has further dead legs
+        // to save, so a voided ticket yields fewer post-void QUOTES than voided TICKETS now — stopping
+        // on voided alone (the pre-arm-A condition) can starve `quotes`. Keep sweeping, within a wider
+        // seed cap, until both floors are cleared with room to spare.
+        for (int seed = 0; seed < 300 && (voided < 8 || quotes < 24); seed++)
         {
             var run = new Run($"sgp-cashout-void-{seed}", SweepConfig());
             for (int i = 0; i < 8; i++) run.GrantConsumable(Mulligan());
@@ -944,8 +1153,10 @@ public class SameMatchCashOutTests
                 Ticket ticket = run.Tickets[i];
                 if (ticket.Legs.Count < 3) continue; // a mulligan needs two ACTIVE legs to leave behind
 
-                int currentLeg = 0;
-                double liveProb = ticket.Legs[0].TrueProb;
+                List<List<int>> fixtures = GroupLegsByFixture(ticket);
+                var legLiveProb = new double[ticket.Legs.Count];
+                for (int j = 0; j < legLiveProb.Length; j++) legLiveProb[j] = ticket.Legs[j].TrueProb;
+                int currentFixture = 0;
                 bool sawVoid = false;
 
                 while (true)
@@ -959,10 +1170,11 @@ public class SameMatchCashOutTests
                             break;
                         }
                         run.PlayMulliganSlip(session);
-                        currentLeg++;
                         sawVoid = true;
                         if (session.IsComplete || ticket.State != TicketState.Open) break;
-                        liveProb = ticket.Legs[currentLeg].TrueProb;
+                        // The window closes exactly when no dead leg remains on this whistle — that
+                        // is when the engine's own AdvanceOrComplete moves the fixture cursor.
+                        if (!session.HasPendingLoss) currentFixture++;
                     }
 
                     if (sawVoid)
@@ -976,7 +1188,7 @@ public class SameMatchCashOutTests
                                 if (!ticket.Legs[j].IsVoided) survivors |= 1 << j;
                             Assert.Equal(ticket.LockedSubsetPrices[survivors], ticket.SameMatchContractPrice);
 
-                            double expected = JointFair(ticket, currentLeg, liveProb);
+                            double expected = JointFair(ticket, currentFixture, legLiveProb);
                             Assert.True(expected == fair.Value,
                                 $"seed {seed}: post-void {expected:R} != {fair.Value:R}");
                             quotes++;
@@ -984,13 +1196,29 @@ public class SameMatchCashOutTests
                     }
 
                     if (!session.MoveNext(out DramaEvent? e)) break;
-                    liveProb = e!.WinProbAfter;
+
+                    if (e!.IsSharedTelling)
+                    {
+                        IReadOnlyList<int> idx = e.LegIndices;
+                        IReadOnlyList<double> pr = e.LegProbs;
+                        for (int k = 0; k < idx.Count; k++) legLiveProb[idx[k]] = pr[k];
+                    }
+                    else
+                    {
+                        legLiveProb[e.LegIndex] = e.WinProbAfter;
+                    }
+
                     if (e.Type != DramaEventType.LegFinal) continue;
-                    if (session.HasPendingLoss) continue;
-                    if (session.RevealedLegState(e.LegIndex) != LegState.Won) break;
-                    currentLeg++;
+                    if (session.HasPendingLoss) continue; // the window just opened; not resolved yet
+
+                    bool anyLost = false;
+                    foreach (int j in fixtures[currentFixture])
+                        if (!ticket.Legs[j].IsVoided && session.RevealedLegState(j) != LegState.Won)
+                        { anyLost = true; break; }
+                    if (anyLost) break;
+
+                    currentFixture++;
                     if (session.IsComplete) break;
-                    liveProb = ticket.Legs[currentLeg].TrueProb;
                 }
 
                 if (sawVoid) voided++;
@@ -1137,23 +1365,35 @@ public class SameMatchCashOutTests
     }
 
     /// <summary>
-    /// A CERTAINTY NEVER QUOTES BELOW ITS WORTH (Allen, 2026-08-14). When the settled legs entail the
-    /// leg in progress, <c>P(L | S)</c> is 1 while <c>liveProb</c> is the board's unconditional
-    /// marginal and is not — so the ratified re-weight would scale the quote DOWN on a leg that
-    /// cannot lose. The ruling drops the re-weight there: the quote is the pure conditional
-    /// <c>payout × P(L ∧ U | S)</c>.
+    /// THE CERTAINTY CARVE-OUT IS UNREACHABLE UNDER <c>T140</c> ARM A — recorded as a measured fact,
+    /// not left as a hole.
     ///
-    /// <para>Asserted on a REAL implication pair driven through the real sweat, and asserted three
-    /// ways at once: the entailment is a precondition checked rather than assumed
-    /// (<c>P(L | S) ≥ 1 − 1e-12</c>); the quote equals the pure conditional to the BIT; and it is
-    /// strictly ABOVE what the re-weight would have produced, so the test would fail if the carve-out
-    /// were removed rather than merely tolerate it.</para>
+    /// <para><b>What the ruling wanted</b> (Allen, 2026-08-14): when the SETTLED legs entail the leg
+    /// in progress, <c>P(L | S)</c> is 1 while the drama's number is the board's unconditional
+    /// marginal and is not, so the ratified re-weight would scale the quote DOWN on a leg that cannot
+    /// lose. The ruling drops the re-weight there — <i>a certainty never quotes below its worth</i>.</para>
+    ///
+    /// <para><b>Why arm A abolishes the state.</b> Entailment only ever holds between two legs on ONE
+    /// match: <c>JointProbabilityOf</c> factorises over matchups, so for a settled set and a live set
+    /// on disjoint matchups <c>P(L | S)</c> collapses to <c>P(L)</c>, which no sellable board price
+    /// approaches 1. And arm A never has two legs of one match in different stages — they are one
+    /// telling, live together and graded at a single whistle. So the settled-entails-live pairing the
+    /// carve-out exists for cannot occur.</para>
+    ///
+    /// <para><b>This test therefore asserts the unreachability, and it is not a weaker test than the
+    /// one it replaces.</b> It still builds a REAL implication pair and proves it is one at the model.
+    /// It pins the structural cause — one matchup, one fixture, never different stages. And it keeps
+    /// the ruling's own assertion live behind a branch: <b>if the carve-out is ever reached again the
+    /// quote must still be the pure conditional to the bit</b>, so the ruled behaviour is pinned
+    /// rather than deleted. The count of carve-outs reached is asserted to be ZERO, which makes this a
+    /// tripwire: should arm A ever be amended so a settled leg can entail a live one, this fails
+    /// loudly and the escalation in <c>docs/handoffs/theater-engine.md</c> is reopened.</para>
     /// </summary>
     [Fact]
-    public void Gate6_a_settled_leg_that_entails_the_live_one_quotes_the_pure_conditional()
+    public void Gate6_the_certainty_carve_out_is_unreachable_under_arm_A()
     {
-        int tickets = 0, reachedTheCarveOut = 0, exactComparisons = 0;
-        double smallestLive = 1.0, largestGap = 0.0;
+        int tickets = 0, quotes = 0, reachedTheCarveOut = 0, stageChecks = 0;
+        double largestCondLive = 0.0;
 
         for (int seed = 0; seed < 400; seed++)
         {
@@ -1166,62 +1406,91 @@ public class SameMatchCashOutTests
             Assert.NotNull(ticket.SameMatch); // the population's precondition
             tickets++;
 
+            // THE PAIR REALLY IS AN IMPLICATION, checked at the model rather than assumed — otherwise
+            // this test could pass by having quietly stopped building an entailment at all. OVER gHi
+            // entails OVER gLo exactly when the joint of the two equals the stronger one's marginal.
+            var higher = new List<Leg> { ticket.Legs[0] };
+            var both = new List<Leg> { ticket.Legs[0], ticket.Legs[1] };
+            double pHigher = SameMatchModel.JointProbabilityOf(higher);
+            double pBoth = SameMatchModel.JointProbabilityOf(both);
+            Assert.True(pBoth == pHigher,
+                $"seed {seed}: OVER {ticket.Legs[0].Selection.Line} was supposed to entail OVER "
+                + $"{ticket.Legs[1].Selection.Line}, but p(both)={pBoth:R} != p(higher)={pHigher:R}");
+
             SweatSession session = run.Sweats[0];
-            int currentLeg = 0;
-            double liveProb = ticket.Legs[0].TrueProb;
+
+            // THE STRUCTURAL CAUSE: all three legs ride one matchup, so arm A gives them ONE telling.
+            Assert.Equal(1, session.FixtureCount);
+            Assert.Equal(new[] { 0, 1, 2 }, session.CurrentFixtureLegs.ToArray());
 
             while (true)
             {
-                // Only leg 1 is the entailed one: at leg 0 nothing has settled, and at leg 2 the
-                // live leg is the independent corners leg, whose conditional is nowhere near 1.
-                if (currentLeg == 1 && session.CashOutFair() is { } fair)
+                // The entailing leg and the entailed leg are never in DIFFERENT STAGES. This is the
+                // whole finding in one assertion: the carve-out needs one settled and one live.
+                bool entailingPending = session.RevealedLegState(0) == LegState.Pending;
+                bool entailedPending = session.RevealedLegState(1) == LegState.Pending;
+                Assert.True(entailingPending == entailedPending,
+                    $"seed {seed}: legs 0 and 1 ride one matchup but are in different stages — arm A "
+                    + "is not holding them to one telling");
+                stageChecks++;
+
+                if (session.CashOutFair() is { } fair)
                 {
-                    double condLive = LiveConditional(ticket, currentLeg);
-                    Assert.True(condLive >= 1.0 - CertaintySlack,
-                        $"seed {seed}: OVER {ticket.Legs[0].Selection.Line} was supposed to entail "
-                        + $"OVER {ticket.Legs[1].Selection.Line}, but P(L|S) = {condLive:R}");
+                    quotes++;
+                    double condLive = LiveConditional(ticket, session.CurrentFixtureIndex);
+                    if (condLive > largestCondLive) largestCondLive = condLive;
 
-                    double expected = ticket.PotentialPayout * PureConditional(ticket, currentLeg);
-                    Assert.True(expected == fair,
-                        $"seed {seed} leg {currentLeg}: the certainty quoted {fair:R}, not the pure "
-                        + $"conditional {expected:R}");
-                    exactComparisons++;
-
-                    // …and the carve-out is LOAD-BEARING: the ratified re-weight would have been
-                    // strictly cheaper, which is the whole reason Allen ruled on it.
-                    double scaled = ReWeightedFair(ticket, currentLeg, liveProb);
-                    if (liveProb < 1.0 - 1e-9)
+                    if (condLive >= 1.0 - CertaintySlack)
                     {
-                        Assert.True(fair > scaled,
-                            $"seed {seed}: the re-weight would not have moved the quote "
-                            + $"({fair:R} vs {scaled:R}) — this population no longer tests anything");
+                        // THE RULING, STILL BINDING. Unreachable today; correct if it returns.
                         reachedTheCarveOut++;
-                        smallestLive = Math.Min(smallestLive, liveProb);
-                        largestGap = Math.Max(largestGap, (fair - scaled) / fair);
+                        double expected =
+                            ticket.PotentialPayout * PureConditional(ticket, session.CurrentFixtureIndex);
+                        Assert.True(expected == fair,
+                            $"seed {seed}: the carve-out fired but quoted {fair:R}, not the pure "
+                            + $"conditional {expected:R}");
                     }
                 }
 
-                if (!session.MoveNext(out DramaEvent? e)) break;
-                liveProb = e!.WinProbAfter;
-                if (e.Type != DramaEventType.LegFinal) continue;
-                if (session.RevealedLegState(e.LegIndex) != LegState.Won) break;
-                currentLeg++;
+                if (!session.MoveNext(out DramaEvent? _)) break;
                 if (session.IsComplete) break;
-                liveProb = ticket.Legs[currentLeg].TrueProb;
             }
         }
 
-        _output.WriteLine($"Gate 6: {tickets} entailment tickets sold; {exactComparisons} quotes taken "
-            + $"on the entailed leg, {reachedTheCarveOut} of them with a live number strictly below 1 "
-            + $"(smallest {smallestLive:F6}); the re-weight would have cut the quote by up to "
-            + $"{largestGap * 100:F2}%.");
+        _output.WriteLine($"Gate 6: {tickets} entailment tickets sold, {stageChecks} stage checks, "
+            + $"{quotes} live quotes; the carve-out was reached {reachedTheCarveOut} times. Largest "
+            + $"P(L|S) observed {largestCondLive:R} against the 1 - {CertaintySlack:E0} threshold.");
 
         Assert.True(tickets >= 50, $"only {tickets} entailment tickets sold");
-        Assert.True(reachedTheCarveOut >= 50,
-            $"only {reachedTheCarveOut} quotes actually exercised the carve-out");
-        Assert.True(largestGap > 0.05,
-            $"the carve-out only moved the quote by {largestGap * 100:F4}% at most — too small to "
-            + "distinguish it from float noise");
+        Assert.True(quotes >= 100, $"only {quotes} live quotes — the population decided nothing");
+
+        // THE RECORDED FACT, and the tripwire. Zero is the correct number under arm A; a non-zero one
+        // means the state came back and docs/handoffs/theater-engine.md's escalation needs reopening.
+        Assert.True(reachedTheCarveOut == 0,
+            $"the certainty carve-out fired {reachedTheCarveOut} times. Under T140 arm A it should be "
+            + "unreachable — legs on one match share a telling, so a settled leg can no longer entail "
+            + "a live one. If this is now reachable the finding filed for Allen is stale: reopen it.");
+        Assert.True(largestCondLive < 1.0 - CertaintySlack,
+            $"P(L|S) reached {largestCondLive:R}, i.e. an entailment, which arm A should make "
+            + "impossible");
+    }
+
+    /// <summary>Fixture-aware overload of <see cref="ReWeightedFair(Ticket, int, double)"/>, for a
+    /// shared telling where a single scalar <c>liveProb</c> cannot describe every live leg. Same UN-carved
+    /// rule, generalized exactly as <see cref="ConditionalWinProb"/> is: the numerator is <see
+    /// cref="LiveDramaJoint"/> rather than one leg's own number.</summary>
+    private static double ReWeightedFair(Ticket ticket, int currentFixture, double[] legLiveProb)
+    {
+        (List<Leg> settled, List<Leg> settledLive, List<Leg> active) = Sets(ticket, currentFixture);
+        double pSettled = SameMatchModel.JointProbabilityOf(settled);
+        double condAll = SameMatchModel.JointProbabilityOf(active) / pSettled;
+        double condLive = SameMatchModel.JointProbabilityOf(settledLive) / pSettled;
+        double liveDramaJoint = LiveDramaJoint(ticket, currentFixture, legLiveProb, pSettled, condLive);
+        double pWin = condAll * (liveDramaJoint / condLive);
+        double fair = ticket.PotentialPayout * pWin;
+        if (ticket.Modifier == TicketModifier.FreeBet && !ticket.Refunded)
+            fair += (1.0 - pWin) * ticket.Stake;
+        return fair;
     }
 
     /// <summary>
@@ -1232,6 +1501,14 @@ public class SameMatchCashOutTests
     /// the UN-carved rule at every quote whose <c>P(L | S)</c> sits below the threshold, and
     /// requiring that a meaningful number of those quotes had a near-certain live number — otherwise
     /// the sweep would pass without ever having posed the question.
+    ///
+    /// <para><c>T140</c> arm A: <b>the FIRST quote taken on a fixture is skipped</b>. Every leg starts
+    /// a fixture at its own baseline marginal, so the re-weight there is exactly 1.0 by construction —
+    /// mathematically indistinguishable from the carve-out, but reached by a DIFFERENT arithmetic path
+    /// (this file's <c>Sets</c>/joint calls vs the engine's), so the two land a few ulp apart and an
+    /// <c>==</c> comparison there is a false alarm, not a re-weight the engine dropped. Once at least
+    /// one beat has landed on the live fixture the drift is genuinely off 1, which is the state this
+    /// gate exists to test.</para>
     /// </summary>
     [Fact]
     public void Gate6_a_near_certain_live_number_is_not_a_certainty_and_still_re_weights()
@@ -1252,37 +1529,60 @@ public class SameMatchCashOutTests
                 if (ticket.SameMatch == null) continue;
 
                 SweatSession session = run.Sweats[i];
-                int currentLeg = 0;
-                double liveProb = ticket.Legs[0].TrueProb;
+                List<List<int>> fixtures = GroupLegsByFixture(ticket);
+                var legLiveProb = new double[ticket.Legs.Count];
+                for (int j = 0; j < legLiveProb.Length; j++) legLiveProb[j] = ticket.Legs[j].TrueProb;
+                int currentFixture = 0;
+                bool steppedThisFixture = false; // at least one beat landed on the CURRENT fixture
 
                 while (true)
                 {
-                    if (session.CashOutFair() is { } fair)
+                    if (steppedThisFixture && session.CashOutFair() is { } fair)
                     {
-                        double condLive = LiveConditional(ticket, currentLeg);
+                        double condLive = LiveConditional(ticket, currentFixture);
                         if (condLive < 1.0 - CertaintySlack)
                         {
-                            Assert.True(ReWeightedFair(ticket, currentLeg, liveProb) == fair,
-                                $"seed {seed} ticket {i} leg {currentLeg}: P(L|S) = {condLive:R} is "
-                                + "not a certainty, but the quote dropped the re-weight");
+                            Assert.True(ReWeightedFair(ticket, currentFixture, legLiveProb) == fair,
+                                $"seed {seed} ticket {i} fixture {currentFixture}: P(L|S) = {condLive:R} "
+                                + "is not a certainty, but the quote dropped the re-weight");
                             reWeighted++;
                             highestCondLiveBelowThreshold =
                                 Math.Max(highestCondLiveBelowThreshold, condLive);
-                            if (liveProb >= 0.9)
+
+                            double anchorLive = legLiveProb[fixtures[currentFixture][0]];
+                            if (anchorLive >= 0.9)
                             {
                                 nearCertainOnScreen++;
-                                highestLive = Math.Max(highestLive, liveProb);
+                                highestLive = Math.Max(highestLive, anchorLive);
                             }
                         }
                     }
 
                     if (!session.MoveNext(out DramaEvent? e)) break;
-                    liveProb = e!.WinProbAfter;
+
+                    if (e!.IsSharedTelling)
+                    {
+                        IReadOnlyList<int> idx = e.LegIndices;
+                        IReadOnlyList<double> pr = e.LegProbs;
+                        for (int k = 0; k < idx.Count; k++) legLiveProb[idx[k]] = pr[k];
+                    }
+                    else
+                    {
+                        legLiveProb[e.LegIndex] = e.WinProbAfter;
+                    }
+                    steppedThisFixture = true;
+
                     if (e.Type != DramaEventType.LegFinal) continue;
-                    if (session.RevealedLegState(e.LegIndex) != LegState.Won) break;
-                    currentLeg++;
+
+                    bool anyLost = false;
+                    foreach (int j in fixtures[currentFixture])
+                        if (!ticket.Legs[j].IsVoided && session.RevealedLegState(j) != LegState.Won)
+                        { anyLost = true; break; }
+                    if (anyLost) break;
+
+                    currentFixture++;
+                    steppedThisFixture = false;
                     if (session.IsComplete) break;
-                    liveProb = ticket.Legs[currentLeg].TrueProb;
                 }
             }
         }

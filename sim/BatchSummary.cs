@@ -84,6 +84,22 @@ public sealed class BatchSummary
     /// section 0b prints it. Zero for every bot but the probe.</summary>
     public readonly Dictionary<MarketKind, SameMatchKindExposure> SameMatchKinds = new();
 
+    // ---- T140 arm A gate telemetry — reduced from the per-run fields, in run-index order, exactly
+    // like every other aggregate on this type. G8-ARMA reads these off the "samematch" batch, the
+    // one bot whose catalogue actually builds same-match (shared-telling) tickets.
+
+    public long ArmATellings;
+    public long ArmASharedTellings;
+    public long ArmAWhistles;
+    public long ArmAExtraWhistles;
+    public long ArmAClockFaults;
+    public long ArmASharedWhistleGradesLanded;
+    public long ArmASharedWhistleLegsExpected;
+    public long ArmAWhistleGradeMismatches;
+    public long ArmAWindowsOpened;
+    public long ArmAMultiDeathWindows;
+    public long ArmAMultiFixtureTickets;
+
     public static BatchSummary From(string name, RunResult[] results)
     {
         var s = new BatchSummary { Name = name, N = results.Length };
@@ -160,6 +176,18 @@ public sealed class BatchSummary
                 total.Legs += e.Legs;
                 total.Tickets += e.Tickets;
             }
+
+            s.ArmATellings += rr.ArmATellings;
+            s.ArmASharedTellings += rr.ArmASharedTellings;
+            s.ArmAWhistles += rr.ArmAWhistles;
+            s.ArmAExtraWhistles += rr.ArmAExtraWhistles;
+            s.ArmAClockFaults += rr.ArmAClockFaults;
+            s.ArmASharedWhistleGradesLanded += rr.ArmASharedWhistleGradesLanded;
+            s.ArmASharedWhistleLegsExpected += rr.ArmASharedWhistleLegsExpected;
+            s.ArmAWhistleGradeMismatches += rr.ArmAWhistleGradeMismatches;
+            s.ArmAWindowsOpened += rr.ArmAWindowsOpened;
+            s.ArmAMultiDeathWindows += rr.ArmAMultiDeathWindows;
+            s.ArmAMultiFixtureTickets += rr.ArmAMultiFixtureTickets;
 
             for (int r = 1; r <= 8; r++)
                 if (rr.DeathRound >= r) s.AliveEntering[r]++;

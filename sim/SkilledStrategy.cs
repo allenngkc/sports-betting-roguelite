@@ -468,23 +468,64 @@ public class SkilledStrategy : IStrategy
         return offer >= CashOutEvRatio * estHold;
     }
 
-    // Estimated value of holding, from revealed state only: settled-won legs (real odds) × current leg
-    // (revealed live win% × odds) × un-started legs (p̂ × odds) × the payout product.
+    // Estimated value of holding, from revealed state only: settled-won legs (real odds) × the legs
+    // LIVE on this telling (revealed live win% × odds) × un-started legs (p̂ × odds) × the payout
+    // product.
+    //
+    // TWO BRANCHES, and the split is deliberate rather than tidy. A solo telling runs the pre-arm-A
+    // expression VERBATIM — same terms, same multiplication order, same bits. This is a BOT HEURISTIC:
+    // it decides when the bot cashes out, so a last-bit change here changes behaviour, which changes
+    // the campaign, which moves the gate baseline. An algebraically equal rewrite is not good enough.
     private static double EstHoldEv(Ticket ticket, SweatSession session, DramaEvent evt, BotState state)
     {
-        int cur = evt.LegIndex;
         IReadOnlyList<Leg> legs = ticket.Legs;
 
-        double resolvedOdds = 1.0;
-        for (int j = 0; j < cur; j++)
-            if (!legs[j].IsVoided && session.RevealedLegState(j) == LegState.Won)
-                resolvedOdds *= legs[j].OfferedOdds;
+        if (!evt.IsSharedTelling)
+        {
+            int cur = evt.LegIndex;
 
-        double val = ticket.Stake * resolvedOdds * (evt.WinProbAfter * legs[cur].OfferedOdds);
-        for (int j = cur + 1; j < legs.Count; j++)
-            if (!legs[j].IsVoided)
-                val *= PHat(state, legs[j]) * legs[j].OfferedOdds;
-        return val * ticket.PayoutMultiplier;
+            double resolvedOdds = 1.0;
+            for (int j = 0; j < cur; j++)
+                if (!legs[j].IsVoided && session.RevealedLegState(j) == LegState.Won)
+                    resolvedOdds *= legs[j].OfferedOdds;
+
+            double val = ticket.Stake * resolvedOdds * (evt.WinProbAfter * legs[cur].OfferedOdds);
+            for (int j = cur + 1; j < legs.Count; j++)
+                if (!legs[j].IsVoided)
+                    val *= PHat(state, legs[j]) * legs[j].OfferedOdds;
+            return val * ticket.PayoutMultiplier;
+        }
+
+        // N legs live on one fixture (T140 arm A). "Before the cursor" no longer partitions the ticket
+        // — the live set is the telling's, and everything else is classified by what has been REVEALED
+        // rather than by index order, which is exact and needs no leg-to-fixture map.
+        IReadOnlyList<int> live = evt.LegIndices;
+        IReadOnlyList<double> liveProbs = evt.LegProbs;
+
+        double sharedResolvedOdds = 1.0;
+        for (int j = 0; j < legs.Count; j++)
+        {
+            if (legs[j].IsVoided || Contains(live, j)) continue;
+            if (session.RevealedLegState(j) == LegState.Won) sharedResolvedOdds *= legs[j].OfferedOdds;
+        }
+
+        double shared = ticket.Stake * sharedResolvedOdds;
+        for (int i = 0; i < live.Count; i++)
+            shared *= liveProbs[i] * legs[live[i]].OfferedOdds;
+
+        for (int j = 0; j < legs.Count; j++)
+        {
+            if (legs[j].IsVoided || Contains(live, j)) continue;
+            if (session.RevealedLegState(j) == LegState.Pending)
+                shared *= PHat(state, legs[j]) * legs[j].OfferedOdds;
+        }
+        return shared * ticket.PayoutMultiplier;
+    }
+
+    private static bool Contains(IReadOnlyList<int> set, int value)
+    {
+        for (int i = 0; i < set.Count; i++) if (set[i] == value) return true;
+        return false;
     }
 
     public virtual void Shop(Run run, BotState state, Pcg32 rng)

@@ -674,13 +674,24 @@ public class VoidRepricingTests
     /// needs a high joint, and scanning the whole 36-selection board for triples costs far more than
     /// it finds.</para>
     /// </summary>
+    /// <param name="grantWhistle">Grants a Ref's Whistle BEFORE the scenario's Mulligan is spent.
+    /// Needed since <c>T140</c> arm A only, and it changes no assertion anywhere: the generator's trio
+    /// all ride matchup 0, so under arm A they are ONE telling and all three grade at one whistle.
+    /// The save window therefore opens once, and once the scenario's only Mulligan is spent on it the
+    /// window closes for want of anything left to spend — so a ticket that voids in full can never be
+    /// OFFERED a second save, and the refusal that exists to be proven becomes unreachable. Holding a
+    /// second, different save keeps the window open on the legs still dead, which is the state the
+    /// refusal is about. Defaults to false so every other caller's stream and behaviour are untouched.</param>
     private static IEnumerable<SubEvensVoid> SubEvensVoids(
-        RunConfig config, TicketModifier modifier, string tag, int seeds, RelicDefinition? relic)
+        RunConfig config, TicketModifier modifier, string tag, int seeds, RelicDefinition? relic,
+        bool grantWhistle = false)
     {
         for (int seed = 0; seed < seeds; seed++)
         {
             var run = new Run($"{tag}-{seed}", config);
             run.GrantConsumable(Mulligan());
+            if (grantWhistle)
+                run.GrantConsumable(RelicCatalog.Consumables.First(c => c.Id == "refs_whistle"));
             if (relic != null) run.GrantRelic(relic);
             if (modifier != TicketModifier.None)
                 run.GrantConsumable(RelicCatalog.Consumables.First(c =>
@@ -866,10 +877,10 @@ public class VoidRepricingTests
         var config = SweepConfig();
         config.SgpMargin = 1.5;
 
-        foreach (SubEvensVoid s in SubEvensVoids(config, TicketModifier.None, "sgp-void-full", 150, null))
+        foreach (SubEvensVoid s in SubEvensVoids(config, TicketModifier.None, "sgp-void-full", 150, null,
+                                                 grantWhistle: true))
         {
             s.Run.GrantConsumable(Mulligan());
-            s.Run.GrantConsumable(RelicCatalog.Consumables.First(c => c.Id == "refs_whistle"));
 
             // Step on until one of the SURVIVORS reveals dead and the save window reopens.
             SweatSession sweat = s.Run.Sweats[0];
