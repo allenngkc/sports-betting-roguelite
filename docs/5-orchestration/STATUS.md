@@ -1,6 +1,17 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-24, cycle 470 (heartbeat).** Quiet
+**Keeper-era heartbeat stamp: 2026-08-24, cycle 471 (heartbeat).** THE
+DOUBLECHANCE REMOVAL IS FULLY LANDED (394e7e0: build + 9/9 campaign +
+recorded overrides + the G7 amendment; the lane also corrected its own
+DLL rule - the DLL embeds HEAD's SHA and can never reproduce after its
+own commit, memory updated). The neither-branch line set + the
+anchor-table shape merged from TV (e00cbb4); Allen ruled the table's
+contract shape (AnchorSide) and the engine builds it as the single
+source. TV mid-suite on part C (the direction re-base, T166 binding).
+WITH ALLEN: the carve-out bookkeeping, the hold's structure, research
+8-9, B9's sitting.
+
+*(prior stamp, cycle 470 (heartbeat).** Quiet
 hold: the campaign mid-run (ETA ~60-70 min; silence is its normal state,
 the seat's watcher armed on the report file and the process); TV's
 suite queued behind it; DD standing by. WITH ALLEN: unchanged.
