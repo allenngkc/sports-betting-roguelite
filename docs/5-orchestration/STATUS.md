@@ -1,6 +1,115 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-23 23:59, cycle 459 (INCIDENT -
+**Keeper-era heartbeat stamp: 2026-08-24, cycle 471 (heartbeat).** THE
+DOUBLECHANCE REMOVAL IS FULLY LANDED (394e7e0: build + 9/9 campaign +
+recorded overrides + the G7 amendment; the lane also corrected its own
+DLL rule - the DLL embeds HEAD's SHA and can never reproduce after its
+own commit, memory updated). The neither-branch line set + the
+anchor-table shape merged from TV (e00cbb4); Allen ruled the table's
+contract shape (AnchorSide) and the engine builds it as the single
+source. TV mid-suite on part C (the direction re-base, T166 binding).
+WITH ALLEN: the carve-out bookkeeping, the hold's structure, research
+8-9, B9's sitting.
+
+*(prior stamp, cycle 470 (heartbeat).** Quiet
+hold: the campaign mid-run (ETA ~60-70 min; silence is its normal state,
+the seat's watcher armed on the report file and the process); TV's
+suite queued behind it; DD standing by. WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 469 (heartbeat).** The
+DoubleChance removal is BUILT (6f4bf67 - three offers go, the kind
+stays) and its ruled campaign runs at 16 workers; TV's twin fix merged
+(fa3b367), step 4 planned, the backed-side table ruled TO THE ENGINE
+(single source; TV consumes); TV's suite held behind the campaign.
+HELD: Allen's 'campaign's done' - the shell still runs and no roster
+exists; engine asked for a one-line status; veto window open. WITH
+ALLEN: the carve-out bookkeeping, the hold's structure, research 8-9,
+B9's sitting.
+
+*(prior stamp, cycle 468 (heartbeat).** STEP 3
+AND THE CONSOLE FIX ARE MERGED (b9c5c30 + f5bd516 via 17c0829 - the
+counter counts MATCHES with a pool-to-code pin; the interleaved
+final-telling predicate fixed). TV on its own onFinalLeg twin
+(mutation-proving the gate before commit); the register transcribed
+through 181 (1794bb4); the engine mid-removal-build (steps 0-4, the
+campaign held for a protected window). WITH ALLEN: the carve-out
+bookkeeping, the hold's structure, research 8-9, B9's sitting.
+
+*(prior stamp, cycle 467 (heartbeat).** The
+counter word ruled MATCH n/m (batch 178; queued to TV to fold into step
+3 behind its K21 fix); the sizing brief (batch 180: player-facing goes,
+internal stays) with the engine seat - two survey agents running.
+Note for the log: my batch-180 commit message mislabeled it as the
+counter ruling; the file is the sizing brief - content binds. WITH
+ALLEN: the carve-out bookkeeping, the hold's structure, research 8-9,
+B9's sitting.
+
+*(prior stamp, cycle 466 - THE DOUBLECHANCE
+ARC IS IN MOTION.** Allen restated (b) - DoubleChance leaves the offered
+set; the DD's removal spec + taxonomy ruling are landed (batches
+176-179, spec-doublechance-removal); the ENGINE SEAT IS KEPT (Allen) and
+resumed to size the sim's exposure - the last unknown before I assign
+the build lane. Also this cycle: the step-3 counter word measured (all
+candidates fit; TV recommends MATCH n/m on vocabulary; DD ruling); TV
+fixing the console's onFinalLeg fast-forward (K21) under a logged
+one-time ownership grant. Watcher v56 (bgz481xbw). WITH ALLEN: the
+carve-out bookkeeping, the hold's structure, research 8-9, B9's
+sitting.
+
+*(prior stamp, cycle 465 (heartbeat).** STEP 2
+MERGED (9d7735e via 9f09566): N grades at one whistle, the per-leg
+presented-resolved set, and the interleaved [A,B,A] gate committed
+together - the high-water mark is retired. TV planning step 3 (the leg
+counter's fixture referent, rides T91-cl). DD holds two: the
+shared-telling copy question (what does a multi-leg telling call
+itself - LEG k is unruled) and Allen's DoubleChance restatement. WITH
+ALLEN: unchanged.
+
+*(prior stamp, cycle 464 (heartbeat).** STEP 1
+MERGED (f44ab44 - the displayed win-prob becomes the TICKET's; suites
+green at baseline after TV fixed its own re-point bug). TV building
+STEP 2 with the per-leg presented-resolved set (Allen approved the
+bigger-correct shape over the rotation doc's unsafe scalar - a fixture's
+legs need not be contiguous). K21 (the console's twin of that
+assumption): settled on quoted source, its GATE pinned into the markets
+handoff for the next seating; B9+K21 = one real-terminal sitting.
+WITH ALLEN: the DoubleChance restatement, carve-out bookkeeping, engine
+retire/keep, the hold's structure, research 8-9, the B9+K21 sitting.
+
+*(prior stamp, cycle 463 (INCIDENT -
+overnight halt ~9h; seats down, results survived).** Recovery: monitors
+first (heartbeat b1m8sp0oa, watcher v55 bf86hf7tv); TV resumed by
+--continue (both step-1 suite XMLs landed overnight - the seat died
+before reading PlayMode; ordered: read, commit if green at baseline,
+report, then step 2); DD resumed by session ID, standing by. WITH
+ALLEN: unchanged (DoubleChance restatement, carve-out bookkeeping,
+engine retire/keep, the hold's structure, research 8-9, B9's capture).
+
+*(prior stamp, cycle 462 (heartbeat).** Fresh
+TV on phases 2-3 step 1 (the probability re-point): built, EditMode
+green at the rotation baseline (320/319/0/1), PlayMode running
+detached; commit follows green (Allen's 'commit step 1' held until
+PlayMode lands). DD ruled T166 (batch 173): the magnitude-band
+thresholds STAY - multi-leg quietening is true. WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 461 (heartbeat).** Quiet:
+the fresh TV lead is loading the phases 2-3 handoff toward its step-1
+plan; DD holding. Nothing to land or merge. WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 460 - TV ROTATED.** The
+drawn-ending Section 1 is closed but 1.1 (1.2 merged, 3b1b207); the
+seat reached 97-98% and rotated on a handoff carrying the FULL phases
+2-3 plan (60a89f5 - four steps + a free reduction + a doc-comment
+correction; step 4's 'owed' flavour lines are in fact landed, corrected
+in the handoff). AUTONOMOUS DECISION (veto window): Allen's 'start step
+1' went to the FRESH seat (term_502cf0a7, Opus max) rather than the
+97% one - a heavy diff would not have survived it. Watcher v54
+(bzm7f9m13). Seats live: TV (fresh), DD. Unseated: engine (mandate
+complete), markets (rotated out). WITH ALLEN: the DoubleChance
+restatement, the carve-out bookkeeping, engine worktree retire/keep,
+the hold's structure, research 8-9, B9's colour capture.
+
+*(prior stamp, cycle 459 (INCIDENT -
 another restart; ~day gap since 458).** Recovery: monitors first
 (heartbeat bwixrbt0l, watcher v53 ba3pdxlyj); census by content: TV
 survived (term_9383cdcd - its 1.2 pin uncommitted, suite cut; ordered:

@@ -408,7 +408,39 @@ and the Whistle's roll need a per-leg number, not because anything should displa
 
 ---
 
-# THE PLUGIN DLL WANTS A CLEAN RELEASE BUILD — a trap this lane walked into
+# CORRECTED 2026-08-24 — THE SECTION BELOW DIAGNOSED THE WRONG CAUSE
+
+**Read this first; the section under it is kept because its conclusion is still safe practice, but
+its REASON is wrong and the wrong reason is the part that misleads.**
+
+`SBR.Engine.dll` embeds `AssemblyInformationalVersion = 1.0.0+<the git commit SHA of HEAD>` — the
+SDK's automatic `SourceRevisionId`. Read it out of any copy with
+`strings SBR.Engine.dll | grep -aoE "1\.0\.0\+[0-9a-f]{40}"`.
+
+**So the DLL's bytes are a function of (source, HEAD).** Three consequences, and the first is the one
+that cost this lane two investigations:
+
+1. **A committed DLL can NEVER reproduce after its own commit.** Building it at HEAD `X` embeds `X`;
+   committing it makes HEAD `Y`; rebuilding now embeds `Y`. **It chases its own tail forever, and the
+   tracked file reads dirty immediately after every commit that contains it. That is EXPECTED, not
+   staleness.** Restore it with `git checkout` and move on. Do not re-commit to "fix" it.
+2. **The churn at `45b8224` → `0f00122` was this, not stale intermediates.** That commit's message
+   says the earlier DLL "came from an INCREMENTAL Release build layered over intermediates left by
+   Debug builds". **That diagnosis is wrong.** The two builds simply ran at different HEADs. Verified
+   here: the working copy carried `1.0.0+6f4bf67…` (= HEAD) while the committed copy had been built
+   at `ecc021b…` (= HEAD's parent).
+3. **The determinism measurement was sound but did not test what it looked like it tested.** Two
+   clean builds back to back ARE byte-identical — because HEAD did not move between them. It is
+   deterministic *for a fixed HEAD*, which is not the same claim.
+
+**The rule that survives:** build the plugin DLL from a clean Release build before committing it
+(cheap, and it removes one variable), commit it whenever engine source changes, and then **expect it
+to read modified forever after** — restore with `git checkout`, never re-commit it on its own.
+Comparing its hash against a previous commit's proves nothing unless both were built at the same HEAD.
+
+---
+
+# THE PLUGIN DLL WANTS A CLEAN RELEASE BUILD — a trap this lane walked into (REASON CORRECTED ABOVE)
 
 **The rule:** an engine-owning lane must build `SBR.Engine.dll` with a **clean** Release build before
 committing it — wipe `engine/obj/Release` and `engine/bin/Release` first. Never commit the output of
@@ -493,3 +525,159 @@ restart but not the harness's own cleanup), and the machine slept overnight mid-
 did not speed it up meaningfully** — `WorkerPolicy`'s own note is right that this workload reaches
 ~5–6 cores whatever the degree, so the worker count was never the ceiling. Budget a campaign in
 compute-hours on a machine that stays awake, not in wall time.
+
+
+---
+
+# CONTRACT ADDITION — THE ANCHOR TABLE MOVES TO THE ENGINE
+
+**Published 2026-08-24, BEFORE any code, per this lane's own publish-before-change rule.** Allen ruled
+the engine owns the backed-side/anchor table and the TV consumes it instead of duplicating a
+fifteen-arm table in `SweatFlavor`. TV's consumer-side shape is in `docs/handoffs/tv-theater.md`
+§0-U15; this is the producer side. **`T163`'s three branches and the §6b subject sites are blocked on
+it.**
+
+## 1. MY EARLIER FINDING WAS HALF RIGHT, AND TV's REPORT CORRECTS IT — recorded, not quietly dropped
+
+I reported that the two existing tables differ in shape (`Side?` vs `bool`), that only the console's
+can express `T163`'s *neither*, and concluded **"the engine table should adopt the console's shape."**
+
+**The shape half is right. The conclusion is wrong, and shipping it would have broken `T163` on its
+own compatibility test.** `EventText.BackedSide` answers *which side did the player BACK* — the side
+that PAYS. The anchor answers *which club the PROSE names*. They are different questions and they
+diverge on exactly one family:
+
+> **`AnytimeScorer` / `PlayerMultiScorer`.** `BackedSide` answers **null** — and is right, because a
+> man can score in a 3–1 defeat and the leg still wins, so his club is not the side backed. **The
+> anchor must answer `Matchup.PlayerSide(PlayerIndex)`**, because the prose names the club he plays
+> for. `SweatFlavor` already anchors these on `PlayerSide` today.
+
+`T163` branch (1) states its own test — *"this subsumes today's single-leg case exactly, so nothing on
+screen changes before arm A lands."* **A table that answered NEITHER on a scorer leg would change the
+screen and falsify that claim.** So this is a SECOND function, not a promotion of the first. Both
+stay. The divergence is the two shapes working as ruled, and `EventText.BackedSide`'s own doc comment
+already says so — I read the shapes and missed the doc comment that explains why they differ.
+
+## 2. THE SHAPE
+
+```csharp
+public static Side? AnchorSide(Leg leg)
+```
+
+- **`Side?`**, where **`null` means NEITHER** — `T163`'s branches (2) and (3), and the answer `bool`
+  structurally cannot give. This is the half of my finding that stands.
+- **Takes a `Leg`, not a `MarketSelection`.** Non-negotiable: the player markets need
+  `Matchup.PlayerSide(PlayerIndex)`, which is not reachable from a selection. This is why it cannot
+  simply be `BackedSide`'s signature.
+- **Lives in `engine/MatchModel.cs`**, beside `DisplayLabel` and `Fields` — the existing
+  presentation-facing reads over a selection.
+
+## 3. THE TABLE — restated as contract, ruled by TV §0-U15 / `T163`
+
+| kind | anchor | why |
+|---|---|---|
+| `Moneyline` | Home / Away / **null** on Draw | the draw is not a team, ever (`T96`, DD batch 49) |
+| `Handicap` | Home / Away | the line is applied TO the backed side; read `Choice` back |
+| `DoubleChance` | `HomeOrDraw`→Home, `AwayOrDraw`→Away, `HomeOrAway`→**null** | the anchor is the one club in the union; 12 holds both, so neither |
+| `TeamTotalGoals` / `TeamTotalCorners` / `TeamTotalCards` | `Selection.Team` | a NAMED field — read it, do not decode it |
+| `AnytimeScorer` / `PlayerMultiScorer` | **`Matchup.PlayerSide(PlayerIndex)`** | **THE DIVERGENCE from `BackedSide`.** See §1. |
+| `TotalGoals`, `BothTeamsToScore`, `TotalCorners`, `TotalCards`, `CorrectScore`, `WinningMargin`, `TotalGoalsOddEven` | **null** | `T163` branch (3) names this set outright |
+| a sixteenth kind | **THROW** | a `default:` that guesses a side IS `K17-cl`'s defect. Never a fallback. |
+
+**`DoubleChance` keeps its arm even though it left the offered set 2026-08-24** — same reasoning as
+`EventText.BackedSide`'s: the enum member stays so in-flight legs still grade, and an exhaustive table
+that omitted it would throw on one. Consistent with the six guard overrides in `6f4bf67`.
+
+## 4. WHAT THE ENGINE DOES **NOT** BUILD
+
+**The fixture composition rule is TV's.** Over a fixture's LIVE legs: all non-null answers agreeing →
+that side is `picked`; two different sides → NEITHER; none at all → NEITHER. The engine answers **per
+leg** and stops there. `T163` is a presentation ruling; the engine supplies its input.
+
+No copy, no line sets. `SweatFlavor.NeitherLine` and the four club-free tables are authored and
+unwired in TV's tree already.
+
+## 5. WHAT THIS BREAKS, NAMED NOT FIXED
+
+- **`SweatFlavor.PickedHomeForPresentation` (`unity/…/SweatFlavor.cs:403`) is superseded.** TV's
+  report measures it as **wrong today on shipping tickets** — it returns HOME unconditionally for
+  every kind except Moneyline and AnytimeScorer, so a totals, BTTS, correct-score, corners, cards,
+  margin, odd/even or team-total leg already names the home club as `{picked}` when no side is backed
+  at all. **This addition is what makes that fixable; the fix and its evidence are TV's.**
+- **`game-console/EventText.cs:138` `BackedSide` is NOT superseded and must not be deleted** — §1. It
+  stays `internal` to the console unless that lane asks otherwise.
+- Nothing else consumes it on day one. `AnchorSide` is purely additive to the engine's surface.
+
+## 6. EVIDENCE THIS LANE WILL PRODUCE
+
+- Exhaustive over `MarketKind`: every member answered, and a value outside the enum THROWS — the
+  `K17-cl` guard, pinned the way `SweatAnchorGateTests` pins the console's.
+- **The compatibility pin `T163` branch (1) asks for**: on every single-leg shape the board offers,
+  `AnchorSide` agrees with what `PickedHomeForPresentation` returns **wherever that function is
+  right** — i.e. Moneyline and the player markets — so "nothing on screen changes before arm A lands"
+  is measured rather than asserted. Where they disagree, the disagreement IS the defect TV measured,
+  and the test records it as intended rather than pinning the old answer.
+- Suites at baseline; `sim` and `game-console` build clean.
+
+**Open:** the name. `AnchorSide` is this lane's proposal, chosen so it cannot be misread as
+`BackedSide`. If TV or the DD wants the ruled vocabulary (`picked` / prose anchor) in the identifier,
+say so before I build — renaming a public engine member afterwards costs both lanes.
+
+
+---
+
+# ANCHOR TABLE — BUILT. `MatchModel.AnchorSide(Leg) -> Side?`
+
+**Landed 2026-08-24 against the contract published above.** Purely additive to the engine surface:
+nothing outside `engine/` calls it yet, so **nothing breaks on the day it lands.** Suites:
+`engine.tests` **329 passed / 0 / 1 skipped** (+5), `game-console.tests` **24 / 0 / 0**. `sim` and
+`game-console` build clean in Release. `SBR.Engine.dll` rebuilt clean and committed.
+
+## What it answers, and what it is not
+
+`null` means **NEITHER** — an answer, not a missing one. `DoubleChance` keeps its arm despite leaving
+the offered set, for the same reason `EventText.BackedSide` keeps its: the enum member stays so
+in-flight legs still grade. An unlisted kind **throws**; there is no `default:` arm.
+
+**`EventText.BackedSide` is NOT superseded** and must not be deleted. It answers which side PAYS;
+this answers which club the PROSE names. They diverge on the player markets and both are right — see
+the contract's §1.
+
+## THE CALL SITES THIS SUPERSEDES — named, not fixed (they are `unity/`, TV's)
+
+`SweatFlavor.PickedHomeForPresentation` (`unity/…/SweatFlavor.cs:489`) is the function this replaces.
+**This lane did not touch any of them.** TV's own report measures the defect: that function returns
+HOME unconditionally for every kind except Moneyline and AnytimeScorer.
+
+**Live call sites — 16:**
+
+| file | lines |
+|---|---|
+| `SBR/Runtime/TvSweatScreen.cs` | `176`, `2252`, `2829`, `2893`, `2933`, `2996`, `4186`, `4309`, `4783` |
+| `SBR/Runtime/SweatFlavor.cs` | `22`, `245`, `289`, `299` (and the definition at `489`) |
+| `SBR/Runtime/SweatPresentationModel.cs` | `278` |
+| `Tests/EditMode/SweatFlavorDrawAnchorTests.cs` | `45`, `50`, `51` |
+
+**`SweatFlavorDrawAnchorTests.cs:45` is the one to look at first.** It asserts
+`PickedHomeForPresentation(draw)` is TRUE — i.e. it PINS the draw anchoring on HOME. `AnchorSide`
+answers **NEITHER** there, on `T96`'s ground that the draw is not a team. **That test pins the defect,
+so it cannot survive the migration unchanged** — it is the clearest single marker of what the move
+costs, and it is TV's to re-point.
+
+**Comment-only references that will go stale** (no behaviour, but they cite the old function as the
+authority): `SweatActiveLegModel.cs:163,196` · `SweatPresentationModel.cs:271,479` ·
+`TheaterChoreographer.cs:87` · `TheaterStage.cs:2078` · `TvSweatScreen.cs:2960` ·
+`Tests/EditMode/ScoreLedgerTests.cs:734` · `Tests/PlayMode/TheaterStageAttributionTests.cs:41`.
+
+## What this lane pinned, so TV inherits evidence rather than assertions
+
+- Every kind answered with its **ruled value** — not merely "does not throw" — plus a coverage check
+  that the fixture spans the enum, so a kind cannot go unasserted.
+- A kind outside the enum **throws** (`K17-cl`), and a null leg is rejected.
+- The player-market divergence, over every roster index on both sides.
+- **The disagreement set with `PickedHomeForPresentation`, asserted as an intended list.** Where the
+  two agree the migration is a no-op; where they differ, that difference IS the shipped-copy change,
+  and the test names `Moneyline/Draw`, `Handicap/Away`, `TotalGoals/Over` and `PlayerMultiScorer`
+  explicitly. **If anyone "fixes" `AnchorSide` back to the old behaviour, that test fails.**
+
+`T163`'s composition over a fixture's live legs is still TV's and is not built here.
