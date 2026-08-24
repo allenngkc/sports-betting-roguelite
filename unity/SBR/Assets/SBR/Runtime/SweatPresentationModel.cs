@@ -45,7 +45,12 @@ namespace SBR.Game
         }
 
         private readonly List<BeatRecord> _beats = new List<BeatRecord>();
-        private int _anchorLeg = -1;
+        // Which TELLING the pre-event anchor was last taken for. Keyed on the FIXTURE, not the leg,
+        // since T140 arm A: a telling is a (ticket, FIXTURE) and the anchor is a per-telling fact —
+        // it should reset once when a new match starts being told, not once per leg riding it. On a
+        // ticket with at most one leg per matchup fixture and leg are the same number, so this is
+        // exactly equivalent to what it replaces; on a shared telling it is the honest referent.
+        private int _anchorFixture = -1;
         private double _prevProb;
 
         public IReadOnlyList<BeatRecord> Beats => _beats;
@@ -53,9 +58,9 @@ namespace SBR.Game
         /// <summary>Records a beat and returns its direction (the shared rule — one authority).</summary>
         public bool RecordBeat(DramaEvent evt, Leg leg)
         {
-            if (evt.LegIndex != _anchorLeg)
+            if (evt.FixtureIndex != _anchorFixture)
             {
-                _anchorLeg = evt.LegIndex;
+                _anchorFixture = evt.FixtureIndex;
                 _prevProb = leg.TrueProb; // the pre-event anchor, exactly EventText's rule
             }
             double delta = evt.WinProbAfter - _prevProb;
@@ -78,7 +83,7 @@ namespace SBR.Game
         public void ResetForTicket()
         {
             _beats.Clear();
-            _anchorLeg = -1;
+            _anchorFixture = -1;
             _prevProb = 0.0;
         }
     }

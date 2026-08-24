@@ -790,9 +790,14 @@ namespace SBR.Game
         /// slot displays, so the previewed and accepted numbers can never differ (§8.10).</summary>
         private double _cashOutPreviewAmount;
 
-        /// <summary>The live-leg index the ticket column was last rendered with, so entering and
-        /// leaving the preview can re-render the same column without inventing a live leg.</summary>
-        private int _liveLegIndexShown = -1;
+        /// <summary>The live-leg SET the ticket column was last rendered with, so entering and
+        /// leaving the preview can re-render the same column without inventing a live leg.
+        ///
+        /// <para>A SET rather than an index since <c>T140</c> arm A: a telling is a (ticket,
+        /// FIXTURE) and every leg riding that fixture is live for the whole telling, so "the live
+        /// leg" is no longer a quantity this surface can hold. EMPTY is what <c>-1</c> used to
+        /// mean — no live row. Held by VALUE, not by reference to the session's own list.</para></summary>
+        private readonly List<int> _liveLegsShown = new List<int>();
 
         /// <summary>The cash-out slot's text as it stood before the preview, restored verbatim on
         /// release (§8.10's "no residue").</summary>
@@ -1146,7 +1151,15 @@ namespace SBR.Game
         /// reads as the component reference does, and so adding a third face later is not a
         /// boolean-blindness bug waiting to happen.</summary>
         private enum Face { Regular, Condensed }
-        private int _resolvedThrough; // legs below this index are PRESENTED as resolved (not engine truth)
+        // Which legs are PRESENTED as resolved (never engine truth). Was an int high-water mark,
+        // `_resolvedThrough`, which encoded "ticket order == resolution order" — retired by T140
+        // arm A's fixture restructure. A fixture's legs need not be CONTIGUOUS: a ticket
+        // [matchA, matchB, matchA] has fixture 0 = legs {0, 2} and is told FIRST, so no scalar can
+        // express "0 and 2 have resolved and 1 has not been told at all". A high-water mark of 3
+        // there marks leg 1 resolved, and the footer's revealedLoss test would then read leg 1's
+        // raw `GradesWon` and announce a death before its scene plays — the T144 leak, exactly.
+        // A leg is marked ONLY at its own reveal moment; marking one early re-opens it.
+        private bool[] _presentedResolved = new bool[0];
         // T68-am / T71 CONSEQUENCE, flagged rather than acted on: `_tBigAmount` no longer renders
         // anything. Both payoff figures moved into the cash-out slot, so it is now built, cleared on
         // reset, and never given content. It is left in place because its name is in the DD-gated
@@ -1494,7 +1507,7 @@ namespace SBR.Game
             // DERIVED rather than snapshotted, unlike the figure above: it is a pure function of state
             // the exit restores anyway, and recomputing from truth is what makes the revert total.
             if (_tCashOutStatus != null) _tCashOutStatus.text = CashOutStatusWord();
-            UpdateTicketColumn(_liveLegIndexShown);
+            UpdateTicketColumn(_liveLegsShown); // repaint at the SAME live set: entering a preview decides no row
             return true;
         }
 
@@ -1509,7 +1522,7 @@ namespace SBR.Game
             if (_tCashOut != null) _tCashOut.text = _cashOutTextBeforePreview;
             _cashOutTextBeforePreview = string.Empty;
             if (_tCashOutStatus != null) _tCashOutStatus.text = CashOutStatusWord();
-            UpdateTicketColumn(_liveLegIndexShown);
+            UpdateTicketColumn(_liveLegsShown); // same live set: releasing a preview decides no row either
         }
 
         /// <summary>Steps a colour exactly one brightness level, by the ratio of DESIGN.md §3's
@@ -2088,8 +2101,25 @@ namespace SBR.Game
                 _tensionProb = grade == LegGrade.Won ? 1f : 0f;
             }
             RevealedView.SetProbability(_probTarget);
-            RevealedView.ResolveLeg(evt.LegIndex, grade);
-            _tape?.ResolveLeg(evt.LegIndex, grade); // T16: collapses the strip to its resolution cap
+            // T140 arm A — EVERY leg that resolves at this whistle resolves HERE, AT ITS OWN GRADE.
+            // A telling is a (ticket, FIXTURE), so N legs can end on one whistle, and `grade` is the
+            // ANCHOR's alone. The legs riding one fixture can be heading to OPPOSITE outcomes —
+            // `DramaEvent.LegProbs` says so in terms ("per-leg by necessity") — so pushing the
+            // anchor's grade onto all N would print a WON chip on a leg that lost. That is a silent
+            // lie on a mixed fixture, and it is the exact failure §6a exists to prevent: one fact,
+            // one source. So each leg's grade is derived from ITS OWN leg state, by the same
+            // IsVoided/GradesWon idiom the resolved-row branch and ResolveBeat already use.
+            //
+            // The ANCHOR keeps the passed-in `grade` rather than re-deriving it, so the single-leg
+            // telling every ticket without a same-match pair produces is byte-identical to before.
+            IReadOnlyList<int> resolving = evt.LegIndices;
+            for (int n = 0; n < resolving.Count; n++)
+            {
+                int resolvedLeg = resolving[n];
+                LegGrade legGrade = resolvedLeg == evt.LegIndex ? grade : GradeOf(_ticket.Legs[resolvedLeg]);
+                RevealedView.ResolveLeg(resolvedLeg, legGrade);
+                _tape?.ResolveLeg(resolvedLeg, legGrade); // T16: collapses the strip to its resolution cap
+            }
 
             // T87-am2 — THE DRAWN MATCH'S LINE, WRITTEN HERE AND HELD, and the trace is why it moved.
             //
@@ -2117,8 +2147,21 @@ namespace SBR.Game
                 yield return ScaledWait(drawnEndingHoldDuration);
             }
 
-            _resolvedThrough = evt.LegIndex + 1;
-            UpdateTicketColumn(evt.LegIndex + 1);
+            // The whole live set is marked together: they end at ONE whistle, so a column that
+            // marked only the anchor would leave the fixture's other leg reading LIVE on a match
+            // that is over. Marked only NOW — after the final scene has played — which is what
+            // keeps the reveal gate above the raw engine truth.
+            MarkPresentedResolved(evt.LegIndices);
+            // The NEXT FIXTURE's legs go live, not `evt.LegIndex + 1`. On a ticket where every
+            // fixture holds one leg those are the same set, so this is a no-op there — which is the
+            // point; the pre-emptive "next leg reads LIVE once its events start" behaviour is
+            // PRESERVED, not replaced with "nothing is live between fixtures". `+ 1` only ever
+            // computed the next fixture by coincidence, and on [A,B,A] it names leg 1 — a leg on a
+            // fixture that was already told — while the fixture actually next is none at all.
+            UpdateTicketColumn(LegsOfFixtureAfter(evt.LegIndex));
+            // The human-facing number stays the ANCHOR's. What a shared telling's copy should call
+            // itself ("LEG 1", "LEGS 1 & 3", something else) is a DESIGN question and it is NOT
+            // ruled; inventing a form here would be this lane deciding it. Left as-is, and named.
             int k = evt.LegIndex + 1;
             if (grade == LegGrade.Won)
             {
@@ -2567,7 +2610,10 @@ namespace SBR.Game
                     _tFlavor.text = "THE SLIP COMES OUT — LEG VOIDED, THE TICKET LIVES";
                     _emissRest = _emissIdle; // the DEAD dim lifts: the ticket breathes again
                     tvLight?.ResetToIdle();
-                    UpdateTicketColumn(Mathf.Min(_resolvedThrough, _ticket.Legs.Count - 1));
+                    // Re-asserts the CURRENTLY live legs, read off the session that owns them. The
+                    // `Mathf.Min(_resolvedThrough, …)` clamp it replaces existed only to keep a
+                    // scalar in range; `CurrentFixtureLegs` is the honest referent and needs none.
+                    UpdateTicketColumn(SessionLiveLegs());
                     yield return ScaledWait(deadLineDuration);
                     yield break;
                 }
@@ -2583,7 +2629,7 @@ namespace SBR.Game
                         _tFlavor.text = "REVIEWED — OVERTURNED. THE LEG STANDS.";
                         _emissRest = _emissIdle;
                         tvLight?.ResetToIdle();
-                        UpdateTicketColumn(Mathf.Min(_resolvedThrough, _ticket.Legs.Count - 1));
+                        UpdateTicketColumn(SessionLiveLegs()); // same: the reinstated legs are the session's live set
                     }
                     else
                     {
@@ -2710,8 +2756,12 @@ namespace SBR.Game
             // The ticket-card takeover copy clears the instant the live sweat begins.
             _tTakeoverTitle.text = string.Empty;
             _tTakeoverSub.text = string.Empty;
-            _resolvedThrough = 0;
-            UpdateTicketColumn(0);
+            ResetPresentedResolved();
+            // The FIRST FIXTURE's legs, which is leg 0's fixture — the ticket's first telling by
+            // construction, since the fixtures are in first-appearance order over the legs. On an
+            // ordinary ticket that is {0}, identical to the `0` this replaces; on [A,B,A] it is
+            // {0, 2}, and both rows correctly open live because both matches kick off together.
+            UpdateTicketColumn(LegsOfFixtureContaining(0));
             BeginStageLeg(0, leg, 0);
         }
 
@@ -2815,7 +2865,7 @@ namespace SBR.Game
         private void RepaintRevealedScore(Leg leg)
         {
             UpdateScorebug(leg);
-            UpdateTicketColumn(_liveLegIndexShown);
+            UpdateTicketColumn(_liveLegsShown); // the CURRENT live set, unchanged: this states the score, it does not re-point the column
             // T62'S RULE, AND THE STATS PANEL IS ITS THIRD MIRROR. One ledger advance, every mirror
             // of it repainted in the same call — T62 existed because the column and the scorebug read
             // the same revealed value on two different repaint schedules and disagreed for a whole
@@ -2953,6 +3003,130 @@ namespace SBR.Game
         // whatever wanted one next. Deleted rather than kept: the surface's only legal team hue is
         // teamHueA/teamHueB on the stage dots, and there is now exactly one call site for it.
 
+        // ---------------------------------------------------------------- the live set / the resolved set
+        //
+        // T140 arm A's two collections, and the reason neither is a scalar. A telling is a
+        // (ticket, FIXTURE): every leg riding one fixture is live across the whole telling and
+        // grades at its ONE whistle. So "which leg is live" and "how far has the ticket resolved"
+        // are both SETS, and the ticket-order cursor that answered them before is not merely
+        // imprecise — on a ticket whose fixture legs are non-contiguous it names the wrong legs.
+
+        /// <summary>Sizes the presented-resolved set to the current ticket and clears it. Called at
+        /// the pregame boundary, which is the moment the column first renders a ticket.</summary>
+        private void ResetPresentedResolved()
+        {
+            int count = _ticket != null ? _ticket.Legs.Count : 0;
+            if (_presentedResolved.Length != count) _presentedResolved = new bool[count];
+            else System.Array.Clear(_presentedResolved, 0, count);
+        }
+
+        /// <summary>Marks every leg of ONE TELLING presented-resolved. They are marked together
+        /// because they end together — a column that marked only the anchor would leave the
+        /// fixture's other leg rendering LIVE on a match whose whistle has already blown.</summary>
+        private void MarkPresentedResolved(IReadOnlyList<int> legIndices)
+        {
+            if (legIndices == null) return;
+            for (int n = 0; n < legIndices.Count; n++)
+            {
+                int i = legIndices[n];
+                if (i >= 0 && i < _presentedResolved.Length) _presentedResolved[i] = true;
+            }
+        }
+
+        /// <summary>Whether leg <paramref name="i"/> is PRESENTED as resolved. Bounds-safe by
+        /// design, not by accident: several readers walk <c>_legRow</c> (a fixed slot count) rather
+        /// than the ticket's legs, so an index past the ticket's end reaches here and must read as
+        /// NOT resolved — the same answer the old <c>i &lt; _resolvedThrough</c> gave it.</summary>
+        private bool IsPresentedResolved(int i)
+            => i >= 0 && i < _presentedResolved.Length && _presentedResolved[i];
+
+        /// <summary>Whether leg <paramref name="i"/> is one of the legs the column is currently
+        /// rendering LIVE. Bounds-safe for the same reason as <see cref="IsPresentedResolved"/>: a
+        /// row index with no leg behind it is simply not in the set.</summary>
+        private bool IsLiveShown(int i) => _liveLegsShown.Contains(i);
+
+        /// <summary>The legs LIVE right now per the session — the honest referent for a repaint that
+        /// re-asserts the current telling (the mulligan and the whistle) rather than choosing a new
+        /// one. Empty with no session, and empty once the sweat is over.</summary>
+        private IReadOnlyList<int> SessionLiveLegs()
+            => _session != null ? _session.CurrentFixtureLegs : (IReadOnlyList<int>)System.Array.Empty<int>();
+
+        /// <summary>The ticket's legs partitioned by matchup, matchups in FIRST-APPEARANCE order,
+        /// each group holding its leg indices in ticket order.
+        ///
+        /// <para><b>This mirrors <c>SameMatchModel.GroupByMatchup</c>'s rule exactly</b> — walk the
+        /// legs in ticket order; a leg joins the existing group whose <c>Matchup</c> it shares by
+        /// REFERENCE (<c>ReferenceEquals</c>, as the engine does), otherwise it opens a new group.
+        /// It is duplicated here ONLY because that helper is <c>internal</c> to the engine. Its own
+        /// note states the constraint this copy is bound by: <c>DramaGenerator</c> "must group
+        /// through THIS helper, in THIS order, or the sweat's idea of a fixture and the joint
+        /// price's would be two implementations of one rule." If these two ever disagree, that is
+        /// precisely what has happened, and the engine contract forbids it — so any change to the
+        /// engine's rule is a change to this one, not a difference to be reconciled downstream.</para>
+        ///
+        /// <para>Grouping is what makes "the next fixture" computable. <c>+ 1</c> cannot: the legs of
+        /// one fixture NEED NOT BE CONTIGUOUS, so on [A, B, A] fixture 0 is legs {0, 2} and is told
+        /// FIRST — and leg 1, which <c>+ 1</c> would name, is on a fixture that has not been told at
+        /// all.</para></summary>
+        private List<List<int>> TicketFixtures()
+        {
+            var groups = new List<List<int>>();
+            if (_ticket == null) return groups;
+            var matchups = new List<Matchup>();
+            for (int i = 0; i < _ticket.Legs.Count; i++)
+            {
+                Matchup matchup = _ticket.Legs[i].Matchup;
+                int group = -1;
+                for (int m = 0; m < matchups.Count; m++)
+                    if (ReferenceEquals(matchups[m], matchup)) { group = m; break; }
+                if (group < 0)
+                {
+                    matchups.Add(matchup);
+                    groups.Add(new List<int>());
+                    group = groups.Count - 1;
+                }
+                groups[group].Add(i);
+            }
+            return groups;
+        }
+
+        /// <summary>The legs of the fixture CONTAINING <paramref name="legIndex"/>. Empty when the
+        /// ticket has no such leg. On a ticket with no same-match pair this is always the single
+        /// leg itself.</summary>
+        private IReadOnlyList<int> LegsOfFixtureContaining(int legIndex)
+        {
+            List<List<int>> fixtures = TicketFixtures();
+            for (int f = 0; f < fixtures.Count; f++)
+                if (fixtures[f].Contains(legIndex)) return fixtures[f];
+            return System.Array.Empty<int>();
+        }
+
+        /// <summary>The legs of the fixture AFTER the one containing <paramref name="legIndex"/>,
+        /// empty when that fixture is the ticket's last (or when the leg is not on the ticket).
+        ///
+        /// <para>This is the correct generalisation of the resolve sites' <c>evt.LegIndex + 1</c>,
+        /// which pre-emptively marks the next thing live at the whistle so it reads LIVE the moment
+        /// its events start. On a ticket where every fixture holds one leg the two agree exactly —
+        /// which is the requirement, not a happy accident: the behaviour is preserved, and only the
+        /// referent is corrected from "the next leg in ticket order" to "the next telling".</para></summary>
+        private IReadOnlyList<int> LegsOfFixtureAfter(int legIndex)
+        {
+            List<List<int>> fixtures = TicketFixtures();
+            for (int f = 0; f < fixtures.Count; f++)
+                if (fixtures[f].Contains(legIndex))
+                    return f + 1 < fixtures.Count
+                        ? (IReadOnlyList<int>)fixtures[f + 1]
+                        : System.Array.Empty<int>();
+            return System.Array.Empty<int>();
+        }
+
+        /// <summary>One leg's grade, by the same <c>IsVoided</c>/<c>GradesWon</c> idiom every other
+        /// site in this file reads it with (see <c>ResolveBeat</c> and the resolved-row branch).
+        /// Needed per-leg because a shared telling resolves N legs at one whistle and they can grade
+        /// DIFFERENTLY.</summary>
+        private static LegGrade GradeOf(Leg leg)
+            => leg.IsVoided ? LegGrade.Voided : leg.GradesWon ? LegGrade.Won : LegGrade.Lost;
+
         /// <summary>The ticket column (DESIGN.md §6/§7, PRD §8.1/§8.2/§8.4): header (ticket
         /// index), <see cref="TicketRowSlots"/> fixed leg-row slots in ticket order, and the
         /// RISK/PAYS footer. Every row's RECT is fixed (LayoutGrid.TicketRow); only its text and
@@ -2972,10 +3146,26 @@ namespace SBR.Game
         /// elsewhere" with a SameMatch block, so THE CASE IS ALREADY REACHABLE and the stated
         /// justification for "at most one row is ever live" no longer holds. What keeps this method
         /// correct is the per-row tolerance above, not the engine restriction it cited — and the
-        /// per-fixture restructure T140 prices is what would first exercise it.</para></summary>
-        private void UpdateTicketColumn(int liveLegIndex)
+        /// per-fixture restructure T140 prices is what would first exercise it.</para>
+        ///
+        /// <para><b>That restructure landed, and this method now takes the live SET.</b> A telling is
+        /// a (ticket, FIXTURE) and every leg riding one fixture is live across the whole telling and
+        /// grades at its single whistle, so a shared telling has MORE THAN ONE live leg and a scalar
+        /// `liveLegIndex` could only ever name one of them. The per-row tolerance the paragraph above
+        /// credits is what made this a parameter change rather than a rewrite: each row still decides
+        /// its own live state, it just tests membership instead of equality.</para></summary>
+        private void UpdateTicketColumn(IReadOnlyList<int> liveLegs)
         {
-            _liveLegIndexShown = liveLegIndex;
+            // Cached BY VALUE, and the reference check is not defensive noise: three call sites
+            // repaint with `_liveLegsShown` ITSELF (both cash-out preview edges and the ledger
+            // repaint, all of which re-assert the current set rather than choosing a new one), so
+            // clearing before copying would erase the very set being re-asserted.
+            if (!ReferenceEquals(liveLegs, _liveLegsShown))
+            {
+                _liveLegsShown.Clear();
+                if (liveLegs != null)
+                    for (int n = 0; n < liveLegs.Count; n++) _liveLegsShown.Add(liveLegs[n]);
+            }
             if (_ticket == null)
             {
                 _tTicketHeader.text = string.Empty;
@@ -2998,7 +3188,7 @@ namespace SBR.Game
             // `if (e.Type == LegFinal) ResolveLegFinal();` then `evt = e; return true;`
             // (SweatSession.cs:150-154) — and `ResolveLegFinal` busts instantly when no save is
             // held (:184-185). So `_ticket.State` reads `Lost` from the moment the event is
-            // DELIVERED, while `_resolvedThrough` only advances in `FinalSlam`, after the whole
+            // DELIVERED, while `_presentedResolved` is only marked in `FinalSlam`, after the whole
             // final scene has played. Three repaints land inside that gap — `RenderEvent`
             // (called straight off `MoveNext`), `RepaintRevealedScore` (stoppage-time goals
             // during the final scene) and `ExitCashOutPreview` (polled every frame) — and a
@@ -3014,9 +3204,15 @@ namespace SBR.Game
             // CASHED OUT IS NOT GATED and must not be: it is a PLAYER ACTION with no hidden
             // outcome behind it (T114 says so in terms), it settles synchronously at the moment
             // he acts, and there is nothing for a reveal to be ahead of.
+            //
+            // Walks ALL legs and tests each one's own mark, rather than a prefix: the resolved legs
+            // are not a prefix of the ticket once a fixture's legs are non-contiguous, and a prefix
+            // scan over [A,B,A] would read leg 1's raw grade after fixture 0 resolved — the leak
+            // this whole gate exists to close, reintroduced by the loop bound.
             bool revealedLoss = false;
-            for (int i = 0; i < _resolvedThrough && i < _ticket.Legs.Count; i++)
+            for (int i = 0; i < _ticket.Legs.Count; i++)
             {
+                if (!IsPresentedResolved(i)) continue;
                 Leg revealedLeg = _ticket.Legs[i];
                 if (!revealedLeg.IsVoided && !revealedLeg.GradesWon) { revealedLoss = true; break; }
             }
@@ -3044,10 +3240,10 @@ namespace SBR.Game
                 // A SETTLED ticket has no live leg. The session is complete, so this row's events
                 // will never arrive; without this clause the leg AFTER the loser keeps rendering the
                 // live form — a NEED and a progress line — on a ticket that can no longer pay.
-                bool isLive = i == liveLegIndex && i >= _resolvedThrough && !ticketSettled;
+                bool isLive = IsLiveShown(i) && !IsPresentedResolved(i) && !ticketSettled;
                 _legRow[i].IsLive = isLive;
 
-                if (i < _resolvedThrough)
+                if (IsPresentedResolved(i))
                 {
                     // TV-S1/TV-20/TV-21: every state states its tier here. The ladder is the primary
                     // semantic channel and was previously declared but never applied, so every one
@@ -3215,12 +3411,13 @@ namespace SBR.Game
         /// Building on that mirror would make STAKE unreachable and would silently disagree with the
         /// chips the player is looking at.
         ///
-        /// <para>Resolved legs (<c>i &lt; _resolvedThrough</c>) read <c>leg.IsVoided</c>/
+        /// <para>Resolved legs (<see cref="IsPresentedResolved"/>) read <c>leg.IsVoided</c>/
         /// <c>leg.GradesWon</c> — this MIRRORS the resolved-row branch above exactly, and is not an
-        /// endpoint leak: <c>_resolvedThrough</c> only advances at the reveal moment, and that
-        /// branch already reads these same two fields behind the same index guard. The live row
-        /// (<c>i == _liveLegIndexShown</c>) takes <see cref="DescribeActiveLeg"/>'s revealed-derived
-        /// outcome — the only one that can be true before full time. Every other row (pending/NEXT)
+        /// endpoint leak: a leg is marked only at its OWN reveal moment, and that branch already
+        /// reads these same two fields behind the same guard. The live rows
+        /// (<see cref="IsLiveShown"/> — a SET since T140 arm A, because a shared telling has more
+        /// than one live leg) take <see cref="DescribeActiveLeg"/>'s revealed-derived outcome, the
+        /// only one that can be true before full time. Every other row (pending/NEXT)
         /// is <c>Undecided</c>.</para>
         ///
         /// <para>Never throws from this render path: a null <c>_ticket</c> yields an empty list, and
@@ -3234,12 +3431,12 @@ namespace SBR.Game
             for (int i = 0; i < _ticket.Legs.Count; i++)
             {
                 Leg leg = _ticket.Legs[i];
-                if (i < _resolvedThrough)
+                if (IsPresentedResolved(i))
                 {
                     outcomes.Add(leg.IsVoided ? RevealedLegOutcome.Voided
                         : leg.GradesWon ? RevealedLegOutcome.Won : RevealedLegOutcome.Lost);
                 }
-                else if (i == _liveLegIndexShown)
+                else if (IsLiveShown(i))
                 {
                     outcomes.Add(DescribeActiveLeg(leg).Outcome);
                 }
@@ -3523,7 +3720,7 @@ namespace SBR.Game
             _tFlavor.text = string.Empty;
             _tTakeoverTitle.text = string.Empty;
             _tTakeoverSub.text = string.Empty;
-            UpdateTicketColumn(-1);
+            UpdateTicketColumn(System.Array.Empty<int>()); // no live leg — what -1 used to say
         }
 
         private void RenderEvent(DramaEvent evt)
@@ -3614,7 +3811,8 @@ namespace SBR.Game
             }
 
             _tAttract.enabled = false;
-            UpdateTicketColumn(evt.LegIndex);
+            // Every leg on THIS telling is live, not just the anchor — one fixture, one whistle.
+            UpdateTicketColumn(evt.LegIndices);
         }
 
         /// <summary>The beat's payoff moment on the stage: NOW the chrome may speak — the
@@ -4097,6 +4295,8 @@ namespace SBR.Game
         private IEnumerator ResolveBeat(DramaEvent evt)
         {
             Leg leg = _ticket.Legs[evt.LegIndex];
+            // ANCHOR's number, and it stays the anchor's — same open DESIGN question as FinalSlam's
+            // `k`: the copy for a shared telling is not ruled, and this lane does not get to rule it.
             int k = evt.LegIndex + 1;
 
             if (leg.IsVoided)
@@ -4118,8 +4318,11 @@ namespace SBR.Game
                 yield return DeadLegBeat(k);
             }
 
-            _resolvedThrough = evt.LegIndex + 1;
-            UpdateTicketColumn(evt.LegIndex + 1); // next leg reads LIVE once its events start
+            // Same pair as FinalSlam's, for the theaterless path: the whole live set is marked at
+            // the one whistle, and the NEXT FIXTURE's legs read LIVE once their events start.
+            // `+ 1` computed that only on a ticket with no same-match pair (see LegsOfFixtureAfter).
+            MarkPresentedResolved(evt.LegIndices);
+            UpdateTicketColumn(LegsOfFixtureAfter(evt.LegIndex));
         }
 
         private IEnumerator WonLegBeat(int k)
