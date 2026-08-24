@@ -84,9 +84,15 @@ namespace SBR.Tests.PlayMode
             yield return WaitRealtime(0.4f);
             RevealedView view = screen.RevealedView;
             Assert.AreEqual("PRE", view.ClockText, "unseated: the clock must still read PRE");
-            double anchor = run.Tickets[0].Legs[0].TrueProb;
+            // T164: this pinned the LEG-DERIVED seed (Legs[0].TrueProb) that T164 retired — the
+            // mirror's pregame number is the TICKET's probability now, never a leg's (T143). The
+            // product over the legs' TrueProb IS the t=0 value of SweatSession.TicketWinProbability:
+            // exact on an ordinary ticket, within a few ulp of the sold price on a same-match one,
+            // so both stay far inside the tolerance this assertion already carried.
+            double anchor = 1.0;
+            foreach (Leg leg in run.Tickets[0].Legs) anchor *= leg.TrueProb;
             Assert.AreEqual((float)anchor, view.WinProbability, 1e-4f,
-                "unseated: the mirror's prob is the pregame anchor, nothing more");
+                "unseated: the mirror's pregame number is the TICKET's probability, never a leg's");
             foreach (RevealedLeg leg in view.Tickets[0].Legs)
                 Assert.IsTrue(leg.State == RevealedLegState.Pending || leg.State == RevealedLegState.Live,
                     "unseated: no outcome may be revealed anywhere");

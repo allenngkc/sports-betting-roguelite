@@ -213,8 +213,20 @@ namespace SBR.Game
                         // C# forbids reusing the name across the enclosing scope, and the two are
                         // genuinely different cases — this one rides a COUNT SCENE that is showing,
                         // that one rides a beat whose scene was quieted.
+                        // T164 — THE LEG-SCOPED READS IN THIS METHOD, STATED ONCE (the two sites
+                        // below reference this note rather than restating it). Goal staging and the
+                        // final template are per-LEG dramatic facts and legitimately stay
+                        // leg-scoped: neither is a displayed probability, so T143/T164's "only the
+                        // ticket's number may be shown" does not reach them. What DID change is the
+                        // source: after the fixture restructure a telling is a (ticket, FIXTURE),
+                        // two or more legs can be live on one telling, and evt.WinProbAfter is only
+                        // the ANCHOR leg's — so reading it would silently hand one leg's number to
+                        // every leg. LegProbs is the parallel per-leg list (ticket order, alongside
+                        // LegIndices) and is what these read instead. Value-identical today:
+                        // LegProbs[0] IS WinProbAfter on every event. WHICH leg the N-live answer
+                        // should key on is step 2's question (§6a), not this change's.
                         ScoreLedger.StagedGoal? countSceneQuietGoal =
-                            ledger.StageBeatGoal(evt.Type, up, delta, evt.WinProbAfter);
+                            ledger.StageBeatGoal(evt.Type, up, delta, evt.LegProbs[0]);
                         return new SceneSpec(countTemplate, variant, countIntro, evt.Tag == TensionTag.Swing,
                             countHelps, null, count, null, market,
                             _pacer.SceneSeconds(countTemplate, countIntro), beneficiaryIsHome,
@@ -232,7 +244,9 @@ namespace SBR.Game
             //    goes through ResolveFinal with the revealed grade and the correction plan).
             if (evt.Type == DramaEventType.LegFinal)
             {
-                SceneTemplate final = evt.WinProbAfter >= 0.5
+                // T164: leg-scoped, reading LegProbs rather than the anchor-only WinProbAfter —
+                // see the note at the StageBeatGoal call above.
+                SceneTemplate final = evt.LegProbs[0] >= 0.5
                     ? SceneTemplate.LegFinalWon
                     : SceneTemplate.LegFinalLost;
                 return new SceneSpec(final, variant, false, false,
@@ -282,7 +296,9 @@ namespace SBR.Game
             // Picked/Opponent/the targets (CompleteGoal is the ledger's ONLY mutator, its own
             // doc says so), so calling it unconditionally changes nothing about WHEN the ledger
             // can move — only whether this method still discards the answer.
-            ScoreLedger.StagedGoal? stagedGoal = ledger.StageBeatGoal(evt.Type, up, delta, evt.WinProbAfter);
+            // T164: leg-scoped, reading LegProbs rather than the anchor-only WinProbAfter — see the
+            // note at the count branch's StageBeatGoal call above.
+            ScoreLedger.StagedGoal? stagedGoal = ledger.StageBeatGoal(evt.Type, up, delta, evt.LegProbs[0]);
 
             // STEP 2 — THE SCENE STAYS TICKET-KEYED, ONLY THE SCOREBUG MOVES: pendingQuietCount
             // set means THIS beat's own batch was declined a scene by the distance gate above,
