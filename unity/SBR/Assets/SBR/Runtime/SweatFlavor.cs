@@ -24,11 +24,14 @@ namespace SBR.Game
         /// disagree, and after `T164` they would have: the model's is the TICKET's move and a local
         /// recomputation off <c>WinProbAfter</c> is the ANCHOR LEG's. The parameter is the fix — the
         /// caller passes what the authority decided.</para></summary>
-        public static string For(DramaEvent e, Leg leg, bool up)
+        public static string For(DramaEvent e, Leg leg, bool up, Side? anchor)
         {
             if (e.Type == DramaEventType.LegFinal) return "FINAL WHISTLE";
 
-            bool pickedHome = PickedHomeForPresentation(leg);
+            // GEOMETRY FALLS BACK, PROSE DOES NOT. Where the telling has an anchor these name the
+            // two clubs as picked/other exactly as before; where it has NONE the base-table path
+            // below returns a club-free line instead, and these are never read.
+            bool pickedHome = (anchor ?? Side.Home) == Side.Home;
             string picked = Short(pickedHome ? leg.Matchup.Home.Name : leg.Matchup.Away.Name);
             string other = Short(pickedHome ? leg.Matchup.Away.Name : leg.Matchup.Home.Name);
 
@@ -69,6 +72,12 @@ namespace SBR.Game
             // ONE FIX, TWO DEFECTS: the suffix appended UPPERCASE to a sentence-case line, against
             // §8's one casing, one dash. T44/TV-32's em-dash convention is unaffected — it is marked
             // at the authored lines that carry a dash of their own.
+            // T163 BRANCH (2)/(3): no anchor, so no club may be named. The base tables interpolate
+            // {picked}/{other} in every variant, so they cannot serve this branch at all — the
+            // club-free set does. NOT routed through NeutralLine: that helper is neutral about the
+            // COUNT FAMILY, not about the anchor, and computes picked/other exactly like the rest.
+            if (anchor == null) return NeitherLine(e.Type, up, e.Step);
+
             return Base(e.Type, up, picked, other, e.Step);
         }
 
@@ -248,11 +257,15 @@ namespace SBR.Game
         /// <summary>The goal call for a reconciliation-upgraded beat (playtest #14 — the board
         /// catches the bar): the Score tables by the GOAL's beneficiary, so a possession beat
         /// that scores never reads "passes and patience" while the net ripples (Sol, M-T4.1).</summary>
-        public static string GoalLine(bool forPicked, Leg leg, int step)
+        public static string GoalLine(bool forPicked, Leg leg, int step, Side? anchor)
         {
-            bool pickedHome = PickedHomeForPresentation(leg);
+            bool pickedHome = (anchor ?? Side.Home) == Side.Home;
             string picked = Short(pickedHome ? leg.Matchup.Home.Name : leg.Matchup.Away.Name);
             string other = Short(pickedHome ? leg.Matchup.Away.Name : leg.Matchup.Home.Name);
+            // T163: no anchor, no club. `forPicked` still carries the DIRECTION (a goal that helps
+            // or hurts), which is what the club-free set is keyed on.
+            if (anchor == null) return NeitherLine(DramaEventType.Score, forPicked, step);
+
             return Base(DramaEventType.Score, forPicked, picked, other, step);
         }
 
@@ -281,12 +294,17 @@ namespace SBR.Game
         /// voice — the members that assert only a dangerous move. Everything else falls to the
         /// neutral possession line, which is the remedy the ruling names and the one
         /// <see cref="NeutralLine"/> has always provided for the count families.</para></summary>
-        public static string NoGoalLine(DramaEvent e, Leg leg, bool up)
+        public static string NoGoalLine(DramaEvent e, Leg leg, bool up, Side? anchor)
         {
             string[] family = e.Type == DramaEventType.BigPlay ? (up ? BigUp : BigDown) : null;
             bool[] assertsGoal = e.Type == DramaEventType.BigPlay
                 ? (up ? BigUpAssertsGoal : BigDownAssertsGoal) : null;
-            if (family == null) return NeutralLine(e, leg, up);
+            if (family == null) return NeutralLine(e, leg, up, anchor);
+
+            // T163: the family's members all interpolate {picked}/{other}, so with no anchor there
+            // is nothing to walk toward — the club-free set carries the same direction instead.
+            // BigPlay is a goal family, which is why this takes the goal table rather than momentum.
+            if (anchor == null) return NeitherLine(DramaEventType.Score, up, e.Step);
 
             // Walk from the step's own position so the choice stays deterministic and still varies
             // by beat, landing on the first member that does not claim a goal.
@@ -294,19 +312,24 @@ namespace SBR.Game
             {
                 int idx = (e.Step + i) % family.Length;
                 if (assertsGoal[idx]) continue;
-                bool pickedHome = PickedHomeForPresentation(leg);
+                bool pickedHome = (anchor ?? Side.Home) == Side.Home;
                 return family[idx]
                     .Replace("{picked}", Short(pickedHome ? leg.Matchup.Home.Name : leg.Matchup.Away.Name))
                     .Replace("{other}", Short(pickedHome ? leg.Matchup.Away.Name : leg.Matchup.Home.Name));
             }
-            return NeutralLine(e, leg, up);
+            return NeutralLine(e, leg, up, anchor);
         }
 
-        public static string NeutralLine(DramaEvent e, Leg leg, bool up)
+        public static string NeutralLine(DramaEvent e, Leg leg, bool up, Side? anchor)
         {
-            bool pickedHome = PickedHomeForPresentation(leg);
+            bool pickedHome = (anchor ?? Side.Home) == Side.Home;
             string picked = Short(pickedHome ? leg.Matchup.Home.Name : leg.Matchup.Away.Name);
             string other = Short(pickedHome ? leg.Matchup.Away.Name : leg.Matchup.Home.Name);
+            // ⚠ T163 NAMES THIS FUNCTION AS THE TRAP: it is neutral about the COUNT FAMILY, not
+            // about the anchor, so without this branch the neither case would ship a HOME anchor
+            // under a neutral name — silently, on precisely the kinds K17 flags.
+            if (anchor == null) return NeitherLine(DramaEventType.Momentum, up, e.Step);
+
             return Base(DramaEventType.Momentum, up, picked, other, e.Step);
         }
 
@@ -494,12 +517,62 @@ namespace SBR.Game
         /// draw-backed leg — `{picked}`/`{other}` naming the home side while the pick is the draw — is
         /// a copy question for the DD. The direction is unaffected either way: up/down comes from the
         /// leg's own win-prob move, not from the name anchor.</para></summary>
+        /// <summary>
+        /// ⚠ <b>SUPERSEDED AS A TABLE, RETAINED AS THE GEOMETRY ADAPTER.</b> Everything above is the
+        /// history of a fifteen-kind rule this function used to carry alone; the rule now lives in
+        /// <see cref="MatchModel.AnchorSide"/>, which Allen ruled the ENGINE owns as the single
+        /// source. This is the adapter the GEOMETRY needs, and nothing more.
+        ///
+        /// <para><b>Why an adapter rather than a deletion.</b> <c>AnchorSide</c> returns
+        /// <c>Side?</c> and admits NEITHER; fourteen consumers here need a BINARY — the ledger's
+        /// score endpoint (<c>ConfigureEndpoint</c>'s <c>_targetPicked</c>/<c>_targetOpponent</c>),
+        /// the stage's attack direction and team colours, the scorebug's identity, the stats panel.
+        /// A scoreline cannot be drawn toward "neither". This function's own older note anticipated
+        /// exactly that: *"every leg needs an answer."*</para>
+        ///
+        /// <para><b>The split, ruled by Allen 2026-08-24:</b> <c>AnchorSide</c> WHERE IT ANSWERS,
+        /// the HOME convention where it is NEITHER — which is the convention
+        /// <c>ConfigureEndpoint</c> already documents for market-scoped kinds (*"the market itself,
+        /// not a phantom team pick, remains the source of direction and grading"*). So the one-anchor
+        /// invariant holds wherever an anchor EXISTS, and the surfaces diverge only where there is
+        /// none: there the PROSE declines to name a club (<see cref="NeitherLine"/>) and therefore
+        /// cannot contradict the colours.</para>
+        ///
+        /// <para><b>This FIXES cases the old table got wrong</b>, and they are the engine's own
+        /// enumerated disagreement list: <c>Handicap/Away</c> was named HOME, and
+        /// <c>PlayerMultiScorer</c> was named HOME rather than the player's club. Both now follow the
+        /// real side, in the prose AND in the geometry, which is what stops the strip and the
+        /// scorebug from naming different clubs on one beat.</para></summary>
         public static bool PickedHomeForPresentation(Leg leg)
-            => leg.Selection.Kind == MarketKind.AnytimeScorer
-                ? leg.Matchup.PlayerSide(leg.Selection.PlayerIndex) == Side.Home
-                : leg.Selection.Kind != MarketKind.Moneyline
-                    || leg.Selection.Choice == MarketChoice.Home
-                    || leg.Selection.Choice == MarketChoice.Draw;
+            => (MatchModel.AnchorSide(leg) ?? Side.Home) == Side.Home;
+
+        /// <summary>`T163`'s ANCHOR, composed over a TELLING rather than read off one leg.
+        ///
+        /// <para>Three branches, ruled: <b>(1)</b> where every live leg on this fixture that names a
+        /// side names the SAME side, that side is the anchor — which subsumes the single-leg case
+        /// exactly, so nothing moves on a ticket with one leg per matchup; <b>(2)</b> where live legs
+        /// name OPPOSITE sides, there is no anchor; <b>(3)</b> where no live leg names a side at all,
+        /// there is no anchor.</para>
+        ///
+        /// <para>The per-leg answer is <see cref="MatchModel.AnchorSide"/> — the ENGINE's table, which
+        /// Allen ruled the single source. It is deliberately NOT the console's <c>BackedSide</c>:
+        /// that answers which side the player BACKED and returns NEITHER on player markets, because a
+        /// man can score in a 3–1 defeat and the leg still wins. This asks which club the PROSE
+        /// anchors on, and a scorer's club is knowable. Two questions, two functions.</para></summary>
+        public static Side? AnchorForTelling(Ticket ticket, DramaEvent e)
+        {
+            if (ticket == null || e == null) return null;
+            Side? found = null;
+            foreach (int i in e.LegIndices)
+            {
+                if (i < 0 || i >= ticket.Legs.Count) continue;
+                Side? side = MatchModel.AnchorSide(ticket.Legs[i]);
+                if (side == null) continue;            // this leg names no side; it cannot veto one
+                if (found == null) { found = side; continue; }
+                if (found != side) return null;        // branch (2): they disagree, so NEITHER
+            }
+            return found;                              // branch (1), or branch (3) as null
+        }
 
         /// <summary>The team's noun (last word of the "City Noun" name) - punchier for the ticker.</summary>
         public static string Short(string teamName)

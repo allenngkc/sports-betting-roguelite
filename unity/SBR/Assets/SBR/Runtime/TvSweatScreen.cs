@@ -1793,7 +1793,8 @@ namespace SBR.Game
                 if (spec.Goal.HasValue)
                 {
                     if (evt.Type == DramaEventType.Momentum)
-                        _pendingFlavor = SweatFlavor.GoalLine(spec.Goal.Value.ForPicked, leg, evt.Step);
+                        _pendingFlavor = SweatFlavor.GoalLine(spec.Goal.Value.ForPicked, leg, evt.Step,
+                            SweatFlavor.AnchorForTelling(_ticket, evt));
                     // TVS-H03 fix: the old PrepareScoringActor/SetScoringActor call here was a
                     // no-op for every anytime-scorer leg (ScorerFor already suppressed identity
                     // pre-final) and, for every other market, stamped a GameObject.name nothing
@@ -1889,8 +1890,10 @@ namespace SBR.Game
                 // goal call wins over neutral possession (Sol, F_0.4.0 P3 r3).
                 if (countLeg && !countScene)
                     _pendingFlavor = spec.Goal.HasValue
-                        ? SweatFlavor.GoalLine(spec.Goal.Value.ForPicked, leg, evt.Step)
-                        : SweatFlavor.NeutralLine(evt, leg, _lastBeatUp);
+                        ? SweatFlavor.GoalLine(spec.Goal.Value.ForPicked, leg, evt.Step,
+                            SweatFlavor.AnchorForTelling(_ticket, evt))
+                        : SweatFlavor.NeutralLine(evt, leg, _lastBeatUp,
+                            SweatFlavor.AnchorForTelling(_ticket, evt));
 
                 // T97 (batch 68) — THE SECOND INSTANCE OF ONE LAW, and the guard above is the first:
                 //
@@ -1950,7 +1953,8 @@ namespace SBR.Game
                 // separately.
                 bool goalScene = spec.Goal.HasValue && spec.Goal.Value.Commits;
                 if (goalWords && !goalScene)
-                    _pendingFlavor = SweatFlavor.NoGoalLine(evt, leg, _lastBeatUp);
+                    _pendingFlavor = SweatFlavor.NoGoalLine(evt, leg, _lastBeatUp,
+                        SweatFlavor.AnchorForTelling(_ticket, evt));
                 if (goalWords) TraceFlavor($"T97 guard commits={goalScene}", _pendingFlavor);
 
                 // Market suspension is for DANGEROUS scenes only (playtest #13 — blanket
@@ -3761,7 +3765,7 @@ namespace SBR.Game
             SweatPresentationModel.BeatRecord beat = _presModel.Beats[_presModel.Beats.Count - 1];
             _lastBeatDelta = beat.Delta;
 
-            string flavor = SweatFlavor.For(evt, leg, _lastBeatUp);
+            string flavor = SweatFlavor.For(evt, leg, _lastBeatUp, SweatFlavor.AnchorForTelling(_ticket, evt));
 
             // T87-am (batch 68) — THE DRAWN MATCH'S CLOSING LINE.
             //

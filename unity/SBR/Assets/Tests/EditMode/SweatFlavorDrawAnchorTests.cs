@@ -42,17 +42,32 @@ namespace SBR.Tests.EditMode
         {
             (Leg draw, Leg home, Leg away, Matchup _) = Legs();
 
+            // THIS ASSERTION SURVIVES T163 UNCHANGED, and the split is why. The PROSE goes
+            // club-free on a draw; the GEOMETRY — scoreline endpoint, attack direction, scorebug
+            // colours — still needs a binary, and falls back to the home convention that
+            // ConfigureEndpoint already documents for market-scoped kinds.
             Assert.IsTrue(SweatFlavor.PickedHomeForPresentation(draw),
-                "a draw has no picked team, so it takes the same home anchor O/U and BTTS take — " +
-                "reporting the AWAY side here is the defect");
+                "a draw has no picked team, so GEOMETRY takes the same home anchor O/U and BTTS " +
+                "take — reporting the AWAY side here is the defect");
 
             // Specific to the draw, not a blanket: the two team rows still answer their real sides.
             Assert.IsTrue(SweatFlavor.PickedHomeForPresentation(home), "a home moneyline still answers home");
             Assert.IsFalse(SweatFlavor.PickedHomeForPresentation(away), "an away moneyline still answers away");
         }
 
+        /// <summary>RE-BASED BY `T163` — and the original concern is served MORE strongly, not less.
+        ///
+        /// <para>This used to assert the draw leg's flavour NAMES THE HOME CLUB. That was the
+        /// pre-`T163` rule, stated in this class's own summary: *"a leg with no picked TEAM anchors
+        /// on the home side and lets the market label carry the pick."* `T163` replaced it — no
+        /// picked team means NEITHER, and the engine's `AnchorSide` returns null for
+        /// `MoneylineDraw` citing `T96`: <b>the draw is not a team, ever.</b></para>
+        ///
+        /// <para><b>What this test was written to stop, it still stops.</b> Its defect was the AWAY
+        /// club appearing on a draw leg. Under the neither branch NO club appears, which forbids the
+        /// away club by construction rather than by anchoring on the other one.</para></summary>
         [Test]
-        public void The_draw_legs_flavour_names_the_home_club_not_the_away_one()
+        public void A_draw_legs_flavour_names_NO_club_now_that_T163_rules_the_draw_neither()
         {
             (Leg draw, Leg _, Leg _2, Matchup m) = Legs();
 
@@ -60,14 +75,20 @@ namespace SBR.Tests.EditMode
             string awayClub = SweatFlavor.Short(m.Away.Name);
             Assume.That(homeClub, Is.Not.EqualTo(awayClub), "the two clubs must differ for this to test anything");
 
-            // The RENDERED consequence, not just the boolean: the defect was a wrong club NAME on
-            // screen, so that is what this asserts.
-            string line = SweatFlavor.GoalLine(forPicked: true, leg: draw, step: 0);
+            Assert.IsNull(MatchModel.AnchorSide(draw),
+                "the engine's anchor table must answer NEITHER for a moneyline draw (T96) — if it "
+                + "answers a side, this whole branch is unreachable and the assertions below are void");
 
-            StringAssert.Contains(homeClub, line,
-                $"the draw leg's flavour should anchor on the home club. Actual: '{line}'");
-            Assert.IsFalse(line.StartsWith(awayClub),
-                $"the away club must not lead a draw leg's flavour — that was the defect. Actual: '{line}'");
+            // The RENDERED consequence, not just the table: the defect was a wrong club NAME on
+            // screen, and the fix is that there is no club name at all.
+            string line = SweatFlavor.GoalLine(forPicked: true, leg: draw, step: 0,
+                anchor: MatchModel.AnchorSide(draw));
+
+            Assert.IsNotEmpty(line, "no line was produced, so nothing below is being asserted");
+            StringAssert.DoesNotContain(awayClub, line,
+                $"the away club must never appear on a draw leg — the original defect. Actual: '{line}'");
+            StringAssert.DoesNotContain(homeClub, line,
+                $"nor the home club: T163 rules the draw NEITHER, so the line is club-free. Actual: '{line}'");
         }
     }
 }
