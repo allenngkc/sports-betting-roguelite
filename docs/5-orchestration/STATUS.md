@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-24, cycle 469 (heartbeat).** The
+**Keeper-era heartbeat stamp: 2026-08-24, cycle 470 (heartbeat).** Quiet
+hold: the campaign mid-run (ETA ~60-70 min; silence is its normal state,
+the seat's watcher armed on the report file and the process); TV's
+suite queued behind it; DD standing by. WITH ALLEN: unchanged.
+
+*(prior stamp, cycle 469 (heartbeat).** The
 DoubleChance removal is BUILT (6f4bf67 - three offers go, the kind
 stays) and its ruled campaign runs at 16 workers; TV's twin fix merged
 (fa3b367), step 4 planned, the backed-side table ruled TO THE ENGINE
