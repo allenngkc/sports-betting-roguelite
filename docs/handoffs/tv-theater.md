@@ -134,6 +134,53 @@ what that clause forbids.
 
 ---
 
+## 0-U18. THE GATE AUDIT — EVERY GATE THAT PASSED FIRST TIME, MUTATED · 2026-08-24
+
+**A GATE THAT PASSED FIRST TIME IS UNAUDITED.** This seat shipped one that was vacuous (the TV
+twin's compatibility test, which an off-by-one mutant PASSED), so the rest were put through the same
+check. **All five die under their own mutants. No source change ships from this** — every mutant was
+reverted and the `.cs` files are byte-identical to `c24b32c`, which is stronger than a re-run.
+
+| mutant | gate it had to kill | verdict |
+|---|---|---|
+| `IsPresentedResolved` ignores the set — the retired high-water mark restored | `A_leg_whose_fixture_has_not_been_told...` | **killed** |
+| one §5.2 line reworded | `The_neither_branch_emits_spec_5_2_verbatim` | **killed** |
+| a momentum variant duplicated | `Each_table_carries_three_distinct_variants` | **killed** |
+| one line capitalised | `Every_neither_line_is_lowercase...` | **killed** |
+| `LegStatement` returns empty | `T130_a_rendered_leg_row_is_never_empty` | **killed**, and it was the ONLY failure of 34 |
+
+### THE ONE THAT MATTERED
+
+**Step 2's interleaved gate had only ever failed on its PRECONDITION.** Its two actual claims — an
+untold leg renders no verdict, the footer does not read its settled form — had never been observed
+firing. The first mutant restores the exact defect the per-leg set replaced, and both fired. **The
+gate the whole of step 2 rests on is real.**
+
+### A SECOND GATE IS SENSITIVE TO `ticketSettled`, found as collateral
+
+`A_previewed_leg_is_struck_and_dimmed_one_level_never_extinguished` also died under that mutant. The
+preview strike reads `_cashOutPreview || ticketSettled`, and marking every leg presented-resolved
+drove `ticketSettled` true. Not a defect — worth knowing that the strike has a second dependency on
+that state.
+
+### ⚠ WHAT NO MUTANT CAN CLOSE — `T130`'s MARKET COVERAGE, NOW MEASURED AND WORSE THAN RECORDED
+
+The audit proves `T130` DETECTS a blank row. It says nothing about WHICH markets it has seen, and the
+failure message answered that question directly:
+
+> *Leg kinds this run: **Moneyline, Moneyline, Moneyline***
+
+The handoff recorded `kinds=[Moneyline,Moneyline]`. **A third leg was dealt and it was moneyline
+again.** `DemoTicketPolicy.Choose` is still handing this gate the one kind that cannot exercise it,
+so **`T130` has STILL never rendered the `CorrectScore` row that item `1.3` un-blanked** — the single
+market the drawn-ending section fixed.
+
+**A mutant cannot close this and neither can another run.** It needs a fixture that FORCES the kind
+rather than accepting whatever the policy deals. Recorded as owed, and it is the one gate on this
+list whose green still overstates what it covers.
+
+---
+
 ## 0-U17. STEP 4 PARTS A+D — THE ANCHOR SPLITS · SHIPPED 2026-08-24
 
 **EditMode 331/330/0/1 · PlayMode 149/124/0/25.** No case-count change; two tests re-based.
