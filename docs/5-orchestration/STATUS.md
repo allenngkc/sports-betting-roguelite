@@ -1,6 +1,16 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-24, cycle 468 (heartbeat).** STEP 3
+**Keeper-era heartbeat stamp: 2026-08-24, cycle 469 (heartbeat).** The
+DoubleChance removal is BUILT (6f4bf67 - three offers go, the kind
+stays) and its ruled campaign runs at 16 workers; TV's twin fix merged
+(fa3b367), step 4 planned, the backed-side table ruled TO THE ENGINE
+(single source; TV consumes); TV's suite held behind the campaign.
+HELD: Allen's 'campaign's done' - the shell still runs and no roster
+exists; engine asked for a one-line status; veto window open. WITH
+ALLEN: the carve-out bookkeeping, the hold's structure, research 8-9,
+B9's sitting.
+
+*(prior stamp, cycle 468 (heartbeat).** STEP 3
 AND THE CONSOLE FIX ARE MERGED (b9c5c30 + f5bd516 via 17c0829 - the
 counter counts MATCHES with a pool-to-code pin; the interleaved
 final-telling predicate fixed). TV on its own onFinalLeg twin
