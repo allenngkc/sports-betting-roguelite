@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-24, cycle 474 (heartbeat).** The
+**Keeper-era heartbeat stamp: 2026-08-24, cycle 475 (heartbeat).** The
+anchor capture found a real defect: Handicap had NO ARM - a silent
+default rendered blank, so frame B could not exist. Allen approved the
+proper fix (a real arm, no silent default, T130's gate extended to
+every armless offered kind - the capture find became a standing gate);
+TV in suite, then the re-shoot and the dock. Frame A is shot. WITH
+ALLEN: the carve-out bookkeeping, the hold's structure, research 8-9,
+B9's sitting.
+
+*(prior stamp, cycle 474 (heartbeat).** The
 capture arc runs to sequence: the pre-commitment landed (adfea9f) and
 amended in its only legitimate window; the lease granted; TV finishing
 T130's forced-kind fixture, then merges main for the pre-commitment
