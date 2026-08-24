@@ -134,6 +134,89 @@ what that clause forbids.
 
 ---
 
+## 0-U15. STEP 4 — THE SHAPE THE TV NEEDS FROM THE ENGINE'S ANCHOR TABLE · 2026-08-24
+
+**Allen ruled the ENGINE owns the backed-side table and the TV consumes it.** This is the consumer's
+side of that contract, written here because the engine lane could not find it at HEAD — it existed
+only in a seat report. **`T163`'s three branches and the §6b subject sites are BLOCKED on this.**
+
+### ⚠ THE TV DOES NOT NEED `EventText.BackedSide`. IT NEEDS A SECOND FUNCTION.
+
+`game-console/EventText.cs:138` already answers *which side did the player BACK*, exhaustive over
+fifteen kinds, throwing rather than guessing (`K17-cl`, gated by `SweatAnchorGateTests`). **Shipping
+that to the TV as-is would be wrong**, and its own doc comment says why:
+
+> *"The player markets … this still answers NEITHER, because the question is which side he BACKED: a
+> man can score in a 3–1 defeat and the leg wins, so his club is not the player's side. **The TV's
+> `PickedHomeForPresentation` does anchor these on `PlayerSide` — that is the other question answered
+> correctly for itself, and the divergence is the two shapes working as ruled.**"*
+
+**Two questions, two answers, and `T163` needs the second.** The anchor controls which club the PROSE
+names, not which side pays. `T163` branch (1) states its own compatibility test — *"this subsumes
+today's single-leg case exactly, so nothing on screen changes before arm A lands"* — and today an
+`AnytimeScorer` leg anchors on `PlayerSide`. **A table answering NEITHER there would change the
+screen and break `T163`'s own claim.**
+
+### THE SHAPE — `Side?` per LEG, and it must take a `Leg`, not a `MarketSelection`
+
+Player markets need `Matchup.PlayerSide(PlayerIndex)`, which is not reachable from the selection.
+
+| kind | anchor answer | why |
+|---|---|---|
+| `Moneyline` | Home / Away / **null** on Draw | the draw is not a team, ever (DD batch 49, `T96`) |
+| `Handicap` | Home / Away | the line is applied TO THE BACKED SIDE; read `Choice` back |
+| `DoubleChance` | `HomeOrDraw`→Home, `AwayOrDraw`→Away, `HomeOrAway`→**null** | the backed side is the ONE club in the union; 12 holds both, so neither |
+| `TeamTotalGoals` / `Corners` / `Cards` | `Selection.Team` | it is a NAMED field; read it, do not decode it |
+| `AnytimeScorer` / `PlayerMultiScorer` | **`Matchup.PlayerSide(PlayerIndex)`** | **THE DIVERGENCE.** The prose anchors on the club the man plays for. `BackedSide` answers null here and is right for its own question. |
+| `TotalGoals`, `BothTeamsToScore`, `TotalCorners`, `TotalCards`, `CorrectScore`, `WinningMargin`, `TotalGoalsOddEven` | **null** | `T163` branch (3) names this set outright |
+| a sixteenth kind | **THROW** | a `default:` that guesses a side IS `K17-cl`. Never a fallback. |
+
+### WHAT THE TV COMPOSES ON TOP — `T163`'s fixture rule, not the engine's to build
+
+Over the fixture's LIVE legs, collect the non-null answers: **all the same side → that side is
+`picked`; two different sides → NEITHER; none at all → NEITHER.**
+
+### WHY THIS IS NOT A REFACTOR — `PickedHomeForPresentation` IS WRONG TODAY, ON SHIPPING TICKETS
+
+`SweatFlavor.cs:403` returns **HOME unconditionally for every kind except Moneyline and
+AnytimeScorer**. So on a totals, BTTS, correct-score, corners, cards, margin, odd/even,
+DoubleChance, team-total **or `PlayerMultiScorer`** leg, the flavour already names the home club as
+`{picked}` when no side is backed at all — **on ordinary single-leg tickets, today.**
+
+**Steps 1–3 were no-ops on the shipping shape. STEP 4 IS NOT.** It changes shipped copy on tickets
+that exist now, so it needs evidence beyond a green suite. Check the docked `dd-import` sets for a
+totals-leg sweat before asking for a capture window.
+
+### WHAT LANDED AHEAD OF THE TABLE
+
+`SweatFlavor.NeitherLine` + the four club-free tables (spec §5.2, twelve lines) and
+`SweatFlavorNeitherBranchTests`. **Authored but NOT WIRED** — nothing calls `NeitherLine` until the
+anchor rule exists. Pinned so the transcription cannot drift from the spec, which is the `K21`/`C60`
+failure in miniature: rows that were ruled in batches 174–175 and unfindable in `docs/` because
+transcription lagged from batch 154.
+
+**§5.1's casing was left to this lane and is answered: lowercase with a terminal period**, this
+file's own club-free convention (`"off the bar and away."`), NOT the casing of the table each line
+joins — that rule is what split a branch two-capitalised/two-lowercase elsewhere.
+
+### STILL OWED ON STEP 4
+
+- **The direction re-base (part C)** — `SweatPresentationModel.RecordBeat` and `SweatFlavor.For` both
+  compute direction off `evt.WinProbAfter`; the spec's §1 note says a single `up`/`down` exists ONLY
+  because the displayed probability is the TICKET's. **Blast radius measured and it is small:**
+  outside `MagnitudeBand`, `delta` is used only as a SIGN test (the band-reconcile's `delta >= 0.0`),
+  and sign survives the re-base. `T166` rules the `MagnitudeBand` thresholds STAY.
+  **Two cautions:** `RecordBeat` has four test callers and `SweatPresentationModelTests` PINS the
+  current leg-scoped semantics, so that pin re-bases with it; and the comment at
+  `SweatPresentationModel.cs:336` (*"their |delta| ≥ 0.07 means they are never actually flat"*) goes
+  numerically FALSE under the re-base while its conclusion survives — a stale citation to fix, not a
+  behaviour to preserve.
+- **`impliedLead` must stay LEG-scoped.** It compares `probAfter` against the reconcile bands, and
+  `probAfter` is `evt.LegProbs[0]` by step 1's class-B split. Re-point it to the ticket and a
+  parlay's product reconciles the scoreline wrongly on every multi-leg ticket.
+
+---
+
 ## 0-U14. THE TV's `onFinalLeg` TWIN — AND THE MUTATION THAT AUDITED THE GATE · 2026-08-24
 
 **EditMode 325/324/0/1 · PlayMode 149/124/0/25.** +2 on step 3: the two twin gates.

@@ -99,6 +99,92 @@ namespace SBR.Game
             _ => MomDown,
         };
 
+        // ---------------------------------------------------------------- T163's NEITHER branch
+
+        /// <summary>The *neither*-branch line for a beat — the branch where the prose has NO anchor
+        /// club, so no line may name one.
+        ///
+        /// <para><b>`T163` (batch 167) rules three branches.</b> Where every live leg on the fixture
+        /// that names a side names the SAME side, that side is <c>picked</c> and the ordinary tables
+        /// apply — that subsumes today's single-leg case exactly. Where live legs name OPPOSITE
+        /// sides, and where NO live leg names a side at all (totals, BTTS, correct score, odd/even,
+        /// margin), the honest answer is <b>NEITHER</b> and these lines are what it says.</para>
+        ///
+        /// <para><b>Why they name no club, rather than naming both as themselves.</b> `T163` reasoned
+        /// that *neither* would leave the two clubs named AS THEMSELVES; batch 171 AMENDED that,
+        /// because filling a slot from the EVENT needs the event's actor and <c>DramaEvent</c> has
+        /// none — no scorer, no possession side. Measured on both surfaces. So the slot change is
+        /// unbuildable without an engine change, and the club-free set (spec §3/§5) is what
+        /// ships.</para>
+        ///
+        /// <para><b>Casing follows §5.1's CORRECTED rule</b> — a club-free line takes the casing its
+        /// own FILE uses for club-free copy, NOT the casing of the table it joins. A table whose
+        /// other lines open with an interpolated club noun has no casing of its own to match, which
+        /// is how one branch elsewhere ended up split two capitalised and two lowercase. This file's
+        /// club-free convention is lowercase with a terminal period —
+        /// <c>"off the bar and away."</c>, <c>"whipped into the corner — the count moves again."</c>
+        /// — so these take that, verbatim from the spec.</para>
+        ///
+        /// <para><b>THREE variants each, deliberately.</b> <see cref="Base"/> indexes
+        /// <c>variants[step % variants.Length]</c>, so a single-element table makes every beat in the
+        /// branch read identically — the defect §5 exists to close.</para>
+        ///
+        /// <para>⚠ <b>DO NOT ROUTE THIS THROUGH <see cref="NeutralLine"/>.</b> `T163` names that trap
+        /// by name: <c>NeutralLine</c> is neutral about the COUNT FAMILY, not about the anchor — it
+        /// computes <c>pickedHome</c>, <c>picked</c> and <c>other</c> exactly like every other line.
+        /// Wiring *neither* to it would ship a HOME anchor under a neutral name, silently, on
+        /// precisely the kinds <c>K17</c> already flags.</para></summary>
+        public static string NeitherLine(DramaEventType type, bool up, int step)
+        {
+            string[] variants = NeitherTable(type, up);
+            return variants[((step % variants.Length) + variants.Length) % variants.Length];
+        }
+
+        private static string[] NeitherTable(DramaEventType type, bool up) => (type, up) switch
+        {
+            // Score and BigPlay are both GOAL families — §5 authors one goal set per direction, and
+            // splitting it here would invent two sets the spec does not have.
+            (DramaEventType.Score, true) => NeitherGoalUp,
+            (DramaEventType.BigPlay, true) => NeitherGoalUp,
+            (DramaEventType.Score, false) => NeitherGoalDown,
+            (DramaEventType.BigPlay, false) => NeitherGoalDown,
+            (DramaEventType.Momentum, true) => NeitherMomUp,
+            _ => NeitherMomDown,
+        };
+
+        private static readonly string[] NeitherGoalUp =
+        {
+            "a goal — the number ticks with it.",
+            "a goal in the churn; the number moves.",
+            "one goes in — the slip gains.",
+        };
+
+        private static readonly string[] NeitherGoalDown =
+        {
+            // "a goal against the slip" states that the goal works against the ticket WITHOUT
+            // naming a side it works FOR, which is exactly what this branch needs. `the slip` is
+            // this surface's own established word — ScoreDown already ships "the slip flinches".
+            "a goal against the slip.",
+            "a goal; the slip flinches.",
+            "one goes in, the wrong way for the slip.",
+        };
+
+        private static readonly string[] NeitherMomUp =
+        {
+            "the half tightens.",
+            "territory, and the clock with it.",
+            "the pitch shrinks.",
+        };
+
+        private static readonly string[] NeitherMomDown =
+        {
+            // `territory` and `sideways` are paired on purpose, so the two momentum directions read
+            // as one axis rather than as two moods.
+            "the ball stays in midfield.",
+            "slow through the middle, and no one in a hurry.",
+            "sideways, and the clock with it.",
+        };
+
         private static readonly string[] ScoreUp =
         {
             "{picked} slot it home.",
