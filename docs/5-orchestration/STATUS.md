@@ -1,6 +1,9 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-24, cycle 477 (heartbeat - THE
+**Keeper-era heartbeat stamp: 2026-08-24, cycle 478 (heartbeat - the
+pause holds, quiet).**
+
+*(prior stamp, cycle 477 (heartbeat - THE
 PAUSE HOLDS).** All seats parked and idle; nothing dispatched. Resume
 checklist: verify Unity procs 0 (5 lingered after TV's teardown), then
 re-arm the capture arc (frame B + suites + dock) on Allen's word.
