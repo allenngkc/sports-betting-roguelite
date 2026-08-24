@@ -2744,7 +2744,13 @@ namespace SBR.Game
             if (_ticket == null || _ticket.Legs.Count == 0) return;
             Leg leg = _ticket.Legs[0];
             _tMatchup.text = MatchupLine(leg);
-            _tLeg.text = $"LEG 1/{_ticket.Legs.Count}";
+            // T165 / T165-am (batch 178): the counter counts TELLINGS, and says so. Under T140 arm A
+            // the unit of broadcast is the (ticket, FIXTURE) — two legs can ride one match — so a
+            // counter reading LEG n/m would print a leg total the column contradicts: four rows
+            // against `LEG 2/3`. The word is ruled MATCH on vocabulary the surface already owns
+            // (`THE MATCH ENDS LEVEL`, and the scoreline slot is `Matchup`); all five candidates
+            // cleared T91-cl's 2px ink floor, so width did not decide it.
+            _tLeg.text = $"MATCH 1/{FixtureTotal()}";
             _tClock.text = "PRE";
             // T44 casing: CF puts state words in tracked uppercase, and every sibling state line on
             // this element is (VAR — NO GOAL, THE TOTEM BURNS, LEG n — WON). Lowercase sentence case
@@ -3044,6 +3050,18 @@ namespace SBR.Game
         /// rendering LIVE. Bounds-safe for the same reason as <see cref="IsPresentedResolved"/>: a
         /// row index with no leg behind it is simply not in the set.</summary>
         private bool IsLiveShown(int i) => _liveLegsShown.Contains(i);
+
+        /// <summary>The counter's DENOMINATOR — how many tellings this ticket has (`T165`).
+        ///
+        /// <para>The session is the authority: <c>FixtureCount</c> is the grouping the joint price
+        /// itself uses, so the surface and the price cannot disagree about what a match is. Falls
+        /// back to the leg count only when there is no session — the pregame/ticket-card boundary,
+        /// where the two coincide anyway on every ticket without a same-match pair, and where a
+        /// counter is better slightly generous than absent.</para></summary>
+        private int FixtureTotal()
+            => _session != null ? _session.FixtureCount
+             : _ticket != null ? _ticket.Legs.Count
+             : 0;
 
         /// <summary>The legs LIVE right now per the session — the honest referent for a repaint that
         /// re-asserts the current telling (the mulligan and the whistle) rather than choosing a new
@@ -3727,7 +3745,10 @@ namespace SBR.Game
         {
             Leg leg = _ticket.Legs[evt.LegIndex];
 
-            _tLeg.text = $"LEG {evt.LegIndex + 1}/{_ticket.Legs.Count}";
+            // T165 / T165-am: the FIXTURE is the referent — see RenderPregame's note. `evt.LegIndex`
+            // is only the telling's ANCHOR after arm A, so counting it would name one leg of a
+            // shared telling and skip the other.
+            _tLeg.text = $"MATCH {evt.FixtureIndex + 1}/{FixtureTotal()}";
 
             if (evt.LegIndex != _flavorLegSeen)
             {

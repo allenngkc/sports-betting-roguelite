@@ -697,8 +697,25 @@ namespace SBR.EditorTools
             // Added when the POPULATION line below named them: the sweep's own §4.2 statement found
             // three slots that were neither swept nor a sibling row index, and two of them are
             // trivially enumerable. Closing the gap beats excusing it — a named gap is still a gap.
-            ("Leg", "the ticket header's leg counter (moved out of the scorebug, into BuildTicketColumn beside TicketHeader, by T91-cl batch 158), bounded by MaxLegs (4)", new[]
-                { "LEG 4/4", "LEG 1/4", "LEG 1/1" }),
+            // FORMAT CHANGED (T165 / T165-am batch 178, 2026-08-24): the counter's referent moved
+            // from the LEG to the FIXTURE and the word moved with it — `MATCH n/m`. Under T140 arm A
+            // two legs can ride one telling, so `LEG n/m` would print a leg total the ticket column
+            // contradicts. The denominator is SweatSession.FixtureCount, which is <= Legs.Count and
+            // so still bounded by MaxLegs (4). Digits are tabular, so 4/4 is the widest form.
+            // ⚠ AND THE POOL WAS INCOMPLETE, found by T165_the_counter_the_code_emits_is_in_the_pool
+            // on its FIRST run. It held three forms — 4/4, 1/4, 1/1 — and the surface emits `n/m`
+            // for EVERY m the ticket can have: a two-leg ticket renders `MATCH 1/2`, which was not
+            // here. THE SAME GAP WAS IN THE `LEG` FORMS IT REPLACED and had been since the slot was
+            // added; nothing had ever compared this pool to the CODE, only to the measured fixtures,
+            // so it could not surface. Enumerated in full here — m in 1..MaxLegs, n in 1..m, ten
+            // forms — because "the strings this slot can emit" is the pool's whole contract, and a
+            // partial enumeration is a phantom in the other direction: the sweep prices a narrower
+            // language than the surface speaks. Digits are tabular, so 4/4 is still the widest.
+            ("Leg", "the ticket header's MATCH counter (moved out of the scorebug, into BuildTicketColumn beside TicketHeader, by T91-cl batch 158; referent moved to the fixture by T165). n/m over m = SweatSession.FixtureCount, which is <= Legs.Count and so bounded by MaxLegs (4)", new[]
+                { "MATCH 1/1",
+                  "MATCH 1/2", "MATCH 2/2",
+                  "MATCH 1/3", "MATCH 2/3", "MATCH 3/3",
+                  "MATCH 1/4", "MATCH 2/4", "MATCH 3/4", "MATCH 4/4" }),
             // `MomentumLabel` is GONE (T90-am/T93, batch 61) — dropped, not shortened, because its
             // overlap with the NEED line was positional. The slot no longer exists to sweep, and the
             // population line below will simply stop counting it.

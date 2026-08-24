@@ -134,6 +134,70 @@ what that clause forbids.
 
 ---
 
+## 0-U13. STEP 3 — §6d / `T165`, THE COUNTER COUNTS MATCHES · SHIPPED 2026-08-24
+
+**EditMode 323/322/0/1 · PlayMode 149/124/0/25.** EditMode is +2 on step 2: the width probe and the
+pool↔code pin. Verified BY NAME.
+
+### THE WORD WAS RULED ON MEASUREMENT THAT DECIDED NOTHING
+
+`T165` left the form to TV — *"only measurement decides."* **It didn't.** All five candidates cleared
+`T91-cl`'s 2px ink floor:
+
+| form | ink | clearance |
+|---|---|---|
+| `LEG 4/4` (retired) | 66.9px | 86.8px |
+| **`MATCH 4/4`** | **96.5px** | **57.2px** |
+| `GAME 4/4` | 84.6px | 69.1px |
+| `TELLING 4/4` | 108.2px | 45.6px |
+| `FIXTURE 4/4` | 109.4px | 44.3px |
+
+`Leg` is RIGHT-ALIGNED: its ink edge is pinned at x −233.0 and grows LEFTWARD to `TicketHeader`'s ink
+at −386.7, so **~149.7px is available** and the widest candidate spends 109.4px.
+
+**THIS LANE PREDICTED `MATCH` WOULD FAIL, AND WAS WRONG BY 55px** — it subtracted an ink WIDTH from a
+CLEARANCE and called the difference headroom. `T144`'s lesson with the sign flipped: reasoning where
+an instrument exists is the error, whichever way it lands. `T165-am` (batch 178) ruled `MATCH` on
+vocabulary — it is already shipped copy here (`THE MATCH ENDS LEVEL`; the scoreline slot is
+`Matchup`), where `GAME` appears in NO shipped copy and `FIXTURE`/`TELLING` are engine words.
+
+### ⚠ THE SIXTH PHANTOM — AND IT IS THE OTHER KIND
+
+`T158`'s own dichotomy: *"either the fixture is a phantom or the pool is incomplete — BOTH are
+findings."* All five phantoms before this were the first kind. **This is the first of the second.**
+
+The new pin caught it on its FIRST run: the code emits `MATCH 1/2` on a two-leg ticket; the pool held
+only `4/4`, `1/4`, `1/1`. **The `LEG` forms it replaced had the IDENTICAL gap, since the slot was
+created.** It could not surface because `T158` compares the measured fixture against the pool and
+**nothing had ever compared the pool against the CODE.** Now enumerated in full — `m ∈ 1..MaxLegs`,
+`n ∈ 1..m`, ten forms. Digits are tabular, so no measured number moved.
+
+**The gate that found it was added in the same diff that created the risk.** That is the argument for
+writing the pin with the change rather than after it.
+
+### WHAT SHIPPED
+
+- Both counter sites read `evt.FixtureIndex + 1` / `FixtureTotal()`; the denominator is
+  `SweatSession.FixtureCount` — **the same grouping the joint price uses**, so the surface and the
+  price cannot disagree about what a match is — falling back to leg count only with no session.
+- `T165_the_counter_the_code_emits_is_in_the_pool`: drives the real `RenderPregame` and asserts the
+  EMITTED string is pooled. **Closes the one edge of code↔pool↔instrument that `T158` cannot see.**
+- The three rejected words are registered in `MeasuredCandidates` with their measured widths. That
+  table's assertion is INVERTED — adopting one fails the pin rather than passing silently.
+- `LEG 4/4` is out of the probe entirely: the surface can no longer emit it, so measuring it would
+  itself be a phantom.
+
+### OWED — AND THE GREEN DOES NOT COVER IT
+
+- **NO TEST RENDERS THE COUNTER ON A SAME-MATCH TICKET.** Every fixture in both suites is ordinary,
+  where fixture count equals leg count and `MATCH n/m` renders exactly what `LEG n/m` did —
+  `evt.FixtureIndex` never diverges from `evt.LegIndex`. **The ruling exists for the shape no test
+  builds.** Wants the `[A,B,A]` treatment step 2's gate got.
+- **`onFinalLeg`'s TV twin is still unfixed** (`TvSweatScreen.cs:1718`) — same referent, same class,
+  and the console half is now fixed while this one is not.
+
+---
+
 ## 0-U12. STEP 2 — §6a, N GRADES AT ONE WHISTLE · SHIPPED 2026-08-24
 
 **EditMode 321/320/0/1 · PlayMode 149/124/0/25.** EditMode is +1 on baseline: the interleaved gate.
