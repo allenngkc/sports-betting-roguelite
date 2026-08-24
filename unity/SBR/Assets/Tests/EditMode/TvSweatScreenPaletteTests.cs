@@ -1216,17 +1216,171 @@ namespace SBR.Tests.EditMode
         // ---------------------------------------------------------------------------------------
 
         /// <summary>Drives the real UpdateTicketColumn against a real ticket. The private
-        /// <c>_ticket</c>/<c>_resolvedThrough</c> fields are set directly because the alternative is
-        /// standing up a whole live session for a question that is purely about what a resolved row
-        /// renders — and the method under test reads leg state, never how the state was reached.</summary>
+        /// <c>_ticket</c>/<c>_presentedResolved</c> fields are set directly because the alternative
+        /// is standing up a whole live session for a question that is purely about what a resolved
+        /// row renders — and the method under test reads leg state, never how the state was reached.
+        ///
+        /// <para>THE PARAMETERS STAY SCALAR ON PURPOSE. <c>T140</c> arm A retired both scalars in
+        /// the surface — the high-water mark became a per-leg set and the live index became a live
+        /// SET — but every caller below is describing the SAME fixture it always described: a
+        /// contiguous prefix of resolved legs and at most one live row. Translating here rather
+        /// than at six call sites keeps those tests stating what they are actually about (what a
+        /// resolved row RENDERS) instead of restating the surface's new internal shape. A test that
+        /// needs a non-contiguous resolved set — the shape the scalar could not express — should
+        /// take the set directly rather than widen this helper.</para>
+        ///
+        /// <para>⚠ THIS HELPER IS A REFLECTED SEAM AND THE COMPILER DOES NOT CHECK IT. Both names
+        /// below are STRING LITERALS, so a signature change in <c>TvSweatScreen</c> compiles green
+        /// here and throws at run time. Before changing either member, grep <c>Assets/**</c> for
+        /// the name as a string. Step 2 broke exactly this and step 1 broke its PlayMode twin.</para></summary>
         private static void RenderTicketColumn(TvSweatScreen s, Ticket ticket, int resolvedThrough, int liveLegIndex)
         {
             typeof(TvSweatScreen).GetField("_ticket", BindingFlags.NonPublic | BindingFlags.Instance)
                 .SetValue(s, ticket);
-            typeof(TvSweatScreen).GetField("_resolvedThrough", BindingFlags.NonPublic | BindingFlags.Instance)
-                .SetValue(s, resolvedThrough);
+
+            var presentedResolved = new bool[ticket.Legs.Count];
+            for (int i = 0; i < presentedResolved.Length; i++) presentedResolved[i] = i < resolvedThrough;
+            typeof(TvSweatScreen).GetField("_presentedResolved", BindingFlags.NonPublic | BindingFlags.Instance)
+                .SetValue(s, presentedResolved);
+
+            IReadOnlyList<int> liveLegs = liveLegIndex < 0
+                ? (IReadOnlyList<int>)System.Array.Empty<int>()
+                : new[] { liveLegIndex };
             typeof(TvSweatScreen).GetMethod("UpdateTicketColumn", BindingFlags.NonPublic | BindingFlags.Instance)
-                .Invoke(s, new object[] { liveLegIndex });
+                .Invoke(s, new object[] { liveLegs });
+        }
+
+        /// <summary>Drives the column with an EXPLICIT presented-resolved set and live set — the
+        /// shape <see cref="RenderTicketColumn"/>'s scalar parameters cannot express. Needed because
+        /// a fixture's legs are not contiguous in ticket order.</summary>
+        private static void RenderTicketColumnSet(
+            TvSweatScreen s, Ticket ticket, bool[] presentedResolved, IReadOnlyList<int> liveLegs)
+        {
+            typeof(TvSweatScreen).GetField("_ticket", BindingFlags.NonPublic | BindingFlags.Instance)
+                .SetValue(s, ticket);
+            typeof(TvSweatScreen).GetField("_presentedResolved", BindingFlags.NonPublic | BindingFlags.Instance)
+                .SetValue(s, presentedResolved);
+            typeof(TvSweatScreen).GetMethod("UpdateTicketColumn", BindingFlags.NonPublic | BindingFlags.Instance)
+                .Invoke(s, new object[] { liveLegs });
+        }
+
+        /// <summary>An INTERLEAVED ticket — <c>[matchA, matchB, matchA]</c> — whose middle leg is a
+        /// LOSS, searched off the board rather than guessed.
+        ///
+        /// <para>Fixture grouping is first-appearance (<c>JointModel.GroupByMatchup</c>), so this
+        /// ticket's fixture 0 is legs <b>{0, 2}</b> and fixture 1 is leg <b>{1}</b> — and fixture 0
+        /// is told FIRST. The same-match pair is the nested goal pair (over the higher line entails
+        /// over the lower), pure set containment, so no board change can refuse it.</para>
+        ///
+        /// <para>WHICH OUTCOMES LAND IS THE ENGINE'S TO SAY. <c>Leg.State</c> has no setter, so this
+        /// searches matchup pairs for the shape it needs instead of hard-coding a seed's result —
+        /// the same discipline <c>engine.tests</c> adopted after a test asserted against a guessed
+        /// outcome and failed for a reason unrelated to what it measured.</para></summary>
+        private static Ticket InterleavedTicketWithLosingMiddleLeg(string runId)
+        {
+            int matchups = new Run(runId, new RunConfig()).CurrentSlate.Matchups.Count;
+            for (int a = 0; a < matchups; a++)
+                for (int b = 0; b < matchups; b++)
+                {
+                    if (a == b) continue;
+                    var run = new Run(runId, new RunConfig());
+                    RunConfig cfg = run.Config;
+                    var picks = new[]
+                    {
+                        new Pick(a, MarketSelection.TotalGoals(cfg.GoalLines[1], true)),
+                        new Pick(b, MarketSelection.Moneyline(Side.Home)),
+                        new Pick(a, MarketSelection.TotalGoals(cfg.GoalLines[0], true)),
+                    };
+                    if (run.RefusalFor(picks) != null) continue;
+
+                    Ticket t = run.PlaceTicket(picks, 10);
+                    run.LockRound();
+                    if (t.Legs.Count != 3) continue;
+                    // The middle leg must be a REAL loss, or the leak this gate exists to catch has
+                    // nothing to leak and the test would pass vacuously.
+                    if (t.Legs[1].IsVoided || t.Legs[1].GradesWon) continue;
+
+                    // AND THE TICKET MUST ACTUALLY BE DEAD IN ENGINE TRUTH, which LockRound does not
+                    // do: `SweatSession.MoveNext` resolves a LegFinal and busts BEFORE handing the
+                    // event back, so `Ticket.State` only reads Lost once the session has been driven.
+                    // Without this the footer assertion below would pass VACUOUSLY — `settledDead`
+                    // is `State == Lost && revealedLoss`, so an unstarted ticket can never read
+                    // settled no matter how badly revealedLoss leaks. Drained here, declining every
+                    // save so nothing rescues the leg the gate needs dead.
+                    SweatSession session = run.Sweats[0];
+                    while (!session.IsComplete)
+                    {
+                        if (session.HasPendingLoss) { session.DeclinePendingLoss(); continue; }
+                        if (!session.MoveNext(out DramaEvent _)) break;
+                    }
+                    if (t.State != TicketState.Lost) continue;
+                    return t;
+                }
+
+            Assert.Fail($"no interleaved [A,B,A] ticket on seed '{runId}' has a losing middle leg and "
+                + "settles Lost; the gate cannot be armed and must not pass vacuously");
+            return null;
+        }
+
+        [Test]
+        public void A_leg_whose_fixture_has_not_been_told_is_never_rendered_resolved_or_leaked_to_the_footer()
+        {
+            // T140 arm A + T144. THE ONE CASE THE INT HIGH-WATER MARK COULD NOT EXPRESS, and the
+            // reason `_resolvedThrough` became a per-leg set.
+            //
+            // A fixture's legs need not be CONTIGUOUS: [matchA, matchB, matchA] groups as
+            // fixture 0 = legs {0, 2} and fixture 1 = leg {1}, and fixture 0 is TOLD FIRST. So the
+            // surface must be able to hold "0 and 2 have resolved, 1 has not been told at all".
+            //
+            // NO SCALAR CAN. Any high-water mark covering leg 2 is >= 3, which also covers leg 1 —
+            // and `revealedLoss` scans the presented-resolved legs reading RAW `GradesWon`, so the
+            // footer would announce the ticket dead during a match the viewer has not been shown.
+            // That is the T144 leak exactly, reached through the fix rather than through omission.
+            //
+            // Both assertions below FAIL on the scalar shape, which is what makes this a gate rather
+            // than a restatement: with the mark at 3 the middle row renders its verdict AND the
+            // footer flips to its settled form.
+            var go = new GameObject("InterleavedFixtureGate");
+            try
+            {
+                TvSweatScreen s = BuiltScreen(go);
+                Ticket ticket = InterleavedTicketWithLosingMiddleLeg("3D-INTERLEAVED-GATE");
+
+                Assert.AreSame(ticket.Legs[0].Matchup, ticket.Legs[2].Matchup,
+                    "fixture 0 must be legs {0,2} — this fixture is not interleaved and proves nothing");
+                Assert.AreNotSame(ticket.Legs[0].Matchup, ticket.Legs[1].Matchup,
+                    "the middle leg must be a DIFFERENT matchup, or there is no untold fixture");
+                Assert.IsTrue(ticket.State == TicketState.Lost,
+                    "the middle leg lost, so the ticket is dead in ENGINE truth — that is the fact "
+                    + "the footer must not read until the reveal");
+
+                // Legs 0 and 2 have been told and resolved; VOIDED so neither is itself a loss and
+                // the only loss available to leak is the untold leg 1.
+                MethodInfo setVoided = typeof(Leg).GetProperty("IsVoided").GetSetMethod(nonPublic: true);
+                Assert.IsNotNull(setVoided, "Leg.IsVoided has no setter — engine shape changed?");
+                setVoided.Invoke(ticket.Legs[0], new object[] { true });
+                setVoided.Invoke(ticket.Legs[2], new object[] { true });
+
+                RenderTicketColumnSet(s, ticket,
+                    presentedResolved: new[] { true, false, true },
+                    liveLegs: System.Array.Empty<int>());
+
+                TMP_Text middleState = FindChild<TMP_Text>(s, "LegRowState1");
+                Assert.IsNotNull(middleState, "LegRowState1 not found");
+                foreach (string verdict in new[] { "W", "L", "VOID" })
+                    Assert.AreNotEqual(verdict, middleState.text,
+                        $"leg 1's fixture has not been told, so its row may not read '{verdict}' — "
+                        + "a verdict on an untold match is the ending, shown early");
+
+                Assert.IsFalse(s.DebugTicketRiskText.StartsWith("STAKE"),
+                    "the footer read its SETTLED form off a leg whose match has not been told — "
+                    + "T144's leak, reopened. revealedLoss must scan only PRESENTED-resolved legs, "
+                    + $"and leg 1 is not one. Footer read: '{s.DebugTicketRiskText}'");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(go);
+            }
         }
 
         private static Ticket TwoLegTicket(string runId)

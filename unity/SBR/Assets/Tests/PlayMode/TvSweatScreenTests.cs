@@ -1102,7 +1102,7 @@ namespace SBR.Tests.PlayMode
                 // 3. THE REVEAL GATE. A footer reading STAKE has named the ticket SETTLED; on a
                 // dead ticket the surface may only say that once a row has SHOWN the loss.
                 // `SweatSession.MoveNext` resolves a LegFinal and busts BEFORE it hands the event
-                // back (SweatSession.cs:150-154, :184-185), while `_resolvedThrough` advances only
+                // back (SweatSession.cs:150-154, :184-185), while `_presentedResolved` is marked only
                 // in FinalSlam, after the whole final scene has played — so a footer reading raw
                 // `_ticket.State` prints the ending during the scene that delivers it.
                 //

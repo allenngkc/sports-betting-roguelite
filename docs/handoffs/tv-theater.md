@@ -134,6 +134,93 @@ what that clause forbids.
 
 ---
 
+## 0-U12. STEP 2 — §6a, N GRADES AT ONE WHISTLE · SHIPPED 2026-08-24
+
+**EditMode 321/320/0/1 · PlayMode 149/124/0/25.** EditMode is +1 on baseline: the interleaved gate.
+Verified by NAME, not by a clean total — "0 failed" and "the gate ran" are different claims.
+
+### THE ROTATION DOC'S PLANNED FIX WAS UNSAFE, AND IT WOULD HAVE REOPENED `T144`
+
+The plan said `_resolvedThrough = evt.LegIndex + 1` becomes `max(LegIndices) + 1`. **It must not.**
+
+`JointModel.GroupByMatchup` (`:1352`) is a plain first-appearance partition; `BetslipModel` appends
+picks in tap order with no sort (`_picks.Add`); `Run.PlaceTicket` builds legs in pick order. So
+**a fixture's legs need not be CONTIGUOUS**: `[matchA, matchB, matchA]` gives fixture 0 = legs
+**{0, 2}**, and it is told FIRST. `max + 1` is 3 there, which marks leg 1 — a leg whose match has not
+been told at all — as presented-resolved. `revealedLoss` (`:3018`) then reads leg 1's raw
+`GradesWon` and the footer announces the death before its scene plays. **The `T144` leak, arriving
+through the remedy rather than through omission.**
+
+**No scalar can express "0 and 2 resolved, 1 untold."** That is why the fix is a per-leg set.
+
+### WHAT SHIPPED
+
+- `_resolvedThrough` (int) → `bool[] _presentedResolved`, with bounds-safe `IsPresentedResolved(i)`.
+  Four readers re-pointed, three writers now mark every index in `evt.LegIndices`.
+- `UpdateTicketColumn(int liveLegIndex)` → `UpdateTicketColumn(IReadOnlyList<int> liveLegs)`;
+  `_liveLegIndexShown` → `_liveLegsShown`. **A self-aliasing guard was required** — three call sites
+  pass the cache field itself, so an unconditional clear-then-copy empties the set being re-asserted.
+- The two `+ 1` "next leg reads LIVE" calls become **the next FIXTURE's legs**, via one
+  first-appearance grouping helper mirroring `GroupByMatchup`. Duplicated in presentation only
+  because that helper is `internal` to the engine — **if the two ever disagree, the sweat's idea of
+  a fixture and the joint price's are two implementations of one rule**, which the contract forbids.
+  Worth routing: making `GroupByMatchup` public would delete this copy.
+- **`FinalSlam`'s `grade` is the ANCHOR's, and the legs on one fixture can grade DIFFERENTLY.**
+  Looping `LegIndices` with that one grade would be a silent lie on a mixed fixture. Each leg's
+  `ResolveLeg` now derives its own outcome; the ceremony branches keep the passed-in grade so the
+  beat is unchanged.
+- `SweatPresentationModel._anchorLeg` → `_anchorFixture`, keyed on `evt.FixtureIndex`. **Its
+  probability arithmetic is untouched** — that is step 4's, and `T166` has ruled the `MagnitudeBand`
+  thresholds STAY (the tape's quietening on multi-leg tickets is TRUE, not a defect to compensate).
+
+### THE GATE, AND THE VACUOUS PASS IT ALMOST WAS
+
+`A_leg_whose_fixture_has_not_been_told_is_never_rendered_resolved_or_leaked_to_the_footer`.
+It renders the column with presented-resolved `[true, false, true]` — **a set no high-water mark can
+produce** — and asserts leg 1 shows no verdict and the footer does not read its settled `STAKE` form.
+
+**Its first run FAILED on its own precondition, and that failure is the point.** `LockRound` does NOT
+settle the ticket — the bust happens when `SweatSession.MoveNext` delivers the `LegFinal`, which is
+the very race the reveal gate exists for. With `State` never `Lost`,
+`settledDead = State == Lost && revealedLoss` **cannot be true for ANY implementation**, so the
+footer assertion would have gone green against a leaking scalar. The fixture now drains the session
+(declining every save), refuses any candidate that does not settle `Lost`, and voids legs 0/2 AFTER
+the drain so engine truth and presentation genuinely disagree. **A gate that cannot fail is worse
+than a missing gate** — write the precondition that proves it is armed.
+
+### ⚠ THE REFLECTED-SEAM TRAP BIT AGAIN, SAME SHAPE, DIFFERENT SUITE
+
+Step 1 broke two PlayMode tests; step 2 broke `TvSweatScreenPaletteTests.cs:1226-1228`, which
+reflects `_resolvedThrough` by string and invokes `UpdateTicketColumn` with an `int`. **Both
+compiled clean in all three assemblies.** The lesson is now written into that helper's doc comment:
+**before changing any `internal` signature on `TvSweatScreen`/`RevealedView`, grep `Assets/**` for
+the member name as a STRING LITERAL.** The scalar-parameter shim was kept so all six existing call
+sites stay verbatim; a test needing a non-contiguous set uses `RenderTicketColumnSet` instead.
+
+### THREE DEFECTS FOUND AND DELIBERATELY NOT FIXED
+
+- **`onFinalLeg` NEVER FIRES on an interleaved ticket.** `TvSweatScreen.cs:1718` —
+  `evt.LegIndex == _ticket.Legs.Count - 1`. On `[A,B,A]` the anchors are only 0 and 1, never 2, so
+  `PacingFor(evt, onFinalLeg)` **loses final-leg pacing entirely.** Honest referent is
+  `evt.FixtureIndex == _session.FixtureCount - 1`. The contract files this under §6b/step 4; it is
+  worse than that placement suggests and should be pulled forward.
+- **`_stageLeg` configures the ledger from the ANCHOR only** (`BeginStageLeg` →
+  `ConfigureEndpoint`). On a shared telling carrying two markets on one match, the non-anchor leg has
+  no ledger behind its progress line.
+- **The pending-loss window is still scalar.** This surface reads `HasPendingLoss` at four sites and
+  never `PendingDeadLegIndices`, so `NoSingleCallSaves` and `S85`'s "state it BEFORE the offer" are
+  unbuilt. That is the other N-live site and it is the largest one left.
+
+### OWED
+
+- **`int k = evt.LegIndex + 1`** feeds `LEG k — VOIDED, THE TICKET LIVES`. What a shared telling's
+  copy calls itself is **NOT RULED**; inventing a form here would be this lane deciding it. Left as
+  the anchor's number, commented. Owed to the DD with the `SweatRenderer` twin.
+- **`game-console/SweatRenderer.cs` carries the same per-leg drive loop** (§6g) and the same
+  contiguity assumption. Routed to the DD for the next markets seating.
+
+---
+
 ## 0-U11. STEP 1 — §6c, THE PROBABILITY SITES · SHIPPED 2026-08-24
 
 **EditMode 320/319/0/1 · PlayMode 149/124/0/25 — both at baseline.** Engine gate green at
