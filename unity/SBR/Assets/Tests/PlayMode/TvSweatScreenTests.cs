@@ -978,6 +978,109 @@ namespace SBR.Tests.PlayMode
                 + "result proves nothing about whether a rendered row can be empty.");
         }
 
+        /// <summary>`T130` AGAINST THE ONE MARKET IT HAS NEVER MET — `CorrectScore`, which item
+        /// `1.3` un-blanked.
+        ///
+        /// <para><b>Why this is a second test rather than a tweak to the first.</b> The
+        /// policy-driven gate above walks whatever <c>DemoTicketPolicy</c> deals, and that has value:
+        /// it is the shape the game actually produces. But it has now dealt moneyline every time —
+        /// the mutation audit's failure message read <i>"Leg kinds this run: Moneyline, Moneyline,
+        /// Moneyline"</i>, a third leg on top of the two the handoff already recorded. <b>A gate that
+        /// cannot reach the market it was written for is a green that overstates itself</b>, and no
+        /// mutant closes that: mutating proves the gate DETECTS a blank row, never which rows it has
+        /// seen.</para>
+        ///
+        /// <para><b>`1.3`'s defect was specifically a <c>default:</c> arm returning empty copy</b>
+        /// (`d90f122`: <i>"the arm alone would not have fixed it — the caller's default: returned an
+        /// empty copy, which IS the blank column"</i>). So the kind is FORCED onto the ticket rather
+        /// than hoped for.</para></summary>
+        [UnityTest]
+        public IEnumerator T130_a_rendered_leg_row_is_never_empty_on_a_correct_score_leg()
+        {
+            yield return LoadRoom();
+            (RunDirector director, TvSweatScreen screen, SitSpot couch) = FindTrio();
+
+            screen.TimeScaleOverride = 0.0001f;
+            couch.transitionDuration = 0.01f;
+
+            yield return WaitUntil(() => director.Run != null, 10f, "director never started a run");
+            Run run = director.Run;
+
+            // FORCED, not dealt. Plus a second leg so the column renders more than one row — the
+            // blank-column defect was found on a multi-row column.
+            var picks = new[]
+            {
+                new Pick(0, MarketSelection.CorrectScore(2, 1)),
+                new Pick(1, MarketSelection.Moneyline(Side.Home)),
+            };
+            Assert.IsNull(run.RefusalFor(picks),
+                "the forced ticket was refused, so this gate would walk a different shape than it names");
+            run.PlaceTicket(picks, run.Config.MinStake);
+            director.LockRound();
+
+            // THE SUBJECT MUST BE ON THE TICKET. Without this the test could pass having rendered
+            // two moneylines, which is exactly the hole it was written to close.
+            var kinds = new List<string>();
+            for (int i = 0; i < director.CurrentTicket.Legs.Count; i++)
+                kinds.Add(director.CurrentTicket.Legs[i].Selection.Kind.ToString());
+            CollectionAssert.Contains(kinds, MarketKind.CorrectScore.ToString(),
+                $"no CorrectScore leg on this ticket — kinds: {string.Join(", ", kinds)}");
+
+            couch.OnInteract(null);
+            yield return WaitUntil(() => SitSpot.Active != null, 10f, "player never sat down");
+
+            yield return WalkSweatAssertingNoEmptyRow(run, screen, picks.Length, kinds);
+        }
+
+        /// <summary>The row assertion, shared by both `T130` gates so the two cannot drift apart: on
+        /// every frame where a ticket IS rendered, no leg row may be empty in all three of its spans.
+        /// See the policy-driven gate's summary for why the footer is the guard.</summary>
+        private static IEnumerator WalkSweatAssertingNoEmptyRow(
+            Run run, TvSweatScreen screen, int legCount, List<string> kinds)
+        {
+            int framesSampled = 0, framesAsserted = 0;
+            float start = Time.realtimeSinceStartup;
+            const float maxSeconds = 60f;
+            while (run.Phase == Phase.Sweat)
+            {
+                if (Time.realtimeSinceStartup - start > maxSeconds)
+                {
+                    Assert.Fail($"the sweat never settled within {maxSeconds}s wall-clock "
+                        + $"(frames sampled: {framesSampled})");
+                    yield break;
+                }
+                framesSampled++;
+
+                if (!string.IsNullOrEmpty(screen.DebugTicketRiskText))
+                {
+                    framesAsserted++;
+                    for (int i = 0; i < legCount; i++)
+                    {
+                        string line = LegRowLineText(screen, i);
+                        string need = screen.DebugLegNeed(i);
+                        string progress = screen.DebugLegProgress(i);
+                        bool carriesSomething = !string.IsNullOrEmpty(line)
+                                             || !string.IsNullOrEmpty(need)
+                                             || !string.IsNullOrEmpty(progress);
+                        Assert.IsTrue(carriesSomething,
+                            $"frame {framesAsserted}, leg {i} of {legCount}: the row carries NO text in "
+                            + "any form — compact line, NEED and progress are all empty on a ticket that "
+                            + $"IS being rendered (footer reads '{screen.DebugTicketRiskText}'). A leg of "
+                            + "his ticket is saying nothing about itself. Leg kinds this run: "
+                            + $"{string.Join(", ", kinds)}");
+                    }
+                }
+                yield return null;
+            }
+
+            UnityEngine.Debug.Log($"[T130] legs={legCount} kinds=[{string.Join(",", kinds)}] "
+                + $"framesSampled={framesSampled} framesAsserted={framesAsserted}");
+
+            Assert.Greater(framesAsserted, 0,
+                "the gate never asserted on a single frame — no frame rendered a ticket, so this "
+                + "result proves nothing about whether a rendered row can be empty.");
+        }
+
         /// <summary>The compact statement's text, by GameObject name. There is no Debug accessor for
         /// it and this adds none to production for a test's convenience — the same lookup the
         /// capture harness uses.</summary>
