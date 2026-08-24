@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-24, cycle 462 (heartbeat).** Fresh
+**Keeper-era heartbeat stamp: 2026-08-24 09:40, cycle 463 (INCIDENT -
+overnight halt ~9h; seats down, results survived).** Recovery: monitors
+first (heartbeat b1m8sp0oa, watcher v55 bf86hf7tv); TV resumed by
+--continue (both step-1 suite XMLs landed overnight - the seat died
+before reading PlayMode; ordered: read, commit if green at baseline,
+report, then step 2); DD resumed by session ID, standing by. WITH
+ALLEN: unchanged (DoubleChance restatement, carve-out bookkeeping,
+engine retire/keep, the hold's structure, research 8-9, B9's capture).
+
+*(prior stamp, cycle 462 (heartbeat).** Fresh
 TV on phases 2-3 step 1 (the probability re-point): built, EditMode
 green at the rotation baseline (320/319/0/1), PlayMode running
 detached; commit follows green (Allen's 'commit step 1' held until
