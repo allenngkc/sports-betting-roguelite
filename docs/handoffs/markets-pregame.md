@@ -189,7 +189,14 @@ unusable.** `SureThingEntryTests` pins that ring rect at 176×48.
 - **Still owed to the ORIGINAL charter, never started:** the match theater has no drawn ending —
   TV's lane, routed to the DD, three questions named in `docs/1-plans/F_0.5.0_*` §12.7.
 
-> **From integration (2026-08-24): the K21 GATE binds the next seat.** Before any console build touches
-> `SweatRenderer.cs`, read batches 174-175: the leg-contiguity assumption is unsafe ([A, B, A] fixtures)
-> and the TV lane already built the per-leg presented-resolved set for it. Pair the K21 capture with B9's
-> colour capture if a real-terminal session is scheduled - same class, one sitting.
+> **From integration (2026-08-24): K21 binds the next seat, and it wants a GATE - not a capture.**
+> Read batches 174-175 first. The console does NOT carry the scalar resolved-through TV found -
+> `SweatRenderer.cs:389` reads `RevealedLegState(e.LegIndex)`, backed by a per-leg array; do not go
+> looking for one. The defect is `SweatRenderer.cs:296`: `onFinalLeg = evt.LegIndex == lastLeg`
+> compares the telling's ANCHOR leg against the highest leg index, so on a two-leg same-match
+> ticket (anchor 0, lastLeg 1) it is false for every telling - the final telling is
+> fast-forwarded instead of sweated, and the "(the final leg must be sweated)" refusal never
+> prints. Assert it, do not shoot it (C60): the state sits behind a keypress and Hold
+> short-circuits on redirected input, so a piped transcript comes back CLEAN. Mutation-test it as
+> K17's gate was. B9 (colour) is a separate real-terminal item - pair only if such a sitting
+> is scheduled for other reasons.
