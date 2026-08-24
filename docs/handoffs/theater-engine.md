@@ -525,3 +525,100 @@ restart but not the harness's own cleanup), and the machine slept overnight mid-
 did not speed it up meaningfully** — `WorkerPolicy`'s own note is right that this workload reaches
 ~5–6 cores whatever the degree, so the worker count was never the ceiling. Budget a campaign in
 compute-hours on a machine that stays awake, not in wall time.
+
+
+---
+
+# CONTRACT ADDITION — THE ANCHOR TABLE MOVES TO THE ENGINE
+
+**Published 2026-08-24, BEFORE any code, per this lane's own publish-before-change rule.** Allen ruled
+the engine owns the backed-side/anchor table and the TV consumes it instead of duplicating a
+fifteen-arm table in `SweatFlavor`. TV's consumer-side shape is in `docs/handoffs/tv-theater.md`
+§0-U15; this is the producer side. **`T163`'s three branches and the §6b subject sites are blocked on
+it.**
+
+## 1. MY EARLIER FINDING WAS HALF RIGHT, AND TV's REPORT CORRECTS IT — recorded, not quietly dropped
+
+I reported that the two existing tables differ in shape (`Side?` vs `bool`), that only the console's
+can express `T163`'s *neither*, and concluded **"the engine table should adopt the console's shape."**
+
+**The shape half is right. The conclusion is wrong, and shipping it would have broken `T163` on its
+own compatibility test.** `EventText.BackedSide` answers *which side did the player BACK* — the side
+that PAYS. The anchor answers *which club the PROSE names*. They are different questions and they
+diverge on exactly one family:
+
+> **`AnytimeScorer` / `PlayerMultiScorer`.** `BackedSide` answers **null** — and is right, because a
+> man can score in a 3–1 defeat and the leg still wins, so his club is not the side backed. **The
+> anchor must answer `Matchup.PlayerSide(PlayerIndex)`**, because the prose names the club he plays
+> for. `SweatFlavor` already anchors these on `PlayerSide` today.
+
+`T163` branch (1) states its own test — *"this subsumes today's single-leg case exactly, so nothing on
+screen changes before arm A lands."* **A table that answered NEITHER on a scorer leg would change the
+screen and falsify that claim.** So this is a SECOND function, not a promotion of the first. Both
+stay. The divergence is the two shapes working as ruled, and `EventText.BackedSide`'s own doc comment
+already says so — I read the shapes and missed the doc comment that explains why they differ.
+
+## 2. THE SHAPE
+
+```csharp
+public static Side? AnchorSide(Leg leg)
+```
+
+- **`Side?`**, where **`null` means NEITHER** — `T163`'s branches (2) and (3), and the answer `bool`
+  structurally cannot give. This is the half of my finding that stands.
+- **Takes a `Leg`, not a `MarketSelection`.** Non-negotiable: the player markets need
+  `Matchup.PlayerSide(PlayerIndex)`, which is not reachable from a selection. This is why it cannot
+  simply be `BackedSide`'s signature.
+- **Lives in `engine/MatchModel.cs`**, beside `DisplayLabel` and `Fields` — the existing
+  presentation-facing reads over a selection.
+
+## 3. THE TABLE — restated as contract, ruled by TV §0-U15 / `T163`
+
+| kind | anchor | why |
+|---|---|---|
+| `Moneyline` | Home / Away / **null** on Draw | the draw is not a team, ever (`T96`, DD batch 49) |
+| `Handicap` | Home / Away | the line is applied TO the backed side; read `Choice` back |
+| `DoubleChance` | `HomeOrDraw`→Home, `AwayOrDraw`→Away, `HomeOrAway`→**null** | the anchor is the one club in the union; 12 holds both, so neither |
+| `TeamTotalGoals` / `TeamTotalCorners` / `TeamTotalCards` | `Selection.Team` | a NAMED field — read it, do not decode it |
+| `AnytimeScorer` / `PlayerMultiScorer` | **`Matchup.PlayerSide(PlayerIndex)`** | **THE DIVERGENCE from `BackedSide`.** See §1. |
+| `TotalGoals`, `BothTeamsToScore`, `TotalCorners`, `TotalCards`, `CorrectScore`, `WinningMargin`, `TotalGoalsOddEven` | **null** | `T163` branch (3) names this set outright |
+| a sixteenth kind | **THROW** | a `default:` that guesses a side IS `K17-cl`'s defect. Never a fallback. |
+
+**`DoubleChance` keeps its arm even though it left the offered set 2026-08-24** — same reasoning as
+`EventText.BackedSide`'s: the enum member stays so in-flight legs still grade, and an exhaustive table
+that omitted it would throw on one. Consistent with the six guard overrides in `6f4bf67`.
+
+## 4. WHAT THE ENGINE DOES **NOT** BUILD
+
+**The fixture composition rule is TV's.** Over a fixture's LIVE legs: all non-null answers agreeing →
+that side is `picked`; two different sides → NEITHER; none at all → NEITHER. The engine answers **per
+leg** and stops there. `T163` is a presentation ruling; the engine supplies its input.
+
+No copy, no line sets. `SweatFlavor.NeitherLine` and the four club-free tables are authored and
+unwired in TV's tree already.
+
+## 5. WHAT THIS BREAKS, NAMED NOT FIXED
+
+- **`SweatFlavor.PickedHomeForPresentation` (`unity/…/SweatFlavor.cs:403`) is superseded.** TV's
+  report measures it as **wrong today on shipping tickets** — it returns HOME unconditionally for
+  every kind except Moneyline and AnytimeScorer, so a totals, BTTS, correct-score, corners, cards,
+  margin, odd/even or team-total leg already names the home club as `{picked}` when no side is backed
+  at all. **This addition is what makes that fixable; the fix and its evidence are TV's.**
+- **`game-console/EventText.cs:138` `BackedSide` is NOT superseded and must not be deleted** — §1. It
+  stays `internal` to the console unless that lane asks otherwise.
+- Nothing else consumes it on day one. `AnchorSide` is purely additive to the engine's surface.
+
+## 6. EVIDENCE THIS LANE WILL PRODUCE
+
+- Exhaustive over `MarketKind`: every member answered, and a value outside the enum THROWS — the
+  `K17-cl` guard, pinned the way `SweatAnchorGateTests` pins the console's.
+- **The compatibility pin `T163` branch (1) asks for**: on every single-leg shape the board offers,
+  `AnchorSide` agrees with what `PickedHomeForPresentation` returns **wherever that function is
+  right** — i.e. Moneyline and the player markets — so "nothing on screen changes before arm A lands"
+  is measured rather than asserted. Where they disagree, the disagreement IS the defect TV measured,
+  and the test records it as intended rather than pinning the old answer.
+- Suites at baseline; `sim` and `game-console` build clean.
+
+**Open:** the name. `AnchorSide` is this lane's proposal, chosen so it cannot be misread as
+`BackedSide`. If TV or the DD wants the ruled vocabulary (`picked` / prose anchor) in the identifier,
+say so before I build — renaming a public engine member afterwards costs both lanes.
