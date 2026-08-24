@@ -134,6 +134,58 @@ what that clause forbids.
 
 ---
 
+## 0-U14. THE TV's `onFinalLeg` TWIN — AND THE MUTATION THAT AUDITED THE GATE · 2026-08-24
+
+**EditMode 325/324/0/1 · PlayMode 149/124/0/25.** +2 on step 3: the two twin gates.
+
+### A SCOPE CORRECTION THIS SEAT OWES, because it ranked this wrong first
+
+Step 2 reported `onFinalLeg` as *"a live defect, worse than its §6b placement suggests"* and this seat
+ranked it the most urgent of the three. **Read properly it is NARROWER than the console twin.**
+`TvSweatScreen`'s `onFinalLeg` feeds ONLY `PacingFor`'s final-telling slowdown, and it sits inside the
+`_stage == null` branch — the theaterless fallback. On the shipping theater path `PlaySweat` hands off
+to `TheaterBeat`, which owns pacing and never calls `PacingFor`.
+
+**The console twin gated a stated RULE on the shipping path** (no fast-forward through the final
+match). **This one loses pacing on a fallback path.** Both real; only one was reachable in a shipped
+sweat. Fixed for correctness and symmetry, not urgency.
+
+### THE FIX
+
+`TvSweatScreen.OnFinalFixture(e, session)` — `e.FixtureIndex == session.FixtureCount - 1`. PUBLIC for
+the same reason `SweatLines` is public in the console: the value is computed inside a coroutine that
+sleeps, waits on seating and plays scenes, so a test that could only reach it by driving that loop is
+a test that cannot run. Dead `lastLeg` removed.
+
+### ⚠ THE MUTATION FOUND A HOLE IN THE GATE, NOT ONLY IN THE CODE — READ THIS ONE
+
+The mutant killed the interleaved gate as intended. **It also PASSED the compatibility test**, which
+is how that test was exposed as vacuous.
+
+The ordinary-ticket fixture took the first two-leg ticket it could build. **That ticket busted on leg
+0**, so the sweat never reached leg 1, so NEITHER predicate ever fired — `4 beats, 4 in agreement`
+was four comparisons of `false == false`. It would have gone green against any predicate that never
+fires, including the one it exists to rule out.
+
+Armed: the fixture now searches for a ticket that reaches its final leg AND asserts the predicate
+actually fires there. **4 beats → 10 beats, predicate true on 6.** The moved beat count IS the
+evidence the search did something.
+
+**A GATE THAT PASSED FIRST TIME IS UNAUDITED.** Two gates this seat added are proven able to fail
+because they DID fail first — step 2's interleaved gate (its precondition) and the pool↔code pin (the
+incomplete pool). The rest passed on their first run, which is exactly the state this one was in.
+**Owed: mutate them.**
+
+### THE PATTERN BEHIND THREE SEPARATE FAILURES TODAY
+
+Step 2's gate failed its precondition (`LockRound` does not settle a ticket); the console gate's first
+fixture busted at fixture 0; this one agreed vacuously for the same reason. **All three are one
+shape: THE DRAMA ENDED BEFORE THE CASE UNDER TEST COULD OCCUR.** A fixture that does not survive far
+enough is indistinguishable from a passing test. **Every sweat-driving fixture needs an explicit
+"and it got that far" assertion**, not just "and it ran".
+
+---
+
 ## 0-U13. STEP 3 — §6d / `T165`, THE COUNTER COUNTS MATCHES · SHIPPED 2026-08-24
 
 **EditMode 323/322/0/1 · PlayMode 149/124/0/25.** EditMode is +2 on step 2: the width probe and the

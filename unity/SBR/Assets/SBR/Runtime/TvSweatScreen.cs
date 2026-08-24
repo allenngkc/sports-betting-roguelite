@@ -1697,7 +1697,6 @@ namespace SBR.Game
         private IEnumerator PlaySweat()
         {
             RenderPregame();
-            int lastLeg = _ticket.Legs.Count - 1;
 
             while (_session != null && !_session.IsComplete)
             {
@@ -1715,7 +1714,9 @@ namespace SBR.Game
                     continue;
                 }
 
-                bool onFinalLeg = evt.LegIndex == lastLeg;
+                // T140 arm A: the FIXTURE is the unit — see OnFinalFixture for why the old
+                // `evt.LegIndex == lastLeg` cannot fire on an interleaved ticket.
+                bool onFinalLeg = OnFinalFixture(evt, _session);
                 if (evt.Type == DramaEventType.LegFinal)
                     yield return ResolveBeat(evt);
 
@@ -5149,8 +5150,32 @@ namespace SBR.Game
 
         // ---------------------------------------------------------------- pacing / waits
 
+        /// <summary>Whether this beat belongs to the LAST telling on the ticket — what
+        /// <see cref="PacingFor"/>'s final-leg slowdown keys on.
+        ///
+        /// <para>WAS <c>evt.LegIndex == _ticket.Legs.Count - 1</c>, AND THAT CANNOT FIRE ON AN
+        /// INTERLEAVED TICKET. After <c>T140</c> arm A a telling is a (ticket, FIXTURE) and
+        /// <c>DramaEvent.LegIndex</c> is its ANCHOR — the lowest ticket-order leg on that fixture.
+        /// Fixture grouping is first-appearance (<c>JointModel.GroupByMatchup</c>) and a fixture's
+        /// legs need not be contiguous, so on <c>[matchA, matchB, matchA]</c> the anchors are only
+        /// ever 0 and 1 — never 2, the last leg index. The ticket's closing telling then paces like
+        /// any other beat.</para>
+        ///
+        /// <para><b>Scope, stated so it is not read as larger than it is:</b> this is the theaterless
+        /// fallback's pacing only. On the shipping theater path <c>TheaterBeat</c> owns pacing and
+        /// <see cref="PacingFor"/> is never called. The console's twin gates a stated RULE (no
+        /// fast-forward through the final match); this one does not.</para>
+        ///
+        /// <para>PUBLIC because a gate asserts it, for the same reason <c>SweatLines</c> is public in
+        /// the console: the value is computed inside a coroutine that sleeps, polls seating and drives
+        /// a scene, so a test that could only reach it by driving that loop is a test that cannot
+        /// run.</para></summary>
+        public static bool OnFinalFixture(DramaEvent e, SweatSession session)
+            => e.FixtureIndex == session.FixtureCount - 1;
+
         /// <summary>The pacing table (ported from SweatRenderer.PacingFor): base delay by tension tag, an
-        /// extra beat right before a leg's final whistle, and everything slowed on the ticket's final leg.</summary>
+        /// extra beat right before a leg's final whistle, and everything slowed on the ticket's final
+        /// TELLING (<c>T140</c> arm A — see <see cref="OnFinalFixture"/>).</summary>
         private float PacingFor(DramaEvent e, bool isFinalLeg)
         {
             float ms = e.Tag switch
