@@ -48,6 +48,27 @@ namespace SBR.ConsoleGame;
 /// </summary>
 public static class SweatLines
 {
+    /// <summary>Whether this beat belongs to the LAST telling on the ticket — the console's
+    /// "no fast-forward past here" predicate.
+    ///
+    /// <para>WAS <c>evt.LegIndex == ticket.Legs.Count - 1</c>, AND THAT IS WRONG UNDER <c>T140</c>
+    /// ARM A. A telling is a (ticket, FIXTURE) and <c>DramaEvent.LegIndex</c> is the telling's
+    /// ANCHOR — the lowest ticket-order leg on that fixture. Fixture grouping is first-appearance
+    /// (<c>JointModel.GroupByMatchup</c>) and a fixture's legs need not be CONTIGUOUS, so on
+    /// <c>[matchA, matchB, matchA]</c> the anchors are only ever 0 and 1 — <b>never 2</b>, the last
+    /// leg index. The old predicate could not become true on that ticket at all.</para>
+    ///
+    /// <para>WHAT THAT COSTS IS NOT PACING, IT IS A RULE: the caller clears <c>fastForward</c> when
+    /// this goes true ("reached the final leg — it must be sweated") and <see cref="Hold"/> refuses
+    /// a fast-forward key on it. Never true means <b>the player can fast-forward through the final
+    /// match</b> — the one thing the console states it will not allow.</para>
+    ///
+    /// <para>Exposed as a named predicate rather than left inline because it is asserted by a gate:
+    /// <c>Hold</c> short-circuits on redirected stdin, so the fast-forward path cannot be exercised
+    /// by piping input at it and the evidence has to be an assertion on this value.</para></summary>
+    public static bool OnFinalFixture(DramaEvent e, SweatSession session)
+        => e.FixtureIndex == session.FixtureCount - 1;
+
     /// <summary>The gutter's width. ONE number for both lines of a beat — the clock line's
     /// <c>{Clock,-9}</c> and the meter line's leg address are the same nine columns, which is what
     /// makes the pair read as a two-column stub (WHEN / WHICH) rather than as a ragged indent.</summary>
@@ -239,7 +260,6 @@ internal static class SweatRenderer
     {
         SweatSession session = run.Sweats[index];
         Ticket ticket = run.Tickets[index];
-        int lastLeg = ticket.Legs.Count - 1;
 
         Ui.WriteLine(ConsoleColor.White, $"TICKET {index + 1}/{total} — {Ui.Money(ticket.Stake)} to win {Ui.Money(ticket.PotentialPayout)}");
 
@@ -293,7 +313,11 @@ internal static class SweatRenderer
 
             if (session.IsComplete) break;
 
-            bool onFinalLeg = evt.LegIndex == lastLeg;
+            // T140 arm A: the FIXTURE is the unit, not the leg — see SweatLines.OnFinalFixture for
+            // why the old `evt.LegIndex == lastLeg` cannot fire on an interleaved ticket. The local
+            // keeps its name because this grant is line-scoped; the rename to `onFinalFixture`
+            // (and Hold's parameter with it) is owed to the markets lane.
+            bool onFinalLeg = SweatLines.OnFinalFixture(evt, session);
             int hold = fastForward && !onFinalLeg ? 0 : PacingFor(evt, onFinalLeg);
             if (fastForward && onFinalLeg) fastForward = false; // reached the final leg — it must be sweated
             if (hold == 0) continue;
