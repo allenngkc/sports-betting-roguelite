@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-24, cycle 472 (heartbeat).** PART C
+**Keeper-era heartbeat stamp: 2026-08-24, cycle 473 (heartbeat).** STEP 4
+COMPLETE AND MERGED (parts A+D at c24b32c via 699fa96) - all four steps
+of phases 2-3 are BUILT. TV now auditing the first-time-green gates by
+mutation (step 2's readers, T130's inherited gate) before the arc's
+evidence pass; the two owed frames' capture ask is being scoped; DD
+standing by to pre-commit it. WITH ALLEN: the carve-out bookkeeping,
+the hold's structure, research 8-9, B9's sitting.
+
+*(prior stamp, cycle 472 (heartbeat).** PART C
 MERGED (cd80569 - the beat's direction is the ticket's, one authority);
 AnchorSide merged (622abf3) and part D building on the confirmed split
 (AnchorSide where it answers, HOME convention where NEITHER) - the last
