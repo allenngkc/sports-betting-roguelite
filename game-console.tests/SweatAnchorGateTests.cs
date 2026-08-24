@@ -42,13 +42,34 @@ public class SweatAnchorGateTests
 
     private static readonly string[] Seeds = { "GATE-K17-A", "GATE-K17-B", "GATE-K17-C", "GATE-K17-D" };
 
-    private static IReadOnlyList<MarketKind> AllKinds => (MarketKind[])Enum.GetValues(typeof(MarketKind));
+    /// <summary>Kinds deliberately removed from the OFFERED SET — they can never be priced on any
+    /// board, so a roll-call that requires them would fail forever on a market the game does not
+    /// offer. A kind belongs here ONLY when no board can offer it, never because a sweep failed to
+    /// reach it: the difference is whether a better sweep COULD reach it. Everything in this file
+    /// derives its population from priced selections, so the exemption belongs at the population and
+    /// not inside each assertion.
+    ///
+    /// <para><c>DoubleChance</c> left the offered set 2026-08-24 —
+    /// <c>spec-doublechance-removal-2026-08-24.md</c>, Allen's ruling of option (b). Its enum member
+    /// is kept on purpose so in-flight legs still grade, and <c>EventText.BackedSide</c> keeps its
+    /// arm, so it cannot leave these roll-calls by disappearing. <b>The exhaustiveness this file
+    /// really guards is untouched:</b> BackedSide must still throw on a kind outside the enum, and
+    /// that assertion does not read this list.</para></summary>
+    private static readonly MarketKind[] Unoffered = { MarketKind.DoubleChance };
 
-    /// <summary>The five kinds the ruling is about: the ones F_0.5.0 made bettable that CARRY a
-    /// side, and for which the HOME anchor was not arbitrary but wrong.</summary>
+    private static IReadOnlyList<MarketKind> AllKinds =>
+        ((MarketKind[])Enum.GetValues(typeof(MarketKind))).Where(k => !Unoffered.Contains(k)).ToArray();
+
+    /// <summary>The kinds the ruling is about: the ones F_0.5.0 made bettable that CARRY a side, and
+    /// for which the HOME anchor was not arbitrary but wrong.
+    ///
+    /// <para><b>FOUR, not five, since 2026-08-24.</b> <c>DoubleChance</c> was the fifth and left the
+    /// offered set, so <c>K17-cl</c>'s AWAY case is no longer reachable for it. Removed here rather
+    /// than exempted inside the loop below, because this list IS the set the gate sweeps — leaving a
+    /// never-priced kind in it would make the gate vacuous for that kind, which is precisely what its
+    /// own message warns about.</para></summary>
     private static readonly MarketKind[] SideCarrying =
     {
-        MarketKind.DoubleChance,
         MarketKind.Handicap,
         MarketKind.TeamTotalGoals,
         MarketKind.TeamTotalCorners,

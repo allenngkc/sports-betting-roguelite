@@ -157,9 +157,14 @@ public static class MatchModel
             offers.Add(Offer(matchup, MarketSelection.AnytimeScorer(i), config));
 
         // ---- F_0.5.0 V1 ----
-        offers.Add(Offer(matchup, MarketSelection.DoubleChance(MarketChoice.HomeOrDraw), config));
-        offers.Add(Offer(matchup, MarketSelection.DoubleChance(MarketChoice.AwayOrDraw), config));
-        offers.Add(Offer(matchup, MarketSelection.DoubleChance(MarketChoice.HomeOrAway), config));
+        // DoubleChance's three offers (1X / X2 / 12) LEFT THE BOARD 2026-08-24, on Allen's ruling of
+        // option (b) — `spec-doublechance-removal-2026-08-24.md`. It is the only market whose
+        // requirement the theatre could not state: `T161-am` measured the shortest authorable
+        // predicate missing the NEED band by 70.9px, so terse copy was exhausted rather than
+        // insufficient. The KIND is not deleted — grading (`:321`, `:460`, `:634`), pricing and the
+        // enum member all stay, because removing an offer is not removing a market's ability to
+        // SETTLE and an in-flight run's DoubleChance legs must still grade. See `Domain.cs`'s
+        // MarketKind.DoubleChance docstring, where both of this kind's deaths are now recorded.
 
         // ±1.5 ONLY. ±0.5 duplicates the 1X2 home/away price and ±2.5 crashes Offer() at reachable
         // seeds (favourite side p 0.984 against the 0.95238 ceiling) — both measured, §12.3.

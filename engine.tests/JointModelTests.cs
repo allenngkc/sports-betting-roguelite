@@ -509,15 +509,40 @@ public class JointModelTests
 
         _output.WriteLine($"grader isolation: {checks:N0} checks over {kinds.Count} market kinds "
             + $"({string.Join(", ", kinds)})");
-        Assert.Equal(13, kinds.Count); // fifteen kinds less the two scorer markets
+        // TWELVE: fifteen kinds, less the two scorer markets, less DoubleChance — which left the
+        // OFFERED SET 2026-08-24 (spec-doublechance-removal) while keeping its enum member.
+        Assert.Equal(12, kinds.Count);
     }
 
-    /// <summary>Every one of the fifteen kinds actually reaches the joint. Without this the gates
-    /// could stay green over a board that quietly stopped offering a kind, which is the same blind
-    /// spot the merge itself exposed.</summary>
+    /// <summary>Every OFFERED kind actually reaches the joint. Without this the gates could stay
+    /// green over a board that quietly stopped offering a kind, which is the same blind spot the
+    /// merge itself exposed.
+    ///
+    /// <para><b>GUARD OVERRIDE, 2026-08-24 — and the override is narrower than the guard.</b> This
+    /// test was written to catch a kind that stopped being offered SILENTLY. On 2026-08-24 that
+    /// event happened on purpose for the first time: Allen ruled DoubleChance out of the offered set
+    /// (<c>spec-doublechance-removal-2026-08-24.md</c>), and its enum member stays so in-flight legs
+    /// still grade. So the roll-call could no longer be "every enum member".</para>
+    ///
+    /// <para><b>What was NOT done, because it would have disarmed the guard:</b> the loop was not
+    /// deleted, and it was not weakened to "every kind the board happens to carry" — that version
+    /// passes over ANY silent removal and is exactly the blind spot named above. Instead the
+    /// exemption is an EXPLICIT LIST of one, so a SECOND kind leaving the board silently still fails
+    /// this test, and removing a kind on purpose costs a deliberate edit here with a reason
+    /// attached. The list is the record; the assertion below it is unchanged in strength.</para></summary>
     [Fact]
     public void Every_market_kind_on_the_board_is_familied_and_priced()
     {
+        // Kinds deliberately removed from the offered set, each with the ruling that removed it.
+        // A kind belongs here ONLY when no board can offer it — never because a test found it
+        // missing.
+        var deliberatelyUnoffered = new Dictionary<MarketKind, string>
+        {
+            [MarketKind.DoubleChance] =
+                "left the offered set 2026-08-24, spec-doublechance-removal (enum member kept so "
+                + "in-flight legs still grade)",
+        };
+
         Matchup matchup = OneMatchup();
         var kinds = new SortedSet<MarketKind>();
         foreach (MarketSelection selection in Board(matchup))
@@ -528,7 +553,19 @@ public class JointModelTests
         }
 
         foreach (MarketKind kind in Enum.GetValues<MarketKind>())
+        {
+            if (deliberatelyUnoffered.TryGetValue(kind, out string? why))
+            {
+                // The exemption is itself asserted: if a kind on this list comes BACK to the board,
+                // the list is stale and must be pruned rather than silently over-covering.
+                Assert.False(kinds.Contains(kind),
+                    $"{kind} is listed as deliberately unoffered ({why}) but the board offers it — "
+                    + "the exemption is stale");
+                continue;
+            }
+
             Assert.True(kinds.Contains(kind), $"{kind} is not on the shipped board — the gates do not cover it");
+        }
     }
 
     /// <summary>An unmapped market kind THROWS rather than defaulting to a family. Guessing GOAL for a

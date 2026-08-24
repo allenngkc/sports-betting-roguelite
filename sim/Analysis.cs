@@ -593,10 +593,29 @@ public sealed class GateData
                 [MarketKind.WinningMargin] =
                     "one-way buckets that deliberately omit the draw (margin 0), so the set is not a "
                     + $"partition and de-vig has no denominator — {Reach(MarketKind.WinningMargin)}",
+                // Reach() is deliberately NOT called for this kind, and that is the amendment.
+                //
+                // The prover distinguishes DECLINED from BLOCKED by asking whether the random bot —
+                // which picks off the board — ever placed a leg the skilled bot refused. That
+                // question is unanswerable once the market is not on the board at all: random places
+                // 0 legs for the same reason skilled does, and the prover's honest verdict for that
+                // shape is "this exclusion is unproven and must not be trusted". TRUE OF THE PROVER,
+                // MISLEADING AS A REPORT LINE — a reader meets a standing warning about an entry that
+                // is not merely correct but now unfalsifiable-by-construction.
+                //
+                // K18/T82-d: an unreachable-but-correct guard is KEPT and its quietness RECORDED. The
+                // recording is the clause below, which states WHY it cannot be measured rather than
+                // reporting that it was not. The de-vig reasoning above is untouched and still the
+                // reason this entry exists — it would govern again the day the market returns, which
+                // is also the day this clause goes stale and the Reach() call should come back.
                 [MarketKind.DoubleChance] =
                     "its three selections OVERLAP — 1X and X2 both contain the draw — so normalizing "
                     + "the implied probabilities is double counting, not de-vig. Structural, and it "
-                    + $"does not expire at v2 pricing the way BTTS does — {Reach(MarketKind.DoubleChance)}",
+                    + "does not expire at v2 pricing the way BTTS does. NOT REACHABILITY-PROVEN, AND "
+                    + "IT CANNOT BE: DoubleChance left the OFFERED SET 2026-08-24 "
+                    + "(spec-doublechance-removal), so no bot can place one and the declined/blocked "
+                    + "prover has nothing to compare. Unreachable by construction, not unproven — see "
+                    + "the note at this entry",
                 [MarketKind.TotalGoalsOddEven] =
                     "THE most near-even market on the board: measured across the latent box under "
                     + "draws it prices odd 0.490–0.499 / even 0.501–0.510, i.e. odds 1.87–1.94 on "
@@ -700,7 +719,30 @@ public sealed class GateData
             // seam that keeps the next uncoverable market from being handled by weakening the
             // criterion. Do NOT add a kind here because it currently reads zero legs; zero legs is
             // what this arm is for.
-            var sgpExcluded = new Dictionary<MarketKind, string>();
+            //
+            // GUARD OVERRIDE, 2026-08-24 — recorded here rather than only in a commit message,
+            // because the comment above forbids the move this makes and a reader needs the
+            // distinction at the site.
+            //
+            // The bar above is "Do NOT add a kind here because it currently reads zero legs; zero
+            // legs is what this arm is for." THAT BAR IS NOT WHAT THIS IS. It guards against a kind
+            // the probe's catalogue merely FAILS TO REACH — a coverage hole dressed up as an
+            // exemption. DoubleChance is a different fact: it reads zero legs because it is NO
+            // LONGER OFFERED ON ANY BOARD (`spec-doublechance-removal-2026-08-24.md`, Allen's
+            // ruling of option (b)). No catalogue can reach it, and no amount of probe work would.
+            //
+            // The two cases are distinguishable by a question this seam should keep asking: COULD a
+            // better probe reach it? For a coverage hole the answer is yes and the exemption is a
+            // lie. Here the answer is no, and the roll-call would otherwise fail forever on a market
+            // the game does not offer. The kind stays in `MarketKind` on purpose (in-flight legs
+            // must still grade), so it cannot be dropped from the roll-call by disappearing.
+            var sgpExcluded = new Dictionary<MarketKind, string>
+            {
+                [MarketKind.DoubleChance] =
+                    "left the OFFERED SET 2026-08-24 (spec-doublechance-removal): the enum member "
+                    + "stays so in-flight legs still grade, but no board offers it, so no same-match "
+                    + "ticket can contain one. Not a coverage hole — unreachable by construction",
+            };
 
             var sgpUncovered = new List<MarketKind>();
             foreach (MarketKind kind in Enum.GetValues(typeof(MarketKind)))
