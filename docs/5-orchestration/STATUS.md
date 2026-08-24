@@ -1,6 +1,11 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-24, cycle 476 - PAUSE. Allen:
+**Keeper-era heartbeat stamp: 2026-08-24, cycle 477 (heartbeat - THE
+PAUSE HOLDS).** All seats parked and idle; nothing dispatched. Resume
+checklist: verify Unity procs 0 (5 lingered after TV's teardown), then
+re-arm the capture arc (frame B + suites + dock) on Allen's word.
+
+*(prior stamp, cycle 476 - PAUSE. Allen:
 "stop and hold."** All three seats ordered to park safely and stand
 down; NOTHING DISPATCHES - no builds, no merges of new work, no fires -
 until Allen's EXPLICIT resume (any session reading this: the pause
