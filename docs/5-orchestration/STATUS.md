@@ -1,6 +1,14 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-24, cycle 473 (heartbeat).** STEP 4
+**Keeper-era heartbeat stamp: 2026-08-24, cycle 474 (heartbeat).** The
+capture arc runs to sequence: the pre-commitment landed (adfea9f) and
+amended in its only legitimate window; the lease granted; TV finishing
+T130's forced-kind fixture, then merges main for the pre-commitment
+BEFORE the shutter. Allen's dock draft HELD a fourth time (no dock on
+disk yet) - fires when real. WITH ALLEN: the carve-out bookkeeping, the
+hold's structure, research 8-9, B9's sitting.
+
+*(prior stamp, cycle 473 (heartbeat).** STEP 4
 COMPLETE AND MERGED (parts A+D at c24b32c via 699fa96) - all four steps
 of phases 2-3 are BUILT. TV now auditing the first-time-green gates by
 mutation (step 2's readers, T130's inherited gate) before the arc's
