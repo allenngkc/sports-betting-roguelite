@@ -1,6 +1,15 @@
 # Studio Status — 2026-08-10 (header refreshed every cycle per Allen; mtime stamp is load-bearing per §6c — keeper watches it every 15 min)
 
-**Keeper-era heartbeat stamp: 2026-08-24, cycle 464 (heartbeat).** STEP 1
+**Keeper-era heartbeat stamp: 2026-08-24, cycle 465 (heartbeat).** STEP 2
+MERGED (9d7735e via 9f09566): N grades at one whistle, the per-leg
+presented-resolved set, and the interleaved [A,B,A] gate committed
+together - the high-water mark is retired. TV planning step 3 (the leg
+counter's fixture referent, rides T91-cl). DD holds two: the
+shared-telling copy question (what does a multi-leg telling call
+itself - LEG k is unruled) and Allen's DoubleChance restatement. WITH
+ALLEN: unchanged.
+
+*(prior stamp, cycle 464 (heartbeat).** STEP 1
 MERGED (f44ab44 - the displayed win-prob becomes the TICKET's; suites
 green at baseline after TV fixed its own re-point bug). TV building
 STEP 2 with the per-leg presented-resolved set (Allen approved the
