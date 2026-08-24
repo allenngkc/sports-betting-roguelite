@@ -134,6 +134,70 @@ what that clause forbids.
 
 ---
 
+## 0-U17. STEP 4 PARTS A+D — THE ANCHOR SPLITS · SHIPPED 2026-08-24
+
+**EditMode 331/330/0/1 · PlayMode 149/124/0/25.** No case-count change; two tests re-based.
+
+### THE SPLIT, RULED BY ALLEN — `AnchorSide` WHERE IT ANSWERS, HOME WHERE IT IS NEITHER
+
+The contract's site list named four flavour sites. **`PickedHomeForPresentation` had FOURTEEN
+consumers**, and beyond prose it decides `ConfigureEndpoint`'s `_targetPicked`/`_targetOpponent` —
+**the scoreline the ledger drives toward** — plus the stage's attack direction and colours, the
+scorebug identity, the stats panel.
+
+**The two functions have different types**, which is the whole problem: `PickedHomeForPresentation`
+returns `bool` and always answers; `MatchModel.AnchorSide` returns `Side?` and admits NEITHER. Ten
+sites need a binary. **A scoreline cannot be drawn toward "neither."**
+
+| | |
+|---|---|
+| `AnchorSide` answers a side | use it EVERYWHERE — prose and geometry. This is what fixes `Handicap/Away` and `PlayerMultiScorer`, which the old table named HOME. |
+| `AnchorSide` is NEITHER | prose goes club-free (`NeitherLine`); geometry keeps the HOME convention `ConfigureEndpoint` already documents. |
+
+**The one-anchor invariant survives** (`ConfigureEndpoint`: *"this MUST be the exact same 'picked'
+anchor the stage and every other renderer use"*) wherever an anchor EXISTS. The surfaces diverge only
+where there is none — and there the prose declines to name a club, so it cannot contradict the
+colours.
+
+### THE SEQUENCING THIS SEAT PLANNED WAS WRONG, AND CHANGED MID-BUILD
+
+The plan was prose first, geometry as its own diff. **Shipping prose alone would have put a
+`Handicap/Away` leg in the exact contradiction the split exists to prevent** — the strip naming the
+away club while the scorebug coloured home. Half of this rule is not a smaller step, it is an
+incoherent one. Both halves landed together.
+
+### THE GEOMETRY HALF IS ONE LINE, AND IT DELETES A DUPLICATE FIFTEEN-KIND TABLE
+
+`PickedHomeForPresentation` is now `(MatchModel.AnchorSide(leg) ?? Side.Home) == Side.Home` — an
+ADAPTER, not a table. All fourteen consumers keep their binary and pick up the real side wherever the
+engine answers one. **The engine owns the rule; this surface owns the fallback.**
+
+### TWO TESTS RE-BASED, BOTH STATED RATHER THAN QUIETLY ADJUSTED
+
+- **`SweatFlavorDrawAnchorTests`** pinned *"the draw leg's flavour names the home club"* — the
+  PRE-`T163` rule, which that class's own summary states outright. `T163` replaced it and the engine
+  cites `T96`: **the draw is not a team, ever.** **What the test was written to stop, it still
+  stops:** its defect was the AWAY club appearing, and now NO club appears, which forbids it by
+  construction rather than by anchoring on the other one. Its geometry assertion survives untouched —
+  annotated in place so it does not read as stale.
+- **`SweatFlavorLeadChangeTests`** now passes an explicit `Side.Home`: its subject is the BASE
+  TABLES, and a null anchor would send it down the club-free set where it would stop measuring what
+  it is named for.
+
+### ⚠ THE GREEN PROVES NO REGRESSION, NOT THAT THE CHANGE IS RIGHT
+
+**This is the first step in the sequence that changes shipped copy on ORDINARY tickets.** The draw
+leg has a direct fixture. **The other three cases on the engine's own disagreement list —
+`Handicap/Away`, `TotalGoals/Over`, `PlayerMultiScorer/Yes` — have NO fixture that renders them.**
+What is proven is that the adapter compiles into the ledger and a real sweat still runs green.
+
+**OWED, and the corners docks CANNOT serve it:** `SweatFlavor.For` returns `CornerLine` early for
+corners and cards, and those tables were ALREADY club-free — the anchor never reaches the strip on a
+corners leg. The narrow ask is two legs: a Score/Momentum beat on a **totals or BTTS** leg, and one
+on a **`Handicap/Away`** leg.
+
+---
+
 ## 0-U16. STEP 4 PART C — THE DIRECTION RE-BASE · SHIPPED 2026-08-24
 
 **EditMode 331/330/0/1 · PlayMode 149/124/0/25.** No case-count change — part C adds no tests, it
