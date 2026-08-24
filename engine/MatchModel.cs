@@ -534,6 +534,110 @@ public static class MatchModel
         return scored >= needed;
     }
 
+    /// <summary>
+    /// <b>WHICH CLUB THE PROSE ANCHORS ON</b> — <c>T163</c>'s anchor, ruled 2026-08-21 (batch 167)
+    /// and moved to the engine as the single source 2026-08-24. <c>null</c> means <b>NEITHER</b>,
+    /// which is an answer and not a missing one.
+    ///
+    /// <para><b>THIS IS NOT "WHICH SIDE DID HE BACK", AND THE DIFFERENCE IS THE WHOLE REASON THIS
+    /// FUNCTION EXISTS.</b> <c>EventText.BackedSide</c> in the console answers the side that PAYS.
+    /// This answers the club the sentence NAMES. They agree on almost every kind and diverge on
+    /// exactly one family: on <see cref="MarketKind.AnytimeScorer"/> and
+    /// <see cref="MarketKind.PlayerMultiScorer"/>, <c>BackedSide</c> answers <c>null</c> and is RIGHT
+    /// — a man can score in a 3–1 defeat and the leg still wins, so his club is not the side backed —
+    /// while the PROSE anchors on the club he plays for. <b>Neither function supersedes the other;
+    /// promoting one to serve both questions would have been the mistake.</b></para>
+    ///
+    /// <para><b>It takes a <see cref="Leg"/> rather than a <see cref="MarketSelection"/> on purpose:</b>
+    /// the player markets resolve through <see cref="Matchup.PlayerSide"/>, which a selection alone
+    /// cannot reach.</para>
+    ///
+    /// <para><b>The composition over a fixture's live legs is NOT here.</b> <c>T163</c>'s rule — all
+    /// non-null answers agreeing gives that side, two different sides gives NEITHER, none at all
+    /// gives NEITHER — is presentation's, and belongs to whichever surface is drawing. This answers
+    /// one leg and stops.</para>
+    ///
+    /// <para><b>NO DEFAULT ARM, EVER.</b> An unlisted kind THROWS. A <c>default:</c> that guesses a
+    /// side is precisely <c>K17-cl</c>'s defect — one arm silently absorbing every case nobody
+    /// thought about — and it is the reason that ruling chose an exhaustive table over a
+    /// predicate.</para>
+    /// </summary>
+    public static Side? AnchorSide(Leg leg)
+    {
+        if (leg == null) throw new ArgumentNullException(nameof(leg));
+        MarketSelection selection = leg.Selection;
+
+        switch (selection.Kind)
+        {
+            // The draw is not a team, ever (T96, DD batch 49): a draw-backed leg anchors on NEITHER
+            // rather than borrowing a club's treatment.
+            case MarketKind.Moneyline:
+                return selection.Choice switch
+                {
+                    MarketChoice.Home => Side.Home,
+                    MarketChoice.Away => Side.Away,
+                    MarketChoice.Draw => null,
+                    _ => throw new ArgumentException(
+                        $"Invalid moneyline choice {selection.Choice}"),
+                };
+
+            // The line is applied TO the backed side, so the choice reads back as the anchor.
+            case MarketKind.Handicap:
+                return selection.Choice switch
+                {
+                    MarketChoice.Home => Side.Home,
+                    MarketChoice.Away => Side.Away,
+                    _ => throw new ArgumentException(
+                        $"Invalid handicap choice {selection.Choice}"),
+                };
+
+            // The anchor is the ONE club in the union; 12 holds both, so neither. The arm is kept
+            // although DoubleChance left the OFFERED SET 2026-08-24 — the enum member stays so
+            // in-flight legs still grade, and an exhaustive table that omitted it would throw on one.
+            case MarketKind.DoubleChance:
+                return selection.Choice switch
+                {
+                    MarketChoice.HomeOrDraw => Side.Home,
+                    MarketChoice.AwayOrDraw => Side.Away,
+                    MarketChoice.HomeOrAway => null,
+                    _ => throw new ArgumentException(
+                        $"Invalid double-chance choice {selection.Choice}"),
+                };
+
+            // A NAMED field. Read it; do not decode it from the choice.
+            case MarketKind.TeamTotalGoals:
+            case MarketKind.TeamTotalCorners:
+            case MarketKind.TeamTotalCards:
+                return selection.Team
+                    ?? throw new ArgumentException(
+                        $"{selection.Kind} carries no Team, so it has no anchor to name");
+
+            // THE DIVERGENCE from BackedSide — see the summary. The prose names the club he plays for.
+            case MarketKind.AnytimeScorer:
+            case MarketKind.PlayerMultiScorer:
+                return leg.Matchup.PlayerSide(selection.PlayerIndex);
+
+            // T163 branch (3) names this set outright: no side is named, so the honest answer is
+            // NEITHER. Listed one by one rather than collected in a default, so a sixteenth kind
+            // cannot join them by accident.
+            case MarketKind.TotalGoals:
+            case MarketKind.BothTeamsToScore:
+            case MarketKind.TotalCorners:
+            case MarketKind.TotalCards:
+            case MarketKind.CorrectScore:
+            case MarketKind.WinningMargin:
+            case MarketKind.TotalGoalsOddEven:
+                return null;
+
+            default:
+                throw new ArgumentOutOfRangeException(
+                    nameof(leg), selection.Kind,
+                    "MatchModel.AnchorSide has no arm for this market kind. Add one — deliberately, "
+                    + "having decided whether the prose names a club for it — rather than letting a "
+                    + "default answer for it (K17-cl).");
+        }
+    }
+
     /// <summary>Legacy single-string market label, one packed string per selection. Retained
     /// behaviourally unchanged for <c>TvSweatScreen.cs</c> (another lead's surface, forbidden to
     /// this ruling's batch) pending that lead's own migration to <see cref="Fields"/>. New surfaces
