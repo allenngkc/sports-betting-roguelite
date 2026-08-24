@@ -134,6 +134,39 @@ what that clause forbids.
 
 ---
 
+## 0-U19. `T130` MEETS ITS SUBJECT — THE FORCED-KIND GATE · 2026-08-24
+
+**PlayMode 150/125/0/25** — +1, so the file recompiled and the gate really ran.
+
+```
+[T130] legs=2 kinds=[Moneyline,Moneyline]     framesSampled=27  framesAsserted=27
+[T130] legs=2 kinds=[CorrectScore,Moneyline]  framesSampled=22  framesAsserted=22
+```
+
+**THE SECOND LINE IS THE POINT.** `T130` had never rendered a `CorrectScore` row — the market item
+`1.3` un-blanked, and the only one the drawn-ending section fixed. `DemoTicketPolicy` dealt moneyline
+three times running. **`d90f122` shipped behind a gate that could not see its own subject**, and
+that is now closed: 22 frames asserted on a rendered correct-score row.
+
+### WHY A SECOND TEST RATHER THAN CHANGING THE FIRST
+
+The policy-driven gate walks **what the game actually deals**, and that has its own value — if the
+policy ever starts dealing something new, it shows there. The forced gate walks **what the ruling is
+about**. Both share `WalkSweatAssertingNoEmptyRow` so the assertion cannot drift between them.
+
+### THE ANTI-VACUITY GUARD IS THE LOAD-BEARING PART
+
+The forced gate **asserts `CorrectScore` is on the ticket before walking a single frame**. Without
+it the test could pass having rendered two moneylines — *which is exactly the hole it exists to
+close*, and the shape that let the original report green for weeks. It also fails loudly if
+`RefusalFor` rejects the pairing, rather than silently walking a different ticket.
+
+**A mutant could never have found this.** Mutation proves a gate DETECTS its defect; it says nothing
+about which inputs the gate has seen. Those are two different kinds of blindness and they need two
+different checks.
+
+---
+
 ## 0-U18. THE GATE AUDIT — EVERY GATE THAT PASSED FIRST TIME, MUTATED · 2026-08-24
 
 **A GATE THAT PASSED FIRST TIME IS UNAUDITED.** This seat shipped one that was vacuous (the TV
